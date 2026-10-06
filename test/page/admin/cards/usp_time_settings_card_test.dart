@@ -1,10 +1,14 @@
 @Tags(['layout-gate'])
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
+import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
 import 'package:privacy_gui/page/admin/cards/usp_time_settings_card.dart';
 
@@ -52,11 +56,15 @@ class _FakeTimeDataNotifier extends TimeDataNotifier {
   Future<TimeData> build() async => _data;
 }
 
-Widget _buildTestWidget(TimeSettingsUIModel time) {
+Widget _buildTestWidget(
+  TimeSettingsUIModel time, {
+  Future<List<TimeZoneInfo>>? zones,
+}) {
   final notifier = _FakeTimeDataNotifier(TimeData(model: time));
   return ProviderScope(
     overrides: [
       timeDataProvider.overrideWith(() => notifier),
+      if (zones != null) timeZoneCatalogueProvider.overrideWith((_) => zones),
     ],
     child: MaterialApp(
       theme: _testTheme,
@@ -95,11 +103,16 @@ void main() {
       expect(find.text('Unsynchronized'), findsOneWidget);
     });
 
-    testWidgets('hides DST row for non-DST timezone', (tester) async {
+    // #1609: this replaces `hides DST row for non-DST timezone` — see the note
+    // at the same test in `usp_timezone_card_test.dart`. The row states the
+    // selected zone's DST property instead of disappearing.
+    testWidgets('shows DST Off, rather than nothing, for a non-DST zone',
+        (tester) async {
       await tester.pumpWidget(_buildTestWidget(_gmt8Time));
       await tester.pumpAndSettle();
 
-      expect(find.text('DST'), findsNothing);
+      expect(find.text('DST'), findsOneWidget);
+      expect(find.text('Off'), findsOneWidget);
     });
 
     testWidgets('shows DST On for DST-enabled timezone', (tester) async {
@@ -122,6 +135,30 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Not set'), findsOneWidget);
+    });
+
+    // #1609 AC9, the dashboard half. Same three tiers as the Administration
+    // card: name the region when we can, otherwise show the offset the device
+    // reported, and keep the raw POSIX string only for a reading that carried
+    // no offset at all.
+    testWidgets('shows the reported offset for an unrecognized zone',
+        (tester) async {
+      const unknownTz = TimeSettingsUIModel(
+        enable: true,
+        status: 'Synchronized',
+        // `CST-8` is the device's own value for Asia/Taipei.
+        currentLocalTime: '2026-09-22T18:30:00+08:00',
+        localTimeZone: 'CST-8',
+        ntpServer1: 'pool.ntp.org',
+        ntpServer2: '',
+      );
+      await tester.pumpWidget(_buildTestWidget(unknownTz));
+      await tester.pumpAndSettle();
+
+      expect(find.text('GMT+08:00'), findsOneWidget,
+          reason: 'once, in the name row — the dedicated UTC-offset row stays '
+              'hidden rather than repeating it.');
+      expect(find.text('CST-8'), findsNothing);
     });
 
     testWidgets('shows skeleton when data is null', (tester) async {
@@ -187,6 +224,27 @@ void main() {
           reason: 'the node carrying the name cannot be activated, so the name '
               'belongs to nothing.');
 
+      handle.dispose();
+    });
+
+    // linksys/FWDEV#198. The dialog offers the device catalogue, so the edit
+    // button waits for it rather than letting a tap wait unseen — and a second
+    // tap open a second dialog.
+    testWidgets('the edit button is disabled until the zone list has loaded',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      final zones = Completer<List<TimeZoneInfo>>();
+      await tester.pumpWidget(_buildTestWidget(_gmt8Time, zones: zones.future));
+      await tester.pump();
+
+      expect(tester.getSemantics(find.byType(AppIconButton)),
+          isSemantics(isEnabled: false));
+
+      zones.complete(kTimeZoneDefinitions);
+      await tester.pumpAndSettle();
+
+      expect(tester.getSemantics(find.byType(AppIconButton)),
+          isSemantics(isEnabled: true));
       handle.dispose();
     });
   });

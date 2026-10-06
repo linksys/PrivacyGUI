@@ -6,6 +6,8 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/admin_users.g.dart';
 import 'package:privacy_gui/generated/device_operations.g.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
+import 'package:privacy_gui/generated/time_settings_operations.g.dart';
+import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
 import 'package:privacy_gui/page/admin/models/admin_ui_models.dart';
 
 final uspAdminServiceProvider = Provider<UspAdminService>(
@@ -17,6 +19,10 @@ class UspAdminService {
   final UspClient _usp;
 
   UspAdminService(this._usp);
+
+  /// The `Result` output of `SetTimeSettings` that means the zone was saved.
+  /// Every other value is a rejection (linksys/FWDEV#198).
+  static const _setTimeSettingsOk = 'OK';
 
   // ---------------------------------------------------------------------------
   // CRUD
@@ -111,44 +117,83 @@ class UspAdminService {
     }
   }
 
-  /// Update timezone and optionally NTP servers / enable.
+  /// Update the timezone and its daylight-savings setting, and optionally the
+  /// NTP server (the timezone edit dialog).
+  ///
+  /// The zone is saved through `Device.Time.X_LINKSYS_SetTimeSettings()`
+  /// (linksys/FWDEV#198), which sets the zone and DST together — hence one
+  /// [zone] value. Leave it null when only the NTP server changed: re-sending the
+  /// resolved zone would commit a guess for a zone the device could not name.
+  ///
+  /// The operate always succeeds; the firmware reports a rejection only in the
+  /// output argument `Result` (`ErrorUnknownTimeZone`,
+  /// `ErrorTimeZoneDoesNotObserveDST`, `ErrorInvalidInput`), and on a rejection
+  /// nothing changes. So anything but `OK` is thrown here — checking the call
+  /// alone would record a rejected zone as saved. The zone goes first so that a
+  /// rejection stops the NTP write too, and the dialog's edit fails as one.
   Future<void> updateTimezone({
-    String? localTimeZone,
+    TimeZoneSelection? zone,
     String? ntpServer1,
-    String? ntpServer2,
-    bool? enable,
   }) async {
+    // Thrown, not asserted: asserts are stripped from the release web build.
+    // The notifier checks this too, but this service is the layer that writes.
+    if (zone == null && ntpServer1 == null) {
+      throw ArgumentError('updateTimezone was given nothing to write');
+    }
     try {
-      final result = await TimeSettings.update(
-        _usp,
-        localTimeZone: localTimeZone,
-        ntpServer1: ntpServer1,
-        ntpServer2: ntpServer2,
-        enable: enable,
-      );
-      final parsed = UspResultParser.parseSetResult(result);
-      switch (parsed) {
-        case UspSuccess():
-          break;
-        case UspPartialSuccess(
-            :final errorSummary,
-            :final successes,
-            :final failures
-          ):
-          throw UspPartialFailureError(
-            summary: 'Timezone update partial failure: $errorSummary',
-            successPaths: successes.map((s) => s.requestedPath).toList(),
-            failures: failures,
+      if (zone != null) {
+        final output = await TimeSettingsOperations.setTimeSettings(
+          _usp,
+          timeZoneId: zone.id,
+          autoAdjustForDst: zone.autoAdjustForDst,
+        );
+        final result = output['Result'];
+        if (result != _setTimeSettingsOk) {
+          throw InvalidInputError(
+            field: 'timezone',
+            detail: 'SetTimeSettings rejected ${zone.id}: $result',
           );
-        case UspFailure(:final errorSummary, :final errors):
-          throw UspCompleteFailureError(
-            summary: 'Timezone update failed: $errorSummary',
-            failures: errors,
-          );
+        }
+      }
+      if (ntpServer1 != null) {
+        _check(
+          await TimeSettings.update(_usp, ntpServer1: ntpServer1),
+          // The zone is already saved by this point, and nothing rolls it back.
+          alreadyApplied: zone != null ? 'timezone' : null,
+        );
       }
     } catch (e) {
       if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  /// Turns a raw Set result into a throw, or nothing.
+  ///
+  /// [alreadyApplied] names what an earlier write in the same edit committed, so
+  /// a failure here does not read as "nothing happened".
+  void _check(Map<String, dynamic> result, {String? alreadyApplied}) {
+    final landed =
+        alreadyApplied == null ? '' : ' ($alreadyApplied was already applied)';
+    final parsed = UspResultParser.parseSetResult(result);
+    switch (parsed) {
+      case UspSuccess():
+        return;
+      case UspPartialSuccess(
+          :final errorSummary,
+          :final successes,
+          :final failures
+        ):
+        throw UspPartialFailureError(
+          summary: 'Timezone update partial failure: $errorSummary$landed',
+          successPaths: successes.map((s) => s.requestedPath).toList(),
+          failures: failures,
+        );
+      case UspFailure(:final errorSummary, :final errors):
+        throw UspCompleteFailureError(
+          summary: 'Timezone update failed: $errorSummary$landed',
+          failures: errors,
+        );
     }
   }
 

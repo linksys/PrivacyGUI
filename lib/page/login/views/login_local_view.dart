@@ -34,6 +34,12 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
   Timer? _timer;
   bool isCountdownJustFinished = false;
   bool _showPassword = false;
+
+  /// Set once a login has succeeded and the page has asked to leave. From then
+  /// until the post-login redirect replaces this page, the loader stays up —
+  /// rebuilding the form for those frames was the flash of the login page between
+  /// submit and the dashboard (#1641).
+  bool _leaving = false;
   late AuthNotifier auth;
   late SessionNotifier session;
 
@@ -74,6 +80,10 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
   void didUpdateWidget(covariant LoginLocalView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.args != oldWidget.args) {
+      // The post-login redirect brought the user back here (e.g.
+      // `?error=noDeviceInfo`) instead of replacing the page, so the login did
+      // not lead anywhere: show the form again rather than a loader forever.
+      _leaving = false;
       if (widget.args['reset'] == true) {
         _passwordController.clear();
         auth.getAdminPasswordAuthStatus().then((value) {
@@ -109,12 +119,14 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
           !next.hasError) {
         if (next.value?.isLoggedIn ?? false) {
           if (!context.mounted) return;
+          setState(() => _leaving = true);
           context.go('/');
         }
       }
     });
 
     final state = ref.watch(authProvider);
+    if (_leaving) return const AppFullScreenLoader();
     return state.when(error: (error, stack) {
       _p = null;
       //The countdown has been triggered and finished, but the error still exists in AsyncValue state

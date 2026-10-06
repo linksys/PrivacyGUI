@@ -659,18 +659,63 @@ void main() {
       container.dispose();
     });
 
-    test('clearAll resets every dimension and search', () async {
+    test('clearPanelFilters resets every filter the panel counts', () async {
+      final container = await createReadyContainer();
+      final notifier = container.read(deviceFilterConfigProvider.notifier);
+
+      // All seven, with values this fixture offers, so reconciliation keeps
+      // them: the count must reach 7 first, or a dimension the reset forgets
+      // would never have been set.
+      notifier.setConnections({ConnectionType.wifi});
+      notifier.setDeviceCategories({DeviceCategory.phone});
+      notifier.setPrivateMac(PrivateMacFilter.privateOnly);
+      notifier.setSignals({DeviceSignalLevel.excellent});
+      notifier.setNodeIds({'NODE-01'});
+      notifier.setSsidNames({'Home'});
+      notifier.setBands({'5GHz'});
+      expect(
+          container.read(deviceFilterConfigProvider).activeCountExcludingStatus,
+          7);
+
+      notifier.clearPanelFilters();
+
+      expect(container.read(deviceFilterConfigProvider),
+          const DeviceFilterConfig());
+      container.dispose();
+    });
+
+    test(
+        'clearPanelFilters keeps the search, because the search box keeps its own text '
+        'and would otherwise say one thing while the list shows another '
+        '(#1159)', () async {
+      final container = await createReadyContainer();
+      final notifier = container.read(deviceFilterConfigProvider.notifier);
+
+      notifier.setSearchQuery('iphone');
+      notifier.setSsidNames({'Home'});
+      notifier.clearPanelFilters();
+
+      expect(container.read(deviceFilterConfigProvider).searchQuery, 'iphone');
+      container.dispose();
+    });
+
+    test(
+        'clearPanelFilters keeps the status, so clearing filters under Online never '
+        'lists an offline device (#1159)', () async {
       final container = await createReadyContainer();
       final notifier = container.read(deviceFilterConfigProvider.notifier);
 
       notifier.setStatus(DeviceStatusFilter.online);
-      notifier.setSearchQuery('iphone');
       notifier.setSsidNames({'Home'});
-      notifier.clearAll();
+      notifier.clearPanelFilters();
 
-      final state = container.read(deviceFilterConfigProvider);
-      expect(state.isActive, isFalse);
-      expect(state.searchQuery, '');
+      expect(container.read(deviceFilterConfigProvider).status,
+          DeviceStatusFilter.online);
+      final listed = container.read(filteredDeviceListProvider);
+      expect(listed, isNotEmpty);
+      expect(listed.where((d) => !d.isActive), isEmpty,
+          reason:
+              'Online is still selected, so the list must stay online-only');
       container.dispose();
     });
   });

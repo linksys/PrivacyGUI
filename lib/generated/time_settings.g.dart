@@ -12,6 +12,8 @@ class TimeSettings {
   final String ntpServer2;
   final String localTimeZone;
   final String currentLocalTime;
+  final String? timeZoneId;
+  final bool? autoAdjustForDst;
 
   const TimeSettings({
     required this.enable,
@@ -20,6 +22,8 @@ class TimeSettings {
     required this.ntpServer2,
     required this.localTimeZone,
     required this.currentLocalTime,
+    this.timeZoneId,
+    this.autoAdjustForDst,
   });
 
   static const _paths = [
@@ -29,6 +33,8 @@ class TimeSettings {
     'Device.Time.NTPServer2',
     'Device.Time.LocalTimeZone',
     'Device.Time.CurrentLocalTime',
+    'Device.Time.X_LINKSYS_TimeZoneID',
+    'Device.Time.X_LINKSYS_AutoAdjustForDST',
   ];
 
   /// Fetch all parameters via USP Get message
@@ -70,6 +76,15 @@ class TimeSettings {
       localTimeZone: (response['Device.Time.LocalTimeZone'] ?? '') as String,
       currentLocalTime:
           (response['Device.Time.CurrentLocalTime'] ?? '') as String,
+      timeZoneId: response.containsKey('Device.Time.X_LINKSYS_TimeZoneID')
+          ? response['Device.Time.X_LINKSYS_TimeZoneID'] as String
+          : null,
+      autoAdjustForDst: response
+              .containsKey('Device.Time.X_LINKSYS_AutoAdjustForDST')
+          ? (response['Device.Time.X_LINKSYS_AutoAdjustForDST'] == true ||
+              response['Device.Time.X_LINKSYS_AutoAdjustForDST'] == 'true' ||
+              response['Device.Time.X_LINKSYS_AutoAdjustForDST'] == '1')
+          : null,
     );
   }
 
@@ -112,7 +127,9 @@ class TimeSettings {
         'ntpServer1: $ntpServer1, '
         'ntpServer2: $ntpServer2, '
         'localTimeZone: $localTimeZone, '
-        'currentLocalTime: $currentLocalTime'
+        'currentLocalTime: $currentLocalTime, '
+        'timeZoneId: $timeZoneId, '
+        'autoAdjustForDst: $autoAdjustForDst'
         ')';
   }
 }

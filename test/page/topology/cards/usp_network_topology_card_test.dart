@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/components/card_popup_form.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/_shared/models/card_density.dart';
@@ -109,11 +110,13 @@ void main() {
         // The positive control, on every width rather than only the wide one: a
         // fix that simply stopped opening anything would satisfy the no-throw
         // assertion above at every narrow width and be indistinguishable from a
-        // working card. `S/N` is rendered by nothing on this card except the node
-        // detail — in the panel where there is room for it, in a dialog where
-        // there is not.
+        // working card. The serial-number label is rendered by nothing on this card
+        // except the node detail — in the panel where there is room for it, in a
+        // dialog where there is not. Read from the ARB rather than spelled: the label
+        // was a literal `S/N` until it was localised, and a spelled `findsOneWidget`
+        // would have gone red there while a spelled `findsNothing` went silently inert.
         expect(
-          find.text('S/N'),
+          find.text(_serialLabel),
           findsOneWidget,
           reason: 'the node detail did not appear',
         );
@@ -134,11 +137,20 @@ void main() {
       });
     }
 
-    // The dialog answers exactly the taps the panel would have answered, and no
-    // more: a client gets no detail on a card with room either — the graph view
-    // fires `onNodeTap` for clients and skips its own panel — so the narrow
-    // branch must not invent one for them.
-    testWidgets('opens nothing for a client', (tester) async {
+    // The dialog answers exactly the taps the panel would have answered, and a
+    // leaf is now one of them.
+    //
+    // This case used to assert the opposite, on a premise ui_kit 3.4.0 removed:
+    // the graph view refused its own panel for a leaf, so the narrow branch had
+    // to refuse one too or the two presentations would disagree. From 3.4.0
+    // whether a node has a panel is decided by whether one was configured, never
+    // by what kind of node it is — so refusing here is what would make the narrow
+    // card the only presentation that ignores a tap on a device.
+    //
+    // What still has to hold is that the dialog is *truthful* for a leaf: a leaf
+    // carries no `isMaster`, and `NodeDetailPopup` drops its role-only rows
+    // rather than printing `Slave` for a laptop (#1614 D2).
+    testWidgets('opens a truthful detail for a leaf', (tester) async {
       final narrowest = widthCasesFor(spec).first;
       final handle = tester.ensureSemantics();
       await probeCardOverflow(
@@ -163,8 +175,13 @@ void main() {
       handle.dispose();
 
       expect(tester.takeException(), isNull);
-      expect(find.byType(AppDialog), findsNothing);
-      expect(find.text('S/N'), findsNothing);
+      expect(find.byType(AppDialog), findsOneWidget,
+          reason: 'a leaf gets the same presentation a node does');
+      // No role, and none of the mesh-node rows a leaf has no data for.
+      expect(find.text('Master'), findsNothing);
+      expect(find.text('Slave'), findsNothing);
+      expect(find.text(_serialLabel), findsNothing);
+      expect(find.text('Backhaul'), findsNothing);
     });
 
     // The other axis, at a width that has room to spare — so the height half of
@@ -195,7 +212,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(
-        find.text('S/N'),
+        find.text(_serialLabel),
         findsOneWidget,
         reason: 'the node detail did not appear',
       );
@@ -310,44 +327,47 @@ void main() {
       );
     });
 
-    testWidgets("is drawn at the theme's own spacing", (tester) async {
-      await pumpPresented(tester);
+    // Both presentations now draw at the theme's own spacing, and the pair is kept
+    // as a pair on purpose.
+    //
+    // The dashboard used to double `nodeSpacing`/`orbitRadius` to stop nodes
+    // crowding at the width the grid gives this card (#1299). ui_kit 3.4.0 sizes
+    // each ring from the discs going on it, so the pitch is guaranteed by geometry
+    // — measured 51.5px at x1.0, x2.0 and x2.2 alike, from 5 to 70 leaves — and
+    // past fit-to-screen the multiplier was a net loss: it grew the bounds into
+    // the 0.5 fit floor, taking the drawn pitch from 29.1px to 25.9px.
+    //
+    // Asserting equality on both, rather than deleting the cases, is what makes
+    // re-introducing a multiplier on either surface a red test.
+    for (final surface in const ['presented', 'dashboard']) {
+      testWidgets("the $surface card is drawn at the theme's own spacing",
+          (tester) async {
+        final Finder anchor;
+        if (surface == 'presented') {
+          await pumpPresented(tester);
+          anchor = find.byType(AppDialog);
+        } else {
+          await pumpOnDashboard(tester);
+          anchor = find.byType(DashboardCardTemplate);
+        }
 
-      final inside = themeAt(tester, presentedTopology()).topologySpec;
-      // The ambient spec, read above the card's own Theme override — so this is
-      // "not doubled" without restating what the doubling factor is.
-      final ambient = themeAt(tester, find.byType(AppDialog)).topologySpec;
+        final inside = themeAt(
+                tester,
+                surface == 'presented'
+                    ? presentedTopology()
+                    : find.byType(AppTopology))
+            .topologySpec;
+        // The ambient spec, read above the card's own Theme override.
+        final ambient = themeAt(tester, anchor).topologySpec;
 
-      expect(
-        inside.nodeSpacing,
-        ambient.nodeSpacing,
-        reason: 'the dashboard card spreads its nodes for a 700px+ desktop '
-            'realization. In a ${kCardPresentationWidth}px presentation the same '
-            'spread pushes the outer nodes under the ClipRect and spends the box '
-            'on gaps',
-      );
-      expect(inside.orbitRadius, ambient.orbitRadius,
-          reason:
-              'the orbit radius is doubled alongside the spacing, so it has '
-              'to come back with it');
-    });
-
-    testWidgets('the dashboard card doubles', (tester) async {
-      await pumpOnDashboard(tester);
-
-      final topology = find.byType(AppTopology);
-      final inside = themeAt(tester, topology).topologySpec;
-      final ambient =
-          themeAt(tester, find.byType(DashboardCardTemplate)).topologySpec;
-
-      expect(
-        inside.nodeSpacing,
-        greaterThan(ambient.nodeSpacing),
-        reason: 'the spread is what makes the graph legible at the width the '
-            'dashboard gives this card; a fix that removed it everywhere would '
-            'change the card nobody complained about',
-      );
-    });
+        expect(inside.nodeSpacing, ambient.nodeSpacing,
+            reason: 'the geometry guarantees the pitch; a multiplier only '
+                'shrinks the graph once it is fitted to the box');
+        expect(inside.orbitRadius, ambient.orbitRadius,
+            reason: 'the orbit radius was scaled alongside the spacing, so it '
+                'has to come back with it');
+      });
+    }
 
     testWidgets('keeps its animation', (tester) async {
       await pumpPresented(tester);
@@ -356,11 +376,14 @@ void main() {
         themeAt(tester, presentedTopology()).visualEffects &
             AppThemeConfig.effectTopologyAnimation,
         isNot(0),
-        reason: 'the same Theme override carries the animation flag and the '
-            'doubled spacing. Dropping the override wholesale would undo the '
-            'spacing and the animation together, and only one of those was the '
-            'defect',
+        reason: 'the animation flag is now the only thing this Theme override '
+            'carries, the spacing having been measured out — so dropping the '
+            'override wholesale would silently turn the animation off',
       );
     });
   });
 }
+
+/// The node detail's serial-number label, as the English ARB words it.
+final _serialLabel =
+    lookupAppLocalizations(const Locale('en')).serialNumberLabel;

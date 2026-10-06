@@ -28,9 +28,6 @@ class BackhaulInfo with EquatableMixin, DiagnosticNamed {
   /// Parent node's device ID (MAC).
   final String? parentNodeId;
 
-  /// Parent node's BSSID the slave connects to.
-  final String? parentBssid;
-
   /// Last contact time in ISO 8601 format.
   final String? lastContactTime;
 
@@ -48,7 +45,6 @@ class BackhaulInfo with EquatableMixin, DiagnosticNamed {
     this.uplinkRate,
     this.downlinkRate,
     this.parentNodeId,
-    this.parentBssid,
     this.lastContactTime,
     this.backhaulMacAddress,
   });
@@ -80,6 +76,25 @@ class BackhaulInfo with EquatableMixin, DiagnosticNamed {
   /// and it is not Ethernet. [linkType] stays null there, so the interface tile
   /// renders `unknown` rather than claiming a medium — see [hasInfo].
   bool get isWifi => hasInfo && !isEthernet;
+
+  /// Whether firmware named the backhaul medium at all.
+  ///
+  /// The third question about the medium, beside [isEthernet] and [isWifi], and
+  /// the only one that answers *"do we know?"* rather than *"which one?"*.
+  /// [isWifi] cannot serve: it is true for a link known only by its parent ID
+  /// (see its doc), because at that point "there is a link and it is not
+  /// Ethernet" is all that can be said — which is the right answer for the
+  /// interface tile, and the wrong one for a topology link that has to pick a
+  /// medium to draw.
+  ///
+  /// Reads [linkType] the same way the medium half of [hasInfo] does, so the two
+  /// cannot drift on what "firmware named nothing" means. `None` arrives here as
+  /// null: `meshBackhaulLinkType` maps it before a [BackhaulInfo] is built, and
+  /// the empty test covers a value that reached us any other way.
+  ///
+  /// Used by `UspTopologyBuilder` to emit `ConnectionType.unknown` rather than
+  /// claiming Wi-Fi for a medium nobody reported (#1464).
+  bool get hasMedium => linkType != null && linkType!.trim().isNotEmpty;
 
   /// Whether this node has a backhaul link at all.
   ///
@@ -113,7 +128,6 @@ class BackhaulInfo with EquatableMixin, DiagnosticNamed {
         uplinkRate,
         downlinkRate,
         parentNodeId,
-        parentBssid,
         lastContactTime,
         backhaulMacAddress,
       ];
@@ -128,7 +142,6 @@ class BackhaulInfo with EquatableMixin, DiagnosticNamed {
         'uplinkRate': uplinkRate,
         'downlinkRate': downlinkRate,
         'parentNodeId': parentNodeId,
-        'parentBssid': parentBssid,
         'lastContactTime': lastContactTime,
         'backhaulMacAddress': backhaulMacAddress,
       };

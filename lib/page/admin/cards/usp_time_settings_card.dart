@@ -5,6 +5,7 @@ import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_notifier.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
+import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
 import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
@@ -57,12 +58,34 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
 
     _syncIfChanged(timeData);
 
-    final tzInfo = matchTimezone(time.localTimeZone);
+    // The device's own zone ID first, our resolution as the fallback — see
+    // `resolveCurrentTimezone`. Resolved against the device catalogue, the list
+    // the edit dialog offers, so the card and its preselection agree. Until the
+    // catalogue has loaded the card resolves against the built-in table and the
+    // edit button stays disabled, so a tap never waits on it unseen or opens the
+    // dialog twice.
+    final zones = ref.watch(timeZoneCatalogueProvider).valueOrNull;
+    final reportedOffset = time.reportedOffsetMinutes;
+    final current =
+        resolveCurrentTimezone(time, zones: zones ?? kTimeZoneDefinitions);
+    final tzInfo = current.zone;
+    // Three tiers, matching `usp_timezone_card.dart` (#1609). An unmatched zone
+    // is ordinary on FLWRT 2.0, not exotic — the factory value is a bare `UTC`
+    // and 81 of the 89 zones the device publishes have no entry of ours — so
+    // when we cannot name the region we show the offset the device reported with
+    // its clock, and keep the raw POSIX string for a reading with no offset.
     final tzDisplay = tzInfo != null
         ? tzInfo.friendlyName
-        : time.localTimeZone.isNotEmpty
-            ? time.localTimeZone
-            : 'Not set';
+        : reportedOffset != null
+            ? formatGmtOffset(reportedOffset)
+            : time.localTimeZone.isNotEmpty
+                ? time.localTimeZone
+                : 'Not set';
+    // The zone's standard offset, deliberately, not the one the device is on
+    // right now — see the note at the same row in `usp_timezone_card.dart`.
+    //
+    // Left empty on the unmatched path on purpose: the offset has gone into the
+    // name row above, and this row would only repeat it.
     final offsetDisplay = tzInfo?.offsetDisplayText ?? '';
 
     final timeDisplay = currentTime != null
@@ -94,7 +117,9 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
         icon: AppIcon.font(Icons.edit, size: 18),
         semanticLabel: loc(context).editTimeSettings,
         identifier: 'admin-time-settings-edit',
-        onTap: isLoading ? null : () => _editTimezone(context, ref, time),
+        onTap: isLoading || zones == null
+            ? null
+            : () => _editTimezone(context, ref, time, zones),
       ),
       detailRoute: RouteNamed.uspAdmin,
       content: Column(
@@ -140,7 +165,9 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
               if (offsetDisplay.isNotEmpty)
                 InfoGridItem(
                     label: loc(context).utcOffset, value: offsetDisplay),
-              if (tzInfo != null && tzInfo.observesDST)
+              // Shown for any zone we can name, not only DST-observing ones —
+              // see the note at the same row in `usp_timezone_card.dart` (#1609).
+              if (tzInfo != null)
                 InfoGridItem(
                   // Deliberately unlocalized, and recorded as arguable in
                   // §2.10d point 6 rather than fixed here: unlike the `Enabled`
@@ -150,9 +177,9 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
                   // (`Sommerzeit`), which is a width change in a cell this
                   // branch has not measured. The value beside it is localized.
                   label: 'DST',
-                  value: inferDstEnabled(time.localTimeZone)
-                      ? loc(context).on
-                      : loc(context).off,
+                  // Whether DST is in effect, not whether the zone observes it —
+                  // see the note at the same row in `usp_timezone_card.dart`.
+                  value: current.dstOn ? loc(context).on : loc(context).off,
                 ),
             ],
           ),
@@ -161,11 +188,12 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
     );
   }
 
-  Future<void> _editTimezone(
-      BuildContext context, WidgetRef ref, TimeSettingsUIModel settings) async {
+  Future<void> _editTimezone(BuildContext context, WidgetRef ref,
+      TimeSettingsUIModel settings, List<TimeZoneInfo> zones) async {
     final result = await showTimezoneEditDialog(
       context,
       current: settings,
+      zones: zones,
     );
     if (result == null || !context.mounted) return;
     await performUspMutation(
@@ -173,7 +201,7 @@ class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
       ref,
       loadingKey: 'time',
       mutation: () => ref.read(uspAdminProvider.notifier).updateTimezone(
-            localTimeZone: result.localTimeZone,
+            zone: result.zone,
             ntpServer1: result.ntpServer1,
           ),
       successMessage: loc(context).timeSettingsSaved,

@@ -20,6 +20,30 @@ enum SseConnectionState {
   suspended,
 }
 
+/// Why the SSE stream is not currently carrying traffic.
+///
+/// #205 Item 8, and it exists because two situations that need opposite responses
+/// arrive through the same failed connect. Guardian rejects a stream against an
+/// **offline device** with a 400, before it publishes anything, and keeps doing so
+/// until the device comes back — so the answer is "wait". Anything else is the path
+/// between this browser and the proxy — so the answer is "try again", and a support
+/// engineer reading a red banner could not previously tell which they were looking at.
+///
+/// Not folded into [SseConnectionState], deliberately: the state says *what the
+/// connection is doing* and every value of it is reachable in both situations. Two
+/// orthogonal facts on one enum would be a product of two enums written out by hand.
+enum SseDisconnectCause {
+  /// No failure recorded, or the last attempt succeeded.
+  none,
+
+  /// The proxy says the device is not reachable (400). Retrying does nothing until
+  /// it is back.
+  deviceOffline,
+
+  /// Anything else: a 5xx, a network error, a closed stream. Retrying may work.
+  transportFailure,
+}
+
 /// Manages a single SSE connection to the usp-bridge `/api/v1/notifications`
 /// endpoint.
 ///
@@ -78,6 +102,14 @@ class SseConnectionManager {
   /// Number of consecutive failed reconnect attempts since the last successful
   /// connection. Resets to 0 on successful connect or intentional disconnect.
   int get reconnectAttempt => _reconnectAttempt;
+
+  /// Why the last attempt failed, or [SseDisconnectCause.none] (#1577).
+  ///
+  /// Read by the SSE banner at render time rather than published on its own stream:
+  /// it only ever changes at the same moment [connectionState] does, and that value
+  /// *is* published, so the rebuild the banner needs has already happened.
+  SseDisconnectCause get lastDisconnectCause => _lastDisconnectCause;
+  SseDisconnectCause _lastDisconnectCause = SseDisconnectCause.none;
 
   /// Guards [_handleStreamEnd] against double-fire when both _onError and
   /// _onDone trigger for the same stream failure. Reset in [connect].
@@ -242,6 +274,10 @@ class SseConnectionManager {
       connectionState.value = SseConnectionState.connected;
       _reconnectAttempt = 0;
       logger.d('[SSE]: Connected (event: ${event.event})');
+      // Traffic is arriving, so whatever the last failure was, it is over. Cleared
+      // here rather than on connect *attempt*: an attempt that is about to fail the
+      // same way would otherwise blank the banner's reason mid-outage.
+      _lastDisconnectCause = SseDisconnectCause.none;
       onConnected?.call();
     }
 
@@ -251,11 +287,25 @@ class SseConnectionManager {
 
   void _onError(Object error) {
     logger.w('[SSE]: Stream error: $error');
+    // #1577: record *why*, so the banner can tell "the device is offline" from "the
+    // connection dropped". Only a typed `SseStreamException` can answer it — the
+    // status used to be interpolated into a string error, which carries the same
+    // number and no way to ask.
+    _lastDisconnectCause = switch (error) {
+      SseStreamException(:final isDeviceOffline) when isDeviceOffline =>
+        SseDisconnectCause.deviceOffline,
+      _ => SseDisconnectCause.transportFailure,
+    };
     _handleStreamEnd();
   }
 
   void _onDone() {
     logger.d('[SSE]: Stream done (server closed connection)');
+    // A clean close carries no status, so it says nothing about the device. Left as
+    // whatever the last *error* recorded rather than overwritten with
+    // `transportFailure`: Guardian closes every proxied stream at ~10 minutes, so
+    // this is the routine path and clearing a real 400 here would lose the one
+    // signal the banner has.
     _handleStreamEnd();
   }
 

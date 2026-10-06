@@ -377,6 +377,8 @@
   "pnpPppoeAddVlan": "Add VLAN ID",
   "pnpPppoeRemoveVlan": "Remove VLAN ID",
   "pnpReconnectWiFi": "Reconnect to your router's WiFi to continue setup",
+  "pnpReconnectWiFiRestarting": "Your router is restarting its WiFi. This takes about a minute. When you see the new network below, connect to it, then tap Next.",
+  "@pnpReconnectWiFiRestarting": {"description": "PnP wizard, the reconnect step after the main WiFi name or password changed. The router restarts WiFi to apply it, and the new network can take about a minute to appear, so this tells the user to wait for it before connecting. Shown above the new network name."},
   "pnpSavingChangesDesc": "Your router's WiFi will briefly turn off and then on again. If you lose connection, reconnect to your router's WiFi to finish setup.",
   "pnpStaticIpDesc": "These settings are for users with a manually-assigned static IP address.",
   "pnpUnplugModemTip": "Not sure which device is the modem?",
@@ -398,7 +400,6 @@
       }
     }
   },
-  "pnpWiFiReadyConnectToNewWiFi": "Connect your devices to your new WiFi",
   "pnpYourNetworkDesc": "Confirm all Nodes are here",
   "pnpYourNetworkTitle": "Your network",
   "poor": "Poor",
@@ -699,6 +700,7 @@
   "errorTimeout": "The operation timed out. Please try again.",
   "errorServiceNotReady": "The service is not ready yet. Please try again in a moment.",
   "errorUnexpected": "Something went wrong. Please try again.",
+  "errorCommandRefused": "The router refused this command. Please try again in a moment.",
   "menuWifiSettings": "WiFi Settings",
   "menuWifiSettingsDesc": "Networks, security, MAC filtering",
   "menuTopologyDesc": "View network topology and mesh nodes",
@@ -1494,6 +1496,35 @@
   "enterMacAddressToAllow": "Enter the MAC address of the device to allow.",
   "deviceAlreadyInAllowedList": "This device is already in the allowed list",
   "adding": "Adding…",
+  "macFilter": "MAC Filtering",
+  "macFilterPageDesc": "Block the listed devices from joining your Wi-Fi by their MAC address. To let only chosen devices join instead, use Instant Privacy.",
+  "macFilterModeDisabledDesc": "All devices can connect freely.",
+  "macFilterModeDenyDesc": "Devices on the list are blocked; everyone else can connect.",
+  "macFilterListTitle": "Filtered devices ({count})",
+  "@macFilterListTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "macFilterListEmpty": "No devices in the list.",
+  "macFilterAllowEmptyWarning": "Add at least one device — Allow mode with an empty list blocks every device.",
+  "macFilterMaxReached": "You can filter at most {count} devices.",
+  "@macFilterMaxReached": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "macFilterRemoveDevice": "Remove device",
+  "macFilterEnableTurnsOffInstantPrivacy": "Saving will turn on MAC Filtering and turn off Instant Privacy — your router can use only one of them at a time. Continue?",
+  "instantPrivacyEnableTurnsOffMacFilter": "Saving will turn on Instant Privacy and turn off MAC Filtering — your router can use only one of them at a time. Continue?",
+  "macFilterInstantPrivacyIsOn": "Instant Privacy is currently on.",
+  "macFilterInstantPrivacyIsOnDesc": "Your router can use only one of Instant Privacy and MAC Filtering at a time. Turning MAC Filtering on and saving will turn Instant Privacy off.",
+  "instantPrivacyMacFilterIsOn": "MAC Filtering is currently on.",
+  "instantPrivacyMacFilterIsOnDesc": "Your router can use only one of Instant Privacy and MAC Filtering at a time. Turning Instant Privacy on and saving will turn MAC Filtering off.",
   "instantSafetyPageDesc": "Protect your family and block pre-determined adult, illegal and malicious content with a single tap. Safe browsing applies to all devices on your network.",
   "safeBrowsingOpenDns": "Safe Browsing (OpenDNS)",
   "openDnsServers": "DNS: 208.67.222.222, 208.67.220.220",
@@ -1673,6 +1704,7 @@
   "routerPasswordRuleOneSpecial": "At least one special character",
   "backToTopology": "Back to Topology",
   "backhaulConnection": "Backhaul Connection",
+  "backhaulRateNotInternetSpeed": "Link rate between mesh nodes — not your internet speed.",
   "bandwidth": "Bandwidth",
   "bitRate": "Bit Rate",
   "changeRouterPassword": "Change Router Password",
@@ -1909,5 +1941,33 @@
   "cardFormCompact": "Compact",
   "cardFormPopup": "Popup",
   "cardFormForNamed": "Card form for {name}",
-  "@cardFormForNamed": {"placeholders": {"name": {"type": "String"}}}
+  "@cardFormForNamed": {"placeholders": {"name": {"type": "String"}}},
+  "notificationHistory": "Notification History",
+  "notificationHistoryLastBoot": "Last boot",
+  "notificationHistoryLastActivity": "Last USP activity",
+  "notificationHistoryEmpty": "This support session has not produced any notifications yet",
+  "@notificationHistoryEmpty": {"description": "History is scoped to one support session, so a fresh session always starts with nothing. Worded as a normal state rather than \"no data\", which reads like a fault."},
+  "notificationHistoryUnavailable": "Notification history is only available during a Remote Assistance session",
+  "@notificationHistoryUnavailable": {"description": "Shown when the page is reached in a build that has no Guardian session, which a hand-typed URL can do because the route lives under the shared dashboard. Better than the developer error page a missing route would produce."},
+  "notificationHistoryGone": "This notification is no longer available",
+  "@notificationHistoryGone": {"description": "A 404 on one stored notification. The spec makes that status cover both \"does not exist\" and \"is not yours\" and deliberately does not distinguish them, so one message answers both."},
+  "notificationHistoryLoadFailed": "This notification could not be loaded",
+  "@notificationHistoryLoadFailed": {"description": "One stored notification whose body could not be read for any reason other than a 404 (which is notificationHistoryGone). Shown in place of the body, on the row and in its dialog; pull-to-refresh retries it."},
+  "notificationHistoryMessageId": "Message ID",
+  "notificationHistoryCommandKey": "Command key",
+  "notificationHistoryShowMore": "Show more",
+  "sseRouterOffline": "Router is offline — waiting for it to come back",
+  "@sseRouterOffline": {"description": "Shown when the SSE stream was refused with a 400, which is how the proxy reports a device it cannot reach. Distinct from \"Disconnected\", which is the path between this browser and the proxy: the two need opposite responses (wait vs retry) and arrived as one failed connect before #1577."},
+  "raPreparingTitle": "Setting up live updates",
+  "@raPreparingTitle": {"description": "Remote Assistance only. Title of the dialog shown over the dashboard while the session subscribes to the router through the cloud."},
+  "raPreparingBody": "Loading the router's data and subscribing to its changes through the cloud. The dashboard fills in behind this; you can use it once this closes.",
+  "@raPreparingBody": {"description": "Remote Assistance only. Body of that dialog. It says the dashboard is visible and filling in behind it, and that it becomes usable when the dialog closes."},
+  "raPreparingPartial": "Some live updates could not be set up. The dashboard may not refresh itself; pull to refresh.",
+  "@raPreparingPartial": {"description": "Remote Assistance only. Shown when the dialog closes but some subscriptions failed: the page still works, it just may not update itself."},
+  "raLiveUpdates": "Live updates",
+  "@raLiveUpdates": {"description": "Remote Assistance only. Row label in the session chip's popup for the cloud event stream that keeps the dashboard current."},
+  "raLiveUpdatesConnecting": "Connecting via cloud",
+  "@raLiveUpdatesConnecting": {"description": "Remote Assistance only. That row while the cloud stream is opening. \"Cloud\" because in RA the app talks to Guardian, not to the router."},
+  "raLiveUpdatesDropped": "Cloud connection dropped — reconnecting",
+  "@raLiveUpdatesDropped": {"description": "Remote Assistance only. That row when the cloud stream dropped and the app is retrying on its own."}
 }

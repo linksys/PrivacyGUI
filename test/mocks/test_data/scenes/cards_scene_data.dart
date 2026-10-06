@@ -74,11 +74,22 @@ final testSystemInfoData = SystemInfoData(model: testSystemInfo);
 // Time Settings
 // ---------------------------------------------------------------------------
 
+// `localTimeZone` used to hold `America/Los_Angeles`, which the device never
+// puts in that leaf — it is the IANA name, and the leaf carries a POSIX string.
+// The card then had nothing to match and printed the fixture verbatim, so the
+// long value #1237 AC5 measures was an artefact of an impossible fixture.
+//
+// This is the shape a real FLWRT 2.0 box reports (bench M60TB-EU): write
+// `America/Los_Angeles` to `X_LINKSYS_LocalTimeZoneName` and the firmware
+// derives `PST8PDT,M3.2.0,M11.1.0` and reports `-07:00` in June. The card now
+// resolves that to "Pacific Time (USA & Canada)", which is longer than the
+// string it replaces, so the wrapping AC5 cares about is still exercised (#1609).
 const testTimeModel = TimeSettingsUIModel(
   enable: true,
   status: 'Synchronized',
   currentLocalTime: '2024-06-15T14:30:45-07:00',
-  localTimeZone: 'America/Los_Angeles',
+  localTimeZone: 'PST8PDT,M3.2.0,M11.1.0',
+  localTimeZoneName: 'America/Los_Angeles',
   ntpServer1: 'pool.ntp.org',
   ntpServer2: '',
 );
@@ -89,7 +100,8 @@ const testTimeUnsyncModel = TimeSettingsUIModel(
   enable: true,
   status: 'Error',
   currentLocalTime: '2024-06-15T14:30:45-07:00',
-  localTimeZone: 'America/Los_Angeles',
+  localTimeZone: 'PST8PDT,M3.2.0,M11.1.0',
+  localTimeZoneName: 'America/Los_Angeles',
   ntpServer1: 'pool.ntp.org',
   ntpServer2: '',
 );

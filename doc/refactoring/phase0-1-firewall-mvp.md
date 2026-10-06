@@ -2,6 +2,13 @@
 
 > Branch: `refactor/dashboard-domain-split`
 > Date: 2026-03-17
+>
+> ⚠️ **A RECORD OF THAT REFACTOR, NOT A CURRENT GUIDE.** The `onSseInvalidation()` dirty guard
+> it describes and checks off was **deleted in #1587 Phase 1** (2026-09-29): it re-fetched when
+> the page was clean (nobody was about to write) and did nothing when it was dirty (the one
+> state that overwrites), so it protected the harmless case. L2 is now read once when the page
+> opens; live values are read from L1. For the current pattern see
+> `doc/refactoring/domain-split-playbook.md` and `constitution.md` Article IV Rule 2.
 
 ## 目標
 

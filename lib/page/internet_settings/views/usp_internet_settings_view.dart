@@ -6,6 +6,7 @@ import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_feature_state.dart';
 import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_form_validator.dart';
 import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_notifier.dart';
@@ -30,12 +31,24 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// - IPv6 Settings (enable + 6rd tunnel)
 /// - Optional Settings (MTU + MAC clone)
 /// - Release & Renew (DHCP lease actions)
+///
+/// Read-only where the surface says so (Remote Assistance, #1626): the edit
+/// toggle and Release & Renew both come from one
+/// `SurfaceStrategy.internetSettingsEditor` answer, so neither can be offered
+/// without the other.
 class UspInternetSettingsView extends ConsumerWidget {
   const UspInternetSettingsView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(uspInternetSettingsProvider);
+    final notifier = ref.read(uspInternetSettingsProvider.notifier);
+    // One decision, read once, for both affordances: `null` means the page is
+    // for reading only, so there is no toggle AND no Release & Renew. Watched
+    // here rather than in the `child` builder, which runs outside this build.
+    final editor = ref
+        .watch(surfaceStrategyProvider)
+        .internetSettingsEditor(notifier.enterEditMode);
 
     return UiKitPageView.withSliver(
       scrollable: true,
@@ -54,22 +67,29 @@ class UspInternetSettingsView extends ConsumerWidget {
                 ref.read(uspInternetSettingsProvider.notifier).fetch(),
           );
         }
-        return _buildContent(childContext, ref, state);
+        return _buildContent(childContext, notifier, state, editor);
       },
     );
   }
 
   Widget _buildContent(
     BuildContext context,
-    WidgetRef ref,
+    UspInternetSettingsNotifier notifier,
     InternetSettingsFeatureState state,
+    VoidCallback? editor,
   ) {
     final isEditing = state.isEditing;
-    final notifier = ref.read(uspInternetSettingsProvider.notifier);
+    final onEditToggle = switch (editor) {
+      null => null,
+      final enter => isEditing ? notifier.exitEditMode : enter,
+    };
+    final showRenew = editor != null && !isEditing;
 
     return AppResponsiveLayout(
-      mobile: (_) => _buildMobileLayout(context, state, isEditing, notifier),
-      desktop: (_) => _buildDesktopLayout(context, state, isEditing, notifier),
+      mobile: (_) => _buildMobileLayout(
+          context, state, isEditing, onEditToggle, showRenew),
+      desktop: (_) => _buildDesktopLayout(
+          context, state, isEditing, onEditToggle, showRenew),
     );
   }
 
@@ -77,7 +97,8 @@ class UspInternetSettingsView extends ConsumerWidget {
     BuildContext context,
     InternetSettingsFeatureState state,
     bool isEditing,
-    dynamic notifier,
+    VoidCallback? onEditToggle,
+    bool showRenew,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,13 +107,7 @@ class UspInternetSettingsView extends ConsumerWidget {
         UspConnectionStatusBanner(
           state: state,
           isEditing: isEditing,
-          onEditToggle: () {
-            if (isEditing) {
-              notifier.exitEditMode();
-            } else {
-              notifier.enterEditMode();
-            }
-          },
+          onEditToggle: onEditToggle,
         ),
         AppGap.lg(),
         // IPv4 Connection section
@@ -105,7 +120,7 @@ class UspInternetSettingsView extends ConsumerWidget {
         UspOptionalSection(state: state, isEditing: isEditing),
         AppGap.lg(),
         // Release & Renew section
-        if (!isEditing) ...[
+        if (showRenew) ...[
           UspRenewSection(state: state),
           AppGap.lg(),
         ],
@@ -117,7 +132,8 @@ class UspInternetSettingsView extends ConsumerWidget {
     BuildContext context,
     InternetSettingsFeatureState state,
     bool isEditing,
-    dynamic notifier,
+    VoidCallback? onEditToggle,
+    bool showRenew,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,13 +142,7 @@ class UspInternetSettingsView extends ConsumerWidget {
         UspConnectionStatusBanner(
           state: state,
           isEditing: isEditing,
-          onEditToggle: () {
-            if (isEditing) {
-              notifier.exitEditMode();
-            } else {
-              notifier.enterEditMode();
-            }
-          },
+          onEditToggle: onEditToggle,
         ),
         AppGap.lg(),
         // Two-column layout
@@ -156,7 +166,7 @@ class UspInternetSettingsView extends ConsumerWidget {
                 children: [
                   UspOptionalSection(state: state, isEditing: isEditing),
                   AppGap.lg(),
-                  if (!isEditing) UspRenewSection(state: state),
+                  if (showRenew) UspRenewSection(state: state),
                 ],
               ),
             ),

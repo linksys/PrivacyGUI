@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/mode/disruption_class.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_state.dart';
 import 'package:privacy_gui/page/admin/services/usp_admin_service.dart';
@@ -93,22 +94,38 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
   }
 
   /// Update timezone and optionally NTP server (used by timezone edit dialog).
+  ///
+  /// [zone] is saved through `SetTimeSettings`, or left null for an NTP-only
+  /// edit — see `UspAdminService.updateTimezone`.
   Future<void> updateTimezone({
-    required String localTimeZone,
+    TimeZoneSelection? zone,
     String? ntpServer1,
   }) async {
+    // A call that supplies no zone and no NTP server writes nothing. Checked
+    // here as well as in the service so it throws before the `finally` below
+    // re-reads the card for a write that was never attempted.
+    if (zone == null && ntpServer1 == null) {
+      throw ArgumentError('updateTimezone was given nothing to write');
+    }
     try {
       await ref.read(uspMutationLockProvider).withLock(() async {
-        await _svc.updateTimezone(
-          localTimeZone: localTimeZone,
-          ntpServer1: ntpServer1,
-        );
+        await _svc.updateTimezone(zone: zone, ntpServer1: ntpServer1);
       });
     } on ServiceError catch (e) {
       logger.e('[USP][Admin]: Timezone update failed', error: e);
       rethrow;
+    } finally {
+      // `finally`, not after the `try`: a failure here can still have changed the
+      // device. The zone and the NTP server go out as two requests, so the
+      // first can land and the second fail, and re-reading is the only way the
+      // card stops showing a zone that is no longer set. Refreshing after a
+      // failure that changed nothing costs one `Get`; not refreshing after one
+      // that did leaves the user looking at a lie.
+      //
+      // The nothing-to-write guard above throws before this block, so a
+      // programmer error does not trigger a pointless fetch.
+      ref.invalidate(timeDataProvider);
     }
-    ref.invalidate(timeDataProvider);
   }
 
   // ---------------------------------------------------------------------------

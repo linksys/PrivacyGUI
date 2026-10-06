@@ -3,7 +3,6 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_feature_state.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_settings.dart';
@@ -19,13 +18,6 @@ import 'package:privacy_gui/page/local_network/services/usp_local_network_servic
 final uspLocalNetworkProvider = AutoDisposeNotifierProvider<
     UspLocalNetworkNotifier, LocalNetworkFeatureState>(
   UspLocalNetworkNotifier.new,
-);
-
-/// Exposes the notifier as a [PreservableContract] for [LinksysRoute]
-/// dirty-check integration.
-final preservableUspLocalNetworkProvider = AutoDisposeProvider<
-    PreservableContract<LocalNetworkSettings, LocalNetworkStatus>>(
-  (ref) => ref.watch(uspLocalNetworkProvider.notifier),
 );
 
 // ---------------------------------------------------------------------------

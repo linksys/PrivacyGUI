@@ -9,8 +9,11 @@ when the JS-interop surface, bridge endpoints, or `E2E_MOCK` behavior change.
 > **Contract source of truth:** the USP wire/JS-API contract lives in
 > `linksys/usp_framework` — `usp-client/proto/usp.proto` (wire),
 > `usp-client/doc/wasm-api-reference.md` (UnifiedResponse + methods). Pin the
-> snapshot via the `e2e-contract-v0.12.0` tag (matches this app's vendored
-> `web/usp_client_bg.wasm`). See `doc/usp/vendored-artifacts.md`.
+> snapshot via the `e2e-contract-v0.13.0` tag (matches this app's vendored
+> `web/usp_client_bg.wasm`, bumped 0.12.0 → 0.13.0 by PrivacyGUI#1533). See
+> `doc/usp/vendored-artifacts.md`. Note the tag is a convention to cut, not an
+> existing ref: `linksys/usp_framework` carries no tags today, so pin the
+> commit the manifest records if the tag has not been created yet.
 
 ## 1. Boot handshake (JS globals)
 

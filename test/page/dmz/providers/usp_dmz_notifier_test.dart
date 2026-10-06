@@ -1,10 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_settings.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_status.dart';
@@ -247,73 +244,6 @@ void main() {
       await expectLater(notifier.save(), throwsA(isA<ServiceError>()));
 
       expect(container.read(uspDmzProvider).status.isSaving, isFalse);
-      container.dispose();
-    });
-
-    test('SSE invalidation triggers re-fetch when clean', () async {
-      final sseController = StreamController<InvalidationEvent>();
-      when(() => mockService.fetch())
-          .thenAnswer((_) async => (testSettings, testStatus));
-
-      final container = ProviderContainer(
-        overrides: [
-          uspDmzServiceProvider.overrideWithValue(mockService),
-          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
-          sseInvalidationProvider.overrideWith((_) => sseController.stream),
-        ],
-      );
-      container.listen(uspDmzProvider, (_, __) {});
-      await Future.delayed(Duration.zero);
-
-      // Initial fetch happened once — clear for clean counting.
-      verify(() => mockService.fetch()).called(1);
-      clearInteractions(mockService);
-
-      // Push a DMZ invalidation event.
-      sseController.add((domain: InvalidationDomain.dmz, seq: 0));
-      await Future.delayed(Duration.zero);
-
-      // Should have re-fetched exactly once after SSE.
-      verify(() => mockService.fetch()).called(1);
-
-      await sseController.close();
-      container.dispose();
-    });
-
-    // The test above emits a single event, so it cannot see a same-domain repeat
-    // being collapsed. That collapse is what riverpod 3.x's `==`-based
-    // updateShouldNotify would cause without the `seq` tag on
-    // `InvalidationEvent` (#1501 AC-B1), and it is what this test pins. This
-    // listener calls `onSseInvalidation()` directly, with no debounce, so the
-    // two events need no spacing.
-    test('a repeat of the dmz domain re-fetches again', () async {
-      final sseController = StreamController<InvalidationEvent>();
-      when(() => mockService.fetch())
-          .thenAnswer((_) async => (testSettings, testStatus));
-
-      final container = ProviderContainer(
-        overrides: [
-          uspDmzServiceProvider.overrideWithValue(mockService),
-          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
-          sseInvalidationProvider.overrideWith((_) => sseController.stream),
-        ],
-      );
-      container.listen(uspDmzProvider, (_, __) {});
-      await Future.delayed(Duration.zero);
-      clearInteractions(mockService);
-
-      // DMZ toggled off then on again from another client: both arrive as the
-      // same domain, so `seq` is the only thing that differs. If the second is
-      // dropped the page keeps showing the intermediate state.
-      sseController.add((domain: InvalidationDomain.dmz, seq: 0));
-      await Future.delayed(Duration.zero);
-      verify(() => mockService.fetch()).called(1);
-
-      sseController.add((domain: InvalidationDomain.dmz, seq: 1));
-      await Future.delayed(Duration.zero);
-      verify(() => mockService.fetch()).called(1);
-
-      await sseController.close();
       container.dispose();
     });
 

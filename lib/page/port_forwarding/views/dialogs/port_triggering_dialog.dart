@@ -60,7 +60,9 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
   Map<String, String> _errors = {};
 
   bool get _isEdit => widget.rule != null;
-  bool get _isFormValid => _errors.isEmpty && _hasRequiredInput;
+  // Computed live, not read from the blur-only `_errors` — see the same getter
+  // in port_range_forwarding_dialog.dart for what the stale read did (#1543).
+  bool get _isFormValid => _hasRequiredInput && _validateFields().isEmpty;
   // Only the two START ports are required. Unlike port range forwarding, a
   // trigger/forward with no end port is valid and means a single port, so the
   // end boxes are NOT part of the required-input gate.
@@ -75,8 +77,15 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
     _descController = TextEditingController(text: r?.description ?? '');
     _trigPortStartController =
         TextEditingController(text: r != null ? '${r.triggerPort}' : '');
+    // An end equal to the start is a single port to the model, the same as 0
+    // (`triggerPortDisplay`, `portDisplay`), so both leave the end box empty.
+    // Prefilling it made `end > start` reject a valid stored rule (#1543). Any
+    // other end is still shown, including one below the start: that rule is
+    // broken, and an empty box would quietly save it as a single port.
     _trigPortEndController = TextEditingController(
-        text: r != null && r.triggerPortEndRange > 0
+        text: r != null &&
+                r.triggerPortEndRange != 0 &&
+                r.triggerPortEndRange != r.triggerPort
             ? '${r.triggerPortEndRange}'
             : '');
     _triggerProtocol = r?.triggerProtocol ?? 'TCP';
@@ -87,11 +96,16 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
     _fwdPortStartController =
         TextEditingController(text: fwd != null ? '${fwd.forwardPort}' : '');
     _fwdPortEndController = TextEditingController(
-        text: fwd != null && fwd.forwardPortEndRange > 0
+        text: fwd != null &&
+                fwd.forwardPortEndRange != 0 &&
+                fwd.forwardPortEndRange != fwd.forwardPort
             ? '${fwd.forwardPortEndRange}'
             : '');
     _forwardProtocol = fwd?.forwardProtocol ?? 'TCP';
     _enabled = r?.enabled ?? true;
+    // Same reason as port_range_forwarding_dialog.dart: a stored rule that
+    // fails validation shows why on open, not after a blur (#1543).
+    _errors = _validateFields();
     for (final f in [
       _descFocus,
       _trigPortStartFocus,
@@ -105,9 +119,9 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
     }
   }
 
-  /// Rebuild to re-evaluate the submit-button enable state (_hasRequiredInput)
-  /// WITHOUT running validation — so no error text appears mid-edit and focus
-  /// is preserved. Full validation happens on focus-loss.
+  /// Rebuild so the submit-button gate (_isFormValid) is re-evaluated against
+  /// what is in the fields now, WITHOUT touching `_errors` — so no error text
+  /// appears mid-edit and focus is preserved. Error text updates on focus-loss.
   void _onInputChanged() {
     setState(() {});
   }
@@ -128,6 +142,10 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
   }
 
   void _validate() {
+    setState(() => _errors = _validateFields());
+  }
+
+  Map<String, String> _validateFields() {
     final errors = <String, String>{};
     final desc = _descController.text.trim();
     final trigStartText = _trigPortStartController.text.trim();
@@ -183,7 +201,7 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
       }
     }
 
-    setState(() => _errors = errors);
+    return errors;
   }
 
   String? _localizeError(String? key) {

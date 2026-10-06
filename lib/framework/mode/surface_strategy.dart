@@ -36,7 +36,8 @@ import 'package:sliver_dashboard/sliver_dashboard.dart' show LayoutItem;
 ///   would buy back the `?? const SizedBox.shrink()` this contract exists to
 ///   remove. Same reasoning as [sessionExitAction]'s non-nullable return, arrived
 ///   at from the opposite direction.
-/// * An *action* a mode lacks is a **`null` callback** ([layoutEditor]) or a
+/// * An *action* a mode lacks is a **`null` callback** ([layoutEditor],
+///   [internetSettingsEditor]) or a
 ///   **`null` flow** ([firstRunPresetFlow]). The call site can render the
 ///   affordance only if it was handed something to run, so there is nothing to
 ///   forget to guard.
@@ -118,11 +119,24 @@ abstract class SurfaceStrategy {
   /// both, and no single surface covers them.
   Widget? sessionIndicator();
 
-  /// How this surface classifies an SSE connection state.
+  /// What holds the dashboard until this surface's session keeps it current by
+  /// itself, or `null` where there is nothing to wait for.
   ///
-  /// The only member whose two implementations differ in *degree* rather than in
-  /// presence — see [SseBannerLevel] for the ten-minute Guardian stream close
-  /// that makes `disconnected` routine in one mode and a fault in the other.
+  /// Remote only, and a cause rather than a flag: under Remote Assistance the
+  /// core subscriptions go through Guardian after the first reads, one every few
+  /// seconds, so the page is up about a minute before it updates itself. Local
+  /// subscribes to the router on the LAN, where that window does not exist. The
+  /// shell mounts whatever this returns over the page and holds no condition.
+  Widget? sessionReadinessGate();
+
+  /// How this surface classifies an SSE connection state for the shell's
+  /// full-width banner.
+  ///
+  /// Local grades it — a closed stream is a fault, a retry is a warning. Remote
+  /// answers `hidden` for every state (2026-10-01): the stream runs to
+  /// Guardian, not the router, so the banner's router wording names the wrong
+  /// thing, and the session chip reports the stream instead. See
+  /// [SseBannerLevel] for both.
   SseBannerLevel connectionBannerLevel(SseConnectionState state);
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -206,6 +220,26 @@ abstract class SurfaceStrategy {
   /// and once as `onEdit`, a required callback that a remote build passed and
   /// never used.
   VoidCallback? layoutEditor(VoidCallback enterEditMode);
+
+  /// This surface's way into editing Internet Settings, wired to
+  /// [enterEditMode], or `null` where the page is for reading only.
+  ///
+  /// One answer for two affordances: the banner's edit toggle AND the Release &
+  /// Renew section. They share a member because they share the risk — a WAN
+  /// write and a lease release can both drop the uplink the viewer's own session
+  /// runs over — and a second member (or a second check at the call site) is how
+  /// the two would drift apart. The view renders neither when handed `null`.
+  ///
+  /// Not an `OperationGuard` seam, on purpose (#1626): nothing is refused
+  /// underneath. The page simply offers no way in, which is what "view-only"
+  /// means.
+  ///
+  /// **The page, not the app.** The dashboard's network-status card has a Renew
+  /// Lease button of its own (`UspNetworkStatusCard`), it is in the remote preset,
+  /// and it is live in a Remote Assistance session. #1626 assumed that card was
+  /// display-only; it is not, and leaving it reachable was a decision (Austin,
+  /// 2026-09-30), not an oversight — this member does not govern it.
+  VoidCallback? internetSettingsEditor(VoidCallback enterEditMode);
 
   /// This surface's first-run dashboard personalisation, or `null` where the
   /// preset is fixed.

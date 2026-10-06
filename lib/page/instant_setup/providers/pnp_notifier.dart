@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
@@ -253,81 +254,223 @@ class PnpNotifier extends Notifier<PnpState> {
 
   // ─── Save ────────────────────────────────────────────────
 
-  /// Save WiFi changes (main + guest), then handle reconnect.
+  /// Save the WiFi form in one write, wait for the router to be reachable again,
+  /// and finish setup.
+  ///
+  /// **One write.** Any WiFi write restarts every radio — main network included,
+  /// even for a guest-only change (bench, FLWRT 2.0.2) — so only the first of
+  /// several writes ever had a live connection under it ([PnpService.saveWifi]).
+  ///
+  /// **Then poll, and only then ask the user.** After the write the browser is
+  /// usually cut off for a while: the router is restarting WiFi, and a client on
+  /// a network whose name did not change rejoins on its own (bench, 2.0.2:
+  /// dropped 14 s after a guest-only write, back 9 s later). So when the write's
+  /// answer does not come, the router is polled
+  /// ([pnpReconnectPollIntervalProvider]) until it answers *and* reads back what
+  /// was written, or [pnpSaveDeadlineProvider] runs out. Only then is the user
+  /// sent to the reconnect step — the case where they have to join a network by
+  /// hand, which is every main-WiFi rename.
+  ///
+  /// "Reachable but not applied yet" is a "not yet", not a failure, until the
+  /// deadline: a router can answer a poll before it has finished applying a
+  /// write that outlasted [pnpWifiAnswerWindowProvider].
+  ///
+  /// **The form is never re-entered silently.** A refusal lands on
+  /// [WizardConfiguring] with its `saveError` set, which the view shows — before
+  /// this, the error went into a field no view read, which is what the #1000
+  /// report describes as the guest page "appearing twice".
   Future<void> saveChanges() async {
     final phase = state.phase;
     if (phase is! WizardConfiguring) return;
+    final config = phase.wifiConfig;
 
     state = state.copyWith(phase: const WizardSaving());
+    final sinceWrite = Stopwatch()..start();
 
+    final PnpWifiWriteOutcome outcome;
     try {
-      await ref.read(uspMutationLockProvider).withLock(() async {
-        await _svc.saveWifi(phase.wifiConfig);
-      });
+      outcome = await _writeWifi(config);
+    } on ServiceError catch (e) {
+      logger.e('[PnP] Save failed: $e');
+      _returnToForm(config, phase.meshNodes, e);
+      return;
+    }
 
-      // Acknowledge PnP completion and save serial number.
-      // NOTE: the same acknowledge + saveSelectedNetwork pair lives in
-      // bypassToDashboard(), but there errors are swallowed; here they
-      // propagate to the catch below so the user stays on the form to retry.
-      logger.d(
-          '[PnP] Saving setup completion, serialNumber=${state.serialNumber}');
-      if (state.serialNumber != null) {
-        // Acknowledge via PnpStatusService (SharedPreferences now, TR-181 future)
-        await ref
-            .read(pnpStatusServiceProvider)
-            .acknowledge(state.serialNumber!);
-
-        // Save selected network for session management
-        await ref
-            .read(sessionProvider.notifier)
-            .saveSelectedNetwork(state.serialNumber!, '');
+    if (outcome == PnpWifiWriteOutcome.unanswered) {
+      final reached = await _pollUntilApplied(config, sinceWrite);
+      if (reached == _PollResult.notApplied) {
+        logger.w('[PnP] router is back but never took the WiFi change — '
+            'back to the form');
+        _returnToForm(config, phase.meshNodes, const UnexpectedError());
+        return;
       }
-
-      if (phase.wifiConfig.isMainDirty) {
-        // Main WiFi changed → connection will drop, user must reconnect
+      if (reached == _PollResult.unreachable) {
+        logger.i('[PnP] router not reachable by the save deadline — asking '
+            'the user to reconnect');
         state = state.copyWith(
           phase: WizardNeedsReconnect(
-            newSsid: phase.wifiConfig.reconnectSsid,
-            newPassword: phase.wifiConfig.reconnectPassword,
-            wifiConfig: phase.wifiConfig,
+            newSsid: config.reconnectSsid,
+            newPassword: config.reconnectPassword,
+            wifiConfig: config,
+            meshNodes: phase.meshNodes,
+            writeUnanswered: true,
           ),
         );
-      } else {
-        // No main WiFi change → skip reconnect, go to firmware check
-        state = state.copyWith(phase: const WizardSaved());
-        await _checkFirmware(
-          ssid: phase.wifiConfig.reconnectSsid,
-          password: phase.wifiConfig.reconnectPassword,
-          wifiConfig: phase.wifiConfig,
-        );
+        return;
       }
-    } catch (e) {
-      logger.e('[PnP] Save failed: $e');
-      state = state.copyWith(
-        phase: WizardConfiguring(
-          wifiConfig: phase.wifiConfig,
-          meshNodes: phase.meshNodes,
-        ),
-        errorMessage: '$e',
-      );
     }
+
+    try {
+      await _finishSave(config);
+    } on ServiceError catch (e) {
+      logger.e('[PnP] Save failed after the WiFi write: $e');
+      _returnToForm(config, phase.meshNodes, e);
+    }
+  }
+
+  /// The WiFi write, with "no answer in time" folded into
+  /// [PnpWifiWriteOutcome.unanswered] rather than thrown.
+  ///
+  /// The lock's own timeout is the window, so the lock is released when the
+  /// window ends even though the request may still be in flight — the same thing
+  /// the lock does for any hung call. Holding it for the request's full lifetime
+  /// (up to 288 s measured) would starve the firmware stage that follows: its
+  /// check takes this lock and gives up after 15 s.
+  Future<PnpWifiWriteOutcome> _writeWifi(PnpWifiConfig config) async {
+    try {
+      return await ref.read(uspMutationLockProvider).withLock(
+            () => _svc.saveWifi(config),
+            timeout: ref.read(pnpWifiAnswerWindowProvider),
+          );
+    } on TimeoutException {
+      logger.i('[PnP] WiFi write not answered within the window — the router '
+          'is asked once it is reachable again');
+      return PnpWifiWriteOutcome.unanswered;
+    }
+  }
+
+  /// Polls until the router answers and reads back [config], or the save
+  /// deadline — counted from the write, [sinceWrite] — runs out.
+  Future<_PollResult> _pollUntilApplied(
+    PnpWifiConfig config,
+    Stopwatch sinceWrite,
+  ) async {
+    final interval = ref.read(pnpReconnectPollIntervalProvider);
+    final deadline = ref.read(pnpSaveDeadlineProvider);
+    var last = _PollResult.unreachable;
+    while (true) {
+      if (await _routerIsBack()) {
+        if (await _isWifiApplied(config)) return _PollResult.applied;
+        last = _PollResult.notApplied;
+      } else {
+        last = _PollResult.unreachable;
+      }
+      if (sinceWrite.elapsed + interval > deadline) return last;
+      await Future<void>.delayed(interval);
+    }
+  }
+
+  /// [PnpService.isWifiApplied], with a failed read as "not yet": the router
+  /// that just answered a poll can still drop the next request while its WiFi
+  /// settles.
+  Future<bool> _isWifiApplied(PnpWifiConfig config) async {
+    try {
+      return await _svc.isWifiApplied(config);
+    } on ServiceError catch (e) {
+      logger.d('[PnP] could not read the WiFi back yet: $e');
+      return false;
+    }
+  }
+
+  /// One attempt to reach the router again: re-login, then read the serial.
+  ///
+  /// A different serial is not "back" — the browser has joined some other
+  /// router. Every failure is a "not yet" rather than an error, so the caller
+  /// can keep trying.
+  Future<bool> _routerIsBack() async {
+    try {
+      // Re-login (WASM state lost during WiFi change)
+      await ref.read(uspAuthCoordinatorProvider).restoreSession(
+            isRecovering: true,
+          );
+      final sn = await _svc.checkRouterIsBack();
+      final expectedSn = state.serialNumber;
+      if (expectedSn != null && expectedSn.isNotEmpty && sn != expectedSn) {
+        logger.w('[PnP] Serial number mismatch: expected=$expectedSn, got=$sn');
+        return false;
+      }
+      logger.i('[PnP] Router reconnected, SN=$sn');
+      return true;
+    } catch (e) {
+      logger.d('[PnP] router not reachable yet: $e');
+      return false;
+    }
+  }
+
+  /// With the WiFi written and the router reachable: acknowledge setup, then run
+  /// the firmware stage.
+  Future<void> _finishSave(PnpWifiConfig config) async {
+    await _acknowledgeSetup();
+    state = state.copyWith(phase: const WizardSaved());
+    await _checkFirmware(
+      ssid: config.reconnectSsid,
+      password: config.reconnectPassword,
+      wifiConfig: config,
+    );
+  }
+
+  /// Acknowledge PnP completion and save serial number.
+  ///
+  /// After the router is reachable again, because the acknowledge is a USP
+  /// OPERATE and would otherwise be sent into the WiFi restart.
+  ///
+  /// NOTE: the same acknowledge + saveSelectedNetwork pair lives in
+  /// bypassToDashboard(), but there errors are swallowed; here they propagate
+  /// to the caller so the user stays on the form to retry.
+  Future<void> _acknowledgeSetup() async {
+    logger
+        .d('[PnP] Saving setup completion, serialNumber=${state.serialNumber}');
+    if (state.serialNumber == null) return;
+    // Acknowledge via PnpStatusService (SharedPreferences now, TR-181 future)
+    await ref.read(pnpStatusServiceProvider).acknowledge(state.serialNumber!);
+
+    // Save selected network for session management
+    await ref
+        .read(sessionProvider.notifier)
+        .saveSelectedNetwork(state.serialNumber!, '');
+  }
+
+  /// Back to the form with [error] for the view to show.
+  ///
+  /// A write found not to have landed comes here with a bare [UnexpectedError]:
+  /// the alternative is a completion screen naming a network the router is not
+  /// broadcasting. No `detail` on it — `localizeServiceError` shows an
+  /// [UnexpectedError]'s detail verbatim, which would put an English sentence in
+  /// front of every locale. The reason is in the log.
+  void _returnToForm(
+    PnpWifiConfig config,
+    List<NodeEntity> meshNodes,
+    ServiceError error,
+  ) {
+    state = state.copyWith(
+      phase: WizardConfiguring(
+        wifiConfig: config,
+        meshNodes: meshNodes,
+        saveError: error,
+      ),
+    );
   }
 
   // ─── Reconnection ────────────────────────────────────────
 
-  /// Poll router to check if it's back after WiFi SSID change.
-  /// Uses exponential backoff: 2s, 4s, 8s, 16s, 32s (5 attempts).
+  /// The reconnect step's Next: the user says they have joined the network, so
+  /// try the router again with exponential backoff (2, 4, 8, 16, 32 s), then
+  /// finish setup as [saveChanges] would have.
   Future<void> testReconnect() async {
     const maxAttempts = 5;
-    String savedSsid = '';
-    String savedPassword = '';
-    PnpWifiConfig? savedWifiConfig;
-    if (state.phase is WizardNeedsReconnect) {
-      final phase = state.phase as WizardNeedsReconnect;
-      savedSsid = phase.newSsid;
-      savedPassword = phase.newPassword;
-      savedWifiConfig = phase.wifiConfig;
-    }
+    final phase = state.phase;
+    if (phase is! WizardNeedsReconnect) return;
+    final backoff = ref.read(pnpReconnectBackoffProvider);
 
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
       state = state.copyWith(
@@ -336,49 +479,35 @@ class PnpNotifier extends Notifier<PnpState> {
           maxAttempts: maxAttempts,
         ),
       );
+      await Future.delayed(backoff(attempt));
+      if (!await _routerIsBack()) continue;
 
-      final delaySeconds = 1 << attempt; // 2, 4, 8, 16, 32
-      await Future.delayed(Duration(seconds: delaySeconds));
-
-      try {
-        // Re-login (WASM state lost during WiFi change)
-        await ref.read(uspAuthCoordinatorProvider).restoreSession(
-              isRecovering: true,
-            );
-
-        final sn = await _svc.checkRouterIsBack();
-        final expectedSn = state.serialNumber;
-
-        // Strict check: serial number must match if we have one
-        if (expectedSn != null && expectedSn.isNotEmpty) {
-          if (sn != expectedSn) {
-            logger.w(
-                '[PnP] Serial number mismatch: expected=$expectedSn, got=$sn');
-            continue; // Try next attempt
-          }
-        }
-
-        logger.i('[PnP] Router reconnected, SN=$sn');
+      final config = phase.wifiConfig;
+      if (config == null) {
+        // Only the demo launcher builds this phase without a config.
         state = state.copyWith(phase: const WizardSaved());
-        await _checkFirmware(
-          ssid: savedSsid,
-          password: savedPassword,
-          wifiConfig: savedWifiConfig,
-        );
+        await _checkFirmware(ssid: phase.newSsid, password: phase.newPassword);
         return;
-      } catch (e) {
-        logger.d('[PnP] Reconnect attempt $attempt/$maxAttempts failed: $e');
       }
+      if (phase.writeUnanswered && !await _isWifiApplied(config)) {
+        // Reached the router, and it is not on the new settings: the write was
+        // lost, not merely its answer. The form is where it is resent from.
+        logger.w('[PnP] WiFi write did not land — back to the form');
+        _returnToForm(config, phase.meshNodes, const UnexpectedError());
+        return;
+      }
+      try {
+        await _finishSave(config);
+      } on ServiceError catch (e) {
+        logger.e('[PnP] Save failed after the router came back: $e');
+        _returnToForm(config, phase.meshNodes, e);
+      }
+      return;
     }
 
-    // All attempts exhausted
-    state = state.copyWith(
-      phase: WizardNeedsReconnect(
-        newSsid: savedSsid,
-        newPassword: savedPassword,
-        wifiConfig: savedWifiConfig,
-      ),
-    );
+    // All attempts exhausted — back to the step, which keeps what the next Next
+    // still has to verify.
+    state = state.copyWith(phase: phase);
   }
 
   // ─── Firmware Stage ──────────────────────────────────────
@@ -751,3 +880,6 @@ class PnpNotifier extends Notifier<PnpState> {
     state = state.copyWith(phase: phase);
   }
 }
+
+/// Where polling for the router after an unanswered WiFi write ended up.
+enum _PollResult { applied, notApplied, unreachable }

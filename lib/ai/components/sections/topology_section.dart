@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/ai/utils/speed_markers.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_subtitle.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_edge_strength.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_slots.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Network topology visualization section.
@@ -44,16 +47,19 @@ class TopologySection extends StatelessWidget {
           topology: topology,
           viewMode: TopologyViewMode.graph,
           layoutMode: LayoutRecommendation.auto,
-          clientVisibility: ClientVisibility.always,
+          leafVisibility: LeafVisibility.always,
           nodeRendererRegistry: NodeRendererRegistry.unified,
           enableAnimation: true,
           interactive: false,
           treeConfig: TopologyTreeConfiguration(
             titleBuilder: (node) => node.name,
-            subtitleBuilder: (node) => node.extra ?? '',
+            subtitleBuilder: (node) => TopologySubtitle.build(context, node),
             preferAnimationNode: true,
             showStatusIndicator: true,
-            showStatusText: true,
+            // `showType` / `showStatusText` are left at their 3.4.0 default of
+            // false: this section pins `viewMode: graph`, so the tree row those
+            // labels belong to is never built, and wiring builders here would be
+            // wiring something nothing draws.
             expanded: false,
           ),
           nodeDetailConfig: NodeDetailConfig(
@@ -67,13 +73,20 @@ class TopologySection extends StatelessWidget {
 
   Widget _buildNodeDetailPopup(
     BuildContext context,
-    MeshNode node,
+    GraphNode node,
     Map<String, dynamic>? metadata,
   ) {
     final mac = metadata?['mac'] as String? ?? '';
     final ip = metadata?['ip'] as String? ?? '';
     final model = metadata?['model'] as String? ?? '';
-    final connectionType = metadata?['connectionType'] as String? ?? '';
+    // Resolved here, not stored. `connectionType` used to be written into the
+    // metadata as a localised word at construction time, which froze it: a viewer
+    // switching language saw the node rebuilt with the string chosen under the
+    // previous locale. The map carries the fact (`isWifi`); this picks the word.
+    final isWifi = metadata?['isWifi'] as bool?;
+    final connectionType = isWifi == null
+        ? ''
+        : (isWifi ? loc(context).wifi : loc(context).ethernet);
     final band = metadata?['band'] as String? ?? '';
     final rssi = metadata?['rssi'] as int?;
     final downlinkRate = metadata?['downlinkRate'] as int?;
@@ -159,10 +172,9 @@ class TopologySection extends StatelessWidget {
           appTheme.copyWith(
             visualEffects:
                 appTheme.visualEffects | AppThemeConfig.effectTopologyAnimation,
-            topologySpec: appTheme.topologySpec.copyWith(
-              nodeSpacing: appTheme.topologySpec.nodeSpacing * 2.0,
-              orbitRadius: appTheme.topologySpec.orbitRadius * 2.0,
-            ),
+            // No spacing multiplier — the third of three sites that carried one,
+            // and the one the issue did not list. The measurement that retired all
+            // three is recorded once, at `usp_network_topology_card.dart:212`.
           ),
         ],
       ),
@@ -170,17 +182,19 @@ class TopologySection extends StatelessWidget {
     );
   }
 
-  MeshTopology _buildTopology(BuildContext context) {
-    final nodes = <MeshNode>[];
-    final links = <MeshLink>[];
+  GraphData _buildTopology(BuildContext context) {
+    final nodes = <GraphNode>[];
+    final edges = <GraphEdge>[];
 
     // Gateway node
     const gatewayId = 'gateway';
-    nodes.add(MeshNode(
+    nodes.add(GraphNode(
       id: gatewayId,
       name: gatewayName,
-      type: MeshNodeType.gateway,
-      status: MeshNodeStatus.online,
+      // Stated at the origin, like `UspTopologyBuilder` — this builder also knows
+      // which of its three sources each node came from.
+      styleSlot: TopologySlots.master,
+      status: NodeState.active,
       level: 1.0,
       extra: gatewayModel,
     ));
@@ -197,29 +211,45 @@ class TopologySection extends StatelessWidget {
         final mac = ext['mac'] as String?;
         final model = ext['model'] as String?;
 
-        nodes.add(MeshNode(
+        nodes.add(GraphNode(
           id: extId,
           name: name,
-          type: MeshNodeType.extender,
+          styleSlot: TopologySlots.slave,
           parentId: gatewayId,
           status: _parseStatus(status),
+          // No `wired:` — the extender schema has no medium field to pass.
           level: _rssiToLevel(rssi),
           metadata: {
             if (mac != null) 'mac': mac,
             if (model != null) 'model': model,
             if (rssi != null) 'rssi': rssi,
             if (uplinkRate != null) 'uplinkRate': uplinkRate,
-            'connectionType': loc(context).wifi,
+            // No `isWifi`. The prompt's extender schema
+            // (`router_system_prompt.dart:223`) is
+            // `{name, status?, rssi?, uplinkRate?, mac?, model?}` — it has no such
+            // field, so the model cannot tell us, and an extender's backhaul is
+            // genuinely sometimes wired. This used to be hardcoded `true`, which
+            // asserted Wi-Fi about every one of them.
+            //
+            // `rssi` is the honest signal: a model that reported one is describing
+            // a wireless link, and the panel already draws a Signal row from it.
           },
         ));
 
-        links.add(MeshLink(
+        edges.add(GraphEdge(
+          // Keyed on the evidence, not asserted. `EdgeKind.indirect` used to be
+          // hardcoded here, which said "wireless backhaul" about every extender a
+          // model described — and the schema (`:223`) gives no medium field to base
+          // that on. An `rssi` is the one thing in it that implies a radio link; a
+          // model that reported none has not told us, and 3.4.0 lets the edge say
+          // so instead of guessing.
           sourceId: gatewayId,
           targetId: extId,
-          connectionType: ConnectionType.wifi,
-          rssi: rssi,
-          linkQuality: _rssiToQuality(rssi),
-          throughput: uplinkRate != null ? uplinkRate / 1000.0 : null, // Kbps
+          kind: rssi == null ? null : EdgeKind.indirect,
+          // Null alongside the null kind, not `EdgeStrength.unknown`. The helper maps
+          // a null reading to `unknown`, which is a grade — and grading an edge this
+          // same line declines to classify says two things about one absent field.
+          strength: rssi == null ? null : edgeStrengthFromRssi(rssi),
         ));
       }
     }
@@ -232,7 +262,12 @@ class TopologySection extends StatelessWidget {
         final clientId = 'client-$i';
         final name = client['name'] as String? ?? loc(context).deviceN(i + 1);
         final parentId = client['parentId'] as String? ?? gatewayId;
-        final isWifi = client['isWifi'] as bool? ?? true;
+        // Nullable. `isWifi?` **is** in the prompt's client schema (`:224`), so an
+        // absent one means the model chose not to say — and the panel now omits the
+        // row rather than defaulting it. `?? true` printed "WiFi" for a device
+        // nothing had described that way, which on a wired client is wrong in the
+        // one direction a viewer would act on.
+        final isWifi = client['isWifi'] as bool?;
         final rssi = client['rssi'] as int?;
         final status = client['status'] as String? ?? 'online';
         final downlinkRate = client['downlinkRate'] as int?; // bps
@@ -240,7 +275,6 @@ class TopologySection extends StatelessWidget {
         final mac = client['mac'] as String?;
         final ip = client['ip'] as String?;
         final band = client['band'] as String?;
-        final totalThroughput = (downlinkRate ?? 0) + (uplinkRate ?? 0);
 
         // Resolve parent ID
         String resolvedParentId = gatewayId;
@@ -256,13 +290,15 @@ class TopologySection extends StatelessWidget {
           }
         }
 
-        nodes.add(MeshNode(
+        nodes.add(GraphNode(
           id: clientId,
           name: name,
-          type: MeshNodeType.client,
+          styleSlot: TopologySlots.device,
           parentId: resolvedParentId,
           status: _parseStatus(status),
-          level: _rssiToLevel(rssi),
+          // A client's schema does carry the medium, so it is passed: known-wired is
+          // full, and anything else is graded on the reading or left empty.
+          level: _rssiToLevel(rssi, wired: isWifi == null ? null : !isWifi),
           deviceCategory: _inferCategory(name),
           metadata: {
             if (mac != null) 'mac': mac,
@@ -271,27 +307,31 @@ class TopologySection extends StatelessWidget {
             if (rssi != null) 'rssi': rssi,
             if (downlinkRate != null) 'downlinkRate': downlinkRate,
             if (uplinkRate != null) 'uplinkRate': uplinkRate,
-            'connectionType':
-                isWifi ? loc(context).wifi : loc(context).ethernet,
+            if (isWifi != null) 'isWifi': isWifi,
           },
         ));
 
-        links.add(MeshLink(
+        edges.add(GraphEdge(
           sourceId: resolvedParentId,
           targetId: clientId,
-          connectionType:
-              isWifi ? ConnectionType.wifi : ConnectionType.ethernet,
-          rssi: isWifi ? rssi : null,
-          linkQuality: isWifi ? _rssiToQuality(rssi) : LinkQuality.stable,
-          throughput:
-              totalThroughput > 0 ? totalThroughput / 1000.0 : null, // Kbps
+          // Null when the model did not say, which 3.4.0 made expressible: the kit
+          // draws an undeclared edge in `undeclaredEdgeStyle` — neutral and never
+          // animated, "because a flow animation is a claim about movement and an
+          // undeclared edge supports none". Picking `direct` or `indirect` here
+          // would be inventing that claim to satisfy a non-null type.
+          kind: isWifi == null
+              ? null
+              : (isWifi ? EdgeKind.indirect : EdgeKind.direct),
+          // Only graded for a link we know is wireless. A wired edge has no RSSI by
+          // design and an undeclared one has no medium to grade.
+          strength: isWifi == true ? edgeStrengthFromRssi(rssi) : null,
         ));
       }
     }
 
-    return MeshTopology(
+    return GraphData(
       nodes: nodes,
-      links: links,
+      edges: edges,
       lastUpdated: DateTime.now(),
     );
   }
@@ -301,16 +341,31 @@ class TopologySection extends StatelessWidget {
   /// The tokens matched here (and the `'online'` default applied at the call
   /// sites) are wire values supplied by the model, never rendered text, so they
   /// stay English on purpose.
-  MeshNodeStatus _parseStatus(String status) {
+  NodeState _parseStatus(String status) {
     return switch (status.toLowerCase()) {
-      'online' || 'connected' || 'up' => MeshNodeStatus.online,
-      'offline' || 'disconnected' || 'down' => MeshNodeStatus.offline,
-      'highload' || 'busy' => MeshNodeStatus.highLoad,
-      _ => MeshNodeStatus.online,
+      'online' || 'connected' || 'up' => NodeState.active,
+      'offline' || 'disconnected' || 'down' => NodeState.inactive,
+      'highload' || 'busy' => NodeState.alert,
+      _ => NodeState.active,
     };
   }
 
-  double _rssiToLevel(int? rssi) {
+  /// The fill level for a node, given what the model told us about its link.
+  ///
+  /// [wired] is explicit because `getWifiSignalLevel(null)` answers `wired`: that
+  /// helper treats a missing reading as "no radio", which is right for the host table
+  /// it was written for and wrong here, where a missing `rssi` usually means the model
+  /// left it out. Routing an absent reading through it drew a full ring — "wired, full
+  /// strength" — for an extender whose edge, one line below, had just declined to say
+  /// what the link is. So the three cases are separated:
+  ///
+  /// - known wired → 1.0, as `UspTopologyBuilder` does for a wired client;
+  /// - wireless or unknown, with no reading → 0.0, the kit's own default for `level`
+  ///   and what `UspTopologyBuilder._rssiValueToLevel(null)` answers;
+  /// - a reading → graded.
+  double _rssiToLevel(int? rssi, {bool? wired}) {
+    if (wired == true) return 1.0;
+    if (rssi == null) return 0.0;
     final level = getWifiSignalLevel(rssi);
     return switch (level) {
       NodeSignalLevel.excellent => 0.9,
@@ -319,18 +374,6 @@ class TopologySection extends StatelessWidget {
       NodeSignalLevel.poor => 0.2,
       NodeSignalLevel.none => 0.0,
       NodeSignalLevel.wired => 1.0,
-    };
-  }
-
-  LinkQuality _rssiToQuality(int? rssi) {
-    final level = getWifiSignalLevel(rssi);
-    return switch (level) {
-      NodeSignalLevel.excellent => LinkQuality.excellent,
-      NodeSignalLevel.good => LinkQuality.excellent,
-      NodeSignalLevel.fair => LinkQuality.good,
-      NodeSignalLevel.poor => LinkQuality.fair,
-      NodeSignalLevel.none => LinkQuality.unknown,
-      NodeSignalLevel.wired => LinkQuality.stable,
     };
   }
 

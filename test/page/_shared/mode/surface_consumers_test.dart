@@ -47,6 +47,10 @@ import 'package:privacy_gui/page/admin/views/usp_admin_view.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_ota_view.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_view.dart';
+import 'package:privacy_gui/page/internet_settings/views/components/usp_connection_status_banner.dart';
+import 'package:privacy_gui/page/internet_settings/views/sections/usp_ipv4_section.dart';
+import 'package:privacy_gui/page/internet_settings/views/sections/usp_renew_section.dart';
+import 'package:privacy_gui/page/internet_settings/views/usp_internet_settings_view.dart';
 import 'package:privacy_gui/page/support/views/usp_support_view.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/route/route_model.dart';
@@ -57,6 +61,7 @@ import '../../../golden_test/golden_framework/mocks/mock_firmware_update.dart';
 import '../../../golden_test/page/firmware_update/fixtures/firmware_update_test_data.dart';
 import '../../../mocks/provider_overrides/mock_admin.dart';
 import '../../../mocks/provider_overrides/mock_common.dart';
+import '../../../mocks/provider_overrides/mock_internet_settings.dart';
 import '../../../util/dashboard_page_harness.dart';
 import '../../../util/settle.dart';
 
@@ -581,6 +586,85 @@ void main() {
               'not the whole bar');
       handle.dispose();
     });
+  });
+
+  // ===========================================================================
+  // internetSettingsEditor
+  // ===========================================================================
+  //
+  // #1626: the page is read-only in Remote Assistance — every value stays on
+  // screen, and there is no way in to change one. Two affordances go, from ONE
+  // answer: the banner's edit toggle and the Release & Renew section. They are
+  // one decision because they are one risk — a WAN write and a lease release can
+  // both drop the uplink the session itself runs over, with no LAN path back —
+  // and two separate checks are how the pencil and the renew button would drift
+  // apart the first time someone touched one of them.
+  //
+  // Both widths, because the page builds the banner and the renew section in two
+  // different methods (`_buildMobileLayout`, `_buildDesktopLayout`) and a call
+  // site fixed in one is exactly the defect a single-width test cannot see.
+  group('SurfaceStrategy consumers - internet settings page', () {
+    const widths = <String, Size>{
+      'desktop': Size(1280, 2400),
+      'mobile': Size(400, 2400),
+    };
+
+    Future<void> pumpInternetSettings(
+      WidgetTester tester,
+      AppModeProfile profile,
+      Size size,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(host(
+        profile: profile,
+        page: const UspInternetSettingsView(),
+        overrides: internetSettingsOverrides(),
+      ));
+      await settleIgnoringAnimations(tester);
+    }
+
+    for (final MapEntry(key: layout, value: size) in widths.entries) {
+      testWidgets('$layout: local offers the edit toggle and Release & Renew',
+          (tester) async {
+        final handle = tester.ensureSemantics();
+
+        await pumpInternetSettings(tester, const LocalModeProfile(), size);
+
+        expect(find.bySemanticsIdentifier('internet-settings-edit-toggle'),
+            findsOneWidget);
+        expect(find.byType(UspRenewSection), findsOneWidget);
+        handle.dispose();
+      });
+
+      testWidgets(
+          '$layout: remote assistance shows the page and nothing to edit',
+          (tester) async {
+        final handle = tester.ensureSemantics();
+
+        await pumpInternetSettings(tester, const RemoteModeProfile(), size);
+
+        expect(find.bySemanticsIdentifier('internet-settings-edit-toggle'),
+            findsNothing,
+            reason: 'no way into edit mode: the agent would be rewriting the '
+                'WAN link its own session is carried over');
+        expect(find.byType(UspRenewSection), findsNothing,
+            reason: 'Release & Renew is the same risk as a WAN write — a '
+                'release drops the address before the renew asks for one — so '
+                'it goes with the toggle, from the same null');
+        expect(find.byType(UspConnectionStatusBanner), findsOneWidget,
+            reason: 'the banner itself stays: it carries the connection type '
+                'and WAN address, which is what "view-only" means the agent '
+                'can still read');
+        expect(find.byType(UspIpv4Section), findsOneWidget,
+            reason: 'and the settings are on screen, so the absences above '
+                'are the affordances and not a page that failed to render');
+        handle.dispose();
+      });
+    }
   });
 
   // ===========================================================================

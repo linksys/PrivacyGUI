@@ -6,6 +6,7 @@ import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/page/mac_filter/providers/mac_filter_notifier.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_quick_setup_network.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dart';
@@ -24,14 +25,17 @@ final uspWifiSettingsProvider =
   UspWifiSettingsNotifier.new,
 );
 
-/// Route-level dirty proxy — aggregates both WiFi tabs' dirty state.
+/// Route-level dirty proxy — aggregates every WiFi tab's dirty state.
 /// Only isDirty() and revert() are invoked by LinksysRoute.onExit.
 final preservableUspWifiPageProvider = AutoDisposeProvider<
     PreservableContract<WifiSettingsSettings, WifiSettingsStatus>>(
-  (ref) => _WifiPageDirtyProxy(
+  (ref) => _WifiPageDirtyProxy([
     ref.watch(uspWifiSettingsProvider.notifier),
     ref.watch(uspWifiAdvancedProvider.notifier),
-  ),
+    // The MAC Filtering tab (#1636). Watched unconditionally: on firmware without
+    // the tab the notifier is never edited, so it is never dirty.
+    ref.watch(uspMacFilterProvider.notifier),
+  ]),
 );
 
 // ---------------------------------------------------------------------------
@@ -46,14 +50,6 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
 
   @override
   UspWifiSettingsState build() {
-    // SSE: when WiFi data provider updates, trigger dirty guard.
-    // The isLoading check excludes the re-run frame, which carries the previous
-    // value forward and would otherwise trigger a second forceRemote fetch per
-    // refetch. See doc/riverpod/listen_site_audit.md.
-    ref.listen(wifiDataProvider, (_, next) {
-      if (next.isLoading) return;
-      if (next.hasValue) onSseInvalidation();
-    });
     // Synchronous build with loading state; async fetch follows immediately.
     Future.microtask(() => fetch());
     return UspWifiSettingsState.initial();
@@ -430,18 +426,18 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
 /// Aggregates dirty state from both WiFi tabs for the route's onExit guard.
 class _WifiPageDirtyProxy
     implements PreservableContract<WifiSettingsSettings, WifiSettingsStatus> {
-  final UspWifiSettingsNotifier _wifiList;
-  final UspWifiAdvancedNotifier _advanced;
+  final List<PreservableContract> _tabs;
 
-  _WifiPageDirtyProxy(this._wifiList, this._advanced);
+  _WifiPageDirtyProxy(this._tabs);
 
   @override
-  bool isDirty() => _wifiList.isDirty() || _advanced.isDirty();
+  bool isDirty() => _tabs.any((t) => t.isDirty());
 
   @override
   void revert() {
-    if (_wifiList.isDirty()) _wifiList.revert();
-    if (_advanced.isDirty()) _advanced.revert();
+    for (final t in _tabs) {
+      if (t.isDirty()) t.revert();
+    }
   }
 
   @override

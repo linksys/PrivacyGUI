@@ -1,9 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/dhcp/models/dhcp_reservation_list.dart';
@@ -31,13 +29,6 @@ final uspDhcpReservationsProvider = AutoDisposeNotifierProvider<
   UspDhcpReservationsNotifier.new,
 );
 
-/// Exposes the notifier as a [PreservableContract] for [LinksysRoute]
-/// dirty-check integration.
-final preservableUspDhcpReservationsProvider = AutoDisposeProvider<
-    PreservableContract<DhcpReservationList, DhcpReservationsStatus>>(
-  (ref) => ref.watch(uspDhcpReservationsProvider.notifier),
-);
-
 // ---------------------------------------------------------------------------
 // Notifier
 // ---------------------------------------------------------------------------
@@ -51,13 +42,6 @@ class UspDhcpReservationsNotifier
 
   @override
   DhcpReservationsFeatureState build() {
-    // SSE invalidation: re-fetch when DHCP reservations change externally.
-    ref.listen(sseInvalidationProvider, (_, next) {
-      if (next.valueOrNull?.domain == InvalidationDomain.dhcpReservations) {
-        onSseInvalidation();
-      }
-    });
-
     Future.microtask(() => fetch());
     return DhcpReservationsFeatureState.initial();
   }

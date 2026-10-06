@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -50,6 +51,15 @@ class MascotTrigger extends Equatable {
 }
 
 /// State tracking for trigger cooldowns.
+///
+/// Reads the clock through `package:clock` rather than `DateTime.now()`, which
+/// is what makes a cooldown testable: `fakeAsync` installs a zone clock that
+/// `clock.now()` follows and `DateTime.now()` does not. Measured — inside
+/// `fakeAsync(...)`, `async.elapse(Duration(minutes: 31))` moves `clock.now()`
+/// by 31 minutes and `DateTime.now()` by under a millisecond, so a cooldown
+/// written against the latter can never expire in a test and the suppression
+/// path cannot be asserted at all. In production `clock.now()` *is*
+/// `DateTime.now()`.
 class TriggerCooldownState {
   final Map<String, DateTime> _lastTriggered = {};
 
@@ -57,12 +67,12 @@ class TriggerCooldownState {
   bool isInCooldown(MascotTrigger trigger) {
     final lastTime = _lastTriggered[trigger.id];
     if (lastTime == null) return false;
-    return DateTime.now().difference(lastTime) < trigger.cooldown;
+    return clock.now().difference(lastTime) < trigger.cooldown;
   }
 
   /// Record that a trigger was fired.
   void recordTrigger(MascotTrigger trigger) {
-    _lastTriggered[trigger.id] = DateTime.now();
+    _lastTriggered[trigger.id] = clock.now();
   }
 
   /// Clear cooldown for a specific trigger.

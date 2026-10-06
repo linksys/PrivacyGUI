@@ -10,6 +10,7 @@ library;
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_notifier.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_state.dart';
@@ -40,7 +41,7 @@ class FixedAdminNotifier extends UspAdminNotifier {
 
   @override
   Future<void> updateTimezone({
-    required String localTimeZone,
+    TimeZoneSelection? zone,
     String? ntpServer1,
   }) async {}
 

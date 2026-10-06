@@ -84,6 +84,9 @@ const _deviceSide = <String>{
 const _agentSide = <String>{
   'lib/page/remote_assistance/views/remote_assistance_confirm_view.dart',
   'lib/page/_shared/components/remote_session_chip.dart',
+  // The "setting up live updates" dialog (2026-10-01): mounted only by
+  // `RemoteSurface.sessionReadinessGate`, over the agent's dashboard.
+  'lib/page/_shared/components/remote_session_readiness_gate.dart',
   'lib/providers/remote_access/remote_access_provider.dart',
   'lib/providers/remote_access/remote_access_state.dart',
   'lib/providers/remote_access/stub_html.dart',

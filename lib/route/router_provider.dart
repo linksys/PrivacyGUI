@@ -44,6 +44,7 @@ import 'package:privacy_gui/page/devices/views/usp_device_detail_view.dart';
 import 'package:privacy_gui/page/topology/views/usp_topology_view.dart';
 import 'package:privacy_gui/page/topology/views/usp_node_detail_view.dart';
 import 'package:privacy_gui/page/instant_safety/views/instant_safety_view.dart';
+import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart'
     as usp_instant_privacy;
@@ -53,6 +54,7 @@ import 'package:privacy_gui/page/firmware_update/views/firmware_update_view.dart
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 import 'package:privacy_gui/page/dhcp/views/usp_dhcp_detail_view.dart';
 import 'package:privacy_gui/page/port_forwarding/views/usp_port_forwarding_detail_view.dart';
+import 'package:privacy_gui/page/notification_history/views/usp_notification_history_view.dart';
 import 'package:privacy_gui/page/system_log/views/usp_system_log_view.dart';
 import 'package:privacy_gui/page/advanced_settings/views/usp_advanced_settings_view.dart';
 import 'package:privacy_gui/page/firewall/views/usp_firewall_view.dart';
@@ -418,6 +420,12 @@ class RouterNotifier extends ChangeNotifier {
     NodeDeviceInfo? cachedDeviceInfo,
   }) async {
     logger.d('[Prepare]: prepare data. Go to path: $goToPath');
+    // Read before the first await, for the reason `authCheck` caches its reads:
+    // logging in changes `authProvider` while the awaits below are pending, and a
+    // `_ref.read` after that throws "Cannot use ref functions after the
+    // dependency of a provider changed" — the decision that threw never checked
+    // PnP (#1641).
+    final pnpStatusService = _ref.read(pnpStatusServiceProvider);
 
     final prefs = await SharedPreferences.getInstance();
     String? serialNumber = prefs.getString(pCurrentSN);
@@ -451,9 +459,8 @@ class RouterNotifier extends ChangeNotifier {
 
       // Post-login PnP check — only for local login
       if (loginType == LoginType.local && !BuildConfig.skipPnp) {
-        final pnpResult = await _ref
-            .read(pnpStatusServiceProvider)
-            .check(nodeDeviceInfo.serialNumber);
+        final pnpResult =
+            await pnpStatusService.check(nodeDeviceInfo.serialNumber);
         if (pnpResult.needsPnp) {
           logger.i('[Prepare]: PnP needed, routing to /pnp');
           return RoutePath.pnp;

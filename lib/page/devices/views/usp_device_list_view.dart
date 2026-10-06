@@ -24,7 +24,12 @@ class UspDeviceListView extends ConsumerStatefulWidget {
 }
 
 class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
-  final _searchController = TextEditingController();
+  // Seeded from the filter, which outlives this page: starting empty showed a
+  // blank box (and no clear button) over a list still filtered by the last
+  // visit's search (#1159).
+  late final _searchController = TextEditingController(
+    text: ref.read(deviceFilterConfigProvider).searchQuery,
+  );
 
   @override
   void dispose() {

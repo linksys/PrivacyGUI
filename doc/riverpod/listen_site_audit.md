@@ -105,11 +105,66 @@ population.
 | 7 | `page/local_network/providers/dhcp_data_provider.dart:58` | prev/next diff | `edge-triggered` | yes | `:60-67` builds `mac → isActive` maps for both frames and only calls `_debouncedInvalidate()` when `MapEquality` says they differ. **This is the in-repo template for fixing #6 and #8.** |
 | 8 | `page/local_network/providers/ethernet_data_provider.dart:55` | `next.hasValue && state.hasValue` | **`redundant-today`** | yes | `ref.invalidateSelf()` on any devices emission, unchanged or not. `_fetch()` passes exactly `clientDevices` to the service, so an identical list cannot change the result *for that reason*, and other causes arrive via the SSE listener at `:47`. **Cost: one redundant Ethernet USP fetch per unrelated device update** — and `DevicesData` changes on any device field (RSSI, band, SSID), so unrelated updates are the common case. **Fixed here**, comparing against the input the last `_fetch()` consumed rather than against `prev`; the `state.hasValue` half of this guard was also dropping settles that raced the fetch — see "The one caveat on the zero" above. |
 
+> ⚠️ **SITE 6 RE-MEASURED 2026-10-01 at `96ddebf5`.** The listener is unchanged and still unguarded; two
+> parts of its row and of the "Cause B" note no longer describe the cost:
+>
+> - **Frequency.** "Only two identical emissions inside the same hour" undersells it. When mesh topology data
+>   is present, every SSE `connectedDevices` refresh publishes twice, from `_refetchPreservingMeshInner` and
+>   then `_fetchMeshAndUpdateInner`, and on an unchanged device list the two `DevicesData` are `==`. Measured:
+>   **2 analytics recomputes and 2 SharedPreferences writes per SSE refresh** with mesh data, 1 without.
+>   Still no USP request.
+> - **The gap argument is weaker than stated.** The notifier has no timer; a bucket is written once at
+>   `build()` and otherwise only when `devicesDataProvider` emits. An hour with no device-list change
+>   therefore has no bucket *today*, and `stats_connection_trends_section.dart` draws it as 0. A
+>   `clientDevices`-only diff would add more such hours rather than introduce the first one. The guard that
+>   compares the hour bucket as well as the list remains the lossless one.
+>
+> Not fixed, by decision: the cost is local (one recompute and one preference write per repeat) and
+> nothing is wrong on screen.
+
+> ⚠️ **SITES 10, 11 AND 12 NO LONGER EXIST.** They were the three `ref.listen` calls that
+> drove `onSseInvalidation()` from an L1 provider — in `usp_wifi_advanced_provider`,
+> `usp_wifi_settings_provider` and `usp_firewall_notifier`. The whole mechanism was **deleted in
+> #1587 Phase 1** (2026-09-29), together with the four SSE-domain wirings in `usp_dmz_notifier`,
+> `usp_dhcp_reservations_notifier`, `usp_port_forwarding_page_notifier` and
+> `usp_static_routing_notifier`.
+>
+> Their rows and the code samples below are kept as the record of what was measured, not as a
+> description of the current tree. The `isLoading` guards discussed here went with them.
+>
+> One thing that outlived the deletion and is worth carrying forward: `performSave` in
+> `usp_wifi_advanced_provider` read `ref.read(wifiDataProvider).valueOrNull` and only worked
+> because site 10's `ref.listen` kept that provider subscribed. With the listener gone the read
+> returned `AsyncLoading`, and the DFS channel remediation silently did nothing. It now awaits
+> `.future`. **A `ref.read` of an L1 provider is only safe while something else holds a
+> subscription** — the same lesson as #1615, from the other direction.
+
 ### `wifiDataProvider` — 3
 
-`wifiDataProvider` refetches via a 500 ms debounced `ref.invalidateSelf()`
-(`wifi_settings/providers/wifi_data_provider.dart:109-114`), so it **does** emit a refresh frame ⇒
-consequence 2 applies to all three listeners: each runs twice per refetch.
+`wifiDataProvider` **used to** refetch via a 500 ms debounced `ref.invalidateSelf()`, so it emitted a
+refresh frame ⇒ consequence 2 applied to all three listeners: each ran twice per refetch. That is the
+state this audit measured, and the `Guard` column below records each site as it was then.
+
+**As of #1615 this producer no longer emits a refresh frame.** It assigns `state` directly
+(`WifiDataNotifier._refreshFromPush`), so a push now delivers exactly ONE settled frame. Measured after
+that change: at most 1 notification per refresh that survives, carrying `isLoading=false`, versus 2
+(`isLoading` true then false) before. **At most**, because an ordering guard added with the same fix
+(#1618) discards a refresh that has been superseded, and a discarded refresh publishes nothing — so
+two overlapping pushes deliver ONE notification, not two. That is a reduction for these consumers,
+not a loss: the discarded one carried a device read that was already out of date. The same applies to `firewallDataProvider`, `portForwardingDataProvider`,
+`ethernetDataProvider` and `dhcpDataProvider`, which were changed together for the same reason.
+
+Two things follow, and they point in opposite directions:
+
+- **The doubling described in sites 9-12 is gone at the source.** Those sites were fixed in #1502 by
+  adding `if (next.isLoading) return;`, which filtered the refresh frame; now there is no refresh frame
+  to filter, so the guard is inert rather than load-bearing. It is deliberately kept — it costs nothing,
+  and it still protects against a producer that goes back to publishing one (a `ref.refresh` from
+  anywhere, or a future `invalidateSelf` reintroduced by someone reading consequence 1 as current).
+- **Consequence 1 no longer holds for these five producers**, so two consecutive equal settled frames CAN
+  now collapse under `==` where an unequal refresh frame previously separated them. This is why those
+  providers' listeners must stay edge-triggered on payload rather than on frame count — the property
+  sites 7 and 8 already rely on.
 
 | # | Site | Guard | Verdict | `==`-safe | Evidence |
 | --: | --- | --- | --- | :--: | --- |
@@ -128,6 +183,34 @@ consequence 2 applies to all three listeners: each runs twice per refetch.
 | # | Site | Guard | Verdict | `==`-safe | Evidence |
 | --: | --- | --- | --- | :--: | --- |
 | 13 | `page/admin/providers/system_info_data_provider.dart:38` | `next.hasValue && state.hasValue` | **`redundant-today`** | yes | `:40 ref.invalidateSelf()`. No doubling here: `firmware_update/providers/firmware_banks_data_provider.dart:51` sets a **bare** `const AsyncLoading()` (`hasValue` false), which the guard filters ⇒ one delivery per refresh. The redundancy is reachability-driven: `firmware_update/providers/firmware_update_notifier.dart:332-356` calls `banks.refresh()` up to 3× (3 s apart), breaking only at `:341 if (banksData.banks.isNotEmpty)`, so a still-empty result triggers **up to 3 systemInfo USP fetches, 2 of them on unchanged banks**. **Not fixable by a payload diff** — see the note below. |
+
+> ⚠️ **SITE 13'S EVIDENCE IS WRONG, AND WAS WRONG WHEN IT WAS WRITTEN** (re-measured 2026-10-01 at
+> `96ddebf5`). The row and the note under "Cause B" are kept as the record; this is the current reading.
+>
+> - **This listener is not the provider's only refresh trigger.** `systemInfoDataProvider` has been in
+>   `DashboardOrchestrator._allDomainProviders` since 2026-03-20, so login (`_buildImpl`), pull-to-refresh
+>   (`refreshAll`) and the startup retry (`_scheduleProviderRetry`) all invalidate it. They do it through
+>   `for (final (_, provider) in _allDomainProviders) ref.invalidate(provider)`, which is why
+>   `rg 'systemInfoDataProvider'` found no `invalidate` call: the name is in the list, not at the call.
+>   `usp_topology_view.dart`'s retry button invalidates it by name as well.
+> - **There is doubling.** `FirmwareBanksDataNotifier.refresh()` now publishes
+>   `const AsyncLoading().copyWithPrevious(state)`, a loading frame that *keeps* the previous banks
+>   (`hasValue` true), so both frames pass `next.hasValue && state.hasValue`. With zero-latency mocks the
+>   two `invalidateSelf()` calls still coalesce (1 fetch); with 80 ms of latency on both fetches they do not:
+>   **2 systemInfo fetches per banks refresh**, the first one handed the previous banks. The published value
+>   is the second, and it is correct.
+> - **More refreshers.** `banks.refresh()` has three callers in `firmware_update_notifier.dart`: `loadBanks`
+>   with `refresh: true` (both firmware pages' read-failure retry), the end of a router-side update check,
+>   and `verify()`'s 3-attempt loop. Measured: one failed refresh still costs 2 fetches (the `AsyncError`
+>   keeps the previous value too), so `verify()`'s worst case is **6**, not 3. Invalidating both providers
+>   together, which is what `refreshAll` starts with, costs 2; boot costs 1.
+> - **The same-version-reflash scenario does not occur on success.** `verify()` only reports success when the
+>   expected *other* bank is now Active, so the banks always differ after a successful flash.
+>
+> **Consequence for the verdict:** still `redundant-today`, still `==`-safe. The cost is the extra
+> `SystemInfoData` publish and its consumers' rebuilds; the second USP read is for the same paths inside
+> the throttler's 5 s cache window, so it is expected not to reach the router (read from the throttler, not
+> measured). Not fixed, by decision: the waste is small and nothing is wrong on screen.
 
 ### `dashboardDomainReadyProvider` — 3
 
@@ -258,10 +341,10 @@ exactly one of the three.** Both of the following were prescribed in a draft of 
   time therefore produces a *different* result, and a `clientDevices` diff would leave gaps in the 24 h
   history — the provider is not autoDispose, so the gap persists for the session. The genuine waste is
   narrower than first measured: only two identical emissions **inside the same hour**, costing one
-  storage write. **Filed as #1504, not fixed** — a sound guard has to compare the hour bucket as well as the
+  storage write *(frequency corrected under site 6's table)*. **Filed as #1504, not fixed** — a sound guard has to compare the hour bucket as well as the
   list, which is a behaviour decision about the analytics history rather than a guard.
 - **Site 13 — `systemInfoDataProvider` has exactly one refresh trigger in the entire app, and it is this
-  listener.** Nothing else invalidates or refreshes it (`rg 'systemInfoDataProvider' lib/` returns no
+  listener.** *(Wrong — see the correction under site 13's table.)* Nothing else invalidates or refreshes it (`rg 'systemInfoDataProvider' lib/` returns no
   `invalidate`/`refresh`/`.notifier` call), and `firmwareBanksDataProvider` in turn has exactly one
   refresher (`firmware_update_notifier.dart:338`). Meanwhile `_fetch()` gets SystemInfo **live from USP**
   and merely passes `banks` through. So on a same-version reflash — banks identical, `softwareVersion`
@@ -275,7 +358,7 @@ exactly one of the three.** Both of the following were prescribed in a draft of 
 | --- | --- | --- |
 | Cause A, `isLoading` guard | 9, 10, 11, 12, 14, 15 | **Fixed in this PR** — provably lossless: the dropped frame carries the *previous* value, so the body was acting on stale data. |
 | Cause B, sound diff | 8 | **Fixed in this PR** — projection is `_fetch()`'s own input; other causes covered by the sibling SSE listener at `:47`, the same bet `dhcp_data_provider:58` already ships. The diff is against the *consumed* input, not `prev`, which also closes the dropped-settle half of the old guard. |
-| Cause B, unsound diff | 6, 13 | **Filed** — #1504 (site 6), #1505 (site 13), each with the measured cost and the reason above. |
+| Cause B, unsound diff | 6, 13 | **Filed** — #1504 (site 6), #1505 (site 13), each with the measured cost and the reason above. Both closed unfixed on 2026-10-01 after re-measurement; see the corrections under each site's table. |
 
 7 fixed, 2 filed. AC-4 requires every `redundant-today` site to be one or the other, and none left
 undocumented.
@@ -319,6 +402,13 @@ Five things this exercise established that the audit alone had not:
    .future)` alone and so passed against the *unguarded* source too. Every one of these tests needs a
    standing `container.listen(...)` to make invalidation eager. This is a trap for anyone writing a
    "should not re-fetch" test in this repo.
+
+   **This laziness turned out to be a live defect, not just a testing trap — #1615.** A provider whose
+   `ref.listen` is registered inside `build()` does not merely miss the refresh when nothing is watching:
+   the listener is not re-registered either, so the FIRST unobserved notification disables the mechanism
+   permanently. Six L1 providers had that shape and all six now assign `state` directly. The testing
+   consequence inverts with it: a "should re-fetch" test for those providers must now hold **no**
+   listener, because holding one is what hid the defect for a year.
 3. **Sites 9–11 already fetch twice at boot**, independently of this bug: the data provider's first
    `loading → data` settle is itself a listener firing, so `build()`'s own `fetch()` is followed by an
    `onSseInvalidation()` → `fetch(forceRemote: true)`. The `isLoading` guard does not address that (the first
@@ -378,6 +468,126 @@ prescriptions, and the first shipped version of the site-8 diff (`==` on a `List
 drift, not mine: the ticket lists
 `usp_wifi_advanced_provider_test` / `usp_wifi_settings_provider_test` as missing, but both exist as
 `test/page/wifi_settings/providers/usp_wifi_{advanced,settings}_notifier_test.dart`.
+
+## Bare `ref.read` of an L1 provider — the sites this audit did not cover (2026-09-29, #1634)
+
+`ref.read(xDataProvider).valueOrNull` returns null unless something else is holding L1 built
+and settled. Deleting `onSseInvalidation()` (#1587 Phase 1) removed one such holder and broke
+exactly one caller — the Wi-Fi Advanced DFS remediation, where an empty `radioModels` meant no
+radio was recognised as parked on a DFS channel and the remediation silently did nothing. Fixed
+by awaiting `.future` with one `refresh` retry, pinned by two tests that are red against the old
+code.
+
+**Two sibling files have the same shape and were NOT changed:**
+
+```
+lib/page/dashboard/providers/pdf_report_data_provider.dart:29-66   13 reads
+lib/page/admin/providers/system_info_data_provider.dart:62          1 read (firmwareBanksDataProvider)
+```
+
+⚠️ The second path is `page/admin/`, not `page/dashboard/` — the review that raised these
+said `dashboard`, and the file is not there. Counts and the line number check out.
+
+Every provider they read is `watch`ed somewhere in `lib/`, so in practice a subscriber usually
+exists — but whether one exists *at that moment* depends on which dashboard preset is mounted,
+which is the "correct by coincidence" shape #1615 was about, and no test would catch the
+coincidence breaking.
+
+They are left alone deliberately, on severity rather than on principle: the PDF report's fields
+are nullable and a missing one drops a section from a generated document. The DFS case wrote a
+wrong configuration to the radio. Same defect, different blast radius — and rewriting 14 reads
+inside a PR whose subject is a deletion would bury the deletion.
+
+⚠️ **The rule to carry forward: a `ref.read` of an L1 provider is only safe while something else
+holds a subscription.** If the value must exist, await `.future`. If it must stay current, watch it.
+
+## #1587 Phase 0 and Phase 2 — the rule, and the audit behind it (2026-09-29)
+
+**Phase 0's remaining item** was a gap in `constitution.md` Article IV's page-type
+classification: it told Type C pages to read L1 directly and said nothing about Type A or
+Type B, leaving the case this defect came from undescribed. Now stated there, scoped to the
+view layer so it cannot be read as bending Rule 2, which governs notifiers.
+
+**Phase 2's remaining items** were the audit below and the instruction to record it either way.
+
+The question: do Local Network, Devices or Wi-Fi show a live value through their L2 working copy,
+the way the Internet Settings banner did before #1613?
+
+**No. All three already read their L1 providers directly.**
+
+```
+local_network   lanDataProvider · ethernetDataProvider · dhcpDataProvider
+devices         devicesDataProvider
+wifi_settings   wifiDataProvider · devicesDataProvider
+```
+
+`readOnlyInfo` — the field that carried the defect — exists only in `internet_settings`, and the
+two `readOnly:` references in `usp_local_network_view.dart` are a text field's input property,
+not a data source.
+
+⚠️ **The `Status` halves are not purely UI state, which is the part worth stating precisely.**
+Local Network and Wi-Fi Advanced hold only loading/saving/error plus derived values
+(`validationErrors`, `lockedOctetCount`), but `wifi_settings_status.dart` also carries
+`quickSetupMainAggregate` / `quickSetupGuestAggregate` — device data, not UI state.
+
+They are not a counterexample, and the reason is what the rule actually turns on: **no view
+reads them.** They hold the SSID and access-point instance paths a fan-out save needs
+(`usp_wifi_settings_service.dart:241`), consumed only by the notifier and the service. Nothing
+about them is displayed, so nothing about them can go stale on screen. Device data living in L2
+is fine when it feeds the save path; it is a defect when it feeds the screen.
+
+Recorded because the answer is "nothing to change": without this the next person re-runs the
+search, and a Phase 2 item stays open forever because its result was never written down.
+
+## The deferred gap: a save does not detect a mid-edit device change (#1587 Phase 3)
+
+Recorded here because **#1587 was closed on 2026-09-30 with this deferred**, and the condition
+that reopens it needs somewhere durable to live.
+
+`constitution.md` states the gap and forbids working around it per-page, and deliberately stops
+there: a rule that cannot be followed without opening an issue or another file is not a rule.
+The measurements, the traps and the open decisions are this document's job.
+
+**The gap.** Every save compares the draft against the page-entry snapshot, never against the
+device's current value. A value the device altered while the user was editing is overwritten
+silently. Every form built on `Preservable` shares it — a count is deliberately not given here,
+because it was 11 when #1587 was written and 12 by the time it closed.
+
+**Why it was deferred.** The editable fields on these pages are values a user sets, so the
+ordinary way to reach a conflict is a second editor — and a home router rarely has two people
+editing at once. Detection belongs in `Preservable`, so it would change the save behaviour of
+every form that uses it, and it needs a product decision about what to show (block, offer
+reload, or offer overwrite). The decision to defer was explicit, not an oversight.
+
+⚠️ **What reopens it, and why the deferral is weaker than it sounds.** Measured on the test
+router:
+
+```
+Device.Routing.Router.1.IPv4Forwarding   3 entries, all Origin=DHCPv4 — created by the device
+Static Routing shows none of them        only because usp_static_routing_service filters
+                                         origin == 'Static'
+```
+
+So "the device does not change these values" holds because somebody wrote a filter, not because
+the data model guarantees it. **The first observed single-user conflict reopens this** — that is
+the trigger, rather than another round of arguing about likelihood.
+
+**Three implementation traps, for whoever picks it up:**
+
+1. **Saves have three shapes, not one.** `usp_internet_settings_service` writes a per-field
+   diff, `usp_dmz_service` writes the whole object, `usp_static_routing_service` writes an
+   add/update/delete batch. What they share is comparing against the page-entry snapshot and
+   never against the device.
+2. **A pre-save re-read can hit a transient.** `performFetch` carries a one-shot correction for
+   `_preservedConnectionType`, which exists because the device briefly reports the wrong
+   connection type after a save. A re-read could hit that same window and report a false
+   conflict.
+3. **It cannot be done "just for one page."** The framework is where it belongs; putting it in a
+   single page means the framework does not own a rule that is its own.
+
+Granularity, when it is built: compare only the fields the save would actually write. Writing an
+unchanged field is not a conflict. And decide what a failed re-read does — proceed, or refuse to
+write — rather than leaving it to fall out of the implementation.
 
 ## Verification
 

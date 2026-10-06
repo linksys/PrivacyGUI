@@ -135,6 +135,41 @@ void main() {
   });
 
   group('mapUspErrorToServiceError', () {
+    // #1533: a refused synchronous Operate. usp-client 0.13.0 reports it as
+    // `success: false` with the agent's code in band, and `UspClient
+    // .extractOperateResult` throws it in this shape. Before that it read as a
+    // success, so a router-refused firmware chunk completed normally.
+    //
+    // The type matters as much as the code: `UnexpectedError` — the fallthrough
+    // this used to take — renders as "something went wrong", which is what a
+    // network blip looks like too. A refusal is the router answering, not the
+    // network failing.
+    test('maps a refused Operate (7022) to UspCompleteFailureError', () {
+      const raw = 'Operate failed: Operation error: '
+          'Device.LocalAgent.X_LINKSYS_Download() refused: Command Failure '
+          '(code: 7022)';
+
+      final mapped = mapUspErrorToServiceError(raw);
+
+      expect(mapped, isA<UspCompleteFailureError>());
+      expect(mapped.code, 7022);
+      expect(mapped.toString(), contains('Command Failure'));
+      expect(mapped.toString(),
+          contains('Device.LocalAgent.X_LINKSYS_Download()'));
+      expect(mapped, isNot(isA<NetworkError>()));
+      expect(mapped, isNot(isA<ConnectivityError>()));
+    });
+
+    test('an operation error without a known code still is not a network error',
+        () {
+      const raw = 'Operate failed: Operation error: the command refused: '
+          'the router gave no reason';
+      final mapped = mapUspErrorToServiceError(raw);
+
+      expect(mapped, isNot(isA<NetworkError>()));
+      expect(mapped, isNot(isA<ConnectivityError>()));
+    });
+
     test('maps auth Invalid credentials to InvalidCredentialsError', () {
       const raw = 'Login failed: Authentication error: Invalid credentials';
       expect(mapUspErrorToServiceError(raw), isA<InvalidCredentialsError>());
@@ -265,6 +300,37 @@ void main() {
     test('maps Protocol error without fault code to UnexpectedError', () {
       const raw = 'Get failed: Protocol error: Malformed message: bad data';
       expect(mapUspErrorToServiceError(raw), isA<UnexpectedError>());
+    });
+  });
+
+  group('isUnansweredTransportFailure', () {
+    // Both messages are the per-path `errorMessage` the WASM client returned on
+    // FLWRT 2.0.2 (2026-10-05). Both carry `errorCode: 9999`, which is why the
+    // message has to decide.
+    test('is true when the browser never got an answer', () {
+      expect(
+        isUnansweredTransportFailure(
+          'Transport error: Transport error: HTTP error: error sending request: '
+          'JsValue(TypeError: Failed to fetch\nTypeError: Failed to fetch)',
+        ),
+        isTrue,
+      );
+    });
+
+    test('is false when the router answered with a refusal', () {
+      expect(
+        isUnansweredTransportFailure(
+          'Transport error: Protocol error: Decoding error: Received error '
+          'response: ProcessSet_AllowPartialFalse: Allow partial=false not '
+          'supported across more than one USP Service (code: 7005)',
+        ),
+        isFalse,
+      );
+    });
+
+    test('is false for a message it does not recognise', () {
+      // Fails closed: an unknown error is reported, not assumed to have landed.
+      expect(isUnansweredTransportFailure('Something else entirely'), isFalse);
     });
   });
 }

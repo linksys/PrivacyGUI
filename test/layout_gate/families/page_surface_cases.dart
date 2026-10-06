@@ -110,6 +110,7 @@ import 'package:privacy_gui/page/firmware_update/views/firmware_update_available
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_view.dart';
 import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart';
+import 'package:privacy_gui/page/mac_filter/views/mac_filter_tab.dart';
 import 'package:privacy_gui/page/instant_safety/views/instant_safety_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/components/pnp_isp_saving_progress.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_entry_view.dart';
@@ -134,6 +135,8 @@ import 'package:privacy_gui/page/login/auto_parent/views/auto_parent_first_login
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
 import 'package:privacy_gui/page/login/views/local_router_recovery_view.dart';
 import 'package:privacy_gui/page/login/views/login_local_view.dart';
+import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart'
+    show MacFilterMode;
 import 'package:privacy_gui/page/menu/views/usp_menu_view.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_port_range_tab.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_port_triggering_tab.dart';
@@ -151,6 +154,7 @@ import 'package:privacy_gui/page/statistics/views/sections/stats_device_distribu
 import 'package:privacy_gui/page/statistics/views/sections/stats_system_gauges_section.dart';
 import 'package:privacy_gui/page/statistics/views/sections/stats_traffic_monitor_section.dart';
 import 'package:privacy_gui/page/statistics/views/usp_statistics_view.dart';
+import 'package:privacy_gui/page/notification_history/views/usp_notification_history_view.dart';
 import 'package:privacy_gui/page/system_log/views/usp_system_log_view.dart';
 import 'package:privacy_gui/page/support/views/usp_support_view.dart';
 import 'package:privacy_gui/page/test_console/views/usp_test_console_view.dart';
@@ -160,9 +164,17 @@ import 'package:privacy_gui/page/topology/views/usp_node_detail_view.dart';
 import 'package:privacy_gui/page/topology/views/usp_topology_view.dart';
 import 'package:privacy_gui/page/unified_diagnostics/views/unified_diagnostics_view.dart';
 import 'package:privacy_gui/page/unified_diagnostics/views/widgets/diagnostic_start_view.dart';
+import 'package:privacy_gui/page/unified_diagnostics/views/widgets/diagnostic_flow_menu.dart';
+import 'package:privacy_gui/page/unified_diagnostics/views/widgets/diagnostic_manual_tools_view.dart';
+import 'package:privacy_gui/page/unified_diagnostics/views/widgets/diagnostic_results_view.dart';
+import 'package:privacy_gui/page/unified_diagnostics/views/widgets/diagnostic_running_view.dart';
+import 'package:privacy_gui/page/unified_diagnostics/views/widgets/flow_card.dart';
+import 'package:privacy_gui/page/unified_diagnostics/views/widgets/recommendation_card.dart';
+import 'package:privacy_gui/page/unified_diagnostics/views/widgets/traceroute_detail_card.dart';
 import 'package:privacy_gui/page/wifi_settings/views/components/wifi_network_card.dart';
 import 'package:privacy_gui/page/wifi_settings/views/tabs/wifi_advanced_tab.dart';
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
+import 'package:qr_flutter/qr_flutter.dart' show QrImageView;
 import 'package:sliver_dashboard/sliver_dashboard.dart' show SliverDashboard;
 import 'package:ui_kit_library/ui_kit.dart'
     show
@@ -176,6 +188,7 @@ import 'package:ui_kit_library/ui_kit.dart'
         AppPasswordInput,
         AppPinInput,
         AppRadioList,
+        AppSliverTimeline,
         AppStepper,
         AppSwitch,
         AppTextField,
@@ -191,12 +204,14 @@ import '../../mocks/provider_overrides/mock_dmz.dart';
 import '../../mocks/provider_overrides/mock_firewall.dart';
 import '../../mocks/provider_overrides/mock_firmware_update.dart';
 import '../../mocks/provider_overrides/mock_instant_privacy.dart';
+import '../../mocks/provider_overrides/mock_mac_filter.dart';
 import '../../mocks/provider_overrides/mock_instant_safety.dart';
 import '../../mocks/provider_overrides/mock_internet_settings.dart';
 import '../../mocks/provider_overrides/mock_ipv6_port_service.dart';
 import '../../mocks/provider_overrides/mock_local_network.dart';
 import '../../mocks/provider_overrides/mock_static_routing.dart';
 import '../../mocks/provider_overrides/mock_statistics.dart';
+import '../../mocks/provider_overrides/mock_notification_history.dart';
 import '../../mocks/provider_overrides/mock_system_log.dart';
 import '../../mocks/provider_overrides/mock_login.dart';
 import '../../mocks/provider_overrides/mock_menu.dart';
@@ -205,6 +220,7 @@ import '../../mocks/provider_overrides/mock_port_forwarding.dart';
 import '../../mocks/provider_overrides/mock_remote_assistance_confirm.dart';
 import '../../mocks/provider_overrides/mock_router_assistant.dart';
 import '../../mocks/provider_overrides/mock_topology.dart';
+import '../../mocks/provider_overrides/mock_unified_diagnostics.dart';
 import '../../mocks/provider_overrides/mock_wifi_settings.dart';
 import '../../mocks/test_data/scenes/devices_scene_data.dart';
 // Both scene files export a top-level `dataState`, so both are prefixed rather
@@ -216,6 +232,7 @@ import '../../mocks/test_data/scenes/login_scene_data.dart';
 import '../../mocks/test_data/scenes/pnp_scene_data.dart';
 import '../../mocks/test_data/scenes/port_forwarding_scene_data.dart' as pf;
 import '../../mocks/test_data/scenes/topology_scene_data.dart';
+import '../../mocks/test_data/scenes/unified_diagnostics_scene_data.dart';
 import '../../mocks/test_data/scenes/wifi_settings_scene_data.dart';
 import 'page_surface_family.dart';
 
@@ -442,12 +459,24 @@ final kTopologyPageCase = PageSurfaceCase(
 /// **What this fixture does not reach, recorded rather than papered over.** The
 /// backhaul throughput row is `if (uplinkRate != null || downlinkRate != null)`
 /// (`usp_node_detail_view.dart:400`) — *not* `phyRate`, which is what an earlier
-/// draft of this case assumed. No existing `UspNodeDetailState` carries either
-/// rate, so no [DetailSpeedCard] renders on this page in any of the 234 cells, and
-/// #1377 may not write a fixture that would (its own out-of-scope list). So the
-/// row stays unmeasured here and is a later wave's fixture scope. The premise
-/// caught the assumption at all 26 locales of the first width, which is the
+/// draft of this case assumed. This fixture carries neither rate, so no
+/// [DetailSpeedCard] renders on this page in any of the 234 cells. The premise
+/// caught that assumption at all 26 locales of the first width, which is the
 /// argument for `requires` being a value stated up front.
+///
+/// **The "no fixture exists" half of that is no longer true (#1442).**
+/// `slaveNodeWithBackhaulRates` carries both rates, written for the qualifier
+/// #1442 adds under that row. This case still pumps
+/// `slaveNodeWithBackhaulTiming`, deliberately: a case is one page *and one
+/// fixture* (§8), the last-contact tile only this fixture unlocks would go with
+/// the swap, and changing it re-sweeps 234 cells against the ratchet for a row
+/// that is already measured elsewhere. The throughput row is swept by
+/// `usp_node_detail_backhaul_overflow_test.dart` — 16 cells, 4 locales × 4
+/// widths, 13 of them red under the pre-#1302 caption shape.
+///
+/// A second case on this page with the rates fixture is the shape that would
+/// close it at gate level, and it belongs to #1602's one-fixture-per-page
+/// sweep rather than to #1442.
 ///
 /// The premise therefore takes one widget from each card the fixture *does* unlock:
 /// [BackhaulSignalIndicator] (the backhaul card's signal tile) and
@@ -893,6 +922,74 @@ final kPnpSetupFirmwarePageCase = PageSurfaceCase(
   forbids: const [AppStepper],
 );
 
+/// `pnp_setup_view` a third and fourth time — the wizard's **completion screens**,
+/// the two branches of `WizardWifiReady` (#1602).
+///
+/// ## Why they were missing, which is the finding worth keeping
+///
+/// This view is a state machine: nine phases reach seven builders, and the gate's unit
+/// is `(page, one fixture)`. So `pnp_setup_view.dart`'s roster row read `swept` on the
+/// strength of two cases — the three-step form and the firmware stage — while six of
+/// the seven builders had **no cell at any width in any locale**. The register was not
+/// lying; it has no column for "which phase". [kPnpSetupPageCase]'s
+/// `requires: [AppStepper, AppTextField, AppPasswordInput]` made it worse in the
+/// helpful direction: that case cannot drift onto another phase, so no fixture
+/// accident would ever have stumbled into these two.
+///
+/// What found it was the nightly golden report — #1586 gave this view its first golden
+/// suite, whose eight state keys are an enumeration of exactly the thing the gate had
+/// two of. **Joining the two enumerations is the cheap instrument**: `gate cases` vs
+/// `golden states:`, per view.
+///
+/// ## What a 480px golden could not say
+///
+/// Golden shoots `phone480` and `desktop1280`, and reported three cells — `el` +4.6 to
+/// +13.0, `fr_CA` +44 to +53 — which reads as long-translation overflow at narrow
+/// width. Swept here at nine widths it is not: at **320px all 26 locales overflow in
+/// both branches** (`en` +101 split, +68 unified; `fr_CA` +213), and unified has a
+/// **second site golden never saw** — the Print/Done action `Row`, 26 of 26 locales.
+/// 601px and above are clean. Structural one width below the narrowest golden device.
+///
+/// ## The premises pin the *branch*, not just the phase
+///
+/// `isSplitMode` is `bands.length > 1` — derived, not stored — so the two fixtures
+/// differ only in a list, and a case that named `[AppCard, AppButton]` would hold
+/// against either branch. Each therefore requires the widget the other cannot build
+/// and forbids the widget the other must:
+///
+///   * [LayoutBlock] is the split branch's per-band wrapper; the unified branch has
+///     none.
+///   * [QrImageView] is the unified branch's QR code; the split branch has none.
+///
+/// That also covers the `bands.isEmpty` fallback inside `_buildCompleteSplitMode`,
+/// which returns the *unified* tree — a split fixture that lost its bands would fail
+/// on `LayoutBlock` rather than sweep its sibling and report 234 green cells.
+///
+/// `forbids: [AppStepper]` is the sibling guard the firmware case also carries:
+/// `WizardConfiguring` is where a fixture that lost its override lands, and it renders
+/// the three-step form.
+final kPnpSetupCompleteSplitPageCase = PageSurfaceCase(
+  id: 'pnp_setup_complete_split',
+  view: () => const PnpSetupView(),
+  overrides: () => pnpOverrides(pnpWizardWifiReadySplitState),
+  requires: const [LayoutBlock, AppButton],
+  forbids: const [AppLoader, AppStepper, QrImageView],
+);
+
+/// `page.pnp_setup_complete_unified` — the other branch of `WizardWifiReady`.
+///
+/// See [kPnpSetupCompleteSplitPageCase] for why both branches exist as cases and what
+/// the premises pin. The one thing this case carries alone: it is the branch with the
+/// **action row** (`Print` beside `Done`), which is the second overflow site #1602's
+/// golden report could not see, because it only goes over at 320px.
+final kPnpSetupCompleteUnifiedPageCase = PageSurfaceCase(
+  id: 'pnp_setup_complete_unified',
+  view: () => const PnpSetupView(),
+  overrides: () => pnpOverrides(pnpWizardWifiReadyUnifiedState),
+  requires: const [QrImageView, AppButton],
+  forbids: const [AppLoader, AppStepper, LayoutBlock],
+);
+
 // ===========================================================================
 // Wave 3 (#1379) — the six entry surfaces
 // ===========================================================================
@@ -1061,8 +1158,8 @@ final kMenuPageCase = PageSurfaceCase(
   // exactly one field off it (`dnsServers`), so a second composed `LanInfoUIModel`
   // would be eight lines restating a fixture that already exists to say the same
   // thing. The scene stays where its own page's cases can see it.
-  overrides: () =>
-      menuOverrides(lanInfo: dhcp.testLanInfo, privacyEnabled: true),
+  overrides: () => menuOverrides(
+      lanInfo: dhcp.testLanInfo, privacyMode: MacFilterMode.allow),
   requires: const [AppMenuCard, AppBadge],
   forbids: const [AppLoader],
 );
@@ -1894,6 +1991,28 @@ final kInstantPrivacyPageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView],
 );
 
+/// `usp_wifi_settings_view` on its third tab — MAC Filtering (#1636), the
+/// network-wide MAC filter in `Deny`: one `AppSwitch` (Deny ⟷ Off — `Allow` is
+/// Instant Privacy's page), plus a list editor (header + Add button + device
+/// rows) that appears when it is on. The gate scene (`gateMacFilterState`) is Deny
+/// with a populated list, so header, Add button and rows all render at once.
+///
+/// A tab case like [kWifiSettingsAdvancedPageCase], so it opens the page on
+/// `initialTab: 2` and requires [MacFilterTab] — the one type no sibling case
+/// requires, which is how a cell knows it measured this tab. The tab exists only
+/// on firmware that serves the filter (#1635), so the case must also grant the
+/// capability: without it the page builds two tabs and `initialTab: 2` clamps
+/// onto Advanced, which [MacFilterTab] in `requires` turns into a red rather than
+/// 234 cells of the wrong tab.
+final kWifiSettingsMacFilterPageCase = PageSurfaceCase(
+  id: 'wifi_settings_mac_filter',
+  view: () =>
+      const UspWifiSettingsView(initialTab: UspWifiSettingsView.macFilterTab),
+  overrides: () => wifiMacFilterTabOverrides(),
+  requires: const [MacFilterTab, AppSwitch, AppButton],
+  forbids: const [AppLoader, ServiceErrorView],
+);
+
 /// `instant_safety_view` — one switch for OpenDNS safe browsing, and two lines of
 /// server prose that appear only while it is on.
 ///
@@ -2011,9 +2130,230 @@ final kInternetSettingsPageCase = PageSurfaceCase(
 /// other case, `pnp_setup`, still forbids the loader, because on the form phase a
 /// spinner really is the stand-in this rule is about. The exemption is per case, not
 /// per view file.
+// ===========================================================================
+// #1602's second half — the unified diagnostics state machine's other screens
+// ===========================================================================
+//
+// [kUnifiedDiagnosticsPageCase] above sweeps this view's `idle` step and nothing
+// else: its fixture is `const []`, so nobody had ever picked a state for it. The
+// view is a `switch (state.step)` into seven arms, five of which are separate
+// page-sized widgets, and the golden suite #1586 gave it enumerates **28** states
+// against that one case. Joining those two lists is what found this — the same
+// instrument that found the setup wizard's completion screens, one page over.
+//
+// **Eight cases, not 28 and not five.** Five would be one per builder, and would
+// leave three of the five sites this branch fixed with no cell: the *data* inside a
+// results or manual-tools state decides which sub-widget renders, so
+// `results_traceroute` draws a [TracerouteDetailCard] no other results state draws,
+// and the manual-tools blocks are gated on `state.activeTab`. 28 would be 6,084
+// cells for ~60s on the page file's clock; these eight are 1,872 for ~18s, and they
+// are picked so that every site the probe found is held by a cell.
+//
+// Measured before the fixes, 27 states x 9 widths x 26 locales = 6,318 cells: **302
+// red, every one of them at 320px**, over five sites, four of which were the same
+// shape — a title `Row` with no `Expanded` on its text, which is exactly the defect
+// #1554 found in `FirmwareInstallPhaseCard`. Fixing the summary header moved 221 of
+// them and re-pointed the remaining 81 at the counts group it created; both are
+// `Wrap`s now and the sweep reads zero. 480px and above were clean throughout.
+
+/// `page.unified_diagnostics_select_flow` — the flow menu, on the WAN-down branch.
+///
+/// `selectFlowWanDownState` rather than `selectFlowInternetOkState` because the
+/// pre-qualifier result decides how many [FlowCard]s the menu offers and which one
+/// is badged `recommended`: the WAN-down branch is the longest list, and it overflowed
+/// in 18 locales against `internet_ok`'s 13. The fix is in `flow_card.dart` — its
+/// title had no flex, so a long one plus the badge went over by up to 45px.
+///
+/// [FlowCard] is the premise that matters. [DiagnosticFlowMenu] alone would hold
+/// against a menu whose cards had gone missing, which is the state a fixture drifting
+/// off `selectFlow` would most plausibly produce.
+final kDiagnosticsSelectFlowPageCase = PageSurfaceCase(
+  id: 'unified_diagnostics_select_flow',
+  view: () => const UnifiedDiagnosticsView(),
+  overrides: () => unifiedDiagnosticsOverrides(selectFlowWanDownState),
+  requires: const [DiagnosticFlowMenu, FlowCard],
+  forbids: const [AppLoader, DiagnosticStartView],
+);
+
+/// `page.unified_diagnostics_running` — a diagnostic in progress.
+///
+/// `runningSpeedTestState` of the four running fixtures: it is the only one that draws
+/// the speed gauge, so it is the widest of them. All four measured clean, so this case
+/// is a coverage claim and not a fix — the 328 lines of `diagnostic_running_view.dart`
+/// simply had no cell at any width before it.
+///
+/// **This case was drafted as the loader exemption's third entry and the draft was
+/// wrong**, which is worth keeping because the mistake was made by reading the file
+/// rather than pumping it. `diagnostic_running_view.dart` does contain an [AppLoader] —
+/// a 12x12 spinner inside the marker of whichever step `isCurrent` — so the draft
+/// argued the screen was loader-is-content and required it. Nine coordinates then
+/// failed with `rendered no AppLoader`: on the speed-test fixture no step is marked
+/// current, so the spinner this case was exempted for is never built. `forbids` is
+/// therefore the honest direction here, and the exemption's third entry turned out to
+/// be [kDiagnosticsManualToolsPageCase] instead — a determinate bar, i.e. the rule's
+/// existing argument rather than a new kind of it. A `requires` entry naming a widget
+/// that is conditional in the source is a premise about the *fixture*, and only a run
+/// can tell you which way it goes.
+final kDiagnosticsRunningPageCase = PageSurfaceCase(
+  id: 'unified_diagnostics_running',
+  view: () => const UnifiedDiagnosticsView(),
+  overrides: () => unifiedDiagnosticsOverrides(runningSpeedTestState),
+  requires: const [DiagnosticRunningView],
+  forbids: const [AppLoader, DiagnosticStartView, DiagnosticResultsView],
+);
+
+/// `page.unified_diagnostics_results` — the results screen at its richest.
+///
+/// `multipleRecommendationsState` because [RecommendationCard] is the part of this
+/// screen whose count is data-driven, and the premise names it: a results state with no
+/// recommendations still renders [DiagnosticResultsView], so requiring only the view
+/// would hold against the empty version of the screen this case exists to measure.
+///
+/// The summary header at the top is the site that carried 180 of the 302 red cells, and
+/// it is now two nested `Wrap`s — see `diagnostic_results_view.dart` for why the second
+/// one was needed, and the readability guard in this family's suite file for the oracle
+/// those `Wrap`s take away.
+final kDiagnosticsResultsPageCase = PageSurfaceCase(
+  id: 'unified_diagnostics_results',
+  view: () => const UnifiedDiagnosticsView(),
+  overrides: () => unifiedDiagnosticsOverrides(multipleRecommendationsState),
+  requires: const [DiagnosticResultsView, RecommendationCard],
+  forbids: const [AppLoader, DiagnosticStartView, TracerouteDetailCard],
+);
+
+/// `page.unified_diagnostics_results_traceroute` — the same screen carrying a hop table.
+///
+/// The family's first case that exists for a **data variant** rather than for a branch
+/// of a `switch`: `showingResults` renders [TracerouteDetailCard] only when a step's
+/// result holds traceroute hops, so seven of the eight results fixtures never build it
+/// and its 131 lines had no cell. It was over by 120px at 320px in 26 locales — the
+/// interpolated hostname makes its title's length *data*, not translation.
+///
+/// This is the shape `kCardDataProfileSweeps` solves on the card sweep, declared here as
+/// a sibling case because the page family has no profile axis.
+///
+/// **The separation from its sibling is one-directional, and measurement is why.** The
+/// draft also forbade [RecommendationCard] here, on the assumption that a traceroute
+/// results state would carry no recommendations; nine coordinates failed with `still
+/// shows RecommendationCard`, because it carries one. So the split is: this case
+/// *requires* the hop table, and the sibling *forbids* it. Each still requires a type
+/// the other does not, which is all the separation needs — a symmetric pair of
+/// `forbids` lists would only have been a second, redundant statement of the same fact,
+/// and this one happened to be false.
+final kDiagnosticsResultsTraceroutePageCase = PageSurfaceCase(
+  id: 'unified_diagnostics_results_traceroute',
+  view: () => const UnifiedDiagnosticsView(),
+  overrides: () => unifiedDiagnosticsOverrides(tracerouteResultsState),
+  requires: const [DiagnosticResultsView, TracerouteDetailCard],
+  forbids: const [AppLoader, DiagnosticStartView],
+);
+
+/// `page.unified_diagnostics_manual_tools` — the manual tools pane, showing a ping result.
+///
+/// ## The three manual cases share a premise, and a separate test is what pins them apart
+///
+/// `diagnostic_manual_tools_view.dart` renders one of three result blocks gated on
+/// `state.activeTab`, and all three are **private methods returning `LayoutBlock`** — so
+/// there is no `Type` that distinguishes ping from traceroute from nslookup, and
+/// `requires` takes nothing else. Extracting three public widgets would give this family
+/// a discriminator, and was rejected as the wrong trade: the risk being guarded is *"the
+/// fixture drifted off its tool"*, which is one fact per run rather than one per cell.
+/// So it is pinned once, by `the three manual-tools fixtures each select their own tool`
+/// in this family's suite file, which can use a text finder where `requires` cannot.
+///
+/// `manualToolsPingResultState` for this case: the ping block measured clean, so this
+/// one is the pane's coverage and the two below are its fixes.
+///
+/// ## The loader exemption's third entry, and it makes the existing argument
+///
+/// Found by the sweep rather than by reading: nine coordinates failed with `still shows
+/// AppLoader`, because `_buildPingResult` ends in a **determinate linear** `AppLoader`
+/// whose `value` is `result.successRate / 100` — the success-rate bar. That is
+/// [kPagesWhoseLoaderIsContent]'s existing sentence, not a new kind of it: the same
+/// claim `pnp_setup_firmware` makes, where the bar's width *is* the number being
+/// reported. So the rule's doc and pin did not need widening; only the membership did.
+///
+/// `requires` names [AppLoader] rather than `forbids` excluding it, which is the
+/// direction that can fail: a fixture that drifted to `manualToolsPingIdleState` would
+/// render the pane with no result block at all, and that is what this catches. It is
+/// also what splits this case from its two siblings — neither the traceroute nor the
+/// nslookup block draws a bar — so the fixture-contract test below is left with exactly
+/// one job: telling *those two* apart.
+final kDiagnosticsManualToolsPageCase = PageSurfaceCase(
+  id: 'unified_diagnostics_manual_tools',
+  view: () => const UnifiedDiagnosticsView(),
+  overrides: () => manualToolsOverrides(manualToolsPingResultState),
+  requires: const [DiagnosticManualToolsView, AppLoader],
+  forbids: const [DiagnosticStartView],
+);
+
+/// `page.unified_diagnostics_manual_traceroute` — the manual traceroute result.
+///
+/// Its header was `icon + gap + titleSmall + Spacer + bodySmall` with no flex on the
+/// title, over by 90px at 320px in 25 locales. The fix replaces the `Spacer` with an
+/// `Expanded` title rather than adding a `Flexible` beside it — both are flex:1, so a
+/// `Flexible` sharing the row with a `Spacer` would be handed half the free space and
+/// wrap while room went unused.
+///
+/// See [kDiagnosticsManualToolsPageCase] for why this case's premise cannot name the
+/// block it measures, and where that is pinned instead.
+final kDiagnosticsManualTraceroutePageCase = PageSurfaceCase(
+  id: 'unified_diagnostics_manual_traceroute',
+  view: () => const UnifiedDiagnosticsView(),
+  overrides: () => manualToolsOverrides(manualToolsTracerouteResultState),
+  requires: const [DiagnosticManualToolsView],
+  forbids: const [AppLoader, DiagnosticStartView],
+);
+
+/// `page.unified_diagnostics_manual_nslookup` — the manual nslookup result.
+///
+/// The same header shape and the same fix as the traceroute block above, over by 56px at
+/// 320px in 24 locales. Two cases rather than one because `activeTab` makes the three
+/// blocks mutually exclusive: a single manual-tools fixture measures exactly one of them.
+final kDiagnosticsManualNsLookupPageCase = PageSurfaceCase(
+  id: 'unified_diagnostics_manual_nslookup',
+  view: () => const UnifiedDiagnosticsView(),
+  overrides: () => manualToolsOverrides(manualToolsNsLookupResultState),
+  requires: const [DiagnosticManualToolsView],
+  forbids: const [AppLoader, DiagnosticStartView],
+);
+
+/// `page.unified_diagnostics_completed` — the terminal screen.
+///
+/// The only one of this view's arms that is built inline rather than delegated to a
+/// widget of its own, so it is also the only one with **no type to require**: it is an
+/// `Icon`, a headline and one [AppButton]. The premise is therefore inverted — it names
+/// the button and forbids all five sub-views, which between them cover every other arm
+/// the `switch` can take. That is the one case in this pair of waves where `forbids`
+/// carries the whole guard rather than backing up a `requires`.
+///
+/// Measured clean at every width and locale, so this is coverage.
+final kDiagnosticsCompletedPageCase = PageSurfaceCase(
+  id: 'unified_diagnostics_completed',
+  view: () => const UnifiedDiagnosticsView(),
+  overrides: () => unifiedDiagnosticsOverrides(completedState),
+  requires: const [AppButton],
+  forbids: const [
+    AppLoader,
+    DiagnosticStartView,
+    DiagnosticFlowMenu,
+    DiagnosticRunningView,
+    DiagnosticResultsView,
+    DiagnosticManualToolsView,
+  ],
+);
+
 const kPagesWhoseLoaderIsContent = <String>{
   'auto_parent_first_login',
   'pnp_setup_firmware',
+  // #1602's third entry, and it makes the other two's argument rather than a new one:
+  // the manual ping result ends in a determinate linear `AppLoader` whose `value` is
+  // the success rate, so the bar's width is the number being reported. Same claim as
+  // `pnp_setup_firmware`'s percentage bar. Note which case this is *not*:
+  // `unified_diagnostics_running` was drafted as the third entry, on a spinner the
+  // source contains but the swept fixture never builds — see
+  // [kDiagnosticsRunningPageCase].
+  'unified_diagnostics_manual_tools',
 };
 
 /// Every case the gate sweeps: the pilot's two, then wave 1's five, then wave 2's nine,
@@ -2323,10 +2663,65 @@ final kSystemLogPageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView],
 );
 
+/// `usp_notification_history_view` — the Remote Assistance notification history
+/// (#1580), and the 47th page view file.
+///
+/// **The page's whole horizontal risk is each row's inline summary.** The list is an
+/// [AppSliverTimeline] whose rows show a part of their body — a TR-181 path beside
+/// its value, a command name beside a localised "Success" — and a path is one
+/// unbroken word that does not shorten in any locale and can be longer than a phone
+/// is wide. It is a `Wrap`, which is the fix wave 4 arrived at rather than something
+/// to rediscover; `gateNotificationDetails` carries the longest leaf the app
+/// subscribes to and the longest command it issues, so that a `Row` there would be
+/// measured. The message id and command
+/// key, which were this page's widest lines as a card list, are in the dialog now and
+/// no cell renders them.
+///
+/// **The premise carries more weight on this page than on any other case**, because
+/// this page has *four* content states and three of them cannot overflow at all:
+///
+/// - the loader, which every case guards with `forbids: [AppLoader]`;
+/// - the **"not available in this mode"** state, which is what a local build renders
+///   and which the gate reaches by default — the page reads
+///   `notificationHistoryAvailableProvider`, i.e. `BridgeConfig.remoteReads`, and
+///   there is no Guardian session in a test. A centred icon over one sentence;
+/// - the **empty** state, an icon over one line of prose, which is the normal state
+///   of a fresh support session.
+///
+/// So [AppCard] separates content from the first two and
+/// [NotificationHistoryTypeFilter] separates it
+/// from the third — the type filter renders only when there are rows. Without both,
+/// "234 cells green" and "234 cells of a sentence in a `Center`" are the same result.
+/// `notificationHistoryOverrides()` is the other half; see its library doc.
+///
+/// [AppSliverTimeline] is required because the filter renders above the list, not in
+/// it: a cell could carry the filter and still not reach the rows. It does not prove
+/// the rows show their bodies rather than a loading or failure line — nothing in
+/// `requires` can, since all three are text. That is asserted beside the sweep, in
+/// `the notification history cells measured every inline summary`.
+///
+/// [AppButton] is required for one more thing the fixture could lose quietly: the Show
+/// more button, which `gateNotificationHistoryState` reaches by pinning `visibleCount`
+/// below its row count rather than by carrying twenty-six rows.
+final kNotificationHistoryPageCase = PageSurfaceCase(
+  id: 'notification_history',
+  view: () => const UspNotificationHistoryView(),
+  overrides: () => notificationHistoryOverrides(),
+  requires: const [
+    UspTopBar,
+    AppCard,
+    NotificationHistoryTypeFilter,
+    AppSliverTimeline,
+    AppButton,
+  ],
+  forbids: const [AppLoader, ServiceErrorView],
+);
+
 final kPageSurfaceCases = <PageSurfaceCase>[
   kDhcpPageCase,
   kWifiSettingsPageCase,
   kWifiSettingsAdvancedPageCase,
+  kWifiSettingsMacFilterPageCase,
   kDeviceListPageCase,
   kDeviceDetailPageCase,
   kTopologyPageCase,
@@ -2352,6 +2747,10 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   // thing the record of this page should not say.
   kPnpSetupPageCase,
   kPnpSetupFirmwarePageCase,
+  // #1602's two, appended for the same reason the ninth was: onboarding order, not
+  // flow order. In flow order they are this wizard's last screen.
+  kPnpSetupCompleteSplitPageCase,
+  kPnpSetupCompleteUnifiedPageCase,
   // Wave 3 (#1379), in the order a user meets them: the landing page, then the three
   // local-login pages, then the menu, then the first-login firmware screen. Unlike
   // wave 2 this order is also the onboarding order — none of the six waited on
@@ -2375,6 +2774,17 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kRemoteAssistancePageCase,
   kSupportPageCase,
   kUnifiedDiagnosticsPageCase,
+  // #1602's second half: this view's other five builders, plus the three data
+  // variants whose sub-widget no sibling fixture renders. Beside their sibling for the
+  // reason the pnp cases are — nine cases now measure one view file.
+  kDiagnosticsSelectFlowPageCase,
+  kDiagnosticsRunningPageCase,
+  kDiagnosticsResultsPageCase,
+  kDiagnosticsResultsTraceroutePageCase,
+  kDiagnosticsManualToolsPageCase,
+  kDiagnosticsManualTraceroutePageCase,
+  kDiagnosticsManualNsLookupPageCase,
+  kDiagnosticsCompletedPageCase,
   kFirmwareUpdatePageCase,
   kFirmwareFailedPageCase,
   // #1549, and not wave 4 — it sits here for the reason the three statistics tabs sit
@@ -2411,4 +2821,5 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kStatisticsDevicesPageCase,
   kStatisticsSystemPageCase,
   kSystemLogPageCase,
+  kNotificationHistoryPageCase,
 ];

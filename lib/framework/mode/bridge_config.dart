@@ -14,11 +14,12 @@ import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 /// unobservable from a unit test by construction. Naming the arguments moves the
 /// decision one step earlier, to a place a test can read.
 ///
-/// The 5 differences, all of them wrong-in-a-local-build if the mode is
+/// The 6 differences, all of them wrong-in-a-local-build if the mode is
 /// mis-decided: [endpoints] (on-router paths vs session-scoped Guardian paths),
 /// [baseUrl] (same-origin vs the Guardian host), [authToken] (none vs a bearer),
 /// [clientTypeId] (none vs the agent's), [authBehavior] (retry a 401 vs treat it
-/// as the end of the support session).
+/// as the end of the support session), and [remoteReads] (three endpoints that
+/// exist remotely and have no local counterpart at all).
 class BridgeConfig {
   /// Which endpoint table is in force. `BridgeEndpoints.local` is a `const`
   /// singleton; the remote table is session-scoped, so it is a function of the
@@ -44,12 +45,26 @@ class BridgeConfig {
   /// independent, and this field is where they meet.
   final AuthBehavior authBehavior;
 
+  /// The read-only endpoints this transport has, or `null` where it has none.
+  ///
+  /// The sixth difference, and the only one that is *absent* on one side rather
+  /// than merely different. Guardian persists every notify it proxies and serves
+  /// three reads over that store; the on-router bridge has no store, so there is
+  /// no local path to name and none is invented. See [RemoteReads] for why a
+  /// placeholder would have been the wrong answer, and #1580 for what reads them.
+  ///
+  /// `null` is also what the notification-history page renders its
+  /// "not available in this mode" state from: its route lives under the shared
+  /// dashboard, so a hand-typed URL reaches it in a local build.
+  final RemoteReads? remoteReads;
+
   const BridgeConfig({
     required this.endpoints,
     this.baseUrl,
     this.authToken,
     this.clientTypeId,
     required this.authBehavior,
+    this.remoteReads,
   });
 
   /// No `operator ==`, deliberately.
@@ -70,5 +85,6 @@ class BridgeConfig {
   String toString() => 'BridgeConfig(baseUrl: $baseUrl, '
       'endpoints: ${endpoints.subscription}, '
       'authToken: ${authToken == null ? 'none' : '<redacted>'}, '
-      'clientTypeId: $clientTypeId, authBehavior: $authBehavior)';
+      'clientTypeId: $clientTypeId, authBehavior: $authBehavior, '
+      'remoteReads: ${remoteReads == null ? 'none' : 'present'})';
 }

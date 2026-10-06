@@ -339,13 +339,20 @@ export class UspClient {
      * Performs an Operate command on the USP agent
      *
      * # Arguments
-     * * `command` - Command path (e.g., "Device.Reboot()" or "Device.IP.Diagnostics.Ping()")
+     * * `command` - Command path (e.g., "Device.Reboot()" or "Device.IP.Diagnostics.IPPing()")
      * * `args` - JavaScript object with input argument name-value pairs (optional, pass {} for no args)
      *
      * # Returns
-     * * Promise that resolves to `{ commandKey: string, outputArgs: Record<string, string> | undefined }`
+     * * Promise that resolves to `{ commandKey: string, outputArgs: Record<string, string> }`
      *   - `commandKey` — UUID for correlating with OperationComplete notifications
-     *   - `outputArgs` — output arguments from the command (undefined if none)
+     *   - `outputArgs` — output arguments from the command. Always present on
+     *     success, and empty whenever the command produced none, so its presence
+     *     does not distinguish the cases below
+     *   - `requestPath` — present only for an accepted asynchronous command: the
+     *     `Device.LocalAgent.Request.{i}` path the outcome will be reported against
+     *   - `noMatch` — present only when a Search Path command matched zero
+     *     objects, so nothing ran (USP 1.3 R-MSG.4a). This flag is the only
+     *     thing separating it from a command that ran and returned nothing
      *
      * # Example (JavaScript)
      * ```javascript
@@ -354,7 +361,7 @@ export class UspClient {
      * console.log("Track async result with:", commandKey);
      *
      * // Command with input arguments
-     * const result = await client.operate("Device.IP.Diagnostics.Ping()", {
+     * const result = await client.operate("Device.IP.Diagnostics.IPPing()", {
      *     "Host": "8.8.8.8",
      *     "NumberOfRepetitions": "4"
      * });
@@ -877,11 +884,28 @@ export function buildWebSocketConnect(from_id, to_id) {
  * Decode a USP Record received over WebSocket and return a JS object
  * with the parsed response.
  *
+ * Throws when the Record, the enclosed Msg, or an `OperateResp` inside it
+ * cannot be decoded. That includes the two `OperateResp` shapes this client
+ * refuses — an `OperationResult` with the oneof unset, and more than one
+ * `OperationResult` — so a refusal cannot be mistaken for a Record that
+ * merely carried nothing to report.
+ *
+ * An `OperateResp` with no `OperationResult` is **not** a refusal: it is a
+ * Search Path that matched zero objects, which USP 1.3 R-MSG.4a requires to
+ * succeed. It returns `no_match: true` and, because the wire carries no
+ * `executed_command`, no `command` key at all.
+ *
  * # JavaScript
  * ```javascript
  * const result = decodeRecord(responseBytes);
- * // result = { from_id, to_id, version, msg_type, msg_id, command?, output_args?, error? }
+ * // result = { from_id, to_id, version, msg_type, msg_id,
+ * //            command?, output_args?, request_path?, no_match?, error? }
  * ```
+ *
+ * Keys are `snake_case` here, unlike the `camelCase` of the unified
+ * `result.data` object the HTTP operations return; `request_path` and
+ * `no_match` are the values that surface exposes as `requestPath` and
+ * `noMatch`.
  * @param {Uint8Array} data
  * @returns {any}
  */
@@ -1165,7 +1189,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_3026(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_3181(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -1358,28 +1382,28 @@ function __wbg_get_imports() {
             return ret;
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 269, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_3024);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 268, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_3179);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000002: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("CloseEvent")], shim_idx: 248, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_2348);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("CloseEvent")], shim_idx: 247, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_2503);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000003: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("Event")], shim_idx: 248, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_2348_2);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("Event")], shim_idx: 247, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_2503_2);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000004: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("MessageEvent")], shim_idx: 248, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_2348_3);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [NamedExternref("MessageEvent")], shim_idx: 247, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_2503_3);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000005: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [], shim_idx: 247, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_2347);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [], shim_idx: 246, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_2502);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000006: function(arg0) {
@@ -1406,26 +1430,26 @@ function __wbg_get_imports() {
     };
 }
 
-function __wasm_bindgen_func_elem_2347(arg0, arg1) {
-    wasm.__wasm_bindgen_func_elem_2347(arg0, arg1);
+function __wasm_bindgen_func_elem_2502(arg0, arg1) {
+    wasm.__wasm_bindgen_func_elem_2502(arg0, arg1);
 }
 
-function __wasm_bindgen_func_elem_2348(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_2348(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_2503(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_2503(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_2348_2(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_2348_2(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_2503_2(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_2503_2(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_2348_3(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_2348_3(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_2503_3(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_2503_3(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_3024(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_3179(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_3024(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_3179(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -1436,8 +1460,8 @@ function __wasm_bindgen_func_elem_3024(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_3026(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_3026(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wasm_bindgen_func_elem_3181(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_3181(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
 

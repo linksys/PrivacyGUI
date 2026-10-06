@@ -468,6 +468,78 @@ void main() {
       expect(result.errorCode, isNull);
       expect(result.errorMessage, 'not permitted');
     });
+
+    test('an OperationComplete carrying neither key is a success (#1579)',
+        () async {
+      // The third outcome, and the one that read as `Unknown` until #1579. A
+      // diagnostic that ran and produced nothing carries **neither**
+      // `output_args` nor `cmd_failure` — the spec's rule is that the *absence*
+      // of `cmd_failure` is what makes an OperationComplete a success, so a
+      // missing `output_args` says nothing about the outcome.
+      //
+      // This is why the defect survived: every other fixture in this file feeds
+      // `output_args`, and with one present the expression that produced
+      // `Unknown` is never reached.
+      await connectManager();
+
+      final future = awaiter.execute(
+        operateCommand: 'Device.IP.Diagnostics.IPPing()',
+        referencePath: 'Device.IP.Diagnostics.IPPing()',
+        timeout: const Duration(seconds: 5),
+      );
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      streamController.add(notificationEvent(
+        subscriptionId: 'cpe-1',
+        type: 'OperationComplete',
+        operComplete: {
+          'command_name': 'IPPing()',
+          'command_key': 'test-key-123',
+        },
+      ));
+
+      final result = await future;
+      expect(result.isComplete, isTrue,
+          reason: 'no cmd_failure means the command completed');
+      expect(result.isFailure, isFalse);
+      expect(result.status, 'Complete');
+      expect(result.outputArgs, isEmpty);
+      // Nameable, which is the half `status: 'Complete'` alone would hide: a
+      // caller that needs to tell "completed and told us nothing" from
+      // "completed and told us something" has one question to ask.
+      expect(result.completedWithoutOutput, isTrue);
+    });
+
+    test('output_args without a Status is still a success (#1579)', () async {
+      // The same defect from the other side. `output_args` present but carrying
+      // no `Status` key also read as `Unknown`, so "the router answered" and "the
+      // router said nothing at all" were the same value to a caller.
+      await connectManager();
+
+      final future = awaiter.execute(
+        operateCommand: 'Device.IP.Diagnostics.IPPing()',
+        referencePath: 'Device.IP.Diagnostics.IPPing()',
+        timeout: const Duration(seconds: 5),
+      );
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      streamController.add(notificationEvent(
+        subscriptionId: 'cpe-1',
+        type: 'OperationComplete',
+        operComplete: {
+          'command_name': 'IPPing()',
+          'command_key': 'test-key-123',
+          'output_args': {'SuccessCount': '4'},
+        },
+      ));
+
+      final result = await future;
+      expect(result.isComplete, isTrue);
+      expect(result.status, 'Complete');
+      expect(result.outputArgs['SuccessCount'], '4');
+      // Not this one: the router did produce output args.
+      expect(result.completedWithoutOutput, isFalse);
+    });
   });
 
   // ---------------------------------------------------------------------------

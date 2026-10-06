@@ -70,12 +70,13 @@ final uspDashboardRoute = ShellRoute(
         // Cancel edit mode when navigating away from dashboard (e.g., tab
         // switch), reverting to the pre-edit snapshot.
         //
-        // Intentional silent-discard policy: unlike the enableDirtyCheck routes
-        // below, the dashboard does NOT prompt with showUnsavedAlert. Every
-        // layout edit is stored as it is made — the grid reports its own drops
-        // and resizes (#1393) — so "cancel" means restoring the snapshot captured
-        // on edit-mode entry rather than dropping a buffer of pending work, and a
-        // confirmation dialog on every tab switch would be noise. See #1037.
+        // Intentional silent-discard policy: unlike the routes below that pass a
+        // preservableProvider, the dashboard does NOT prompt with
+        // showUnsavedAlert. Every layout edit is stored as it is made — the grid
+        // reports its own drops and resizes (#1393) — so "cancel" means
+        // restoring the snapshot captured on edit-mode entry rather than dropping
+        // a buffer of pending work, and a confirmation dialog on every tab switch
+        // would be noise. See #1037.
         final container = ProviderScope.containerOf(context);
         final editState = container.read(dashboardEditModeProvider);
         if (editState.isEditing) {
@@ -144,14 +145,14 @@ final uspDashboardRoute = ShellRoute(
       name: RouteNamed.uspInstantSafety,
       path: RoutePath.uspInstantSafety,
       builder: (context, state) => const UspInstantSafetyView(),
-      enableDirtyCheck: true,
-      preservableProvider: preservableUspInstantSafetyProvider,
+      preservableProvider: uspInstantSafetyProvider.notifier,
     ),
     LinksysRoute(
       name: RouteNamed.uspInstantPrivacy,
       path: RoutePath.uspInstantPrivacy,
       builder: (context, state) =>
           const usp_instant_privacy.InstantPrivacyView(),
+      preservableProvider: uspInstantPrivacyProvider.notifier,
     ),
     LinksysRoute(
       name: RouteNamed.uspAdmin,
@@ -176,13 +177,26 @@ final uspDashboardRoute = ShellRoute(
       name: RouteNamed.uspDhcpDetail,
       path: RoutePath.uspDhcpDetail,
       builder: (context, state) => const UspDhcpDetailView(),
-      enableDirtyCheck: true,
-      preservableProvider: preservableUspDhcpReservationsProvider,
+      preservableProvider: uspDhcpReservationsProvider.notifier,
     ),
     LinksysRoute(
       name: RouteNamed.uspSystemLog,
       path: RoutePath.uspSystemLog,
       builder: (context, state) => const UspSystemLogView(),
+    ),
+    // Registered in every mode, deliberately. The child routes of the shared
+    // dashboard are one table, so a hand-typed `/uspNotificationHistory` resolves
+    // locally too — #1474 phase 9 hit the mirror of this with `localLoginRoute`
+    // in a remote build. The page reads `BridgeConfig.remoteReads` and renders an
+    // explicit "not available in this mode" state, which beats the developer
+    // error page a route that declined the location would produce. The *entry
+    // point* is the Remote Assistance chip's popup (`RemoteSessionChip`), which
+    // only the remote surface mounts — so the mode decides it without a member
+    // of its own.
+    LinksysRoute(
+      name: RouteNamed.uspNotificationHistory,
+      path: RoutePath.uspNotificationHistory,
+      builder: (context, state) => const UspNotificationHistoryView(),
     ),
     LinksysRoute(
       name: RouteNamed.uspStatistics,
@@ -200,29 +214,25 @@ final uspDashboardRoute = ShellRoute(
           path: RoutePath.uspInternetSettings,
           config: const LinksysRouteConfig(noNaviRail: true),
           builder: (context, state) => const UspInternetSettingsView(),
-          enableDirtyCheck: true,
-          preservableProvider: preservableUspInternetSettingsProvider,
+          preservableProvider: uspInternetSettingsProvider.notifier,
         ),
         LinksysRoute(
           name: RouteNamed.uspLocalNetwork,
           path: RoutePath.uspLocalNetwork,
           builder: (context, state) => const UspLocalNetworkView(),
-          enableDirtyCheck: true,
-          preservableProvider: preservableUspLocalNetworkProvider,
+          preservableProvider: uspLocalNetworkProvider.notifier,
         ),
         LinksysRoute(
           name: RouteNamed.uspFirewall,
           path: RoutePath.uspFirewall,
           builder: (context, state) => const UspFirewallView(),
-          enableDirtyCheck: true,
-          preservableProvider: preservableUspFirewallProvider,
+          preservableProvider: uspFirewallProvider.notifier,
         ),
         LinksysRoute(
           name: RouteNamed.uspDmz,
           path: RoutePath.uspDmz,
           builder: (context, state) => const UspDmzView(),
-          enableDirtyCheck: true,
-          preservableProvider: preservableUspDmzProvider,
+          preservableProvider: uspDmzProvider.notifier,
         ),
         LinksysRoute(
           name: RouteNamed.uspPortForwardingDetail,
@@ -230,22 +240,19 @@ final uspDashboardRoute = ShellRoute(
           builder: (context, state) => UspPortForwardingDetailView(
             initialTab: _uspTabQueryParam(state),
           ),
-          enableDirtyCheck: true,
-          preservableProvider: preservableUspPortForwardingPageProvider,
+          preservableProvider: uspPortForwardingPageProvider.notifier,
         ),
         LinksysRoute(
           name: RouteNamed.uspStaticRouting,
           path: RoutePath.uspStaticRouting,
           builder: (context, state) => const UspStaticRoutingView(),
-          enableDirtyCheck: true,
-          preservableProvider: preservableUspStaticRoutingProvider,
+          preservableProvider: uspStaticRoutingProvider.notifier,
         ),
         LinksysRoute(
           name: RouteNamed.uspIpv6PortService,
           path: RoutePath.uspIpv6PortService,
           builder: (context, state) => const UspIpv6PortServiceView(),
-          enableDirtyCheck: true,
-          preservableProvider: preservableUspIpv6PortServiceProvider,
+          preservableProvider: uspIpv6PortServiceProvider.notifier,
         ),
       ],
     ),
@@ -259,7 +266,6 @@ final uspDashboardRoute = ShellRoute(
       name: RouteNamed.uspWifiSettings,
       path: RoutePath.uspWifiSettings,
       preservableProvider: preservableUspWifiPageProvider,
-      enableDirtyCheck: true,
       builder: (context, state) =>
           UspWifiSettingsView(initialTab: _uspTabQueryParam(state)),
     ),

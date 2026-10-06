@@ -271,10 +271,11 @@ final usp{Domain}Provider =
   Usp{Domain}Notifier.new,
 );
 
-final preservableUsp{Domain}Provider = AutoDisposeProvider<
-    PreservableContract<{Domain}Settings, {Domain}Status>>(
-  (ref) => ref.watch(usp{Domain}Provider.notifier),
-);
+// 不需要另外宣告 preservable provider：mixin 已經讓 notifier 本身就是
+// PreservableContract，route 直接傳 usp{Domain}Provider.notifier（#1622）。
+// 唯一的例外：同一頁的 dirty 狀態橫跨多個 notifier 時，才自己寫一個合併它們的
+// provider —— 參考 Wi-Fi 頁的 `_WifiPageDirtyProxy`
+// （lib/page/wifi_settings/providers/usp_wifi_settings_provider.dart）。
 
 // ── Notifier ──
 
@@ -284,10 +285,10 @@ class Usp{Domain}Notifier extends AutoDisposeNotifier<{Domain}FeatureState>
 
   @override
   {Domain}FeatureState build() {
-    // 監聽 data provider — SSE dirty guard
-    ref.listen({domain}DataProvider, (_, next) {
-      if (next.hasValue) onSseInvalidation();
-    });
+    // 不要在這裡監聽 SSE。`onSseInvalidation()` 已於 #1587 Phase 1 刪除 ——
+    // 它的 dirty guard 在頁面「乾淨」時重抓（沒人要寫入，無意義）、在「有編輯」
+    // 時什麼都不做（那才是會覆蓋的狀態），所以它保護無害的、從有害的退開。
+    // L2 是使用者的草稿：開頁時填入，之後不在他底下改變。
     Future.microtask(() => fetch());
     return {Domain}FeatureState.initial();
   }
@@ -402,8 +403,8 @@ LinksysRoute(
   name: RouteNamed.usp{Domain},
   path: RouteNamed.usp{Domain},
   builder: (context, state) => const Usp{Domain}View(),
-  enableDirtyCheck: true,
-  preservableProvider: preservableUsp{Domain}Provider,
+  // 傳入它就是開啟 dirty check，沒有另外的開關
+  preservableProvider: usp{Domain}Provider.notifier,
 ),
 ```
 
@@ -419,9 +420,8 @@ import 'package:privacy_gui/page/{domain}/providers/usp_{domain}_notifier.dart';
 - [ ] `{Domain}Status` — 瞬態部分
 - [ ] `{Domain}FeatureState` — 組合 + `initial()` factory
 - [ ] `Usp{Domain}Notifier` — `performFetch` + `performSave` + `updateSetting`
-- [ ] `preservableUsp{Domain}Provider` — route dirty check 用
 - [ ] View — `UiKitBottomBarConfig` bottom bar
-- [ ] Route — `enableDirtyCheck: true`
+- [ ] Route — `preservableProvider: usp{Domain}Provider.notifier`（傳入就是開啟 dirty check）
 - [ ] Dashboard card — 改用 `{domain}DataProvider`
 - [ ] Dashboard notifier — 移除相關 fetch / state / SSE / mutations
 - [ ] `flutter analyze` — 0 errors
@@ -530,9 +530,8 @@ final usp{Domain}ListProvider =
   Usp{Domain}ListNotifier.new,
 );
 
-final preservableUsp{Domain}ListProvider = AutoDisposeProvider<PreservableContract>(
-  (ref) => ref.watch(usp{Domain}ListProvider.notifier),
-);
+// 同 Type A：route 直接傳 usp{Domain}ListProvider.notifier，不另外宣告 preservable
+// provider；只有 dirty 狀態橫跨多個 notifier 時才例外（見 A 節）。
 
 class Usp{Domain}ListNotifier extends AutoDisposeNotifier<{Domain}ListFeatureState>
     with PreservableAutoDisposeNotifierMixin<
@@ -540,9 +539,7 @@ class Usp{Domain}ListNotifier extends AutoDisposeNotifier<{Domain}ListFeatureSta
 
   @override
   {Domain}ListFeatureState build() {
-    ref.listen({domain}DataProvider, (_, next) {
-      if (next.hasValue) onSseInvalidation();  // dirty guard
-    });
+    // 同上：不監聽 SSE（#1587 Phase 1）。
     Future.microtask(() => fetch());
     return {Domain}ListFeatureState.initial();
   }
@@ -709,8 +706,7 @@ LinksysRoute(
   name: RouteNamed.usp{Domain},
   path: RouteNamed.usp{Domain},
   builder: (context, state) => const Usp{Domain}ListView(),
-  enableDirtyCheck: true,
-  preservableProvider: preservableUsp{Domain}ListProvider,
+  preservableProvider: usp{Domain}ListProvider.notifier,
 ),
 ```
 
@@ -721,9 +717,8 @@ LinksysRoute(
 - [ ] `{Domain}ListStatus` — 瞬態狀態（含 `maxItems`）
 - [ ] `{Domain}ListFeatureState` — 組合 + `initial()` factory
 - [ ] `Usp{Domain}ListNotifier` — `addItem` / `editItem` / `deleteItem` + diff-based `performSave`
-- [ ] `preservableUsp{Domain}ListProvider` — route dirty check 用
 - [ ] View — `UiKitBottomBarConfig` bottom bar（Save + Cancel）
-- [ ] Route — `enableDirtyCheck: true`
+- [ ] Route — `preservableProvider: usp{Domain}ListProvider.notifier`（傳入就是開啟 dirty check）
 - [ ] Dashboard card — 改用 `{domain}DataProvider`
 - [ ] Dashboard notifier — 移除相關 fetch / state / mutations
 - [ ] `flutter analyze` — 0 errors
@@ -821,7 +816,9 @@ final data = await ref.read({domain}DataProvider.future);
 final data = await ref.watch({domain}DataProvider.future);
 ```
 
-SSE 更新的正確路徑是透過 `ref.listen` + `onSseInvalidation()` dirty guard。
+而**正確的路徑不是改用 `ref.listen` + dirty guard** —— 那個機制已於 #1587 Phase 1 刪除。
+L2 只在開頁時讀一次；頁面上任何需要即時的值直接讀 L1（`{domain}DataProvider`），
+判準是「使用者能編輯它嗎」——不能編輯就從 L1 讀。詳見 `constitution.md` Article IV Rule 2。
 
 ### 4. Save 後要 invalidate Data Provider
 

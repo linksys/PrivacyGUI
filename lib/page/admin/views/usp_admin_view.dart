@@ -9,6 +9,9 @@ import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/helpers/recovery_dialog_helper.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
+import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
+import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
+import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_notifier.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_state.dart';
 import 'package:privacy_gui/page/admin/views/components/usp_password_card.dart';
@@ -86,11 +89,7 @@ class UspAdminView extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        UspTimezoneCard(
-          timeSettings: state.timeSettings,
-          fetchedAt: state.timeFetchedAt,
-          onEdit: () => _editTimezone(context, ref, state),
-        ),
+        _timezoneCard(context, ref, state, fetchedAt: state.timeFetchedAt),
         AppGap.xl(),
         UspPasswordCard(
           adminUser: state.adminUser,
@@ -149,10 +148,7 @@ class UspAdminView extends ConsumerWidget {
           width: context.colWidth(6),
           child: Column(
             children: [
-              UspTimezoneCard(
-                timeSettings: state.timeSettings,
-                onEdit: () => _editTimezone(context, ref, state),
-              ),
+              _timezoneCard(context, ref, state),
               AppGap.xl(),
               UspSystemActionsCard(
                 onReboot: () => _reboot(context, ref),
@@ -181,22 +177,49 @@ class UspAdminView extends ConsumerWidget {
     );
   }
 
+  /// The timezone card, resolved against the device's zone catalogue.
+  ///
+  /// Both layouts go through here so they hand the card the same list the edit
+  /// dialog offers. The edit button stays disabled until the catalogue has
+  /// loaded, so a tap never waits on it unseen or opens the dialog twice. Until
+  /// then the card resolves against the built-in table, which the catalogue
+  /// replaces once it arrives.
+  ///
+  /// [fetchedAt] is passed by the mobile layout only, as before.
+  Widget _timezoneCard(
+    BuildContext context,
+    WidgetRef ref,
+    UspAdminState state, {
+    DateTime? fetchedAt,
+  }) {
+    final zones = ref.watch(timeZoneCatalogueProvider).valueOrNull;
+    return UspTimezoneCard(
+      timeSettings: state.timeSettings,
+      fetchedAt: fetchedAt,
+      zones: zones ?? kTimeZoneDefinitions,
+      onEdit: zones == null
+          ? null
+          : () => _editTimezone(context, ref, state, zones),
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Actions
   // ---------------------------------------------------------------------------
 
-  Future<void> _editTimezone(
-      BuildContext context, WidgetRef ref, UspAdminState state) async {
+  Future<void> _editTimezone(BuildContext context, WidgetRef ref,
+      UspAdminState state, List<TimeZoneInfo> zones) async {
     final result = await showTimezoneEditDialog(
       context,
       current: state.timeSettings,
+      zones: zones,
     );
     if (result == null || !context.mounted) return;
     try {
       await doSomethingWithSpinner(
         context,
         ref.read(uspAdminProvider.notifier).updateTimezone(
-              localTimeZone: result.localTimeZone,
+              zone: result.zone,
               ntpServer1: result.ntpServer1,
             ),
       );

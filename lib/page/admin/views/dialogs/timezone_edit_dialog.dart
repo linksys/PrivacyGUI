@@ -9,19 +9,28 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// Shows a dialog to select a timezone from a searchable list with DST toggle
 /// and an optional Advanced section for NTP server configuration.
 ///
+/// [zones] is the list to offer — the device's own catalogue
+/// (`timeZoneCatalogueProvider`, linksys/FWDEV#198) — and the caller resolves
+/// its card against the same list, so the preselection matches what the card
+/// shows. Required, with no default: a default would let a caller skip the
+/// device catalogue without noticing.
+///
 /// Returns a [TimezoneEditResult] if saved, or null if cancelled.
 Future<TimezoneEditResult?> showTimezoneEditDialog(
   BuildContext context, {
   required TimeSettingsUIModel current,
+  required List<TimeZoneInfo> zones,
 }) {
-  final currentTz = matchTimezone(current.localTimeZone);
+  final resolved = resolveCurrentTimezone(current, zones: zones);
+  final currentTz = resolved.zone;
+  final currentDst = resolved.dstOn;
   TimeZoneInfo? selected = currentTz;
-  bool dstEnabled = inferDstEnabled(current.localTimeZone);
+  bool dstEnabled = currentDst;
   String searchQuery = '';
   bool advancedExpanded = false;
   final ntpController = TextEditingController(text: current.ntpServer1);
 
-  return showSubmitAppDialog<TimezoneEditResult>(
+  return showSubmitAppDialog<TimezoneEditResult?>(
     context,
     scrollable: false,
     useRootNavigator: false,
@@ -29,8 +38,8 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
     checkPositiveEnabled: () => selected != null,
     contentBuilder: (context, setState, onSubmit) {
       final filtered = searchQuery.isEmpty
-          ? kTimeZoneDefinitions
-          : kTimeZoneDefinitions.where((tz) {
+          ? zones
+          : zones.where((tz) {
               final query = searchQuery.toLowerCase();
               final desc = tz.description.toLowerCase();
               final offset = tz.offsetDisplayText.toLowerCase();
@@ -44,7 +53,9 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
               return false;
             }).toList();
 
-      final dstToggleEnabled = selected?.observesDST ?? false;
+      // Operable only on a zone that observes DST: the firmware refuses DST on
+      // for one that does not (ErrorTimeZoneDoesNotObserveDST).
+      final canSwitch = selected?.observesDST ?? false;
 
       return Column(
         mainAxisSize: MainAxisSize.min,
@@ -61,7 +72,9 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
             },
           ),
           AppGap.md(),
-          // DST toggle row
+          // Saved with the zone in one `SetTimeSettings` call, so switching it
+          // off keeps the zone's own ID and only sends DST false — Eastern Time
+          // with DST off stays Eastern Time (linksys/FWDEV#198).
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -72,7 +85,7 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
                 key: const Key('dstToggle'),
                 identifier: 'admin-timezone-dst',
                 value: dstEnabled,
-                onChanged: dstToggleEnabled
+                onChanged: canSwitch
                     ? (value) {
                         setState(() {
                           dstEnabled = value;
@@ -102,9 +115,9 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
                         onTap: () {
                           setState(() {
                             selected = tz;
-                            if (!tz.observesDST) {
-                              dstEnabled = false;
-                            }
+                            // A zone without daylight savings must not carry a
+                            // stale `true` into the save.
+                            if (!tz.observesDST) dstEnabled = false;
                           });
                         },
                       );
@@ -124,13 +137,14 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
         ],
       );
     },
-    event: () async {
-      final ntpValue = ntpController.text.trim();
-      return TimezoneEditResult(
-        localTimeZone: selected!.posixFor(dstEnabled: dstEnabled),
-        ntpServer1: ntpValue != current.ntpServer1 ? ntpValue : null,
-      );
-    },
+    event: () async => buildTimezoneEditResult(
+      selected: selected!,
+      dstEnabled: dstEnabled,
+      currentTz: currentTz,
+      currentDst: currentDst,
+      ntpValue: ntpController.text.trim(),
+      currentNtp: current.ntpServer1,
+    ),
   );
 }
 
@@ -249,12 +263,62 @@ class _AdvancedSection extends StatelessWidget {
   }
 }
 
+/// Decides what a Save should write, or that it should write nothing.
+///
+/// Top-level and pure so the dialog and its tests run the *same* code.
+///
+/// Returns null when nothing changed at all. That is not a shortcut: both call
+/// sites already guard `result == null` for a cancelled dialog, and "you pressed
+/// Save but changed nothing" needs exactly the same handling. Returning an
+/// all-null [TimezoneEditResult] instead is what made a no-change Save reach
+/// `updateTimezone`, trip its nothing-to-write guard, and show the user a failure
+/// snackbar for a normal interaction.
+TimezoneEditResult? buildTimezoneEditResult({
+  required TimeZoneInfo selected,
+  required bool dstEnabled,
+  required TimeZoneInfo? currentTz,
+  required bool currentDst,
+  required String ntpValue,
+  required String currentNtp,
+}) {
+  final ntpServer1 = ntpValue != currentNtp ? ntpValue : null;
+  // A zone without DST is saved with DST false whatever the switch last held:
+  // the firmware refuses `true` for it (ErrorTimeZoneDoesNotObserveDST).
+  final dstToSave = selected.observesDST && dstEnabled;
+  final zoneUnchanged = selected == currentTz && dstToSave == currentDst;
+
+  if (zoneUnchanged) {
+    // Writing the resolved zone back when it was not chosen would commit a
+    // guess: when the device cannot name its zone, the one shown is our own
+    // resolution of it. So an edit that only touched the NTP server must leave
+    // the zone alone, and an edit that touched nothing must write nothing at all.
+    return ntpServer1 == null
+        ? null
+        : TimezoneEditResult.ntpOnly(ntpServer1: ntpServer1);
+  }
+
+  return TimezoneEditResult(
+    // Sent verbatim — a zone without DST keeps its -NO-DST suffix, and the bare
+    // standard string is ErrorUnknownTimeZone on the device.
+    zone: (id: selected.timeZoneID, autoAdjustForDst: dstToSave),
+    ntpServer1: ntpServer1,
+  );
+}
+
 class TimezoneEditResult {
-  final String localTimeZone;
+  /// The zone and DST setting to save through `SetTimeSettings`, or null when
+  /// the zone was not changed.
+  final TimeZoneSelection? zone;
+
   final String? ntpServer1;
 
-  const TimezoneEditResult({
-    required this.localTimeZone,
-    this.ntpServer1,
-  });
+  /// A zone change, saved through `SetTimeSettings` with its DST setting.
+  const TimezoneEditResult(
+      {required TimeZoneSelection this.zone, this.ntpServer1});
+
+  /// The zone was not changed, so it is not written.
+  ///
+  /// A separate constructor rather than a nullable [zone] parameter: it is what
+  /// stops a zone the device could not name being committed as a guess.
+  const TimezoneEditResult.ntpOnly({this.ntpServer1}) : zone = null;
 }

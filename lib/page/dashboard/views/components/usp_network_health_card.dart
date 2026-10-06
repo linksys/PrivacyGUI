@@ -67,7 +67,10 @@ class _UspNetworkHealthCardState extends ConsumerState<UspNetworkHealthCard> {
     // Physical WAN link state — same signal the page-top connection banner
     // uses. Consulted so a disconnected WAN is not scored "Excellent" purely
     // because a down link carries no traffic (loss 0%). See #1143.
-    final wanIsUp = ref.watch(wanIsUpProvider);
+    // `?? true` is this card's choice, not the provider's (#1620): an unread L1 must not
+    // render as "Disconnected" next to a score, because that reads as a measurement rather
+    // than as an absence of one.
+    final wanIsUp = ref.watch(wanIsUpProvider) ?? true;
 
     return DashboardCardTemplate.tabbed(
       title: loc(context).networkHealth,

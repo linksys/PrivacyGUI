@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_feature_state.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_settings.dart';
@@ -20,13 +19,6 @@ final uspFirewallProvider =
   UspFirewallNotifier.new,
 );
 
-/// Exposes the notifier as a [PreservableContract] for [LinksysRoute]
-/// dirty-check integration.
-final preservableUspFirewallProvider =
-    AutoDisposeProvider<PreservableContract<FirewallSettings, FirewallStatus>>(
-  (ref) => ref.watch(uspFirewallProvider.notifier),
-);
-
 // ---------------------------------------------------------------------------
 // Notifier
 // ---------------------------------------------------------------------------
@@ -39,16 +31,6 @@ class UspFirewallNotifier extends AutoDisposeNotifier<FirewallFeatureState>
 
   @override
   FirewallFeatureState build() {
-    // Listen to data provider for SSE-driven changes.
-    // Uses the framework's onSseInvalidation() — skips if dirty.
-    // The isLoading check excludes the re-run frame, which carries the previous
-    // value forward and would otherwise trigger a second forceRemote fetch per
-    // refetch. See doc/riverpod/listen_site_audit.md.
-    ref.listen(firewallDataProvider, (_, next) {
-      if (next.isLoading) return;
-      if (next.hasValue) onSseInvalidation();
-    });
-
     // Synchronous build with loading state; async fetch follows immediately.
     Future.microtask(() => fetch());
     return FirewallFeatureState.initial();

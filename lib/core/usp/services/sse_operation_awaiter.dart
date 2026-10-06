@@ -45,7 +45,192 @@ class SseOperationAwaiter {
   /// majority of stalls.
   static const _operateHttpRetries = 1;
 
-  SseOperationAwaiter(this._manager, this._usp);
+  /// Diagnostics whose `OperationComplete` has not arrived yet, by `commandKey`.
+  ///
+  /// The whole of #1578's state. Guardian publishes a diagnostic's push signal **at
+  /// most once and never retries it**, so a signal lost to a reconnect is
+  /// unrecoverable from the stream — but the result is stored, and
+  /// `GET /usp/results?commandKey=` reads it back. This map is what says which keys
+  /// are worth asking about.
+  final Map<String, Completer<OperateResult>> _pending = {};
+
+  /// Removes the stream-opened listener when this awaiter is torn down.
+  VoidCallback? _removeStreamOpenedListener;
+
+  SseOperationAwaiter(this._manager, this._usp) {
+    // Reconcile on reconnect, which is the case the read exists for: Guardian closes
+    // every stream at ~10 minutes, so a diagnostic straddling that boundary loses its
+    // push with nothing to notice it.
+    //
+    // **On the edge, not on an interval.** The spec prohibits polling these reads —
+    // the server already polls DynamoDB on our behalf every ~10 s, and a second layer
+    // multiplies the read volume the design budgets for. A stream open is a discrete
+    // event, and `sse_operation_awaiter_reconcile_test.dart` asserts the call count
+    // rather than trusting this paragraph.
+    _removeStreamOpenedListener = _manager.addStreamOpenedListener(() {
+      // Fire-and-forget: this runs from a stream callback nobody awaits, so an
+      // escaping error would surface as an unhandled async error.
+      _reconcileAllPending().catchError((Object e) {
+        logger.w('[USP][SSE][Operate]: Reconcile after reopen failed: $e');
+      });
+    });
+  }
+
+  /// Reads Guardian's stored result for every outstanding diagnostic.
+  ///
+  /// Sequential rather than `Future.wait`: there is rarely more than one, and a burst
+  /// of concurrent reads against the proxy is the shape the no-polling rule exists to
+  /// keep down.
+  Future<void> _reconcileAllPending() async {
+    if (_pending.isEmpty) return;
+    logger.d('[USP][SSE][Operate]: Stream reopened with ${_pending.length} '
+        'diagnostic(s) outstanding — reconciling');
+    for (final key in [..._pending.keys]) {
+      await _reconcile(key);
+    }
+  }
+
+  /// Completes the pending operation for [commandKey] from Guardian's store, if a row
+  /// is there. Returns whether it did.
+  ///
+  /// **Attribution is the `commandKey` and nothing else.** #1575's verification item 2
+  /// is closed without an environment: `web/usp_client.d.ts` documents `commandKey` as
+  /// a UUID minted per `operate()` call, so it is unique *per execution* by
+  /// construction and any row carrying it belongs to this run. The spec's other
+  /// admissible route — record what already exists for the key before firing, accept
+  /// only what is new — is therefore unnecessary, and implementing it would add a read
+  /// on the happy path to disambiguate something that cannot collide.
+  ///
+  /// **Timestamps are not compared, deliberately.** `originTs` is the cloud broker's
+  /// receive time; subtracting a local clock from it fails silently in both
+  /// directions.
+  ///
+  /// An empty array is a definitive "not there yet" — no retry loop. And a
+  /// not-yet-arrived push is not a lost one: the backend retries its own read-back
+  /// three times with a doubling delay, so a healthy push can trail the write by
+  /// several seconds. Reading empty here simply leaves the operation pending for the
+  /// stream or the timeout to resolve.
+  Future<bool> _reconcile(String commandKey) async {
+    final completer = _pending[commandKey];
+    if (completer == null || completer.isCompleted) return false;
+
+    final List<Object?> rows;
+    try {
+      rows = await _manager.bridge.results(commandKey);
+    } catch (e) {
+      // Includes the local transport, where this read does not exist at all: the
+      // stored-result endpoint is Guardian's, so locally every reconcile is a
+      // `StateError` and the operation is left to its stream and its timeout — which
+      // is the correct behaviour and not a degraded one. A lost local push is a
+      // different problem with no store behind it.
+      logger.d('[USP][SSE][Operate]: No stored result for $commandKey: $e');
+      return false;
+    }
+
+    for (final row in rows) {
+      final result = _parseStoredResult(row, commandKey);
+      if (result == null) continue;
+      if (completer.isCompleted) return false;
+      logger.i('[USP][SSE][Operate]: Recovered ${result.commandName} from '
+          'Guardian\'s store (commandKey=$commandKey)');
+      completer.complete(result);
+      return true;
+    }
+    return false;
+  }
+
+  /// One `results` row as an [OperateResult], or null if it is not one.
+  ///
+  /// **Two shapes are accepted, and that is a hedge with a reason.** The spec says the
+  /// endpoint returns one row per execution and nothing more precise about the row, and
+  /// no environment has served one yet (#1575's verification list). The two candidates
+  /// are the notification envelope — `{msgId, originTs, notificationType, body: {…}}`,
+  /// which is what `history` uses — and the bare notify payload. Tolerating both costs
+  /// four lines and means whichever QA serves, this works; guessing one and being
+  /// wrong means a reconcile that silently never matches, which is indistinguishable
+  /// from "the result was not stored".
+  ///
+  /// The key is re-checked here even though the query already filtered on it: the
+  /// query is the server's promise and this is the client's own attribution, which is
+  /// the half the spec makes the client's job.
+  OperateResult? _parseStoredResult(Object? row, String commandKey) {
+    if (row is! Map<String, dynamic>) return null;
+    final body = row['body'];
+    final payload = body is Map<String, dynamic> ? body : row;
+    if (payload['oper_complete'] is! Map<String, dynamic>) return null;
+
+    final result = _parseOperateResult(
+      SseNotification(
+        subscriptionId: '',
+        type: 'OperationComplete',
+        payload: payload,
+      ),
+    );
+    if (result == null) return null;
+    return result.commandKey == commandKey ? result : null;
+  }
+
+  /// Marks an operation outstanding from here, so a stream reopen can reconcile
+  /// it (#1578). A null or empty key is an operate that returned none, which has
+  /// nothing to reconcile by.
+  void _track(String? commandKey, Completer<OperateResult> completer) {
+    if (commandKey != null && commandKey.isNotEmpty) {
+      _pending[commandKey] = completer;
+    }
+  }
+
+  /// The other half of [_track], from both execute paths' `finally`: once the
+  /// caller has its answer — a result, a timeout or an error — nothing awaits
+  /// the operation, and a reconcile on the next reopen would be a read for no one.
+  void _untrack(String? commandKey) {
+    if (commandKey != null) _pending.remove(commandKey);
+  }
+
+  /// Last chance before a timeout is reported: read the stored result.
+  ///
+  /// The other half of #1578, and the cheaper half to get wrong — a timeout is what a
+  /// caller sees when the push was lost, so reporting one without asking the store is
+  /// throwing away the only copy that exists. One read, on one edge, and only when the
+  /// stream has already failed to deliver.
+  Future<OperateResult> _timeoutOrStoredResult(
+    String? commandKey,
+    String operateCommand,
+    Duration timeout,
+  ) async {
+    if (commandKey != null && commandKey.isNotEmpty) {
+      await _reconcile(commandKey);
+      // Checked whatever the read returned: a push can land while the read is in
+      // flight, and then `_reconcile` finds the completer already done and says
+      // false. The completer holding a result is the answer either way — a
+      // timeout here would throw away a result already in hand.
+      final completer = _pending[commandKey];
+      if (completer != null && completer.isCompleted) {
+        return completer.future;
+      }
+    }
+    throw TimeoutException(
+      'OperationComplete not received within ${timeout.inSeconds}s '
+      'for $operateCommand',
+    );
+  }
+
+  /// Stops reconciling, and drops any operation still outstanding.
+  ///
+  /// Wired to `sseOperationAwaiterProvider`'s `onDispose`. Not strictly necessary —
+  /// the awaiter is rebuilt only when its manager is, and a disposed manager's
+  /// listener list goes with it — but an awaiter that outlived its registration would
+  /// reconcile against a stream it no longer belongs to, and that is cheaper to
+  /// prevent than to diagnose.
+  ///
+  /// Pending completers are **dropped, not errored**, the same contract
+  /// `OperationCompleteWatch.release()` states: every one of them is already being
+  /// awaited under a `.timeout`, so erroring them here would turn an ordinary teardown
+  /// race into an unhandled async error.
+  void dispose() {
+    _removeStreamOpenedListener?.call();
+    _removeStreamOpenedListener = null;
+    _pending.clear();
+  }
 
   /// Wrap [UspClient.operate] with a per-attempt timeout and a single retry.
   ///
@@ -339,15 +524,17 @@ class SseOperationAwaiter {
       logger.d('[USP][SSE][Operate]: Executing $operateCommand in session '
           '(commandKey=$expectedKey)');
 
+      _track(expectedKey, completer);
+
       final result = await completer.future.timeout(
         timeout,
-        onTimeout: () => throw TimeoutException(
-          'OperationComplete not received within ${timeout.inSeconds}s',
-        ),
+        onTimeout: () =>
+            _timeoutOrStoredResult(expectedKey, operateCommand, timeout),
       );
       return result;
     } finally {
       removeHandler();
+      _untrack(expectedKey);
     }
   }
 
@@ -377,6 +564,10 @@ class SseOperationAwaiter {
 
     VoidCallback? removeHandler;
     Future<void> Function()? cleanupSubscription;
+
+    // Hoisted beside `removeHandler` and for the same reason: the `finally` has to
+    // un-track this operation, so the key cannot live inside the `try` (#1578).
+    String? expectedKey;
     try {
       // Step 1: Register subscription (OBUSPA + bridge) so the CPE sends events
       cleanupSubscription = await _manager.subscribe(
@@ -390,7 +581,11 @@ class SseOperationAwaiter {
       // race window where SSE OperationComplete arrives before the HTTP
       // operate response. Match by commandName first; tighten to commandKey
       // once the HTTP response gives us one.
-      String? expectedKey;
+      //
+      // No `String? expectedKey` here: this is the hoisted one above. A second
+      // declaration shadowed it, so the `finally` untracked nothing and every
+      // timed-out diagnostic stayed in `_pending` — read again on every stream
+      // reopen, for as long as the awaiter lived.
       removeHandler = _manager.addWildcardHandler((notification) {
         if (notification.type != 'OperationComplete' || completer.isCompleted) {
           return;
@@ -418,13 +613,14 @@ class SseOperationAwaiter {
       logger.d('[USP][SSE][Operate]: Starting $operateCommand '
           '(commandKey=$expectedKey)');
 
-      // Await SSE OperationComplete or timeout
+      _track(expectedKey, completer);
+
+      // Await SSE OperationComplete, or read the stored result before reporting a
+      // timeout — Guardian never re-publishes a push it has already sent once.
       final result = await completer.future.timeout(
         timeout,
-        onTimeout: () => throw TimeoutException(
-          'OperationComplete not received within ${timeout.inSeconds}s '
-          'for $operateCommand',
-        ),
+        onTimeout: () =>
+            _timeoutOrStoredResult(expectedKey, operateCommand, timeout),
       );
 
       logger.d(
@@ -433,6 +629,7 @@ class SseOperationAwaiter {
     } finally {
       // Always cleanup: wildcard handler + subscription
       removeHandler?.call();
+      _untrack(expectedKey);
       if (cleanupSubscription != null) {
         try {
           await cleanupSubscription();
@@ -547,12 +744,25 @@ class SseOperationAwaiter {
     return OperateResult(
       commandName: operComplete['command_name']?.toString() ?? '',
       commandKey: operComplete['command_key']?.toString() ?? '',
+      // Three outcomes, and the *absence* of `cmd_failure` is what decides
+      // between them — never the absence of `output_args` (#1579).
+      //
       // A refusal reads as `Error` rather than as the `Unknown` it used to,
       // because `cmd_failure` carries no `Status` and a caller checking
       // `isError` was being told nothing. `isFailure` is the finer question.
+      //
+      // Everything else is a **success**, whether or not the router named a
+      // status: a diagnostic that completed with no output args at all carries
+      // neither key, and one that answered without a `Status` key carries the
+      // first but not that member. Both used to fall through to `'Unknown'`,
+      // which every `isComplete` caller reads as "not complete" — so a
+      // successful no-output diagnostic drew the error icon
+      // (`diagnostic_manual_tools_view.dart:375`). `OperateResult
+      // .completedWithoutOutput` is what keeps the two successes nameable now
+      // that they share a status.
       status: outputArgs['Status'] ??
           outputArgs['status'] ??
-          (failure != null ? 'Error' : 'Unknown'),
+          (failure != null ? 'Error' : 'Complete'),
       outputArgs: outputArgs,
       errorCode: errorCode,
       errorMessage: errorMessage,
@@ -609,6 +819,23 @@ class SseOperationAwaiter {
       onNotification: (_) {}, // No-op: matching happens on the wildcard below.
     );
 
+    // **This handler deliberately does not filter on [referencePath], and the
+    // asymmetry with `SseManager._handleSseSubscribe` — which does prefix-filter —
+    // is a decision, not an oversight (#1533, handed over from #1561).**
+    //
+    // A prefix filter here has no safe field to test. The local bridge sends
+    // `command_name` as a *bare* name (`IPPing()`) and no `obj_path` at all, while
+    // the Guardian payload sends `command_name` as a full path. So a
+    // `startsWith(referencePath)` test would either fail open on every local event
+    // — achieving nothing — or, if written to fail closed, starve this watch of the
+    // very events it exists for, and both consumers hold it open for up to an
+    // install's 20-minute ceiling.
+    //
+    // What the missing filter costs is bounded and known: [OperationCompleteWatch]
+    // ._seen accumulates every `OperationComplete` in the app for the life of the
+    // watch. It cannot cause a wrong verdict, because both consumers match on
+    // `commandKey` (`firmware_router_ota_check_service.dart`,
+    // `..._install_service.dart`), which no other subtree's event can collide with.
     late final OperationCompleteWatch watch;
     final removeHandler = _manager.addWildcardHandler((notification) {
       if (notification.type != 'OperationComplete') return;
@@ -681,6 +908,10 @@ class OperationCompleteWatch {
     return completer.future;
   }
 
+  /// Tears the watch down. **Pending [firstWhere] futures are dropped, not
+  /// completed** — see that method's contract for why erroring them would turn
+  /// every ordinary race into an unhandled async error. Awaiting one across a
+  /// release is therefore not supported.
   Future<void> release() async {
     _waiters.clear();
     await _onRelease?.call();

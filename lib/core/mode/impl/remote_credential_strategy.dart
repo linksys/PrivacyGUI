@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/framework/mode/credential_strategy.dart';
 
 /// Remote Assistance credential handling: Guardian minted a temporary access
@@ -11,6 +12,14 @@ class RemoteCredentialStrategy implements CredentialStrategy {
 
   @override
   AuthBehavior get authBehavior => AuthBehavior.remote;
+
+  /// Always, once there is a client: the Guardian token *is* the credential,
+  /// and `RemoteAssistanceNotifier.activate()` builds the client only after it
+  /// has one. The client's own `isAuthenticated` is not consulted — it tracks a
+  /// password login, which a support session never performs, so it reads
+  /// `false` for the whole session.
+  @override
+  bool holdsCredential(UspClient usp) => true;
 
   /// Nothing to re-establish, and nothing to compare. **This is the fix in
   /// #1323, acceptances 4 and 5.**

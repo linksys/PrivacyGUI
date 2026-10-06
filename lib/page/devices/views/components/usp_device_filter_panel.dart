@@ -8,7 +8,7 @@ import 'package:privacy_gui/page/devices/providers/device_filter_provider.dart';
 import 'package:privacy_gui/page/devices/providers/device_filter_state.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
-import 'package:ui_kit_library/ui_kit.dart' hide ConnectionType;
+import 'package:ui_kit_library/ui_kit.dart';
 
 String _signalLabel(BuildContext context, DeviceSignalLevel level) {
   final nodeLevel = nodeLevelOf(level);
@@ -72,8 +72,9 @@ class UspDeviceFilterPanel extends ConsumerWidget {
             children: [
               _FilterHeader(
                 activeCount: filter.activeCountExcludingStatus,
-                onClear: () =>
-                    ref.read(deviceFilterConfigProvider.notifier).clearAll(),
+                onClear: () => ref
+                    .read(deviceFilterConfigProvider.notifier)
+                    .clearPanelFilters(),
               ),
               AppGap.md(),
               LayoutBlock(
@@ -98,8 +99,9 @@ class UspDeviceFilterPanel extends ConsumerWidget {
           children: [
             _FilterHeader(
               activeCount: filter.activeCountExcludingStatus,
-              onClear: () =>
-                  ref.read(deviceFilterConfigProvider.notifier).clearAll(),
+              onClear: () => ref
+                  .read(deviceFilterConfigProvider.notifier)
+                  .clearPanelFilters(),
             ),
             AppGap.md(),
 
@@ -645,7 +647,7 @@ class UspDeviceFilterChipBar extends ConsumerWidget {
       chips.add(_FilterChip(
         label: loc(context).clear,
         isActive: false,
-        onTap: notifier.clearAll,
+        onTap: notifier.clearPanelFilters,
       ));
     }
 

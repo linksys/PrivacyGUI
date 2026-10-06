@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_setup_view.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../layout_gate/collector.dart';
 import '../../../layout_gate/families/page_surface_family.dart';
+import '../../../layout_gate/surface.dart';
+import '../../../util/dashboard/text_readability_probe.dart';
 import '../../../mocks/provider_overrides/mock_pnp.dart';
 import '../../../mocks/test_data/scenes/pnp_scene_data.dart';
 import '../../../util/app_test_fonts.dart';
@@ -181,5 +187,169 @@ void main() {
     // password field too.
     expect(find.text(pnpUnifiedWifiConfig.ssid), findsOneWidget);
     expect(find.text(pnpUnifiedWifiConfig.password), findsOneWidget);
+  });
+  group('a save that returns to the form says why (#1000)', () {
+    // The defect: `saveChanges()` put its error in a state field no view read,
+    // so a failed save looked like the guest page "being shown twice".
+    //
+    // Driven through `setDemoPhase` on the pinned notifier, because what is under
+    // test is the view's reaction to a *transition* into the form — the save
+    // logic itself is the notifier test's.
+    Future<FixedPnpNotifier> pumpSaving(WidgetTester tester) async {
+      enlargeSurface(tester);
+      final notifier = FixedPnpNotifier(
+        const PnpState(phase: WizardSaving(), serialNumber: 'SN-TEST'),
+      );
+      await runWithOverflowCollection((_) async {
+        await tester.pumpWidget(pageSurfaceHost(
+          view: const PnpSetupView(),
+          locale: const Locale('en'),
+          overrides: [pnpProvider.overrideWith(() => notifier)],
+        ));
+        await settle(tester);
+      });
+      return notifier;
+    }
+
+    testWidgets('shows the localized error when the save fails',
+        (tester) async {
+      final notifier = await pumpSaving(tester);
+
+      await runWithOverflowCollection((_) async {
+        notifier.setDemoPhase(const WizardConfiguring(
+          wifiConfig: pnpUnifiedWifiConfig,
+          saveError: TimeoutError(detail: 'diagnostic only'),
+        ));
+        await settle(tester);
+      });
+
+      expect(find.text('The operation timed out. Please try again.'),
+          findsOneWidget);
+      expect(find.textContaining('diagnostic only'), findsNothing,
+          reason: 'detail is diagnostic, never shown (constitution §13.6)');
+    });
+
+    testWidgets('says nothing when the form is reached without an error',
+        (tester) async {
+      final notifier = await pumpSaving(tester);
+
+      await runWithOverflowCollection((_) async {
+        notifier.setDemoPhase(
+            const WizardConfiguring(wifiConfig: pnpUnifiedWifiConfig));
+        await settle(tester);
+      });
+
+      expect(find.byType(SnackBar), findsNothing);
+    });
+  });
+
+  testWidgets(
+      'the reconnect screen says the router is restarting, and lays out at '
+      '320px in every locale', (tester) async {
+    // The copy is new (the old line said "connect your devices to your new WiFi"
+    // while that network was not on the air yet), and the reconnect screen is in
+    // no layout-gate case — so this is the only thing that renders it per locale.
+    // 320px is the product floor and overflow is monotonic in width.
+    final overflows = <String>[];
+    for (final locale in AppLocalizations.supportedLocales) {
+      await setLayoutSurface(tester, const Size(320, 1600));
+      final errors = await runWithOverflowCollection((sink) async {
+        await tester.pumpWidget(KeyedSubtree(
+          key: ValueKey(locale.toString()),
+          child: pageSurfaceHost(
+            view: const PnpSetupView(),
+            locale: locale,
+            overrides: pnpOverrides(pnpWizardNeedsReconnectState),
+          ),
+        ));
+        await settle(tester);
+        return sink;
+      });
+      if (errors.isNotEmpty) overflows.add('$locale: $errors');
+
+      final copy = lookupAppLocalizations(locale).pnpReconnectWiFiRestarting;
+      expect(find.text(copy), findsOneWidget, reason: '$locale');
+    }
+
+    expect(overflows, isEmpty, reason: overflows.join('\n'));
+  });
+
+  testWidgets(
+      'neither completion-screen action button clips its label at 320px, in any '
+      'locale', (tester) async {
+    // **The assertion the layout gate structurally cannot make here, and the
+    // second thing #1602's fix needs pinned.** That fix turned the `Print` /
+    // `Done` `Row` into a `Wrap`, which removes the `RenderFlex` overflow the gate
+    // was reading. It does not remove the failure mode: `RenderWrap` hands each
+    // child the line's width as a *constraint*, so a button that wants more room
+    // than the line has does not overflow — it **shrinks, and squeezes its
+    // label**. Green gate, unreadable button.
+    //
+    // A first draft of this test asserted `buttonWidth <= wrap.constraints
+    // .maxWidth` and was **inert**: mutation-checked by wrapping the `Wrap` in a
+    // `SizedBox(width: 100)`, it stayed green, because that inequality is what
+    // `RenderWrap` already guarantees. The oracle has to be the label, not the box.
+    //
+    // Measured 2026-09-21 at 320px, all 26 locales: the line is **174.0px**, the
+    // widest button is `nl` at **146.0px** (`el` 143.1, `fr`/`fr_CA` 136.7), and
+    // every locale's `Wrap` lays out **two runs** (104.0px tall) — so the
+    // degradation really happens rather than the pair merely fitting, and no
+    // label is squeezed: tightest headroom **28.0px**, ~19% of the button.
+    //
+    // 320px is the product floor (`kMinSupportedScreenWidth`) and overflow is
+    // monotonic in width, so one width is the whole claim.
+    final offenders = <String>[];
+    for (final locale in AppLocalizations.supportedLocales) {
+      await setLayoutSurface(tester, const Size(320, 1600));
+      await tester.pumpWidget(KeyedSubtree(
+        // A fresh subtree per locale, the same reason the gate's runner keys its
+        // cell hosts: reused render objects would measure the first locale's
+        // layout 26 times.
+        key: ValueKey(locale.toString()),
+        child: pageSurfaceHost(
+          view: const PnpSetupView(),
+          locale: locale,
+          overrides: pnpOverrides(pnpWizardWifiReadyUnifiedState),
+        ),
+      ));
+      await settle(tester);
+
+      // The unified completion screen builds exactly one `Wrap`. If a second ever
+      // appears this throws rather than silently measuring the wrong one.
+      final buttons = find.descendant(
+          of: find.byType(Wrap), matching: find.byType(AppButton));
+      expect(buttons, findsNWidgets(2),
+          reason: 'the action Wrap should hold Print and Done');
+
+      for (var i = 0; i < 2; i++) {
+        final label =
+            find.descendant(of: buttons.at(i), matching: find.byType(Text));
+        if (label.evaluate().length != 1) continue;
+        final paragraph = tester.paragraphOf(label);
+        final text = paragraph.text.toPlainText();
+        // Both verdicts, in the order rule 4 of the gate skill puts them: neither
+        // subsumes the other. An ellipsis leaves every surviving token fitting, and
+        // a mid-word break drops nothing, so `didExceedMaxLines` stays false.
+        if (tester.isTextClipped(label)) {
+          offenders.add('$locale: "$text" is truncated inside its button — '
+              'granted ${paragraph.size.width.toStringAsFixed(1)}px');
+        } else if (!kLocalesWithoutWordSpaces.contains(locale.toString()) &&
+            tester.hasSplitToken(label)) {
+          offenders.add('$locale: "$text" broke mid-word inside its button — '
+              'granted ${paragraph.size.width.toStringAsFixed(1)}px, widest token '
+              '${tester.widestTokenWidth(label).toStringAsFixed(1)}px');
+        }
+      }
+    }
+
+    expect(
+      offenders,
+      isEmpty,
+      reason:
+          'a `Wrap` constrains its children to the line, so a button with too '
+          'little room squeezes its label instead of overflowing — invisible to '
+          'every one of the 234 cells in page.pnp_setup_complete_unified:\n'
+          '${offenders.join('\n')}',
+    );
   });
 }

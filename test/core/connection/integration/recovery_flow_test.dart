@@ -49,7 +49,8 @@ void main() {
               : ProbeResult.unreachable;
         });
         when(() => mockSse.connect()).thenAnswer((_) async {});
-        when(() => mockSse.disconnect()).thenAnswer((_) async {});
+        when(() => mockSse.disconnectKeepingSubscriptions())
+            .thenAnswer((_) async {});
 
         final container = ProviderContainer(
           overrides: [
@@ -106,7 +107,8 @@ void main() {
 
       when(() => mockProbe.probe())
           .thenAnswer((_) async => ProbeResult.serialMismatch);
-      when(() => mockSse.disconnect()).thenAnswer((_) async {});
+      when(() => mockSse.disconnectKeepingSubscriptions())
+          .thenAnswer((_) async {});
 
       final container = ProviderContainer(
         overrides: [
