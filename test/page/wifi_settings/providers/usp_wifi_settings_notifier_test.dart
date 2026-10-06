@@ -560,8 +560,11 @@ void main() {
         // From here on L1 fails, as it did while the radios reloaded.
         notifier.failNext = true;
 
-        await settings.save();
+        await expectLater(settings.save(), completes);
 
+        expect(notifier.failures, greaterThan(0),
+            reason: 'the refresh must actually have failed, or this test '
+                'proves nothing');
         container.dispose();
       });
 
@@ -879,10 +882,12 @@ class _FakeWifiDataNotifier extends AsyncNotifier<WifiData>
 class _ThrowOnRefresh extends AsyncNotifier<WifiData>
     implements WifiDataNotifier {
   bool failNext = false;
+  int failures = 0;
 
   @override
   Future<WifiData> build() async {
     if (failNext) {
+      failures++;
       throw const NetworkError(
           detail: 'TimeoutException after 0:00:15.000000: Throttler: request '
               'exceeded 15s');

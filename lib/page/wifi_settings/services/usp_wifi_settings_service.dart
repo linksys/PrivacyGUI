@@ -30,28 +30,6 @@ final uspWifiSettingsServiceProvider = Provider<UspWifiSettingsService>(
 /// same shape) took 35.4 s and had succeeded when the app reported it failed.
 enum WifiWriteOutcome { confirmed, unanswered }
 
-/// Whether a per-path WiFi SET error means the router never answered.
-///
-/// [isUnansweredTransportFailure]'s `Failed to fetch` — the browser on the
-/// WiFi being reloaded — plus one shape only Remote Assistance produces: an
-/// `HTTP 5xx` carrying **no** router fault code. Guardian answers 500 when it
-/// cannot reach a router whose radios are reloading (CLOUD_GUARDIANS#215: the
-/// main-password SET came back `HTTP error: HTTP 500` after 25.9 s, and GETs
-/// read empty for another ~20 s until the router rejoined the cloud). A fault
-/// the router itself reported always carries `(code: N)`, so it is excluded,
-/// and a 4xx is never unanswered — a 401 must end the session (#1627).
-///
-/// Kept here rather than widening the shared predicate, which PnP also uses.
-bool isUnansweredWifiWrite(String errorMessage) {
-  if (isUnansweredTransportFailure(errorMessage)) return true;
-  if (_routerFaultCode.hasMatch(errorMessage)) return false;
-  final status = _httpStatus.firstMatch(errorMessage);
-  return status != null && status.group(1)!.startsWith('5');
-}
-
-final _routerFaultCode = RegExp(r'\(code:\s*\d+\)');
-final _httpStatus = RegExp(r'HTTP error: HTTP (\d{3})');
-
 /// A WiFi write that has been worked out but not yet sent.
 ///
 /// [params] are known **before** the write goes out, so a caller whose wait

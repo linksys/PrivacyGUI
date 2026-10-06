@@ -255,6 +255,7 @@
   "protocol": "Protokol",
   "publicMac": "Genel",
   "quickSetup": "Hızlı Kurulum",
+  "quickSetupDiscardChangesDesc": "Hızlı Kurulum'u değiştirmek, bu sekmede kaydetmediğiniz değişiklikleri atar.",
   "applyToAllBandsDesc": "Aynı WiFi ayarlarını tüm bantlara aynı anda uygulayın",
   "rebootChildTitle": "Düğümü ve tüm alt düğümlerini yeniden başlat",
   "rebootOk": "Evet, Tümünü Yeniden Başlat",

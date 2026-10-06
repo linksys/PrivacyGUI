@@ -210,7 +210,10 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   Future<void> _refreshL1AfterWrite() async {
     try {
       final _ = await ref.refresh(wifiDataProvider.future);
-    } catch (e) {
+    } on ServiceError catch (e) {
+      // L1 maps every USP failure to a ServiceError (usp_wifi_data_service),
+      // so this is its whole failure surface; anything else is a bug and
+      // propagates (constitution §13.4).
       logger.w(
           '[USP][WiFi]: L1 refresh after the write failed — the write '
           'itself is settled',
@@ -273,6 +276,12 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   }
 
   /// Toggles Quick Setup mode ON or OFF.
+  ///
+  /// **Call it on a clean form.** It makes the current settings the new
+  /// baseline, so unsaved per-network edits would be carried in silently —
+  /// hidden by Quick Setup, and read later as if the router held them (#1499
+  /// review round 2). The WiFi tab asks the user and reverts first; any new
+  /// caller must do the same.
   ///
   /// When enabling, initialises [WifiQuickSetupSettings] from the current
   /// server-side aggregate data (password starts empty — TR-181 cannot return it).

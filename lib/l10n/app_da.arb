@@ -257,6 +257,7 @@
   "protocol": "Protokol",
   "publicMac": "Offentlig",
   "quickSetup": "Hurtig opsætning",
+  "quickSetupDiscardChangesDesc": "Hvis du skifter Hurtig opsætning, annulleres de ændringer, du ikke har gemt på denne fane.",
   "applyToAllBandsDesc": "Anvend de samme WiFi-indstillinger på alle bånd på én gang",
   "rebootChildTitle": "Genstart noden og alle dens underordnede",
   "rebootOk": "Ja, genstart alle",

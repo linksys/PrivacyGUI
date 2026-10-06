@@ -255,6 +255,7 @@
   "protocol": "Giao thức",
   "publicMac": "Công khai",
   "quickSetup": "Thiết lập nhanh",
+  "quickSetupDiscardChangesDesc": "Chuyển Thiết lập nhanh sẽ hủy bỏ các thay đổi bạn chưa lưu trên thẻ này.",
   "applyToAllBandsDesc": "Áp dụng cùng một cài đặt WiFi cho tất cả các băng tần cùng một lúc",
   "rebootChildTitle": "Khởi động lại nút và tất cả các nút con",
   "rebootOk": "Có, Khởi động lại tất cả",

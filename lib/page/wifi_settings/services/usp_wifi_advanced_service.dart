@@ -68,12 +68,11 @@ class UspWifiAdvancedService {
   }) async {
     if (radioPaths.isEmpty) return WifiWriteOutcome.confirmed;
     try {
-      final params = <String, dynamic>{
-        for (final path in radioPaths) '${path}IEEE80211hEnabled': enabled,
-        for (final path in forceAutoChannelPaths)
-          '${path}AutoChannelEnable': true,
-      };
-      final result = await _usp.set(params);
+      final result = await _usp.set(_ieee80211hParams(
+        radioPaths: radioPaths,
+        enabled: enabled,
+        forceAutoChannelPaths: forceAutoChannelPaths,
+      ));
       // Parse the batch result so a firmware partial rejection (e.g. accepts
       // IEEE80211hEnabled but rejects a forced AutoChannelEnable) surfaces as an
       // error instead of being silently swallowed.
@@ -121,11 +120,11 @@ class UspWifiAdvancedService {
     List<String> forceAutoChannelPaths = const [],
   }) =>
       WifiWritePlan(
-        params: {
-          for (final path in radioPaths) '${path}IEEE80211hEnabled': enabled,
-          for (final path in forceAutoChannelPaths)
-            '${path}AutoChannelEnable': true,
-        },
+        params: _ieee80211hParams(
+          radioPaths: radioPaths,
+          enabled: enabled,
+          forceAutoChannelPaths: forceAutoChannelPaths,
+        ),
         proof: {
           for (final path in radioPaths)
             if (current[path] != enabled) '${path}IEEE80211hEnabled': enabled,
@@ -136,6 +135,18 @@ class UspWifiAdvancedService {
           forceAutoChannelPaths: forceAutoChannelPaths,
         ),
       );
+
+  /// The one SET both [setIeee80211hEnabled] and [planIeee80211h] describe.
+  Map<String, dynamic> _ieee80211hParams({
+    required List<String> radioPaths,
+    required bool enabled,
+    required List<String> forceAutoChannelPaths,
+  }) =>
+      {
+        for (final path in radioPaths) '${path}IEEE80211hEnabled': enabled,
+        for (final path in forceAutoChannelPaths)
+          '${path}AutoChannelEnable': true,
+      };
 
   /// Whether the radios now carry every `IEEE80211hEnabled` value in [proof].
   /// Fails closed: an empty [proof] is not applied.

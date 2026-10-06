@@ -540,8 +540,13 @@ void main() {
             'Device.WiFi.Radio.1.': true,
           });
 
-      await notifier.save();
+      await expectLater(notifier.save(), completes,
+          reason: 'past the window is a read-back, not an error');
 
+      // The SET never answered, so only reading the radios back could have
+      // settled the save.
+      verify(() => mockService.isIeee80211hApplied(
+          {'Device.WiFi.Radio.1.IEEE80211hEnabled': true})).called(1);
       container.dispose();
     });
 
@@ -563,7 +568,11 @@ void main() {
       notifier.setDfsEnabled(true);
       l1.fail = true;
 
-      await notifier.save();
+      await expectLater(notifier.save(), completes);
+
+      expect(l1.failures, greaterThan(0),
+          reason: 'the refresh must actually have failed, or this test '
+              'proves nothing');
 
       verify(() => mockService.setIeee80211hEnabled(
             radioPaths: ['Device.WiFi.Radio.1.'],
@@ -814,10 +823,12 @@ class _StubWifiDataNotifier extends WifiDataNotifier {
 /// hitting the 15 s throttler.
 class _FailAfterFirstBuild extends WifiDataNotifier {
   bool fail = false;
+  int failures = 0;
 
   @override
   Future<WifiData> build() async {
     if (fail) {
+      failures++;
       throw const NetworkError(detail: 'Throttler: request exceeded 15s');
     }
     return const WifiData.empty();

@@ -255,6 +255,7 @@
   "protocol": "프로토콜",
   "publicMac": "공개",
   "quickSetup": "빠른 설정",
+  "quickSetupDiscardChangesDesc": "빠른 설정을 전환하면 이 탭에서 저장하지 않은 변경사항이 삭제됩니다.",
   "applyToAllBandsDesc": "동일한 WiFi 설정을 모든 대역에 한 번에 적용",
   "rebootChildTitle": "노드 및 모든 하위 노드 재부팅",
   "rebootOk": "예, 모두 재부팅",

@@ -257,6 +257,7 @@
   "protocol": "Protokoll",
   "publicMac": "Offentlig",
   "quickSetup": "Rask oppsett",
+  "quickSetupDiscardChangesDesc": "Hvis du bytter Rask oppsett, forkastes endringene du ikke har lagret på denne fanen.",
   "applyToAllBandsDesc": "Bruk de samme WiFi-innstillingene på alle bånd samtidig",
   "rebootChildTitle": "Start noden og alle dens underordnede på nytt",
   "rebootOk": "Ja, start alle på nytt",

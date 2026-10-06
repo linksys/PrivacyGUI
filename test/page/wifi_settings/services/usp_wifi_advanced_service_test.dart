@@ -232,6 +232,20 @@ void main() {
         expect(plan.proof, {'Device.WiFi.Radio.1.IEEE80211hEnabled': false});
       });
 
+      test("the plan's send issues exactly the planned params, once", () async {
+        when(() => mockUsp.set(any())).thenAnswer((_) async => _setSuccess());
+        final plan = svc.planIeee80211h(
+          current: {'Device.WiFi.Radio.1.': true},
+          radioPaths: ['Device.WiFi.Radio.1.'],
+          enabled: false,
+          forceAutoChannelPaths: ['Device.WiFi.Radio.1.'],
+        );
+
+        expect(await plan.send(), WifiWriteOutcome.confirmed);
+
+        verify(() => mockUsp.set(plan.params)).called(1);
+      });
+
       test('read-back fails closed on an empty proof, and reads nothing',
           () async {
         expect(await svc.isIeee80211hApplied(const {}), isFalse);

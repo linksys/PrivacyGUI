@@ -185,7 +185,7 @@ class UspWifiAdvancedNotifier
     // the same way #1499's confirmed save was reported as a failure.
     try {
       final _ = await ref.refresh(wifiDataProvider.future);
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.w(
           '[USP][WiFi][Advanced]: L1 refresh after the write failed — '
           'the write itself is settled',
