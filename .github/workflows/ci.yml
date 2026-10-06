@@ -1,9 +1,9 @@
 name: PrivacyGUI CI/CD
 
 on:
-  # Only `pull_request`, and see the note at the bottom of this file for why: the
-  # golden jobs that `push`, `workflow_dispatch` and `schedule` existed for are
-  # not in this repo.
+  # `pull_request`, plus `push` to `usp` only (why: the comment above `push:`
+  # below). The golden jobs that `push` to other branches, `workflow_dispatch` and
+  # `schedule` once existed for are not in this repo; see the note at the bottom.
   #
   # One consequence is worth knowing before you debug a silent pipeline: a
   # `pull_request` run is built against `refs/pull/N/merge`, and GitHub cannot
@@ -51,6 +51,20 @@ on:
   # safe, doing the second useful thing it does.
   pull_request:
     branches: [ "main", "usp", "dev-*" ]
+  # And on a push to `usp`, which is how a promotion merge lands. Ruleset
+  # `22061561` checks the five contexts on any commit pushed to a branch it
+  # covers, creating that branch included, so cutting `dev-2.X.Y` from `usp`
+  # needs those checks on `usp`'s tip. A PR run attaches them to the PR's head and its test-merge ref,
+  # never to the commit the merge creates, so before this the tip carried only
+  # `dart-wasm-boundary` (usp-boundary.yml already had `push`). Measured
+  # 2026-10-06: `dev-2.7.3` from `usp` was refused with "4 of 5 required status
+  # checks are expected". `dev-2.7.2` was cut on 2026-09-18 before the ruleset
+  # went strict that day, which is why nobody hit it then.
+  #
+  # `usp` only, not `dev-*`: every commit on a dev branch arrives by a PR that
+  # already ran these jobs, and a second ~20 min run per merge would buy nothing.
+  push:
+    branches: [ "usp" ]
 
 # All four jobs read: checkout, pub get, test, build. None writes a comment, a
 # label, a check or a commit, so none needs a token that can. This matches
@@ -447,7 +461,8 @@ jobs:
   #  * nightly_deep_check (schedule) ran `dart tools/run_screenshot_tests.dart`.
   #    That script does still exist; what the job lacked was the baselines.
   #
-  # Their push:, workflow_dispatch: and schedule: triggers went with them, which
-  # is why `on:` above lists only pull_request: every job here is gated on that
-  # event, so the other three produced workflow runs with no jobs in them.
+  # Their push:, workflow_dispatch: and schedule: triggers went with them: every
+  # job here was gated on pull_request, so the other three produced workflow runs
+  # with no jobs in them. No job is gated on the event today, so the `push` to
+  # `usp` added on 2026-10-06 runs all four.
   # ========================================================================
