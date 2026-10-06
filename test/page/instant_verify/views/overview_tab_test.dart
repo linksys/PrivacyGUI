@@ -322,13 +322,12 @@ void main() {
       expect(find.text("Your internet isn't working"), findsOneWidget);
     });
 
-    testWidgets('opens explanation without hiding the recommended action', (tester) async {
+    testWidgets('shows explanation as subtext without hiding the recommended action', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_criticalFindingState()));
       await tester.pump();
 
       expect(find.text('Restart Router'), findsOneWidget);
-      expect(find.text('Verified: Router reachable. Websites: not loading.'), findsNothing);
-      await _tap(tester, 'Why this matters');
+      expect(find.text('Why this matters'), findsNothing);
       expect(
           find.text('Verified: Router reachable. Websites: not loading.'),
           findsOneWidget);

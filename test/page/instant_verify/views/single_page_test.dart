@@ -146,12 +146,9 @@ void main() {
     ], child: const InstantTestPage()));
     await tester.pumpAndSettle();
     expect(find.text('Your router is very busy'), findsOneWidget);
-    expect(find.textContaining('88% CPU'), findsNothing);
-    expect(find.text('Restart Router'), findsOneWidget);
-    await tapText(tester, 'Why this matters');
     expect(find.textContaining('88% CPU'), findsOneWidget);
-    await tapText(tester, 'Hide why this matters');
-    expect(find.textContaining('88% CPU'), findsNothing);
+    expect(find.text('Restart Router'), findsOneWidget);
+    expect(find.text('Why this matters'), findsNothing);
     await tapText(tester, '3 other findings');
     expect(find.text('Restart Router'), findsWidgets);
   });

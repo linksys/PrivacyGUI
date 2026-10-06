@@ -723,13 +723,10 @@ class _StatusCard extends StatelessWidget {
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.only(left: 32),
-            child: primary.hasAutoFix
-                ? DetailsDisclosure(label: 'Why this matters',
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      if (primary.summary != null) Text(primary.headline),
-                      Text(primary.explanation, style: TextStyle(color: scheme.onSurfaceVariant)),
-                    ]))
-                : Text(primary.explanation, style: TextStyle(color: scheme.onSurfaceVariant)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              if (primary.summary != null) Text(primary.headline),
+              Text(primary.explanation, style: TextStyle(color: scheme.onSurfaceVariant)),
+            ]),
           ),
 
           if (onTroubleshootDevice != null && state.issueDevices.isNotEmpty) ...[
@@ -740,7 +737,6 @@ class _StatusCard extends StatelessWidget {
                 child: AppTextButton(
                   'Help ${device.displayName} (${device.macAddress})',
                   onTap: () => onTroubleshootDevice!(device),
-                  icon: Icons.chevron_right,
                 ),
               ),
           ],
