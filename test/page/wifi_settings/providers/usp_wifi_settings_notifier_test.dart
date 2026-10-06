@@ -14,6 +14,7 @@ import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dar
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_write_confirm.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
 import '../../../../test/mocks/test_data/wifi_settings_test_data.dart';
@@ -24,6 +25,14 @@ class MockUspWifiSettingsService extends Mock
 class MockUspClient extends Mock implements UspClient {}
 
 class MockUspAuthCoordinator extends Mock implements UspAuthCoordinator {}
+
+const _written = {'Device.WiFi.SSID.1.SSID': 'Changed'};
+
+/// A plan whose one SET the router answers.
+WifiWritePlan confirmedPlan() => WifiWritePlan(
+      params: _written,
+      send: () async => WifiWriteOutcome.confirmed,
+    );
 
 void main() {
   late MockUspWifiSettingsService mockService;
@@ -37,6 +46,7 @@ void main() {
     registerFallbackValue(<WifiNetworkUIModel>[]);
     registerFallbackValue(WifiSettingsSettings.empty());
     registerFallbackValue(const WifiSettingsStatus());
+    registerFallbackValue(<String, dynamic>{});
   });
 
   setUp(() {
@@ -57,6 +67,13 @@ void main() {
         uspClientProvider.overrideWithValue(mockUsp),
         uspAuthCoordinatorProvider.overrideWithValue(mockAuthCoordinator),
         wifiDataProvider.overrideWith(() => _FakeWifiDataNotifier(data)),
+        // Short timings, so the read-back path runs without real waits.
+        wifiAnswerWindowProvider
+            .overrideWithValue(const Duration(milliseconds: 50)),
+        wifiReadBackIntervalProvider
+            .overrideWithValue(const Duration(milliseconds: 10)),
+        wifiSaveDeadlineProvider
+            .overrideWithValue(const Duration(milliseconds: 200)),
       ],
     );
     container.listen(uspWifiSettingsProvider, (_, __) {});
@@ -420,7 +437,7 @@ void main() {
       when(() => mockService.saveAdvanced(
             original: any(named: 'original'),
             current: any(named: 'current'),
-          )).thenAnswer((_) async {});
+          )).thenReturn(confirmedPlan());
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -459,7 +476,7 @@ void main() {
             original: any(named: 'original'),
             current: any(named: 'current'),
             status: any(named: 'status'),
-          )).thenAnswer((_) async {});
+          )).thenReturn(confirmedPlan());
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -478,6 +495,65 @@ void main() {
             status: any(named: 'status'),
           )).called(1);
       container.dispose();
+    });
+
+    // -----------------------------------------------------------------------
+    // performSave — a lost reply is read back, not reported (#1499, CG#215)
+    // -----------------------------------------------------------------------
+
+    group('save when the reply is lost to the WiFi reload', () {
+      Future<UspWifiSettingsNotifier> quickSetupNotifier(
+          ProviderContainer container) async {
+        await Future.delayed(Duration.zero);
+        await Future.delayed(Duration.zero);
+        final notifier = container.read(uspWifiSettingsProvider.notifier);
+        notifier.updateQuickSetupField(isGuest: false, password: 'newpass1');
+        return notifier;
+      }
+
+      setUp(() {
+        when(() => mockService.buildWifiNetworks(
+              ssids: any(named: 'ssids'),
+              accessPoints: any(named: 'accessPoints'),
+              radios: any(named: 'radios'),
+            )).thenReturn(WifiSettingsTestData.createNetworks());
+        when(() => mockService.buildQuickSetupNetworks(any())).thenReturn((
+          main: WifiSettingsTestData.createQuickSetupAggregate(),
+          guest: null,
+          isQuickSetup: true,
+        ));
+        when(() => mockService.saveQuickSetup(
+              original: any(named: 'original'),
+              current: any(named: 'current'),
+              status: any(named: 'status'),
+            )).thenReturn(WifiWritePlan(
+          params: _written,
+          send: () async => WifiWriteOutcome.unanswered,
+        ));
+      });
+
+      test('succeeds once the router reads back what was written', () async {
+        when(() => mockService.isApplied(any())).thenAnswer((_) async => true);
+        final container = createContainer();
+        final notifier = await quickSetupNotifier(container);
+
+        await notifier.save();
+
+        verify(() => mockService.isApplied(_written)).called(1);
+        expect(
+            container.read(uspWifiSettingsProvider).status.isSaving, isFalse);
+        container.dispose();
+      });
+
+      test('fails — never a false success — when it never reads back',
+          () async {
+        when(() => mockService.isApplied(any())).thenAnswer((_) async => false);
+        final container = createContainer();
+        final notifier = await quickSetupNotifier(container);
+
+        await expectLater(notifier.save(), throwsA(isA<ServiceError>()));
+        container.dispose();
+      });
     });
 
     // -----------------------------------------------------------------------
@@ -614,7 +690,10 @@ void main() {
       when(() => mockService.saveAdvanced(
             original: any(named: 'original'),
             current: any(named: 'current'),
-          )).thenThrow(const NetworkError(detail: 'HTTP 504'));
+          )).thenReturn(WifiWritePlan(
+        params: _written,
+        send: () async => throw const NetworkError(detail: 'HTTP 504'),
+      ));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -646,7 +725,10 @@ void main() {
       when(() => mockService.saveAdvanced(
             original: any(named: 'original'),
             current: any(named: 'current'),
-          )).thenThrow(const NetworkError(detail: 'HTTP 504'));
+          )).thenReturn(WifiWritePlan(
+        params: _written,
+        send: () async => throw const NetworkError(detail: 'HTTP 504'),
+      ));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);

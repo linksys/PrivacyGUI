@@ -3,13 +3,14 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/tr181_path.dart';
 import 'package:privacy_gui/core/utils/wifi_channel.dart';
-import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_feature_state.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_status.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_write_confirm.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_advanced_service.dart';
+import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
 // ---------------------------------------------------------------------------
 // Providers
@@ -158,13 +159,30 @@ class UspWifiAdvancedNotifier
       }
     }
 
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      await _svc.setIeee80211hEnabled(
-        radioPaths: radioPaths,
-        enabled: enabled,
-        forceAutoChannelPaths: forceAutoChannelPaths,
-      );
-    });
+    // One SET, then — if its reply is lost to the radio reload or outlasts the
+    // lock's window — the radios are read back before success or failure is
+    // reported (#1460: the SET took 35.4 s over Remote Assistance and had
+    // applied when the app gave up at 30 s). See [wifiWriteConfirmProvider].
+    // Only IEEE80211hEnabled is read back. The forced AutoChannelEnable goes
+    // out in the same SET, so the DFS state landing means it did — the rule
+    // the WiFi Settings read-back applies to passphrases.
+    final planned = <String, dynamic>{
+      for (final path in radioPaths) '${path}IEEE80211hEnabled': enabled,
+    };
+    await ref.read(wifiWriteConfirmProvider)(
+      WifiWritePlan(
+        params: planned,
+        send: () => _svc.setIeee80211hEnabled(
+          radioPaths: radioPaths,
+          enabled: enabled,
+          forceAutoChannelPaths: forceAutoChannelPaths,
+        ),
+      ),
+      isApplied: (_) async {
+        final now = await _svc.fetchIeee80211h();
+        return radioPaths.every((p) => now[p] == enabled);
+      },
+    );
 
     logger.d('[USP][WiFi][Advanced]: Save succeeded — '
         'radios=${radioPaths.length}, enabled=$enabled, '

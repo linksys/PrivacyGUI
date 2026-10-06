@@ -4,7 +4,6 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
-import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_notifier.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart';
@@ -14,6 +13,7 @@ import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart'
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_write_confirm.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
 // ---------------------------------------------------------------------------
@@ -173,21 +173,21 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   @override
   Future<void> performSave() async {
     try {
-      await ref.read(uspMutationLockProvider).withLock(() async {
-        final current = state.settings.current;
-        if (current.quickSetupEnabled) {
-          await _svc.saveQuickSetup(
-            original: state.settings.original,
-            current: current,
-            status: state.status,
-          );
-        } else {
-          await _svc.saveAdvanced(
-            original: state.settings.original.networks,
-            current: current.networks,
-          );
-        }
-      });
+      // One SET, then — if its reply is lost to the WiFi reload — a read-back
+      // before success or failure is reported (#1499, #1460; see
+      // [wifiWriteConfirmProvider]).
+      final current = state.settings.current;
+      final plan = current.quickSetupEnabled
+          ? _svc.saveQuickSetup(
+              original: state.settings.original,
+              current: current,
+              status: state.status,
+            )
+          : _svc.saveAdvanced(
+              original: state.settings.original.networks,
+              current: current.networks,
+            );
+      await ref.read(wifiWriteConfirmProvider)(plan, isApplied: _svc.isApplied);
     } finally {
       // Refresh Layer 1 cache so post-save fetch() reads fresh data.
       // Using refresh() instead of invalidate() because the latter only marks
@@ -333,13 +333,14 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
     required bool autoChannel,
   }) async {
     try {
-      await ref.read(uspMutationLockProvider).withLock(() async {
-        await _svc.updateRadioChannel(
+      await ref.read(wifiWriteConfirmProvider)(
+        _svc.updateRadioChannel(
           instancePath,
           channel: channel,
           autoChannel: autoChannel,
-        );
-      });
+        ),
+        isApplied: _svc.isApplied,
+      );
     } on ServiceError catch (e) {
       logger.e('[USP][WiFi]: Update radio channel failed', error: e);
       rethrow;
@@ -352,16 +353,22 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   /// Called from Dashboard WiFi Networks card.
   Future<void> toggleSsidsByName(String ssidName, bool enable) async {
     try {
-      final count = await ref.read(uspMutationLockProvider).withLock(() async {
-        // Read wifiData inside lock to avoid TOCTOU race with concurrent mutations
-        final wifiData = await ref.read(wifiDataProvider.future);
-        return _svc.toggleSsidsByName(
+      // The paths are read from L1 BEFORE the lock, not inside it as they used
+      // to be: the read-back needs the planned params up front, so they must
+      // exist before the write is sent (see WifiWritePlan), and the lock is not
+      // re-entrant. The window this opens is narrow and its worst case is a
+      // toggle of paths valid a moment earlier, which the read-back then
+      // reports truthfully. The write itself is still serialised by the lock.
+      final wifiData = await ref.read(wifiDataProvider.future);
+      final count = await ref.read(wifiWriteConfirmProvider)(
+        _svc.toggleSsidsByName(
           wifiData.codegenContext.raw.ssids,
           wifiData.codegenContext.raw.accessPoints,
           ssidName,
           enable,
-        );
-      });
+        ),
+        isApplied: _svc.isApplied,
+      );
       if (count == 0) {
         logger.w('[USP][WiFi]: No SSIDs found matching the requested name');
         throw const InvalidInputError(

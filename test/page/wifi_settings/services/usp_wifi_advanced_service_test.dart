@@ -3,6 +3,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_advanced_service.dart';
+import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -38,6 +39,20 @@ Map<String, dynamic> _setFailure({
         'data': <String, dynamic>{},
         'error': {
           path: {'errorCode': errorCode, 'errorMessage': errorMessage},
+        },
+      },
+    };
+
+/// A per-path SET error whose request never got an answer.
+Map<String, dynamic> _setUnanswered() => {
+      'success': false,
+      'result': {
+        'data': <String, dynamic>{},
+        'error': {
+          'Device.WiFi.Radio.1.IEEE80211hEnabled': {
+            'errorCode': 9999,
+            'errorMessage': 'Transport error: Failed to fetch',
+          },
         },
       },
     };
@@ -167,6 +182,31 @@ void main() {
             'Device.WiFi.Radio.2.IEEE80211hEnabled': false,
             'Device.WiFi.Radio.2.AutoChannelEnable': true,
           })).called(1);
+    });
+
+    test(
+        'a lost reply is "unanswered", not a failure — #1460: the DFS SET '
+        'took 35.4 s and had applied', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => _setUnanswered());
+
+      final outcome = await svc.setIeee80211hEnabled(
+        radioPaths: ['Device.WiFi.Radio.1.'],
+        enabled: false,
+      );
+
+      expect(outcome, WifiWriteOutcome.unanswered);
+    });
+
+    test('an answered SET is confirmed', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => _setSuccess());
+
+      expect(
+        await svc.setIeee80211hEnabled(
+          radioPaths: ['Device.WiFi.Radio.1.'],
+          enabled: true,
+        ),
+        WifiWriteOutcome.confirmed,
+      );
     });
 
     test('empty forceAutoChannelPaths writes no AutoChannelEnable', () async {

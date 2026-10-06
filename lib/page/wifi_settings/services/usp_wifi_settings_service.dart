@@ -20,6 +20,34 @@ final uspWifiSettingsServiceProvider = Provider<UspWifiSettingsService>(
   (ref) => UspWifiSettingsService(ref.read(uspClientProvider)!),
 );
 
+/// What the router said about a WiFi write.
+///
+/// [unanswered] is the ordinary outcome on FL-WRT 2.0, not a fault: every WiFi
+/// write reloads all the radios, and the reply often has nowhere to arrive (the
+/// browser is on the WiFi being reloaded, or a Remote Assistance proxy outlasts
+/// the wait). The caller then reads the router back ([UspWifiSettingsService
+/// .isApplied]) before deciding — #1460's single DFS SET (a different service,
+/// same shape) took 35.4 s and had succeeded when the app reported it failed.
+enum WifiWriteOutcome { confirmed, unanswered }
+
+/// A WiFi write that has been worked out but not yet sent.
+///
+/// [params] are known **before** the write goes out, so a caller whose wait
+/// runs out still knows what to read back — reading back from the write's own
+/// reply would read nothing exactly when the reply is lost. [count] is the
+/// number of SSIDs a toggle matched, and 1 otherwise. [send] issues the one SET.
+class WifiWritePlan {
+  final Map<String, dynamic> params;
+  final int count;
+  final Future<WifiWriteOutcome> Function() send;
+
+  const WifiWritePlan({
+    required this.params,
+    required this.send,
+    this.count = 1,
+  });
+}
+
 /// Stateless service for transforming raw USP WiFi data into [WifiNetworkUIModel] list.
 ///
 /// Cross-references three TR-181 collections:
@@ -204,20 +232,26 @@ class UspWifiSettingsService {
   // Save — Quick Setup
   // ---------------------------------------------------------------------------
 
-  /// Saves WiFi settings in Quick Setup mode.
+  /// Plans a Quick Setup save: **one** SET, sent by the plan's `send`.
   ///
   /// Writes are gated by field-level diff against [original] so that firmware
   /// only receives the parameters the user actually changed:
-  ///   - SSID update is issued only when ssid name or enabled flag changed.
-  ///   - AP update is issued only when password or securityMode changed.
+  ///   - SSID params only when ssid name or enabled flag changed.
+  ///   - AP params only when password, securityMode or enabled changed.
   ///
   /// This prevents `KeyPassphrase (Invalid value)` errors from firmware when
   /// the user toggles Guest enable without (re-)entering a passphrase.
-  Future<void> saveQuickSetup({
+  ///
+  /// One SET because every WiFi SET reloads all radios: written one row at a
+  /// time, each write waited ~25 s for a reload and the next landed mid-reload,
+  /// so a name change stuck and the password did not (#1499, CLOUD_GUARDIANS
+  /// #215). See [_writeOnce].
+  WifiWritePlan saveQuickSetup({
     required WifiSettingsSettings original,
     required WifiSettingsSettings current,
     required WifiSettingsStatus status,
-  }) async {
+  }) {
+    final params = <String, dynamic>{};
     try {
       final groups = [
         (
@@ -257,30 +291,8 @@ class UspWifiSettingsService {
             }
           }
           for (final p in aggregate.ssidInstancePaths) {
-            final result = await WiFiSsids.update(_usp, [
-              WiFiSsidUpdate(
-                instancePath: p,
-                ssid: pending.ssid,
-                enable: pending.enabled,
-              ),
-            ]);
-            final parsed = UspResultParser.parseSetResult(result);
-            switch (parsed) {
-              case UspSuccess():
-                break;
-              case UspPartialSuccess(failures: final f):
-                throw UspPartialFailureError(
-                  summary:
-                      'WiFi SSID update partial failure: ${f.first.errorMessage}',
-                  successPaths: [],
-                  failures: f,
-                );
-              case UspFailure(errors: final e):
-                throw UspCompleteFailureError(
-                  summary: 'WiFi SSID update failed: ${e.first.errorMessage}',
-                  failures: e,
-                );
-            }
+            params['${p}SSID'] = pending.ssid;
+            params['${p}Enable'] = pending.enabled;
           }
         }
 
@@ -313,37 +325,14 @@ class UspWifiSettingsService {
               band: band,
               selectedMode: pending.securityMode,
             );
-            final result = await WiFiAccessPoints.update(
-              _usp,
-              [
-                WiFiAccessPointUpdate(
-                  instancePath: p,
-                  enable: enabledChanged ? pending.enabled : null,
-                  // Omit an empty passphrase (e.g. when only securityMode
-                  // changed to an open mode) so firmware does not reject it.
-                  keyPassphrase: securityChanged && pending.password.isNotEmpty
-                      ? pending.password
-                      : null,
-                  securityModeEnabled: securityChanged ? securityMode : null,
-                )
-              ],
-            );
-            final parsed = UspResultParser.parseSetResult(result);
-            switch (parsed) {
-              case UspSuccess():
-                break;
-              case UspPartialSuccess(failures: final f):
-                throw UspPartialFailureError(
-                  summary:
-                      'WiFi AP update partial failure: ${f.first.errorMessage}',
-                  successPaths: [],
-                  failures: f,
-                );
-              case UspFailure(errors: final e):
-                throw UspCompleteFailureError(
-                  summary: 'WiFi AP update failed: ${e.first.errorMessage}',
-                  failures: e,
-                );
+            if (enabledChanged) params['${p}Enable'] = pending.enabled;
+            if (securityChanged) {
+              params['${p}Security.ModeEnabled'] = securityMode;
+              // Omit an empty passphrase (e.g. when only securityMode
+              // changed to an open mode) so firmware does not reject it.
+              if (pending.password.isNotEmpty) {
+                params['${p}Security.KeyPassphrase'] = pending.password;
+              }
             }
           }
         }
@@ -352,17 +341,27 @@ class UspWifiSettingsService {
       if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
+    return _plan(params, 'WiFi Quick Setup update');
   }
 
   // ---------------------------------------------------------------------------
   // Save — Advanced
   // ---------------------------------------------------------------------------
 
-  /// Saves WiFi settings in Advanced mode (per-network).
-  Future<void> saveAdvanced({
+  /// Plans an Advanced save (per-network): **one** SET, sent by `send`.
+  ///
+  /// One SET across every network and layer, for the reason in [_writeOnce].
+  /// Its outcome can still be [WifiWriteOutcome.unanswered] — the reply lost to
+  /// the reload it caused — so the caller reads [WifiWritePlan.params] back
+  /// instead of reporting a failure.
+  ///
+  /// Validation runs while the plan is built, so a bad value throws before any
+  /// SET goes out.
+  WifiWritePlan saveAdvanced({
     required List<WifiNetworkUIModel> original,
     required List<WifiNetworkUIModel> current,
-  }) async {
+  }) {
+    final params = <String, dynamic>{};
     try {
       for (var i = 0; i < current.length; i++) {
         final curr = current[i];
@@ -375,33 +374,8 @@ class UspWifiSettingsService {
         if (orig == null ||
             orig.enabled != curr.enabled ||
             orig.ssid != curr.ssid) {
-          final result = await WiFiSsids.update(
-            _usp,
-            [
-              WiFiSsidUpdate(
-                instancePath: curr.ssidInstancePath,
-                enable: curr.enabled,
-                ssid: curr.ssid,
-              )
-            ],
-          );
-          final parsed = UspResultParser.parseSetResult(result);
-          switch (parsed) {
-            case UspSuccess():
-              break;
-            case UspPartialSuccess(failures: final f):
-              throw UspPartialFailureError(
-                summary:
-                    'WiFi SSID update partial failure: ${f.first.errorMessage}',
-                successPaths: [],
-                failures: f,
-              );
-            case UspFailure(errors: final e):
-              throw UspCompleteFailureError(
-                summary: 'WiFi SSID update failed: ${e.first.errorMessage}',
-                failures: e,
-              );
-          }
+          params['${curr.ssidInstancePath}Enable'] = curr.enabled;
+          params['${curr.ssidInstancePath}SSID'] = curr.ssid;
         }
 
         // ── AccessPoint layer ───────────────────────────────────────────────
@@ -431,37 +405,16 @@ class UspWifiSettingsService {
                   selectedMode: curr.securityMode,
                 )
               : null;
-          final result = await WiFiAccessPoints.update(
-            _usp,
-            [
-              WiFiAccessPointUpdate(
-                instancePath: ap,
-                enable: enabledChanged ? curr.enabled : null,
-                keyPassphrase: securityChanged && curr.keyPassphrase.isNotEmpty
-                    ? curr.keyPassphrase
-                    : null,
-                securityModeEnabled: securityMode,
-                ssidAdvertisementEnabled:
-                    broadcastChanged ? curr.ssidAdvertisementEnabled : null,
-              )
-            ],
-          );
-          final parsed = UspResultParser.parseSetResult(result);
-          switch (parsed) {
-            case UspSuccess():
-              break;
-            case UspPartialSuccess(failures: final f):
-              throw UspPartialFailureError(
-                summary:
-                    'WiFi AP update partial failure: ${f.first.errorMessage}',
-                successPaths: [],
-                failures: f,
-              );
-            case UspFailure(errors: final e):
-              throw UspCompleteFailureError(
-                summary: 'WiFi AP update failed: ${e.first.errorMessage}',
-                failures: e,
-              );
+          if (enabledChanged) params['${ap}Enable'] = curr.enabled;
+          if (securityMode != null) {
+            params['${ap}Security.ModeEnabled'] = securityMode;
+          }
+          if (securityChanged && curr.keyPassphrase.isNotEmpty) {
+            params['${ap}Security.KeyPassphrase'] = curr.keyPassphrase;
+          }
+          if (broadcastChanged) {
+            params['${ap}SSIDAdvertisementEnabled'] =
+                curr.ssidAdvertisementEnabled;
           }
         }
 
@@ -473,38 +426,15 @@ class UspWifiSettingsService {
                 orig.channelBandwidth != curr.channelBandwidth ||
                 orig.channel != curr.channel ||
                 orig.autoChannelEnable != curr.autoChannelEnable)) {
-          final result = await WiFiRadios.update(
-            _usp,
-            [
-              WiFiRadioUpdate(
-                instancePath: radio,
-                operatingStandards: curr.operatingStandards.isNotEmpty
-                    ? curr.operatingStandards
-                    : null,
-                operatingChannelBandwidth: curr.channelBandwidth.isNotEmpty
-                    ? curr.channelBandwidth
-                    : null,
-                autoChannelEnable: curr.autoChannelEnable,
-                channel: curr.autoChannelEnable ? null : curr.channel,
-              )
-            ],
-          );
-          final parsed = UspResultParser.parseSetResult(result);
-          switch (parsed) {
-            case UspSuccess():
-              break;
-            case UspPartialSuccess(failures: final f):
-              throw UspPartialFailureError(
-                summary:
-                    'WiFi Radio update partial failure: ${f.first.errorMessage}',
-                successPaths: [],
-                failures: f,
-              );
-            case UspFailure(errors: final e):
-              throw UspCompleteFailureError(
-                summary: 'WiFi Radio update failed: ${e.first.errorMessage}',
-                failures: e,
-              );
+          if (curr.operatingStandards.isNotEmpty) {
+            params['${radio}OperatingStandards'] = curr.operatingStandards;
+          }
+          if (curr.channelBandwidth.isNotEmpty) {
+            params['${radio}OperatingChannelBandwidth'] = curr.channelBandwidth;
+          }
+          params['${radio}AutoChannelEnable'] = curr.autoChannelEnable;
+          if (!curr.autoChannelEnable) {
+            params['${radio}Channel'] = curr.channel;
           }
         }
       }
@@ -512,51 +442,27 @@ class UspWifiSettingsService {
       if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
+    return _plan(params, 'WiFi Advanced update');
   }
 
   // ---------------------------------------------------------------------------
   // Mutations — WiFi Radio quick actions (from Dashboard cards)
   // ---------------------------------------------------------------------------
 
-  /// Updates a WiFi radio's channel and auto-channel setting.
-  Future<void> updateRadioChannel(
+  /// Plans a WiFi radio's channel and auto-channel change.
+  ///
+  /// Already one SET, but a channel change reloads the radio like any other
+  /// WiFi write, so its reply can be lost the same way: the outcome is returned
+  /// for the caller to read back rather than reporting a failure at 30 s.
+  WifiWritePlan updateRadioChannel(
     String instancePath, {
     required int channel,
     required bool autoChannel,
-  }) async {
-    try {
-      final result = await WiFiRadios.update(
-        _usp,
-        [
-          WiFiRadioUpdate(
-            instancePath: instancePath,
-            channel: channel,
-            autoChannelEnable: autoChannel,
-          )
-        ],
-      );
-      final parsed = UspResultParser.parseSetResult(result);
-      switch (parsed) {
-        case UspSuccess():
-          break;
-        case UspPartialSuccess(failures: final f):
-          throw UspPartialFailureError(
-            summary:
-                'Update radio channel partial failure: ${f.first.errorMessage}',
-            successPaths: [],
-            failures: f,
-          );
-        case UspFailure(errors: final e):
-          throw UspCompleteFailureError(
-            summary: 'Update radio channel failed: ${e.first.errorMessage}',
-            failures: e,
-          );
-      }
-    } catch (e) {
-      if (e is ServiceError) rethrow;
-      throw mapUspErrorToServiceError(e);
-    }
-  }
+  }) =>
+      _plan({
+        '${instancePath}Channel': channel,
+        '${instancePath}AutoChannelEnable': autoChannel,
+      }, 'Update radio channel');
 
   /// Toggles all networks with a given SSID name on or off across all bands.
   ///
@@ -566,19 +472,22 @@ class UspWifiSettingsService {
   /// this firmware (see #972). The AccessPoint match is resolved via
   /// AccessPoint.SSIDReference → SSID.instancePath.
   ///
-  /// Returns the number of SSIDs toggled.
-  Future<int> toggleSsidsByName(
+  /// Both layers go out in **one** SET, for the reason in [_writeOnce].
+  ///
+  /// Returns the plan; its [WifiWritePlan.count] is the number of SSIDs
+  /// matched, 0 (and no SET) when none was.
+  WifiWritePlan toggleSsidsByName(
     WiFiSsids ssids,
     WiFiAccessPoints accessPoints,
     String ssidName,
     bool enable,
-  ) async {
+  ) {
     final ssidPaths = ssids.items
         .where((s) => s.ssid == ssidName)
         .map((s) => s.instancePath)
         .toList();
 
-    if (ssidPaths.isEmpty) return 0;
+    if (ssidPaths.isEmpty) return _plan(const {}, 'Toggle SSIDs', count: 0);
 
     // Resolve AccessPoint paths whose SSIDReference points at a matched SSID.
     final matchedSsidPathSet = ssidPaths.map(ensureTrailingDot).toSet();
@@ -588,32 +497,126 @@ class UspWifiSettingsService {
         .map((ap) => ap.instancePath)
         .toList();
 
+    final params = <String, dynamic>{
+      for (final p in ssidPaths) '${p}Enable': enable,
+      for (final p in apPaths) '${p}Enable': enable,
+    };
+    return _plan(params, 'Toggle SSIDs', count: ssidPaths.length);
+  }
+
+  WifiWritePlan _plan(
+    Map<String, dynamic> params,
+    String label, {
+    int count = 1,
+  }) =>
+      WifiWritePlan(
+        params: params,
+        count: count,
+        send: () => _writeOnce(params, label),
+      );
+
+  /// Sends [params] as **one** SET and says whether the router answered.
+  ///
+  /// **One SET.** Every WiFi SET reloads all the radios on FL-WRT 2.0 (#1000,
+  /// bench 2.0.2), so a save split into several SETs only ever had a live
+  /// connection under the first. One SET means one reload: on the bench the new
+  /// SSIDs were on the air in 15 s, against 40 s for two SETs.
+  ///
+  /// **`allowPartial: true`, and it has to be.** The OBUSPA broker refuses an
+  /// atomic SET that spans more than one USP Service with 7005; SSID, AccessPoint
+  /// and Radio rows together do (the same wall `PnpService.saveWifi` and
+  /// `_saveIpv6Settings` hit). A per-leaf failure the router does report still
+  /// throws.
+  ///
+  /// Returns [WifiWriteOutcome.unanswered] when every error says the request
+  /// never got an answer ([isUnansweredTransportFailure]) — the reply was lost to
+  /// the reload. A refusal throws: a router that answered applied nothing, and
+  /// the WASM client stamps `9999` on both, so only the message tells them apart.
+  /// Nothing to write is [WifiWriteOutcome.confirmed] with no SET at all.
+  Future<WifiWriteOutcome> _writeOnce(
+    Map<String, dynamic> params,
+    String label,
+  ) async {
+    if (params.isEmpty) return WifiWriteOutcome.confirmed;
     try {
-      final ssidUpdates = ssidPaths
-          .map((p) => WiFiSsidUpdate(instancePath: p, enable: enable))
-          .toList();
-      final ssidResult = await WiFiSsids.update(_usp, ssidUpdates);
-      _throwIfNotSuccess(ssidResult, 'Toggle SSIDs');
-
-      if (apPaths.isNotEmpty) {
-        final apUpdates = apPaths
-            .map((p) => WiFiAccessPointUpdate(instancePath: p, enable: enable))
-            .toList();
-        final apResult = await WiFiAccessPoints.update(_usp, apUpdates);
-        _throwIfNotSuccess(apResult, 'Toggle AccessPoints');
+      final result = await _usp.set(params, allowPartial: true);
+      final parsed = UspResultParser.parseSetResult(result);
+      if (parsed is UspFailure &&
+          parsed.errors
+              .every((e) => isUnansweredTransportFailure(e.errorMessage))) {
+        logger.i('[USP][WiFi]: $label unanswered — the WiFi reloaded under '
+            'the request');
+        return WifiWriteOutcome.unanswered;
       }
-
-      return ssidPaths.length;
+      _throwIfParsedNotSuccess(parsed, label);
+      return WifiWriteOutcome.confirmed;
     } catch (e) {
       if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
 
-  /// Parses a USP Set result and throws the appropriate [ServiceError] when it
-  /// is not a complete success. [label] prefixes the error summary.
-  void _throwIfNotSuccess(Map<String, dynamic> result, String label) {
-    final parsed = UspResultParser.parseSetResult(result);
+  /// Whether the router now carries the values in [written] — the params a save
+  /// sent, for a write whose own answer never arrived.
+  ///
+  /// Read back through the generated models rather than the raw leaves, because
+  /// they already normalise the firmware's `true` / `"true"` / `"1"` into one
+  /// `bool`; a raw compare would call a landed write "not yet".
+  ///
+  /// **Passphrases are not compared.** TR-181 reads `KeyPassphrase` back empty,
+  /// and they went out in the same SET as everything else, so the rest landing
+  /// means they did — the rule `PnpService.isWifiApplied` follows. A save that
+  /// wrote nothing else reads as applied.
+  ///
+  /// Throws [ServiceError] when the read itself fails; the caller treats that
+  /// as "not yet" while the radios settle.
+  Future<bool> isApplied(Map<String, dynamic> written) async {
+    bool wants(String table) => written.keys.any((k) =>
+        k.startsWith('Device.WiFi.$table.') && !k.endsWith('KeyPassphrase'));
+    final needSsids = wants('SSID');
+    final needAps = wants('AccessPoint');
+    final needRadios = wants('Radio');
+    if (!needSsids && !needAps && !needRadios) return true;
+
+    final WiFiSsids? ssids;
+    final WiFiAccessPoints? aps;
+    final WiFiRadios? radios;
+    try {
+      ssids = needSsids ? await WiFiSsids.fetch(_usp) : null;
+      aps = needAps ? await WiFiAccessPoints.fetch(_usp) : null;
+      radios = needRadios ? await WiFiRadios.fetch(_usp) : null;
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+
+    final readBack = <String, Object?>{
+      for (final s in ssids?.items ?? const <WiFiSsid>[]) ...{
+        '${s.instancePath}SSID': s.ssid,
+        '${s.instancePath}Enable': s.enable,
+      },
+      for (final a in aps?.items ?? const <WiFiAccessPoint>[]) ...{
+        '${a.instancePath}Enable': a.enable,
+        '${a.instancePath}Security.ModeEnabled': a.securityModeEnabled,
+        '${a.instancePath}SSIDAdvertisementEnabled': a.ssidAdvertisementEnabled,
+      },
+      for (final r in radios?.items ?? const <WiFiRadio>[]) ...{
+        '${r.instancePath}Channel': r.channel,
+        '${r.instancePath}OperatingChannelBandwidth':
+            r.operatingChannelBandwidth,
+        '${r.instancePath}OperatingStandards': r.operatingStandards,
+        '${r.instancePath}AutoChannelEnable': r.autoChannelEnable,
+        '${r.instancePath}IEEE80211hEnabled': r.ieee80211hEnabled,
+      },
+    };
+
+    return written.entries
+        .where((e) => !e.key.endsWith('KeyPassphrase'))
+        .every((e) => readBack[e.key] == e.value);
+  }
+
+  /// Throws the appropriate [ServiceError] when [parsed] is not a complete
+  /// success. [label] prefixes the error summary.
+  void _throwIfParsedNotSuccess(UspSetResult parsed, String label) {
     switch (parsed) {
       case UspSuccess():
         return;
