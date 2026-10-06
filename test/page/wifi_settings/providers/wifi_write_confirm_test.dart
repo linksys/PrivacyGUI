@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -16,8 +17,10 @@ import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_servic
 void main() {
   const params = {'Device.WiFi.SSID.1.SSID': 'NewHome'};
   WifiWritePlan plan(Future<WifiWriteOutcome> Function() send,
-          {Map<String, dynamic> p = params, int count = 1}) =>
-      WifiWritePlan(params: p, send: send, count: count);
+          {Map<String, dynamic> p = params,
+          Map<String, dynamic>? proof,
+          int count = 1}) =>
+      WifiWritePlan(params: p, proof: proof ?? p, send: send, count: count);
 
   late ProviderContainer container;
   setUp(() {
@@ -128,6 +131,117 @@ void main() {
       ),
       throwsA(isA<InvalidInputError>()),
     );
+  });
+
+  test(
+      'an unanswered write with NO proof is a failure, never a success — a '
+      'password-only change cannot be read back (CLOUD_GUARDIANS#215)',
+      () async {
+    var reads = 0;
+    await expectLater(
+      run(
+        plan(
+          () async => WifiWriteOutcome.unanswered,
+          p: const {
+            'Device.WiFi.AccessPoint.1.Security.ModeEnabled': 'WPA2-Personal',
+            'Device.WiFi.AccessPoint.1.Security.KeyPassphrase': 'x',
+          },
+          proof: const {},
+        ),
+        isApplied: (_) async {
+          reads++;
+          return true;
+        },
+      ),
+      throwsA(isA<ServiceError>()),
+    );
+    expect(reads, 0, reason: 'nothing to read back, so nothing is read');
+  });
+
+  test('reads back the proof, not the params', () async {
+    final seen = <Map<String, dynamic>>[];
+    await run(
+      plan(
+        () async => WifiWriteOutcome.unanswered,
+        p: const {
+          'Device.WiFi.SSID.1.SSID': 'NewHome',
+          'Device.WiFi.SSID.1.Enable': true,
+        },
+        proof: const {'Device.WiFi.SSID.1.SSID': 'NewHome'},
+      ),
+      isApplied: (w) async {
+        seen.add(w);
+        return true;
+      },
+    );
+
+    expect(seen.single, {'Device.WiFi.SSID.1.SSID': 'NewHome'});
+  });
+
+  group('the real default timings — no overrides', () {
+    // The other tests shrink the timings so they run fast. These run the
+    // shipped 30 s / 3 s / 60 s, through fakeAsync, because a defect in a
+    // default is invisible to a test that replaces it. That only works because
+    // the provider times itself with `clock` — fakeAsync does not move
+    // `Stopwatch()`.
+    late ProviderContainer real;
+    setUp(() => real = ProviderContainer(overrides: [
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+        ]));
+    tearDown(() => real.dispose());
+
+    test(
+        '#1460 exactly: the SET answers at 35.4 s — past the 30 s window — '
+        'and the read-back confirms it', () {
+      fakeAsync((async) {
+        Object? error;
+        var confirmed = false;
+        var reads = 0;
+        real
+            .read(wifiWriteConfirmProvider)(
+          plan(() async {
+            await Future<void>.delayed(const Duration(milliseconds: 35400));
+            return WifiWriteOutcome.confirmed;
+          }),
+          // Applied from the start; the app just never heard so in time.
+          isApplied: (_) async {
+            reads++;
+            return true;
+          },
+        )
+            .then((_) {
+          confirmed = true;
+        }, onError: (Object e) {
+          error = e;
+        });
+
+        async.elapse(const Duration(seconds: 29));
+        expect(confirmed, isFalse, reason: 'still inside the 30 s window');
+        async.elapse(const Duration(seconds: 2));
+        expect(error, isNull, reason: 'past 30 s is a read-back, not an error');
+        expect(confirmed, isTrue);
+        expect(reads, 1);
+      });
+    });
+
+    test('gives up at the 60 s deadline, not before', () {
+      fakeAsync((async) {
+        Object? error;
+        real
+            .read(wifiWriteConfirmProvider)(
+          plan(() async => WifiWriteOutcome.unanswered),
+          isApplied: (_) async => false,
+        )
+            .then((_) {}, onError: (Object e) {
+          error = e;
+        });
+
+        async.elapse(const Duration(seconds: 57));
+        expect(error, isNull, reason: 'still polling every 3 s');
+        async.elapse(const Duration(seconds: 4));
+        expect(error, isA<ServiceError>());
+      });
+    });
   });
 
   test('nothing to write sends nothing and reads nothing', () async {

@@ -79,8 +79,7 @@ class UspWifiAdvancedService {
       // error instead of being silently swallowed.
       final parsed = UspResultParser.parseSetResult(result);
       if (parsed is UspFailure &&
-          parsed.errors
-              .every((e) => isUnansweredTransportFailure(e.errorMessage))) {
+          parsed.errors.every((e) => isUnansweredWifiWrite(e.errorMessage))) {
         logger.i('[USP][WiFi][Advanced]: IEEE80211h update unanswered — the '
             'radios reloaded under the request');
         return WifiWriteOutcome.unanswered;
@@ -105,5 +104,48 @@ class UspWifiAdvancedService {
       if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
+  }
+
+  /// [setIeee80211hEnabled] as a [WifiWritePlan], for a caller that settles a
+  /// lost reply by reading the radios back.
+  ///
+  /// The proof is the `IEEE80211hEnabled` values, which [fetchIeee80211h]
+  /// reads back — but only for radios whose value actually changes, since an
+  /// unchanged one would read back "matching" whether or not the write arrived.
+  /// The forced `AutoChannelEnable` is not proof: it goes out in the same SET,
+  /// so the DFS state landing means it did.
+  WifiWritePlan planIeee80211h({
+    required Map<String, bool> current,
+    required List<String> radioPaths,
+    required bool enabled,
+    List<String> forceAutoChannelPaths = const [],
+  }) =>
+      WifiWritePlan(
+        params: {
+          for (final path in radioPaths) '${path}IEEE80211hEnabled': enabled,
+          for (final path in forceAutoChannelPaths)
+            '${path}AutoChannelEnable': true,
+        },
+        proof: {
+          for (final path in radioPaths)
+            if (current[path] != enabled) '${path}IEEE80211hEnabled': enabled,
+        },
+        send: () => setIeee80211hEnabled(
+          radioPaths: radioPaths,
+          enabled: enabled,
+          forceAutoChannelPaths: forceAutoChannelPaths,
+        ),
+      );
+
+  /// Whether the radios now carry every `IEEE80211hEnabled` value in [proof].
+  /// Fails closed: an empty [proof] is not applied.
+  Future<bool> isIeee80211hApplied(Map<String, dynamic> proof) async {
+    if (proof.isEmpty) return false;
+    final now = await fetchIeee80211h();
+    return proof.entries.every((e) {
+      final radio =
+          e.key.substring(0, e.key.length - 'IEEE80211hEnabled'.length);
+      return now[radio] == e.value;
+    });
   }
 }

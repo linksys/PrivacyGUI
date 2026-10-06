@@ -194,7 +194,27 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       // the provider dirty — without an active subscriber it won't rebuild,
       // and the subsequent .future call would return stale data.
       // Wrapped in finally to ensure UI stays in sync even on partial failure.
+      await _refreshL1AfterWrite();
+    }
+  }
+
+  /// Re-reads L1 after a write, without letting the re-read decide the save.
+  ///
+  /// The radios are still reloading when it runs, so it can time out on the
+  /// 15 s throttler — which is what #1499's user saw: both SETs had succeeded,
+  /// and `Throttler: request exceeded 15s` from THIS read turned the save into
+  /// "Something went wrong". The write's outcome is already settled by then (a
+  /// confirmed answer or a read-back), so a failed refresh is logged, not
+  /// thrown; the post-save `fetch()` reports a stale read on `status.error`,
+  /// as the mixin documents.
+  Future<void> _refreshL1AfterWrite() async {
+    try {
       final _ = await ref.refresh(wifiDataProvider.future);
+    } catch (e) {
+      logger.w(
+          '[USP][WiFi]: L1 refresh after the write failed — the write '
+          'itself is settled',
+          error: e);
     }
   }
 

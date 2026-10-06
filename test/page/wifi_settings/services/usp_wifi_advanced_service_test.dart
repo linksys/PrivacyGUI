@@ -209,6 +209,57 @@ void main() {
       );
     });
 
+    group('planIeee80211h', () {
+      test(
+          'proof is only the radios whose DFS value changes — an unchanged '
+          'one would read back "matching" either way', () {
+        final plan = svc.planIeee80211h(
+          current: {
+            'Device.WiFi.Radio.1.': true,
+            'Device.WiFi.Radio.2.': false
+          },
+          radioPaths: ['Device.WiFi.Radio.1.', 'Device.WiFi.Radio.2.'],
+          enabled: false,
+          forceAutoChannelPaths: ['Device.WiFi.Radio.1.'],
+        );
+
+        expect(plan.params, {
+          'Device.WiFi.Radio.1.IEEE80211hEnabled': false,
+          'Device.WiFi.Radio.2.IEEE80211hEnabled': false,
+          'Device.WiFi.Radio.1.AutoChannelEnable': true,
+        });
+        // Radio.2 was already off; the forced AutoChannelEnable rides along.
+        expect(plan.proof, {'Device.WiFi.Radio.1.IEEE80211hEnabled': false});
+      });
+
+      test('read-back fails closed on an empty proof, and reads nothing',
+          () async {
+        expect(await svc.isIeee80211hApplied(const {}), isFalse);
+        verifyNever(() => mockUsp.get(any()));
+      });
+
+      test('read-back is true only when every proved radio reads back',
+          () async {
+        when(() => mockUsp.get(any())).thenAnswer((_) async => {
+              'Device.WiFi.Radio.1.IEEE80211hEnabled': false,
+              'Device.WiFi.Radio.2.IEEE80211hEnabled': true,
+            });
+
+        expect(
+          await svc.isIeee80211hApplied(
+              {'Device.WiFi.Radio.1.IEEE80211hEnabled': false}),
+          isTrue,
+        );
+        expect(
+          await svc.isIeee80211hApplied({
+            'Device.WiFi.Radio.1.IEEE80211hEnabled': false,
+            'Device.WiFi.Radio.2.IEEE80211hEnabled': false,
+          }),
+          isFalse,
+        );
+      });
+    });
+
     test('empty forceAutoChannelPaths writes no AutoChannelEnable', () async {
       when(() => mockUsp.set(any())).thenAnswer((_) async => _setSuccess());
 

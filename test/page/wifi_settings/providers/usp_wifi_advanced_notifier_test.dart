@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
@@ -14,6 +15,19 @@ import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_servic
 
 class MockUspWifiAdvancedService extends Mock
     implements UspWifiAdvancedService {}
+
+/// The plan builder never touches the client; this only satisfies its type.
+class _NoUsp extends Mock implements UspClient {}
+
+/// The real service, with its one GET answered by [_source]'s stub — so the
+/// read-back comparison under test is the production one.
+class _ReadBackVia extends UspWifiAdvancedService {
+  _ReadBackVia(this._source) : super(_NoUsp());
+  final UspWifiAdvancedService _source;
+
+  @override
+  Future<Map<String, bool>> fetchIeee80211h() => _source.fetchIeee80211h();
+}
 
 WifiRadioUIModel _radioModel({
   required String instancePath,
@@ -38,16 +52,57 @@ void main() {
 
   setUp(() {
     mockService = MockUspWifiAdvancedService();
+    // The plan and its read-back are the real service's, so these tests pin
+    // the real params and proof. Only the SET and the GET are mocked: `send`
+    // goes through the mocked setIeee80211hEnabled, so every `verify` of it
+    // below still sees the call, and the read-back reads fetchIeee80211h.
+    when(() => mockService.planIeee80211h(
+          current: any(named: 'current'),
+          radioPaths: any(named: 'radioPaths'),
+          enabled: any(named: 'enabled'),
+          forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
+        )).thenAnswer((inv) {
+      final current = inv.namedArguments[#current] as Map<String, bool>;
+      final radioPaths = inv.namedArguments[#radioPaths] as List<String>;
+      final enabled = inv.namedArguments[#enabled] as bool;
+      final force = inv.namedArguments[#forceAutoChannelPaths] as List<String>;
+      final real = UspWifiAdvancedService(_NoUsp()).planIeee80211h(
+        current: current,
+        radioPaths: radioPaths,
+        enabled: enabled,
+        forceAutoChannelPaths: force,
+      );
+      return WifiWritePlan(
+        params: real.params,
+        proof: real.proof,
+        send: () => mockService.setIeee80211hEnabled(
+          radioPaths: radioPaths,
+          enabled: enabled,
+          forceAutoChannelPaths: force,
+        ),
+      );
+    });
+    // The real comparison, over the mocked GET — not a copy of it.
+    when(() => mockService.isIeee80211hApplied(any())).thenAnswer((inv) =>
+        _ReadBackVia(mockService).isIeee80211hApplied(
+            inv.positionalArguments.first as Map<String, dynamic>));
+  });
+
+  setUpAll(() {
+    registerFallbackValue(<String, bool>{});
+    registerFallbackValue(<String, dynamic>{});
   });
 
   ProviderContainer createContainer({
     List<WifiRadioUIModel> radios = const [],
+    WifiDataNotifier Function()? wifiNotifier,
   }) {
     final container = ProviderContainer(
       overrides: [
         uspWifiAdvancedServiceProvider.overrideWithValue(mockService),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
-        wifiDataProvider.overrideWith(() => _StubWifiDataNotifier(radios)),
+        wifiDataProvider
+            .overrideWith(wifiNotifier ?? () => _StubWifiDataNotifier(radios)),
         // Short timings, so the read-back path runs without real waits.
         wifiAnswerWindowProvider
             .overrideWithValue(const Duration(milliseconds: 50)),
@@ -490,6 +545,34 @@ void main() {
       container.dispose();
     });
 
+    test(
+        'a confirmed DFS write is NOT failed by the L1 refresh after it '
+        '(the 15 s throttler while the radios reload)', () async {
+      when(() => mockService.fetchIeee80211h()).thenAnswer((_) async => {
+            'Device.WiFi.Radio.1.': false,
+          });
+      when(() => mockService.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: any(named: 'enabled'),
+            forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
+          )).thenAnswer((_) async => WifiWriteOutcome.confirmed);
+      final l1 = _FailAfterFirstBuild();
+      final container = createContainer(wifiNotifier: () => l1);
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspWifiAdvancedProvider.notifier);
+      notifier.setDfsEnabled(true);
+      l1.fail = true;
+
+      await notifier.save();
+
+      verify(() => mockService.setIeee80211hEnabled(
+            radioPaths: ['Device.WiFi.Radio.1.'],
+            enabled: true,
+            forceAutoChannelPaths: const [],
+          )).called(1);
+      container.dispose();
+    });
+
     test('fails when the radios never read back the new state', () async {
       stubDfs(readsBack: {'Device.WiFi.Radio.1.': true});
       final container = createContainer();
@@ -725,6 +808,20 @@ class _StubWifiDataNotifier extends WifiDataNotifier {
           codegenContext: WifiCodegenContext.empty,
           radioModels: _radios,
         );
+}
+
+/// Builds normally until [fail] is set, then throws — the post-save refresh
+/// hitting the 15 s throttler.
+class _FailAfterFirstBuild extends WifiDataNotifier {
+  bool fail = false;
+
+  @override
+  Future<WifiData> build() async {
+    if (fail) {
+      throw const NetworkError(detail: 'Throttler: request exceeded 15s');
+    }
+    return const WifiData.empty();
+  }
 }
 
 /// Throws on its first build and succeeds afterwards — for the retry contract.

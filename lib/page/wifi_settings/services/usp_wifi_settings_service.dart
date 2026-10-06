@@ -30,20 +30,52 @@ final uspWifiSettingsServiceProvider = Provider<UspWifiSettingsService>(
 /// same shape) took 35.4 s and had succeeded when the app reported it failed.
 enum WifiWriteOutcome { confirmed, unanswered }
 
+/// Whether a per-path WiFi SET error means the router never answered.
+///
+/// [isUnansweredTransportFailure]'s `Failed to fetch` — the browser on the
+/// WiFi being reloaded — plus one shape only Remote Assistance produces: an
+/// `HTTP 5xx` carrying **no** router fault code. Guardian answers 500 when it
+/// cannot reach a router whose radios are reloading (CLOUD_GUARDIANS#215: the
+/// main-password SET came back `HTTP error: HTTP 500` after 25.9 s, and GETs
+/// read empty for another ~20 s until the router rejoined the cloud). A fault
+/// the router itself reported always carries `(code: N)`, so it is excluded,
+/// and a 4xx is never unanswered — a 401 must end the session (#1627).
+///
+/// Kept here rather than widening the shared predicate, which PnP also uses.
+bool isUnansweredWifiWrite(String errorMessage) {
+  if (isUnansweredTransportFailure(errorMessage)) return true;
+  if (_routerFaultCode.hasMatch(errorMessage)) return false;
+  final status = _httpStatus.firstMatch(errorMessage);
+  return status != null && status.group(1)!.startsWith('5');
+}
+
+final _routerFaultCode = RegExp(r'\(code:\s*\d+\)');
+final _httpStatus = RegExp(r'HTTP error: HTTP (\d{3})');
+
 /// A WiFi write that has been worked out but not yet sent.
 ///
 /// [params] are known **before** the write goes out, so a caller whose wait
 /// runs out still knows what to read back — reading back from the write's own
 /// reply would read nothing exactly when the reply is lost. [count] is the
 /// number of SSIDs a toggle matched, and 1 otherwise. [send] issues the one SET.
+///
+/// [proof] is the subset of [params] that can tell a landed write from the old
+/// state: the values this save **changes** and the router reads back. It never
+/// holds a passphrase (TR-181 reads those back empty) nor a value resent
+/// unchanged alongside a change — a password-only save resends the current
+/// `ModeEnabled`, which reads back "matching" whether or not the write arrived
+/// (CLOUD_GUARDIANS#215's exact case). Empty proof means a lost reply cannot be
+/// confirmed by reading back, so it must not be reported as a success.
 class WifiWritePlan {
   final Map<String, dynamic> params;
+  final Map<String, dynamic> proof;
   final int count;
   final Future<WifiWriteOutcome> Function() send;
 
   const WifiWritePlan({
     required this.params,
     required this.send,
+    this.proof = const {},
     this.count = 1,
   });
 }
@@ -252,96 +284,106 @@ class UspWifiSettingsService {
     required WifiSettingsStatus status,
   }) {
     final params = <String, dynamic>{};
-    try {
-      final groups = [
-        (
-          pending: current.quickSetupMain,
-          orig: original.quickSetupMain,
-          isGuest: false,
-        ),
-        (
-          pending: current.quickSetupGuest,
-          orig: original.quickSetupGuest,
-          isGuest: true,
-        ),
-      ];
+    final proof = <String, dynamic>{};
+    final groups = [
+      (
+        pending: current.quickSetupMain,
+        orig: original.quickSetupMain,
+        isGuest: false,
+      ),
+      (
+        pending: current.quickSetupGuest,
+        orig: original.quickSetupGuest,
+        isGuest: true,
+      ),
+    ];
 
-      for (final group in groups) {
-        final pending = group.pending;
-        if (pending == null) continue;
-        final orig = group.orig;
+    for (final group in groups) {
+      final pending = group.pending;
+      if (pending == null) continue;
+      final orig = group.orig;
 
-        final aggregate = group.isGuest
-            ? status.quickSetupGuestAggregate
-            : status.quickSetupMainAggregate;
-        if (aggregate == null) continue;
+      final aggregate = group.isGuest
+          ? status.quickSetupGuestAggregate
+          : status.quickSetupMainAggregate;
+      if (aggregate == null) continue;
 
-        // ── SSID layer — only when ssid name or enabled changed ────────────
-        final ssidChanged = orig == null || orig.ssid != pending.ssid;
-        final enabledChanged = orig == null || orig.enabled != pending.enabled;
-        if (aggregate.ssidInstancePaths.isNotEmpty &&
-            (ssidChanged || enabledChanged)) {
-          if (ssidChanged) {
-            if (pending.ssid.isEmpty) {
-              throw InvalidInputError(detail: 'SSID name cannot be empty');
-            }
-            if (pending.ssid.length > 32) {
-              throw InvalidInputError(
-                  detail: 'SSID name cannot exceed 32 characters');
-            }
+      // ── SSID layer — only when ssid name or enabled changed ────────────
+      final ssidChanged = orig == null || orig.ssid != pending.ssid;
+      final enabledChanged = orig == null || orig.enabled != pending.enabled;
+      if (aggregate.ssidInstancePaths.isNotEmpty &&
+          (ssidChanged || enabledChanged)) {
+        if (ssidChanged) {
+          if (pending.ssid.isEmpty) {
+            throw InvalidInputError(detail: 'SSID name cannot be empty');
           }
-          for (final p in aggregate.ssidInstancePaths) {
-            params['${p}SSID'] = pending.ssid;
-            params['${p}Enable'] = pending.enabled;
+          if (pending.ssid.length > 32) {
+            throw InvalidInputError(
+                detail: 'SSID name cannot exceed 32 characters');
           }
         }
+        for (final p in aggregate.ssidInstancePaths) {
+          params['${p}SSID'] = pending.ssid;
+          params['${p}Enable'] = pending.enabled;
+          if (ssidChanged) proof['${p}SSID'] = pending.ssid;
+          if (enabledChanged) proof['${p}Enable'] = pending.enabled;
+        }
+      }
 
-        // ── AP layer — when password, securityMode, or enabled changed ─────
-        // enabled is mirrored onto AccessPoint.Enable alongside SSID.Enable
-        // because SSID.Enable alone does not stop broadcasting on this
-        // firmware (see #972).
-        final passwordChanged =
-            orig == null || orig.password != pending.password;
-        final modeChanged =
-            orig == null || orig.securityMode != pending.securityMode;
-        if (aggregate.apInstancePaths.isNotEmpty &&
-            (passwordChanged || modeChanged || enabledChanged)) {
-          // Build a band lookup: AP instance path → band string.
-          // Used to apply the 6 GHz security override (Wi-Fi 6E mandates WPA3).
-          final bandByApPath = <String, String>{
-            for (final n in current.networks)
-              if (n.accessPointInstancePath != null)
-                n.accessPointInstancePath!: n.band,
-          };
+      // ── AP layer — when password, securityMode, or enabled changed ─────
+      // enabled is mirrored onto AccessPoint.Enable alongside SSID.Enable
+      // because SSID.Enable alone does not stop broadcasting on this
+      // firmware (see #972).
+      final passwordChanged = orig == null || orig.password != pending.password;
+      final modeChanged =
+          orig == null || orig.securityMode != pending.securityMode;
+      if (aggregate.apInstancePaths.isNotEmpty &&
+          (passwordChanged || modeChanged || enabledChanged)) {
+        // Build a band lookup: AP instance path → band string.
+        // Used to apply the 6 GHz security override (Wi-Fi 6E mandates WPA3).
+        final bandByApPath = <String, String>{
+          for (final n in current.networks)
+            if (n.accessPointInstancePath != null)
+              n.accessPointInstancePath!: n.band,
+        };
+        // Each row's mode as the router holds it now, so a coerced 6 GHz
+        // mode that equals it is not mistaken for a change it can prove.
+        final modeByApPath = <String, String>{
+          for (final n in original.networks)
+            if (n.accessPointInstancePath != null)
+              n.accessPointInstancePath!: n.securityMode,
+        };
 
-          // Whether the security layer (mode + passphrase) needs writing.
-          // When only `enabled` changed we mirror AccessPoint.Enable without
-          // re-sending security params, so an enable toggle never mutates the
-          // security mode (e.g. the 6 GHz WPA3 override).
-          final securityChanged = passwordChanged || modeChanged;
-          for (final p in aggregate.apInstancePaths) {
-            final band = bandByApPath[p] ?? '';
-            final securityMode = _securityModeFor6GHz(
-              band: band,
-              selectedMode: pending.securityMode,
-            );
-            if (enabledChanged) params['${p}Enable'] = pending.enabled;
-            if (securityChanged) {
-              params['${p}Security.ModeEnabled'] = securityMode;
-              // Omit an empty passphrase (e.g. when only securityMode
-              // changed to an open mode) so firmware does not reject it.
-              if (pending.password.isNotEmpty) {
-                params['${p}Security.KeyPassphrase'] = pending.password;
-              }
+        // Whether the security layer (mode + passphrase) needs writing.
+        // When only `enabled` changed we mirror AccessPoint.Enable without
+        // re-sending security params, so an enable toggle never mutates the
+        // security mode (e.g. the 6 GHz WPA3 override).
+        final securityChanged = passwordChanged || modeChanged;
+        for (final p in aggregate.apInstancePaths) {
+          final band = bandByApPath[p] ?? '';
+          final securityMode = _securityModeFor6GHz(
+            band: band,
+            selectedMode: pending.securityMode,
+          );
+          if (enabledChanged) {
+            params['${p}Enable'] = pending.enabled;
+            proof['${p}Enable'] = pending.enabled;
+          }
+          if (securityChanged) {
+            params['${p}Security.ModeEnabled'] = securityMode;
+            if (modeByApPath[p] != securityMode) {
+              proof['${p}Security.ModeEnabled'] = securityMode;
+            }
+            // Omit an empty passphrase (e.g. when only securityMode
+            // changed to an open mode) so firmware does not reject it.
+            if (pending.password.isNotEmpty) {
+              params['${p}Security.KeyPassphrase'] = pending.password;
             }
           }
         }
       }
-    } catch (e) {
-      if (e is ServiceError) rethrow;
-      throw mapUspErrorToServiceError(e);
     }
-    return _plan(params, 'WiFi Quick Setup update');
+    return _plan(params, 'WiFi Quick Setup update', proof: proof);
   }
 
   // ---------------------------------------------------------------------------
@@ -362,87 +404,112 @@ class UspWifiSettingsService {
     required List<WifiNetworkUIModel> current,
   }) {
     final params = <String, dynamic>{};
-    try {
-      for (var i = 0; i < current.length; i++) {
-        final curr = current[i];
-        final orig = original.length > i ? original[i] : null;
+    final proof = <String, dynamic>{};
+    for (var i = 0; i < current.length; i++) {
+      final curr = current[i];
+      final orig = original.length > i ? original[i] : null;
 
-        // Skip unchanged networks.
-        if (orig != null && orig == curr) continue;
+      // Skip unchanged networks.
+      if (orig != null && orig == curr) continue;
 
-        // ── SSID layer ─────────────────────────────────────────────────────
-        if (orig == null ||
-            orig.enabled != curr.enabled ||
-            orig.ssid != curr.ssid) {
-          params['${curr.ssidInstancePath}Enable'] = curr.enabled;
-          params['${curr.ssidInstancePath}SSID'] = curr.ssid;
+      // ── SSID layer ─────────────────────────────────────────────────────
+      if (orig == null ||
+          orig.enabled != curr.enabled ||
+          orig.ssid != curr.ssid) {
+        params['${curr.ssidInstancePath}Enable'] = curr.enabled;
+        params['${curr.ssidInstancePath}SSID'] = curr.ssid;
+        if (orig == null || orig.enabled != curr.enabled) {
+          proof['${curr.ssidInstancePath}Enable'] = curr.enabled;
         }
+        if (orig == null || orig.ssid != curr.ssid) {
+          proof['${curr.ssidInstancePath}SSID'] = curr.ssid;
+        }
+      }
 
-        // ── AccessPoint layer ───────────────────────────────────────────────
-        // Mirror the enabled flag onto AccessPoint.Enable alongside SSID.Enable:
-        // on this firmware SSID.Enable alone does not stop the AP broadcasting,
-        // so the enable state must be written to both layers (see #972).
-        //
-        // Each field is gated on its own diff so a pure enable toggle sends
-        // only AccessPoint.Enable and never re-writes the security mode or the
-        // advertisement flag (mirrors saveQuickSetup's AP gating).
-        final ap = curr.accessPointInstancePath;
-        final enabledChanged = orig == null || orig.enabled != curr.enabled;
-        final securityChanged = orig == null ||
-            orig.keyPassphrase != curr.keyPassphrase ||
-            orig.securityMode != curr.securityMode;
-        final broadcastChanged = orig == null ||
-            orig.ssidAdvertisementEnabled != curr.ssidAdvertisementEnabled;
-        if (ap != null &&
-            (enabledChanged || securityChanged || broadcastChanged)) {
-          // Apply the 6 GHz security override (Wi-Fi 6E mandates WPA3), the
-          // same way saveQuickSetup does, so both save paths write a
-          // firmware-valid mode on 6 GHz. Skip the override for enable-only
-          // toggles (securityChanged false) so the mode is never re-written.
-          final securityMode = securityChanged && curr.securityMode.isNotEmpty
-              ? _securityModeFor6GHz(
-                  band: curr.band,
-                  selectedMode: curr.securityMode,
-                )
-              : null;
-          if (enabledChanged) params['${ap}Enable'] = curr.enabled;
-          if (securityMode != null) {
-            params['${ap}Security.ModeEnabled'] = securityMode;
-          }
-          if (securityChanged && curr.keyPassphrase.isNotEmpty) {
-            params['${ap}Security.KeyPassphrase'] = curr.keyPassphrase;
-          }
-          if (broadcastChanged) {
-            params['${ap}SSIDAdvertisementEnabled'] =
-                curr.ssidAdvertisementEnabled;
+      // ── AccessPoint layer ───────────────────────────────────────────────
+      // Mirror the enabled flag onto AccessPoint.Enable alongside SSID.Enable:
+      // on this firmware SSID.Enable alone does not stop the AP broadcasting,
+      // so the enable state must be written to both layers (see #972).
+      //
+      // Each field is gated on its own diff so a pure enable toggle sends
+      // only AccessPoint.Enable and never re-writes the security mode or the
+      // advertisement flag (mirrors saveQuickSetup's AP gating).
+      final ap = curr.accessPointInstancePath;
+      final enabledChanged = orig == null || orig.enabled != curr.enabled;
+      final securityChanged = orig == null ||
+          orig.keyPassphrase != curr.keyPassphrase ||
+          orig.securityMode != curr.securityMode;
+      final broadcastChanged = orig == null ||
+          orig.ssidAdvertisementEnabled != curr.ssidAdvertisementEnabled;
+      if (ap != null &&
+          (enabledChanged || securityChanged || broadcastChanged)) {
+        // Apply the 6 GHz security override (Wi-Fi 6E mandates WPA3), the
+        // same way saveQuickSetup does, so both save paths write a
+        // firmware-valid mode on 6 GHz. Skip the override for enable-only
+        // toggles (securityChanged false) so the mode is never re-written.
+        final securityMode = securityChanged && curr.securityMode.isNotEmpty
+            ? _securityModeFor6GHz(
+                band: curr.band,
+                selectedMode: curr.securityMode,
+              )
+            : null;
+        if (enabledChanged) {
+          params['${ap}Enable'] = curr.enabled;
+          proof['${ap}Enable'] = curr.enabled;
+        }
+        if (securityMode != null) {
+          params['${ap}Security.ModeEnabled'] = securityMode;
+          // A password-only change resends the current mode: it proves
+          // nothing (CLOUD_GUARDIANS#215).
+          if (orig?.securityMode != securityMode) {
+            proof['${ap}Security.ModeEnabled'] = securityMode;
           }
         }
+        if (securityChanged && curr.keyPassphrase.isNotEmpty) {
+          params['${ap}Security.KeyPassphrase'] = curr.keyPassphrase;
+        }
+        if (broadcastChanged) {
+          params['${ap}SSIDAdvertisementEnabled'] =
+              curr.ssidAdvertisementEnabled;
+          proof['${ap}SSIDAdvertisementEnabled'] =
+              curr.ssidAdvertisementEnabled;
+        }
+      }
 
-        // ── Radio layer ─────────────────────────────────────────────────────
-        final radio = curr.radioInstancePath;
-        if (radio != null &&
-            (orig == null ||
-                orig.operatingStandards != curr.operatingStandards ||
-                orig.channelBandwidth != curr.channelBandwidth ||
-                orig.channel != curr.channel ||
-                orig.autoChannelEnable != curr.autoChannelEnable)) {
-          if (curr.operatingStandards.isNotEmpty) {
-            params['${radio}OperatingStandards'] = curr.operatingStandards;
+      // ── Radio layer ─────────────────────────────────────────────────────
+      final radio = curr.radioInstancePath;
+      if (radio != null &&
+          (orig == null ||
+              orig.operatingStandards != curr.operatingStandards ||
+              orig.channelBandwidth != curr.channelBandwidth ||
+              orig.channel != curr.channel ||
+              orig.autoChannelEnable != curr.autoChannelEnable)) {
+        if (curr.operatingStandards.isNotEmpty) {
+          params['${radio}OperatingStandards'] = curr.operatingStandards;
+          if (orig?.operatingStandards != curr.operatingStandards) {
+            proof['${radio}OperatingStandards'] = curr.operatingStandards;
           }
-          if (curr.channelBandwidth.isNotEmpty) {
-            params['${radio}OperatingChannelBandwidth'] = curr.channelBandwidth;
+        }
+        if (curr.channelBandwidth.isNotEmpty) {
+          params['${radio}OperatingChannelBandwidth'] = curr.channelBandwidth;
+          if (orig?.channelBandwidth != curr.channelBandwidth) {
+            proof['${radio}OperatingChannelBandwidth'] = curr.channelBandwidth;
           }
-          params['${radio}AutoChannelEnable'] = curr.autoChannelEnable;
-          if (!curr.autoChannelEnable) {
-            params['${radio}Channel'] = curr.channel;
+        }
+        params['${radio}AutoChannelEnable'] = curr.autoChannelEnable;
+        if (orig?.autoChannelEnable != curr.autoChannelEnable) {
+          proof['${radio}AutoChannelEnable'] = curr.autoChannelEnable;
+        }
+        // Only a manual channel is ours to prove; on auto the firmware picks.
+        if (!curr.autoChannelEnable) {
+          params['${radio}Channel'] = curr.channel;
+          if (orig?.channel != curr.channel) {
+            proof['${radio}Channel'] = curr.channel;
           }
         }
       }
-    } catch (e) {
-      if (e is ServiceError) rethrow;
-      throw mapUspErrorToServiceError(e);
     }
-    return _plan(params, 'WiFi Advanced update');
+    return _plan(params, 'WiFi Advanced update', proof: proof);
   }
 
   // ---------------------------------------------------------------------------
@@ -454,15 +521,26 @@ class UspWifiSettingsService {
   /// Already one SET, but a channel change reloads the radio like any other
   /// WiFi write, so its reply can be lost the same way: the outcome is returned
   /// for the caller to read back rather than reporting a failure at 30 s.
+  ///
+  /// On auto channel the proof is `AutoChannelEnable` alone: the dialog sends
+  /// the radio's current channel with it, and the firmware then picks another,
+  /// so a landed write would never read that channel back.
   WifiWritePlan updateRadioChannel(
     String instancePath, {
     required int channel,
     required bool autoChannel,
   }) =>
-      _plan({
-        '${instancePath}Channel': channel,
-        '${instancePath}AutoChannelEnable': autoChannel,
-      }, 'Update radio channel');
+      _plan(
+          {
+            '${instancePath}Channel': channel,
+            '${instancePath}AutoChannelEnable': autoChannel,
+          },
+          'Update radio channel',
+          allowPartial: false,
+          proof: {
+            if (!autoChannel) '${instancePath}Channel': channel,
+            '${instancePath}AutoChannelEnable': autoChannel,
+          });
 
   /// Toggles all networks with a given SSID name on or off across all bands.
   ///
@@ -487,7 +565,9 @@ class UspWifiSettingsService {
         .map((s) => s.instancePath)
         .toList();
 
-    if (ssidPaths.isEmpty) return _plan(const {}, 'Toggle SSIDs', count: 0);
+    if (ssidPaths.isEmpty) {
+      return _plan(const {}, 'Toggle SSIDs', proof: const {}, count: 0);
+    }
 
     // Resolve AccessPoint paths whose SSIDReference points at a matched SSID.
     final matchedSsidPathSet = ssidPaths.map(ensureTrailingDot).toSet();
@@ -501,18 +581,23 @@ class UspWifiSettingsService {
       for (final p in ssidPaths) '${p}Enable': enable,
       for (final p in apPaths) '${p}Enable': enable,
     };
-    return _plan(params, 'Toggle SSIDs', count: ssidPaths.length);
+    // Every Enable written is the change, so all of it is proof.
+    return _plan(params, 'Toggle SSIDs',
+        proof: params, count: ssidPaths.length);
   }
 
   WifiWritePlan _plan(
     Map<String, dynamic> params,
     String label, {
+    required Map<String, dynamic> proof,
+    bool allowPartial = true,
     int count = 1,
   }) =>
       WifiWritePlan(
         params: params,
+        proof: proof,
         count: count,
-        send: () => _writeOnce(params, label),
+        send: () => _writeOnce(params, label, allowPartial: allowPartial),
       );
 
   /// Sends [params] as **one** SET and says whether the router answered.
@@ -522,11 +607,12 @@ class UspWifiSettingsService {
   /// connection under the first. One SET means one reload: on the bench the new
   /// SSIDs were on the air in 15 s, against 40 s for two SETs.
   ///
-  /// **`allowPartial: true`, and it has to be.** The OBUSPA broker refuses an
-  /// atomic SET that spans more than one USP Service with 7005; SSID, AccessPoint
-  /// and Radio rows together do (the same wall `PnpService.saveWifi` and
-  /// `_saveIpv6Settings` hit). A per-leaf failure the router does report still
-  /// throws.
+  /// **[allowPartial] is true for a SET that spans tables, and has to be.** The
+  /// OBUSPA broker refuses an atomic SET across more than one USP Service with
+  /// 7005; SSID, AccessPoint and Radio rows together do (the same wall
+  /// `PnpService.saveWifi` and `_saveIpv6Settings` hit). A Radio-only write is
+  /// one service, so it stays atomic and cannot half-apply. A per-leaf failure
+  /// the router does report still throws.
   ///
   /// Returns [WifiWriteOutcome.unanswered] when every error says the request
   /// never got an answer ([isUnansweredTransportFailure]) — the reply was lost to
@@ -535,15 +621,15 @@ class UspWifiSettingsService {
   /// Nothing to write is [WifiWriteOutcome.confirmed] with no SET at all.
   Future<WifiWriteOutcome> _writeOnce(
     Map<String, dynamic> params,
-    String label,
-  ) async {
+    String label, {
+    required bool allowPartial,
+  }) async {
     if (params.isEmpty) return WifiWriteOutcome.confirmed;
     try {
-      final result = await _usp.set(params, allowPartial: true);
+      final result = await _usp.set(params, allowPartial: allowPartial);
       final parsed = UspResultParser.parseSetResult(result);
       if (parsed is UspFailure &&
-          parsed.errors
-              .every((e) => isUnansweredTransportFailure(e.errorMessage))) {
+          parsed.errors.every((e) => isUnansweredWifiWrite(e.errorMessage))) {
         logger.i('[USP][WiFi]: $label unanswered — the WiFi reloaded under '
             'the request');
         return WifiWriteOutcome.unanswered;
@@ -556,8 +642,8 @@ class UspWifiSettingsService {
     }
   }
 
-  /// Whether the router now carries the values in [written] — the params a save
-  /// sent, for a write whose own answer never arrived.
+  /// Whether the router now carries the values in [written] — a plan's
+  /// [WifiWritePlan.proof], for a write whose own answer never arrived.
   ///
   /// Read back through the generated models rather than the raw leaves, because
   /// they already normalise the firmware's `true` / `"true"` / `"1"` into one
@@ -565,8 +651,11 @@ class UspWifiSettingsService {
   ///
   /// **Passphrases are not compared.** TR-181 reads `KeyPassphrase` back empty,
   /// and they went out in the same SET as everything else, so the rest landing
-  /// means they did — the rule `PnpService.isWifiApplied` follows. A save that
-  /// wrote nothing else reads as applied.
+  /// means they did — the rule `PnpService.isWifiApplied` follows.
+  ///
+  /// **Fails closed.** Nothing comparable reads as NOT applied: with no changed
+  /// value to look at, a "yes" would be a guess, and #215's false success was
+  /// exactly that guess.
   ///
   /// Throws [ServiceError] when the read itself fails; the caller treats that
   /// as "not yet" while the radios settle.
@@ -576,7 +665,7 @@ class UspWifiSettingsService {
     final needSsids = wants('SSID');
     final needAps = wants('AccessPoint');
     final needRadios = wants('Radio');
-    if (!needSsids && !needAps && !needRadios) return true;
+    if (!needSsids && !needAps && !needRadios) return false;
 
     final WiFiSsids? ssids;
     final WiFiAccessPoints? aps;
@@ -605,7 +694,6 @@ class UspWifiSettingsService {
             r.operatingChannelBandwidth,
         '${r.instancePath}OperatingStandards': r.operatingStandards,
         '${r.instancePath}AutoChannelEnable': r.autoChannelEnable,
-        '${r.instancePath}IEEE80211hEnabled': r.ieee80211hEnabled,
       },
     };
 

@@ -58,6 +58,7 @@ void main() {
 
   ProviderContainer createContainer({
     WifiData? wifiData,
+    WifiDataNotifier Function()? wifiNotifier,
   }) {
     final data = wifiData ?? WifiSettingsTestData.createWifiData();
     final container = ProviderContainer(
@@ -66,7 +67,8 @@ void main() {
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
         uspClientProvider.overrideWithValue(mockUsp),
         uspAuthCoordinatorProvider.overrideWithValue(mockAuthCoordinator),
-        wifiDataProvider.overrideWith(() => _FakeWifiDataNotifier(data)),
+        wifiDataProvider
+            .overrideWith(wifiNotifier ?? () => _FakeWifiDataNotifier(data)),
         // Short timings, so the read-back path runs without real waits.
         wifiAnswerWindowProvider
             .overrideWithValue(const Duration(milliseconds: 50)),
@@ -528,6 +530,8 @@ void main() {
               status: any(named: 'status'),
             )).thenReturn(WifiWritePlan(
           params: _written,
+          // A rename: its new SSID is what a read-back can confirm.
+          proof: _written,
           send: () async => WifiWriteOutcome.unanswered,
         ));
       });
@@ -545,6 +549,22 @@ void main() {
         container.dispose();
       });
 
+      test(
+          'a confirmed write is NOT failed by the L1 refresh timing out after '
+          'it (#1499: both SETs had succeeded; the 15 s throttler on the '
+          'post-save refresh is what the user saw)', () async {
+        when(() => mockService.isApplied(any())).thenAnswer((_) async => true);
+        final notifier = _ThrowOnRefresh();
+        final container = createContainer(wifiNotifier: () => notifier);
+        final settings = await quickSetupNotifier(container);
+        // From here on L1 fails, as it did while the radios reloaded.
+        notifier.failNext = true;
+
+        await settings.save();
+
+        container.dispose();
+      });
+
       test('fails — never a false success — when it never reads back',
           () async {
         when(() => mockService.isApplied(any())).thenAnswer((_) async => false);
@@ -552,6 +572,93 @@ void main() {
         final notifier = await quickSetupNotifier(container);
 
         await expectLater(notifier.save(), throwsA(isA<ServiceError>()));
+        container.dispose();
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // Dashboard quick actions — same write-then-confirm as the page save
+    // -----------------------------------------------------------------------
+
+    group('dashboard quick actions', () {
+      setUp(() {
+        when(() => mockService.buildWifiNetworks(
+              ssids: any(named: 'ssids'),
+              accessPoints: any(named: 'accessPoints'),
+              radios: any(named: 'radios'),
+            )).thenReturn(WifiSettingsTestData.createNetworks());
+        when(() => mockService.buildQuickSetupNetworks(any())).thenReturn((
+          main: null,
+          guest: null,
+          isQuickSetup: false,
+        ));
+      });
+
+      test('toggleSsidsByName: an unanswered toggle is read back, then done',
+          () async {
+        when(() => mockService.toggleSsidsByName(any(), any(), any(), any()))
+            .thenReturn(WifiWritePlan(
+          params: const {'Device.WiFi.SSID.1.Enable': false},
+          proof: const {'Device.WiFi.SSID.1.Enable': false},
+          count: 1,
+          send: () async => WifiWriteOutcome.unanswered,
+        ));
+        when(() => mockService.isApplied(any())).thenAnswer((_) async => true);
+        final container = createContainer();
+        await Future.delayed(Duration.zero);
+
+        await container
+            .read(uspWifiSettingsProvider.notifier)
+            .toggleSsidsByName('Home', false);
+
+        verify(() => mockService
+            .isApplied(const {'Device.WiFi.SSID.1.Enable': false})).called(1);
+        container.dispose();
+      });
+
+      test('toggleSsidsByName: no matching SSID is still an InvalidInputError',
+          () async {
+        when(() => mockService.toggleSsidsByName(any(), any(), any(), any()))
+            .thenReturn(WifiWritePlan(
+          params: const {},
+          count: 0,
+          send: () async => WifiWriteOutcome.confirmed,
+        ));
+        final container = createContainer();
+        await Future.delayed(Duration.zero);
+
+        await expectLater(
+          container
+              .read(uspWifiSettingsProvider.notifier)
+              .toggleSsidsByName('Nope', false),
+          throwsA(isA<InvalidInputError>()),
+        );
+        container.dispose();
+      });
+
+      test(
+          'updateRadioChannel: an unanswered write that never reads back fails',
+          () async {
+        when(() => mockService.updateRadioChannel(
+              any(),
+              channel: any(named: 'channel'),
+              autoChannel: any(named: 'autoChannel'),
+            )).thenReturn(WifiWritePlan(
+          params: const {'Device.WiFi.Radio.1.Channel': 40},
+          proof: const {'Device.WiFi.Radio.1.Channel': 40},
+          send: () async => WifiWriteOutcome.unanswered,
+        ));
+        when(() => mockService.isApplied(any())).thenAnswer((_) async => false);
+        final container = createContainer();
+        await Future.delayed(Duration.zero);
+
+        await expectLater(
+          container.read(uspWifiSettingsProvider.notifier).updateRadioChannel(
+              'Device.WiFi.Radio.1.',
+              channel: 40,
+              autoChannel: false),
+          throwsA(isA<ServiceError>()),
+        );
         container.dispose();
       });
     });
@@ -765,6 +872,23 @@ class _FakeWifiDataNotifier extends AsyncNotifier<WifiData>
 
   @override
   Future<WifiData> build() async => _data;
+}
+
+/// Builds normally, then throws on the next build once [failNext] is set — the
+/// post-save refresh hitting the 15 s throttler while the radios reload.
+class _ThrowOnRefresh extends AsyncNotifier<WifiData>
+    implements WifiDataNotifier {
+  bool failNext = false;
+
+  @override
+  Future<WifiData> build() async {
+    if (failNext) {
+      throw const NetworkError(
+          detail: 'TimeoutException after 0:00:15.000000: Throttler: request '
+              'exceeded 15s');
+    }
+    return WifiSettingsTestData.createWifiData();
+  }
 }
 
 // ---------------------------------------------------------------------------

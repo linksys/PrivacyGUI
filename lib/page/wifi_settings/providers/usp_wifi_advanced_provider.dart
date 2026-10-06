@@ -10,7 +10,6 @@ import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_status.dart'
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_write_confirm.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_advanced_service.dart';
-import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
 // ---------------------------------------------------------------------------
 // Providers
@@ -163,25 +162,14 @@ class UspWifiAdvancedNotifier
     // lock's window — the radios are read back before success or failure is
     // reported (#1460: the SET took 35.4 s over Remote Assistance and had
     // applied when the app gave up at 30 s). See [wifiWriteConfirmProvider].
-    // Only IEEE80211hEnabled is read back. The forced AutoChannelEnable goes
-    // out in the same SET, so the DFS state landing means it did — the rule
-    // the WiFi Settings read-back applies to passphrases.
-    final planned = <String, dynamic>{
-      for (final path in radioPaths) '${path}IEEE80211hEnabled': enabled,
-    };
     await ref.read(wifiWriteConfirmProvider)(
-      WifiWritePlan(
-        params: planned,
-        send: () => _svc.setIeee80211hEnabled(
-          radioPaths: radioPaths,
-          enabled: enabled,
-          forceAutoChannelPaths: forceAutoChannelPaths,
-        ),
+      _svc.planIeee80211h(
+        current: state.settings.original.ieee80211hByRadio,
+        radioPaths: radioPaths,
+        enabled: enabled,
+        forceAutoChannelPaths: forceAutoChannelPaths,
       ),
-      isApplied: (_) async {
-        final now = await _svc.fetchIeee80211h();
-        return radioPaths.every((p) => now[p] == enabled);
-      },
+      isApplied: _svc.isIeee80211hApplied,
     );
 
     logger.d('[USP][WiFi][Advanced]: Save succeeded — '
@@ -191,7 +179,18 @@ class UspWifiAdvancedNotifier
     // Using refresh() instead of invalidate() because the latter only marks
     // the provider dirty — without an active subscriber it won't rebuild,
     // and the subsequent .future call would return stale data.
-    final _ = await ref.refresh(wifiDataProvider.future);
+    //
+    // Its failure is logged, not thrown: the write is settled by now, and the
+    // radios it reloaded can still time this read out on the 15 s throttler —
+    // the same way #1499's confirmed save was reported as a failure.
+    try {
+      final _ = await ref.refresh(wifiDataProvider.future);
+    } catch (e) {
+      logger.w(
+          '[USP][WiFi][Advanced]: L1 refresh after the write failed — '
+          'the write itself is settled',
+          error: e);
+    }
   }
 
   // ---------------------------------------------------------------------------

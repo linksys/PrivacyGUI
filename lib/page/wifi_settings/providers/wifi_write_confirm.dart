@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
@@ -50,8 +51,10 @@ typedef WifiWriteConfirm = Future<int> Function(
 /// - An **unanswered** write — the reply lost to the reload, or the lock's
 ///   [wifiAnswerWindowProvider] running out — is read back every
 ///   [wifiReadBackIntervalProvider] until [isApplied] says the router carries
-///   the plan's params — known before the write, so a reply that never comes
-///   still leaves something to check. Then it is confirmed. This is the fix for #1460, where
+///   the plan's [WifiWritePlan.proof] — the values the save changes, known
+///   before the write, so a reply that never comes still leaves something to
+///   check. Then it is confirmed. An empty proof cannot be checked, so a lost
+///   reply then ends as an [UnexpectedError], never as a success. This is the fix for #1460, where
 ///   a 35.4 s SET had succeeded and the app reported a failure at 30 s.
 /// - A failed read-back is "not yet": the radios can drop a request while they
 ///   settle.
@@ -64,7 +67,9 @@ typedef WifiWriteConfirm = Future<int> Function(
 final wifiWriteConfirmProvider = Provider<WifiWriteConfirm>((ref) {
   return (plan, {required isApplied}) async {
     if (plan.params.isEmpty) return plan.count;
-    final sinceWrite = Stopwatch()..start();
+    // `clock`, not `Stopwatch()`: fakeAsync moves the former only, and the
+    // shipped 30 s / 60 s are what the tests have to be able to run.
+    final sinceWrite = clock.stopwatch()..start();
     final window = ref.read(wifiAnswerWindowProvider);
 
     var outcome = WifiWriteOutcome.unanswered;
@@ -79,11 +84,21 @@ final wifiWriteConfirmProvider = Provider<WifiWriteConfirm>((ref) {
     }
     if (outcome == WifiWriteOutcome.confirmed) return plan.count;
 
+    // Nothing this save changed can be read back — a password-only change is
+    // the case. Reading back would compare only values that were already
+    // there, so it would "confirm" a write that never arrived
+    // (CLOUD_GUARDIANS#215). Unconfirmed is reported as a failure.
+    if (plan.proof.isEmpty) {
+      logger.w('[USP][WiFi]: write unanswered and nothing it changed can be '
+          'read back — reporting it unconfirmed');
+      throw const UnexpectedError();
+    }
+
     final interval = ref.read(wifiReadBackIntervalProvider);
     final deadline = ref.read(wifiSaveDeadlineProvider);
     while (true) {
       try {
-        if (await isApplied(plan.params)) {
+        if (await isApplied(plan.proof)) {
           logger.i('[USP][WiFi]: write read back as applied after '
               '${sinceWrite.elapsed.inSeconds}s');
           return plan.count;
