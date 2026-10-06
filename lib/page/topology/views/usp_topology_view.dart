@@ -335,9 +335,17 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
                 // means what the switch says — and it is also the one that leaves
                 // the count on each node, because `LeafOrbitRing` draws its number
                 // whenever the leaves are not expanded.
-                leafVisibility: _showDevices
-                    ? LeafVisibility.adaptive
-                    : LeafVisibility.collapsed,
+                //
+                // All of the above is about the graph. The tree reads the enum as
+                // two states — `always` lists every device and every other value
+                // withholds them, since a list has no viewport to run out of — so
+                // handing it `adaptive` hid the devices on a phone with the switch
+                // on (#1630). The tree is told `always` when the switch is on.
+                leafVisibility: !_showDevices
+                    ? LeafVisibility.collapsed
+                    : isTree
+                        ? LeafVisibility.always
+                        : LeafVisibility.adaptive,
                 nodeRendererRegistry: NodeRendererRegistry.unified,
                 enableAnimation: true,
                 // Pan and zoom, inside a page that **does** scroll (`:94`). That
