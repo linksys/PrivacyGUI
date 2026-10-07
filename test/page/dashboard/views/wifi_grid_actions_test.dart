@@ -111,24 +111,47 @@ void main() {
     verify(mockWifiListNotifier.save()).called(1);
   });
 
-  // Cancel pops null out of a dialog typed Future<bool>, so the toggle handler
-  // dies on a TypeError before it reaches any save. No write leaves either way;
-  // the error is recorded here as found, not endorsed, so that fixing it is a
-  // deliberate change to this test rather than a silent one.
-  testWidgets('cancelling saves nothing', (tester) async {
-    await pump(tester);
+  // Cancel, and dismissing the dialog without choosing, both close it with no
+  // answer. Neither may save, and neither may throw: the switch drops the
+  // handler's future, so an error there escapes as an uncaught one (#1668).
+  group('backing out of the confirmation', () {
+    Future<List<Object>> backOut(
+        WidgetTester tester, Future<void> Function() close) async {
+      await pump(tester);
+      final errors = <Object>[];
+      runZonedGuarded(() => switches(tester).first.onChanged!(false),
+          (error, _) => errors.add(error));
+      await tester.pumpAndSettle();
+      expect(find.text('Ok'), findsOneWidget,
+          reason: 'precondition: the confirmation is up');
+      await close();
+      await tester.pumpAndSettle();
+      return errors;
+    }
 
-    // The handler's future is dropped by the switch, so its error is caught in
-    // a zone of its own rather than failing the test as an uncaught error.
-    final errors = <Object>[];
-    runZonedGuarded(() => switches(tester).first.onChanged!(false),
-        (error, _) => errors.add(error));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(AppTextButton, 'Cancel'));
-    await tester.pumpAndSettle();
-    expect(errors.single, isA<TypeError>());
-    verifyNever(mockWifiListNotifier.saveToggleEnabled(
-        radios: anyNamed('radios'), enabled: anyNamed('enabled')));
-    verifyNever(mockWifiListNotifier.save());
+    void expectNothingSaved() {
+      verifyNever(mockWifiListNotifier.saveToggleEnabled(
+          radios: anyNamed('radios'), enabled: anyNamed('enabled')));
+      verifyNever(mockWifiListNotifier.save());
+    }
+
+    testWidgets('Cancel saves nothing and raises no error', (tester) async {
+      final errors = await backOut(tester,
+          () => tester.tap(find.widgetWithText(AppTextButton, 'Cancel')));
+
+      expect(errors, isEmpty);
+      expectNothingSaved();
+      expect(find.text('Ok'), findsNothing, reason: 'the dialog is closed');
+    });
+
+    testWidgets('dismissing the dialog saves nothing and raises no error',
+        (tester) async {
+      final errors =
+          await backOut(tester, () => tester.tapAt(const Offset(5, 5)));
+
+      expect(errors, isEmpty);
+      expectNothingSaved();
+      expect(find.text('Ok'), findsNothing, reason: 'the dialog is closed');
+    });
   });
 }

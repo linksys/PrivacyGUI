@@ -340,8 +340,10 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
     }
   }
 
+  /// Whether the user confirmed the toggle. Cancelling or dismissing the dialog
+  /// both close it with no answer, which is a no (#1668).
   Future<bool> showSwitchWifiDialog() async {
-    return await showSimpleAppDialog(
+    final confirmed = await showSimpleAppDialog<bool>(
       context,
       title: loc(context).wifiListSaveModalTitle,
       content: SingleChildScrollView(
@@ -358,10 +360,11 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
         ),
       ),
       actions: [
-        AppTextButton(loc(context).cancel, onTap: () => context.pop()),
+        AppTextButton(loc(context).cancel, onTap: () => context.pop(false)),
         AppTextButton(loc(context).ok, onTap: () => context.pop(true)),
       ],
     );
+    return confirmed ?? false;
   }
 
   List<Widget> _disableGuestBandWarning() {
