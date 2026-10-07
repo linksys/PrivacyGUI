@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/page/components/widgets/write_guard.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -217,61 +217,63 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           vpnStatus(context, status),
-          WriteGuard(
-            child: AppTextButton(
-              key: ValueKey('testAgain'),
-              loc(context).testAgain,
-              onTap: () async {
-                bool isChanged = isStateChanged(state.settings);
-                bool hasErrors = _hasErrors();
+          AppTextButton(
+            key: ValueKey('testAgain'),
+            loc(context).testAgain,
+            onTap: () async {
+              // The test is a diagnostic and runs on a read-only login too.
+              // That login cannot save first, so it tests what the router has,
+              // as if nothing had been edited.
+              bool isChanged = isStateChanged(state.settings) &&
+                  ref.read(accessPolicyProvider).canWrite;
+              bool hasErrors = _hasErrors();
 
-                final shouldGo = !isChanged
-                    ? true
-                    : !hasErrors
-                        ? await showMessageAppDialog(context,
-                            title: loc(context).unsavedChangesTitle,
-                            message:
-                                'Your changes is undaved, do you want to save and test it?',
-                            actions: [
-                                AppTextButton(loc(context).cancel, onTap: () {
-                                  context.pop(false);
-                                }),
-                                AppTextButton(loc(context).save, onTap: () {
-                                  context.pop(true);
-                                }),
-                              ])
-                        : await showMessageAppOkDialog(context,
-                                title: loc(context).alertExclamation,
-                                message:
-                                    'Your changes has errors, please fix them before testing.',
-                                icon: Icon(LinksysIcons.error))
-                            .then((_) => false);
+              final shouldGo = !isChanged
+                  ? true
+                  : !hasErrors
+                      ? await showMessageAppDialog(context,
+                          title: loc(context).unsavedChangesTitle,
+                          message:
+                              'Your changes is undaved, do you want to save and test it?',
+                          actions: [
+                              AppTextButton(loc(context).cancel, onTap: () {
+                                context.pop(false);
+                              }),
+                              AppTextButton(loc(context).save, onTap: () {
+                                context.pop(true);
+                              }),
+                            ])
+                      : await showMessageAppOkDialog(context,
+                              title: loc(context).alertExclamation,
+                              message:
+                                  'Your changes has errors, please fix them before testing.',
+                              icon: Icon(LinksysIcons.error))
+                          .then((_) => false);
 
-                if (!shouldGo) {
+              if (!shouldGo) {
+                return;
+              }
+              if (isChanged) {
+                await _saveChanges();
+              }
+
+              doSomethingWithSpinner(context, notifier.testVPNConnection())
+                  .then((state) {
+                if (state == null) {
                   return;
                 }
-                if (isChanged) {
-                  await _saveChanges();
+                preservedState = state.settings;
+                if (state.status.testResult?.success == true) {
+                  showSuccessSnackBar(
+                    state.status.testResult!.statusMessage,
+                  );
+                } else {
+                  showFailedSnackBar(
+                    state.status.testResult!.statusMessage,
+                  );
                 }
-
-                doSomethingWithSpinner(context, notifier.testVPNConnection())
-                    .then((state) {
-                  if (state == null) {
-                    return;
-                  }
-                  preservedState = state.settings;
-                  if (state.status.testResult?.success == true) {
-                    showSuccessSnackBar(
-                      state.status.testResult!.statusMessage,
-                    );
-                  } else {
-                    showFailedSnackBar(
-                      state.status.testResult!.statusMessage,
-                    );
-                  }
-                });
-              },
-            ),
+              });
+            },
           ),
         ],
       ),

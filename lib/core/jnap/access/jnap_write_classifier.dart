@@ -12,10 +12,12 @@ final Set<JNAPAction> jnapReadActions = {
     if (_isReadByName(action)) action,
 };
 
-/// Actions that run a test on the router without changing its settings.
+/// Actions that make the router do something without changing its settings:
+/// run a test, blink a node so it can be found, refresh what it reports, or
+/// email its own sysinfo.
 ///
-/// Allowed in read-only mode. Speed test is kept out of remote mode by the UI,
-/// not by this gate.
+/// Allowed in read-only mode, so a remote helper can still diagnose. Speed test
+/// is kept out of remote mode by the UI, not by this gate.
 const Set<JNAPAction> jnapDiagnosticActions = {
   JNAPAction.startPing,
   JNAPAction.stopPing,
@@ -23,6 +25,14 @@ const Set<JNAPAction> jnapDiagnosticActions = {
   JNAPAction.stopTracroute,
   JNAPAction.runHealthCheck,
   JNAPAction.stopHealthCheck,
+  JNAPAction.startBlinkNodeLed,
+  JNAPAction.stopBlinkNodeLed,
+  JNAPAction.startBlinkingNodeLed,
+  JNAPAction.stopBlinkingNodeLed,
+  JNAPAction.testVPNConnection,
+  JNAPAction.sendSysinfoEmail,
+  JNAPAction.refreshSlaveBackhaulData,
+  JNAPAction.btRequestScanUnconfigured,
 };
 
 /// The two firmware actions both check for and install an update; which one

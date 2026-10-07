@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/components/widgets/write_guard.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -58,14 +57,12 @@ class _BlinkNodeLightWidgetState extends ConsumerState<BlinkNodeLightWidget> {
                 }
               },
             )
-          : WriteGuard(
-              child: AppTextButton.noPadding(
-                key: const ValueKey('blinkNodeButton'),
-                loc(context).nodeDetailBlinkNodeLightBtn,
-                onTap: () {
-                  _startBlink();
-                },
-              ),
+          : AppTextButton.noPadding(
+              key: const ValueKey('blinkNodeButton'),
+              loc(context).nodeDetailBlinkNodeLightBtn,
+              onTap: () {
+                _startBlink();
+              },
             ),
     );
   }

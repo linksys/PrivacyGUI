@@ -36,25 +36,18 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  // #1637: sharing router info has the router email its logs, a write, so the
-  // button is blocked before it opens the share dialog.
+  // #1637: sharing router info has the router email its own logs. That changes
+  // no setting, so it is a diagnostic and works on a read-only login too.
   group('share router info', () {
     final share = find.text('Share router info with Linksys');
 
-    testWidgets('is blocked in read-only mode', (tester) async {
+    testWidgets('opens the share dialog in read-only mode', (tester) async {
       await pumpPage(tester, policy: const AccessPolicy(canWrite: false));
 
-      expect(
-          find.ancestor(
-              of: share,
-              matching:
-                  find.byTooltip('This feature is unavailable in remote mode')),
-          findsOneWidget);
-
-      await tester.tap(share, warnIfMissed: false);
+      await tester.tap(share);
       await tester.pumpAndSettle();
 
-      expect(find.text('Send logs'), findsNothing);
+      expect(find.text('Send logs'), findsOneWidget);
     });
 
     testWidgets('opens the share dialog with full access', (tester) async {

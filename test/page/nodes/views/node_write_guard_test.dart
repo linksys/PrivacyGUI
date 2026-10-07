@@ -160,9 +160,9 @@ void main() {
     });
   });
 
-  // #1637: blinking sends startBlinkNodeLed to the router. The widget lives in
-  // the name dialog, which read-only mode already keeps shut, so it is pumped
-  // on its own here to check its own guard.
+  // #1637: blinking only helps find a node and changes no setting, so it is a
+  // diagnostic and works on a read-only login too. The widget lives in the name
+  // dialog, which read-only mode keeps shut, so it is pumped on its own here.
   group('blink node light', () {
     Future<void> pumpBlink(WidgetTester tester,
             {AccessPolicy policy = AccessPolicy.full}) =>
@@ -181,12 +181,12 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('does not start in read-only mode', (tester) async {
+    testWidgets('starts in read-only mode', (tester) async {
       await pumpBlink(tester, policy: _readOnly);
 
       await tapBlink(tester);
 
-      verifyNever(nodeDetail.toggleBlinkNode(false));
+      verify(nodeDetail.toggleBlinkNode(false)).called(1);
     });
 
     testWidgets('starts with full access', (tester) async {

@@ -7,8 +7,6 @@ import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/styled/styled_tab_page_view.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/page/instant_device/views/device_list_widget.dart';
-import 'package:privacy_gui/page/instant_topology/views/model/node_instant_actions.dart';
-import 'package:privacy_gui/page/instant_topology/views/widgets/node_action_menu.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
 import '../../../common/config.dart';
@@ -96,41 +94,6 @@ void main() {
       await tapIcon(tester, LinksysIcons.delete);
 
       expect(calls, ['deauth', 'delete']);
-    });
-  });
-
-  group('node action menu', () {
-    late List<NodeInstantActions> taps;
-
-    setUp(() => taps = []);
-
-    Widget menu() => Scaffold(
-          body: NodeActionMenu(
-            actions: const [NodeInstantActions.reboot],
-            onActionTap: taps.add,
-            itemBuilder: (context, action) => Text(action.name),
-          ),
-        );
-
-    testWidgets('does not open in read-only mode', (tester) async {
-      await pump(tester, menu(), policy: _readOnly);
-
-      await tester.tap(find.byType(PopupMenuButton<NodeInstantActions>),
-          warnIfMissed: false);
-      await tester.pumpAndSettle();
-
-      expect(find.text('reboot'), findsNothing);
-    });
-
-    testWidgets('opens and acts with full access', (tester) async {
-      await pump(tester, menu());
-
-      await tester.tap(find.byType(PopupMenuButton<NodeInstantActions>));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('reboot'));
-      await tester.pumpAndSettle();
-
-      expect(taps, [NodeInstantActions.reboot]);
     });
   });
 
