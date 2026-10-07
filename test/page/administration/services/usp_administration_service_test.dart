@@ -89,6 +89,27 @@ void main() {
           )).called(1);
     });
 
+    test('a partial result is a partial failure, not a success', () {
+      // A one-leaf Set should not come back partial, but the parser can say so
+      // and the branch must not read as success if it ever does.
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': true,
+                'result': {
+                  'data': {'Device.UPnP.Device.UPnPIGD': '1'},
+                  'error': {
+                    'Device.UPnP.Device.Enable': {
+                      'errorCode': 9007,
+                      'errorMessage': 'Invalid parameter value',
+                    },
+                  },
+                },
+              });
+
+      expect(() => svc.setUpnpEnabled(false),
+          throwsA(isA<UspPartialFailureError>()));
+    });
+
     test('a refused Set throws UspCompleteFailureError', () {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => _setFailure());

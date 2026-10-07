@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -126,9 +128,18 @@ class UspWifiAdvancedNotifier
     if (client == null && node == null) return;
 
     try {
-      await ref.read(uspMutationLockProvider).withLock(() async {
-        await _svc.setSteering(clientSteering: client, nodeSteering: node);
-      });
+      try {
+        await ref.read(uspMutationLockProvider).withLock(() async {
+          await _svc.setSteering(clientSteering: client, nodeSteering: node);
+        });
+      } on TimeoutException catch (e) {
+        // The lock's own window, which the service never sees to map. Folded
+        // so it reaches the re-read below and the view as a timeout; same fold
+        // as `firmware_auto_update_data_provider.dart`.
+        throw TimeoutError(
+          detail: 'the steering write was not answered (${e.message ?? '30s'})',
+        );
+      }
     } on ServiceError {
       await _rereadSteering();
       rethrow;

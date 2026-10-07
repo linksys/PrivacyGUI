@@ -54,7 +54,7 @@ class UspWifiAdvancedTab extends ConsumerWidget {
   ) {
     final notifier = ref.read(uspWifiAdvancedProvider.notifier);
     final settings = state.settings.current;
-    final disabled = state.status.isSaving;
+    final busy = state.status.isSaving;
 
     // No "nothing here" state any more: a fetch that succeeded read both
     // steering switches (the definition requires them), so the tab always has
@@ -70,7 +70,7 @@ class UspWifiAdvancedTab extends ConsumerWidget {
             title: loc(context).clientSteering,
             description: loc(context).clientSteeringDesc,
             value: settings.clientSteering,
-            busy: disabled,
+            busy: busy,
             onChanged: notifier.setClientSteering,
           ),
           AppGap.md(),
@@ -79,7 +79,7 @@ class UspWifiAdvancedTab extends ConsumerWidget {
             title: loc(context).nodeSteering,
             description: loc(context).nodeSteeringDesc,
             value: settings.nodeSteering,
-            busy: disabled,
+            busy: busy,
             onChanged: notifier.setNodeSteering,
           ),
           if (settings.ieee80211hByRadio.isNotEmpty) ...[
@@ -89,7 +89,7 @@ class UspWifiAdvancedTab extends ConsumerWidget {
               title: loc(context).dynamicFrequencySelection,
               description: loc(context).dfsDescription,
               value: settings.isDfsEnabled,
-              busy: disabled,
+              busy: busy,
               onChanged: notifier.setDfsEnabled,
             ),
           ],

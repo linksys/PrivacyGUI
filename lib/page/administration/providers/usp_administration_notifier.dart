@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
@@ -74,9 +76,19 @@ class UspAdministrationNotifier
   @override
   Future<void> performSave() async {
     final enabled = state.settings.current.upnpEnabled;
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      await _svc.setUpnpEnabled(enabled);
-    });
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.setUpnpEnabled(enabled);
+      });
+    } on TimeoutException catch (e) {
+      // The lock's own window, not a USP error, so the service never maps it.
+      // As a ServiceError it reaches save()'s re-read and is localized as a
+      // timeout; left bare it skipped both. Same fold as
+      // `firmware_auto_update_data_provider.dart`.
+      throw TimeoutError(
+        detail: 'the UPnP write was not answered (${e.message ?? '30s'})',
+      );
+    }
     logger.d('[USP][Administration]: UPnP saved — enabled=$enabled');
   }
 

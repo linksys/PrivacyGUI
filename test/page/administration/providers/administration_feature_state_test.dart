@@ -6,7 +6,7 @@ import 'package:privacy_gui/page/administration/models/administration_settings.d
 import 'package:privacy_gui/page/administration/models/administration_status.dart';
 
 void main() {
-  group('AdministrationFeatureState', () {
+  group('AdministrationFeatureState - dirty state and copy', () {
     test('initial() is loading with UPnP off and nothing dirty', () {
       final state = AdministrationFeatureState.initial();
 
@@ -48,7 +48,7 @@ void main() {
     });
   });
 
-  group('AdministrationSettings', () {
+  group('AdministrationSettings - value semantics', () {
     test('copyWith and equality', () {
       const on = AdministrationSettings(upnpEnabled: true);
 
@@ -59,7 +59,7 @@ void main() {
     });
   });
 
-  group('AdministrationStatus', () {
+  group('AdministrationStatus - copyWith', () {
     test('copyWith keeps or clears the error', () {
       const failed = AdministrationStatus(error: NetworkError(detail: 'x'));
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -819,6 +821,35 @@ void main() {
       verify(() => mockService.fetchSteering()).called(2);
     });
 
+    test('a steering Set that outlasts the lock is a TimeoutError, re-read',
+        () async {
+      // The lock throws a bare TimeoutException at its window; unfolded it
+      // skipped the re-read and reached the view as an unexpected error.
+      stubDfs({'Device.WiFi.Radio.1.': true});
+      stubSteeringRead(client: false, node: false);
+      stubSteeringWrite();
+      final container = ProviderContainer(
+        overrides: [
+          uspWifiAdvancedServiceProvider.overrideWithValue(mockService),
+          // What the real lock throws at its 30 s window, without waiting.
+          uspMutationLockProvider.overrideWithValue(_TimingOutLock()),
+          wifiDataProvider.overrideWith(() => _StubWifiDataNotifier(const [])),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.listen(uspWifiAdvancedProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspWifiAdvancedProvider.notifier);
+
+      notifier.setClientSteering(true);
+      await expectLater(notifier.save(), throwsA(isA<TimeoutError>()));
+
+      final state = container.read(uspWifiAdvancedProvider);
+      expect(state.settings.current.clientSteering, isFalse);
+      expect(state.isDirty, isFalse);
+      verify(() => mockService.fetchSteering()).called(2);
+    });
+
     test('a DFS failure after a landed steering write keeps steering saved',
         () async {
       stubDfs({'Device.WiFi.Radio.1.': false});
@@ -939,4 +970,14 @@ class _FlakyWifiDataNotifier extends WifiDataNotifier {
       radioModels: radios,
     );
   }
+}
+
+/// A lock whose action never finishes inside its window: throws what
+/// [UspMutationLock.withLock] throws when the window closes, at once.
+class _TimingOutLock extends UspMutationLock {
+  @override
+  Future<T> withLock<T>(Future<T> Function() action,
+          {Duration timeout = UspMutationLock.defaultTimeout}) =>
+      Future.error(TimeoutException(
+          'USP mutation timed out after ${timeout.inSeconds}s', timeout));
 }

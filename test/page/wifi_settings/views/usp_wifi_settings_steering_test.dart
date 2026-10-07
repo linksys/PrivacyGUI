@@ -80,63 +80,66 @@ void main() {
     await settle(tester);
   }
 
-  testWidgets('both switches show the values read from the device',
-      (tester) async {
-    await pumpAdvanced(tester);
+  group('UspWifiSettingsView - Advanced tab steering', () {
+    testWidgets('both switches show the values read from the device',
+        (tester) async {
+      await pumpAdvanced(tester);
 
-    expect(find.text('Client Steering'), findsOneWidget);
-    expect(find.text('Node Steering'), findsOneWidget);
-    expect(
-        tester
-            .widget<AppSwitch>(switchWith('wifi-advanced-client-steering'))
-            .value,
-        isFalse);
-    expect(
-        tester
-            .widget<AppSwitch>(switchWith('wifi-advanced-node-steering'))
-            .value,
-        isTrue);
-    expect(switchWith('wifi-advanced-dfs'), findsOneWidget,
-        reason: 'DFS stays beside them');
-  });
+      expect(find.text('Client Steering'), findsOneWidget);
+      expect(find.text('Node Steering'), findsOneWidget);
+      expect(
+          tester
+              .widget<AppSwitch>(switchWith('wifi-advanced-client-steering'))
+              .value,
+          isFalse);
+      expect(
+          tester
+              .widget<AppSwitch>(switchWith('wifi-advanced-node-steering'))
+              .value,
+          isTrue);
+      expect(switchWith('wifi-advanced-dfs'), findsOneWidget,
+          reason: 'DFS stays beside them');
+    });
 
-  testWidgets('a steering-only save writes one Set and waits for no reconnect',
-      (tester) async {
-    await pumpAdvanced(tester);
+    testWidgets(
+        'a steering-only save writes one Set and waits for no reconnect',
+        (tester) async {
+      await pumpAdvanced(tester);
 
-    await tester.tap(switchWith('wifi-advanced-client-steering'));
-    await settle(tester);
-    await tester.tap(find.widgetWithText(AppButton, 'Save'));
-    await settle(tester);
+      await tester.tap(switchWith('wifi-advanced-client-steering'));
+      await settle(tester);
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await settle(tester);
 
-    verify(() => svc.setSteering(clientSteering: true)).called(1);
-    verifyNever(() => svc.setIeee80211hEnabled(
-          radioPaths: any(named: 'radioPaths'),
-          enabled: any(named: 'enabled'),
-          forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
-        ));
-    expect(recoveries, isEmpty,
-        reason: 'steering is applied without a radio restart, so the browser '
-            'never loses the router and there is nothing to wait for');
-    expect(find.text('WiFi settings saved'), findsOneWidget);
-  });
+      verify(() => svc.setSteering(clientSteering: true)).called(1);
+      verifyNever(() => svc.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: any(named: 'enabled'),
+            forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
+          ));
+      expect(recoveries, isEmpty,
+          reason: 'steering is applied without a radio restart, so the browser '
+              'never loses the router and there is nothing to wait for');
+      expect(find.text('WiFi settings saved'), findsOneWidget);
+    });
 
-  testWidgets('a save that changes DFS still waits for the radios',
-      (tester) async {
-    when(() => svc.setIeee80211hEnabled(
-          radioPaths: any(named: 'radioPaths'),
-          enabled: any(named: 'enabled'),
-          forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
-        )).thenAnswer((_) async {});
-    await pumpAdvanced(tester);
+    testWidgets('a save that changes DFS still waits for the radios',
+        (tester) async {
+      when(() => svc.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: any(named: 'enabled'),
+            forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
+          )).thenAnswer((_) async {});
+      await pumpAdvanced(tester);
 
-    await tester.tap(switchWith('wifi-advanced-dfs'));
-    await settle(tester);
-    await tester.tap(find.widgetWithText(AppButton, 'Save'));
-    await settle(tester);
+      await tester.tap(switchWith('wifi-advanced-dfs'));
+      await settle(tester);
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await settle(tester);
 
-    expect(recoveries.map((r) => r.trigger),
-        [RecoveryTrigger.operationalWifiChange]);
+      expect(recoveries.map((r) => r.trigger),
+          [RecoveryTrigger.operationalWifiChange]);
+    });
   });
 }
 

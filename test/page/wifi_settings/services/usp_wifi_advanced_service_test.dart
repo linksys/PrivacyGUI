@@ -349,6 +349,20 @@ void main() {
       );
     });
 
+    test('one switch refused while the other lands is a partial failure', () {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => _setPartial(
+                path: 'Device.X_LINKSYS_Mesh.NodeSteeringEnabled',
+                errorCode: 9007,
+                errorMessage: 'Invalid parameter value',
+              ));
+
+      expect(
+        () => svc.setSteering(clientSteering: true, nodeSteering: true),
+        throwsA(isA<UspPartialFailureError>()),
+      );
+    });
+
     test('a transport error maps to ServiceError', () {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenThrow('Set failed: Transport error: Connection refused');

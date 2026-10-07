@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -158,6 +160,38 @@ void main() {
       verify(() => svc.fetch()).called(2);
     });
 
+    test('a Set that outlasts the lock is a TimeoutError and is re-read',
+        () async {
+      // The lock throws a bare TimeoutException at its window. Left as one it
+      // skipped the re-read (only ServiceError was caught) and reached the view
+      // as an unexpected error, with the switch still showing the unsent value.
+      // A hung write is the case where nobody knows what the router holds,
+      // which is what the re-read is for.
+      when(() => svc.setUpnpEnabled(any())).thenAnswer((_) async {});
+      var reads = 0;
+      when(() => svc.fetch()).thenAnswer((_) async {
+        reads++;
+        return const AdministrationSettings(upnpEnabled: true);
+      });
+      final container = ProviderContainer(overrides: [
+        uspAdministrationServiceProvider.overrideWithValue(svc),
+        // What the real lock throws at its 30 s window, without waiting 30 s.
+        uspMutationLockProvider.overrideWithValue(_TimingOutLock()),
+      ]);
+      addTearDown(container.dispose);
+      container.listen(uspAdministrationProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspAdministrationProvider.notifier);
+
+      notifier.setUpnpEnabled(false);
+      await expectLater(notifier.save(), throwsA(isA<TimeoutError>()));
+
+      final state = container.read(uspAdministrationProvider);
+      expect(state.settings.current.upnpEnabled, isTrue);
+      expect(state.isDirty, isFalse);
+      expect(reads, 2, reason: 'on entry, and to settle the hung write');
+    });
+
     test('a failure whose re-read also fails keeps the edit pending', () async {
       when(() => svc.setUpnpEnabled(any()))
           .thenThrow(const NetworkError(detail: 'unreachable'));
@@ -188,4 +222,14 @@ void main() {
               'and Save can be tried again');
     });
   });
+}
+
+/// A lock whose action never finishes inside its window: throws what
+/// [UspMutationLock.withLock] throws when the window closes, at once.
+class _TimingOutLock extends UspMutationLock {
+  @override
+  Future<T> withLock<T>(Future<T> Function() action,
+          {Duration timeout = UspMutationLock.defaultTimeout}) =>
+      Future.error(TimeoutException(
+          'USP mutation timed out after ${timeout.inSeconds}s', timeout));
 }

@@ -82,79 +82,81 @@ void main() {
   bool switchValue(WidgetTester tester) =>
       tester.widget<AppSwitch>(upnpSwitch).value;
 
-  testWidgets('the switch shows Device.UPnP.Device.Enable', (tester) async {
-    await pumpPage(tester);
+  group('UspAdministrationView - UPnP switch', () {
+    testWidgets('the switch shows Device.UPnP.Device.Enable', (tester) async {
+      await pumpPage(tester);
 
-    expect(find.text('UPnP'), findsOneWidget);
-    expect(switchValue(tester), isTrue);
-    expect(find.widgetWithText(AppButton, 'Save'), findsNothing,
-        reason: 'nothing edited, so no Save bar');
-  });
-
-  testWidgets('flipping writes nothing; Save sends one Set', (tester) async {
-    when(() => svc.setUpnpEnabled(any())).thenAnswer((_) async {
-      deviceValue = false;
+      expect(find.text('UPnP'), findsOneWidget);
+      expect(switchValue(tester), isTrue);
+      expect(find.widgetWithText(AppButton, 'Save'), findsNothing,
+          reason: 'nothing edited, so no Save bar');
     });
-    await pumpPage(tester);
 
-    await tester.tap(upnpSwitch);
-    await settle(tester);
-    expect(switchValue(tester), isFalse);
-    verifyNever(() => svc.setUpnpEnabled(any()));
+    testWidgets('flipping writes nothing; Save sends one Set', (tester) async {
+      when(() => svc.setUpnpEnabled(any())).thenAnswer((_) async {
+        deviceValue = false;
+      });
+      await pumpPage(tester);
 
-    await tester.tap(find.widgetWithText(AppButton, 'Save'));
-    await settle(tester);
+      await tester.tap(upnpSwitch);
+      await settle(tester);
+      expect(switchValue(tester), isFalse);
+      verifyNever(() => svc.setUpnpEnabled(any()));
 
-    verify(() => svc.setUpnpEnabled(false)).called(1);
-    expect(switchValue(tester), isFalse);
-    expect(find.text('Changes saved'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Save'), findsNothing);
-  });
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await settle(tester);
 
-  testWidgets('a failed Set shows an error and the device value',
-      (tester) async {
-    // Fails after a beat, as a real Set does. `doSomethingWithSpinner` starts
-    // listening to the task ~100ms in, so a mock that throws synchronously
-    // fails the task before anything is listening and the test framework
-    // reports it as unhandled — a property of the stub, not of the page.
-    when(() => svc.setUpnpEnabled(any())).thenAnswer((_) async {
-      await Future<void>.delayed(const Duration(milliseconds: 200));
-      throw const NetworkError(detail: 'unreachable');
+      verify(() => svc.setUpnpEnabled(false)).called(1);
+      expect(switchValue(tester), isFalse);
+      expect(find.text('Changes saved'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Save'), findsNothing);
     });
-    await pumpPage(tester);
 
-    await tester.tap(upnpSwitch);
-    await settle(tester);
-    await tester.tap(find.widgetWithText(AppButton, 'Save'));
-    await settle(tester);
+    testWidgets('a failed Set shows an error and the device value',
+        (tester) async {
+      // Fails after a beat, as a real Set does. `doSomethingWithSpinner` starts
+      // listening to the task ~100ms in, so a mock that throws synchronously
+      // fails the task before anything is listening and the test framework
+      // reports it as unhandled — a property of the stub, not of the page.
+      when(() => svc.setUpnpEnabled(any())).thenAnswer((_) async {
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        throw const NetworkError(detail: 'unreachable');
+      });
+      await pumpPage(tester);
 
-    expect(find.byType(SnackBar), findsOneWidget);
-    expect(find.text('Changes saved'), findsNothing);
-    expect(switchValue(tester), isTrue, reason: 'the router still holds on');
-  });
+      await tester.tap(upnpSwitch);
+      await settle(tester);
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await settle(tester);
 
-  testWidgets('leaving with an unsaved change asks first', (tester) async {
-    await pumpPage(tester);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.text('Changes saved'), findsNothing);
+      expect(switchValue(tester), isTrue, reason: 'the router still holds on');
+    });
 
-    await tester.tap(upnpSwitch);
-    await settle(tester);
-    GoRouter.of(tester.element(upnpSwitch)).pop();
-    await settle(tester);
+    testWidgets('leaving with an unsaved change asks first', (tester) async {
+      await pumpPage(tester);
 
-    expect(find.text('You have unsaved changes on this page'), findsOneWidget,
-        reason: "the route's dirty guard is this notifier");
-    expect(upnpSwitch, findsOneWidget, reason: 'still on the page');
-  });
+      await tester.tap(upnpSwitch);
+      await settle(tester);
+      GoRouter.of(tester.element(upnpSwitch)).pop();
+      await settle(tester);
 
-  testWidgets('leaving with nothing edited does not ask', (tester) async {
-    await pumpPage(tester);
+      expect(find.text('You have unsaved changes on this page'), findsOneWidget,
+          reason: "the route's dirty guard is this notifier");
+      expect(upnpSwitch, findsOneWidget, reason: 'still on the page');
+    });
 
-    GoRouter.of(tester.element(upnpSwitch)).pop();
-    // The exit transition, not just the async `onExit`.
-    await tester.pumpAndSettle();
+    testWidgets('leaving with nothing edited does not ask', (tester) async {
+      await pumpPage(tester);
 
-    expect(find.text('You have unsaved changes on this page'), findsNothing);
-    expect(upnpSwitch, findsNothing, reason: 'the page is gone');
-    expect(find.text('open'), findsOneWidget);
+      GoRouter.of(tester.element(upnpSwitch)).pop();
+      // The exit transition, not just the async `onExit`.
+      await tester.pumpAndSettle();
+
+      expect(find.text('You have unsaved changes on this page'), findsNothing);
+      expect(upnpSwitch, findsNothing, reason: 'the page is gone');
+      expect(find.text('open'), findsOneWidget);
+    });
   });
 }
