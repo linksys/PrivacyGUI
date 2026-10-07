@@ -216,6 +216,7 @@
   "faqWebInterfaceGuideDesc": "Panduan lengkap untuk router Linksys Pinnacle Mesh",
   "faqs": "FAQ",
   "featureUnavailableInRemoteMode": "Fitur ini tidak tersedia dalam mode jarak jauh",
+  "readOnlyModeBanner": "Mode hanya baca. Pengaturan dapat dilihat, tetapi tidak dapat diubah.",
   "filterAnonymous": "Filter permintaan Internet anonim",
   "filterIdent": "Filter ident (Port 113)",
   "filterInternetNATRedirection": "Filter pengalihan NAT Internet",

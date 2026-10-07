@@ -216,6 +216,7 @@
   "faqWebInterfaceGuideDesc": "Πλήρης οδηγός για δρομολογητές Linksys Pinnacle Mesh",
   "faqs": "Συχνές ερωτήσεις",
   "featureUnavailableInRemoteMode": "Αυτή η λειτουργία δεν είναι διαθέσιμη σε λειτουργία απομακρυσμένης πρόσβασης",
+  "readOnlyModeBanner": "Λειτουργία μόνο ανάγνωσης. Μπορείτε να δείτε τις ρυθμίσεις, αλλά όχι να τις αλλάξετε.",
   "filterAnonymous": "Φιλτράρισμα ανώνυμων αιτημάτων Internet",
   "filterIdent": "Φιλτράρισμα ident (Θύρα 113)",
   "filterInternetNATRedirection": "Ανακατεύθυνση φιλτραρίσματος Internet NAT",

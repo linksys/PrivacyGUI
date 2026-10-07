@@ -234,6 +234,7 @@
   "faqWebInterfaceGuideDesc": "Guía completa para routers Linksys Pinnacle Mesh",
   "faqs": "Preguntas Frecuentes",
   "featureUnavailableInRemoteMode": "Esta función no está disponible en modo remoto",
+  "readOnlyModeBanner": "Modo de solo lectura. La configuración se puede ver, pero no modificar.",
   "filterAnonymous": "Filtrar solicitudes de Internet anónimas",
   "filterIdent": "Filtrar identificador (Puerto 113)",
   "filterInternetNATRedirection": "Filtrar redirección NAT de Internet",

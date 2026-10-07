@@ -234,6 +234,7 @@
   "faqWebInterfaceGuideDesc": "Linksys Pinnacle Mesh路由器完整指南",
   "faqs": "常见问题解答",
   "featureUnavailableInRemoteMode": "此功能在远程模式下不可用",
+  "readOnlyModeBanner": "只读模式。可以查看设置，但无法更改。",
   "filterAnonymous": "过滤匿名Internet请求",
   "filterIdent": "过滤ident协议（端口号113）",
   "filterInternetNATRedirection": "过滤Internet NAT重定向",

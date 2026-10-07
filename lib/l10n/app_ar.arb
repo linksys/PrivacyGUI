@@ -234,6 +234,7 @@
   "faqWebInterfaceGuideDesc": "دليل شامل لأجهزة راوتر Linksys Pinnacle Mesh",
   "faqs": "الأسئلة الشائعة",
   "featureUnavailableInRemoteMode": "هذه الميزة غير متوفرة في وضع التحكم عن بُعد",
+  "readOnlyModeBanner": "وضع القراءة فقط. يمكن عرض الإعدادات ولكن لا يمكن تغييرها.",
   "filterAnonymous": "تصفية طلبات إنترنت المجهولة",
   "filterIdent": "تصفية التعريف (المنفذ 113)",
   "filterInternetNATRedirection": "تصفية إعادة توجيه NAT عبر إنترنت",

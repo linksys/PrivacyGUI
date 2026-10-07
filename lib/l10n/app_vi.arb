@@ -216,6 +216,7 @@
   "faqWebInterfaceGuideDesc": "Hướng dẫn đầy đủ cho bộ định tuyến Linksys Pinnacle Mesh",
   "faqs": "FAQ",
   "featureUnavailableInRemoteMode": "Tính năng này không khả dụng trong chế độ từ xa",
+  "readOnlyModeBanner": "Chế độ chỉ đọc. Có thể xem cài đặt nhưng không thể thay đổi.",
   "filterAnonymous": "Lọc các yêu cầu Internet ẩn danh",
   "filterIdent": "Lọc nhận dạng (cổng 113)",
   "filterInternetNATRedirection": "Lọc Chuyển hướng Internet NAT",

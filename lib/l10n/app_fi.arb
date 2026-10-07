@@ -216,6 +216,7 @@
   "faqWebInterfaceGuideDesc": "Täydellinen opas Linksys Pinnacle Mesh -reitittimille",
   "faqs": "UKK",
   "featureUnavailableInRemoteMode": "Tämä ominaisuus ei ole käytettävissä etätilassa",
+  "readOnlyModeBanner": "Vain luku -tila. Asetuksia voi tarkastella, mutta niitä ei voi muuttaa.",
   "filterAnonymous": "Suodata anonyymit Internet-pyynnöt",
   "filterIdent": "Suodata ident (portti 113)",
   "filterInternetNATRedirection": "Suodata Internetin NAT-uudelleenohjaus",

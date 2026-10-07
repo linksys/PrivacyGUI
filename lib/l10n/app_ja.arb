@@ -325,6 +325,7 @@
   "faqWebInterfaceGuideDesc": "Linksys Pinnacle Meshルーターの完全ガイド",
   "faqs": "よくある質問",
   "featureUnavailableInRemoteMode": "この機能はリモートモードでは利用できません",
+  "readOnlyModeBanner": "読み取り専用モードです。設定は表示できますが、変更はできません。",
   "filterAnonymous": "匿名インターネットリクエストをフィルター処理します",
   "filterIdent": "フィルターID（ポート113）",
   "filterInternetNATRedirection": "インターネットNATリダイレクトをフィルター",

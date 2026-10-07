@@ -216,6 +216,7 @@
   "faqWebInterfaceGuideDesc": "คู่มือฉบับสมบูรณ์สำหรับเราเตอร์ Linksys Pinnacle Mesh",
   "faqs": "คำถามที่พบบ่อย",
   "featureUnavailableInRemoteMode": "คุณลักษณะนี้ไม่พร้อมใช้งานในโหมดระยะไกล",
+  "readOnlyModeBanner": "โหมดอ่านอย่างเดียว ดูการตั้งค่าได้แต่ไม่สามารถเปลี่ยนแปลงได้",
   "filterAnonymous": "กรองการร้องขออินเทอร์เน็ตที่ไม่มีชื่อ",
   "filterIdent": "กรอง ident (พอร์ต 113)",
   "filterInternetNATRedirection": "กรองการเปลี่ยนเส้นทาง NAT ของอินเทอร์เน็ต",

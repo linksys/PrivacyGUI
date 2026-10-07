@@ -216,6 +216,7 @@
   "faqWebInterfaceGuideDesc": "Linksys Pinnacle Mesh yönlendiricileri için eksiksiz kılavuz",
   "faqs": "SSS",
   "featureUnavailableInRemoteMode": "Bu özellik uzak modda kullanılamaz",
+  "readOnlyModeBanner": "Salt okunur mod. Ayarlar görüntülenebilir ancak değiştirilemez.",
   "filterAnonymous": "Anonim İnternet isteklerini engelle",
   "filterIdent": "Ident filtresi (Port 113)",
   "filterInternetNATRedirection": "İnternet NAT yeniden yönlendirmeyi engelle",

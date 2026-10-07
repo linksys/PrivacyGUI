@@ -234,6 +234,7 @@
   "faqWebInterfaceGuideDesc": "Volledige gids voor Linksys Pinnacle Mesh-routers",
   "faqs": "Veelgestelde vragen",
   "featureUnavailableInRemoteMode": "Deze functie is niet beschikbaar in de externe modus",
+  "readOnlyModeBanner": "Alleen-lezenmodus. Instellingen kunnen worden bekeken, maar niet gewijzigd.",
   "filterAnonymous": "Anonieme internetverzoeken filteren",
   "filterIdent": "IDENT filteren (poort 113)",
   "filterInternetNATRedirection": "Filter Doorsturen NAT",
