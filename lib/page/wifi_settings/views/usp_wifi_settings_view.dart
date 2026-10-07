@@ -1,18 +1,10 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/_shared/helpers/recovery_dialog_helper.dart';
-import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
-import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/capability/capability_provider.dart';
 import 'package:privacy_gui/core/capability/device_capability.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_notifier.dart';
 import 'package:privacy_gui/page/mac_filter/views/mac_filter_tab.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -21,6 +13,7 @@ import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provi
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/tabs/wifi_advanced_tab.dart';
 import 'package:privacy_gui/page/wifi_settings/views/tabs/wifi_list_tab.dart';
+import 'package:privacy_gui/page/wifi_settings/views/wifi_write_with_recovery.dart';
 
 class UspWifiSettingsView extends ConsumerStatefulWidget {
   /// How many tabs this page has. Shared with the `clamp` below so the two
@@ -234,97 +227,30 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
   // Save
   // ---------------------------------------------------------------------------
 
-  /// One recovery for the whole save, entered when the save starts.
-  ///
-  /// Every WiFi write reloads the radios, so the save enters recovery before
-  /// it sends anything: the app is then already waiting when the reload drops
-  /// the event stream, and the shell — which only enters its natural recovery
-  /// from `authenticated` — puts up nothing of its own. Before this the save
-  /// showed "Processing", then the shell's "Connection lost" mid-save, then a
-  /// second recovery of its own once the save came back (bench 2026-10-07).
-  ///
-  /// The probe is held off while the write is in flight. FW 2.0.2 keeps
-  /// answering for the first ~38 s of the reload, so a probe then would end the
-  /// recovery before anything had restarted; the save starts it once its write
-  /// has settled, whatever the outcome, and the recovery ends through the probe
-  /// as it does for every trigger. Then the page reports the save.
-  ///
-  /// Remote Assistance enters no recovery for a WiFi change (#1323 — the
-  /// agent's path never breaks), so there the spinner covers the save.
+  /// The tab's save, as one Wi-Fi write under one recovery — see
+  /// [runWifiWriteWithRecovery].
   Future<void> _onSave(BuildContext context, WidgetRef ref) async {
     final activeTab = _tabController.index;
     // MAC Filtering saves through its own flow (`macFilterBottomBar`), which
     // confirms overriding Instant Privacy and has no Wi-Fi reconnect step.
     if (activeTab != 0 && activeTab != 1) return;
-
-    final connection = ref.read(appConnectionStateProvider.notifier);
-    final recovering = connection.enterWaiting(
-      context: const RecoveryContext(
-        trigger: RecoveryTrigger.operationalWifiChange,
-        // Held off until the write settles — see `startProbingNow` below. Long
-        // enough to outlast any save (`wifiSaveHardLimitProvider`).
-        cooldown: Duration(minutes: 3),
-      ),
-    );
-    // Settled once the page knows the save's outcome and the form shows it.
-    // The dialog stays up until then, not only until the router is back:
-    // closing at recovery showed the pre-save form for the ~11 s a read-back
-    // took (bench 2026-10-07, the guest network still on after turning it off).
-    final settled = Completer<void>();
-    if (recovering) {
-      // Not awaited: it closes itself when the recovery ends and [settled].
-      unawaited(showRecoveryDialog(
-        context,
-        ref,
-        trigger: RecoveryTrigger.operationalWifiChange,
-        skipEnterWaiting: true,
-        holdUntil: settled.future,
-      ));
-    }
-
-    Object? failure;
-    try {
-      final Future<void> task = activeTab == 0
-          ? ref.read(uspWifiSettingsProvider.notifier).save()
-          : ref.read(uspWifiAdvancedProvider.notifier).save();
-      logger.d('[WiFi][Save] Starting save (recovery: $recovering)...');
-      await (recovering ? task : doSomethingWithSpinner(context, task));
-      logger.d('[WiFi][Save] Save settled');
-    } catch (e) {
-      logger.d('[WiFi][Save] Error: $e');
-      failure = e;
-    }
-
-    final wifi = ref.read(uspWifiSettingsProvider.notifier);
-    final routerAway =
-        failure == null && activeTab == 0 && wifi.awaitsRouterRecovery;
-    if (recovering) {
-      connection.startProbingNow();
-    } else if (routerAway) {
-      // Remote Assistance: the router still has to rejoin the cloud before it
-      // can be read. The natural recovery is the wait both modes run.
-      connection.enterWaiting(context: RecoveryContext.natural);
-    }
-    try {
-      if (recovering || routerAway) {
-        if (!await awaitRecovery(ref)) return; // signed out: nothing to report
-      }
-
-      if (failure == null && routerAway) {
-        try {
-          await wifi.confirmAfterRecovery();
-        } catch (e) {
-          failure = e;
+    await runWifiWriteWithRecovery(
+      context,
+      ref,
+      successMessage: loc(context).wifiSettingsSaved,
+      write: () async {
+        if (activeTab == 1) {
+          await ref.read(uspWifiAdvancedProvider.notifier).save();
+          return const WifiWriteConfirmed();
         }
-      }
-    } finally {
-      settled.complete();
-    }
-    if (!context.mounted) return;
-    if (failure != null) {
-      showFailedSnackBar(context, localizeServiceError(context, failure));
-    } else {
-      showSuccessSnackBar(context, loc(context).wifiSettingsSaved);
-    }
+        final wifi = ref.read(uspWifiSettingsProvider.notifier);
+        await wifi.save();
+        // Only this tab's save can leave the router away: a rename moves the
+        // browser off the network it is on.
+        return wifi.awaitsRouterRecovery
+            ? WifiWriteAwaitsRouter(wifi.confirmAfterRecovery)
+            : const WifiWriteConfirmed();
+      },
+    );
   }
 }

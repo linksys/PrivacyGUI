@@ -300,8 +300,7 @@ void main() {
     test('radios but no SSIDs is a failed read too', () async {
       when(() => mockUsp.get(any(), priority: any(named: 'priority')))
           .thenAnswer((invocation) async {
-        final first =
-            (invocation.positionalArguments[0] as List<String>).first;
+        final first = (invocation.positionalArguments[0] as List<String>).first;
         return first.startsWith('Device.WiFi.Radio.')
             ? _buildRadiosResponse()
             : <String, dynamic>{};
