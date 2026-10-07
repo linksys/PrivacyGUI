@@ -81,7 +81,15 @@ class UspSystemInfoDataService {
       freeMemory: systemInfo.freeMemory,
       cpuUsage: systemInfo.cpuUsage,
       firmwareImages: fwModels,
+      baseMacAddress: _nonEmptyUpper(systemInfo.baseMacAddress),
     );
+  }
+
+  /// Same normalisation `SessionService` gives this leaf for Remote Assistance,
+  /// so the card and the cloud request show one value in one spelling.
+  static String? _nonEmptyUpper(String? value) {
+    final text = value?.trim().toUpperCase();
+    return (text == null || text.isEmpty) ? null : text;
   }
 
   // ---------------------------------------------------------------------------

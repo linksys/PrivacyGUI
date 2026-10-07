@@ -66,6 +66,11 @@ const testSystemInfo = SystemInfoUIModel(
   totalMemory: 524288,
   freeMemory: 204800,
   cpuUsage: 23,
+  // The Device Information card's MAC (#1665). Before #1665 the card showed the
+  // master node's ID, and this scene's master is `'GATEWAY'` — so the layout
+  // gate measured a 7-character placeholder in a cell that holds a 17-character
+  // MAC on a real router.
+  baseMacAddress: '74:12:13:21:55:02',
 );
 
 final testSystemInfoData = SystemInfoData(model: testSystemInfo);
