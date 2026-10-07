@@ -28,12 +28,15 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_state.dart';
+import 'package:privacy_gui/core/cloud/services/remote_assistance_service.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/framework/mode/session_request.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_confirm_view.dart';
 import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_dialog.dart';
 import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_session_guard.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
 import '../../golden_test/golden_framework/mocks/mock_remote_assistance.dart';
@@ -42,13 +45,48 @@ import '../../mocks/provider_overrides/mock_remote_assistance_confirm.dart';
 import '../../mocks/test_data/remote_assistance_test_data.dart';
 import '../../util/app_test_fonts.dart';
 
+/// The `ra-client-state-*` suffix for each session status, WRITTEN OUT.
+///
+/// The dialog builds its hook from `status.name`, so a test that also built it
+/// from `.name` would move with any rename and stay green while the spec, which
+/// waits on these literals, timed out on the real router. Written out, a rename
+/// turns the matching case red here; the `keys` check below catches a status
+/// added without one.
+const _clientStateFor = {
+  GRASessionStatus.initiate: 'initiate',
+  GRASessionStatus.pending: 'pending',
+  GRASessionStatus.active: 'active',
+  GRASessionStatus.invalid: 'invalid',
+};
+
 /// Every `ra-client-state-*` value the dialog can show: the four session
 /// statuses, plus the two states before there is a session to report.
-final _allClientStates = [
-  'loading',
+final _allClientStates = ['loading', 'error', ..._clientStateFor.values];
+
+/// Every `ra-confirm-state-*` value the agent's confirm page can show, written
+/// out for the same reason as [_clientStateFor]. A list rather than a table
+/// keyed by the state because `_ViewState` is private to the view.
+///
+/// `idle` is listed so the one-at-a-time checks cover it, but no test drives it:
+/// it lasts one frame. Validation is scheduled for right after the first frame,
+/// and a link missing its session or token renders a separate view with no card
+/// and so no state hook — so there is no `idle` a spec could wait on.
+const _confirmStates = [
+  'idle',
+  'validating',
+  'validated',
+  'connecting',
   'error',
-  for (final s in GRASessionStatus.values) s.name,
 ];
+
+/// Exactly one confirm-state hook on screen, and it is [state].
+void _expectOnlyConfirmState(String state) {
+  expect(find.bySemanticsIdentifier('ra-confirm-state-$state'), findsOneWidget);
+  for (final other in _confirmStates.where((s) => s != state)) {
+    expect(find.bySemanticsIdentifier('ra-confirm-state-$other'), findsNothing,
+        reason: 'only the current state may be on screen');
+  }
+}
 
 /// `initiateRemoteAssistance` never completes, so the dialog stays on its
 /// loading branch — the state between opening it and Guardian answering.
@@ -66,9 +104,9 @@ class _FailsToStart extends FixedRemoteClientNotifier {
       throw const UnauthorizedError();
 }
 
-/// Starts PENDING with a PIN, and goes ACTIVE when told — the moment the agent's
-/// PIN lands. Restoring finds nothing, so only that transition can open the
-/// guard's dialog.
+/// Starts PENDING with a PIN, goes ACTIVE when told — the moment the agent's PIN
+/// lands — and INVALID when told — the moment either end ends it. Restoring finds
+/// nothing, so only the first transition can open the guard's dialog.
 class _GoesActive extends FixedRemoteClientNotifier {
   _GoesActive()
       : super(RemoteClientState(
@@ -82,6 +120,39 @@ class _GoesActive extends FixedRemoteClientNotifier {
   void goActive() => state = state.copyWith(
       sessionInfo: () =>
           RemoteAssistanceTestData.sessionWithStatus(GRASessionStatus.active));
+  void goInvalid() => state = state.copyWith(
+      sessionInfo: () =>
+          RemoteAssistanceTestData.sessionWithStatus(GRASessionStatus.invalid));
+}
+
+/// Session validation that never answers, so the confirm page stays on
+/// `validating` — the state between opening the agent's link and Guardian
+/// answering.
+class _NeverAnswers extends Fake implements RemoteAssistanceService {
+  @override
+  Future<GRASessionInfo> fetchSessionInfoForCA({
+    required String sessionToken,
+    required String sessionId,
+  }) =>
+      Completer<GRASessionInfo>().future;
+}
+
+/// Opening the session fails, or never finishes — the two ways Connect can not
+/// reach the dashboard. `build` stays the shared fixture's unauthenticated state.
+///
+/// The failure lands after a delay, as a real one does: `doSomethingWithSpinner`
+/// only attaches its error handler once its own ~100 ms of setup has run, so a
+/// future that is already failed by then is reported as unhandled.
+class _ConnectFails extends AuthNotifier {
+  _ConnectFails({this.hangs = false});
+  final bool hangs;
+  @override
+  Future<AuthState> build() => Future.value(AuthState.empty());
+  @override
+  Future<void> openSession(SessionRequest request) => hangs
+      ? Completer<void>().future
+      : Future.delayed(const Duration(milliseconds: 500),
+          () => throw const UnauthorizedError());
 }
 
 RemoteClientState _clientState(GRASessionStatus status, {String? pin}) =>
@@ -135,20 +206,24 @@ Future<void> _openClientDialog(
 
 void main() {
   group('customer dialog — one state hook per session status', () {
-    for (final status in GRASessionStatus.values) {
-      testWidgets('${status.name} carries ra-client-state-${status.name}',
-          (tester) async {
+    test('every session status has a written-out hook suffix', () {
+      expect(_clientStateFor.keys, unorderedEquals(GRASessionStatus.values),
+          reason: 'a new status needs its hook value written into the table');
+    });
+
+    for (final MapEntry(key: status, value: hook) in _clientStateFor.entries) {
+      testWidgets('$status carries ra-client-state-$hook', (tester) async {
         final semantics = tester.ensureSemantics();
         await _openClientDialog(
           tester,
           _clientState(status, pin: RemoteAssistanceTestData.testPin),
         );
 
-        expect(find.bySemanticsIdentifier('ra-client-state-${status.name}'),
+        expect(find.bySemanticsIdentifier('ra-client-state-$hook'),
             findsOneWidget);
         // Exactly one state hook at a time — loading and error included — or the
         // spec's "wait for the next state" could be satisfied by a stale one.
-        for (final other in _allClientStates.where((s) => s != status.name)) {
+        for (final other in _allClientStates.where((s) => s != hook)) {
           expect(find.bySemanticsIdentifier('ra-client-state-$other'),
               findsNothing,
               reason: 'only the current state may be on screen');
@@ -318,10 +393,10 @@ void main() {
     // so each hook resolves to the dialog on top. Pinned, because if a future
     // change made the lower dialog's semantics visible, every one of these hooks
     // would match twice and a strict locator in the spec would fail.
-    testWidgets(
-        'both open, one node per hook; closing the top restores the '
-        'one below', (tester) async {
-      final semantics = tester.ensureSemantics();
+
+    /// The live dialog open under the guard, then the session turned ACTIVE so
+    /// the guard has opened the restored dialog over it.
+    Future<_GoesActive> openBothDialogs(WidgetTester tester) async {
       late _GoesActive notifier;
       await tester.pumpWidget(_app(
         overrides: [
@@ -353,6 +428,15 @@ void main() {
 
       expect(find.byType(AlertDialog), findsNWidgets(2),
           reason: 'the premise: the guard did open a second dialog');
+      return notifier;
+    }
+
+    testWidgets(
+        'both open, one node per hook; closing the top restores the '
+        'one below', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await openBothDialogs(tester);
+
       expect(
           find.bySemanticsIdentifier('ra-client-state-active'), findsOneWidget);
       expect(
@@ -369,6 +453,34 @@ void main() {
       semantics.dispose();
       await tester.pumpWidget(const SizedBox());
     });
+
+    testWidgets(
+        'when the session ends, the top dialog closes itself and the live '
+        'one shows ra-client-state-invalid', (tester) async {
+      // R30's last customer-side wait. The restored dialog pops itself on the
+      // transition to INVALID, so the `invalid` hook the spec waits for is the
+      // LIVE dialog's, uncovered — not the restored dialog's own `invalid`
+      // branch, which only renders when it is opened on an already-ended session.
+      final semantics = tester.ensureSemantics();
+      final notifier = await openBothDialogs(tester);
+
+      notifier.goInvalid();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(AlertDialog), findsOneWidget,
+          reason: 'the restored dialog closes itself on INVALID');
+      expect(find.bySemanticsIdentifier('ra-client-state-invalid'),
+          findsOneWidget);
+      for (final other in _allClientStates.where((s) => s != 'invalid')) {
+        expect(
+            find.bySemanticsIdentifier('ra-client-state-$other'), findsNothing);
+      }
+      expect(find.bySemanticsIdentifier('ra-client-end-session'), findsNothing,
+          reason: 'nothing left to end');
+      semantics.dispose();
+      await tester.pumpWidget(const SizedBox());
+    });
   });
 
   group('agent confirm page', () {
@@ -379,13 +491,20 @@ void main() {
     // artifact from being reported as an exception.
     setUpAll(loadAppFonts);
 
-    Future<void> pumpConfirm(WidgetTester tester, GRASessionInfo info) async {
+    Future<void> pumpConfirm(
+      WidgetTester tester,
+      GRASessionInfo info, {
+      List<Override> overrides = const [],
+    }) async {
       tester.view.physicalSize = const Size(1280, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(_app(
-        overrides: remoteAssistanceConfirmOverrides(sessionInfo: info),
+        overrides: [
+          ...remoteAssistanceConfirmOverrides(sessionInfo: info),
+          ...overrides,
+        ],
         home: const RemoteAssistanceConfirmView(
           sessionId: RemoteAssistanceTestData.testSessionId,
           token: RemoteAssistanceTestData.testSessionToken,
@@ -397,18 +516,84 @@ void main() {
       await tester.pump();
     }
 
+    /// Taps Connect and runs the clock past `doSomethingWithSpinner`'s setup
+    /// (~100 ms) and [_ConnectFails]'s 500 ms, so `openSession` has been called
+    /// and, for a failure, answered. Not pumpAndSettle: the spinner dialog's
+    /// message stream is periodic.
+    Future<void> tapConnect(WidgetTester tester) async {
+      await tester.tap(find.bySemanticsIdentifier('ra-confirm-connect'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pump();
+    }
+
+    testWidgets('while Guardian is answering: ra-confirm-state-validating',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpConfirm(tester, RemoteAssistanceTestData.activeSession(),
+          overrides: [
+            remoteAssistanceServiceProvider.overrideWithValue(_NeverAnswers()),
+          ]);
+
+      _expectOnlyConfirmState('validating');
+      semantics.dispose();
+      // The view gives validation 15 s; run past it so the timer is not left
+      // pending, which the binding reports as a failure.
+      await tester.pump(const Duration(seconds: 16));
+    });
+
     testWidgets(
         'an ACTIVE session lands on ra-confirm-state-validated, with '
         'the Connect hook', (tester) async {
       final semantics = tester.ensureSemantics();
       await pumpConfirm(tester, RemoteAssistanceTestData.activeSession());
 
-      expect(find.bySemanticsIdentifier('ra-confirm-state-validated'),
-          findsOneWidget);
+      _expectOnlyConfirmState('validated');
       expect(find.bySemanticsIdentifier('ra-confirm-connect'), findsOneWidget);
+      expect(
+          find.bySemanticsIdentifier('ra-confirm-error-message'), findsNothing,
+          reason: 'a clean validation shows no error box');
       semantics.dispose();
       // ACTIVE starts the view's one-second countdown; unmount so the binding's
       // pending-timer check does not fail the test.
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('while the session opens: ra-confirm-state-connecting',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpConfirm(tester, RemoteAssistanceTestData.activeSession(),
+          overrides: [
+            authProvider.overrideWith(() => _ConnectFails(hangs: true)),
+          ]);
+
+      await tapConnect(tester);
+
+      _expectOnlyConfirmState('connecting');
+      semantics.dispose();
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets(
+        'a failed Connect shows ra-confirm-error-message while the state '
+        'stays validated', (tester) async {
+      // The reason the error box has its own hook. The card's state goes back to
+      // `validated`, which is also what it read before Connect — so without this
+      // a spec waiting for the dashboard could only time out, never report the
+      // message on screen.
+      final semantics = tester.ensureSemantics();
+      await pumpConfirm(tester, RemoteAssistanceTestData.activeSession(),
+          overrides: [authProvider.overrideWith(() => _ConnectFails())]);
+      expect(
+          find.bySemanticsIdentifier('ra-confirm-error-message'), findsNothing,
+          reason: 'the premise: no error box before Connect');
+
+      await tapConnect(tester);
+
+      _expectOnlyConfirmState('validated');
+      expect(find.bySemanticsIdentifier('ra-confirm-error-message'),
+          findsOneWidget);
+      semantics.dispose();
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -419,9 +604,12 @@ void main() {
       final semantics = tester.ensureSemantics();
       await pumpConfirm(tester, RemoteAssistanceTestData.pendingSession());
 
-      expect(
-          find.bySemanticsIdentifier('ra-confirm-state-error'), findsOneWidget);
+      _expectOnlyConfirmState('error');
       expect(find.bySemanticsIdentifier('ra-confirm-connect'), findsNothing);
+      expect(find.bySemanticsIdentifier('ra-confirm-error-message'),
+          findsOneWidget,
+          reason:
+              'every error path shows the same box, so it carries the hook');
       semantics.dispose();
     });
 

@@ -393,8 +393,9 @@ class _RemoteAssistanceConfirmViewState
           //
           // `validated` is not only "before Connect": a Connect that fails comes
           // back to it, with the error box shown (see `_connect`). After tapping
-          // Connect, a spec must wait for the dashboard — not for this hook to
-          // leave `validated`, which a failure never does.
+          // Connect, a spec must wait for the dashboard OR the error box's own
+          // hook, `ra-confirm-error-message` — not for this hook to leave
+          // `validated`, which a failure never does.
           child: AppCard(
             identifier: 'ra-confirm-state-${_viewState.name}',
             child: Column(
@@ -426,23 +427,31 @@ class _RemoteAssistanceConfirmViewState
                 ],
                 if (_errorMessage != null) ...[
                   AppGap.lg(),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.error_outline, color: colorScheme.error),
-                        AppGap.md(),
-                        Expanded(
-                          child: AppText.bodyMedium(
-                            _errorMessage!,
-                            color: colorScheme.onErrorContainer,
+                  // Keyed on the box, not on the view state: a failed Connect
+                  // shows it while the state stays `validated` (see the card
+                  // hook above), so this is the only structural sign of that
+                  // failure. A spec racing it against the dashboard can report
+                  // the message instead of timing out.
+                  Semantics(
+                    identifier: 'ra-confirm-error-message',
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline, color: colorScheme.error),
+                          AppGap.md(),
+                          Expanded(
+                            child: AppText.bodyMedium(
+                              _errorMessage!,
+                              color: colorScheme.onErrorContainer,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   AppGap.md(),
