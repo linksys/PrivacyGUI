@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:privacy_gui/framework/feature_state.dart';
 import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_settings.dart';
@@ -33,9 +34,21 @@ class WifiAdvancedFeatureState
     );
   }
 
+  /// Whether saving now would write IEEE 802.11h — the one write on this tab
+  /// that reloads every radio and drops a client connected over Wi-Fi.
+  ///
+  /// The notifier reads it to decide what to send and the view reads it to
+  /// decide whether to wait for the router to come back, so the two cannot
+  /// disagree about a save. A steering-only save is applied at once and needs
+  /// neither (#1661).
+  bool get changesDfs => !const MapEquality<String, bool>().equals(
+      settings.current.ieee80211hByRadio, settings.original.ieee80211hByRadio);
+
   @override
   Map<String, dynamic> toMap() => {
         'dfsEnabled': settings.current.isDfsEnabled,
+        'clientSteering': settings.current.clientSteering,
+        'nodeSteering': settings.current.nodeSteering,
         'isDirty': isDirty,
         'isLoading': status.isLoading,
       };

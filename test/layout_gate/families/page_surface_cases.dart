@@ -310,20 +310,19 @@ final kWifiSettingsPageCase = PageSurfaceCase(
 /// link does — `initialTab: 1` — for which see [kStatisticsDevicesPageCase]; the two
 /// pages now share one mechanism rather than one excuse.
 ///
-/// ## Coverage: the whole tab, because the tab is one card
+/// ## Coverage: the whole tab, three cards
 ///
-/// No depth limit to state and none to measure. `UspWifiAdvancedTab` renders a single
-/// `AppCard` holding one DFS row, so [kPageSweepHeight] reaches the end of it at every
-/// width — this one's green means *the tab*, not a prefix of it. Four of the five tab
-/// cases are like that ([kStatisticsSystemPageCase], [kPortRangePageCase] and
-/// [kPortTriggeringPageCase] are the others); `page.statistics` and
-/// `page.statistics_devices` are the two that stop at [kPageSweepHeight].
+/// `UspWifiAdvancedTab` renders three `AppCard`s — client steering, node steering
+/// (#1661) and DFS — each one `Expanded` title + [AppSwitch] row over a description.
+/// Until #1661 it was the DFS card alone. The green still means *the tab* and not a
+/// prefix of it, for a reason that does not depend on [kPageSweepHeight]: the cards
+/// sit in a `SingleChildScrollView`'s `Column`, which lays out every child whether
+/// or not it is in the viewport — only a lazy sliver skips what is off screen.
 ///
-/// That also makes it the cheapest tab in the family and the one least likely to find
-/// anything: the row is already `Expanded` + [AppSwitch], which is the shape the rest
-/// of this file keeps arriving at as the *fix*. Swept anyway, and worth saying why —
-/// "it looks safe" is the claim a gate exists to stop anyone from having to make. The
-/// 234 cells are the receipt, and a future card added to this tab inherits them.
+/// It is the shape the rest of this file keeps arriving at as the *fix*, which made
+/// it the tab least likely to find anything. The two steering cards were the
+/// "future card added to this tab" this paragraph used to promise would inherit the
+/// 234 cells, and they did: they entered green.
 ///
 /// ## The premise, and the one thing it has to rule out
 ///
@@ -333,16 +332,16 @@ final kWifiSettingsPageCase = PageSurfaceCase(
 /// for the same reason: `initialTab` is an `int` behind a `clamp(0, 1)`, so every wrong
 /// value is a legal one.
 ///
-/// [AppSwitch] is the second entry because this tab has a *third* rendering that is
-/// neither loader nor error: `wifi_advanced_tab.dart:55` returns a centred
-/// `noAdvancedWifiSettings` string when `ieee80211hByRadio` is empty. That arm is inside
-/// [UspWifiAdvancedTab], so the first entry cannot see it, and it lays out one line of
-/// text where the card lays out a row — a fixture thinned to an empty map would sweep
-/// 234 cells of an empty-state message and report them as this tab's coverage.
-/// `defaultAdvancedState` — an alias for `advancedDfsOnState`, which is the name
-/// [kWifiSettingsPageCase]'s doc uses for the same object — carries two radios, and
-/// [AppSwitch] is what fails if it stops. Whichever name the alias points at is what
-/// this case actually sweeps, which is the reason to say both here.
+/// [AppSwitch] is the second entry. It used to guard a *third* rendering, a centred
+/// `noAdvancedWifiSettings` string shown when `ieee80211hByRadio` was empty; #1661
+/// removed that arm, because a successful fetch has always read both steering
+/// switches and so the tab always has rows. What an empty radio map does now is drop
+/// the DFS card only — and the DFS card is the one with the longest description, so
+/// a fixture thinned to an empty map would sweep two short cards and report them as
+/// this tab's coverage. `defaultAdvancedState` — an alias for `advancedDfsOnState`,
+/// which is the name [kWifiSettingsPageCase]'s doc uses for the same object — carries
+/// two radios, which is what keeps the DFS card in the sweep. Whichever name the alias
+/// points at is what this case actually sweeps, which is the reason to say both here.
 final kWifiSettingsAdvancedPageCase = PageSurfaceCase(
   id: 'wifi_settings_advanced',
   view: () => const UspWifiSettingsView(initialTab: 1),
