@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -248,6 +249,163 @@ void main() {
         async.elapse(const Duration(seconds: 57));
         expect(error, isNull, reason: 'still polling every 3 s');
         async.elapse(const Duration(seconds: 4));
+        expect(error, isA<ServiceError>());
+      });
+    });
+  });
+
+  group('the SET still in flight at the deadline (bench round 2)', () {
+    // Bench, 2026-10-07 (M60, 2.0.2, local), Quick Setup rename + password:
+    // sent 11:54:02; every read-back from 30 s on REACHED the router and read
+    // the old name; the save failed at 60 s; the SET itself returned at
+    // 11:55:02 — 60.04 s. Round 1 the same SET returned at 60.0 s. FW 2.0.2
+    // changes the values when the reload ends and answers the SET then, so a
+    // 60 s deadline from the write is one step short every time.
+    late ProviderContainer real;
+    setUp(() => real = ProviderContainer(overrides: [
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+        ]));
+    tearDown(() => real.dispose());
+
+    test(
+        'old values until the SET returns at 60.04 s, new after — confirmed, '
+        'not failed', () {
+      fakeAsync((async) {
+        Object? error;
+        WifiConfirmResult? result;
+        var applied = false;
+        real
+            .read(wifiWriteConfirmProvider)(
+          plan(() async {
+            await Future<void>.delayed(const Duration(milliseconds: 60040));
+            applied = true; // the reload ends, the values change, it answers
+            return WifiWriteOutcome.unanswered;
+          }),
+          isApplied: (_) async => applied,
+          allowRouterAway: true,
+        )
+            .then((r) {
+          result = r;
+        }, onError: (Object e) {
+          error = e;
+        });
+
+        async.elapse(const Duration(seconds: 61));
+        expect(error, isNull,
+            reason: 'reading the old value while the SET is in flight is '
+                '"not yet", not a refusal');
+        async.elapse(const Duration(seconds: 5));
+        expect(error, isNull);
+        expect(result, isA<WifiConfirmed>());
+      });
+    });
+
+    test('a SET that finally answers with success is confirmed at once', () {
+      fakeAsync((async) {
+        WifiConfirmResult? result;
+        var reads = 0;
+        real
+            .read(wifiWriteConfirmProvider)(
+          plan(() async {
+            await Future<void>.delayed(const Duration(seconds: 70));
+            return WifiWriteOutcome.confirmed;
+          }),
+          isApplied: (_) async {
+            reads++;
+            return false;
+          },
+        )
+            .then((r) {
+          result = r;
+        });
+
+        // Noticed on the next read-back cycle — within one 3 s interval.
+        async.elapse(const Duration(seconds: 73));
+        expect(result, isA<WifiConfirmed>());
+        final readsAtAnswer = reads;
+        async.elapse(const Duration(seconds: 10));
+        expect(reads, readsAtAnswer, reason: 'nothing left to read back');
+      });
+    });
+
+    test(
+        'SET returned, router reachable, still the old values after the grace '
+        'period ⇒ a failure', () {
+      fakeAsync((async) {
+        Object? error;
+        real
+            .read(wifiWriteConfirmProvider)(
+          plan(() async {
+            await Future<void>.delayed(const Duration(seconds: 40));
+            return WifiWriteOutcome.unanswered;
+          }),
+          isApplied: (_) async => false,
+          allowRouterAway: true,
+        )
+            .then((_) {}, onError: (Object e) {
+          error = e;
+        });
+
+        async.elapse(const Duration(seconds: 59));
+        expect(error, isNull, reason: 'still inside the deadline');
+        async.elapse(const Duration(seconds: 5));
+        expect(error, isA<ServiceError>(),
+            reason: 'the router answered and has said no for long enough');
+      });
+    });
+
+    test(
+        'a SET that ends just before the deadline still gets a read-back '
+        'after it, even when the read right at the answer is stale', () {
+      fakeAsync((async) {
+        Object? error;
+        WifiConfirmResult? result;
+        Duration? endedAt;
+        final sinceStart = clock.stopwatch()..start();
+        real
+            .read(wifiWriteConfirmProvider)(
+          plan(() async {
+            await Future<void>.delayed(const Duration(milliseconds: 58900));
+            endedAt = sinceStart.elapsed;
+            return WifiWriteOutcome.unanswered;
+          }),
+          // The router reads the new values only a beat after it answers —
+          // so the first read after the answer can still be stale.
+          isApplied: (_) async {
+            final end = endedAt;
+            return end != null &&
+                sinceStart.elapsed > end + const Duration(milliseconds: 1500);
+          },
+        )
+            .then((r) {
+          result = r;
+        }, onError: (Object e) {
+          error = e;
+        });
+
+        async.elapse(const Duration(seconds: 70));
+        expect(error, isNull,
+            reason: 'a ruling waits one read-back interval past the answer');
+        expect(result, isA<WifiConfirmed>());
+      });
+    });
+
+    test('a SET that never returns is ruled at the hard limit, not forever',
+        () {
+      fakeAsync((async) {
+        Object? error;
+        real
+            .read(wifiWriteConfirmProvider)(
+          plan(() => Completer<WifiWriteOutcome>().future),
+          isApplied: (_) async => false,
+        )
+            .then((_) {}, onError: (Object e) {
+          error = e;
+        });
+
+        async.elapse(const Duration(seconds: 100));
+        expect(error, isNull, reason: 'the SET is still in flight');
+        async.elapse(const Duration(seconds: 25));
         expect(error, isA<ServiceError>());
       });
     });

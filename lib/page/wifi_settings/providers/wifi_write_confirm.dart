@@ -24,13 +24,31 @@ final wifiReadBackIntervalProvider = Provider<Duration>(
   (ref) => const Duration(seconds: 3),
 );
 
-/// How long after the write the router is read back before the save gives up.
+/// How long after the write the router is read back before the save gives up —
+/// once the write's own request has ended.
 ///
 /// Counted from the write. Sixty seconds covers the two longest single waits
 /// measured: #1460's DFS SET answered at 35.4 s over Remote Assistance, and on
 /// 2.0.2 a renamed network went on the air 40 s after its write.
+///
+/// Not a ruling while the request is still in flight. FW 2.0.2 changes the
+/// values when the reload ends and answers the SET at the same moment, so a
+/// read-back before that answer reads the old values however long it waits —
+/// bench 2026-10-07: a Quick Setup rename's SET returned at 60.04 s, every
+/// read-back before it reached the router and read the old name, and a
+/// deadline of 60 s from the write failed a save that landed. So the deadline
+/// waits for the request too, up to [wifiSaveHardLimitProvider].
 final wifiSaveDeadlineProvider = Provider<Duration>(
   (ref) => const Duration(seconds: 60),
+);
+
+/// The longest a save waits for a write whose request has not ended.
+///
+/// A WASM request can hang well past any reload — PnP measured one at 288 s —
+/// so waiting for the request alone could hold the page indefinitely. Two
+/// minutes is twice the slowest answer measured on this page (60.04 s).
+final wifiSaveHardLimitProvider = Provider<Duration>(
+  (ref) => const Duration(seconds: 120),
 );
 
 /// Sends [plan] under the mutation lock and settles its outcome; returns the
@@ -101,12 +119,28 @@ final wifiWriteConfirmProvider = Provider<WifiWriteConfirm>((ref) {
     final sinceWrite = clock.stopwatch()..start();
     final window = ref.read(wifiAnswerWindowProvider);
 
+    // The request is held past the window, not dropped: whether it is still
+    // in flight decides whether an old value read back is "not yet" or "no".
+    // The lock is released at the window either way, as for any hung call.
+    WifiWriteOutcome? answer;
+    Object? sendError;
+    final request = Completer<void>();
     var outcome = WifiWriteOutcome.unanswered;
     try {
       outcome = await ref.read(uspMutationLockProvider).withLock(
-            plan.send,
-            timeout: window,
-          );
+        () {
+          final sent = plan.send();
+          // Observed, not awaited: the lock awaits `sent`, and this records
+          // how it ended for after the window, without a second error path.
+          unawaited(sent.then<void>((o) {
+            answer = o;
+          }, onError: (Object e) {
+            sendError = e;
+          }).whenComplete(request.complete));
+          return sent;
+        },
+        timeout: window,
+      );
     } on TimeoutException {
       logger.i('[USP][WiFi]: write not answered within ${window.inSeconds}s '
           '— reading the router back');
@@ -125,10 +159,25 @@ final wifiWriteConfirmProvider = Provider<WifiWriteConfirm>((ref) {
 
     final interval = ref.read(wifiReadBackIntervalProvider);
     final deadline = ref.read(wifiSaveDeadlineProvider);
+    final hardLimit = ref.read(wifiSaveHardLimitProvider);
+    // When the request ended, if it has: a ruling waits one interval past it,
+    // so the first read after the answer gets its say.
+    Duration? endedAt;
     // Whether any read-back got an answer. One that did and read the wrong
     // values is the router saying no; none at all is the router being away.
     var reachedRouter = false;
     while (true) {
+      if (request.isCompleted) {
+        endedAt ??= sinceWrite.elapsed;
+        // A late answer is as good as an early one: the router said yes.
+        if (answer == WifiWriteOutcome.confirmed) {
+          logger.i('[USP][WiFi]: write answered after '
+              '${sinceWrite.elapsed.inSeconds}s');
+          return WifiConfirmed(plan.count);
+        }
+        // A late refusal is still a refusal.
+        if (sendError != null) throw sendError!;
+      }
       try {
         final applied = await isApplied(plan.proof);
         reachedRouter = true;
@@ -140,14 +189,20 @@ final wifiWriteConfirmProvider = Provider<WifiWriteConfirm>((ref) {
       } on ServiceError catch (e) {
         logger.d('[USP][WiFi]: could not read the WiFi back yet: $e');
       }
-      if (sinceWrite.elapsed + interval > deadline) {
+      final next = sinceWrite.elapsed + interval;
+      final ended = endedAt;
+      final settled = ended != null
+          ? next > deadline && next > ended + interval
+          : next > hardLimit;
+      if (settled) {
         if (allowRouterAway && !reachedRouter) {
           logger.i('[USP][WiFi]: router still away after '
-              '${deadline.inSeconds}s — handing over to recovery');
+              '${sinceWrite.elapsed.inSeconds}s — handing over to recovery');
           return WifiRouterAway(plan.proof);
         }
-        logger.w('[USP][WiFi]: write not read back as applied within '
-            '${deadline.inSeconds}s');
+        logger.w('[USP][WiFi]: write not read back as applied after '
+            '${sinceWrite.elapsed.inSeconds}s '
+            '(request ${ended == null ? 'still in flight' : 'ended'})');
         throw const UnexpectedError();
       }
       await Future<void>.delayed(interval);
