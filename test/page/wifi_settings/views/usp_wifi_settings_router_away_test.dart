@@ -142,6 +142,34 @@ void main() {
       expect(connection.waitsEntered, 1);
     });
 
+    testWidgets(
+        'router away: the dialog stays up until the read-back has settled — '
+        'closing at recovery showed the pre-save form for ~11 s',
+        (tester) async {
+      // Bench round 5: recovery passed at 13:46:18 and closed the dialog; the
+      // read-back took until 13:46:29, and meanwhile the form showed the guest
+      // network still on — the cache from before the save — and not dirty.
+      wifi.holdConfirm = true;
+      await pumpWifi(tester);
+      await tester.tap(save);
+      await frames(tester);
+      wifi.finishSave(WifiSaveEnd.routerAway);
+      await frames(tester);
+
+      connection.set(AppConnectionState.authenticated);
+      await frames(tester);
+
+      expect(wifi.confirms, 1, reason: 'the read-back has started');
+      expect(applying, findsOneWidget,
+          reason: 'recovered, but the page does not know the save yet');
+
+      wifi.releaseConfirm();
+      await frames(tester);
+
+      expect(applying, findsNothing);
+      expect(saved, findsOneWidget);
+    });
+
     testWidgets('router back but the save did not apply ⇒ failure',
         (tester) async {
       wifi.confirmFails = true;
@@ -254,6 +282,12 @@ class _ScriptedWifiNotifier extends FixedWifiSettingsNotifier {
   var confirms = 0;
   var confirmFails = false;
 
+  /// Holds the read-back open until [releaseConfirm], to look at the page
+  /// while it runs.
+  var holdConfirm = false;
+  Completer<void>? _confirm;
+  void releaseConfirm() => _confirm!.complete();
+
   void finishSave(WifiSaveEnd end) {
     switch (end) {
       case WifiSaveEnd.confirmed:
@@ -276,6 +310,7 @@ class _ScriptedWifiNotifier extends FixedWifiSettingsNotifier {
   Future<void> confirmAfterRecovery() async {
     confirms++;
     _away = false;
+    if (holdConfirm) await (_confirm = Completer<void>()).future;
     if (confirmFails) throw const UnexpectedError();
   }
 }

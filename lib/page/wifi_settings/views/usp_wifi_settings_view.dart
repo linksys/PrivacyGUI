@@ -266,13 +266,19 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
         cooldown: Duration(minutes: 3),
       ),
     );
+    // Settled once the page knows the save's outcome and the form shows it.
+    // The dialog stays up until then, not only until the router is back:
+    // closing at recovery showed the pre-save form for the ~11 s a read-back
+    // took (bench 2026-10-07, the guest network still on after turning it off).
+    final settled = Completer<void>();
     if (recovering) {
-      // Not awaited: it closes itself when the recovery ends.
+      // Not awaited: it closes itself when the recovery ends and [settled].
       unawaited(showRecoveryDialog(
         context,
         ref,
         trigger: RecoveryTrigger.operationalWifiChange,
         skipEnterWaiting: true,
+        holdUntil: settled.future,
       ));
     }
 
@@ -299,16 +305,20 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
       // can be read. The natural recovery is the wait both modes run.
       connection.enterWaiting(context: RecoveryContext.natural);
     }
-    if (recovering || routerAway) {
-      if (!await awaitRecovery(ref)) return; // signed out: nothing to report
-    }
-
-    if (failure == null && routerAway) {
-      try {
-        await wifi.confirmAfterRecovery();
-      } catch (e) {
-        failure = e;
+    try {
+      if (recovering || routerAway) {
+        if (!await awaitRecovery(ref)) return; // signed out: nothing to report
       }
+
+      if (failure == null && routerAway) {
+        try {
+          await wifi.confirmAfterRecovery();
+        } catch (e) {
+          failure = e;
+        }
+      }
+    } finally {
+      settled.complete();
     }
     if (!context.mounted) return;
     if (failure != null) {

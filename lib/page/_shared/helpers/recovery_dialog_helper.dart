@@ -24,6 +24,10 @@ Future<void> showRecoveryDialog(
   String? title,
   String? message,
   String? successMessage,
+  // Keeps the dialog up past the recovery until this completes — for a caller
+  // with work left once the router is back (a Wi-Fi save reading back what it
+  // wrote), so the page is never shown before it is right.
+  Future<void>? holdUntil,
 }) async {
   logger
       .d('[Recovery] showRecoveryDialog: trigger=$trigger, cooldown=$cooldown, '
@@ -104,7 +108,9 @@ Future<void> showRecoveryDialog(
       // non-nullable `Widget` so it cannot be failed by omission.
       surface.sessionExitAction(),
     ],
-    dismissWhen: recovered.future,
+    dismissWhen: holdUntil == null
+        ? recovered.future
+        : Future.wait([recovered.future, holdUntil]),
   );
   logger.d('[Recovery] Recovery dialog dismissed');
 
