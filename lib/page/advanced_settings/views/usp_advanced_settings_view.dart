@@ -96,6 +96,12 @@ class UspAdvancedSettingsView extends StatelessWidget {
         title: loc(context).staticRouting,
         onTap: () => context.pushNamed(RouteNamed.uspStaticRouting),
       ),
+      // After routing, as in 1.x. UPnP only for now (#1660).
+      AppSectionItemData(
+        identifier: 'advanced-settings-administration',
+        title: loc(context).administration,
+        onTap: () => context.pushNamed(RouteNamed.uspAdministration),
+      ),
     ];
   }
 

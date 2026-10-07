@@ -83,6 +83,7 @@ import 'package:privacy_gui/page/admin/views/components/usp_password_card.dart';
 import 'package:privacy_gui/page/admin/views/components/usp_system_actions_card.dart';
 import 'package:privacy_gui/page/admin/views/components/usp_timezone_card.dart';
 import 'package:privacy_gui/page/admin/views/usp_admin_view.dart';
+import 'package:privacy_gui/page/administration/views/usp_administration_view.dart';
 import 'package:privacy_gui/page/advanced_settings/views/usp_advanced_settings_view.dart';
 import 'package:privacy_gui/page/ai_assistant/views/router_assistant_view.dart';
 import 'package:privacy_gui/page/apps/views/usp_apps_view.dart';
@@ -196,6 +197,7 @@ import 'package:ui_kit_library/ui_kit.dart'
         AppTopology;
 
 import '../../mocks/provider_overrides/mock_admin.dart';
+import '../../mocks/provider_overrides/mock_administration.dart';
 import '../../mocks/provider_overrides/mock_apps.dart';
 import '../../mocks/provider_overrides/mock_dashboard_page.dart';
 import '../../mocks/provider_overrides/mock_devices.dart';
@@ -1924,6 +1926,27 @@ final kDmzPageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView],
 );
 
+/// `usp_administration_view` — Advanced Settings → Administration (#1660). Not
+/// [kAdminPageCase], the menu's page of the same title.
+///
+/// One card, one row: the `upnp` label `Expanded` beside an [AppSwitch]. The label is
+/// `UPnP` in 25 locales and `UPnPi` in `pt`, so this is the least text the family lays
+/// out, and it is swept for the reason [kWifiSettingsAdvancedPageCase] gives — "it
+/// looks safe" is the claim the gate exists to replace. It arrives with the `lib/` change that creates it,
+/// straight to `swept`, as `firmware_ota` and `notification_history` did.
+///
+/// [UspUpnpCard] is the premise: the page has a loader arm and a [ServiceErrorView] arm,
+/// both in `forbids`, and the card is the only thing the data arm renders. The fixture
+/// is the clean `upnpOnState` — the dirty one adds only ui_kit's Save bar, out of scope
+/// as it is for [kDmzPageCase]; see `mock_administration.dart`.
+final kAdministrationPageCase = PageSurfaceCase(
+  id: 'administration',
+  view: () => const UspAdministrationView(),
+  overrides: () => administrationOverrides(),
+  requires: const [UspTopBar, UspUpnpCard, AppSwitch],
+  forbids: const [AppLoader, ServiceErrorView],
+);
+
 /// `usp_firewall_view` — nine rows in three cards: two SPI switches, three VPN
 /// passthrough switches, three internet filters and a link out to IPv6 port service.
 ///
@@ -2821,4 +2844,5 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kStatisticsSystemPageCase,
   kSystemLogPageCase,
   kNotificationHistoryPageCase,
+  kAdministrationPageCase,
 ];
