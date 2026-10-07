@@ -386,7 +386,18 @@ class _RemoteAssistanceConfirmViewState
       child: (context, constraints) => Center(
         child: SizedBox(
           width: context.colWidth(4),
+          // Keyed by the view state, so the real-router RA spec waits for
+          // `validated` (or sees `error`) structurally rather than by matching
+          // "Session validated. Ready to connect.", which is unlocalized copy and
+          // will not stay that way.
+          //
+          // `validated` is not only "before Connect": a Connect that fails comes
+          // back to it, with the error box shown (see `_connect`). After tapping
+          // Connect, a spec must wait for the dashboard OR the error box's own
+          // hook, `ra-confirm-error-message` — not for this hook to leave
+          // `validated`, which a failure never does.
           child: AppCard(
+            identifier: 'ra-confirm-state-${_viewState.name}',
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,23 +427,31 @@ class _RemoteAssistanceConfirmViewState
                 ],
                 if (_errorMessage != null) ...[
                   AppGap.lg(),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.error_outline, color: colorScheme.error),
-                        AppGap.md(),
-                        Expanded(
-                          child: AppText.bodyMedium(
-                            _errorMessage!,
-                            color: colorScheme.onErrorContainer,
+                  // Keyed on the box, not on the view state: a failed Connect
+                  // shows it while the state stays `validated` (see the card
+                  // hook above), so this is the only structural sign of that
+                  // failure. A spec racing it against the dashboard can report
+                  // the message instead of timing out.
+                  Semantics(
+                    identifier: 'ra-confirm-error-message',
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline, color: colorScheme.error),
+                          AppGap.md(),
+                          Expanded(
+                            child: AppText.bodyMedium(
+                              _errorMessage!,
+                              color: colorScheme.onErrorContainer,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   AppGap.md(),
@@ -456,6 +475,7 @@ class _RemoteAssistanceConfirmViewState
                       label: _viewState == _ViewState.connecting
                           ? 'Connecting...'
                           : 'Connect',
+                      identifier: 'ra-confirm-connect',
                       variant: SurfaceVariant.highlight,
                       size: AppButtonSize.small,
                       onTap:
@@ -544,6 +564,10 @@ class _RemoteAssistanceConfirmViewState
         child: SizedBox(
           width: context.colWidth(4),
           child: AppCard(
+            // The terminal surface an agent lands on after End Session — or after
+            // any automatic ending (#1323). A separate view, not a `_viewState`,
+            // so it has its own hook rather than a fifth `ra-confirm-state-*`.
+            identifier: 'ra-confirm-ended',
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
