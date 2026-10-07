@@ -6,6 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/mode/app_mode_profile.dart';
+import 'package:privacy_gui/core/mode/local_mode_profile.dart';
+import 'package:privacy_gui/core/mode/remote_mode_profile.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_state.dart';
@@ -43,7 +46,10 @@ void main() {
     }
   }
 
-  Future<void> pumpWifi(WidgetTester tester) async {
+  Future<void> pumpWifi(
+    WidgetTester tester, {
+    AppModeProfile profile = const LocalModeProfile(),
+  }) async {
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -55,6 +61,7 @@ void main() {
         uspWifiAdvancedProvider.overrideWith(
             () => FixedWifiAdvancedNotifier(defaultAdvancedState)),
         appConnectionStateProvider.overrideWith(() => connection),
+        appModeProfileProvider.overrideWithValue(profile),
       ],
     ));
     await frames(tester);
@@ -144,6 +151,41 @@ void main() {
     expect(wifi.confirms, 0);
     expect(saved, findsNothing);
   });
+
+  // The other order: the save comes back first, with the app still signed in
+  // and the router not answering. Over Remote Assistance the agent's own path
+  // never broke — but the router still has to rejoin the cloud before it can be
+  // read, so both modes wait for it, with no time limit.
+  for (final MapEntry(key: mode, value: profile) in const {
+    'local': LocalModeProfile(),
+    'remote assistance': RemoteModeProfile(),
+  }.entries) {
+    testWidgets(
+        '$mode: save returns first ⇒ waits for the router to come back, then '
+        'reads back once', (tester) async {
+      await pumpWifi(tester, profile: profile);
+      await tester.tap(save);
+      await frames(tester);
+
+      wifi.finishSave();
+      await frames(tester);
+
+      expect(processing, findsNothing);
+      expect(connection.current, AppConnectionState.waitingForRecovery,
+          reason: 'entered a recovery that waits — not one this mode skips');
+      expect(find.text('Router is applying changes'), findsNothing,
+          reason: 'the wait is the natural recovery the shell shows; the page '
+              'stacks nothing of its own on it');
+      expect(wifi.confirms, 0,
+          reason: 'nothing is read before the router is back');
+
+      connection.set(AppConnectionState.authenticated);
+      await frames(tester);
+
+      expect(wifi.confirms, 1);
+      expect(saved, findsOneWidget);
+    });
+  }
 }
 
 /// What the shell's natural-recovery listener does when the app enters
@@ -197,9 +239,17 @@ class _ControllableConnection extends AppConnectionStateNotifier {
 
   void set(AppConnectionState next) => state = next;
 
+  /// The real answer to "does this trigger need a recovery in this mode" —
+  /// that is the decision under test — without the real probe loop.
   @override
   bool enterWaiting({required RecoveryContext context}) {
+    if (state == AppConnectionState.waitingForRecovery) return true;
+    final plan =
+        ref.read(appModeProfileProvider).proximity.planFor(context.trigger);
+    if (!plan.needsRecovery) return false;
     state = AppConnectionState.waitingForRecovery;
     return true;
   }
+
+  AppConnectionState get current => state;
 }

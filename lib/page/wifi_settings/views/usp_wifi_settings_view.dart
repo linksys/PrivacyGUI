@@ -274,27 +274,24 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
   /// Not a failure yet: wait for the router (no time limit), then read it back
   /// once and report what it says.
   ///
-  /// Usually the shell is already showing its own "Connection lost" dialog by
-  /// now — the reload dropped the event stream mid-save — so this joins that
-  /// wait instead of stacking a second modal on it.
+  /// The wait is the app's natural recovery — the router is unreachable, which
+  /// is what that trigger means — so the shell shows its "Connection lost"
+  /// dialog for it (usually already up by now: the reload dropped the event
+  /// stream mid-save) and this page stacks nothing of its own. Natural, not
+  /// `operationalWifiChange`: Remote Assistance answers "no recovery needed"
+  /// for a Wi-Fi change, since the agent's path never broke, but the router
+  /// still has to rejoin the cloud before it can be read, and only a wait that
+  /// RA also runs gets there.
   Future<void> _confirmAfterRouterReturns(
     BuildContext context,
     WidgetRef ref,
     UspWifiSettingsNotifier wifi,
   ) async {
     logger.d('[WiFi][Save] Router away after the save — waiting for it');
-    if (ref.read(appConnectionStateProvider) ==
-        AppConnectionState.waitingForRecovery) {
-      if (!await awaitRecovery(ref)) return; // signed out: nothing to report
-    } else {
-      // No success message: the recovery coming back only says the router is
-      // reachable, not that the save took.
-      await showRecoveryDialog(
-        context,
-        ref,
-        trigger: RecoveryTrigger.operationalWifiChange,
-      );
-    }
+    ref
+        .read(appConnectionStateProvider.notifier)
+        .enterWaiting(context: RecoveryContext.natural);
+    if (!await awaitRecovery(ref)) return; // signed out: nothing to report
     if (!context.mounted) return;
     await wifi.confirmAfterRecovery();
     if (context.mounted) {

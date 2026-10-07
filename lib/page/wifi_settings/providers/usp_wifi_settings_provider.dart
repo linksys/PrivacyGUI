@@ -52,7 +52,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   ///
   /// Set when [performSave] gets [WifiRouterAway]: a rename took the browser
   /// off the network and no read-back reached the router by the deadline. The
-  /// view then waits for the router (the recovery dialog, no time limit) and
+  /// view then waits for the router (the natural recovery, no time limit) and
   /// calls [confirmAfterRecovery] to settle it. Not part of the state: it is a
   /// hand-off between one save and the view that started it, not something any
   /// widget renders.

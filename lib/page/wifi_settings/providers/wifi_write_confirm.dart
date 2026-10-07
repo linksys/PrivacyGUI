@@ -60,8 +60,10 @@ final class WifiConfirmed extends WifiConfirmResult {
 /// rejoin a network it does not know — the user has to, which takes longer than
 /// any deadline (bench 2026-10-07: the router had applied a Quick Setup rename,
 /// the user was back on the new password, and the save had already reported
-/// failure at 60 s). The caller waits for the router instead and reads [proof]
-/// back once it is reachable.
+/// failure at 60 s). Over Remote Assistance the agent's path never breaks, but
+/// the router still has to rejoin the cloud after the reload before it can be
+/// read. The caller waits for the router instead and reads [proof] back once it
+/// is reachable.
 final class WifiRouterAway extends WifiConfirmResult {
   final Map<String, dynamic> proof;
   const WifiRouterAway(this.proof);

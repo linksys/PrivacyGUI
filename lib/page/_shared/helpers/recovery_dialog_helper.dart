@@ -123,11 +123,11 @@ Future<void> showRecoveryDialog(
 
 /// Waits out a recovery that is already running, without showing anything.
 ///
-/// For a caller whose mutation finished while the app was already recovering —
-/// a Wi-Fi rename, where the reload dropped the event stream and the shell put
-/// up its own "Connection lost" dialog before the save came back (#1499). That
-/// dialog already owns the wait; a second one stacked on it would be two modals
-/// for one outage. Returns `true` once the app is back to `authenticated`,
+/// For a caller that needs the router back but does not own the dialog for it:
+/// a natural recovery, whose "Connection lost" dialog the shell shows — as it
+/// does when a Wi-Fi rename drops the event stream mid-save (#1499). A second
+/// dialog stacked on that one would be two modals for one outage. Returns
+/// `true` once the app is back to `authenticated`,
 /// `false` if the session ended instead. Returns at once when no recovery is
 /// running.
 Future<bool> awaitRecovery(WidgetRef ref) async {
