@@ -50,6 +50,15 @@ class SystemInfoUIModel extends Equatable with DiagnosticLoggable {
   final int cpuUsage;
   final List<FirmwareImageUIModel> firmwareImages;
 
+  /// The router's own MAC, from `Device.DeviceInfo.X_LINKSYS_BaseMACAddress`,
+  /// upper-cased. Null when the router does not report it.
+  ///
+  /// This is the MAC to show for the router. The master node's ID is not: on
+  /// FLWRT 2.0 it comes from DataElements, which answers after the device list
+  /// does — and sometimes with no controller row at all — so until then the
+  /// master node reads the literal `'GATEWAY'` (#1665).
+  final String? baseMacAddress;
+
   const SystemInfoUIModel({
     required this.manufacturer,
     required this.modelName,
@@ -61,6 +70,7 @@ class SystemInfoUIModel extends Equatable with DiagnosticLoggable {
     required this.freeMemory,
     required this.cpuUsage,
     this.firmwareImages = const [],
+    this.baseMacAddress,
   });
 
   /// Display name for the gateway (router model or fallback).
@@ -113,5 +123,6 @@ class SystemInfoUIModel extends Equatable with DiagnosticLoggable {
         'freeMemory': freeMemory,
         'cpuUsage': cpuUsage,
         'firmwareImages': firmwareImages,
+        'baseMacAddress': baseMacAddress,
       };
 }

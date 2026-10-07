@@ -120,4 +120,53 @@ void main() {
       expect(() => svc.fetch(), throwsA(isA<NetworkError>()));
     });
   });
+
+  group('UspSystemInfoDataService — base MAC (#1665)', () {
+    void stubBaseMac(Object? value) {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async {
+        final paths = _.positionalArguments[0] as List;
+        if (paths.any((p) => p.toString().contains('Manufacturer'))) {
+          return {
+            ...systemInfoResponse,
+            if (value != null)
+              'Device.DeviceInfo.X_LINKSYS_BaseMACAddress': value,
+          };
+        }
+        return firmwareImagesResponse;
+      });
+    }
+
+    test('carries the router base MAC into the UI model', () async {
+      stubBaseMac('74:12:13:21:55:02');
+
+      final model = await svc.fetch();
+
+      expect(model.baseMacAddress, '74:12:13:21:55:02');
+    });
+
+    test('upper-cases a base MAC the router reports in lower case', () async {
+      stubBaseMac(' 74:12:13:21:5a:bc ');
+
+      final model = await svc.fetch();
+
+      expect(model.baseMacAddress, '74:12:13:21:5A:BC');
+    });
+
+    test('an empty base MAC is no base MAC', () async {
+      stubBaseMac('');
+
+      final model = await svc.fetch();
+
+      expect(model.baseMacAddress, isNull);
+    });
+
+    test('a router that does not report the leaf yields null', () async {
+      stubBaseMac(null);
+
+      final model = await svc.fetch();
+
+      expect(model.baseMacAddress, isNull);
+    });
+  });
 }
