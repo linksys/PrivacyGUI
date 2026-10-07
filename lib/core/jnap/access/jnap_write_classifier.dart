@@ -32,6 +32,7 @@ const Set<JNAPAction> jnapDiagnosticActions = {
   JNAPAction.testVPNConnection,
   JNAPAction.sendSysinfoEmail,
   JNAPAction.refreshSlaveBackhaulData,
+  JNAPAction.refreshNodesWirelessNetworkConnections,
   JNAPAction.btRequestScanUnconfigured,
 };
 

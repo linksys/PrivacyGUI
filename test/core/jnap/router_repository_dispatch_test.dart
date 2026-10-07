@@ -289,6 +289,19 @@ void main() {
       expect(recorder.executed, hasLength(1));
     });
 
+    // Polling sends this on every page that shows client signals (#1652). A
+    // refusal would put the read-only message up each time one opens.
+    test('sends the client signal refresh, unreported', () async {
+      await readOnlyRepo.send(
+        JNAPAction.refreshNodesWirelessNetworkConnections,
+        auth: true,
+        fetchRemote: true,
+        cacheLevel: CacheLevel.noCache,
+      );
+      expect(recorder.executed, hasLength(1));
+      expect(container.read(readOnlyRefusalProvider), 0);
+    });
+
     test('sends a batch of reads', () async {
       await readOnlyRepo.transaction(
           JNAPTransactionBuilder(commands: [

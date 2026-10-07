@@ -20,6 +20,7 @@ const _irregularReads = {
   JNAPAction.stopBlinkingNodeLed,
   JNAPAction.testVPNConnection,
   JNAPAction.refreshSlaveBackhaulData,
+  JNAPAction.refreshNodesWirelessNetworkConnections,
   JNAPAction.sendSysinfoEmail,
 };
 
