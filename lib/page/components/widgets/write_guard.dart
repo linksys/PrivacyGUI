@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 
-/// Wraps a control that changes the router, and blocks it - dimmed, not
-/// tappable, with a tooltip saying why - when the current login may not write.
+/// Wraps a control that changes the router, and blocks it - dimmed, closed to
+/// taps and to the keyboard, with a tooltip saying why - when the current login
+/// may not write.
 ///
 /// The JNAP layer refuses such a write regardless (see [AccessPolicy]); this is
 /// so the user is not led as far as a refused request. With full access it adds
@@ -30,7 +31,9 @@ class WriteGuard extends ConsumerWidget {
       message: loc(context).featureUnavailableInRemoteMode,
       child: Opacity(
         opacity: 0.5,
-        child: AbsorbPointer(child: child),
+        // AbsorbPointer stops taps only; ExcludeFocus keeps a keyboard user from
+        // tabbing to the control and activating it.
+        child: ExcludeFocus(child: AbsorbPointer(child: child)),
       ),
     );
   }

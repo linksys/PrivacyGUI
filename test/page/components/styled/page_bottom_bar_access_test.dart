@@ -1,43 +1,40 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/jnap/access/access_policy.dart';
-import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
 
-import '../../../common/theme_data.dart';
+import '../../../common/testable_widget.dart';
 
 void main() {
+  Future<void> pumpPage(WidgetTester tester, AccessPolicy policy,
+      {PageBottomBar? bottomBar, PageMenu? menu, double width = 1280}) async {
+    tester.view.physicalSize = Size(width, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(testableWidget(
+      overrides: [accessPolicyProvider.overrideWithValue(policy)],
+      child: StyledAppPageView(
+        hideTopbar: true,
+        bottomBar: bottomBar,
+        menu: menu,
+        child: (context, constraints) => const SizedBox.shrink(),
+      ),
+    ));
+    await tester.pump();
+  }
+
   Future<int> tapSave(
     WidgetTester tester, {
     required AccessPolicy policy,
     required bool isWrite,
   }) async {
     var taps = 0;
-    tester.view.physicalSize = const Size(1280, 900);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    await tester.pumpWidget(ProviderScope(
-      overrides: [accessPolicyProvider.overrideWithValue(policy)],
-      child: MaterialApp(
-        theme: mockLightThemeData,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        builder: (context, child) =>
-            CustomResponsive(child: child ?? const SizedBox.shrink()),
-        home: StyledAppPageView(
-          hideTopbar: true,
-          bottomBar: PageBottomBar(
-            isPositiveEnabled: true,
-            isWrite: isWrite,
-            onPositiveTap: () => taps++,
-          ),
-          child: (context, constraints) => const SizedBox.shrink(),
-        ),
-      ),
-    ));
-    await tester.pump();
+    await pumpPage(tester, policy,
+        bottomBar: PageBottomBar(
+          isPositiveEnabled: true,
+          isWrite: isWrite,
+          onPositiveTap: () => taps++,
+        ));
     await tester.tap(find.text('Save'));
     await tester.pump();
     return taps;
@@ -71,33 +68,17 @@ void main() {
   group('page menu', () {
     Future<(int, int)> tapMenu(WidgetTester tester, AccessPolicy policy) async {
       var writes = 0, navigations = 0;
-      tester.view.physicalSize = const Size(1440, 1000);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      await tester.pumpWidget(ProviderScope(
-        overrides: [accessPolicyProvider.overrideWithValue(policy)],
-        child: MaterialApp(
-          theme: mockLightThemeData,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          builder: (context, child) =>
-              CustomResponsive(child: child ?? const SizedBox.shrink()),
-          home: StyledAppPageView(
-            hideTopbar: true,
-            menu: PageMenu(items: [
-              PageMenuItem(
-                  label: 'Restart',
-                  icon: null,
-                  isWrite: true,
-                  onTap: () => writes++),
-              PageMenuItem(
-                  label: 'Open page', icon: null, onTap: () => navigations++),
-            ]),
-            child: (context, constraints) => const SizedBox.shrink(),
-          ),
-        ),
-      ));
-      await tester.pump();
+      await pumpPage(tester, policy,
+          width: 1440,
+          menu: PageMenu(items: [
+            PageMenuItem(
+                label: 'Restart',
+                icon: null,
+                isWrite: true,
+                onTap: () => writes++),
+            PageMenuItem(
+                label: 'Open page', icon: null, onTap: () => navigations++),
+          ]));
       await tester.tap(find.text('Restart'), warnIfMissed: false);
       await tester.tap(find.text('Open page'));
       await tester.pump();

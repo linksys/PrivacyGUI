@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/widgets/write_guard.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -161,9 +162,11 @@ class _TroubleshootingViewState extends ConsumerState<TroubleshootingView> {
                     'DHCP Client',
                     onTap: () => showDhcpSheet(state),
                   ),
-                  AppTextButton(
-                    'Share router info with Linksys',
-                    onTap: () => showSendRouterInfoDialog(),
+                  WriteGuard(
+                    child: AppTextButton(
+                      'Share router info with Linksys',
+                      onTap: () => showSendRouterInfoDialog(),
+                    ),
                   ),
                   if (ref.read(authProvider).value?.loginType ==
                           LoginType.local ||

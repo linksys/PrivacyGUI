@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/widgets/write_guard.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -60,26 +61,29 @@ class _VPNStatusTile extends ConsumerState<VPNStatusTile> {
                   children: [
                     AppText.titleMedium(loc(context).vpn),
                     const AppGap.small2(),
-                    AppSwitch(
-                        value:
-                            vpnState.settings.serviceSettings?.enabled ?? false,
-                        onChanged: (value) {
-                          final settings = vpnState.settings.serviceSettings ??
-                              VPNServiceSetSettings(
-                                  enabled: false, autoConnect: false);
-                          final notifier = ref.read(vpnProvider.notifier);
-                          notifier
-                              .setVPNService(settings.copyWith(enabled: value));
+                    WriteGuard(
+                      child: AppSwitch(
+                          value: vpnState.settings.serviceSettings?.enabled ??
+                              false,
+                          onChanged: (value) {
+                            final settings =
+                                vpnState.settings.serviceSettings ??
+                                    VPNServiceSetSettings(
+                                        enabled: false, autoConnect: false);
+                            final notifier = ref.read(vpnProvider.notifier);
+                            notifier.setVPNService(
+                                settings.copyWith(enabled: value));
 
-                          doSomethingWithSpinner(context, notifier.save())
-                              .onError((error, stackTrace) {
-                            // A toggle has no form to keep: put it back where
-                            // the router has it. Polling refreshes only the
-                            // tunnel status, so nothing else would.
-                            notifier.setVPNService(settings);
-                            return null;
-                          });
-                        })
+                            doSomethingWithSpinner(context, notifier.save())
+                                .onError((error, stackTrace) {
+                              // A toggle has no form to keep: put it back where
+                              // the router has it. Polling refreshes only the
+                              // tunnel status, so nothing else would.
+                              notifier.setVPNService(settings);
+                              return null;
+                            });
+                          }),
+                    ),
                   ],
                 ),
                 vpnStatus(

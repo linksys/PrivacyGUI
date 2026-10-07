@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/widgets/write_guard.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
@@ -172,18 +173,20 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
                           .map((e) => e.replaceAll('RADIO_', ''))
                           .join('/')),
                 ),
-                AppSwitch(
-                  semanticLabel: widget.item.isGuest
-                      ? 'guest'
-                      : widget.item.radios
-                          .map((e) => e.replaceAll('RADIO_', ''))
-                          .join('/'),
-                  value: widget.item.isEnabled,
-                  onChanged: widget.item.isGuest ||
-                          !widget.item.isEnabled ||
-                          widget.canBeDisabled
-                      ? (value) => _handleWifiToggled(value)
-                      : null,
+                WriteGuard(
+                  child: AppSwitch(
+                    semanticLabel: widget.item.isGuest
+                        ? 'guest'
+                        : widget.item.radios
+                            .map((e) => e.replaceAll('RADIO_', ''))
+                            .join('/'),
+                    value: widget.item.isEnabled,
+                    onChanged: widget.item.isGuest ||
+                            !widget.item.isEnabled ||
+                            widget.canBeDisabled
+                        ? (value) => _handleWifiToggled(value)
+                        : null,
+                  ),
                 ),
               ],
             ),

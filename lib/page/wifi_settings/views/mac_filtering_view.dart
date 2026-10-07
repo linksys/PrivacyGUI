@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/widgets/write_guard.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
@@ -187,16 +188,19 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
         child: Row(
       children: [
         Expanded(child: AppText.labelLarge(loc(context).wifiMacFiltering)),
-        AppSwitch(
-          semanticLabel: 'wifi mac filtering',
-          value: state.settings.mode == MacFilterMode.deny,
-          onChanged: (value) {
-            _notifier.setAccess(value
-                ? MacFilterMode.deny
-                : preservedState?.settings.mode == MacFilterMode.deny
-                    ? MacFilterMode.disabled
-                    : preservedState?.settings.mode ?? MacFilterMode.disabled);
-          },
+        WriteGuard(
+          child: AppSwitch(
+            semanticLabel: 'wifi mac filtering',
+            value: state.settings.mode == MacFilterMode.deny,
+            onChanged: (value) {
+              _notifier.setAccess(value
+                  ? MacFilterMode.deny
+                  : preservedState?.settings.mode == MacFilterMode.deny
+                      ? MacFilterMode.disabled
+                      : preservedState?.settings.mode ??
+                          MacFilterMode.disabled);
+            },
+          ),
         )
       ],
     ));

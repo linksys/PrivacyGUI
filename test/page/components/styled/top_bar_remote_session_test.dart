@@ -43,6 +43,10 @@ class _FakeDashboardHome extends DashboardHomeNotifier {
 }
 
 /// The cloud, with a round trip of [latency] and a count of each read.
+///
+/// Hand-written rather than the generated nice mock: the storm is measured in
+/// round trips, and a method this flow starts calling later fails here with a
+/// NoSuchMethodError instead of quietly returning a dummy value.
 class _FakeCloud implements DeviceCloudService {
   _FakeCloud();
 
@@ -191,6 +195,20 @@ void main() {
           reason: 'was one read per round trip, ~23 in 5 s');
       expect(find.text(_endedNotice), findsOneWidget,
           reason: 'the session-ended notice still shows, once');
+      await drain(tester);
+    });
+
+    // The top bar has no room to wrap, so it says so in the short form, and
+    // stops counting down a session that is gone.
+    testWidgets('the top bar says the session ended', (tester) async {
+      await pumpTopBar(tester);
+      await startLiveSession(tester);
+
+      container.read(remoteClientProvider.notifier).markSessionExpired();
+      await run(tester, const Duration(seconds: 1));
+
+      expect(find.text('Session ended'), findsOneWidget);
+      expect(find.textContaining('Session expires in'), findsNothing);
       await drain(tester);
     });
 

@@ -46,6 +46,26 @@ void main() {
     });
   });
 
+  // Pages that only work on a local login (manual firmware upload, WAN editing,
+  // the LAN IP redirect) read this instead of the `force` build flag, which a
+  // Guardian on a normal build never sets.
+  group('isRemoteLoginProvider', () {
+    Future<bool> isRemote(LoginType loginType) async {
+      final container = ProviderContainer(overrides: [
+        authProvider.overrideWith(() => _FixedAuth(loginType)),
+      ]);
+      addTearDown(container.dispose);
+      await container.read(authProvider.future);
+      return container.read(isRemoteLoginProvider);
+    }
+
+    test('is true for a remote login only', () async {
+      expect(await isRemote(LoginType.remote), isTrue);
+      expect(await isRemote(LoginType.local), isFalse);
+      expect(await isRemote(LoginType.none), isFalse);
+    });
+  });
+
   group('AccessPolicy.checkSend', () {
     const readOnly = AccessPolicy(canWrite: false);
     const full = AccessPolicy(canWrite: true);

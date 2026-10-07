@@ -1,7 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/styled/status_label.dart';
 import 'package:privacy_gui/page/components/styled/top_bar.dart';
@@ -39,7 +38,7 @@ class PageBottomBar extends Equatable {
   final void Function()? onNegitiveTap;
 
   /// Whether the positive action changes the router. When it does, the button
-  /// is disabled for a login that may not write (see [AccessPolicy]).
+  /// is disabled for a login that may not write (see [WriteGuard]).
   ///
   /// Defaults to true so a new page is held to read-only unless it says
   /// otherwise. Set it false only where the action hands a value back to the
@@ -481,18 +480,11 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
 
   Widget _bottomWidget(BuildContext context) {
     final bottomBar = widget.bottomBar;
-    final writeBlocked = bottomBar != null &&
-        bottomBar.isWrite &&
-        !ref.watch(accessPolicyProvider).canWrite;
-    final onPositiveTap = bottomBar?.isPositiveEnabled == true && !writeBlocked
+    final onPositiveTap = bottomBar?.isPositiveEnabled == true
         ? () => bottomBar?.onPositiveTap.call()
         : null;
-    Widget guardPositive(Widget button) => writeBlocked
-        ? Tooltip(
-            message: loc(context).featureUnavailableInRemoteMode,
-            child: button,
-          )
-        : button;
+    Widget guardPositive(Widget button) =>
+        bottomBar?.isWrite == true ? WriteGuard(child: button) : button;
     return widget.bottomBar != null
         ? Align(
             alignment: Alignment.bottomCenter,

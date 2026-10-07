@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/page/components/widgets/write_guard.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
@@ -11,7 +12,6 @@ import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -27,6 +27,9 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/validator_widget.dart';
 import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
+import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
+import 'package:privacy_gui/constants/error_code.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 
 class InstantAdminView extends ArgumentsConsumerStatefulView {
   const InstantAdminView({
@@ -38,7 +41,8 @@ class InstantAdminView extends ArgumentsConsumerStatefulView {
   ConsumerState<InstantAdminView> createState() => _InstantAdminViewState();
 }
 
-class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
+class _InstantAdminViewState extends ConsumerState<InstantAdminView>
+    with PageSnackbarMixin {
   late final RouterPasswordNotifier _routerPasswordNotifier;
   late final TimezoneNotifier _timezoneNotifier;
   late final PowerTableNotifier _powerTableNotifier;
@@ -113,6 +117,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     BuildContext context,
     RouterPasswordState routerPasswordState,
   ) {
+    final canWrite = ref.watch(accessPolicyProvider).canWrite;
     return AppCard(
       padding: const EdgeInsets.symmetric(
         vertical: Spacing.medium,
@@ -143,13 +148,17 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
                 ),
               )),
             ),
-            trailing: const Icon(
-              LinksysIcons.edit,
-              semanticLabel: 'edit',
+            trailing: const WriteGuard(
+              child: Icon(
+                LinksysIcons.edit,
+                semanticLabel: 'edit',
+              ),
             ),
-            onTap: () {
-              _showRouterPasswordModal(routerPasswordState.hint);
-            },
+            onTap: canWrite
+                ? () {
+                    _showRouterPasswordModal(routerPasswordState.hint);
+                  }
+                : null,
           ),
           const Divider(),
           AppListCard(
@@ -173,28 +182,30 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
       ),
       child: Column(
         children: [
-          AppSwitchTriggerTile(
-            value: isFwAutoUpdate,
-            title: AppText.labelLarge(loc(context).autoFirmwareUpdate),
-            semanticLabel: 'auto firmware update',
-            onChanged: (value) {},
-            event: (value) async {
-              // Caught here because the tile shows a spinner while this runs
-              // and only clears it when this returns: an error thrown out of
-              // here leaves it spinning. A refused write is already explained
-              // at the app root, and the policy is only stored on success, so
-              // the switch stays where the router has it.
-              try {
-                await ref
-                    .read(firmwareUpdateProvider.notifier)
-                    .setFirmwareUpdatePolicy(value
-                        ? FirmwareUpdateSettings.firmwareUpdatePolicyAuto
-                        : FirmwareUpdateSettings.firmwareUpdatePolicyManual);
-              } catch (e) {
-                logger.e('[FIRMWARE]: Failed to change the update policy',
-                    error: e);
-              }
-            },
+          WriteGuard(
+            child: AppSwitchTriggerTile(
+              value: isFwAutoUpdate,
+              title: AppText.labelLarge(loc(context).autoFirmwareUpdate),
+              semanticLabel: 'auto firmware update',
+              onChanged: (value) {},
+              event: (value) async {
+                // Caught here because the tile shows a spinner while this runs
+                // and only clears it when this returns: an error thrown out of
+                // here leaves it spinning. A refused write is already explained
+                // at the app root, and the policy is only stored on success, so
+                // the switch stays where the router has it.
+                try {
+                  await ref
+                      .read(firmwareUpdateProvider.notifier)
+                      .setFirmwareUpdatePolicy(value
+                          ? FirmwareUpdateSettings.firmwareUpdatePolicyAuto
+                          : FirmwareUpdateSettings.firmwareUpdatePolicyManual);
+                } catch (e) {
+                  logger.e('[FIRMWARE]: Failed to change the update policy',
+                      error: e);
+                }
+              },
+            ),
           ),
         ],
       ),
@@ -236,7 +247,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
             await context.pushNamed<bool?>(RouteNamed.settingsTimeZone);
         if (result == true) {
           if (!mounted) return;
-          showSuccessSnackBar(context, loc(context).done);
+          showSuccessSnackBar(loc(context).done);
         }
       },
     );
@@ -246,6 +257,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     BuildContext context,
     PowerTableState powerTableState,
   ) {
+    final canWrite = ref.watch(accessPolicyProvider).canWrite;
     return AppListCard(
       title: AppText.bodyLarge(loc(context).transmitRegion),
       description: Column(
@@ -261,10 +273,12 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
           ),
         ],
       ),
-      trailing: const Icon(LinksysIcons.chevronRight),
-      onTap: () {
-        handleTransmitRegionTap(powerTableState);
-      },
+      trailing: const WriteGuard(child: Icon(LinksysIcons.chevronRight)),
+      onTap: canWrite
+          ? () {
+              handleTransmitRegionTap(powerTableState);
+            }
+          : null,
     );
   }
 
@@ -316,8 +330,8 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
       if (value != null && value is PowerTableCountries) {
         onSave(_powerTableNotifier.save(value)).then((_) {
           showSavedSuccessSnackbar();
-        }).onError((_, __) {
-          showSavedFailSnackbar();
+        }).onError((error, _) {
+          showErrorMessageSnackBar(error);
         }).catchError((error) {
           showRouterNotFound();
         }, test: (error) => error is JNAPSideEffectError);
@@ -335,11 +349,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
   }
 
   void showSavedSuccessSnackbar() {
-    showSuccessSnackBar(context, loc(context).saved);
-  }
-
-  void showSavedFailSnackbar() {
-    showFailedSnackBar(context, loc(context).failedExclamation);
+    showSuccessSnackBar(loc(context).saved);
   }
 
   String _getTimezone(TimezoneState timezoneState) {
@@ -521,12 +531,16 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
         .then<void>((_) {
       _success();
     }).onError((error, stackTrace) {
-      showFailedSnackBar(context, loc(context).invalidAdminPassword);
+      if (error is JNAPError && error.result == errorInvalidAdminPassword) {
+        showFailedSnackBar(loc(context).invalidAdminPassword);
+      } else {
+        showErrorMessageSnackBar(error);
+      }
     });
   }
 
   void _success() {
     logger.d('success save');
-    showSuccessSnackBar(context, loc(context).passwwordUpdated);
+    showSuccessSnackBar(loc(context).passwwordUpdated);
   }
 }

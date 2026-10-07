@@ -159,14 +159,12 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
 
   Future updateFirmware() async {
     logger.i('[FIRMWARE]: Update firmware: Start');
+    final action = serviceHelper.isSupportNodeFirmwareUpdate()
+        ? JNAPAction.nodesUpdateFirmwareNow
+        : JNAPAction.updateFirmwareNow;
     // Checked before `isUpdating` is set: nothing below clears it if the send is
     // refused, which would leave the page on its updating spinner for good.
-    enforceAccess(
-        ref,
-        (policy) => policy.checkWrite(
-            serviceHelper.isSupportNodeFirmwareUpdate()
-                ? JNAPAction.nodesUpdateFirmwareNow
-                : JNAPAction.updateFirmwareNow));
+    enforceAccess(ref, (policy) => policy.checkWrite(action));
     final benchmark = BenchMarkLogger(name: 'FirmwareUpdate');
     benchmark.start();
     state = state.copyWith(isUpdating: true);
@@ -176,9 +174,6 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     ref.read(firmwareUpdateCandidateProvider.notifier).state = statusRecords;
     logger.d('[FIRMWARE]: Saved current status records: $statusRecords');
 
-    final action = serviceHelper.isSupportNodeFirmwareUpdate()
-        ? JNAPAction.nodesUpdateFirmwareNow
-        : JNAPAction.updateFirmwareNow;
     await ref.read(routerRepositoryProvider).send(
           action,
           data: {'onlyCheck': false},

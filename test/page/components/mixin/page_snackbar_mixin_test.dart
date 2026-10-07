@@ -5,11 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
 
-import '../../../common/theme_data.dart';
+import '../../../common/testable_widget.dart';
 
 class _Page extends StatefulWidget {
   const _Page(this.error);
@@ -29,14 +27,7 @@ class _PageState extends State<_Page> with PageSnackbarMixin {
 
 void main() {
   Future<void> failWith(WidgetTester tester, Object? error) async {
-    await tester.pumpWidget(MaterialApp(
-      theme: mockLightThemeData,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      builder: (context, child) =>
-          CustomResponsive(child: child ?? const SizedBox.shrink()),
-      home: Scaffold(body: _Page(error)),
-    ));
+    await tester.pumpWidget(testableWidget(child: _Page(error)));
     await tester.tap(find.text('fail'));
     await tester.pump();
   }

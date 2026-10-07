@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/access/access_policy.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 
@@ -39,6 +42,31 @@ void main() {
         notifier.updateFirmware(), throwsA(isA<ReadOnlyAccessException>()));
 
     expect(container.read(firmwareUpdateProvider).isUpdating, isFalse);
+  });
+
+  // The refusal names the action the update would have sent, which depends on
+  // whether the router updates its nodes too.
+  group('the refused action', () {
+    Future<JNAPAction?> refusedAction({required bool nodes}) async {
+      when(serviceHelper.isSupportNodeFirmwareUpdate()).thenReturn(nodes);
+      addTearDown(() => reset(serviceHelper));
+      final container = readOnlyContainer();
+      try {
+        await container.read(firmwareUpdateProvider.notifier).updateFirmware();
+      } on ReadOnlyAccessException catch (e) {
+        return e.action;
+      }
+      return null;
+    }
+
+    test('is the node-wide update on a mesh router', () async {
+      expect(
+          await refusedAction(nodes: true), JNAPAction.nodesUpdateFirmwareNow);
+    });
+
+    test('is the single update otherwise', () async {
+      expect(await refusedAction(nodes: false), JNAPAction.updateFirmwareNow);
+    });
   });
 
   // The upload goes to the router's local address directly rather than through

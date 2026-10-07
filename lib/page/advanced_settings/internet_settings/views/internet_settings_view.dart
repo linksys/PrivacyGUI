@@ -28,11 +28,10 @@ import 'package:privacy_gui/page/auto_ipoe/service/auto_ipoe_service.dart';
 import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_optional_pane.dart';
 import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_recovery_ui.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
-import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacy_gui/util/url_helper/url_helper.dart'
     if (dart.library.io) 'package:privacy_gui/util/url_helper/url_helper_mobile.dart'
     if (dart.library.html) 'package:privacy_gui/util/url_helper/url_helper_web.dart';
@@ -66,7 +65,7 @@ class InternetSettingsView extends ArgumentsConsumerStatefulView {
 }
 
 class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, PageSnackbarMixin {
   final TextEditingController _mtuSizeController = TextEditingController();
   final TextEditingController _macAddressCloneController =
       TextEditingController();
@@ -432,14 +431,16 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
               description: AppText.labelLarge(
                 wanStatus?.wanConnection?.ipAddress ?? '-',
               ),
-              trailing: AppTextButton.noPadding(
-                loc(context).releaseAndRenew,
-                onTap:
-                    isBridgeMode || _effectiveIpv4WanType(state) == WanType.ipoe
-                        ? null
-                        : () {
-                            _showRenewIPAlert(InternetSettingsViewType.ipv4);
-                          },
+              trailing: WriteGuard(
+                child: AppTextButton.noPadding(
+                  loc(context).releaseAndRenew,
+                  onTap: isBridgeMode ||
+                          _effectiveIpv4WanType(state) == WanType.ipoe
+                      ? null
+                      : () {
+                          _showRenewIPAlert(InternetSettingsViewType.ipv4);
+                        },
+                ),
               ),
             ),
           ),
@@ -451,15 +452,17 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
               description: AppText.labelLarge(
                 wanStatus?.wanIPv6Connection?.networkInfo?.ipAddress ?? '-',
               ),
-              trailing: AppTextButton.noPadding(
-                loc(context).releaseAndRenew,
-                onTap: isBridgeMode ||
-                        _isIPv6LockedByAutoIPoE(state, autoIPoEState) ||
-                        wanIpv6Type == WanIPv6Type.passThrough
-                    ? null
-                    : () {
-                        _showRenewIPAlert(InternetSettingsViewType.ipv6);
-                      },
+              trailing: WriteGuard(
+                child: AppTextButton.noPadding(
+                  loc(context).releaseAndRenew,
+                  onTap: isBridgeMode ||
+                          _isIPv6LockedByAutoIPoE(state, autoIPoEState) ||
+                          wanIpv6Type == WanIPv6Type.passThrough
+                      ? null
+                      : () {
+                          _showRenewIPAlert(InternetSettingsViewType.ipv6);
+                        },
+                ),
               ),
             ),
           ),
@@ -2169,7 +2172,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
         originalAutoIPoEState = nextState.copyWith();
         initUI(originalState);
       });
-      showSuccessSnackBar(context, loc(context).changesSaved);
+      showSuccessSnackBar(loc(context).changesSaved);
     } finally {
       _isFinalizingAutoIPoE = false;
     }
@@ -2367,7 +2370,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
         // Nothing to wait for: an IPoE save never comes through this path.
         _awaitingAutoIPoECompletion = false;
       });
-      showSuccessSnackBar(context, loc(context).changesSaved);
+      showSuccessSnackBar(loc(context).changesSaved);
     }).catchError((error) {
       _awaitingAutoIPoECompletion = false;
       showRouterNotFoundAlert(
@@ -2383,22 +2386,13 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
             originalAutoIPoEState = ref.read(autoIPoEProvider).copyWith();
             initUI(originalState);
           });
-          showSuccessSnackBar(context, loc(context).changesSaved);
+          showSuccessSnackBar(loc(context).changesSaved);
         },
       );
     }, test: (error) => error is JNAPSideEffectError).onError(
         (error, stackTrace) {
       _awaitingAutoIPoECompletion = false;
-      final jnapError = error is JNAPError ? error : null;
-      final errorMsg = switch (error.runtimeType) {
-        JNAPError => errorCodeHelper(context, jnapError?.result),
-        TimeoutException => loc(context).generalError,
-        _ => loc(context).unknownError,
-      };
-      showFailedSnackBar(
-        context,
-        errorMsg ?? loc(context).unknownErrorCode(jnapError?.result ?? ''),
-      );
+      showErrorMessageSnackBar(error);
     }).whenComplete(() {
       setState(() {
         loadingTitle = '';
@@ -2441,30 +2435,23 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
     doSomethingWithSpinner(
       context,
       _notifier.renewDHCPWANLease().then((value) {
-        showSuccessSnackBar(context, loc(context).successExclamation);
+        showSuccessSnackBar(loc(context).successExclamation);
       }).catchError((error) {
         showRouterNotFoundAlert(
           context,
           ref,
           onComplete: () async {
             await ref.read(pollingProvider.notifier).forcePolling();
-            showSuccessSnackBar(context, loc(context).successExclamation);
+            showSuccessSnackBar(loc(context).successExclamation);
           },
         );
       }, test: (error) => error is JNAPSideEffectError).onError(
           (error, stackTrace) {
-        final jnapError = error is JNAPError ? error : null;
-        final errorMsg = switch (error.runtimeType) {
-          JNAPError => jnapError?.result == 'ErrorInvalidWANType'
-              ? loc(context).currentWanTypeIsNotDhcp
-              : errorCodeHelper(context, jnapError?.result),
-          TimeoutException => loc(context).generalError,
-          _ => loc(context).unknownError,
-        };
-        showFailedSnackBar(
-          context,
-          errorMsg ?? loc(context).unknownErrorCode(jnapError?.result ?? ''),
-        );
+        if (error is JNAPError && error.result == 'ErrorInvalidWANType') {
+          showFailedSnackBar(loc(context).currentWanTypeIsNotDhcp);
+        } else {
+          showErrorMessageSnackBar(error);
+        }
       }),
     );
   }
@@ -2473,30 +2460,24 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
     doSomethingWithSpinner(
       context,
       _notifier.renewDHCPIPv6WANLease().then((value) {
-        showSuccessSnackBar(context, loc(context).successExclamation);
+        showSuccessSnackBar(loc(context).successExclamation);
       }).catchError((error) {
         showRouterNotFoundAlert(
           context,
           ref,
           onComplete: () async {
             await ref.read(pollingProvider.notifier).forcePolling();
-            showSuccessSnackBar(context, loc(context).successExclamation);
+            showSuccessSnackBar(loc(context).successExclamation);
           },
         );
       }, test: (error) => error is JNAPSideEffectError).onError(
           (error, stackTrace) {
-        final jnapError = error is JNAPError ? error : null;
-        final errorMsg = switch (error.runtimeType) {
-          JNAPError => jnapError?.result == 'ErrorInvalidIPv6WANType'
-              ? loc(context).currentIPv6ConnectionTypeIsNotAutomatic
-              : errorCodeHelper(context, jnapError?.result),
-          TimeoutException => loc(context).generalError,
-          _ => loc(context).unknownError,
-        };
-        showFailedSnackBar(
-          context,
-          errorMsg ?? loc(context).unknownErrorCode(jnapError?.result ?? ''),
-        );
+        if (error is JNAPError && error.result == 'ErrorInvalidIPv6WANType') {
+          showFailedSnackBar(
+              loc(context).currentIPv6ConnectionTypeIsNotAutomatic);
+        } else {
+          showErrorMessageSnackBar(error);
+        }
       }),
     );
   }

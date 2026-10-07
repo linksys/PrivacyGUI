@@ -51,12 +51,8 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
     if (isRemote && isPollingDone) {
       _startRemoteAssistance(context);
     }
-    // Only the one value the session line draws, not the whole provider. This
-    // build() calls initiateRemoteAssistanceCA, and that call writes state even
-    // when it finds nothing to track. Watching the whole provider turned every
-    // such write into a rebuild straight back into the call: one sessions read
-    // per cloud round trip once a session had ended (#1637). With nothing being
-    // tracked, this value sits at null or 0, so those writes change nothing here.
+    // Select, don't watch the whole provider: the call above writes state, and
+    // rebuilding on those writes loops it (#1637).
     final secondsLeft = isRemote
         ? ref.watch(
             remoteClientProvider.select((state) => state.sessionSecondsLeft))

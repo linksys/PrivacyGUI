@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/widgets/write_guard.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -308,14 +309,16 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
           ),
           if (isEnable) ...[
             const AppGap.medium(),
-            AppIconButton.noPadding(
-              icon: LinksysIcons.delete,
-              semanticLabel: 'delete',
-              color: Theme.of(context).colorScheme.error,
-              onTap: () {
-                _showDeleteDialog(
-                    device.macAddress, device.macAddress == myMac);
-              },
+            WriteGuard(
+              child: AppIconButton.noPadding(
+                icon: LinksysIcons.delete,
+                semanticLabel: 'delete',
+                color: Theme.of(context).colorScheme.error,
+                onTap: () {
+                  _showDeleteDialog(
+                      device.macAddress, device.macAddress == myMac);
+                },
+              ),
             ),
           ],
         ],
@@ -348,14 +351,16 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
         child: Row(
       children: [
         Expanded(child: AppText.labelLarge(loc(context).instantPrivacy)),
-        AppSwitch(
-          semanticLabel: 'instant privacy',
-          value: state.settings.mode == MacFilterMode.allow,
-          onChanged: _isRefreshing
-              ? null
-              : (value) {
-                  _showEnableDialog(value);
-                },
+        WriteGuard(
+          child: AppSwitch(
+            semanticLabel: 'instant privacy',
+            value: state.settings.mode == MacFilterMode.allow,
+            onChanged: _isRefreshing
+                ? null
+                : (value) {
+                    _showEnableDialog(value);
+                  },
+          ),
         )
       ],
     ));
