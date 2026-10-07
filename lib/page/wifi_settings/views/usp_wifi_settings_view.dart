@@ -7,6 +7,7 @@ import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/helpers/recovery_dialog_helper.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
+import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/capability/capability_provider.dart';
 import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -248,6 +249,12 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
 
       if (!context.mounted) return;
 
+      final wifi = ref.read(uspWifiSettingsProvider.notifier);
+      if (activeTab == 0 && wifi.awaitsRouterRecovery) {
+        await _confirmAfterRouterReturns(context, ref, wifi);
+        return;
+      }
+
       await showRecoveryDialog(
         context,
         ref,
@@ -259,6 +266,39 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
       if (context.mounted) {
         showFailedSnackBar(context, localizeServiceError(context, e));
       }
+    }
+  }
+
+  /// The save went out but the router could not be read back before the
+  /// deadline — typically a rename, with the browser rejoining the new network.
+  /// Not a failure yet: wait for the router (no time limit), then read it back
+  /// once and report what it says.
+  ///
+  /// Usually the shell is already showing its own "Connection lost" dialog by
+  /// now — the reload dropped the event stream mid-save — so this joins that
+  /// wait instead of stacking a second modal on it.
+  Future<void> _confirmAfterRouterReturns(
+    BuildContext context,
+    WidgetRef ref,
+    UspWifiSettingsNotifier wifi,
+  ) async {
+    logger.d('[WiFi][Save] Router away after the save — waiting for it');
+    if (ref.read(appConnectionStateProvider) ==
+        AppConnectionState.waitingForRecovery) {
+      if (!await awaitRecovery(ref)) return; // signed out: nothing to report
+    } else {
+      // No success message: the recovery coming back only says the router is
+      // reachable, not that the save took.
+      await showRecoveryDialog(
+        context,
+        ref,
+        trigger: RecoveryTrigger.operationalWifiChange,
+      );
+    }
+    if (!context.mounted) return;
+    await wifi.confirmAfterRecovery();
+    if (context.mounted) {
+      showSuccessSnackBar(context, loc(context).wifiSettingsSaved);
     }
   }
 }

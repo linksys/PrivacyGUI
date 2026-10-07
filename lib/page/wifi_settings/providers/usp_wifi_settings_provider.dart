@@ -48,6 +48,43 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
             WifiSettingsStatus, UspWifiSettingsState> {
   UspWifiSettingsService get _svc => ref.read(uspWifiSettingsServiceProvider);
 
+  /// What the last page save wrote, held while the router is away.
+  ///
+  /// Set when [performSave] gets [WifiRouterAway]: a rename took the browser
+  /// off the network and no read-back reached the router by the deadline. The
+  /// view then waits for the router (the recovery dialog, no time limit) and
+  /// calls [confirmAfterRecovery] to settle it. Not part of the state: it is a
+  /// hand-off between one save and the view that started it, not something any
+  /// widget renders.
+  Map<String, dynamic>? _proofAwaitingRecovery;
+
+  /// Whether the last save is waiting for the router to come back before it
+  /// can be confirmed. See [confirmAfterRecovery].
+  bool get awaitsRouterRecovery => _proofAwaitingRecovery != null;
+
+  /// Settles a save that ended [awaitsRouterRecovery], once the router is back.
+  ///
+  /// Reads the router back **once**: applied is done; not applied throws, so a
+  /// rename the router refused is reported rather than taken as success. Either
+  /// way nothing is left pending, and the form is reloaded from the router —
+  /// the save's own re-fetch ran while it was away, so it read the cache from
+  /// before the write. A no-op when nothing is pending.
+  Future<void> confirmAfterRecovery() async {
+    final proof = _proofAwaitingRecovery;
+    if (proof == null) return;
+    _proofAwaitingRecovery = null;
+    try {
+      if (!await _svc.isApplied(proof)) {
+        logger.w('[USP][WiFi]: router back, but the save did not apply');
+        throw const UnexpectedError();
+      }
+      logger.i('[USP][WiFi]: router back, save read back as applied');
+    } finally {
+      await _refreshL1AfterWrite();
+      await fetch(forceRemote: true);
+    }
+  }
+
   @override
   UspWifiSettingsState build() {
     // Synchronous build with loading state; async fetch follows immediately.
@@ -172,11 +209,13 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
 
   @override
   Future<void> performSave() async {
+    _proofAwaitingRecovery = null;
+    // One SET, then — if its reply is lost to the WiFi reload — a read-back
+    // before success or failure is reported (#1499, #1460; see
+    // [wifiWriteConfirmProvider]).
+    final current = state.settings.current;
+    final WifiConfirmResult result;
     try {
-      // One SET, then — if its reply is lost to the WiFi reload — a read-back
-      // before success or failure is reported (#1499, #1460; see
-      // [wifiWriteConfirmProvider]).
-      final current = state.settings.current;
       final plan = current.quickSetupEnabled
           ? _svc.saveQuickSetup(
               original: state.settings.original,
@@ -187,15 +226,31 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
               original: state.settings.original.networks,
               current: current.networks,
             );
-      await ref.read(wifiWriteConfirmProvider)(plan, isApplied: _svc.isApplied);
-    } finally {
-      // Refresh Layer 1 cache so post-save fetch() reads fresh data.
-      // Using refresh() instead of invalidate() because the latter only marks
-      // the provider dirty — without an active subscriber it won't rebuild,
-      // and the subsequent .future call would return stale data.
-      // Wrapped in finally to ensure UI stays in sync even on partial failure.
+      result = await ref.read(wifiWriteConfirmProvider)(
+        plan,
+        isApplied: _svc.isApplied,
+        // Only the page save: a rename moves the browser off the network it is
+        // on, and only the user can bring it back. See [WifiRouterAway].
+        allowRouterAway: true,
+      );
+    } catch (_) {
+      // Keep the UI in sync even when the write failed.
       await _refreshL1AfterWrite();
+      rethrow;
     }
+
+    // Router away: refreshing L1 now could only fail, so it waits for
+    // [confirmAfterRecovery], which runs once the router is back.
+    if (result case WifiRouterAway(:final proof)) {
+      _proofAwaitingRecovery = proof;
+      return;
+    }
+
+    // Refresh Layer 1 cache so post-save fetch() reads fresh data.
+    // Using refresh() instead of invalidate() because the latter only marks
+    // the provider dirty — without an active subscriber it won't rebuild,
+    // and the subsequent .future call would return stale data.
+    await _refreshL1AfterWrite();
   }
 
   /// Re-reads L1 after a write, without letting the re-read decide the save.
@@ -389,7 +444,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       // toggle of paths valid a moment earlier, which the read-back then
       // reports truthfully. The write itself is still serialised by the lock.
       final wifiData = await ref.read(wifiDataProvider.future);
-      final count = await ref.read(wifiWriteConfirmProvider)(
+      final result = await ref.read(wifiWriteConfirmProvider)(
         _svc.toggleSsidsByName(
           wifiData.codegenContext.raw.ssids,
           wifiData.codegenContext.raw.accessPoints,
@@ -398,6 +453,13 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
         ),
         isApplied: _svc.isApplied,
       );
+      // A toggle does not rename the network the browser is on, so it never
+      // asks for allowRouterAway: an unreachable router by the deadline is a
+      // failure, and only WifiConfirmed comes back.
+      final count = switch (result) {
+        WifiConfirmed(:final count) => count,
+        WifiRouterAway() => throw const UnexpectedError(),
+      };
       if (count == 0) {
         logger.w('[USP][WiFi]: No SSIDs found matching the requested name');
         throw const InvalidInputError(

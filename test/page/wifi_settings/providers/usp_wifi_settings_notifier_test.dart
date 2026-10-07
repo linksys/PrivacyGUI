@@ -577,6 +577,104 @@ void main() {
         await expectLater(notifier.save(), throwsA(isA<ServiceError>()));
         container.dispose();
       });
+
+      group('router away — the browser rejoining a renamed network', () {
+        // Bench 2026-10-07: the rename landed, every read-back for 60 s failed
+        // because the browser was off the network, and the save reported
+        // failure. The page save now hands over instead.
+        setUp(() {
+          when(() => mockService.isApplied(any())).thenAnswer(
+              (_) async => throw const NetworkError(detail: 'Failed to fetch'));
+        });
+
+        test('save completes and leaves a pending confirmation', () async {
+          final container = createContainer();
+          final notifier = await quickSetupNotifier(container);
+
+          await expectLater(notifier.save(), completes);
+
+          expect(notifier.awaitsRouterRecovery, isTrue);
+          container.dispose();
+        });
+
+        test('confirmAfterRecovery: read back once, applied ⇒ done', () async {
+          final container = createContainer();
+          final notifier = await quickSetupNotifier(container);
+          await notifier.save();
+          // The save's own polling read back many times; count only what the
+          // recovery does.
+          clearInteractions(mockService);
+          when(() => mockService.isApplied(any()))
+              .thenAnswer((_) async => true);
+
+          await notifier.confirmAfterRecovery();
+
+          verify(() => mockService.isApplied(_written)).called(1);
+          expect(notifier.awaitsRouterRecovery, isFalse);
+          container.dispose();
+        });
+
+        test(
+            'confirmAfterRecovery reloads the form from the router — the save\'s '
+            'own re-fetch ran while it was away and read the old cache',
+            () async {
+          final container = createContainer();
+          final notifier = await quickSetupNotifier(container);
+          await notifier.save();
+          // What the router holds once it is back: the renamed network.
+          final renamed = WifiSettingsTestData.createNetworks()
+              .map((n) => n.copyWith(ssid: 'Changed'))
+              .toList();
+          when(() => mockService.buildWifiNetworks(
+                ssids: any(named: 'ssids'),
+                accessPoints: any(named: 'accessPoints'),
+                radios: any(named: 'radios'),
+              )).thenReturn(renamed);
+          when(() => mockService.isApplied(any()))
+              .thenAnswer((_) async => true);
+
+          await notifier.confirmAfterRecovery();
+
+          expect(
+              container
+                  .read(uspWifiSettingsProvider)
+                  .settings
+                  .original
+                  .networks
+                  .map((n) => n.ssid),
+              everyElement('Changed'));
+          container.dispose();
+        });
+
+        test('confirmAfterRecovery: not applied ⇒ a failure, never a success',
+            () async {
+          final container = createContainer();
+          final notifier = await quickSetupNotifier(container);
+          await notifier.save();
+          when(() => mockService.isApplied(any()))
+              .thenAnswer((_) async => false);
+
+          await expectLater(
+              notifier.confirmAfterRecovery(), throwsA(isA<ServiceError>()));
+          expect(notifier.awaitsRouterRecovery, isFalse,
+              reason: 'answered either way — nothing is left pending');
+          container.dispose();
+        });
+
+        test('confirmAfterRecovery with nothing pending does nothing',
+            () async {
+          final container = createContainer();
+          await Future.delayed(Duration.zero);
+          await Future.delayed(Duration.zero);
+
+          await container
+              .read(uspWifiSettingsProvider.notifier)
+              .confirmAfterRecovery();
+
+          verifyNever(() => mockService.isApplied(any()));
+          container.dispose();
+        });
+      });
     });
 
     // -----------------------------------------------------------------------

@@ -36,11 +36,20 @@ void main() {
   });
   tearDown(() => container.dispose());
 
+  /// Runs the default (no allowRouterAway) path, which only ever confirms or
+  /// throws — so it unwraps the count and fails on anything else.
   Future<int> run(
     WifiWritePlan p, {
     required Future<bool> Function(Map<String, dynamic>) isApplied,
-  }) =>
-      container.read(wifiWriteConfirmProvider)(p, isApplied: isApplied);
+  }) async {
+    final result =
+        await container.read(wifiWriteConfirmProvider)(p, isApplied: isApplied);
+    return switch (result) {
+      WifiConfirmed(:final count) => count,
+      WifiRouterAway() =>
+        throw StateError('routerAway without allowRouterAway'),
+    };
+  }
 
   test('a confirmed write returns its count and never reads back', () async {
     var reads = 0;
@@ -241,6 +250,50 @@ void main() {
         async.elapse(const Duration(seconds: 4));
         expect(error, isA<ServiceError>());
       });
+    });
+  });
+
+  group('router away at the deadline', () {
+    // Bench, 2026-10-07 (M60, 2.0.2): a Quick Setup rename. The one SET went
+    // out; every read-back for 60 s failed because the browser was rejoining
+    // the renamed network; at 60 s the save reported failure — though the
+    // router had applied it and the user was back on the new password.
+    test(
+        'with allowRouterAway, never reaching the router is "routerAway" with '
+        'the proof to read later — not a failure', () async {
+      final result = await container.read(wifiWriteConfirmProvider)(
+        plan(() async => WifiWriteOutcome.unanswered),
+        isApplied: (_) async =>
+            throw const NetworkError(detail: 'Failed to fetch'),
+        allowRouterAway: true,
+      );
+
+      expect(result, isA<WifiRouterAway>());
+      expect((result as WifiRouterAway).proof, params);
+    });
+
+    test('without it, never reaching the router is still a failure', () async {
+      await expectLater(
+        container.read(wifiWriteConfirmProvider)(
+          plan(() async => WifiWriteOutcome.unanswered),
+          isApplied: (_) async =>
+              throw const NetworkError(detail: 'Failed to fetch'),
+        ),
+        throwsA(isA<ServiceError>()),
+      );
+    });
+
+    test(
+        'reaching the router and reading the wrong values is a failure even '
+        'with allowRouterAway — the router answered, and said no', () async {
+      await expectLater(
+        container.read(wifiWriteConfirmProvider)(
+          plan(() async => WifiWriteOutcome.unanswered),
+          isApplied: (_) async => false,
+          allowRouterAway: true,
+        ),
+        throwsA(isA<ServiceError>()),
+      );
     });
   });
 

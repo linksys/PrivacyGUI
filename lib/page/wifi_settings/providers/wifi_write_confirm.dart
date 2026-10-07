@@ -35,10 +35,37 @@ final wifiSaveDeadlineProvider = Provider<Duration>(
 
 /// Sends [plan] under the mutation lock and settles its outcome; returns the
 /// plan's [WifiWritePlan.count] once the write is confirmed.
-typedef WifiWriteConfirm = Future<int> Function(
+typedef WifiWriteConfirm = Future<WifiConfirmResult> Function(
   WifiWritePlan plan, {
   required Future<bool> Function(Map<String, dynamic> written) isApplied,
+  bool allowRouterAway,
 });
+
+/// How a WiFi write settled.
+sealed class WifiConfirmResult {
+  const WifiConfirmResult();
+}
+
+/// The router answered the write, or read back what it was given.
+final class WifiConfirmed extends WifiConfirmResult {
+  /// The plan's [WifiWritePlan.count].
+  final int count;
+  const WifiConfirmed(this.count);
+}
+
+/// Every read-back by the deadline failed to reach the router.
+///
+/// Only returned to a caller that passed `allowRouterAway: true`. A WiFi Settings
+/// rename takes the browser off the network it is on, and the browser cannot
+/// rejoin a network it does not know — the user has to, which takes longer than
+/// any deadline (bench 2026-10-07: the router had applied a Quick Setup rename,
+/// the user was back on the new password, and the save had already reported
+/// failure at 60 s). The caller waits for the router instead and reads [proof]
+/// back once it is reachable.
+final class WifiRouterAway extends WifiConfirmResult {
+  final Map<String, dynamic> proof;
+  const WifiRouterAway(this.proof);
+}
 
 /// [WifiWriteConfirm] for the WiFi Settings and WiFi Advanced pages.
 ///
@@ -65,8 +92,8 @@ typedef WifiWriteConfirm = Future<int> Function(
 /// The lock is released when its window ends even if the request is still in
 /// flight, as it is for any hung call, so a read-back can take it.
 final wifiWriteConfirmProvider = Provider<WifiWriteConfirm>((ref) {
-  return (plan, {required isApplied}) async {
-    if (plan.params.isEmpty) return plan.count;
+  return (plan, {required isApplied, allowRouterAway = false}) async {
+    if (plan.params.isEmpty) return WifiConfirmed(plan.count);
     // `clock`, not `Stopwatch()`: fakeAsync moves the former only, and the
     // shipped 30 s / 60 s are what the tests have to be able to run.
     final sinceWrite = clock.stopwatch()..start();
@@ -82,7 +109,7 @@ final wifiWriteConfirmProvider = Provider<WifiWriteConfirm>((ref) {
       logger.i('[USP][WiFi]: write not answered within ${window.inSeconds}s '
           '— reading the router back');
     }
-    if (outcome == WifiWriteOutcome.confirmed) return plan.count;
+    if (outcome == WifiWriteOutcome.confirmed) return WifiConfirmed(plan.count);
 
     // Nothing this save changed can be read back — a password-only change is
     // the case. Reading back would compare only values that were already
@@ -96,17 +123,27 @@ final wifiWriteConfirmProvider = Provider<WifiWriteConfirm>((ref) {
 
     final interval = ref.read(wifiReadBackIntervalProvider);
     final deadline = ref.read(wifiSaveDeadlineProvider);
+    // Whether any read-back got an answer. One that did and read the wrong
+    // values is the router saying no; none at all is the router being away.
+    var reachedRouter = false;
     while (true) {
       try {
-        if (await isApplied(plan.proof)) {
+        final applied = await isApplied(plan.proof);
+        reachedRouter = true;
+        if (applied) {
           logger.i('[USP][WiFi]: write read back as applied after '
               '${sinceWrite.elapsed.inSeconds}s');
-          return plan.count;
+          return WifiConfirmed(plan.count);
         }
       } on ServiceError catch (e) {
         logger.d('[USP][WiFi]: could not read the WiFi back yet: $e');
       }
       if (sinceWrite.elapsed + interval > deadline) {
+        if (allowRouterAway && !reachedRouter) {
+          logger.i('[USP][WiFi]: router still away after '
+              '${deadline.inSeconds}s — handing over to recovery');
+          return WifiRouterAway(plan.proof);
+        }
         logger.w('[USP][WiFi]: write not read back as applied within '
             '${deadline.inSeconds}s');
         throw const UnexpectedError();
