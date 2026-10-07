@@ -145,6 +145,13 @@ void _stubRadioWithPossibleChannels(
             'Auto,20MHz,40MHz,80MHz',
       };
     }
+    // A router is never just a radio: with empty SSID / AccessPoint tables
+    // `fetch` reads it as one answering mid-reload and throws.
+    if (first.startsWith('Device.WiFi.SSID.')) return _buildSsidsResponse();
+    if (first.startsWith('Device.WiFi.AccessPoint.') &&
+        !first.contains('AssociatedDevice')) {
+      return _buildAccessPointsResponse();
+    }
     return <String, dynamic>{};
   });
 }
@@ -277,15 +284,30 @@ void main() {
       expect(result.radioModels[1].possibleChannels, [36, 40, 44, 48]);
     });
 
-    test('handles empty collections', () async {
+    test(
+        'every table empty is a failed read — a router always has a radio, '
+        'and this is what it answers mid-reload', () async {
+      // Bench round 5, 2026-10-07 (M60, 2.0.2): 1 s after a Wi-Fi save's
+      // recovery passed, the Radio, SSID and AccessPoint GETs all came back
+      // with no rows. Returned as data, it was cached as "no networks", and
+      // the page opened on it 8 s later. Thrown, the orchestrator re-reads it.
       when(() => mockUsp.get(any(), priority: any(named: 'priority')))
           .thenAnswer((_) async => <String, dynamic>{});
 
-      final result = await svc.fetch();
+      expect(() => svc.fetch(), throwsA(isA<ServiceError>()));
+    });
 
-      expect(result.radioModels, isEmpty);
-      expect(result.wifiClientMap, isEmpty);
-      expect(result.connectionDetailMap, isEmpty);
+    test('radios but no SSIDs is a failed read too', () async {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((invocation) async {
+        final first =
+            (invocation.positionalArguments[0] as List<String>).first;
+        return first.startsWith('Device.WiFi.Radio.')
+            ? _buildRadiosResponse()
+            : <String, dynamic>{};
+      });
+
+      expect(() => svc.fetch(), throwsA(isA<ServiceError>()));
     });
   });
 
