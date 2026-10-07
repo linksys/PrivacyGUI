@@ -675,9 +675,20 @@ class UspWifiSettingsService {
       },
     };
 
-    return written.entries
-        .where((e) => !e.key.endsWith('KeyPassphrase'))
-        .every((e) => readBack[e.key] == e.value);
+    final compared =
+        written.entries.where((e) => !e.key.endsWith('KeyPassphrase'));
+    // A row it wrote is missing: the router answered without its tables. FW
+    // 2.0.2 answers a WiFi GET with no rows at all while the radios reload
+    // (bench 2026-10-07: `{}` in ~18 ms, every read from 30 s to 60 s after a
+    // rename). That is the router not there yet, not the router holding the
+    // old values, so it is a failed read — the caller retries, and never takes
+    // it as a refusal.
+    final missing = compared.where((e) => !readBack.containsKey(e.key));
+    if (missing.isNotEmpty) {
+      throw NetworkError(
+          detail: 'WiFi read-back had no row for ${missing.first.key}');
+    }
+    return compared.every((e) => readBack[e.key] == e.value);
   }
 
   /// Throws the appropriate [ServiceError] when [parsed] is not a complete

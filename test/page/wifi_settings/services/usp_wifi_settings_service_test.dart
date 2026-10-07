@@ -1127,6 +1127,34 @@ void main() {
       verifyNever(() => mockUsp.get(any()));
     });
 
+    test(
+        'an EMPTY table is a failed read, not the old values — the router '
+        'answers a GET with no rows while its radios reload', () async {
+      // Bench round 3, 2026-10-07 (M60, 2.0.2): from 30 s to 60 s after a
+      // Quick Setup rename, every `Device.WiFi.SSID.*.` GET came back `{}` in
+      // ~18 ms. Read as "reached the router, values wrong", that ruled a save
+      // that landed as refused.
+      routerReads(const {});
+
+      expect(
+        writeSvc.isApplied({'Device.WiFi.SSID.1.SSID': 'NewHome'}),
+        throwsA(isA<ServiceError>()),
+      );
+    });
+
+    test('a table that lacks a written row is a failed read too', () async {
+      // Only SSID.1 answered; the save also wrote SSID.2.
+      routerReads(router);
+
+      expect(
+        writeSvc.isApplied({
+          'Device.WiFi.SSID.1.SSID': 'NewHome',
+          'Device.WiFi.SSID.2.SSID': 'NewHome',
+        }),
+        throwsA(isA<ServiceError>()),
+      );
+    });
+
     test('a failed read is a ServiceError, for the caller to retry', () async {
       when(() => mockUsp.get(any())).thenThrow(Exception('Failed to fetch'));
 

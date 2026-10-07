@@ -64,21 +64,38 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
 
   /// Settles a save that ended [awaitsRouterRecovery], once the router is back.
   ///
-  /// Reads the router back **once**: applied is done; not applied throws, so a
-  /// rename the router refused is reported rather than taken as success. Either
-  /// way nothing is left pending, and the form is reloaded from the router —
-  /// the save's own re-fetch ran while it was away, so it read the cache from
-  /// before the write. A no-op when nothing is pending.
+  /// Reads the router back until it answers: applied is done; not applied
+  /// throws, so a rename the router refused is reported rather than taken as
+  /// success. A read that fails is retried a few times, one read-back interval
+  /// apart — the recovery probe passing says the router answers, not that its
+  /// radios have settled, and mid-reload it answers a WiFi GET with no rows.
+  /// Either way nothing is left pending, and the form is reloaded from the
+  /// router — the save's own re-fetch ran while it was away, so it read the
+  /// cache from before the write. A no-op when nothing is pending.
   Future<void> confirmAfterRecovery() async {
     final proof = _proofAwaitingRecovery;
     if (proof == null) return;
     _proofAwaitingRecovery = null;
+    const attempts = 5;
+    final interval = ref.read(wifiReadBackIntervalProvider);
     try {
-      if (!await _svc.isApplied(proof)) {
-        logger.w('[USP][WiFi]: router back, but the save did not apply');
-        throw const UnexpectedError();
+      for (var attempt = 1;; attempt++) {
+        final bool applied;
+        try {
+          applied = await _svc.isApplied(proof);
+        } on ServiceError catch (e) {
+          if (attempt == attempts) rethrow;
+          logger.d('[USP][WiFi]: router back, read-back not answered yet: $e');
+          await Future<void>.delayed(interval);
+          continue;
+        }
+        if (!applied) {
+          logger.w('[USP][WiFi]: router back, but the save did not apply');
+          throw const UnexpectedError();
+        }
+        logger.i('[USP][WiFi]: router back, save read back as applied');
+        return;
       }
-      logger.i('[USP][WiFi]: router back, save read back as applied');
     } finally {
       await _refreshL1AfterWrite();
       await fetch(forceRemote: true);

@@ -1,3 +1,4 @@
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -646,6 +647,43 @@ void main() {
           container.dispose();
         });
 
+        test(
+            'confirmAfterRecovery: a failed read right after recovery is '
+            'retried, not reported — the radios can still be settling',
+            () async {
+          final container = createContainer();
+          final notifier = await quickSetupNotifier(container);
+          await notifier.save();
+          clearInteractions(mockService);
+          var reads = 0;
+          when(() => mockService.isApplied(any())).thenAnswer((_) async {
+            // Two empty-table answers, then the renamed network.
+            if (++reads <= 2) {
+              throw const NetworkError(detail: 'no row for SSID.1');
+            }
+            return true;
+          });
+
+          await expectLater(notifier.confirmAfterRecovery(), completes);
+
+          expect(reads, 3);
+          container.dispose();
+        });
+
+        test(
+            'confirmAfterRecovery: still unreadable after the retries ⇒ a '
+            'failure', () async {
+          final container = createContainer();
+          final notifier = await quickSetupNotifier(container);
+          await notifier.save();
+          when(() => mockService.isApplied(any())).thenAnswer(
+              (_) async => throw const NetworkError(detail: 'still away'));
+
+          await expectLater(
+              notifier.confirmAfterRecovery(), throwsA(isA<ServiceError>()));
+          container.dispose();
+        });
+
         test('confirmAfterRecovery: not applied ⇒ a failure, never a success',
             () async {
           final container = createContainer();
@@ -659,6 +697,80 @@ void main() {
           expect(notifier.awaitsRouterRecovery, isFalse,
               reason: 'answered either way — nothing is left pending');
           container.dispose();
+        });
+
+        test(
+            'bench round 3, end to end, at the shipped timings: empty tables '
+            'mid-reload, SET answers at 60.07 s, router away, then the read '
+            'after recovery confirms — a success, not "Something went wrong"',
+            () {
+          fakeAsync((async) {
+            // Bench 2026-10-07 12:28:58 (M60, 2.0.2, local, Quick Setup rename
+            // + password). Every WiFi GET from 30 s on came back `{}`; the SET
+            // returned unanswered at 60.07 s; the browser was off the network
+            // until the user rejoined; recovery passed at ~118 s. The save
+            // reported failure, and the form stayed dirty.
+            final container = ProviderContainer(overrides: [
+              uspWifiSettingsServiceProvider.overrideWithValue(mockService),
+              uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+              uspClientProvider.overrideWithValue(mockUsp),
+              uspAuthCoordinatorProvider.overrideWithValue(mockAuthCoordinator),
+              wifiDataProvider.overrideWith(() =>
+                  _FakeWifiDataNotifier(WifiSettingsTestData.createWifiData())),
+            ]);
+            container.listen(uspWifiSettingsProvider, (_, __) {});
+            when(() => mockService.saveQuickSetup(
+                  original: any(named: 'original'),
+                  current: any(named: 'current'),
+                  status: any(named: 'status'),
+                )).thenReturn(WifiWritePlan(
+              params: _written,
+              proof: _written,
+              send: () async {
+                await Future<void>.delayed(const Duration(milliseconds: 60070));
+                return WifiWriteOutcome.unanswered;
+              },
+            ));
+            var routerBack = false;
+            when(() => mockService.isApplied(any())).thenAnswer((_) async {
+              if (!routerBack) {
+                throw const NetworkError(detail: 'no row for SSID.1');
+              }
+              return true;
+            });
+
+            async.flushMicrotasks();
+            final notifier = container.read(uspWifiSettingsProvider.notifier);
+            async.elapse(Duration.zero);
+            notifier.updateQuickSetupField(isGuest: false, ssid: 'Changed');
+
+            Object? saveError;
+            var saved = false;
+            notifier.save().then((_) {
+              saved = true;
+            }, onError: (Object e) {
+              saveError = e;
+            });
+            async.elapse(const Duration(seconds: 70));
+
+            expect(saveError, isNull,
+                reason: 'empty tables are the router not there yet, not a no');
+            expect(saved, isTrue);
+            expect(notifier.awaitsRouterRecovery, isTrue,
+                reason: 'handed to recovery, to be read once the router is '
+                    'back');
+
+            routerBack = true;
+            Object? confirmError;
+            notifier.confirmAfterRecovery().then((_) {}, onError: (Object e) {
+              confirmError = e;
+            });
+            async.elapse(const Duration(seconds: 5));
+
+            expect(confirmError, isNull);
+            expect(notifier.awaitsRouterRecovery, isFalse);
+            container.dispose();
+          });
         });
 
         test('confirmAfterRecovery with nothing pending does nothing',

@@ -153,10 +153,16 @@ class UspWifiAdvancedService {
   Future<bool> isIeee80211hApplied(Map<String, dynamic> proof) async {
     if (proof.isEmpty) return false;
     final now = await fetchIeee80211h();
-    return proof.entries.every((e) {
-      final radio =
-          e.key.substring(0, e.key.length - 'IEEE80211hEnabled'.length);
-      return now[radio] == e.value;
-    });
+    String radioOf(String key) =>
+        key.substring(0, key.length - 'IEEE80211hEnabled'.length);
+    // A proved radio with no row: the router answered without its tables, as
+    // FW 2.0.2 does mid-reload. A failed read for the caller to retry — see
+    // `UspWifiSettingsService.isApplied`.
+    final missing = proof.keys.where((k) => !now.containsKey(radioOf(k)));
+    if (missing.isNotEmpty) {
+      throw NetworkError(
+          detail: 'IEEE 802.11h read-back had no row for ${missing.first}');
+    }
+    return proof.entries.every((e) => now[radioOf(e.key)] == e.value);
   }
 }

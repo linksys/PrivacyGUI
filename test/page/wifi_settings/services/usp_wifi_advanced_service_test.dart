@@ -272,6 +272,20 @@ void main() {
           isFalse,
         );
       });
+
+      test(
+          'a radio missing from the read-back is a failed read, not "not '
+          'applied" — the router answers with no rows while it reloads',
+          () async {
+        // Bench round 3, 2026-10-07: WiFi GETs came back `{}` mid-reload.
+        when(() => mockUsp.get(any())).thenAnswer((_) async => {});
+
+        expect(
+          svc.isIeee80211hApplied(
+              {'Device.WiFi.Radio.1.IEEE80211hEnabled': false}),
+          throwsA(isA<ServiceError>()),
+        );
+      });
     });
 
     test('empty forceAutoChannelPaths writes no AutoChannelEnable', () async {
