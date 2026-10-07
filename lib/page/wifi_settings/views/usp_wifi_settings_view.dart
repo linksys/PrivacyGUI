@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
@@ -232,69 +234,86 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
   // Save
   // ---------------------------------------------------------------------------
 
+  /// One recovery for the whole save, entered when the save starts.
+  ///
+  /// Every WiFi write reloads the radios, so the save enters recovery before
+  /// it sends anything: the app is then already waiting when the reload drops
+  /// the event stream, and the shell — which only enters its natural recovery
+  /// from `authenticated` — puts up nothing of its own. Before this the save
+  /// showed "Processing", then the shell's "Connection lost" mid-save, then a
+  /// second recovery of its own once the save came back (bench 2026-10-07).
+  ///
+  /// The probe is held off while the write is in flight. FW 2.0.2 keeps
+  /// answering for the first ~38 s of the reload, so a probe then would end the
+  /// recovery before anything had restarted; the save starts it once its write
+  /// has settled, whatever the outcome, and the recovery ends through the probe
+  /// as it does for every trigger. Then the page reports the save.
+  ///
+  /// Remote Assistance enters no recovery for a WiFi change (#1323 — the
+  /// agent's path never breaks), so there the spinner covers the save.
   Future<void> _onSave(BuildContext context, WidgetRef ref) async {
     final activeTab = _tabController.index;
     // MAC Filtering saves through its own flow (`macFilterBottomBar`), which
     // confirms overriding Instant Privacy and has no Wi-Fi reconnect step.
+    if (activeTab != 0 && activeTab != 1) return;
 
-    try {
-      final Future<void> task = switch (activeTab) {
-        0 => ref.read(uspWifiSettingsProvider.notifier).save(),
-        1 => ref.read(uspWifiAdvancedProvider.notifier).save(),
-        _ => Future.value(),
-      };
-      logger.d('[WiFi][Save] Starting save...');
-      await doSomethingWithSpinner(context, task);
-      logger.d('[WiFi][Save] Save completed, save spinner dismissed');
-
-      if (!context.mounted) return;
-
-      final wifi = ref.read(uspWifiSettingsProvider.notifier);
-      if (activeTab == 0 && wifi.awaitsRouterRecovery) {
-        await _confirmAfterRouterReturns(context, ref, wifi);
-        return;
-      }
-
-      await showRecoveryDialog(
+    final connection = ref.read(appConnectionStateProvider.notifier);
+    final recovering = connection.enterWaiting(
+      context: const RecoveryContext(
+        trigger: RecoveryTrigger.operationalWifiChange,
+        // Held off until the write settles — see `startProbingNow` below. Long
+        // enough to outlast any save (`wifiSaveHardLimitProvider`).
+        cooldown: Duration(minutes: 3),
+      ),
+    );
+    if (recovering) {
+      // Not awaited: it closes itself when the recovery ends.
+      unawaited(showRecoveryDialog(
         context,
         ref,
         trigger: RecoveryTrigger.operationalWifiChange,
-        successMessage: loc(context).wifiSettingsSaved,
-      );
+        skipEnterWaiting: true,
+      ));
+    }
+
+    Object? failure;
+    try {
+      final Future<void> task = activeTab == 0
+          ? ref.read(uspWifiSettingsProvider.notifier).save()
+          : ref.read(uspWifiAdvancedProvider.notifier).save();
+      logger.d('[WiFi][Save] Starting save (recovery: $recovering)...');
+      await (recovering ? task : doSomethingWithSpinner(context, task));
+      logger.d('[WiFi][Save] Save settled');
     } catch (e) {
       logger.d('[WiFi][Save] Error: $e');
-      if (context.mounted) {
-        showFailedSnackBar(context, localizeServiceError(context, e));
+      failure = e;
+    }
+
+    final wifi = ref.read(uspWifiSettingsProvider.notifier);
+    final routerAway =
+        failure == null && activeTab == 0 && wifi.awaitsRouterRecovery;
+    if (recovering) {
+      connection.startProbingNow();
+    } else if (routerAway) {
+      // Remote Assistance: the router still has to rejoin the cloud before it
+      // can be read. The natural recovery is the wait both modes run.
+      connection.enterWaiting(context: RecoveryContext.natural);
+    }
+    if (recovering || routerAway) {
+      if (!await awaitRecovery(ref)) return; // signed out: nothing to report
+    }
+
+    if (failure == null && routerAway) {
+      try {
+        await wifi.confirmAfterRecovery();
+      } catch (e) {
+        failure = e;
       }
     }
-  }
-
-  /// The save went out but the router could not be read back before the
-  /// deadline — typically a rename, with the browser rejoining the new network.
-  /// Not a failure yet: wait for the router (no time limit), then read it back
-  /// once and report what it says.
-  ///
-  /// The wait is the app's natural recovery — the router is unreachable, which
-  /// is what that trigger means — so the shell shows its "Connection lost"
-  /// dialog for it (usually already up by now: the reload dropped the event
-  /// stream mid-save) and this page stacks nothing of its own. Natural, not
-  /// `operationalWifiChange`: Remote Assistance answers "no recovery needed"
-  /// for a Wi-Fi change, since the agent's path never broke, but the router
-  /// still has to rejoin the cloud before it can be read, and only a wait that
-  /// RA also runs gets there.
-  Future<void> _confirmAfterRouterReturns(
-    BuildContext context,
-    WidgetRef ref,
-    UspWifiSettingsNotifier wifi,
-  ) async {
-    logger.d('[WiFi][Save] Router away after the save — waiting for it');
-    ref
-        .read(appConnectionStateProvider.notifier)
-        .enterWaiting(context: RecoveryContext.natural);
-    if (!await awaitRecovery(ref)) return; // signed out: nothing to report
     if (!context.mounted) return;
-    await wifi.confirmAfterRecovery();
-    if (context.mounted) {
+    if (failure != null) {
+      showFailedSnackBar(context, localizeServiceError(context, failure));
+    } else {
       showSuccessSnackBar(context, loc(context).wifiSettingsSaved);
     }
   }

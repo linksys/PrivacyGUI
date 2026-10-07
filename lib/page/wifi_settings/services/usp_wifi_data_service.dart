@@ -117,6 +117,16 @@ class UspWifiDataService {
     final accessPoints = results[2] as WiFiAccessPoints;
     final rawWifiClientMap = results[3] as Map<String, WifiClient>;
 
+    // Every SSID has an access point. SSIDs with none is the router answering
+    // while its radios reload — FW 2.0.2 returns a table with no rows then —
+    // and a form built from it has no password or security mode to show
+    // (bench 2026-10-07: 4 SSIDs, 0 APs, 3 s after a Wi-Fi save's recovery
+    // passed). A failed read, so a caller retries instead of rendering it.
+    if (ssids.items.isNotEmpty && accessPoints.items.isEmpty) {
+      throw const NetworkError(
+          detail: 'WiFi read returned SSIDs with no access points');
+    }
+
     // Cross-reference AP → SSID → Radio to get band + SSID name per client
     final connectionDetailMap = _buildConnectionDetailMap(
       wifiClientMap: rawWifiClientMap,

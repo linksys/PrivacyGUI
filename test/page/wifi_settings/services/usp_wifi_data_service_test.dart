@@ -182,6 +182,26 @@ void main() {
       expect(result.wifiClientMap, isEmpty);
     });
 
+    test(
+        'SSIDs with no access points is a failed read — the router answered '
+        'mid-reload, and a form built from it shows no security', () async {
+      // Bench round 4, 2026-10-07 (M60, 2.0.2): 3 s after a Wi-Fi save's
+      // recovery passed, the re-read returned 4 SSIDs, 0 APs, 2 radios. The
+      // page rendered it — no password, no security mode — and nothing read
+      // again to correct it.
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((invocation) async {
+        final first = (invocation.positionalArguments[0] as List<String>).first;
+        if (first.startsWith('Device.WiFi.Radio.')) {
+          return _buildRadiosResponse();
+        }
+        if (first.startsWith('Device.WiFi.SSID.')) return _buildSsidsResponse();
+        return <String, dynamic>{};
+      });
+
+      expect(() => svc.fetch(), throwsA(isA<ServiceError>()));
+    });
+
     test('maps USP error to ServiceError on fetch failure', () async {
       when(() => mockUsp.get(any(), priority: any(named: 'priority')))
           .thenThrow(Exception('USP timeout'));

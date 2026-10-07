@@ -20,16 +20,20 @@ import '../../../mocks/provider_overrides/mock_wifi_settings.dart';
 import '../../../mocks/test_data/scenes/wifi_settings_scene_data.dart';
 import '../../../util/app_test_fonts.dart';
 
-/// The page's half of a save the router could not be read back from in time.
+/// One recovery for the whole Wi-Fi save, entered when the save starts.
 ///
-/// Bench, 2026-10-07 (M60, FW 2.0.2, local): a Quick Setup rename + password.
-/// The one SET applied; the browser dropped off the old SSID; every read-back
-/// for 60 s failed while the user rejoined; the save reported failure. Before
-/// that, at 30 s, the event stream gave up and the shell put up "Connection
-/// lost" — and the save's end closed THAT dialog, stranding "Processing".
+/// Bench, 2026-10-07 (M60, FW 2.0.2, local), a Quick Setup rename + password,
+/// four rounds. What the page did before this, in order: "Processing"; the
+/// event stream gave up mid-save and the shell put up "Connection lost"; the
+/// save came back and — as every Wi-Fi save always had — opened a SECOND
+/// recovery, "Router is applying changes", with its own 20 s cooldown; the
+/// form was then re-read while the access-point table was still empty.
 ///
-/// Now the page waits for the router, reads back once, and reports what it
-/// says. The recovery this waits on is whichever one is already running.
+/// Now the save enters recovery itself, so the app is already waiting when the
+/// stream drops and the shell shows nothing of its own. The probe is held off
+/// while the router is still applying — it answers for the first ~38 s of the
+/// reload — and started once the write has settled. Recovery ends through the
+/// probe as for every trigger; the page then reports the save.
 ///
 /// **Untagged on purpose** so `run_tests.sh` runs it.
 void main() {
@@ -38,7 +42,7 @@ void main() {
   });
 
   late _ControllableConnection connection;
-  late _RouterAwayWifiNotifier wifi;
+  late _ScriptedWifiNotifier wifi;
 
   Future<void> frames(WidgetTester tester) async {
     for (var i = 0; i < 8; i++) {
@@ -76,106 +80,57 @@ void main() {
     description: 'the page Save button',
   );
   final processing = find.textContaining('Processing');
+  final applying = find.text('Router is applying changes');
   final saved = find.text('WiFi settings saved');
+  final failed = find.text('Something went wrong. Please try again.');
 
   setUp(() {
     connection = _ControllableConnection();
-    wifi = _RouterAwayWifiNotifier(editDirtyState);
+    wifi = _ScriptedWifiNotifier(editDirtyState);
   });
 
-  testWidgets(
-      'the bench sequence: recovery already up when the save returns — '
-      'Processing closes, ONE recovery dialog, then success on read-back',
-      (tester) async {
-    await pumpWifi(tester);
-    await tester.tap(save);
-    await frames(tester);
-    expect(processing, findsOneWidget);
-
-    // The event stream gives up mid-save; the app enters recovery. (The
-    // shell's listener is what shows its dialog; here a dialog stands in.)
-    connection.set(AppConnectionState.waitingForRecovery);
-    _pushStandInRecoveryDialog(tester);
-    await frames(tester);
-
-    wifi.finishSave();
-    await frames(tester);
-
-    expect(processing, findsNothing,
-        reason: 'the spinner closed itself, not the dialog above it');
-    expect(find.text('Connection lost'), findsOneWidget,
-        reason: 'the running recovery keeps its own dialog');
-    expect(find.text('Router is applying changes'), findsNothing,
-        reason: 'no second recovery dialog stacked on the first');
-    expect(wifi.confirms, 0,
-        reason: 'nothing is read before the router is back');
-
-    connection.set(AppConnectionState.authenticated);
-    await frames(tester);
-
-    expect(wifi.confirms, 1);
-    expect(saved, findsOneWidget);
-  });
-
-  testWidgets('router back but the save did not apply ⇒ failure, not success',
-      (tester) async {
-    wifi.confirmFails = true;
-    await pumpWifi(tester);
-    await tester.tap(save);
-    await frames(tester);
-    connection.set(AppConnectionState.waitingForRecovery);
-    wifi.finishSave();
-    await frames(tester);
-
-    connection.set(AppConnectionState.authenticated);
-    await frames(tester);
-
-    expect(wifi.confirms, 1);
-    expect(saved, findsNothing);
-    expect(find.text('Something went wrong. Please try again.'), findsOneWidget,
-        reason: 'reported as a failure — not left silent');
-  });
-
-  testWidgets('signed out while waiting ⇒ nothing is read and nothing reported',
-      (tester) async {
-    await pumpWifi(tester);
-    await tester.tap(save);
-    await frames(tester);
-    connection.set(AppConnectionState.waitingForRecovery);
-    wifi.finishSave();
-    await frames(tester);
-
-    connection.set(AppConnectionState.loggedOut);
-    await frames(tester);
-
-    expect(wifi.confirms, 0);
-    expect(saved, findsNothing);
-  });
-
-  // The other order: the save comes back first, with the app still signed in
-  // and the router not answering. Over Remote Assistance the agent's own path
-  // never broke — but the router still has to rejoin the cloud before it can be
-  // read, so both modes wait for it, with no time limit.
-  for (final MapEntry(key: mode, value: profile) in const {
-    'local': LocalModeProfile(),
-    'remote assistance': RemoteModeProfile(),
-  }.entries) {
+  group('local', () {
     testWidgets(
-        '$mode: save returns first ⇒ waits for the router to come back, then '
-        'reads back once', (tester) async {
-      await pumpWifi(tester, profile: profile);
+        'the save enters recovery when it starts: ONE dialog, no probe while '
+        'the router is applying, no second recovery after', (tester) async {
+      await pumpWifi(tester);
       await tester.tap(save);
       await frames(tester);
 
-      wifi.finishSave();
+      expect(connection.current, AppConnectionState.waitingForRecovery,
+          reason: 'waiting from the start — so the stream dropping mid-save '
+              'finds the app already recovering and shows nothing new');
+      expect(applying, findsOneWidget);
+      expect(processing, findsNothing,
+          reason: 'the recovery dialog is the one dialog');
+      expect(connection.probingStarted, isFalse,
+          reason: 'the router still answers early in the reload; a probe '
+              'now would end the recovery before anything restarted');
+
+      wifi.finishSave(WifiSaveEnd.confirmed);
+      await frames(tester);
+      expect(connection.probingStarted, isTrue,
+          reason: 'the write has settled — now the router is worth probing');
+      expect(saved, findsNothing, reason: 'not before the router is back');
+
+      connection.set(AppConnectionState.authenticated);
       await frames(tester);
 
-      expect(processing, findsNothing);
-      expect(connection.current, AppConnectionState.waitingForRecovery,
-          reason: 'entered a recovery that waits — not one this mode skips');
-      expect(find.text('Router is applying changes'), findsNothing,
-          reason: 'the wait is the natural recovery the shell shows; the page '
-              'stacks nothing of its own on it');
+      expect(applying, findsNothing);
+      expect(saved, findsOneWidget);
+      expect(connection.waitsEntered, 1,
+          reason: 'one recovery for the whole save, never a second one');
+    });
+
+    testWidgets(
+        'router away (a rename): waits through the same recovery, then reads '
+        'back once', (tester) async {
+      await pumpWifi(tester);
+      await tester.tap(save);
+      await frames(tester);
+
+      wifi.finishSave(WifiSaveEnd.routerAway);
+      await frames(tester);
       expect(wifi.confirms, 0,
           reason: 'nothing is read before the router is back');
 
@@ -184,25 +139,111 @@ void main() {
 
       expect(wifi.confirms, 1);
       expect(saved, findsOneWidget);
+      expect(connection.waitsEntered, 1);
     });
-  }
+
+    testWidgets('router back but the save did not apply ⇒ failure',
+        (tester) async {
+      wifi.confirmFails = true;
+      await pumpWifi(tester);
+      await tester.tap(save);
+      await frames(tester);
+      wifi.finishSave(WifiSaveEnd.routerAway);
+      await frames(tester);
+
+      connection.set(AppConnectionState.authenticated);
+      await frames(tester);
+
+      expect(saved, findsNothing);
+      expect(failed, findsOneWidget);
+    });
+
+    testWidgets(
+        'a refused save still ends the recovery it entered, then reports the '
+        'failure', (tester) async {
+      await pumpWifi(tester);
+      await tester.tap(save);
+      await frames(tester);
+
+      wifi.finishSave(WifiSaveEnd.refused);
+      await frames(tester);
+      expect(connection.probingStarted, isTrue,
+          reason: 'the router answered, so the probe passes at once — the '
+              'one exit recovery has');
+
+      connection.set(AppConnectionState.authenticated);
+      await frames(tester);
+
+      expect(applying, findsNothing);
+      expect(failed, findsOneWidget);
+      expect(saved, findsNothing);
+    });
+
+    testWidgets('signed out while waiting ⇒ nothing is read or reported',
+        (tester) async {
+      await pumpWifi(tester);
+      await tester.tap(save);
+      await frames(tester);
+      wifi.finishSave(WifiSaveEnd.routerAway);
+      await frames(tester);
+
+      connection.set(AppConnectionState.loggedOut);
+      await frames(tester);
+
+      expect(wifi.confirms, 0);
+      expect(saved, findsNothing);
+    });
+  });
+
+  group('remote assistance', () {
+    // A Wi-Fi change does not interrupt the agent's path (#1323), so no
+    // recovery is entered for the save; the spinner covers it.
+    testWidgets('confirmed: Processing, then success — no recovery at all',
+        (tester) async {
+      await pumpWifi(tester, profile: const RemoteModeProfile());
+      await tester.tap(save);
+      await frames(tester);
+
+      expect(processing, findsOneWidget);
+      expect(applying, findsNothing);
+      expect(connection.current, AppConnectionState.authenticated);
+
+      wifi.finishSave(WifiSaveEnd.confirmed);
+      await frames(tester);
+
+      expect(processing, findsNothing);
+      expect(saved, findsOneWidget);
+      expect(connection.waitsEntered, 0);
+    });
+
+    testWidgets(
+        'router away: waits for it to rejoin the cloud (natural recovery), '
+        'then reads back once', (tester) async {
+      await pumpWifi(tester, profile: const RemoteModeProfile());
+      await tester.tap(save);
+      await frames(tester);
+
+      wifi.finishSave(WifiSaveEnd.routerAway);
+      await frames(tester);
+      expect(connection.current, AppConnectionState.waitingForRecovery,
+          reason: 'the router still has to rejoin the cloud before it can '
+              'be read, and RA runs the natural recovery');
+      expect(wifi.confirms, 0);
+
+      connection.set(AppConnectionState.authenticated);
+      await frames(tester);
+
+      expect(wifi.confirms, 1);
+      expect(saved, findsOneWidget);
+    });
+  });
 }
 
-/// What the shell's natural-recovery listener does when the app enters
-/// recovery: push a modal with no way out but the router coming back.
-void _pushStandInRecoveryDialog(WidgetTester tester) {
-  showDialog<void>(
-    context: tester.element(find.byType(UspWifiSettingsView)),
-    barrierDismissible: false,
-    useRootNavigator: true,
-    builder: (_) => const AlertDialog(content: Text('Connection lost')),
-  );
-}
+enum WifiSaveEnd { confirmed, routerAway, refused }
 
-/// Ends its save the way a rename does when the browser cannot reach the
-/// router by the deadline: written, and waiting for recovery.
-class _RouterAwayWifiNotifier extends FixedWifiSettingsNotifier {
-  _RouterAwayWifiNotifier(UspWifiSettingsState state) : super(state);
+/// Ends its save the way the test says.
+class _ScriptedWifiNotifier extends FixedWifiSettingsNotifier {
+  _ScriptedWifiNotifier(UspWifiSettingsState state) : super(state);
 
   // Created on first save, not with the notifier: the notifier is built in
   // `setUp`, outside the test's fake-async zone, and a completer made there
@@ -213,9 +254,16 @@ class _RouterAwayWifiNotifier extends FixedWifiSettingsNotifier {
   var confirms = 0;
   var confirmFails = false;
 
-  void finishSave() {
-    _away = true;
-    _save!.complete();
+  void finishSave(WifiSaveEnd end) {
+    switch (end) {
+      case WifiSaveEnd.confirmed:
+        _save!.complete();
+      case WifiSaveEnd.routerAway:
+        _away = true;
+        _save!.complete();
+      case WifiSaveEnd.refused:
+        _save!.completeError(const UnexpectedError());
+    }
   }
 
   @override
@@ -234,21 +282,31 @@ class _RouterAwayWifiNotifier extends FixedWifiSettingsNotifier {
 
 /// The connection state, moved by the test.
 class _ControllableConnection extends AppConnectionStateNotifier {
+  var waitsEntered = 0;
+  var probingStarted = false;
+
   @override
   AppConnectionState build() => AppConnectionState.authenticated;
 
   void set(AppConnectionState next) => state = next;
 
   /// The real answer to "does this trigger need a recovery in this mode" —
-  /// that is the decision under test — without the real probe loop.
+  /// that is part of what is under test — without the real probe loop.
   @override
   bool enterWaiting({required RecoveryContext context}) {
     if (state == AppConnectionState.waitingForRecovery) return true;
     final plan =
         ref.read(appModeProfileProvider).proximity.planFor(context.trigger);
     if (!plan.needsRecovery) return false;
+    waitsEntered++;
+    probingStarted = context.cooldown == Duration.zero;
     state = AppConnectionState.waitingForRecovery;
     return true;
+  }
+
+  @override
+  void startProbingNow() {
+    if (state == AppConnectionState.waitingForRecovery) probingStarted = true;
   }
 
   AppConnectionState get current => state;
