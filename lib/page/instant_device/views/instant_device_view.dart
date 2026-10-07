@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
+import 'package:privacy_gui/page/components/mixin/client_signal_watcher_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -34,7 +35,7 @@ class InstantDeviceView extends ArgumentsConsumerStatefulView {
 }
 
 class _InstantDeviceViewState extends ConsumerState<InstantDeviceView>
-    with PageSnackbarMixin {
+    with ClientSignalWatcherMixin, PageSnackbarMixin {
   List<String> _selectedList = [];
 
   @override
@@ -79,7 +80,10 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView>
               icon: LinksysIcons.refresh,
               onTap: () {
                 controller.repeat();
-                ref.read(pollingProvider.notifier).forcePolling().then((value) {
+                ref
+                    .read(pollingProvider.notifier)
+                    .forcePollingWithClientSignals()
+                    .then((value) {
                   controller.stop();
                 });
               },

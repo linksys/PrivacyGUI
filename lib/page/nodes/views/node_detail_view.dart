@@ -17,6 +17,7 @@ import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
+import 'package:privacy_gui/page/components/mixin/client_signal_watcher_mixin.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -56,7 +57,10 @@ class NodeDetailView extends ArgumentsConsumerStatefulView {
 }
 
 class _NodeDetailViewState extends ConsumerState<NodeDetailView>
-    with PageSnackbarMixin, SingleTickerProviderStateMixin {
+    with
+        PageSnackbarMixin,
+        SingleTickerProviderStateMixin,
+        ClientSignalWatcherMixin {
   late final TabController _tabController;
 
   @override
@@ -111,7 +115,10 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
               icon: LinksysIcons.refresh,
               onTap: () {
                 controller.repeat();
-                ref.read(pollingProvider.notifier).forcePolling().then((value) {
+                ref
+                    .read(pollingProvider.notifier)
+                    .forcePollingWithClientSignals()
+                    .then((value) {
                   controller.stop();
                 });
               },
@@ -156,7 +163,10 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
               icon: LinksysIcons.refresh,
               onTap: () {
                 controller.repeat();
-                ref.read(pollingProvider.notifier).forcePolling().then((value) {
+                ref
+                    .read(pollingProvider.notifier)
+                    .forcePollingWithClientSignals()
+                    .then((value) {
                   controller.stop();
                 });
               },

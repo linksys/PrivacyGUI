@@ -101,7 +101,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                     controller.repeat();
                     ref
                         .read(pollingProvider.notifier)
-                        .forcePolling()
+                        .forcePollingWithClientSignals()
                         .then((value) {
                       controller.stop();
                     });
@@ -124,7 +124,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
 
     return StyledAppPageView.innerPage(
       onRefresh: () {
-        return ref.read(pollingProvider.notifier).forcePolling();
+        return ref
+            .read(pollingProvider.notifier)
+            .forcePollingWithClientSignals();
       },
       child: (context, constraints) => ResponsiveLayout.isMobileLayout(context)
           ? Column(
