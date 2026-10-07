@@ -6,7 +6,6 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/card/expansion_card.dart';
 import 'package:privacygui_widgets/widgets/label/status_label.dart';
-import 'package:privacygui_widgets/widgets/switch/switch.dart';
 
 /// Smart QoS result cards, shown on the completed speed-test page.
 ///
@@ -16,20 +15,22 @@ import 'package:privacygui_widgets/widgets/switch/switch.dart';
 /// shaping the router would apply, and an Advanced disclosure exposing the raw
 /// values.
 ///
-/// ⚠️ DISPLAY + INTENT ONLY. This firmware exposes no QoS/shaping write path
-/// (confirmed: no CAKE/shaping JNAP action on this build). The toggle therefore
-/// records the user's intent and the values are computed by
-/// [SmartQosRecommendation.fromResult] — a client-side mirror of the router's
-/// arithmetic. The [onEnabledChanged] callback is invoked so a host can persist
-/// intent, but nothing here writes shaping config. The card states this to the
-/// user via [loc.smartQosPendingBackendNote]. Wire the write path — and delete
-/// the mirror model — when a transport lands.
+/// ⚠️ DISPLAY ONLY ON THIS FIRMWARE. There is no QoS/shaping write path
+/// (confirmed: no CAKE/shaping JNAP action on this build) and no durable store
+/// for the user's intent, so hosts render this with [readOnly] true: the toggle
+/// is disabled and the card says so ([loc.smartQosPendingBackendNote]). The
+/// values come from [SmartQosRecommendation.fromResult], a client-side mirror of
+/// the router's arithmetic, and every derived value is labelled as an estimate
+/// ([loc.smartQosEstimateNote]) because the mirror is unvalidated against the
+/// firmware. When a transport lands: persist intent through [onEnabledChanged],
+/// pass [readOnly] false, read values from the router, delete the mirror.
 class SmartQosResult extends StatefulWidget {
   const SmartQosResult({
     super.key,
     required this.recommendation,
     this.initiallyEnabled = false,
     this.onEnabledChanged,
+    this.readOnly = false,
   });
 
   final SmartQosRecommendation recommendation;
@@ -41,6 +42,13 @@ class SmartQosResult extends StatefulWidget {
   /// Invoked when the user flips the enable toggle. Records intent only — see
   /// the class doc: there is no shaping write path on this firmware.
   final ValueChanged<bool>? onEnabledChanged;
+
+  /// When true the enable control is shown disabled and the card reads as a
+  /// preview: nothing is recorded. Hosts pass this until they can persist the
+  /// user's choice and read it back (there is no shaping backend on this
+  /// firmware and no durable intent store yet), so the toggle never promises an
+  /// effect it cannot deliver.
+  final bool readOnly;
 
   @override
   State<SmartQosResult> createState() => _SmartQosResultState();
@@ -102,12 +110,14 @@ class _SmartQosResultState extends State<SmartQosResult> {
               ),
               const AppGap.medium(),
               AppSwitch(
-                semanticLabel: 'enable smart qos',
+                semanticLabel: loc(context).smartQosEnable,
                 value: _enabled,
-                onChanged: (value) {
-                  setState(() => _enabled = value);
-                  widget.onEnabledChanged?.call(value);
-                },
+                onChanged: widget.readOnly
+                    ? null
+                    : (value) {
+                        setState(() => _enabled = value);
+                        widget.onEnabledChanged?.call(value);
+                      },
               ),
             ],
           ),
@@ -126,6 +136,11 @@ class _SmartQosResultState extends State<SmartQosResult> {
         mainAxisSize: MainAxisSize.min,
         children: [
           AppText.titleSmall(loc(context).smartQosProtectionDetails),
+          const AppGap.small2(),
+          AppText.bodySmall(
+            loc(context).smartQosEstimateNote,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
           const AppGap.medium(),
           _detailRow(
             context,

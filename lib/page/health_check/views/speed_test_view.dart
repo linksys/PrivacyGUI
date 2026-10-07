@@ -597,7 +597,12 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
                     // ISP info
                     if (smartQosRecommendation != null) ...[
                       const AppGap.small3(),
-                      SmartQosResult(recommendation: smartQosRecommendation),
+                      SmartQosResult(
+                        recommendation: smartQosRecommendation,
+                        // No backend and no intent store on this firmware:
+                        // preview only, nothing is recorded (PR #1363 review).
+                        readOnly: true,
+                      ),
                     ],
                   ],
                 ),
@@ -633,7 +638,10 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
               ),
               if (smartQosRecommendation != null) ...[
                 const AppGap.small3(),
-                SmartQosResult(recommendation: smartQosRecommendation),
+                SmartQosResult(
+                  recommendation: smartQosRecommendation,
+                  readOnly: true,
+                ),
               ],
             ],
           ),

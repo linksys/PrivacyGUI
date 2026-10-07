@@ -1105,9 +1105,9 @@
   "smartQosInactive": "Inactive",
   "smartQosEnable": "Enable Smart QoS",
   "smartQosEnableDescription": "Prevent lag during video calls and gaming",
-  "smartQosProtectionDetails": "Protection Details",
-  "smartQosUploadManagedAt": "Upload managed at",
-  "smartQosNoLimitNeeded": "No limit needed",
+  "smartQosProtectionDetails": "Estimated protection",
+  "smartQosUploadManagedAt": "Estimated upload limit",
+  "smartQosNoLimitNeeded": "No limit expected",
   "smartQosAdvanced": "Advanced",
   "smartQosUploadKbps": "Upload (kbps)",
   "smartQosDownloadKbps": "Download (kbps)",
@@ -1115,6 +1115,7 @@
   "smartQosModeUploadOnly": "Upload only",
   "smartQosModeBoth": "Both",
   "smartQosOverheadBytes": "Overhead (bytes)",
-  "smartQosPendingBackendNote": "These settings will be applied automatically once Smart QoS shaping is available on your router.",
+  "smartQosPendingBackendNote": "Preview only. Smart QoS shaping is not available on this router yet, so nothing is saved or applied from this page.",
+  "smartQosEstimateNote": "Estimates from your speed test. Your router sets the final values when Smart QoS becomes available.",
   "smartQosExplainer": "When too many things use your internet at once, everything slows down — video calls freeze, games lag, and pages take forever to load. Smart QoS manages your connection so every app gets its fair share and nothing hogs all the bandwidth."
 }
