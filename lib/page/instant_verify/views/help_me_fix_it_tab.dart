@@ -236,21 +236,21 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
             child: ExcludeFocus(excluding: visit != active,
                 child: TickerMode(enabled: visit == active, child: DiagnosticSelectionArea(child: _flow(visit)))),
           ),
-        if (widget.singlePage) ...[
+        // One way back: the header arrow (density pass, QA #3). The footer
+        // only offers re-checking after a fix.
+        if (widget.singlePage && checkAgain) ...[
           const AppGap.large2(),
           const Divider(),
           const AppGap.small3(),
-          if (checkAgain)
-            const AppText.bodyMedium('After trying a fix, check again to see the latest results.'),
-          const AppGap.small3(),
-          Wrap(spacing: 12, runSpacing: 8, children: [
-            if (checkAgain)
-              AppFilledButton('Check again',
-                onTap: widget.onCheckAgain,
-                icon: LinksysIcons.refresh),
-            AppTextButton(widget.exitLabel,
-                onTap: _exitFlow),
-          ]),
+          Wrap(
+              spacing: Spacing.small3,
+              runSpacing: Spacing.small2,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                const AppText.bodyMedium('Tried a fix?'),
+                AppOutlinedButton('Check again',
+                    onTap: widget.onCheckAgain, icon: LinksysIcons.refresh),
+              ]),
         ],
         const AppGap.large2(),
         _linksysSupportTile(context),
@@ -422,7 +422,8 @@ class _FlowShell extends StatelessWidget {
         Expanded(
           child: SingleChildScrollView(
             padding: InstantTestLayout.scrollPadding(context),
-            child: child,
+            // Every flow and its footer share one column (QA #2 fixed focus).
+            child: InstantTestFocusColumn(children: [child]),
           ),
         ),
       ],
@@ -714,14 +715,20 @@ class _Flow1State extends ConsumerState<_Flow1> {
 
   @override
   Widget build(BuildContext context) {
-    final advice = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      if (_phase == _Flow1Phase.running) ..._running(context),
-      if (_phase == _Flow1Phase.gatewayFail) ..._gatewayFailPath(context),
-      if (_phase == _Flow1Phase.internetFail) ..._internetFailPath(context),
-      if (_phase == _Flow1Phase.dnsFail) ..._dnsFailPath(context),
-      if (_phase == _Flow1Phase.allOk) ..._allOkPath(context),
+    // The result and its next step share the first card (density pass).
+    final lead = _resultHeader(context);
+    return InstantTestFocusColumn(children: [
+      if (_phase == _Flow1Phase.running)
+        _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start,
+            children: [lead, ..._running(context)])),
+      if (_phase == _Flow1Phase.gatewayFail) ..._gatewayFailPath(context, lead),
+      if (_phase == _Flow1Phase.internetFail) ..._internetFailPath(context, lead),
+      if (_phase == _Flow1Phase.dnsFail) ..._dnsFailPath(context, lead),
+      if (_phase == _Flow1Phase.allOk) ..._allOkPath(context, lead),
       if (_phase == _Flow1Phase.unavailable)
         _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          lead,
+          _leadDivider,
           const UserStepHeading('Try the connection check again'),
           const AppGap.small2(),
           const AppText.bodyMedium("We couldn't complete the check, so no connection result is available yet."),
@@ -730,11 +737,11 @@ class _Flow1State extends ConsumerState<_Flow1> {
               icon: LinksysIcons.refresh),
         ])),
     ]);
-    return InstantTestFocusColumn(
-        children: [_diagnosticProgressCard(context), advice]);
   }
 
-  Widget _diagnosticProgressCard(BuildContext context) {
+  static const _leadDivider = Divider(height: Spacing.large2);
+
+  Widget _resultHeader(BuildContext context) {
     final outcome = switch (_phase) {
       _Flow1Phase.running => 'Running diagnostics…',
       _Flow1Phase.unavailable => 'Connection check could not finish',
@@ -743,7 +750,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
       _Flow1Phase.internetFail => "Your router can't reach the internet",
       _Flow1Phase.dnsFail => "Your router is online, but websites aren't loading",
     };
-    return _stepCard(context, Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -780,7 +787,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
                 : (_internetOk ? _dnsOk : null)),
         ])),
       ],
-    ));
+    );
   }
 
   Widget _checkRow(BuildContext context, String label, bool? result) {
@@ -820,10 +827,12 @@ class _Flow1State extends ConsumerState<_Flow1> {
         ),
       ];
 
-  List<Widget> _gatewayFailPath(BuildContext context) => [
+  List<Widget> _gatewayFailPath(BuildContext context, Widget lead) => [
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            lead,
+            _leadDivider,
             UserStepHeading('Check your connection to the router'),
             const AppGap.small2(),
             const AppText.bodyMedium('Your device can\'t reach your router. This is usually a WiFi or cable issue between your device and the router.'),
@@ -845,10 +854,12 @@ class _Flow1State extends ConsumerState<_Flow1> {
 
       ];
 
-  List<Widget> _internetFailPath(BuildContext context) => [
+  List<Widget> _internetFailPath(BuildContext context, Widget lead) => [
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            lead,
+            _leadDivider,
             UserStepHeading('Check the connection to your modem'),
             const AppGap.small2(),
             const AppText.bodyMedium('Your router is reachable but can\'t get to the internet. The issue is likely between your router and the box from your internet company (modem).'),
@@ -886,10 +897,12 @@ class _Flow1State extends ConsumerState<_Flow1> {
 
       ];
 
-  List<Widget> _dnsFailPath(BuildContext context) => [
+  List<Widget> _dnsFailPath(BuildContext context, Widget lead) => [
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            lead,
+            _leadDivider,
             UserStepHeading('Try restarting your router'),
             const AppGap.small2(),
             const AppText.bodyMedium('Your router can reach the internet but domain names aren\'t resolving. This can often be fixed by restarting your router.'),
@@ -933,33 +946,28 @@ class _Flow1State extends ConsumerState<_Flow1> {
 
       ];
 
-  List<Widget> _allOkPath(BuildContext context) => [
+  List<Widget> _allOkPath(BuildContext context, Widget lead) => [
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            UserStepHeading('Still seeing an issue?'),
-            const AppGap.small2(),
-            AppText.bodyMedium(
-              'The connection looks healthy from the router\'s side. '
-              'This can happen if the problem is intermittent or affects only one device.',
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            lead,
+            _leadDivider,
+            // One line leads into the choice; the likely next step is primary.
+            const AppText.bodyMedium(
+              'The connection looks healthy from the router\'s side, so the '
+              'problem is probably on one device, or it comes and goes.',
             ),
             const AppGap.small3(),
-            const AppText.bodyLarge('Is this happening on just one device?'),
-            const AppGap.small2(),
-            AppOutlinedButton('Yes — troubleshoot a specific device',
-                onTap: () => widget.onNavigateToFlow?.call(30),
-                icon: LinksysIcons.devices),
-            const AppGap.small3(),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: AppOutlinedButton('Still seeing issues — test again',
-                onTap: _runDiagnostics,
-                icon: LinksysIcons.refresh),
-            ),
+            Wrap(spacing: Spacing.small3, runSpacing: Spacing.small2, children: [
+              AppFilledButton('Yes — troubleshoot a specific device',
+                  onTap: () => widget.onNavigateToFlow?.call(30),
+                  icon: LinksysIcons.devices),
+              AppOutlinedButton('Still seeing issues — test again',
+                  onTap: _runDiagnostics,
+                  icon: LinksysIcons.refresh),
+            ]),
           ],
         )),
-
       ];
 }
 

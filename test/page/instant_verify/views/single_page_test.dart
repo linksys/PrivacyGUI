@@ -1,4 +1,5 @@
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'dart:async';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
@@ -156,11 +157,40 @@ void main() {
     expect(find.textContaining('88% CPU'), findsOneWidget);
     expect(find.text('Restart Router'), findsOneWidget);
     expect(find.text('Why this matters'), findsNothing);
-    await tapText(tester, '3 other findings');
+    // Other findings, weak devices and weak WiFi nodes share one list.
+    expect(find.text('Devices that may need help'), findsNothing);
+    expect(find.textContaining('Mesh Network'), findsNothing);
+    await tapText(tester,
+        tester.widget<Text>(find.textContaining('more things we found')).data!);
     expect(find.text('Restart Router'), findsWidgets);
   });
 
-  testWidgets('wide layouts use available space and follow resizing', (tester) async {
+  testWidgets('the result and every problem choice fit on one desktop screen',
+      (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1280, 800);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(testableWidget(overrides: [
+      instantVerifyPivotProvider
+          .overrideWith(MockInstantVerifyPivotNotifier.new),
+      browserDiagnosticServiceProvider
+          .overrideWithValue(MockBrowserDiagnosticService()),
+    ], child: const InstantTestPage()));
+    await tester.pumpAndSettle();
+    for (final label in [
+      'Your router is very busy',
+      'Restart Router',
+      "Internet isn't working",
+      "Doesn't reach a room",
+    ]) {
+      expect(tester.getRect(find.text(label)).bottom, lessThan(800),
+          reason: '$label should be visible without scrolling');
+    }
+  });
+
+  testWidgets('wide layouts keep one readable centered column and follow resizing',
+      (tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(2048, 1100);
     addTearDown(tester.view.resetPhysicalSize);
@@ -168,7 +198,12 @@ void main() {
     await mount(tester);
     final first = find.widgetWithText(AppOutlinedButton, "Internet isn't working");
     final last = find.widgetWithText(AppOutlinedButton, 'Keeps cutting out');
-    expect(tester.getBottomRight(last).dx - tester.getTopLeft(first).dx, greaterThan(1800));
+    final left = tester.getTopLeft(first).dx;
+    final right = tester.getBottomRight(last).dx;
+    // Three choices per row inside the 760px column, centered on the page.
+    expect(right - left, lessThanOrEqualTo(760));
+    expect(tester.getTopLeft(first).dy, tester.getTopLeft(last).dy);
+    expect(((left + right) / 2 - 1024).abs(), lessThan(40));
     tester.view.physicalSize = const Size(390, 844);
     await tester.pumpAndSettle();
     expect(tester.getTopLeft(first).dx, greaterThanOrEqualTo(0));
@@ -205,8 +240,18 @@ void main() {
         child: SizedBox(width: 800, child: InstantTestPage())));
     await tapText(tester, "Internet isn't working");
     final result = tester.getRect(find.text('Your router can reach the internet'));
-    final guidance = tester.getRect(find.text('Still seeing an issue?'));
+    final guidance =
+        tester.getRect(find.textContaining('The connection looks healthy'));
     expect(guidance.top, greaterThan(result.bottom));
+    // The result and its next step share one card.
+    final card = find.ancestor(
+        of: find.text('Your router can reach the internet'),
+        matching: find.byType(AppCard));
+    expect(
+        find.descendant(
+            of: card.first,
+            matching: find.textContaining('The connection looks healthy')),
+        findsOneWidget);
     expect(result.left, greaterThanOrEqualTo(320));
     expect(guidance.right, lessThanOrEqualTo(1120));
     expect(tester.takeException(), isNull);
@@ -226,7 +271,7 @@ void main() {
       await tester.pumpAndSettle();
       final action = find.ancestor(
           of: find.text('Yes — troubleshoot a specific device'),
-          matching: find.byWidgetPredicate((widget) => widget is OutlinedButton)).first;
+          matching: find.byWidgetPredicate((widget) => widget is ButtonStyleButton)).first;
       final labelWidth = tester.getSize(find.text('Yes — troubleshoot a specific device')).width;
       expect(tester.getSize(action).width, lessThanOrEqualTo(labelWidth + 100));
       expect(tester.getBottomRight(action).dx, lessThanOrEqualTo(width));
@@ -351,8 +396,13 @@ void main() {
       'weak WiFi finding opens connection analysis, not cannot-connect advice',
       (tester) async {
     await mount(tester);
-    await tapText(tester, 'Troubleshoot these devices');
-    await tapText(tester, 'Office printer');
+    // Weak devices are listed by name with what else we found.
+    if (find.text('Help Office printer').evaluate().isEmpty) {
+      await tapText(tester,
+          (tester.widget<Text>(find.textContaining(' we found').last)).data!);
+    }
+    await tapText(tester, 'Help Office printer');
+    expect(answer(tester, 'Device'), 'Office printer');
     expect(answer(tester, 'Problem'), 'Slow connection');
     expect(find.text('Yes — I can see it'), findsNothing);
   });
@@ -453,9 +503,10 @@ void main() {
           const {'Check again', 'Still seeing issues — test again',
                   'Try connection check again'}.contains(w.data));
       expect(rechecks, findsOneWidget);
-      expect(find.text('After trying a fix, check again to see the latest results.'),
-          findsNothing);
-      expect(find.text('Back to Instant-Test'), findsOneWidget);
+      expect(find.text('Tried a fix?'), findsNothing);
+      // One way back: the header arrow, not a second footer link.
+      expect(find.byTooltip('Back to Instant-Test'), findsOneWidget);
+      expect(find.text('Back to Instant-Test'), findsNothing);
     }
   });
 
@@ -694,14 +745,16 @@ void main() {
     await tapText(tester, "Internet isn't working");
     expect(find.text('Open Instant-Test'), findsNothing);
     expect(find.text("My internet isn't working"), findsOneWidget);
-    await tapText(tester, 'Back to Instant-Test');
+    await tester.tap(find.byTooltip('Back to Instant-Test'));
+    await tester.pumpAndSettle();
     expect(find.text('Open Instant-Test'), findsNothing);
     expect(find.text('Whole internet is slow'), findsOneWidget);
   });
 
   testWidgets('home actions scroll with diagnostics and only workflows are offered',
       (tester) async {
-    tester.view.physicalSize = const Size(390, 844);
+    // Short enough that the condensed home still has to scroll.
+    tester.view.physicalSize = const Size(390, 520);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -712,7 +765,7 @@ void main() {
     expect(find.text('View devices'), findsNothing);
     expect(find.text('View network'), findsNothing);
     final chooserTop = tester.getTopLeft(find.text('What needs help?')).dy;
-    await tester.ensureVisible(find.text('Run Again'));
+    await tester.ensureVisible(find.text('What does my router light mean?'));
     await tester.pumpAndSettle();
     expect(tester.getTopLeft(find.text('What needs help?')).dy, lessThan(chooserTop));
   });
@@ -734,7 +787,8 @@ void main() {
     expect(find.text('Which device needs help?'), findsOneWidget);
     expect(find.text('Everything in my home'), findsNothing);
     expect(find.text('Run Again'), findsNothing);
-    await tapText(tester, 'Back to Instant-Test');
+    await tester.tap(find.byTooltip('Back to Instant-Test'));
+    await tester.pumpAndSettle();
     expect(find.text('Whole internet is slow'), findsOneWidget);
   });
 
@@ -847,8 +901,7 @@ void main() {
     await tapText(tester, 'Whole internet is slow');
     await tester.tap(find.text('Check my speed'));
     await tester.pump();
-    await tester.ensureVisible(find.text('Back to Instant-Test'));
-    await tester.tap(find.text('Back to Instant-Test'));
+    await tester.tap(find.byTooltip('Back to Instant-Test'));
     await tester.pumpAndSettle();
     service.pendingSpeed!.complete(const SpeedTestResult(
         downloadMbps: 120, uploadMbps: 45, latencyMs: 18, jitterMs: 2));
@@ -1040,7 +1093,8 @@ void main() {
                 find.widgetWithText(ChoiceChip, 'Specific devices'))
             .selected,
         isTrue);
-    await tapText(tester, 'Back to Instant-Test');
+    await tester.tap(find.byTooltip('Back to Instant-Test'));
+    await tester.pumpAndSettle();
     expect(find.text('Whole internet is slow'), findsOneWidget);
   });
 
@@ -1057,8 +1111,7 @@ void main() {
     expect(service.calls, 1);
     await tester.pump(const Duration(seconds: 24));
     expect(service.calls, 1, reason: 'pending probes must not overlap');
-    await tester.ensureVisible(find.text('Back to Instant-Test'));
-    await tester.tap(find.text('Back to Instant-Test'));
+    await tester.tap(find.byTooltip('Back to Instant-Test'));
     await tester.pump();
     service.pending!.complete(const GatewayPingResult(reachable: false));
     await tester.pump(const Duration(seconds: 48));

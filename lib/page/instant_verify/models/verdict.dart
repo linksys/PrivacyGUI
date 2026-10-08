@@ -33,6 +33,10 @@ class VerdictFinding {
   /// ISP escalation text to show after a failed restart attempt (D-26).
   final String? postRestartEscalation;
 
+  /// Summarises the per-device weak-WiFi list, so a view that lists those
+  /// devices individually can show them in its place.
+  final bool aboutIssueDevices;
+
   const VerdictFinding({
     required this.priority,
     required this.headline,
@@ -42,6 +46,7 @@ class VerdictFinding {
     this.actionKey,
     this.checkNumber,
     this.postRestartEscalation,
+    this.aboutIssueDevices = false,
   });
 
   bool get hasAutoFix => actionKey != null;
@@ -491,6 +496,7 @@ class VerdictEngine {
           headline: '$count $deviceWord with weak WiFi',
           explanation: advice,
           checkNumber: 7,
+          aboutIssueDevices: true,
         ));
       }
     }

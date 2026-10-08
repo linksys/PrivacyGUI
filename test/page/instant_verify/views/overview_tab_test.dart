@@ -432,7 +432,7 @@ void main() {
       await tester.pumpWidget(_buildOverviewTab(_multipleFindingsState()));
       await tester.pump();
 
-      expect(find.text('3 other findings'), findsOneWidget);
+      expect(find.text('3 more things we found'), findsOneWidget);
       expect(find.text('High lag detected (120ms)'), findsNothing);
     });
 
@@ -440,7 +440,7 @@ void main() {
       await tester.pumpWidget(_buildOverviewTab(_multipleFindingsState()));
       await tester.pump();
 
-      await _tap(tester, '3 other findings');
+      await _tap(tester, '3 more things we found');
       expect(find.text('High lag detected (120ms)'), findsOneWidget);
     });
 
@@ -448,8 +448,8 @@ void main() {
       await tester.pumpWidget(_buildOverviewTab(_multipleFindingsState()));
       await tester.pump();
 
-      await _tap(tester, '3 other findings');
-      await _tap(tester, 'Hide 3 other findings');
+      await _tap(tester, '3 more things we found');
+      await _tap(tester, 'Hide 3 more things we found');
       expect(find.text('High lag detected (120ms)'), findsNothing);
       expect(find.text('Your internet is slower than expected (15 Mbps)'), findsOneWidget);
     });
@@ -463,7 +463,7 @@ void main() {
           findsNothing);
 
       // Tap expand
-      await _tap(tester, '3 other findings');
+      await _tap(tester, '3 more things we found');
       await tester.pump();
 
       // Now they should be visible
@@ -539,65 +539,77 @@ void main() {
     });
   });
 
-  group('OverviewTab — mesh card', () {
-    testWidgets('shows mesh card for multi-node setup', (tester) async {
+  group('OverviewTab — mesh in the found list', () {
+    testWidgets('a weak WiFi node is listed with what else we found',
+        (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_meshState()));
       await tester.pump();
 
-      expect(find.textContaining('Mesh Network'), findsOneWidget);
-      expect(find.text('Kitchen'), findsNothing);
-      await _tap(tester, 'View WiFi node details');
-      expect(find.text('Kitchen'), findsOneWidget);
-      expect(find.text('Living Room'), findsOneWidget);
-      expect(find.text('Bedroom'), findsOneWidget);
+      // No separate mesh card: only the weak node needs attention.
+      expect(find.textContaining('Mesh Network'), findsNothing);
+      expect(find.text('Bedroom has a weak connection to the router'),
+          findsNothing);
+      await _tap(tester, '1 more thing we found');
+      expect(find.text('Bedroom has a weak connection to the router'),
+          findsOneWidget);
+      expect(find.textContaining('Living Room'), findsNothing);
+      expect(find.textContaining('Kitchen'), findsNothing);
     });
 
-    testWidgets('shows device count and parent/child labels', (tester) async {
-      await tester.pumpWidget(_buildOverviewTab(_meshState()));
-      await tester.pump();
-
-      // Header shows total device count (not "nodes")
-      expect(find.text('Mesh Network — 3 devices'), findsOneWidget);
-      await _tap(tester, 'View WiFi node details');
-      // Role labels shown per node
-      expect(find.text('Parent'), findsOneWidget);
-      expect(find.text('Child'), findsWidgets);
-    });
-
-    testWidgets('no mesh card for single router', (tester) async {
+    testWidgets('nothing extra is listed for a single router', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
       await tester.pump();
 
-      expect(find.textContaining('Mesh Network'), findsNothing);
+      expect(find.textContaining('more thing'), findsNothing);
     });
   });
 
-  group('OverviewTab — device issues card', () {
-    testWidgets('shows device issues card when devices have issues',
+  group('OverviewTab — devices in the found list', () {
+    testWidgets('a weak device is listed by name with its signal',
         (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_deviceIssuesState()));
       await tester.pump();
 
-      expect(find.text('Devices that may need help'), findsOneWidget);
-      expect(find.text('iPhone'), findsNothing);
-      await _tap(tester, 'View affected devices');
-      expect(find.text('iPhone'), findsOneWidget);
+      expect(find.text('Devices that may need help'), findsNothing);
+      expect(find.text('iPhone has a weak WiFi signal'), findsNothing);
+      await _tap(tester, '1 more thing we found');
+      expect(find.text('iPhone has a weak WiFi signal'), findsOneWidget);
+      expect(find.text('-82 dBm on 2.4GHz'), findsOneWidget);
+      // Plain names; no MAC address unless two devices share a name.
+      expect(find.textContaining('AA:BB:CC:DD:EE:01'), findsNothing);
     });
 
-    testWidgets('shows signal details for weak device', (tester) async {
-      await tester.pumpWidget(_buildOverviewTab(_deviceIssuesState()));
+    testWidgets('a weak-WiFi summary finding is replaced by its devices',
+        (tester) async {
+      final base = _deviceIssuesState();
+      await tester.pumpWidget(_buildOverviewTab(base.copyWith(
+          verdict: const Verdict(checksRun: 8, findings: [
+        VerdictFinding(
+            priority: VerdictPriority.warning,
+            headline: 'Your router is under high load (88% CPU)',
+            explanation: 'A restart usually clears this.',
+            actionLabel: 'Restart Router',
+            actionKey: VerdictEngine.actionRestartRouter),
+        VerdictFinding(
+            priority: VerdictPriority.warning,
+            headline: '1 device with weak WiFi',
+            explanation: 'iPhone has a weak WiFi connection.',
+            checkNumber: 7,
+            aboutIssueDevices: true),
+      ]))));
       await tester.pump();
 
-      expect(find.textContaining('-82 dBm'), findsNothing);
-      await _tap(tester, 'View affected devices');
-      expect(find.textContaining('-82 dBm'), findsOneWidget);
+      await _tap(tester, '1 more thing we found');
+      expect(find.text('iPhone has a weak WiFi signal'), findsOneWidget);
+      expect(find.text('1 device with weak WiFi'), findsNothing);
     });
 
-    testWidgets('no device issues card when all good', (tester) async {
+    testWidgets('nothing extra is listed when all devices are fine',
+        (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
       await tester.pump();
 
-      expect(find.text('Devices that may need help'), findsNothing);
+      expect(find.textContaining('weak WiFi signal'), findsNothing);
     });
   });
 
@@ -748,18 +760,18 @@ void main() {
     });
   });
 
-  group('OverviewTab — primary CTA annotation', () {
-    // 'Start here' annotation appears when there are 2+ findings AND
-    // the primary finding has an auto-fix (actionKey != null).
-
-    testWidgets('multiple findings with auto-fix show start-here annotation',
+  group('OverviewTab — primary action row', () {
+    testWidgets('the fix and everything else found share one action row',
         (tester) async {
-      // _multipleFindingsState() has 4 findings; primary has actionKey 'restart_router'
-      // → hasAutoFix = true → annotation should appear.
+      // _multipleFindingsState() has 4 findings; the primary has a restart fix.
       await tester.pumpWidget(_buildOverviewTab(_multipleFindingsState()));
       await tester.pump();
 
-      expect(find.textContaining('Start here'), findsOneWidget);
+      expect(find.textContaining('Start here'), findsNothing);
+      final fix = tester.getCenter(find.text('Restart Router'));
+      final more = tester.getCenter(find.text('3 more things we found'));
+      expect((fix.dy - more.dy).abs(), lessThan(8));
+      expect(more.dx, greaterThan(fix.dx));
     });
 
     testWidgets('single finding does not show start-here annotation',

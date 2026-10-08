@@ -1,9 +1,7 @@
-import 'instant_test_layout.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:flutter/material.dart';
-import 'user_step_heading.dart';
 
 /// Direct workflow entry points, laid out as actions rather than page tabs.
 class SymptomChooser extends StatelessWidget {
@@ -19,23 +17,29 @@ class SymptomChooser extends StatelessWidget {
     (4, LinksysIcons.home, "Doesn't reach a room"),
   ];
 
+  /// Compact choices (density pass, QA #3): a small question and one row of
+  /// three buttons per line, so the result above stays the main content.
+  static int columns(double width) => width >= 600
+      ? 3
+      : width >= 160 * 2 + Spacing.small2
+          ? 2
+          : 1;
+
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const UserStepHeading('What needs help?', centered: true),
+        Semantics(
+            header: true, child: const AppText.titleSmall('What needs help?')),
         const AppGap.small2(),
-        const AppText.bodyMedium("Choose the problem you're having.",
-            textAlign: TextAlign.center),
-        const AppGap.small3(),
         LayoutBuilder(builder: (context, constraints) {
-          final columns = InstantTestLayout.actionColumns(constraints.maxWidth);
+          final count = columns(constraints.maxWidth);
           final width =
-              (constraints.maxWidth - Spacing.medium * (columns - 1)) / columns;
+              (constraints.maxWidth - Spacing.small2 * (count - 1)) / count;
           return Wrap(
-            spacing: Spacing.medium,
-            runSpacing: Spacing.medium,
+            spacing: Spacing.small2,
+            runSpacing: Spacing.small2,
             children: [
               for (final (id, icon, label) in symptoms)
                 SizedBox(
@@ -43,12 +47,11 @@ class SymptomChooser extends StatelessWidget {
                   child: AppOutlinedButton(label,
                       onTap: () => onSelect(id),
                       icon: icon,
-                      size: Size(width, 88)),
+                      size: Size(width, Spacing.large5)),
                 ),
             ],
           );
         }),
-        const AppGap.large2(),
       ],
     );
   }

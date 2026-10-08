@@ -157,6 +157,7 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
                               SymptomChooser(onSelect: (flow) => _launch(flow)),
                           onNavigateToFlow: (index) => _launch(index + 1),
                           onTroubleshootWeakDevices: () => _launch(31),
+                          onViewNetwork: () => _navigate(details: 2),
                           onTroubleshootDevice: (device) => _launch(31, device: device),
                         )),
                       ),

@@ -17,17 +17,6 @@ class InstantTestLayout extends StatelessWidget {
   final Widget child;
   final InstantTestContentWidth contentWidth;
 
-  static const columnGap = Spacing.large2;
-
-  static bool usesColumns(double availableWidth) =>
-      availableWidth >= ResponsiveLayout.medium;
-
-  static int actionColumns(double availableWidth) => usesColumns(availableWidth)
-      ? 3
-      : availableWidth >= 160 * 2 + Spacing.medium
-          ? 2
-          : 1;
-
   /// Standalone legacy views keep their own padding. Hosted views inherit the
   /// shared page margins, so nested scrolling never adds another side gutter.
   static EdgeInsets scrollPadding(BuildContext context) => EdgeInsets.symmetric(

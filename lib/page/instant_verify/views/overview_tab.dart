@@ -14,7 +14,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
 import 'package:privacy_gui/page/instant_verify/models/verdict.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
@@ -116,19 +115,22 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
     final state = ref.watch(instantVerifyPivotProvider);
     ref.listen(instantVerifyPivotProvider.select((s) => s.phase), _revealResult);
 
+    // Density pass (QA 2026-10-07 #3/#5): one column, one result card that
+    // also lists everything else we found, compact problem choices, and the
+    // light guide and support in the footer.
     return SingleChildScrollView(
       padding: InstantTestLayout.scrollPadding(context),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: InstantTestFocusColumn(
         children: [
-          // Router light guide link (PRD v0.7 S-1)
+          Align(alignment: Alignment.centerRight, child: _runAgain(state)),
+          // Inline WAN-down callout (PRD v0.7 S-1); the guide link is in the footer.
           _LightGuideLink(
+            showLink: false,
             showInlineCallout: state.wanStatus != null && state.errorMessage == null &&
                 state.phase != PivotLoadPhase.idle &&
                 state.phase != PivotLoadPhase.loading &&
                 !state.wanConnected,
           ),
-          const AppGap.small2(),
           _StatusCard(
             key: _resultKey,
             state: state,
@@ -140,15 +142,13 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
                 setState(() => _checksExpanded = !_checksExpanded),
             onAction: _handleAction,
             onTroubleshootDevice: widget.onTroubleshootDevice,
+            onTroubleshootWeakDevices: widget.onTroubleshootWeakDevices,
+            onViewNetwork: widget.onViewNetwork,
             onViewClients: widget.onViewClients,
             onNavigateToFlow: widget.onNavigateToFlow,
             showProblemCards: widget.showProblemCards,
             hasRestarted: state.hasRestartedThisSession,
           ),
-          if (widget.leading != null) ...[
-            const AppGap.medium(),
-            widget.leading!,
-          ],
           if (state.recentPriorRestart &&
               state.verdict != null &&
               state.verdict!.findings.isNotEmpty) ...[
@@ -173,58 +173,32 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
                 ),
             ),
           ],
-          if (state.issueDevices.isNotEmpty) ...[
-            const AppGap.medium(),
-            _DeviceIssuesCard(
-                state: state, onNavigateToFlow: widget.onNavigateToFlow,
-                onTroubleshoot: widget.onTroubleshootWeakDevices),
-          ],
-          if (state.isMeshNetwork) ...[
-            const AppGap.medium(),
-            _MeshCard(state: state),
-          ],
           // Restart countdown with reassurance (PRD v0.7 D-23)
           if (_restartCountdown > 0) ...[
             const AppGap.medium(),
             _RestartCountdown(secondsRemaining: _restartCountdown),
           ],
+          if (widget.leading != null) ...[
+            const AppGap.large2(),
+            widget.leading!,
+          ],
           const AppGap.large2(),
-          Builder(builder: (context) {
-            final notifier = ref.read(instantVerifyPivotProvider.notifier);
-            final cooldown = notifier.speedTestCooldownRemaining;
-            // Keep the live countdown ticking while cooling down.
-            if (cooldown > 0) _ensureCooldownTicker();
-            final baseLabel =
-                state.hasRestartedThisSession ? 'Check Again' : 'Run Again';
-            final isBusy = state.phase == PivotLoadPhase.loading ||
-                state.phase == PivotLoadPhase.jnapLoaded ||
-                _restartCountdown > 0;
-            return Center(
-              child: AppOutlinedButton(
-                cooldown > 0 ? '$baseLabel (${cooldown}s)' : baseLabel,
-                icon: LinksysIcons.refresh,
-                // Disabled while a run is in flight OR during the 15s
-                // anti-hammer cooldown after a speed test.
-                onTap: isBusy || cooldown > 0
-                    ? null
-                    : () {
-                        setState(() {
-                          _findingsExpanded = false;
-                          _checksExpanded = false;
-                        });
-                        // Explicit user re-run → force the speed test (bypass
-                        // the 3-min passive throttle). The provider still
-                        // enforces the 15s hard cooldown as the backstop.
-                        ref
-                            .read(instantVerifyPivotProvider.notifier)
-                            .fetch(forceSpeedTest: true);
-                        // Start ticking so the button shows the cooldown.
-                        WidgetsBinding.instance.addPostFrameCallback(
-                            (_) => _ensureCooldownTicker());
-                      },
-              ),
-            );
-          }),
+          const Divider(),
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: Spacing.medium,
+            children: [
+              const _LightGuideLink(),
+              Wrap(spacing: Spacing.small1, children: [
+                AppText.bodySmall('Still need help?',
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+                const AppText.bodySmall(
+                    'www.linksys.com/support  •  1-800-326-7114',
+                    selectable: true),
+              ]),
+            ],
+          ),
           // Internal validation builds (deploy_local.sh sets force=local) get the
           // mock-failure scenario picker; customer Jenkins builds (force!=local)
           // do not. Replaces the old kDebugMode guard, which release builds strip.
@@ -250,6 +224,38 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
           const AppGap.large2(),
         ],
       ),
+    );
+  }
+
+  Widget _runAgain(InstantVerifyPivotState state) {
+    final notifier = ref.read(instantVerifyPivotProvider.notifier);
+    final cooldown = notifier.speedTestCooldownRemaining;
+    // Keep the live countdown ticking while cooling down.
+    if (cooldown > 0) _ensureCooldownTicker();
+    final baseLabel = state.hasRestartedThisSession ? 'Check Again' : 'Run Again';
+    final isBusy = state.phase == PivotLoadPhase.loading ||
+        state.phase == PivotLoadPhase.jnapLoaded ||
+        _restartCountdown > 0;
+    return AppTextButton(
+      cooldown > 0 ? '$baseLabel (${cooldown}s)' : baseLabel,
+      icon: LinksysIcons.refresh,
+      // Disabled while a run is in flight OR during the 15s anti-hammer
+      // cooldown after a speed test.
+      onTap: isBusy || cooldown > 0
+          ? null
+          : () {
+              setState(() {
+                _findingsExpanded = false;
+                _checksExpanded = false;
+              });
+              // Explicit user re-run → force the speed test (bypass the 3-min
+              // passive throttle). The provider still enforces the 15s hard
+              // cooldown as the backstop.
+              notifier.fetch(forceSpeedTest: true);
+              // Start ticking so the button shows the cooldown.
+              WidgetsBinding.instance
+                  .addPostFrameCallback((_) => _ensureCooldownTicker());
+            },
     );
   }
 
@@ -617,6 +623,8 @@ class _StatusCard extends StatelessWidget {
   final Future<void> Function(String actionKey) onAction;
   final VoidCallback? onViewClients;
   final ValueChanged<DiagnosticClient>? onTroubleshootDevice;
+  final VoidCallback? onTroubleshootWeakDevices;
+  final VoidCallback? onViewNetwork;
   final void Function(int flowIndex)? onNavigateToFlow;
   final bool showProblemCards;
   final bool hasRestarted;
@@ -631,6 +639,8 @@ class _StatusCard extends StatelessWidget {
     required this.onAction,
     this.onViewClients,
     this.onTroubleshootDevice,
+    this.onTroubleshootWeakDevices,
+    this.onViewNetwork,
     this.onNavigateToFlow,
     this.showProblemCards = true,
     this.hasRestarted = false,
@@ -642,14 +652,25 @@ class _StatusCard extends StatelessWidget {
 
     if (state.errorMessage != null ||
         (state.phase == PivotLoadPhase.complete && state.verdict == null)) {
-      return _card(context, child: Semantics(liveRegion: true, child: const Column(
+      // Device and node data can still be current when the run fails.
+      final more = _moreRows(context, devicesUnderPrimary: false);
+      return _card(context, child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.titleMedium("We couldn't finish checking your connection"),
-          AppGap.small2(),
-          AppText.bodyMedium('Make sure this device is connected to your router, then choose Run Again. You can also choose a problem below for guided help.'),
+          Semantics(liveRegion: true, child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppText.titleMedium("We couldn't finish checking your connection"),
+              AppGap.small2(),
+              AppText.bodyMedium('Make sure this device is connected to your router, then choose Run Again. You can also choose a problem below for guided help.'),
+            ],
+          )),
+          if (more.isNotEmpty) ...[
+            const AppGap.small2(),
+            ..._moreSection(more),
+          ],
         ],
-      )));
+      ));
     }
 
     // Loading / preliminary state — show individual check progress
@@ -677,6 +698,7 @@ class _StatusCard extends StatelessWidget {
     // All clear state — "We didn't detect any issues" + flow cards (PRD v0.7 D-16)
     if (verdict!.isAllClear) {
       final good = InstantTestTone.good.color(context);
+      final more = _moreRows(context, devicesUnderPrimary: false);
       return _card(
         context,
         borderColor: good,
@@ -698,6 +720,12 @@ class _StatusCard extends StatelessWidget {
                 ),
               ),
             ]),
+            // No verdict finding, but a weak device or WiFi node is still
+            // worth a look.
+            if (more.isNotEmpty) ...[
+              const AppGap.small2(),
+              ..._moreSection(more),
+            ],
             const AppGap.medium(),
             if (showProblemCards)
               _problemCards(context,
@@ -714,9 +742,14 @@ class _StatusCard extends StatelessWidget {
 
     // Findings present
     final primary = verdict.primaryFinding!;
-    final visible = verdict.visibleFindings;
-    final hidden = verdict.hiddenFindings;
     final borderColor = _priorityColor(context, primary.priority);
+    // Device links belong to device findings (check 7) only; under an
+    // unrelated finding such as router load they read as its fix.
+    final devicesUnderPrimary = onTroubleshootDevice != null &&
+        primary.checkNumber == 7 &&
+        state.issueDevices.isNotEmpty;
+    final more =
+        _moreRows(context, devicesUnderPrimary: devicesUnderPrimary);
 
     return _card(
       context,
@@ -734,27 +767,25 @@ class _StatusCard extends StatelessWidget {
               ),
             ),
           ]),
-          const AppGap.small2(),
+          const AppGap.small1(),
+          // One paragraph: the measured fact (when the title is a summary),
+          // then what it means.
           Padding(
             padding: const EdgeInsets.only(left: Spacing.large3),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              if (primary.summary != null) AppText.bodyMedium(primary.headline),
-              AppText.bodyMedium(primary.explanation,
-                  color: scheme.onSurfaceVariant),
-            ]),
+            child: AppText.bodyMedium(
+                primary.summary != null
+                    ? '${primary.headline}. ${primary.explanation}'
+                    : primary.explanation,
+                color: scheme.onSurfaceVariant),
           ),
 
-          // Device links belong to device findings (check 7) only; under an
-          // unrelated finding such as router load they read as its fix.
-          if (onTroubleshootDevice != null &&
-              primary.checkNumber == 7 &&
-              state.issueDevices.isNotEmpty) ...[
+          if (devicesUnderPrimary) ...[
             const AppGap.small2(),
             for (final device in state.issueDevices.map((score) => score.client))
-              Align(
-                alignment: Alignment.centerLeft,
+              Padding(
+                padding: const EdgeInsets.only(left: Spacing.large3),
                 child: AppTextButton(
-                  'Help ${device.displayName} (${device.macAddress})',
+                  _helpLabel(device),
                   onTap: () => onTroubleshootDevice!(device),
                 ),
               ),
@@ -778,33 +809,17 @@ class _StatusCard extends StatelessWidget {
                 ),
               ),
             ),
-          ] else if (primary.hasAutoFix) ...[
-            const AppGap.small3(),
-            if ((visible.length > 1 || hidden.isNotEmpty) && primary.hasAutoFix)
-              Padding(
-                padding: const EdgeInsets.only(
-                    left: Spacing.large3, bottom: Spacing.small1),
-                child: AppText.bodySmall(
-                  'Start here — fixing this may help the others too',
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.only(left: Spacing.large3),
-              child: AppFilledButton(primary.actionLabel!,
-                onTap: () => onAction(primary.actionKey!),
-                icon: _actionIcon(primary.actionKey!)),
-            ),
           ],
 
-          if (visible.length > 1 || hidden.isNotEmpty)
-            DetailsDisclosure(
-              label: '${visible.length - 1 + hidden.length} other findings',
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                ...[...visible.skip(1), ...hidden].map((f) => _FindingRow(
-                    finding: f, onAction: onAction)),
-              ]),
-            ),
+          // One action row: the fix, then everything else we found.
+          const AppGap.small3(),
+          ..._moreSection(more,
+              fix: primary.hasAutoFix &&
+                      !(hasRestarted && primary.postRestartEscalation != null)
+                  ? AppFilledButton(primary.actionLabel!,
+                      onTap: () => onAction(primary.actionKey!),
+                      icon: _actionIcon(primary.actionKey!))
+                  : null),
 
           // U-01: keep the Fix-flow entry cards reachable even when a finding is
           // shown — the customer's problem may differ from what we detected.
@@ -823,6 +838,122 @@ class _StatusCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  static String _moreLabel(int count) =>
+      '$count more ${count == 1 ? 'thing' : 'things'} we found';
+
+  /// The action row (the fix, if any, then the "more" toggle) and, when
+  /// open, the list below it.
+  List<Widget> _moreSection(List<Widget> more, {Widget? fix}) => [
+        if (fix != null || more.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(left: Spacing.large3),
+            child: Wrap(
+              spacing: Spacing.medium,
+              runSpacing: Spacing.small2,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                if (fix != null) fix,
+                if (more.isNotEmpty)
+                  AppTextButton(
+                      findingsExpanded
+                          ? 'Hide ${_moreLabel(more.length)}'
+                          : _moreLabel(more.length),
+                      icon: findingsExpanded
+                          ? LinksysIcons.arrowDropUp
+                          : LinksysIcons.arrowDropDown,
+                      onTap: onToggleFindings),
+              ],
+            ),
+          ),
+        if (findingsExpanded && more.isNotEmpty)
+          Padding(
+            padding:
+                const EdgeInsets.only(left: Spacing.large3, top: Spacing.small2),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var i = 0; i < more.length; i++) ...[
+                    if (i > 0) const Divider(height: Spacing.medium),
+                    more[i],
+                  ],
+                ]),
+          ),
+      ];
+
+  /// Names are enough unless two devices share one; then the MAC tells
+  /// them apart.
+  String _helpLabel(DiagnosticClient device) {
+    final sameName = state.issueDevices
+        .where((score) => score.client.displayName == device.displayName)
+        .length;
+    return sameName > 1
+        ? 'Help ${device.displayName} (${device.macAddress})'
+        : 'Help ${device.displayName}';
+  }
+
+  /// Everything found besides the top result, one row and one action each:
+  /// other findings, devices with weak WiFi, and WiFi nodes with a weak link
+  /// to the router. Replaces the separate devices and mesh cards.
+  List<Widget> _moreRows(BuildContext context,
+      {required bool devicesUnderPrimary}) {
+    final listDevices = !devicesUnderPrimary && state.issueDevices.isNotEmpty;
+    final verdict = state.verdict;
+    final findings = (verdict == null || verdict.isAllClear
+            ? const <VerdictFinding>[]
+            : verdict.findings.skip(1))
+        .where((f) => !(listDevices && f.aboutIssueDevices));
+    final weakNodes = state.meshNodes.where((n) =>
+        !n.isController &&
+        (n.backhaulHealth == BackhaulHealth.weak ||
+            n.backhaulHealth == BackhaulHealth.critical));
+    return [
+      for (final finding in findings)
+        _FindingRow(finding: finding, onAction: onAction),
+      if (listDevices)
+        for (final score in state.issueDevices.take(5))
+          _MoreRow(
+            tone: InstantTestTone.warning,
+            title: _deviceTitle(score.client),
+            detail: [
+              if (score.client.signalDecibels != null)
+                '${score.client.signalDecibels} dBm',
+              if (score.client.band.isNotEmpty) 'on ${score.client.band}',
+            ].join(' '),
+            action: onTroubleshootDevice == null
+                ? null
+                : AppTextButton(_helpLabel(score.client),
+                    onTap: () => onTroubleshootDevice!(score.client)),
+          ),
+      if (listDevices && state.issueDevices.length > 5)
+        _MoreRow(
+          tone: InstantTestTone.warning,
+          title: '${state.issueDevices.length - 5} more devices need help',
+          action: onTroubleshootWeakDevices == null
+              ? null
+              : AppTextButton('Troubleshoot these devices',
+                  onTap: onTroubleshootWeakDevices),
+        ),
+      for (final node in weakNodes)
+        _MoreRow(
+          tone: node.backhaulHealth == BackhaulHealth.critical
+              ? InstantTestTone.problem
+              : InstantTestTone.warning,
+          title: '${node.name} has a weak connection to the router',
+          detail: 'Move it closer to the router, or connect it with an Ethernet cable.',
+          action: onViewNetwork == null
+              ? null
+              : AppTextButton('View WiFi nodes', onTap: onViewNetwork),
+        ),
+    ];
+  }
+
+  static String _deviceTitle(DiagnosticClient client) {
+    final weak = client.signalDecibels != null && client.signalDecibels! < -75;
+    return weak
+        ? '${client.displayName} has a weak WiFi signal'
+        : '${client.displayName} has a slow WiFi connection';
   }
 
   // Shared "what's wrong?" entry cards (U-01). Reachable from BOTH the all-clear
@@ -948,384 +1079,44 @@ class _FindingRow extends StatelessWidget {
   const _FindingRow({required this.finding, required this.onAction});
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _icon(context),
-          const AppGap.small2(),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.bodySmall(finding.headline),
-                if (finding.hasAutoFix)
-                  AppTextButton(finding.actionLabel!,
-                    onTap: () => onAction(finding.actionKey!)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _icon(BuildContext context) {
-    final tone = _StatusCard._priorityTone(finding.priority);
-    return Icon(tone.icon, color: tone.color(context), size: 18);
-  }
+  Widget build(BuildContext context) => _MoreRow(
+        tone: _StatusCard._priorityTone(finding.priority),
+        title: finding.headline,
+        action: finding.hasAutoFix
+            ? AppTextButton(finding.actionLabel!,
+                onTap: () => onAction(finding.actionKey!))
+            : null,
+      );
 }
 
-// ── Device issues card ────────────────────────────────────────────────────────
+// ── One row in "more things we found" ─────────────────────────────────────────
 
-class _DeviceIssuesCard extends StatelessWidget {
-  final InstantVerifyPivotState state;
-  final void Function(int flowIndex)? onNavigateToFlow;
-  final VoidCallback? onTroubleshoot;
-  const _DeviceIssuesCard({required this.state, this.onNavigateToFlow, this.onTroubleshoot});
+class _MoreRow extends StatelessWidget {
+  final InstantTestTone tone;
+  final String title;
+  final String? detail;
+  final Widget? action;
+  const _MoreRow(
+      {required this.tone, required this.title, this.detail, this.action});
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final issueDevices = state.issueDevices;
-
-    final tooFarCount = issueDevices
-        .where((d) => (d.client.signalDecibels ?? 0) < -75)
-        .length;
-    final advice = tooFarCount > issueDevices.length / 2
-        ? 'Try moving your router to a more central location to improve their signal.'
-        : 'Check for thick walls, metal objects, or appliances between these devices and your router.';
-
-    return AppCard(
-      padding: const EdgeInsets.all(Spacing.medium),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const AppText.titleMedium(
-            'Devices that may need help',
-          ),
-          AppText.bodyMedium('${issueDevices.length} device${issueDevices.length == 1 ? '' : 's'} may have a weak signal or a slow WiFi connection.'),
-          DetailsDisclosure(label: 'View affected devices', child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const AppGap.small3(),
-          ...issueDevices.take(5).map((d) => _DeviceIssueRow(score: d)),
-          if (issueDevices.length > 5)
-            Padding(
-              padding: const EdgeInsets.only(bottom: Spacing.small2),
-              child: AppText.bodySmall(
-                '+${issueDevices.length - 5} more devices',
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-          const AppGap.small2(),
-          AppText.bodySmall(advice, color: scheme.onSurfaceVariant),
-          ])),
-          // Direct action into the fix flow instead of only telling the user
-          // to go to My Devices (on-device feedback).
-          if (onNavigateToFlow != null || onTroubleshoot != null) ...[
-            const AppGap.small1(),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: AppTextButton('Troubleshoot these devices',
-                onTap: onTroubleshoot ?? () =>
-                    onNavigateToFlow!.call(2), // → Device connectivity flow
-                icon: LinksysIcons.resetWrench,
-              ),
-            ),
-          ],
-        ],
+    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(
+        padding: const EdgeInsets.only(top: Spacing.small1),
+        child: Icon(tone.icon, color: tone.color(context), size: 18),
       ),
-    );
-  }
-}
-
-// ── Device issue row ──────────────────────────────────────────────────────────
-
-class _DeviceIssueRow extends StatelessWidget {
-  final DeviceScore score;
-  const _DeviceIssueRow({required this.score});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final client = score.client;
-
-    // Determine primary issue reason
-    final bool weakSignal =
-        client.signalDecibels != null && client.signalDecibels! < -75;
-    final bool slowRate = (client.txRateMbps != null && client.txRateMbps! < 10) ||
-        (client.rxRateMbps != null && client.rxRateMbps! < 10);
-
-    // Build detail string: signal + rate
-    final parts = <String>[];
-    if (client.signalDecibels != null) {
-      parts.add('${client.signalDecibels} dBm');
-    }
-    if (client.txRateMbps != null || client.rxRateMbps != null) {
-      final tx = client.txRateMbps;
-      final rx = client.rxRateMbps;
-      if (tx != null && rx != null) {
-        parts.add('↓${rx}  ↑${tx} Mbps');
-      } else if (tx != null) {
-        parts.add('↑${tx} Mbps');
-      }
-    }
-    final detail = parts.join('  ·  ');
-
-    final issueColor = (weakSignal && slowRate
-            ? InstantTestTone.problem
-            : InstantTestTone.warning)
-        .color(context);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: issueColor,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const AppGap.small2(),
-            Expanded(
-              child: AppText.bodyMedium(
-                client.displayNameWithOui,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const AppGap.small2(),
-            AppText.bodySmall(
-              client.band,
-              color: scheme.onSurfaceVariant,
-            ),
-          ]),
-          if (detail.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(left: Spacing.medium, top: 2),
-              child: AppText.bodySmall(
-                detail,
-                color: weakSignal || slowRate
-                    ? issueColor
-                    : scheme.onSurfaceVariant,
-              ),
-            ),
-        ],
+      const AppGap.small2(),
+      Expanded(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          AppText.labelLarge(title),
+          if (detail != null && detail!.isNotEmpty)
+            AppText.bodySmall(detail!,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
+        ]),
       ),
-    );
-  }
-}
-
-// ── Mesh network card ─────────────────────────────────────────────────────────
-
-class _MeshCard extends StatelessWidget {
-  final InstantVerifyPivotState state;
-  const _MeshCard({required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    final nodes = state.meshNodes;
-    final deviceCount = nodes.length;
-
-    return AppCard(
-      padding: const EdgeInsets.all(Spacing.medium),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            const Icon(LinksysIcons.networkNode, size: 18),
-            const AppGap.small2(),
-            AppText.titleMedium(
-              'Mesh Network — $deviceCount device${deviceCount == 1 ? '' : 's'}',
-            ),
-          ]),
-          if (nodes.any((n) => n.backhaulHealth == BackhaulHealth.weak || n.backhaulHealth == BackhaulHealth.critical))
-            const AppText.bodyMedium('A WiFi node has a weak connection.'),
-          DetailsDisclosure(label: 'View WiFi node details', child: Column(children: [
-          const AppGap.small3(),
-          ...nodes.map((node) => _MeshNodeRow(
-                node: node,
-                clientCount: state.clientCountForNode(node.deviceId),
-              )),          ])),
-        ],
-      ),
-    );
-  }
-}
-
-class _MeshNodeRow extends StatelessWidget {
-  final MeshNodeInfo node;
-  final int clientCount;
-  const _MeshNodeRow({required this.node, required this.clientCount});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final good = InstantTestTone.good.color(context);
-    final warning = InstantTestTone.warning.color(context);
-    final problem = InstantTestTone.problem.color(context);
-
-    // ── Role icon + color ──────────────────────────────────────────────────
-    final IconData roleIcon;
-    final Color roleColor;
-    if (node.isController) {
-      roleIcon = LinksysIcons.router;
-      roleColor = scheme.primary;
-    } else if (node.hasWiredBackhaul) {
-      roleIcon = LinksysIcons.ethernet;
-      roleColor = good;
-    } else {
-      switch (node.backhaulHealth) {
-        case BackhaulHealth.strong:
-          roleIcon = LinksysIcons.wifi;
-          roleColor = good;
-        case BackhaulHealth.moderate:
-          roleIcon = LinksysIcons.wifi;
-          roleColor = warning;
-        case BackhaulHealth.weak:
-        case BackhaulHealth.critical:
-          roleIcon = LinksysIcons.error;
-          roleColor = problem;
-        case BackhaulHealth.unknown:
-          roleIcon = LinksysIcons.wifi;
-          roleColor = good;
-      }
-    }
-
-    // ── Backhaul health label + detail for satellite nodes ──────────────────
-    String? healthLabel;
-    String? healthDetail;
-    Color healthColor = scheme.onSurfaceVariant;
-
-    if (!node.isController) {
-      final speed = node.backhaulSpeedMbps;
-      final rssi = node.backhaulApRssi ?? node.backhaulRssi;
-
-      // Build compact data string: "201 Mbps · -33 dBm"
-      final parts = <String>[];
-      if (speed != null) parts.add('$speed Mbps');
-      if (rssi != null) parts.add('$rssi dBm');
-      final dataStr = parts.join(' · ');
-
-      switch (node.backhaulHealth) {
-        case BackhaulHealth.strong:
-          healthLabel = 'Good connection';
-          healthDetail = dataStr.isNotEmpty ? dataStr : null;
-          healthColor = good;
-        case BackhaulHealth.moderate:
-          healthLabel = 'Moderate';
-          healthDetail = '${dataStr.isNotEmpty ? '$dataStr — ' : ''}'
-              'may cause occasional slowness under load';
-          healthColor = warning;
-        case BackhaulHealth.weak:
-          healthLabel = 'Weak backhaul';
-          healthDetail = '${dataStr.isNotEmpty ? '$dataStr — ' : ''}'
-              'likely causing slowness, jitter, or drops. '
-              'Move ${node.name} closer to the main router.';
-          healthColor = problem;
-        case BackhaulHealth.critical:
-          healthLabel = 'Critical backhaul';
-          healthDetail = '${dataStr.isNotEmpty ? '$dataStr — ' : ''}'
-              'backhaul too poor to be reliable. '
-              'Move ${node.name} much closer to the main router, '
-              'or connect it by Ethernet cable.';
-          healthColor = problem;
-        case BackhaulHealth.unknown:
-          healthLabel = node.hasWiredBackhaul ? 'Wired — optimal' : null;
-          healthDetail = dataStr.isNotEmpty ? dataStr : null;
-          healthColor = good;
-      }
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: Spacing.small3),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(roleIcon, size: 18, color: roleColor),
-          const AppGap.small2(),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Name row + role badge + client count
-                Row(children: [
-                  // Role badge: "Parent" or "Child"
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                    margin: const EdgeInsets.only(right: 6),
-                    decoration: BoxDecoration(
-                      color: node.isController
-                          ? scheme.primaryContainer
-                          : scheme.surfaceContainerHighest,
-                      borderRadius:
-                          CustomTheme.of(context).radius.asBorderRadius().small,
-                    ),
-                    child: AppText.labelSmall(
-                      node.isController ? 'Parent' : 'Child',
-                      color: node.isController
-                          ? scheme.onPrimaryContainer
-                          : scheme.onSurfaceVariant,
-                    ),
-                  ),
-                  Expanded(
-                    child: AppText.bodySmall(
-                      node.name,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (clientCount > 0)
-                    AppText.bodySmall(
-                      '$clientCount device${clientCount == 1 ? '' : 's'}',
-                      color: scheme.onSurfaceVariant,
-                    ),
-                ]),
-
-                // Model + backhaul health
-                const AppGap.small1(),
-                Wrap(
-                  spacing: Spacing.small1,
-                  children: [
-                    if (node.model != null)
-                      AppText.bodySmall(node.model!,
-                          color: scheme.onSurfaceVariant),
-                    if (node.model != null && healthLabel != null)
-                      AppText.bodySmall('·', color: scheme.outlineVariant),
-                    if (healthLabel != null)
-                      AppText.bodySmall(healthLabel, color: healthColor),
-                  ],
-                ),
-
-                // Health detail (only for moderate/weak/critical)
-                if (healthDetail != null &&
-                    node.backhaulHealth != BackhaulHealth.strong &&
-                    node.backhaulHealth != BackhaulHealth.unknown) ...[
-                  const AppGap.small1(),
-                  AppText.bodySmall(
-                    healthDetail,
-                    color: healthColor,
-                  ),
-                ] else if (healthDetail != null &&
-                    (node.backhaulHealth == BackhaulHealth.strong ||
-                        node.backhaulHealth == BackhaulHealth.unknown)) ...[
-                  const AppGap.small1(),
-                  AppText.bodySmall(
-                    healthDetail,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+      if (action != null) ...[const AppGap.small2(), action!],
+    ]);
   }
 }
 
@@ -1897,7 +1688,8 @@ class _CheckRow extends StatelessWidget {
 
 class _LightGuideLink extends StatelessWidget {
   final bool showInlineCallout;
-  const _LightGuideLink({this.showInlineCallout = false});
+  final bool showLink;
+  const _LightGuideLink({this.showInlineCallout = false, this.showLink = true});
 
   @override
   Widget build(BuildContext context) {
@@ -1942,14 +1734,11 @@ class _LightGuideLink extends StatelessWidget {
               ],
             ),
           ),
-        // Persistent link (always visible)
-        Align(
-          alignment: Alignment.centerRight,
-          child: AppTextButton('What does my router light mean?',
+        if (showLink)
+          AppTextButton('What does my router light mean?',
             icon: LinksysIcons.lightBulb,
             onTap: () => _showLightGuide(context),
           ),
-        ),
       ],
     );
   }
