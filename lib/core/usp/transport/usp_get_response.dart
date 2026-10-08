@@ -1,8 +1,10 @@
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
+
 /// Decodes the unified GET response into the transport's flat path map.
 ///
-/// Transport failures are returned as fulfilled responses with error code 9999.
-/// Throw them in the standard error format so authentication recovery and the
-/// service error mapper see the failure before missing paths are interpreted.
+/// Client failures are returned as fulfilled responses with error code 9999.
+/// Preserve the underlying category in the standard error format so auth
+/// recovery and the service error mapper see it before interpreting missing paths.
 /// Ordinary per-path errors retain the existing partial-read contract: an
 /// unsupported optional path is absent, while successful paths remain usable.
 Map<String, String> decodeUspGetResponse(Object? response) {
@@ -19,10 +21,7 @@ Map<String, String> decodeUspGetResponse(Object? response) {
       final code = error['errorCode'];
       if (code != 9999 && code != '9999') continue;
       final message = error['errorMessage']?.toString() ?? 'Request failed';
-      final detail = message.startsWith('Transport error: ')
-          ? message
-          : 'Transport error: $message';
-      throw 'Get failed: $detail';
+      throw 'Get failed: ${unwrapUspClientError(message)}';
     }
   }
 

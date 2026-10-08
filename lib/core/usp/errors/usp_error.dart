@@ -121,6 +121,30 @@ UspError? parseUspError(Object error) {
   return (UspErrorCategory.protocol, rest);
 }
 
+/// Restores the underlying category inside a client's code-9999 envelope.
+///
+/// The envelope prefixes every failure with `Transport error: `, including
+/// protocol refusals and authentication failures. Remove that one wrapper only
+/// when its detail starts with a known category; never infer a category from
+/// words inside the detail. Older untyped messages keep their transport fallback.
+String unwrapUspClientError(String message) {
+  const transportPrefix = 'Transport error: ';
+  final detail = message.startsWith(transportPrefix)
+      ? message.substring(transportPrefix.length)
+      : message;
+  const categoryPrefixes = [
+    transportPrefix,
+    'Protocol error: ',
+    'Authentication error: ',
+    'Operation error: ',
+    'Validation error: ',
+  ];
+  if (categoryPrefixes.any(detail.startsWith)) return detail;
+  return message.startsWith(transportPrefix)
+      ? message
+      : '$transportPrefix$message';
+}
+
 // =============================================================================
 // ServiceError mapping
 // =============================================================================

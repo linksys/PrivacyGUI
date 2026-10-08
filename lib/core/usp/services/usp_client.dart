@@ -1029,11 +1029,11 @@ class UspClient {
   }) =>
       // An Operate can change data as well (SetTimeSettings, SetMACFilter).
       _invalidatingReads(() => _operate(
-        command,
-        args: args,
-        retryOnAuthFailure: retryOnAuthFailure,
-        redactArguments: redactArguments,
-      ));
+            command,
+            args: args,
+            retryOnAuthFailure: retryOnAuthFailure,
+            redactArguments: redactArguments,
+          ));
 
   Future<Map<String, dynamic>> _operate(
     String command, {
