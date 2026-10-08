@@ -1,4 +1,4 @@
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
@@ -21,8 +21,8 @@ Future<bool> confirmAndDeauth(
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Force reconnect?'),
-      content: Text(
+      title: const AppText.titleMedium('Force reconnect?'),
+      content: AppText.bodyMedium(
           '$displayName will briefly lose its WiFi connection and reconnect '
           'automatically within a few seconds, which may improve its '
           'connection quality.'),
@@ -40,8 +40,10 @@ Future<bool> confirmAndDeauth(
     await ref.read(instantVerifyPivotProvider.notifier).deauthClient(mac);
   } catch (_) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('The reconnect request could not be confirmed. Check the device connection before trying again.'),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: AppText.bodyMedium(
+            'The reconnect request could not be confirmed. Check the device connection before trying again.',
+            color: Theme.of(context).colorScheme.onInverseSurface),
       ));
     }
     return false;
@@ -51,7 +53,9 @@ Future<bool> confirmAndDeauth(
   if (!context.mounted) return true;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
-      content: Text('$displayName disconnected — it should reconnect in a moment.'),
+      content: AppText.bodyMedium(
+          '$displayName disconnected — it should reconnect in a moment.',
+          color: Theme.of(context).colorScheme.onInverseSurface),
       duration: const Duration(seconds: 3),
       behavior: SnackBarBehavior.floating,
     ),

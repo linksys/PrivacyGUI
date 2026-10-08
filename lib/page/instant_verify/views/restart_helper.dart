@@ -1,4 +1,5 @@
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
@@ -19,9 +20,10 @@ Future<bool> confirmAndRestart(BuildContext context, WidgetRef ref,
       Uri.base.host.isNotEmpty ? Uri.base.host : 'your router';
   if (state.hasRestartedThisSession) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text(
-            'You\'ve already restarted this session. If the issue persists, contact Linksys Support.'),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: AppText.bodyMedium(
+            'You\'ve already restarted this session. If the issue persists, contact Linksys Support.',
+            color: Theme.of(context).colorScheme.onInverseSurface),
         behavior: SnackBarBehavior.floating,
       ));
     }
@@ -30,8 +32,8 @@ Future<bool> confirmAndRestart(BuildContext context, WidgetRef ref,
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Restart your router?'),
-      content: Text(
+      title: const AppText.titleMedium('Restart your router?'),
+      content: AppText.bodyMedium(
           'All devices will disconnect for about 2 minutes.\n\n'
           'If you\'re on WiFi, this page will go blank. '
           'Wait 2 minutes, reconnect to your WiFi, then return to $returnAddress.'),
@@ -57,12 +59,12 @@ Future<bool> confirmAndRestart(BuildContext context, WidgetRef ref,
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-                width: 22,
-                height: 22,
+                width: Spacing.large2,
+                height: Spacing.large2,
                 child: CircularProgressIndicator(strokeWidth: 2)),
-            SizedBox(width: 18),
+            AppGap.large1(),
             Expanded(
-              child: Text('Restarting your router…\n'
+              child: AppText.bodyMedium('Restarting your router…\n'
                   'This takes about 2 minutes.'),
             ),
           ],
@@ -75,8 +77,10 @@ Future<bool> confirmAndRestart(BuildContext context, WidgetRef ref,
     } catch (_) {
       if (progressRoute.isActive) navigator.removeRoute(progressRoute);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('The restart could not be confirmed. Wait for your router to reconnect, then check again before retrying.'),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: AppText.bodyMedium(
+              'The restart could not be confirmed. Wait for your router to reconnect, then check again before retrying.',
+              color: Theme.of(context).colorScheme.onInverseSurface),
         ));
       }
       return false;

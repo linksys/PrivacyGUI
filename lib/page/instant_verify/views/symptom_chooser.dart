@@ -1,5 +1,5 @@
 import 'instant_test_layout.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:flutter/material.dart';
@@ -25,10 +25,10 @@ class SymptomChooser extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const UserStepHeading('What needs help?', centered: true),
-        const SizedBox(height: 8),
-        const Text("Choose the problem you're having.",
+        const AppGap.small2(),
+        const AppText.bodyMedium("Choose the problem you're having.",
             textAlign: TextAlign.center),
-        const SizedBox(height: 12),
+        const AppGap.small3(),
         LayoutBuilder(builder: (context, constraints) {
           final columns = InstantTestLayout.actionColumns(constraints.maxWidth);
           final width =
@@ -48,7 +48,7 @@ class SymptomChooser extends StatelessWidget {
             ],
           );
         }),
-        const SizedBox(height: 24),
+        const AppGap.large2(),
       ],
     );
   }

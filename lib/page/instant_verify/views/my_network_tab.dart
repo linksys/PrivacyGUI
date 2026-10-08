@@ -1,12 +1,16 @@
 import 'instant_test_layout.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
+import 'instant_test_style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
 import 'package:privacy_gui/page/instant_verify/views/restart_helper.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 /// PRD v0.7 Tab 2: My Network
 ///
@@ -35,12 +39,11 @@ class MyNetworkTab extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Expanded(
-                child: Text('Your Network',
-                    style: Theme.of(context).textTheme.titleLarge),
+              const Expanded(
+                child: AppText.titleLarge('Your Network'),
               ),
               IconButton(
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(LinksysIcons.refresh),
                 tooltip: 'Refresh',
                 onPressed: state.phase == PivotLoadPhase.loading
                     ? null
@@ -50,20 +53,20 @@ class MyNetworkTab extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const AppGap.small2(),
           _InternetConnectionCard(state: state, ref: ref),
-          const SizedBox(height: 12),
+          const AppGap.small3(),
           _YourRouterCard(state: state, ref: ref),
           if (state.isMeshNetwork) ...[
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             _SatelliteNodesSection(state: state),
           ],
-          const SizedBox(height: 12),
+          const AppGap.small3(),
           _WifiOverviewCard(state: state),
           // Only show guest network card when it's enabled — not a config screen
           if (state.guestNetwork != null &&
               state.guestNetwork!['isGuestNetworkEnabled'] == true) ...[
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             _GuestNetworkCard(state: state),
           ],
         ],
@@ -85,54 +88,47 @@ class _InternetConnectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final connected = state.wanConnected;
-    final colors = Theme.of(context).colorScheme;
+    final tone = connected ? InstantTestTone.good : InstantTestTone.problem;
 
     return AppCard(
       padding: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(Spacing.medium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Icon(
-                  connected ? Icons.cloud_done : Icons.cloud_off,
-                  color: connected ? Colors.green : Colors.red,
+                  connected ? LinksysIcons.public : LinksysIcons.publicOff,
+                  color: tone.color(context),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'Internet Connection',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w600),
-                ),
+                const AppGap.small2(),
+                const AppText.titleMedium('Internet Connection'),
               ],
             ),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             _infoRow(context, 'Status',
                 connected ? 'Connected' : 'Not Connected',
-                valueColor: connected ? Colors.green : Colors.red),
+                valueColor: tone.color(context)),
             if (state.wanConnectionType != null)
               _infoRow(context, 'Type', state.wanConnectionType!),
             if (connected && state.wanIpAddress != null)
               _infoRow(context, 'IP Address', state.wanIpAddress!),
             if (!connected && !state.hasRestartedThisSession) ...[
-              const SizedBox(height: 12),
+              const AppGap.small3(),
               SizedBox(
                 width: double.infinity,
                 child: AppOutlinedButton('Restart Router',
                 onTap: () => confirmAndRestart(context, ref),
-                icon: Icons.restart_alt),
+                icon: LinksysIcons.restartAlt),
               ),
             ],
             if (!connected && state.hasRestartedThisSession) ...[
-              const SizedBox(height: 12),
-              Text(
+              const AppGap.small3(),
+              AppText.bodySmall(
                 'You already restarted — if it\'s still disconnected, contact Linksys Support.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ],
           ],
@@ -160,27 +156,24 @@ class _YourRouterCard extends StatelessWidget {
     return AppCard(
       padding: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(Spacing.medium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.router, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 8),
-                Text(
+                Icon(LinksysIcons.router,
+                    color: Theme.of(context).colorScheme.primary),
+                const AppGap.small2(),
+                AppText.titleMedium(
                   // Show the controller's custom name when available.
                   state.meshNodes.any((n) => n.isController)
                       ? state.meshNodes.firstWhere((n) => n.isController).name
                       : 'Your Router',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             if (state.routerModel != null)
               _infoRow(context, 'Model', state.routerModel!),
             _infoRow(
@@ -189,48 +182,52 @@ class _YourRouterCard extends StatelessWidget {
               state.firmwareUpdateAvailable
                   ? 'Update available'
                   : 'Up to date',
-              valueColor:
-                  state.firmwareUpdateAvailable ? Colors.orange : Colors.green,
+              valueColor: state.firmwareUpdateAvailable
+                  ? InstantTestTone.warning.color(context)
+                  : InstantTestTone.good.color(context),
             ),
             if (state.firmwareUpdateAvailable) ...[
-              const SizedBox(height: 8),
+              const AppGap.small2(),
               SizedBox(
                 width: double.infinity,
                 child: AppOutlinedButton('Update Now',
                 onTap: () {
                     ref.read(instantVerifyPivotProvider.notifier).triggerFirmwareUpdate();
                   },
-                icon: Icons.system_update),
+                icon: LinksysIcons.cloudDownload),
               ),
             ],
             if (showUptime) ...[
-              const SizedBox(height: 8),
+              const AppGap.small2(),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(Spacing.small3),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(8),
+                  color: InstantTestTone.warning.container(context),
+                  borderRadius:
+                      CustomTheme.of(context).radius.asBorderRadius().medium,
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.schedule, size: 18, color: Colors.orange),
-                    const SizedBox(width: 8),
+                    Icon(LinksysIcons.uptime,
+                        size: 18,
+                        color: InstantTestTone.warning.onContainer(context)),
+                    const AppGap.small2(),
                     Expanded(
-                      child: Text(
+                      child: AppText.bodyMedium(
                         'Running for $uptimeDays days — a restart may help',
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        color: InstantTestTone.warning.onContainer(context),
                       ),
                     ),
                   ],
                 ),
               ),
               if (!state.hasRestartedThisSession) ...[
-                const SizedBox(height: 8),
+                const AppGap.small2(),
                 SizedBox(
                   width: double.infinity,
                   child: AppOutlinedButton('Restart Router',
                 onTap: () => confirmAndRestart(context, ref),
-                icon: Icons.restart_alt),
+                icon: LinksysIcons.restartAlt),
                 ),
               ],
             ],
@@ -256,15 +253,9 @@ class _SatelliteNodesSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            'Your Child Nodes',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w600),
-          ),
+        const Padding(
+          padding: EdgeInsets.only(left: Spacing.small1, bottom: Spacing.small2),
+          child: AppText.titleMedium('Your Child Nodes'),
         ),
         for (int i = 0; i < satellites.length; i++)
           _SatelliteNodeCard(
@@ -298,21 +289,21 @@ class _SatelliteNodeCard extends StatelessWidget {
 
     final speedSuffix = node.backhaulSpeedMbps != null ? ' (${node.backhaulSpeedMbps} Mbps)' : '';
     String backhaulLabel;
-    Color? backhaulColor;
+    InstantTestTone? backhaulTone;
     if (!isOnline) {
       backhaulLabel = 'Offline — not responding';
-      backhaulColor = Colors.red;
+      backhaulTone = InstantTestTone.problem;
     } else if (isWired) {
       backhaulLabel = 'Connected by Ethernet$speedSuffix';
     } else if (isWeak) {
       backhaulLabel = 'Connected wirelessly — ${health == BackhaulHealth.critical ? 'Critical' : 'Weak'}$speedSuffix';
-      backhaulColor = Colors.orange;
+      backhaulTone = InstantTestTone.warning;
     } else if (health == BackhaulHealth.moderate) {
       backhaulLabel = 'Connected wirelessly — Moderate$speedSuffix';
-      backhaulColor = Colors.orange;
+      backhaulTone = InstantTestTone.warning;
     } else if (health == BackhaulHealth.strong) {
       backhaulLabel = 'Connected wirelessly — Good$speedSuffix';
-      backhaulColor = Colors.green;
+      backhaulTone = InstantTestTone.good;
     } else {
       // Online but no backhaul health data — don't assert "Good".
       backhaulLabel = 'Connected wirelessly — Health unknown';
@@ -320,64 +311,59 @@ class _SatelliteNodeCard extends StatelessWidget {
 
     return AppCard(
       padding: EdgeInsets.zero,
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: Spacing.small2),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(Spacing.medium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Icon(
-                  Icons.sensors,
+                  LinksysIcons.networkNode,
                   color: !isOnline
-                      ? Colors.red
+                      ? InstantTestTone.problem.color(context)
                       : isWeak
-                          ? Colors.orange
+                          ? InstantTestTone.warning.color(context)
                           : Theme.of(context).colorScheme.primary,
                   size: 20,
                 ),
-                const SizedBox(width: 8),
+                const AppGap.small2(),
                 Expanded(
-                  child: Text(
+                  child: AppText.titleSmall(
                     // Show the node's custom name (was hardcoded "Child Node N").
                     node.name,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),
                 if (!isOnline)
-                  const Icon(Icons.error_outline, color: Colors.red, size: 18)
+                  Icon(InstantTestTone.problem.icon,
+                      color: InstantTestTone.problem.color(context), size: 18)
                 else if (isWeak)
-                  const Icon(Icons.warning_amber, color: Colors.orange, size: 18),
+                  Icon(InstantTestTone.warning.icon,
+                      color: InstantTestTone.warning.color(context), size: 18),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
+            const AppGap.small2(),
+            AppText.bodyMedium(
               backhaulLabel,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: backhaulColor,
-                  ),
+              color: backhaulTone?.color(context),
             ),
-            Text(
+            AppText.bodySmall(
               '$deviceCount device${deviceCount == 1 ? '' : 's'} connected',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             if (isWeak) ...[
-              const SizedBox(height: 8),
+              const AppGap.small2(),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(Spacing.small3),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(8),
+                  color: InstantTestTone.warning.container(context),
+                  borderRadius:
+                      CustomTheme.of(context).radius.asBorderRadius().medium,
                 ),
-                child: Text(
+                child: AppText.bodyMedium(
                   'This node has a weak connection to your router. Move it closer or connect it with an Ethernet cable.',
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  color: InstantTestTone.warning.onContainer(context),
                 ),
               ),
             ],
@@ -407,42 +393,38 @@ class _WifiOverviewCard extends StatelessWidget {
     return AppCard(
       padding: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(Spacing.medium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.wifi, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 8),
-                Text(
-                  'WiFi Overview',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w600),
-                ),
+                Icon(LinksysIcons.wifi,
+                    color: Theme.of(context).colorScheme.primary),
+                const AppGap.small2(),
+                const AppText.titleMedium('WiFi Overview'),
               ],
             ),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             _bandRow(context, '$count24 device${count24 == 1 ? '' : 's'} on 2.4 GHz',
                 'slower, longer range'),
-            const SizedBox(height: 4),
+            const AppGap.small1(),
             _bandRow(context, '$count5 device${count5 == 1 ? '' : 's'} on 5 GHz',
                 'faster, shorter range'),
             if (isOvercrowded) ...[
-              const SizedBox(height: 12),
+              const AppGap.small3(),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(Spacing.small3),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(8),
+                  color: InstantTestTone.warning.container(context),
+                  borderRadius:
+                      CustomTheme.of(context).radius.asBorderRadius().medium,
                 ),
-                child: Text(
+                child: AppText.bodyMedium(
                   'Many of your devices are on the slower 2.4 GHz band. '
                   'Connect fast devices like phones and laptops to the '
                   '5 GHz network for better speeds.',
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  color: InstantTestTone.warning.onContainer(context),
                 ),
               ),
             ],
@@ -456,13 +438,11 @@ class _WifiOverviewCard extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+          child: AppText.bodyMedium(label),
         ),
-        Text(
+        AppText.bodySmall(
           '($hint)',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ],
     );
@@ -487,38 +467,28 @@ class _GuestNetworkCard extends StatelessWidget {
     return AppCard(
       padding: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(Spacing.medium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.group, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Guest Network',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600),
-                  ),
+                Icon(LinksysIcons.group,
+                    color: Theme.of(context).colorScheme.primary),
+                const AppGap.small2(),
+                const Expanded(
+                  child: AppText.titleMedium('Guest Network'),
                 ),
-                Text(
+                AppText.labelLarge(
                   'On',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: Colors.green,
-                        fontWeight: FontWeight.w600,
-                      ),
+                  color: InstantTestTone.good.color(context),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text(
+            const AppGap.small1(),
+            AppText.bodySmall(
               '$count guest device${count == 1 ? '' : 's'} connected',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ],
         ),
@@ -553,26 +523,22 @@ class _GuestNetworkCard extends StatelessWidget {
 Widget _infoRow(BuildContext context, String label, String value,
     {Color? valueColor}) {
   return Padding(
-    padding: const EdgeInsets.only(bottom: 4),
+    padding: const EdgeInsets.only(bottom: Spacing.small1),
     child: Row(
       children: [
         SizedBox(
           width: 100,
-          child: Text(
+          child: AppText.bodyMedium(
             label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
         Expanded(
-          child: SelectableText(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: valueColor,
-                  fontWeight: valueColor != null ? FontWeight.w600 : null,
-                ),
-          ),
+          // A status value is emphasised in its tone color; plain values are
+          // body copy.
+          child: valueColor != null
+              ? AppText.labelLarge(value, color: valueColor, selectable: true)
+              : AppText.bodyMedium(value, selectable: true),
         ),
       ],
     ),

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 import '../services/copy_text.dart';
 
 /// Copy the Flutter selection, including on router origins where the browser's
@@ -48,9 +49,10 @@ class _DiagnosticSelectionAreaState extends State<DiagnosticSelectionArea> {
     if (text == null || text.isEmpty) return;
     final copied = await copyDiagnosticText(text);
     if (!copied && mounted) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(const SnackBar(
-        content: Text(
-            'Copy was blocked by your browser. Allow clipboard access and try again.'),
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+        content: AppText.bodyMedium(
+            'Copy was blocked by your browser. Allow clipboard access and try again.',
+            color: Theme.of(context).colorScheme.onInverseSurface),
       ));
     }
   }

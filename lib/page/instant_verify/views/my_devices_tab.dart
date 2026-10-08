@@ -1,6 +1,6 @@
 import 'diagnostic_selection_area.dart';
 import 'instant_test_layout.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
+import 'instant_test_style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
@@ -9,7 +9,11 @@ import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
 import 'package:privacy_gui/page/instant_verify/views/device_actions.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 /// PRD v0.7 Tab 1: My Devices
 ///
@@ -32,8 +36,8 @@ class MyDevicesTab extends ConsumerWidget {
     if (state.clients.isEmpty) {
       return const Center(
         child: Padding(
-          padding: EdgeInsets.all(32),
-          child: Text(
+          padding: EdgeInsets.all(Spacing.large3),
+          child: AppText.bodyMedium(
             'No devices found. Run Instant-Test first to discover connected devices.',
             textAlign: TextAlign.center,
           ),
@@ -62,23 +66,20 @@ class MyDevicesTab extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    AppText.titleLarge(
                       '$totalCount device${totalCount == 1 ? '' : 's'} connected',
-                      style: Theme.of(context).textTheme.titleLarge,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
+                    const AppGap.small1(),
+                    AppText.bodyMedium(
                       '$wirelessCount wireless, $wiredCount wired',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ],
                 ),
               ),
               // Re-scan for devices (e.g. a device that joined after the last test)
               IconButton(
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(LinksysIcons.refresh),
                 tooltip: 'Refresh devices',
                 onPressed: state.phase == PivotLoadPhase.loading
                     ? null
@@ -88,7 +89,7 @@ class MyDevicesTab extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const AppGap.medium(),
 
           // ── Device list ─────────────────────────────────────────────
           if (state.isMeshNetwork)
@@ -138,46 +139,46 @@ String _badgeLabel(_SignalBadge badge) {
   }
 }
 
-Color _badgeColor(_SignalBadge badge, ColorScheme colors) {
+InstantTestTone _badgeTone(_SignalBadge badge) {
   switch (badge) {
     case _SignalBadge.good:
-      return Colors.green;
+      return InstantTestTone.good;
     case _SignalBadge.weak:
-      return Colors.orange;
+      return InstantTestTone.warning;
     case _SignalBadge.poor:
-      return Colors.red;
+      return InstantTestTone.problem;
     case _SignalBadge.wired:
-      return colors.onSurfaceVariant;
+      return InstantTestTone.neutral;
   }
 }
 
 IconData _deviceIcon(DiagnosticClient client) {
-  if (!client.isWireless) return Icons.cable;
+  if (!client.isWireless) return LinksysIcons.ethernet;
   final name = (client.hostname ?? '').toLowerCase();
   final mfr = (client.manufacturer ?? '').toLowerCase();
   if (name.contains('iphone') || name.contains('android') || name.contains('pixel') || name.contains('galaxy')) {
-    return Icons.phone_android;
+    return LinksysIcons.smartPhone;
   }
-  if (name.contains('ipad') || name.contains('tablet')) return Icons.tablet;
+  if (name.contains('ipad') || name.contains('tablet')) return LinksysIcons.smartPhone;
   if (name.contains('tv') || name.contains('roku') || name.contains('shield') || mfr.contains('roku') || mfr.contains('nvidia')) {
-    return Icons.tv;
+    return LinksysIcons.smartTv;
   }
   if (name.contains('echo') || name.contains('nest') || name.contains('sonos') || mfr.contains('sonos') || mfr.contains('amazon')) {
-    return Icons.speaker;
+    return LinksysIcons.musicSpeaker;
   }
   if (name.contains('macbook') || name.contains('laptop') || name.contains('surface')) {
-    return Icons.laptop;
+    return LinksysIcons.computer;
   }
   if (name.contains('desktop') || name.contains('pc') || mfr.contains('dell') || mfr.contains('hp')) {
-    return Icons.computer;
+    return LinksysIcons.computer;
   }
   if (mfr.contains('espressif') || mfr.contains('tuya') || mfr.contains('wyze')) {
-    return Icons.sensors;
+    return LinksysIcons.smartPlug;
   }
   if (mfr.contains('nintendo') || mfr.contains('sony/ps') || mfr.contains('xbox')) {
-    return Icons.sports_esports;
+    return LinksysIcons.stadiaController;
   }
-  return Icons.devices;
+  return LinksysIcons.devices;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -326,39 +327,37 @@ class _NodeGroupState extends State<_NodeGroup> {
 
     return AppCard(
       padding: EdgeInsets.zero,
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: Spacing.small3),
       child: Column(
         children: [
           InkWell(
             onTap: () => setState(() => _expanded = !_expanded),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            borderRadius: BorderRadius.vertical(
+                top: CustomTheme.of(context).radius.medium),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: Spacing.medium, vertical: Spacing.small3),
               child: Row(
                 children: [
                   Icon(
-                    _expanded ? Icons.expand_more : Icons.chevron_right,
+                    _expanded
+                        ? LinksysIcons.arrowDropDown
+                        : LinksysIcons.chevronRight,
                     color: colors.onSurfaceVariant,
                   ),
-                  const SizedBox(width: 8),
+                  const AppGap.small2(),
                   Expanded(
-                    child: Text(
-                      widget.label,
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
+                    child: AppText.titleMedium(widget.label),
                   ),
-                  Text(
+                  AppText.bodySmall(
                     '$clientCount device${clientCount == 1 ? '' : 's'}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
+                    color: colors.onSurfaceVariant,
                   ),
                   if (widget.node?.hasWeakBackhaul == true) ...[
-                    const SizedBox(width: 8),
-                    Icon(Icons.warning_amber, color: Colors.orange, size: 18),
+                    const AppGap.small2(),
+                    Icon(InstantTestTone.warning.icon,
+                        color: InstantTestTone.warning.color(context),
+                        size: 18),
                   ],
                 ],
               ),
@@ -368,12 +367,10 @@ class _NodeGroupState extends State<_NodeGroup> {
             const Divider(height: 1),
             if (widget.clients.isEmpty)
               Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
+                padding: const EdgeInsets.all(Spacing.medium),
+                child: AppText.bodyMedium(
                   'No devices connected',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
+                  color: colors.onSurfaceVariant,
                 ),
               )
             else
@@ -399,61 +396,56 @@ class _DeviceRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final badge = _badgeFor(client);
+    final tone = _badgeTone(badge);
     final colors = Theme.of(context).colorScheme;
 
     return InkWell(
       onTap: () => _showDeviceDetail(context, client, state, onNavigateToFlow: onNavigateToFlow),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: Spacing.medium, vertical: 10),
         child: Row(
           children: [
             Icon(_deviceIcon(client), size: 20, color: colors.onSurfaceVariant),
-            const SizedBox(width: 8),
+            const AppGap.small2(),
             Expanded(
               child: client.hostname == null && client.manufacturer != null
                   ? Tooltip(
                       message: 'Name from device hardware ID — many smart home brands show unfamiliar names',
-                      child: Text(
+                      child: AppText.bodyMedium(
                         client.displayNameWithOui,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     )
-                  : Text(
+                  : AppText.bodyMedium(
                       client.displayNameWithOui,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium,
                     ),
             ),
-            const SizedBox(width: 4),
+            const AppGap.small1(),
             if (client.isWireless)
               Padding(
                 padding: const EdgeInsets.only(right: 6),
-                child: Text(
+                child: AppText.bodySmall(
                   client.band,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
+                  color: colors.onSurfaceVariant,
                 ),
               ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: Spacing.small2, vertical: 2),
               decoration: BoxDecoration(
-                color: _badgeColor(badge, colors).withOpacity(0.12),
-                borderRadius: BorderRadius.circular(12),
+                color: tone.container(context),
+                borderRadius:
+                    CustomTheme.of(context).radius.asBorderRadius().medium,
               ),
-              child: Text(
+              child: AppText.labelSmall(
                 _badgeLabel(badge),
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: _badgeColor(badge, colors),
-                      fontWeight: FontWeight.w600,
-                    ),
+                color: tone.onContainer(context),
               ),
             ),
             if (badge == _SignalBadge.poor || badge == _SignalBadge.weak)
               Padding(
-                padding: const EdgeInsets.only(left: 4),
-                child: Icon(Icons.warning_amber, size: 14, color: _badgeColor(badge, colors)),
+                padding: const EdgeInsets.only(left: Spacing.small1),
+                child: Icon(tone.icon, size: 14, color: tone.color(context)),
               ),
           ],
         ),
@@ -475,8 +467,9 @@ void _showDeviceDetail(
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    shape: RoundedRectangleBorder(
+      borderRadius:
+          BorderRadius.vertical(top: CustomTheme.of(context).radius.large),
     ),
     builder: (context) => DiagnosticSelectionArea(
       child: _DeviceDetailSheet(
@@ -513,7 +506,8 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
 
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+        padding: const EdgeInsets.fromLTRB(
+            Spacing.large2, Spacing.medium, Spacing.large2, Spacing.large2),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -521,48 +515,49 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
             // Drag handle
             Center(
               child: Container(
-                width: 40,
-                height: 4,
+                width: Spacing.large4,
+                height: Spacing.small1,
                 decoration: BoxDecoration(
-                  color: colors.onSurfaceVariant.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(2),
+                  color: colors.outlineVariant,
+                  borderRadius:
+                      CustomTheme.of(context).radius.asBorderRadius().small,
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const AppGap.medium(),
 
             // Device name + icon
             Row(
               children: [
                 Icon(_deviceIcon(client), size: 32, color: colors.primary),
-                const SizedBox(width: 12),
+                const AppGap.small3(),
                 Expanded(
-                  child: SelectableText(
+                  child: AppText.titleLarge(
                     client.displayNameWithOui,
-                    style: Theme.of(context).textTheme.titleLarge,
+                    selectable: true,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const AppGap.medium(),
 
             // Connection info
             _connectionInfo(context),
-            const SizedBox(height: 16),
+            const AppGap.medium(),
 
             // IP + MAC (selectable for copy)
             _deviceMeta(context, colors),
-            const SizedBox(height: 16),
+            const AppGap.medium(),
 
             // Signal quality bar (wireless only)
             if (client.isWireless) ...[
               _signalBar(context, badge, colors),
-              const SizedBox(height: 16),
+              const AppGap.medium(),
             ],
 
             // Advice
             _advice(context, badge),
-            const SizedBox(height: 16),
+            const AppGap.medium(),
 
             // Actions
             _actions(context, colors),
@@ -578,14 +573,12 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
     if (!client.isWireless) {
       return Row(
         children: [
-          Icon(Icons.cable, size: 18, color: colors.onSurfaceVariant),
-          const SizedBox(width: 8),
+          Icon(LinksysIcons.ethernet, size: 18, color: colors.onSurfaceVariant),
+          const AppGap.small2(),
           Expanded(
-            child: Text(
+            child: AppText.bodyMedium(
               'Connected by Ethernet cable',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colors.onSurfaceVariant,
-                  ),
+              color: colors.onSurfaceVariant,
             ),
           ),
         ],
@@ -617,14 +610,12 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
 
     return Row(
       children: [
-        Icon(Icons.wifi, size: 18, color: colors.onSurfaceVariant),
-        const SizedBox(width: 8),
+        Icon(LinksysIcons.wifi, size: 18, color: colors.onSurfaceVariant),
+        const AppGap.small2(),
         Expanded(
-          child: Text(
+          child: AppText.bodyMedium(
             connectionLabel,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colors.onSurfaceVariant,
-                ),
+            color: colors.onSurfaceVariant,
           ),
         ),
       ],
@@ -632,7 +623,7 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
   }
 
   Widget _signalBar(BuildContext context, _SignalBadge badge, ColorScheme colors) {
-    final color = _badgeColor(badge, colors);
+    final color = _badgeTone(badge).color(context);
     final fraction = badge == _SignalBadge.good
         ? 1.0
         : badge == _SignalBadge.weak
@@ -644,21 +635,18 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
       children: [
         Row(
           children: [
-            Text(
+            AppText.labelLarge(
               'Signal: ${_badgeLabel(badge)}',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w600,
-                  ),
+              color: color,
             ),
           ],
         ),
-        const SizedBox(height: 6),
+        const AppGap.small2(),
         ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: CustomTheme.of(context).radius.asBorderRadius().small,
           child: LinearProgressIndicator(
             value: fraction,
-            minHeight: 8,
+            minHeight: Spacing.small2,
             backgroundColor: colors.surfaceContainerHighest,
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
@@ -668,16 +656,13 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
   }
 
   Widget _advice(BuildContext context, _SignalBadge badge) {
-    final textStyle = Theme.of(context).textTheme.bodyMedium;
-
     if (!client.isWireless) {
       // Wired device advice — PRD spec: checklist + restart option
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('If this device has connection issues:',
-              style: textStyle?.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
+          const AppText.labelLarge('If this device has connection issues:'),
+          const AppGap.small2(),
           _checklistItem(context, 'Check that the Ethernet cable is firmly plugged in at both ends'),
           _checklistItem(context, 'Try a different cable if available'),
           _checklistItem(context, 'Try a different port on your router'),
@@ -687,32 +672,27 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
 
     switch (badge) {
       case _SignalBadge.poor:
-        return Text(
+        return const AppText.bodyMedium(
           'Move this device closer to your router, or move your router to a more central location.',
-          style: textStyle,
         );
       case _SignalBadge.weak:
         if (client.band.contains('2.4')) {
-          return Text(
+          return const AppText.bodyMedium(
             'Connect to the 5 GHz network for faster speeds — it has the same name and password.',
-            style: textStyle,
           );
         }
         final rate = client.txRateMbps;
         if (rate != null && rate < 30 && (client.signalDecibels ?? -90) >= -70) {
-          return Text(
+          return const AppText.bodyMedium(
             'Thick walls, metal objects, or appliances may be blocking the signal between this device and your router.',
-            style: textStyle,
           );
         }
-        return Text(
+        return const AppText.bodyMedium(
           'Move this device closer to your router, or move your router to a more central location.',
-          style: textStyle,
         );
       case _SignalBadge.good:
-        return Text(
+        return const AppText.bodyMedium(
           'This device has a strong WiFi connection.',
-          style: textStyle,
         );
       case _SignalBadge.wired:
         return const SizedBox.shrink(); // handled above
@@ -737,8 +717,8 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: colors.surfaceContainerHighest.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(8),
+        color: Theme.of(context).colorSchemeExt.surfaceContainerLow!,
+        borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
       ),
       child: Column(children: rows),
     );
@@ -746,22 +726,15 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
 
   Widget _metaRow(BuildContext context, ColorScheme colors, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: Spacing.small1),
       child: Row(
         children: [
           SizedBox(
-            width: 40,
-            child: Text(label,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colors.onSurfaceVariant)),
+            width: Spacing.large4,
+            child: AppText.bodySmall(label, color: colors.onSurfaceVariant),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colors.onSurface,
-                  fontWeight: FontWeight.w500),
-            ),
+            child: AppText.bodySmall(value, color: colors.onSurface),
           ),
         ],
       ),
@@ -783,19 +756,21 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
               onNavigateToFlow!(30, device: client); // 30 = Flow 3 pre-connected
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Go to Help Me Fix It → Device connectivity issues'),
-                  duration: Duration(seconds: 3),
+                SnackBar(
+                  content: AppText.bodyMedium(
+                      'Go to Help Me Fix It → Device connectivity issues',
+                      color: colors.onInverseSurface),
+                  duration: const Duration(seconds: 3),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
             }
           },
-                icon: Icons.build_outlined),
+                icon: LinksysIcons.resetWrench),
 
         // Disconnect/Reconnect — useful for weak signal devices and all wireless
         if (client.isWireless) ...[
-          const SizedBox(height: 8),
+          const AppGap.small2(),
           _isDisconnecting
               ? OutlinedButton.icon(
                   onPressed: null,
@@ -803,26 +778,26 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
                       width: 14,
                       height: 14,
                       child: CircularProgressIndicator(strokeWidth: 2)),
-                  label: const Text('Disconnecting…'),
+                  label: AppText.labelLarge('Disconnecting…',
+                      color: colors.onSurfaceVariant),
                 )
               : AppOutlinedButton('Disconnect and reconnect this device',
                 onTap: () => _disconnectDevice(context),
-                icon: Icons.wifi_off_outlined),
+                icon: LinksysIcons.signalWifiOff),
           if (isWeak)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
+              padding: const EdgeInsets.only(top: Spacing.small1),
+              child: AppText.bodySmall(
                 'Reconnecting forces the device to re-select its WiFi connection, '
                 'which can improve a weak signal.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colors.onSurfaceVariant),
+                color: colors.onSurfaceVariant,
               ),
             ),
         ],
 
         // Channel change — shown when channel data is available and signal is weak
         if (isWeak && state.channelInfo != null) ...[
-          const SizedBox(height: 8),
+          const AppGap.small2(),
           _isChangingChannel
               ? OutlinedButton.icon(
                   onPressed: null,
@@ -830,11 +805,12 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
                       width: 14,
                       height: 14,
                       child: CircularProgressIndicator(strokeWidth: 2)),
-                  label: const Text('Changing channel…'),
+                  label: AppText.labelLarge('Changing channel…',
+                      color: colors.onSurfaceVariant),
                 )
               : AppOutlinedButton('Try a cleaner WiFi channel',
                 onTap: () => _triggerChannelRescan(context),
-                icon: Icons.wifi_tethering),
+                icon: LinksysIcons.wifi),
         ],
       ],
     );
@@ -854,11 +830,12 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
 
   Future<void> _triggerChannelRescan(BuildContext context) async {
     // Real firmware RF scan picks the clearest channels (not a hardcoded 6/36).
+    final snackTextColor = Theme.of(context).colorScheme.onInverseSurface;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Optimize WiFi channels?'),
-        content: const Text(
+        title: const AppText.titleMedium('Optimize WiFi channels?'),
+        content: const AppText.bodyMedium(
             'Your router will scan for the clearest WiFi channels and switch '
             'automatically. This takes about a minute, and devices may briefly '
             'disconnect and reconnect.'),
@@ -887,7 +864,7 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
     };
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg),
+        content: AppText.bodyMedium(msg, color: snackTextColor),
         duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
       ),
@@ -903,11 +880,11 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
           // Non-interactive bullet. Was Icons.check_box_outline_blank, which
           // looked like a tappable checkbox but had no handler (J-09).
           Padding(
-            padding: const EdgeInsets.only(top: 6, right: 8),
-            child: Icon(Icons.circle, size: 6,
+            padding: const EdgeInsets.only(top: 6, right: Spacing.small2),
+            child: Icon(LinksysIcons.circle, size: 6,
                 color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
-          Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium)),
+          Expanded(child: AppText.bodyMedium(text)),
         ],
       ),
     );

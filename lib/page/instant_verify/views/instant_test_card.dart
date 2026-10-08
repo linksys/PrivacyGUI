@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -24,11 +25,11 @@ class InstantTestCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.health_and_safety_outlined, color: scheme.primary),
+              Icon(LinksysIcons.troubleshoot, color: scheme.primary),
               const AppGap.small2(),
               AppText.titleMedium('Instant-Test'),
               const Spacer(),
-              Icon(Icons.chevron_right, color: scheme.onSurfaceVariant),
+              Icon(LinksysIcons.chevronRight, color: scheme.onSurfaceVariant),
             ],
           ),
           const AppGap.medium(),

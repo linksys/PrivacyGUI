@@ -5,6 +5,7 @@ import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
+import 'package:privacy_gui/page/instant_verify/views/instant_test_style.dart';
 import 'package:privacy_gui/page/instant_verify/views/my_devices_tab.dart';
 
 import '../../../common/di.dart';
@@ -212,7 +213,7 @@ void main() {
       await tester.pumpWidget(_buildTab(_meshState()));
       await tester.pumpAndSettle();
       // sat-2 has backhaul RSSI -75 which is < -70 → weak
-      expect(find.byIcon(Icons.warning_amber), findsAtLeast(1));
+      expect(find.byIcon(InstantTestTone.warning.icon), findsAtLeast(1));
     });
 
     testWidgets('node with issues auto-expanded', (tester) async {

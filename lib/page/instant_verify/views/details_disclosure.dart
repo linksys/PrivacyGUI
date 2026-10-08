@@ -1,5 +1,6 @@
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 
@@ -59,12 +60,11 @@ class _GuidedStepsState extends State<GuidedSteps> {
   Widget build(BuildContext context) {
     final index = _index.clamp(0, widget.steps.length - 1);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('Step ${index + 1} of ${widget.steps.length}',
-          style: Theme.of(context).textTheme.labelMedium),
-      const SizedBox(height: 8),
-      Text(widget.steps[index]),
-      const SizedBox(height: 8),
-      Wrap(spacing: 8, children: [
+      AppText.labelMedium('Step ${index + 1} of ${widget.steps.length}'),
+      const AppGap.small2(),
+      AppText.bodyMedium(widget.steps[index]),
+      const AppGap.small2(),
+      Wrap(spacing: Spacing.small2, children: [
         if (index > 0)
           AppTextButton('Previous step',
               onTap: () => setState(() => _index = index - 1)),
