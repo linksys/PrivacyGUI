@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
@@ -227,9 +229,9 @@ void main() {
       expect(notifier.nextPollInterval(GRASessionStatus.invalid), 5);
     });
 
-    test('returns 60s once the session is active', () {
+    test('returns 30s once the session is active', () {
       final notifier = container.read(remoteClientProvider.notifier);
-      expect(notifier.nextPollInterval(GRASessionStatus.active), 60);
+      expect(notifier.nextPollInterval(GRASessionStatus.active), 30);
     });
   });
 
@@ -466,6 +468,61 @@ void main() {
                   pinSessionId: 'session-1')
               .pinForCurrentSession,
           '1234');
+    });
+  });
+
+  group('sessionSecondsLeft', () {
+    const invalidSessionInfo = GRASessionInfo(
+      id: 'session-1',
+      serialNumber: 'TEST123',
+      modelNumber: 'LN16-EU',
+      status: GRASessionStatus.invalid,
+      expiredIn: 2547,
+      createdAt: 1748315872000,
+      statusChangedAt: 1748315989000,
+      currentTime: 1748316924838,
+    );
+
+    test('null with no session', () {
+      expect(const RemoteClientState().sessionSecondsLeft, isNull);
+    });
+
+    test('zero once the session is not ACTIVE', () {
+      expect(
+          const RemoteClientState(sessionInfo: invalidSessionInfo)
+              .sessionSecondsLeft,
+          0);
+      expect(
+          const RemoteClientState(sessionInfo: pendingSessionInfo)
+              .sessionSecondsLeft,
+          0);
+    });
+
+    test('the running countdown over the session figure', () {
+      expect(
+          const RemoteClientState(
+                  sessionInfo: testSessionInfo, expiredCountdown: 42)
+              .sessionSecondsLeft,
+          42);
+    });
+
+    test('the session figure before the countdown starts', () {
+      expect(
+          const RemoteClientState(sessionInfo: testSessionInfo)
+              .sessionSecondsLeft,
+          2547);
+    });
+
+    test('floored at zero', () {
+      expect(
+          const RemoteClientState(
+                  sessionInfo: testSessionInfo, expiredCountdown: -1)
+              .sessionSecondsLeft,
+          0);
+      expect(
+          RemoteClientState(sessionInfo: testSessionInfo.copyWith(expiredIn: 0))
+              .sessionSecondsLeft,
+          0);
     });
   });
 
@@ -707,6 +764,143 @@ void main() {
       await notifier.endRemoteAssistance();
 
       expect(container.read(remoteClientProvider).isDialogShown, false);
+    });
+  });
+
+  // #1637: once a session has ended the cloud refuses every JNAP call made
+  // through it with SESSION_EXPIRED. That is the earliest signal the session is
+  // over, ahead of the next session poll.
+  group('markSessionExpired', () {
+    test('ends an ACTIVE session so the session-ended flow runs', () {
+      final notifier = container.read(remoteClientProvider.notifier);
+      notifier.state = RemoteClientState(sessionInfo: testSessionInfo);
+      final statuses = <GRASessionStatus?>[];
+      container.listen(
+          remoteClientProvider.select((s) => s.sessionInfo?.status),
+          (_, next) => statuses.add(next));
+
+      notifier.markSessionExpired();
+
+      expect(container.read(remoteClientProvider).sessionInfo?.status,
+          GRASessionStatus.invalid,
+          reason: 'leaving ACTIVE is what the top bar and dialog react to');
+      expect(statuses, [GRASessionStatus.invalid]);
+    });
+
+    // Every request in flight when the session ends is refused the same way, so
+    // this is called in bursts. Only the first may change anything.
+    test('is idempotent', () {
+      final notifier = container.read(remoteClientProvider.notifier);
+      notifier.state = RemoteClientState(sessionInfo: testSessionInfo);
+      final statuses = <GRASessionStatus?>[];
+      container.listen(
+          remoteClientProvider.select((s) => s.sessionInfo?.status),
+          (_, next) => statuses.add(next));
+
+      notifier
+        ..markSessionExpired()
+        ..markSessionExpired()
+        ..markSessionExpired();
+
+      expect(statuses, [GRASessionStatus.invalid]);
+    });
+
+    test('does nothing without a session', () {
+      final notifier = container.read(remoteClientProvider.notifier);
+
+      notifier.markSessionExpired();
+
+      expect(container.read(remoteClientProvider).sessionInfo, isNull);
+    });
+
+    // The top bar calls initiateRemoteAssistanceCA on every rebuild, and the
+    // state change above is what rebuilds it. The cloud's session record can
+    // still say ACTIVE for a moment after it has started refusing calls, so a
+    // re-initiation here would bring the session back and fire the session-ended
+    // flow a second time once the record catches up.
+    test('keeps the session ended against the top bar re-initiating it',
+        () async {
+      when(mockCloudService.getSessions(master: anyNamed('master')))
+          .thenAnswer((_) async => [testSessionInfo]);
+      when(mockCloudService.getSessionInfo(
+        master: anyNamed('master'),
+        sessionId: anyNamed('sessionId'),
+      )).thenAnswer((_) async => testSessionInfo);
+      final notifier = container.read(remoteClientProvider.notifier);
+      notifier.state = RemoteClientState(sessionInfo: testSessionInfo);
+
+      notifier.markSessionExpired();
+      await notifier.initiateRemoteAssistanceCA();
+
+      expect(container.read(remoteClientProvider).sessionInfo?.status,
+          GRASessionStatus.invalid);
+      expect(container.read(remoteClientProvider).expiredCountdown, isNull,
+          reason: 'no countdown restarted for a session that has ended');
+    });
+
+    // Keyed on the session, not a flag: logout does not rebuild this notifier,
+    // so a latch that ignored the id would lock out the next session too.
+    test('lets a different session start after one has expired', () async {
+      const nextSession = GRASessionInfo(
+        id: 'session-2',
+        serialNumber: 'TEST123',
+        modelNumber: 'LN16-EU',
+        status: GRASessionStatus.active,
+        expiredIn: 3000,
+        createdAt: 1748316000000,
+        statusChangedAt: 1748316100000,
+        currentTime: 1748316600000,
+      );
+      when(mockCloudService.getSessions(master: anyNamed('master')))
+          .thenAnswer((_) async => [nextSession]);
+      when(mockCloudService.getSessionInfo(
+        master: anyNamed('master'),
+        sessionId: anyNamed('sessionId'),
+      )).thenAnswer((_) async => nextSession);
+      final notifier = container.read(remoteClientProvider.notifier);
+      notifier.state = RemoteClientState(sessionInfo: testSessionInfo);
+
+      notifier.markSessionExpired();
+      await notifier.initiateRemoteAssistanceCA();
+
+      expect(container.read(remoteClientProvider).sessionInfo, nextSession);
+    });
+
+    // The cloud's record can still read ACTIVE for a moment after it has
+    // started refusing calls. If SESSION_EXPIRED lands while a pass is waiting
+    // on that read, the stale ACTIVE must not overwrite the ended session.
+    test('an expiry during the session read is not undone by its answer',
+        () async {
+      final read = Completer<GRASessionInfo>();
+      when(mockCloudService.getSessions(master: anyNamed('master')))
+          .thenAnswer((_) async => [testSessionInfo]);
+      when(mockCloudService.getSessionInfo(
+        master: anyNamed('master'),
+        sessionId: anyNamed('sessionId'),
+      )).thenAnswer((_) => read.future);
+      final notifier = container.read(remoteClientProvider.notifier);
+      notifier.state = RemoteClientState(sessionInfo: testSessionInfo);
+
+      final pass = notifier.initiateRemoteAssistanceCA();
+      await pumpEventQueue();
+      notifier.markSessionExpired();
+      read.complete(testSessionInfo);
+      await pass;
+
+      expect(container.read(remoteClientProvider).sessionInfo?.status,
+          GRASessionStatus.invalid);
+      expect(container.read(remoteClientProvider).expiredCountdown, isNull,
+          reason: 'no countdown started for a session that has ended');
+    });
+
+    test('stops the countdown, which has nothing left to count', () {
+      final notifier = container.read(remoteClientProvider.notifier);
+      notifier.state =
+          RemoteClientState(sessionInfo: testSessionInfo, expiredCountdown: 42);
+
+      notifier.markSessionExpired();
+
+      expect(container.read(remoteClientProvider).expiredCountdown, isNull);
     });
   });
 }

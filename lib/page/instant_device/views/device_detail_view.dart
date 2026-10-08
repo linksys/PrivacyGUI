@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/icon_device_category.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -16,7 +15,7 @@ import 'package:privacy_gui/page/advanced_settings/local_network_settings/provid
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/mixin/client_signal_watcher_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -36,6 +35,7 @@ import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/loadable_widget/loadable_widget.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacy_gui/page/components/widgets/write_guard.dart';
 
 class DeviceDetailView extends ArgumentsConsumerStatefulView {
   const DeviceDetailView({
@@ -48,7 +48,7 @@ class DeviceDetailView extends ArgumentsConsumerStatefulView {
 }
 
 class _DeviceDetailViewState extends ConsumerState<DeviceDetailView>
-    with ClientSignalWatcherMixin {
+    with ClientSignalWatcherMixin, PageSnackbarMixin {
   final TextEditingController _deviceNameController = TextEditingController();
   late int _iconIndex;
   String? _errorMessage;
@@ -162,10 +162,12 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView>
               padding: const EdgeInsets.all(Spacing.medium),
               color: Theme.of(context).colorScheme.background,
               title: state.item.name,
-              trailing: AppIconButton(
-                icon: LinksysIcons.edit,
-                semanticLabel: 'edit',
-                onTap: _showEdidDeviceModal,
+              trailing: WriteGuard(
+                child: AppIconButton(
+                  icon: LinksysIcons.edit,
+                  semanticLabel: 'edit',
+                  onTap: _showEdidDeviceModal,
+                ),
               ),
             ),
             AppSettingCard.noBorder(
@@ -269,7 +271,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView>
                     state.item.ipv4Address.isNotEmpty &&
                     state.item.type != WifiConnectionType.guest &&
                     isReservedIp != null
-                ? AppLoadableWidget.textButton(
+                ? WriteGuard(
+                    child: AppLoadableWidget.textButton(
                     spinnerSize: Size(36, 36),
                     title: isReservedIp == true
                         ? loc(context).releaseReservedIp
@@ -283,7 +286,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView>
                       await handleReserveDhcp(
                           state.item, isReservedIp!, controller);
                     },
-                  )
+                  ))
                 : null,
             selectableDescription: true,
           ),
@@ -495,7 +498,6 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView>
         if (isOverlap) {
           // Show overlap
           showFailedSnackBar(
-            context,
             loc(context).ipOrMacAddressOverlap,
           );
         } else {
@@ -542,16 +544,10 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView>
         .then((_) {
       // show succeed
       showSuccessSnackBar(
-        context,
         loc(context).changesSaved,
       );
-    }).catchError((error) {
-      // show error
-      final err = error as JNAPError;
-      showFailedSnackBar(
-        context,
-        err.result,
-      );
-    }, test: (error) => error is JNAPError);
+    }).onError((error, stackTrace) {
+      showErrorMessageSnackBar(error);
+    });
   }
 }

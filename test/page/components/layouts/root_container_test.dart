@@ -25,6 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
@@ -144,7 +145,8 @@ void main() {
             config: config,
             builder: (context, state) => const SizedBox.shrink(),
           ),
-          child: const Text('dashboard'),
+          // The dashboard shell's Scaffold, which is what a snackbar is shown on.
+          child: const Scaffold(body: Text('dashboard')),
         ),
       ),
     ));
@@ -388,6 +390,40 @@ void main() {
           reason: 'and polling must not have resumed');
 
       await closeAlert(tester);
+    });
+  });
+
+  // #1637: a refused write has to be explained however its caller handles the
+  // failure - several only dismiss their spinner. The root says why.
+  group('a write refused by read-only mode', () {
+    const message = 'This feature is unavailable in remote mode';
+
+    Future<void> refuse(WidgetTester tester) async {
+      container.read(readOnlyRefusalProvider.notifier).state++;
+      await tester.pump();
+    }
+
+    testWidgets('says the feature is unavailable remotely', (tester) async {
+      await pumpRootContainer(tester, loginType: LoginType.remote);
+
+      await refuse(tester);
+
+      expect(find.text(message), findsOneWidget);
+    });
+
+    testWidgets('is told again on the next refusal', (tester) async {
+      await pumpRootContainer(tester, loginType: LoginType.remote);
+
+      await refuse(tester);
+      ScaffoldMessenger.of(tester.element(find.text('dashboard')))
+          .removeCurrentSnackBar();
+      await tester.pumpAndSettle();
+      expect(find.text(message), findsNothing);
+
+      await refuse(tester);
+      await tester.pump();
+
+      expect(find.text(message), findsOneWidget);
     });
   });
 }

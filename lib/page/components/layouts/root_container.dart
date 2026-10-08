@@ -3,9 +3,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/page/components/layouts/idle_checker.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/idle_checker_pause_provider.dart';
 import 'package:privacy_gui/providers/root/root_config.dart';
@@ -57,6 +60,18 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
     ref.listen(routerUnreachableProvider, (previous, next) {
       if (next > 0) {
         _reportRouterUnreachable();
+      }
+    });
+
+    // #1637: a write refused by read-only mode never reached the router, so
+    // there is nothing for the caller to report - and callers differ in what
+    // they do with a failed write, several only dismissing their spinner. Said
+    // here once, so every refusal is explained however its caller handles it.
+    ref.listen(readOnlyRefusalProvider, (previous, next) {
+      final shellContext = shellNavigatorKey.currentContext;
+      if (next > 0 && shellContext != null) {
+        showFailedSnackBar(
+            shellContext, loc(shellContext).featureUnavailableInRemoteMode);
       }
     });
 

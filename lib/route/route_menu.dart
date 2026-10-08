@@ -92,6 +92,7 @@ final menus = [
             // Same as firmwareUpdateDetail: this view raises the alert itself
             // once the upload takes the router away.
             ignoreConnectivityEvent: true,
+            writeFlow: true,
           ),
           builder: (context, state) => ManualFirmwareUpdateView(),
         ),

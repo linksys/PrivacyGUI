@@ -120,7 +120,10 @@ class InstantSafetyNotifier extends Notifier<InstantSafetyState> {
         if (error is JNAPSideEffectError) {
           throw error;
         }
-        throw SafeBrowsingError(message: (error as JNAPError).error);
+        if (error is! JNAPError) {
+          throw error ?? '';
+        }
+        throw SafeBrowsingError(message: error.error);
       });
     } else {
       // ERROR

@@ -12,6 +12,9 @@ const errorBadAuthentication = 'BAD_AUTHENTICATION';
 const errorAuthenticationMissing = 'AUTHENTICATION_MISSING';
 const errorNotAuthenticated = 'NOT_AUTHENTICATED';
 const errorInvalidSessionToken = "INVALID_SESSION_TOKEN";
+// Remote assistance: the cloud refuses a request made through a session that
+// is past its time or no longer ACTIVE.
+const errorRemoteSessionExpired = 'SESSION_EXPIRED';
 const errorMfaRequired = 'mfa_required';
 const errorInvalidCredentials = 'invalid_credentials';
 // JNAP Error

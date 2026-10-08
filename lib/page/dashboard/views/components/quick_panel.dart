@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/widgets/write_guard.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
@@ -172,11 +173,13 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
                 ],
               ),
             ),
-            AppSwitch(
-              key: ValueKey(semantics),
-              value: value,
-              onChanged: onChanged,
-              semanticLabel: semantics,
+            WriteGuard(
+              child: AppSwitch(
+                key: ValueKey(semantics),
+                value: value,
+                onChanged: onChanged,
+                semanticLabel: semantics,
+              ),
             ),
           ],
         ),

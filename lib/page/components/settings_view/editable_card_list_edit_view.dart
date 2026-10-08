@@ -35,6 +35,7 @@ class _EditableCardListEditViewState
   Widget build(BuildContext context) {
     return StyledAppPageView(
         bottomBar: PageBottomBar(
+            isWrite: false,
             isPositiveEnabled: _isDataValid?.call(_data) ?? false,
             onPositiveTap: () {
               context.pop(true);

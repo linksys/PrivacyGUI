@@ -124,6 +124,7 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
       title: loc(context).selectDevices,
       bottomBar: _selectMode == SelectMode.multiple
           ? PageBottomBar(
+              isWrite: false,
               isPositiveEnabled: selected.isNotEmpty,
               positiveLabel: loc(context).nAdd(selected.length - _extraCount),
               onPositiveTap: () {
