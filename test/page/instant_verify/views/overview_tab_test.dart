@@ -9,6 +9,8 @@ import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_p
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
 import 'package:privacy_gui/page/instant_verify/views/overview_tab.dart';
 import 'package:privacy_gui/page/instant_verify/views/symptom_chooser.dart';
+import 'package:privacy_gui/page/dashboard/views/dashboard_menu_view.dart'
+    show AppMenuCard;
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -959,18 +961,21 @@ void main() {
             .first)
         .dy;
 
-    testWidgets('choices are AppCard tiles with an icon and a title',
+    testWidgets('choices are the Menu page\'s AppMenuCard tiles',
         (tester) async {
       int? selected;
       await pumpChooser(tester, const Size(1280, 800),
           onSelect: (id) => selected = id);
       expect(find.text('What needs help?'), findsOneWidget);
       expect(find.byType(AppOutlinedButton), findsNothing);
-      for (final (_, icon, label) in SymptomChooser.symptoms) {
+      for (final (_, icon, label, description) in SymptomChooser.symptoms) {
         final tile = find.ancestor(
-            of: find.text(label), matching: find.byType(AppCard));
+            of: find.text(label), matching: find.byType(AppMenuCard));
         expect(tile, findsOneWidget, reason: label);
         expect(find.descendant(of: tile, matching: find.byIcon(icon)),
+            findsOneWidget,
+            reason: label);
+        expect(find.descendant(of: tile, matching: find.text(description)),
             findsOneWidget,
             reason: label);
       }

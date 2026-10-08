@@ -3,6 +3,8 @@ import '../models/router_light.dart';
 import 'instant_test_layout.dart';
 import 'instant_test_style.dart';
 import 'symptom_chooser.dart';
+import 'package:privacy_gui/page/dashboard/views/dashboard_menu_view.dart'
+    show AppMenuCard;
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
@@ -816,9 +818,8 @@ class _StatusCard extends StatelessWidget {
       children: [
         AppText.bodyMedium(heading, color: scheme.onSurfaceVariant),
         const AppGap.small3(),
-        // Flow cards as Menu tiles (two-line titles).
+        // Flow cards as Menu tiles.
         SymptomTileGrid(
-          titleLines: 2,
           children: [
             for (final (index, icon, label) in const [
               (0, LinksysIcons.publicOff, 'My internet\nisn\'t working'),
@@ -828,10 +829,9 @@ class _StatusCard extends StatelessWidget {
               (4, LinksysIcons.signalWifiNone,
                   'My connection\nkeeps cutting out'),
             ])
-              SymptomTile(
+              AppMenuCard(
                 iconData: icon,
                 title: label,
-                titleLines: 2,
                 onTap: () => onNavigateToFlow?.call(index),
               ),
           ],
