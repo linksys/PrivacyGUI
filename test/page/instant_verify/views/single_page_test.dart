@@ -606,6 +606,35 @@ void main() {
     expect(find.text('Whole internet is slow'), findsOneWidget);
   });
 
+  testWidgets('pushed page opens workflows without leaving Instant-Test',
+      (tester) async {
+    final router = GoRouter(initialLocation: '/dashboardHome', routes: [
+      GoRoute(
+          path: '/dashboardHome',
+          builder: (context, __) => Scaffold(
+              body: TextButton(
+                  onPressed: () => context.push('/instantTest'),
+                  child: const Text('Open Instant-Test')))),
+      GoRoute(
+          path: '/instantTest', builder: (_, __) => const InstantTestPage()),
+    ]);
+    addTearDown(router.dispose);
+    await mount(tester,
+        child: Router(
+          routerDelegate: router.routerDelegate,
+          routeInformationParser: router.routeInformationParser,
+          routeInformationProvider: router.routeInformationProvider,
+        ));
+    await tapText(tester, 'Open Instant-Test');
+    expect(router.routeInformationProvider.value.uri.path, '/dashboardHome');
+    await tapText(tester, "Internet isn't working");
+    expect(find.text('Open Instant-Test'), findsNothing);
+    expect(find.text("My internet isn't working"), findsOneWidget);
+    await tapText(tester, 'Back to Instant-Test');
+    expect(find.text('Open Instant-Test'), findsNothing);
+    expect(find.text('Whole internet is slow'), findsOneWidget);
+  });
+
   testWidgets('home actions scroll with diagnostics and only workflows are offered',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);

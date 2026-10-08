@@ -48,7 +48,7 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
     if (router == _router) return;
     _router?.routeInformationProvider.removeListener(_readRoute);
     _router = router;
-    _routePath = router?.routeInformationProvider.value.uri.path;
+    _routePath = router == null ? null : GoRouterState.of(context).uri.path;
     router?.routeInformationProvider.addListener(_readRoute);
     _readRoute();
   }
@@ -80,6 +80,9 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
     final router = _router;
     if (router == null) return; // Embedded widget/test without a route host.
     final uri = router.routeInformationProvider.value.uri;
+    // A pushed page is not reflected in the URL, which still names the page
+    // underneath; navigating there would leave Instant-Test.
+    if (uri.path != _routePath) return;
     final query = Map<String, String>.of(uri.queryParameters)
       ..remove('instant');
     if (location.value.isNotEmpty) query['instant'] = location.value;
