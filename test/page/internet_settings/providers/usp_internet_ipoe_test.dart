@@ -1,15 +1,16 @@
-import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
-import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
-import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_snapshot.dart';
-import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_data_provider.dart';
-import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_page_provider.dart';
-import 'package:privacy_gui/page/auto_ipoe/services/auto_ipoe_service.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_snapshot.dart';
+import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_data_provider.dart';
+import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_page_provider.dart';
+import 'package:privacy_gui/page/internet_settings/services/auto_ipoe_service.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_read_only_info.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
@@ -62,7 +63,7 @@ class IPoEFixture {
   var form = const UspInternetSettingsForm(
       connectionType: UspWanConnectionType.dhcp, mtu: 1500);
   bool disposed = false;
-  IPoEFixture({bool managed = false}) {
+  IPoEFixture({bool managed = false, bool supported = true}) {
     latest = ipoeSnapshot(managed: managed);
     when(() => ipoe.loadSubmission()).thenAnswer((_) async => null);
     when(() => ipoe.storeSubmission(any())).thenAnswer((_) async {});
@@ -90,6 +91,9 @@ class IPoEFixture {
       form = call.positionalArguments[1] as UspInternetSettingsForm;
     });
     container = ProviderContainer(overrides: [
+      deviceCapabilitiesProvider.overrideWithValue(supported
+          ? DeviceCapabilities({DeviceCapability.autoIPoE})
+          : DeviceCapabilities.empty),
       uspClientProvider.overrideWithValue(MockUsp()),
       uspInternetSettingsServiceProvider.overrideWithValue(wan),
       autoIPoEServiceProvider.overrideWithValue(ipoe),
@@ -123,12 +127,10 @@ Future<void> settleDispatch() =>
     Future<void>.delayed(const Duration(milliseconds: 20));
 
 void main() {
-  // Run this integration suite with --dart-define=auto-ipoe=y.
-  group('Auto-IPoE enabled build', _enabledBuildTests,
-      skip: !BuildConfig.autoIPoEEnabled);
+  group('Auto-IPoE supported device', _supportedDeviceTests);
 }
 
-void _enabledBuildTests() {
+void _supportedDeviceTests() {
   late IPoEFixture f;
   setUpAll(() {
     registerFallbackValue(

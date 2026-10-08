@@ -144,7 +144,8 @@ void main() {
     });
 
     test('the inline Auto-IPoE log widget is not a page view', () {
-      const path = 'lib/page/auto_ipoe/views/widgets/auto_ipoe_log_view.dart';
+      const path =
+          'lib/page/internet_settings/views/sections/auto_ipoe_log_view.dart';
       expect(File(path).existsSync(), isTrue);
       expect(isPageViewPath(path), isFalse);
       expect(discovered, isNot(contains(path)));
@@ -479,11 +480,11 @@ void main() {
       expect(measured, isEmpty);
       expect(roster.needsFixture, isEmpty);
 
-      // AutoIPoEView adds one pending fixture after the original queue was cleared.
+      // PnpIPoEView adds one pending fixture after the original queue was cleared.
       // The four pages below still have their declared coverage; a new queued
       // page must not erase that completed work.
       const paidDown = {
-        'lib/page/auto_ipoe/views/auto_ipoe_view.dart',
+        'lib/page/instant_setup/views/pnp_ipoe_view.dart',
         // Wave 3's one unit of debt: #1370's glob found this file one directory
         // deeper than the other login views and could not measure it at all,
         // because its opening state is the only state it has.
@@ -544,7 +545,7 @@ void main() {
       // short version is that unreachability is the only reason this epic accepts
       // and none of the four is unreachable.
       //
-      // 46 swept + 2 excluded = 48 accounted for. AutoIPoEView's supported-ready
+      // 46 swept + 2 excluded = 48 accounted for. PnpIPoEView's supported-ready
       // fixture now exercises its settings, completed result, and log panel.
       //
       // The 44th is #1549's `firmware_ota_view.dart`, and it is the first row added
@@ -694,7 +695,7 @@ void main() {
       // 601px in 26 locales. Not one of the 43 entered on an allowlist entry;
       // `known_overflows.json` is still `{"tracking": {}, "allowlist": {}}`.
       expect(roster.sweptPaths, {
-        'lib/page/auto_ipoe/views/auto_ipoe_view.dart',
+        'lib/page/instant_setup/views/pnp_ipoe_view.dart',
         'lib/page/admin/views/usp_admin_view.dart',
         'lib/page/advanced_settings/views/usp_advanced_settings_view.dart',
         'lib/page/ai_assistant/views/router_assistant_view.dart',

@@ -1,8 +1,14 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/active_ipv4_connection.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/usp/models/operate_result.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
@@ -21,6 +27,8 @@ class _MockUnifiedDiagnosticsService extends Mock
 class _MockExecutor extends Mock implements NetworkDiagnosticsExecutor {}
 
 class _MockScope extends Mock implements DiagnosticScope {}
+
+class _MockUspClient extends Mock implements UspClient {}
 
 void main() {
   late _MockUnifiedDiagnosticsService mockService;
@@ -340,6 +348,135 @@ void main() {
           isTrue,
         );
         container.dispose();
+      });
+    });
+
+    group('Capability lifecycle', () {
+      test('capability loss stops the run before another connection read',
+          () async {
+        final client = _MockUspClient();
+        final connection = Completer<Map<String, dynamic>>();
+        var supported = true;
+        when(() => client.get(any(), priority: any(named: 'priority')))
+            .thenAnswer((_) => connection.future);
+        final container = ProviderContainer(overrides: [
+          uspClientProvider.overrideWithValue(client),
+          deviceCapabilitiesProvider.overrideWith((_) => supported
+              ? DeviceCapabilities({DeviceCapability.autoIPoE})
+              : DeviceCapabilities.empty),
+          networkDiagnosticsExecutorProvider.overrideWithValue(mockExecutor),
+        ]);
+        addTearDown(container.dispose);
+        container.listen(unifiedDiagnosticsProvider, (_, __) {});
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+        final run = notifier.runFullDiagnostic();
+        await Future<void>.delayed(Duration.zero);
+
+        supported = false;
+        container.invalidate(deviceCapabilitiesProvider);
+        await container.pump();
+        expect(container.read(unifiedDiagnosticsProvider).step,
+            DiagnosticStep.idle);
+        connection.complete({
+          ActiveIpv4Connection.path: jsonEncode({
+            'apiVersion': 1,
+            'available': true,
+            'state': 'Up',
+            'activeIPv4Route': true,
+            'tunnelType': 'DS-Lite',
+          }),
+        });
+        await run;
+        await notifier.teardownDone;
+
+        final requests = verify(() =>
+                client.get(captureAny(), priority: any(named: 'priority')))
+            .captured;
+        expect(requests, [
+          [ActiveIpv4Connection.path]
+        ]);
+        verifyNever(() => mockExecutor.acquireScope(
+            referencePaths: any(named: 'referencePaths')));
+        expect(container.read(unifiedDiagnosticsProvider).step,
+            DiagnosticStep.idle);
+      });
+
+      test('capability loss retires an acquiring scope before a fresh run',
+          () async {
+        final replacementService = _MockUnifiedDiagnosticsService();
+        final replacementScope = _MockScope();
+        final acquiring = Completer<DiagnosticScope>();
+        var supported = true;
+        var acquisitions = 0;
+        when(() => replacementScope.isReleased).thenReturn(false);
+        when(() => replacementScope.release()).thenAnswer((_) async {});
+        when(() => mockExecutor.acquireScope(
+              referencePaths: any(named: 'referencePaths'),
+            )).thenAnswer((_) {
+          acquisitions++;
+          return acquisitions == 1
+              ? acquiring.future
+              : Future.value(replacementScope);
+        });
+        for (final service in [mockService, replacementService]) {
+          when(() => service.checkWanStatus())
+              .thenAnswer((_) async => const WanStatusUIModel(
+                    status: 'Up',
+                    ipAddress: '192.0.2.1',
+                    subnetMask: '255.255.255.0',
+                    addressingType: 'DHCP',
+                  ));
+          when(() => service.attachScope(any())).thenReturn(null);
+          when(() => service.pingInternet(
+                host: any(named: 'host'),
+                repeatCount: any(named: 'repeatCount'),
+              )).thenAnswer((_) async => _createPingResult('1.1.1.1'));
+        }
+        final container = ProviderContainer(overrides: [
+          deviceCapabilitiesProvider.overrideWith((_) => supported
+              ? DeviceCapabilities({DeviceCapability.autoIPoE})
+              : DeviceCapabilities.empty),
+          unifiedDiagnosticsServiceProvider.overrideWith((ref) => ref
+                  .watch(deviceCapabilitiesProvider)
+                  .has(DeviceCapability.autoIPoE)
+              ? mockService
+              : replacementService),
+          networkDiagnosticsExecutorProvider.overrideWithValue(mockExecutor),
+        ]);
+        addTearDown(container.dispose);
+        container.listen(unifiedDiagnosticsProvider, (_, __) {});
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+        final staleRun = notifier.startWithPreQualifier();
+        await Future<void>.delayed(Duration.zero);
+        expect(acquisitions, 1);
+
+        supported = false;
+        container.invalidate(deviceCapabilitiesProvider);
+        await container.pump();
+        expect(container.read(unifiedDiagnosticsProvider).step,
+            DiagnosticStep.idle);
+        acquiring.complete(mockScope);
+        await staleRun;
+        await notifier.teardownDone;
+
+        verify(() => mockScope.release()).called(1);
+        verifyNever(() => mockService.attachScope(any()));
+        verifyNever(() => replacementService.attachScope(any()));
+        verifyNever(() => mockService.pingInternet(
+            host: any(named: 'host'), repeatCount: any(named: 'repeatCount')));
+
+        await notifier.startWithPreQualifier();
+
+        verifyInOrder([
+          () => replacementService.attachScope(replacementScope),
+          () => replacementService.pingInternet(repeatCount: 1),
+        ]);
+        expect(acquisitions, 2);
+        expect(container.read(unifiedDiagnosticsProvider).preQualifierResult,
+            PreQualifierResult.internetOk);
+        await notifier.cancel();
+        await notifier.teardownDone;
+        verify(() => replacementScope.release()).called(1);
       });
     });
 

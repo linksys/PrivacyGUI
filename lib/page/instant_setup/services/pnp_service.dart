@@ -1,6 +1,6 @@
-import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
-import 'package:privacy_gui/page/auto_ipoe/services/auto_ipoe_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
@@ -21,13 +21,22 @@ import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_band.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_snapshot.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
+import 'package:privacy_gui/page/internet_settings/services/auto_ipoe_service.dart';
 import 'package:privacy_gui/page/internet_settings/services/usp_internet_settings_service.dart';
 
-final pnpServiceProvider = Provider<PnpService>(
-  (ref) => PnpService(ref.read(uspClientProvider)!),
-);
+final pnpServiceProvider = Provider<PnpService>((ref) {
+  final supportsAutoIPoE =
+      ref.watch(deviceCapabilitiesProvider).has(DeviceCapability.autoIPoE);
+  return PnpService(
+    ref.watch(uspClientProvider)!,
+    fetchAutoIPoE:
+        supportsAutoIPoE ? ref.watch(autoIPoEServiceProvider).fetch : null,
+  );
+});
 
 /// Result of factory-default detection.
 class FactoryDefaultCheckResult {
@@ -67,8 +76,11 @@ enum PnpWifiWriteOutcome { confirmed, unanswered }
 /// This service assumes the user is already authenticated.
 class PnpService {
   final UspClient _usp;
+  final Future<AutoIPoESnapshot> Function()? _fetchAutoIPoE;
 
-  PnpService(this._usp);
+  /// Omitting [fetchAutoIPoE] keeps the ordinary WAN connection check.
+  PnpService(this._usp, {Future<AutoIPoESnapshot> Function()? fetchAutoIPoE})
+      : _fetchAutoIPoE = fetchAutoIPoE;
 
   /// Expose UspClient for UspInternetSettingsService instantiation.
   UspClient get usp => _usp;
@@ -99,16 +111,19 @@ class PnpService {
   /// Returns true if WAN is up with a valid IP address.
   Future<bool> checkInternetConnected() async {
     try {
-      try {
-        final ipoe = await AutoIPoEService(_usp).fetch();
-        if (ipoe.capabilities.isSupported && ipoe.runtime.isCurrentWANType) {
-          return !ipoe.runtime.isBusy &&
-              ipoe.runtime.isEnabled &&
-              ipoe.runtime.applyState == AutoIPoEApplyState.active &&
-              ipoe.runtime.connectivityVerified == true &&
-              ipoe.runtime.hasVerifiedBackendConnectivity;
-        }
-      } on ResourceNotFoundError {/* Router without the optional adapter. */}
+      final fetchAutoIPoE = _fetchAutoIPoE;
+      if (fetchAutoIPoE != null) {
+        try {
+          final ipoe = await fetchAutoIPoE();
+          if (ipoe.capabilities.isSupported && ipoe.runtime.isCurrentWANType) {
+            return !ipoe.runtime.isBusy &&
+                ipoe.runtime.isEnabled &&
+                ipoe.runtime.applyState == AutoIPoEApplyState.active &&
+                ipoe.runtime.connectivityVerified == true &&
+                ipoe.runtime.hasVerifiedBackendConnectivity;
+          }
+        } on ResourceNotFoundError {/* Router without the optional adapter. */}
+      }
       final wan = await WanStatus.fetch(_usp);
       return wan.status == 'Up' && wan.ipAddress.isNotEmpty;
     } on ServiceError {

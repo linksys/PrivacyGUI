@@ -8,10 +8,9 @@ import 'package:privacy_gui/components/customs/circular_countdown_widget.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/app_menu_card.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
-import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
-import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_snapshot.dart';
-import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_section.dart';
-import 'package:privacy_gui/page/auto_ipoe/views/widgets/auto_ipoe_log_view.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_snapshot.dart';
+import 'package:privacy_gui/page/internet_settings/views/sections/auto_ipoe_section.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_filter_panel.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_list_tile.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
@@ -93,7 +92,6 @@ void main() {
         containsAll([
           AutoIPoESection,
           AppDropdown<AutoIPoEMode>,
-          AutoIPoELogView,
           AppButton,
         ]));
     expect(kAutoIPoEPageCase.forbids, contains(AppLoader));
@@ -247,7 +245,7 @@ void main() {
           // has four content states, three of which cannot overflow, and its list
           // sits below the filter that proves the first premise.
           'notification_history',
-          'auto_ipoe',
+          'pnp_ipoe',
         ],
         // Updated by #1377, #1378, #1379 and #1380, and the wording is the point of
         // the test.

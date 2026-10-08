@@ -79,10 +79,9 @@ import 'package:privacy_gui/components/styled/menus/widgets/app_menu_card.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
-import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
-import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_section.dart';
-import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_view.dart';
-import 'package:privacy_gui/page/auto_ipoe/views/widgets/auto_ipoe_log_view.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/page/internet_settings/views/sections/auto_ipoe_section.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_ipoe_view.dart';
 import 'package:privacy_gui/page/admin/views/components/usp_password_card.dart';
 import 'package:privacy_gui/page/admin/views/components/usp_system_actions_card.dart';
 import 'package:privacy_gui/page/admin/views/components/usp_timezone_card.dart';
@@ -2723,19 +2722,12 @@ final kNotificationHistoryPageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView],
 );
 
-// The supported, completed state includes the editable mode controls, ready
-// result, and log panel; neither a loading nor unsupported page can pass.
+// The PnP ready state must show the supported mode controls and Execute action.
 final kAutoIPoEPageCase = PageSurfaceCase(
-  id: 'auto_ipoe',
-  view: () => const AutoIPoEView(),
+  id: 'pnp_ipoe',
+  view: () => const PnpIPoEView(),
   overrides: autoIPoEOverrides,
-  requires: const [
-    AutoIPoESection,
-    AppDropdown<AutoIPoEMode>,
-    AppCard,
-    AppButton,
-    AutoIPoELogView,
-  ],
+  requires: const [AutoIPoESection, AppDropdown<AutoIPoEMode>, AppButton],
   forbids: const [AppLoader, ServiceErrorView],
 );
 

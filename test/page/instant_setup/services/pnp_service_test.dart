@@ -1,4 +1,3 @@
-import 'package:privacy_gui/constants/build_config.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -7,8 +6,11 @@ import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_band.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
+import 'package:privacy_gui/page/internet_settings/services/auto_ipoe_service.dart';
 
 class MockUspClient extends Mock implements UspClient {}
+
+class MockAutoIPoEService extends Mock implements AutoIPoEService {}
 
 void main() {
   late MockUspClient mockUsp;
@@ -847,7 +849,13 @@ void main() {
       });
     });
   });
-  group('PnpService native connection error handling', () {
+  group('PnpService injected connection error handling', () {
+    late MockAutoIPoEService ipoe;
+
+    setUp(() {
+      ipoe = MockAutoIPoEService();
+      service = PnpService(mockUsp, fetchAutoIPoE: ipoe.fetch);
+    });
     for (final error in const <ServiceError>[
       NotAuthenticatedError(
           code: 401, detail: 'Synthetic authentication failure'),
@@ -856,19 +864,20 @@ void main() {
       NetworkError(code: 503, detail: 'Synthetic unavailable service'),
       InvalidInputError(code: 7004, detail: 'Synthetic invalid response'),
     ]) {
-      test('preserves ${error.runtimeType} from the native read', () async {
-        when(() => mockUsp.get(any(), fresh: true)).thenThrow(error);
+      test('preserves ${error.runtimeType} from the injected read', () async {
+        when(() => ipoe.fetch()).thenThrow(error);
 
         await expectLater(
             service.checkInternetConnected(), throwsA(same(error)));
 
-        verify(() => mockUsp.get(any(), fresh: true)).called(1);
-        verifyNoMoreInteractions(mockUsp);
+        verify(() => ipoe.fetch()).called(1);
+        verifyNoMoreInteractions(ipoe);
+        verifyZeroInteractions(mockUsp);
       });
     }
 
     test('keeps a mapped HTTP auth failure through the outer catch', () async {
-      when(() => mockUsp.get(any(), fresh: true))
+      when(() => ipoe.fetch())
           .thenThrow('Get failed: Transport error: HTTP error: HTTP 401');
 
       await expectLater(
@@ -877,8 +886,9 @@ void main() {
             isA<NotAuthenticatedError>().having((e) => e.code, 'code', 401)),
       );
 
-      verify(() => mockUsp.get(any(), fresh: true)).called(1);
-      verifyNoMoreInteractions(mockUsp);
+      verify(() => ipoe.fetch()).called(1);
+      verifyNoMoreInteractions(ipoe);
+      verifyZeroInteractions(mockUsp);
     });
-  }, skip: !BuildConfig.autoIPoEEnabled);
+  });
 }

@@ -57,7 +57,6 @@ class RoutePath {
   static const uspDeviceDetail = 'uspDeviceDetail';
   static const uspNodeDetail = 'uspNodeDetail';
   static const uspUnifiedDiagnostics = 'uspUnifiedDiagnostics';
-  static const uspAutoIPoE = 'uspAutoIPoE';
   static const pnpAutoIPoE = 'pnpAutoIPoE';
   static const uspInternetSettings = 'uspInternetSettings';
   static const uspLocalNetwork = 'uspLocalNetwork';
@@ -221,7 +220,6 @@ class RouteNamed {
   static const uspIpv6PortService = 'uspIpv6PortService';
   static const uspStatistics = 'uspStatistics';
   static const uspTestConsole = 'uspTestConsole';
-  static const uspAutoIPoE = 'uspAutoIPoE';
   static const pnpAutoIPoE = 'pnpAutoIPoE';
   static const uspInternetSettings = 'uspInternetSettings';
   static const uspWifiSettings = 'uspWifiSettings';

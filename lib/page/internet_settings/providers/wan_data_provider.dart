@@ -1,6 +1,7 @@
+import 'package:privacy_gui/core/capability/device_capability.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
 import 'dart:async';
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/constants/build_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
@@ -107,7 +108,7 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
     });
 
     // Tunnel creation/deletion need not emit the legacy WAN object's SSE event.
-    if (BuildConfig.autoIPoEEnabled) {
+    if (ref.watch(deviceCapabilitiesProvider).has(DeviceCapability.autoIPoE)) {
       final timer = Timer.periodic(
           const Duration(seconds: 15), (_) => _refreshFromPush());
       ref.onDispose(timer.cancel);

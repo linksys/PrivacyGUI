@@ -82,7 +82,6 @@ function buildWebApp() {
     --dart-define=cloud_env="${cloud}" \
     --dart-define=enable_env_picker="${picker}" \
     --dart-define=ca="${ca}" \
-    --dart-define=auto-ipoe="${AUTO_IPOE:-n}" \
     --dart-define=source_revision="${sourceRevision}" \
     $themeSourceFlag $themeJsonFlag $themeStudioFlag
 }

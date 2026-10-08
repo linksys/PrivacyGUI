@@ -1,14 +1,13 @@
-import 'package:privacy_gui/constants/build_config.dart';
-import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_data_provider.dart';
-import 'package:privacy_gui/page/auto_ipoe/views/widgets/auto_ipoe_log_view.dart';
+import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_data_provider.dart';
+import 'package:privacy_gui/page/internet_settings/views/sections/auto_ipoe_log_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
-import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
-import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_snapshot.dart';
-import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_section.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_snapshot.dart';
+import 'package:privacy_gui/page/internet_settings/views/sections/auto_ipoe_section.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_notifier.dart';
@@ -33,12 +32,10 @@ Widget host(IPoEFixture f) => UncontrolledProviderScope(
         })))));
 
 void main() {
-  // Run this integration suite with --dart-define=auto-ipoe=y.
-  group('Auto-IPoE enabled build', _enabledBuildTests,
-      skip: !BuildConfig.autoIPoEEnabled);
+  group('Auto-IPoE supported device', _supportedDeviceTests);
 }
 
-void _enabledBuildTests() {
+void _supportedDeviceTests() {
   setUpAll(() {
     registerFallbackValue(const AutoIPoESubmission('fixture-id', reset: false));
     registerFallbackValue(const AutoIPoESettings.init());

@@ -78,7 +78,7 @@ const String kPageViewRoot = 'lib/page';
 /// 45 → 46 at #1549, which is the first move of the first kind: the app gained
 /// `firmware_ota_view.dart` by splitting one firmware entry point into two pages, so
 /// the walk is unchanged and one row was added beside it.
-/// 47 -> 48 at #1664: AutoIPoEView adds a routed page with a supported-ready sweep fixture.
+/// 47 -> 48 at #1664: PnpIPoEView adds a routed page with a supported-ready sweep fixture.
 /// Its inline log widget lives under views/widgets/ and is not a page.
 const int kPageViewCount = 48;
 

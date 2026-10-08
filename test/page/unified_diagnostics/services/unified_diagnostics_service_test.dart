@@ -1,4 +1,8 @@
-import 'package:privacy_gui/constants/build_config.dart';
+import 'dart:async';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'dart:convert';
 import 'package:privacy_gui/core/usp/services/active_ipv4_connection.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -152,7 +156,7 @@ void main() {
     when(() => mockExecutor.acquireScope(
           referencePaths: any(named: 'referencePaths'),
         )).thenAnswer((_) async => fakeScope);
-    service = UnifiedDiagnosticsService(mockUsp);
+    service = UnifiedDiagnosticsService(mockUsp, autoIPoESupported: false);
     service.attachScope(fakeScope);
   });
 
@@ -352,6 +356,71 @@ void main() {
 
   // ────────────────────────────────────────────────────────────────────────
 
+  for (final supported in [false, true]) {
+    test('diagnostics provider injects Auto-IPoE support $supported', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            ...wanStatusResponse(),
+            ActiveIpv4Connection.path: jsonEncode({
+              'apiVersion': 1,
+              'available': true,
+              'state': 'Up',
+              'activeIPv4Route': true,
+              'tunnelType': 'DS-Lite',
+            }),
+          });
+      final container = ProviderContainer(overrides: [
+        uspClientProvider.overrideWithValue(mockUsp),
+        deviceCapabilitiesProvider.overrideWithValue(supported
+            ? DeviceCapabilities({DeviceCapability.autoIPoE})
+            : DeviceCapabilities.empty),
+      ]);
+      addTearDown(container.dispose);
+      final diagnostics = container.read(unifiedDiagnosticsServiceProvider)!;
+
+      final result = await diagnostics.checkWanStatus();
+
+      expect(result.isUp, isTrue);
+      expect(result.hasIp, isTrue);
+      expect(result.usesTunnel, supported);
+      expect(result.addressingType, supported ? 'DS-Lite' : 'DHCP');
+      final requests = verify(() => mockUsp.get(captureAny()))
+          .captured
+          .cast<List<String>>()
+          .expand((paths) => paths);
+      expect(requests.contains(ActiveIpv4Connection.path), supported);
+    });
+  }
+
+  test(
+      'capability loss fences an old service before a fallback connection read',
+      () async {
+    var supported = true;
+    final pending = Completer<Map<String, dynamic>>();
+    when(() => mockUsp.get(any())).thenAnswer((_) => pending.future);
+    final container = ProviderContainer(overrides: [
+      uspClientProvider.overrideWithValue(mockUsp),
+      deviceCapabilitiesProvider.overrideWith((_) => supported
+          ? DeviceCapabilities({DeviceCapability.autoIPoE})
+          : DeviceCapabilities.empty),
+    ]);
+    addTearDown(container.dispose);
+    final diagnostics = container.read(unifiedDiagnosticsServiceProvider)!;
+    final gateway = diagnostics.pingGateway();
+
+    supported = false;
+    container.invalidate(deviceCapabilitiesProvider);
+    container.read(unifiedDiagnosticsServiceProvider);
+    pending.complete({});
+
+    await expectLater(gateway, throwsA(isA<ResourceNotFoundError>()));
+    await expectLater(
+        diagnostics.checkWanStatus(), throwsA(isA<ResourceNotFoundError>()));
+    await expectLater(
+        diagnostics.pingGateway(), throwsA(isA<ResourceNotFoundError>()));
+    verify(() => mockUsp.get([ActiveIpv4Connection.path])).called(1);
+    verifyNoMoreInteractions(mockUsp);
+  });
+
   group('checkWanStatus', () {
     test('parses WAN GET response into WanStatusUIModel', () async {
       when(() => mockUsp.get(any()))
@@ -438,8 +507,8 @@ void main() {
     for (final gateway in ['203.0.113.254', '']) {
       test(
           gateway.isEmpty
-              ? 'default-off skips a missing WAN gateway without probing'
-              : 'default-off uses the actual WAN gateway instead of guessing .1',
+              ? 'unsupported device skips a missing WAN gateway without probing'
+              : 'unsupported device uses the actual WAN gateway instead of guessing .1',
           () async {
         final requestedPaths = <String>[];
         when(() => mockUsp.get(any())).thenAnswer((invocation) async {
@@ -496,10 +565,12 @@ void main() {
           expect(result?.host, gateway);
           expect(fakeScope.calls.single.args['Host'], gateway);
         }
-      }, skip: BuildConfig.autoIPoEEnabled);
+      });
     }
 
     test('uses the kernel next hop, not a guessed .1 gateway', () async {
+      service = UnifiedDiagnosticsService(mockUsp, autoIPoESupported: true)
+        ..attachScope(fakeScope);
       when(() => mockUsp.get(any())).thenAnswer((_) async => {
             ActiveIpv4Connection.path: jsonEncode({
               'apiVersion': 1,
@@ -527,10 +598,12 @@ void main() {
 
       expect(result?.host, '203.0.113.254'); // Actual next hop
       expect(fakeScope.calls.single.args['Host'], '203.0.113.254');
-    }, skip: !BuildConfig.autoIPoEEnabled);
+    });
 
     test('missing gateway is skipped without probing a made-up address',
         () async {
+      service = UnifiedDiagnosticsService(mockUsp, autoIPoESupported: true)
+        ..attachScope(fakeScope);
       when(() => mockUsp.get(any())).thenAnswer((_) async => {
             ActiveIpv4Connection.path: jsonEncode({
               'apiVersion': 1,
@@ -544,7 +617,7 @@ void main() {
           });
       expect(await service.pingGateway(), isNull);
       expect(fakeScope.calls, isEmpty);
-    }, skip: !BuildConfig.autoIPoEEnabled);
+    });
 
     test('throws when WAN has no IP', () async {
       when(() => mockUsp.get(any()))

@@ -427,9 +427,9 @@
 # second-state cells. The trailing-space form does NOT help, because the coordinate suffix follows
 # second-state immediately: use --plain-name 'page.unified_diagnostics screen_px' for the idle case alone,
 # second-state and 'page.unified_diagnostics_' for the eight added ones.
-# added AutoIPoEView (#1664): supported-ready settings fixture, 234 cells, 2026-10-08.
-# added Three isolated --plain-name page.auto_ipoe --reporter json runs with auto-ipoe=y:
-# added ms/cell 60.8 / 68.3 / 59.4; median 60.8. Its inline log widget is not a page.
+# added PnpIPoEView (#1664): supported-ready settings fixture, 234 cells, 2026-10-08.
+# Auto-IPoE moved to PnP; capability-backed ready state is exercised by page.pnp_ipoe:
+# added ms/cell 35.3 / 35.6 / 35.0; median 35.3. The PnP ready fixture has no log widget.
 # rows sorted by path, so adding a page is a one-line diff
 # reader test/layout_gate/page_roster.dart
 # oracle test/layout_gate/page_roster_test.dart
@@ -445,7 +445,6 @@ lib/page/admin/views/usp_admin_view.dart	swept	21.9
 lib/page/advanced_settings/views/usp_advanced_settings_view.dart	swept	13.6
 lib/page/ai_assistant/views/router_assistant_view.dart	swept	21.6
 lib/page/apps/views/usp_apps_view.dart	swept	21.5
-lib/page/auto_ipoe/views/auto_ipoe_view.dart	swept	60.8
 lib/page/dashboard/views/usp_dashboard_view.dart	swept	52.0
 lib/page/dashboard/views/usp_sliver_dashboard_view.dart	swept	58.6
 lib/page/devices/views/usp_device_detail_view.dart	swept	33.4
@@ -459,6 +458,7 @@ lib/page/instant_privacy/views/instant_privacy_view.dart	swept	19.3
 lib/page/instant_safety/views/instant_safety_view.dart	swept	14.5
 lib/page/instant_setup/views/pnp_complete_view.dart	excluded:not reachable; no route builds it and nothing under lib/ constructs it (#1370)	-
 lib/page/instant_setup/views/pnp_entry_view.dart	swept	11.6
+lib/page/instant_setup/views/pnp_ipoe_view.dart	swept	35.3
 lib/page/instant_setup/views/pnp_isp_settings_view.dart	swept	12.7
 lib/page/instant_setup/views/pnp_modem_lights_off_view.dart	swept	12.9
 lib/page/instant_setup/views/pnp_no_internet_view.dart	swept	14.7
