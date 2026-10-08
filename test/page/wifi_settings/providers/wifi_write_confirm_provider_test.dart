@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_write_confirm.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_write_confirm_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
 /// The provider-side half of #1499 / #1460: a WiFi write whose answer never

@@ -15,7 +15,7 @@ import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dar
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_write_confirm.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_write_confirm_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
 import '../../../../test/mocks/test_data/wifi_settings_test_data.dart';

@@ -9,7 +9,7 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_write_confirm.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_write_confirm_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_advanced_service.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
