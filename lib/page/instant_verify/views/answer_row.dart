@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
-/// An answered workflow question, collapsed to one line above the current
-/// step. "Change" reopens the original choices in place.
+/// An answered workflow question, collapsed to one kit list row above the
+/// current step. "Change" reopens the original choices below it.
 class AnswerRow extends StatefulWidget {
   const AnswerRow({
     super.key,
@@ -42,34 +43,27 @@ class _AnswerRowState extends State<AnswerRow> {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: Spacing.small2),
-      child: AppCard(
-        padding: const EdgeInsets.symmetric(
-            horizontal: Spacing.medium, vertical: Spacing.small2),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Row(children: [
-            SizedBox(
-                width: Spacing.large5 * 2,
-                child: AppText.labelMedium(widget.label.toUpperCase(),
-                    color: scheme.onSurfaceVariant)),
-            Expanded(
-                child: Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: Spacing.small2,
-                    children: [
-                  AppText.labelLarge(widget.value),
-                  if (widget.detail != null)
-                    AppText.bodySmall(widget.detail!,
-                        color: scheme.onSurfaceVariant),
-                ])),
-            AppTextButton(_changing ? 'Cancel' : widget.changeLabel,
-                onTap: () => setState(() => _changing = !_changing)),
-          ]),
-          if (_changing) ...[
-            const AppGap.small2(),
-            widget.choices,
-          ],
-        ]),
-      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        AppListCard(
+          title: AppText.bodyMedium(widget.label,
+              color: scheme.onSurfaceVariant),
+          description: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: Spacing.small2,
+              children: [
+                AppText.labelLarge(widget.value),
+                if (widget.detail != null)
+                  AppText.bodySmall(widget.detail!,
+                      color: scheme.onSurfaceVariant),
+              ]),
+          trailing: AppTextButton(_changing ? 'Cancel' : widget.changeLabel,
+              onTap: () => setState(() => _changing = !_changing)),
+        ),
+        if (_changing) ...[
+          const AppGap.small2(),
+          AppCard(child: widget.choices),
+        ],
+      ]),
     );
   }
 }

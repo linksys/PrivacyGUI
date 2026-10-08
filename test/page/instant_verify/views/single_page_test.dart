@@ -1,4 +1,5 @@
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'dart:async';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
@@ -991,7 +992,7 @@ void main() {
     expect(find.text('Test device 0'), findsNothing);
     await tester.enterText(find.byType(TextField), 'Test device 11');
     await tester.pumpAndSettle();
-    expect(find.widgetWithText(ListTile, 'Test device 11'), findsOneWidget);
+    expect(find.widgetWithText(AppListCard, 'Test device 11'), findsOneWidget);
     expect(find.text('Test device 8'), findsNothing);
     await tapText(tester, 'Test device 11');
     expect(answer(tester, 'Device'), 'Test device 11');
@@ -1000,6 +1001,56 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('No devices match your search.'), findsOneWidget);
     expect(answer(tester, 'Device'), 'Test device 11');
+  });
+
+  for (final width in [390.0, 800.0]) {
+    testWidgets(
+        'device picker and answers are kit list cards at ${width.toInt()}px',
+        (tester) async {
+      tester.view.physicalSize = Size(width, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final clients = List.generate(
+          12,
+          (i) => DiagnosticClient(
+              macAddress: '00:00:00:00:00:${i.toString().padLeft(2, '0')}',
+              hostname: 'A device with a long name that wraps $i',
+              band: '5 GHz',
+              isWireless: true));
+      await mount(tester, notifier: FixtureNotifier(clients: clients));
+      await tapText(tester, "Device won't connect");
+      expect(tester.takeException(), isNull);
+      expect(find.byType(ListTile), findsNothing);
+      final row = find.byKey(const ValueKey('device-choice-00:00:00:00:00:00'));
+      expect(tester.widget(row), isA<AppListCard>());
+      final heading = tester.getSemantics(find.text('Which device needs help?'));
+      expect(heading.hasFlag(SemanticsFlag.isHeader), isTrue);
+      await tapText(tester, 'A device with a long name that wraps 3');
+      expect(tester.takeException(), isNull);
+      final device = find.byWidgetPredicate(
+          (w) => w is AnswerRow && w.label == 'Device');
+      expect(find.descendant(of: device, matching: find.byType(AppListCard)),
+          findsOneWidget);
+      await tapText(tester, 'Change device');
+      expect(tester.takeException(), isNull);
+      expect(row, findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+    });
+  }
+
+  testWidgets('selected device row reports its selected state',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await mount(tester);
+    await tapText(tester, "Device won't connect");
+    await tapText(tester, 'Office printer');
+    await tapText(tester, 'Change device');
+    final node = tester.getSemantics(
+        find.byKey(const ValueKey('device-choice-AA:BB:CC:DD:EE:01')));
+    expect(node.hasFlag(SemanticsFlag.isSelected), isTrue);
+    expect(node.hasFlag(SemanticsFlag.isButton), isTrue);
+    handle.dispose();
   });
 
   testWidgets('workflow heading supports mouse text selection', (tester) async {

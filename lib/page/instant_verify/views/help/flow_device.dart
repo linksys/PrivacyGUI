@@ -71,6 +71,10 @@ class _Flow3State extends ConsumerState<_Flow3> {
     _selectedDevice = widget.initialDevice;
   }
 
+  /// A step card's heading, as other pages head their cards.
+  Widget _heading(String text) =>
+      Semantics(header: true, child: AppText.titleSmall(text));
+
   void _pushStep(int newStep) {
     setState(() {
       if (!widget.singlePage) _stepHistory.add(_step);
@@ -141,17 +145,19 @@ class _Flow3State extends ConsumerState<_Flow3> {
       if (state.clients.isNotEmpty && matches.isEmpty)
         const AppText.bodyMedium('No devices match your search.'),
       for (final device in visible) ...[
-        Material(
-          color: _selectedDevice?.macAddress == device.macAddress
-              ? theme.colorScheme.secondaryContainer : Colors.transparent,
-          borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
-          child: ListTile(
+        // A device row as in Instant-Device's picker: one AppListCard, tinted
+        // when selected. The card is the one control (taps, focus, selected
+        // state); the radio is decoration with no Tab stop or screen-reader
+        // node of its own, same look as the kit's AppRadioList.
+        Semantics(
+          button: true,
+          selected: _selectedDevice?.macAddress == device.macAddress,
+          child: AppListCard(
             key: ValueKey('device-choice-${device.macAddress}'),
-            selected: _selectedDevice?.macAddress == device.macAddress,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-            // Same radio look as the kit's AppRadioList. The tile is the one
-            // control: it handles taps, focus and the selected state, so the
-            // radio adds no extra Tab stop or screen-reader node.
+            color: _selectedDevice?.macAddress == device.macAddress
+                ? theme.colorScheme.secondaryContainer : null,
+            padding: const EdgeInsets.symmetric(
+                vertical: Spacing.small2, horizontal: Spacing.small2),
             leading: ExcludeFocus(
                 child: ExcludeSemantics(
                     child: IgnorePointer(
@@ -160,7 +166,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
                             groupValue: _selectedDevice?.macAddress,
                             onChanged: loading ? null : (_) {})))),
             title: AppText.bodyMedium(device.displayNameWithOui, maxLines: 2, overflow: TextOverflow.ellipsis),
-            subtitle: AppText.bodySmall(device.isWireless ? 'WiFi' : 'Ethernet',
+            description: AppText.bodySmall(device.isWireless ? 'WiFi' : 'Ethernet',
                 color: theme.colorScheme.onSurfaceVariant),
             onTap: loading ? null : () => setState(() {
               _selectedDevice = device;
@@ -211,7 +217,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
             changeLabel: 'Change device',
             choices: choices)
         : _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            UserStepHeading('Which device needs help?'),
+            _heading('Which device needs help?'),
             const AppGap.small2(),
             choices,
           ]));
@@ -309,7 +315,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            UserStepHeading('Wired device troubleshooting'),
+            _heading('Wired device troubleshooting'),
             const AppGap.small2(),
             AppText.bodySmall(
               'Try a step, then check whether the connection improves.',
@@ -329,7 +335,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            UserStepHeading('Still not working?'),
+            _heading('Still not working?'),
             const AppGap.small3(),
             Align(
               alignment: Alignment.centerLeft,
@@ -413,7 +419,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
     return _stepCard(context, Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        UserStepHeading('Which device is slow?'),
+        _heading('Which device is slow?'),
         const AppGap.small1(),
         AppText.bodySmall('Select it to get specific advice based on its signal and connection.',
             color: colors.onSurfaceVariant),
@@ -427,28 +433,21 @@ class _Flow3State extends ConsumerState<_Flow3> {
           AppText.bodySmall('No wireless devices detected. Only wired devices are connected, or your router didn\'t report any wireless clients.',
               color: colors.onSurfaceVariant)
         else
-          for (final c in clients)
-            InkWell(
+          for (final c in clients) ...[
+            AppListCard(
               onTap: () => setState(() => _selectedDevice = c),
-              borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Row(children: [
-                  Icon(LinksysIcons.devices, size: 18, color: colors.onSurfaceVariant),
-                  const AppGap.small3(),
-                  Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      AppText.bodySmall(c.displayNameWithOui),
-                      AppText.bodySmall(
-                        '${c.band}${c.signalDecibels != null ? "  ·  ${c.signalDecibels} dBm" : ""}',
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ]),
-                  ),
-                  Icon(LinksysIcons.chevronRight, size: 18, color: colors.outlineVariant),
-                ]),
+              padding: const EdgeInsets.symmetric(
+                  vertical: Spacing.small2, horizontal: Spacing.medium),
+              leading: Icon(LinksysIcons.devices, color: colors.onSurfaceVariant),
+              title: AppText.labelMedium(c.displayNameWithOui),
+              description: AppText.bodySmall(
+                '${c.band}${c.signalDecibels != null ? "  ·  ${c.signalDecibels} dBm" : ""}',
+                color: colors.onSurfaceVariant,
               ),
+              trailing: const Icon(LinksysIcons.chevronRight),
             ),
+            const AppGap.small1(),
+          ],
       ],
     ));
   }
@@ -642,7 +641,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
         ]))
       else ...[
         _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const UserStepHeading('Try this first'),
+          _heading('Try this first'),
           const AppGap.small3(),
           AppText.bodyLarge(findings.first.fix),
           DetailsDisclosure(label: 'Why this might help', child: AppText.bodyMedium(findings.first.detail)),
@@ -741,7 +740,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UserStepHeading('Device keeps dropping WiFi'),
+          _heading('Device keeps dropping WiFi'),
           const AppGap.small2(),
           AppText.bodySmall('Try a step, then check whether the connection improves.',
               color: Theme.of(context).colorScheme.onSurfaceVariant),
@@ -768,7 +767,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UserStepHeading('Things we can try from here'),
+          _heading('Things we can try from here'),
           const AppGap.small3(),
 
           // Force reconnect — deauthenticates the device so it re-associates fresh
@@ -869,16 +868,18 @@ class _Flow3State extends ConsumerState<_Flow3> {
           children: [
             const AppText.titleSmall('Which device is dropping?'),
             const AppGap.small3(),
-            ...wirelessClients.map((c) => ListTile(
-                  leading: const Icon(LinksysIcons.smartPhone),
-                  title: AppText.bodyMedium(c.displayNameWithOui),
-                  subtitle: AppText.bodySmall('${c.band} · ${c.signalDecibels ?? "??"} dBm'),
-                  contentPadding: EdgeInsets.zero,
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _doDeauth(context, c.macAddress, c.displayNameWithOui);
-                  },
-                )),
+            for (final c in wirelessClients)
+              AppListCard(
+                showBorder: false,
+                padding: const EdgeInsets.symmetric(vertical: Spacing.small2),
+                leading: const Icon(LinksysIcons.smartPhone),
+                title: AppText.bodyMedium(c.displayNameWithOui),
+                description: AppText.bodySmall('${c.band} · ${c.signalDecibels ?? "??"} dBm'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _doDeauth(context, c.macAddress, c.displayNameWithOui);
+                },
+              ),
           ],
         ),
       ),
@@ -1089,12 +1090,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
         DetailsDisclosure(label: 'WiFi radio details', child: Column(children: [
         // Bands summary
         if (hasRadioData) ...[
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorSchemeExt.surfaceContainerLow!,
-              borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
-            ),
+          AppCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1185,34 +1181,25 @@ class _Flow3State extends ConsumerState<_Flow3> {
     );
   }
 
+  /// A finding as an Instant-Privacy style warning card: status by a colored
+  /// icon, error border only when the finding blocks the device joining.
   Widget _ssidFindingTile(BuildContext context, _SsidFinding f) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: f.tone.container(context),
-        borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
-        border: Border.all(color: f.tone.color(context)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(f.icon, size: 18, color: f.tone.onContainer(context)),
-          const AppGap.small3(),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.labelMedium(f.title,
-                    color: f.tone.onContainer(context)),
-                const AppGap.small1(),
-                AppText.bodySmall(f.detail,
-                    color: f.tone.onContainer(context)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    final icon = Icon(f.icon, color: f.tone.color(context));
+    final title = AppText.labelLarge(f.title);
+    final detail = AppText.bodySmall(f.detail,
+        color: Theme.of(context).colorScheme.onSurfaceVariant);
+    return f.isBlocker
+        ? AppListCard(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            leading: icon,
+            title: title,
+            description: detail,
+            borderColor: Theme.of(context).colorScheme.error)
+        : AppListCard(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            leading: icon,
+            title: title,
+            description: detail);
   }
   // ── end SSID not visible ──────────────────────────────────────────────────
 
@@ -1226,7 +1213,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
     if (widget.singlePage) {
       return [
         _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          UserStepHeading('Check the WiFi network name'),
+          _heading('Check the WiFi network name'),
           const AppGap.small3(),
           AppText.bodyLarge('Can you see $ssidLabel in your device\'s WiFi list?'),
           const AppGap.medium(),
@@ -1287,7 +1274,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UserStepHeading('General troubleshooting'),
+          _heading('General troubleshooting'),
           const AppGap.small2(),
           const AppText.bodyMedium(
             'Your device is connected but something doesn\'t seem right. '
@@ -1305,7 +1292,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UserStepHeading('If those didn\'t help'),
+          _heading('If those didn\'t help'),
           const AppGap.small3(),
           Align(
               alignment: Alignment.centerLeft,
@@ -1329,7 +1316,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UserStepHeading('Check your WiFi details'),
+          _heading('Check your WiFi details'),
           const AppGap.small3(),
           _wifiCredRow(context, 'Network name', ssid),
           const AppGap.small1(),
@@ -1344,10 +1331,10 @@ class _Flow3State extends ConsumerState<_Flow3> {
         ],
       )),
       if (wpa3Only)
-        _stepCard(context, _infoBox(context,
+        _warningCard(context,
             'Your router is set to WPA3-only security. '
             'Older devices (phones before 2019, many smart home devices) can\'t connect with this setting. '
-            'Choose Back to router home, open Incredible-WiFi, and check whether WPA2/WPA3 compatibility is available.')),
+            'Choose Back to router home, open Incredible-WiFi, and check whether WPA2/WPA3 compatibility is available.'),
       if (macActive)
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1380,7 +1367,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UserStepHeading('Still not connecting?'),
+          _heading('Still not connecting?'),
           const AppGap.small2(),
           const AppText.bodyMedium(
             'If the steps above haven\'t worked, restarting your router often '
@@ -1415,7 +1402,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UserStepHeading('Connect your smart home device'),
+          _heading('Connect your smart home device'),
           const AppGap.small3(),
           GuidedSteps(steps: [
               'Make sure your phone is on the same WiFi network you want the device on — not a guest network',
@@ -1428,11 +1415,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
         ],
       )),
       if (wpa3Only)
-        _stepCard(context,
-            _infoBox(
-              context,
-              'Some older smart home devices don\'t support the latest WiFi security standard. If this device keeps failing:\n\nChoose Back to router home, open Incredible-WiFi, and check whether WPA2 compatibility is available.',
-            )),
+        _warningCard(context,
+            'Some older smart home devices don\'t support the latest WiFi security standard. If this device keeps failing:\n\nChoose Back to router home, open Incredible-WiFi, and check whether WPA2 compatibility is available.'),
       const AppGap.small2(),
       Align(
               alignment: Alignment.centerLeft,
@@ -1442,6 +1426,17 @@ class _Flow3State extends ConsumerState<_Flow3> {
 
     ];
   }
+
+  /// A non-blocking warning, as Instant-Privacy shows one: AppSettingCard
+  /// with a warning-colored icon and the default border.
+  Widget _warningCard(BuildContext context, String text) => Padding(
+        padding: const EdgeInsets.only(bottom: Spacing.medium),
+        child: AppSettingCard(
+          title: text,
+          leading: Icon(LinksysIcons.infoCircle,
+              color: InstantTestTone.warning.color(context)),
+        ),
+      );
 
   Widget _wifiCredRow(BuildContext context, String label, String value) =>
       Row(

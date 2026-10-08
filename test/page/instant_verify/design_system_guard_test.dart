@@ -37,6 +37,8 @@ const _kitConverted = {
   'details_disclosure.dart',
   'restart_helper.dart',
   'diagnostic_selection_area.dart',
+  'flow_device.dart',
+  'answer_row.dart',
 };
 
 const _bannedInKitConverted = <String, String>{

@@ -22,6 +22,8 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
