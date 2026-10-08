@@ -10,6 +10,9 @@ import 'package:privacy_gui/components/localizations/service_error_localizations
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/framework/mode/session_end.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -48,10 +51,12 @@ class _AutoIPoEViewState extends ConsumerState<AutoIPoEView> {
   bool _started = false;
   bool _leaving = false;
   bool _continuing = false;
+  bool _recoveringSession = false;
   String? _requestId;
   AutoIPoESettings? _draft;
   AutoIPoEService? _attemptService;
   Object? _actionError;
+  AutoIPoEService? _actionErrorService;
   bool _allowPnpExit = false;
   AutoIPoEPnpExitGuard? _exitGuard;
 
@@ -87,7 +92,10 @@ class _AutoIPoEViewState extends ConsumerState<AutoIPoEView> {
     final outcome = rejection != null
         ? AutoIPoEOutcome.rejected
         : snapshot.outcomeFor(submission);
-    final readError = ref.watch(autoIPoEDataProvider).error;
+    final readState = ref.watch(autoIPoEDataProvider);
+    final readError = readState.error;
+    if (!readState.isLoading) _recoverPnpSession(readError);
+    _recoverPnpSession(_actionError, origin: _actionErrorService);
     final retryRead =
         pnp && outcome == AutoIPoEOutcome.pending && readError != null;
     final retry = _actionError != null ||
@@ -95,7 +103,8 @@ class _AutoIPoEViewState extends ConsumerState<AutoIPoEView> {
         outcome == AutoIPoEOutcome.failed ||
         outcome == AutoIPoEOutcome.rejected ||
         outcome == AutoIPoEOutcome.retryScheduled;
-    final busy = _leaving ||
+    final busy = _recoveringSession ||
+        _leaving ||
         _sending ||
         _continuing ||
         state.status.saving ||
@@ -286,12 +295,58 @@ class _AutoIPoEViewState extends ConsumerState<AutoIPoEView> {
     );
   }
 
+  bool _ownsCurrentSession(AutoIPoEService service) {
+    if (!identical(service, ref.read(autoIPoEServiceProvider))) return false;
+    try {
+      service.checkConnection();
+      return true;
+    } on NotAuthenticatedError {
+      // A stable client can have been rebound since this service was created.
+      return false;
+    }
+  }
+
+  void _recoverPnpSession(Object? error, {AutoIPoEService? origin}) {
+    if (!pnp ||
+        _recoveringSession ||
+        (error is! NotAuthenticatedError &&
+            error is! InvalidSessionTokenError &&
+            error is! SessionTokenExpiredError)) {
+      return;
+    }
+    final service = ref.read(autoIPoEServiceProvider);
+    if ((origin != null && !identical(origin, service)) ||
+        !_ownsCurrentSession(service)) {
+      return;
+    }
+    _recoveringSession = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      // Do not end a replacement session for an error from the previous one.
+      if (!_ownsCurrentSession(service) ||
+          ref.read(autoIPoEDataProvider).isLoading ||
+          (!identical(error, ref.read(autoIPoEDataProvider).error) &&
+              !identical(error, _actionError))) {
+        setState(() => _recoveringSession = false);
+        return;
+      }
+      // Reauthentication is not the user's Back/cancel action. Retain the
+      // submitted request for read-only reconciliation after the next login;
+      // neither the exit guard nor the dirty guard may issue Reset here.
+      _allowPnpExit = true;
+      _requestId = null;
+      ref.read(autoIPoEPageProvider.notifier).revert();
+      await ref.read(authProvider.notifier).logout(cause: EndCause.sessionLost);
+      if (mounted) context.go(RoutePath.localLoginPassword);
+    });
+  }
+
   Future<void> _next() async {
     if (ref.read(surfaceStrategyProvider).internetSettingsEditor(() {}) ==
         null) {
       return;
     }
-    if (_sending || _continuing || _leaving) return;
+    if (_sending || _continuing || _leaving || _recoveringSession) return;
     setState(() => _started = true);
     final page = ref.read(autoIPoEPageProvider);
     final submission = ref.read(autoIPoESubmissionProvider);
@@ -329,7 +384,12 @@ class _AutoIPoEViewState extends ConsumerState<AutoIPoEView> {
         _requestId = current!.requestId;
       }
     } catch (e) {
-      if (mounted) setState(() => _actionError = e);
+      if (mounted && _ownsCurrentSession(service)) {
+        setState(() {
+          _actionError = e;
+          _actionErrorService = service;
+        });
+      }
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -342,6 +402,7 @@ class _AutoIPoEViewState extends ConsumerState<AutoIPoEView> {
         _sending ||
         _continuing ||
         _leaving ||
+        _recoveringSession ||
         _requestId == null) {
       return;
     }
@@ -364,6 +425,7 @@ class _AutoIPoEViewState extends ConsumerState<AutoIPoEView> {
 
   Future<void> _continuePnp() async {
     if (!mounted || _continuing) return;
+    final service = ref.read(autoIPoEServiceProvider);
     setState(() {
       _continuing = true;
       _actionError = null;
@@ -381,7 +443,10 @@ class _AutoIPoEViewState extends ConsumerState<AutoIPoEView> {
       if (mounted) {
         setState(() {
           _continuing = false;
-          _actionError = e;
+          if (_ownsCurrentSession(service)) {
+            _actionError = e;
+            _actionErrorService = service;
+          }
         });
       }
     }
@@ -424,10 +489,11 @@ class _AutoIPoEViewState extends ConsumerState<AutoIPoEView> {
       _allowPnpExit = true;
       return true;
     } catch (e) {
-      if (mounted) {
+      if (mounted && _ownsCurrentSession(service)) {
         setState(() {
           _started = true;
           _actionError = e;
+          _actionErrorService = service;
         });
       }
       return false;
