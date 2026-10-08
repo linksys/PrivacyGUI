@@ -1,10 +1,12 @@
 import 'diagnostic_selection_area.dart';
 import 'instant_test_layout.dart';
 import 'instant_test_page_header.dart';
+import 'instant_test_style.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'details_disclosure.dart';
 import 'dart:async';
 import 'user_step_heading.dart';
@@ -234,12 +236,12 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
                 child: TickerMode(enabled: visit == active, child: DiagnosticSelectionArea(child: _flow(visit)))),
           ),
         if (widget.singlePage) ...[
-          const SizedBox(height: 24),
+          const AppGap.large2(),
           const Divider(),
-          const SizedBox(height: 12),
+          const AppGap.small3(),
           if (checkAgain)
-            const Text('After trying a fix, check again to see the latest results.'),
-          const SizedBox(height: 12),
+            const AppText.bodyMedium('After trying a fix, check again to see the latest results.'),
+          const AppGap.small3(),
           Wrap(spacing: 12, runSpacing: 8, children: [
             if (checkAgain)
               AppFilledButton('Check again',
@@ -249,7 +251,7 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
                 onTap: _exitFlow),
           ]),
         ],
-        const SizedBox(height: 24),
+        const AppGap.large2(),
         _linksysSupportTile(context),
       ]),
     );
@@ -306,13 +308,7 @@ class _FlowMenuState extends State<_FlowMenu> {
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 16),
-          child: Text(
-            'What are you running into?',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w600),
-          ),
+          child: const AppText.titleMedium('What are you running into?'),
         ),
         Card(
           child: Padding(
@@ -320,12 +316,9 @@ class _FlowMenuState extends State<_FlowMenu> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Is it affecting one specific device or everything?',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 12),
+                const AppText.titleSmall(
+                    'Is it affecting one specific device or everything?'),
+                const AppGap.small3(),
                 Align(
               alignment: Alignment.centerLeft,
               child: AppOutlinedButton('One specific device',
@@ -333,7 +326,7 @@ class _FlowMenuState extends State<_FlowMenu> {
                     icon: LinksysIcons.genericDevice,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const AppGap.small2(),
                 Align(
               alignment: Alignment.centerLeft,
               child: AppOutlinedButton('Everything in my home',
@@ -356,24 +349,18 @@ class _FlowMenuState extends State<_FlowMenu> {
           'Videos buffer, downloads are sluggish'),
       (3, LinksysIcons.devices, 'Device connectivity issues',
           'A device won\'t connect or keeps dropping off WiFi'),
-      (4, Icons.signal_wifi_bad, 'WiFi doesn\'t reach a room',
+      (4, LinksysIcons.signalWifi0Bar, 'WiFi doesn\'t reach a room',
           'Weak signal in part of your home'),
-      (5, Icons.sync_problem, 'My connection keeps cutting out',
+      (5, LinksysIcons.networkCheck, 'My connection keeps cutting out',
           'Internet drops and comes back on its own'),
     ];
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Text(
-            'What are you running into?',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w600),
-          ),
+        const Padding(
+          padding: EdgeInsets.only(bottom: 16),
+          child: AppText.titleMedium('What are you running into?'),
         ),
         for (final (index, icon, title, subtitle) in flows)
           Card(
@@ -381,13 +368,11 @@ class _FlowMenuState extends State<_FlowMenu> {
             child: ListTile(
               leading: Icon(icon,
                   color: Theme.of(context).colorScheme.primary, size: 28),
-              title: Text(title,
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text(subtitle,
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 13)),
-              trailing: const Icon(LinksysIcons.chevronRight, color: Colors.grey),
+              title: AppText.labelLarge(title),
+              subtitle: AppText.bodySmall(subtitle,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+              trailing: Icon(LinksysIcons.chevronRight,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
               onTap: () => widget.onSelect(index),
             ),
           ),
@@ -430,7 +415,7 @@ class _FlowShell extends StatelessWidget {
                     valueListenable: stepIndicatorNotifier!,
                     builder: (_, indicator, __) => indicator == null
                         ? const SizedBox.shrink()
-                        : Text(indicator, style: Theme.of(context).textTheme.labelSmall)),
+                        : AppText.labelSmall(indicator)),
           ),
         ),
         Expanded(
@@ -468,10 +453,8 @@ Widget _infoBox(BuildContext context, String text,
       children: [
         Icon(icon, size: 18,
             color: color ?? Theme.of(context).colorScheme.primary),
-        const SizedBox(width: 8),
-        Expanded(
-            child:
-                Text(text, style: Theme.of(context).textTheme.bodyMedium)),
+        const AppGap.small2(),
+        Expanded(child: AppText.bodyMedium(text)),
       ],
     ),
   );
@@ -486,13 +469,11 @@ Widget _checklistItem(BuildContext context, String text) => Padding(
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 7, left: 4, right: 8),
-            child: Icon(Icons.circle,
+            child: Icon(LinksysIcons.circle,
                 size: 6,
                 color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
-          Expanded(
-              child: SelectableText(text,
-                  style: Theme.of(context).textTheme.bodyMedium)),
+          Expanded(child: AppText.bodyMedium(text, selectable: true)),
         ],
       ),
     );
@@ -513,31 +494,26 @@ class _ClickChecklistItemState extends State<_ClickChecklistItem> {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () => setState(() => _done = !_done),
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
-              _done ? Icons.check_box : Icons.check_box_outline_blank,
+              _done ? LinksysIcons.checkBox : LinksysIcons.checkBoxOutlineBlank,
               size: 20,
               color: _done
-                  ? Colors.green
+                  ? InstantTestTone.good.color(context)
                   : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(width: 8),
+            const AppGap.small2(),
             Expanded(
-              child: Text(
+              child: AppText.bodyMedium(
                 widget.text,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      decoration: _done
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none,
-                      color: _done
-                          ? Theme.of(context).colorScheme.onSurfaceVariant
-                          : null,
-                    ),
+                color: _done
+                    ? Theme.of(context).colorScheme.onSurfaceVariant
+                    : null,
               ),
             ),
           ],
@@ -551,27 +527,19 @@ class _ClickChecklistItemState extends State<_ClickChecklistItem> {
 Widget _ispScript(BuildContext context, String script) => Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color:
-            Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-            color:
-                Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+        color: InstantTestTone.info.container(context),
+        borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
+        border: Border.all(color: Theme.of(context).colorScheme.outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Say to your provider:',
-              style: Theme.of(context)
-                  .textTheme
-                  .labelMedium
-                  ?.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 6),
-          SelectableText('"$script"',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(fontStyle: FontStyle.italic)),
+          AppText.labelMedium('Say to your provider:',
+              color: InstantTestTone.info.onContainer(context)),
+          const AppGap.small1(),
+          AppText.bodyMedium('"$script"',
+              selectable: true,
+              color: InstantTestTone.info.onContainer(context)),
         ],
       ),
     );
@@ -585,17 +553,14 @@ Widget _linksysSupportTile(BuildContext context) => Padding(
           Row(children: [
             Icon(LinksysIcons.supportAgent,
                 size: 20, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 8),
-            Text('Still need help?',
-                style: Theme.of(context).textTheme.titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            const AppGap.small2(),
+            const AppText.titleSmall('Still need help?'),
           ]),
-          const SizedBox(height: 6),
-          SelectableText(
+          const AppGap.small1(),
+          AppText.bodySmall(
             'Contact Linksys Support:\nwww.linksys.com/support  •  1-800-326-7114',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+            selectable: true,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ],
       ),
@@ -612,11 +577,10 @@ Widget _restartOrEscalate(BuildContext context, WidgetRef ref, InstantVerifyPivo
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        AppText.bodySmall(
           'You\'ve already restarted your router this session. '
           'If the issue persists, contact Linksys Support.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ],
     );
@@ -635,14 +599,13 @@ class _LoadingButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           shape: const RoundedRectangleBorder(),
           minimumSize: Size(64, ResponsiveLayout.isMobileLayout(context) ? 48 : 40),
-          textStyle: Theme.of(context).textTheme.labelMedium,
         ),
         onPressed: null,
         icon: const SizedBox(
             width: 14,
             height: 14,
             child: CircularProgressIndicator(strokeWidth: 2)),
-        label: Text(label),
+        label: AppText.labelMedium(label),
       );
 }
 
@@ -759,9 +722,9 @@ class _Flow1State extends ConsumerState<_Flow1> {
       if (_phase == _Flow1Phase.unavailable)
         _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const UserStepHeading('Try the connection check again'),
-          const SizedBox(height: 8),
-          const Text("We couldn't complete the check, so no connection result is available yet."),
-          const SizedBox(height: 12),
+          const AppGap.small2(),
+          const AppText.bodyMedium("We couldn't complete the check, so no connection result is available yet."),
+          const AppGap.small3(),
           AppOutlinedButton('Try connection check again', onTap: _runDiagnostics,
               icon: LinksysIcons.refresh),
         ])),
@@ -787,24 +750,20 @@ class _Flow1State extends ConsumerState<_Flow1> {
             Icon(_phase == _Flow1Phase.allOk
                 ? LinksysIcons.checkCircle : LinksysIcons.infoCircle,
                 color: _phase == _Flow1Phase.allOk
-                    ? Colors.green : Theme.of(context).colorScheme.error,
+                    ? InstantTestTone.good.color(context)
+                    : InstantTestTone.problem.color(context),
                 size: 20),
-            const SizedBox(width: 8),
+            const AppGap.small2(),
           ],
-          Expanded(child: Text(outcome,
-            style: Theme.of(context)
-                .textTheme
-                .titleSmall
-                ?.copyWith(fontWeight: FontWeight.w600))),
+          Expanded(child: AppText.titleSmall(outcome)),
         ]),
         if (_runs > 1 && _phase != _Flow1Phase.running && _checkedAt != null) ...[
-          const SizedBox(height: 4),
-          Text(
+          const AppGap.small1(),
+          AppText.bodySmall(
               'Checked again at ${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(_checkedAt!))}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              color: Theme.of(context).colorScheme.onSurfaceVariant),
         ],
-        const SizedBox(height: 12),
+        const AppGap.small3(),
         DetailsDisclosure(label: 'View test details', child: Column(children: [
         _checkRow(context, 'This device reached your router',
             (_phase == _Flow1Phase.running || _phase == _Flow1Phase.unavailable) && !_gatewayOk
@@ -829,33 +788,33 @@ class _Flow1State extends ConsumerState<_Flow1> {
       indicator = _phase == _Flow1Phase.running
           ? const SizedBox(width: 16, height: 16,
               child: CircularProgressIndicator(strokeWidth: 2))
-          : const Icon(Icons.remove, size: 18);
+          : const Icon(LinksysIcons.remove, size: 18);
     } else if (result) {
-      indicator =
-          const Icon(LinksysIcons.checkCircle, color: Colors.green, size: 18);
+      indicator = Icon(LinksysIcons.checkCircle,
+          color: InstantTestTone.good.color(context), size: 18);
     } else {
-      indicator = const Icon(Icons.cancel, color: Colors.red, size: 18);
+      indicator = Icon(LinksysIcons.close,
+          color: InstantTestTone.problem.color(context), size: 18);
     }
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(children: [
         indicator,
-        const SizedBox(width: 10),
-        Expanded(child: Text(result == null && _phase != _Flow1Phase.running
-            ? '$label — Not run' : label, style: Theme.of(context).textTheme.bodyMedium)),
+        const AppGap.small3(),
+        Expanded(child: AppText.bodyMedium(result == null && _phase != _Flow1Phase.running
+            ? '$label — Not run' : label)),
       ]),
     );
   }
 
   List<Widget> _running(BuildContext context) => [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
           child: Row(children: [
-            const SizedBox(width: 18, height: 18,
+            SizedBox(width: 18, height: 18,
                 child: CircularProgressIndicator(strokeWidth: 2)),
-            const SizedBox(width: 8),
-            Expanded(child: Text('Checking your connection…',
-                style: Theme.of(context).textTheme.bodyMedium)),
+            AppGap.small2(),
+            Expanded(child: AppText.bodyMedium('Checking your connection…')),
           ]),
         ),
       ];
@@ -865,15 +824,15 @@ class _Flow1State extends ConsumerState<_Flow1> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             UserStepHeading('Check your connection to the router'),
-            const SizedBox(height: 8),
-            Text('Your device can\'t reach your router. This is usually a WiFi or cable issue between your device and the router.'),
-            const SizedBox(height: 12),
+            const AppGap.small2(),
+            const AppText.bodyMedium('Your device can\'t reach your router. This is usually a WiFi or cable issue between your device and the router.'),
+            const AppGap.small3(),
             GuidedSteps(steps: [
               'Make sure you\'re connected to your Linksys WiFi network (not a neighbor\'s)',
               'If you\'re using a wired connection, check that the Ethernet cable is firmly plugged in at both ends',
               'Move closer to your router and try again',
             ]),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppOutlinedButton('Check again',
@@ -890,15 +849,15 @@ class _Flow1State extends ConsumerState<_Flow1> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             UserStepHeading('Check the connection to your modem'),
-            const SizedBox(height: 8),
-            Text('Your router is reachable but can\'t get to the internet. The issue is likely between your router and the box from your internet company (modem).'),
-            const SizedBox(height: 12),
+            const AppGap.small2(),
+            const AppText.bodyMedium('Your router is reachable but can\'t get to the internet. The issue is likely between your router and the box from your internet company (modem).'),
+            const AppGap.small3(),
             GuidedSteps(steps: [
               'Find the box from your internet company (Comcast, Spectrum, AT&T, etc.) — it\'s separate from your Linksys router',
               'Check that the cable between that box and your Linksys router is firmly plugged in at both ends',
               'Look for lights on that box — if all lights are off or blinking red, the issue is with your internet service',
             ]),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppOutlinedButton('Check again',
@@ -911,11 +870,11 @@ class _Flow1State extends ConsumerState<_Flow1> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             UserStepHeading('If cables are fine, contact your internet provider'),
-            const SizedBox(height: 8),
+            const AppGap.small2(),
             _ispScript(context,
                 'My router is connected to your equipment but the internet isn\'t working. I checked all the cables. Please check if there\'s an outage or provisioning issue.'),
             const _SessionSummaryCard(websiteStatus: 'Not checked in this test'),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppFilledButton('Done — my internet is working now',
@@ -931,14 +890,13 @@ class _Flow1State extends ConsumerState<_Flow1> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             UserStepHeading('Try restarting your router'),
-            const SizedBox(height: 8),
-            Text('Your router can reach the internet but domain names aren\'t resolving. This can often be fixed by restarting your router.'),
-            const SizedBox(height: 12),
-            Text(
+            const AppGap.small2(),
+            const AppText.bodyMedium('Your router can reach the internet but domain names aren\'t resolving. This can often be fixed by restarting your router.'),
+            const AppGap.small3(),
+            const AppText.bodyMedium(
               'Restarting clears DNS cache issues and usually resolves this.',
-              style: Theme.of(context).textTheme.bodyMedium,
             ),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppFilledButton('Restart Router',
@@ -946,9 +904,9 @@ class _Flow1State extends ConsumerState<_Flow1> {
                 icon: LinksysIcons.restartAlt),
             ),
             if (_restarted) ...[
-              const SizedBox(height: 8),
-              const Text('Diagnostics ran again after restart.',
-                  style: TextStyle(color: Colors.green)),
+              const AppGap.small2(),
+              AppText.bodyMedium('Diagnostics ran again after restart.',
+                  color: InstantTestTone.good.color(context)),
             ],
           ],
         )),
@@ -957,11 +915,11 @@ class _Flow1State extends ConsumerState<_Flow1> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               UserStepHeading('If restarting didn\'t fix it:'),
-              const SizedBox(height: 8),
+              const AppGap.small2(),
               _ispScript(context,
                   'My router is connected and has an IP address, but websites won\'t load and domain names can\'t be resolved. I restarted my router but the problem persists.'),
               const _SessionSummaryCard(websiteStatus: 'Not loading'),
-              const SizedBox(height: 12),
+              const AppGap.small3(),
               Align(
               alignment: Alignment.centerLeft,
               child: AppFilledButton('Done — my internet is working now',
@@ -979,21 +937,19 @@ class _Flow1State extends ConsumerState<_Flow1> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             UserStepHeading('Still seeing an issue?'),
-            const SizedBox(height: 8),
-            Text(
+            const AppGap.small2(),
+            AppText.bodyMedium(
               'The connection looks healthy from the router\'s side. '
               'This can happen if the problem is intermittent or affects only one device.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 12),
-            Text('Is this happening on just one device?',
-                style: Theme.of(context).textTheme.bodyLarge),
-            const SizedBox(height: 8),
+            const AppGap.small3(),
+            const AppText.bodyLarge('Is this happening on just one device?'),
+            const AppGap.small2(),
             AppOutlinedButton('Yes — troubleshoot a specific device',
                 onTap: () => widget.onNavigateToFlow?.call(30),
                 icon: LinksysIcons.devices),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppOutlinedButton('Still seeing issues — test again',
@@ -1163,20 +1119,20 @@ class _Flow2State extends ConsumerState<_Flow2> {
         _infoBox(
           context,
           'Your device has a weak WiFi connection. This reading may be lower than your actual internet speed. Move closer to your router, then run again.',
-          icon: Icons.warning_amber,
-          color: Colors.orange,
+          icon: LinksysIcons.error,
+          color: InstantTestTone.warning.color(context),
         ),
-      const SizedBox(height: 12),
+      const AppGap.small3(),
 
-          const SizedBox(height: 12),
+          const AppGap.small3(),
           if (_isRunning) ...[
             const Row(children: [
               SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2)),
-              SizedBox(width: 10),
-              Text('Running speed test (~20 seconds)…'),
+              AppGap.small3(),
+              AppText.bodyMedium('Running speed test (~20 seconds)…'),
             ]),
           ] else ...[
             Align(
@@ -1210,54 +1166,51 @@ class _Flow2State extends ConsumerState<_Flow2> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Here\'s what your connection can do',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 12),
+          const AppText.titleSmall('Here\'s what your connection can do'),
+          const AppGap.small3(),
           // Lead with capability, not raw number
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: actuallyProblematic
-                  ? Colors.orange.withOpacity(0.08)
-                  : Colors.green.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(10),
+              color: (actuallyProblematic
+                      ? InstantTestTone.warning
+                      : InstantTestTone.good)
+                  .container(context),
+              borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
               border: Border.all(
-                  color: actuallyProblematic
-                      ? Colors.orange.withOpacity(0.3)
-                      : Colors.green.withOpacity(0.3)),
+                  color: (actuallyProblematic
+                          ? InstantTestTone.warning
+                          : InstantTestTone.good)
+                      .color(context)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_speedCapability(mbps),
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        )),
-                const SizedBox(height: 6),
+                AppText.bodyLarge(_speedCapability(mbps),
+                    color: (actuallyProblematic
+                            ? InstantTestTone.warning
+                            : InstantTestTone.good)
+                        .onContainer(context)),
+                const AppGap.small1(),
 
               ],
             ),
           ),
-          const SizedBox(height: 8),
+          const AppGap.small2(),
           DetailsDisclosure(label: 'View speed test details', child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 // Show all three metrics — PRD D-35 requires upload visibility
-                SelectableText(
+                AppText.bodySmall(
                   '${mbps.toStringAsFixed(0)} Mbps down · '
                   '${_speedResult!.uploadMbps.toStringAsFixed(0)} Mbps up · '
                   '${_speedResult!.latencyMs}ms latency',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),          SelectableText(
+                  selectable: true,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),          AppText.bodySmall(
             'This measures your speed from this device through your browser to the internet. '
             'Browser-based tests are typically slower than your router\'s built-in speed test — '
             'that\'s normal. Results also vary by time of day and how many devices are active.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+            selectable: true,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           ])),
         ],
@@ -1267,18 +1220,14 @@ class _Flow2State extends ConsumerState<_Flow2> {
       if (!widget.singlePage) _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Does this feel fast enough for what you\'re trying to do?',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 12),
+          const AppText.titleSmall('Does this feel fast enough for what you\'re trying to do?'),
+          const AppGap.small3(),
           Align(
               alignment: Alignment.centerLeft,
               child: AppFilledButton('Yes — it feels fine',
                 onTap: widget.onDone),
           ),
-          const SizedBox(height: 8),
+          const AppGap.small2(),
           Align(
               alignment: Alignment.centerLeft,
               child: AppOutlinedButton('No — something still feels slow',
@@ -1286,7 +1235,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
               onTap: () => _pushStep(2),
             ),
           ),
-          const SizedBox(height: 8),
+          const AppGap.small2(),
           AppTextButton('Run test again',
                 onTap: _runSpeedTest,
                 icon: LinksysIcons.refresh),
@@ -1310,7 +1259,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           UserStepHeading('Let\'s figure out what\'s slow'),
-          const SizedBox(height: 12),
+          const AppGap.small3(),
 
           // Show jitter warning if relevant (gaming/call lag)
           if (highJitter) ...[
@@ -1318,8 +1267,9 @@ class _Flow2State extends ConsumerState<_Flow2> {
                 'Your connection has variable response time (${jitterMs}ms). '
                 'This causes the stuttering you feel during games and video calls '
                 'even when your download speed looks fine.',
-                icon: Icons.timer_outlined, color: Colors.orange),
-            const SizedBox(height: 10),
+                icon: LinksysIcons.uptime,
+                color: InstantTestTone.warning.color(context)),
+            const AppGap.small3(),
           ],
 
           // Show weak device signal if we detected any
@@ -1328,13 +1278,13 @@ class _Flow2State extends ConsumerState<_Flow2> {
                 '${weakDevices.length} device${weakDevices.length == 1 ? "" : "s"} on your network '
                 '${weakDevices.length == 1 ? "has" : "have"} a weak WiFi signal. '
                 'A weak signal reduces speed even when your overall internet is fine.',
-                icon: Icons.signal_wifi_statusbar_connected_no_internet_4,
-                color: Colors.orange),
-            const SizedBox(height: 10),
+                icon: LinksysIcons.signalWifi0Bar,
+                color: InstantTestTone.warning.color(context)),
+            const AppGap.small3(),
           ],
 
           UserStepHeading('Where is it slow?'),
-          const SizedBox(height: 8),
+          const AppGap.small2(),
 
           Align(
               alignment: Alignment.centerLeft,
@@ -1342,7 +1292,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
                 onTap: () => _pushStep(3),
                 icon: LinksysIcons.devices),
           ),
-          const SizedBox(height: 8),
+          const AppGap.small2(),
           Align(
               alignment: Alignment.centerLeft,
               child: AppOutlinedButton('Just one specific device',
@@ -1351,12 +1301,12 @@ class _Flow2State extends ConsumerState<_Flow2> {
               icon: LinksysIcons.genericDevice,
             ),
           ),
-          const SizedBox(height: 8),
+          const AppGap.small2(),
           Align(
               alignment: Alignment.centerLeft,
               child: AppOutlinedButton('Games or video calls are laggy',
                 onTap: () => _pushStep(5),
-                icon: Icons.sports_esports),
+                icon: LinksysIcons.stadiaController),
           ),
         ],
       )),
@@ -1377,12 +1327,8 @@ class _Flow2State extends ConsumerState<_Flow2> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Before restarting, here\'s what we noticed:',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 10),
+            const AppText.titleSmall('Before restarting, here\'s what we noticed:'),
+            const AppGap.small3(),
             if (weakDevices.isNotEmpty)
               _checklistItem(context,
                   '${weakDevices.length} device${weakDevices.length == 1 ? '' : 's'} '
@@ -1394,27 +1340,21 @@ class _Flow2State extends ConsumerState<_Flow2> {
               _checklistItem(context,
                   '${weakNodes.map((n) => n.name).join(', ')} '
                   '${weakNodes.length == 1 ? 'has' : 'have'} a weak connection to your router'),
-            const SizedBox(height: 8),
-            Text('These may be causing the slowness.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            const AppGap.small2(),
+            AppText.bodySmall('These may be causing the slowness.',
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
           ],
         )),
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          AppText.titleSmall(
             hasFindings
                 ? 'If none of these apply, try restarting your router'
-                : 'Try restarting your router',
-            style: Theme.of(context)
-                .textTheme
-                .titleSmall
-                ?.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          Text('Restarting can clear congestion and improve speeds.',
-              style: Theme.of(context).textTheme.bodyMedium),
-          const SizedBox(height: 12),
+                : 'Try restarting your router'),
+          const AppGap.small2(),
+          const AppText.bodyMedium('Restarting can clear congestion and improve speeds.'),
+          const AppGap.small3(),
           SizedBox(
             width: double.infinity,
             child: _isRunning
@@ -1423,7 +1363,7 @@ class _Flow2State extends ConsumerState<_Flow2> {
                 onTap: _restartAndRetest,
                 icon: LinksysIcons.restartAlt),
           ),
-          const SizedBox(height: 8),
+          const AppGap.small2(),
           AppTextButton('Skip — already restarted',
                 onTap: () => _pushStep(4)),
         ],
@@ -1436,18 +1376,17 @@ class _Flow2State extends ConsumerState<_Flow2> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             UserStepHeading('Contact your internet provider'),
-            const SizedBox(height: 8),
-            Text(
+            const AppGap.small2(),
+            const AppText.bodyMedium(
               'Since restarting didn\'t fix it, the issue is likely outside your router.',
-              style: Theme.of(context).textTheme.bodyMedium,
             ),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             _ispScript(context,
                 'My internet is slower than what I\'m paying for — only ${_postRestartResult?.downloadMbps.toStringAsFixed(0) ?? _mbps?.toStringAsFixed(0) ?? '?'} Mbps. I restarted my router but the problem persists.'),
             _SessionSummaryCard(speedStatus: (_postRestartResult ?? _speedResult) == null
                 ? 'Not completed in this test'
                 : '${(_postRestartResult ?? _speedResult)!.downloadMbps.toStringAsFixed(0)} Mbps down'),
-            const SizedBox(height: 16),
+            const AppGap.medium(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppFilledButton('Done',
@@ -1467,39 +1406,41 @@ class _Flow2State extends ConsumerState<_Flow2> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           UserStepHeading('Latency / lag troubleshooting'),
-          const SizedBox(height: 8),
+          const AppGap.small2(),
           _infoBox(context,
               'Gaming and video calls are sensitive to latency and jitter, not just download speed. '
               'High latency causes lag even with fast internet.'),
-          const SizedBox(height: 12),
+          const AppGap.small3(),
           GuidedSteps(steps: [
               'Connect the device with an Ethernet cable if possible — wired is always better for gaming',
               'If on WiFi, move the device closer to your router or a child node',
               'Close bandwidth-heavy apps on other devices (streaming, downloads)',
             ]),
           if (state.speedTest != null && state.speedTest!.jitterMs > 20) ...[
-            const SizedBox(height: 8),
+            const AppGap.small2(),
             _infoBox(context,
                 'Your connection has high jitter (${state.speedTest!.jitterMs}ms). '
                 'This causes the stuttering you feel in games and video calls. '
                 'Restarting your router often improves jitter.',
-                icon: Icons.warning_amber, color: Colors.orange),
+                icon: LinksysIcons.error,
+                color: InstantTestTone.warning.color(context)),
           ],
           if (state.isMeshNetwork && state.weakBackhaulNodes.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const AppGap.small2(),
             _infoBox(context,
                 'One of your child nodes has a weak connection to your router. '
                 'Devices connected through that node will experience higher latency.',
-                icon: Icons.warning_amber, color: Colors.orange),
+                icon: LinksysIcons.error,
+                color: InstantTestTone.warning.color(context)),
           ],
-          const SizedBox(height: 12),
+          const AppGap.small3(),
           Align(
               alignment: Alignment.centerLeft,
               child: AppOutlinedButton('Restart Router',
                 onTap: () => _confirmAndRestart(context, ref),
                 icon: LinksysIcons.restartAlt),
           ),
-          const SizedBox(height: 8),
+          const AppGap.small2(),
           Align(
               alignment: Alignment.centerLeft,
               child: AppFilledButton('Done',
@@ -1533,7 +1474,7 @@ class _SpeedTierTable extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border.all(
             color: Theme.of(context).colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
       ),
       child: Column(
         children: [
@@ -1543,16 +1484,14 @@ class _SpeedTierTable extends StatelessWidget {
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: tiers[i].$3
-                    ? Theme.of(context)
-                        .colorScheme
-                        .primaryContainer
-                        .withOpacity(0.4)
+                    ? InstantTestTone.info.container(context)
                     : null,
                 borderRadius: i == 0
-                    ? const BorderRadius.vertical(top: Radius.circular(7))
+                    ? BorderRadius.vertical(
+                        top: CustomTheme.of(context).radius.medium)
                     : i == tiers.length - 1
-                        ? const BorderRadius.vertical(
-                            bottom: Radius.circular(7))
+                        ? BorderRadius.vertical(
+                            bottom: CustomTheme.of(context).radius.medium)
                         : null,
               ),
               child: Row(
@@ -1560,32 +1499,26 @@ class _SpeedTierTable extends StatelessWidget {
                   if (tiers[i].$3)
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 5),
-                      child: Icon(Icons.circle, size: 8),
+                      child: Icon(LinksysIcons.circle, size: 8),
                     )
                   else
                     const SizedBox(width: 18),
-                  const SizedBox(width: 4),
+                  const AppGap.small1(),
                   SizedBox(
                     width: 90,
-                    child: Text(tiers[i].$1,
-                        style: TextStyle(
-                            fontWeight: tiers[i].$3
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                            fontSize: 12)),
+                    child: tiers[i].$3
+                        ? AppText.labelMedium(tiers[i].$1,
+                            color: InstantTestTone.info.onContainer(context))
+                        : AppText.bodySmall(tiers[i].$1),
                   ),
                   Expanded(
-                    child: Text(tiers[i].$2,
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: tiers[i].$3
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                            color: tiers[i].$3
-                                ? null
-                                : Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant)),
+                    child: tiers[i].$3
+                        ? AppText.labelMedium(tiers[i].$2,
+                            color: InstantTestTone.info.onContainer(context))
+                        : AppText.bodySmall(tiers[i].$2,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant),
                   ),
                 ],
               ),
@@ -1720,33 +1653,37 @@ class _Flow3State extends ConsumerState<_Flow3> {
     final theme = Theme.of(context);
     final picker = _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       UserStepHeading('1. Choose a device'),
-      const SizedBox(height: 8),
+      const AppGap.small2(),
 
       if (state.clients.length > _devicesPerPage) ...[
         TextField(
           decoration: const InputDecoration(labelText: 'Find a device', prefixIcon: Icon(LinksysIcons.search), border: OutlineInputBorder()),
           onChanged: (value) => setState(() { _deviceQuery = value; _devicePage = 0; }),
         ),
-        const SizedBox(height: 12),
+        const AppGap.small3(),
       ],
       if (loading) const LinearProgressIndicator(),
       if (!loading && state.clients.isEmpty)
-        const Text('No device list is available. This does not tell us whether your device is connected.'),
+        const AppText.bodyMedium('No device list is available. This does not tell us whether your device is connected.'),
       if (state.clients.isNotEmpty && matches.isEmpty)
-        const Text('No devices match your search.'),
+        const AppText.bodyMedium('No devices match your search.'),
       for (final device in visible) ...[
         Material(
           color: _selectedDevice?.macAddress == device.macAddress
               ? theme.colorScheme.secondaryContainer : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
           child: ListTile(
             key: ValueKey('device-choice-${device.macAddress}'),
             selected: _selectedDevice?.macAddress == device.macAddress,
             contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-            leading: Icon(_selectedDevice?.macAddress == device.macAddress
-                ? Icons.radio_button_checked : Icons.radio_button_off, size: 20),
-            title: Text(device.displayNameWithOui, maxLines: 2, overflow: TextOverflow.ellipsis),
-            subtitle: Text(device.isWireless ? 'WiFi' : 'Ethernet'),
+            leading: _selectedDevice?.macAddress == device.macAddress
+                ? Icon(LinksysIcons.checkCircleFilled,
+                    size: 20, color: theme.colorScheme.primary)
+                : Icon(LinksysIcons.circle,
+                    size: 20, color: theme.colorScheme.outlineVariant),
+            title: AppText.bodyMedium(device.displayNameWithOui, maxLines: 2, overflow: TextOverflow.ellipsis),
+            subtitle: AppText.bodySmall(device.isWireless ? 'WiFi' : 'Ethernet',
+                color: theme.colorScheme.onSurfaceVariant),
             onTap: loading ? null : () => setState(() {
               _selectedDevice = device;
               _connectState = device.isWireless ? _ConnectState.canConnect : _ConnectState.wired;
@@ -1755,16 +1692,17 @@ class _Flow3State extends ConsumerState<_Flow3> {
             }),
           ),
         ),
-        const SizedBox(height: 4),
+        const AppGap.small1(),
       ],
       if (matches.length > _devicesPerPage)
         Row(children: [
-          Expanded(child: Text('${page * _devicesPerPage + 1}–${page * _devicesPerPage + visible.length} of ${matches.length}')),
-          IconButton(tooltip: 'Previous devices', onPressed: page == 0 ? null : () => setState(() => _devicePage = page - 1), icon: const Icon(Icons.chevron_left)),
+          Expanded(child: AppText.bodyMedium('${page * _devicesPerPage + 1}–${page * _devicesPerPage + visible.length} of ${matches.length}')),
+          IconButton(tooltip: 'Previous devices', onPressed: page == 0 ? null : () => setState(() => _devicePage = page - 1),
+              icon: const RotatedBox(quarterTurns: 2, child: Icon(LinksysIcons.chevronRight))),
           IconButton(tooltip: 'Next devices', onPressed: page == lastPage ? null : () => setState(() => _devicePage = page + 1), icon: const Icon(LinksysIcons.chevronRight)),
         ]),
       const Divider(height: 24),
-      Text('Device not listed?', style: theme.textTheme.titleSmall),
+      const AppText.titleSmall('Device not listed?'),
       AppTextButton("I don't see my device",
                 onTap: () => setState(() {
         _selectedDevice = null;
@@ -1781,7 +1719,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
     ]));
     final deviceChoice = _selectedDevice != null && selectedPresent
         ? _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Help for ${_selectedDevice!.displayNameWithOui}', style: theme.textTheme.titleSmall),
+            AppText.titleSmall('Help for ${_selectedDevice!.displayNameWithOui}'),
             DetailsDisclosure(key: ValueKey(_selectedDevice!.macAddress), label: 'Change device', child: picker),
           ]))
         : picker;
@@ -1792,15 +1730,15 @@ class _Flow3State extends ConsumerState<_Flow3> {
         _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           // All problems stay visible (QA): a collapsed picker under a
           // "Something else" heading hid what the section was for.
-          Text("What's happening with this device?", style: theme.textTheme.titleSmall),
-          const SizedBox(height: 8),
+          const AppText.titleSmall("What's happening with this device?"),
+          const AppGap.small2(),
           Wrap(spacing: 8, runSpacing: 8, children: [
             for (final item in const [
               (_ConnectIssue.cantConnect, "Won't connect"),
               (_ConnectIssue.slowOnDevice, 'Slow connection'),
               (_ConnectIssue.keepsDropping, 'Keeps disconnecting'),
               (_ConnectIssue.other, 'Something else'),
-            ]) ChoiceChip(label: Text(item.$2), selected: _connectIssue == item.$1,
+            ]) ChoiceChip(label: AppText.bodyMedium(item.$2), selected: _connectIssue == item.$1,
                 onSelected: (_) => setState(() { _connectIssue = item.$1; _step = 2; })),
           ]),
         ])),
@@ -1817,8 +1755,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
       ] else if (_selectedDevice == null)
         _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           UserStepHeading('Start with the device that needs help'),
-          const SizedBox(height: 12),
-          const Text('Choose a device to get started.'),
+          const AppGap.small3(),
+          const AppText.bodyMedium('Choose a device to get started.'),
         ])),
     ]);
     return InstantTestColumns(sidebar: deviceChoice, content: help);
@@ -1828,19 +1766,14 @@ class _Flow3State extends ConsumerState<_Flow3> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Can your device connect to your WiFi?',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            SelectableText(
+            const AppText.titleSmall('Can your device connect to your WiFi?'),
+            const AppGap.small2(),
+            AppText.bodySmall(
               'It may show as connected but have no internet, or it may not connect at all.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+              selectable: true,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppOutlinedButton('Yes — it\'s connected but something is wrong',
@@ -1850,7 +1783,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
                 },
                 icon: LinksysIcons.wifi),
             ),
-            const SizedBox(height: 8),
+            const AppGap.small2(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppOutlinedButton('No — it won\'t connect at all',
@@ -1860,7 +1793,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
                 },
                 icon: LinksysIcons.signalWifiOff),
             ),
-            const SizedBox(height: 8),
+            const AppGap.small2(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppOutlinedButton('No — my device uses an Ethernet cable',
@@ -1868,7 +1801,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
                   setState(() => _connectState = _ConnectState.wired);
                   _pushStep(1);
                 },
-                icon: Icons.settings_ethernet),
+                icon: LinksysIcons.ethernet),
             ),
           ],
         )),
@@ -1879,14 +1812,13 @@ class _Flow3State extends ConsumerState<_Flow3> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             UserStepHeading('Wired device troubleshooting'),
-            const SizedBox(height: 8),
-            SelectableText(
+            const AppGap.small2(),
+            AppText.bodySmall(
               'Try a step, then check whether the connection improves.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+              selectable: true,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             GuidedSteps(steps: [
               'Check the Ethernet cable is firmly plugged in at both ends',
               'Try a different Ethernet port on the router',
@@ -1900,14 +1832,14 @@ class _Flow3State extends ConsumerState<_Flow3> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             UserStepHeading('Still not working?'),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppOutlinedButton('Restart Router',
                 onTap: () => _confirmAndRestart(context, ref),
                 icon: LinksysIcons.restartAlt),
             ),
-            const SizedBox(height: 8),
+            const AppGap.small2(),
             AppFilledButton('Problem solved',
                 onTap: widget.onDone),
           ],
@@ -1919,12 +1851,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('What\'s happening?',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 12),
+            const AppText.titleSmall('What\'s happening?'),
+            const AppGap.small3(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppOutlinedButton('It keeps dropping off WiFi',
@@ -1932,9 +1860,9 @@ class _Flow3State extends ConsumerState<_Flow3> {
                   setState(() => _connectIssue = _ConnectIssue.keepsDropping);
                   _pushStep(2);
                 },
-                icon: Icons.sync_problem),
+                icon: LinksysIcons.networkCheck),
             ),
-            const SizedBox(height: 8),
+            const AppGap.small2(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppOutlinedButton('It\'s connected but internet is slow on this device',
@@ -1944,7 +1872,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
                 },
                 icon: LinksysIcons.networkCheck),
             ),
-            const SizedBox(height: 8),
+            const AppGap.small2(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppOutlinedButton('Something else',
@@ -1952,7 +1880,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
                   setState(() => _connectIssue = _ConnectIssue.other);
                   _pushStep(3);
                 },
-                icon: Icons.help_outline),
+                icon: LinksysIcons.help),
             ),
           ],
         )),
@@ -1988,35 +1916,34 @@ class _Flow3State extends ConsumerState<_Flow3> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         UserStepHeading('Which device is slow?'),
-        const SizedBox(height: 4),
-        Text('Select it to get specific advice based on its signal and connection.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant)),
-        const SizedBox(height: 12),
+        const AppGap.small1(),
+        AppText.bodySmall('Select it to get specific advice based on its signal and connection.',
+            color: colors.onSurfaceVariant),
+        const AppGap.small3(),
         if (isLoading)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
             child: Center(child: CircularProgressIndicator()),
           )
         else if (clients.isEmpty)
-          Text('No wireless devices detected. Only wired devices are connected, or your router didn\'t report any wireless clients.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant))
+          AppText.bodySmall('No wireless devices detected. Only wired devices are connected, or your router didn\'t report any wireless clients.',
+              color: colors.onSurfaceVariant)
         else
           for (final c in clients)
             InkWell(
               onTap: () => setState(() => _selectedDevice = c),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Row(children: [
                   Icon(LinksysIcons.devices, size: 18, color: colors.onSurfaceVariant),
-                  const SizedBox(width: 10),
+                  const AppGap.small3(),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(c.displayNameWithOui,
-                          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
-                      Text(
+                      AppText.bodySmall(c.displayNameWithOui),
+                      AppText.bodySmall(
                         '${c.band}${c.signalDecibels != null ? "  ·  ${c.signalDecibels} dBm" : ""}',
-                        style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant),
+                        color: colors.onSurfaceVariant,
                       ),
                     ]),
                   ),
@@ -2050,8 +1977,9 @@ class _Flow3State extends ConsumerState<_Flow3> {
     if (signal != null && signal < -75) {
       final critical = signal < -82;
       findings.add(_SlowDeviceFinding(
-        icon: Icons.signal_wifi_off,
-        color: critical ? Colors.red : Colors.orange,
+        icon: LinksysIcons.signalWifiOff,
+        color: (critical ? InstantTestTone.problem : InstantTestTone.warning)
+            .color(context),
         title: critical ? 'Very weak signal ($signal dBm)' : 'Weak signal ($signal dBm)',
         detail: critical
             ? 'Signal is barely enough to stay connected. Move the device much closer '
@@ -2066,7 +1994,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
     if (band.contains('2.4') && txRate != null && txRate > 80) {
       findings.add(_SlowDeviceFinding(
         icon: LinksysIcons.wifi,
-        color: Colors.orange,
+        color: InstantTestTone.warning.color(context),
         title: 'On slower 2.4 GHz — capable of 5 GHz',
         detail: 'This device has a fast link rate (${txRate}Mbps) so it\'s likely '
             '5 GHz capable, but it\'s on the slower 2.4 GHz band. '
@@ -2076,7 +2004,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
     } else if (band.contains('2.4') && (signal == null || signal >= -75)) {
       findings.add(_SlowDeviceFinding(
         icon: LinksysIcons.wifi,
-        color: Colors.orange,
+        color: InstantTestTone.warning.color(context),
         title: 'On 2.4 GHz (slower band)',
         detail: 'The 2.4 GHz band is slower than 5 GHz. '
             'If your router broadcasts a separate 5 GHz network, '
@@ -2091,8 +2019,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
       if (health == BackhaulHealth.weak || health == BackhaulHealth.critical) {
         final speed = node.backhaulSpeedMbps;
         findings.add(_SlowDeviceFinding(
-          icon: Icons.hub_outlined,
-          color: Colors.orange,
+          icon: LinksysIcons.networkNode,
+          color: InstantTestTone.warning.color(context),
           title: 'Connected through ${node.name} — weak backhaul',
           detail: 'The mesh node this device uses has a slow connection back to '
               'the main router${speed != null ? " ($speed Mbps)" : ""}. '
@@ -2110,7 +2038,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       if (txRate < threshold) {
         findings.add(_SlowDeviceFinding(
           icon: LinksysIcons.networkCheck,
-          color: Colors.orange,
+          color: InstantTestTone.warning.color(context),
           title: 'Slow link rate for ${band.contains('5') ? '5 GHz' : '2.4 GHz'} ($txRate Mbps)',
           detail: 'This device is connected at $txRate Mbps — much lower than '
               'expected for ${band.contains('5') ? '5 GHz (typically 400–1200 Mbps)' : '2.4 GHz (typically 50–150 Mbps)'}. '
@@ -2130,17 +2058,16 @@ class _Flow3State extends ConsumerState<_Flow3> {
         children: [
           Row(children: [
             Icon(LinksysIcons.devices, size: 18, color: colors.primary),
-            const SizedBox(width: 8),
+            const AppGap.small2(),
             Expanded(
-              child: Text(widget.singlePage ? 'Connection check' : device.displayNameWithOui,
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              child: AppText.labelLarge(widget.singlePage ? 'Connection check' : device.displayNameWithOui),
             ),
             if (!widget.singlePage) AppTextButton('Switch Device',
               onTap: () => setState(() => _selectedDevice = null),
             ),
           ]),
-          const SizedBox(height: 12),
-          Text(signal == null ? 'Signal information is unavailable.'
+          const AppGap.small3(),
+          AppText.bodyMedium(signal == null ? 'Signal information is unavailable.'
               : '${_signalLabel(signal, includeReading: false)} WiFi signal'),
           DetailsDisclosure(key: ValueKey(device.macAddress), label: 'Connection details', child: Column(children: [
           _deviceMetaRow(context, colors, label: 'Band', value: band),
@@ -2162,12 +2089,12 @@ class _Flow3State extends ConsumerState<_Flow3> {
       if (!hasIssues)
         _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            const Icon(Icons.check_circle_outline, color: Colors.green, size: 18),
-            const SizedBox(width: 8),
-            const Expanded(child: Text('No issue found in the available checks',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
+            Icon(LinksysIcons.checkCircle,
+                color: InstantTestTone.good.color(context), size: 18),
+            const AppGap.small2(),
+            const Expanded(child: AppText.labelMedium('No issue found in the available checks')),
           ]),
-          const SizedBox(height: 12),
+          const AppGap.small3(),
           DetailsDisclosure(label: 'What we checked', child: Column(children: [
           // Speed test result
           if (state.speedTest != null) ...[
@@ -2181,7 +2108,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
                     'Contact your internet provider if this is consistently slow.'
                   : 'Speed looks fine — the issue is likely on the device itself.',
             ),
-            Divider(height: 20, color: colors.outlineVariant.withOpacity(0.4)),
+            Divider(height: 20, color: colors.outlineVariant),
           ],
           // Active device count
           if (state.clients.isNotEmpty) ...[
@@ -2194,7 +2121,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
                     '(streaming, downloads) can reduce speed for everyone.'
                   : 'Device count is normal — network congestion is unlikely.',
             ),
-            Divider(height: 20, color: colors.outlineVariant.withOpacity(0.4)),
+            Divider(height: 20, color: colors.outlineVariant),
           ],
           // Band distribution
           if (state.wirelessDeviceCount > 0) ...[
@@ -2208,26 +2135,26 @@ class _Flow3State extends ConsumerState<_Flow3> {
             ),
           ],
           ])),
-          const SizedBox(height: 12),
-          Text(
+          const AppGap.small3(),
+          AppText.bodySmall(
             'If the device still feels slow, try closing background apps and '
             'running a speed test directly on that device.',
-            style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant, height: 1.4),
+            color: colors.onSurfaceVariant,
           ),
         ]))
       else ...[
         _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const UserStepHeading('Try this first'),
-          const SizedBox(height: 12),
-          Text(findings.first.fix, style: Theme.of(context).textTheme.bodyLarge),
-          DetailsDisclosure(label: 'Why this might help', child: Text(findings.first.detail)),
+          const AppGap.small3(),
+          AppText.bodyLarge(findings.first.fix),
+          DetailsDisclosure(label: 'Why this might help', child: AppText.bodyMedium(findings.first.detail)),
           if (findings.length > 1)
             DetailsDisclosure(label: 'More things to try', child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [for (final f in findings.skip(1)) ...[
-                Text(f.fix, style: Theme.of(context).textTheme.titleSmall),
-                Text(f.detail),
-                const SizedBox(height: 12),
+                AppText.titleSmall(f.fix),
+                AppText.bodyMedium(f.detail),
+                const AppGap.small3(),
               ]],
             )),
         ])),
@@ -2245,15 +2172,13 @@ class _Flow3State extends ConsumerState<_Flow3> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
         Icon(icon, size: 14, color: colors.onSurfaceVariant),
-        const SizedBox(width: 6),
-        Text(label,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: colors.onSurfaceVariant)),
+        const AppGap.small1(),
+        AppText.bodySmall(label, color: colors.onSurfaceVariant),
         const Spacer(),
-        Text(value,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: colors.onSurface)),
+        AppText.labelMedium(value, color: colors.onSurface),
       ]),
-      const SizedBox(height: 3),
-      Text(note, style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant, height: 1.4)),
+      const AppGap.small1(),
+      AppText.bodySmall(note, color: colors.onSurfaceVariant),
     ]);
   }
 
@@ -2267,15 +2192,10 @@ class _Flow3State extends ConsumerState<_Flow3> {
         children: [
           SizedBox(
             width: 110,
-            child: Text(label,
-                style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant)),
+            child: AppText.bodySmall(label, color: colors.onSurfaceVariant),
           ),
           Expanded(
-            child: Text(value,
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: colors.onSurface)),
+            child: AppText.bodySmall(value, color: colors.onSurface),
           ),
         ],
       ),
@@ -2324,11 +2244,10 @@ class _Flow3State extends ConsumerState<_Flow3> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           UserStepHeading('Device keeps dropping WiFi'),
-          const SizedBox(height: 8),
-          Text('Try a step, then check whether the connection improves.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 10),
+          const AppGap.small2(),
+          AppText.bodySmall('Try a step, then check whether the connection improves.',
+              color: Theme.of(context).colorScheme.onSurfaceVariant),
+          const AppGap.small3(),
           GuidedSteps(steps: [
             'Move the device closer to your router or a child node',
             if (!isUnifiedSsid) 'Try your other WiFi network if your router has separate network names.',
@@ -2336,12 +2255,13 @@ class _Flow3State extends ConsumerState<_Flow3> {
             'Check if other devices also drop — if yes, try restarting your router',
           ]),
           if (weakDevices.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const AppGap.small2(),
             _infoBox(context,
                 '${weakDevices.length} device${weakDevices.length == 1 ? "" : "s"} on your network '
                 '${weakDevices.length == 1 ? "has" : "have"} a weak WiFi signal right now. '
                 'Weak signal causes drops even when the device appears connected.',
-                icon: Icons.signal_wifi_bad, color: Colors.orange),
+                icon: LinksysIcons.signalWifi0Bar,
+                color: InstantTestTone.warning.color(context)),
           ],
         ],
       )),
@@ -2351,7 +2271,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           UserStepHeading('Things we can try from here'),
-          const SizedBox(height: 10),
+          const AppGap.small3(),
 
           // Force reconnect — deauthenticates the device so it re-associates fresh
           Builder(builder: (ctx) {
@@ -2364,42 +2284,40 @@ class _Flow3State extends ConsumerState<_Flow3> {
               children: [
                 AppOutlinedButton('Force reconnect a device',
                 onTap: enabled ? () => _showDeauthPicker(ctx, state) : null,
-                icon: Icons.wifi_off_outlined),
-                const SizedBox(height: 4),
-                Text(
+                icon: LinksysIcons.signalWifiOff),
+                const AppGap.small1(),
+                AppText.bodySmall(
                   !hasDevices
                       ? 'Loading device list…'
                       : wirelessCount == 0
                           ? 'No wireless devices detected on your network.'
                           : 'Disconnects the device from WiFi for a moment — it reconnects fresh, '
                             'which often clears a dropping connection.',
-                  style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+                  color: Theme.of(ctx).colorScheme.onSurfaceVariant,
                 ),
               ],
             );
           }),
 
           if (hasChannelData) ...[
-            const SizedBox(height: 10),
+            const AppGap.small3(),
             AppOutlinedButton('Optimize my WiFi channels',
                 onTap: () => _optimizeChannels(context),
-                icon: Icons.wifi_tethering),
-            const SizedBox(height: 4),
-            Text(
+                icon: LinksysIcons.wifi),
+            const AppGap.small1(),
+            AppText.bodySmall(
               'Interference from nearby networks can cause drops. Your router '
               'will scan for the clearest channels and switch automatically — '
               'this takes about a minute.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ],
 
-          const SizedBox(height: 12),
+          const AppGap.small3(),
           AppOutlinedButton('Restart Router',
                 onTap: () => _confirmAndRestart(context, ref),
                 icon: LinksysIcons.restartAlt),
-          const SizedBox(height: 8),
+          const AppGap.small2(),
           AppFilledButton('Device stopped dropping',
                 onTap: widget.onDone),
         ],
@@ -2417,7 +2335,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
         state.phase == PivotLoadPhase.loading) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Still loading devices — please wait a moment and try again.'),
+          content: AppText.bodyMedium('Still loading devices — please wait a moment and try again.'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -2427,7 +2345,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
     if (wirelessClients.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No wireless devices found in the device list.'),
+          content: AppText.bodyMedium('No wireless devices found in the device list.'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -2442,24 +2360,21 @@ class _Flow3State extends ConsumerState<_Flow3> {
 
     showModalBottomSheet<void>(
       context: context,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+              top: CustomTheme.of(context).radius.large)),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Which device is dropping?',
-                style: Theme.of(ctx)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 12),
+            const AppText.titleSmall('Which device is dropping?'),
+            const AppGap.small3(),
             ...wirelessClients.map((c) => ListTile(
-                  leading: const Icon(Icons.smartphone_outlined),
-                  title: Text(c.displayNameWithOui),
-                  subtitle: Text('${c.band} · ${c.signalDecibels ?? "??"} dBm'),
+                  leading: const Icon(LinksysIcons.smartPhone),
+                  title: AppText.bodyMedium(c.displayNameWithOui),
+                  subtitle: AppText.bodySmall('${c.band} · ${c.signalDecibels ?? "??"} dBm'),
                   contentPadding: EdgeInsets.zero,
                   onTap: () {
                     Navigator.pop(ctx);
@@ -2483,8 +2398,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dlg) => AlertDialog(
-        title: const Text('Optimize WiFi channels?'),
-        content: const Text(
+        title: const AppText.titleLarge('Optimize WiFi channels?'),
+        content: const AppText.bodyMedium(
           'Your router will scan for clearer channels and switch automatically. '
           'This may briefly disconnect devices or cause a short slowdown '
           'while the change takes effect.'),
@@ -2508,9 +2423,9 @@ class _Flow3State extends ConsumerState<_Flow3> {
               width: 22,
               height: 22,
               child: CircularProgressIndicator(strokeWidth: 2.5)),
-          SizedBox(width: 16),
+          AppGap.medium(),
           Expanded(
-            child: Text(
+            child: AppText.bodyMedium(
                 'Scanning for the clearest WiFi channels…\nThis takes about a minute.'),
           ),
         ]),
@@ -2542,8 +2457,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
     await showDialog<void>(
       context: context,
       builder: (dlg) => AlertDialog(
-        title: Text(title),
-        content: Text(body),
+        title: AppText.titleLarge(title),
+        content: AppText.bodyMedium(body),
         actions: [
           AppFilledButton('Done',
                 onTap: () => Navigator.of(dlg).pop()),
@@ -2606,8 +2521,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
 
     if (scheduleBlocking) {
       findings.add(_SsidFinding(
-        icon: Icons.schedule,
-        color: Colors.orange,
+        icon: LinksysIcons.uptime,
+        tone: InstantTestTone.warning,
         title: 'WiFi schedule is active',
         detail: 'Your router has a schedule that turns off WiFi at certain times. '
             'Check your schedule settings — WiFi may be turned off right now.',
@@ -2618,7 +2533,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
     if (disabledBands.isNotEmpty) {
       findings.add(_SsidFinding(
         icon: LinksysIcons.signalWifiOff,
-        color: Colors.red,
+        tone: InstantTestTone.problem,
         title: '${disabledBands.join(' and ')} radio is turned off',
         detail: 'The ${disabledBands.join('/')} band is disabled in your router settings. '
             'Enable it under WiFi settings.',
@@ -2628,8 +2543,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
 
     if (hiddenSsid == true) {
       findings.add(_SsidFinding(
-        icon: Icons.visibility_off,
-        color: Colors.orange,
+        icon: LinksysIcons.visibilityOff,
+        tone: InstantTestTone.warning,
         title: 'Network name is hidden (SSID broadcast off)',
         detail: 'Your router is not broadcasting the network name. '
             'Devices need to be configured manually to join a hidden network, '
@@ -2640,8 +2555,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
 
     if (wpa3Only) {
       findings.add(_SsidFinding(
-        icon: Icons.lock,
-        color: Colors.orange,
+        icon: LinksysIcons.encrypted,
+        tone: InstantTestTone.warning,
         title: 'WPA3-only security — older devices can\'t connect',
         detail: 'Devices made before 2019 (and many smart home devices) don\'t '
             'support WPA3. Switch to WPA2/WPA3 mixed mode in your WiFi Security settings.',
@@ -2651,8 +2566,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
 
     if (dfsChannels.isNotEmpty) {
       findings.add(_SsidFinding(
-        icon: Icons.radar,
-        color: Colors.blue,
+        icon: LinksysIcons.networkCheck,
+        tone: InstantTestTone.info,
         title: 'Operating on DFS channel (${dfsChannels.join(', ')})',
         detail: 'DFS channels are shared with radar systems. Some older laptops, '
             'phones, and smart home devices can\'t see or connect to DFS channels. '
@@ -2670,9 +2585,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
     return _stepCard(context, Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('We checked your router\'s WiFi — here\'s what we found',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-        const SizedBox(height: 8),
+        const AppText.titleSmall('We checked your router\'s WiFi — here\'s what we found'),
+        const AppGap.small2(),
 
         DetailsDisclosure(label: 'WiFi radio details', child: Column(children: [
         // Bands summary
@@ -2680,16 +2594,15 @@ class _Flow3State extends ConsumerState<_Flow3> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: colors.surfaceContainerHighest.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(8),
+              color: Theme.of(context).colorSchemeExt.surfaceContainerLow!,
+              borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('WiFi radios — actively broadcasting:',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600, color: colors.onSurfaceVariant)),
-                const SizedBox(height: 6),
+                AppText.labelMedium('WiFi radios — actively broadcasting:',
+                    color: colors.onSurfaceVariant),
+                const AppGap.small1(),
                 if (has24Ghz)
                   _radioStatusRow(context, '2.4 GHz', disabledBands.any((b) => b.contains('2.4'))),
                 if (has5Ghz)
@@ -2697,12 +2610,12 @@ class _Flow3State extends ConsumerState<_Flow3> {
                 if (has6Ghz)
                   _radioStatusRow(context, '6 GHz', disabledBands.any((b) => b.contains('6'))),
                 if (!has24Ghz && !has5Ghz && !has6Ghz)
-                  Text('Radio data not available',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant)),
+                  AppText.bodySmall('Radio data not available',
+                      color: colors.onSurfaceVariant),
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const AppGap.small3(),
         ],
 
         ])),
@@ -2718,11 +2631,11 @@ class _Flow3State extends ConsumerState<_Flow3> {
                     '  • Forgetting and re-scanning for networks'
                   : 'We didn\'t detect an obvious cause. Try moving your device closer to '
                     'the router, then check again. A router restart often helps.'),
-          const SizedBox(height: 12),
+          const AppGap.small3(),
         ] else ...[
           for (final f in findings) ...[
             _ssidFindingTile(context, f),
-            const SizedBox(height: 8),
+            const AppGap.small2(),
           ],
         ],
 
@@ -2733,7 +2646,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
               'laptops from 2021 or earlier won\'t see the 6 GHz network at all. '
               'Check if your device supports WiFi 6E.',
               icon: LinksysIcons.infoCircle),
-          const SizedBox(height: 12),
+          const AppGap.small3(),
         ],
 
         // Restart action
@@ -2743,7 +2656,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
                 onTap: () => _confirmAndRestart(context, ref),
                 icon: LinksysIcons.restartAlt),
         ),
-        const SizedBox(height: 8),
+        const AppGap.small2(),
         Align(
               alignment: Alignment.centerLeft,
               child: AppOutlinedButton('Back',
@@ -2759,18 +2672,17 @@ class _Flow3State extends ConsumerState<_Flow3> {
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(children: [
         Icon(
-          disabled ? Icons.cancel : LinksysIcons.checkCircle,
+          disabled ? LinksysIcons.close : LinksysIcons.checkCircle,
           size: 14,
-          color: disabled ? Colors.red : Colors.green,
+          color: (disabled ? InstantTestTone.problem : InstantTestTone.good)
+              .color(context),
         ),
-        const SizedBox(width: 6),
-        Text(band,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w500)),
-        const SizedBox(width: 6),
-        Text(disabled ? 'Disabled' : 'Active',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: disabled ? Colors.red : Colors.green)),
+        const AppGap.small1(),
+        AppText.bodySmall(band),
+        const AppGap.small1(),
+        AppText.bodySmall(disabled ? 'Disabled' : 'Active',
+            color: (disabled ? InstantTestTone.problem : InstantTestTone.good)
+                .color(context)),
       ]),
     );
   }
@@ -2779,27 +2691,24 @@ class _Flow3State extends ConsumerState<_Flow3> {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: f.color.withOpacity(0.07),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: f.color.withOpacity(0.25)),
+        color: f.tone.container(context),
+        borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
+        border: Border.all(color: f.tone.color(context)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(f.icon, size: 18, color: f.color),
-          const SizedBox(width: 10),
+          Icon(f.icon, size: 18, color: f.tone.onContainer(context)),
+          const AppGap.small3(),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(f.title,
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                        color: f.isBlocker ? f.color : null)),
-                const SizedBox(height: 3),
-                Text(f.detail,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.4)),
+                AppText.labelMedium(f.title,
+                    color: f.tone.onContainer(context)),
+                const AppGap.small1(),
+                AppText.bodySmall(f.detail,
+                    color: f.tone.onContainer(context)),
               ],
             ),
           ),
@@ -2820,14 +2729,13 @@ class _Flow3State extends ConsumerState<_Flow3> {
       return [
         _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           UserStepHeading('Check the WiFi network name'),
-          const SizedBox(height: 12),
-          Text('Can you see $ssidLabel in your device\'s WiFi list?',
-              style: Theme.of(context).textTheme.bodyLarge),
-          const SizedBox(height: 16),
+          const AppGap.small3(),
+          AppText.bodyLarge('Can you see $ssidLabel in your device\'s WiFi list?'),
+          const AppGap.medium(),
           Wrap(spacing: 8, runSpacing: 8, children: [
-            ChoiceChip(label: const Text('Yes — I can see it'), selected: _canSeeSsid == true,
+            ChoiceChip(label: const AppText.bodyMedium('Yes — I can see it'), selected: _canSeeSsid == true,
                 onSelected: (_) => setState(() => _canSeeSsid = true)),
-            ChoiceChip(label: const Text('No — I don\'t see it'), selected: _canSeeSsid == false,
+            ChoiceChip(label: const AppText.bodyMedium('No — I don\'t see it'), selected: _canSeeSsid == false,
                 onSelected: (_) => setState(() => _canSeeSsid = false)),
           ]),
         ])),
@@ -2841,25 +2749,20 @@ class _Flow3State extends ConsumerState<_Flow3> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Can you see $ssidLabel in your device\'s WiFi list?',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            SelectableText(
+            AppText.titleSmall('Can you see $ssidLabel in your device\'s WiFi list?'),
+            const AppGap.small2(),
+            AppText.bodySmall(
               'Open your device\'s WiFi settings and look for the network name above.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+              selectable: true,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppFilledButton('Yes — I can see it',
                 onTap: () => setState(() => _canSeeSsid = true)),
             ),
-            const SizedBox(height: 8),
+            const AppGap.small2(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppOutlinedButton('No — I don\'t see it',
@@ -2887,13 +2790,12 @@ class _Flow3State extends ConsumerState<_Flow3> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           UserStepHeading('General troubleshooting'),
-          const SizedBox(height: 8),
-          Text(
+          const AppGap.small2(),
+          const AppText.bodyMedium(
             'Your device is connected but something doesn\'t seem right. '
             'Try these general steps:',
-            style: Theme.of(context).textTheme.bodyMedium,
           ),
-          const SizedBox(height: 12),
+          const AppGap.small3(),
           const GuidedSteps(steps: [
             'Restart the affected device (phone, laptop, etc.)',
             'Forget this WiFi network on the device and reconnect. Have your WiFi password ready.',
@@ -2906,7 +2808,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           UserStepHeading('If those didn\'t help'),
-          const SizedBox(height: 12),
+          const AppGap.small3(),
           Align(
               alignment: Alignment.centerLeft,
               child: AppOutlinedButton('Restart Router',
@@ -2930,11 +2832,11 @@ class _Flow3State extends ConsumerState<_Flow3> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           UserStepHeading('Check your WiFi details'),
-          const SizedBox(height: 12),
+          const AppGap.small3(),
           _wifiCredRow(context, 'Network name', ssid),
-          const SizedBox(height: 6),
+          const AppGap.small1(),
           _wifiCredRow(context, 'Password', password),
-          const SizedBox(height: 12),
+          const AppGap.small3(),
           GuidedSteps(steps: [
               'Make sure you\'re selecting the exact network name shown above',
               'Check that caps lock is off when entering the password',
@@ -2956,7 +2858,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
               context,
               'Your router has a device blocklist turned on.\n\nThis controls which devices can connect — it may be blocking this device.\n\nTurning it off lets any device join using your WiFi password. Your password is still required.',
             ),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             Row(children: [
               Expanded(
                 child: _isDisablingMacFilter
@@ -2964,7 +2866,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
                     : AppFilledButton('Turn off blocklist',
                 onTap: _disableMacFilter),
               ),
-              const SizedBox(width: 8),
+              const AppGap.small2(),
               Expanded(
                 child: AppOutlinedButton('Leave it on',
                 onTap: () {}),
@@ -2974,26 +2876,26 @@ class _Flow3State extends ConsumerState<_Flow3> {
         )),
       if (_macFilterDisabled)
         _infoBox(context, 'Device blocklist turned off. Try connecting again.',
-            icon: Icons.check_circle_outline, color: Colors.green),
-      const SizedBox(height: 8),
+            icon: LinksysIcons.checkCircle,
+            color: InstantTestTone.good.color(context)),
+      const AppGap.small2(),
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           UserStepHeading('Still not connecting?'),
-          const SizedBox(height: 8),
-          Text(
+          const AppGap.small2(),
+          const AppText.bodyMedium(
             'If the steps above haven\'t worked, restarting your router often '
             'fixes connection issues that nothing else does.',
-            style: Theme.of(context).textTheme.bodyMedium,
           ),
-          const SizedBox(height: 12),
+          const AppGap.small3(),
           Align(
               alignment: Alignment.centerLeft,
               child: AppOutlinedButton('Restart Router',
                 onTap: () => _confirmAndRestart(context, ref),
                 icon: LinksysIcons.restartAlt),
           ),
-          const SizedBox(height: 8),
+          const AppGap.small2(),
           Align(
               alignment: Alignment.centerLeft,
               child: AppFilledButton('Device is connected now',
@@ -3016,14 +2918,14 @@ class _Flow3State extends ConsumerState<_Flow3> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           UserStepHeading('Connect your smart home device'),
-          const SizedBox(height: 12),
+          const AppGap.small3(),
           GuidedSteps(steps: [
               'Make sure your phone is on the same WiFi network you want the device on — not a guest network',
               'Use the 2.4 GHz network if your router has separate names for 2.4 and 5 GHz',
             ]),
-          const SizedBox(height: 8),
+          const AppGap.small2(),
           _wifiCredRow(context, 'Network name', ssid),
-          const SizedBox(height: 6),
+          const AppGap.small1(),
           _wifiCredRow(context, 'Password', password),
         ],
       )),
@@ -3033,7 +2935,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
               context,
               'Some older smart home devices don\'t support the latest WiFi security standard. If this device keeps failing:\n\nChoose Back to router home, open Incredible-WiFi, and check whether WPA2 compatibility is available.',
             )),
-      const SizedBox(height: 8),
+      const AppGap.small2(),
       Align(
               alignment: Alignment.centerLeft,
               child: AppFilledButton('Device is connected now',
@@ -3049,17 +2951,11 @@ class _Flow3State extends ConsumerState<_Flow3> {
         children: [
           SizedBox(
             width: 110,
-            child: Text(label,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    )),
+            child: AppText.bodyMedium(label,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           Expanded(
-            child: SelectableText(value,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            child: AppText.labelLarge(value, selectable: true),
           ),
         ],
       );
@@ -3121,14 +3017,14 @@ class _Flow4State extends ConsumerState<_Flow4> {
     return [
       _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         UserStepHeading('Improve coverage in that room'),
-        const SizedBox(height: 8),
+        const AppGap.small2(),
         if (weakNodes.isNotEmpty)
           for (final node in weakNodes)
-            Text('${node.name} has a weak connection to the main router. Move it closer to the router, toward the room that needs coverage, or use Ethernet.'),
+            AppText.bodyMedium('${node.name} has a weak connection to the main router. Move it closer to the router, toward the room that needs coverage, or use Ethernet.'),
         if (weakNodes.isEmpty)
-          const Text('Keep the router or a child node in the open, between the main router and the room with weak WiFi. A node needs a good connection back to the router.'),
+          const AppText.bodyMedium('Keep the router or a child node in the open, between the main router and the room with weak WiFi. A node needs a good connection back to the router.'),
         if (state.phase != PivotLoadPhase.complete || state.meshNodes.isEmpty)
-          const Text('Mesh information is unavailable or incomplete; placement advice is general.'),
+          const AppText.bodyMedium('Mesh information is unavailable or incomplete; placement advice is general.'),
       ])),
       ..._step0(context),
       ..._step1(context),
@@ -3146,17 +3042,17 @@ class _Flow4State extends ConsumerState<_Flow4> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           UserStepHeading('Where is your router right now?'),
-          const SizedBox(height: 12),
+          const AppGap.small3(),
           for (final (val, label) in options)
             RadioListTile<_RouterPlacement>(
               value: val,
               groupValue: _placement,
-              title: Text(label),
+              title: AppText.bodyMedium(label),
               onChanged: (v) => setState(() => _placement = v),
               contentPadding: EdgeInsets.zero,
               dense: true,
             ),
-          const SizedBox(height: 12),
+          const AppGap.small3(),
           if (!widget.singlePage) Align(
               alignment: Alignment.centerLeft,
               child: AppFilledButton('Continue',
@@ -3182,30 +3078,21 @@ class _Flow4State extends ConsumerState<_Flow4> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Placement tip',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          SelectableText(advice,
-              style: Theme.of(context).textTheme.bodyMedium),
+          const AppText.titleSmall('Placement tip'),
+          const AppGap.small2(),
+          AppText.bodyMedium(advice, selectable: true),
         ],
       )),
       DetailsDisclosure(label: 'More coverage tips', child: Column(children: [
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Quick tips',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          _tipRow(context, Icons.check, 'Keep your router elevated — on a shelf or table, not the floor'),
-          _tipRow(context, Icons.check, 'Point antennas vertically if your router has them'),
-          _tipRow(context, Icons.check, 'Keep it away from microwaves, baby monitors, and cordless phones'),
-          _tipRow(context, Icons.close, 'Don\'t put it inside a cabinet, closet, or entertainment unit'),
+          const AppText.titleSmall('Quick tips'),
+          const AppGap.small2(),
+          _tipRow(context, LinksysIcons.check, 'Keep your router elevated — on a shelf or table, not the floor'),
+          _tipRow(context, LinksysIcons.check, 'Point antennas vertically if your router has them'),
+          _tipRow(context, LinksysIcons.check, 'Keep it away from microwaves, baby monitors, and cordless phones'),
+          _tipRow(context, LinksysIcons.close, 'Don\'t put it inside a cabinet, closet, or entertainment unit'),
         ],
       )),
       _stepCard(context,
@@ -3216,15 +3103,11 @@ class _Flow4State extends ConsumerState<_Flow4> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Need more coverage?',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          SelectableText(
+          const AppText.titleSmall('Need more coverage?'),
+          const AppGap.small2(),
+          const AppText.bodyMedium(
             'Adding a Linksys child node in that room extends your WiFi coverage using the same network name and password — your devices connect automatically.',
-            style: Theme.of(context).textTheme.bodyMedium,
+            selectable: true,
           ),
         ],
       )),
@@ -3247,11 +3130,12 @@ class _Flow4State extends ConsumerState<_Flow4> {
           children: [
             Icon(icon,
                 size: 18,
-                color: icon == Icons.check ? Colors.green : Colors.red),
-            const SizedBox(width: 8),
-            Expanded(
-                child: SelectableText(text,
-                    style: Theme.of(context).textTheme.bodyMedium)),
+                color: (icon == LinksysIcons.check
+                        ? InstantTestTone.good
+                        : InstantTestTone.problem)
+                    .color(context)),
+            const AppGap.small2(),
+            Expanded(child: AppText.bodyMedium(text, selectable: true)),
           ],
         ),
       );
@@ -3436,22 +3320,22 @@ class _Flow5State extends ConsumerState<_Flow5> {
     children: [
       _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         UserStepHeading('Check for connection drops'),
-        const SizedBox(height: 8),
-        const Text('Keep this page open for a two-minute connection check. A short test may miss occasional drops.'),
-        const SizedBox(height: 12),
-        Text('How often does it drop?', style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: 8),
+        const AppGap.small2(),
+        const AppText.bodyMedium('Keep this page open for a two-minute connection check. A short test may miss occasional drops.'),
+        const AppGap.small3(),
+        const AppText.titleSmall('How often does it drop?'),
+        const AppGap.small2(),
         Wrap(spacing: 8, runSpacing: 8, children: [
           for (final item in const [(_DropFrequency.everyFewMinutes, 'Every few minutes'), (_DropFrequency.fewTimesDay, 'A few times a day')])
-            ChoiceChip(label: Text(item.$2), selected: _frequency == item.$1,
+            ChoiceChip(label: AppText.bodyMedium(item.$2), selected: _frequency == item.$1,
               onSelected: _isMonitoring ? null : (_) => setState(() { _frequency = item.$1; _resetResult(); })),
         ]),
-        const SizedBox(height: 20),
-        Text('Which devices are affected?', style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: 8),
+        const AppGap.large1(),
+        const AppText.titleSmall('Which devices are affected?'),
+        const AppGap.small2(),
         Wrap(spacing: 8, runSpacing: 8, children: [
           for (final item in const [(_DropScope.wholeInternet, 'All devices'), (_DropScope.specificDevices, 'Specific devices')])
-            ChoiceChip(label: Text(item.$2), selected: _scope == item.$1,
+            ChoiceChip(label: AppText.bodyMedium(item.$2), selected: _scope == item.$1,
               onSelected: _isMonitoring ? null : (_) => setState(() { _scope = item.$1; _resetResult(); })),
         ]),
       ])),
@@ -3462,7 +3346,7 @@ class _Flow5State extends ConsumerState<_Flow5> {
       else if (_step == 3) ..._step3Result(context)
       else if (_step == 4) ..._step4PostRestart(context)
       else ...[
-        if (_monitorError != null) Text(_monitorError!),
+        if (_monitorError != null) AppText.bodyMedium(_monitorError!),
         ..._step2Monitor(context),
       ],
     ],
@@ -3472,16 +3356,12 @@ class _Flow5State extends ConsumerState<_Flow5> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('How often does it drop?',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
+            const AppText.titleSmall('How often does it drop?'),
+            const AppGap.small2(),
             RadioListTile<_DropFrequency>(
               value: _DropFrequency.everyFewMinutes,
               groupValue: _frequency,
-              title: const Text('Every few minutes'),
+              title: const AppText.bodyMedium('Every few minutes'),
               onChanged: (v) => setState(() => _frequency = v),
               contentPadding: EdgeInsets.zero,
               dense: true,
@@ -3489,12 +3369,12 @@ class _Flow5State extends ConsumerState<_Flow5> {
             RadioListTile<_DropFrequency>(
               value: _DropFrequency.fewTimesDay,
               groupValue: _frequency,
-              title: const Text('A few times a day'),
+              title: const AppText.bodyMedium('A few times a day'),
               onChanged: (v) => setState(() => _frequency = v),
               contentPadding: EdgeInsets.zero,
               dense: true,
             ),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppFilledButton('Continue',
@@ -3510,16 +3390,12 @@ class _Flow5State extends ConsumerState<_Flow5> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Is it everything or specific devices?',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
+            const AppText.titleSmall('Is it everything or specific devices?'),
+            const AppGap.small2(),
             RadioListTile<_DropScope>(
               value: _DropScope.wholeInternet,
               groupValue: _scope,
-              title: const Text('My whole internet goes out — all devices stop at once'),
+              title: const AppText.bodyMedium('My whole internet goes out — all devices stop at once'),
               onChanged: (v) => setState(() => _scope = v),
               contentPadding: EdgeInsets.zero,
               dense: true,
@@ -3527,18 +3403,18 @@ class _Flow5State extends ConsumerState<_Flow5> {
             RadioListTile<_DropScope>(
               value: _DropScope.specificDevices,
               groupValue: _scope,
-              title: const Text('Just specific devices lose connection'),
+              title: const AppText.bodyMedium('Just specific devices lose connection'),
               onChanged: (v) => setState(() => _scope = v),
               contentPadding: EdgeInsets.zero,
               dense: true,
             ),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             if (_scope == _DropScope.specificDevices) ...[
               _infoBox(
                 context,
                 'This sounds like a device issue rather than a whole-network problem. The Device connectivity issues flow will help.',
               ),
-              const SizedBox(height: 8),
+              const AppGap.small2(),
               Align(
               alignment: Alignment.centerLeft,
               child: AppFilledButton('Go to Device connectivity issues',
@@ -3563,15 +3439,15 @@ class _Flow5State extends ConsumerState<_Flow5> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             UserStepHeading('Run a 2-minute connection test'),
-            const SizedBox(height: 8),
+            const AppGap.small2(),
             _infoBox(
               context,
               'We check the connection from this device to your router every 24 seconds for two minutes. This does not test your internet provider. Keep this page open.',
             ),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             if (widget.singlePage && (_frequency == null || _scope == null)) ...[
-              const Text('Select frequency and affected devices above to start the check.'),
-              const SizedBox(height: 12),
+              const AppText.bodyMedium('Select frequency and affected devices above to start the check.'),
+              const AppGap.small3(),
             ],
             if (!_isMonitoring && _checksCompleted == 0) ...[
               SizedBox(
@@ -3579,7 +3455,7 @@ class _Flow5State extends ConsumerState<_Flow5> {
                 child: AppFilledButton('Start connection test',
                 onTap: widget.singlePage && (_frequency == null || _scope == null)
                       ? null : _startMonitor,
-                icon: Icons.monitor_heart),
+                icon: LinksysIcons.networkCheck),
               ),
             ] else if (_isMonitoring) ...[
               Row(children: [
@@ -3587,16 +3463,16 @@ class _Flow5State extends ConsumerState<_Flow5> {
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2)),
-                const SizedBox(width: 10),
-                Text(
+                const AppGap.small3(),
+                AppText.bodyMedium(
                     'Monitoring… (check ${_checksCompleted + 1} of $_totalChecks)'),
               ]),
               if (_dropsDetected > 0)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
-                  child: Text(
+                  child: AppText.bodyMedium(
                     '$_dropsDetected drop${_dropsDetected == 1 ? '' : 's'} detected so far',
-                    style: const TextStyle(color: Colors.orange),
+                    color: InstantTestTone.warning.color(context),
                   ),
                 ),
             ],
@@ -3614,15 +3490,15 @@ class _Flow5State extends ConsumerState<_Flow5> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
-              const Icon(Icons.warning_amber, color: Colors.orange, size: 20),
-              const SizedBox(width: 8),
-              Text(
+              Icon(LinksysIcons.error,
+                  color: InstantTestTone.warning.color(context), size: 20),
+              const AppGap.small2(),
+              AppText.bodyMedium(
                   '$_dropsDetected drop${_dropsDetected == 1 ? '' : 's'} detected during the test'),
             ]),
-            const SizedBox(height: 12),
-            Text('Restarting your router clears up most drop issues.',
-                style: Theme.of(context).textTheme.bodyMedium),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
+            const AppText.bodyMedium('Restarting your router clears up most drop issues.'),
+            const AppGap.small3(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppFilledButton('Restart Router',
@@ -3639,17 +3515,18 @@ class _Flow5State extends ConsumerState<_Flow5> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(children: [
-              Icon(LinksysIcons.checkCircle, color: Colors.green, size: 20),
-              SizedBox(width: 8),
-              Expanded(child: Text('No drops caught during the test.')),
+            Row(children: [
+              Icon(LinksysIcons.checkCircle,
+                  color: InstantTestTone.good.color(context), size: 20),
+              const AppGap.small2(),
+              const Expanded(child: AppText.bodyMedium('No drops caught during the test.')),
             ]),
-            const SizedBox(height: 8),
-            SelectableText(
+            const AppGap.small2(),
+            const AppText.bodyMedium(
               'The drops happen frequently but we didn\'t catch one right now. Try restarting your router — this fixes most intermittent drop issues.',
-              style: Theme.of(context).textTheme.bodyMedium,
+              selectable: true,
             ),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppFilledButton('Restart Router',
@@ -3666,33 +3543,33 @@ class _Flow5State extends ConsumerState<_Flow5> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(children: [
-            Icon(LinksysIcons.checkCircle, color: Colors.green, size: 20),
-            SizedBox(width: 8),
-            Expanded(child: Text('No drops detected right now.')),
+          Row(children: [
+            Icon(LinksysIcons.checkCircle,
+                color: InstantTestTone.good.color(context), size: 20),
+            const AppGap.small2(),
+            const Expanded(child: AppText.bodyMedium('No drops detected right now.')),
           ]),
-          const SizedBox(height: 8),
-          SelectableText(
+          const AppGap.small2(),
+          const AppText.bodyMedium(
             'Intermittent drops that happen a few times a day are hard to catch in a short test. Try restarting your router as a first step — it resolves most intermittent issues.',
-            style: Theme.of(context).textTheme.bodyMedium,
+            selectable: true,
           ),
-          const SizedBox(height: 12),
+          const AppGap.small3(),
           _checklistItem(context,
               'Check if the drops happen at a specific time (heavy usage periods like evenings can cause congestion)'),
-          const SizedBox(height: 8),
+          const AppGap.small2(),
           Align(
               alignment: Alignment.centerLeft,
               child: AppOutlinedButton('Restart Router',
                 onTap: _restartAndCheck,
                 icon: LinksysIcons.restartAlt),
           ),
-          const SizedBox(height: 8),
-          Text('If drops continue after a restart:',
-              style: Theme.of(context).textTheme.labelMedium),
-          const SizedBox(height: 8),
+          const AppGap.small2(),
+          const AppText.labelMedium('If drops continue after a restart:'),
+          const AppGap.small2(),
           _ispScript(context,
               'My connection drops several times a day. I restarted my router but the problem persists.'),
-          const SizedBox(height: 12),
+          const AppGap.small3(),
           Align(
               alignment: Alignment.centerLeft,
               child: AppFilledButton('Done',
@@ -3713,8 +3590,8 @@ class _Flow5State extends ConsumerState<_Flow5> {
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2)),
-              const SizedBox(width: 10),
-              const Text('Checking connection after restart…'),
+              const AppGap.small3(),
+              const AppText.bodyMedium('Checking connection after restart…'),
             ])),
       ];
     }
@@ -3724,13 +3601,14 @@ class _Flow5State extends ConsumerState<_Flow5> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(children: [
-              Icon(LinksysIcons.checkCircle, color: Colors.green, size: 20),
-              SizedBox(width: 8),
-              Expanded(
-                  child: Text('Looks like the restart fixed it!')),
+            Row(children: [
+              Icon(LinksysIcons.checkCircle,
+                  color: InstantTestTone.good.color(context), size: 20),
+              const AppGap.small2(),
+              const Expanded(
+                  child: AppText.bodyMedium('Looks like the restart fixed it!')),
             ]),
-            const SizedBox(height: 16),
+            const AppGap.medium(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppFilledButton('Done',
@@ -3753,22 +3631,18 @@ class _Flow5State extends ConsumerState<_Flow5> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Still dropping after restart',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          SelectableText(
+          const AppText.titleSmall('Still dropping after restart'),
+          const AppGap.small2(),
+          const AppText.bodyMedium(
             'Since restarting didn\'t fix it, the issue is likely outside your router.',
-            style: Theme.of(context).textTheme.bodyMedium,
+            selectable: true,
           ),
-          const SizedBox(height: 12),
+          const AppGap.small3(),
           _ispScript(context, isPppoe
               ? 'My DSL/fiber connection drops for about a minute every few hours and reconnects on its own. I think it\'s a PPPoE session issue. I restarted my router but the problem persists.'
               : 'My connection drops $freq. I restarted my router but the problem persists.'),
           const _SessionSummaryCard(),
-          const SizedBox(height: 16),
+          const AppGap.medium(),
           Align(
               alignment: Alignment.centerLeft,
               child: AppFilledButton('I\'ll call my provider',
@@ -3825,18 +3699,16 @@ class _SessionSummaryCard extends ConsumerWidget {
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: scheme.outlineVariant.withOpacity(0.5)),
+        color: Theme.of(context).colorSchemeExt.surfaceContainerLow!,
+        borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('What to tell the agent:',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600)),
-          const SizedBox(height: 6),
+          AppText.labelSmall('What to tell the agent:',
+              color: scheme.onSurfaceVariant),
+          const AppGap.small1(),
           ...rows,
         ],
       ),
@@ -3849,14 +3721,11 @@ class _SessionSummaryCard extends ConsumerWidget {
       child: Row(children: [
         SizedBox(
           width: 72,
-          child: Text(label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          child: AppText.bodySmall(label,
+              color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         Expanded(
-          child: Text(value,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w500)),
+          child: AppText.bodySmall(value),
         ),
       ]),
     );
@@ -3885,15 +3754,13 @@ class _SatisfactionPromptState extends State<_SatisfactionPrompt> {
     if (_rating != null) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(
+        child: AppText.bodySmall(
           _rating == 0
               ? 'Great! Glad that helped.'
               : _rating == 1
                   ? 'Thanks for the feedback.'
                   : 'Sorry about that — contact Linksys Support for more help.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontStyle: FontStyle.italic),
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       );
     }
@@ -3902,16 +3769,18 @@ class _SatisfactionPromptState extends State<_SatisfactionPrompt> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Divider(height: 20),
-        Text('Did this help?',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant)),
-        const SizedBox(height: 6),
+        AppText.labelSmall('Did this help?',
+            color: Theme.of(context).colorScheme.onSurfaceVariant),
+        const AppGap.small1(),
         Row(children: [
-          _ratingBtn(context, 0, 'Fixed it', Icons.check_circle_outline, Colors.green),
-          const SizedBox(width: 6),
-          _ratingBtn(context, 1, 'Partly', Icons.remove_circle_outline, Colors.orange),
-          const SizedBox(width: 6),
-          _ratingBtn(context, 2, 'Still broken', Icons.cancel_outlined, Colors.red),
+          _ratingBtn(context, 0, 'Fixed it', LinksysIcons.checkCircle,
+              InstantTestTone.good.color(context)),
+          const AppGap.small1(),
+          _ratingBtn(context, 1, 'Partly', LinksysIcons.remove,
+              InstantTestTone.warning.color(context)),
+          const AppGap.small1(),
+          _ratingBtn(context, 2, 'Still broken', LinksysIcons.close,
+              InstantTestTone.problem.color(context)),
         ]),
       ],
     );
@@ -4004,12 +3873,8 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Two routers detected',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
+            const AppText.titleSmall('Two routers detected'),
+            const AppGap.small2(),
             if (isCgnat)
               _infoBox(context,
                   'Your internet company is using a shared IP address (Carrier-Grade NAT). '
@@ -4022,14 +3887,14 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
                   'This creates a "double router" situation that can cause issues '
                   'with port forwarding, gaming, and VoIP calls. '
                   'Your internet works, but some features are limited.'),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             UserStepHeading('What would you like to do?'),
-            const SizedBox(height: 8),
+            const AppGap.small2(),
             if (!isCgnat) ...[
               ListTile(
-                leading: const Icon(Icons.settings_ethernet),
-                title: const Text('Enable bridge mode on the ISP gateway'),
-                subtitle: const Text('Best option — makes your router the only router'),
+                leading: const Icon(LinksysIcons.ethernet),
+                title: const AppText.bodyMedium('Enable bridge mode on the ISP gateway'),
+                subtitle: const AppText.bodySmall('Best option — makes your router the only router'),
                 onTap: () => _pushStep(1),
                 contentPadding: EdgeInsets.zero,
                 dense: true,
@@ -4037,8 +3902,8 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
               const Divider(height: 12),
               ListTile(
                 leading: const Icon(LinksysIcons.wifi),
-                title: const Text('Switch Linksys to WiFi access point mode'),
-                subtitle: const Text('Good for extending WiFi — ISP gateway handles routing'),
+                title: const AppText.bodyMedium('Switch Linksys to WiFi access point mode'),
+                subtitle: const AppText.bodySmall('Good for extending WiFi — ISP gateway handles routing'),
                 onTap: () => _pushStep(2),
                 contentPadding: EdgeInsets.zero,
                 dense: true,
@@ -4046,11 +3911,11 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
               const Divider(height: 12),
             ],
             ListTile(
-              leading: const Icon(Icons.phone),
-              title: Text(isCgnat
+              leading: const Icon(LinksysIcons.call),
+              title: AppText.bodyMedium(isCgnat
                   ? 'Contact my internet provider for a dedicated IP'
                   : 'Leave it as two routers — contact my internet provider'),
-              subtitle: Text(isCgnat
+              subtitle: AppText.bodySmall(isCgnat
                   ? 'Required if you need port forwarding or gaming features'
                   : 'If you need port forwarding, gaming, or VoIP to work'),
               onTap: () => _pushStep(3),
@@ -4060,9 +3925,9 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
             if (!isCgnat) ...[
               const Divider(height: 12),
               ListTile(
-                leading: const Icon(Icons.check_circle_outline),
-                title: const Text('Leave as-is — internet is working fine'),
-                subtitle: const Text('OK if you don\'t need port forwarding'),
+                leading: const Icon(LinksysIcons.checkCircle),
+                title: const AppText.bodyMedium('Leave as-is — internet is working fine'),
+                subtitle: const AppText.bodySmall('OK if you don\'t need port forwarding'),
                 onTap: () => _pushStep(4),
                 contentPadding: EdgeInsets.zero,
                 dense: true,
@@ -4077,12 +3942,12 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             UserStepHeading('Enabling bridge mode'),
-            const SizedBox(height: 8),
+            const AppGap.small2(),
             _infoBox(context,
                 'Bridge mode turns off the routing features on your internet '
                 'company\'s gateway so your Linksys can handle everything. '
                 'The steps depend on your internet provider\'s equipment.'),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             GuidedSteps(steps: [
               'Log into your internet company\'s gateway — usually at 192.168.100.1 or printed on the device',
               'Look for settings labelled "Bridge Mode", "IP Passthrough", or "DMZ". The name varies by provider.',
@@ -4090,16 +3955,15 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
               'Save and wait 2 minutes — both devices will restart',
               'Run the Instant-Test again to confirm you now have a public IP address',
             ]),
-            const SizedBox(height: 12),
-            SelectableText(
+            const AppGap.small3(),
+            AppText.bodySmall(
               'Not sure how? Search "[your internet provider] enable bridge mode" '
               '— or call them and say: "I want to put my gateway into bridge mode '
               'so my third-party router handles everything."',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+              selectable: true,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppFilledButton('Done',
@@ -4116,24 +3980,25 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             UserStepHeading('Switch Linksys to access point mode'),
-            const SizedBox(height: 8),
+            const AppGap.small2(),
             _infoBox(context,
                 'In access point mode, your Linksys handles WiFi but your internet '
                 'company\'s gateway handles routing. This is simpler than bridge mode '
                 'and works well if you just need better WiFi coverage.'),
-            const SizedBox(height: 8),
+            const AppGap.small2(),
             _infoBox(context,
                 'Note: In AP mode, features like parental controls, device prioritization, '
                 'and port forwarding on the Linksys won\'t work — those stay on the ISP gateway.',
-                icon: Icons.warning_amber, color: Colors.orange),
-            const SizedBox(height: 12),
+                icon: LinksysIcons.error,
+                color: InstantTestTone.warning.color(context)),
+            const AppGap.small3(),
             GuidedSteps(steps: [
               'Open the Linksys app and go to Router Settings',
               'Look for "Operation Mode" or "Network Mode" and select "Access Point"',
               'Connect the Linksys to your internet company\'s gateway with an Ethernet cable',
               'Your devices will connect to the Linksys WiFi and get internet through the gateway',
             ]),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppFilledButton('Done',
@@ -4150,19 +4015,18 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             UserStepHeading('Contact your internet provider'),
-            const SizedBox(height: 8),
-            Text(
+            const AppGap.small2(),
+            AppText.bodyMedium(
               isCgnat
                   ? 'Your provider manages the shared IP system — only they can assign you a dedicated public IP.'
                   : 'Your internet provider can help you put their device into bridge mode.',
-              style: Theme.of(context).textTheme.bodyMedium,
             ),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             _ispScript(context,
                 isCgnat
                     ? 'I have a Linksys router but I\'m getting a shared IP address. I need a public static or dynamic IP to use port forwarding and online gaming. Can you assign me a dedicated IP?'
                     : 'I connected my Linksys router to your gateway and my network has two routers. I\'d like to put your gateway into bridge mode so my Linksys handles everything. Can you walk me through that?'),
-            const SizedBox(height: 16),
+            const AppGap.medium(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppFilledButton('Done',
@@ -4177,17 +4041,13 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Leaving as two routers',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
+            const AppText.titleSmall('Leaving as two routers'),
+            const AppGap.small2(),
             _infoBox(context,
                 'That\'s fine! Two routers (double-NAT) works for normal browsing, streaming, '
                 'and most everyday use. You\'ll only notice issues if you need port '
                 'forwarding, host game servers, or use business VoIP.'),
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppFilledButton('Got it — my internet is working',
@@ -4218,13 +4078,13 @@ class _SlowDeviceFinding {
 
 class _SsidFinding {
   final IconData icon;
-  final Color color;
+  final InstantTestTone tone;
   final String title;
   final String detail;
   final bool isBlocker;
   const _SsidFinding({
     required this.icon,
-    required this.color,
+    required this.tone,
     required this.title,
     required this.detail,
     required this.isBlocker,
