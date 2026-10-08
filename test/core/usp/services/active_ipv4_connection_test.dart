@@ -1,3 +1,4 @@
+import 'package:privacy_gui/constants/build_config.dart';
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -10,6 +11,12 @@ import 'package:privacy_gui/page/unified_diagnostics/services/unified_diagnostic
 class Client extends Mock implements UspClient {}
 
 void main() {
+  // Run this integration suite with --dart-define=auto-ipoe=y.
+  group('Auto-IPoE enabled build', _enabledBuildTests,
+      skip: !BuildConfig.autoIPoEEnabled);
+}
+
+void _enabledBuildTests() {
   for (final kind in ['MAP-E', 'DS-Lite', 'IPIP']) {
     test(
         '$kind uses actual route, without requiring legacy WAN IPv4 or gateway',

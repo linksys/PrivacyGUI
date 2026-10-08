@@ -1,3 +1,4 @@
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_data_provider.dart';
 import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_log_view.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +33,12 @@ Widget host(IPoEFixture f) => UncontrolledProviderScope(
         })))));
 
 void main() {
+  // Run this integration suite with --dart-define=auto-ipoe=y.
+  group('Auto-IPoE enabled build', _enabledBuildTests,
+      skip: !BuildConfig.autoIPoEEnabled);
+}
+
+void _enabledBuildTests() {
   setUpAll(() {
     registerFallbackValue(const AutoIPoESubmission('fixture-id', reset: false));
     registerFallbackValue(const AutoIPoESettings.init());

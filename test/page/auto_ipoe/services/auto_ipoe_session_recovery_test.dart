@@ -1,3 +1,4 @@
+import 'package:privacy_gui/constants/build_config.dart';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +17,12 @@ import '../../../mocks/test_data/auto_ipoe_test_data.dart';
 class MockGetTransport extends Mock implements UspTransport {}
 
 void main() {
+  // Run this integration suite with --dart-define=auto-ipoe=y.
+  group('Auto-IPoE enabled build', _enabledBuildTests,
+      skip: !BuildConfig.autoIPoEEnabled);
+}
+
+void _enabledBuildTests() {
   late MockGetTransport transport;
   late UspClient client;
   late AutoIPoEService service;

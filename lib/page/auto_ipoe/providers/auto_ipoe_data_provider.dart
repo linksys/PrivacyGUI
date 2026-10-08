@@ -1,3 +1,4 @@
+import 'package:privacy_gui/constants/build_config.dart';
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,11 +42,13 @@ class AutoIPoEDataNotifier extends AsyncNotifier<AutoIPoESnapshot> {
       ref.read(surfaceStrategyProvider).internetSettingsEditor(() {}) != null;
 
   void _requireWritable() {
+    if (!BuildConfig.autoIPoEEnabled) throw const ResourceNotFoundError();
     if (!_canWrite) throw const UnauthorizedError();
   }
 
   @override
   Future<AutoIPoESnapshot> build() async {
+    if (!BuildConfig.autoIPoEEnabled) return const AutoIPoESnapshot();
     final generation = ++_generation;
     _disposed = false;
     ref.onDispose(() {
@@ -98,7 +101,7 @@ class AutoIPoEDataNotifier extends AsyncNotifier<AutoIPoESnapshot> {
   bool _current(int generation) => !_disposed && generation == _generation;
 
   Future<AutoIPoESnapshot?> refresh() async {
-    if (_reading || _disposed) return null;
+    if (!BuildConfig.autoIPoEEnabled || _reading || _disposed) return null;
     _reading = true;
     final generation = _generation;
     final service = _service;
@@ -346,7 +349,7 @@ class AutoIPoEDataNotifier extends AsyncNotifier<AutoIPoESnapshot> {
   }
 
   void continueChecking() {
-    if (_disposed) return;
+    if (!BuildConfig.autoIPoEEnabled || _disposed) return;
     _timer?.cancel();
     _remainingPolls = 120;
     _resolutionAttempts = 0;

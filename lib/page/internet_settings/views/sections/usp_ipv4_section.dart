@@ -1,3 +1,4 @@
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_log_view.dart';
 import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_data_provider.dart';
 import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_page_provider.dart';
@@ -146,8 +147,10 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
               items: UspWanConnectionType.values
                   .where((type) =>
                       type != UspWanConnectionType.ipoe ||
-                      ipoe?.capabilities.isSupported == true ||
-                      form.connectionType == UspWanConnectionType.ipoe)
+                      (BuildConfig.autoIPoEEnabled &&
+                          (ipoe?.capabilities.isSupported == true ||
+                              form.connectionType ==
+                                  UspWanConnectionType.ipoe)))
                   .toList(),
               value: form.connectionType,
               itemAsString: (type) => type.localizedLabel(context),
