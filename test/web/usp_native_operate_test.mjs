@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {webcrypto} from 'node:crypto';
+globalThis.crypto ??= webcrypto;
+const source = fs.readFileSync(new URL('../../web/usp_native_operate.js', import.meta.url), 'utf8');
+const {encodeOperate,decodeOperate,nativeOperate,installNativeOperate} = await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const fixture = JSON.parse(fs.readFileSync(new URL('./usp_native_operate_fixture.json',import.meta.url)));
+const {command,args,messageId,commandKey} = fixture;
+const request=Buffer.from(fixture.request,'base64'), response=Buffer.from(fixture.response,'base64');
+assert.deepEqual(Buffer.from(encodeOperate(command,args,messageId,commandKey)),request);
+const result=decodeOperate(response,command,messageId,commandKey);
+assert.equal(JSON.parse(result.outputArgs.Result).cancelled,true);
+assert.equal(result.commandKey,commandKey);
+assert.throws(()=>decodeOperate(response,command,'wrong',commandKey),/ID mismatch/);
+assert.throws(()=>decodeOperate(response,'wrong',messageId,commandKey),/command mismatch/);
+assert.throws(()=>decodeOperate(response.subarray(0,-1),command,messageId,commandKey),/Truncated/);
+assert.throws(()=>encodeOperate('Device.Reboot()',{},messageId,commandKey),/Unsupported/);
+assert.throws(()=>encodeOperate(command,{Settings:5},messageId,commandKey),/Invalid/);
+let calls=0;
+const client={baseUrl:()=> 'https://router.example',getToken:()=> 'synthetic-token'};
+await assert.rejects(nativeOperate(client,command,args,async()=>{calls++;throw new Error('reply lost');}),/reply lost/);
+assert.equal(calls,1);
+await assert.rejects(nativeOperate({...client,getToken:()=>null},command,args,async()=>{calls++;}),/Authentication/);
+assert.equal(calls,1);
+class Original {operate(...args){return args;}}
+installNativeOperate(Original);
+assert.deepEqual(new Original().operate('Device.Reboot()',{}),['Device.Reboot()',{}]);
+console.log('PASS: real CPE protobuf fixture, input/output validation, single dispatch, auth, original non-IPoE route');

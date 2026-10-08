@@ -1193,5 +1193,12 @@
   "raPreparingPartial": "ไม่สามารถตั้งค่าการอัปเดตแบบเรียลไทม์บางรายการได้ แดชบอร์ดอาจไม่รีเฟรชเอง ดึงเพื่อรีเฟรช",
   "raLiveUpdates": "การอัปเดตแบบเรียลไทม์",
   "raLiveUpdatesConnecting": "กำลังเชื่อมต่อผ่านคลาวด์",
-  "raLiveUpdatesDropped": "การเชื่อมต่อคลาวด์ขาดหาย — กำลังเชื่อมต่อใหม่"
+  "raLiveUpdatesDropped": "การเชื่อมต่อคลาวด์ขาดหาย — กำลังเชื่อมต่อใหม่",
+  "autoIpoeTitle": "Auto-IPoE",
+  "autoIpoeApply": "Save and Apply",
+  "autoIpoeReset": "Disable Auto-IPoE",
+  "autoIpoeResetBeforeSwitching": "Disable Auto-IPoE before choosing another Internet connection type. This restores the normal WAN settings.",
+  "autoIpoeOpenSettings": "IPoE settings",
+  "autoIpoeResolvePending": "Check interrupted setup",
+  "autoIpoeResolvePendingDescription": "Check whether setup started. If it did not start, return to the settings safely. An active setup will continue."
 }

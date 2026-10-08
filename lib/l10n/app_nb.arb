@@ -1193,5 +1193,12 @@
   "raPreparingPartial": "Noen direkteoppdateringer kunne ikke konfigureres. Dashbordet oppdaterer seg kanskje ikke selv; dra for å oppdatere.",
   "raLiveUpdates": "Direkteoppdateringer",
   "raLiveUpdatesConnecting": "Kobler til via skyen",
-  "raLiveUpdatesDropped": "Skytilkoblingen ble brutt — kobler til på nytt"
+  "raLiveUpdatesDropped": "Skytilkoblingen ble brutt — kobler til på nytt",
+  "autoIpoeTitle": "Auto-IPoE",
+  "autoIpoeApply": "Save and Apply",
+  "autoIpoeReset": "Disable Auto-IPoE",
+  "autoIpoeResetBeforeSwitching": "Disable Auto-IPoE before choosing another Internet connection type. This restores the normal WAN settings.",
+  "autoIpoeOpenSettings": "IPoE settings",
+  "autoIpoeResolvePending": "Check interrupted setup",
+  "autoIpoeResolvePendingDescription": "Check whether setup started. If it did not start, return to the settings safely. An active setup will continue."
 }

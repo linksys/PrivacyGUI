@@ -1193,5 +1193,12 @@
   "raPreparingPartial": "部分实时更新无法设置。仪表板可能不会自动刷新，请下拉刷新。",
   "raLiveUpdates": "实时更新",
   "raLiveUpdatesConnecting": "正在通过云端连接",
-  "raLiveUpdatesDropped": "云端连接中断 — 正在重新连接"
+  "raLiveUpdatesDropped": "云端连接中断 — 正在重新连接",
+  "autoIpoeTitle": "Auto-IPoE",
+  "autoIpoeApply": "Save and Apply",
+  "autoIpoeReset": "Disable Auto-IPoE",
+  "autoIpoeResetBeforeSwitching": "Disable Auto-IPoE before choosing another Internet connection type. This restores the normal WAN settings.",
+  "autoIpoeOpenSettings": "IPoE settings",
+  "autoIpoeResolvePending": "Check interrupted setup",
+  "autoIpoeResolvePendingDescription": "Check whether setup started. If it did not start, return to the settings safely. An active setup will continue."
 }

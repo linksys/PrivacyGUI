@@ -223,6 +223,10 @@ class UspInternetSettingsService {
     String? pppInstancePath,
     String? vlanInstancePath,
   }) async {
+    if (edited.connectionType == UspWanConnectionType.ipoe) {
+      throw const InvalidInputError(
+          detail: 'IPoE requires the Auto-IPoE workflow');
+    }
     try {
       // Step 1: PPP lifecycle
       final pppPath = await _handlePppLifecycle(
@@ -327,6 +331,8 @@ class UspInternetSettingsService {
 
     if (typeChanged) {
       switch (edited.connectionType) {
+        case UspWanConnectionType.ipoe:
+          throw const InvalidInputError();
         case UspWanConnectionType.dhcp:
           _handleSetResult(await WanDhcp.update(_usp, addressingType: 'DHCP'));
 
@@ -370,6 +376,8 @@ class UspInternetSettingsService {
       }
     } else {
       switch (edited.connectionType) {
+        case UspWanConnectionType.ipoe:
+          throw const InvalidInputError();
         case UspWanConnectionType.staticIp:
           final originalDns = _mergeDns(
               original.dnsServer1, original.dnsServer2, original.dnsServer3);

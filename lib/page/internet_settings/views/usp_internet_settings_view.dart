@@ -1,3 +1,7 @@
+import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_page_provider.dart';
+import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_snapshot.dart';
+import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_data_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -29,7 +33,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// - Connection Status Banner (with edit icon)
 /// - IPv4 Connection (type + conditional fields)
 /// - IPv6 Settings (enable + 6rd tunnel)
-/// - Optional Settings (MTU + MAC clone)
+/// - Optional Settings (MTU + MAC clone), when Auto-IPoE does not manage WAN
 /// - Release & Renew (DHCP lease actions)
 ///
 /// Read-only where the surface says so (Remote Assistance, #1626): the edit
@@ -67,34 +71,41 @@ class UspInternetSettingsView extends ConsumerWidget {
                 ref.read(uspInternetSettingsProvider.notifier).fetch(),
           );
         }
-        return _buildContent(childContext, notifier, state, editor);
+        return _buildContent(childContext, ref, notifier, state, editor);
       },
     );
   }
 
   Widget _buildContent(
     BuildContext context,
+    WidgetRef ref,
     UspInternetSettingsNotifier notifier,
     InternetSettingsFeatureState state,
     VoidCallback? editor,
   ) {
     final isEditing = state.isEditing;
-    final onEditToggle = switch (editor) {
+    final onEditToggle = switch (state.status.isSaving ? null : editor) {
       null => null,
       final enter => isEditing ? notifier.exitEditMode : enter,
     };
     final showRenew = editor != null && !isEditing;
 
+    final ipoe = ref.watch(autoIPoEDataProvider).valueOrNull;
+    if (ipoe?.capabilities.isSupported == true ||
+        state.connectionType == UspWanConnectionType.ipoe) {
+      ref.watch(autoIPoEPageProvider);
+    }
     return AppResponsiveLayout(
       mobile: (_) => _buildMobileLayout(
-          context, state, isEditing, onEditToggle, showRenew),
+          context, notifier, state, isEditing, onEditToggle, showRenew),
       desktop: (_) => _buildDesktopLayout(
-          context, state, isEditing, onEditToggle, showRenew),
+          context, notifier, state, isEditing, onEditToggle, showRenew),
     );
   }
 
   Widget _buildMobileLayout(
     BuildContext context,
+    UspInternetSettingsNotifier notifier,
     InternetSettingsFeatureState state,
     bool isEditing,
     VoidCallback? onEditToggle,
@@ -113,12 +124,14 @@ class UspInternetSettingsView extends ConsumerWidget {
         // IPv4 Connection section
         UspIpv4Section(state: state, isEditing: isEditing),
         AppGap.lg(),
-        // IPv6 Settings section
-        UspIpv6Section(state: state, isEditing: isEditing),
-        AppGap.lg(),
-        // Optional Settings section (MTU + MAC clone)
-        UspOptionalSection(state: state, isEditing: isEditing),
-        AppGap.lg(),
+        // Auto-IPoE owns IPv6 until its reset has completed.
+        if (state.connectionType != UspWanConnectionType.ipoe &&
+            !notifier.needsIPoEReset) ...[
+          UspIpv6Section(state: state, isEditing: isEditing),
+          AppGap.lg(),
+          UspOptionalSection(state: state, isEditing: isEditing),
+          AppGap.lg(),
+        ],
         // Release & Renew section
         if (showRenew) ...[
           UspRenewSection(state: state),
@@ -130,6 +143,7 @@ class UspInternetSettingsView extends ConsumerWidget {
 
   Widget _buildDesktopLayout(
     BuildContext context,
+    UspInternetSettingsNotifier notifier,
     InternetSettingsFeatureState state,
     bool isEditing,
     VoidCallback? onEditToggle,
@@ -154,18 +168,24 @@ class UspInternetSettingsView extends ConsumerWidget {
               child: Column(
                 children: [
                   UspIpv4Section(state: state, isEditing: isEditing),
-                  AppGap.lg(),
-                  UspIpv6Section(state: state, isEditing: isEditing),
+                  if (state.connectionType != UspWanConnectionType.ipoe &&
+                      !notifier.needsIPoEReset) ...[
+                    AppGap.lg(),
+                    UspIpv6Section(state: state, isEditing: isEditing),
+                  ],
                 ],
               ),
             ),
             AppGap.gutter(),
-            // Right column: Optional + Renew
+            // Right column: Optional settings + Release & Renew
             Expanded(
               child: Column(
                 children: [
-                  UspOptionalSection(state: state, isEditing: isEditing),
-                  AppGap.lg(),
+                  if (state.connectionType != UspWanConnectionType.ipoe &&
+                      !notifier.needsIPoEReset) ...[
+                    UspOptionalSection(state: state, isEditing: isEditing),
+                    AppGap.lg(),
+                  ],
                   if (showRenew) UspRenewSection(state: state),
                 ],
               ),
@@ -181,14 +201,22 @@ class UspInternetSettingsView extends ConsumerWidget {
     WidgetRef ref,
     InternetSettingsFeatureState state,
   ) {
+    final ipoe = ref.watch(autoIPoEDataProvider).valueOrNull;
+    final submission = ref.watch(autoIPoESubmissionProvider);
+    final supported = ipoe?.capabilities.isSupported == true ||
+        state.connectionType == UspWanConnectionType.ipoe;
+    final ipoeDirty = supported && ref.watch(autoIPoEPageProvider).isDirty;
     if (state.status.isLoading || !state.isEditing) return null;
 
     final isValid = ref.watch(uspInternetFormValidProvider);
-    final isSaving = state.status.activeMutation == 'save';
+    final isSaving = state.status.isSaving ||
+        ipoe?.runtime.isBusy == true ||
+        ipoe?.outcomeFor(submission) == AutoIPoEOutcome.pending;
 
     return UiKitBottomBarConfig(
       positiveLabel: loc(context).save,
-      isPositiveEnabled: state.isDirty && isValid && !isSaving,
+      isPositiveEnabled: (state.isDirty || ipoeDirty) && isValid && !isSaving,
+      isNegativeEnabled: !state.status.isSaving,
       onPositiveTap: () => _save(context, ref),
       onNegativeTap: () =>
           ref.read(uspInternetSettingsProvider.notifier).exitEditMode(),
@@ -206,7 +234,32 @@ class UspInternetSettingsView extends ConsumerWidget {
     final hostName = preSave.readOnlyInfo.hostName;
 
     try {
-      await doSomethingWithSpinner(context, notifier.save());
+      var resetConfirmed = false;
+      final needsReset =
+          submittedType != UspWanConnectionType.ipoe && notifier.needsIPoEReset;
+      if (needsReset) {
+        await showSimpleAppDialog(context,
+            title: loc(context).autoIpoeReset,
+            content:
+                AppText.bodyMedium(loc(context).autoIpoeResetBeforeSwitching),
+            actions: [
+              AppButton.text(
+                  label: loc(context).cancel, onTap: () => context.pop()),
+              AppButton.primary(
+                  identifier: 'auto-ipoe-confirm-reset',
+                  label: loc(context).autoIpoeReset,
+                  onTap: () {
+                    resetConfirmed = true;
+                    context.pop();
+                  }),
+            ]);
+        if (!resetConfirmed || !context.mounted) return;
+      }
+      if (submittedType == UspWanConnectionType.ipoe || needsReset) {
+        await notifier.save(resetConfirmed: resetConfirmed);
+      } else {
+        await doSomethingWithSpinner(context, notifier.save());
+      }
       if (!context.mounted) return;
 
       if (shouldRedirectToBridge(

@@ -17,6 +17,8 @@ final uspInternetFormValidProvider = Provider.autoDispose<bool>((ref) {
 
 /// Validate the entire form based on connection type and field values.
 bool validateForm(UspInternetSettingsForm form) {
+  // IPoE has its own mode-specific native validation and owns IPv6/MTU.
+  if (form.connectionType == UspWanConnectionType.ipoe) return true;
   if (!_validateIpv4Fields(form)) return false;
   if (!_validateIpv6Fields(form)) return false;
   if (!_validateOptionalFields(form)) return false;
@@ -25,6 +27,7 @@ bool validateForm(UspInternetSettingsForm form) {
 
 bool _validateIpv4Fields(UspInternetSettingsForm form) {
   switch (form.connectionType) {
+    case UspWanConnectionType.ipoe:
     case UspWanConnectionType.dhcp:
       return true;
     case UspWanConnectionType.staticIp:

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -104,6 +105,10 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
       }
     });
 
+    // Tunnel creation/deletion need not emit the legacy WAN object's SSE event.
+    final timer = Timer.periodic(
+        const Duration(seconds: 15), (_) => ref.invalidateSelf());
+    ref.onDispose(timer.cancel);
     return _fetch();
   }
 

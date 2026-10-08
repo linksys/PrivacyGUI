@@ -467,7 +467,14 @@ class UnifiedDiagnosticsNotifier
     state = state.copyWith(step: DiagnosticStep.pingGateway);
     try {
       final ping = await svc.pingGateway();
-      final pingResult = _evaluatePing(DiagnosticStep.pingGateway, ping);
+      final pingResult = ping == null
+          ? const DiagnosticStepUIModel(
+              step: DiagnosticStep.pingGateway,
+              severity: DiagnosticSeverity.skipped,
+              titleKey: 'Gateway',
+              descriptionKey:
+                  'Not applicable: this connection has no conventional IPv4 gateway. Internet reachability is tested separately.')
+          : _evaluatePing(DiagnosticStep.pingGateway, ping);
       results.add(pingResult);
       _publish(gen, state.copyWith(results: List.from(results)));
     } catch (e) {
@@ -624,7 +631,14 @@ class UnifiedDiagnosticsNotifier
     state = state.copyWith(step: DiagnosticStep.pingGateway);
     try {
       final ping = await svc.pingGateway();
-      final pingResult = _evaluatePing(DiagnosticStep.pingGateway, ping);
+      final pingResult = ping == null
+          ? const DiagnosticStepUIModel(
+              step: DiagnosticStep.pingGateway,
+              severity: DiagnosticSeverity.skipped,
+              titleKey: 'Gateway',
+              descriptionKey:
+                  'Not applicable: this connection has no conventional IPv4 gateway. Internet reachability is tested separately.')
+          : _evaluatePing(DiagnosticStep.pingGateway, ping);
       results.add(pingResult);
       _publish(gen, state.copyWith(results: List.from(results)));
     } catch (e) {

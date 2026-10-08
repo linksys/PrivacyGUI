@@ -1193,5 +1193,12 @@
   "raPreparingPartial": "部分即時更新無法設定。儀表板可能不會自動更新，請下拉重新整理。",
   "raLiveUpdates": "即時更新",
   "raLiveUpdatesConnecting": "正在透過雲端連線",
-  "raLiveUpdatesDropped": "雲端連線中斷 — 正在重新連線"
+  "raLiveUpdatesDropped": "雲端連線中斷 — 正在重新連線",
+  "autoIpoeTitle": "Auto-IPoE",
+  "autoIpoeApply": "Save and Apply",
+  "autoIpoeReset": "Disable Auto-IPoE",
+  "autoIpoeResetBeforeSwitching": "Disable Auto-IPoE before choosing another Internet connection type. This restores the normal WAN settings.",
+  "autoIpoeOpenSettings": "IPoE settings",
+  "autoIpoeResolvePending": "Check interrupted setup",
+  "autoIpoeResolvePendingDescription": "Check whether setup started. If it did not start, return to the settings safely. An active setup will continue."
 }
