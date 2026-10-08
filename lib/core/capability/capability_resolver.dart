@@ -19,6 +19,7 @@ import 'package:privacy_gui/core/capability/device_capability.dart';
 /// #1635's design note.
 String capabilityProbePath(DeviceCapability capability) {
   return switch (capability) {
+    DeviceCapability.autoIPoE => 'Device.X_LINKSYS_AutoIPoE.APIVersion',
     DeviceCapability.wifiMacFilter =>
       'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode',
   };

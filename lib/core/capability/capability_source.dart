@@ -45,16 +45,23 @@ class GetProbeCapabilitySource implements CapabilitySource {
     const capabilities = DeviceCapability.values;
     final paths = [for (final c in capabilities) capabilityProbePath(c)];
 
-    final Map<String, dynamic> response;
+    Map<String, dynamic> response;
     try {
-      // One batch Get (one round-trip through the throttler) for every path.
+      // Keep the normal path to one round-trip through the throttler.
       response = await usp.get(paths);
     } catch (e) {
-      // A failed probe cannot distinguish which paths exist, so fail closed for
-      // all of them — mirrors `SessionService._fetchDeviceUuid`: the absence is
-      // the outcome, kept in the log rather than a thrown type.
-      logger.w('$_tag probe Get failed, all capabilities unavailable: $e');
-      return DeviceCapabilities.empty;
+      // An unknown optional path can fault the entire batch. Probe each path
+      // separately so one unsupported feature cannot hide an unrelated one.
+      logger.w('$_tag batch probe failed, retrying individual paths: $e');
+      response = <String, dynamic>{};
+      for (final path in paths) {
+        try {
+          final result = await usp.get([path]);
+          if (result.containsKey(path)) response[path] = result[path];
+        } catch (error) {
+          logger.d('$_tag path $path unavailable: $error');
+        }
+      }
     }
 
     final supported = <DeviceCapability>{};
@@ -63,7 +70,7 @@ class GetProbeCapabilitySource implements CapabilitySource {
       final value = response[path];
       // Present AND non-empty. `containsKey` false (silently omitted) or an
       // empty-string value both mean unsupported.
-      if (value != null && value.toString().isNotEmpty) {
+      if (value != null && value.toString().trim().isNotEmpty) {
         supported.add(capability);
       } else {
         logger.d(

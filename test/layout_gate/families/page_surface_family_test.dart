@@ -8,6 +8,9 @@ import 'package:privacy_gui/components/customs/circular_countdown_widget.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/app_menu_card.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_snapshot.dart';
+import 'package:privacy_gui/page/internet_settings/views/sections/auto_ipoe_section.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_filter_panel.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_list_tile.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
@@ -30,6 +33,7 @@ import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart
 import 'package:sliver_dashboard/sliver_dashboard.dart' show SliverDashboard;
 import 'package:ui_kit_library/ui_kit.dart';
 
+import '../../mocks/test_data/scenes/auto_ipoe_scene_data.dart';
 import '../../mocks/test_data/scenes/login_scene_data.dart';
 import '../../util/dashboard/dashboard_card_probe.dart'
     show kMinSupportedScreenWidth;
@@ -77,11 +81,27 @@ double _contentWidth(double screen) =>
 ///    the content box narrows, computed from ui_kit rather than read from the
 ///    table in the family's header, which is prose and cannot fail.
 void main() {
-  // "Cases" and not "pages", corrected by #1489: this list is sixty-three cases over
-  // forty-five pages, because six of those pages are swept more than once. The two
+  test('Auto-IPoE fixture pins supported ready content and controls', () {
+    expect(gateAutoIPoESnapshot.capabilities.isSupported, isTrue);
+    expect(gateAutoIPoESnapshot.outcomeFor(gateAutoIPoESubmission),
+        AutoIPoEOutcome.succeeded);
+    expect(gateAutoIPoEPageState.status.loading, isFalse);
+    expect(gateAutoIPoEPageState.status.error, isNull);
+    expect(
+        kAutoIPoEPageCase.requires,
+        containsAll([
+          AutoIPoESection,
+          AppDropdown<AutoIPoEMode>,
+          AppButton,
+        ]));
+    expect(kAutoIPoEPageCase.forbids, contains(AppLoader));
+  });
+
+  // "Cases" and not "pages", corrected by #1489: this list is sixty-four cases over
+  // forty-six pages, because six of those pages are swept more than once. The two
   // counts were equal for the whole of #1369 and the group title read "pages"
   // throughout, which is exactly the kind of coincidence a name should not be built on
-  // — `kPageViewCount` is 47, a third quantity again (page view *files*, which no case
+  // — `kPageViewCount` is 48, a third quantity again (page view *files*, which no case
   // can move), and it is equal to neither.
   //
   // **Two counts drifted before #1554 re-measured them, and only in the prose.** The
@@ -122,14 +142,15 @@ void main() {
   // an assertion that does not read it is the failure mode, and copying it to a fifth
   // place is how it becomes hard to notice.
   group(
-      'the gate declares sixty-three cases over forty-five pages, and which '
-      'sixty-three is a decision', () {
+      'the gate declares sixty-four cases over forty-six pages, and which '
+      'sixty-four is a decision', () {
     test(
         'kPageSurfaceCases holds the pilot two, wave 1\'s five, wave 2\'s nine, '
         'wave 3\'s six, wave 4\'s twenty-one, #1489\'s five non-default tabs, '
         '#1549\'s split page, #1554\'s two fixture states, #1602\'s two '
         'completion branches plus eight diagnostics screens, #1580\'s '
-        'remote-only page, and #1636\'s third Wi-Fi tab', () {
+        'remote-only page, #1636\'s third Wi-Fi tab, and #1664\'s Auto-IPoE page',
+        () {
       expect(
         kPageSurfaceCases.map((c) => c.id),
         [
@@ -224,6 +245,7 @@ void main() {
           // has four content states, three of which cannot overflow, and its list
           // sits below the filter that proves the first premise.
           'notification_history',
+          'pnp_ipoe',
         ],
         // Updated by #1377, #1378, #1379 and #1380, and the wording is the point of
         // the test.

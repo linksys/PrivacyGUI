@@ -1,3 +1,7 @@
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
+import 'package:privacy_gui/core/usp/services/active_ipv4_connection.dart';
+import 'package:privacy_gui/page/internet_settings/services/usp_wan_data_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
@@ -12,7 +16,6 @@ import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dns_client.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
-import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
@@ -26,7 +29,14 @@ final unifiedDiagnosticsServiceProvider =
     Provider<UnifiedDiagnosticsService?>((ref) {
   final usp = ref.watch(uspClientProvider);
   if (usp == null) return null;
-  return UnifiedDiagnosticsService(usp);
+  var active = true;
+  ref.onDispose(() => active = false);
+  return UnifiedDiagnosticsService(
+    usp,
+    isAvailable: () => active,
+    autoIPoESupported:
+        ref.watch(deviceCapabilitiesProvider).has(DeviceCapability.autoIPoE),
+  );
 });
 
 /// Service encapsulating all USP operations for network diagnostics.
@@ -38,6 +48,8 @@ final unifiedDiagnosticsServiceProvider =
 ///   notifier — call [attachScope] before invoking any Operate-based method.
 class UnifiedDiagnosticsService {
   final UspClient _usp;
+  final bool _autoIPoESupported;
+  final bool Function()? _isAvailable;
   DiagnosticScope? _scope;
 
   static const _defaultInternetHost =
@@ -45,7 +57,14 @@ class UnifiedDiagnosticsService {
   static const _defaultDnsHost = '8.8.8.8'; // Google DNS — for DNS check
   static const _defaultTracerouteHost = '8.8.8.8';
 
-  UnifiedDiagnosticsService(this._usp);
+  UnifiedDiagnosticsService(this._usp,
+      {bool autoIPoESupported = false, bool Function()? isAvailable})
+      : _autoIPoESupported = autoIPoESupported,
+        _isAvailable = isAvailable;
+
+  void _checkAvailable() {
+    if (_isAvailable?.call() == false) throw const ResourceNotFoundError();
+  }
 
   /// Inject the active [DiagnosticScope]. Replaces any prior scope (the prior
   /// scope's release lifecycle is owned by its caller; this method does not
@@ -71,18 +90,20 @@ class UnifiedDiagnosticsService {
 
   /// Check WAN interface status using codegen WanStatus.
   Future<WanStatusUIModel> checkWanStatus() async {
+    _checkAvailable();
     logger.d('[Diagnostics] Checking WAN status');
-    final WanStatus wan;
-    try {
-      wan = await WanStatus.fetch(_usp);
-    } catch (e) {
-      throw mapUspErrorToServiceError(e);
-    }
+    final wan = await UspWanDataService(
+      _usp,
+      autoIPoESupported: _autoIPoESupported,
+    ).fetch();
+    _checkAvailable();
     return WanStatusUIModel(
-      status: wan.status,
+      status: wan.isUp ? 'Up' : 'Down',
       ipAddress: wan.ipAddress,
       subnetMask: wan.subnetMask,
       addressingType: wan.addressingType,
+      usesTunnel:
+          const ['MAP-E', 'DS-Lite', 'IPIP'].contains(wan.addressingType),
     );
   }
 
@@ -115,15 +136,32 @@ class UnifiedDiagnosticsService {
   }
 
   /// Ping the default gateway.
-  Future<PingResult> pingGateway({int repeatCount = 3}) async {
-    final wan = await checkWanStatus();
-    if (wan.ipAddress.isEmpty) {
-      throw const InvalidInputError(
-          field: 'wanIp',
-          detail: 'No WAN IP address — cannot determine gateway');
+  Future<PingResult?> pingGateway({int repeatCount = 3}) async {
+    _checkAvailable();
+    final active = await ActiveIpv4Connection.fetch(
+      _usp,
+      autoIPoESupported: _autoIPoESupported,
+    );
+    _checkAvailable();
+    if (active != null) {
+      if (!active.isUp) {
+        throw const ConnectivityError(detail: 'No active IPv4 route');
+      }
+      // BR/AFTR reachability by ICMP is not required for a working tunnel.
+      if (active.isTunnel || active.pointToPoint && active.gateway.isEmpty) {
+        return null;
+      }
+      if (active.gateway.isEmpty) return null;
+      return ping(active.gateway, repeatCount: repeatCount);
     }
-    final gateway = _deriveGateway(wan.ipAddress, wan.subnetMask);
-    return ping(gateway, repeatCount: repeatCount);
+    final wan = await UspWanDataService(
+      _usp,
+      autoIPoESupported: _autoIPoESupported,
+    ).fetch();
+    _checkAvailable();
+    if (!wan.isUp) throw const ConnectivityError(detail: 'WAN is down');
+    if (wan.gateway.isEmpty) return null;
+    return ping(wan.gateway, repeatCount: repeatCount);
   }
 
   /// Ping DNS server (Google 8.8.8.8).
@@ -751,26 +789,6 @@ class UnifiedDiagnosticsService {
   }
 
   // ─── Helpers ─────────────────────────────────────────────
-
-  /// Derive default gateway from IP and subnet mask.
-  /// Simple heuristic: assume gateway is .1 in the subnet.
-  String _deriveGateway(String ipAddress, String subnetMask) {
-    final ipParts = ipAddress.split('.').map(int.parse).toList();
-    final maskParts = subnetMask.split('.').map(int.parse).toList();
-
-    if (ipParts.length != 4 || maskParts.length != 4) {
-      return '192.168.1.1'; // fallback
-    }
-
-    // Network address + .1
-    final gateway = <int>[];
-    for (int i = 0; i < 4; i++) {
-      gateway.add(ipParts[i] & maskParts[i]);
-    }
-    gateway[3] = 1;
-
-    return gateway.join('.');
-  }
 }
 
 /// WAN status information.
@@ -779,16 +797,18 @@ class WanStatusUIModel {
   final String ipAddress;
   final String subnetMask;
   final String addressingType;
+  final bool usesTunnel;
 
   const WanStatusUIModel({
     required this.status,
     required this.ipAddress,
     required this.subnetMask,
     required this.addressingType,
+    this.usesTunnel = false,
   });
 
   bool get isUp => status == 'Up';
-  bool get hasIp => ipAddress.isNotEmpty;
+  bool get hasIp => ipAddress.isNotEmpty || (usesTunnel && isUp);
 }
 
 /// DHCP pool usage information.

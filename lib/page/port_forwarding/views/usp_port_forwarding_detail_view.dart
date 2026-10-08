@@ -1,3 +1,4 @@
+import 'package:privacy_gui/page/_shared/components/tunnel_forwarding_notice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
@@ -200,7 +201,8 @@ class _UspPortForwardingDetailViewState
         SliverPadding(
           padding: EdgeInsets.symmetric(horizontal: context.layoutMargin),
           sliver: SliverList(
-            delegate: SliverChildListDelegate([tabContent, AppGap.md()]),
+            delegate: SliverChildListDelegate(
+                [const TunnelForwardingNotice(), tabContent, AppGap.md()]),
           ),
         ),
       ],

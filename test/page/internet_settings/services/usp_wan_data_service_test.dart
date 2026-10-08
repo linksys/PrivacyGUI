@@ -1,3 +1,9 @@
+import 'dart:convert';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/active_ipv4_connection.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -77,6 +83,58 @@ void main() {
   // ---------------------------------------------------------------------------
   // WAN Status mapping
   // ---------------------------------------------------------------------------
+
+  for (final supported in [false, true]) {
+    test('ordinary WAN works with Auto-IPoE support $supported', () async {
+      stubWanStatus();
+      final service = UspWanDataService(mockUsp, autoIPoESupported: supported);
+
+      final result = await service.fetch();
+
+      expect(result.isUp, isTrue);
+      expect(result.addressingType, 'DHCP');
+      expect(result.gateway, '203.0.113.254');
+      final requests = verify(
+              () => mockUsp.get(captureAny(), priority: any(named: 'priority')))
+          .captured
+          .cast<List<String>>()
+          .expand((paths) => paths);
+      expect(requests.contains(ActiveIpv4Connection.path), supported);
+    });
+
+    test('service provider injects Auto-IPoE support $supported', () async {
+      stubWanStatus();
+      when(() => mockUsp.get([ActiveIpv4Connection.path]))
+          .thenAnswer((_) async => {
+                ActiveIpv4Connection.path: jsonEncode({
+                  'apiVersion': 1,
+                  'available': true,
+                  'state': 'Up',
+                  'activeIPv4Route': true,
+                  'tunnelType': 'DS-Lite',
+                  'mtu': 1460,
+                }),
+              });
+      final container = ProviderContainer(overrides: [
+        uspClientProvider.overrideWithValue(mockUsp),
+        deviceCapabilitiesProvider.overrideWithValue(supported
+            ? DeviceCapabilities({DeviceCapability.autoIPoE})
+            : DeviceCapabilities.empty),
+      ]);
+      addTearDown(container.dispose);
+
+      final result = await container.read(uspWanDataServiceProvider).fetch();
+
+      expect(result.isUp, isTrue);
+      expect(result.addressingType, supported ? 'DS-Lite' : 'DHCP');
+      final requests = verify(
+              () => mockUsp.get(captureAny(), priority: any(named: 'priority')))
+          .captured
+          .cast<List<String>>()
+          .expand((paths) => paths);
+      expect(requests.contains(ActiveIpv4Connection.path), supported);
+    });
+  }
 
   group('UspWanDataService — fetch', () {
     test('maps WanStatus fields to UIModel', () async {
@@ -538,6 +596,42 @@ void main() {
           .thenThrow('Get failed: Transport error');
 
       expect(() => svc.fetch(), throwsA(isA<ServiceError>()));
+    });
+  });
+  group('UspWanDataService native connection error handling', () {
+    setUp(() {
+      svc = UspWanDataService(mockUsp, autoIPoESupported: true);
+    });
+    for (final error in const <ServiceError>[
+      NotAuthenticatedError(
+          code: 401, detail: 'Synthetic authentication failure'),
+      SessionTokenExpiredError(detail: 'Synthetic expired session'),
+      InvalidSessionTokenError(detail: 'Synthetic invalid session'),
+      NetworkError(code: 503, detail: 'Synthetic unavailable service'),
+      InvalidInputError(code: 7004, detail: 'Synthetic invalid response'),
+    ]) {
+      test('preserves ${error.runtimeType} from the native read', () async {
+        when(() => mockUsp.get(any())).thenThrow(error);
+
+        await expectLater(svc.fetch(), throwsA(same(error)));
+
+        verify(() => mockUsp.get(any())).called(1);
+        verifyNoMoreInteractions(mockUsp);
+      });
+    }
+
+    test('keeps a mapped HTTP auth failure through the outer catch', () async {
+      when(() => mockUsp.get(any()))
+          .thenThrow('Get failed: Transport error: HTTP error: HTTP 401');
+
+      await expectLater(
+        svc.fetch(),
+        throwsA(
+            isA<NotAuthenticatedError>().having((e) => e.code, 'code', 401)),
+      );
+
+      verify(() => mockUsp.get(any())).called(1);
+      verifyNoMoreInteractions(mockUsp);
     });
   });
 }

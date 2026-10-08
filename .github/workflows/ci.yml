@@ -266,6 +266,10 @@ jobs:
           EXTRA_EXCLUDE_TAGS: layout-gate
         run: bash run_tests.sh
 
+
+      - name: Native USP operation contract tests
+        run: node --test test/web/usp_native_operate_test.mjs
+
   # ------------------------------------------------------------------------
   # 3. The layout gate, on its own, because it is ~85% of the pipeline's wall
   #    clock and because "the gate is red" and "a unit test is red" are
@@ -303,6 +307,7 @@ jobs:
       # measured nothing. Verified against this SDK, not assumed.
       - name: 🛡️ Layout Gate (PR-blocking widget gates)
         run: flutter test --tags layout-gate --exclude-tags="golden||loc||ui"
+
 
   # ------------------------------------------------------------------------
   # 4. Web smoke build. Independent of every test above, and it used to wait
@@ -381,6 +386,7 @@ jobs:
           flutter build web --release --no-pub \
             --dart-define=force=remote \
             --output "${{ github.workspace }}/build/web-remote"
+
 
   # ========================================================================
   # Required status checks are a repository setting — and since 2026-09-07

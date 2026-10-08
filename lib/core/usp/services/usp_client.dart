@@ -40,10 +40,7 @@ enum NotifType {
 /// SSE subscription delegate. Set by [SseManager] to enable SSE-backed
 /// subscriptions. When null, [UspClient.subscribe] falls back to polling.
 typedef SseSubscribeDelegate = Future<
-        ({
-          void Function() removeHandler,
-          Future<void> Function() unregister,
-        })>
+        ({void Function() removeHandler, Future<void> Function() unregister})>
     Function({
   required String subscriptionId,
   required String notifType,
@@ -245,6 +242,9 @@ class UspClient {
   String _idLabel(String id) => '$id${_lastCallRetried ? '.retry' : ''}';
 
   String get baseUrl => _baseUrl;
+
+  /// Identifies the current connection even when this facade is rebound in place.
+  int get connectionGeneration => _generation;
 
   bool get isAuthenticated => _client.isAuthenticated;
 
@@ -518,10 +518,12 @@ class UspClient {
   Future<Map<String, dynamic>> get(
     List<String> paths, {
     RequestPriority? priority,
+    bool fresh = false,
   }) async {
     if (throttler != null) {
       return throttler!.enqueue(
-        cacheKey: 'usp:${paths.join(",")}',
+        cacheKey: 'usp:${fresh ? "fresh:" : ""}${paths.join(",")}',
+        cacheTtl: fresh ? Duration.zero : null,
         priority: priority ?? RequestPriority.normal,
         action: () => _rawGet(paths),
       );
@@ -534,18 +536,22 @@ class UspClient {
     _lastCallRetried = false;
     final sw = Stopwatch()..start();
 
-    logger.d('$_tag $_separator\n'
-        '$_tag #$id GET (Request) → ${paths.length} paths\n'
-        '${_prettyList(paths)}');
+    logger.d(
+      '$_tag $_separator\n'
+      '$_tag #$id GET (Request) → ${paths.length} paths\n'
+      '${_prettyList(paths)}',
+    );
 
     try {
       final rawMap = await _withAuthRetry(() => _client.get(paths));
       sw.stop();
 
       final label = _idLabel(id);
-      logger.d('$_tag $_separator\n'
-          '$_tag $label GET (Response) ← ${sw.elapsedMilliseconds}ms\n'
-          '${_prettyMap(rawMap)}');
+      logger.d(
+        '$_tag $_separator\n'
+        '$_tag $label GET (Response) ← ${sw.elapsedMilliseconds}ms\n'
+        '${_prettyMap(rawMap)}',
+      );
 
       if (rawMap.isEmpty) {
         if (isTableQueryOnlyRequest(paths)) {
@@ -557,8 +563,10 @@ class UspClient {
           // (empty) instance set and returns an empty list, so this is a normal
           // "no rows" outcome, not a fault. Log it at debug so it does not
           // drown real warnings.
-          logger.d('$_tag$label GET empty (table query, no instances): '
-              '$paths');
+          logger.d(
+            '$_tag$label GET empty (table query, no instances): '
+            '$paths',
+          );
         } else {
           // At least one concrete path was requested — an empty response there
           // is genuinely unexpected and worth a warning.
@@ -574,11 +582,16 @@ class UspClient {
       // leaves and emit ONE aggregated warning rather than one per path, so a
       // genuine partial-response warning is not diluted into a wall of lines.
       final missing = <String>[];
-      final normalized =
-          normalizeGetResponse(paths, rawMap, onMissingPath: missing.add);
+      final normalized = normalizeGetResponse(
+        paths,
+        rawMap,
+        onMissingPath: missing.add,
+      );
       if (missing.isNotEmpty) {
-        logger.w('$_tag$label GET missing ${missing.length} path(s) in '
-            'response: $missing');
+        logger.w(
+          '$_tag$label GET missing ${missing.length} path(s) in '
+          'response: $missing',
+        );
       }
       return normalized;
     } catch (e) {
@@ -684,16 +697,22 @@ class UspClient {
   /// - Batch:  `set({'Device.X.Y': value, ...}, allowPartial: true)` — sets multiple
   ///
   /// Returns structured operation result from the WASM client.
-  Future<Map<String, dynamic>> set(Object pathOrParams,
-      {dynamic singleValue, bool allowPartial = false}) async {
+  Future<Map<String, dynamic>> set(
+    Object pathOrParams, {
+    dynamic singleValue,
+    bool allowPartial = false,
+  }) async {
     if (pathOrParams is String && singleValue != null) {
       return await _singleSet(pathOrParams, singleValue.toString());
     } else if (pathOrParams is Map) {
-      return await _batchSet(pathOrParams.cast<String, dynamic>(),
-          allowPartial: allowPartial);
+      return await _batchSet(
+        pathOrParams.cast<String, dynamic>(),
+        allowPartial: allowPartial,
+      );
     }
     throw ArgumentError(
-        'set() expects (String, value) or (Map<String, dynamic>)');
+      'set() expects (String, value) or (Map<String, dynamic>)',
+    );
   }
 
   Future<Map<String, dynamic>> _singleSet(String path, String value) async {
@@ -708,8 +727,10 @@ class UspClient {
       final result = await _withAuthRetry(() => _client.set({path: value}));
       sw.stop();
       final label = _idLabel(id);
-      logger.d('$_tag$label SET ← (${sw.elapsedMilliseconds}ms)\n'
-          '${_prettyMap(result)}');
+      logger.d(
+        '$_tag$label SET ← (${sw.elapsedMilliseconds}ms)\n'
+        '${_prettyMap(result)}',
+      );
       return result;
     } catch (e) {
       sw.stop();
@@ -719,24 +740,32 @@ class UspClient {
     }
   }
 
-  Future<Map<String, dynamic>> _batchSet(Map<String, dynamic> parameters,
-      {bool allowPartial = false}) async {
+  Future<Map<String, dynamic>> _batchSet(
+    Map<String, dynamic> parameters, {
+    bool allowPartial = false,
+  }) async {
     final id = _genReqId();
     _lastCallRetried = false;
     final sw = Stopwatch()..start();
-    final Map<String, String> stringParams =
-        parameters.map((key, value) => MapEntry(key, value.toString()));
+    final Map<String, String> stringParams = parameters.map(
+      (key, value) => MapEntry(key, value.toString()),
+    );
 
-    logger.d('$_tag#$id SET${allowPartial ? ' (allowPartial)' : ''} →\n'
-        '${_prettyMap(parameters)}');
+    logger.d(
+      '$_tag#$id SET${allowPartial ? ' (allowPartial)' : ''} →\n'
+      '${_prettyMap(parameters)}',
+    );
 
     try {
       final result = await _withAuthRetry(
-          () => _client.set(stringParams, allowPartial: allowPartial));
+        () => _client.set(stringParams, allowPartial: allowPartial),
+      );
       sw.stop();
       final label = _idLabel(id);
-      logger.d('$_tag$label SET ← (${sw.elapsedMilliseconds}ms)\n'
-          '${_prettyMap(result)}');
+      logger.d(
+        '$_tag$label SET ← (${sw.elapsedMilliseconds}ms)\n'
+        '${_prettyMap(result)}',
+      );
       return result;
     } catch (e) {
       sw.stop();
@@ -759,22 +788,28 @@ class UspClient {
   /// `{path, value}` maps. Groups are processed in order; params within a
   /// group are sent together in one Set message.
   Future<Map<String, dynamic>> setOrdered(
-      List<List<Map<String, String>>> parameterGroups,
-      {bool allowPartial = false}) async {
+    List<List<Map<String, String>>> parameterGroups, {
+    bool allowPartial = false,
+  }) async {
     final id = _genReqId();
     _lastCallRetried = false;
     final sw = Stopwatch()..start();
 
-    logger.d('$_tag#$id SET_ORDERED${allowPartial ? ' (allowPartial)' : ''} →\n'
-        '${_prettyJson(parameterGroups)}');
+    logger.d(
+      '$_tag#$id SET_ORDERED${allowPartial ? ' (allowPartial)' : ''} →\n'
+      '${_prettyJson(parameterGroups)}',
+    );
 
     try {
-      final result = await _withAuthRetry(() =>
-          _client.setOrdered(parameterGroups, allowPartial: allowPartial));
+      final result = await _withAuthRetry(
+        () => _client.setOrdered(parameterGroups, allowPartial: allowPartial),
+      );
       sw.stop();
       final label = _idLabel(id);
-      logger.d('$_tag$label SET_ORDERED ← (${sw.elapsedMilliseconds}ms)\n'
-          '${_prettyMap(result)}');
+      logger.d(
+        '$_tag$label SET_ORDERED ← (${sw.elapsedMilliseconds}ms)\n'
+        '${_prettyMap(result)}',
+      );
       return result;
     } catch (e) {
       sw.stop();
@@ -795,18 +830,24 @@ class UspClient {
   /// - `params` (Map<String, dynamic>): initial parameter values
   ///
   /// Single-item lists are optimized to use the WASM single-add method.
-  Future<Map<String, dynamic>> add(List<Map<String, dynamic>> items,
-      {bool allowPartial = false}) async {
+  Future<Map<String, dynamic>> add(
+    List<Map<String, dynamic>> items, {
+    bool allowPartial = false,
+  }) async {
     if (items.length == 1) {
       final item = items.first;
-      return await _singleAdd(item['path'] as String,
-          item['params'] as Map<String, dynamic>? ?? {});
+      return await _singleAdd(
+        item['path'] as String,
+        item['params'] as Map<String, dynamic>? ?? {},
+      );
     }
     return await _batchAdd(items, allowPartial: allowPartial);
   }
 
   Future<Map<String, dynamic>> _singleAdd(
-      String objectPath, Map<String, dynamic> parameters) async {
+    String objectPath,
+    Map<String, dynamic> parameters,
+  ) async {
     final id = _genReqId();
     _lastCallRetried = false;
     final sw = Stopwatch()..start();
@@ -816,13 +857,17 @@ class UspClient {
     logger.d('$_tag#$id ADD →\n${_prettyMap(payload)}');
 
     try {
-      final result = await _withAuthRetry(() => _client.add([
-            {'path': objectPath, 'params': stringParams}
-          ]));
+      final result = await _withAuthRetry(
+        () => _client.add([
+          {'path': objectPath, 'params': stringParams},
+        ]),
+      );
       sw.stop();
       final label = _idLabel(id);
-      logger.d('$_tag$label ADD ← (${sw.elapsedMilliseconds}ms)\n'
-          '${_prettyMap(result)}');
+      logger.d(
+        '$_tag$label ADD ← (${sw.elapsedMilliseconds}ms)\n'
+        '${_prettyMap(result)}',
+      );
       return result;
     } catch (e) {
       sw.stop();
@@ -832,22 +877,29 @@ class UspClient {
     }
   }
 
-  Future<Map<String, dynamic>> _batchAdd(List<Map<String, dynamic>> objects,
-      {bool allowPartial = false}) async {
+  Future<Map<String, dynamic>> _batchAdd(
+    List<Map<String, dynamic>> objects, {
+    bool allowPartial = false,
+  }) async {
     final id = _genReqId();
     _lastCallRetried = false;
     final sw = Stopwatch()..start();
 
-    logger.d('$_tag#$id ADD${allowPartial ? ' (allowPartial)' : ''} →\n'
-        '${_prettyJson(objects)}');
+    logger.d(
+      '$_tag#$id ADD${allowPartial ? ' (allowPartial)' : ''} →\n'
+      '${_prettyJson(objects)}',
+    );
 
     try {
       final result = await _withAuthRetry(
-          () => _client.add(objects, allowPartial: allowPartial));
+        () => _client.add(objects, allowPartial: allowPartial),
+      );
       sw.stop();
       final label = _idLabel(id);
-      logger.d('$_tag$label ADD ← (${sw.elapsedMilliseconds}ms)\n'
-          '${_prettyMap(result)}');
+      logger.d(
+        '$_tag$label ADD ← (${sw.elapsedMilliseconds}ms)\n'
+        '${_prettyMap(result)}',
+      );
       return result;
     } catch (e) {
       sw.stop();
@@ -865,8 +917,10 @@ class UspClient {
   ///
   /// Each path must be a specific instance path (e.g., "Device.NAT.PortMapping.3.").
   /// Single-item lists are optimized to use the WASM single-delete method.
-  Future<Map<String, dynamic>> delete(List<String> paths,
-      {bool allowPartial = false}) async {
+  Future<Map<String, dynamic>> delete(
+    List<String> paths, {
+    bool allowPartial = false,
+  }) async {
     if (paths.length == 1) {
       return await _singleDelete(paths.first);
     }
@@ -884,8 +938,10 @@ class UspClient {
       final result = await _withAuthRetry(() => _client.delete([path]));
       sw.stop();
       final label = _idLabel(id);
-      logger.d('$_tag$label DELETE ← (${sw.elapsedMilliseconds}ms)\n'
-          '${_prettyMap(result)}');
+      logger.d(
+        '$_tag$label DELETE ← (${sw.elapsedMilliseconds}ms)\n'
+        '${_prettyMap(result)}',
+      );
       return result;
     } catch (e) {
       sw.stop();
@@ -895,22 +951,29 @@ class UspClient {
     }
   }
 
-  Future<Map<String, dynamic>> _batchDelete(List<String> paths,
-      {bool allowPartial = false}) async {
+  Future<Map<String, dynamic>> _batchDelete(
+    List<String> paths, {
+    bool allowPartial = false,
+  }) async {
     final id = _genReqId();
     _lastCallRetried = false;
     final sw = Stopwatch()..start();
 
-    logger.d('$_tag#$id DELETE${allowPartial ? ' (allowPartial)' : ''} →\n'
-        '${_prettyList(paths)}');
+    logger.d(
+      '$_tag#$id DELETE${allowPartial ? ' (allowPartial)' : ''} →\n'
+      '${_prettyList(paths)}',
+    );
 
     try {
       final result = await _withAuthRetry(
-          () => _client.delete(paths, allowPartial: allowPartial));
+        () => _client.delete(paths, allowPartial: allowPartial),
+      );
       sw.stop();
       final label = _idLabel(id);
-      logger.d('$_tag$label DELETE ← (${sw.elapsedMilliseconds}ms)\n'
-          '${_prettyMap(result)}');
+      logger.d(
+        '$_tag$label DELETE ← (${sw.elapsedMilliseconds}ms)\n'
+        '${_prettyMap(result)}',
+      );
       return result;
     } catch (e) {
       sw.stop();
@@ -931,21 +994,26 @@ class UspClient {
   /// [args] are the input arguments for the command.
   /// Returns a flat map containing `commandKey` (for SSE correlation) and
   /// all output arguments from the Operate response.
-  Future<Map<String, dynamic>> operate(String command,
-      {Map<String, String> args = const {}}) async {
+  Future<Map<String, dynamic>> operate(
+    String command, {
+    Map<String, String> args = const {},
+    bool retryOnAuthFailure = true,
+    bool redactArguments = false,
+  }) async {
     final id = _genReqId();
     _lastCallRetried = false;
     final sw = Stopwatch()..start();
 
     final payload = <String, dynamic>{
       'command': command,
-      if (args.isNotEmpty) 'args': args
+      if (args.isNotEmpty) 'args': redactArguments ? '[redacted]' : args,
     };
     logger.d('$_tag#$id OPERATE →\n${_prettyMap(payload)}');
 
     try {
-      final rawResponse =
-          await _withAuthRetry(() => _client.operate(command, args: args));
+      final rawResponse = retryOnAuthFailure
+          ? await _withAuthRetry(() => _client.operate(command, args: args))
+          : await _client.operate(command, args: args);
       sw.stop();
 
       // usp-client 0.13.0 unified format:
@@ -953,13 +1021,17 @@ class UspClient {
       // Throws when the agent refused the command — see extractOperateResult.
       final response = extractOperateResult(rawResponse);
       final label = _idLabel(id);
-      logger.d('$_tag$label OPERATE ← (${sw.elapsedMilliseconds}ms)\n'
-          '${_prettyMap(response)}');
+      logger.d(
+        '$_tag$label OPERATE ← (${sw.elapsedMilliseconds}ms)\n'
+        '${redactArguments ? '[redacted]' : _prettyMap(response)}',
+      );
       return response;
     } catch (e) {
       sw.stop();
       final label = _idLabel(id);
-      logger.e('$_tag$label OPERATE ✗ (${sw.elapsedMilliseconds}ms)\n  $e');
+      logger.e(
+        '$_tag$label OPERATE ✗ (${sw.elapsedMilliseconds}ms)\n  ${redactArguments ? e.runtimeType : e}',
+      );
       rethrow;
     }
   }
@@ -1003,10 +1075,9 @@ class UspClient {
     }
 
     final result = raw['result'] as Map?;
-    if (result == null) return raw; // fallback to raw if not the unified format
-
-    final data = result['data'] as Map?;
+    final data = result == null ? raw : result['data'] as Map?;
     if (data == null) return {};
+    if (result == null && !data.containsKey('outputArgs')) return raw;
 
     final output = <String, dynamic>{};
     final commandKey = data['commandKey']?.toString();
@@ -1150,9 +1221,11 @@ class UspClient {
         .toSet();
 
     // Step 2: Add subscription instance
-    final addResult = await _withAuthRetry(() => _client.add([
-          {'path': objectPath, 'params': <String, dynamic>{}}
-        ]));
+    final addResult = await _withAuthRetry(
+      () => _client.add([
+        {'path': objectPath, 'params': <String, dynamic>{}},
+      ]),
+    );
 
     // Step 3: Resolve instance path from structured result.
     // add() returns the WASM v0.11.0 unified shape
@@ -1185,36 +1258,40 @@ class UspClient {
       final newIds = afterIds.difference(existingIds);
       if (newIds.isEmpty) {
         throw StateError(
-            'USP Add succeeded but no new instance found in $objectPath');
+          'USP Add succeeded but no new instance found in $objectPath',
+        );
       }
       instancePath = '$objectPath${newIds.first}.';
     }
 
     // Step 4: Set Enable, NotifType, ReferenceList
-    await _withAuthRetry(() => _client.set({
-          '${instancePath}Enable': 'true',
-          '${instancePath}NotifType': notifType,
-          '${instancePath}ReferenceList': referenceList,
-        }));
+    await _withAuthRetry(
+      () => _client.set({
+        '${instancePath}Enable': 'true',
+        '${instancePath}NotifType': notifType,
+        '${instancePath}ReferenceList': referenceList,
+      }),
+    );
 
     // Step 5: Read back to verify
-    final verify = await _withAuthRetry(() => _client.get([
-          '${instancePath}Recipient',
-          '${instancePath}Enable',
-          '${instancePath}NotifType',
-          '${instancePath}ReferenceList',
-        ]));
+    final verify = await _withAuthRetry(
+      () => _client.get([
+        '${instancePath}Recipient',
+        '${instancePath}Enable',
+        '${instancePath}NotifType',
+        '${instancePath}ReferenceList',
+      ]),
+    );
 
     sw.stop();
     final recipient = verify['${instancePath}Recipient'] ?? '';
-    logger.d('$_tag#$id CREATE_SUBSCRIPTION $instancePath '
-        'type=$notifType ref=$referenceList → Recipient=$recipient '
-        '(${sw.elapsedMilliseconds}ms)');
+    logger.d(
+      '$_tag#$id CREATE_SUBSCRIPTION $instancePath '
+      'type=$notifType ref=$referenceList → Recipient=$recipient '
+      '(${sw.elapsedMilliseconds}ms)',
+    );
 
-    return {
-      'instancePath': instancePath,
-      ...verify,
-    };
+    return {'instancePath': instancePath, ...verify};
   }
 
   /// Deletes an OBUSPA subscription instance.
@@ -1226,8 +1303,10 @@ class UspClient {
     final shortPath = instancePath.startsWith('Device.')
         ? instancePath.substring(7)
         : instancePath;
-    logger.d('$_tag#$id DELETE_SUBSCRIPTION $shortPath '
-        '(${sw.elapsedMilliseconds}ms)');
+    logger.d(
+      '$_tag#$id DELETE_SUBSCRIPTION $shortPath '
+      '(${sw.elapsedMilliseconds}ms)',
+    );
   }
 
   /// Lists all OBUSPA subscriptions via the WASM client.
@@ -1239,8 +1318,10 @@ class UspClient {
     final sw = Stopwatch()..start();
     final subs = await _withAuthRetry(() => _client.listSubscriptions());
     sw.stop();
-    logger.d('$_tag#$id LIST_SUBSCRIPTIONS → ${subs.length} entries '
-        '(${sw.elapsedMilliseconds}ms)');
+    logger.d(
+      '$_tag#$id LIST_SUBSCRIPTIONS → ${subs.length} entries '
+      '(${sw.elapsedMilliseconds}ms)',
+    );
     return subs;
   }
 
@@ -1276,8 +1357,10 @@ class UspClient {
 
     if (instanceIds.isEmpty) {
       sw.stop();
-      logger.d('$_tag#$id PURGE_SUBSCRIPTIONS → 0 (none found, '
-          '${sw.elapsedMilliseconds}ms)');
+      logger.d(
+        '$_tag#$id PURGE_SUBSCRIPTIONS → 0 (none found, '
+        '${sw.elapsedMilliseconds}ms)',
+      );
       return 0;
     }
 
@@ -1286,8 +1369,10 @@ class UspClient {
       final prefix = '$objectPath$instId.';
       final notifType = allParams['${prefix}NotifType'] ?? '?';
       final refList = allParams['${prefix}ReferenceList'] ?? '?';
-      logger.d('$_tag#$id PURGE: $prefix '
-          '(type=$notifType, ref=$refList)');
+      logger.d(
+        '$_tag#$id PURGE: $prefix '
+        '(type=$notifType, ref=$refList)',
+      );
     }
 
     int deleted = 0;
@@ -1297,14 +1382,18 @@ class UspClient {
         await _withAuthRetry(() => _client.delete([instancePath]));
         deleted++;
       } catch (e) {
-        logger.w('$_tag#$id PURGE failed to delete '
-            '$instancePath: $e');
+        logger.w(
+          '$_tag#$id PURGE failed to delete '
+          '$instancePath: $e',
+        );
       }
     }
 
     sw.stop();
-    logger.d('$_tag#$id PURGE_SUBSCRIPTIONS → deleted $deleted/'
-        '${instanceIds.length} (${sw.elapsedMilliseconds}ms)');
+    logger.d(
+      '$_tag#$id PURGE_SUBSCRIPTIONS → deleted $deleted/'
+      '${instanceIds.length} (${sw.elapsedMilliseconds}ms)',
+    );
     return deleted;
   }
 
@@ -1327,14 +1416,19 @@ class UspClient {
   }) async {
     if (onSseSubscribe != null) {
       return _sseSubscribe(
-          id: id, notifType: notifType, paths: paths, parser: parser);
-    }
-    return _pollingSubscribe(
         id: id,
         notifType: notifType,
         paths: paths,
         parser: parser,
-        interval: interval);
+      );
+    }
+    return _pollingSubscribe(
+      id: id,
+      notifType: notifType,
+      paths: paths,
+      parser: parser,
+      interval: interval,
+    );
   }
 
   /// SSE-backed subscription: registers via delegate, re-fetches on notification.

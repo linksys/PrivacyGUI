@@ -1,3 +1,4 @@
+import 'package:privacy_gui/page/_shared/components/tunnel_forwarding_notice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
@@ -150,6 +151,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         AppGap.xl(),
+        const TunnelForwardingNotice(),
         _buildEnableCard(context, pending, notifier, disabled),
         if (pending.isEnabled) ...[
           AppGap.md(),

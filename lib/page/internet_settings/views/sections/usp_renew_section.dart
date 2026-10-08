@@ -1,3 +1,5 @@
+import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_data_provider.dart';
+import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -38,6 +40,9 @@ class UspRenewSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final activeMutation = state.status.activeMutation;
     final isBridge = state.isBridgeMode;
+    final managedIPoE = state.connectionType == UspWanConnectionType.ipoe ||
+        UspInternetSettingsNotifier.isManagedIPoE(
+            ref.watch(autoIPoEDataProvider).valueOrNull);
     final l = loc(context);
     final reading = ref.watch(wanIpReadingProvider);
     final iconColor = Theme.of(context).colorScheme.primary;
@@ -68,7 +73,7 @@ class UspRenewSection extends ConsumerWidget {
               ipAddress: reading.addressOrNull,
               addressLabel: reading is WanIpUnknown ? l.unknown : null,
               isLoading: activeMutation == 'renewIpv4',
-              onRenew: isBridge || reading is WanIpUnknown
+              onRenew: isBridge || managedIPoE || reading is WanIpUnknown
                   ? null
                   : () => _renewDhcp(context, ref, isIpv6: false),
             ),
@@ -80,7 +85,7 @@ class UspRenewSection extends ConsumerWidget {
             child: UspRenewActionCard(
               protocolLabel: l.ipv6,
               isLoading: activeMutation == 'renewIpv6',
-              onRenew: isBridge
+              onRenew: isBridge || managedIPoE
                   ? null
                   : () => _renewDhcp(context, ref, isIpv6: true),
             ),

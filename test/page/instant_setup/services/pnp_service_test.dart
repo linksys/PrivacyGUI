@@ -6,8 +6,11 @@ import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_band.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
+import 'package:privacy_gui/page/internet_settings/services/auto_ipoe_service.dart';
 
 class MockUspClient extends Mock implements UspClient {}
+
+class MockAutoIPoEService extends Mock implements AutoIPoEService {}
 
 void main() {
   late MockUspClient mockUsp;
@@ -844,6 +847,48 @@ void main() {
         expect(applied, isTrue);
         verifyNever(() => mockUsp.get(any(), priority: any(named: 'priority')));
       });
+    });
+  });
+  group('PnpService injected connection error handling', () {
+    late MockAutoIPoEService ipoe;
+
+    setUp(() {
+      ipoe = MockAutoIPoEService();
+      service = PnpService(mockUsp, fetchAutoIPoE: ipoe.fetch);
+    });
+    for (final error in const <ServiceError>[
+      NotAuthenticatedError(
+          code: 401, detail: 'Synthetic authentication failure'),
+      SessionTokenExpiredError(detail: 'Synthetic expired session'),
+      InvalidSessionTokenError(detail: 'Synthetic invalid session'),
+      NetworkError(code: 503, detail: 'Synthetic unavailable service'),
+      InvalidInputError(code: 7004, detail: 'Synthetic invalid response'),
+    ]) {
+      test('preserves ${error.runtimeType} from the injected read', () async {
+        when(() => ipoe.fetch()).thenThrow(error);
+
+        await expectLater(
+            service.checkInternetConnected(), throwsA(same(error)));
+
+        verify(() => ipoe.fetch()).called(1);
+        verifyNoMoreInteractions(ipoe);
+        verifyZeroInteractions(mockUsp);
+      });
+    }
+
+    test('keeps a mapped HTTP auth failure through the outer catch', () async {
+      when(() => ipoe.fetch())
+          .thenThrow('Get failed: Transport error: HTTP error: HTTP 401');
+
+      await expectLater(
+        service.checkInternetConnected(),
+        throwsA(
+            isA<NotAuthenticatedError>().having((e) => e.code, 'code', 401)),
+      );
+
+      verify(() => ipoe.fetch()).called(1);
+      verifyNoMoreInteractions(ipoe);
+      verifyZeroInteractions(mockUsp);
     });
   });
 }

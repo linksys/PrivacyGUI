@@ -427,14 +427,17 @@
 # second-state cells. The trailing-space form does NOT help, because the coordinate suffix follows
 # second-state immediately: use --plain-name 'page.unified_diagnostics screen_px' for the idle case alone,
 # second-state and 'page.unified_diagnostics_' for the eight added ones.
+# added PnpIPoEView (#1664): supported-ready settings fixture, 234 cells, 2026-10-08.
+# Auto-IPoE moved to PnP; capability-backed ready state is exercised by page.pnp_ipoe:
+# added ms/cell 35.3 / 35.6 / 35.0; median 35.3. The PnP ready fixture has no log widget.
 # rows sorted by path, so adding a page is a one-line diff
 # reader test/layout_gate/page_roster.dart
 # oracle test/layout_gate/page_roster_test.dart
 # doc doc/testing/overflow_gate_architecture.md section 11.5; the onboarding queue is section 11.6
-# pages 47
-# swept 45
+# pages 48
+# swept 46
 # queued 0
-# measured 45
+# measured 46
 # needs_fixture 0
 # excluded 2
 # columns path	disposition	ms_per_cell
@@ -455,6 +458,7 @@ lib/page/instant_privacy/views/instant_privacy_view.dart	swept	19.3
 lib/page/instant_safety/views/instant_safety_view.dart	swept	14.5
 lib/page/instant_setup/views/pnp_complete_view.dart	excluded:not reachable; no route builds it and nothing under lib/ constructs it (#1370)	-
 lib/page/instant_setup/views/pnp_entry_view.dart	swept	11.6
+lib/page/instant_setup/views/pnp_ipoe_view.dart	swept	35.3
 lib/page/instant_setup/views/pnp_isp_settings_view.dart	swept	12.7
 lib/page/instant_setup/views/pnp_modem_lights_off_view.dart	swept	12.9
 lib/page/instant_setup/views/pnp_no_internet_view.dart	swept	14.7

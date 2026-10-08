@@ -2,10 +2,14 @@
 // This is a regular (non-module) script so it executes synchronously,
 // but the actual WASM loading is async. The resulting Promise is stored
 // on window.__uspClientReady so Dart code can await it before using UspClient.
+const uspScriptUrl = new URL(document.currentScript.src);
+const uspAssetUrl = name => new URL(name + uspScriptUrl.search, uspScriptUrl).href;
 window.__uspClientReady = (async function () {
   try {
-    const module = await import('./usp_client.js');
-    await module.default(); // init() — loads and instantiates the WASM binary
+    const module = await import(uspAssetUrl('usp_client.js'));
+    await module.default({module_or_path: uspAssetUrl('usp_client_bg.wasm')});
+    const {installNativeOperate} = await import(uspAssetUrl('usp_native_operate.js'));
+    installNativeOperate(module.UspClient);
     window.UspClient = module.UspClient;
     window.UspClientBuilder = module.UspClientBuilder;
     // WebSocket client and record builders for firmware upload (Method 2)

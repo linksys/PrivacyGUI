@@ -1,0 +1,409 @@
+import 'package:privacy_gui/core/capability/device_capability.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:uuid/uuid.dart';
+import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
+
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_snapshot.dart';
+import 'package:privacy_gui/page/internet_settings/services/auto_ipoe_service.dart';
+
+final autoIPoEDataProvider =
+    AsyncNotifierProvider<AutoIPoEDataNotifier, AutoIPoESnapshot>(
+  AutoIPoEDataNotifier.new,
+);
+final autoIPoESubmissionProvider = StateProvider<AutoIPoESubmission?>(
+  (ref) => null,
+);
+final autoIPoERejectionProvider = StateProvider<String?>((ref) => null);
+
+/// Session cache survives navigation; only status reads are repeated.
+class AutoIPoEDataNotifier extends AsyncNotifier<AutoIPoESnapshot> {
+  Timer? _timer;
+  Timer? _capabilityTimer;
+  int _capabilityRetries = 0;
+  bool _disposed = false;
+  bool _reading = false;
+  bool _dispatching = false;
+  bool _leavingPnp = false;
+  int _remainingPolls = 0;
+  int _generation = 0;
+  int _loadFailures = 0;
+  int _resolutionAttempts = 0;
+  bool _polling = false;
+  AutoIPoEService get _service => ref.read(autoIPoEServiceProvider);
+
+  // Follow the same WAN write policy as Internet Settings, including work
+  // resumed from browser storage or queued before the session changes.
+  bool get _canWrite =>
+      ref.read(surfaceStrategyProvider).internetSettingsEditor(() {}) != null;
+
+  bool get _isSupported =>
+      ref.read(deviceCapabilitiesProvider).has(DeviceCapability.autoIPoE);
+
+  void _requireWritable() {
+    if (!_isSupported) throw const ResourceNotFoundError();
+    if (!_canWrite) throw const UnauthorizedError();
+  }
+
+  @override
+  Future<AutoIPoESnapshot> build() async {
+    final generation = ++_generation;
+    _disposed = false;
+    ref.onDispose(() {
+      _disposed = true;
+      ++_generation;
+      _timer?.cancel();
+      _capabilityTimer?.cancel();
+    });
+    if (!ref.watch(deviceCapabilitiesProvider).has(DeviceCapability.autoIPoE)) {
+      // Drop only this session's UI correlation; durable recovery belongs to
+      // the supported router and must remain available after reauthentication.
+      await Future<void>.value();
+      if (_current(generation)) {
+        ref.read(autoIPoESubmissionProvider.notifier).state = null;
+        ref.read(autoIPoERejectionProvider.notifier).state = null;
+      }
+      return const AutoIPoESnapshot();
+    }
+    // Watch the service so authentication/client changes retry an early read.
+    final service = ref.watch(autoIPoEServiceProvider);
+    try {
+      final submission = await service.loadSubmission();
+      if (!_current(generation)) throw const NotAuthenticatedError();
+      service.checkConnection();
+      final snapshot = await service.fetch();
+      if (!_current(generation)) return snapshot;
+      service.checkConnection();
+      ref.read(autoIPoESubmissionProvider.notifier).state = submission;
+      ref.read(autoIPoERejectionProvider.notifier).state = null;
+      _loadFailures = 0;
+      _retryCapabilities(snapshot);
+      if (snapshot.outcomeFor(submission) == AutoIPoEOutcome.pending) {
+        continueChecking();
+      }
+      return snapshot;
+    } on ServiceError catch (e) {
+      if (_current(generation) &&
+          e is! ResourceNotFoundError &&
+          ++_loadFailures < 3) {
+        _timer = Timer(const Duration(seconds: 3), () {
+          if (_current(generation)) ref.invalidateSelf();
+        });
+      }
+      rethrow;
+    }
+  }
+
+  void _retryCapabilities(AutoIPoESnapshot snapshot) {
+    _capabilityTimer?.cancel();
+    if (snapshot.capabilitiesAvailable) {
+      _capabilityRetries = 0;
+    } else if (_capabilityRetries++ < 2) {
+      final generation = _generation;
+      _capabilityTimer = Timer(const Duration(seconds: 3), () {
+        if (_current(generation)) refresh();
+      });
+    }
+  }
+
+  bool _current(int generation) => !_disposed && generation == _generation;
+
+  Future<AutoIPoESnapshot?> refresh() async {
+    if (!_isSupported || _reading || _disposed) return null;
+    _reading = true;
+    final generation = _generation;
+    final service = _service;
+    try {
+      final snapshot = await service.fetch();
+      if (!_current(generation)) return null;
+      service.checkConnection();
+      state = AsyncData(snapshot);
+      _retryCapabilities(snapshot);
+      final outcome = snapshot.outcomeFor(ref.read(autoIPoESubmissionProvider));
+      if (outcome != AutoIPoEOutcome.pending) {
+        _timer?.cancel();
+      } else if (_timer?.isActive != true) {
+        continueChecking();
+      }
+      return snapshot;
+    } on ServiceError catch (e, st) {
+      if (_current(generation)) {
+        state = AsyncError<AutoIPoESnapshot>(e, st).copyWithPrevious(state);
+      }
+      return null;
+    } finally {
+      _reading = false;
+    }
+  }
+
+  /// Explicit user action only. A new UUID is never generated by polling.
+  Future<void> apply(AutoIPoESettings settings, {bool resetFirst = false}) =>
+      _submit(reset: false, settings: settings, resetFirst: resetFirst);
+  Future<void> reset() => _submit(reset: true);
+
+  /// Back is an explicit exit request. Reuse the canonical Reset operation;
+  /// do not delete locks, kill workers or treat its receipt as completion.
+  Future<void> leavePnp({bool resetIfIdle = false}) async {
+    _requireWritable();
+    if (_leavingPnp || _dispatching) throw const InvalidInputError();
+    _leavingPnp = true;
+    _timer?.cancel();
+    final generation = _generation;
+    final service = _service;
+    void checkSession() {
+      if (!_current(generation) || !identical(service, _service)) {
+        throw const NotAuthenticatedError();
+      }
+      service.checkConnection();
+    }
+
+    Future<AutoIPoESnapshot> settled() async {
+      for (var attempt = 0; attempt < 120; attempt++) {
+        checkSession();
+        var snapshot = await refresh();
+        checkSession();
+        var submission = ref.read(autoIPoESubmissionProvider);
+        if (snapshot != null &&
+            !snapshot.runtime.isBusy &&
+            snapshot.outcomeFor(submission) == AutoIPoEOutcome.pending) {
+          // Fence an unseen request before releasing its correlation. An
+          // accepted worker is observed until terminal, never cancelled here.
+          await resolvePending(resumePolling: false);
+          checkSession();
+          snapshot = await refresh();
+          checkSession();
+          submission = ref.read(autoIPoESubmissionProvider);
+        }
+        if (snapshot != null &&
+            !snapshot.runtime.isBusy &&
+            snapshot.outcomeFor(submission) != AutoIPoEOutcome.pending) {
+          return snapshot;
+        }
+        await Future<void>.delayed(const Duration(seconds: 3));
+      }
+      throw const ConnectivityError();
+    }
+
+    try {
+      var snapshot = await settled();
+      final needsReset = resetIfIdle ||
+          snapshot.settings.isEnabled ||
+          snapshot.runtime.isEnabled ||
+          snapshot.runtime.needsResetBeforeLeaving;
+      if (needsReset) {
+        await _submit(reset: true, pnpExit: true);
+        checkSession();
+        final reset = ref.read(autoIPoESubmissionProvider);
+
+        if (reset?.reset != true ||
+            ref.read(autoIPoERejectionProvider) != null) {
+          throw const UnexpectedError();
+        }
+        snapshot = await settled();
+        checkSession();
+
+        if (ref.read(autoIPoESubmissionProvider) != reset ||
+            snapshot.outcomeFor(reset) != AutoIPoEOutcome.succeeded) {
+          throw const UnexpectedError();
+        }
+      }
+      if (snapshot.settings.isEnabled ||
+          snapshot.runtime.isEnabled ||
+          snapshot.runtime.needsResetBeforeLeaving ||
+          snapshot.runtime.isBusy) {
+        throw const UnexpectedError();
+      }
+      await service.clearSubmission();
+      checkSession();
+      ref.read(autoIPoESubmissionProvider.notifier).state = null;
+      ref.read(autoIPoERejectionProvider.notifier).state = null;
+      _timer?.cancel();
+    } finally {
+      _leavingPnp = false;
+    }
+  }
+
+  Future<void> _submit({
+    required bool reset,
+    AutoIPoESettings? settings,
+    bool resetFirst = false,
+    bool pnpExit = false,
+  }) async {
+    _requireWritable();
+    if (_leavingPnp && !pnpExit) throw const InvalidInputError();
+    if (_dispatching) throw const InvalidInputError();
+    final current = state.valueOrNull;
+    final pending = ref.read(autoIPoESubmissionProvider);
+    if (current?.outcomeFor(pending) == AutoIPoEOutcome.pending ||
+        current?.runtime.isBusy == true) {
+      throw const InvalidInputError();
+    }
+    _dispatching = true;
+    final generation = _generation;
+    final service = _service;
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        if (!_current(generation)) return;
+        _requireWritable();
+        service.checkConnection();
+        final submission = AutoIPoESubmission(const Uuid().v4(), reset: reset);
+        // Storage must succeed before dispatch; no credentials are stored here.
+        await service.storeSubmission(submission);
+        if (!_current(generation)) return;
+        _requireWritable();
+        service.checkConnection();
+        ref.read(autoIPoESubmissionProvider.notifier).state = submission;
+        ref.read(autoIPoERejectionProvider.notifier).state = null;
+        try {
+          final receipt = await service.submit(
+            submission,
+            settings: settings,
+            resetFirst: resetFirst,
+          );
+          if (!_current(generation)) return;
+          service.checkConnection();
+          if (!receipt.accepted) {
+            // Rejected receipts may describe another job, not this request.
+            ref.read(autoIPoERejectionProvider.notifier).state =
+                receipt.error ?? 'ErrorRequestRejected';
+            return;
+          }
+        } on ServiceError {
+          // An interrupted reply is not rejection and must never trigger Apply again.
+        }
+        if (!_current(generation)) return;
+        _requireWritable();
+        service.checkConnection();
+        continueChecking();
+        await refresh();
+      });
+    } finally {
+      _dispatching = false;
+    }
+  }
+
+  /// Retire an uncertain UUID only after the backend proves it is fenced or
+  /// terminal. Existing accepted jobs are never cancelled or replayed.
+  Future<void> resolvePending({bool resumePolling = true}) async {
+    _requireWritable();
+    final submission = ref.read(autoIPoESubmissionProvider);
+    if (submission == null || _dispatching) return;
+    _dispatching = true;
+    final generation = _generation;
+    final service = _service;
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        if (!_current(generation)) return;
+        _requireWritable();
+        service.checkConnection();
+        final receipt = await service.resolvePending(submission);
+        if (!_current(generation)) return;
+        _requireWritable();
+        service.checkConnection();
+        if (receipt.cancelled &&
+            !receipt.accepted &&
+            receipt.requestId == submission.requestId &&
+            receipt.operationId == submission.requestId) {
+          await service.clearSubmission();
+          if (!_current(generation)) return;
+          service.checkConnection();
+          ref.read(autoIPoESubmissionProvider.notifier).state = null;
+          ref.read(autoIPoERejectionProvider.notifier).state = null;
+          _timer?.cancel();
+          await refresh();
+        } else {
+          // ResolvePending can return a historical completion snapshot.
+          // Only a fresh Status read can describe the current WAN.
+          ref.read(autoIPoERejectionProvider.notifier).state = null;
+          if (resumePolling) continueChecking();
+          final current = await refresh();
+          if (!_current(generation)) return;
+          service.checkConnection();
+          final terminal = receipt.status.terminalResult;
+          // Preparation can reject a claimed Apply before a worker is accepted.
+          // Its durable failure still retires this UUID after newer work starts.
+          final rejectedApply = !submission.reset &&
+              !receipt.accepted &&
+              receipt.error?.trim().isNotEmpty == true &&
+              receipt.exitCode != null &&
+              receipt.exitCode != 0 &&
+              receipt.status.terminalResultSupported &&
+              terminal?.isFailureFor(AutoIPoETerminalResult.applyOperation) ==
+                  true;
+          if (current != null &&
+              current.requestId != submission.requestId &&
+              (receipt.accepted || rejectedApply) &&
+              !receipt.cancelled &&
+              receipt.requestId == submission.requestId &&
+              receipt.operationId == submission.requestId &&
+              !receipt.status.isBusy &&
+              receipt.exitCode != null &&
+              terminal?.exitCode == receipt.exitCode &&
+              terminal?.operation ==
+                  (submission.reset ? 'reset' : 'auto_ipoe')) {
+            // A newer job replaced this proven terminal job. Release only
+            // the old browser correlation; never cancel or replay work.
+            await service.clearSubmission();
+            if (!_current(generation)) return;
+            service.checkConnection();
+            ref.read(autoIPoESubmissionProvider.notifier).state = null;
+            _timer?.cancel();
+          }
+        }
+      });
+    } finally {
+      _dispatching = false;
+    }
+  }
+
+  void continueChecking() {
+    if (!_isSupported || _disposed) return;
+    _timer?.cancel();
+    _remainingPolls = 120;
+    _resolutionAttempts = 0;
+    _timer = Timer.periodic(const Duration(seconds: 3), (_) {
+      unawaited(_poll());
+    });
+  }
+
+  Future<void> _poll() async {
+    if (_disposed || _polling || _dispatching || _leavingPnp) return;
+    if (_remainingPolls-- <= 0) {
+      _timer?.cancel();
+      state = AsyncError<AutoIPoESnapshot>(
+        const ConnectivityError(),
+        StackTrace.current,
+      ).copyWithPrevious(state);
+      return;
+    }
+    _polling = true;
+    final generation = _generation;
+    try {
+      final snapshot = await refresh();
+      if (!_current(generation) || snapshot == null) return;
+      final submission = ref.read(autoIPoESubmissionProvider);
+      if (_canWrite &&
+          submission != null &&
+          snapshot.outcomeFor(submission) == AutoIPoEOutcome.pending &&
+          (snapshot.requestId != submission.requestId ||
+              snapshot.operationId != submission.requestId) &&
+          _resolutionAttempts < 3) {
+        ++_resolutionAttempts;
+        // ResolvePending atomically fences only an unseen UUID. It returns
+        // accepted work unchanged; it never invokes Apply or Reset.
+        await resolvePending(resumePolling: false);
+      }
+    } on ServiceError catch (e, st) {
+      if (_current(generation)) {
+        state = AsyncError<AutoIPoESnapshot>(e, st).copyWithPrevious(state);
+      }
+    } finally {
+      _polling = false;
+    }
+  }
+}

@@ -15,6 +15,7 @@ extension UspWanConnectionTypeLabel on UspWanConnectionType {
       UspWanConnectionType.dhcp => l.connectionTypeDhcp,
       UspWanConnectionType.staticIp => l.staticIp,
       UspWanConnectionType.pppoe => l.connectionTypePppoe,
+      UspWanConnectionType.ipoe => l.connectionTypeIpoe,
       UspWanConnectionType.pptp => l.connectionTypePptp,
       UspWanConnectionType.l2tp => l.connectionTypeL2tp,
       UspWanConnectionType.bridge => l.connectionTypeBridge,

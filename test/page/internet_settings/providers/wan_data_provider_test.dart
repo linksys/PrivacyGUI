@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
@@ -95,6 +97,7 @@ void main() {
   ProviderContainer createContainer({Stream<InvalidationEvent>? sse}) {
     final container = ProviderContainer(
       overrides: [
+        deviceCapabilitiesProvider.overrideWithValue(DeviceCapabilities.empty),
         uspClientProvider.overrideWithValue(mockUsp),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
         if (sse != null) sseInvalidationProvider.overrideWith((_) => sse),
@@ -137,6 +140,8 @@ void main() {
     test('fetch sets error state when USP service unavailable', () async {
       final container = ProviderContainer(
         overrides: [
+          deviceCapabilitiesProvider
+              .overrideWithValue(DeviceCapabilities.empty),
           uspClientProvider.overrideWithValue(null),
           uspMutationLockProvider.overrideWithValue(UspMutationLock()),
         ],
@@ -371,6 +376,8 @@ void main() {
       final sse = StreamController<InvalidationEvent>();
       final container = ProviderContainer(
         overrides: [
+          deviceCapabilitiesProvider
+              .overrideWithValue(DeviceCapabilities.empty),
           uspClientProvider.overrideWithValue(mockUsp),
           uspMutationLockProvider.overrideWithValue(UspMutationLock()),
           sseInvalidationProvider.overrideWith((_) => sse.stream),
@@ -407,6 +414,93 @@ void main() {
 
       await sse.close();
       container.dispose();
+    });
+
+    for (final supported in [false, true]) {
+      testWidgets('capability $supported preserves SSE with no WAN listener',
+          (tester) async {
+        final svc = MockWanSvc();
+        var fetches = 0;
+        when(() => svc.fetch()).thenAnswer((_) async {
+          fetches++;
+          return WanStatusUIModel(
+            isUp: true,
+            ipAddress: '100.64.0.$fetches',
+            subnetMask: '255.255.255.0',
+            addressingType: 'DHCP',
+            mtu: 1500,
+          );
+        });
+        final sse = StreamController<InvalidationEvent>();
+        final container = ProviderContainer(overrides: [
+          deviceCapabilitiesProvider.overrideWithValue(supported
+              ? DeviceCapabilities({DeviceCapability.autoIPoE})
+              : DeviceCapabilities.empty),
+          uspWanDataServiceProvider.overrideWithValue(svc),
+          sseInvalidationProvider.overrideWith((_) => sse.stream),
+        ]);
+        await container.read(wanDataProvider.future);
+        sse.add((domain: InvalidationDomain.wanStatus, seq: 1));
+        await tester.pump();
+        expect(fetches, 2);
+
+        // No read or listener during the interval: polling must keep L1 alive.
+        await tester.pump(const Duration(seconds: 15));
+        final afterPoll = supported ? 3 : 2;
+        expect(fetches, afterPoll,
+            reason: 'only a supported device needs supplemental polling');
+        sse.add((domain: InvalidationDomain.wanStatus, seq: 2));
+        await tester.pump();
+        expect(fetches, afterPoll + 1);
+        expect(container.read(wanDataProvider).value!.model.ipAddress,
+            '100.64.0.${afterPoll + 1}');
+        container.dispose();
+        unawaited(sse.close());
+        await tester.pump();
+      });
+    }
+
+    testWidgets('capability loss cancels polling and preserves SSE',
+        (tester) async {
+      final svc = MockWanSvc();
+      var fetches = 0;
+      var capabilities = DeviceCapabilities({DeviceCapability.autoIPoE});
+      when(() => svc.fetch()).thenAnswer((_) async {
+        fetches++;
+        return const WanStatusUIModel(
+          isUp: true,
+          ipAddress: '100.64.0.10',
+          subnetMask: '255.255.255.0',
+          addressingType: 'DHCP',
+          mtu: 1500,
+        );
+      });
+      final sse = StreamController<InvalidationEvent>();
+      final container = ProviderContainer(overrides: [
+        deviceCapabilitiesProvider.overrideWith((_) => capabilities),
+        uspWanDataServiceProvider.overrideWithValue(svc),
+        sseInvalidationProvider.overrideWith((_) => sse.stream),
+      ]);
+      container.listen(wanDataProvider, (_, __) {});
+      await container.read(wanDataProvider.future);
+      await tester.pump(const Duration(seconds: 15));
+      expect(fetches, 2);
+
+      capabilities = DeviceCapabilities.empty;
+      container.invalidate(deviceCapabilitiesProvider);
+      await tester.pump();
+      await container.read(wanDataProvider.future);
+      final afterLoss = fetches;
+      await tester.pump(const Duration(seconds: 30));
+      expect(fetches, afterLoss,
+          reason: 'a capability change must cancel the prior periodic timer');
+
+      sse.add((domain: InvalidationDomain.wanStatus, seq: 1));
+      await tester.pump();
+      expect(fetches, afterLoss + 1);
+      container.dispose();
+      unawaited(sse.close());
+      await tester.pump();
     });
 
     test('a neighbouring domain does not re-fetch', () async {
@@ -457,6 +551,8 @@ void main() {
 
     ProviderContainer makeContainer(Stream<InvalidationEvent> sse) =>
         ProviderContainer(overrides: [
+          deviceCapabilitiesProvider
+              .overrideWithValue(DeviceCapabilities.empty),
           uspWanDataServiceProvider.overrideWithValue(svc),
           sseInvalidationProvider.overrideWith((_) => sse),
         ]);

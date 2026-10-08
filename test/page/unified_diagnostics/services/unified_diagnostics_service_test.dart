@@ -1,3 +1,10 @@
+import 'dart:async';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
+import 'dart:convert';
+import 'package:privacy_gui/core/usp/services/active_ipv4_connection.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -149,7 +156,7 @@ void main() {
     when(() => mockExecutor.acquireScope(
           referencePaths: any(named: 'referencePaths'),
         )).thenAnswer((_) async => fakeScope);
-    service = UnifiedDiagnosticsService(mockUsp);
+    service = UnifiedDiagnosticsService(mockUsp, autoIPoESupported: false);
     service.attachScope(fakeScope);
   });
 
@@ -349,6 +356,71 @@ void main() {
 
   // ────────────────────────────────────────────────────────────────────────
 
+  for (final supported in [false, true]) {
+    test('diagnostics provider injects Auto-IPoE support $supported', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            ...wanStatusResponse(),
+            ActiveIpv4Connection.path: jsonEncode({
+              'apiVersion': 1,
+              'available': true,
+              'state': 'Up',
+              'activeIPv4Route': true,
+              'tunnelType': 'DS-Lite',
+            }),
+          });
+      final container = ProviderContainer(overrides: [
+        uspClientProvider.overrideWithValue(mockUsp),
+        deviceCapabilitiesProvider.overrideWithValue(supported
+            ? DeviceCapabilities({DeviceCapability.autoIPoE})
+            : DeviceCapabilities.empty),
+      ]);
+      addTearDown(container.dispose);
+      final diagnostics = container.read(unifiedDiagnosticsServiceProvider)!;
+
+      final result = await diagnostics.checkWanStatus();
+
+      expect(result.isUp, isTrue);
+      expect(result.hasIp, isTrue);
+      expect(result.usesTunnel, supported);
+      expect(result.addressingType, supported ? 'DS-Lite' : 'DHCP');
+      final requests = verify(() => mockUsp.get(captureAny()))
+          .captured
+          .cast<List<String>>()
+          .expand((paths) => paths);
+      expect(requests.contains(ActiveIpv4Connection.path), supported);
+    });
+  }
+
+  test(
+      'capability loss fences an old service before a fallback connection read',
+      () async {
+    var supported = true;
+    final pending = Completer<Map<String, dynamic>>();
+    when(() => mockUsp.get(any())).thenAnswer((_) => pending.future);
+    final container = ProviderContainer(overrides: [
+      uspClientProvider.overrideWithValue(mockUsp),
+      deviceCapabilitiesProvider.overrideWith((_) => supported
+          ? DeviceCapabilities({DeviceCapability.autoIPoE})
+          : DeviceCapabilities.empty),
+    ]);
+    addTearDown(container.dispose);
+    final diagnostics = container.read(unifiedDiagnosticsServiceProvider)!;
+    final gateway = diagnostics.pingGateway();
+
+    supported = false;
+    container.invalidate(deviceCapabilitiesProvider);
+    container.read(unifiedDiagnosticsServiceProvider);
+    pending.complete({});
+
+    await expectLater(gateway, throwsA(isA<ResourceNotFoundError>()));
+    await expectLater(
+        diagnostics.checkWanStatus(), throwsA(isA<ResourceNotFoundError>()));
+    await expectLater(
+        diagnostics.pingGateway(), throwsA(isA<ResourceNotFoundError>()));
+    verify(() => mockUsp.get([ActiveIpv4Connection.path])).called(1);
+    verifyNoMoreInteractions(mockUsp);
+  });
+
   group('checkWanStatus', () {
     test('parses WAN GET response into WanStatusUIModel', () async {
       when(() => mockUsp.get(any()))
@@ -432,9 +504,83 @@ void main() {
   });
 
   group('pingGateway', () {
-    test('derives gateway from WAN IP/mask and pings it', () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async =>
-          wanStatusResponse(ip: '203.0.113.50', mask: '255.255.255.0'));
+    for (final gateway in ['203.0.113.254', '']) {
+      test(
+          gateway.isEmpty
+              ? 'unsupported device skips a missing WAN gateway without probing'
+              : 'unsupported device uses the actual WAN gateway instead of guessing .1',
+          () async {
+        final requestedPaths = <String>[];
+        when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+          final paths = invocation.positionalArguments.first as List<String>;
+          requestedPaths.addAll(paths);
+          if (paths.any((path) => path.contains('IPv4Forwarding'))) {
+            const route = 'Device.Routing.Router.1.IPv4Forwarding.1';
+            return {
+              '$route.Enable': true,
+              '$route.DestIPAddress': '0.0.0.0',
+              '$route.DestSubnetMask': '0.0.0.0',
+              '$route.GatewayIPAddress': gateway,
+              '$route.Interface': 'Device.IP.Interface.2',
+              '$route.Origin': 'Static',
+              '$route.Alias': 'DefaultRoute',
+            };
+          }
+          if (paths.contains('Device.IP.Interface.*.Alias')) {
+            return {
+              'Device.IP.Interface.1.Alias': 'lan',
+              'Device.IP.Interface.2.Alias': 'wan',
+            };
+          }
+          if (paths.contains('Device.IP.Interface.2.Status')) {
+            return wanStatusResponse();
+          }
+          return <String, dynamic>{}; // No IPv6 addresses in this fixture.
+        });
+        fakeScope.pingResult = OperateResult(
+          commandName: 'IPPing()',
+          commandKey: 'k',
+          status: 'Complete',
+          outputArgs: const {
+            'SuccessCount': '3',
+            'FailureCount': '0',
+            'AverageResponseTime': '5',
+            'MinimumResponseTime': '5',
+            'MaximumResponseTime': '5',
+          },
+        );
+
+        final result = await service.pingGateway();
+
+        expect(requestedPaths, contains('Device.IP.Interface.2.Status'));
+        expect(
+            requestedPaths,
+            contains(
+                'Device.Routing.Router.1.IPv4Forwarding.*.GatewayIPAddress'));
+        expect(requestedPaths, isNot(contains(ActiveIpv4Connection.path)));
+        if (gateway.isEmpty) {
+          expect(result, isNull);
+          expect(fakeScope.calls, isEmpty);
+        } else {
+          expect(result?.host, gateway);
+          expect(fakeScope.calls.single.args['Host'], gateway);
+        }
+      });
+    }
+
+    test('uses the kernel next hop, not a guessed .1 gateway', () async {
+      service = UnifiedDiagnosticsService(mockUsp, autoIPoESupported: true)
+        ..attachScope(fakeScope);
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            ActiveIpv4Connection.path: jsonEncode({
+              'apiVersion': 1,
+              'available': true,
+              'state': 'Up',
+              'activeIPv4Route': true,
+              'gateway': '203.0.113.254',
+              'protocol': 'dhcp'
+            })
+          });
       fakeScope.pingResult = OperateResult(
         commandName: 'IPPing()',
         commandKey: 'k',
@@ -450,31 +596,27 @@ void main() {
 
       final result = await service.pingGateway();
 
-      expect(result.host, '203.0.113.1'); // Derived gateway
-      expect(fakeScope.calls.single.args['Host'], '203.0.113.1');
+      expect(result?.host, '203.0.113.254'); // Actual next hop
+      expect(fakeScope.calls.single.args['Host'], '203.0.113.254');
     });
 
-    test('falls back to 192.168.1.1 when WAN IP/mask are malformed', () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async => wanStatusResponse(
-            ip: 'not-an-ip',
-            mask: 'not-a-mask',
-          ));
-      fakeScope.pingResult = OperateResult(
-        commandName: 'IPPing()',
-        commandKey: 'k',
-        status: 'Complete',
-        outputArgs: const {
-          'SuccessCount': '3',
-          'FailureCount': '0',
-          'AverageResponseTime': '1',
-          'MinimumResponseTime': '1',
-          'MaximumResponseTime': '1',
-        },
-      );
-
-      // Cannot parse IP — int.parse on 'not-an-ip' throws inside _deriveGateway,
-      // which means the throw escapes pingGateway. Confirm error path.
-      expect(service.pingGateway(), throwsA(isA<FormatException>()));
+    test('missing gateway is skipped without probing a made-up address',
+        () async {
+      service = UnifiedDiagnosticsService(mockUsp, autoIPoESupported: true)
+        ..attachScope(fakeScope);
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            ActiveIpv4Connection.path: jsonEncode({
+              'apiVersion': 1,
+              'available': true,
+              'state': 'Up',
+              'activeIPv4Route': true,
+              'gateway': '',
+              'protocol': 'pppoe',
+              'pointToPoint': true
+            })
+          });
+      expect(await service.pingGateway(), isNull);
+      expect(fakeScope.calls, isEmpty);
     });
 
     test('throws when WAN has no IP', () async {

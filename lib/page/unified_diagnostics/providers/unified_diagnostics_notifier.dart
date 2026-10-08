@@ -68,6 +68,11 @@ class UnifiedDiagnosticsNotifier
 
   @override
   UnifiedDiagnosticsState build() {
+    // A run captures its service and device support. Retire that run before a
+    // replacement service can issue further steps or inherit its scope.
+    ref.listen(unifiedDiagnosticsServiceProvider, (previous, next) {
+      if (!identical(previous, next)) unawaited(cancel());
+    });
     ref.onDispose(() async {
       final scope = _scope;
       _scope = null;
@@ -84,9 +89,10 @@ class UnifiedDiagnosticsNotifier
 
   /// Acquire (or reuse) the shared diagnostic scope. Lifecycle is bound to
   /// this notifier — released automatically on dispose.
-  Future<DiagnosticScope> _ensureScope(int gen) async {
+  Future<void> _ensureScope(int gen, UnifiedDiagnosticsService service) async {
+    if (!_isCurrent(gen)) return;
     final existing = _scope;
-    if (existing != null && !existing.isReleased) return existing;
+    if (existing != null && !existing.isReleased) return;
 
     final executor = ref.read(networkDiagnosticsExecutorProvider);
     if (executor == null) {
@@ -105,11 +111,10 @@ class UnifiedDiagnosticsNotifier
       } catch (e) {
         logger.w('[Diagnostics] Failed to release scope for stale run: $e');
       }
-      return scope;
+      return;
     }
     _scope = scope;
-    _svc?.attachScope(scope);
-    return scope;
+    service.attachScope(scope);
   }
 
   /// Run full diagnostic — auto-run all checks without user selection.
@@ -193,7 +198,8 @@ class UnifiedDiagnosticsNotifier
 
       // Step 2: Quick ping to check internet connectivity
       try {
-        await _ensureScope(gen);
+        await _ensureScope(gen, svc);
+        if (!_isCurrent(gen)) return;
         final pingResult = await svc.pingInternet(repeatCount: 1);
         if (!_isCurrent(gen)) return;
 
@@ -457,7 +463,7 @@ class UnifiedDiagnosticsNotifier
     // Acquire shared scope for all ping and speed test operations.
     // Released on notifier dispose / cancel / back navigation.
     try {
-      await _ensureScope(gen);
+      await _ensureScope(gen, svc);
     } catch (e) {
       logger.e('[Diagnostics] Failed to acquire scope: $e');
     }
@@ -467,7 +473,14 @@ class UnifiedDiagnosticsNotifier
     state = state.copyWith(step: DiagnosticStep.pingGateway);
     try {
       final ping = await svc.pingGateway();
-      final pingResult = _evaluatePing(DiagnosticStep.pingGateway, ping);
+      final pingResult = ping == null
+          ? const DiagnosticStepUIModel(
+              step: DiagnosticStep.pingGateway,
+              severity: DiagnosticSeverity.skipped,
+              titleKey: 'Gateway',
+              descriptionKey:
+                  'Not applicable: this connection has no conventional IPv4 gateway. Internet reachability is tested separately.')
+          : _evaluatePing(DiagnosticStep.pingGateway, ping);
       results.add(pingResult);
       _publish(gen, state.copyWith(results: List.from(results)));
     } catch (e) {
@@ -614,7 +627,7 @@ class UnifiedDiagnosticsNotifier
     }
 
     try {
-      await _ensureScope(gen);
+      await _ensureScope(gen, svc);
     } catch (e) {
       logger.e('[Diagnostics] Failed to acquire scope: $e');
     }
@@ -624,7 +637,14 @@ class UnifiedDiagnosticsNotifier
     state = state.copyWith(step: DiagnosticStep.pingGateway);
     try {
       final ping = await svc.pingGateway();
-      final pingResult = _evaluatePing(DiagnosticStep.pingGateway, ping);
+      final pingResult = ping == null
+          ? const DiagnosticStepUIModel(
+              step: DiagnosticStep.pingGateway,
+              severity: DiagnosticSeverity.skipped,
+              titleKey: 'Gateway',
+              descriptionKey:
+                  'Not applicable: this connection has no conventional IPv4 gateway. Internet reachability is tested separately.')
+          : _evaluatePing(DiagnosticStep.pingGateway, ping);
       results.add(pingResult);
       _publish(gen, state.copyWith(results: List.from(results)));
     } catch (e) {
@@ -872,7 +892,7 @@ class UnifiedDiagnosticsNotifier
     final results = <DiagnosticStepUIModel>[];
 
     try {
-      await _ensureScope(gen);
+      await _ensureScope(gen, svc);
     } catch (e) {
       logger.e('[Diagnostics] Failed to acquire scope: $e');
     }
