@@ -1,4 +1,5 @@
 import '../models/diagnostic_client.dart';
+import '../models/router_light.dart';
 import 'instant_test_layout.dart';
 import 'instant_test_style.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -1989,30 +1990,30 @@ class _LightGuideLink extends StatelessWidget {
                 ],
               ),
               const AppGap.small2(),
-            // LED patterns from Pinnacle LED spec r20260109a. LED colors are
-            // drawn with the closest theme token; white and off are outlined.
-            _lightRow(ctx, scheme.surface, 'Solid white',
+            // LED patterns from Pinnacle LED spec r20260109a. Dots show the
+            // physical LED colors; white and off are outlined.
+            _lightRow(ctx, RouterLightColor.white, 'Solid white',
                 'Everything is fine — connected to internet',
                 animated: false, outlined: true),
-            _lightRow(ctx, scheme.surface, 'Pulsing white',
+            _lightRow(ctx, RouterLightColor.white, 'Pulsing white',
                 'Starting up or WPS pairing in progress — wait about a minute',
                 animated: true, animationType: 'pulse', outlined: true),
-            _lightRow(ctx, scheme.surface, 'Flashing white',
+            _lightRow(ctx, RouterLightColor.white, 'Flashing white',
                 'Factory reset in progress — do not unplug',
                 animated: true, animationType: 'flash', outlined: true),
-            _lightRow(ctx, InstantTestTone.info.color(ctx), 'Pulsing blue',
+            _lightRow(ctx, RouterLightColor.blue, 'Pulsing blue',
                 'Booting up — wait about a minute',
                 animated: true, animationType: 'pulse'),
-            _lightRow(ctx, InstantTestTone.problem.color(ctx), 'Solid red',
+            _lightRow(ctx, RouterLightColor.red, 'Solid red',
                 'No internet — check your cables',
                 animated: false),
-            _lightRow(ctx, InstantTestTone.warning.color(ctx), 'Solid yellow',
+            _lightRow(ctx, RouterLightColor.yellow, 'Solid yellow',
                 'Needs attention — a check found a problem',
                 animated: false),
-            _lightRow(ctx, InstantTestTone.good.color(ctx), 'Solid green',
+            _lightRow(ctx, RouterLightColor.green, 'Solid green',
                 'Instant-Test passed — everything looks good',
                 animated: false),
-            _lightRow(ctx, Colors.transparent, 'Off',
+            _lightRow(ctx, RouterLightColor.off, 'Off',
                 'No power, or Night Mode is enabled',
                 animated: false, outlined: true),
               ],
