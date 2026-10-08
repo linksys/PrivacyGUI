@@ -346,7 +346,6 @@ void main() {
     await mount(tester);
     await tapText(tester, 'Troubleshoot these devices');
     await tapText(tester, 'Office printer');
-    await tapText(tester, 'Change problem');
     expect(
         tester
             .widget<ChoiceChip>(
@@ -437,6 +436,25 @@ void main() {
     expect(find.text('Your router can reach the internet'), findsOneWidget);
   });
 
+  testWidgets('device problem choices are visible without expanding a picker',
+      (tester) async {
+    await mount(tester);
+    await tapText(tester, "Internet isn't working");
+    await tapText(tester, 'Yes — troubleshoot a specific device');
+    await tapText(tester, 'Office printer');
+    expect(find.text("What's happening with this device?"), findsOneWidget);
+    expect(find.text('Change problem'), findsNothing);
+    for (final label in [
+      "Won't connect", 'Slow connection', 'Keeps disconnecting', 'Something else'
+    ]) {
+      expect(find.widgetWithText(ChoiceChip, label).hitTestable(), findsOneWidget);
+    }
+    expect(
+        tester.widget<ChoiceChip>(
+            find.widgetWithText(ChoiceChip, 'Something else')).selected,
+        isTrue);
+  });
+
   testWidgets('re-check shows it is running even when probes finish instantly',
       (tester) async {
     final service = ProbeService();
@@ -460,7 +478,6 @@ void main() {
     await mount(tester, notifier: FixtureNotifier(rejectReconnect: true));
     await tapText(tester, 'One device is slow');
     await tapText(tester, 'Office printer');
-    await tapText(tester, 'Change problem');
     await tapText(tester, 'Keeps disconnecting');
     await tapText(tester, 'Force reconnect a device');
     await tapText(tester, 'Reconnect');
@@ -512,7 +529,6 @@ void main() {
     await mount(tester);
     await tapText(tester, 'One device is slow');
     await tapText(tester, 'Office printer');
-    await tapText(tester, 'Change problem');
     await tapText(tester, 'Something else');
     await tapText(tester, 'Try the next step');
     await tapText(tester, 'Try the next step');
@@ -699,7 +715,6 @@ void main() {
     await tapText(tester, "Device won't connect");
     await tapText(tester, 'Office printer');
     expect(find.text('Yes — I can see it'), findsOneWidget);
-    await tapText(tester, 'Change problem');
     expect(
         tester
             .widget<ChoiceChip>(
@@ -716,7 +731,6 @@ void main() {
     await tapText(tester, 'Specific devices');
     await tapText(tester, 'Choose the affected device');
     await tapText(tester, 'Office printer');
-    await tapText(tester, 'Change problem');
     expect(
         tester
             .widget<ChoiceChip>(

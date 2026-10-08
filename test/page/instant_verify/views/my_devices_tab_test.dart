@@ -337,7 +337,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Nest Hub'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('Child Node 1'), findsAtLeast(1));
+      // QA: the node's own name, not a generic "Child Node N".
+      expect(find.textContaining('Connected to Living Room on'), findsOneWidget);
+      expect(find.textContaining('Child Node'), findsNothing);
     });
   });
 

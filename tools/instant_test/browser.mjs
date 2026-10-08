@@ -184,9 +184,7 @@ try {
       await clickInScrollView(p,'Change device');
       await button(p,'Office-Printer WiFi').waitFor();
       await clickInScrollView(p,'Hide change device');
-      await clickInScrollView(p,'Change problem');
       await clickInScrollView(p,'Keeps disconnecting');
-      await clickInScrollView(p,'Hide change problem');
       await clickInScrollView(p,'Try the next step');
       await visible(p,'Forget this WiFi network on the device, then reconnect fresh. Have your WiFi password ready.');
       await clickInScrollView(p,'Previous step');
@@ -224,7 +222,6 @@ try {
     await button(p,'Hide test details').click();
     await clickInScrollView(p,'Yes — troubleshoot a specific device');
     await button(p,'Office-Printer WiFi').click();
-    await button(p,'Change problem').click();
     await button(p,'Slow connection').click();
     await clickInScrollView(p,'Connection details');
     for (const width of [390,1024,2048]) {
@@ -303,7 +300,6 @@ try {
     await p.keyboard.press('Escape');
     await button(p,"Device won't connect").click();
     await button(p,'Office-Printer WiFi').click();
-    await button(p,'Change problem').click();
     await button(p,'Keeps disconnecting').click();
     await button(p,'Force reconnect a device').click();
     await visible(p,'Force reconnect?');

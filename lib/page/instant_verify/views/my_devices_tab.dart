@@ -603,9 +603,10 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
         if (node.isController) {
           connectionLabel = 'Connected to router on ${client.band}';
         } else {
-          final satellites = state.meshNodes.where((n) => !n.isController).toList();
-          final idx = satellites.indexOf(node) + 1;
-          connectionLabel = 'Connected to Child Node $idx on ${client.band}';
+          // The node's own name, matching network details (was "Child Node N").
+          connectionLabel = node.name.trim().isEmpty
+              ? 'Connected to a mesh node on ${client.band}'
+              : 'Connected to ${node.name} on ${client.band}';
         }
       } else {
         connectionLabel = 'Connected on ${client.band}';

@@ -1787,16 +1787,10 @@ class _Flow3State extends ConsumerState<_Flow3> {
         _infoBox(context, 'The selected device is not in the latest list. Its connection status is unknown.'),
       if (_selectedDevice != null && selectedPresent && _connectState != _ConnectState.wired)
         _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(switch (_connectIssue) {
-            _ConnectIssue.cantConnect => "Won't connect",
-            _ConnectIssue.slowOnDevice => 'Slow connection',
-            _ConnectIssue.keepsDropping => 'Keeps disconnecting',
-            _ConnectIssue.other => 'Something else',
-            null => 'Device connection',
-          }, style: theme.textTheme.titleSmall),
+          // All problems stay visible (QA): a collapsed picker under a
+          // "Something else" heading hid what the section was for.
+          Text("What's happening with this device?", style: theme.textTheme.titleSmall),
           const SizedBox(height: 8),
-
-          DetailsDisclosure(label: 'Change problem', child:
           Wrap(spacing: 8, runSpacing: 8, children: [
             for (final item in const [
               (_ConnectIssue.cantConnect, "Won't connect"),
@@ -1805,7 +1799,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
               (_ConnectIssue.other, 'Something else'),
             ]) ChoiceChip(label: Text(item.$2), selected: _connectIssue == item.$1,
                 onSelected: (_) => setState(() { _connectIssue = item.$1; _step = 2; })),
-          ])),
+          ]),
         ])),
       if (_connectState == _ConnectState.cantConnect) ...[
         _infoBox(context, 'A device can be missing because it is offline or the router has incomplete information. Check its WiFi settings below.'),
