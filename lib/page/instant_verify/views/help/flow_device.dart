@@ -1,4 +1,4 @@
-part of '../help_me_fix_it_tab.dart';
+part of 'help_page.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Flow 3: Device connectivity issues
@@ -257,7 +257,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
             state.clients.firstWhere((c) => c.macAddress == _selectedDevice!.macAddress)),
       ],
     ]);
-    return InstantTestFocusColumn(children: [deviceStep, help]);
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [deviceStep, help]);
   }
 
   List<Widget> _step0(BuildContext context) => [

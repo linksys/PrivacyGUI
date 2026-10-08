@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
 import 'package:privacy_gui/page/instant_verify/models/verdict.dart';
@@ -11,7 +9,9 @@ import 'package:privacy_gui/page/instant_verify/views/overview_tab.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/instant_verify/prototypes/mock_pivot_notifier.dart';
 import '../../../common/di.dart';
+import '../../../common/testable_router.dart';
 import '../../../common/testable_widget.dart';
+import 'instant_test_harness.dart';
 
 class FeedbackNotifier extends InstantVerifyPivotNotifier {
   @override
@@ -89,32 +89,27 @@ void main() {
         lessThan(tester.getTopLeft(find.text('What needs help?')).dy));
   });
 
-  testWidgets('router home is reachable from a direct workflow URL',
+  testWidgets('a direct workflow URL backs out to Instant-Test, then Menu',
       (tester) async {
-    final router = GoRouter(initialLocation: '/instant?instant=3', routes: [
-      GoRoute(
-          path: '/instant',
-          builder: (_, __) => const Scaffold(body: InstantTestPage())),
-      GoRoute(
-          path: RoutePath.dashboardHome,
-          name: RouteNamed.dashboardHome,
-          builder: (_, __) =>
-              const Scaffold(body: Text('Router home destination'))),
-    ]);
+    final router =
+        instantTestRouter(initialLocation: '$instantTestHome/help?flow=3');
     addTearDown(router.dispose);
-    await tester.pumpWidget(testableWidget(
-        overrides: [
-          instantVerifyPivotProvider.overrideWith(FeedbackNotifier.new),
-          browserDiagnosticServiceProvider
-              .overrideWithValue(MockBrowserDiagnosticService())
-        ],
-        child: Router(
-            routerDelegate: router.routerDelegate,
-            routeInformationParser: router.routeInformationParser,
-            routeInformationProvider: router.routeInformationProvider)));
+    await tester.pumpWidget(testableRouter(router: router, overrides: [
+      instantVerifyPivotProvider.overrideWith(FeedbackNotifier.new),
+      browserDiagnosticServiceProvider
+          .overrideWithValue(MockBrowserDiagnosticService())
+    ]));
     await tester.pump();
-    await tester.tap(find.text('Back to router home'));
-    await tester.pumpAndSettle();
-    expect(find.text('Router home destination'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Device connectivity issues'), findsOneWidget);
+    await tester.tap(backButton);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(topRoute(router), RouteNamed.menuInstantTest);
+    expect(find.text('What needs help?'), findsOneWidget);
+    await tester.tap(backButton);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Menu page'), findsOneWidget);
   });
 }

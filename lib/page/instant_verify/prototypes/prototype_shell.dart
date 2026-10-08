@@ -1,60 +1,154 @@
-import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/instant_verify/prototypes/mock_pivot_notifier.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_service.dart';
+import 'package:privacy_gui/page/instant_verify/views/help/help_page.dart';
+import 'package:privacy_gui/page/instant_verify/views/instant_test_navigation.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_test_page.dart';
+import 'package:privacy_gui/page/instant_verify/views/my_network_tab.dart';
+import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/route/route_model.dart';
 import 'demo_controls.dart';
 
-/// The selected single-page design, with simulated diagnostics and actions.
-/// This prototype route never uses router data or executes router mutations.
-class PrototypeRoot extends StatefulWidget {
-  const PrototypeRoot({super.key});
+const _previewRoutes = InstantTestRoutes(
+  home: RouteNamed.instantPrototype,
+  devices: RouteNamed.instantPrototypeDevices,
+  network: RouteNamed.instantPrototypeNetwork,
+  help: RouteNamed.instantPrototypeHelp,
+);
 
-  @override
-  State<PrototypeRoot> createState() => _PrototypeRootState();
-}
+/// Local test builds only (registered when force=local): the Instant-Test
+/// pages and their child routes, on simulated diagnostics and actions. The
+/// preview never uses router data or executes router mutations.
+LinksysRoute instantPrototypeRoute() => LinksysRoute(
+      name: _previewRoutes.home,
+      path: RoutePath.instantPrototype,
+      config: const LinksysRouteConfig(noNaviRail: true),
+      builder: (context, state) =>
+          PrototypeRoot(state: state, child: const InstantTestPage()),
+      routes: [
+        LinksysRoute(
+          name: _previewRoutes.devices,
+          path: RoutePath.instantTestDevices,
+          builder: (context, state) =>
+              PrototypeRoot(state: state, child: const InstantTestDevicesPage()),
+        ),
+        LinksysRoute(
+          name: _previewRoutes.network,
+          path: RoutePath.instantTestNetwork,
+          builder: (context, state) =>
+              PrototypeRoot(state: state, child: const MyNetworkTab()),
+        ),
+        LinksysRoute(
+          name: _previewRoutes.help,
+          path: RoutePath.instantTestHelp,
+          builder: (context, state) => PrototypeRoot(
+            state: state,
+            child: InstantTestHelpView(
+              flow: int.tryParse(state.uri.queryParameters['flow'] ?? '') ?? 0,
+            ),
+          ),
+        ),
+      ],
+    );
 
-class _PrototypeRootState extends State<PrototypeRoot> {
-  MockBrowserDiagnosticService? _service;
-  String? _configuration;
-  int _overview = 3;
-  bool _showProgress = false;
+/// One simulated session shared by every preview page, so the pages read the
+/// same results, as they share the real providers in the app.
+class _PreviewSession {
+  _PreviewSession(this.parent, this.configuration, this.container,
+      {required this.overview, required this.probe});
+  final ProviderContainer parent;
+  final String configuration;
+  final ProviderContainer container;
+  final int overview;
+  final PreviewProbeScenario probe;
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // A workflow route change must not reset a fixture's probe history.
-    // A changed demo configuration (or a new run key) starts fresh state.
-    final query = GoRouterState.of(context).uri.queryParameters;
-    final scenario = PreviewProbeScenario.values.firstWhere(
+  static _PreviewSession? _current;
+
+  static const _demoKeys = {'probe', 'overview', 'progress', 'run'};
+
+  /// A URL with demo parameters (from Demo controls or a test runner) starts a
+  /// fresh session; plain page navigation keeps the current one.
+  static _PreviewSession of(
+      ProviderContainer parent, Map<String, String> query) {
+    final current = _current;
+    if (current != null &&
+        current.parent == parent &&
+        !query.keys.any(_demoKeys.contains)) {
+      return current;
+    }
+    final probe = PreviewProbeScenario.values.firstWhere(
         (value) => value.name == query['probe'],
         orElse: () => PreviewProbeScenario.healthy);
-    _showProgress = query['progress'] == '1';
-    final overview = int.tryParse(query['overview'] ?? '') ?? 3;
-    _overview = overview >= 0 && overview < 5 ? overview : 3;
-    final configuration = '${scenario.name}:$_overview:$_showProgress:${query['run'] ?? ''}';
-    if (_configuration != configuration) {
-      _configuration = configuration;
-      _service = MockBrowserDiagnosticService(scenario: scenario);
+    final showProgress = query['progress'] == '1';
+    final parsed = int.tryParse(query['overview'] ?? '') ?? 3;
+    final overview = parsed >= 0 && parsed < 5 ? parsed : 3;
+    final configuration =
+        '${probe.name}:$overview:$showProgress:${query['run'] ?? ''}';
+    if (current != null &&
+        current.parent == parent &&
+        current.configuration == configuration) {
+      return current;
     }
+    final service = MockBrowserDiagnosticService(scenario: probe);
+    final session = _PreviewSession(
+      parent,
+      configuration,
+      ProviderContainer(parent: parent, overrides: [
+        browserDiagnosticServiceProvider.overrideWithValue(service),
+        instantVerifyPivotProvider.overrideWith(() =>
+            MockInstantVerifyPivotNotifier(
+                showProgress: showProgress,
+                overviewScenario: overview,
+                actionScenario: probe)),
+        instantTestRoutesProvider.overrideWithValue(_previewRoutes),
+      ]),
+      overview: overview,
+      probe: probe,
+    );
+    _current = session;
+    // Pages of the replaced session unmount in this frame.
+    if (current != null) {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => current.container.dispose());
+    }
+    return session;
   }
+}
+
+/// Puts one preview page on the simulated session, with the reviewer's demo
+/// controls over it.
+class PrototypeRoot extends StatelessWidget {
+  const PrototypeRoot({super.key, required this.state, required this.child});
+
+  final GoRouterState state;
+  final Widget child;
 
   @override
-  Widget build(BuildContext context) => ProviderScope(
-        key: ValueKey(_configuration),
-        overrides: [
-          browserDiagnosticServiceProvider.overrideWithValue(_service!),
-          instantVerifyPivotProvider
-              .overrideWith(() => MockInstantVerifyPivotNotifier(showProgress: _showProgress, overviewScenario: _overview, actionScenario: _service!.scenario)),
-        ],
-        child: Scaffold(
-          appBar: AppBar(
-            title: const Text('Instant-Test preview'),
-            actions: [DemoControls(overview: _overview, probe: _service!.scenario)],
+  Widget build(BuildContext context) {
+    final session = _PreviewSession.of(
+        ProviderScope.containerOf(context, listen: false),
+        state.uri.queryParameters);
+    return UncontrolledProviderScope(
+      // A new session gives the page fresh state.
+      key: ObjectKey(session.container),
+      container: session.container,
+      child: Stack(children: [
+        child,
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: SafeArea(
+            child: Material(
+              elevation: 2,
+              child: DemoControls(
+                  overview: session.overview, probe: session.probe),
+            ),
           ),
-          body: const InstantTestPage(),
         ),
-      );
+      ]),
+    );
+  }
 }

@@ -1,4 +1,4 @@
-part of '../help_me_fix_it_tab.dart';
+part of 'help_page.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Shared widgets + helpers

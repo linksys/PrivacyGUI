@@ -1,4 +1,6 @@
+import 'package:privacy_gui/page/instant_verify/views/help/help_page.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_test_page.dart';
+import 'package:privacy_gui/page/instant_verify/views/my_network_tab.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -143,12 +145,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Local test builds only: Instant-Test preview on mock data, used by
       // tools/instant_test. Customer builds do not register it.
       if (BuildConfig.forceCommandType == ForceCommand.local)
-        LinksysRoute(
-          name: RouteNamed.instantPrototype,
-          path: RoutePath.instantPrototype,
-          config: const LinksysRouteConfig(noNaviRail: true),
-          builder: (context, state) => const PrototypeRoot(),
-        ),
+        instantPrototypeRoute(),
     ],
     redirect: (context, state) {
       if (!ref.read(accessPolicyProvider).canWrite) {

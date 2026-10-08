@@ -143,10 +143,38 @@ final menus = [
   LinksysRoute(
     name: RouteNamed.menuInstantTest,
     path: RoutePath.menuInstantTest,
-    config:
-        LinksysRouteConfig(column: ColumnGrid(column: 12), noNaviRail: false),
-    // Instant-Test uses the existing authenticated route and session.
-    builder: (context, state) => const InstantTestRoutePage(),
+    config: LinksysRouteConfig(
+      column: ColumnGrid(column: 9),
+    ),
+    builder: (context, state) => const InstantTestPage(),
+    routes: [
+      LinksysRoute(
+        name: RouteNamed.instantTestDevices,
+        path: RoutePath.instantTestDevices,
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 9),
+        ),
+        builder: (context, state) => const InstantTestDevicesPage(),
+      ),
+      LinksysRoute(
+        name: RouteNamed.instantTestNetwork,
+        path: RoutePath.instantTestNetwork,
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 9),
+        ),
+        builder: (context, state) => const MyNetworkTab(),
+      ),
+      LinksysRoute(
+        name: RouteNamed.instantTestHelp,
+        path: RoutePath.instantTestHelp,
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 9),
+        ),
+        builder: (context, state) => InstantTestHelpView(
+          flow: int.tryParse(state.uri.queryParameters['flow'] ?? '') ?? 0,
+        ),
+      ),
+    ],
   ),
   LinksysRoute(
     name: RouteNamed.devicePicker,

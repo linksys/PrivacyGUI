@@ -3,7 +3,7 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'dart:async';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
-import 'package:privacy_gui/page/instant_verify/views/instant_test_location.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'dart:ui' show PointerDeviceKind, SemanticsFlag;
 import 'package:flutter/rendering.dart';
 
@@ -18,12 +18,13 @@ import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_p
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
 import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_service.dart';
 import 'package:privacy_gui/page/instant_verify/views/answer_row.dart';
-import 'package:privacy_gui/page/instant_verify/views/instant_test_page.dart';
 import 'package:privacy_gui/page/instant_verify/views/overview_tab.dart';
 import 'package:privacy_gui/page/instant_verify/views/my_network_tab.dart';
 
 import '../../../common/di.dart';
+import '../../../common/testable_router.dart';
 import '../../../common/testable_widget.dart';
+import 'instant_test_harness.dart';
 
 const printer = DiagnosticClient(
     macAddress: 'AA:BB:CC:DD:EE:01',
@@ -130,29 +131,40 @@ String answer(WidgetTester tester, String label) => tester
 void main() {
   mockDependencyRegister();
 
-  Future<void> mount(WidgetTester tester,
+  /// Opens Instant-Test through its routes ([location] defaults to home).
+  Future<GoRouter> mount(WidgetTester tester,
       {FixtureNotifier? notifier,
       BrowserDiagnosticService? service,
-      Widget child = const InstantTestPage()}) async {
+      InstantVerifyPivotNotifier Function()? pivot,
+      String location = instantTestHome}) async {
+    final router = instantTestRouter(initialLocation: location);
+    addTearDown(router.dispose);
+    await tester.pumpWidget(testableRouter(router: router, overrides: [
+      instantVerifyPivotProvider
+          .overrideWith(pivot ?? () => notifier ?? FixtureNotifier()),
+      browserDiagnosticServiceProvider
+          .overrideWithValue(service ?? MockBrowserDiagnosticService()),
+    ]));
+    await tester.pumpAndSettle();
+    return router;
+  }
+
+  /// One Instant-Test page widget on its own, without routes.
+  Future<void> mountPage(WidgetTester tester, Widget page,
+      {FixtureNotifier? notifier}) async {
     await tester.pumpWidget(testableWidget(overrides: [
       instantVerifyPivotProvider
           .overrideWith(() => notifier ?? FixtureNotifier()),
       browserDiagnosticServiceProvider
-          .overrideWithValue(service ?? MockBrowserDiagnosticService()),
-    ], child: child));
+          .overrideWithValue(MockBrowserDiagnosticService()),
+    ], child: page));
     await tester.pumpAndSettle();
   }
 
   testWidgets(
       'home keeps the result and action visible while preserving measured details',
       (tester) async {
-    await tester.pumpWidget(testableWidget(overrides: [
-      instantVerifyPivotProvider
-          .overrideWith(MockInstantVerifyPivotNotifier.new),
-      browserDiagnosticServiceProvider
-          .overrideWithValue(MockBrowserDiagnosticService()),
-    ], child: const InstantTestPage()));
-    await tester.pumpAndSettle();
+    await mount(tester, pivot: MockInstantVerifyPivotNotifier.new);
     expect(find.text('Your router is very busy'), findsOneWidget);
     expect(find.textContaining('88% CPU'), findsOneWidget);
     expect(find.text('Restart Router'), findsOneWidget);
@@ -171,13 +183,7 @@ void main() {
     tester.view.physicalSize = const Size(1280, 800);
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(testableWidget(overrides: [
-      instantVerifyPivotProvider
-          .overrideWith(MockInstantVerifyPivotNotifier.new),
-      browserDiagnosticServiceProvider
-          .overrideWithValue(MockBrowserDiagnosticService()),
-    ], child: const InstantTestPage()));
-    await tester.pumpAndSettle();
+    await mount(tester, pivot: MockInstantVerifyPivotNotifier.new);
     for (final label in [
       'Your router is very busy',
       'Restart Router',
@@ -189,7 +195,7 @@ void main() {
     }
   });
 
-  testWidgets('wide layouts keep one readable centered column and follow resizing',
+  testWidgets('problem choices sit three to a row and follow resizing',
       (tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(2048, 1100);
@@ -198,12 +204,8 @@ void main() {
     await mount(tester);
     final first = find.widgetWithText(AppOutlinedButton, "Internet isn't working");
     final last = find.widgetWithText(AppOutlinedButton, 'Keeps cutting out');
-    final left = tester.getTopLeft(first).dx;
-    final right = tester.getBottomRight(last).dx;
-    // Three choices per row inside the 760px column, centered on the page.
-    expect(right - left, lessThanOrEqualTo(760));
+    // Three choices per row.
     expect(tester.getTopLeft(first).dy, tester.getTopLeft(last).dy);
-    expect(((left + right) / 2 - 1024).abs(), lessThan(40));
     tester.view.physicalSize = const Size(390, 844);
     await tester.pumpAndSettle();
     expect(tester.getTopLeft(first).dx, greaterThanOrEqualTo(0));
@@ -219,7 +221,8 @@ void main() {
     await mount(tester);
     await tapText(tester, "Internet isn't working");
     await tapText(tester, 'View test details');
-    for (final width in [320.0, 600.0, 905.0, 1240.0, 2048.0]) {
+    // From 360: the shared TopBar itself overflows below that width.
+    for (final width in [360.0, 600.0, 905.0, 1240.0, 2048.0]) {
       tester.view.physicalSize = Size(width, 1100);
       await tester.pumpAndSettle();
       expect(find.text('This device reached your router'), findsOneWidget);
@@ -231,13 +234,12 @@ void main() {
     }
   });
 
-  testWidgets('workflow uses its available container width on a wide screen', (tester) async {
+  testWidgets('workflow result and its next step share one card', (tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(1440, 1100);
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await mount(tester, child: const Center(
-        child: SizedBox(width: 800, child: InstantTestPage())));
+    await mount(tester);
     await tapText(tester, "Internet isn't working");
     final result = tester.getRect(find.text('Your router can reach the internet'));
     final guidance =
@@ -252,8 +254,6 @@ void main() {
             of: card.first,
             matching: find.textContaining('The connection looks healthy')),
         findsOneWidget);
-    expect(result.left, greaterThanOrEqualTo(320));
-    expect(guidance.right, lessThanOrEqualTo(1120));
     expect(tester.takeException(), isNull);
   });
 
@@ -409,8 +409,7 @@ void main() {
 
   testWidgets('network detail health includes link speed and unknown telemetry',
       (tester) async {
-    await mount(tester,
-        child: const MyNetworkTab(),
+    await mountPage(tester, const MyNetworkTab(),
         notifier: FixtureNotifier(meshNodes: const [
           MeshNodeInfo(deviceId: 'parent', name: 'Main', isController: true),
           MeshNodeInfo(
@@ -504,8 +503,8 @@ void main() {
                   'Try connection check again'}.contains(w.data));
       expect(rechecks, findsOneWidget);
       expect(find.text('Tried a fix?'), findsNothing);
-      // One way back: the header arrow, not a second footer link.
-      expect(find.byTooltip('Back to Instant-Test'), findsOneWidget);
+      // One way back: the page's back arrow, not a second footer link.
+      expect(backButton, findsOneWidget);
       expect(find.text('Back to Instant-Test'), findsNothing);
     }
   });
@@ -641,49 +640,17 @@ void main() {
     expect(find.text('Check my speed'), findsOneWidget);
   });
 
-  test('navigation URL accepts only known views and flows', () {
-    expect(InstantTestLocation.parse('devices/5/32').value, 'devices/5/32');
-    for (final invalid in [
-      'devices/password',
-      'restart',
-      '999',
-      '1/1/1/1/1/1/1/1/1'
-    ]) {
-      expect(InstantTestLocation.parse(invalid).value, isEmpty);
-    }
-  });
-
-  testWidgets(
-      'route restores details and return clears the navigation parameter',
+  testWidgets('details and help pages are addressable routes; Back returns home',
       (tester) async {
-    final router = GoRouter(
-        initialLocation: '/instant-prototype?instant=network',
-        routes: [
-          GoRoute(
-              path: '/instant-prototype',
-              builder: (_, __) => const InstantTestPage()),
-        ]);
-    addTearDown(router.dispose);
-    await mount(tester,
-        child: Router(
-          routerDelegate: router.routerDelegate,
-          routeInformationParser: router.routeInformationParser,
-          routeInformationProvider: router.routeInformationProvider,
-        ));
+    final router = await mount(tester, location: '$instantTestHome/network');
+    expect(find.text('Network details'), findsOneWidget);
     expect(find.text('Internet Connection'), findsOneWidget);
-    await tester.tap(find.byTooltip('Back to Instant-Test'));
-    await tester.pumpAndSettle();
-    expect(router.routeInformationProvider.value.uri.queryParameters['instant'],
-        isNull);
+    await tapBack(tester);
+    expect(topRoute(router), RouteNamed.menuInstantTest);
     expect(find.text('Whole internet is slow'), findsOneWidget);
-    router.go('/instant-prototype?instant=5/32');
+    router.go('$instantTestHome/help?flow=5');
     await tester.pumpAndSettle();
-    expect(find.text('Device keeps disconnecting'), findsOneWidget);
-    expect(find.byTooltip('Back to connection check'), findsOneWidget);
-    await tester.tap(find.byTooltip('Back to connection check'));
-    await tester.pumpAndSettle();
-    expect(router.routeInformationProvider.value.uri.queryParameters['instant'],
-        '5');
+    expect(find.text('My connection keeps cutting out'), findsOneWidget);
     expect(find.text('Start connection test'), findsOneWidget);
     expect(
         tester
@@ -695,60 +662,36 @@ void main() {
                 .first)
             .onPressed,
         isNull);
+    await tapBack(tester);
+    expect(find.text('Whole internet is slow'), findsOneWidget);
   });
 
   testWidgets('route change dismisses a pending restart confirmation',
       (tester) async {
-    final router =
-        GoRouter(initialLocation: '/instant-prototype?instant=3', routes: [
-      GoRoute(
-          path: '/instant-prototype',
-          builder: (_, __) => const InstantTestPage()),
-    ]);
-    addTearDown(router.dispose);
-    await mount(tester,
-        child: Router(
-          routerDelegate: router.routerDelegate,
-          routeInformationParser: router.routeInformationParser,
-          routeInformationProvider: router.routeInformationProvider,
-        ));
+    final router = await mount(tester, location: '$instantTestHome/help?flow=3');
     await tapText(tester, 'My device uses an Ethernet cable');
     await tapText(tester, 'Restart Router');
     expect(find.text('Restart your router?'), findsOneWidget);
-    router.go('/instant-prototype');
+    router.go(instantTestHome);
     await tester.pumpAndSettle();
     expect(find.text('Restart your router?'), findsNothing);
     expect(find.text('Whole internet is slow'), findsOneWidget);
   });
 
-  testWidgets('pushed page opens workflows without leaving Instant-Test',
+  testWidgets('a flow is pushed over Instant-Test; Back returns to it, then to Menu',
       (tester) async {
-    final router = GoRouter(initialLocation: '/dashboardHome', routes: [
-      GoRoute(
-          path: '/dashboardHome',
-          builder: (context, __) => Scaffold(
-              body: TextButton(
-                  onPressed: () => context.push('/instantTest'),
-                  child: const Text('Open Instant-Test')))),
-      GoRoute(
-          path: '/instantTest', builder: (_, __) => const InstantTestPage()),
-    ]);
-    addTearDown(router.dispose);
-    await mount(tester,
-        child: Router(
-          routerDelegate: router.routerDelegate,
-          routeInformationParser: router.routeInformationParser,
-          routeInformationProvider: router.routeInformationProvider,
-        ));
-    await tapText(tester, 'Open Instant-Test');
-    expect(router.routeInformationProvider.value.uri.path, '/dashboardHome');
-    await tapText(tester, "Internet isn't working");
-    expect(find.text('Open Instant-Test'), findsNothing);
-    expect(find.text("My internet isn't working"), findsOneWidget);
-    await tester.tap(find.byTooltip('Back to Instant-Test'));
+    final router = await mount(tester, location: RoutePath.dashboardMenu);
+    router.pushNamed(RouteNamed.menuInstantTest);
     await tester.pumpAndSettle();
-    expect(find.text('Open Instant-Test'), findsNothing);
+    await tapText(tester, "Internet isn't working");
+    expect(topRoute(router), RouteNamed.instantTestHelp);
+    expect(topLocation(router).queryParameters['flow'], '1');
+    expect(find.text("My internet isn't working"), findsOneWidget);
+    expect(find.text('Whole internet is slow'), findsNothing);
+    await tapBack(tester);
     expect(find.text('Whole internet is slow'), findsOneWidget);
+    await tapBack(tester);
+    expect(find.text('Menu page'), findsOneWidget);
   });
 
   testWidgets('home actions scroll with diagnostics and only workflows are offered',
@@ -787,8 +730,7 @@ void main() {
     expect(find.text('Which device needs help?'), findsOneWidget);
     expect(find.text('Everything in my home'), findsNothing);
     expect(find.text('Run Again'), findsNothing);
-    await tester.tap(find.byTooltip('Back to Instant-Test'));
-    await tester.pumpAndSettle();
+    await tapBack(tester);
     expect(find.text('Whole internet is slow'), findsOneWidget);
   });
 
@@ -860,14 +802,33 @@ void main() {
   testWidgets('check again returns home and fetches fresh diagnostic data',
       (tester) async {
     final notifier = FixtureNotifier();
-    await mount(tester, notifier: notifier);
+    final router = await mount(tester, notifier: notifier);
     final before = notifier.fetchCount;
     await tapText(tester, "Doesn't reach a room");
-    expect(find.byTooltip('Back to Instant-Test'), findsOneWidget);
+    expect(topRoute(router), RouteNamed.instantTestHelp);
     await tapText(tester, 'Check again');
     expect(notifier.fetchCount, before + 1);
+    expect(topRoute(router), RouteNamed.menuInstantTest);
     expect(find.text('Whole internet is slow'), findsOneWidget);
     expect(find.text('Improve coverage in that room'), findsNothing);
+  });
+
+  testWidgets('check again from a lateral flow returns to home, not the origin',
+      (tester) async {
+    final notifier = FixtureNotifier();
+    final router = await mount(tester, notifier: notifier);
+    final before = notifier.fetchCount;
+    await tapText(tester, 'Keeps cutting out');
+    await tapText(tester, 'A few times a day');
+    await tapText(tester, 'Specific devices');
+    await tapText(tester, 'Choose the affected device');
+    expect(find.text('Device keeps disconnecting'), findsOneWidget);
+    await tapText(tester, 'Check again');
+    expect(notifier.fetchCount, before + 1);
+    expect(topRoute(router), RouteNamed.menuInstantTest);
+    expect(find.text('Whole internet is slow'), findsOneWidget);
+    await tapBack(tester);
+    expect(find.text('Menu page'), findsOneWidget);
   });
 
   testWidgets('speed result and scope share a screen and Back preserves result',
@@ -881,16 +842,17 @@ void main() {
     expect(find.textContaining('120 Mbps down'), findsOneWidget);
     expect(find.text('No — something still feels slow'), findsNothing);
     await tapText(tester, 'Just one specific device');
-    await tester.tap(find.byTooltip('Back to speed check'));
-    await tester.pumpAndSettle();
+    expect(find.text('One device is slow'), findsOneWidget);
+    // Back from the lateral flow returns to the speed check page.
+    await tapBack(tester);
     if (find.text('View speed test details').evaluate().isNotEmpty) {
       await tapText(tester, 'View speed test details');
     }
     expect(find.textContaining('120 Mbps down'), findsOneWidget);
     await tapText(tester, 'Everything in my home is slow');
-    expect(find.byTooltip('Back to previous step'), findsOneWidget);
-    await tester.tap(find.byTooltip('Back to previous step'));
-    await tester.pumpAndSettle();
+    // Back steps back within the flow before leaving it.
+    await tapBack(tester);
+    expect(find.text('My internet is slow'), findsOneWidget);
     if (find.text('View speed test details').evaluate().isNotEmpty) {
       await tapText(tester, 'View speed test details');
     }
@@ -919,8 +881,7 @@ void main() {
     await tapText(tester, 'Whole internet is slow');
     await tester.tap(find.text('Check my speed'));
     await tester.pump();
-    await tester.tap(find.byTooltip('Back to Instant-Test'));
-    await tester.pumpAndSettle();
+    await tapBack(tester);
     service.pendingSpeed!.complete(const SpeedTestResult(
         downloadMbps: 120, uploadMbps: 45, latencyMs: 18, jitterMs: 2));
     await tester.pumpAndSettle();
@@ -931,23 +892,27 @@ void main() {
   testWidgets(
       'device details pass the selected device into help and restore origin',
       (tester) async {
-    final router = GoRouter(initialLocation: '/instant-prototype?instant=devices', routes: [GoRoute(path: '/instant-prototype', builder: (_, __) => const Scaffold(body: InstantTestPage()))]);
-    addTearDown(router.dispose);
-    await mount(tester, child: Router(routerDelegate: router.routerDelegate, routeInformationParser: router.routeInformationParser, routeInformationProvider: router.routeInformationProvider));
-    await tester.pumpAndSettle();
+    final router = await mount(tester, location: '$instantTestHome/devices');
+    expect(find.text('Device details'), findsOneWidget);
     await tapText(tester, 'Office printer');
     await tapText(tester, 'Troubleshoot this device');
+    expect(topRoute(router), RouteNamed.instantTestHelp);
+    expect(topLocation(router).queryParameters['flow'], '30');
     expect(find.text('Select a device'), findsNothing);
     expect(answer(tester, 'Device'), 'Office printer');
-    expect(find.byTooltip('Back to device details'), findsOneWidget);
-    await tester.tap(find.byTooltip('Back to device details'));
-    await tester.pumpAndSettle();
+    await tapBack(tester);
     expect(find.text('Device details'), findsOneWidget);
     expect(find.text('Office printer'), findsOneWidget);
   });
 
   testWidgets('all bridge advice branches return to their choices',
       (tester) async {
+    // Desktop width: Flow 6's ListTile options under-report their intrinsic
+    // height when their titles wrap, which the scrollable page frame needs.
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1280, 900);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await mount(tester);
     tester.widget<OverviewTab>(find.byType(OverviewTab)).onNavigateToFlow!(5);
     await tester.pumpAndSettle();
@@ -958,21 +923,21 @@ void main() {
       'Leave as-is — internet is working fine',
     ]) {
       await tapText(tester, label);
-      await tester.tap(find.byTooltip('Back to previous step'));
-      await tester.pumpAndSettle();
+      await tapBack(tester);
       expect(find.text('Two routers detected'), findsOneWidget);
     }
   });
 
   testWidgets('network details and bridge finding remain reachable',
       (tester) async {
-    final router = GoRouter(initialLocation: '/instant-prototype?instant=network', routes: [GoRoute(path: '/instant-prototype', builder: (_, __) => const Scaffold(body: InstantTestPage()))]);
-    addTearDown(router.dispose);
-    await mount(tester, child: Router(routerDelegate: router.routerDelegate, routeInformationParser: router.routeInformationParser, routeInformationProvider: router.routeInformationProvider));
-    await tester.pumpAndSettle();
+    // Desktop width for Flow 6's ListTiles, as above.
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1280, 900);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await mount(tester, location: '$instantTestHome/network');
     expect(find.text('Internet Connection'), findsOneWidget);
-    await tester.tap(find.byTooltip('Back to Instant-Test'));
-    await tester.pumpAndSettle();
+    await tapBack(tester);
     tester.widget<OverviewTab>(find.byType(OverviewTab)).onNavigateToFlow!(5);
     await tester.pumpAndSettle();
     expect(find.text('Two routers / Combo gateway'), findsOneWidget);
@@ -1097,8 +1062,8 @@ void main() {
     await tapText(tester, 'Specific devices');
     await tapText(tester, 'Choose the affected device');
     expect(find.text('Which device needs help?'), findsOneWidget);
-    await tester.tap(find.byTooltip('Back to connection check'));
-    await tester.pumpAndSettle();
+    await tapBack(tester);
+    expect(find.text('My connection keeps cutting out'), findsOneWidget);
     expect(
         tester
             .widget<ChoiceChip>(
@@ -1111,8 +1076,7 @@ void main() {
                 find.widgetWithText(ChoiceChip, 'Specific devices'))
             .selected,
         isTrue);
-    await tester.tap(find.byTooltip('Back to Instant-Test'));
-    await tester.pumpAndSettle();
+    await tapBack(tester);
     expect(find.text('Whole internet is slow'), findsOneWidget);
   });
 
@@ -1129,8 +1093,7 @@ void main() {
     expect(service.calls, 1);
     await tester.pump(const Duration(seconds: 24));
     expect(service.calls, 1, reason: 'pending probes must not overlap');
-    await tester.tap(find.byTooltip('Back to Instant-Test'));
-    await tester.pump();
+    await tapBack(tester);
     service.pending!.complete(const GatewayPingResult(reachable: false));
     await tester.pump(const Duration(seconds: 48));
     expect(service.calls, 1);
@@ -1181,7 +1144,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await mount(tester, child: const OverviewTab(showProblemCards: false));
+    await mountPage(tester, const OverviewTab(showProblemCards: false));
   });
 
   testWidgets('mobile symptoms and workflow controls fit the viewport',

@@ -1,4 +1,4 @@
-part of '../help_me_fix_it_tab.dart';
+part of 'help_page.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Flow 1: My internet isn't working
@@ -106,7 +106,7 @@ class _Flow1State extends ConsumerState<_Flow1> {
   Widget build(BuildContext context) {
     // The result and its next step share the first card (density pass).
     final lead = _resultHeader(context);
-    return InstantTestFocusColumn(children: [
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (_phase == _Flow1Phase.running)
         _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start,
             children: [lead, ..._running(context)])),

@@ -1,4 +1,5 @@
-import 'instant_test_layout.dart';
+import 'diagnostic_selection_area.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'instant_test_style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,7 +21,17 @@ class MyNetworkTab extends ConsumerWidget {
   const MyNetworkTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context, WidgetRef ref) => StyledAppPageView(
+        title: 'Network details',
+        scrollable: true,
+        onRefresh: () => ref
+            .read(instantVerifyPivotProvider.notifier)
+            .fetch(forceSpeedTest: true),
+        child: (context, constraints) =>
+            DiagnosticSelectionArea(child: _content(context, ref)),
+      );
+
+  Widget _content(BuildContext context, WidgetRef ref) {
     final state = ref.watch(instantVerifyPivotProvider);
 
     if (state.phase == PivotLoadPhase.idle ||
@@ -28,13 +39,7 @@ class MyNetworkTab extends ConsumerWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return RefreshIndicator(
-      onRefresh: () =>
-          ref.read(instantVerifyPivotProvider.notifier).fetch(forceSpeedTest: true),
-      child: SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: InstantTestLayout.scrollPadding(context),
-      child: Column(
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -70,8 +75,6 @@ class MyNetworkTab extends ConsumerWidget {
             _GuestNetworkCard(state: state),
           ],
         ],
-      ),
-      ),
     );
   }
 }

@@ -1,7 +1,10 @@
 import '../models/diagnostic_client.dart';
 import '../models/router_light.dart';
-import 'instant_test_layout.dart';
+import 'diagnostic_selection_area.dart';
 import 'instant_test_style.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/styled/consts.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -118,9 +121,16 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
     // Density pass (QA 2026-10-07 #3/#5): one column, one result card that
     // also lists everything else we found, compact problem choices, and the
     // light guide and support in the footer.
-    return SingleChildScrollView(
-      padding: InstantTestLayout.scrollPadding(context),
-      child: InstantTestFocusColumn(
+    return StyledAppPageView(
+      title: loc(context).instantTest,
+      scrollable: true,
+      // The local preview opens here with nothing underneath.
+      backState: Navigator.of(context).canPop()
+          ? StyledBackState.enabled
+          : StyledBackState.none,
+      child: (context, constraints) => DiagnosticSelectionArea(
+          child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Align(alignment: Alignment.centerRight, child: _runAgain(state)),
           // Inline WAN-down callout (PRD v0.7 S-1); the guide link is in the footer.
@@ -223,7 +233,7 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
           ],
           const AppGap.large2(),
         ],
-      ),
+      )),
     );
   }
 

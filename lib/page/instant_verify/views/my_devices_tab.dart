@@ -1,5 +1,5 @@
 import 'diagnostic_selection_area.dart';
-import 'instant_test_layout.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'instant_test_style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,7 +25,17 @@ class MyDevicesTab extends ConsumerWidget {
   const MyDevicesTab({super.key, this.onNavigateToFlow});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context, WidgetRef ref) => StyledAppPageView(
+        title: 'Device details',
+        scrollable: true,
+        onRefresh: () => ref
+            .read(instantVerifyPivotProvider.notifier)
+            .fetch(forceSpeedTest: true),
+        child: (context, constraints) =>
+            DiagnosticSelectionArea(child: _content(context, ref)),
+      );
+
+  Widget _content(BuildContext context, WidgetRef ref) {
     final state = ref.watch(instantVerifyPivotProvider);
 
     if (state.phase == PivotLoadPhase.idle ||
@@ -49,13 +59,7 @@ class MyDevicesTab extends ConsumerWidget {
     final wirelessCount = state.wirelessDeviceCount;
     final wiredCount = state.wiredDeviceCount;
 
-    return RefreshIndicator(
-      onRefresh: () =>
-          ref.read(instantVerifyPivotProvider.notifier).fetch(forceSpeedTest: true),
-      child: SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: InstantTestLayout.scrollPadding(context),
-      child: Column(
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Header ──────────────────────────────────────────────────
@@ -97,8 +101,6 @@ class MyDevicesTab extends ConsumerWidget {
           else
             _FlatDeviceList(state: state, onNavigateToFlow: onNavigateToFlow),
         ],
-      ),
-      ),
     );
   }
 }
