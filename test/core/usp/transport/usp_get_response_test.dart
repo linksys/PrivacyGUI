@@ -66,6 +66,21 @@ void main() {
     });
   }
 
+  test('nested HTTP 401 remains available to authentication recovery', () {
+    expect(
+      () => decodeUspGetResponse(response(success: false, errors: {
+        'Device.X.Status': {
+          'errorCode': 9999,
+          'errorMessage':
+              'Transport error: Transport error: HTTP error: HTTP 401',
+        },
+      })),
+      throwsA(predicate<Object>((error) =>
+          error.toString().contains('HTTP 401') &&
+          mapUspErrorToServiceError(error) is NotAuthenticatedError)),
+    );
+  });
+
   for (final message in [
     'Transport error: HTTP error: HTTP 503',
     'Transport error: Request timeout',
@@ -81,6 +96,64 @@ void main() {
       );
     });
   }
+
+  for (final sample in [
+    (
+      message: 'Protocol error: Decoding error: Received error response: '
+          'Permission denied (code: 9001)',
+      expected: isA<UnauthorizedError>().having((e) => e.code, 'code', 9001),
+    ),
+    (
+      message: 'Protocol error: Decoding error: Received error response: '
+          'Invalid parameter (code: 7005)',
+      expected: isA<InvalidInputError>().having((e) => e.code, 'code', 7005),
+    ),
+    (
+      message: 'Protocol error: Decoding error: Received error response: '
+          'Path does not exist (code: 7026)',
+      expected:
+          isA<ResourceNotFoundError>().having((e) => e.code, 'code', 7026),
+    ),
+    (
+      message: 'Protocol error: Decoding error: Empty response data',
+      expected: isA<UnexpectedError>(),
+    ),
+    (
+      message: 'Authentication error: Session expired',
+      expected: isA<SessionTokenExpiredError>(),
+    ),
+    (
+      message: 'Validation error: Invalid path',
+      expected: isA<InvalidInputError>(),
+    ),
+  ]) {
+    test('9999 preserves the underlying failure: ${sample.message}', () {
+      expect(
+        () => decodeUspGetResponse(response(success: false, errors: {
+          'Device.X.Status': {
+            'errorCode': 9999,
+            'errorMessage': 'Transport error: ${sample.message}',
+          },
+        })),
+        throwsA(predicate<Object>((error) =>
+            sample.expected.matches(mapUspErrorToServiceError(error), {}))),
+      );
+    });
+  }
+
+  test('9999 unwraps only the category prefix, not text inside a failure', () {
+    expect(
+      () => decodeUspGetResponse(response(success: false, errors: {
+        'Device.X.Status': {
+          'errorCode': 9999,
+          'errorMessage': 'Transport error: Transport error: HTTP error: '
+              'HTTP 503: Protocol error: downstream unavailable',
+        },
+      })),
+      throwsA(predicate<Object>(
+          (error) => mapUspErrorToServiceError(error) is NetworkError)),
+    );
+  });
 
   test('a transport error without a message still fails', () {
     expect(
