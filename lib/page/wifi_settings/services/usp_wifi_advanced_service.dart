@@ -3,15 +3,18 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/generated/mesh_steering.g.dart';
 
 final uspWifiAdvancedServiceProvider = Provider<UspWifiAdvancedService>(
   (ref) => UspWifiAdvancedService(ref.read(uspClientProvider)!),
 );
 
-/// Stateless service for IEEE 802.11h (DFS + TPC) radio settings.
+/// Stateless service for the Wi-Fi Settings Advanced tab.
 ///
-/// Reads and writes `Device.WiFi.Radio.{i}.IEEE80211hEnabled` via raw USP
-/// get/set (no codegen definition exists for this path).
+/// - IEEE 802.11h (DFS + TPC): `Device.WiFi.Radio.{i}.IEEE80211hEnabled`, via
+///   raw USP get/set (no codegen definition exists for this path).
+/// - Client and node steering: `Device.X_LINKSYS_Mesh.{Client,Node}SteeringEnabled`
+///   (linksys/FWDEV#192), through the `MeshSteering` codegen class.
 class UspWifiAdvancedService {
   static const _ieee80211hPath = 'Device.WiFi.Radio.*.IEEE80211hEnabled';
 
@@ -80,6 +83,61 @@ class UspWifiAdvancedService {
         case UspFailure(errors: final e):
           throw UspCompleteFailureError(
             summary: 'IEEE80211h update failed: ${e.first.errorMessage}',
+            failures: e,
+          );
+      }
+    } catch (e) {
+      if (e is ServiceError) rethrow;
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  /// Fetches the two network-wide steering switches.
+  ///
+  /// Both leaves are required by the definition, so a firmware without
+  /// `Device.X_LINKSYS_Mesh.` fails this fetch rather than reading as two OFF
+  /// switches.
+  Future<({bool clientSteering, bool nodeSteering})> fetchSteering() async {
+    try {
+      final mesh = await MeshSteering.fetch(_usp);
+      return (
+        clientSteering: mesh.clientSteeringEnabled,
+        nodeSteering: mesh.nodeSteeringEnabled,
+      );
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  /// Writes the steering switches it is given, in one Set. A null leaves that
+  /// switch alone; both null sends nothing.
+  ///
+  /// The firmware applies it at once, with no reboot and no Wi-Fi restart, so
+  /// unlike [setIeee80211hEnabled] this write never loses its reply to a radio
+  /// reload. It is kept out of the IEEE 802.11h Set for that reason, and because
+  /// the two objects belong to different USP services, which an atomic Set
+  /// across them is refused for (7005).
+  Future<void> setSteering({bool? clientSteering, bool? nodeSteering}) async {
+    if (clientSteering == null && nodeSteering == null) return;
+    try {
+      final result = await MeshSteering.update(
+        _usp,
+        clientSteeringEnabled: clientSteering,
+        nodeSteeringEnabled: nodeSteering,
+      );
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(failures: final f):
+          throw UspPartialFailureError(
+            summary: 'Steering update partial failure: ${f.first.errorMessage}',
+            successPaths: const [],
+            failures: f,
+          );
+        case UspFailure(errors: final e):
+          throw UspCompleteFailureError(
+            summary: 'Steering update failed: ${e.first.errorMessage}',
             failures: e,
           );
       }

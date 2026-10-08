@@ -77,8 +77,10 @@ const String kPageViewRoot = 'lib/page';
 ///
 /// 45 → 46 at #1549, which is the first move of the first kind: the app gained
 /// `firmware_ota_view.dart` by splitting one firmware entry point into two pages, so
-/// the walk is unchanged and one row was added beside it.
-const int kPageViewCount = 47;
+/// the walk is unchanged and one row was added beside it. 46 → 47 at #1580
+/// (`usp_notification_history_view.dart`) and 47 → 48 at #1660
+/// (`usp_administration_view.dart`), both the same kind of move.
+const int kPageViewCount = 48;
 
 /// The marker for a column with no value, spelled as the overflow baselines spell
 /// it (`page.tsv` writes `-` for every absent `px`, `side`, `site` and `widget`).

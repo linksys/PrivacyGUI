@@ -529,7 +529,7 @@ void main() {
       );
     });
 
-    test('the register reads 45 swept, 0 queued, 2 excluded', () {
+    test('the register reads 46 swept, 0 queued, 2 excluded', () {
       // 2/41/2 when #1382 shipped it; wave 1 (#1377) moved five from queued to
       // swept, wave 2 (#1378) nine — eight on the day, and `pnp_setup` the day
       // after, when ui_kit v2.40.2 unblocked it — wave 3 (#1379) six, and wave 4
@@ -541,8 +541,8 @@ void main() {
       // short version is that unreachability is the only reason this epic accepts
       // and none of the four is unreachable.
       //
-      // 45 + 2 = 47, which is the whole point: the count this epic set out to reach
-      // is not "45 swept" but "47 accounted for", and the two are the same claim
+      // 46 + 2 = 48, which is the whole point: the count this epic set out to reach
+      // is not "46 swept" but "48 accounted for", and the two are the same claim
       // only while `# queued 0` holds.
       //
       // The 44th is #1549's `firmware_ota_view.dart`, and it is the first row added
@@ -560,8 +560,11 @@ void main() {
       // the "not available in this mode" screen, so `notificationHistoryOverrides()`
       // has to turn availability on before the page renders anything a sweep can
       // measure.
+      //
+      // The 46th is #1660's `usp_administration_view.dart` — Advanced Settings →
+      // Administration, the UPnP switch — and it arrives the same way again.
       expect(
-          roster.withDisposition(PageRosterDisposition.swept), hasLength(45));
+          roster.withDisposition(PageRosterDisposition.swept), hasLength(46));
       expect(roster.withDisposition(PageRosterDisposition.queued), isEmpty);
       expect(
         roster
@@ -653,7 +656,7 @@ void main() {
       );
     });
 
-    test('swept is 45 of 47 — every page but the two unreachable ones', () {
+    test('swept is 46 of 48 — every page but the two unreachable ones', () {
       // Written out rather than counted, and that is the point of the test. This is
       // the roster half of the join assertion 3 checks both directions of, so a
       // length check would pass against 43 rows that are not these 43.
@@ -671,10 +674,11 @@ void main() {
       // will be confusable again.
       //
       // How the 43 arrived, since the shape of the epic is the reusable part — and it
-      // is 45 now: #1549 added `firmware_ota_view.dart` after the epic closed, by
+      // is 46 now: #1549 added `firmware_ota_view.dart` after the epic closed, by
       // splitting one page in two rather than by onboarding one that was already
-      // there, and #1580 added `usp_notification_history_view.dart` the same way —
-      // a `lib/` change that creates a page declares it in the same commit. The set below is therefore no longer "what the epic swept", and the
+      // there, and #1580 added `usp_notification_history_view.dart` and #1660
+      // `usp_administration_view.dart` the same way — a `lib/` change that creates
+      // a page declares it in the same commit. The set below is therefore no longer "what the epic swept", and the
       // distinction is worth keeping: a page that arrives with a `lib/` change is
       // held to the same declaration as one the epic queued, which is the only reason
       // the wave arithmetic below stops adding up to the set's length.
@@ -690,6 +694,7 @@ void main() {
       // `known_overflows.json` is still `{"tracking": {}, "allowlist": {}}`.
       expect(roster.sweptPaths, {
         'lib/page/admin/views/usp_admin_view.dart',
+        'lib/page/administration/views/usp_administration_view.dart',
         'lib/page/advanced_settings/views/usp_advanced_settings_view.dart',
         'lib/page/ai_assistant/views/router_assistant_view.dart',
         'lib/page/apps/views/usp_apps_view.dart',

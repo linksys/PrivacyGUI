@@ -120,5 +120,20 @@ void main() {
 
       expect(a, isNot(equals(b)));
     });
+
+    test('steering defaults to off and is part of equality (#1661)', () {
+      const off = WifiAdvancedSettings(ieee80211hByRadio: {});
+      expect(off.clientSteering, isFalse);
+      expect(off.nodeSteering, isFalse);
+
+      // A steering change alone has to make the tab dirty, so the two switches
+      // are compared like the DFS map is.
+      expect(off.copyWith(clientSteering: true), isNot(equals(off)));
+      expect(off.copyWith(nodeSteering: true), isNot(equals(off)));
+      expect(
+        off.copyWith(clientSteering: true).copyWith(clientSteering: false),
+        equals(off),
+      );
+    });
   });
 }

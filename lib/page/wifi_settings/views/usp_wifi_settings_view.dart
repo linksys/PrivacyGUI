@@ -236,6 +236,15 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
     // MAC Filtering saves through its own flow (`macFilterBottomBar`), which
     // confirms overriding Instant Privacy and has no Wi-Fi reconnect step.
 
+    // Read before the save: once it lands the tab is clean and would say no.
+    // Every WiFi-tab write restarts the radios; on Advanced only the DFS one
+    // does, and a steering-only save is applied without dropping the browser,
+    // so there is no reconnect to wait for (#1661).
+    final restartsRadios = switch (activeTab) {
+      1 => ref.read(uspWifiAdvancedProvider).changesDfs,
+      _ => true,
+    };
+
     try {
       final Future<void> task = switch (activeTab) {
         0 => ref.read(uspWifiSettingsProvider.notifier).save(),
@@ -247,6 +256,11 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
       logger.d('[WiFi][Save] Save completed, save spinner dismissed');
 
       if (!context.mounted) return;
+
+      if (!restartsRadios) {
+        showSuccessSnackBar(context, loc(context).wifiSettingsSaved);
+        return;
+      }
 
       await showRecoveryDialog(
         context,

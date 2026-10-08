@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -34,6 +36,10 @@ void main() {
 
   setUp(() {
     mockService = MockUspWifiAdvancedService();
+    // Every fetch reads the steering switches too (#1661). Stubbed here so the
+    // DFS-only tests below need not repeat it; the steering group overrides it.
+    when(() => mockService.fetchSteering())
+        .thenAnswer((_) async => (clientSteering: false, nodeSteering: false));
   });
 
   ProviderContainer createContainer({
@@ -387,7 +393,9 @@ void main() {
       final notifier = container.read(uspWifiAdvancedProvider.notifier);
       notifier.setDfsEnabled(true);
 
-      expect(() => notifier.save(), throwsA(isA<InvalidInputError>()));
+      // Awaited: unawaited, `dispose()` below runs before the save reaches the
+      // service, and the matcher sees a disposed-container error instead.
+      await expectLater(notifier.save(), throwsA(isA<InvalidInputError>()));
       container.dispose();
     });
 
@@ -587,6 +595,291 @@ void main() {
     });
   });
 
+  group('UspWifiAdvancedNotifier - steering (#1661)', () {
+    void stubDfs(Map<String, bool> byRadio) {
+      when(() => mockService.fetchIeee80211h())
+          .thenAnswer((_) async => byRadio);
+      when(() => mockService.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: any(named: 'enabled'),
+            forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
+          )).thenAnswer((_) async {});
+    }
+
+    void stubSteeringRead({required bool client, required bool node}) {
+      when(() => mockService.fetchSteering()).thenAnswer(
+          (_) async => (clientSteering: client, nodeSteering: node));
+    }
+
+    void stubSteeringWrite() {
+      when(() => mockService.setSteering(
+            clientSteering: any(named: 'clientSteering'),
+            nodeSteering: any(named: 'nodeSteering'),
+          )).thenAnswer((_) async {});
+    }
+
+    test('fetch reads the switches from the device', () async {
+      stubDfs({'Device.WiFi.Radio.1.': true});
+      stubSteeringRead(client: true, node: false);
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+      await Future.delayed(Duration.zero);
+
+      final current = container.read(uspWifiAdvancedProvider).settings.current;
+      expect(current.clientSteering, isTrue);
+      expect(current.nodeSteering, isFalse);
+      expect(current.ieee80211hByRadio, {'Device.WiFi.Radio.1.': true});
+    });
+
+    test('a failed steering read fails the tab like a failed DFS read',
+        () async {
+      stubDfs({'Device.WiFi.Radio.1.': true});
+      when(() => mockService.fetchSteering())
+          .thenThrow(const NetworkError(detail: 'timeout'));
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+      await Future.delayed(Duration.zero);
+
+      final state = container.read(uspWifiAdvancedProvider);
+      expect(state.status.error, isA<NetworkError>(),
+          reason: 'drawing two switches from a read that failed would state a '
+              'setting nobody knows');
+    });
+
+    test('each switch edits only itself and marks the tab dirty', () async {
+      stubDfs({'Device.WiFi.Radio.1.': true});
+      stubSteeringRead(client: false, node: false);
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspWifiAdvancedProvider.notifier);
+
+      notifier.setClientSteering(true);
+      var current = container.read(uspWifiAdvancedProvider).settings.current;
+      expect(current.clientSteering, isTrue);
+      expect(current.nodeSteering, isFalse);
+      expect(container.read(uspWifiAdvancedProvider).isDirty, isTrue);
+
+      notifier.setClientSteering(false);
+      notifier.setNodeSteering(true);
+      current = container.read(uspWifiAdvancedProvider).settings.current;
+      expect(current.clientSteering, isFalse);
+      expect(current.nodeSteering, isTrue);
+      expect(current.ieee80211hByRadio, {'Device.WiFi.Radio.1.': true});
+    });
+
+    test('toggling DFS back to its original keeps a pending steering edit',
+        () async {
+      // `setDfsEnabled` restores the original radio map when DFS goes back to
+      // where it started, so a mixed per-radio original stops reading dirty. It
+      // must restore only the map: restoring the whole settings object would
+      // silently undo a steering switch the user flipped first.
+      stubDfs({'Device.WiFi.Radio.1.': false, 'Device.WiFi.Radio.2.': true});
+      stubSteeringRead(client: false, node: false);
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspWifiAdvancedProvider.notifier);
+
+      notifier.setNodeSteering(true);
+      notifier.setDfsEnabled(true);
+      notifier.setDfsEnabled(false);
+
+      final state = container.read(uspWifiAdvancedProvider);
+      expect(state.settings.current.nodeSteering, isTrue);
+      expect(state.settings.current.ieee80211hByRadio,
+          {'Device.WiFi.Radio.1.': false, 'Device.WiFi.Radio.2.': true});
+      expect(state.isDirty, isTrue);
+    });
+
+    test('a steering-only save sends one steering Set and no DFS Set',
+        () async {
+      stubDfs({'Device.WiFi.Radio.1.': true});
+      stubSteeringRead(client: false, node: false);
+      stubSteeringWrite();
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspWifiAdvancedProvider.notifier);
+
+      notifier.setClientSteering(true);
+      expect(container.read(uspWifiAdvancedProvider).changesDfs, isFalse);
+      await notifier.save();
+
+      // Only the switch that changed, so the other one is not rewritten with
+      // the value this page read on entry.
+      verify(() => mockService.setSteering(clientSteering: true)).called(1);
+      verifyNever(() => mockService.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: any(named: 'enabled'),
+            forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
+          ));
+    });
+
+    test('both switches changed go out in one steering Set', () async {
+      stubDfs({'Device.WiFi.Radio.1.': true});
+      stubSteeringRead(client: true, node: false);
+      stubSteeringWrite();
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspWifiAdvancedProvider.notifier);
+
+      notifier.setClientSteering(false);
+      notifier.setNodeSteering(true);
+      await notifier.save();
+
+      verify(() => mockService.setSteering(
+            clientSteering: false,
+            nodeSteering: true,
+          )).called(1);
+    });
+
+    test('a DFS-only save sends no steering Set', () async {
+      stubDfs({'Device.WiFi.Radio.1.': false});
+      stubSteeringRead(client: false, node: false);
+      stubSteeringWrite();
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspWifiAdvancedProvider.notifier);
+
+      notifier.setDfsEnabled(true);
+      expect(container.read(uspWifiAdvancedProvider).changesDfs, isTrue);
+      await notifier.save();
+
+      verifyNever(() => mockService.setSteering(
+            clientSteering: any(named: 'clientSteering'),
+            nodeSteering: any(named: 'nodeSteering'),
+          ));
+      verify(() => mockService.setIeee80211hEnabled(
+            radioPaths: ['Device.WiFi.Radio.1.'],
+            enabled: true,
+            forceAutoChannelPaths: const [],
+          )).called(1);
+    });
+
+    test('a mixed save writes steering before the radio-reloading DFS Set',
+        () async {
+      stubDfs({'Device.WiFi.Radio.1.': false});
+      stubSteeringRead(client: false, node: false);
+      final calls = <String>[];
+      when(() => mockService.setSteering(
+            clientSteering: any(named: 'clientSteering'),
+            nodeSteering: any(named: 'nodeSteering'),
+          )).thenAnswer((_) async => calls.add('steering'));
+      when(() => mockService.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: any(named: 'enabled'),
+            forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
+          )).thenAnswer((_) async => calls.add('dfs'));
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspWifiAdvancedProvider.notifier);
+
+      notifier.setNodeSteering(true);
+      notifier.setDfsEnabled(true);
+      await notifier.save();
+
+      expect(calls, ['steering', 'dfs'],
+          reason: 'the DFS write reloads every radio; the steering write must '
+              'not be sent into that reload');
+    });
+
+    test('a refused steering Set re-reads the device and rethrows', () async {
+      stubDfs({'Device.WiFi.Radio.1.': true});
+      stubSteeringRead(client: false, node: false);
+      when(() => mockService.setSteering(
+            clientSteering: any(named: 'clientSteering'),
+            nodeSteering: any(named: 'nodeSteering'),
+          )).thenThrow(const UnexpectedError(detail: 'refused (9007)'));
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspWifiAdvancedProvider.notifier);
+
+      notifier.setClientSteering(true);
+      await expectLater(notifier.save(), throwsA(isA<UnexpectedError>()));
+
+      final state = container.read(uspWifiAdvancedProvider);
+      expect(state.settings.current.clientSteering, isFalse,
+          reason: 'the switch shows what the device holds, not the refused '
+              'value');
+      expect(state.isDirty, isFalse);
+      expect(state.status.isSaving, isFalse);
+      // Once on entry, once to settle the failure.
+      verify(() => mockService.fetchSteering()).called(2);
+    });
+
+    test('a steering Set that outlasts the lock is a TimeoutError, re-read',
+        () async {
+      // The lock throws a bare TimeoutException at its window; unfolded it
+      // skipped the re-read and reached the view as an unexpected error.
+      stubDfs({'Device.WiFi.Radio.1.': true});
+      stubSteeringRead(client: false, node: false);
+      stubSteeringWrite();
+      final container = ProviderContainer(
+        overrides: [
+          uspWifiAdvancedServiceProvider.overrideWithValue(mockService),
+          // What the real lock throws at its 30 s window, without waiting.
+          uspMutationLockProvider.overrideWithValue(_TimingOutLock()),
+          wifiDataProvider.overrideWith(() => _StubWifiDataNotifier(const [])),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.listen(uspWifiAdvancedProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspWifiAdvancedProvider.notifier);
+
+      notifier.setClientSteering(true);
+      await expectLater(notifier.save(), throwsA(isA<TimeoutError>()));
+
+      final state = container.read(uspWifiAdvancedProvider);
+      expect(state.settings.current.clientSteering, isFalse);
+      expect(state.isDirty, isFalse);
+      verify(() => mockService.fetchSteering()).called(2);
+    });
+
+    test('a DFS failure after a landed steering write keeps steering saved',
+        () async {
+      stubDfs({'Device.WiFi.Radio.1.': false});
+      stubSteeringRead(client: false, node: false);
+      stubSteeringWrite();
+      when(() => mockService.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: any(named: 'enabled'),
+            forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
+          )).thenThrow(const NetworkError(detail: 'radio reload timeout'));
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspWifiAdvancedProvider.notifier);
+
+      notifier.setClientSteering(true);
+      notifier.setDfsEnabled(true);
+      await expectLater(notifier.save(), throwsA(isA<NetworkError>()));
+
+      final state = container.read(uspWifiAdvancedProvider);
+      expect(state.settings.original.clientSteering, isTrue,
+          reason: 'the steering Set succeeded, so it is no longer an unsaved '
+              'edit');
+      expect(state.settings.current.isDfsEnabled, isTrue,
+          reason: 'the DFS edit is still pending, as before #1661');
+      expect(state.isDirty, isTrue);
+    });
+  });
+
   group('UspWifiAdvancedNotifier - isDfsEnabled', () {
     test('true when all radios enabled', () async {
       when(() => mockService.fetchIeee80211h()).thenAnswer((_) async => {
@@ -677,4 +970,14 @@ class _FlakyWifiDataNotifier extends WifiDataNotifier {
       radioModels: radios,
     );
   }
+}
+
+/// A lock whose action never finishes inside its window: throws what
+/// [UspMutationLock.withLock] throws when the window closes, at once.
+class _TimingOutLock extends UspMutationLock {
+  @override
+  Future<T> withLock<T>(Future<T> Function() action,
+          {Duration timeout = UspMutationLock.defaultTimeout}) =>
+      Future.error(TimeoutException(
+          'USP mutation timed out after ${timeout.inSeconds}s', timeout));
 }

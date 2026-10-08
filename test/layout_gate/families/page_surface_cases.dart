@@ -83,6 +83,7 @@ import 'package:privacy_gui/page/admin/views/components/usp_password_card.dart';
 import 'package:privacy_gui/page/admin/views/components/usp_system_actions_card.dart';
 import 'package:privacy_gui/page/admin/views/components/usp_timezone_card.dart';
 import 'package:privacy_gui/page/admin/views/usp_admin_view.dart';
+import 'package:privacy_gui/page/administration/views/usp_administration_view.dart';
 import 'package:privacy_gui/page/advanced_settings/views/usp_advanced_settings_view.dart';
 import 'package:privacy_gui/page/ai_assistant/views/router_assistant_view.dart';
 import 'package:privacy_gui/page/apps/views/usp_apps_view.dart';
@@ -196,6 +197,7 @@ import 'package:ui_kit_library/ui_kit.dart'
         AppTopology;
 
 import '../../mocks/provider_overrides/mock_admin.dart';
+import '../../mocks/provider_overrides/mock_administration.dart';
 import '../../mocks/provider_overrides/mock_apps.dart';
 import '../../mocks/provider_overrides/mock_dashboard_page.dart';
 import '../../mocks/provider_overrides/mock_devices.dart';
@@ -310,20 +312,19 @@ final kWifiSettingsPageCase = PageSurfaceCase(
 /// link does — `initialTab: 1` — for which see [kStatisticsDevicesPageCase]; the two
 /// pages now share one mechanism rather than one excuse.
 ///
-/// ## Coverage: the whole tab, because the tab is one card
+/// ## Coverage: the whole tab, three cards
 ///
-/// No depth limit to state and none to measure. `UspWifiAdvancedTab` renders a single
-/// `AppCard` holding one DFS row, so [kPageSweepHeight] reaches the end of it at every
-/// width — this one's green means *the tab*, not a prefix of it. Four of the five tab
-/// cases are like that ([kStatisticsSystemPageCase], [kPortRangePageCase] and
-/// [kPortTriggeringPageCase] are the others); `page.statistics` and
-/// `page.statistics_devices` are the two that stop at [kPageSweepHeight].
+/// `UspWifiAdvancedTab` renders three `AppCard`s — client steering, node steering
+/// (#1661) and DFS — each one `Expanded` title + [AppSwitch] row over a description.
+/// Until #1661 it was the DFS card alone. The green still means *the tab* and not a
+/// prefix of it, for a reason that does not depend on [kPageSweepHeight]: the cards
+/// sit in a `SingleChildScrollView`'s `Column`, which lays out every child whether
+/// or not it is in the viewport — only a lazy sliver skips what is off screen.
 ///
-/// That also makes it the cheapest tab in the family and the one least likely to find
-/// anything: the row is already `Expanded` + [AppSwitch], which is the shape the rest
-/// of this file keeps arriving at as the *fix*. Swept anyway, and worth saying why —
-/// "it looks safe" is the claim a gate exists to stop anyone from having to make. The
-/// 234 cells are the receipt, and a future card added to this tab inherits them.
+/// It is the shape the rest of this file keeps arriving at as the *fix*, which made
+/// it the tab least likely to find anything. The two steering cards were the
+/// "future card added to this tab" this paragraph used to promise would inherit the
+/// 234 cells, and they did: they entered green.
 ///
 /// ## The premise, and the one thing it has to rule out
 ///
@@ -333,16 +334,16 @@ final kWifiSettingsPageCase = PageSurfaceCase(
 /// for the same reason: `initialTab` is an `int` behind a `clamp(0, 1)`, so every wrong
 /// value is a legal one.
 ///
-/// [AppSwitch] is the second entry because this tab has a *third* rendering that is
-/// neither loader nor error: `wifi_advanced_tab.dart:55` returns a centred
-/// `noAdvancedWifiSettings` string when `ieee80211hByRadio` is empty. That arm is inside
-/// [UspWifiAdvancedTab], so the first entry cannot see it, and it lays out one line of
-/// text where the card lays out a row — a fixture thinned to an empty map would sweep
-/// 234 cells of an empty-state message and report them as this tab's coverage.
-/// `defaultAdvancedState` — an alias for `advancedDfsOnState`, which is the name
-/// [kWifiSettingsPageCase]'s doc uses for the same object — carries two radios, and
-/// [AppSwitch] is what fails if it stops. Whichever name the alias points at is what
-/// this case actually sweeps, which is the reason to say both here.
+/// [AppSwitch] is the second entry. It used to guard a *third* rendering, a centred
+/// `noAdvancedWifiSettings` string shown when `ieee80211hByRadio` was empty; #1661
+/// removed that arm, because a successful fetch has always read both steering
+/// switches and so the tab always has rows. What an empty radio map does now is drop
+/// the DFS card only — and the DFS card is the one with the longest description, so
+/// a fixture thinned to an empty map would sweep two short cards and report them as
+/// this tab's coverage. `defaultAdvancedState` — an alias for `advancedDfsOnState`,
+/// which is the name [kWifiSettingsPageCase]'s doc uses for the same object — carries
+/// two radios, which is what keeps the DFS card in the sweep. Whichever name the alias
+/// points at is what this case actually sweeps, which is the reason to say both here.
 final kWifiSettingsAdvancedPageCase = PageSurfaceCase(
   id: 'wifi_settings_advanced',
   view: () => const UspWifiSettingsView(initialTab: 1),
@@ -1925,6 +1926,27 @@ final kDmzPageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView],
 );
 
+/// `usp_administration_view` — Advanced Settings → Administration (#1660). Not
+/// [kAdminPageCase], the menu's page of the same title.
+///
+/// One card, one row: the `upnp` label `Expanded` beside an [AppSwitch]. The label is
+/// `UPnP` in 25 locales and `UPnPi` in `pt`, so this is the least text the family lays
+/// out, and it is swept for the reason [kWifiSettingsAdvancedPageCase] gives — "it
+/// looks safe" is the claim the gate exists to replace. It arrives with the `lib/` change that creates it,
+/// straight to `swept`, as `firmware_ota` and `notification_history` did.
+///
+/// [UspUpnpCard] is the premise: the page has a loader arm and a [ServiceErrorView] arm,
+/// both in `forbids`, and the card is the only thing the data arm renders. The fixture
+/// is the clean `upnpOnState` — the dirty one adds only ui_kit's Save bar, out of scope
+/// as it is for [kDmzPageCase]; see `mock_administration.dart`.
+final kAdministrationPageCase = PageSurfaceCase(
+  id: 'administration',
+  view: () => const UspAdministrationView(),
+  overrides: () => administrationOverrides(),
+  requires: const [UspTopBar, UspUpnpCard, AppSwitch],
+  forbids: const [AppLoader, ServiceErrorView],
+);
+
 /// `usp_firewall_view` — nine rows in three cards: two SPI switches, three VPN
 /// passthrough switches, three internet filters and a link out to IPv6 port service.
 ///
@@ -2822,4 +2844,5 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kStatisticsSystemPageCase,
   kSystemLogPageCase,
   kNotificationHistoryPageCase,
+  kAdministrationPageCase,
 ];
