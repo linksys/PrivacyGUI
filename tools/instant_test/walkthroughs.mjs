@@ -135,6 +135,8 @@ export async function walkthroughs({check,button,visible,clickInScrollView,url})
     await click(p,'More things to try');await click(p,'Hide more things to try');
     await click(p,'Change problem');await click(p,'Something else');
     await visible(p,'General troubleshooting');await guide(p,4);
+    // A chosen problem collapses to its row; change it to pick another.
+    await click(p,'Change problem');
     await click(p,'Keeps disconnecting');await visible(p,'Device keeps dropping WiFi');
     await guide(p,3);await click(p,'Force reconnect a device');
     await visible(p,'Force reconnect?');await click(p,'Reconnect');

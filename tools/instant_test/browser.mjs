@@ -16,6 +16,21 @@ const results = [];
 const expected404s = ['/assets/roboto/', '/assets/notosanssymbols/', '/assets/assets/resources/versions.json'];
 const button = (page, name) => page.getByRole('button', {name, exact:true});
 const visible = (page, text) => page.getByText(text, {exact:true}).last().waitFor({state:'visible', timeout:10000});
+// Other findings, weak devices and weak WiFi nodes share one collapsed list
+// on the result card ("N more things we found").
+const openFoundList = async page => {
+  const toggle = page.getByRole('button', {name:/^(Hide )?\d+ more things? we found$/}).first();
+  await toggle.waitFor();
+  // The list keeps its state while a workflow is open on top of it.
+  if ((await toggle.innerText()).startsWith('Hide')) return;
+  await toggle.click();
+  await page.getByRole('button', {name:/^Hide \d+ more things? we found$/}).first().waitFor();
+};
+// An answered workflow question collapses to a labelled one-line row.
+const answered = async (page, label, value) => {
+  await visible(page, label.toUpperCase());
+  await visible(page, value);
+};
 // Flutter scrolls its canvas viewport; reveal the contextual links with real
 // scrolling rather than only moving their accessibility elements in the DOM.
 async function clickInScrollView(page, label) {
@@ -128,19 +143,26 @@ try {
       if (!mobile) await p.setViewportSize({width:2048,height:1100});
       const start=await button(p,"Internet isn't working").boundingBox();
       const end=await button(p,'Keeps cutting out').boundingBox();
-      if (!mobile) assert(end.x+end.width-start.x>1800,'Wide layout still wastes the available width');
+      if (!mobile) {
+        // One readable centered column, three choices per row.
+        assert(end.x+end.width-start.x<=760,'Choices must stay inside the readable column');
+        assert(Math.abs((start.x+end.x+end.width)/2-1024)<40,'The column must be centered');
+        assert.equal(Math.round(start.y),Math.round(end.y),'Three choices per row on wide screens');
+      }
       await button(p,"Internet isn't working").click();
-      await visible(p,'Still seeing an issue?');
+      await visible(p,'Your router can reach the internet');
       assert.equal(await p.getByText(/Everything looks fine right now/).count(),0);
       await p.getByText(/The connection looks healthy/).waitFor();
       const action=await button(p,'Yes — troubleshoot a specific device').boundingBox();
       assert(action.width<420,'Follow-up action should fit its label');
       assert(action.x>=0 && action.x+action.width<=p.viewportSize().width);
+      // One way back: the header arrow, not a second footer link.
+      assert.equal(await button(p,'Back to Instant-Test').count(),1,'Only the header offers Back');
       const support=p.getByText('Still need help?',{exact:true});
       assert.equal(await support.count(),1,'Support should appear once in the shared footer');
       const supportBox=await support.boundingBox();
-      const returnBox=await button(p,'Back to Instant-Test').last().boundingBox();
-      assert(supportBox.y>returnBox.y+returnBox.height,'Support must follow the page actions');
+      const retestBox=await button(p,'Still seeing issues — test again').boundingBox();
+      assert(supportBox.y>retestBox.y+retestBox.height,'Support must follow the page actions');
       await p.screenshot({path:`${output}/followup-${mobile?'mobile':'wide'}.png`});
       await clickInScrollView(p,'Yes — troubleshoot a specific device');
       await button(p,'Office-Printer WiFi').waitFor();
@@ -181,10 +203,16 @@ try {
       await clickInScrollView(p,'Hide connection details');
       await p.getByText('Band',{exact:true}).waitFor({state:'detached'});
       assert.equal(await p.getByText('Band',{exact:true}).count(),0);
+      await answered(p,'Device','Office-Printer');
       await clickInScrollView(p,'Change device');
       await button(p,'Office-Printer WiFi').waitFor();
-      await clickInScrollView(p,'Hide change device');
+      await clickInScrollView(p,'Cancel');
+      await button(p,'Office-Printer WiFi').waitFor({state:'detached'});
+      // The entry symptom answered the problem; changing it reopens the choices.
+      await answered(p,'Problem','Slow connection');
+      await clickInScrollView(p,'Change problem');
       await clickInScrollView(p,'Keeps disconnecting');
+      await answered(p,'Problem','Keeps disconnecting');
       await clickInScrollView(p,'Try the next step');
       await visible(p,'Forget this WiFi network on the device, then reconnect fresh. Have your WiFi password ready.');
       await clickInScrollView(p,'Previous step');
@@ -192,9 +220,11 @@ try {
     },mobile);
   }
   await check('weak-device-finding', async p=>{
-    await clickInScrollView(p,'Troubleshoot these devices');
-    await button(p,'Office-Printer WiFi').click();
-    await visible(p,'Help for Office-Printer');
+    assert.equal(await p.getByText('Devices that may need help',{exact:true}).count(),0,'No separate devices card');
+    await openFoundList(p);
+    await clickInScrollView(p,'Help Office-Printer');
+    await answered(p,'Device','Office-Printer');
+    await answered(p,'Problem','Slow connection');
     assert.equal(await p.getByText('Link rate',{exact:true}).count(),0);
     await visible(p,'Try this first');
     await button(p,'Connection details').click();
@@ -203,9 +233,12 @@ try {
     assert.match(p.url(),/instant=31/);
   });
   await check('mesh-health',async p=>{
-    await visible(p,'A WiFi node has a weak connection.');
-    await p.goto(`${url}?instant=network`);
+    assert.equal(await p.getByText(/^Mesh Network/).count(),0,'No separate mesh card');
+    await openFoundList(p);
+    await visible(p,'MX6200 Bedroom has a weak connection to the router');
+    await clickInScrollView(p,'View WiFi nodes');
     await visible(p,'Connected wirelessly — Weak (45 Mbps)');
+    assert.match(p.url(),/instant=network/);
     assert.equal(await p.getByText('Connected wirelessly — Good (45 Mbps)',{exact:true}).count(),0);
   });
   await check('responsive-layout-state',async p=>{
@@ -282,7 +315,7 @@ try {
     // Device details exposes an InkWell row with a merged name/band/health label.
     await p.locator('flt-semantics[flt-tappable]').filter({hasText:/^Office-Printer\b/}).first().click();
     await button(p,'Troubleshoot this device').click();
-    await visible(p,'Help for Office-Printer');
+    await answered(p,'Device','Office-Printer');
     assert.match(p.url(),/instant=devices/);
     await button(p,'Back to device details').first().click();
     await visible(p,'4 devices connected');
@@ -300,6 +333,7 @@ try {
     await p.keyboard.press('Escape');
     await button(p,"Device won't connect").click();
     await button(p,'Office-Printer WiFi').click();
+    await button(p,'Change problem').click();
     await button(p,'Keeps disconnecting').click();
     await button(p,'Force reconnect a device').click();
     await visible(p,'Force reconnect?');
@@ -383,16 +417,20 @@ try {
   });
   for(const mobile of [false,true]) {
     await check(`warning-device-handoff-${mobile?'mobile':'desktop'}`,async p=>{
-      const action=p.getByRole('button',{name:/^Help .*\([A-Fa-f0-9:]+\)$/}).first();
+      await openFoundList(p);
+      const action=p.getByRole('button',{name:/^Help /}).first();
       await action.waitFor();
       const label=await action.innerText();
-      const name=label.match(/^Help (.*) \(/)[1];
+      // Names alone, unless two devices share one; then the MAC tells them apart.
+      assert.doesNotMatch(label,/\([A-Fa-f0-9:]+\)$/,'Unique device names need no MAC');
+      const name=label.replace(/^Help /,'');
       await clickInScrollView(p,action);
-      await visible(p,`Help for ${name}`);
-      assert.equal(await p.getByText('1. Choose a device',{exact:true}).count(),0);
+      await answered(p,'Device',name);
+      assert.equal(await p.getByText('Which device needs help?',{exact:true}).count(),0);
       await clickInScrollView(p,'Connection details');
       await visible(p,'Link rate');
       await clickInScrollView(p,button(p,'Back to Instant-Test').last());
+      await openFoundList(p);
       await action.waitFor();
     },mobile);
   }
