@@ -46,7 +46,8 @@ class _Flow4State extends ConsumerState<_Flow4> {
         (n.backhaulHealth == BackhaulHealth.weak || n.backhaulHealth == BackhaulHealth.critical)).toList();
     return [
       _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        UserStepHeading('Improve coverage in that room'),
+        Semantics(header: true,
+            child: AppText.titleSmall('Improve coverage in that room')),
         const AppGap.small2(),
         if (weakNodes.isNotEmpty)
           for (final node in weakNodes)
@@ -71,17 +72,19 @@ class _Flow4State extends ConsumerState<_Flow4> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UserStepHeading('Where is your router right now?'),
+          Semantics(header: true,
+              child: AppText.titleSmall('Where is your router right now?')),
           const AppGap.small3(),
-          for (final (val, label) in options)
-            RadioListTile<_RouterPlacement>(
-              value: val,
-              groupValue: _placement,
-              title: AppText.bodyMedium(label),
-              onChanged: (v) => setState(() => _placement = v),
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-            ),
+          AppRadioList<_RouterPlacement>(
+            selected: _placement,
+            mainAxisSize: MainAxisSize.min,
+            items: [
+              for (final (val, label) in options)
+                AppRadioListItem(
+                    value: val, titleWidget: AppText.bodyMedium(label)),
+            ],
+            onChanged: (_, v) => setState(() => _placement = v),
+          ),
           const AppGap.small3(),
           if (!widget.singlePage) Align(
               alignment: Alignment.centerLeft,
@@ -125,11 +128,12 @@ class _Flow4State extends ConsumerState<_Flow4> {
           _tipRow(context, LinksysIcons.close, 'Don\'t put it inside a cabinet, closet, or entertainment unit'),
         ],
       )),
-      _stepCard(context,
-          _infoBox(
-            context,
-            'If you live in an apartment building or dense area, interference from neighboring WiFi networks can cause weak signal — even with perfect placement.',
-          )),
+      // The note is a card of its own (Instant-Privacy's info card).
+      _infoBox(
+        context,
+        'If you live in an apartment building or dense area, interference from neighboring WiFi networks can cause weak signal — even with perfect placement.',
+      ),
+      const AppGap.medium(),
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

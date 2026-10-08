@@ -41,9 +41,16 @@ const _kitConverted = {
   'answer_row.dart',
   'flow_speed.dart',
   'flow_drops.dart',
+  'help_page.dart',
+  'help_shared.dart',
+  'flow_internet.dart',
+  'flow_coverage.dart',
+  'flow_two_routers.dart',
 };
 
 const _bannedInKitConverted = <String, String>{
+  r'\bUserStepHeading\(':
+      'use AppText.titleSmall in a Semantics header inside the AppCard',
   r'borderColor:(?!\s*Theme\.of\(\w+\)\.colorScheme\.error\b)':
       'use the default AppCard border; show status with a colored icon',
   r'\bBoxDecoration\(':

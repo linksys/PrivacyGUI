@@ -4,29 +4,38 @@ part of 'help_page.dart';
 // Shared widgets + helpers
 // ═══════════════════════════════════════════════════════════════════════════
 
-// Uses the design-system AppCard (same primitive as the dashboardMenu page)
-// so border color, surface, and radius exactly match the rest of the app.
+/// One step of a flow: a default AppCard with Instant-Admin's card padding.
 Widget _stepCard(BuildContext context, Widget child) => Padding(
       padding: const EdgeInsets.only(bottom: Spacing.medium),
-      child: SizedBox(width: double.infinity, child: AppCard(
-        padding: EdgeInsets.all(ResponsiveLayout.isMobileLayout(context)
-            ? Spacing.medium : Spacing.large2),
-        child: child,
-      )),
+      child: SizedBox(
+        width: double.infinity,
+        child: AppCard(
+          padding: const EdgeInsets.symmetric(
+              vertical: Spacing.medium, horizontal: Spacing.large2),
+          child: child,
+        ),
+      ),
     );
 
+/// Instant-Privacy's two notes: the info AppCard with a colored icon, or,
+/// for a caution ([color] given), its warning AppSettingCard. Nothing here
+/// blocks the customer, so neither gets the error border.
 Widget _infoBox(BuildContext context, String text,
     {IconData icon = LinksysIcons.infoCircle, Color? color}) {
-  return Container(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 18,
-            color: color ?? Theme.of(context).colorScheme.primary),
-        const AppGap.small2(),
-        Expanded(child: AppText.bodyMedium(text)),
-      ],
+  if (color != null) {
+    return AppSettingCard(title: text, leading: Icon(icon, color: color));
+  }
+  return SizedBox(
+    width: double.infinity,
+    child: AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: Theme.of(context).colorScheme.primary),
+          const AppGap.medium(),
+          AppText.bodyMedium(text),
+        ],
+      ),
     ),
   );
 }
@@ -95,46 +104,27 @@ class _ClickChecklistItemState extends State<_ClickChecklistItem> {
 }
 
 /// ISP or Linksys support script — always SelectableText so customer can copy it.
-Widget _ispScript(BuildContext context, String script) => Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: InstantTestTone.info.container(context),
-        borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
-        border: Border.all(color: Theme.of(context).colorScheme.outline),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppText.labelMedium('Say to your provider:',
-              color: InstantTestTone.info.onContainer(context)),
-          const AppGap.small1(),
-          AppText.bodyMedium('"$script"',
-              selectable: true,
-              color: InstantTestTone.info.onContainer(context)),
-        ],
+Widget _ispScript(BuildContext context, String script) => SizedBox(
+      width: double.infinity,
+      child: AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const AppText.labelMedium('Say to your provider:'),
+            const AppGap.small1(),
+            AppText.bodyMedium('"$script"', selectable: true),
+          ],
+        ),
       ),
     );
 
 /// Shared workflow footer, following the page's navigation and check actions.
-Widget _linksysSupportTile(BuildContext context) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            Icon(LinksysIcons.supportAgent,
-                size: 20, color: Theme.of(context).colorScheme.primary),
-            const AppGap.small2(),
-            const AppText.titleSmall('Still need help?'),
-          ]),
-          const AppGap.small1(),
-          AppText.bodySmall(
-            'Contact Linksys Support:\nwww.linksys.com/support  •  1-800-326-7114',
-            selectable: true,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ],
-      ),
+/// Presented like the dashboard Support page's contact cards.
+Widget _linksysSupportTile(BuildContext context) => const SupportOptionCard(
+      icon: Icon(LinksysIcons.supportAgent),
+      title: 'Still need help?',
+      description:
+          'Contact Linksys Support:\nwww.linksys.com/support  •  1-800-326-7114',
     );
 
 /// Centralised restart confirmation. Shows a dialog, then calls restartRouter().
@@ -219,22 +209,19 @@ class _SessionSummaryCard extends ConsumerWidget {
 
     if (rows.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorSchemeExt.surfaceContainerLow!,
-        borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
-        border: Border.all(color: scheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppText.labelSmall('What to tell the agent:',
-              color: scheme.onSurfaceVariant),
-          const AppGap.small1(),
-          ...rows,
-        ],
+    return SizedBox(
+      width: double.infinity,
+      child: AppCard(
+        margin: const EdgeInsets.only(top: Spacing.small2),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.labelSmall('What to tell the agent:',
+                color: scheme.onSurfaceVariant),
+            const AppGap.small1(),
+            ...rows,
+          ],
+        ),
       ),
     );
   }

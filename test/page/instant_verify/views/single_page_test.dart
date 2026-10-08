@@ -919,12 +919,6 @@ void main() {
 
   testWidgets('all bridge advice branches return to their choices',
       (tester) async {
-    // Desktop width: Flow 6's ListTile options under-report their intrinsic
-    // height when their titles wrap, which the scrollable page frame needs.
-    tester.view.devicePixelRatio = 1;
-    tester.view.physicalSize = const Size(1280, 900);
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
     await mount(tester);
     tester.widget<OverviewTab>(find.byType(OverviewTab)).onNavigateToFlow!(5);
     await tester.pumpAndSettle();
@@ -942,11 +936,6 @@ void main() {
 
   testWidgets('network details and bridge finding remain reachable',
       (tester) async {
-    // Desktop width for Flow 6's ListTiles, as above.
-    tester.view.devicePixelRatio = 1;
-    tester.view.physicalSize = const Size(1280, 900);
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
     await mount(tester, location: '$instantTestHome/network');
     expect(find.text('Internet Connection'), findsOneWidget);
     await tapBack(tester);

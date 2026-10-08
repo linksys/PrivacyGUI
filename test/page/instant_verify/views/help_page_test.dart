@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
@@ -120,12 +125,6 @@ void main() {
 
   group('Help page frame', () {
     testWidgets('each flow page carries its title', (tester) async {
-      // Desktop width: Flow 6's ListTile options under-report their
-      // intrinsic height when titles wrap (see single_page_test.dart).
-      tester.view.devicePixelRatio = 1;
-      tester.view.physicalSize = const Size(1280, 900);
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
       for (final flow in InstantTestHelpView.flows) {
         await tester.pumpWidget(_buildFlow(_baseState(), flow));
         await tester.pump();
@@ -322,6 +321,169 @@ void main() {
         },
       );
       expect(state.wanConnectionType, isNull);
+    });
+  });
+
+  group('Help flows — kit components', () {
+    const bridgeChoices = [
+      'Enable bridge mode on the ISP gateway',
+      'Switch Linksys to WiFi access point mode',
+      'Leave it as two routers — contact my internet provider',
+      'Leave as-is — internet is working fine',
+    ];
+    const placements = [
+      ('Center of my home or close to it', 'Central placement can help'),
+      ('Near a wall, door, or in a corner', 'Move your router toward the center'),
+      ('Inside a closet, cabinet, or behind the TV',
+          'Move your router out into the open'),
+    ];
+
+    void atWidth(WidgetTester tester, double width) {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = Size(width, 900);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+    }
+
+    /// A new page each time: re-pumping the same tree would keep its state.
+    Future<void> openFresh(WidgetTester tester, int flow,
+        [InstantVerifyPivotState? state]) async {
+      await tester.pumpWidget(const SizedBox());
+      await _open(tester, flow, state);
+    }
+
+    AppCard cardAround(WidgetTester tester, Finder text) => tester.widget<AppCard>(
+        find.ancestor(of: text, matching: find.byType(AppCard)).first);
+
+    testWidgets('step headings are titleSmall semantics headers',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await _open(tester, 6);
+      await _tap(tester, find.text(bridgeChoices.first));
+      expect(tester.getSemantics(find.text('Enabling bridge mode'))
+          .hasFlag(SemanticsFlag.isHeader), isTrue);
+      await _open(tester, 4);
+      expect(tester.getSemantics(find.text('Where is your router right now?'))
+          .hasFlag(SemanticsFlag.isHeader), isTrue);
+      handle.dispose();
+    });
+
+    testWidgets('two-router choices are borderless AppListCard rows',
+        (tester) async {
+      for (final width in [390.0, 800.0]) {
+        atWidth(tester, width);
+        await openFresh(tester, 6);
+        expect(find.byType(ListTile), findsNothing);
+        for (final label in bridgeChoices) {
+          final row = find.ancestor(
+              of: find.text(label), matching: find.byType(AppListCard));
+          expect(row, findsOneWidget, reason: label);
+          final card = tester.widget<AppListCard>(row);
+          expect(card.showBorder, isFalse, reason: label);
+          expect(card.leading, isA<Icon>(), reason: label);
+          expect(card.onTap, isNotNull, reason: label);
+        }
+      }
+    });
+
+    testWidgets('every two-router branch fits at phone and tablet width',
+        (tester) async {
+      for (final width in [390.0, 800.0]) {
+        atWidth(tester, width);
+        for (final label in bridgeChoices) {
+          await openFresh(tester, 6);
+          await _tap(tester, find.text(label));
+          expect(find.text('Two routers detected'), findsNothing,
+              reason: '$label at $width');
+        }
+      }
+    });
+
+    testWidgets('a shared address offers only the provider choice',
+        (tester) async {
+      final cgnat = InstantVerifyPivotState(
+        phase: PivotLoadPhase.complete,
+        browserTestStep: 'complete',
+        wanStatus: const {
+          'wanStatus': 'Connected',
+          'wanConnection': {'ipAddress': '100.64.1.1'},
+        },
+      );
+      atWidth(tester, 390);
+      await _open(tester, 6, cgnat);
+      expect(find.byType(AppListCard), findsOneWidget);
+      await _tap(tester,
+          find.text('Contact my internet provider for a dedicated IP'));
+      expect(find.text('Say to your provider:'), findsOneWidget);
+    });
+
+    testWidgets('coverage placements are labelled radios at both widths',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      for (final width in [390.0, 800.0]) {
+        atWidth(tester, width);
+        await openFresh(tester, 4);
+        for (final (label, advice) in placements) {
+          final radio = tester.getSemantics(find.text(label));
+          expect(radio.hasFlag(SemanticsFlag.isInMutuallyExclusiveGroup),
+              isTrue, reason: label);
+          expect(radio.label, contains(label));
+          // Choose it as a screen reader (and the browser's radio) would.
+          await tester.ensureVisible(find.text(label));
+          tester.binding.pipelineOwner.semanticsOwner!
+              .performAction(radio.id, SemanticsAction.tap);
+          await tester.pumpAndSettle();
+          expect(tester.getSemantics(find.text(label))
+              .hasFlag(SemanticsFlag.isChecked), isTrue, reason: label);
+          expect(find.textContaining(advice), findsOneWidget, reason: label);
+        }
+        await _tap(tester, find.text('More coverage tips'));
+        expect(find.text('Need more coverage?'), findsOneWidget);
+      }
+      handle.dispose();
+    });
+
+    testWidgets('info, provider script and support are default kit cards',
+        (tester) async {
+      await _open(tester, 6);
+      final info = cardAround(
+          tester, find.textContaining('connected behind another router'));
+      expect(info.borderColor, isNull);
+      expect(info.color, isNull);
+      expect(find.descendant(of: find.byWidget(info),
+          matching: find.byIcon(LinksysIcons.infoCircle)), findsOneWidget);
+
+      await _tap(tester, find.text(bridgeChoices[2]));
+      final script = cardAround(tester, find.text('Say to your provider:'));
+      expect(script.borderColor, isNull);
+      expect(script.color, isNull);
+
+      final support = cardAround(tester, find.text('Still need help?'));
+      expect(support.borderColor, isNull);
+      expect(support.color, isNull);
+    });
+
+    testWidgets('the AP-mode note is a setting card with a colored icon',
+        (tester) async {
+      await _open(tester, 6);
+      await _tap(tester, find.text(bridgeChoices[1]));
+      final note = find.ancestor(
+          of: find.textContaining('In AP mode, features like'),
+          matching: find.byType(AppSettingCard));
+      expect(note, findsOneWidget);
+      final card = tester.widget<AppSettingCard>(note);
+      expect(card.borderColor, isNull, reason: 'advice, not a blocking warning');
+      expect((card.leading as Icon).color, isNotNull);
+    });
+
+    testWidgets('the connection check fits at phone and tablet width',
+        (tester) async {
+      for (final width in [390.0, 800.0]) {
+        atWidth(tester, width);
+        await openFresh(tester, 1);
+        await _tap(tester, find.text('View test details'));
+        expect(find.text('This device reached your router'), findsOneWidget);
+      }
     });
   });
 

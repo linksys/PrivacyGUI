@@ -89,61 +89,58 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
                   'This creates a "double router" situation that can cause issues '
                   'with port forwarding, gaming, and VoIP calls. '
                   'Your internet works, but some features are limited.'),
-            const AppGap.small3(),
-            UserStepHeading('What would you like to do?'),
+            const AppGap.medium(),
+            Semantics(header: true,
+                child: AppText.titleSmall('What would you like to do?')),
             const AppGap.small2(),
             if (!isCgnat) ...[
-              ListTile(
-                leading: const Icon(LinksysIcons.ethernet),
-                title: const AppText.bodyMedium('Enable bridge mode on the ISP gateway'),
-                subtitle: const AppText.bodySmall('Best option — makes your router the only router'),
-                onTap: () => _pushStep(1),
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-              ),
-              const Divider(height: 12),
-              ListTile(
-                leading: const Icon(LinksysIcons.wifi),
-                title: const AppText.bodyMedium('Switch Linksys to WiFi access point mode'),
-                subtitle: const AppText.bodySmall('Good for extending WiFi — ISP gateway handles routing'),
-                onTap: () => _pushStep(2),
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-              ),
-              const Divider(height: 12),
+              _option(LinksysIcons.ethernet,
+                  'Enable bridge mode on the ISP gateway',
+                  'Best option — makes your router the only router', 1),
+              const Divider(),
+              _option(LinksysIcons.wifi,
+                  'Switch Linksys to WiFi access point mode',
+                  'Good for extending WiFi — ISP gateway handles routing', 2),
+              const Divider(),
             ],
-            ListTile(
-              leading: const Icon(LinksysIcons.call),
-              title: AppText.bodyMedium(isCgnat
-                  ? 'Contact my internet provider for a dedicated IP'
-                  : 'Leave it as two routers — contact my internet provider'),
-              subtitle: AppText.bodySmall(isCgnat
-                  ? 'Required if you need port forwarding or gaming features'
-                  : 'If you need port forwarding, gaming, or VoIP to work'),
-              onTap: () => _pushStep(3),
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-            ),
+            _option(
+                LinksysIcons.call,
+                isCgnat
+                    ? 'Contact my internet provider for a dedicated IP'
+                    : 'Leave it as two routers — contact my internet provider',
+                isCgnat
+                    ? 'Required if you need port forwarding or gaming features'
+                    : 'If you need port forwarding, gaming, or VoIP to work',
+                3),
             if (!isCgnat) ...[
-              const Divider(height: 12),
-              ListTile(
-                leading: const Icon(LinksysIcons.checkCircle),
-                title: const AppText.bodyMedium('Leave as-is — internet is working fine'),
-                subtitle: const AppText.bodySmall('OK if you don\'t need port forwarding'),
-                onTap: () => _pushStep(4),
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-              ),
+              const Divider(),
+              _option(LinksysIcons.checkCircle,
+                  'Leave as-is — internet is working fine',
+                  'OK if you don\'t need port forwarding', 4),
             ],
           ],
         )),
       ];
 
+  /// A choice row inside the step card, as Instant-Admin's rows: a
+  /// borderless AppListCard between dividers.
+  Widget _option(IconData icon, String title, String detail, int step) =>
+      AppListCard(
+        showBorder: false,
+        padding: EdgeInsets.zero,
+        leading: Icon(icon),
+        title: AppText.bodyMedium(title),
+        description: AppText.bodySmall(detail),
+        trailing: const Icon(LinksysIcons.chevronRight),
+        onTap: () => _pushStep(step),
+      );
+
   List<Widget> _stepBridgeMode(BuildContext context) => [
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            UserStepHeading('Enabling bridge mode'),
+            Semantics(header: true,
+                child: AppText.titleSmall('Enabling bridge mode')),
             const AppGap.small2(),
             _infoBox(context,
                 'Bridge mode turns off the routing features on your internet '
@@ -181,7 +178,8 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            UserStepHeading('Switch Linksys to access point mode'),
+            Semantics(header: true,
+                child: AppText.titleSmall('Switch Linksys to access point mode')),
             const AppGap.small2(),
             _infoBox(context,
                 'In access point mode, your Linksys handles WiFi but your internet '
@@ -216,7 +214,8 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            UserStepHeading('Contact your internet provider'),
+            Semantics(header: true,
+                child: AppText.titleSmall('Contact your internet provider')),
             const AppGap.small2(),
             AppText.bodyMedium(
               isCgnat

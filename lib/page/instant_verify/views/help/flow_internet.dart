@@ -118,7 +118,8 @@ class _Flow1State extends ConsumerState<_Flow1> {
         _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           lead,
           _leadDivider,
-          const UserStepHeading('Try the connection check again'),
+          Semantics(header: true,
+              child: AppText.titleSmall('Try the connection check again')),
           const AppGap.small2(),
           const AppText.bodyMedium("We couldn't complete the check, so no connection result is available yet."),
           const AppGap.small3(),
@@ -222,7 +223,8 @@ class _Flow1State extends ConsumerState<_Flow1> {
           children: [
             lead,
             _leadDivider,
-            UserStepHeading('Check your connection to the router'),
+            Semantics(header: true,
+                child: AppText.titleSmall('Check your connection to the router')),
             const AppGap.small2(),
             const AppText.bodyMedium('Your device can\'t reach your router. This is usually a WiFi or cable issue between your device and the router.'),
             const AppGap.small3(),
@@ -249,7 +251,8 @@ class _Flow1State extends ConsumerState<_Flow1> {
           children: [
             lead,
             _leadDivider,
-            UserStepHeading('Check the connection to your modem'),
+            Semantics(header: true,
+                child: AppText.titleSmall('Check the connection to your modem')),
             const AppGap.small2(),
             const AppText.bodyMedium('Your router is reachable but can\'t get to the internet. The issue is likely between your router and the box from your internet company (modem).'),
             const AppGap.small3(),
@@ -270,7 +273,9 @@ class _Flow1State extends ConsumerState<_Flow1> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            UserStepHeading('If cables are fine, contact your internet provider'),
+            Semantics(header: true,
+                child: AppText.titleSmall(
+                    'If cables are fine, contact your internet provider')),
             const AppGap.small2(),
             _ispScript(context,
                 'My router is connected to your equipment but the internet isn\'t working. I checked all the cables. Please check if there\'s an outage or provisioning issue.'),
@@ -292,7 +297,8 @@ class _Flow1State extends ConsumerState<_Flow1> {
           children: [
             lead,
             _leadDivider,
-            UserStepHeading('Try restarting your router'),
+            Semantics(header: true,
+                child: AppText.titleSmall('Try restarting your router')),
             const AppGap.small2(),
             const AppText.bodyMedium('Your router can reach the internet but domain names aren\'t resolving. This can often be fixed by restarting your router.'),
             const AppGap.small3(),
@@ -317,7 +323,8 @@ class _Flow1State extends ConsumerState<_Flow1> {
           _stepCard(context, Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              UserStepHeading('If restarting didn\'t fix it:'),
+              Semantics(header: true,
+                  child: AppText.titleSmall('If restarting didn\'t fix it:')),
               const AppGap.small2(),
               _ispScript(context,
                   'My router is connected and has an IP address, but websites won\'t load and domain names can\'t be resolved. I restarted my router but the problem persists.'),
