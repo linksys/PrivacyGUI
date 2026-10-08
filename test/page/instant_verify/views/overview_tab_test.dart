@@ -220,6 +220,25 @@ void main() {
       expect(find.text('View test progress'), findsNothing);
     });
 
+    testWidgets('finished run scrolls its result back into view', (tester) async {
+      final notifier = MockInstantVerifyPivotNotifier(_loadingState());
+      await tester.pumpWidget(testableWidget(
+        overrides: [instantVerifyPivotProvider.overrideWith(() => notifier)],
+        child: const OverviewTab(
+            leading: SizedBox(height: 4000, child: Text('What needs help?'))),
+      ));
+      await tester.pump();
+      // While the run is in progress the user scrolls on to the chooser.
+      await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -3000));
+      await tester.pump();
+      expect(find.text('Checking your connection').hitTestable(), findsNothing);
+
+      // ignore: invalid_use_of_protected_member
+      notifier.state = _allClearState();
+      await tester.pumpAndSettle();
+      expect(find.text("We didn't detect any issues").hitTestable(), findsOneWidget);
+    });
+
     testWidgets('overall progress is a bar, leaving one spinner on the running check',
         (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_loadingState()));

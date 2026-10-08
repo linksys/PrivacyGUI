@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'details_disclosure.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
@@ -47,6 +48,25 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
   bool _findingsExpanded = false;
   bool _checksExpanded = false;
   int _restartCountdown = 0;
+  final _resultKey = GlobalKey();
+
+  /// The run takes about 20 seconds and users scroll on to "What needs
+  /// help?" meanwhile, so the result appears out of view (QA). Bring it back.
+  void _revealResult(PivotLoadPhase? previous, PivotLoadPhase next) {
+    if (next != PivotLoadPhase.complete ||
+        previous == null ||
+        previous == PivotLoadPhase.complete) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final target = _resultKey.currentContext;
+      if (!mounted || target == null) return;
+      Scrollable.ensureVisible(target,
+          duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      SemanticsService.announce(
+          'Instant-Test finished. Results are ready.', Directionality.of(context));
+    });
+  }
 
   /// Ticks once a second while the speed-test cooldown is active so the
   /// "Run Again" button can show a live countdown.
@@ -90,6 +110,7 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(instantVerifyPivotProvider);
+    ref.listen(instantVerifyPivotProvider.select((s) => s.phase), _revealResult);
 
     return SingleChildScrollView(
       padding: InstantTestLayout.scrollPadding(context),
@@ -105,6 +126,7 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
           ),
           const SizedBox(height: 8),
           _StatusCard(
+            key: _resultKey,
             state: state,
             findingsExpanded: _findingsExpanded,
             checksExpanded: _checksExpanded,
@@ -603,6 +625,7 @@ class _StatusCard extends StatelessWidget {
   final bool hasRestarted;
 
   const _StatusCard({
+    super.key,
     required this.state,
     required this.findingsExpanded,
     required this.checksExpanded,
