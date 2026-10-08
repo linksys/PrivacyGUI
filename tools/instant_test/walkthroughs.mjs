@@ -2,19 +2,23 @@ import assert from 'node:assert/strict';
 
 // Feature-path acceptance against the isolated preview. Probe query values are
 // consumed only by PrototypeRoot; they cannot configure the real router route.
+// Pages: /instant-prototype (home), /devices, /network, /help?flow=N; each page
+// has the StyledAppPageView back arrow (semantics label 'back').
 export async function walkthroughs({check,button,visible,clickInScrollView,url}) {
   const click=(p,target)=>clickInScrollView(p,typeof target==='string'?button(p,target).last():target);
   const tap=(p,label)=>click(p,p.getByText(label,{exact:false}).last());
   // Some transient overlay messages have painted HTML before semantics catches up.
   const contentText=(p,text)=>p.locator('body').getByText(text,{exact:false}).filter({visible:true}).last().waitFor();
+  // A flow opens as its own page (help route) over the preview home.
   async function open(p,probe='healthy',flow) {
     const target=new URL(url);
     const query=new URLSearchParams({probe});
-    if(flow)query.set('instant',String(flow));
-    target.hash=`/instant-prototype?${query}`;
+    if(flow)query.set('flow',String(flow));
+    target.hash=`/instant-prototype${flow?'/help':''}?${query}`;
     await p.goto('about:blank');
     await p.goto(target.href);
-    await visible(p,'Instant-Test preview');
+    if(flow) await button(p,'back').waitFor();
+    else await visible(p,'What needs help?');
   }
   async function guide(p,steps) {
     for(let i=1;i<steps;i++) await click(p,button(p,'Try the next step').first());
@@ -64,7 +68,7 @@ export async function walkthroughs({check,button,visible,clickInScrollView,url})
         await contentText(p,'Not loading');
       }
       if(probe==='internetDown') await click(p,'Done — my internet is working now');
-      else await click(p,'Back to Instant-Test');
+      else await click(p,'back');
       await button(p,"Internet isn't working").waitFor();
     },probe==='gatewayDown');
   }
@@ -114,7 +118,8 @@ export async function walkthroughs({check,button,visible,clickInScrollView,url})
     await click(p,'Whole internet is slow');await click(p,'Check my speed');
     await click(p,'Just one specific device');await click(p,'Office-Printer WiFi');
     await visible(p,'Weak WiFi signal');
-    await click(p,'Back to speed check');
+    // Back pops the lateral flow page back to the speed check page.
+    await click(p,'back');
     await visible(p,"Here's what your connection can do");
   });
   await check('device-manual-and-wired',async p=>{
@@ -204,12 +209,13 @@ export async function walkthroughs({check,button,visible,clickInScrollView,url})
       await click(p,'View test details');await p.getByText(/Router reached/).waitFor();
       await click(p,p.locator('flt-semantics[flt-tappable]').filter({hasText:'Router reached'}).last());await p.getByText(/We connected to your router/).waitFor();
       await click(p,'Hide test details');
-      await p.goto(p.url().replace(/([?&])instant=[^&]*/,'$1').replace(/[?&]$/,'') + (p.url().includes('?') ? '&' : '?') + 'instant=network');await visible(p,'Your Network');
+      // Network details is a child route; a hash-only change keeps the session.
+      await p.goto(`${url}/network`);await visible(p,'Network details');
       if(title==='Slow internet + weak WiFi') {
-        await click(p,'Update Now');await visible(p,'Your Network');
+        await click(p,'Update Now');await visible(p,'Network details');
       }
-      await click(p,'Back to Instant-Test');await click(p,'One device is slow');
-      await click(p,'Back to Instant-Test');
+      await click(p,'back');await click(p,'One device is slow');
+      await click(p,'back');
       await button(p,"Internet isn't working").waitFor();
     });
   }

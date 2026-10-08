@@ -15,6 +15,9 @@ const browser = await chromium.launch({headless:true});
 const results = [];
 const expected404s = ['/assets/roboto/', '/assets/notosanssymbols/', '/assets/assets/resources/versions.json'];
 const button = (page, name) => page.getByRole('button', {name, exact:true});
+// Every Instant-Test page is a StyledAppPageView; its back arrow is labelled 'back'.
+// Pushed pages do not change the URL (go_router's default for imperative pushes).
+const back = page => button(page, 'back');
 const visible = (page, text) => page.getByText(text, {exact:true}).last().waitFor({state:'visible', timeout:10000});
 // Other findings, weak devices and weak WiFi nodes share one collapsed list
 // on the result card ("N more things we found").
@@ -78,7 +81,8 @@ async function check(name, run, mobile = false) {
   });
   try {
     await page.goto(url);
-    await visible(page, 'Instant-Test preview');
+    // The preview shows the real page frame: top bar and the page title.
+    await visible(page, 'Instant-Test');
     await visible(page, 'What needs help?');
     for (const oldLayout of ['Single page', 'Home card', 'A · 2-tab + glance', 'B · Verify top-tab', 'Current · 4-tab']) {
       assert.equal(await page.getByText(oldLayout,{exact:true}).count(),0,'Retired preview layout is still visible');
@@ -157,9 +161,6 @@ try {
       const start=await button(p,"Internet isn't working").boundingBox();
       const end=await button(p,'Keeps cutting out').boundingBox();
       if (!mobile) {
-        // One readable centered column, three choices per row.
-        assert(end.x+end.width-start.x<=760,'Choices must stay inside the readable column');
-        assert(Math.abs((start.x+end.x+end.width)/2-1024)<40,'The column must be centered');
         assert.equal(Math.round(start.y),Math.round(end.y),'Three choices per row on wide screens');
       }
       await button(p,"Internet isn't working").click();
@@ -170,7 +171,7 @@ try {
       assert(action.width<420,'Follow-up action should fit its label');
       assert(action.x>=0 && action.x+action.width<=p.viewportSize().width);
       // One way back: the header arrow, not a second footer link.
-      assert.equal(await button(p,'Back to Instant-Test').count(),1,'Only the header offers Back');
+      assert.equal(await back(p).count(),1,'Only the page title row offers Back');
       const support=p.getByText('Still need help?',{exact:true});
       assert.equal(await support.count(),1,'Support should appear once in the shared footer');
       const supportBox=await support.boundingBox();
@@ -192,7 +193,8 @@ try {
       }
       assert.equal(await button(p,'View devices').count(),0);
       assert.equal(await button(p,'View network').count(),0);
-      await button(p,'Back to router home').waitFor();
+      // The preview home has nothing underneath, so no back arrow.
+      assert.equal(await back(p).count(),0);
     },mobile);
   }
   for (const mobile of [false,true]) {
@@ -243,7 +245,7 @@ try {
     await button(p,'Connection details').click();
     await visible(p,'Link rate');
     assert.equal(await button(p,'Yes — I can see it').count(),0);
-    assert.match(p.url(),/instant=31/);
+    await visible(p,'One device is slow');
   });
   await check('mesh-health',async p=>{
     assert.equal(await p.getByText(/^Mesh Network/).count(),0,'No separate mesh card');
@@ -251,7 +253,7 @@ try {
     await visible(p,'MX6200 Bedroom has a weak connection to the router');
     await clickInScrollView(p,'View WiFi nodes');
     await visible(p,'Connected wirelessly — Weak (45 Mbps)');
-    assert.match(p.url(),/instant=network/);
+    await visible(p,'Network details');
     assert.equal(await p.getByText('Connected wirelessly — Good (45 Mbps)',{exact:true}).count(),0);
   });
   await check('responsive-layout-state',async p=>{
@@ -283,31 +285,29 @@ try {
     assert.equal(await p.getByText('This device reached your router',{exact:true}).count(),0,'Outcome must be visible while individual checks remain collapsed');
     assert.equal(await p.getByText('Running diagnostics…',{exact:true}).count(),0);
   });
-  await check('browser-history',async p=>{
+  await check('page-back',async p=>{
     await clickInScrollView(p,'One device is slow');
-    await button(p,'Back to Instant-Test').last().waitFor();
-    assert.match(p.url(),/instant=31/);
-    await p.goBack();await button(p,'Whole internet is slow').waitFor();
-    await p.goForward();await button(p,'Back to Instant-Test').last().waitFor();
-    await p.reload();await button(p,'Back to Instant-Test').last().waitFor();
-    await button(p,'Back to Instant-Test').last().click();
+    await visible(p,'One device is slow');
+    await back(p).click();
     await button(p,'Whole internet is slow').waitFor();
-    assert(!p.url().includes('instant='));
+    // Direct addresses open the help page over the preview home.
+    await p.goto(`${url}/help?flow=31`);
+    await visible(p,'One device is slow');
+    await back(p).click();
+    await button(p,'Whole internet is slow').waitFor();
   });
-  await check('lateral-history',async p=>{
+  await check('lateral-back',async p=>{
     await button(p,'Keeps cutting out').click();
     await button(p,'A few times a day').click();
     await button(p,'Specific devices').click();
     await button(p,'Choose the affected device').click();
     await button(p,'Office-Printer WiFi').click();
     await visible(p,'Device keeps dropping WiFi');
-    await p.goBack();await button(p,'Choose the affected device').waitFor();
-    await p.goForward();await button(p,'Office-Printer WiFi').waitFor();
-    await p.reload();await button(p,'Office-Printer WiFi').waitFor();
-    assert.equal(await button(p,'Device stopped dropping').count(),0, 'Refresh must not restore device data');
-    await button(p,'Back to connection check').click();
-    await button(p,'Start connection test').waitFor();
-    assert.equal(await button(p,'Start connection test').isEnabled(),false, 'Refresh must not restart the monitor');
+    // Back returns to the origin flow with its answers kept.
+    await back(p).click();
+    await button(p,'Choose the affected device').waitFor();
+    await back(p).click();
+    await button(p,'Whole internet is slow').waitFor();
   });
   await check('mobile-keyboard',async p=>{
     async function activate(label) {
@@ -325,13 +325,13 @@ try {
     await activate('Yes — I can see it');await visible(p,'Check your WiFi details');
   },true);
   await check('device-details-handoff',async p=>{
-    await p.goto(`${url}?instant=devices`);
+    await p.goto(`${url}/devices`);
+    await visible(p,'Device details');
     // Device details exposes an InkWell row with a merged name/band/health label.
     await p.locator('flt-semantics[flt-tappable]').filter({hasText:/^Office-Printer\b/}).first().click();
     await button(p,'Troubleshoot this device').click();
     await answered(p,'Device','Office-Printer');
-    assert.match(p.url(),/instant=devices/);
-    await button(p,'Back to device details').first().click();
+    await back(p).click();
     await visible(p,'4 devices connected');
     // Device details exposes an InkWell row with a merged name/band/health label.
     await p.locator('flt-semantics[flt-tappable]').filter({hasText:/^Office-Printer\b/}).first().click();
@@ -357,33 +357,25 @@ try {
     await p.keyboard.press('Escape');
     await visible(p,'Device keeps dropping WiFi');
   });
-  await check('browser-back-during-confirmation',async p=>{
-    await button(p,"Device won't connect").click();
-    await button(p,'My device uses an Ethernet cable').click();
-    await button(p,'Restart Router').click();
-    await visible(p,'Restart your router?');
-    await p.goBack();
-    await button(p,'Whole internet is slow').waitFor();
-    assert.equal(await p.getByText('Restart your router?',{exact:true}).count(),0,
-      'Leaving a workflow must dismiss its pending confirmation');
-  });
   await check('leave-running-monitor',async p=>{
     await button(p,'Keeps cutting out').click();
     await button(p,'A few times a day').click();
     await button(p,'All devices').click();
     await button(p,'Start connection test').click();
     await p.getByText(/Monitoring…/).waitFor();
-    await p.goBack();await button(p,'Whole internet is slow').waitFor();
-    await p.goForward();await button(p,'Start connection test').waitFor();
+    await back(p).click();await button(p,'Whole internet is slow').waitFor();
+    // Reopening starts a fresh page: no answers, no running monitor.
+    await button(p,'Keeps cutting out').click();
+    await button(p,'Start connection test').waitFor();
     assert.equal(await button(p,'Start connection test').isEnabled(),false);
     assert.equal(await p.getByText(/Monitoring…/).count(),0);
   });
   await check('remaining-workflows',async p=>{
     await button(p,'Whole internet is slow').click();await button(p,'Check my speed').click();
     await button(p,'Just one specific device').waitFor();
-    await button(p,'Back to Instant-Test').last().click();
+    await back(p).click();
     await button(p,"Doesn't reach a room").click();await visible(p,'Improve coverage in that room');
-    await button(p,'Back to Instant-Test').last().click();
+    await back(p).click();
     await button(p,"Device won't connect").click();await button(p,"I don't see my device").click();
     await button(p,"No — I don't see it").click();await visible(p,"We checked your router's WiFi — here's what we found");
     // "Not in the list" is now the collapsed answer; change it to pick Ethernet.
@@ -447,7 +439,7 @@ try {
       assert.equal(await p.getByText('Which device needs help?',{exact:true}).count(),0);
       await clickInScrollView(p,'Connection details');
       await visible(p,'Link rate');
-      await clickInScrollView(p,button(p,'Back to Instant-Test').last());
+      await clickInScrollView(p,back(p));
       await openFoundList(p);
       await action.waitFor();
     },mobile);

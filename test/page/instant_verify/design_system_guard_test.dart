@@ -7,8 +7,6 @@ import 'package:flutter_test/flutter_test.dart';
 /// instead of hardcoding them. Upstream Instant-Verify files are out of scope.
 const _outOfScope = {
   'instant_verify_view.dart',
-  // Unreferenced prototype view; nothing routes to it.
-  'instant_verify_pivot_view.dart',
 };
 
 const _banned = <String, String>{
@@ -50,10 +48,13 @@ const _bannedInKitConverted = <String, String>{
 
 void main() {
   final files = Directory('lib/page/instant_verify/views')
-      .listSync()
+      // Recursive: the help flows live in views/help/.
+      .listSync(recursive: true)
       .whereType<File>()
       .where((f) => f.path.endsWith('.dart'))
       .where((f) => !_outOfScope.contains(f.uri.pathSegments.last))
+      // Upstream Instant-Verify widgets.
+      .where((f) => !f.uri.pathSegments.contains('components'))
       .toList()
     ..sort((a, b) => a.path.compareTo(b.path));
 

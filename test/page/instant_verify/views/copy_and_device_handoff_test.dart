@@ -12,8 +12,11 @@ import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_s
 import 'package:privacy_gui/page/instant_verify/views/answer_row.dart';
 import 'package:privacy_gui/page/instant_verify/views/diagnostic_selection_area.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_test_page.dart';
+import 'package:privacy_gui/route/constants.dart';
 import '../../../common/di.dart';
+import '../../../common/testable_router.dart';
 import '../../../common/testable_widget.dart';
+import 'instant_test_harness.dart';
 
 const devices = [
   DiagnosticClient(
@@ -100,9 +103,11 @@ void main() {
     testWidgets(
         'warning opens the exact duplicate-name device ${device.macAddress}',
         (tester) async {
-      await tester.pumpWidget(testableWidget(overrides: [
+      final router = instantTestRouter();
+      addTearDown(router.dispose);
+      await tester.pumpWidget(testableRouter(router: router, overrides: [
         instantVerifyPivotProvider.overrideWith(WarningNotifier.new)
-      ], child: const InstantTestPage()));
+      ]));
       await tester.pumpAndSettle();
       expect(
           find.text('Help Healthy device (AA:BB:CC:DD:EE:03)'), findsNothing);
@@ -110,6 +115,9 @@ void main() {
       await tester.ensureVisible(action);
       await tester.tap(action);
       await tester.pumpAndSettle();
+      // The help page is pushed with the device handed over by its MAC.
+      expect(topRoute(router), RouteNamed.instantTestHelp);
+      expect(topLocation(router).queryParameters['flow'], '31');
       final chosen = tester.widget<AnswerRow>(find.byWidgetPredicate(
           (w) => w is AnswerRow && w.label == 'Device'));
       expect(chosen.value, 'LB100');

@@ -78,10 +78,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           children: [
             const DashboardHomeTitle(),
             const AppGap.large1(),
-            // go, not push: a pushed page is not reflected in the URL, so
-            // browser Back/Forward could not step through Instant-Test flows.
             InstantTestCard(
-                onTap: () => context.goNamed(RouteNamed.menuInstantTest)),
+                onTap: () => context.pushNamed(RouteNamed.menuInstantTest)),
             const AppGap.medium(),
             !hasLanPort
                 ? _desktopNoLanPortsLayout()
@@ -223,7 +221,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         DashboardHomeTitle(),
         AppGap.large1(),
         InstantTestCard(
-            onTap: () => context.goNamed(RouteNamed.menuInstantTest)),
+            onTap: () => context.pushNamed(RouteNamed.menuInstantTest)),
         AppGap.medium(),
         InternetConnectionWidget(),
         AppGap.medium(),

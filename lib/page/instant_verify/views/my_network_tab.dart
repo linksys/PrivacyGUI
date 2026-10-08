@@ -1,4 +1,5 @@
-import 'instant_test_layout.dart';
+import 'diagnostic_selection_area.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'instant_test_style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,42 +27,33 @@ class MyNetworkTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(instantVerifyPivotProvider);
-
-    if (state.phase == PivotLoadPhase.idle ||
-        state.phase == PivotLoadPhase.loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    return RefreshIndicator(
-      onRefresh: () =>
-          ref.read(instantVerifyPivotProvider.notifier).fetch(forceSpeedTest: true),
-      child: SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: InstantTestLayout.scrollPadding(context),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Expanded(
-                child: AppText.titleLarge('Your Network'),
-              ),
-              IconButton(
-                icon: const Icon(LinksysIcons.refresh),
-                tooltip: 'Refresh',
-                onPressed: state.phase == PivotLoadPhase.loading
-                    ? null
-                    : () => ref
-                        .read(instantVerifyPivotProvider.notifier)
-                        .fetch(forceSpeedTest: true),
-              ),
-            ],
-          ),
-          const AppGap.small2(),
-          _NetworkCards(state: state, ref: ref),
-        ],
-      ),
-      ),
+    final loading = state.phase == PivotLoadPhase.idle ||
+        state.phase == PivotLoadPhase.loading;
+    void refresh() => ref
+        .read(instantVerifyPivotProvider.notifier)
+        .fetch(forceSpeedTest: true);
+    return StyledAppPageView(
+      title: 'Network details',
+      scrollable: true,
+      onRefresh: () async => refresh(),
+      // Refresh sits in the title row, as on Instant-Topology.
+      actions: [
+        AppIconButton.noPadding(
+          icon: LinksysIcons.refresh,
+          semanticLabel: 'Refresh',
+          color: Theme.of(context).colorScheme.primary,
+          onTap: loading ? null : refresh,
+        ),
+      ],
+      // Instant-Admin's layout: the grid fills the page height and scrolls
+      // with the page's own controller.
+      child: (context, constraints) => loading
+          ? const Center(child: CircularProgressIndicator())
+          : SizedBox(
+              height: constraints.maxHeight,
+              child: DiagnosticSelectionArea(
+                  child: _NetworkCards(state: state, ref: ref)),
+            ),
     );
   }
 }
@@ -85,8 +77,7 @@ class _NetworkCards extends StatelessWidget {
         _GuestNetworkCard(state: state),
     ];
     return MasonryGridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+      controller: Scrollable.maybeOf(context)?.widget.controller,
       padding: EdgeInsets.zero,
       crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
       mainAxisSpacing: Spacing.small2,

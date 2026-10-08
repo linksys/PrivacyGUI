@@ -50,7 +50,10 @@ class SymptomChooser extends StatelessWidget {
 }
 
 /// The Menu page's grid (DashboardMenuView._buildMenuGridView): three
-/// AppMenuCards per row on wide layouts, one on mobile, same sizes.
+/// AppMenuCards per row on wide layouts, one on mobile, same tile heights
+/// and spacing. Built from rows of fixed-height cells, not a GridView, because
+/// the page frame (StyledAppPageView, scrollable) sizes its content by
+/// intrinsic height, which a nested scrollable cannot report.
 class SymptomTileGrid extends StatelessWidget {
   const SymptomTileGrid({super.key, required this.children});
   final List<Widget> children;
@@ -58,17 +61,32 @@ class SymptomTileGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final wide = ResponsiveLayout.isOverMedimumLayout(context);
-    return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: wide ? 3 : 1,
-        mainAxisSpacing: wide ? Spacing.medium : Spacing.small2,
-        crossAxisSpacing: ResponsiveLayout.columnPadding(context),
-        mainAxisExtent: wide ? 152 : 112,
-      ),
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      itemCount: children.length,
-      itemBuilder: (context, index) => children[index],
+    final columns = wide ? 3 : 1;
+    final height = wide ? 152.0 : 112.0;
+    final rowGap = wide ? Spacing.medium : Spacing.small2;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var start = 0; start < children.length; start += columns) ...[
+          if (start > 0) SizedBox(height: rowGap),
+          SizedBox(
+            height: height,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = start; i < start + columns; i++) ...[
+                  if (i > start)
+                    SizedBox(width: ResponsiveLayout.columnPadding(context)),
+                  Expanded(
+                      child: i < children.length
+                          ? children[i]
+                          : const SizedBox.shrink()),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

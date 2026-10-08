@@ -253,7 +253,9 @@ void main() {
 
   group('MyDevicesTab — device detail sheet', () {
     testWidgets('tapping wireless device opens detail sheet', (tester) async {
-      tester.view.physicalSize = const Size(800, 1200);
+      // Logical pixels: the page frame adds the top bar and title above.
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(800,1200);
       addTearDown(() => tester.view.resetPhysicalSize());
 
       await tester.pumpWidget(_buildTab(_flatListState()));
@@ -268,7 +270,9 @@ void main() {
     });
 
     testWidgets('poor signal device shows move advice', (tester) async {
-      tester.view.physicalSize = const Size(800, 1200);
+      // Logical pixels: the page frame adds the top bar and title above.
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(800,1200);
       addTearDown(() => tester.view.resetPhysicalSize());
 
       await tester.pumpWidget(_buildTab(_flatListState()));
@@ -280,7 +284,9 @@ void main() {
     });
 
     testWidgets('wired device shows Ethernet checklist', (tester) async {
-      tester.view.physicalSize = const Size(800, 1200);
+      // Logical pixels: the page frame adds the top bar and title above.
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(800,1200);
       addTearDown(() => tester.view.resetPhysicalSize());
 
       await tester.pumpWidget(_buildTab(_flatListState()));
@@ -296,7 +302,9 @@ void main() {
     });
 
     testWidgets('2.4GHz weak device suggests 5GHz', (tester) async {
-      tester.view.physicalSize = const Size(800, 1200);
+      // Logical pixels: the page frame adds the top bar and title above.
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(800,1200);
       addTearDown(() => tester.view.resetPhysicalSize());
 
       await tester.pumpWidget(_buildTab(_flatListState()));
@@ -308,7 +316,9 @@ void main() {
 
     testWidgets('Troubleshoot this device calls onNavigateToFlow with 30 (connected)',
         (tester) async {
-      tester.view.physicalSize = const Size(800, 1600);
+      // Logical pixels: the page frame adds the top bar and title above.
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(800,1600);
       addTearDown(() => tester.view.resetPhysicalSize());
 
       int? capturedFlow;
@@ -335,7 +345,9 @@ void main() {
     });
 
     testWidgets('mesh device shows node connection info', (tester) async {
-      tester.view.physicalSize = const Size(800, 1600);
+      // Logical pixels: the page frame adds the top bar and title above.
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(800,1600);
       addTearDown(() => tester.view.resetPhysicalSize());
 
       await tester.pumpWidget(_buildTab(_meshState()));
@@ -492,7 +504,9 @@ void main() {
 
   group('MyDevicesTab — disconnect/reconnect handler', () {
     Future<void> _openWeakDeviceSheet(WidgetTester tester) async {
-      tester.view.physicalSize = const Size(800, 1600);
+      // Logical pixels: the page frame adds the top bar and title above.
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(800,1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
@@ -532,7 +546,9 @@ void main() {
     });
 
     testWidgets('disconnect button not shown for wired device', (tester) async {
-      tester.view.physicalSize = const Size(800, 1600);
+      // Logical pixels: the page frame adds the top bar and title above.
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(800,1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
@@ -572,7 +588,9 @@ void main() {
 
     testWidgets('channel change button visible for weak wireless device with channel data',
         (tester) async {
-      tester.view.physicalSize = const Size(800, 1800);
+      // Logical pixels: the page frame adds the top bar and title above.
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(800,1800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
@@ -585,7 +603,9 @@ void main() {
     });
 
     testWidgets('channel change shows confirmation dialog', (tester) async {
-      tester.view.physicalSize = const Size(800, 1800);
+      // Logical pixels: the page frame adds the top bar and title above.
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(800,1800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
@@ -603,7 +623,9 @@ void main() {
     });
 
     testWidgets('channel change not shown without channel data', (tester) async {
-      tester.view.physicalSize = const Size(800, 1600);
+      // Logical pixels: the page frame adds the top bar and title above.
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(800,1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);

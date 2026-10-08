@@ -7,38 +7,37 @@ import 'package:privacy_gui/page/dashboard/views/dashboard_shell.dart';
 import 'package:privacy_gui/page/instant_verify/prototypes/mock_pivot_notifier.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_service.dart';
-import 'package:privacy_gui/page/instant_verify/views/instant_test_page.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 
 import '../../../common/di.dart';
 import '../../../common/testable_router.dart';
+import 'instant_test_harness.dart';
 
 void main() {
   mockDependencyRegister();
 
+  // The real Instant-Test route and child routes inside the dashboard shell,
+  // opened from the Menu with pushNamed like every other menu tile.
   GoRouter buildRouter() => GoRouter(
         navigatorKey: shellNavigatorKey,
-        initialLocation: '/dashboardMenu',
+        initialLocation: RoutePath.dashboardMenu,
         routes: [
           ShellRoute(
             builder: (context, state, child) => DashboardShell(child: child),
             routes: [
               LinksysRoute(
                 name: RouteNamed.dashboardMenu,
-                path: '/dashboardMenu',
+                path: RoutePath.dashboardMenu,
                 builder: (context, state) => Scaffold(
                     body: TextButton(
-                        onPressed: () => context.go('/dashboardMenu/instantTest'),
+                        onPressed: () =>
+                            context.pushNamed(RouteNamed.menuInstantTest),
                         child: const Text('Menu page'))),
                 routes: [
-                  LinksysRoute(
-                    name: RouteNamed.menuInstantTest,
-                    path: 'instantTest',
-                    config: const LinksysRouteConfig(noNaviRail: false),
-                    builder: (context, state) => const InstantTestRoutePage(),
-                  ),
+                  menus.firstWhere(
+                      (route) => route.name == RouteNamed.menuInstantTest),
                 ],
               ),
             ],
@@ -71,51 +70,51 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('menu route shows the shared top bar instead of its own home link',
+  testWidgets('menu route is a standard page: top bar, title, back to Menu',
       (tester) async {
-    await open(tester);
+    final router = await open(tester);
+    expect(topRoute(router), RouteNamed.menuInstantTest);
     expect(find.byType(TopBar), findsOneWidget);
     expect(find.byType(TopNavigationMenu), findsOneWidget);
     expect(find.text('Back to router home'), findsNothing);
     expect(find.text('What needs help?'), findsOneWidget);
-    // Standard page title row: back arrow, then the page name.
     expect(find.text('Instant-Test'), findsOneWidget);
-    await tester.tap(find.byTooltip('Back to menu'));
-    await tester.pumpAndSettle();
+    await tapBack(tester);
     expect(find.text('Menu page'), findsOneWidget);
   });
 
-  testWidgets('a flow shows only its own back control, not the menu title row',
-      (tester) async {
-    await open(tester);
-    await tapText(tester, "Internet isn't working");
-    expect(find.byTooltip('Back to menu'), findsNothing);
-    expect(find.byTooltip('Back to Instant-Test'), findsOneWidget);
-    await tester.tap(find.byTooltip('Back to Instant-Test'));
-    await tester.pumpAndSettle();
-    expect(find.byTooltip('Back to menu'), findsOneWidget);
-  });
-
-  testWidgets('flows are addressable so browser Back returns to the results',
+  testWidgets('a flow is its own page with its own title and back',
       (tester) async {
     final router = await open(tester);
-    expect(router.routeInformationProvider.value.uri.path,
-        '/dashboardMenu/instantTest');
-
     await tapText(tester, "Internet isn't working");
-    expect(router.routeInformationProvider.value.uri.queryParameters['instant'],
-        '1');
+    expect(topRoute(router), RouteNamed.instantTestHelp);
+    expect(find.byType(TopBar), findsOneWidget);
     expect(find.text("My internet isn't working"), findsOneWidget);
+    expect(find.text('What needs help?'), findsNothing);
+    await tapBack(tester);
+    expect(topRoute(router), RouteNamed.menuInstantTest);
+    expect(find.text('What needs help?'), findsOneWidget);
+  });
 
-    // The browser reports Back as the previous address.
-    router.go('/dashboardMenu/instantTest');
-    await tester.pumpAndSettle();
-    expect(find.text('What needs help?').hitTestable(), findsOneWidget);
-    expect(find.text("My internet isn't working"), findsNothing);
+  testWidgets('flows are addressable child routes of Instant-Test',
+      (tester) async {
+    final router = await open(tester);
+    await tapText(tester, "Internet isn't working");
+    expect(topLocation(router).path, '/dashboardMenu/menuInstantTest/help');
+    expect(topLocation(router).queryParameters['flow'], '1');
 
-    // ...and Forward as the flow's address.
-    router.go('/dashboardMenu/instantTest?instant=1');
+    // A direct address opens the flow over Instant-Test home.
+    router.go('/dashboardMenu/menuInstantTest/help?flow=4');
     await tester.pumpAndSettle();
-    expect(find.text("My internet isn't working"), findsOneWidget);
+    expect(find.text("WiFi doesn't reach a room"), findsOneWidget);
+    await tapBack(tester);
+    expect(find.text('What needs help?'), findsOneWidget);
+
+    router.go('/dashboardMenu/menuInstantTest/devices');
+    await tester.pumpAndSettle();
+    expect(find.text('Device details'), findsOneWidget);
+    router.go('/dashboardMenu/menuInstantTest/network');
+    await tester.pumpAndSettle();
+    expect(find.text('Network details'), findsOneWidget);
   });
 }
