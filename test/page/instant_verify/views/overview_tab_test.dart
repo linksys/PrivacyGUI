@@ -8,6 +8,7 @@ import 'package:privacy_gui/page/instant_verify/models/verdict.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
 import 'package:privacy_gui/page/instant_verify/views/overview_tab.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 
 import '../../../common/di.dart';
 import '../../../common/testable_widget.dart';
@@ -414,7 +415,7 @@ void main() {
       await tester.pumpWidget(_buildOverviewTab(_criticalFindingState()));
       await tester.pump();
 
-      expect(find.byIcon(Icons.error), findsOneWidget);
+      expect(find.byIcon(LinksysIcons.error), findsOneWidget);
     });
   });
 

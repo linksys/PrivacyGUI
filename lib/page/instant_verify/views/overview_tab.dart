@@ -1,7 +1,10 @@
 import '../models/diagnostic_client.dart';
 import 'instant_test_layout.dart';
+import 'instant_test_style.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
+import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'dart:async';
 import 'package:go_router/go_router.dart';
 import 'details_disclosure.dart';
@@ -124,7 +127,7 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
                 state.phase != PivotLoadPhase.loading &&
                 !state.wanConnected,
           ),
-          const SizedBox(height: 8),
+          const AppGap.small2(),
           _StatusCard(
             key: _resultKey,
             state: state,
@@ -142,28 +145,27 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
             hasRestarted: state.hasRestartedThisSession,
           ),
           if (widget.leading != null) ...[
-            const SizedBox(height: 16),
+            const AppGap.medium(),
             widget.leading!,
           ],
           if (state.recentPriorRestart &&
               state.verdict != null &&
               state.verdict!.findings.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             AppCard(
               color: Theme.of(context).colorScheme.tertiaryContainer,
               padding: const EdgeInsets.all(14),
               child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.history, size: 18,
+                    Icon(LinksysIcons.uptime, size: 18,
                         color: Theme.of(context).colorScheme.onTertiaryContainer),
-                    const SizedBox(width: 10),
+                    const AppGap.small2(),
                     Expanded(
-                      child: Text(
+                      child: AppText.bodySmall(
                         'You restarted your router recently but the problem came back. '
                         'This usually means the issue isn\'t something a restart can fix.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onTertiaryContainer),
+                        color: Theme.of(context).colorScheme.onTertiaryContainer,
                       ),
                     ),
                   ],
@@ -171,21 +173,21 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
             ),
           ],
           if (state.issueDevices.isNotEmpty) ...[
-            const SizedBox(height: 16),
+            const AppGap.medium(),
             _DeviceIssuesCard(
                 state: state, onNavigateToFlow: widget.onNavigateToFlow,
                 onTroubleshoot: widget.onTroubleshootWeakDevices),
           ],
           if (state.isMeshNetwork) ...[
-            const SizedBox(height: 16),
+            const AppGap.medium(),
             _MeshCard(state: state),
           ],
           // Restart countdown with reassurance (PRD v0.7 D-23)
           if (_restartCountdown > 0) ...[
-            const SizedBox(height: 16),
+            const AppGap.medium(),
             _RestartCountdown(secondsRemaining: _restartCountdown),
           ],
-          const SizedBox(height: 24),
+          const AppGap.large2(),
           Builder(builder: (context) {
             final notifier = ref.read(instantVerifyPivotProvider.notifier);
             final cooldown = notifier.speedTestCooldownRemaining;
@@ -226,22 +228,25 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
           // mock-failure scenario picker; customer Jenkins builds (force!=local)
           // do not. Replaces the old kDebugMode guard, which release builds strip.
           if (BuildConfig.forceCommandType == ForceCommand.local) ...[
-            const SizedBox(height: 8),
+            const AppGap.small2(),
             Center(
               child: FilledButton.tonal(
                 onPressed: () => _showScenarioPicker(context),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.science_outlined, size: 16),
-                    SizedBox(width: 8),
-                    Text('Test scenarios'),
+                    const Icon(LinksysIcons.troubleshoot, size: 16),
+                    const AppGap.small2(),
+                    AppText.labelLarge('Test scenarios',
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSecondaryContainer),
                   ],
                 ),
               ),
             ),
           ],
-          const SizedBox(height: 24),
+          const AppGap.large2(),
         ],
       ),
     );
@@ -306,13 +311,13 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Install $version?'),
-        content: const Text(
+        title: AppText.titleLarge('Install $version?'),
+        content: const AppText.bodyMedium(
           'This update takes about 5 minutes.\n\n'
           'During the update:\n'
-          '\u2022 Your WiFi will turn off\n'
-          '\u2022 All devices will disconnect\n'
-          '\u2022 This page will stop responding\n\n'
+          '• Your WiFi will turn off\n'
+          '• All devices will disconnect\n'
+          '• This page will stop responding\n\n'
           'Your router will restart automatically when done. '
           'Your devices will reconnect on their own.\n\n'
           'Don\'t unplug your router during the update.',
@@ -334,52 +339,53 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
       // Scroll-controlled so the sheet can grow past the default ~50% height
       // and scroll — otherwise the lower scenarios get clipped on short windows.
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+            top: CustomTheme.of(context).radius.large),
       ),
       builder: (ctx) {
         final scheme = Theme.of(ctx).colorScheme;
-        final scenarios = [
+        const scenarios = [
           _ScenarioItem(
             index: 0,
-            icon: Icons.cable_outlined,
-            color: Colors.red,
+            icon: LinksysIcons.ethernet,
+            tone: InstantTestTone.problem,
             title: 'No internet connection',
             subtitle: 'WAN disconnected — critical finding + cable check',
           ),
           _ScenarioItem(
             index: 1,
-            icon: Icons.public_off,
-            color: Colors.orange,
+            icon: LinksysIcons.publicOff,
+            tone: InstantTestTone.warning,
             title: 'Websites aren\'t loading',
             subtitle: 'Connected to ISP, DNS failure — restart CTA',
           ),
           _ScenarioItem(
             index: 2,
-            icon: Icons.slow_motion_video,
-            color: Colors.orange,
+            icon: LinksysIcons.networkCheck,
+            tone: InstantTestTone.warning,
             title: 'Slow internet + weak WiFi',
             subtitle: '3 Mbps / 148ms latency + 2 weak devices + firmware + uptime',
           ),
           _ScenarioItem(
             index: 3,
-            icon: Icons.memory,
-            color: Colors.deepOrange,
+            icon: LinksysIcons.router,
+            tone: InstantTestTone.warning,
             title: 'Router overloaded + mesh issues',
             subtitle: 'CPU 88% / Mem 90% + zombie node + ethernet no-link',
           ),
           _ScenarioItem(
             index: 4,
-            icon: Icons.lock_outline,
-            color: Colors.blue,
+            icon: LinksysIcons.encrypted,
+            tone: InstantTestTone.info,
             title: 'Configuration blocks',
             subtitle: '2.4 GHz crowd + schedule + privacy + PMF + DHCP 92%',
           ),
         ];
         return Padding(
           padding: EdgeInsets.only(
-            top: 16,
-            bottom: 32 + MediaQuery.of(ctx).viewInsets.bottom,
+            top: Spacing.medium,
+            bottom: Spacing.large3 + MediaQuery.of(ctx).viewInsets.bottom,
           ),
           child: ConstrainedBox(
             // Cap at 80% of screen; the list scrolls within this.
@@ -394,49 +400,44 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
               Center(
                 child: Container(
                   width: 40, height: 4,
-                  margin: const EdgeInsets.only(bottom: 12),
+                  margin: const EdgeInsets.only(bottom: Spacing.small3),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
+                    color: scheme.outline,
+                    borderRadius:
+                        CustomTheme.of(ctx).radius.asBorderRadius().small,
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: Spacing.large1),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Test Scenarios',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 17,
-                            color: scheme.onSurface)),
-                    const SizedBox(height: 2),
-                    Text(
+                    AppText.titleMedium('Test Scenarios',
+                        color: scheme.onSurface),
+                    const AppGap.small1(),
+                    AppText.bodySmall(
                       'Load mock data to exercise each workflow without a router.',
-                      style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+                      color: scheme.onSurfaceVariant,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
+              const AppGap.small3(),
               Flexible(
                 child: ListView(
                   shrinkWrap: true,
                   children: scenarios.map((s) => ListTile(
                 leading: CircleAvatar(
                   radius: 18,
-                  backgroundColor: s.color.withValues(alpha: 0.12),
-                  child: Icon(s.icon, size: 18, color: s.color),
+                  backgroundColor: s.tone.container(ctx),
+                  child: Icon(s.icon, size: 18, color: s.tone.onContainer(ctx)),
                 ),
-                title: Text(s.title,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w500, fontSize: 14)),
-                subtitle: Text(s.subtitle,
-                    style: TextStyle(
-                        fontSize: 12, color: scheme.onSurfaceVariant)),
+                title: AppText.bodyMedium(s.title),
+                subtitle: AppText.bodySmall(s.subtitle,
+                    color: scheme.onSurfaceVariant),
                 contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 2),
+                    horizontal: Spacing.large1, vertical: 2),
                 onTap: () {
                   Navigator.pop(ctx);
                   setState(() {
@@ -467,13 +468,13 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
 class _ScenarioItem {
   final int index;
   final IconData icon;
-  final Color color;
+  final InstantTestTone tone;
   final String title;
   final String subtitle;
   const _ScenarioItem({
     required this.index,
     required this.icon,
-    required this.color,
+    required this.tone,
     required this.title,
     required this.subtitle,
   });
@@ -502,10 +503,11 @@ class _HeaderBar extends StatelessWidget {
         : null;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+          horizontal: Spacing.medium, vertical: Spacing.small3),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -515,22 +517,18 @@ class _HeaderBar extends StatelessWidget {
             children: [
               Expanded(
                 child: Wrap(
-                  spacing: 12,
-                  runSpacing: 4,
+                  spacing: Spacing.small3,
+                  runSpacing: Spacing.small1,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Text(model,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 15)),
+                    AppText.titleMedium(model),
                     if (!isLoading)
-                      _chip(context, _connectionLabel(state), _connectionColor(state))
+                      _chip(context, _connectionLabel(state), _connectionTone(state))
                     else
-                      _chip(context, 'Checking...', Colors.grey),
+                      _chip(context, 'Checking...', InstantTestTone.neutral),
                     if (upDays != null && !isLoading)
-                      Text('Up $upDays',
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: scheme.onSurfaceVariant)),
+                      AppText.bodySmall('Up $upDays',
+                          color: scheme.onSurfaceVariant),
                   ],
                 ),
               ),
@@ -538,9 +536,9 @@ class _HeaderBar extends StatelessWidget {
           ),
           // Row 2: FW, Serial, MAC
           if (fw != null || serial != null || mac != null) ...[
-            const SizedBox(height: 6),
+            const AppGap.small2(),
             Wrap(
-              spacing: 16,
+              spacing: Spacing.medium,
               runSpacing: 2,
               children: [
                 if (fw != null)
@@ -578,33 +576,31 @@ class _HeaderBar extends StatelessWidget {
     return 'Checking...';
   }
 
-  static Color _connectionColor(InstantVerifyPivotState state) {
+  static InstantTestTone _connectionTone(InstantVerifyPivotState state) {
     if (state.dnsCheck != null) {
-      return state.dnsCheck!.resolved ? Colors.green : Colors.orange;
+      return state.dnsCheck!.resolved
+          ? InstantTestTone.good
+          : InstantTestTone.warning;
     }
     if (state.wanStatus != null) {
-      return state.wanConnected ? Colors.blue : Colors.red;
+      return state.wanConnected ? InstantTestTone.info : InstantTestTone.problem;
     }
-    return Colors.grey;
+    return InstantTestTone.neutral;
   }
 
   Widget _metaText(BuildContext context, String text) {
-    return Text(text,
-        style: TextStyle(
-            fontSize: 11,
-            color: Theme.of(context).colorScheme.onSurfaceVariant));
+    return AppText.bodySmall(text,
+        color: Theme.of(context).colorScheme.onSurfaceVariant);
   }
 
-  Widget _chip(BuildContext context, String label, Color color) {
+  Widget _chip(BuildContext context, String label, InstantTestTone tone) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.small2, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
+        color: tone.container(context),
+        borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
       ),
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+      child: AppText.labelSmall(label, color: tone.onContainer(context)),
     );
   }
 }
@@ -645,13 +641,12 @@ class _StatusCard extends StatelessWidget {
 
     if (state.errorMessage != null ||
         (state.phase == PivotLoadPhase.complete && state.verdict == null)) {
-      return _card(context, child: Semantics(liveRegion: true, child: Column(
+      return _card(context, child: Semantics(liveRegion: true, child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("We couldn't finish checking your connection",
-              style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          const Text('Make sure this device is connected to your router, then choose Run Again. You can also choose a problem below for guided help.'),
+          AppText.titleMedium("We couldn't finish checking your connection"),
+          AppGap.small2(),
+          AppText.bodyMedium('Make sure this device is connected to your router, then choose Run Again. You can also choose a problem below for guided help.'),
         ],
       )));
     }
@@ -680,32 +675,29 @@ class _StatusCard extends StatelessWidget {
 
     // All clear state — "We didn't detect any issues" + flow cards (PRD v0.7 D-16)
     if (verdict!.isAllClear) {
+      final good = InstantTestTone.good.color(context);
       return _card(
         context,
-        borderColor: Colors.green,
+        borderColor: good,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
-              const Icon(LinksysIcons.checkCircle, color: Colors.green, size: 22),
-              const SizedBox(width: 10),
+              Icon(LinksysIcons.checkCircle, color: good, size: 24),
+              const AppGap.small2(),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("We didn't detect any issues",
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 16)),
+                    const AppText.titleMedium("We didn't detect any issues"),
                     if (verdict.checksRun > 0)
-                      Text(_checksPassedLabel(state),
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.green.shade700)),
+                      AppText.bodySmall(_checksPassedLabel(state),
+                          color: good),
                   ],
                 ),
               ),
             ]),
-            const SizedBox(height: 16),
+            const AppGap.medium(),
             if (showProblemCards)
               _problemCards(context,
                   'Still having a problem? Tell us what\'s happening and we\'ll help:'),
@@ -733,22 +725,21 @@ class _StatusCard extends StatelessWidget {
         children: [
           // Headline
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _priorityIcon(primary.priority),
-            const SizedBox(width: 10),
+            _priorityIcon(context, primary.priority),
+            const AppGap.small2(),
             Expanded(
-              child: Text(
+              child: AppText.titleMedium(
                 primary.summary ?? primary.headline,
-                style: const TextStyle(
-                    fontWeight: FontWeight.w600, fontSize: 16),
               ),
             ),
           ]),
-          const SizedBox(height: 8),
+          const AppGap.small2(),
           Padding(
-            padding: const EdgeInsets.only(left: 32),
+            padding: const EdgeInsets.only(left: Spacing.large3),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              if (primary.summary != null) Text(primary.headline),
-              Text(primary.explanation, style: TextStyle(color: scheme.onSurfaceVariant)),
+              if (primary.summary != null) AppText.bodyMedium(primary.headline),
+              AppText.bodyMedium(primary.explanation,
+                  color: scheme.onSurfaceVariant),
             ]),
           ),
 
@@ -757,7 +748,7 @@ class _StatusCard extends StatelessWidget {
           if (onTroubleshootDevice != null &&
               primary.checkNumber == 7 &&
               state.issueDevices.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const AppGap.small2(),
             for (final device in state.issueDevices.map((score) => score.client))
               Align(
                 alignment: Alignment.centerLeft,
@@ -770,40 +761,35 @@ class _StatusCard extends StatelessWidget {
 
           // Primary action button — or ISP escalation after restart (D-26)
           if (hasRestarted && primary.postRestartEscalation != null) ...[
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             Padding(
-              padding: const EdgeInsets.only(left: 32),
+              padding: const EdgeInsets.only(left: Spacing.large3),
               child: Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(Spacing.small3),
                 decoration: BoxDecoration(
-                  color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(8),
+                  color: Theme.of(context).colorSchemeExt.surfaceContainerLow!,
+                  borderRadius:
+                      CustomTheme.of(context).radius.asBorderRadius().medium,
                 ),
-                child: Text(
+                child: AppText.bodySmall(
                   primary.postRestartEscalation!,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: scheme.onSurfaceVariant,
-                  ),
+                  color: scheme.onSurfaceVariant,
                 ),
               ),
             ),
           ] else if (primary.hasAutoFix) ...[
-            const SizedBox(height: 12),
+            const AppGap.small3(),
             if ((visible.length > 1 || hidden.isNotEmpty) && primary.hasAutoFix)
               Padding(
-                padding: const EdgeInsets.only(left: 32, bottom: 4),
-                child: Text(
+                padding: const EdgeInsets.only(
+                    left: Spacing.large3, bottom: Spacing.small1),
+                child: AppText.bodySmall(
                   'Start here — fixing this may help the others too',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: scheme.onSurfaceVariant,
-                    fontStyle: FontStyle.italic,
-                  ),
+                  color: scheme.onSurfaceVariant,
                 ),
               ),
             Padding(
-              padding: const EdgeInsets.only(left: 32),
+              padding: const EdgeInsets.only(left: Spacing.large3),
               child: AppFilledButton(primary.actionLabel!,
                 onTap: () => onAction(primary.actionKey!),
                 icon: _actionIcon(primary.actionKey!)),
@@ -825,7 +811,7 @@ class _StatusCard extends StatelessWidget {
             const Divider(height: 24),
             _problemCards(context,
                 'Something else? Tell us what\'s happening and we\'ll help:'),
-            const SizedBox(height: 8),
+            const AppGap.small2(),
           ],
 
           _CheckResultsExpand(
@@ -847,20 +833,20 @@ class _StatusCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(heading, style: TextStyle(color: scheme.onSurfaceVariant)),
-        const SizedBox(height: 12),
+        AppText.bodyMedium(heading, color: scheme.onSurfaceVariant),
+        const AppGap.small3(),
         // Flow cards — 2x2 grid + 1 (PRD v0.7)
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: Spacing.small2,
+          runSpacing: Spacing.small2,
           children: [
             _FlowCard(
-              icon: Icons.public_off,
+              icon: LinksysIcons.publicOff,
               label: 'My internet\nisn\'t working',
               onTap: () => onNavigateToFlow?.call(0),
             ),
             _FlowCard(
-              icon: Icons.slow_motion_video,
+              icon: LinksysIcons.networkCheck,
               label: 'My internet\nis slow',
               onTap: () => onNavigateToFlow?.call(1),
             ),
@@ -870,12 +856,12 @@ class _StatusCard extends StatelessWidget {
               onTap: () => onNavigateToFlow?.call(2),
             ),
             _FlowCard(
-              icon: Icons.signal_wifi_bad,
+              icon: LinksysIcons.signalWifi0Bar,
               label: 'WiFi doesn\'t\nreach a room',
               onTap: () => onNavigateToFlow?.call(3),
             ),
             _FlowCard(
-              icon: Icons.sync_problem,
+              icon: LinksysIcons.signalWifiNone,
               label: 'My connection\nkeeps cutting out',
               onTap: () => onNavigateToFlow?.call(4),
             ),
@@ -892,17 +878,17 @@ class _StatusCard extends StatelessWidget {
         state.phase == PivotLoadPhase.loading;
     final label =
         isLoading ? 'Checking...' : _HeaderBar._connectionLabel(state);
-    final color =
-        isLoading ? Colors.grey : _HeaderBar._connectionColor(state);
+    final color = (isLoading
+            ? InstantTestTone.neutral
+            : _HeaderBar._connectionTone(state))
+        .color(context);
     return Row(children: [
       Container(
           width: 8,
           height: 8,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-      const SizedBox(width: 8),
-      Text(label,
-          style: TextStyle(
-              fontSize: 13, fontWeight: FontWeight.w600, color: color)),
+      const AppGap.small2(),
+      AppText.labelMedium(label, color: color),
     ]);
   }
 
@@ -911,36 +897,31 @@ class _StatusCard extends StatelessWidget {
     // Uses the design-system AppCard (matches dashboardMenu + other tabs).
     // borderColor still tints the frame by status when provided.
     return AppCard(
-      padding: const EdgeInsets.all(16),
-      borderColor: borderColor?.withValues(alpha: 0.4),
+      padding: const EdgeInsets.all(Spacing.medium),
+      borderColor: borderColor,
       child: child,
     );
   }
 
-  Color _priorityColor(BuildContext context, VerdictPriority priority) {
+  static InstantTestTone _priorityTone(VerdictPriority priority) {
     switch (priority) {
       case VerdictPriority.critical:
-        return Theme.of(context).colorScheme.error;
+        return InstantTestTone.problem;
       case VerdictPriority.warning:
-        return Colors.orange;
+        return InstantTestTone.warning;
       case VerdictPriority.info:
-        return Colors.blue;
+        return InstantTestTone.info;
       case VerdictPriority.allClear:
-        return Colors.green;
+        return InstantTestTone.good;
     }
   }
 
-  Widget _priorityIcon(VerdictPriority priority) {
-    switch (priority) {
-      case VerdictPriority.critical:
-        return const Icon(Icons.error, color: Colors.red, size: 22);
-      case VerdictPriority.warning:
-        return const Icon(Icons.warning_amber, color: Colors.orange, size: 22);
-      case VerdictPriority.info:
-        return const Icon(LinksysIcons.infoCircle, color: Colors.blue, size: 22);
-      case VerdictPriority.allClear:
-        return const Icon(LinksysIcons.checkCircle, color: Colors.green, size: 22);
-    }
+  Color _priorityColor(BuildContext context, VerdictPriority priority) =>
+      _priorityTone(priority).color(context);
+
+  Widget _priorityIcon(BuildContext context, VerdictPriority priority) {
+    final tone = _priorityTone(priority);
+    return Icon(tone.icon, color: tone.color(context), size: 24);
   }
 
   IconData _actionIcon(String actionKey) {
@@ -948,11 +929,11 @@ class _StatusCard extends StatelessWidget {
       case VerdictEngine.actionRestartRouter:
         return LinksysIcons.refresh;
       case VerdictEngine.actionFirmwareUpdate:
-        return Icons.system_update;
+        return LinksysIcons.cloudDownload;
       case VerdictEngine.actionBridgeModeHelp:
-        return Icons.device_hub;
+        return LinksysIcons.networkNode;
       default:
-        return Icons.play_arrow;
+        return LinksysIcons.chevronRight;
     }
   }
 }
@@ -972,15 +953,13 @@ class _FindingRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _icon(),
-          const SizedBox(width: 8),
+          _icon(context),
+          const AppGap.small2(),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(finding.headline,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w500, fontSize: 13)),
+                AppText.bodySmall(finding.headline),
                 if (finding.hasAutoFix)
                   AppTextButton(finding.actionLabel!,
                     onTap: () => onAction(finding.actionKey!)),
@@ -992,18 +971,9 @@ class _FindingRow extends StatelessWidget {
     );
   }
 
-  Widget _icon() {
-    switch (finding.priority) {
-      case VerdictPriority.critical:
-        return const Icon(Icons.error, color: Colors.red, size: 18);
-      case VerdictPriority.warning:
-        return const Icon(Icons.warning_amber, color: Colors.orange, size: 18);
-      case VerdictPriority.info:
-        return const Icon(LinksysIcons.infoCircle, color: Colors.blue, size: 18);
-      case VerdictPriority.allClear:
-        return const Icon(Icons.check_circle_outline,
-            color: Colors.green, size: 18);
-    }
+  Widget _icon(BuildContext context) {
+    final tone = _StatusCard._priorityTone(finding.priority);
+    return Icon(tone.icon, color: tone.color(context), size: 18);
   }
 }
 
@@ -1028,43 +998,39 @@ class _DeviceIssuesCard extends StatelessWidget {
         : 'Check for thick walls, metal objects, or appliances between these devices and your router.';
 
     return AppCard(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(Spacing.medium),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          const AppText.titleMedium(
             'Devices that may need help',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
           ),
-          Text('${issueDevices.length} device${issueDevices.length == 1 ? '' : 's'} may have a weak signal or a slow WiFi connection.'),
+          AppText.bodyMedium('${issueDevices.length} device${issueDevices.length == 1 ? '' : 's'} may have a weak signal or a slow WiFi connection.'),
           DetailsDisclosure(label: 'View affected devices', child: Column(
             crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const SizedBox(height: 12),
+          const AppGap.small3(),
           ...issueDevices.take(5).map((d) => _DeviceIssueRow(score: d)),
           if (issueDevices.length > 5)
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
+              padding: const EdgeInsets.only(bottom: Spacing.small2),
+              child: AppText.bodySmall(
                 '+${issueDevices.length - 5} more devices',
-                style:
-                    TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+                color: scheme.onSurfaceVariant,
               ),
             ),
-          const SizedBox(height: 8),
-          Text(advice,
-              style: TextStyle(
-                  fontSize: 13, color: scheme.onSurfaceVariant)),
+          const AppGap.small2(),
+          AppText.bodySmall(advice, color: scheme.onSurfaceVariant),
           ])),
           // Direct action into the fix flow instead of only telling the user
           // to go to My Devices (on-device feedback).
           if (onNavigateToFlow != null || onTroubleshoot != null) ...[
-            const SizedBox(height: 4),
+            const AppGap.small1(),
             Align(
               alignment: Alignment.centerLeft,
               child: AppTextButton('Troubleshoot these devices',
                 onTap: onTroubleshoot ?? () =>
                     onNavigateToFlow!.call(2), // → Device connectivity flow
-                icon: Icons.build_outlined,
+                icon: LinksysIcons.resetWrench,
               ),
             ),
           ],
@@ -1107,8 +1073,10 @@ class _DeviceIssueRow extends StatelessWidget {
     }
     final detail = parts.join('  ·  ');
 
-    final issueColor =
-        weakSignal && slowRate ? Colors.red : Colors.orange.shade700;
+    final issueColor = (weakSignal && slowRate
+            ? InstantTestTone.problem
+            : InstantTestTone.warning)
+        .color(context);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -1124,32 +1092,27 @@ class _DeviceIssueRow extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
             ),
-            const SizedBox(width: 10),
+            const AppGap.small2(),
             Expanded(
-              child: Text(
+              child: AppText.bodyMedium(
                 client.displayNameWithOui,
-                style: const TextStyle(fontWeight: FontWeight.w500),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(width: 8),
-            Text(
+            const AppGap.small2(),
+            AppText.bodySmall(
               client.band,
-              style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+              color: scheme.onSurfaceVariant,
             ),
           ]),
           if (detail.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(left: 18, top: 2),
-              child: Text(
+              padding: const EdgeInsets.only(left: Spacing.medium, top: 2),
+              child: AppText.bodySmall(
                 detail,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: weakSignal || slowRate
-                      ? issueColor
-                      : scheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
-                ),
+                color: weakSignal || slowRate
+                    ? issueColor
+                    : scheme.onSurfaceVariant,
               ),
             ),
         ],
@@ -1170,22 +1133,21 @@ class _MeshCard extends StatelessWidget {
     final deviceCount = nodes.length;
 
     return AppCard(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(Spacing.medium),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            const Icon(Icons.hub_outlined, size: 18),
-            const SizedBox(width: 8),
-            Text(
+            const Icon(LinksysIcons.networkNode, size: 18),
+            const AppGap.small2(),
+            AppText.titleMedium(
               'Mesh Network — $deviceCount device${deviceCount == 1 ? '' : 's'}',
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
             ),
           ]),
           if (nodes.any((n) => n.backhaulHealth == BackhaulHealth.weak || n.backhaulHealth == BackhaulHealth.critical))
-            const Text('A WiFi node has a weak connection.'),
+            const AppText.bodyMedium('A WiFi node has a weak connection.'),
           DetailsDisclosure(label: 'View WiFi node details', child: Column(children: [
-          const SizedBox(height: 12),
+          const AppGap.small3(),
           ...nodes.map((node) => _MeshNodeRow(
                 node: node,
                 clientCount: state.clientCountForNode(node.deviceId),
@@ -1204,31 +1166,34 @@ class _MeshNodeRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final good = InstantTestTone.good.color(context);
+    final warning = InstantTestTone.warning.color(context);
+    final problem = InstantTestTone.problem.color(context);
 
     // ── Role icon + color ──────────────────────────────────────────────────
     final IconData roleIcon;
     final Color roleColor;
     if (node.isController) {
-      roleIcon = Icons.router;
+      roleIcon = LinksysIcons.router;
       roleColor = scheme.primary;
     } else if (node.hasWiredBackhaul) {
-      roleIcon = Icons.cable;
-      roleColor = Colors.green;
+      roleIcon = LinksysIcons.ethernet;
+      roleColor = good;
     } else {
       switch (node.backhaulHealth) {
         case BackhaulHealth.strong:
           roleIcon = LinksysIcons.wifi;
-          roleColor = Colors.green;
+          roleColor = good;
         case BackhaulHealth.moderate:
           roleIcon = LinksysIcons.wifi;
-          roleColor = Colors.orange;
+          roleColor = warning;
         case BackhaulHealth.weak:
         case BackhaulHealth.critical:
-          roleIcon = Icons.warning_amber;
-          roleColor = Colors.red;
+          roleIcon = LinksysIcons.error;
+          roleColor = problem;
         case BackhaulHealth.unknown:
           roleIcon = LinksysIcons.wifi;
-          roleColor = Colors.green;
+          roleColor = good;
       }
     }
 
@@ -1251,39 +1216,39 @@ class _MeshNodeRow extends StatelessWidget {
         case BackhaulHealth.strong:
           healthLabel = 'Good connection';
           healthDetail = dataStr.isNotEmpty ? dataStr : null;
-          healthColor = Colors.green.shade700;
+          healthColor = good;
         case BackhaulHealth.moderate:
           healthLabel = 'Moderate';
           healthDetail = '${dataStr.isNotEmpty ? '$dataStr — ' : ''}'
               'may cause occasional slowness under load';
-          healthColor = Colors.orange.shade700;
+          healthColor = warning;
         case BackhaulHealth.weak:
           healthLabel = 'Weak backhaul';
           healthDetail = '${dataStr.isNotEmpty ? '$dataStr — ' : ''}'
               'likely causing slowness, jitter, or drops. '
               'Move ${node.name} closer to the main router.';
-          healthColor = Colors.red.shade700;
+          healthColor = problem;
         case BackhaulHealth.critical:
           healthLabel = 'Critical backhaul';
           healthDetail = '${dataStr.isNotEmpty ? '$dataStr — ' : ''}'
               'backhaul too poor to be reliable. '
               'Move ${node.name} much closer to the main router, '
               'or connect it by Ethernet cable.';
-          healthColor = Colors.red.shade800;
+          healthColor = problem;
         case BackhaulHealth.unknown:
           healthLabel = node.hasWiredBackhaul ? 'Wired — optimal' : null;
           healthDetail = dataStr.isNotEmpty ? dataStr : null;
-          healthColor = Colors.green.shade700;
+          healthColor = good;
       }
     }
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: Spacing.small3),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(roleIcon, size: 18, color: roleColor),
-          const SizedBox(width: 10),
+          const AppGap.small2(),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1298,53 +1263,41 @@ class _MeshNodeRow extends StatelessWidget {
                       color: node.isController
                           ? scheme.primaryContainer
                           : scheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius:
+                          CustomTheme.of(context).radius.asBorderRadius().small,
                     ),
-                    child: Text(
+                    child: AppText.labelSmall(
                       node.isController ? 'Parent' : 'Child',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: node.isController
-                            ? scheme.onPrimaryContainer
-                            : scheme.onSurfaceVariant,
-                      ),
+                      color: node.isController
+                          ? scheme.onPrimaryContainer
+                          : scheme.onSurfaceVariant,
                     ),
                   ),
                   Expanded(
-                    child: Text(
+                    child: AppText.bodySmall(
                       node.name,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w500, fontSize: 13),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   if (clientCount > 0)
-                    Text(
+                    AppText.bodySmall(
                       '$clientCount device${clientCount == 1 ? '' : 's'}',
-                      style: TextStyle(
-                          fontSize: 11, color: scheme.onSurfaceVariant),
+                      color: scheme.onSurfaceVariant,
                     ),
                 ]),
 
                 // Model + backhaul health
-                const SizedBox(height: 3),
+                const AppGap.small1(),
                 Wrap(
-                  spacing: 4,
+                  spacing: Spacing.small1,
                   children: [
                     if (node.model != null)
-                      Text(node.model!,
-                          style: TextStyle(
-                              fontSize: 11, color: scheme.onSurfaceVariant)),
+                      AppText.bodySmall(node.model!,
+                          color: scheme.onSurfaceVariant),
                     if (node.model != null && healthLabel != null)
-                      Text('·',
-                          style: TextStyle(color: scheme.outlineVariant, fontSize: 11)),
+                      AppText.bodySmall('·', color: scheme.outlineVariant),
                     if (healthLabel != null)
-                      Text(healthLabel,
-                          style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: healthColor)),
+                      AppText.bodySmall(healthLabel, color: healthColor),
                   ],
                 ),
 
@@ -1352,22 +1305,18 @@ class _MeshNodeRow extends StatelessWidget {
                 if (healthDetail != null &&
                     node.backhaulHealth != BackhaulHealth.strong &&
                     node.backhaulHealth != BackhaulHealth.unknown) ...[
-                  const SizedBox(height: 3),
-                  Text(
+                  const AppGap.small1(),
+                  AppText.bodySmall(
                     healthDetail,
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: healthColor,
-                        height: 1.3),
+                    color: healthColor,
                   ),
                 ] else if (healthDetail != null &&
                     (node.backhaulHealth == BackhaulHealth.strong ||
                         node.backhaulHealth == BackhaulHealth.unknown)) ...[
-                  const SizedBox(height: 3),
-                  Text(
+                  const AppGap.small1(),
+                  AppText.bodySmall(
                     healthDetail,
-                    style: TextStyle(
-                        fontSize: 11, color: scheme.onSurfaceVariant),
+                    color: scheme.onSurfaceVariant,
                   ),
                 ],
               ],
@@ -1415,14 +1364,13 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final rows = _summaryRows(widget.state);
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(Spacing.small3),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8),
+        color: Theme.of(context).colorSchemeExt.surfaceContainerLow!,
+        borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
       ),
       child: Column(
         children: rows.asMap().entries.map((entry) {
@@ -1521,16 +1469,16 @@ List<_SummaryRow> _summaryRows(InstantVerifyPivotState state) {
             ? 'Website access was not checked. Run the checks again or choose Internet isn\'t working for help.'
             : state.dnsCheck?.resolved == true
             ? 'We sent a request to look up a website address (like google.com). '
-              'Your router found it \u2014 websites should load normally.'
+              'Your router found it — websites should load normally.'
             : 'We tried to look up a website address and your router couldn\'t find it. '
               'This means websites may not load even though your router shows connected.',
       ),
       _SummaryRow(
         label: 'Speed check',
         // Flag high latency (>100ms) as a warning so the row visually matches
-        // the "High lag detected" finding \u2014 otherwise a green pass row makes
+        // the "High lag detected" finding — otherwise a green pass row makes
         // the warning seem to come from nowhere.
-        // Failed (ran but didn't complete) \u2192 warning, not a neutral "skipped".
+        // Failed (ran but didn't complete) → warning, not a neutral "skipped".
         state: state.speedTestFailed
             ? _CheckDisplayState.warning
             : state.speedTest == null
@@ -1539,13 +1487,13 @@ List<_SummaryRow> _summaryRows(InstantVerifyPivotState state) {
                     ? _CheckDisplayState.warning
                     : _CheckDisplayState.pass),
         detail: state.speedTestFailed
-            ? "Didn't complete \u2014 try again"
+            ? "Didn't complete — try again"
             : state.speedTest == null
                 ? 'Not completed'
-                : '\u2193 ${state.speedTest!.downloadMbps.toStringAsFixed(0)} Mbps  '
-                    '\u2191 ${state.speedTest!.uploadMbps.toStringAsFixed(0)} Mbps  '
+                : '↓ ${state.speedTest!.downloadMbps.toStringAsFixed(0)} Mbps  '
+                    '↑ ${state.speedTest!.uploadMbps.toStringAsFixed(0)} Mbps  '
                     '${state.speedTest!.latencyMs} ms delay'
-                    '${state.speedTest!.latencyMs > 100 ? ' \u2014 high lag' : ''}',
+                    '${state.speedTest!.latencyMs > 100 ? ' — high lag' : ''}',
         expandedDetail: 'The speed test did not complete. Try running again.',
         expandedWidget: state.speedTest != null
             ? _SpeedGauge(
@@ -1558,7 +1506,7 @@ List<_SummaryRow> _summaryRows(InstantVerifyPivotState state) {
       _SummaryRow(
         label: 'Devices checked',
         shortLabel: 'Devices',
-        // Flag amber when any device has a weak signal \u2014 matches the
+        // Flag amber when any device has a weak signal — matches the
         // "weak WiFi" finding so the row reflects the top-level warning.
         state: state.clients.isEmpty
             ? _CheckDisplayState.skipped
@@ -1567,7 +1515,7 @@ List<_SummaryRow> _summaryRows(InstantVerifyPivotState state) {
                 : missingDeviceMeasurements ? _CheckDisplayState.skipped : _CheckDisplayState.pass),
         detail: state.clients.isEmpty
             ? 'No devices found'
-            : '${state.clients.length} device${state.clients.length == 1 ? '' : 's'} \u2014 '
+            : '${state.clients.length} device${state.clients.length == 1 ? '' : 's'} — '
                 '${state.issueDevices.isNotEmpty ? '${state.issueDevices.length} may need help' : missingDeviceMeasurements ? 'Some measurements unavailable' : 'No issues detected'}',
         expandedDetail: state.clients.isEmpty
             ? 'No connected devices were detected.'
@@ -1625,25 +1573,26 @@ class _SummaryRowWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final radius = CustomTheme.of(context).radius.asBorderRadius();
 
     IconData iconData;
     Color iconColor;
     switch (row.state) {
       case _CheckDisplayState.pass:
-        iconData = LinksysIcons.checkCircle;
-        iconColor = Colors.green;
+        iconData = InstantTestTone.good.icon;
+        iconColor = InstantTestTone.good.color(context);
       case _CheckDisplayState.fail:
-        iconData = Icons.cancel;
-        iconColor = Colors.red;
+        iconData = LinksysIcons.close;
+        iconColor = InstantTestTone.problem.color(context);
       case _CheckDisplayState.warning:
-        iconData = Icons.warning_amber;
-        iconColor = Colors.orange;
+        iconData = InstantTestTone.warning.icon;
+        iconColor = InstantTestTone.warning.color(context);
       case _CheckDisplayState.skipped:
-        iconData = Icons.remove_circle_outline;
+        iconData = LinksysIcons.remove;
         iconColor = scheme.outlineVariant;
       case _CheckDisplayState.available:
-        iconData = Icons.arrow_circle_up;
-        iconColor = Colors.blue;
+        iconData = LinksysIcons.cloudDownload;
+        iconColor = InstantTestTone.info.color(context);
     }
 
     return Column(
@@ -1651,32 +1600,28 @@ class _SummaryRowWidget extends StatelessWidget {
       children: [
         InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: radius.small,
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 8, top: 2),
+            padding: const EdgeInsets.only(bottom: Spacing.small2, top: 2),
             child: Row(children: [
               Icon(iconData, size: 16, color: iconColor),
-              const SizedBox(width: 8),
+              const AppGap.small2(),
               Expanded(
-                child: Text(row.label,
-                    style: const TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w500)),
+                child: AppText.bodySmall(row.label),
               ),
               if (row.detail.isNotEmpty)
                 Flexible(
                   flex: 2,
-                  child: Text(
+                  child: AppText.bodySmall(
                     row.detail,
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: row.state == _CheckDisplayState.fail
-                            ? Colors.red.shade700
-                            : scheme.onSurfaceVariant),
+                    color: row.state == _CheckDisplayState.fail
+                        ? InstantTestTone.problem.color(context)
+                        : scheme.onSurfaceVariant,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              const SizedBox(width: 4),
+              const AppGap.small1(),
               Icon(
                 isExpanded ? LinksysIcons.arrowDropUp : LinksysIcons.arrowDropDown,
                 size: 14,
@@ -1688,23 +1633,20 @@ class _SummaryRowWidget extends StatelessWidget {
         // Progressive disclosure (PRD v0.7 S-5)
         if (isExpanded)
           Padding(
-            padding: const EdgeInsets.only(left: 24, bottom: 12, right: 8),
+            padding: const EdgeInsets.only(
+                left: Spacing.large2, bottom: Spacing.small3, right: Spacing.small2),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: scheme.surface,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+                borderRadius: radius.medium,
+                border: Border.all(color: scheme.outlineVariant),
               ),
               child: row.expandedWidget ??
-                  Text(
+                  AppText.bodySmall(
                     row.expandedDetail,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: scheme.onSurfaceVariant,
-                      height: 1.4,
-                    ),
+                    color: scheme.onSurfaceVariant,
                   ),
             ),
           ),
@@ -1829,31 +1771,28 @@ class _ChecklistProgress extends StatelessWidget {
         // animations (QA feedback).
         Center(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: Spacing.small2),
             child: Column(
               children: [
                 Semantics(
                   label: '$finished of ${statuses.length} checks finished',
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius:
+                        CustomTheme.of(context).radius.asBorderRadius().small,
                     child: LinearProgressIndicator(
                         value: finished / statuses.length,
                         minHeight: 8,
                         color: Theme.of(context).colorScheme.primary),
                   ),
                 ),
-                const SizedBox(height: 14),
-                Text(
+                const AppGap.small3(),
+                const AppText.titleMedium(
                   'Checking your connection',
-                  style:
-                      const TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
                 ),
-                const SizedBox(height: 2),
-                Text(
+                const AppGap.small1(),
+                AppText.bodySmall(
                   'Running your network checks…',
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ],
             ),
@@ -1907,11 +1846,11 @@ class _CheckRow extends StatelessWidget {
 
     switch (status) {
       case _CheckStatus.pending:
-        icon = Icon(Icons.radio_button_unchecked,
+        icon = Icon(LinksysIcons.circle,
             size: 18, color: scheme.outlineVariant);
         labelColor = scheme.onSurfaceVariant;
       case _CheckStatus.skipped:
-        icon = Icon(Icons.remove_circle_outline, size: 18, color: scheme.onSurfaceVariant);
+        icon = Icon(LinksysIcons.remove, size: 18, color: scheme.onSurfaceVariant);
       case _CheckStatus.running:
         icon = SizedBox(
           width: 18,
@@ -1920,10 +1859,12 @@ class _CheckRow extends StatelessWidget {
               strokeWidth: 2, color: scheme.primary),
         );
       case _CheckStatus.pass:
-        icon = const Icon(LinksysIcons.checkCircle, size: 18, color: Colors.green);
+        icon = Icon(InstantTestTone.good.icon,
+            size: 18, color: InstantTestTone.good.color(context));
       case _CheckStatus.fail:
-        icon = const Icon(Icons.cancel, size: 18, color: Colors.red);
-        labelColor = Colors.red;
+        final problem = InstantTestTone.problem.color(context);
+        icon = Icon(LinksysIcons.close, size: 18, color: problem);
+        labelColor = problem;
     }
 
     final statusLabel = switch (status) {
@@ -1936,14 +1877,14 @@ class _CheckRow extends StatelessWidget {
     return Semantics(
       label: '$label: $statusLabel',
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.only(bottom: Spacing.small3),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           icon,
-          const SizedBox(width: 10),
+          const AppGap.small2(),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(label, style: TextStyle(fontWeight: FontWeight.w500, color: labelColor)),
-            Text(detail.isEmpty ? statusLabel : detail,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+            AppText.bodyMedium(label, color: labelColor),
+            AppText.bodySmall(detail.isEmpty ? statusLabel : detail,
+                color: scheme.onSurfaceVariant),
           ])),
         ]),
       ),
@@ -1960,6 +1901,7 @@ class _LightGuideLink extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    const problem = InstantTestTone.problem;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1968,39 +1910,32 @@ class _LightGuideLink extends StatelessWidget {
         if (showInlineCallout)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(Spacing.small3),
+            margin: const EdgeInsets.only(bottom: Spacing.small2),
             decoration: BoxDecoration(
-              color: Colors.red.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+              color: problem.container(context),
+              borderRadius:
+                  CustomTheme.of(context).radius.asBorderRadius().medium,
+              border: Border.all(color: problem.color(context)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                AppText.labelMedium(
                   'No internet connection detected.',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: Colors.red,
-                  ),
+                  color: problem.onContainer(context),
                 ),
-                const SizedBox(height: 6),
-                Text(
+                const AppGap.small2(),
+                AppText.bodySmall(
                   "Check your router's light. What color is it?",
-                  style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+                  color: problem.onContainer(context),
                 ),
-                const SizedBox(height: 4),
+                const AppGap.small1(),
                 GestureDetector(
                   onTap: () => _showLightGuide(context),
-                  child: Text(
+                  child: AppText.bodySmall(
                     'What does my light mean?',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: scheme.primary,
-                      decoration: TextDecoration.underline,
-                    ),
+                    color: scheme.primary,
                   ),
                 ),
               ],
@@ -2010,7 +1945,7 @@ class _LightGuideLink extends StatelessWidget {
         Align(
           alignment: Alignment.centerRight,
           child: AppTextButton('What does my router light mean?',
-            icon: Icons.lightbulb_outline,
+            icon: LinksysIcons.lightBulb,
             onTap: () => _showLightGuide(context),
           ),
         ),
@@ -2026,12 +1961,13 @@ class _LightGuideLink extends StatelessWidget {
       context: context,
       builder: (ctx) => Dialog(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: CustomTheme.of(ctx).radius.asBorderRadius().large,
         ),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 12, 20),
+            padding: const EdgeInsets.fromLTRB(
+                Spacing.large2, Spacing.medium, Spacing.small3, Spacing.large1),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2039,49 +1975,46 @@ class _LightGuideLink extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: Text(
+                    child: AppText.titleMedium(
                       'What does my router light mean?',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
-                        color: scheme.onSurface,
-                      ),
+                      color: scheme.onSurface,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close),
+                    icon: const Icon(LinksysIcons.close),
                     visualDensity: VisualDensity.compact,
                     tooltip: 'Close',
                     onPressed: () => Navigator.of(ctx).pop(),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-            // LED patterns from Pinnacle LED spec r20260109a
-            _lightRow(Colors.white, 'Solid white',
-                'Everything is fine \u2014 connected to internet',
-                animated: false),
-            _lightRow(Colors.white, 'Pulsing white',
-                'Starting up or WPS pairing in progress \u2014 wait about a minute',
+              const AppGap.small2(),
+            // LED patterns from Pinnacle LED spec r20260109a. LED colors are
+            // drawn with the closest theme token; white and off are outlined.
+            _lightRow(ctx, scheme.surface, 'Solid white',
+                'Everything is fine — connected to internet',
+                animated: false, outlined: true),
+            _lightRow(ctx, scheme.surface, 'Pulsing white',
+                'Starting up or WPS pairing in progress — wait about a minute',
+                animated: true, animationType: 'pulse', outlined: true),
+            _lightRow(ctx, scheme.surface, 'Flashing white',
+                'Factory reset in progress — do not unplug',
+                animated: true, animationType: 'flash', outlined: true),
+            _lightRow(ctx, InstantTestTone.info.color(ctx), 'Pulsing blue',
+                'Booting up — wait about a minute',
                 animated: true, animationType: 'pulse'),
-            _lightRow(Colors.white, 'Flashing white',
-                'Factory reset in progress \u2014 do not unplug',
-                animated: true, animationType: 'flash'),
-            _lightRow(Colors.blue, 'Pulsing blue',
-                'Booting up \u2014 wait about a minute',
-                animated: true, animationType: 'pulse'),
-            _lightRow(Colors.red, 'Solid red',
-                'No internet \u2014 check your cables',
+            _lightRow(ctx, InstantTestTone.problem.color(ctx), 'Solid red',
+                'No internet — check your cables',
                 animated: false),
-            _lightRow(Colors.yellow.shade700, 'Solid yellow',
-                'Needs attention \u2014 a check found a problem',
+            _lightRow(ctx, InstantTestTone.warning.color(ctx), 'Solid yellow',
+                'Needs attention — a check found a problem',
                 animated: false),
-            _lightRow(Colors.green, 'Solid green',
-                'Instant-Test passed \u2014 everything looks good',
+            _lightRow(ctx, InstantTestTone.good.color(ctx), 'Solid green',
+                'Instant-Test passed — everything looks good',
                 animated: false),
-            _lightRow(Colors.black, 'Off',
+            _lightRow(ctx, Colors.transparent, 'Off',
                 'No power, or Night Mode is enabled',
-                animated: false),
+                animated: false, outlined: true),
               ],
             ),
           ),
@@ -2090,12 +2023,17 @@ class _LightGuideLink extends StatelessWidget {
     );
   }
 
-  static Widget _lightRow(Color color, String label, String meaning, {
+  static Widget _lightRow(
+    BuildContext context,
+    Color color,
+    String label,
+    String meaning, {
     bool animated = false,
     String animationType = 'pulse', // 'pulse' or 'flash'
+    bool outlined = false,
   }) {
-    final isBlack = color == Colors.black;
-    final isWhite = color == Colors.white;
+    final scheme = Theme.of(context).colorScheme;
+    final ext = Theme.of(context).colorSchemeExt;
 
     Widget dot = Container(
       width: 16,
@@ -2104,8 +2042,8 @@ class _LightGuideLink extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
-        border: (isWhite || isBlack)
-            ? Border.all(color: Colors.grey.shade400, width: 1)
+        border: outlined
+            ? Border.all(color: scheme.outline, width: 1)
             : null,
       ),
     );
@@ -2123,9 +2061,11 @@ class _LightGuideLink extends StatelessWidget {
               width: 7,
               height: 7,
               decoration: BoxDecoration(
-                color: animationType == 'flash' ? Colors.white : Colors.white54,
+                color: animationType == 'flash'
+                    ? scheme.surface
+                    : ext.surfaceContainerHigh!,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.grey.shade400, width: 0.5),
+                border: Border.all(color: scheme.outline, width: 0.5),
               ),
             ),
           ),
@@ -2139,34 +2079,30 @@ class _LightGuideLink extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           dot,
-          const SizedBox(width: 12),
+          const AppGap.small3(),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(children: [
-                  Text(label,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 13)),
+                  AppText.labelMedium(label),
                   if (animated) ...[
-                    const SizedBox(width: 6),
+                    const AppGap.small2(),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(4),
+                        color: ext.surfaceContainerHigh!,
+                        borderRadius:
+                            CustomTheme.of(context).radius.asBorderRadius().small,
                       ),
-                      child: Text(
+                      child: AppText.labelSmall(
                         animationType == 'flash' ? 'flashing' : 'pulsing',
-                        style: TextStyle(
-                            fontSize: 10, color: Colors.grey.shade600),
+                        color: scheme.onSurfaceVariant,
                       ),
                     ),
                   ],
                 ]),
-                Text(meaning,
-                    style: TextStyle(
-                        fontSize: 12, color: Colors.grey.shade600)),
+                AppText.bodySmall(meaning, color: scheme.onSurfaceVariant),
               ],
             ),
           ),
@@ -2205,16 +2141,17 @@ class _RestartCountdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    const info = InstantTestTone.info;
     final minutes = secondsRemaining ~/ 60;
     final seconds = secondsRemaining % 60;
     final timeStr = '$minutes:${seconds.toString().padLeft(2, '0')}';
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(Spacing.medium),
       decoration: BoxDecoration(
-        color: scheme.primaryContainer.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: scheme.primary.withValues(alpha: 0.3)),
+        color: info.container(context),
+        borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
+        border: Border.all(color: info.color(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2228,26 +2165,20 @@ class _RestartCountdown extends StatelessWidget {
                 color: scheme.primary,
               ),
             ),
-            const SizedBox(width: 10),
-            Text(
-              'Restarting your router\u2026  $timeStr remaining',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: scheme.onSurface,
-              ),
+            const AppGap.small2(),
+            AppText.labelLarge(
+              'Restarting your router…  $timeStr remaining',
+              color: info.onContainer(context),
             ),
           ]),
-          const SizedBox(height: 12),
-          Text(
-            "Don't worry \u2014 this is normal. Your devices will "
+          const AppGap.small3(),
+          AppText.bodySmall(
+            "Don't worry — this is normal. Your devices will "
             'disconnect for a couple minutes, then reconnect '
             "on their own. You don't need to do anything.\n\n"
             'This page will reload automatically when your '
             'router is back online.',
-            style: TextStyle(
-              fontSize: 13,
-              color: scheme.onSurfaceVariant,
-            ),
+            color: info.onContainer(context),
           ),
         ],
       ),
@@ -2270,10 +2201,10 @@ class _SpeedGauge extends StatelessWidget {
 
   static const double _maxMbps = 1000;
 
-  Color _latencyColor(int ms) {
-    if (ms <= 50) return Colors.green;
-    if (ms <= 100) return Colors.orange;
-    return Colors.red;
+  InstantTestTone _latencyTone(int ms) {
+    if (ms <= 50) return InstantTestTone.good;
+    if (ms <= 100) return InstantTestTone.warning;
+    return InstantTestTone.problem;
   }
 
   String _latencyLabel(int ms) {
@@ -2285,7 +2216,7 @@ class _SpeedGauge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final latColor = _latencyColor(latencyMs);
+    final latColor = _latencyTone(latencyMs).color(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2294,37 +2225,36 @@ class _SpeedGauge extends StatelessWidget {
           label: 'Download',
           value: '${downloadMbps.toStringAsFixed(0)} Mbps',
           fraction: (downloadMbps / _maxMbps).clamp(0.0, 1.0),
-          color: Colors.blue,
+          color: InstantTestTone.info.color(context),
         ),
-        const SizedBox(height: 8),
+        const AppGap.small2(),
         _GaugeRow(
           label: 'Upload',
           value: '${uploadMbps.toStringAsFixed(0)} Mbps',
           fraction: (uploadMbps / _maxMbps).clamp(0.0, 1.0),
-          color: Colors.indigo,
+          color: scheme.secondary,
         ),
-        const SizedBox(height: 8),
+        const AppGap.small2(),
         Row(children: [
           SizedBox(
             width: 72,
-            child: Text('Latency',
-                style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
+            child: AppText.bodySmall('Latency',
+                color: scheme.onSurfaceVariant),
           ),
           Container(
             width: 8,
             height: 8,
             decoration: BoxDecoration(color: latColor, shape: BoxShape.circle),
           ),
-          const SizedBox(width: 6),
-          Text('${latencyMs} ms — ${_latencyLabel(latencyMs)}',
-              style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
+          const AppGap.small2(),
+          AppText.bodySmall('${latencyMs} ms — ${_latencyLabel(latencyMs)}',
+              color: scheme.onSurfaceVariant),
         ]),
-        const SizedBox(height: 10),
-        Text(
+        const AppGap.small2(),
+        AppText.bodySmall(
           'Speed measured from this device. '
           'Results can vary by time of day and WiFi distance.',
-          style: TextStyle(
-              fontSize: 11, color: scheme.onSurfaceVariant, height: 1.4),
+          color: scheme.onSurfaceVariant,
         ),
       ],
     );
@@ -2350,26 +2280,22 @@ class _GaugeRow extends StatelessWidget {
     return Row(children: [
       SizedBox(
         width: 72,
-        child: Text(label,
-            style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
+        child: AppText.bodySmall(label, color: scheme.onSurfaceVariant),
       ),
       Expanded(
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(3),
+          borderRadius: CustomTheme.of(context).radius.asBorderRadius().small,
           child: LinearProgressIndicator(
             value: fraction,
             minHeight: 6,
             color: color,
-            backgroundColor: scheme.outlineVariant.withValues(alpha: 0.3),
+            backgroundColor:
+                Theme.of(context).colorSchemeExt.surfaceContainerHighest!,
           ),
         ),
       ),
-      const SizedBox(width: 8),
-      Text(value,
-          style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: scheme.onSurfaceVariant)),
+      const AppGap.small2(),
+      AppText.bodySmall(value, color: scheme.onSurfaceVariant),
     ]);
   }
 }
