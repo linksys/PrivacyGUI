@@ -1,4 +1,3 @@
-import 'package:privacy_gui/constants/build_config.dart';
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -11,12 +10,15 @@ import 'package:privacy_gui/page/unified_diagnostics/services/unified_diagnostic
 class Client extends Mock implements UspClient {}
 
 void main() {
-  // Run this integration suite with --dart-define=auto-ipoe=y.
-  group('Auto-IPoE enabled build', _enabledBuildTests,
-      skip: !BuildConfig.autoIPoEEnabled);
-}
+  test('unsupported devices skip the connection read', () async {
+    final client = Client();
 
-void _enabledBuildTests() {
+    expect(
+      await ActiveIpv4Connection.fetch(client, autoIPoESupported: false),
+      isNull,
+    );
+    verifyZeroInteractions(client);
+  });
   for (final kind in ['MAP-E', 'DS-Lite', 'IPIP']) {
     test(
         '$kind uses actual route, without requiring legacy WAN IPv4 or gateway',
@@ -35,16 +37,46 @@ void _enabledBuildTests() {
                   'pointToPoint': true
                 })
               });
-      final wan = await UspWanDataService(client).fetch();
+      final wan =
+          await UspWanDataService(client, autoIPoESupported: true).fetch();
       expect(wan.isUp, true);
       expect(wan.addressingType, kind);
       expect(wan.mtu, 1460);
       expect(wan.gateway, '');
-      final diag = UnifiedDiagnosticsService(client);
+      final diag = UnifiedDiagnosticsService(client, autoIPoESupported: true);
       expect((await diag.checkWanStatus()).hasIp, true);
       expect(await diag.pingGateway(), isNull);
     });
   }
+  test('a down tunnel stays down without a legacy WAN fallback', () async {
+    final client = Client();
+    when(() => client.get(any(), priority: any(named: 'priority')))
+        .thenAnswer((_) async => {
+              ActiveIpv4Connection.path: jsonEncode({
+                'apiVersion': 1,
+                'available': true,
+                'state': 'Up',
+                'activeIPv4Route': false,
+                'tunnelType': 'MAP-E',
+                'address': '192.0.2.7',
+              }),
+            });
+
+    final wan =
+        await UspWanDataService(client, autoIPoESupported: true).fetch();
+    final diagnostics =
+        UnifiedDiagnosticsService(client, autoIPoESupported: true);
+
+    expect(wan.isUp, isFalse);
+    expect(wan.addressingType, 'MAP-E');
+    expect((await diagnostics.checkWanStatus()).isUp, isFalse);
+    await expectLater(
+        diagnostics.pingGateway(), throwsA(isA<ConnectivityError>()));
+    final requested =
+        verify(() => client.get(captureAny(), priority: any(named: 'priority')))
+            .captured;
+    expect(requested, everyElement([ActiveIpv4Connection.path]));
+  });
   test('stale tunnel address without route is down', () {
     final c = ActiveIpv4Connection({
       'available': true,
@@ -58,15 +90,16 @@ void _enabledBuildTests() {
     final c = Client();
     when(() => c.get(any(), priority: any(named: 'priority')))
         .thenAnswer((_) async => {});
-    expect(await ActiveIpv4Connection.fetch(c), isNull);
+    expect(
+        await ActiveIpv4Connection.fetch(c, autoIPoESupported: true), isNull);
   });
   test('authentication errors must not be turned into a legacy fallback',
       () async {
     final c = Client();
     when(() => c.get(any(), priority: any(named: 'priority')))
         .thenThrow(const NotAuthenticatedError());
-    await expectLater(
-        ActiveIpv4Connection.fetch(c), throwsA(isA<NotAuthenticatedError>()));
+    await expectLater(ActiveIpv4Connection.fetch(c, autoIPoESupported: true),
+        throwsA(isA<NotAuthenticatedError>()));
   });
   test('ordinary DHCP uses real next hop and remains DHCP', () {
     final c = ActiveIpv4Connection({

@@ -209,14 +209,6 @@ final uspDashboardRoute = ShellRoute(
       path: RoutePath.uspAdvancedSettings,
       builder: (context, state) => const UspAdvancedSettingsView(),
       routes: [
-        if (BuildConfig.autoIPoEEnabled)
-          LinksysRoute(
-            name: RouteNamed.uspAutoIPoE,
-            path: RoutePath.uspAutoIPoE,
-            config: const LinksysRouteConfig(noNaviRail: true),
-            builder: (context, state) => const AutoIPoEView(),
-            preservableProvider: autoIPoEPageProvider.notifier,
-          ),
         LinksysRoute(
           name: RouteNamed.uspInternetSettings,
           path: RoutePath.uspInternetSettings,

@@ -36,10 +36,6 @@ enum ForceCommand {
 }
 
 class BuildConfig {
-  /// Auto-IPoE is opt-in; firmware builds map CONFIG_PACKAGE_auto-ipoe=y here.
-  static const bool autoIPoEEnabled =
-      String.fromEnvironment('auto-ipoe', defaultValue: 'n') == 'y';
-
   static const String cloudEnv =
       String.fromEnvironment('cloud_env', defaultValue: 'qa');
   static const bool isEnableEnvPicker =

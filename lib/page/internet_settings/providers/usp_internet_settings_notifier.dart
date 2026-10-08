@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:privacy_gui/framework/preservable.dart';
-import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
-import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_snapshot.dart';
-import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_data_provider.dart';
-import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_page_provider.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_snapshot.dart';
+import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_data_provider.dart';
+import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_page_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';

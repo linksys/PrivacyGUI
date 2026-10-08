@@ -1,3 +1,5 @@
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/usp/services/active_ipv4_connection.dart';
 import 'package:privacy_gui/page/internet_settings/services/usp_wan_data_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,7 +29,14 @@ final unifiedDiagnosticsServiceProvider =
     Provider<UnifiedDiagnosticsService?>((ref) {
   final usp = ref.watch(uspClientProvider);
   if (usp == null) return null;
-  return UnifiedDiagnosticsService(usp);
+  var active = true;
+  ref.onDispose(() => active = false);
+  return UnifiedDiagnosticsService(
+    usp,
+    isAvailable: () => active,
+    autoIPoESupported:
+        ref.watch(deviceCapabilitiesProvider).has(DeviceCapability.autoIPoE),
+  );
 });
 
 /// Service encapsulating all USP operations for network diagnostics.
@@ -39,6 +48,8 @@ final unifiedDiagnosticsServiceProvider =
 ///   notifier — call [attachScope] before invoking any Operate-based method.
 class UnifiedDiagnosticsService {
   final UspClient _usp;
+  final bool _autoIPoESupported;
+  final bool Function()? _isAvailable;
   DiagnosticScope? _scope;
 
   static const _defaultInternetHost =
@@ -46,7 +57,14 @@ class UnifiedDiagnosticsService {
   static const _defaultDnsHost = '8.8.8.8'; // Google DNS — for DNS check
   static const _defaultTracerouteHost = '8.8.8.8';
 
-  UnifiedDiagnosticsService(this._usp);
+  UnifiedDiagnosticsService(this._usp,
+      {bool autoIPoESupported = false, bool Function()? isAvailable})
+      : _autoIPoESupported = autoIPoESupported,
+        _isAvailable = isAvailable;
+
+  void _checkAvailable() {
+    if (_isAvailable?.call() == false) throw const ResourceNotFoundError();
+  }
 
   /// Inject the active [DiagnosticScope]. Replaces any prior scope (the prior
   /// scope's release lifecycle is owned by its caller; this method does not
@@ -72,8 +90,13 @@ class UnifiedDiagnosticsService {
 
   /// Check WAN interface status using codegen WanStatus.
   Future<WanStatusUIModel> checkWanStatus() async {
+    _checkAvailable();
     logger.d('[Diagnostics] Checking WAN status');
-    final wan = await UspWanDataService(_usp).fetch();
+    final wan = await UspWanDataService(
+      _usp,
+      autoIPoESupported: _autoIPoESupported,
+    ).fetch();
+    _checkAvailable();
     return WanStatusUIModel(
       status: wan.isUp ? 'Up' : 'Down',
       ipAddress: wan.ipAddress,
@@ -114,7 +137,12 @@ class UnifiedDiagnosticsService {
 
   /// Ping the default gateway.
   Future<PingResult?> pingGateway({int repeatCount = 3}) async {
-    final active = await ActiveIpv4Connection.fetch(_usp);
+    _checkAvailable();
+    final active = await ActiveIpv4Connection.fetch(
+      _usp,
+      autoIPoESupported: _autoIPoESupported,
+    );
+    _checkAvailable();
     if (active != null) {
       if (!active.isUp) {
         throw const ConnectivityError(detail: 'No active IPv4 route');
@@ -126,7 +154,11 @@ class UnifiedDiagnosticsService {
       if (active.gateway.isEmpty) return null;
       return ping(active.gateway, repeatCount: repeatCount);
     }
-    final wan = await UspWanDataService(_usp).fetch();
+    final wan = await UspWanDataService(
+      _usp,
+      autoIPoESupported: _autoIPoESupported,
+    ).fetch();
+    _checkAvailable();
     if (!wan.isUp) throw const ConnectivityError(detail: 'WAN is down');
     if (wan.gateway.isEmpty) return null;
     return ping(wan.gateway, repeatCount: repeatCount);

@@ -1,10 +1,11 @@
-import 'package:privacy_gui/constants/build_config.dart';
-import 'package:privacy_gui/page/auto_ipoe/views/widgets/auto_ipoe_log_view.dart';
-import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_data_provider.dart';
-import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_page_provider.dart';
-import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_snapshot.dart';
-import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_section.dart';
-import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_view.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/page/internet_settings/views/sections/auto_ipoe_log_view.dart';
+import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_data_provider.dart';
+import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_page_provider.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_snapshot.dart';
+import 'package:privacy_gui/page/internet_settings/views/sections/auto_ipoe_section.dart';
+import 'package:privacy_gui/page/internet_settings/views/sections/auto_ipoe_runtime.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -126,7 +127,12 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
   @override
   Widget build(BuildContext context) {
     final form = widget.state.edited;
-    final isEditing = widget.isEditing && !widget.state.status.isSaving;
+    final supportsAutoIPoE =
+        ref.watch(deviceCapabilitiesProvider).has(DeviceCapability.autoIPoE);
+    // A session can lose capability while the previous device's form is visible.
+    final isEditing = widget.isEditing &&
+        !widget.state.status.isSaving &&
+        (form.connectionType != UspWanConnectionType.ipoe || supportsAutoIPoE);
     final ipoe = ref.watch(autoIPoEDataProvider).valueOrNull;
     final submission = ref.watch(autoIPoESubmissionProvider);
     final rejection = ref.watch(autoIPoERejectionProvider);
@@ -147,7 +153,7 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
               items: UspWanConnectionType.values
                   .where((type) =>
                       type != UspWanConnectionType.ipoe ||
-                      (BuildConfig.autoIPoEEnabled &&
+                      (supportsAutoIPoE &&
                           (ipoe?.capabilities.isSupported == true ||
                               form.connectionType ==
                                   UspWanConnectionType.ipoe)))

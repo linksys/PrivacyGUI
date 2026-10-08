@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
-import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_snapshot.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_snapshot.dart';
 
 class AutoIPoETestData {
   static const id = 'f954a865-22c0-4dad-96d0-714cd58af8f4';

@@ -1,3 +1,5 @@
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/usp/services/active_ipv4_connection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -18,12 +20,16 @@ import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
 
 final uspWanDataServiceProvider = Provider<UspWanDataService>(
   (ref) {
-    final usp = ref.read(uspClientProvider);
+    final usp = ref.watch(uspClientProvider);
     if (usp == null) {
       throw const ServiceNotInitializedError(
           detail: 'USP service not available');
     }
-    return UspWanDataService(usp);
+    return UspWanDataService(
+      usp,
+      autoIPoESupported:
+          ref.watch(deviceCapabilitiesProvider).has(DeviceCapability.autoIPoE),
+    );
   },
 );
 
@@ -37,14 +43,19 @@ final uspWanDataServiceProvider = Provider<UspWanDataService>(
 /// for [wanDataProvider].
 class UspWanDataService {
   final UspClient _usp;
+  final bool _autoIPoESupported;
 
-  UspWanDataService(this._usp);
+  UspWanDataService(this._usp, {bool autoIPoESupported = false})
+      : _autoIPoESupported = autoIPoESupported;
 
   /// Fetches WAN status + gateway + IPv6 addresses and returns a
   /// [WanStatusUIModel].
   Future<WanStatusUIModel> fetch() async {
     try {
-      final active = await ActiveIpv4Connection.fetch(_usp);
+      final active = await ActiveIpv4Connection.fetch(
+        _usp,
+        autoIPoESupported: _autoIPoESupported,
+      );
       if (active != null) {
         return WanStatusUIModel(
           isUp: active.isUp,

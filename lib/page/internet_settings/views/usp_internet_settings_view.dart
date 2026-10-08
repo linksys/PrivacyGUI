@@ -1,7 +1,7 @@
-import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_page_provider.dart';
-import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_snapshot.dart';
+import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_page_provider.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_snapshot.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_data_provider.dart';
+import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_data_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';

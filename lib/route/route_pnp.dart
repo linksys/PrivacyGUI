@@ -65,8 +65,11 @@ final pnpRoute = LinksysRoute(
 
 Future<bool> _pnpAutoIPoEExitGuard(
     BuildContext context, GoRouterState state) async {
-  final guard =
-      ProviderScope.containerOf(context).read(autoIPoEPnpExitGuardProvider);
+  final container = ProviderScope.containerOf(context);
+  if (!container
+      .read(deviceCapabilitiesProvider)
+      .has(DeviceCapability.autoIPoE)) return true;
+  final guard = container.read(autoIPoEPnpExitGuardProvider);
   return await guard.onExit?.call() ?? false;
 }
 
@@ -82,15 +85,21 @@ final pnpNoInternetRoute = LinksysRoute(
       config: _pnpRouteConfig,
       builder: (context, state) => const PnpIspSettingsView(),
       routes: [
-        if (BuildConfig.autoIPoEEnabled)
-          LinksysRoute(
-            name: RouteNamed.pnpAutoIPoE,
-            path: RoutePath.pnpAutoIPoE,
-            config: _pnpRouteConfig,
-            builder: (context, state) => const AutoIPoEView(pnp: true),
-            onExit: _pnpAutoIPoEExitGuard,
-            preservableProvider: autoIPoEPageProvider.notifier,
-          ),
+        LinksysRoute(
+          name: RouteNamed.pnpAutoIPoE,
+          path: RoutePath.pnpAutoIPoE,
+          config: _pnpRouteConfig,
+          redirect: (context, state) {
+            final capabilities = ProviderScope.containerOf(context)
+                .read(deviceCapabilitiesProvider);
+            return capabilities.has(DeviceCapability.autoIPoE)
+                ? null
+                : context.namedLocation(RouteNamed.pnpIspTypeSelection);
+          },
+          builder: (context, state) => const PnpIPoEView(),
+          onExit: _pnpAutoIPoEExitGuard,
+          preservableProvider: autoIPoEPageProvider.notifier,
+        ),
         LinksysRoute(
           name: RouteNamed.pnpPPPOE,
           path: RoutePath.pnpPPPOE,

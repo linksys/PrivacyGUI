@@ -1,4 +1,4 @@
-import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_data_provider.dart';
+import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_data_provider.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
