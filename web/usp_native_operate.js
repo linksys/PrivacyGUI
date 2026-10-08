@@ -37,7 +37,11 @@ function fields(bytes) {
     else if ([1, 2, 5].includes(wire)) {
       const length = wire === 2 ? integer() : wire === 1 ? 8 : 4;
       if (length > bytes.length - offset) throw new Error('Truncated USP field');
-      value = bytes.slice(offset, offset + length); offset += length;
+      // USP Error and CommandFailure encode their error code as fixed32.
+      value = wire === 5
+        ? new DataView(bytes.buffer, bytes.byteOffset + offset, 4).getUint32(0, true)
+        : bytes.slice(offset, offset + length);
+      offset += length;
     } else throw new Error('Unsupported USP wire type');
     const values = result.get(number) || []; values.push(value); result.set(number, values);
   }
