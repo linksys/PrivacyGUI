@@ -19,6 +19,8 @@ const button = (page, name) => page.getByRole('button', {name, exact:true});
 // Pushed pages do not change the URL (go_router's default for imperative pushes).
 const back = page => button(page, 'back');
 const visible = (page, text) => page.getByText(text, {exact:true}).last().waitFor({state:'visible', timeout:10000});
+// StyledAppPageView (every PrivacyGUI page) labels its title "page title <Title>".
+const pageTitle = (page, title) => visible(page, `page title ${title}`);
 // Other findings, weak devices and weak WiFi nodes share one collapsed list
 // on the result card ("N more things we found").
 const openFoundList = async page => {
@@ -82,7 +84,7 @@ async function check(name, run, mobile = false) {
   try {
     await page.goto(url);
     // The preview shows the real page frame: top bar and the page title.
-    await visible(page, 'Instant-Test');
+    await pageTitle(page, 'Instant-Test');
     await visible(page, 'What needs help?');
     for (const oldLayout of ['Single page', 'Home card', 'A · 2-tab + glance', 'B · Verify top-tab', 'Current · 4-tab']) {
       assert.equal(await page.getByText(oldLayout,{exact:true}).count(),0,'Retired preview layout is still visible');
@@ -253,7 +255,7 @@ try {
     await visible(p,'MX6200 Bedroom has a weak connection to the router');
     await clickInScrollView(p,'View WiFi nodes');
     await visible(p,'Connected wirelessly — Weak (45 Mbps)');
-    await visible(p,'Network details');
+    await pageTitle(p,'Network details');
     assert.equal(await p.getByText('Connected wirelessly — Good (45 Mbps)',{exact:true}).count(),0);
   });
   await check('responsive-layout-state',async p=>{
@@ -326,7 +328,7 @@ try {
   },true);
   await check('device-details-handoff',async p=>{
     await p.goto(`${url}/devices`);
-    await visible(p,'Device details');
+    await pageTitle(p,'Device details');
     // Device details exposes an InkWell row with a merged name/band/health label.
     await p.locator('flt-semantics[flt-tappable]').filter({hasText:/^Office-Printer\b/}).first().click();
     await button(p,'Troubleshoot this device').click();

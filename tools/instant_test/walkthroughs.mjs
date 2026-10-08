@@ -210,9 +210,10 @@ export async function walkthroughs({check,button,visible,clickInScrollView,url})
       await click(p,p.locator('flt-semantics[flt-tappable]').filter({hasText:'Router reached'}).last());await p.getByText(/We connected to your router/).waitFor();
       await click(p,'Hide test details');
       // Network details is a child route; a hash-only change keeps the session.
-      await p.goto(`${url}/network`);await visible(p,'Network details');
+      // StyledAppPageView labels its title "page title <Title>".
+      await p.goto(`${url}/network`);await visible(p,'page title Network details');
       if(title==='Slow internet + weak WiFi') {
-        await click(p,'Update Now');await visible(p,'Network details');
+        await click(p,'Update Now');await visible(p,'page title Network details');
       }
       await click(p,'back');await click(p,'One device is slow');
       await click(p,'back');
