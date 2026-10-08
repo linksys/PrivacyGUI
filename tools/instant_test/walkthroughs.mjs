@@ -191,7 +191,7 @@ export async function walkthroughs({check,button,visible,clickInScrollView,url})
     ['Leave as-is — internet is working fine',null,'Got it — my internet is working'],
   ]) {
     await check(`two-routers-${done==='Done'?heading.split(' ')[0].toLowerCase():'leave'}`,async p=>{
-      await open(p,'healthy',6);await visible(p,'Two routers detected');await tap(p,label);
+      await open(p,'healthy',6);await visible(p,'Two routers detected');await click(p,label);
       if(heading)await visible(p,heading);
       await click(p,done);await button(p,"Internet isn't working").waitFor();
     });

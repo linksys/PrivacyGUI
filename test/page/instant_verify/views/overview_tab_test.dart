@@ -1,3 +1,5 @@
+import 'dart:ui' show SemanticsAction, SemanticsFlag;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
@@ -970,6 +972,18 @@ void main() {
             .ancestor(of: find.text(label), matching: find.byType(AppCard))
             .first)
         .dy;
+
+    testWidgets('each problem tile is announced as a button', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpChooser(tester, const Size(1280, 800));
+      for (final (_, _, label, _) in SymptomChooser.symptoms) {
+        final data = tester.getSemantics(find.text(label)).getSemanticsData();
+        expect(data.hasFlag(SemanticsFlag.isButton), isTrue, reason: label);
+        expect(data.hasAction(SemanticsAction.tap), isTrue, reason: label);
+        expect(data.label, startsWith(label));
+      }
+      handle.dispose();
+    });
 
     testWidgets('choices are the Menu page\'s AppMenuCard tiles',
         (tester) async {

@@ -37,11 +37,19 @@ class SymptomChooser extends StatelessWidget {
         SymptomTileGrid(
           children: [
             for (final (id, icon, label, description) in symptoms)
-              AppMenuCard(
-                  iconData: icon,
-                  title: label,
-                  description: description,
-                  onTap: () => onSelect(id)),
+              // AppMenuCard is tappable but exposes its title and description
+              // as separate nodes and is not marked as a button. Announce each
+              // choice as one button, as the device picker rows are.
+              MergeSemantics(
+                child: Semantics(
+                  button: true,
+                  child: AppMenuCard(
+                      iconData: icon,
+                      title: label,
+                      description: description,
+                      onTap: () => onSelect(id)),
+                ),
+              ),
           ],
         ),
       ],

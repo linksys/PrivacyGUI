@@ -14,7 +14,23 @@ await mkdir(output, {recursive:true});
 const browser = await chromium.launch({headless:true});
 const results = [];
 const expected404s = ['/assets/roboto/', '/assets/notosanssymbols/', '/assets/assets/resources/versions.json'];
-const button = (page, name) => page.getByRole('button', {name, exact:true});
+// Problem tiles (AppMenuCard) and two-routers choices (AppListCard) are one
+// button each whose name is the title followed by its description.
+const CHOICES = new Set([
+  "Internet isn't working", 'Whole internet is slow', 'Keeps cutting out',
+  'One device is slow', "Device won't connect", "Doesn't reach a room",
+  'Enable bridge mode on the ISP gateway', 'Switch Linksys to WiFi access point mode',
+  'Leave it as two routers — contact my internet provider',
+  'Leave as-is — internet is working fine',
+]);
+// Connection-drop frequency and scope are the kit's AppRadioList (radios).
+const RADIOS = new Set(['Every few minutes', 'A few times a day', 'All devices', 'Specific devices']);
+const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const button = (page, name) => CHOICES.has(name)
+  ? page.getByRole('button', {name: new RegExp(`^${escapeRe(name)}\\s`)})
+  : RADIOS.has(name)
+    ? page.getByRole('radio', {name, exact:true})
+    : page.getByRole('button', {name, exact:true});
 // Every Instant-Test page is a StyledAppPageView; its back arrow is labelled 'back'.
 // Pushed pages do not change the URL (go_router's default for imperative pushes).
 const back = page => button(page, 'back');
@@ -43,7 +59,7 @@ const settled = async locator => {
 };
 // An answered workflow question collapses to a labelled one-line row.
 const answered = async (page, label, value) => {
-  await visible(page, label.toUpperCase());
+  await visible(page, label);
   await visible(page, value);
 };
 // Flutter scrolls its canvas viewport; reveal the contextual links with real
@@ -318,7 +334,9 @@ try {
         await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
         const active=await p.evaluate(()=>document.activeElement?.getAttribute('aria-label')||document.activeElement?.innerText);
         // Two-line tiles expose "Name\nWiFi"; compare as one line.
-        if(active?.replace(/\s+/g,' ').trim()===label){await p.keyboard.press('Enter');return;}
+        // Two-line tiles expose "Name\nWiFi" or "Title\nDescription"; match the first line.
+        const name=active?.replace(/\s+/g,' ').trim();
+        if(name===label||name?.startsWith(`${label} `)){await p.keyboard.press('Enter');return;}
       }
       throw Error(`Not reachable with Tab: ${label}`);
     }
