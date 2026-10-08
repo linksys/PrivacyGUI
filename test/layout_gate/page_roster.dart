@@ -78,7 +78,9 @@ const String kPageViewRoot = 'lib/page';
 /// 45 → 46 at #1549, which is the first move of the first kind: the app gained
 /// `firmware_ota_view.dart` by splitting one firmware entry point into two pages, so
 /// the walk is unchanged and one row was added beside it.
-const int kPageViewCount = 47;
+/// 47 -> 48 at #1664: AutoIPoEView is a routed page awaiting a sweep fixture.
+/// Its inline log widget lives under views/widgets/ and is not a page.
+const int kPageViewCount = 48;
 
 /// The marker for a column with no value, spelled as the overflow baselines spell
 /// it (`page.tsv` writes `-` for every absent `px`, `side`, `site` and `widget`).

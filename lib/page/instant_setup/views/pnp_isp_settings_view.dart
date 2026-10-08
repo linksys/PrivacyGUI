@@ -113,6 +113,7 @@ class _PnpIspSettingsViewState extends ConsumerState<PnpIspSettingsView> {
         if (!managed) ...[
           _buildTypeCard(
             context,
+            identifier: 'pnp-isp-dhcp',
             icon: Icons.refresh,
             title: 'DHCP',
             description: loc(context).pnpIspTypeSelectionDhcpDesc,
@@ -121,23 +122,23 @@ class _PnpIspSettingsViewState extends ConsumerState<PnpIspSettingsView> {
           AppGap.md(),
         ],
         if (BuildConfig.autoIPoEEnabled &&
-            ipoe?.capabilities.isSupported == true) ...[
+            (managed || ipoe?.capabilities.isSupported == true)) ...[
           _buildTypeCard(
             context,
+            identifier: 'pnp-isp-ipoe',
             icon: Icons.public,
             title: loc(context).connectionTypeIpoe,
-            description: loc(context).autoIpoePnpDescription,
+            description: managed
+                ? loc(context).autoIpoeResetBeforeSwitching
+                : loc(context).autoIpoePnpDescription,
             onTap: () => context.pushNamed(RouteNamed.pnpAutoIPoE),
           ),
-          if (managed) ...[
-            AppGap.md(),
-            AppText.bodyMedium(loc(context).autoIpoeResetBeforeSwitching),
-          ],
           AppGap.md(),
         ],
         if (!managed) ...[
           _buildTypeCard(
             context,
+            identifier: 'pnp-isp-pppoe',
             icon: Icons.vpn_key_outlined,
             title: 'PPPoE',
             description: loc(context).pnpIspTypeSelectionPppoeDesc,
@@ -146,6 +147,7 @@ class _PnpIspSettingsViewState extends ConsumerState<PnpIspSettingsView> {
           AppGap.md(),
           _buildTypeCard(
             context,
+            identifier: 'pnp-isp-static',
             icon: Icons.pin_outlined,
             title: loc(context).ipAddress,
             description: loc(context).pnpIspTypeSelectionStaticDesc,
@@ -158,33 +160,37 @@ class _PnpIspSettingsViewState extends ConsumerState<PnpIspSettingsView> {
 
   Widget _buildTypeCard(
     BuildContext context, {
+    required String identifier,
     required IconData icon,
     required String title,
     required String description,
     required VoidCallback onTap,
   }) {
-    return AppCard(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Row(
-            children: [
-              AppIcon.font(icon, size: 28),
-              AppGap.md(),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppText.titleSmall(title),
-                    AppGap.xs(),
-                    AppText.bodySmall(description),
-                  ],
+    return Semantics(
+      identifier: identifier,
+      child: AppCard(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Row(
+              children: [
+                AppIcon.font(icon, size: 28),
+                AppGap.md(),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppText.titleSmall(title),
+                      AppGap.xs(),
+                      AppText.bodySmall(description),
+                    ],
+                  ),
                 ),
-              ),
-              AppIcon.font(Icons.chevron_right),
-            ],
+                AppIcon.font(Icons.chevron_right),
+              ],
+            ),
           ),
         ),
       ),
