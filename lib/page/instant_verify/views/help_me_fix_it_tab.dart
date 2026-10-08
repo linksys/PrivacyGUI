@@ -1,3 +1,4 @@
+import 'answer_row.dart';
 import 'diagnostic_selection_area.dart';
 import 'instant_test_layout.dart';
 import 'instant_test_page_header.dart';
@@ -729,8 +730,8 @@ class _Flow1State extends ConsumerState<_Flow1> {
               icon: LinksysIcons.refresh),
         ])),
     ]);
-    return InstantTestColumns(
-        sidebar: _diagnosticProgressCard(context), content: advice);
+    return InstantTestFocusColumn(
+        children: [_diagnosticProgressCard(context), advice]);
   }
 
   Widget _diagnosticProgressCard(BuildContext context) {
@@ -1574,6 +1575,9 @@ class _Flow3State extends ConsumerState<_Flow3> {
   // null = not yet answered, true = can see SSID, false = can't see SSID (Item 12)
   bool? _canSeeSsid;
 
+  /// The problem came from the chosen symptom or a chip, not the default.
+  bool _problemAnswered = false;
+
   /// Device selected in My Devices or chosen via inline picker.
   /// Enables device-specific analysis in _slowDevicePath().
   DiagnosticClient? _selectedDevice;
@@ -1593,6 +1597,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _connectState = _ConnectState.canConnect;
     }
     if (widget.singlePage) _connectIssue = widget.initialIssue ?? _connectIssue ?? _ConnectIssue.other;
+    _problemAnswered = widget.initialIssue != null || widget.initialSlowDevice;
     _selectedDevice = widget.initialDevice;
   }
 
@@ -1651,9 +1656,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
     final page = _devicePage.clamp(0, lastPage);
     final visible = matches.skip(page * _devicesPerPage).take(_devicesPerPage);
     final theme = Theme.of(context);
-    final picker = _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      UserStepHeading('1. Choose a device'),
-      const AppGap.small2(),
+    final choices = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
 
       if (state.clients.length > _devicesPerPage) ...[
         TextField(
@@ -1717,32 +1720,57 @@ class _Flow3State extends ConsumerState<_Flow3> {
         _connectState = _ConnectState.wired;
         _step = 1;
       })),
-    ]));
-    final deviceChoice = _selectedDevice != null && selectedPresent
-        ? _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            AppText.titleSmall('Help for ${_selectedDevice!.displayNameWithOui}'),
-            DetailsDisclosure(key: ValueKey(_selectedDevice!.macAddress), label: 'Change device', child: picker),
-          ]))
-        : picker;
+    ]);
+    // Option A (QA #2): answered questions collapse to one line above the
+    // current step, so the next action is always the card below them.
+    final selected = _selectedDevice != null && selectedPresent ? _selectedDevice! : null;
+    final unlisted = _selectedDevice == null && _connectState == _ConnectState.cantConnect;
+    final wired = _selectedDevice == null && _connectState == _ConnectState.wired;
+    final Widget deviceStep = selected != null || unlisted || wired
+        ? AnswerRow(
+            // A new answer closes the change controls.
+            key: ValueKey('answer-device-${selected?.macAddress ?? _connectState}'),
+            label: 'Device',
+            value: selected?.displayNameWithOui ??
+                (unlisted ? 'Not in the list' : 'Uses an Ethernet cable'),
+            detail: selected == null ? null : (selected.isWireless ? 'WiFi' : 'Ethernet'),
+            changeLabel: 'Change device',
+            choices: choices)
+        : _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            UserStepHeading('Which device needs help?'),
+            const AppGap.small2(),
+            choices,
+          ]));
+    const issues = [
+      (_ConnectIssue.cantConnect, "Won't connect"),
+      (_ConnectIssue.slowOnDevice, 'Slow connection'),
+      (_ConnectIssue.keepsDropping, 'Keeps disconnecting'),
+      (_ConnectIssue.other, 'Something else'),
+    ];
+    final issueChips = Wrap(spacing: Spacing.small2, runSpacing: Spacing.small2, children: [
+      for (final item in issues) ChoiceChip(label: AppText.bodyMedium(item.$2), selected: _connectIssue == item.$1,
+          onSelected: (_) => setState(() { _connectIssue = item.$1; _problemAnswered = true; _step = 2; })),
+    ]);
+    final problemStep = selected == null || _connectState == _ConnectState.wired
+        ? null
+        : _problemAnswered
+            ? AnswerRow(
+                key: ValueKey('answer-problem-$_connectIssue'),
+                label: 'Problem',
+                value: issues.firstWhere((item) => item.$1 == _connectIssue).$2,
+                changeLabel: 'Change problem',
+                choices: issueChips)
+            : _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                // All problems stay visible (QA): a collapsed picker under a
+                // "Something else" heading hid what the section was for.
+                const AppText.titleSmall("What's happening with this device?"),
+                const AppGap.small2(),
+                issueChips,
+              ]));
     final help = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (_selectedDevice != null && !selectedPresent)
         _infoBox(context, 'The selected device is not in the latest list. Its connection status is unknown.'),
-      if (_selectedDevice != null && selectedPresent && _connectState != _ConnectState.wired)
-        _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // All problems stay visible (QA): a collapsed picker under a
-          // "Something else" heading hid what the section was for.
-          const AppText.titleSmall("What's happening with this device?"),
-          const AppGap.small2(),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final item in const [
-              (_ConnectIssue.cantConnect, "Won't connect"),
-              (_ConnectIssue.slowOnDevice, 'Slow connection'),
-              (_ConnectIssue.keepsDropping, 'Keeps disconnecting'),
-              (_ConnectIssue.other, 'Something else'),
-            ]) ChoiceChip(label: AppText.bodyMedium(item.$2), selected: _connectIssue == item.$1,
-                onSelected: (_) => setState(() { _connectIssue = item.$1; _step = 2; })),
-          ]),
-        ])),
+      if (problemStep != null) problemStep,
       if (_connectState == _ConnectState.cantConnect) ...[
         _infoBox(context, 'A device can be missing because it is offline or the router has incomplete information. Check its WiFi settings below.'),
         ..._step1CantConnect(context),
@@ -1753,14 +1781,9 @@ class _Flow3State extends ConsumerState<_Flow3> {
         else if (_connectIssue == _ConnectIssue.other) ..._pathOther(context, state)
         else ..._deviceAnalysisCards(context, state,
             state.clients.firstWhere((c) => c.macAddress == _selectedDevice!.macAddress)),
-      ] else if (_selectedDevice == null)
-        _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          UserStepHeading('Start with the device that needs help'),
-          const AppGap.small3(),
-          const AppText.bodyMedium('Choose a device to get started.'),
-        ])),
+      ],
     ]);
-    return InstantTestColumns(sidebar: deviceChoice, content: help);
+    return InstantTestFocusColumn(children: [deviceStep, help]);
   }
 
   List<Widget> _step0(BuildContext context) => [

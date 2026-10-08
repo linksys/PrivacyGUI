@@ -65,35 +65,27 @@ class _PageMargins extends InheritedWidget {
   bool updateShouldNotify(_PageMargins oldWidget) => false;
 }
 
-/// One shared sidebar/content arrangement for diagnostic and device workflows.
-/// Keep the same child structure while resizing so open details retain state.
-class InstantTestColumns extends StatelessWidget {
-  const InstantTestColumns({
-    super.key,
-    required this.sidebar,
-    required this.content,
-  });
+/// Workflows read top to bottom in one centered column: answered steps sit
+/// above the current one, so the next action is always in the same place
+/// (QA 2026-10-07 #2, "keep fixed focus"). The same structure is used at every
+/// width, so open details retain state while resizing.
+class InstantTestFocusColumn extends StatelessWidget {
+  const InstantTestFocusColumn({super.key, required this.children});
 
-  final Widget sidebar;
-  final Widget content;
+  /// Readable line length for questions and advice.
+  static const maxWidth = 760.0;
+
+  final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) =>
-      LayoutBuilder(builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final columns = InstantTestLayout.usesColumns(width);
-        final sidebarWidth = columns ? (width / 4).clamp(280.0, 352.0) : width;
-        return Wrap(
-          spacing: InstantTestLayout.columnGap,
-          children: [
-            SizedBox(width: sidebarWidth, child: sidebar),
-            SizedBox(
-              width: columns
-                  ? width - sidebarWidth - InstantTestLayout.columnGap
-                  : width,
-              child: content,
-            ),
-          ],
-        );
-      });
+  Widget build(BuildContext context) => Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: maxWidth),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: children,
+          ),
+        ),
+      );
 }

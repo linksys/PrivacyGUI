@@ -16,6 +16,7 @@ import 'package:privacy_gui/page/instant_verify/prototypes/mock_pivot_notifier.d
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
 import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_service.dart';
+import 'package:privacy_gui/page/instant_verify/views/answer_row.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_test_page.dart';
 import 'package:privacy_gui/page/instant_verify/views/overview_tab.dart';
 import 'package:privacy_gui/page/instant_verify/views/my_network_tab.dart';
@@ -118,6 +119,12 @@ Future<void> tapText(WidgetTester tester, String text) async {
   await tester.tap(target);
   await tester.pumpAndSettle();
 }
+
+/// The collapsed answer shown for an answered workflow question.
+String answer(WidgetTester tester, String label) => tester
+    .widget<AnswerRow>(
+        find.byWidgetPredicate((w) => w is AnswerRow && w.label == label))
+    .value;
 
 void main() {
   mockDependencyRegister();
@@ -226,7 +233,7 @@ void main() {
       expect(tester.takeException(), isNull);
     }
     await tapText(tester, 'Yes — troubleshoot a specific device');
-    expect(find.text('1. Choose a device'), findsOneWidget);
+    expect(find.text('Which device needs help?'), findsOneWidget);
   });
 
   testWidgets('test details are optional and can be closed again',
@@ -346,12 +353,7 @@ void main() {
     await mount(tester);
     await tapText(tester, 'Troubleshoot these devices');
     await tapText(tester, 'Office printer');
-    expect(
-        tester
-            .widget<ChoiceChip>(
-                find.widgetWithText(ChoiceChip, 'Slow connection'))
-            .selected,
-        isTrue);
+    expect(answer(tester, 'Problem'), 'Slow connection');
     expect(find.text('Yes — I can see it'), findsNothing);
   });
 
@@ -499,6 +501,7 @@ void main() {
     await mount(tester, notifier: FixtureNotifier(rejectReconnect: true));
     await tapText(tester, 'One device is slow');
     await tapText(tester, 'Office printer');
+    await tapText(tester, 'Change problem');
     await tapText(tester, 'Keeps disconnecting');
     await tapText(tester, 'Force reconnect a device');
     await tapText(tester, 'Reconnect');
@@ -550,10 +553,15 @@ void main() {
     await mount(tester);
     await tapText(tester, 'One device is slow');
     await tapText(tester, 'Office printer');
+    await tapText(tester, 'Change problem');
     await tapText(tester, 'Something else');
+    // The new answer collapses back to one line.
+    expect(answer(tester, 'Problem'), 'Something else');
+    expect(find.widgetWithText(ChoiceChip, 'Keeps disconnecting'), findsNothing);
     await tapText(tester, 'Try the next step');
     await tapText(tester, 'Try the next step');
     expect(find.text('Step 3 of 4'), findsOneWidget);
+    await tapText(tester, 'Change problem');
     await tapText(tester, 'Keeps disconnecting');
     expect(find.text('Step 1 of 3'), findsOneWidget);
   });
@@ -723,11 +731,36 @@ void main() {
       expect(find.text(label), findsOneWidget);
     }
     await tapText(tester, 'One device is slow');
-    expect(find.text('1. Choose a device'), findsOneWidget);
+    expect(find.text('Which device needs help?'), findsOneWidget);
     expect(find.text('Everything in my home'), findsNothing);
     expect(find.text('Run Again'), findsNothing);
     await tapText(tester, 'Back to Instant-Test');
     expect(find.text('Whole internet is slow'), findsOneWidget);
+  });
+
+  testWidgets('answers stack above the current question in one column',
+      (tester) async {
+    tester.view.physicalSize = const Size(1440, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await mount(tester);
+    await tapText(tester, "Device won't connect");
+    // Nothing to read elsewhere before choosing: only the device question.
+    expect(find.text('Which device needs help?'), findsOneWidget);
+    expect(find.text('Start with the device that needs help'), findsNothing);
+    await tapText(tester, 'Office printer');
+    final device = tester.getRect(find.byWidgetPredicate(
+        (w) => w is AnswerRow && w.label == 'Device'));
+    final problem = tester.getRect(find.byWidgetPredicate(
+        (w) => w is AnswerRow && w.label == 'Problem'));
+    final question = tester.getRect(find.text('Yes — I can see it'));
+    expect(problem.top, greaterThan(device.top));
+    expect(question.top, greaterThan(problem.bottom));
+    expect(problem.left, device.left);
+    // The next action starts inside the answers' column, not beside it.
+    expect(question.left, greaterThanOrEqualTo(device.left));
+    expect(question.left, lessThan(device.left + 80));
   });
 
   testWidgets('cannot-connect entry keeps its symptom after choosing a device',
@@ -736,12 +769,8 @@ void main() {
     await tapText(tester, "Device won't connect");
     await tapText(tester, 'Office printer');
     expect(find.text('Yes — I can see it'), findsOneWidget);
-    expect(
-        tester
-            .widget<ChoiceChip>(
-                find.widgetWithText(ChoiceChip, "Won't connect"))
-            .selected,
-        isTrue);
+    expect(answer(tester, 'Device'), 'Office printer');
+    expect(answer(tester, 'Problem'), "Won't connect");
   });
 
   testWidgets('drop entry keeps its symptom after choosing a device',
@@ -752,12 +781,7 @@ void main() {
     await tapText(tester, 'Specific devices');
     await tapText(tester, 'Choose the affected device');
     await tapText(tester, 'Office printer');
-    expect(
-        tester
-            .widget<ChoiceChip>(
-                find.widgetWithText(ChoiceChip, 'Keeps disconnecting'))
-            .selected,
-        isTrue);
+    expect(answer(tester, 'Problem'), 'Keeps disconnecting');
     expect(find.text('Device keeps dropping WiFi'), findsOneWidget);
   });
 
@@ -843,7 +867,7 @@ void main() {
     await tapText(tester, 'Office printer');
     await tapText(tester, 'Troubleshoot this device');
     expect(find.text('Select a device'), findsNothing);
-    expect(find.text('Help for Office printer'), findsOneWidget);
+    expect(answer(tester, 'Device'), 'Office printer');
     expect(find.byTooltip('Back to device details'), findsOneWidget);
     await tester.tap(find.byTooltip('Back to device details'));
     await tester.pumpAndSettle();
@@ -933,18 +957,18 @@ void main() {
     expect(find.widgetWithText(ListTile, 'Test device 11'), findsOneWidget);
     expect(find.text('Test device 8'), findsNothing);
     await tapText(tester, 'Test device 11');
-    expect(find.text('Help for Test device 11'), findsOneWidget);
+    expect(answer(tester, 'Device'), 'Test device 11');
     await tapText(tester, 'Change device');
     await tester.enterText(find.byType(TextField), 'missing');
     await tester.pumpAndSettle();
     expect(find.text('No devices match your search.'), findsOneWidget);
-    expect(find.text('Help for Test device 11'), findsOneWidget);
+    expect(answer(tester, 'Device'), 'Test device 11');
   });
 
   testWidgets('workflow heading supports mouse text selection', (tester) async {
     await mount(tester);
     await tapText(tester, "Device won't connect");
-    final heading = find.text('1. Choose a device');
+    final heading = find.text('Which device needs help?');
     final paragraph = tester.renderObject<RenderParagraph>(
         find.descendant(of: heading, matching: find.byType(RichText)));
     final rect = tester.getRect(heading);
@@ -1001,7 +1025,7 @@ void main() {
     await tapText(tester, 'A few times a day');
     await tapText(tester, 'Specific devices');
     await tapText(tester, 'Choose the affected device');
-    expect(find.text('1. Choose a device'), findsOneWidget);
+    expect(find.text('Which device needs help?'), findsOneWidget);
     await tester.tap(find.byTooltip('Back to connection check'));
     await tester.pumpAndSettle();
     expect(
@@ -1103,7 +1127,7 @@ void main() {
     await tapText(tester, 'A few times a day');
     await tapText(tester, 'Specific devices');
     await tapText(tester, 'Choose the affected device');
-    expect(find.text('1. Choose a device'), findsOneWidget);
+    expect(find.text('Which device needs help?'), findsOneWidget);
     expect(find.text('Run Again'), findsNothing);
   });
 

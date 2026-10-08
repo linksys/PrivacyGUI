@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
 import 'package:privacy_gui/page/instant_verify/models/verdict.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
+import 'package:privacy_gui/page/instant_verify/views/answer_row.dart';
 import 'package:privacy_gui/page/instant_verify/views/diagnostic_selection_area.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_test_page.dart';
 import '../../../common/di.dart';
@@ -109,8 +110,10 @@ void main() {
       await tester.ensureVisible(action);
       await tester.tap(action);
       await tester.pumpAndSettle();
-      expect(find.text('Help for LB100'), findsOneWidget);
-      expect(find.text('1. Choose a device'), findsNothing);
+      final chosen = tester.widget<AnswerRow>(find.byWidgetPredicate(
+          (w) => w is AnswerRow && w.label == 'Device'));
+      expect(chosen.value, 'LB100');
+      expect(find.text('Which device needs help?'), findsNothing);
       await tester.ensureVisible(find.text('Connection details'));
       await tester.tap(find.text('Connection details'));
       await tester.pumpAndSettle();
