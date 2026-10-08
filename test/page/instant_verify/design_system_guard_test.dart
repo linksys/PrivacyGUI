@@ -25,14 +25,23 @@ const _banned = <String, String>{
   r'(?<![A-Za-z])Text\(': 'use AppText.<level>',
 };
 
-/// Card styling comes from the kit (integration spec Part 2): default AppCard
-/// borders, status by colored icon, AppSettingCard / info AppCard instead of
-/// hand-built tinted containers. The only border tint allowed is the
-/// Instant-Privacy blocking warning (`borderColor: ...colorScheme.error`).
-/// Scoped to the files already converted; widen as the others land.
-const _kitCardFiles = {'overview_tab.dart', 'symptom_chooser.dart'};
+/// Files already built from the kit's cards (AppCard, AppListCard,
+/// AppSettingCard, AppDeviceListCard, AppMenuCard): default borders, status by
+/// colored icon, no hand-built tinted containers. The only border tint allowed
+/// is the Instant-Privacy blocking warning (`borderColor: ...colorScheme.error`).
+/// Widen this list as the remaining views are converted.
+const _kitConverted = {
+  'overview_tab.dart',
+  'symptom_chooser.dart',
+  'my_devices_tab.dart',
+  'my_network_tab.dart',
+  'device_actions.dart',
+  'details_disclosure.dart',
+  'restart_helper.dart',
+  'diagnostic_selection_area.dart',
+};
 
-const _kitCardBanned = <String, String>{
+const _bannedInKitConverted = <String, String>{
   r'borderColor:(?!\s*Theme\.of\(\w+\)\.colorScheme\.error\b)':
       'use the default AppCard border; show status with a colored icon',
   r'\bBoxDecoration\(':
@@ -70,21 +79,20 @@ void main() {
     });
   }
 
-  final kitCardFiles = files
-      .where((f) => _kitCardFiles.contains(f.uri.pathSegments.last))
+  final converted = files
+      .where((f) => _kitConverted.contains(f.uri.pathSegments.last))
       .toList();
 
-  test('kit-card rules cover their files', () {
-    expect(kitCardFiles.map((f) => f.uri.pathSegments.last).toSet(),
-        _kitCardFiles);
+  test('kit-converted Instant-Test views exist', () {
+    expect(converted.map((f) => f.uri.pathSegments.last).toSet(),
+        _kitConverted);
   });
 
-  for (final entry in _kitCardBanned.entries) {
-    test('converted Instant-Test views avoid ${entry.key} (${entry.value})',
-        () {
+  for (final entry in _bannedInKitConverted.entries) {
+    test('kit-converted views avoid ${entry.key} (${entry.value})', () {
       final pattern = RegExp(entry.key);
       final hits = <String>[];
-      for (final file in kitCardFiles) {
+      for (final file in converted) {
         final lines = file.readAsLinesSync();
         for (var i = 0; i < lines.length; i++) {
           final line = lines[i];

@@ -7,6 +7,10 @@ import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_p
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_test_style.dart';
 import 'package:privacy_gui/page/instant_verify/views/my_devices_tab.dart';
+import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
+import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/card/setting_card.dart';
+import 'package:privacygui_widgets/widgets/label/status_label.dart';
 
 import '../../../common/di.dart';
 import '../../../common/testable_widget.dart';
@@ -254,6 +258,9 @@ void main() {
 
       await tester.pumpWidget(_buildTab(_flatListState()));
       await tester.pumpAndSettle();
+      // Kit device cards are taller than the old rows; scroll to the device.
+      await tester.ensureVisible(find.text("Deven's iPhone"));
+      await tester.pumpAndSettle();
       await tester.tap(find.text("Deven's iPhone"));
       await tester.pumpAndSettle();
       expect(find.text('Signal: Good'), findsOneWidget);
@@ -341,6 +348,77 @@ void main() {
       // QA: the node's own name, not a generic "Child Node N".
       expect(find.textContaining('Connected to Living Room on'), findsOneWidget);
       expect(find.textContaining('Child Node'), findsNothing);
+    });
+  });
+
+  group('MyDevicesTab — kit components', () {
+    testWidgets('each device is an AppDeviceListCard with an AppStatusLabel',
+        (tester) async {
+      await tester.pumpWidget(_buildTab(_flatListState()));
+      await tester.pumpAndSettle();
+      expect(find.byType(AppDeviceListCard), findsNWidgets(4));
+      for (final label in ['Poor', 'Weak', 'Good', 'Wired']) {
+        expect(
+            find.descendant(
+                of: find.byType(AppStatusLabel), matching: find.text(label)),
+            findsOneWidget,
+            reason: label);
+      }
+      expect(
+          find.descendant(
+              of: find.widgetWithText(AppDeviceListCard, 'Old Laptop'),
+              matching: find.byType(AppStatusLabel)),
+          findsOneWidget);
+    });
+
+    testWidgets('hardware-ID names keep their explanation tooltip',
+        (tester) async {
+      await tester.pumpWidget(_buildTab(InstantVerifyPivotState(
+        phase: PivotLoadPhase.complete,
+        browserTestStep: 'complete',
+        clients: [_client(mac: 'AC:DE:48:00:00:01', signal: -50, txRate: 400)],
+      )));
+      await tester.pumpAndSettle();
+      expect(find.text('Apple (AC:DE:48:00:00:01)'), findsOneWidget);
+      expect(
+          find.byTooltip(
+              'Name from device hardware ID — many smart home brands show unfamiliar names'),
+          findsOneWidget);
+    });
+
+    testWidgets('node groups collapse and expand from their header',
+        (tester) async {
+      await tester.pumpWidget(_buildTab(_meshState()));
+      await tester.pumpAndSettle();
+      expect(find.text('Samsung TV'), findsOneWidget);
+      await tester.tap(find.text('Router'));
+      await tester.pumpAndSettle();
+      expect(find.text('Samsung TV'), findsNothing);
+      expect(find.text('Nest Hub'), findsOneWidget);
+      await tester.tap(find.text('Router'));
+      await tester.pumpAndSettle();
+      expect(find.text('Samsung TV'), findsOneWidget);
+    });
+
+    testWidgets('detail sheet uses the standard drag handle and setting rows',
+        (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(_buildTab(_flatListState()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text("Deven's iPhone"));
+      await tester.pumpAndSettle();
+      expect(tester.widget<BottomSheet>(find.byType(BottomSheet)).showDragHandle,
+          isTrue);
+      final mac = find.ancestor(
+          of: find.text('00:00:00:00:00:01'),
+          matching: find.byType(AppSettingCard));
+      expect(mac, findsOneWidget);
+      expect(tester.widget<AppSettingCard>(mac).title, 'MAC');
+      expect(find.widgetWithText(AppListCard, 'Signal: Good'), findsOneWidget);
     });
   });
 

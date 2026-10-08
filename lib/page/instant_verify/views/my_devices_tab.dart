@@ -4,7 +4,6 @@ import 'instant_test_style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
-import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
@@ -12,8 +11,11 @@ import 'package:privacy_gui/page/instant_verify/views/device_actions.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
+import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/label/status_label.dart';
 
 /// PRD v0.7 Tab 1: My Devices
 ///
@@ -152,6 +154,17 @@ InstantTestTone _badgeTone(_SignalBadge badge) {
   }
 }
 
+/// The kit's status label: a colored dot and word. Wired has no signal
+/// quality, so it reads in the neutral "off" color.
+Widget _badgeStatus(BuildContext context, _SignalBadge badge) {
+  return AppStatusLabel(
+    label: _badgeLabel(badge),
+    offLabel: _badgeLabel(badge),
+    isOff: badge == _SignalBadge.wired,
+    onColor: _badgeTone(badge).color(context),
+  );
+}
+
 IconData _deviceIcon(DiagnosticClient client) {
   if (!client.isWireless) return LinksysIcons.ethernet;
   final name = (client.hostname ?? '').toLowerCase();
@@ -223,15 +236,38 @@ class _FlatDeviceList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sorted = _sorted(state.clients);
-    return AppCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        children: [
-          for (final client in sorted)
-            _DeviceRow(client: client, state: state, onNavigateToFlow: onNavigateToFlow),
+    return _DeviceCards(
+      clients: _sorted(state.clients),
+      state: state,
+      onNavigateToFlow: onNavigateToFlow,
+    );
+  }
+}
+
+/// Device cards separated like the device list on the Devices page.
+class _DeviceCards extends StatelessWidget {
+  final List<DiagnosticClient> clients;
+  final InstantVerifyPivotState state;
+  final void Function(int flow, {DiagnosticClient? device})? onNavigateToFlow;
+  const _DeviceCards({
+    required this.clients,
+    required this.state,
+    this.onNavigateToFlow,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (int i = 0; i < clients.length; i++) ...[
+          if (i > 0) const AppGap.small2(),
+          _DeviceRow(
+              client: clients[i],
+              state: state,
+              onNavigateToFlow: onNavigateToFlow),
         ],
-      ),
+      ],
     );
   }
 }
@@ -269,6 +305,7 @@ class _MeshGroupedList extends StatelessWidget {
     }
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (int i = 0; i < allNodes.length; i++)
           _NodeGroup(
@@ -325,57 +362,53 @@ class _NodeGroupState extends State<_NodeGroup> {
     final colors = Theme.of(context).colorScheme;
     final clientCount = widget.clients.length;
 
-    return AppCard(
-      padding: EdgeInsets.zero,
-      margin: const EdgeInsets.only(bottom: Spacing.small3),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Spacing.medium),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          InkWell(
+          // Group heading: a borderless list row that collapses the group.
+          AppListCard(
+            showBorder: false,
+            padding: const EdgeInsets.symmetric(
+                horizontal: Spacing.small2, vertical: Spacing.small2),
             onTap: () => setState(() => _expanded = !_expanded),
-            borderRadius: BorderRadius.vertical(
-                top: CustomTheme.of(context).radius.medium),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: Spacing.medium, vertical: Spacing.small3),
-              child: Row(
-                children: [
-                  Icon(
-                    _expanded
-                        ? LinksysIcons.arrowDropDown
-                        : LinksysIcons.chevronRight,
-                    color: colors.onSurfaceVariant,
-                  ),
+            leading: Icon(
+              _expanded ? LinksysIcons.arrowDropDown : LinksysIcons.chevronRight,
+              color: colors.onSurfaceVariant,
+            ),
+            title: AppText.titleMedium(widget.label),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppText.bodySmall(
+                  '$clientCount device${clientCount == 1 ? '' : 's'}',
+                  color: colors.onSurfaceVariant,
+                ),
+                if (widget.node?.hasWeakBackhaul == true) ...[
                   const AppGap.small2(),
-                  Expanded(
-                    child: AppText.titleMedium(widget.label),
-                  ),
-                  AppText.bodySmall(
-                    '$clientCount device${clientCount == 1 ? '' : 's'}',
-                    color: colors.onSurfaceVariant,
-                  ),
-                  if (widget.node?.hasWeakBackhaul == true) ...[
-                    const AppGap.small2(),
-                    Icon(InstantTestTone.warning.icon,
-                        color: InstantTestTone.warning.color(context),
-                        size: 18),
-                  ],
+                  Icon(InstantTestTone.warning.icon,
+                      color: InstantTestTone.warning.color(context)),
                 ],
-              ),
+              ],
             ),
           ),
           if (_expanded) ...[
-            const Divider(height: 1),
+            const AppGap.small2(),
             if (widget.clients.isEmpty)
               Padding(
-                padding: const EdgeInsets.all(Spacing.medium),
+                padding: const EdgeInsets.symmetric(horizontal: Spacing.small2),
                 child: AppText.bodyMedium(
                   'No devices connected',
                   color: colors.onSurfaceVariant,
                 ),
               )
             else
-              for (final client in widget.clients)
-                _DeviceRow(client: client, state: widget.state, onNavigateToFlow: widget.onNavigateToFlow),
+              _DeviceCards(
+                clients: widget.clients,
+                state: widget.state,
+                onNavigateToFlow: widget.onNavigateToFlow,
+              ),
           ],
         ],
       ),
@@ -396,61 +429,28 @@ class _DeviceRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final badge = _badgeFor(client);
-    final tone = _badgeTone(badge);
-    final colors = Theme.of(context).colorScheme;
 
-    return InkWell(
-      onTap: () => _showDeviceDetail(context, client, state, onNavigateToFlow: onNavigateToFlow),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Spacing.medium, vertical: 10),
-        child: Row(
-          children: [
-            Icon(_deviceIcon(client), size: 20, color: colors.onSurfaceVariant),
-            const AppGap.small2(),
-            Expanded(
-              child: client.hostname == null && client.manufacturer != null
-                  ? Tooltip(
-                      message: 'Name from device hardware ID — many smart home brands show unfamiliar names',
-                      child: AppText.bodyMedium(
-                        client.displayNameWithOui,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    )
-                  : AppText.bodyMedium(
-                      client.displayNameWithOui,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-            ),
-            const AppGap.small1(),
-            if (client.isWireless)
-              Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: AppText.bodySmall(
-                  client.band,
-                  color: colors.onSurfaceVariant,
-                ),
-              ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: Spacing.small2, vertical: 2),
-              decoration: BoxDecoration(
-                color: tone.container(context),
-                borderRadius:
-                    CustomTheme.of(context).radius.asBorderRadius().extraLarge,
-              ),
-              child: AppText.labelSmall(
-                _badgeLabel(badge),
-                color: tone.onContainer(context),
-              ),
-            ),
-            if (badge == _SignalBadge.poor || badge == _SignalBadge.weak)
-              Padding(
-                padding: const EdgeInsets.only(left: Spacing.small1),
-                child: Icon(tone.icon, size: 14, color: tone.color(context)),
-              ),
-          ],
-        ),
-      ),
+    // The Devices page's device card: icon, name, band, status. The band
+    // sits under the name so narrow phones keep room for the status.
+    final card = AppDeviceListCard(
+      leading: _deviceIcon(client),
+      title: client.displayNameWithOui,
+      description: client.isWireless
+          ? AppText.bodyMedium(
+              client.band,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            )
+          : null,
+      trailing: _badgeStatus(context, badge),
+      onTap: () => _showDeviceDetail(context, client, state,
+          onNavigateToFlow: onNavigateToFlow),
     );
+    return client.hostname == null && client.manufacturer != null
+        ? Tooltip(
+            message: 'Name from device hardware ID — many smart home brands show unfamiliar names',
+            child: card,
+          )
+        : card;
   }
 }
 
@@ -467,10 +467,7 @@ void _showDeviceDetail(
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    shape: RoundedRectangleBorder(
-      borderRadius:
-          BorderRadius.vertical(top: CustomTheme.of(context).radius.large),
-    ),
+    showDragHandle: true,
     builder: (context) => DiagnosticSelectionArea(
       child: _DeviceDetailSheet(
         client: client,
@@ -507,25 +504,11 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(
-            Spacing.large2, Spacing.medium, Spacing.large2, Spacing.large2),
+            Spacing.large2, 0, Spacing.large2, Spacing.large2),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Drag handle
-            Center(
-              child: Container(
-                width: Spacing.large4,
-                height: Spacing.small1,
-                decoration: BoxDecoration(
-                  color: colors.outlineVariant,
-                  borderRadius:
-                      CustomTheme.of(context).radius.asBorderRadius().small,
-                ),
-              ),
-            ),
-            const AppGap.medium(),
-
             // Device name + icon
             Row(
               children: [
@@ -630,19 +613,16 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
             ? 0.55
             : 0.25;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            AppText.labelLarge(
-              'Signal: ${_badgeLabel(badge)}',
-              color: color,
-            ),
-          ],
-        ),
-        const AppGap.small2(),
-        ClipRRect(
+    // Signal row as on the device detail page: colored level, then a meter.
+    return AppListCard(
+      padding: const EdgeInsets.all(Spacing.medium),
+      title: AppText.labelLarge(
+        'Signal: ${_badgeLabel(badge)}',
+        color: color,
+      ),
+      description: Padding(
+        padding: const EdgeInsets.only(top: Spacing.small2),
+        child: ClipRRect(
           borderRadius: CustomTheme.of(context).radius.asBorderRadius().small,
           child: LinearProgressIndicator(
             value: fraction,
@@ -651,7 +631,7 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -702,42 +682,36 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
   Widget _deviceMeta(BuildContext context, ColorScheme colors) {
     final rows = <Widget>[];
     if (client.ipAddress != null) {
-      rows.add(_metaRow(context, colors, 'IP', client.ipAddress!));
+      rows.add(_metaRow('IP', client.ipAddress!));
     }
-    rows.add(_metaRow(context, colors, 'MAC', client.macAddress));
+    rows.add(_metaRow('MAC', client.macAddress));
     final leaseMin = widget.state.dhcpLeaseMinutes;
     if (leaseMin != null && leaseMin > 0) {
       final hours = (leaseMin / 60).ceil();
-      rows.add(_metaRow(context, colors, 'Connected',
+      rows.add(_metaRow('Connected',
           'Within the last ${hours == 1 ? "hour" : "$hours hours"}'));
     } else {
-      rows.add(_metaRow(context, colors, 'Status', 'Connected now'));
+      rows.add(_metaRow('Status', 'Connected now'));
     }
-    if (rows.isEmpty) return const SizedBox.shrink();
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorSchemeExt.surfaceContainerLow!,
-        borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
-      ),
-      child: Column(children: rows),
+    // One setting card per field, as on the device detail page.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (int i = 0; i < rows.length; i++) ...[
+          if (i > 0) const AppGap.small2(),
+          rows[i],
+        ],
+      ],
     );
   }
 
-  Widget _metaRow(BuildContext context, ColorScheme colors, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: Spacing.small1),
-      child: Row(
-        children: [
-          SizedBox(
-            width: Spacing.large4,
-            child: AppText.bodySmall(label, color: colors.onSurfaceVariant),
-          ),
-          Expanded(
-            child: AppText.bodySmall(value, color: colors.onSurface),
-          ),
-        ],
-      ),
+  Widget _metaRow(String label, String value) {
+    return AppSettingCard(
+      padding: const EdgeInsets.symmetric(
+          horizontal: Spacing.large2, vertical: Spacing.medium),
+      title: label,
+      description: value,
+      selectableDescription: true,
     );
   }
 
@@ -772,15 +746,9 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
         if (client.isWireless) ...[
           const AppGap.small2(),
           _isDisconnecting
-              ? OutlinedButton.icon(
-                  onPressed: null,
-                  icon: const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2)),
-                  label: AppText.labelLarge('Disconnecting…',
-                      color: colors.onSurfaceVariant),
-                )
+              // Disabled kit button while the request runs.
+              ? const AppOutlinedButton('Disconnecting…',
+                  icon: LinksysIcons.signalWifiOff)
               : AppOutlinedButton('Disconnect and reconnect this device',
                 onTap: () => _disconnectDevice(context),
                 icon: LinksysIcons.signalWifiOff),
@@ -799,15 +767,8 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
         if (isWeak && state.channelInfo != null) ...[
           const AppGap.small2(),
           _isChangingChannel
-              ? OutlinedButton.icon(
-                  onPressed: null,
-                  icon: const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2)),
-                  label: AppText.labelLarge('Changing channel…',
-                      color: colors.onSurfaceVariant),
-                )
+              ? const AppOutlinedButton('Changing channel…',
+                  icon: LinksysIcons.wifi)
               : AppOutlinedButton('Try a cleaner WiFi channel',
                 onTap: () => _triggerChannelRescan(context),
                 icon: LinksysIcons.wifi),

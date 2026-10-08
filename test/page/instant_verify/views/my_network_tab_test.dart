@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
+import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/card/setting_card.dart';
+import 'package:privacygui_widgets/widgets/label/status_label.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
 import 'package:privacy_gui/page/instant_verify/views/my_network_tab.dart';
@@ -301,6 +306,93 @@ void main() {
       await tester.pumpWidget(_buildTab(_connectedState()));
       await tester.pumpAndSettle();
       expect(find.text('WiFi Overview'), findsOneWidget);
+    });
+  });
+
+  group('MyNetworkTab — kit components', () {
+    Finder settingCardWith(String text) => find.ancestor(
+        of: find.textContaining(text), matching: find.byType(AppSettingCard));
+
+    testWidgets('uptime warning is an AppSettingCard with the default border',
+        (tester) async {
+      await tester.pumpWidget(_buildTab(_highUptimeState()));
+      await tester.pumpAndSettle();
+      final card = settingCardWith('restart may help');
+      expect(card, findsOneWidget);
+      expect(tester.widget<AppSettingCard>(card).borderColor, isNull);
+      expect(tester.widget<AppSettingCard>(card).leading, isNotNull);
+    });
+
+    testWidgets('weak node advice is an AppSettingCard', (tester) async {
+      await tester.pumpWidget(_buildTab(_meshState()));
+      await tester.pumpAndSettle();
+      expect(settingCardWith('weak connection to your router'), findsOneWidget);
+    });
+
+    testWidgets('child nodes are AppListCard rows', (tester) async {
+      await tester.pumpWidget(_buildTab(_meshState()));
+      await tester.pumpAndSettle();
+      for (final name in ['Living Room', 'Bedroom', 'Office']) {
+        expect(find.widgetWithText(AppListCard, name), findsAtLeast(1),
+            reason: name);
+      }
+    });
+
+    testWidgets('crowded 2.4 GHz advice is an AppSettingCard', (tester) async {
+      await tester.pumpWidget(_buildTab(InstantVerifyPivotState(
+        phase: PivotLoadPhase.complete,
+        browserTestStep: 'complete',
+        wanStatus: const {'wanStatus': 'Connected'},
+        clients: [
+          for (var i = 0; i < 4; i++)
+            DiagnosticClient(
+                macAddress: '00:00:00:00:00:0$i',
+                band: '2.4GHz',
+                isWireless: true),
+        ],
+      )));
+      await tester.pumpAndSettle();
+      expect(settingCardWith('slower 2.4 GHz band'), findsOneWidget);
+    });
+
+    testWidgets('guest status uses AppStatusLabel', (tester) async {
+      await tester.pumpWidget(_buildTab(_guestEnabledState()));
+      await tester.pumpAndSettle();
+      expect(
+          find.descendant(
+              of: find.byType(AppStatusLabel), matching: find.text('On')),
+          findsOneWidget);
+    });
+
+    testWidgets('desktop lays independent cards out in two columns',
+        (tester) async {
+      tester.view.physicalSize = const Size(1440, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(_buildTab(_connectedState()));
+      await tester.pumpAndSettle();
+      final grid = tester.widget<MasonryGridView>(find.byType(MasonryGridView));
+      expect(
+          (grid.gridDelegate as SliverSimpleGridDelegateWithFixedCrossAxisCount)
+              .crossAxisCount,
+          2);
+      final internet = tester.getTopLeft(find.text('Internet Connection'));
+      final router = tester.getTopLeft(find.text('Your Router'));
+      expect(router.dy, internet.dy);
+      expect(router.dx, greaterThan(internet.dx));
+    });
+
+    testWidgets('mobile keeps a single column', (tester) async {
+      tester.view.physicalSize = const Size(400, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(_buildTab(_connectedState()));
+      await tester.pumpAndSettle();
+      final internet = tester.getTopLeft(find.text('Internet Connection'));
+      final router = tester.getTopLeft(find.text('Your Router'));
+      expect(router.dy, greaterThan(internet.dy));
     });
   });
 
