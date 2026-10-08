@@ -752,7 +752,11 @@ class _StatusCard extends StatelessWidget {
             ]),
           ),
 
-          if (onTroubleshootDevice != null && state.issueDevices.isNotEmpty) ...[
+          // Device links belong to device findings (check 7) only; under an
+          // unrelated finding such as router load they read as its fix.
+          if (onTroubleshootDevice != null &&
+              primary.checkNumber == 7 &&
+              state.issueDevices.isNotEmpty) ...[
             const SizedBox(height: 8),
             for (final device in state.issueDevices.map((score) => score.client))
               Align(

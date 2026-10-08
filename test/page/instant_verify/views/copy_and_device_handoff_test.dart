@@ -45,7 +45,8 @@ class WarningNotifier extends InstantVerifyPivotNotifier {
           VerdictFinding(
               priority: VerdictPriority.warning,
               headline: '2 devices with weak WiFi',
-              explanation: 'LB100 and LB100 need help.')
+              explanation: 'LB100 and LB100 need help.',
+              checkNumber: 7)
         ]),
       );
   @override
@@ -70,8 +71,30 @@ Future<void> copy(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+class LoadWarningNotifier extends WarningNotifier {
+  @override
+  InstantVerifyPivotState build() => super.build().copyWith(
+        verdict: const Verdict(findings: [
+          VerdictFinding(
+              priority: VerdictPriority.warning,
+              headline: 'Your router is very busy',
+              explanation: 'A restart usually clears this.',
+              checkNumber: 13)
+        ]),
+      );
+}
+
 void main() {
   mockDependencyRegister();
+  testWidgets('device links stay off an unrelated top finding', (tester) async {
+    await tester.pumpWidget(testableWidget(overrides: [
+      instantVerifyPivotProvider.overrideWith(LoadWarningNotifier.new)
+    ], child: const InstantTestPage()));
+    await tester.pumpAndSettle();
+    expect(find.text('Your router is very busy'), findsOneWidget);
+    expect(find.textContaining('Help LB100 ('), findsNothing);
+  });
+
   for (final device in devices.take(2)) {
     testWidgets(
         'warning opens the exact duplicate-name device ${device.macAddress}',

@@ -490,6 +490,7 @@ class VerdictEngine {
           priority: VerdictPriority.warning,
           headline: '$count $deviceWord with weak WiFi',
           explanation: advice,
+          checkNumber: 7,
         ));
       }
     }
