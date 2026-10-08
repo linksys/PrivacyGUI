@@ -437,6 +437,25 @@ void main() {
     expect(find.text('Your router can reach the internet'), findsOneWidget);
   });
 
+  testWidgets('re-check shows it is running even when probes finish instantly',
+      (tester) async {
+    final service = ProbeService();
+    await mount(tester, service: service);
+    await tapText(tester, "Internet isn't working");
+    expect(find.textContaining('Checked again at'), findsNothing);
+    final target = find.text('Still seeing issues — test again');
+    await tester.ensureVisible(target);
+    await tester.tap(target);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(service.calls, 2);
+    expect(find.text('Running diagnostics…'), findsOneWidget);
+    expect(find.text('Checking your connection…'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.text('Your router can reach the internet'), findsOneWidget);
+    expect(find.textContaining('Checked again at'), findsOneWidget);
+  });
+
   testWidgets('rejected reconnect reports failure without claiming disconnection', (tester) async {
     await mount(tester, notifier: FixtureNotifier(rejectReconnect: true));
     await tapText(tester, 'One device is slow');

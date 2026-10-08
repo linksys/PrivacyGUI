@@ -673,6 +673,13 @@ class _Flow1State extends ConsumerState<_Flow1> {
   bool _dnsOk = false;
   bool _isRestarting = false;
   bool _restarted = false;
+  int _runs = 0;
+  DateTime? _checkedAt;
+  Timer? _minimumTimer;
+
+  /// Local probes can finish within a frame. Without a visible running state
+  /// a re-check that returns the same result looks like a dead button.
+  static const _minimumCheck = Duration(milliseconds: 1200);
 
   @override
   void initState() {
@@ -680,37 +687,47 @@ class _Flow1State extends ConsumerState<_Flow1> {
     _runDiagnostics();
   }
 
+  @override
+  void dispose() {
+    _minimumTimer?.cancel();
+    super.dispose();
+  }
+
   Future<void> _runDiagnostics() async {
+    final run = ++_runs;
     setState(() {
       _phase = _Flow1Phase.running;
       _gatewayOk = false;
       _internetOk = false;
       _dnsOk = false;
     });
+    final shown = Completer<void>();
+    _minimumTimer?.cancel();
+    _minimumTimer = Timer(_minimumCheck, shown.complete);
+    final phase = await _probe(run);
+    await shown.future;
+    if (!mounted || run != _runs) return;
+    setState(() {
+      _phase = phase;
+      _checkedAt = DateTime.now();
+    });
+  }
+
+  Future<_Flow1Phase> _probe(int run) async {
+    bool current() => mounted && run == _runs;
     final svc = ref.read(browserDiagnosticServiceProvider);
     try {
       final gateway = await svc.pingGateway();
-      if (!mounted) return;
-      setState(() => _gatewayOk = gateway.reachable);
-      if (!gateway.reachable) {
-        setState(() => _phase = _Flow1Phase.gatewayFail);
-        return;
-      }
+      if (current()) setState(() => _gatewayOk = gateway.reachable);
+      if (!gateway.reachable) return _Flow1Phase.gatewayFail;
       final publicIp = await svc.pingPublicIp();
-      if (!mounted) return;
-      setState(() => _internetOk = publicIp.reachable);
-      if (!publicIp.reachable) {
-        setState(() => _phase = _Flow1Phase.internetFail);
-        return;
-      }
+      if (current()) setState(() => _internetOk = publicIp.reachable);
+      if (!publicIp.reachable) return _Flow1Phase.internetFail;
       final dns = await svc.checkDns();
-      if (!mounted) return;
-      setState(() {
-        _dnsOk = dns.resolved;
-        _phase = dns.resolved ? _Flow1Phase.allOk : _Flow1Phase.dnsFail;
-      });
+      if (current()) setState(() => _dnsOk = dns.resolved);
+      return dns.resolved ? _Flow1Phase.allOk : _Flow1Phase.dnsFail;
     } catch (_) {
-      if (mounted) setState(() => _phase = _Flow1Phase.unavailable);
+      return _Flow1Phase.unavailable;
     }
   }
 
@@ -777,6 +794,13 @@ class _Flow1State extends ConsumerState<_Flow1> {
                 .titleSmall
                 ?.copyWith(fontWeight: FontWeight.w600))),
         ]),
+        if (_runs > 1 && _phase != _Flow1Phase.running && _checkedAt != null) ...[
+          const SizedBox(height: 4),
+          Text(
+              'Checked again at ${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(_checkedAt!))}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        ],
         const SizedBox(height: 12),
         DetailsDisclosure(label: 'View test details', child: Column(children: [
         _checkRow(context, 'This device reached your router',
@@ -821,7 +845,16 @@ class _Flow1State extends ConsumerState<_Flow1> {
   }
 
   List<Widget> _running(BuildContext context) => [
-        _infoBox(context, 'Checking your connection…', icon: LinksysIcons.search),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(children: [
+            const SizedBox(width: 18, height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2)),
+            const SizedBox(width: 8),
+            Expanded(child: Text('Checking your connection…',
+                style: Theme.of(context).textTheme.bodyMedium)),
+          ]),
+        ),
       ];
 
   List<Widget> _gatewayFailPath(BuildContext context) => [
