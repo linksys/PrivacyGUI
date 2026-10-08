@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:async';
 
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
@@ -74,6 +75,41 @@ void main() {
         ),
       );
 
+  /// Same as [harness], but with [child] inside a `ShellRoute`, mirroring
+  /// production: the top bar lives in the dashboard shell's page content, so a
+  /// context taken there resolves to the shell navigator, not the root one.
+  /// The flat harness cannot catch a pop aimed at the wrong navigator, because
+  /// it only ever has one.
+  Widget shellHarness({
+    required List<Override> overrides,
+    required Widget child,
+  }) =>
+      ProviderScope(
+        overrides: overrides,
+        child: MaterialApp.router(
+          theme: mockLightThemeData,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, routeChild) =>
+              CustomResponsive(child: routeChild ?? const SizedBox.shrink()),
+          routerConfig: GoRouter(
+            initialLocation: '/dashboard',
+            routes: [
+              ShellRoute(
+                builder: (context, state, shellChild) =>
+                    Scaffold(body: shellChild),
+                routes: [
+                  GoRoute(
+                    path: '/dashboard',
+                    builder: (context, state) => child,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+
   /// [WidgetTester.pumpAndSettle] cannot be used here: the ACTIVE state renders
   /// [RemoteAssistanceAnimation], which loops, so there is never a frame with
   /// nothing scheduled. Pump a fixed span instead - enough for the dialog route
@@ -137,7 +173,8 @@ void main() {
 
     expect(find.text('Close'), findsNothing,
         reason: 'the dialog should have closed itself');
-    expect(find.text('Session expired'), findsOneWidget,
+    expect(find.text('Session ended. It may have expired or been closed.'),
+        findsOneWidget,
         reason: 'the user should be told, not left guessing');
     expect(polling.resumeCount, 1,
         reason: 'polling was paused on ACTIVE and nothing else resumes it');
@@ -181,7 +218,8 @@ void main() {
     await settle(tester);
 
     expect(find.text('Close'), findsNothing);
-    expect(find.text('Session expired'), findsNothing,
+    expect(find.text('Session ended. It may have expired or been closed.'),
+        findsNothing,
         reason: 'the user closed it themselves; nothing expired');
     expect(polling.resumeCount, 1,
         reason: 'closing resumes polling however the close was triggered');
@@ -219,6 +257,60 @@ void main() {
     await settle(tester);
 
     expect(find.text('Close'), findsOneWidget);
-    expect(find.text('Session expired'), findsNothing);
+    expect(find.text('Session ended. It may have expired or been closed.'),
+        findsNothing);
+  });
+
+  // The notice's OK button used to pop via `Navigator.of(context)`, where
+  // `context` is the caller's - under the dashboard ShellRoute when the dialog
+  // came from the top bar. That resolved to the shell navigator, so OK popped the
+  // dashboard route out of the match list rather than closing the notice, which
+  // took the notice down with it and left a blank page. Needs the shell harness:
+  // with a single navigator the wrong target and the right one coincide.
+  testWidgets('OK on the expired notice closes it and leaves the page up',
+      (tester) async {
+    final notifier = _TestRemoteClientNotifier(
+        RemoteClientState(sessionInfo: sessionWith(GRASessionStatus.active)));
+    final polling = _FakePollingNotifier();
+    useLargeSurface(tester);
+
+    await tester.pumpWidget(shellHarness(
+      overrides: [
+        remoteClientProvider.overrideWith(() => notifier),
+        pollingProvider.overrideWith(() => polling),
+      ],
+      child: Consumer(
+        builder: (context, ref, child) => Column(
+          children: [
+            const Text('dashboard'),
+            TextButton(
+              onPressed: () =>
+                  showRemoteAssistanceDialog(context, ref, isPassive: true),
+              child: const Text('open'),
+            ),
+          ],
+        ),
+      ),
+    ));
+
+    await tester.tap(find.text('open'));
+    await settle(tester);
+
+    notifier.emit(
+        RemoteClientState(sessionInfo: sessionWith(GRASessionStatus.initiate)));
+    await settle(tester);
+    expect(find.text('Session ended. It may have expired or been closed.'),
+        findsOneWidget,
+        reason: 'the notice should be up before OK is pressed');
+
+    await tester.tap(find.text('Ok'));
+    await settle(tester);
+
+    expect(find.text('Session ended. It may have expired or been closed.'),
+        findsNothing,
+        reason: 'OK should close the notice it belongs to');
+    expect(find.text('dashboard'), findsOneWidget,
+        reason: 'the page behind the notice must survive - popping the shell '
+            'route instead of the notice is what left a blank screen');
   });
 }

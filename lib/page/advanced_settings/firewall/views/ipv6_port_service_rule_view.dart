@@ -102,6 +102,7 @@ class _AddRuleContentViewState
       scrollable: true,
       title: loc(context).ipv6PortServices,
       bottomBar: PageBottomBar(
+        isWrite: false,
         isPositiveEnabled: _notifier.isRuleValid(),
         onPositiveTap: () {
           final rule = ref.read(ipv6PortServiceRuleProvider).rule;

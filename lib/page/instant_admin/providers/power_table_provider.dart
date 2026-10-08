@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/power_table_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
@@ -127,7 +128,11 @@ class PowerTableNotifier extends Notifier<PowerTableState> {
         country: PowerTableCountries.resolve(powerTable.country ?? ''));
   }
 
-  Future<PowerTableState> save(PowerTableCountries country) {
+  Future<PowerTableState> save(PowerTableCountries country) async {
+    // Before polling stops: the restart below is chained onto the send, so a
+    // refusal after the stop would leave polling off.
+    enforceAccess(ref,
+        (policy) => policy.checkSend(JNAPAction.setPowerTableSettings));
     ref.read(pollingProvider.notifier).stopPolling();
     return ref
         .read(routerRepositoryProvider)

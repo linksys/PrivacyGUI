@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/widgets/write_guard.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
@@ -141,23 +142,27 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
             ],
           ),
           const AppGap.medium(),
-          AppTextButton.noPadding(
-            loc(context).tryAgain,
-            onTap: () async {
-              logger.d('[AddNodes]: Retry to search for more nodes');
-              try {
-                await ref.read(addNodesProvider.notifier).startAutoOnboarding();
-              } on ExceptionSmartConnectTimeout {
-                if (context.mounted) {
-                  showFailedSnackBar(context, loc(context).generalError);
+          WriteGuard(
+            child: AppTextButton.noPadding(
+              loc(context).tryAgain,
+              onTap: () async {
+                logger.d('[AddNodes]: Retry to search for more nodes');
+                try {
+                  await ref
+                      .read(addNodesProvider.notifier)
+                      .startAutoOnboarding();
+                } on ExceptionSmartConnectTimeout {
+                  if (context.mounted) {
+                    showFailedSnackBar(context, loc(context).generalError);
+                  }
+                } catch (e) {
+                  logger.e('[AddNodes]: Retry failed with error: $e');
+                  if (context.mounted) {
+                    showFailedSnackBar(context, loc(context).generalError);
+                  }
                 }
-              } catch (e) {
-                logger.e('[AddNodes]: Retry failed with error: $e');
-                if (context.mounted) {
-                  showFailedSnackBar(context, loc(context).generalError);
-                }
-              }
-            },
+              },
+            ),
           ),
           const AppGap.large3(),
           AppFilledButton(
@@ -209,24 +214,28 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
             },
           ),
           const AppGap.large3(),
-          AppFilledButtonWithLoading(
-            loc(context).next,
-            onTap: () async {
-              logger.d('[AddNodes]: Start to search for more nodes');
-              try {
-                await ref.read(addNodesProvider.notifier).startAutoOnboarding();
-              } on ExceptionSmartConnectTimeout {
-                if (context.mounted) {
-                  showFailedSnackBar(context, loc(context).generalError);
+          WriteGuard(
+            child: AppFilledButtonWithLoading(
+              loc(context).next,
+              onTap: () async {
+                logger.d('[AddNodes]: Start to search for more nodes');
+                try {
+                  await ref
+                      .read(addNodesProvider.notifier)
+                      .startAutoOnboarding();
+                } on ExceptionSmartConnectTimeout {
+                  if (context.mounted) {
+                    showFailedSnackBar(context, loc(context).generalError);
+                  }
+                } catch (e) {
+                  logger.e(
+                      '[AddNodes]: Start auto onboarding failed with error: $e');
+                  if (context.mounted) {
+                    showFailedSnackBar(context, loc(context).generalError);
+                  }
                 }
-              } catch (e) {
-                logger.e(
-                    '[AddNodes]: Start auto onboarding failed with error: $e');
-                if (context.mounted) {
-                  showFailedSnackBar(context, loc(context).generalError);
-                }
-              }
-            },
+              },
+            ),
           )
         ],
       )),

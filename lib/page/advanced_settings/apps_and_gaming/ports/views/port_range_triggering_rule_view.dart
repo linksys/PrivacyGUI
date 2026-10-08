@@ -100,6 +100,7 @@ class _AddRuleContentViewState
       scrollable: true,
       title: loc(context).portRangeTriggering,
       bottomBar: PageBottomBar(
+        isWrite: false,
         isPositiveEnabled: _notifier.isRuleValid(),
         onPositiveTap: () {
           final rule = ref.read(portRangeTriggeringRuleProvider).rule;

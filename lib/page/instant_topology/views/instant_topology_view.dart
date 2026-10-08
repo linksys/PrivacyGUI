@@ -3,6 +3,8 @@ import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/widgets/write_guard.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
@@ -291,7 +293,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView>
     final supportChildReboot = serviceHelper.isSupportChildReboot();
     final supportChildFactoryReset = serviceHelper.isSupportChildFactoryReset();
 
-    return node.data.isMaster
+    final actions = node.data.isMaster
         ? [
             if (hasBlinkFunction &&
                 isCognitiveMeshRouter(
@@ -319,6 +321,11 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView>
                     hardwareVersion: node.data.hardwareVersion))
               NodeInstantActions.reset,
           ];
+    // Blink is a diagnostic; reboot, pair and reset all change the network. A
+    // node left with nothing to offer shows no action row at all.
+    return ref.watch(accessPolicyProvider).canWrite
+        ? actions
+        : actions.where((e) => e == NodeInstantActions.blink).toList();
   }
 
   _handleSelectedNodeAction(
@@ -563,12 +570,14 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView>
       context,
       title: loc(context).modalOfflineNodeTitle,
       actions: [
-        AppTextButton(
-          loc(context).modalOfflineRemoveNodeFromNetwork,
-          color: Theme.of(context).colorScheme.error,
-          onTap: () {
-            context.pop('remove');
-          },
+        WriteGuard(
+          child: AppTextButton(
+            loc(context).modalOfflineRemoveNodeFromNetwork,
+            color: Theme.of(context).colorScheme.error,
+            onTap: () {
+              context.pop('remove');
+            },
+          ),
         ),
         AppTextButton(
           loc(context).close,
