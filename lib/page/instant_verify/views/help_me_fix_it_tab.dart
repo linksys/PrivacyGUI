@@ -1656,7 +1656,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
     final page = _devicePage.clamp(0, lastPage);
     final visible = matches.skip(page * _devicesPerPage).take(_devicesPerPage);
     final theme = Theme.of(context);
-    final choices = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+    final choices = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 
       if (state.clients.length > _devicesPerPage) ...[
         TextField(
