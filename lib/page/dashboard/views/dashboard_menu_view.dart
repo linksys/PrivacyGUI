@@ -87,8 +87,11 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
     return Scrollbar(
       thickness: 0,
       child: SizedBox(
+        // Rows must round UP — integer/float division that truncates would clip
+        // the final partial row (e.g. a lone card on its own row gets cut off).
         height: (items.length /
-                    (ResponsiveLayout.isOverMedimumLayout(context) ? 3 : 1)) *
+                    (ResponsiveLayout.isOverMedimumLayout(context) ? 3 : 1))
+                .ceil() *
                 (ResponsiveLayout.isOverMedimumLayout(context) ? 152 : 112) +
             kDefaultToolbarHeight,
         child: GridView.builder(
@@ -209,6 +212,15 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           onTap: () {
             _navigateTo(RouteNamed.menuInstantVerify);
           }),
+      AppSectionItemData(
+          title: loc(context).instantTest,
+          description: loc(context).instantTestDesc,
+          // 'troubleshoot' — distinct from the speed-test cards' networkCheck,
+          // and fits the "fix common problems" purpose.
+          iconData: LinksysIcons.troubleshoot,
+          // go, not push, so the URL names Instant-Test and browser
+          // Back/Forward can step through its flows.
+          onTap: () => context.goNamed(RouteNamed.menuInstantTest)),
       if (isSupportVPN)
         AppSectionItemData(
             title: loc(context).vpn,

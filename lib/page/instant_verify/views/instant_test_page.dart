@@ -1,0 +1,211 @@
+import 'diagnostic_selection_area.dart';
+import 'instant_test_layout.dart';
+import 'package:privacy_gui/route/constants.dart';
+import 'package:privacygui_widgets/widgets/buttons/button.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'instant_test_page_header.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/styled/top_bar.dart';
+import 'instant_test_location.dart';
+import 'symptom_chooser.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
+import 'package:privacy_gui/page/instant_verify/views/help_me_fix_it_tab.dart';
+import 'package:privacy_gui/page/instant_verify/views/overview_tab.dart';
+import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
+import 'package:privacy_gui/page/instant_verify/views/my_devices_tab.dart';
+import 'package:privacy_gui/page/instant_verify/views/my_network_tab.dart';
+
+/// The authenticated menu route carries the same top bar as other router
+/// pages (header plus Dashboard/Menu navigation on desktop; the shell adds
+/// the bottom bar on mobile). StyledAppPageView is not used because its
+/// non-scrolling, unpadded layout nests Expanded inside a Stack.
+class InstantTestRoutePage extends StatelessWidget {
+  const InstantTestRoutePage({super.key});
+
+  @override
+  Widget build(BuildContext context) => const Column(children: [
+        PreferredSize(preferredSize: Size(0, 80), child: TopBar()),
+        Expanded(child: InstantTestPage(backToMenu: true)),
+      ]);
+}
+
+/// Customer diagnostics and guided help share one home and one return path.
+/// Uses the caller's existing authenticated session, or a preview override.
+class InstantTestPage extends ConsumerStatefulWidget {
+  const InstantTestPage({super.key, this.backToMenu = false});
+
+  /// Return to the Menu (the route's parent) instead of router home.
+  final bool backToMenu;
+
+  @override
+  ConsumerState<InstantTestPage> createState() => _InstantTestPageState();
+}
+
+class _InstantTestPageState extends ConsumerState<InstantTestPage> {
+  List<int> _flowPath = [];
+  bool get _showFlow => _flowPath.isNotEmpty;
+  GoRouter? _router;
+  String? _routePath;
+  int? _details;
+  final _pendingDevice = ValueNotifier<DiagnosticClient?>(null);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(instantVerifyPivotProvider.notifier).fetch();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final router = GoRouter.maybeOf(context);
+    if (router == _router) return;
+    _router?.routeInformationProvider.removeListener(_readRoute);
+    _router = router;
+    _routePath = router == null ? null : GoRouterState.of(context).uri.path;
+    router?.routeInformationProvider.addListener(_readRoute);
+    _readRoute();
+  }
+
+  void _readRoute() {
+    final uri = _router?.routeInformationProvider.value.uri;
+    if (uri == null || uri.path != _routePath || !mounted) return;
+    final location = InstantTestLocation.parse(uri.queryParameters['instant']);
+    if (location.value ==
+        InstantTestLocation(details: _details, flows: _flowPath).value) return;
+    // Query navigation keeps the page's Navigator route mounted. Its popup
+    // routes must not outlive the workflow that requested confirmation.
+    final navigator = Navigator.of(context, rootNavigator: true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) navigator.popUntil((route) => route is! PopupRoute);
+    });
+    setState(() {
+      _details = location.details;
+      _flowPath = location.flows;
+    });
+  }
+
+  void _navigate({int? details, List<int> flows = const []}) {
+    final location = InstantTestLocation(details: details, flows: flows);
+    setState(() {
+      _details = details;
+      _flowPath = List.of(flows);
+    });
+    final router = _router;
+    if (router == null) return; // Embedded widget/test without a route host.
+    final uri = router.routeInformationProvider.value.uri;
+    // A pushed page is not reflected in the URL, which still names the page
+    // underneath; navigating there would leave Instant-Test.
+    if (uri.path != _routePath) return;
+    final query = Map<String, String>.of(uri.queryParameters)
+      ..remove('instant');
+    if (location.value.isNotEmpty) query['instant'] = location.value;
+    router.go(uri.replace(queryParameters: query).toString());
+  }
+
+  @override
+  void dispose() {
+    _router?.routeInformationProvider.removeListener(_readRoute);
+    _pendingDevice.dispose();
+    super.dispose();
+  }
+
+  void _launch(int flow, {DiagnosticClient? device}) {
+    _pendingDevice.value = device;
+    _navigate(details: _details, flows: [flow]);
+  }
+
+  @override
+  Widget build(BuildContext context) => DiagnosticSelectionArea(
+      child: InstantTestLayout(
+          contentWidth: InstantTestContentWidth.wide,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (widget.backToMenu)
+                // Hidden while a details page or flow shows its own title row.
+                Offstage(
+                  offstage: _showFlow || _details != null,
+                  child: InstantTestPageHeader(
+                      title: 'Instant-Test',
+                      backLabel: 'Back to menu',
+                      onBack: () => context.goNamed(RouteNamed.dashboardMenu)),
+                )
+              else
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: AppTextButton('Back to router home',
+                      icon: LinksysIcons.arrowBack,
+                      onTap: () => context.goNamed(RouteNamed.dashboardHome)),
+                ),
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Offstage(
+                      offstage: _showFlow || _details != null,
+                      child: ExcludeFocus(
+                        excluding: _showFlow || _details != null,
+                        child: DiagnosticSelectionArea(
+                            child: OverviewTab(
+                          showProblemCards: false,
+                          leading:
+                              SymptomChooser(onSelect: (flow) => _launch(flow)),
+                          onNavigateToFlow: (index) => _launch(index + 1),
+                          onTroubleshootWeakDevices: () => _launch(31),
+                          onViewNetwork: () => _navigate(details: 2),
+                          onTroubleshootDevice: (device) => _launch(31, device: device),
+                        )),
+                      ),
+                    ),
+                    if (_details != null)
+                      Offstage(
+                        offstage: _showFlow,
+                        child: ExcludeFocus(
+                            excluding: _showFlow,
+                            child: DiagnosticSelectionArea(
+                                child: Column(children: [
+                              InstantTestPageHeader(
+                                  title: _details == 1
+                                      ? 'Device details'
+                                      : 'Network details',
+                                  backLabel: 'Back to Instant-Test',
+                                  onBack: () => _navigate()),
+                              Expanded(
+                                  child: _details == 1
+                                      ? MyDevicesTab(
+                                          onNavigateToFlow: (flow, {device}) =>
+                                              _launch(flow, device: device))
+                                      : const MyNetworkTab()),
+                            ]))),
+                      ),
+                    if (_showFlow)
+                      Positioned.fill(
+                        child: HelpMeFixItTab(
+                          flowPath: _flowPath,
+                          onFlowPathChanged: (flows) =>
+                              _navigate(details: _details, flows: flows),
+                          pendingFlowDeviceNotifier: _pendingDevice,
+                          exitLabel: _details == 1
+                              ? 'Back to device details'
+                              : 'Back to Instant-Test',
+                          singlePage: true,
+                          onCheckAgain: () {
+                            _navigate();
+                            ref
+                                .read(instantVerifyPivotProvider.notifier)
+                                .fetch();
+                          },
+                          onExitToHome: () => _navigate(details: _details),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          )));
+}

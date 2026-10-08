@@ -29,10 +29,8 @@ Widget testableWidget({
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          body: CustomResponsive(
-            child: child,
-          ),
-        ),
+        // Match app.dart: dialogs and the page share the design-system theme.
+        builder: (context, child) => CustomResponsive(child: child!),
+        home: Scaffold(body: child),
       ),
     );

@@ -1,3 +1,4 @@
+import 'package:privacy_gui/page/instant_verify/views/instant_test_page.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -53,6 +54,7 @@ import 'package:privacy_gui/page/instant_safety/views/instant_safety_view.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart';
 import 'package:privacy_gui/page/select_network/_select_network.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_verify_view.dart';
+import 'package:privacy_gui/page/instant_verify/prototypes/prototype_shell.dart';
 import 'package:privacy_gui/page/support/faq_list_view.dart';
 import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.dart';
 import 'package:privacy_gui/page/troubleshooting/_troubleshooting.dart';
@@ -80,7 +82,6 @@ part 'route_otp.dart';
 part 'route_pnp.dart';
 part 'route_add_nodes.dart';
 part 'route_menu.dart';
-
 // init path enum
 enum LocalWhereToGo {
   pnp,
@@ -139,6 +140,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       pnpRoute,
       pnpTroubleshootingRoute,
       addNodesRoute,
+      // Local test builds only: Instant-Test preview on mock data, used by
+      // tools/instant_test. Customer builds do not register it.
+      if (BuildConfig.forceCommandType == ForceCommand.local)
+        LinksysRoute(
+          name: RouteNamed.instantPrototype,
+          path: RoutePath.instantPrototype,
+          config: const LinksysRouteConfig(noNaviRail: true),
+          builder: (context, state) => const PrototypeRoot(),
+        ),
     ],
     redirect: (context, state) {
       if (!ref.read(accessPolicyProvider).canWrite) {
@@ -164,6 +174,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         return router._redirectLogic(state);
       } else if (state.matchedLocation.startsWith(RoutePath.pnp)) {
         return router._goPnpPath(state);
+      } else if (BuildConfig.forceCommandType == ForceCommand.local &&
+          state.matchedLocation.startsWith(RoutePath.instantPrototype)) {
+        // Local test builds only: the Instant-Test preview runs on mock data
+        // and makes no router calls, so it needs no login.
+        return state.uri.toString();
       }
       return router._redirectLogic(state);
     },

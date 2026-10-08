@@ -137,9 +137,16 @@ final menus = [
     path: RoutePath.menuInstantVerify,
     config:
         LinksysRouteConfig(column: ColumnGrid(column: 12), noNaviRail: false),
-    builder: (context, state) => InstantVerifyView(
-      args: state.extra as Map<String, dynamic>? ?? const {},
-    ),
+    // Instant-Verify: the technician diagnostic tool (restored).
+    builder: (context, state) => const InstantVerifyView(),
+  ),
+  LinksysRoute(
+    name: RouteNamed.menuInstantTest,
+    path: RoutePath.menuInstantTest,
+    config:
+        LinksysRouteConfig(column: ColumnGrid(column: 12), noNaviRail: false),
+    // Instant-Test uses the existing authenticated route and session.
+    builder: (context, state) => const InstantTestRoutePage(),
   ),
   LinksysRoute(
     name: RouteNamed.devicePicker,
