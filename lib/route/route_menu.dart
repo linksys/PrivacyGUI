@@ -135,7 +135,7 @@ final menus = [
     config:
         LinksysRouteConfig(column: ColumnGrid(column: 12), noNaviRail: false),
     // Instant-Test uses the existing authenticated route and session.
-    builder: (context, state) => const InstantTestPage(),
+    builder: (context, state) => const InstantTestRoutePage(),
   ),
   LinksysRoute(
     name: RouteNamed.devicePicker,

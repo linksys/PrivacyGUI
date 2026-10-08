@@ -6,6 +6,7 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'instant_test_page_header.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/styled/top_bar.dart';
 import 'instant_test_location.dart';
 import 'symptom_chooser.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,10 +17,27 @@ import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
 import 'package:privacy_gui/page/instant_verify/views/my_devices_tab.dart';
 import 'package:privacy_gui/page/instant_verify/views/my_network_tab.dart';
 
+/// The authenticated menu route carries the same top bar as other router
+/// pages (header plus Dashboard/Menu navigation on desktop; the shell adds
+/// the bottom bar on mobile). StyledAppPageView is not used because its
+/// non-scrolling, unpadded layout nests Expanded inside a Stack.
+class InstantTestRoutePage extends StatelessWidget {
+  const InstantTestRoutePage({super.key});
+
+  @override
+  Widget build(BuildContext context) => const Column(children: [
+        PreferredSize(preferredSize: Size(0, 80), child: TopBar()),
+        Expanded(child: InstantTestPage(backToMenu: true)),
+      ]);
+}
+
 /// Customer diagnostics and guided help share one home and one return path.
 /// Uses the caller's existing authenticated session, or a preview override.
 class InstantTestPage extends ConsumerStatefulWidget {
-  const InstantTestPage({super.key});
+  const InstantTestPage({super.key, this.backToMenu = false});
+
+  /// Return to the Menu (the route's parent) instead of router home.
+  final bool backToMenu;
 
   @override
   ConsumerState<InstantTestPage> createState() => _InstantTestPageState();
@@ -110,9 +128,13 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
             children: [
               Align(
                 alignment: Alignment.centerLeft,
-                child: AppTextButton('Back to router home',
-                    icon: LinksysIcons.arrowBack,
-                    onTap: () => context.goNamed(RouteNamed.dashboardHome)),
+                child: widget.backToMenu
+                    ? AppTextButton('Back to menu',
+                        icon: LinksysIcons.arrowBack,
+                        onTap: () => context.goNamed(RouteNamed.dashboardMenu))
+                    : AppTextButton('Back to router home',
+                        icon: LinksysIcons.arrowBack,
+                        onTap: () => context.goNamed(RouteNamed.dashboardHome)),
               ),
               Expanded(
                 child: Stack(
