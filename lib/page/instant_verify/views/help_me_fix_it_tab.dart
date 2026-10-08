@@ -212,6 +212,9 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
       return _FlowMenu(onSelect: _launchFlow);
     }
     final active = _visits.last;
+    // The connection check has its own re-check beside its result; a second
+    // "Check again" here would do something different under the same name.
+    final checkAgain = widget.onCheckAgain != null && active.flow != 1;
     return _FlowShell(
       title: _flowTitle(active.flow),
       onBack: _handleShellBack,
@@ -234,11 +237,11 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
           const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 12),
-          if (widget.onCheckAgain != null)
+          if (checkAgain)
             const Text('After trying a fix, check again to see the latest results.'),
           const SizedBox(height: 12),
           Wrap(spacing: 12, runSpacing: 8, children: [
-            if (widget.onCheckAgain != null)
+            if (checkAgain)
               AppFilledButton('Check again',
                 onTap: widget.onCheckAgain,
                 icon: LinksysIcons.refresh),

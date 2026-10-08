@@ -436,6 +436,27 @@ void main() {
     expect(find.text('Your router can reach the internet'), findsOneWidget);
   });
 
+  testWidgets('connection check offers one re-check per screen', (tester) async {
+    for (final service in [
+      ProbeService(),
+      ProbeService()..gatewayUnavailable = true,
+      ProbeService()..internetUnavailable = true,
+      ProbeService()..fail = true,
+    ]) {
+      await tester.pumpWidget(const SizedBox());
+      await mount(tester, service: service);
+      await tapText(tester, "Internet isn't working");
+      final rechecks = find.byWidgetPredicate((w) =>
+          w is Text &&
+          const {'Check again', 'Still seeing issues — test again',
+                  'Try connection check again'}.contains(w.data));
+      expect(rechecks, findsOneWidget);
+      expect(find.text('After trying a fix, check again to see the latest results.'),
+          findsNothing);
+      expect(find.text('Back to Instant-Test'), findsOneWidget);
+    }
+  });
+
   testWidgets('device problem choices are visible without expanding a picker',
       (tester) async {
     await mount(tester);
