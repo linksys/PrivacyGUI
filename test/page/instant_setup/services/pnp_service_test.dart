@@ -1,3 +1,4 @@
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -846,4 +847,38 @@ void main() {
       });
     });
   });
+  group('PnpService native connection error handling', () {
+    for (final error in const <ServiceError>[
+      NotAuthenticatedError(
+          code: 401, detail: 'Synthetic authentication failure'),
+      SessionTokenExpiredError(detail: 'Synthetic expired session'),
+      InvalidSessionTokenError(detail: 'Synthetic invalid session'),
+      NetworkError(code: 503, detail: 'Synthetic unavailable service'),
+      InvalidInputError(code: 7004, detail: 'Synthetic invalid response'),
+    ]) {
+      test('preserves ${error.runtimeType} from the native read', () async {
+        when(() => mockUsp.get(any(), fresh: true)).thenThrow(error);
+
+        await expectLater(
+            service.checkInternetConnected(), throwsA(same(error)));
+
+        verify(() => mockUsp.get(any(), fresh: true)).called(1);
+        verifyNoMoreInteractions(mockUsp);
+      });
+    }
+
+    test('keeps a mapped HTTP auth failure through the outer catch', () async {
+      when(() => mockUsp.get(any(), fresh: true))
+          .thenThrow('Get failed: Transport error: HTTP error: HTTP 401');
+
+      await expectLater(
+        service.checkInternetConnected(),
+        throwsA(
+            isA<NotAuthenticatedError>().having((e) => e.code, 'code', 401)),
+      );
+
+      verify(() => mockUsp.get(any(), fresh: true)).called(1);
+      verifyNoMoreInteractions(mockUsp);
+    });
+  }, skip: !BuildConfig.autoIPoEEnabled);
 }

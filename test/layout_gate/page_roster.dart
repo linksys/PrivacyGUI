@@ -80,7 +80,7 @@ const String kPageViewRoot = 'lib/page';
 /// the walk is unchanged and one row was added beside it. 46 → 47 at #1580
 /// (`usp_notification_history_view.dart`) and 47 → 48 at #1660
 /// (`usp_administration_view.dart`), both the same kind of move.
-/// 48 → 49 at #1664: AutoIPoEView is a routed page awaiting a sweep fixture.
+/// 48 → 49 at #1664: AutoIPoEView is a routed page with a supported-ready sweep fixture.
 /// Its inline log widget lives under views/widgets/ and is not a page.
 const int kPageViewCount = 49;
 

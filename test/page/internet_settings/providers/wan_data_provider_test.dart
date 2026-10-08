@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
@@ -407,6 +408,45 @@ void main() {
 
       await sse.close();
       container.dispose();
+    });
+
+    testWidgets('optional polling preserves SSE with no WAN listener',
+        (tester) async {
+      final svc = MockWanSvc();
+      var fetches = 0;
+      when(() => svc.fetch()).thenAnswer((_) async {
+        fetches++;
+        return WanStatusUIModel(
+          isUp: true,
+          ipAddress: '100.64.0.$fetches',
+          subnetMask: '255.255.255.0',
+          addressingType: 'DHCP',
+          mtu: 1500,
+        );
+      });
+      final sse = StreamController<InvalidationEvent>();
+      final container = ProviderContainer(overrides: [
+        uspWanDataServiceProvider.overrideWithValue(svc),
+        sseInvalidationProvider.overrideWith((_) => sse.stream),
+      ]);
+      await container.read(wanDataProvider.future);
+      sse.add((domain: InvalidationDomain.wanStatus, seq: 1));
+      await tester.pump();
+      expect(fetches, 2);
+
+      // No read or listener during the interval: polling must keep L1 alive.
+      await tester.pump(const Duration(seconds: 15));
+      const afterPoll = BuildConfig.autoIPoEEnabled ? 3 : 2;
+      expect(fetches, afterPoll,
+          reason: 'disabled builds must not poll the router');
+      sse.add((domain: InvalidationDomain.wanStatus, seq: 2));
+      await tester.pump();
+      expect(fetches, afterPoll + 1);
+      expect(container.read(wanDataProvider).value!.model.ipAddress,
+          '100.64.0.${afterPoll + 1}');
+      container.dispose();
+      unawaited(sse.close());
+      await tester.pump();
     });
 
     test('a neighbouring domain does not re-fetch', () async {

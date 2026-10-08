@@ -91,6 +91,8 @@ class UspWanDataService {
         ipv6Enabled: wanStatus.ipv6Enabled,
         ipv6Addresses: extra.ipv6Addresses,
       );
+    } on ServiceError {
+      rethrow;
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }

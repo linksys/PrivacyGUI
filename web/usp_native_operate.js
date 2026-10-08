@@ -70,7 +70,7 @@ export function decodeOperate(bytes, command, messageId, commandKey) {
   const body = fields(one(message, 2));
   if (body.has(3)) {
     const error = fields(one(body, 3));
-    throw new Error(`USP error ${one(error, 1)}: ${text.decode(one(error, 2))}`);
+    throw `Operate failed: Protocol error: ${text.decode(one(error, 2))} (code: ${one(error, 1)})`;
   }
   if (one(header, 2) !== 7) throw new Error('Unexpected USP response type');
   const response = fields(one(body, 2));
@@ -79,7 +79,7 @@ export function decodeOperate(bytes, command, messageId, commandKey) {
   if ([2, 3, 4].filter(k => operation.has(k)).length !== 1) throw new Error('Invalid USP operation result');
   if (operation.has(4)) {
     const error = fields(one(operation, 4));
-    throw new Error(`USP command error ${one(error, 1)}: ${text.decode(one(error, 2))}`);
+    throw `Operate failed: Operation error: ${text.decode(one(error, 2))} (code: ${one(error, 1)})`;
   }
   // Auto-IPoE acknowledges synchronously; an async result is not acceptance.
   const outputArgs = Object.create(null);
@@ -93,18 +93,38 @@ export function decodeOperate(bytes, command, messageId, commandKey) {
 }
 export async function nativeOperate(client, command, args, fetcher = fetch) {
   const messageId = crypto.randomUUID(), commandKey = crypto.randomUUID();
-  const payload = encodeOperate(command, args, messageId, commandKey);
+  let payload;
+  try {
+    payload = encodeOperate(command, args, messageId, commandKey);
+  } catch (error) {
+    throw `Operate failed: Validation error: ${error.message ?? error}`;
+  }
   const token = client.getToken();
-  if (!token) throw new Error('Authentication required');
-  // Exactly one dispatch. Timeout/reply loss is reconciled by RequestId, never retried.
-  const response = await fetcher(new URL('/api/v1/usp', client.baseUrl()), {
-    method: 'POST', credentials: 'include',
-    headers: {'Content-Type': 'application/octet-stream', 'Authorization': `Bearer ${token}`},
-    body: payload, signal: AbortSignal.timeout(120000),
-  });
-  if (!response.ok) throw new Error(`USP HTTP ${response.status}`);
-  return decodeOperate(new Uint8Array(await response.arrayBuffer()), command, messageId, commandKey);
+  // The Dart transport expects plain strings in the shared USP error format.
+  // Error objects add an "Error:" prefix and lose auth/fault classification.
+  if (!token) throw 'Operate failed: Authentication error: Authentication required';
+  let response, bytes;
+  try {
+    // Exactly one dispatch. Timeout/reply loss is reconciled by RequestId, never retried.
+    response = await fetcher(new URL('/api/v1/usp', client.baseUrl()), {
+      method: 'POST', credentials: 'include',
+      headers: {'Content-Type': 'application/octet-stream', 'Authorization': `Bearer ${token}`},
+      body: payload, signal: AbortSignal.timeout(120000),
+    });
+    if (response.ok) bytes = new Uint8Array(await response.arrayBuffer());
+  } catch (error) {
+    const detail = error?.name === 'TimeoutError' ? 'Request timeout' : error?.message ?? error;
+    throw `Operate failed: Transport error: ${detail}`;
+  }
+  if (!response.ok) throw `Operate failed: Transport error: HTTP error: HTTP ${response.status}`;
+  try {
+    return decodeOperate(bytes, command, messageId, commandKey);
+  } catch (error) {
+    if (typeof error === 'string') throw error;
+    throw `Operate failed: Protocol error: ${error.message ?? error}`;
+  }
 }
+
 export function installNativeOperate(UspClient) {
   const original = UspClient.prototype.operate;
   UspClient.prototype.operate = function(command, args) {
