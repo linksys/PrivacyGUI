@@ -9,6 +9,9 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/mode/app_mode_profile.dart';
 import 'package:privacy_gui/core/mode/local_mode_profile.dart';
 import 'package:privacy_gui/framework/preservable.dart';
+import 'package:privacy_gui/framework/mode/session_end.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_snapshot.dart';
@@ -43,6 +46,11 @@ class _ExitData extends AutoIPoEDataNotifier {
   }
 
   void publish(AutoIPoESnapshot snapshot) => state = AsyncData(snapshot);
+
+  void fail(ServiceError error) {
+    state = AsyncError<AutoIPoESnapshot>(error, StackTrace.current)
+        .copyWithPrevious(state);
+  }
 }
 
 class _ExitPage extends AutoIPoEPageNotifier {
@@ -75,6 +83,21 @@ class _ExitPage extends AutoIPoEPageNotifier {
 
 class _ExitService extends Mock implements AutoIPoEService {}
 
+class _ExitAuth extends AuthNotifier {
+  int logouts = 0;
+  EndCause? cause;
+
+  @override
+  Future<AuthState> build() async => AuthState.empty();
+
+  @override
+  Future<void> logout({EndCause cause = EndCause.sessionLost}) async {
+    logouts++;
+    this.cause = cause;
+    state = AsyncData(AuthState.empty());
+  }
+}
+
 class _ExitPnp extends PnpNotifier {
   int starts = 0;
   @override
@@ -101,6 +124,9 @@ GoRouter _router() {
         routes: [ipoe],
       ),
       GoRoute(
+          path: RoutePath.localLoginPassword,
+          builder: (_, __) => const Text('Sign in again')),
+      GoRoute(
           path: RoutePath.pnp,
           builder: (_, __) => const Text('Next setup step')),
     ],
@@ -114,14 +140,18 @@ Future<ProviderContainer> _pump(
   _ExitPage page,
   _ExitPnp pnp, {
   AutoIPoESubmission? submission,
+  _ExitAuth? auth,
+  AutoIPoEService Function()? serviceFactory,
 }) async {
   await tester.pumpWidget(ProviderScope(
     overrides: [
       ...commonOverrides(),
+      if (auth != null) authProvider.overrideWith(() => auth),
       appModeProfileProvider.overrideWithValue(const LocalModeProfile()),
       autoIPoEDataProvider.overrideWith(() => data),
       autoIPoEPageProvider.overrideWith(() => page),
-      autoIPoEServiceProvider.overrideWithValue(_ExitService()),
+      autoIPoEServiceProvider
+          .overrideWith((ref) => serviceFactory?.call() ?? _ExitService()),
       autoIPoESubmissionProvider.overrideWith((ref) => submission),
       pnpProvider.overrideWith(() => pnp),
     ],
@@ -138,6 +168,188 @@ Future<ProviderContainer> _pump(
 }
 
 void main() {
+  for (final error in <ServiceError>[
+    const NotAuthenticatedError(),
+    const SessionTokenExpiredError(),
+    const InvalidSessionTokenError(),
+    const ConnectivityError(),
+    const NetworkError(),
+    const ResourceNotFoundError(),
+    const UnauthorizedError(),
+  ]) {
+    testWidgets('PnP recovers only expired authentication: $error',
+        (tester) async {
+      final isSessionError = error is NotAuthenticatedError ||
+          error is SessionTokenExpiredError ||
+          error is InvalidSessionTokenError;
+      const savedKey = 'auto-ipoe-submission:https://192.168.1.1';
+      const savedRequest =
+          '{"requestId":"${AutoIPoETestData.id}","reset":false}';
+      SharedPreferences.setMockInitialValues({savedKey: savedRequest});
+      final snapshot =
+          AutoIPoETestData.snapshot(requestId: AutoIPoETestData.id, busy: true);
+      final data = _ExitData(snapshot);
+      final page = _ExitPage(snapshot, dirty: true);
+      final auth = _ExitAuth();
+      final pnp = _ExitPnp();
+      final router = _router();
+      addTearDown(router.dispose);
+      const submission = AutoIPoESubmission(AutoIPoETestData.id, reset: false);
+      final container = await _pump(tester, router, data, page, pnp,
+          submission: submission, auth: auth);
+      data.fail(error);
+      for (var i = 0; i < 8; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.text('Sign in again'),
+          isSessionError ? findsOneWidget : findsNothing);
+      expect(auth.logouts, isSessionError ? 1 : 0);
+      if (isSessionError) expect(auth.cause, EndCause.sessionLost);
+      expect(data.exits, 0);
+      expect(page.saves, 0);
+      expect(pnp.starts, 0);
+      expect(container.read(autoIPoESubmissionProvider), submission);
+      expect((await SharedPreferences.getInstance()).getString(savedKey),
+          savedRequest);
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('a superseded auth failure cannot end the replacement session',
+      (tester) async {
+    final snapshot =
+        AutoIPoETestData.snapshot(requestId: AutoIPoETestData.id, busy: true);
+    final data = _ExitData(snapshot);
+    final page = _ExitPage(snapshot);
+    final auth = _ExitAuth();
+    final router = _router();
+    addTearDown(router.dispose);
+    final container = await _pump(tester, router, data, page, _ExitPnp(),
+        auth: auth,
+        submission:
+            const AutoIPoESubmission(AutoIPoETestData.id, reset: false));
+    data.fail(const NotAuthenticatedError());
+    // Runs before the recovery callback scheduled by the upcoming build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      container.invalidate(autoIPoEServiceProvider);
+      data.publish(snapshot);
+    });
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(auth.logouts, 0);
+    expect(data.exits, 0);
+    expect(page.saves, 0);
+    expect(find.byType(AutoIPoEView), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final timing in ['replaceBeforeError', 'replaceAfterError', 'rebind']) {
+    final rebind = timing == 'rebind';
+    testWidgets('late Apply error cannot end a newer session: $timing',
+        (tester) async {
+      final snapshot = AutoIPoETestData.snapshot();
+      final data = _ExitData(snapshot);
+      final page = _ExitPage(snapshot, dirty: true);
+      final auth = _ExitAuth();
+      final router = _router();
+      final service = _ExitService();
+      bool generationChanged = false;
+      when(() => service.checkConnection()).thenAnswer((_) {
+        if (generationChanged) throw const NotAuthenticatedError();
+      });
+      addTearDown(router.dispose);
+      final container = await _pump(tester, router, data, page, _ExitPnp(),
+          auth: auth, serviceFactory: rebind ? () => service : null);
+      final completed = Completer<void>();
+      page.onSave = () => completed.future;
+      final execute = find.byWidgetPredicate((widget) =>
+          widget is AppButton && widget.identifier == 'auto-ipoe-pnp-continue');
+      tester.widget<AppButton>(execute).onTap!();
+      await tester.pump();
+      if (timing == 'replaceAfterError') {
+        completed.completeError(const NotAuthenticatedError());
+        await tester.idle();
+        container.invalidate(autoIPoEServiceProvider);
+      } else {
+        if (rebind) {
+          generationChanged = true;
+        } else {
+          container.invalidate(autoIPoEServiceProvider);
+        }
+        completed.completeError(const NotAuthenticatedError());
+      }
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(auth.logouts, 0);
+      expect(data.exits, 0);
+      expect(page.saves, 1);
+      expect(find.byType(AutoIPoEView), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('read error from a rebound client does not end its new session',
+      (tester) async {
+    final snapshot =
+        AutoIPoETestData.snapshot(requestId: AutoIPoETestData.id, busy: true);
+    final data = _ExitData(snapshot);
+    final page = _ExitPage(snapshot);
+    final auth = _ExitAuth();
+    final router = _router();
+    final service = _ExitService();
+    bool generationChanged = false;
+    when(() => service.checkConnection()).thenAnswer((_) {
+      if (generationChanged) throw const NotAuthenticatedError();
+    });
+    addTearDown(router.dispose);
+    await _pump(tester, router, data, page, _ExitPnp(),
+        auth: auth, serviceFactory: () => service);
+    generationChanged = true;
+    data.fail(const NotAuthenticatedError());
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(auth.logouts, 0);
+    expect(data.exits, 0);
+    expect(find.byType(AutoIPoEView), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('authentication loss on Apply goes to login without replay',
+      (tester) async {
+    final snapshot = AutoIPoETestData.snapshot();
+    final data = _ExitData(snapshot);
+    final page = _ExitPage(snapshot, dirty: true);
+    final auth = _ExitAuth();
+    final pnp = _ExitPnp();
+    final router = _router();
+    addTearDown(router.dispose);
+    final container = await _pump(tester, router, data, page, pnp, auth: auth);
+    page.onSave = () async {
+      container.read(autoIPoESubmissionProvider.notifier).state =
+          const AutoIPoESubmission(AutoIPoETestData.id, reset: false);
+      throw const NotAuthenticatedError();
+    };
+    final execute = find.byWidgetPredicate((widget) =>
+        widget is AppButton && widget.identifier == 'auto-ipoe-pnp-continue');
+    tester.widget<AppButton>(execute).onTap!();
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text('Sign in again'), findsOneWidget);
+    expect(auth.logouts, 1);
+    expect(page.saves, 1);
+    expect(data.exits, 0);
+    expect(pnp.starts, 0);
+    expect(container.read(autoIPoESubmissionProvider)?.requestId,
+        AutoIPoETestData.id);
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   for (final fails in [false, true]) {
     testWidgets(
         'browser Back waits for setup cleanup on a clean draft: fails=$fails',

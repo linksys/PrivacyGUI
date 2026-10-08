@@ -4,6 +4,7 @@ library usp_client;
 import 'dart:js_interop';
 
 import 'package:privacy_gui/core/usp/transport/usp_transport.dart';
+import 'package:privacy_gui/core/usp/transport/usp_get_response.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
 /// Safely converts dartify() LinkedMap<Object?, Object?> to Map<String, dynamic>.
@@ -165,20 +166,7 @@ class UspClientWeb implements UspTransport {
       rethrow;
     }
 
-    final map = resultJs.dartify() as Map?;
-    if (map == null) return {};
-
-    // Parse unified format: {success, result: {data, error?}}
-    final resultData = map['result'] as Map? ?? {};
-    final data = resultData['data'] as Map? ?? {};
-
-    final result = <String, String>{};
-    for (final entry in data.entries) {
-      final key = entry.key?.toString() ?? '';
-      result[key] = entry.value?.toString() ?? '';
-    }
-
-    return result;
+    return decodeUspGetResponse(resultJs.dartify());
   }
 
   // ---------------------------------------------------------------------------
