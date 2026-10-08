@@ -1193,12 +1193,5 @@
   "raPreparingPartial": "Nie udało się skonfigurować niektórych aktualizacji na żywo. Pulpit może nie odświeżać się sam; przeciągnij, aby odświeżyć.",
   "raLiveUpdates": "Aktualizacje na żywo",
   "raLiveUpdatesConnecting": "Łączenie przez chmurę",
-  "raLiveUpdatesDropped": "Połączenie z chmurą zostało przerwane — ponowne łączenie",
-  "autoIpoeTitle": "Auto-IPoE",
-  "autoIpoeApply": "Save and Apply",
-  "autoIpoeReset": "Disable Auto-IPoE",
-  "autoIpoeResetBeforeSwitching": "Disable Auto-IPoE before choosing another Internet connection type. This restores the normal WAN settings.",
-  "autoIpoeOpenSettings": "IPoE settings",
-  "autoIpoeResolvePending": "Check interrupted setup",
-  "autoIpoeResolvePendingDescription": "Check whether setup started. If it did not start, return to the settings safely. An active setup will continue."
+  "raLiveUpdatesDropped": "Połączenie z chmurą zostało przerwane — ponowne łączenie"
 }

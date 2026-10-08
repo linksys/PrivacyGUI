@@ -1193,12 +1193,5 @@
   "raPreparingPartial": "Không thể thiết lập một số cập nhật trực tiếp. Bảng điều khiển có thể không tự làm mới; kéo để làm mới.",
   "raLiveUpdates": "Cập nhật trực tiếp",
   "raLiveUpdatesConnecting": "Đang kết nối qua đám mây",
-  "raLiveUpdatesDropped": "Mất kết nối đám mây — đang kết nối lại",
-  "autoIpoeTitle": "Auto-IPoE",
-  "autoIpoeApply": "Save and Apply",
-  "autoIpoeReset": "Disable Auto-IPoE",
-  "autoIpoeResetBeforeSwitching": "Disable Auto-IPoE before choosing another Internet connection type. This restores the normal WAN settings.",
-  "autoIpoeOpenSettings": "IPoE settings",
-  "autoIpoeResolvePending": "Check interrupted setup",
-  "autoIpoeResolvePendingDescription": "Check whether setup started. If it did not start, return to the settings safely. An active setup will continue."
+  "raLiveUpdatesDropped": "Mất kết nối đám mây — đang kết nối lại"
 }

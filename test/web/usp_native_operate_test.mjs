@@ -51,8 +51,10 @@ for (const [code, bytes] of [
   for (const commandFailure of [false, true]) {
     const packet = errorResponse(Buffer.from(bytes), commandFailure);
     const view = Buffer.concat([Buffer.from([0xaa, 0xbb]), packet]).subarray(2);
-    assert.throws(() => decodeOperate(view, command, messageId, commandKey), {
-      message: `USP ${commandFailure ? 'command error' : 'error'} ${code}: Synthetic refusal`,
+    assert.throws(() => decodeOperate(view, command, messageId, commandKey), error => {
+      assert.equal(typeof error, 'string');
+      assert.equal(error, `Operate failed: ${commandFailure ? 'Operation' : 'Protocol'} error: Synthetic refusal (code: ${code})`);
+      return true;
     });
   }
 }
@@ -68,7 +70,46 @@ await assert.rejects(nativeOperate(client,command,args,async()=>{calls++;throw n
 assert.equal(calls,1);
 await assert.rejects(nativeOperate({...client,getToken:()=>null},command,args,async()=>{calls++;}),/Authentication/);
 assert.equal(calls,1);
+
+// Shared with the Dart parser/mapping tests: these are the exact rejection
+// values crossing the JS Promise boundary, not Error.message approximations.
+const errors = JSON.parse(fs.readFileSync(new URL('./usp_native_operate_errors.json', import.meta.url)));
+const cryptoDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
+Object.defineProperty(globalThis, 'crypto', {value: {randomUUID: () => messageId}, configurable: true});
+try {
+  for (const testCase of errors) {
+    let dispatches = 0;
+    const fetcher = async () => {
+      dispatches++;
+      switch (testCase.kind) {
+        case 'network': throw new TypeError(testCase.message);
+        case 'timeout': throw new DOMException('Synthetic timeout', 'TimeoutError');
+        case 'http': return {ok: false, status: testCase.status};
+        case 'body': return {ok: true, arrayBuffer: async () => {throw new TypeError(testCase.message);}};
+        case 'protocol':
+        case 'command': {
+          const code = Buffer.alloc(5);
+          code[0] = 0x0d;
+          code.writeUInt32LE(testCase.faultCode, 1);
+          return {ok: true, arrayBuffer: async () => errorResponse(code, testCase.kind === 'command')};
+        }
+        case 'malformed': return {ok: true, arrayBuffer: async () => new Uint8Array()};
+        default: throw new Error('Unexpected dispatch');
+      }
+    };
+    const errorClient = testCase.kind === 'auth' ? {...client, getToken: () => null} : client;
+    const errorArgs = testCase.kind === 'validation' ? {Settings: 5} : args;
+    await assert.rejects(nativeOperate(errorClient, command, errorArgs, fetcher), error => {
+      assert.equal(typeof error, 'string', testCase.name);
+      assert.equal(error, testCase.error, testCase.name);
+      return true;
+    });
+    assert.equal(dispatches, ['auth', 'validation'].includes(testCase.kind) ? 0 : 1, testCase.name);
+  }
+} finally {
+  Object.defineProperty(globalThis, 'crypto', cryptoDescriptor);
+}
 class Original {operate(...args){return args;}}
 installNativeOperate(Original);
 assert.deepEqual(new Original().operate('Device.Reboot()',{}),['Device.Reboot()',{}]);
-console.log('PASS: real CPE protobuf fixture, input/output and fixed32 error validation, single dispatch, auth, original non-IPoE route');
+console.log('PASS: operation fixtures, canonical error contract, single dispatch, and original command routing');

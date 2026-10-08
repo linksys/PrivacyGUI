@@ -259,7 +259,6 @@ class AutoIPoEIssueMapper {
     final detail = _firstText(
       envelope['detail'],
       envelope['message'],
-      null,
       notStarted ? effectiveError.toString() : null,
     );
 

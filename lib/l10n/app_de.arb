@@ -1193,12 +1193,5 @@
   "raPreparingPartial": "Einige Live-Aktualisierungen konnten nicht eingerichtet werden. Das Dashboard aktualisiert sich möglicherweise nicht selbst; zum Aktualisieren nach unten ziehen.",
   "raLiveUpdates": "Live-Aktualisierungen",
   "raLiveUpdatesConnecting": "Verbindung über die Cloud",
-  "raLiveUpdatesDropped": "Cloud-Verbindung unterbrochen – Verbindung wird wiederhergestellt",
-  "autoIpoeTitle": "Auto-IPoE",
-  "autoIpoeApply": "Save and Apply",
-  "autoIpoeReset": "Disable Auto-IPoE",
-  "autoIpoeResetBeforeSwitching": "Disable Auto-IPoE before choosing another Internet connection type. This restores the normal WAN settings.",
-  "autoIpoeOpenSettings": "IPoE settings",
-  "autoIpoeResolvePending": "Check interrupted setup",
-  "autoIpoeResolvePendingDescription": "Check whether setup started. If it did not start, return to the settings safely. An active setup will continue."
+  "raLiveUpdatesDropped": "Cloud-Verbindung unterbrochen – Verbindung wird wiederhergestellt"
 }

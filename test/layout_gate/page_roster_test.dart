@@ -428,7 +428,7 @@ void main() {
       }
     });
 
-    test('the queue has 0 measured-and-waiting and 1 pending fixture', () {
+    test('the queue has no measured-and-waiting pages or pending fixtures', () {
       // The distinction #1370 bought, and the one every wave estimated against —
       // recorded here at the end because the two counts reaching zero together is
       // the epic's actual finish line, and because the *path* they took is the
@@ -477,14 +477,13 @@ void main() {
           .withDisposition(PageRosterDisposition.queued)
           .where((r) => r.msPerCell != null);
       expect(measured, isEmpty);
-      expect(roster.needsFixture, const [
-        'lib/page/auto_ipoe/views/auto_ipoe_view.dart',
-      ]);
+      expect(roster.needsFixture, isEmpty);
 
       // AutoIPoEView adds one pending fixture after the original queue was cleared.
       // The four pages below still have their declared coverage; a new queued
       // page must not erase that completed work.
       const paidDown = {
+        'lib/page/auto_ipoe/views/auto_ipoe_view.dart',
         // Wave 3's one unit of debt: #1370's glob found this file one directory
         // deeper than the other login views and could not measure it at all,
         // because its opening state is the only state it has.
@@ -533,7 +532,7 @@ void main() {
       );
     });
 
-    test('the register reads 45 swept, 1 queued, 2 excluded', () {
+    test('the register reads 46 swept, 0 queued, 2 excluded', () {
       // 2/41/2 when #1382 shipped it; wave 1 (#1377) moved five from queued to
       // swept, wave 2 (#1378) nine — eight on the day, and `pnp_setup` the day
       // after, when ui_kit v2.40.2 unblocked it — wave 3 (#1379) six, and wave 4
@@ -545,8 +544,8 @@ void main() {
       // short version is that unreachability is the only reason this epic accepts
       // and none of the four is unreachable.
       //
-      // 45 swept + 1 queued + 2 excluded = 48 accounted for. AutoIPoEView is
-      // queued explicitly; the register must not imply that it has been swept.
+      // 46 swept + 2 excluded = 48 accounted for. AutoIPoEView's supported-ready
+      // fixture now exercises its settings, completed result, and log panel.
       //
       // The 44th is #1549's `firmware_ota_view.dart`, and it is the first row added
       // after the epic closed. It went straight to `swept` with no queued stop, which
@@ -564,10 +563,10 @@ void main() {
       // has to turn availability on before the page renders anything a sweep can
       // measure.
       expect(
-          roster.withDisposition(PageRosterDisposition.swept), hasLength(45));
+          roster.withDisposition(PageRosterDisposition.swept), hasLength(46));
       expect(
         roster.withDisposition(PageRosterDisposition.queued).map((r) => r.path),
-        const ['lib/page/auto_ipoe/views/auto_ipoe_view.dart'],
+        isEmpty,
       );
       expect(
         roster
@@ -659,7 +658,7 @@ void main() {
       );
     });
 
-    test('45 of 48 pages are swept; one is queued and two are excluded', () {
+    test('46 of 48 pages are swept and two are excluded', () {
       // Written out rather than counted, and that is the point of the test. This is
       // the roster half of the join assertion 3 checks both directions of, so a
       // length check would pass against 43 rows that are not these 43.
@@ -695,6 +694,7 @@ void main() {
       // 601px in 26 locales. Not one of the 43 entered on an allowlist entry;
       // `known_overflows.json` is still `{"tracking": {}, "allowlist": {}}`.
       expect(roster.sweptPaths, {
+        'lib/page/auto_ipoe/views/auto_ipoe_view.dart',
         'lib/page/admin/views/usp_admin_view.dart',
         'lib/page/advanced_settings/views/usp_advanced_settings_view.dart',
         'lib/page/ai_assistant/views/router_assistant_view.dart',

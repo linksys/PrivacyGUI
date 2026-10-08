@@ -1193,12 +1193,5 @@
   "raPreparingPartial": "Não foi possível configurar algumas atualizações em tempo real. O painel pode não se atualizar sozinho; arraste para atualizar.",
   "raLiveUpdates": "Atualizações em tempo real",
   "raLiveUpdatesConnecting": "A ligar através da nuvem",
-  "raLiveUpdatesDropped": "Ligação à nuvem perdida — a voltar a ligar",
-  "autoIpoeTitle": "Auto-IPoE",
-  "autoIpoeApply": "Save and Apply",
-  "autoIpoeReset": "Disable Auto-IPoE",
-  "autoIpoeResetBeforeSwitching": "Disable Auto-IPoE before choosing another Internet connection type. This restores the normal WAN settings.",
-  "autoIpoeOpenSettings": "IPoE settings",
-  "autoIpoeResolvePending": "Check interrupted setup",
-  "autoIpoeResolvePendingDescription": "Check whether setup started. If it did not start, return to the settings safely. An active setup will continue."
+  "raLiveUpdatesDropped": "Ligação à nuvem perdida — a voltar a ligar"
 }

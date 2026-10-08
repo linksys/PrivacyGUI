@@ -79,6 +79,10 @@ import 'package:privacy_gui/components/styled/menus/widgets/app_menu_card.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_section.dart';
+import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_view.dart';
+import 'package:privacy_gui/page/auto_ipoe/views/widgets/auto_ipoe_log_view.dart';
 import 'package:privacy_gui/page/admin/views/components/usp_password_card.dart';
 import 'package:privacy_gui/page/admin/views/components/usp_system_actions_card.dart';
 import 'package:privacy_gui/page/admin/views/components/usp_timezone_card.dart';
@@ -181,6 +185,7 @@ import 'package:ui_kit_library/ui_kit.dart'
         AppBadge,
         AppButton,
         AppCard,
+        AppDropdown,
         AppExpansionPanel,
         AppIconButton,
         AppIpv4TextField,
@@ -197,6 +202,7 @@ import 'package:ui_kit_library/ui_kit.dart'
 
 import '../../mocks/provider_overrides/mock_admin.dart';
 import '../../mocks/provider_overrides/mock_apps.dart';
+import '../../mocks/provider_overrides/mock_auto_ipoe.dart';
 import '../../mocks/provider_overrides/mock_dashboard_page.dart';
 import '../../mocks/provider_overrides/mock_devices.dart';
 import '../../mocks/provider_overrides/mock_dhcp.dart';
@@ -2717,6 +2723,22 @@ final kNotificationHistoryPageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView],
 );
 
+// The supported, completed state includes the editable mode controls, ready
+// result, and log panel; neither a loading nor unsupported page can pass.
+final kAutoIPoEPageCase = PageSurfaceCase(
+  id: 'auto_ipoe',
+  view: () => const AutoIPoEView(),
+  overrides: autoIPoEOverrides,
+  requires: const [
+    AutoIPoESection,
+    AppDropdown<AutoIPoEMode>,
+    AppCard,
+    AppButton,
+    AutoIPoELogView,
+  ],
+  forbids: const [AppLoader, ServiceErrorView],
+);
+
 final kPageSurfaceCases = <PageSurfaceCase>[
   kDhcpPageCase,
   kWifiSettingsPageCase,
@@ -2822,4 +2844,5 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kStatisticsSystemPageCase,
   kSystemLogPageCase,
   kNotificationHistoryPageCase,
+  kAutoIPoEPageCase,
 ];

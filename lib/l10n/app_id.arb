@@ -1193,12 +1193,5 @@
   "raPreparingPartial": "Beberapa pembaruan langsung tidak dapat disiapkan. Dasbor mungkin tidak memperbarui sendiri; tarik untuk menyegarkan.",
   "raLiveUpdates": "Pembaruan langsung",
   "raLiveUpdatesConnecting": "Menghubungkan melalui cloud",
-  "raLiveUpdatesDropped": "Koneksi cloud terputus — menghubungkan ulang",
-  "autoIpoeTitle": "Auto-IPoE",
-  "autoIpoeApply": "Save and Apply",
-  "autoIpoeReset": "Disable Auto-IPoE",
-  "autoIpoeResetBeforeSwitching": "Disable Auto-IPoE before choosing another Internet connection type. This restores the normal WAN settings.",
-  "autoIpoeOpenSettings": "IPoE settings",
-  "autoIpoeResolvePending": "Check interrupted setup",
-  "autoIpoeResolvePendingDescription": "Check whether setup started. If it did not start, return to the settings safely. An active setup will continue."
+  "raLiveUpdatesDropped": "Koneksi cloud terputus — menghubungkan ulang"
 }

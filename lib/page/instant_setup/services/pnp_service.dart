@@ -111,6 +111,8 @@ class PnpService {
       } on ResourceNotFoundError {/* Router without the optional adapter. */}
       final wan = await WanStatus.fetch(_usp);
       return wan.status == 'Up' && wan.ipAddress.isNotEmpty;
+    } on ServiceError {
+      rethrow;
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }

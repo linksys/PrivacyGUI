@@ -427,24 +427,25 @@
 # second-state cells. The trailing-space form does NOT help, because the coordinate suffix follows
 # second-state immediately: use --plain-name 'page.unified_diagnostics screen_px' for the idle case alone,
 # second-state and 'page.unified_diagnostics_' for the eight added ones.
-# queued-note AutoIPoEView has setup and settings routes (#1664).
-# queued-note A layout sweep fixture and timing measurement are pending; its inline log widget is not a page.
+# added AutoIPoEView (#1664): supported-ready settings fixture, 234 cells, 2026-10-08.
+# added Three isolated --plain-name page.auto_ipoe --reporter json runs with auto-ipoe=y:
+# added ms/cell 60.8 / 68.3 / 59.4; median 60.8. Its inline log widget is not a page.
 # rows sorted by path, so adding a page is a one-line diff
 # reader test/layout_gate/page_roster.dart
 # oracle test/layout_gate/page_roster_test.dart
 # doc doc/testing/overflow_gate_architecture.md section 11.5; the onboarding queue is section 11.6
 # pages 48
-# swept 45
-# queued 1
-# measured 45
-# needs_fixture 1
+# swept 46
+# queued 0
+# measured 46
+# needs_fixture 0
 # excluded 2
 # columns path	disposition	ms_per_cell
 lib/page/admin/views/usp_admin_view.dart	swept	21.9
 lib/page/advanced_settings/views/usp_advanced_settings_view.dart	swept	13.6
 lib/page/ai_assistant/views/router_assistant_view.dart	swept	21.6
 lib/page/apps/views/usp_apps_view.dart	swept	21.5
-lib/page/auto_ipoe/views/auto_ipoe_view.dart	queued	-
+lib/page/auto_ipoe/views/auto_ipoe_view.dart	swept	60.8
 lib/page/dashboard/views/usp_dashboard_view.dart	swept	52.0
 lib/page/dashboard/views/usp_sliver_dashboard_view.dart	swept	58.6
 lib/page/devices/views/usp_device_detail_view.dart	swept	33.4

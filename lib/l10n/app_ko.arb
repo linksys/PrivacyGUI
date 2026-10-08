@@ -1193,12 +1193,5 @@
   "raPreparingPartial": "일부 실시간 업데이트를 설정할 수 없습니다. 대시보드가 자동으로 새로 고쳐지지 않을 수 있으니 당겨서 새로 고치세요.",
   "raLiveUpdates": "실시간 업데이트",
   "raLiveUpdatesConnecting": "클라우드를 통해 연결 중",
-  "raLiveUpdatesDropped": "클라우드 연결이 끊겼습니다 — 다시 연결 중",
-  "autoIpoeTitle": "Auto-IPoE",
-  "autoIpoeApply": "Save and Apply",
-  "autoIpoeReset": "Disable Auto-IPoE",
-  "autoIpoeResetBeforeSwitching": "Disable Auto-IPoE before choosing another Internet connection type. This restores the normal WAN settings.",
-  "autoIpoeOpenSettings": "IPoE settings",
-  "autoIpoeResolvePending": "Check interrupted setup",
-  "autoIpoeResolvePendingDescription": "Check whether setup started. If it did not start, return to the settings safely. An active setup will continue."
+  "raLiveUpdatesDropped": "클라우드 연결이 끊겼습니다 — 다시 연결 중"
 }

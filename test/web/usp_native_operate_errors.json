@@ -1,0 +1,80 @@
+[
+  {
+    "name": "missing token",
+    "kind": "auth",
+    "error": "Operate failed: Authentication error: Authentication required",
+    "category": "auth",
+    "serviceError": "NotAuthenticatedError"
+  },
+  {
+    "name": "expired HTTP session",
+    "kind": "http",
+    "status": 401,
+    "error": "Operate failed: Transport error: HTTP error: HTTP 401",
+    "category": "transport",
+    "httpStatus": 401,
+    "serviceError": "NotAuthenticatedError"
+  },
+  {
+    "name": "HTTP service unavailable",
+    "kind": "http",
+    "status": 503,
+    "error": "Operate failed: Transport error: HTTP error: HTTP 503",
+    "category": "transport",
+    "httpStatus": 503,
+    "serviceError": "NetworkError"
+  },
+  {
+    "name": "fetch failure",
+    "kind": "network",
+    "message": "Failed to fetch",
+    "error": "Operate failed: Transport error: Failed to fetch",
+    "category": "transport",
+    "serviceError": "NetworkError"
+  },
+  {
+    "name": "request timeout",
+    "kind": "timeout",
+    "error": "Operate failed: Transport error: Request timeout",
+    "category": "transport",
+    "serviceError": "NetworkError"
+  },
+  {
+    "name": "response body interrupted",
+    "kind": "body",
+    "message": "Body read interrupted",
+    "error": "Operate failed: Transport error: Body read interrupted",
+    "category": "transport",
+    "serviceError": "NetworkError"
+  },
+  {
+    "name": "protocol fault",
+    "kind": "protocol",
+    "faultCode": 7004,
+    "error": "Operate failed: Protocol error: Synthetic refusal (code: 7004)",
+    "category": "protocol",
+    "serviceError": "InvalidInputError"
+  },
+  {
+    "name": "command refusal",
+    "kind": "command",
+    "faultCode": 7022,
+    "error": "Operate failed: Operation error: Synthetic refusal (code: 7022)",
+    "category": "operation",
+    "serviceError": "UspCompleteFailureError"
+  },
+  {
+    "name": "invalid arguments",
+    "kind": "validation",
+    "error": "Operate failed: Validation error: Invalid USP argument",
+    "category": "validation",
+    "serviceError": "InvalidInputError"
+  },
+  {
+    "name": "malformed response",
+    "kind": "malformed",
+    "error": "Operate failed: Protocol error: Missing or duplicate USP field",
+    "category": "protocol",
+    "serviceError": "UnexpectedError"
+  }
+]

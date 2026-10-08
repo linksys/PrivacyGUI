@@ -435,6 +435,70 @@ void main() {
   });
 
   group('pingGateway', () {
+    for (final gateway in ['203.0.113.254', '']) {
+      test(
+          gateway.isEmpty
+              ? 'default-off skips a missing WAN gateway without probing'
+              : 'default-off uses the actual WAN gateway instead of guessing .1',
+          () async {
+        final requestedPaths = <String>[];
+        when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+          final paths = invocation.positionalArguments.first as List<String>;
+          requestedPaths.addAll(paths);
+          if (paths.any((path) => path.contains('IPv4Forwarding'))) {
+            const route = 'Device.Routing.Router.1.IPv4Forwarding.1';
+            return {
+              '$route.Enable': true,
+              '$route.DestIPAddress': '0.0.0.0',
+              '$route.DestSubnetMask': '0.0.0.0',
+              '$route.GatewayIPAddress': gateway,
+              '$route.Interface': 'Device.IP.Interface.2',
+              '$route.Origin': 'Static',
+              '$route.Alias': 'DefaultRoute',
+            };
+          }
+          if (paths.contains('Device.IP.Interface.*.Alias')) {
+            return {
+              'Device.IP.Interface.1.Alias': 'lan',
+              'Device.IP.Interface.2.Alias': 'wan',
+            };
+          }
+          if (paths.contains('Device.IP.Interface.2.Status')) {
+            return wanStatusResponse();
+          }
+          return <String, dynamic>{}; // No IPv6 addresses in this fixture.
+        });
+        fakeScope.pingResult = OperateResult(
+          commandName: 'IPPing()',
+          commandKey: 'k',
+          status: 'Complete',
+          outputArgs: const {
+            'SuccessCount': '3',
+            'FailureCount': '0',
+            'AverageResponseTime': '5',
+            'MinimumResponseTime': '5',
+            'MaximumResponseTime': '5',
+          },
+        );
+
+        final result = await service.pingGateway();
+
+        expect(requestedPaths, contains('Device.IP.Interface.2.Status'));
+        expect(
+            requestedPaths,
+            contains(
+                'Device.Routing.Router.1.IPv4Forwarding.*.GatewayIPAddress'));
+        expect(requestedPaths, isNot(contains(ActiveIpv4Connection.path)));
+        if (gateway.isEmpty) {
+          expect(result, isNull);
+          expect(fakeScope.calls, isEmpty);
+        } else {
+          expect(result?.host, gateway);
+          expect(fakeScope.calls.single.args['Host'], gateway);
+        }
+      }, skip: BuildConfig.autoIPoEEnabled);
+    }
+
     test('uses the kernel next hop, not a guessed .1 gateway', () async {
       when(() => mockUsp.get(any())).thenAnswer((_) async => {
             ActiveIpv4Connection.path: jsonEncode({

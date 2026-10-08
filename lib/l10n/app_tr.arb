@@ -1193,12 +1193,5 @@
   "raPreparingPartial": "Bazı canlı güncellemeler ayarlanamadı. Pano kendini yenilemeyebilir; yenilemek için çekin.",
   "raLiveUpdates": "Canlı güncellemeler",
   "raLiveUpdatesConnecting": "Bulut üzerinden bağlanılıyor",
-  "raLiveUpdatesDropped": "Bulut bağlantısı koptu — yeniden bağlanılıyor",
-  "autoIpoeTitle": "Auto-IPoE",
-  "autoIpoeApply": "Save and Apply",
-  "autoIpoeReset": "Disable Auto-IPoE",
-  "autoIpoeResetBeforeSwitching": "Disable Auto-IPoE before choosing another Internet connection type. This restores the normal WAN settings.",
-  "autoIpoeOpenSettings": "IPoE settings",
-  "autoIpoeResolvePending": "Check interrupted setup",
-  "autoIpoeResolvePendingDescription": "Check whether setup started. If it did not start, return to the settings safely. An active setup will continue."
+  "raLiveUpdatesDropped": "Bulut bağlantısı koptu — yeniden bağlanılıyor"
 }

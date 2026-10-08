@@ -31,15 +31,6 @@ class ActiveIpv4Connection {
       (data['ipv6Addresses'] is List ? data['ipv6Addresses'] as List : const [])
           .whereType<String>()
           .toList();
-  String? get forwardingNotice => switch (text('forwardingPolicy')) {
-        'port-set' =>
-          'MAP-E: only ports assigned by your ISP can receive inbound IPv4 connections.',
-        'provider-nat' =>
-          'DS-Lite: inbound IPv4 connections are controlled by your ISP’s NAT. Local port rules alone cannot open them.',
-        'provider-dependent' =>
-          'IPIP: inbound IPv4 availability depends on the address and service supplied by your ISP.',
-        _ => null,
-      };
   static Future<ActiveIpv4Connection?> fetch(UspClient client) async {
     if (!BuildConfig.autoIPoEEnabled) return null;
     Map<String, dynamic> reply;
