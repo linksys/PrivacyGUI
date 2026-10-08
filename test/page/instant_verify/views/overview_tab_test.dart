@@ -8,7 +8,12 @@ import 'package:privacy_gui/page/instant_verify/models/verdict.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
 import 'package:privacy_gui/page/instant_verify/views/overview_tab.dart';
+import 'package:privacy_gui/page/instant_verify/views/symptom_chooser.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 
 import '../../../common/di.dart';
 import '../../../common/testable_widget.dart';
@@ -782,6 +787,212 @@ void main() {
       await tester.pump();
 
       expect(find.textContaining('Start here'), findsNothing);
+    });
+  });
+
+  // Part 2 of the integration spec: the results page is built from the
+  // standard kit components, as the rest of the router UI is.
+  group('OverviewTab — kit components', () {
+    AppCard cardAround(WidgetTester tester, String text) =>
+        tester.widget<AppCard>(find
+            .ancestor(of: find.text(text), matching: find.byType(AppCard))
+            .last);
+
+    testWidgets('the result card keeps the default border; status is the icon',
+        (tester) async {
+      for (final (state, headline, icon) in [
+        (_criticalFindingState(), "Your internet isn't working",
+            LinksysIcons.error),
+        (_allClearState(), "We didn't detect any issues",
+            LinksysIcons.checkCircle),
+        (_multipleFindingsState(),
+            'Your internet is slower than expected (15 Mbps)',
+            LinksysIcons.error),
+      ]) {
+        await tester.pumpWidget(_buildOverviewTab(state));
+        await tester.pump();
+        final card = cardAround(tester, headline);
+        expect(card.borderColor, isNull, reason: headline);
+        expect(card.color, isNull, reason: headline);
+        expect(
+            find.descendant(
+                of: find.byWidget(card), matching: find.byIcon(icon)),
+            findsWidgets,
+            reason: headline);
+        await tester.pumpWidget(const SizedBox());
+      }
+    });
+
+    testWidgets('everything else found is a borderless AppListCard row',
+        (tester) async {
+      await tester.pumpWidget(_buildOverviewTab(_multipleFindingsState()));
+      await tester.pump();
+      await _tap(tester, '3 more things we found');
+
+      for (final headline in [
+        'High lag detected (120ms)',
+        'A software update is available (2.0.0)',
+        'Your router has been running for 90 days',
+      ]) {
+        final row = find.ancestor(
+            of: find.text(headline), matching: find.byType(AppListCard));
+        expect(row, findsOneWidget, reason: headline);
+        final card = tester.widget<AppListCard>(row);
+        expect(card.showBorder, isFalse, reason: headline);
+        expect(card.leading, isA<Icon>(), reason: headline);
+      }
+      // The row's fix is its trailing action.
+      final update = tester.widget<AppListCard>(find.ancestor(
+          of: find.text('A software update is available (2.0.0)'),
+          matching: find.byType(AppListCard)));
+      expect(update.trailing, isNotNull);
+      expect(
+          find.descendant(
+              of: find.byWidget(update), matching: find.text('Update Now')),
+          findsOneWidget);
+    });
+
+    testWidgets('a weak device row shows its detail as the description',
+        (tester) async {
+      await tester.pumpWidget(_buildOverviewTab(_deviceIssuesState()));
+      await tester.pump();
+      await _tap(tester, '1 more thing we found');
+      final row = tester.widget<AppListCard>(find.ancestor(
+          of: find.text('iPhone has a weak WiFi signal'),
+          matching: find.byType(AppListCard)));
+      expect(row.showBorder, isFalse);
+      expect(
+          find.descendant(
+              of: find.byWidget(row), matching: find.text('-82 dBm on 2.4GHz')),
+          findsOneWidget);
+    });
+
+    testWidgets('problem choices are rounded AppCard tiles, not buttons',
+        (tester) async {
+      int? navigatedFlow;
+      await tester.pumpWidget(_buildOverviewTab(_allClearState(),
+          onNavigateToFlow: (i) => navigatedFlow = i));
+      await tester.pump();
+      expect(find.byType(AppOutlinedButton), findsNothing);
+      final tile = find.ancestor(
+          of: find.text('My internet\nis slow'), matching: find.byType(AppCard));
+      expect(tile, findsWidgets);
+      await tester.tap(find.text('My internet\nis slow'));
+      expect(navigatedFlow, 1);
+    });
+
+    testWidgets('WAN-down callout is a blocking AppSettingCard (error border)',
+        (tester) async {
+      // The light guide dialog needs the same tall surface as its own test.
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(_buildOverviewTab(_wanDownState()));
+      await tester.pump();
+      final callout = find.ancestor(
+          of: find.text('No internet connection detected.'),
+          matching: find.byType(AppSettingCard));
+      expect(callout, findsOneWidget);
+      final card = tester.widget<AppSettingCard>(callout);
+      final context = tester.element(callout);
+      expect(card.borderColor, Theme.of(context).colorScheme.error);
+      expect(card.description, "Check your router's light. What color is it?");
+      expect(
+          find.descendant(
+              of: callout, matching: find.text('What does my light mean?')),
+          findsOneWidget);
+      await tester.tap(find.text('What does my light mean?'));
+      await tester.pumpAndSettle();
+      expect(find.text('Solid red'), findsOneWidget);
+    });
+
+    testWidgets('recent-restart note is a non-blocking AppSettingCard',
+        (tester) async {
+      await tester.pumpWidget(_buildOverviewTab(
+          _criticalFindingState().copyWith(recentPriorRestart: true)));
+      await tester.pump();
+      final note = find.ancestor(
+          of: find.textContaining('You restarted your router recently'),
+          matching: find.byType(AppSettingCard));
+      expect(note, findsOneWidget);
+      final card = tester.widget<AppSettingCard>(note);
+      expect(card.borderColor, isNull);
+      expect(card.color, isNull);
+      expect(card.leading, isA<Icon>());
+    });
+
+    testWidgets('post-restart escalation is an info card with a colored icon',
+        (tester) async {
+      await tester.pumpWidget(_buildOverviewTab(
+          _criticalFindingState().copyWith(hasRestartedThisSession: true)));
+      await tester.pump();
+      final note = find.ancestor(
+          of: find.text('Contact your provider.'),
+          matching: find.byType(AppSettingCard));
+      expect(note, findsOneWidget);
+      final card = tester.widget<AppSettingCard>(note);
+      expect(card.borderColor, isNull);
+      expect(card.leading, isA<Icon>());
+      // The fix is replaced by the escalation after a restart.
+      expect(find.text('Restart Router'), findsNothing);
+      expect(find.text('Check Again'), findsOneWidget);
+    });
+  });
+
+  group('SymptomChooser — menu tiles', () {
+    Future<void> pumpChooser(WidgetTester tester, Size size,
+        {ValueChanged<int>? onSelect}) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = size;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(testableWidget(
+          child: SingleChildScrollView(
+              child: SymptomChooser(onSelect: onSelect ?? (_) {}))));
+      await tester.pump();
+    }
+
+    double top(WidgetTester tester, String label) => tester
+        .getTopLeft(find
+            .ancestor(of: find.text(label), matching: find.byType(AppCard))
+            .first)
+        .dy;
+
+    testWidgets('choices are AppCard tiles with an icon and a title',
+        (tester) async {
+      int? selected;
+      await pumpChooser(tester, const Size(1280, 800),
+          onSelect: (id) => selected = id);
+      expect(find.text('What needs help?'), findsOneWidget);
+      expect(find.byType(AppOutlinedButton), findsNothing);
+      for (final (_, icon, label) in SymptomChooser.symptoms) {
+        final tile = find.ancestor(
+            of: find.text(label), matching: find.byType(AppCard));
+        expect(tile, findsOneWidget, reason: label);
+        expect(find.descendant(of: tile, matching: find.byIcon(icon)),
+            findsOneWidget,
+            reason: label);
+      }
+      await tester.tap(find.text('One device is slow'));
+      expect(selected, 31);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('three per row on wide layouts, one per row on mobile',
+        (tester) async {
+      await pumpChooser(tester, const Size(1280, 800));
+      final labels = [for (final s in SymptomChooser.symptoms) s.$3];
+      expect(top(tester, labels[0]), top(tester, labels[2]));
+      expect(top(tester, labels[3]), greaterThan(top(tester, labels[2])));
+      expect(top(tester, labels[3]), top(tester, labels[5]));
+
+      await pumpChooser(tester, const Size(390, 844));
+      for (var i = 1; i < labels.length; i++) {
+        expect(top(tester, labels[i]), greaterThan(top(tester, labels[i - 1])),
+            reason: labels[i]);
+      }
+      expect(tester.takeException(), isNull);
     });
   });
 }

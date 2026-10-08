@@ -25,6 +25,20 @@ const _banned = <String, String>{
   r'(?<![A-Za-z])Text\(': 'use AppText.<level>',
 };
 
+/// Card styling comes from the kit (integration spec Part 2): default AppCard
+/// borders, status by colored icon, AppSettingCard / info AppCard instead of
+/// hand-built tinted containers. The only border tint allowed is the
+/// Instant-Privacy blocking warning (`borderColor: ...colorScheme.error`).
+/// Scoped to the files already converted; widen as the others land.
+const _kitCardFiles = {'overview_tab.dart', 'symptom_chooser.dart'};
+
+const _kitCardBanned = <String, String>{
+  r'borderColor:(?!\s*Theme\.of\(\w+\)\.colorScheme\.error\b)':
+      'use the default AppCard border; show status with a colored icon',
+  r'\bBoxDecoration\(':
+      'use AppCard / AppSettingCard / AppListCard from privacygui_widgets',
+};
+
 void main() {
   final files = Directory('lib/page/instant_verify/views')
       .listSync()
@@ -43,6 +57,34 @@ void main() {
       final pattern = RegExp(entry.key);
       final hits = <String>[];
       for (final file in files) {
+        final lines = file.readAsLinesSync();
+        for (var i = 0; i < lines.length; i++) {
+          final line = lines[i];
+          if (line.trimLeft().startsWith('//')) continue;
+          if (pattern.hasMatch(line)) {
+            hits.add('${file.path}:${i + 1}: ${line.trim()}');
+          }
+        }
+      }
+      expect(hits, isEmpty, reason: hits.join('\n'));
+    });
+  }
+
+  final kitCardFiles = files
+      .where((f) => _kitCardFiles.contains(f.uri.pathSegments.last))
+      .toList();
+
+  test('kit-card rules cover their files', () {
+    expect(kitCardFiles.map((f) => f.uri.pathSegments.last).toSet(),
+        _kitCardFiles);
+  });
+
+  for (final entry in _kitCardBanned.entries) {
+    test('converted Instant-Test views avoid ${entry.key} (${entry.value})',
+        () {
+      final pattern = RegExp(entry.key);
+      final hits = <String>[];
+      for (final file in kitCardFiles) {
         final lines = file.readAsLinesSync();
         for (var i = 0; i < lines.length; i++) {
           final line = lines[i];

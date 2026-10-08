@@ -1,4 +1,3 @@
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'dart:async';
 import 'package:go_router/go_router.dart';
@@ -21,6 +20,7 @@ import 'package:privacy_gui/page/instant_verify/views/answer_row.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_test_page.dart';
 import 'package:privacy_gui/page/instant_verify/views/overview_tab.dart';
 import 'package:privacy_gui/page/instant_verify/views/my_network_tab.dart';
+import 'package:privacy_gui/page/instant_verify/views/symptom_chooser.dart';
 
 import '../../../common/di.dart';
 import '../../../common/testable_widget.dart';
@@ -196,8 +196,8 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await mount(tester);
-    final first = find.widgetWithText(AppOutlinedButton, "Internet isn't working");
-    final last = find.widgetWithText(AppOutlinedButton, 'Keeps cutting out');
+    final first = find.widgetWithText(SymptomTile, "Internet isn't working");
+    final last = find.widgetWithText(SymptomTile, 'Keeps cutting out');
     final left = tester.getTopLeft(first).dx;
     final right = tester.getBottomRight(last).dx;
     // Three choices per row inside the 760px column, centered on the page.
