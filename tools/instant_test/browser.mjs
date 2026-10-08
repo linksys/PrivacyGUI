@@ -263,7 +263,7 @@ try {
     await button(p,'Connection details').click();
     await visible(p,'Link rate');
     assert.equal(await button(p,'Yes — I can see it').count(),0);
-    await visible(p,'One device is slow');
+    await pageTitle(p,'One device is slow');
   });
   await check('mesh-health',async p=>{
     assert.equal(await p.getByText(/^Mesh Network/).count(),0,'No separate mesh card');
@@ -305,12 +305,12 @@ try {
   });
   await check('page-back',async p=>{
     await clickInScrollView(p,'One device is slow');
-    await visible(p,'One device is slow');
+    await pageTitle(p,'One device is slow');
     await back(p).click();
     await button(p,'Whole internet is slow').waitFor();
     // Direct addresses open the help page over the preview home.
     await p.goto(`${url}/help?flow=31`);
-    await visible(p,'One device is slow');
+    await pageTitle(p,'One device is slow');
     await back(p).click();
     await button(p,'Whole internet is slow').waitFor();
   });
