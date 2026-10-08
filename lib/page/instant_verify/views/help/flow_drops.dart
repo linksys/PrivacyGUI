@@ -178,25 +178,37 @@ class _Flow5State extends ConsumerState<_Flow5> {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        UserStepHeading('Check for connection drops'),
+        Semantics(
+            header: true,
+            child: const AppText.titleSmall('Check for connection drops')),
         const AppGap.small2(),
         const AppText.bodyMedium('Keep this page open for a two-minute connection check. A short test may miss occasional drops.'),
         const AppGap.small3(),
         const AppText.titleSmall('How often does it drop?'),
         const AppGap.small2(),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          for (final item in const [(_DropFrequency.everyFewMinutes, 'Every few minutes'), (_DropFrequency.fewTimesDay, 'A few times a day')])
-            ChoiceChip(label: AppText.bodyMedium(item.$2), selected: _frequency == item.$1,
-              onSelected: _isMonitoring ? null : (_) => setState(() { _frequency = item.$1; _resetResult(); })),
-        ]),
+        AppRadioList<_DropFrequency>(
+          selected: _frequency,
+          items: [
+            for (final item in const [(_DropFrequency.everyFewMinutes, 'Every few minutes'), (_DropFrequency.fewTimesDay, 'A few times a day')])
+              AppRadioListItem(title: item.$2, value: item.$1, enabled: !_isMonitoring),
+          ],
+          onChanged: (_, value) {
+            if (value != null) setState(() { _frequency = value; _resetResult(); });
+          },
+        ),
         const AppGap.large1(),
         const AppText.titleSmall('Which devices are affected?'),
         const AppGap.small2(),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          for (final item in const [(_DropScope.wholeInternet, 'All devices'), (_DropScope.specificDevices, 'Specific devices')])
-            ChoiceChip(label: AppText.bodyMedium(item.$2), selected: _scope == item.$1,
-              onSelected: _isMonitoring ? null : (_) => setState(() { _scope = item.$1; _resetResult(); })),
-        ]),
+        AppRadioList<_DropScope>(
+          selected: _scope,
+          items: [
+            for (final item in const [(_DropScope.wholeInternet, 'All devices'), (_DropScope.specificDevices, 'Specific devices')])
+              AppRadioListItem(title: item.$2, value: item.$1, enabled: !_isMonitoring),
+          ],
+          onChanged: (_, value) {
+            if (value != null) setState(() { _scope = value; _resetResult(); });
+          },
+        ),
       ])),
       if (_scope == _DropScope.specificDevices)
         AppOutlinedButton('Choose the affected device',
@@ -217,21 +229,17 @@ class _Flow5State extends ConsumerState<_Flow5> {
           children: [
             const AppText.titleSmall('How often does it drop?'),
             const AppGap.small2(),
-            RadioListTile<_DropFrequency>(
-              value: _DropFrequency.everyFewMinutes,
-              groupValue: _frequency,
-              title: const AppText.bodyMedium('Every few minutes'),
-              onChanged: (v) => setState(() => _frequency = v),
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-            ),
-            RadioListTile<_DropFrequency>(
-              value: _DropFrequency.fewTimesDay,
-              groupValue: _frequency,
-              title: const AppText.bodyMedium('A few times a day'),
-              onChanged: (v) => setState(() => _frequency = v),
-              contentPadding: EdgeInsets.zero,
-              dense: true,
+            AppRadioList<_DropFrequency>(
+              selected: _frequency,
+              items: [
+                AppRadioListItem(
+                    title: 'Every few minutes',
+                    value: _DropFrequency.everyFewMinutes),
+                AppRadioListItem(
+                    title: 'A few times a day',
+                    value: _DropFrequency.fewTimesDay),
+              ],
+              onChanged: (_, v) => setState(() => _frequency = v),
             ),
             const AppGap.small3(),
             Align(
@@ -251,21 +259,17 @@ class _Flow5State extends ConsumerState<_Flow5> {
           children: [
             const AppText.titleSmall('Is it everything or specific devices?'),
             const AppGap.small2(),
-            RadioListTile<_DropScope>(
-              value: _DropScope.wholeInternet,
-              groupValue: _scope,
-              title: const AppText.bodyMedium('My whole internet goes out — all devices stop at once'),
-              onChanged: (v) => setState(() => _scope = v),
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-            ),
-            RadioListTile<_DropScope>(
-              value: _DropScope.specificDevices,
-              groupValue: _scope,
-              title: const AppText.bodyMedium('Just specific devices lose connection'),
-              onChanged: (v) => setState(() => _scope = v),
-              contentPadding: EdgeInsets.zero,
-              dense: true,
+            AppRadioList<_DropScope>(
+              selected: _scope,
+              items: [
+                AppRadioListItem(
+                    title: 'My whole internet goes out — all devices stop at once',
+                    value: _DropScope.wholeInternet),
+                AppRadioListItem(
+                    title: 'Just specific devices lose connection',
+                    value: _DropScope.specificDevices),
+              ],
+              onChanged: (_, v) => setState(() => _scope = v),
             ),
             const AppGap.small3(),
             if (_scope == _DropScope.specificDevices) ...[
@@ -297,7 +301,9 @@ class _Flow5State extends ConsumerState<_Flow5> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            UserStepHeading('Run a 2-minute connection test'),
+            Semantics(
+                header: true,
+                child: const AppText.titleSmall('Run a 2-minute connection test')),
             const AppGap.small2(),
             _infoBox(
               context,

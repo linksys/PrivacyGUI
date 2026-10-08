@@ -124,6 +124,16 @@ Future<void> tapText(WidgetTester tester, String text) async {
   await tester.pumpAndSettle();
 }
 
+/// Whether the kit radio (AppRadioList) labelled [label] is selected.
+bool radioSelected(WidgetTester tester, String label) {
+  final item = find
+      .ancestor(of: find.text(label), matching: find.byType(InkWell))
+      .first;
+  final radio = tester.widget<Radio>(find.descendant(
+      of: item, matching: find.byWidgetPredicate((w) => w is Radio)));
+  return radio.value == radio.groupValue;
+}
+
 /// The collapsed answer shown for an answered workflow question.
 String answer(WidgetTester tester, String label) => tester
     .widget<AnswerRow>(
@@ -1116,18 +1126,10 @@ void main() {
     expect(find.text('Which device needs help?'), findsOneWidget);
     await tapBack(tester);
     expect(find.text('My connection keeps cutting out'), findsOneWidget);
-    expect(
-        tester
-            .widget<ChoiceChip>(
-                find.widgetWithText(ChoiceChip, 'A few times a day'))
-            .selected,
-        isTrue);
-    expect(
-        tester
-            .widget<ChoiceChip>(
-                find.widgetWithText(ChoiceChip, 'Specific devices'))
-            .selected,
-        isTrue);
+    expect(radioSelected(tester, 'A few times a day'), isTrue);
+    expect(radioSelected(tester, 'Every few minutes'), isFalse);
+    expect(radioSelected(tester, 'Specific devices'), isTrue);
+    expect(radioSelected(tester, 'All devices'), isFalse);
     await tapBack(tester);
     expect(find.text('Whole internet is slow'), findsOneWidget);
   });
@@ -1216,6 +1218,35 @@ void main() {
     expect(find.text('Which device needs help?'), findsOneWidget);
     expect(find.text('Run Again'), findsNothing);
   });
+
+  for (final width in [390.0, 800.0]) {
+    testWidgets('speed and drops flows fit a ${width.toInt()}px viewport',
+        (tester) async {
+      tester.view.physicalSize = Size(width, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await mount(tester);
+      await tapText(tester, 'Whole internet is slow');
+      await tapText(tester, 'Check my speed');
+      final capability = find.textContaining('Plenty fast');
+      expect(
+          find.ancestor(of: capability, matching: find.byType(AppListCard)),
+          findsOneWidget);
+      expect(tester.getRect(capability).right, lessThanOrEqualTo(width));
+      await tapText(tester, 'Everything in my home is slow');
+      expect(find.text('Restart + Run Speed Test Again'), findsOneWidget);
+      await tapBack(tester);
+      await tapBack(tester);
+      await tapText(tester, 'Keeps cutting out');
+      await tapText(tester, 'Every few minutes');
+      await tapText(tester, 'All devices');
+      expect(radioSelected(tester, 'All devices'), isTrue);
+      expect(tester.getRect(find.text('Start connection test')).right,
+          lessThanOrEqualTo(width));
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   test('preview actions never resolve a router repository', () async {
     var repositoryReads = 0;

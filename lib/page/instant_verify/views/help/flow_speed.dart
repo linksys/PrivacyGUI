@@ -152,16 +152,15 @@ class _Flow2State extends ConsumerState<_Flow2> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UserStepHeading('Run a speed test'),
-      if (weakWifi)
-        _infoBox(
-          context,
-          'Your device has a weak WiFi connection. This reading may be lower than your actual internet speed. Move closer to your router, then run again.',
-          icon: LinksysIcons.error,
-          color: InstantTestTone.warning.color(context),
-        ),
-      const AppGap.small3(),
-
+          Semantics(
+              header: true, child: const AppText.titleSmall('Run a speed test')),
+          if (weakWifi)
+            _infoBox(
+              context,
+              'Your device has a weak WiFi connection. This reading may be lower than your actual internet speed. Move closer to your router, then run again.',
+              icon: LinksysIcons.error,
+              color: InstantTestTone.warning.color(context),
+            ),
           const AppGap.small3(),
           if (_isRunning) ...[
             const Row(children: [
@@ -206,33 +205,19 @@ class _Flow2State extends ConsumerState<_Flow2> {
         children: [
           const AppText.titleSmall('Here\'s what your connection can do'),
           const AppGap.small3(),
-          // Lead with capability, not raw number
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
+          // Lead with capability, not raw number. Default card border; the
+          // status shows in the colored icon (dashboard internet-status).
+          AppListCard(
+            leading: Icon(
+              actuallyProblematic
+                  ? LinksysIcons.error
+                  : LinksysIcons.checkCircle,
               color: (actuallyProblematic
                       ? InstantTestTone.warning
                       : InstantTestTone.good)
-                  .container(context),
-              borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
-              border: Border.all(
-                  color: (actuallyProblematic
-                          ? InstantTestTone.warning
-                          : InstantTestTone.good)
-                      .color(context)),
+                  .color(context),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.bodyLarge(_speedCapability(mbps),
-                    color: (actuallyProblematic
-                            ? InstantTestTone.warning
-                            : InstantTestTone.good)
-                        .onContainer(context)),
-                const AppGap.small1(),
-
-              ],
-            ),
+            title: AppText.bodyLarge(_speedCapability(mbps)),
           ),
           const AppGap.small2(),
           DetailsDisclosure(label: 'View speed test details', child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -296,7 +281,9 @@ class _Flow2State extends ConsumerState<_Flow2> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UserStepHeading('Let\'s figure out what\'s slow'),
+          Semantics(
+              header: true,
+              child: const AppText.titleSmall('Let\'s figure out what\'s slow')),
           const AppGap.small3(),
 
           // Show jitter warning if relevant (gaming/call lag)
@@ -321,7 +308,8 @@ class _Flow2State extends ConsumerState<_Flow2> {
             const AppGap.small3(),
           ],
 
-          UserStepHeading('Where is it slow?'),
+          Semantics(
+              header: true, child: const AppText.titleSmall('Where is it slow?')),
           const AppGap.small2(),
 
           Align(
@@ -413,7 +401,9 @@ class _Flow2State extends ConsumerState<_Flow2> {
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            UserStepHeading('Contact your internet provider'),
+            Semantics(
+                header: true,
+                child: const AppText.titleSmall('Contact your internet provider')),
             const AppGap.small2(),
             const AppText.bodyMedium(
               'Since restarting didn\'t fix it, the issue is likely outside your router.',
@@ -443,7 +433,9 @@ class _Flow2State extends ConsumerState<_Flow2> {
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UserStepHeading('Latency / lag troubleshooting'),
+          Semantics(
+              header: true,
+              child: const AppText.titleSmall('Latency / lag troubleshooting')),
           const AppGap.small2(),
           _infoBox(context,
               'Gaming and video calls are sensitive to latency and jitter, not just download speed. '
@@ -489,81 +481,6 @@ class _Flow2State extends ConsumerState<_Flow2> {
       )),
 
     ];
-  }
-}
-
-class _SpeedTierTable extends StatelessWidget {
-  final double currentMbps;
-  const _SpeedTierTable({required this.currentMbps});
-
-  @override
-  Widget build(BuildContext context) {
-    final tiers = [
-      ('< 5 Mbps', 'Barely enough for one video call', currentMbps < 5),
-      ('5–25 Mbps', 'Basic browsing and streaming for 1–2 people',
-          currentMbps >= 5 && currentMbps < 25),
-      ('25–100 Mbps', 'Good for most households',
-          currentMbps >= 25 && currentMbps < 100),
-      ('100+ Mbps', 'Fast — handles many devices at once',
-          currentMbps >= 100),
-    ];
-
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant),
-        borderRadius: CustomTheme.of(context).radius.asBorderRadius().medium,
-      ),
-      child: Column(
-        children: [
-          for (int i = 0; i < tiers.length; i++)
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: tiers[i].$3
-                    ? InstantTestTone.info.container(context)
-                    : null,
-                borderRadius: i == 0
-                    ? BorderRadius.vertical(
-                        top: CustomTheme.of(context).radius.medium)
-                    : i == tiers.length - 1
-                        ? BorderRadius.vertical(
-                            bottom: CustomTheme.of(context).radius.medium)
-                        : null,
-              ),
-              child: Row(
-                children: [
-                  if (tiers[i].$3)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 5),
-                      child: Icon(LinksysIcons.circle, size: 8),
-                    )
-                  else
-                    const SizedBox(width: 18),
-                  const AppGap.small1(),
-                  SizedBox(
-                    width: 90,
-                    child: tiers[i].$3
-                        ? AppText.labelMedium(tiers[i].$1,
-                            color: InstantTestTone.info.onContainer(context))
-                        : AppText.bodySmall(tiers[i].$1),
-                  ),
-                  Expanded(
-                    child: tiers[i].$3
-                        ? AppText.labelMedium(tiers[i].$2,
-                            color: InstantTestTone.info.onContainer(context))
-                        : AppText.bodySmall(tiers[i].$2,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
   }
 }
 

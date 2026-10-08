@@ -39,6 +39,8 @@ const _kitConverted = {
   'diagnostic_selection_area.dart',
   'flow_device.dart',
   'answer_row.dart',
+  'flow_speed.dart',
+  'flow_drops.dart',
 };
 
 const _bannedInKitConverted = <String, String>{
