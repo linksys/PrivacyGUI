@@ -435,7 +435,7 @@ class _DeviceRow extends StatelessWidget {
               decoration: BoxDecoration(
                 color: tone.container(context),
                 borderRadius:
-                    CustomTheme.of(context).radius.asBorderRadius().medium,
+                    CustomTheme.of(context).radius.asBorderRadius().extraLarge,
               ),
               child: AppText.labelSmall(
                 _badgeLabel(badge),
