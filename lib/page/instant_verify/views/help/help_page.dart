@@ -19,7 +19,6 @@ import 'package:privacy_gui/page/instant_verify/views/diagnostic_selection_area.
 import 'package:privacy_gui/page/instant_verify/views/instant_test_navigation.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_test_style.dart';
 import 'package:privacy_gui/page/instant_verify/views/restart_helper.dart';
-import 'package:privacy_gui/page/instant_verify/views/user_step_heading.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';

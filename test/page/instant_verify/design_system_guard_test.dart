@@ -23,31 +23,11 @@ const _banned = <String, String>{
   r'(?<![A-Za-z])Text\(': 'use AppText.<level>',
 };
 
-/// Files already built from the kit's cards (AppCard, AppListCard,
-/// AppSettingCard, AppDeviceListCard, AppMenuCard): default borders, status by
-/// colored icon, no hand-built tinted containers. The only border tint allowed
-/// is the Instant-Privacy blocking warning (`borderColor: ...colorScheme.error`).
-/// Widen this list as the remaining views are converted.
-const _kitConverted = {
-  'overview_tab.dart',
-  'symptom_chooser.dart',
-  'my_devices_tab.dart',
-  'my_network_tab.dart',
-  'device_actions.dart',
-  'details_disclosure.dart',
-  'restart_helper.dart',
-  'diagnostic_selection_area.dart',
-  'flow_device.dart',
-  'answer_row.dart',
-  'flow_speed.dart',
-  'flow_drops.dart',
-  'help_page.dart',
-  'help_shared.dart',
-  'flow_internet.dart',
-  'flow_coverage.dart',
-  'flow_two_routers.dart',
-};
-
+/// Every Instant-Test view is built from the kit's cards (AppCard,
+/// AppListCard, AppSettingCard, AppDeviceListCard, AppMenuCard): default
+/// borders, status by colored icon, no hand-built tinted containers or heading
+/// bands. The only border tint allowed is the Instant-Privacy blocking warning
+/// (`borderColor: ...colorScheme.error`).
 const _bannedInKitConverted = <String, String>{
   r'\bUserStepHeading\(':
       'use AppText.titleSmall in a Semantics header inside the AppCard',
@@ -91,20 +71,11 @@ void main() {
     });
   }
 
-  final converted = files
-      .where((f) => _kitConverted.contains(f.uri.pathSegments.last))
-      .toList();
-
-  test('kit-converted Instant-Test views exist', () {
-    expect(converted.map((f) => f.uri.pathSegments.last).toSet(),
-        _kitConverted);
-  });
-
   for (final entry in _bannedInKitConverted.entries) {
-    test('kit-converted views avoid ${entry.key} (${entry.value})', () {
+    test('Instant-Test views avoid ${entry.key} (${entry.value})', () {
       final pattern = RegExp(entry.key);
       final hits = <String>[];
-      for (final file in converted) {
+      for (final file in files) {
         final lines = file.readAsLinesSync();
         for (var i = 0; i < lines.length; i++) {
           final line = lines[i];
