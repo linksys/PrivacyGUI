@@ -19,7 +19,6 @@ import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
-import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -62,7 +61,10 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView>
 
     pnp = ref.read(pnpProvider.notifier);
     // check path include local password
-    _password = widget.args['p'] as String?;
+    final routePassword = widget.args['p'] as String?;
+    final savedPassword = ref.read(authProvider).value?.localPassword;
+    _password = routePassword ??
+        (savedPassword?.isNotEmpty == true ? savedPassword : null);
     logger.i(
         '[PnP]: Start PNP setup ${_password != null ? 'with' : 'without'} admin password');
     // verify admin password is valid
@@ -501,7 +503,10 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView>
       setState(() {
         // _hasDefaultPasswordChanged = false;
         _inputError = '';
-        _password = defaultAdminPassword;
+        final savedPassword = ref.read(authProvider).value?.localPassword;
+        _password = savedPassword?.isNotEmpty == true
+            ? savedPassword
+            : defaultAdminPassword;
       });
       throw error;
     }, test: (error) => error is ExceptionRouterUnconfigured).whenComplete(() {

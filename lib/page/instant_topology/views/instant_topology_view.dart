@@ -12,6 +12,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
+import 'package:privacy_gui/page/components/mixin/client_signal_watcher_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
@@ -47,7 +48,10 @@ class InstantTopologyView extends ArgumentsConsumerStatefulView {
       _InstantTopologyViewState();
 }
 
-class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
+// Also the Topology tab of Instant Verify, which hosts this view as a widget:
+// the tab is built only while it is the one showing, so the watch follows it.
+class _InstantTopologyViewState extends ConsumerState<InstantTopologyView>
+    with ClientSignalWatcherMixin {
   bool _isLoading = false;
   bool _isWidget = false;
   late final TreeController<RouterTreeNode> treeController;
@@ -96,7 +100,9 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
           : StyledAppPageView(
               // scrollable: true,
               onRefresh: () {
-                return ref.read(pollingProvider.notifier).forcePolling();
+                return ref
+                    .read(pollingProvider.notifier)
+                    .forcePollingWithClientSignals();
               },
               hideTopbar: _isWidget,
               useMainPadding: true,
@@ -116,7 +122,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
                                 controller.repeat();
                                 ref
                                     .read(pollingProvider.notifier)
-                                    .forcePolling()
+                                    .forcePollingWithClientSignals()
                                     .then((value) {
                                   controller.stop();
                                 });
@@ -191,7 +197,9 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
             thumbVisibility: true,
             child: RefreshIndicator(
               onRefresh: () {
-                return ref.read(pollingProvider.notifier).forcePolling();
+                return ref
+                    .read(pollingProvider.notifier)
+                    .forcePollingWithClientSignals();
               },
               child: SingleChildScrollView(
                 controller: _desktopScrollController,

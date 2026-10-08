@@ -60,7 +60,14 @@ final menus = [
           builder: (context, state) => NodeDetailView(),
           routes: [
             LinksysRoute(
-              config: LinksysRouteConfig(column: ColumnGrid(column: 12)),
+              config: LinksysRouteConfig(
+                column: ColumnGrid(column: 12),
+                // An update takes the router away for minutes, and this view
+                // raises the router-not-found alert itself when it does. Without
+                // this the failing background poll would raise a second one from
+                // behind, over a progress screen the operator must not lose.
+                ignoreConnectivityEvent: true,
+              ),
               name: RouteNamed.firmwareUpdateDetail,
               path: RoutePath.firmwareUpdateDetail,
               builder: (context, state) => const FirmwareUpdateDetailView(),
@@ -82,6 +89,9 @@ final menus = [
           config: LinksysRouteConfig(
             column: ColumnGrid(column: 9),
             noNaviRail: true,
+            // Same as firmwareUpdateDetail: this view raises the alert itself
+            // once the upload takes the router away.
+            ignoreConnectivityEvent: true,
           ),
           builder: (context, state) => ManualFirmwareUpdateView(),
         ),

@@ -1,6 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -205,13 +206,20 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
   }
 
   Future<bool> poll({
-    required Future<(bool, JNAPResult?)> Function() pollFunc,
+    required Future<(bool, JNAPResult?)> Function(int pollStartedAt) pollFunc,
     int retryDelayInSec = 5,
     int maxRetry = -1,
     int maxPollTimeInSec = -1,
     int timeDelayStartInSec = 3,
     bool Function()? condition,
   }) async {
+    // Per invocation, not a field. Two polls can be in flight at once -- one
+    // user action can save two providers in parallel, and each response carries
+    // its own side effects -- and a shared field means the first to finish
+    // restores a value the second never saw, erasing its reference point at
+    // exactly the moment the grace below is the only thing that could still
+    // succeed. Captured before the initial delay, as the field was.
+    final pollStartedAt = DateTime.now().millisecondsSinceEpoch;
     // Log poll config
     logger.d('''[SideEffectManager] Start Poll with config:
         retry delay: $retryDelayInSec,
@@ -228,7 +236,7 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
     JNAPResult? lastHandledResult;
     while (maxRetry == -1 || retry <= maxRetry) {
       logger.d('[SideEffectManager] poll <$retry> times');
-      result = await pollFunc.call().then((value) {
+      result = await pollFunc.call(pollStartedAt).then((value) {
             lastHandledResult = value.$2;
             return value.$1;
           }).onError((error, stackTrace) => false) ||
@@ -254,14 +262,27 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
     return result;
   }
 
-  Future<(bool, JNAPResult?)> testRouterFullyBootedUp() async {
-    final startTime = DateTime.now().millisecondsSinceEpoch;
+  /// How long a router has to keep answering before a silent WAN stops holding
+  /// the poll open.
+  @visibleForTesting
+  static const routerRespondingGrace = Duration(seconds: 60);
 
+  /// True once the router looks usable again.
+  ///
+  /// A connected WAN is the primary answer. Failing that, a router that has been
+  /// answering [routerRespondingGrace] into the current poll also counts, so a
+  /// reconnect whose WAN never comes back finishes as a success rather than
+  /// exhausting its retries and surfacing as a save failure. That escape hatch
+  /// is measured from [pollStartedAt], which the poll hands to every probe it
+  /// makes, so each operation has its own reference point and cannot inherit or
+  /// erase another's.
+  Future<(bool, JNAPResult?)> testRouterFullyBootedUp(int pollStartedAt) async {
     return _getWANStatus().then<(bool, JNAPResult?)>((status) {
       final wanConnected = status.wanStatus == 'Connected' ||
           status.wanIPv6Status == 'Connected';
       final isRouterRespondingLongEnough =
-          DateTime.now().millisecondsSinceEpoch > startTime + 60 * 1000;
+          DateTime.now().millisecondsSinceEpoch >=
+              pollStartedAt + routerRespondingGrace.inMilliseconds;
 
       return (
         wanConnected || isRouterRespondingLongEnough,
@@ -270,15 +291,16 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
     }).onError((error, stackTrace) => (false, null));
   }
 
-  Future<(bool, JNAPResult?)> testRouterReconnected() async {
+  Future<(bool, JNAPResult?)> testRouterReconnected(int pollStartedAt) async {
     final pref = await SharedPreferences.getInstance();
     final cachedSerialNumber =
         pref.getString(pCurrentSN) ?? pref.getString(pPnpConfiguredSN);
 
     return _getDeviceInfo()
         .then((devceInfo) => devceInfo.serialNumber == cachedSerialNumber)
-        .then((value) async =>
-            (value ? await testRouterFullyBootedUp() : (false, null)))
+        .then((value) async => (value
+            ? await testRouterFullyBootedUp(pollStartedAt)
+            : (false, null)))
         .onError((error, stackTrace) => (false, null));
   }
 

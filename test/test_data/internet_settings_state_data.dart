@@ -515,3 +515,41 @@ const internetSettingsStateIpv6PPPoE = {
   },
   "macClone": false
 };
+
+// A JP-market router on IPoE: the only WAN type under which the view renders
+// the AutoIPoE section. `IPoE` has to appear in supportedIPv4ConnectionType as
+// well, or the WAN-type dropdown in the editing view cannot offer it back.
+const internetSettingsStateIpoe = {
+  "ipv4Setting": {
+    "ipv4ConnectionType": "IPoE",
+    "supportedIPv4ConnectionType": [
+      "DHCP",
+      "IPoE",
+      "Static",
+      "PPPoE",
+      "PPTP",
+      "L2TP",
+      "Bridge"
+    ],
+    "supportedWANCombinations": [
+      {"wanType": "DHCP", "wanIPv6Type": "Automatic"},
+      {"wanType": "IPoE", "wanIPv6Type": "Automatic"},
+      {"wanType": "Static", "wanIPv6Type": "Automatic"},
+      {"wanType": "PPPoE", "wanIPv6Type": "Automatic"},
+      {"wanType": "L2TP", "wanIPv6Type": "Automatic"},
+      {"wanType": "PPTP", "wanIPv6Type": "Automatic"},
+      {"wanType": "Bridge", "wanIPv6Type": "Automatic"},
+      {"wanType": "DHCP", "wanIPv6Type": "Pass-through"},
+      {"wanType": "PPPoE", "wanIPv6Type": "PPPoE"}
+    ],
+    "mtu": 0
+  },
+  "ipv6Setting": {
+    "ipv6ConnectionType": "Automatic",
+    "supportedIPv6ConnectionType": ["Automatic", "PPPoE", "Pass-through"],
+    "duid": "00:02:03:09:05:05:80:69:1A:A7:14:FF",
+    "isIPv6AutomaticEnabled": true
+  },
+  "macClone": false,
+  "macCloneAddress": ""
+};
