@@ -220,6 +220,31 @@ void main() {
       expect(find.text('View test progress'), findsNothing);
     });
 
+    testWidgets('overall progress is a bar, leaving one spinner on the running check',
+        (tester) async {
+      await tester.pumpWidget(_buildOverviewTab(_loadingState()));
+      await tester.pump();
+      // Only the running row spins; overall progress is a separate bar (QA).
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      final bar = tester.widget<LinearProgressIndicator>(
+          find.byType(LinearProgressIndicator));
+      expect(bar.value, 0);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(_buildOverviewTab(const InstantVerifyPivotState(
+        phase: PivotLoadPhase.jnapLoaded,
+        browserTestStep: 'dns',
+        wanStatus: {'wanStatus': 'Connected'},
+        gatewayPing: GatewayPingResult(reachable: true, latencyMs: 2),
+      )));
+      await tester.pump();
+      final later = tester.widget<LinearProgressIndicator>(
+          find.byType(LinearProgressIndicator));
+      expect(later.value, greaterThan(0));
+      expect(later.value, lessThan(1));
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
     testWidgets('shows individual checks without a disclosure', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_loadingState()));
       await tester.pump();

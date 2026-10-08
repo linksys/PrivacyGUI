@@ -1788,24 +1788,32 @@ class _ChecklistProgress extends StatelessWidget {
         ? ''
         : '${state.clients.length} device${state.clients.length == 1 ? '' : 's'} found';
 
+    final statuses = [routerStatus, internetStatus, gatewayStatus, dnsStatus,
+        speedStatus, deviceStatus];
+    final finished = statuses
+        .where((s) => s != _CheckStatus.pending && s != _CheckStatus.running)
+        .length;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Centered "test is running" beachball — kept visually distinct from
-        // the small left-aligned per-check circles below, so it clearly reads
-        // as the overall progress, not just another check row (on-device
-        // feedback: the top circle looked like the check circles).
+        // Overall progress is a bar that fills as checks finish. A second
+        // spinner above the per-check spinners read as two competing
+        // animations (QA feedback).
         Center(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Column(
               children: [
-                SizedBox(
-                  width: 44,
-                  height: 44,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 4,
-                      color: Theme.of(context).colorScheme.primary),
+                Semantics(
+                  label: '$finished of ${statuses.length} checks finished',
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                        value: finished / statuses.length,
+                        minHeight: 8,
+                        color: Theme.of(context).colorScheme.primary),
+                  ),
                 ),
                 const SizedBox(height: 14),
                 Text(
