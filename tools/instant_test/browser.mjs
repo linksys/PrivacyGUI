@@ -26,6 +26,16 @@ const openFoundList = async page => {
   await toggle.click();
   await page.getByRole('button', {name:/^Hide \d+ more things? we found$/}).first().waitFor();
 };
+// After a resize, accessibility boxes lag the relayout; wait until they stop moving.
+const settled = async locator => {
+  let last = '';
+  for (let n=0;n<40;n++) {
+    const box = JSON.stringify(await locator.boundingBox());
+    if (box === last) return;
+    last = box;
+    await locator.page().waitForTimeout(100);
+  }
+};
 // An answered workflow question collapses to a labelled one-line row.
 const answered = async (page, label, value) => {
   await visible(page, label.toUpperCase());
@@ -140,7 +150,10 @@ try {
   }
   for (const mobile of [false,true]) {
     await check(mobile?'compact-followup-mobile':'compact-followup-wide',async p=>{
-      if (!mobile) await p.setViewportSize({width:2048,height:1100});
+      if (!mobile) {
+        await p.setViewportSize({width:2048,height:1100});
+        await settled(button(p,"Internet isn't working"));
+      }
       const start=await button(p,"Internet isn't working").boundingBox();
       const end=await button(p,'Keeps cutting out').boundingBox();
       if (!mobile) {
@@ -302,7 +315,8 @@ try {
         await p.keyboard.press('Tab');
         await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
         const active=await p.evaluate(()=>document.activeElement?.getAttribute('aria-label')||document.activeElement?.innerText);
-        if(active===label){await p.keyboard.press('Enter');return;}
+        // Two-line tiles expose "Name\nWiFi"; compare as one line.
+        if(active?.replace(/\s+/g,' ').trim()===label){await p.keyboard.press('Enter');return;}
       }
       throw Error(`Not reachable with Tab: ${label}`);
     }
@@ -372,7 +386,11 @@ try {
     await button(p,'Back to Instant-Test').last().click();
     await button(p,"Device won't connect").click();await button(p,"I don't see my device").click();
     await button(p,"No — I don't see it").click();await visible(p,"We checked your router's WiFi — here's what we found");
+    // "Not in the list" is now the collapsed answer; change it to pick Ethernet.
+    await answered(p,'Device','Not in the list');
+    await button(p,'Change device').click();
     await button(p,'My device uses an Ethernet cable').click();await visible(p,'Wired device troubleshooting');
+    await answered(p,'Device','Uses an Ethernet cable');
   });
   for (const method of ['keyboard', 'menu']) {
     await check(`copy-selected-${method}`, async p => {

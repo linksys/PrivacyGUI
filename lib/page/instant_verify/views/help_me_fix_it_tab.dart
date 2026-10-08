@@ -1687,12 +1687,16 @@ class _Flow3State extends ConsumerState<_Flow3> {
             key: ValueKey('device-choice-${device.macAddress}'),
             selected: _selectedDevice?.macAddress == device.macAddress,
             contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-            // Same radio control as the kit's AppRadioList; the tile handles taps.
-            leading: IgnorePointer(
-                child: Radio<String>(
-                    value: device.macAddress,
-                    groupValue: _selectedDevice?.macAddress,
-                    onChanged: loading ? null : (_) {})),
+            // Same radio look as the kit's AppRadioList. The tile is the one
+            // control: it handles taps, focus and the selected state, so the
+            // radio adds no extra Tab stop or screen-reader node.
+            leading: ExcludeFocus(
+                child: ExcludeSemantics(
+                    child: IgnorePointer(
+                        child: Radio<String>(
+                            value: device.macAddress,
+                            groupValue: _selectedDevice?.macAddress,
+                            onChanged: loading ? null : (_) {})))),
             title: AppText.bodyMedium(device.displayNameWithOui, maxLines: 2, overflow: TextOverflow.ellipsis),
             subtitle: AppText.bodySmall(device.isWireless ? 'WiFi' : 'Ethernet',
                 color: theme.colorScheme.onSurfaceVariant),

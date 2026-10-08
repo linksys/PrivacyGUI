@@ -4,7 +4,7 @@ import 'dart:async';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_test_location.dart';
-import 'dart:ui' show PointerDeviceKind;
+import 'dart:ui' show PointerDeviceKind, SemanticsFlag;
 import 'package:flutter/rendering.dart';
 
 import 'package:flutter/material.dart';
@@ -790,6 +790,24 @@ void main() {
     await tester.tap(find.byTooltip('Back to Instant-Test'));
     await tester.pumpAndSettle();
     expect(find.text('Whole internet is slow'), findsOneWidget);
+  });
+
+  testWidgets('each device row is one control for keyboard and screen readers',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await mount(tester);
+    await tapText(tester, "Device won't connect");
+    var radios = 0;
+    bool visit(SemanticsNode node) {
+      if (node.hasFlag(SemanticsFlag.isInMutuallyExclusiveGroup)) radios++;
+      node.visitChildren(visit);
+      return true;
+    }
+    tester.binding.pipelineOwner.semanticsOwner!.rootSemanticsNode!
+        .visitChildren(visit);
+    expect(radios, 0, reason: 'the radio is decoration; the row is the control');
+    expect(find.bySemanticsLabel(RegExp('Office printer')), findsWidgets);
+    handle.dispose();
   });
 
   testWidgets('answers stack above the current question in one column',

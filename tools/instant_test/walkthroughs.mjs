@@ -124,6 +124,8 @@ export async function walkthroughs({check,button,visible,clickInScrollView,url})
     await click(p,"Device won't connect");await click(p,"I don't see my device");
     await click(p,"No — I don't see it");
     await visible(p,"We checked your router's WiFi — here's what we found");
+    // "Not in the list" is now the collapsed answer; change it to pick Ethernet.
+    await click(p,'Change device');
     await click(p,'My device uses an Ethernet cable');await visible(p,'Wired device troubleshooting');
     await guide(p,5);await click(p,'Problem solved');
     await button(p,"Device won't connect").waitFor();
@@ -191,6 +193,8 @@ export async function walkthroughs({check,button,visible,clickInScrollView,url})
   }
   await check('router-light-guide',async p=>{
     await click(p,'What does my router light mean?');
+    // The link is in the footer now; wait for the sheet to finish opening.
+    await visible(p,'Solid white');
     for(const text of ['Solid white','Pulsing blue','Solid red','Solid yellow','Solid green','Off'])assert.equal(await p.getByText(text,{exact:true}).count(),1);
     await p.keyboard.press('Escape');await button(p,"Internet isn't working").waitFor();
   },true);
