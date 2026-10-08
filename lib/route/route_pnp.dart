@@ -82,14 +82,15 @@ final pnpNoInternetRoute = LinksysRoute(
       config: _pnpRouteConfig,
       builder: (context, state) => const PnpIspSettingsView(),
       routes: [
-        LinksysRoute(
-          name: RouteNamed.pnpAutoIPoE,
-          path: RoutePath.pnpAutoIPoE,
-          config: _pnpRouteConfig,
-          builder: (context, state) => const AutoIPoEView(pnp: true),
-          onExit: _pnpAutoIPoEExitGuard,
-          preservableProvider: autoIPoEPageProvider.notifier,
-        ),
+        if (BuildConfig.autoIPoEEnabled)
+          LinksysRoute(
+            name: RouteNamed.pnpAutoIPoE,
+            path: RoutePath.pnpAutoIPoE,
+            config: _pnpRouteConfig,
+            builder: (context, state) => const AutoIPoEView(pnp: true),
+            onExit: _pnpAutoIPoEExitGuard,
+            preservableProvider: autoIPoEPageProvider.notifier,
+          ),
         LinksysRoute(
           name: RouteNamed.pnpPPPOE,
           path: RoutePath.pnpPPPOE,

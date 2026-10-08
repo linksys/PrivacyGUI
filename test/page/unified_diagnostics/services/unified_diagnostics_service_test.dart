@@ -1,3 +1,4 @@
+import 'package:privacy_gui/constants/build_config.dart';
 import 'dart:convert';
 import 'package:privacy_gui/core/usp/services/active_ipv4_connection.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -462,7 +463,7 @@ void main() {
 
       expect(result?.host, '203.0.113.254'); // Actual next hop
       expect(fakeScope.calls.single.args['Host'], '203.0.113.254');
-    });
+    }, skip: !BuildConfig.autoIPoEEnabled);
 
     test('missing gateway is skipped without probing a made-up address',
         () async {
@@ -479,7 +480,7 @@ void main() {
           });
       expect(await service.pingGateway(), isNull);
       expect(fakeScope.calls, isEmpty);
-    });
+    }, skip: !BuildConfig.autoIPoEEnabled);
 
     test('throws when WAN has no IP', () async {
       when(() => mockUsp.get(any()))

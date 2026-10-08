@@ -1,3 +1,4 @@
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -122,6 +123,12 @@ Future<void> settleDispatch() =>
     Future<void>.delayed(const Duration(milliseconds: 20));
 
 void main() {
+  // Run this integration suite with --dart-define=auto-ipoe=y.
+  group('Auto-IPoE enabled build', _enabledBuildTests,
+      skip: !BuildConfig.autoIPoEEnabled);
+}
+
+void _enabledBuildTests() {
   late IPoEFixture f;
   setUpAll(() {
     registerFallbackValue(

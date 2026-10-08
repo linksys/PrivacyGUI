@@ -1,3 +1,4 @@
+import 'package:privacy_gui/constants/build_config.dart';
 import 'dart:async';
 import 'package:privacy_gui/page/_shared/mode/remote_surface.dart';
 import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
@@ -16,6 +17,12 @@ import '../../../mocks/test_data/auto_ipoe_test_data.dart';
 class MockService extends Mock implements AutoIPoEService {}
 
 void main() {
+  // Run this integration suite with --dart-define=auto-ipoe=y.
+  group('Auto-IPoE enabled build', _enabledBuildTests,
+      skip: !BuildConfig.autoIPoEEnabled);
+}
+
+void _enabledBuildTests() {
   late MockService service;
   late ProviderContainer container;
   setUpAll(

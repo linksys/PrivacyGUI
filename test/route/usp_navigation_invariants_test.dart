@@ -31,6 +31,7 @@
 //     name and verb in `the indirect entry points are enumerated and push`.
 
 import 'dart:io';
+import 'package:privacy_gui/constants/build_config.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -155,6 +156,10 @@ final Map<String, String> _routeViewClass = () {
     final nameMatch = namePattern.firstMatch(lines[i]);
     if (nameMatch == null) continue;
     final name = nameMatch.group(1)!;
+    // This route is opt-in; the source scanner still sees its declaration.
+    if (name == RouteNamed.uspAutoIPoE && !BuildConfig.autoIPoEEnabled) {
+      continue;
+    }
     // Scan forward until a constructor call turns up. The window is generous
     // because a builder may open with query-parameter plumbing before the view.
     for (var j = i + 1; j < lines.length && j < i + 25; j++) {
@@ -436,7 +441,8 @@ void main() {
         RouteNamed.uspNotificationHistory: '/uspNotificationHistory',
         RouteNamed.uspStatistics: '/uspStatistics',
         RouteNamed.uspAdvancedSettings: '/uspAdvancedSettings',
-        RouteNamed.uspAutoIPoE: '/uspAdvancedSettings/uspAutoIPoE',
+        if (BuildConfig.autoIPoEEnabled)
+          RouteNamed.uspAutoIPoE: '/uspAdvancedSettings/uspAutoIPoE',
         RouteNamed.uspInternetSettings:
             '/uspAdvancedSettings/uspInternetSettings',
         RouteNamed.uspLocalNetwork: '/uspAdvancedSettings/uspLocalNetwork',

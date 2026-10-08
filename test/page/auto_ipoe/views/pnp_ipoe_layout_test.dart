@@ -1,3 +1,4 @@
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/page/auto_ipoe/services/auto_ipoe_service.dart';
 import 'package:privacy_gui/framework/preservable.dart';
@@ -114,6 +115,12 @@ class ActionPnp extends PnpNotifier {
 }
 
 void main() {
+  // Run this integration suite with --dart-define=auto-ipoe=y.
+  group('Auto-IPoE enabled build', _enabledBuildTests,
+      skip: !BuildConfig.autoIPoEEnabled);
+}
+
+void _enabledBuildTests() {
   for (final scenario in [
     'success',
     'failure',

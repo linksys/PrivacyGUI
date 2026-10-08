@@ -1,3 +1,4 @@
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_data_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
@@ -119,7 +120,8 @@ class _PnpIspSettingsViewState extends ConsumerState<PnpIspSettingsView> {
           ),
           AppGap.md(),
         ],
-        if (ipoe?.capabilities.isSupported == true) ...[
+        if (BuildConfig.autoIPoEEnabled &&
+            ipoe?.capabilities.isSupported == true) ...[
           _buildTypeCard(
             context,
             icon: Icons.public,

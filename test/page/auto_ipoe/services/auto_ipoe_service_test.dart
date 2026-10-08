@@ -1,3 +1,4 @@
+import 'package:privacy_gui/constants/build_config.dart';
 import 'dart:convert';
 import 'dart:async';
 
@@ -19,6 +20,12 @@ class MockClient extends Mock implements UspClient {}
 class MockTransport extends Mock implements UspTransport {}
 
 void main() {
+  // Run this integration suite with --dart-define=auto-ipoe=y.
+  group('Auto-IPoE enabled build', _enabledBuildTests,
+      skip: !BuildConfig.autoIPoEEnabled);
+}
+
+void _enabledBuildTests() {
   late MockClient client;
   late AutoIPoEService service;
   const submission = AutoIPoESubmission(AutoIPoETestData.id, reset: false);

@@ -1,3 +1,4 @@
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -65,6 +66,12 @@ Finder _button(String id) => find.byWidgetPredicate(
     );
 
 void main() {
+  // Run this integration suite with --dart-define=auto-ipoe=y.
+  group('Auto-IPoE enabled build', _enabledBuildTests,
+      skip: !BuildConfig.autoIPoEEnabled);
+}
+
+void _enabledBuildTests() {
   for (final remote in [false, true]) {
     testWidgets(
         'standalone WAN controls follow the surface policy: remote=$remote',

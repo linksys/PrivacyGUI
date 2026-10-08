@@ -1,3 +1,4 @@
+import 'package:privacy_gui/constants/build_config.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -168,6 +169,12 @@ Future<ProviderContainer> _pump(
 }
 
 void main() {
+  // Run this integration suite with --dart-define=auto-ipoe=y.
+  group('Auto-IPoE enabled build', _enabledBuildTests,
+      skip: !BuildConfig.autoIPoEEnabled);
+}
+
+void _enabledBuildTests() {
   for (final error in <ServiceError>[
     const NotAuthenticatedError(),
     const SessionTokenExpiredError(),

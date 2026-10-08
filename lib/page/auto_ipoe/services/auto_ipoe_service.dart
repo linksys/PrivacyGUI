@@ -1,3 +1,4 @@
+import 'package:privacy_gui/constants/build_config.dart';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,6 +47,7 @@ class AutoIPoEService {
 
   /// Refuses work belonging to a connection replaced on the stable USP client.
   void checkConnection() {
+    if (!BuildConfig.autoIPoEEnabled) throw const ResourceNotFoundError();
     if (_connectionGeneration != null &&
         client.connectionGeneration != _connectionGeneration) {
       throw const NotAuthenticatedError();

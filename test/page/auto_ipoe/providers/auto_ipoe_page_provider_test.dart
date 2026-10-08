@@ -1,3 +1,4 @@
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_snapshot.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,6 +24,12 @@ class DraftData extends AutoIPoEDataNotifier {
 }
 
 void main() {
+  // Run this integration suite with --dart-define=auto-ipoe=y.
+  group('Auto-IPoE enabled build', _enabledBuildTests,
+      skip: !BuildConfig.autoIPoEEnabled);
+}
+
+void _enabledBuildTests() {
   test('PnP failure preserves entered provider secrets and draft', () async {
     final data = DraftData();
     final container = ProviderContainer(
