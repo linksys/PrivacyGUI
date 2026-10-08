@@ -60,6 +60,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
       ],
       bottomBar: _isEdit
           ? InversePageBottomBar(
+              isWrite: false,
               isPositiveEnabled: true,
               onPositiveTap: () {
                 ref
@@ -74,6 +75,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
               },
             )
           : PageBottomBar(
+              isWrite: false,
               isPositiveEnabled: true,
               onPositiveTap: () {
                 context.pop();

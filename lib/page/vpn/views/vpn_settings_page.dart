@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -220,7 +221,11 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
             key: ValueKey('testAgain'),
             loc(context).testAgain,
             onTap: () async {
-              bool isChanged = isStateChanged(state.settings);
+              // The test is a diagnostic and runs on a read-only login too.
+              // That login cannot save first, so it tests what the router has,
+              // as if nothing had been edited.
+              bool isChanged = isStateChanged(state.settings) &&
+                  ref.read(accessPolicyProvider).canWrite;
               bool hasErrors = _hasErrors();
 
               final shouldGo = !isChanged

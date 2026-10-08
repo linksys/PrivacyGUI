@@ -3,6 +3,8 @@ import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/widgets/write_guard.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
@@ -12,6 +14,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
+import 'package:privacy_gui/page/components/mixin/client_signal_watcher_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
@@ -47,7 +50,10 @@ class InstantTopologyView extends ArgumentsConsumerStatefulView {
       _InstantTopologyViewState();
 }
 
-class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
+// Also the Topology tab of Instant Verify, which hosts this view as a widget:
+// the tab is built only while it is the one showing, so the watch follows it.
+class _InstantTopologyViewState extends ConsumerState<InstantTopologyView>
+    with ClientSignalWatcherMixin {
   bool _isLoading = false;
   bool _isWidget = false;
   late final TreeController<RouterTreeNode> treeController;
@@ -96,7 +102,9 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
           : StyledAppPageView(
               // scrollable: true,
               onRefresh: () {
-                return ref.read(pollingProvider.notifier).forcePolling();
+                return ref
+                    .read(pollingProvider.notifier)
+                    .forcePollingWithClientSignals();
               },
               hideTopbar: _isWidget,
               useMainPadding: true,
@@ -116,7 +124,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
                                 controller.repeat();
                                 ref
                                     .read(pollingProvider.notifier)
-                                    .forcePolling()
+                                    .forcePollingWithClientSignals()
                                     .then((value) {
                                   controller.stop();
                                 });
@@ -191,7 +199,9 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
             thumbVisibility: true,
             child: RefreshIndicator(
               onRefresh: () {
-                return ref.read(pollingProvider.notifier).forcePolling();
+                return ref
+                    .read(pollingProvider.notifier)
+                    .forcePollingWithClientSignals();
               },
               child: SingleChildScrollView(
                 controller: _desktopScrollController,
@@ -283,7 +293,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     final supportChildReboot = serviceHelper.isSupportChildReboot();
     final supportChildFactoryReset = serviceHelper.isSupportChildFactoryReset();
 
-    return node.data.isMaster
+    final actions = node.data.isMaster
         ? [
             if (hasBlinkFunction &&
                 isCognitiveMeshRouter(
@@ -311,6 +321,11 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
                     hardwareVersion: node.data.hardwareVersion))
               NodeInstantActions.reset,
           ];
+    // Blink is a diagnostic; reboot, pair and reset all change the network. A
+    // node left with nothing to offer shows no action row at all.
+    return ref.watch(accessPolicyProvider).canWrite
+        ? actions
+        : actions.where((e) => e == NodeInstantActions.blink).toList();
   }
 
   _handleSelectedNodeAction(
@@ -555,12 +570,14 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
       context,
       title: loc(context).modalOfflineNodeTitle,
       actions: [
-        AppTextButton(
-          loc(context).modalOfflineRemoveNodeFromNetwork,
-          color: Theme.of(context).colorScheme.error,
-          onTap: () {
-            context.pop('remove');
-          },
+        WriteGuard(
+          child: AppTextButton(
+            loc(context).modalOfflineRemoveNodeFromNetwork,
+            color: Theme.of(context).colorScheme.error,
+            onTap: () {
+              context.pop('remove');
+            },
+          ),
         ),
         AppTextButton(
           loc(context).close,

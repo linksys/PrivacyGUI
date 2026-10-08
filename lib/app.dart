@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/layouts/root_container.dart';
@@ -137,6 +138,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     logger.i('didChangeAppLifecycleState: ${state.name}');
+    ref.read(pollingProvider.notifier).appVisible = isAppVisible(state);
     // if (state == AppLifecycleState.resumed) {
     //   ref
     //       .read(connectivityProvider.notifier)

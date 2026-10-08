@@ -58,7 +58,9 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     return StyledAppPageView(
       scrollable: true,
       onRefresh: () async {
-        await ref.read(pollingProvider.notifier).forcePolling();
+        await ref
+            .read(pollingProvider.notifier)
+            .forcePollingWithClientSignals();
       },
       appBarStyle: AppBarStyle.none,
       backState: StyledBackState.none,

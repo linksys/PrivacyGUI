@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/widgets/write_guard.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
@@ -16,6 +17,7 @@ import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
+import 'package:privacy_gui/page/components/mixin/client_signal_watcher_mixin.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -55,7 +57,10 @@ class NodeDetailView extends ArgumentsConsumerStatefulView {
 }
 
 class _NodeDetailViewState extends ConsumerState<NodeDetailView>
-    with PageSnackbarMixin, SingleTickerProviderStateMixin {
+    with
+        PageSnackbarMixin,
+        SingleTickerProviderStateMixin,
+        ClientSignalWatcherMixin {
   late final TabController _tabController;
 
   @override
@@ -110,7 +115,10 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
               icon: LinksysIcons.refresh,
               onTap: () {
                 controller.repeat();
-                ref.read(pollingProvider.notifier).forcePolling().then((value) {
+                ref
+                    .read(pollingProvider.notifier)
+                    .forcePollingWithClientSignals()
+                    .then((value) {
                   controller.stop();
                 });
               },
@@ -155,7 +163,10 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
               icon: LinksysIcons.refresh,
               onTap: () {
                 controller.repeat();
-                ref.read(pollingProvider.notifier).forcePolling().then((value) {
+                ref
+                    .read(pollingProvider.notifier)
+                    .forcePollingWithClientSignals()
+                    .then((value) {
                   controller.stop();
                 });
               },
@@ -387,12 +398,14 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
               ),
               _avatarInfoCard(
                 title: state.location,
-                trailing: AppIconButton(
-                  icon: LinksysIcons.edit,
-                  semanticLabel: 'edit',
-                  onTap: () {
-                    _showEditNodeNameDialog(state);
-                  },
+                trailing: WriteGuard(
+                  child: AppIconButton(
+                    icon: LinksysIcons.edit,
+                    semanticLabel: 'edit',
+                    onTap: () {
+                      _showEditNodeNameDialog(state);
+                    },
+                  ),
                 ),
               ),
               _avatarInfoCard(
@@ -459,30 +472,32 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
       final title = loc(context).nodeLight;
       final nodeLightStatus = NodeLightStatus.getStatus(nodeLightSettings);
       return [
-        AppSettingCard(
-          key: const ValueKey('nodeLightSettings'),
-          title: title,
-          showBorder: false,
-          color: Theme.of(context).colorScheme.background,
-          padding: const EdgeInsets.all(Spacing.medium),
-          trailing: nodeLightStatus != NodeLightStatus.night
-              ? AppStatusLabel(
-                  isOff: nodeLightStatus == NodeLightStatus.off,
-                  label: loc(context).on,
-                  offLabel: loc(context).off,
-                )
-              : const Row(
-                  children: [
-                    Icon(
-                      LinksysIcons.darkMode,
-                      size: 16,
-                    ),
-                    AppText.bodyMedium('8PM - 8AM')
-                  ],
-                ),
-          onTap: () {
-            _showNodeLightSelectionDialog(nodeLightStatus);
-          },
+        WriteGuard(
+          child: AppSettingCard(
+            key: const ValueKey('nodeLightSettings'),
+            title: title,
+            showBorder: false,
+            color: Theme.of(context).colorScheme.background,
+            padding: const EdgeInsets.all(Spacing.medium),
+            trailing: nodeLightStatus != NodeLightStatus.night
+                ? AppStatusLabel(
+                    isOff: nodeLightStatus == NodeLightStatus.off,
+                    label: loc(context).on,
+                    offLabel: loc(context).off,
+                  )
+                : const Row(
+                    children: [
+                      Icon(
+                        LinksysIcons.darkMode,
+                        size: 16,
+                      ),
+                      AppText.bodyMedium('8PM - 8AM')
+                    ],
+                  ),
+            onTap: () {
+              _showNodeLightSelectionDialog(nodeLightStatus);
+            },
+          ),
         ),
       ];
     }

@@ -13,13 +13,13 @@ final localLoginRoute = LinksysRoute(
     LinksysRoute(
       name: RouteNamed.localRouterRecovery,
       path: RoutePath.localRouterRecovery,
-      config: const LinksysRouteConfig(noNaviRail: true),
+      config: const LinksysRouteConfig(noNaviRail: true, writeFlow: true),
       builder: (context, state) => const LocalRouterRecoveryView(),
       routes: [
         LinksysRoute(
           name: RouteNamed.localPasswordReset,
           path: RoutePath.localPasswordReset,
-          config: const LinksysRouteConfig(noNaviRail: true),
+          config: const LinksysRouteConfig(noNaviRail: true, writeFlow: true),
           builder: (context, state) => LocalResetRouterPasswordView(
             args: state.extra as Map<String, dynamic>? ?? {},
           ),

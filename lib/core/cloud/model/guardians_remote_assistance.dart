@@ -89,6 +89,28 @@ class GRASessionInfo extends Equatable {
     required this.currentTime,
   });
 
+  GRASessionInfo copyWith({
+    String? id,
+    String? serialNumber,
+    String? modelNumber,
+    GRASessionStatus? status,
+    int? expiredIn,
+    int? createdAt,
+    int? statusChangedAt,
+    int? currentTime,
+  }) {
+    return GRASessionInfo(
+      id: id ?? this.id,
+      serialNumber: serialNumber ?? this.serialNumber,
+      modelNumber: modelNumber ?? this.modelNumber,
+      status: status ?? this.status,
+      expiredIn: expiredIn ?? this.expiredIn,
+      createdAt: createdAt ?? this.createdAt,
+      statusChangedAt: statusChangedAt ?? this.statusChangedAt,
+      currentTime: currentTime ?? this.currentTime,
+    );
+  }
+
   @override
   List<Object?> get props => [
         id,

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -318,8 +319,17 @@ Future<T?> showSpinnerDialog<T>(BuildContext context) {
       dismissible: false, content: const AppSpinner());
 }
 
+/// Asks whether to discard unsaved edits; true means discard.
+///
+/// A login that may not write could never save them, so there is nothing to
+/// ask: the edits are discarded without the prompt (#1637).
 Future<bool?> showUnsavedAlert(BuildContext context,
     {String? title, String? message}) {
+  if (!ProviderScope.containerOf(context, listen: false)
+      .read(accessPolicyProvider)
+      .canWrite) {
+    return Future.value(true);
+  }
   return showMessageAppDialog<bool>(
     context,
     title: title ?? loc(context).unsavedChangesTitle,

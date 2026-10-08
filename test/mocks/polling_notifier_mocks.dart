@@ -26,34 +26,19 @@ import 'package:privacy_gui/core/jnap/providers/polling_provider.dart' as _i3;
 
 class _FakeAsyncNotifierProviderRef_0<T> extends _i1.SmartFake
     implements _i2.AsyncNotifierProviderRef<T> {
-  _FakeAsyncNotifierProviderRef_0(
-    Object parent,
-    Invocation parentInvocation,
-  ) : super(
-          parent,
-          parentInvocation,
-        );
+  _FakeAsyncNotifierProviderRef_0(Object parent, Invocation parentInvocation)
+      : super(parent, parentInvocation);
 }
 
 class _FakeAsyncValue_1<T> extends _i1.SmartFake implements _i2.AsyncValue<T> {
-  _FakeAsyncValue_1(
-    Object parent,
-    Invocation parentInvocation,
-  ) : super(
-          parent,
-          parentInvocation,
-        );
+  _FakeAsyncValue_1(Object parent, Invocation parentInvocation)
+      : super(parent, parentInvocation);
 }
 
 class _FakeCoreTransactionData_2 extends _i1.SmartFake
     implements _i3.CoreTransactionData {
-  _FakeCoreTransactionData_2(
-    Object parent,
-    Invocation parentInvocation,
-  ) : super(
-          parent,
-          parentInvocation,
-        );
+  _FakeCoreTransactionData_2(Object parent, Invocation parentInvocation)
+      : super(parent, parentInvocation);
 }
 
 /// A class which mocks [PollingNotifier].
@@ -64,10 +49,20 @@ class MockPollingNotifier extends _i2.AsyncNotifier<_i3.CoreTransactionData>
     implements _i3.PollingNotifier {
   @override
   set paused(bool? value) => super.noSuchMethod(
-        Invocation.setter(
-          #paused,
-          value,
-        ),
+        Invocation.setter(#paused, value),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  bool get paused => (super.noSuchMethod(
+        Invocation.getter(#paused),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  set appVisible(bool? visible) => super.noSuchMethod(
+        Invocation.setter(#appVisible, visible),
         returnValueForMissingStub: null,
       );
 
@@ -102,10 +97,7 @@ class MockPollingNotifier extends _i2.AsyncNotifier<_i3.CoreTransactionData>
   @override
   set state(_i2.AsyncValue<_i3.CoreTransactionData>? newState) =>
       super.noSuchMethod(
-        Invocation.setter(
-          #state,
-          newState,
-        ),
+        Invocation.setter(#state, newState),
         returnValueForMissingStub: null,
       );
 
@@ -113,81 +105,81 @@ class MockPollingNotifier extends _i2.AsyncNotifier<_i3.CoreTransactionData>
   _i4.Future<_i3.CoreTransactionData> get future => (super.noSuchMethod(
         Invocation.getter(#future),
         returnValue: _i4.Future<_i3.CoreTransactionData>.value(
-            _FakeCoreTransactionData_2(
-          this,
-          Invocation.getter(#future),
-        )),
+          _FakeCoreTransactionData_2(this, Invocation.getter(#future)),
+        ),
         returnValueForMissingStub: _i4.Future<_i3.CoreTransactionData>.value(
-            _FakeCoreTransactionData_2(
-          this,
-          Invocation.getter(#future),
-        )),
+          _FakeCoreTransactionData_2(this, Invocation.getter(#future)),
+        ),
       ) as _i4.Future<_i3.CoreTransactionData>);
 
   @override
   _i4.FutureOr<_i3.CoreTransactionData> build() => (super.noSuchMethod(
-        Invocation.method(
-          #build,
-          [],
-        ),
+        Invocation.method(#build, []),
         returnValue: _i4.Future<_i3.CoreTransactionData>.value(
-            _FakeCoreTransactionData_2(
-          this,
-          Invocation.method(
-            #build,
-            [],
-          ),
-        )),
+          _FakeCoreTransactionData_2(this, Invocation.method(#build, [])),
+        ),
         returnValueForMissingStub: _i4.Future<_i3.CoreTransactionData>.value(
-            _FakeCoreTransactionData_2(
-          this,
-          Invocation.method(
-            #build,
-            [],
+          _FakeCoreTransactionData_2(
+            this,
+            Invocation.method(#build, []),
           ),
-        )),
+        ),
       ) as _i4.FutureOr<_i3.CoreTransactionData>);
 
   @override
   _i4.Future<dynamic> forcePolling() => (super.noSuchMethod(
-        Invocation.method(
-          #forcePolling,
-          [],
-        ),
+        Invocation.method(#forcePolling, []),
         returnValue: _i4.Future<dynamic>.value(),
         returnValueForMissingStub: _i4.Future<dynamic>.value(),
       ) as _i4.Future<dynamic>);
 
   @override
+  _i4.Future<void> forcePollingWithClientSignals() => (super.noSuchMethod(
+        Invocation.method(#forcePollingWithClientSignals, []),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> refreshClientSignals() => (super.noSuchMethod(
+        Invocation.method(#refreshClientSignals, []),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
+
+  @override
+  void watchClientSignals() => super.noSuchMethod(
+        Invocation.method(#watchClientSignals, []),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void unwatchClientSignals() => super.noSuchMethod(
+        Invocation.method(#unwatchClientSignals, []),
+        returnValueForMissingStub: null,
+      );
+
+  @override
   void checkAndStartPolling([bool? force = false]) => super.noSuchMethod(
-        Invocation.method(
-          #checkAndStartPolling,
-          [force],
-        ),
+        Invocation.method(#checkAndStartPolling, [force]),
         returnValueForMissingStub: null,
       );
 
   @override
   _i4.Future<String> checkSmartMode() => (super.noSuchMethod(
-        Invocation.method(
-          #checkSmartMode,
-          [],
+        Invocation.method(#checkSmartMode, []),
+        returnValue: _i4.Future<String>.value(
+          _i5.dummyValue<String>(
+            this,
+            Invocation.method(#checkSmartMode, []),
+          ),
         ),
-        returnValue: _i4.Future<String>.value(_i5.dummyValue<String>(
-          this,
-          Invocation.method(
-            #checkSmartMode,
-            [],
+        returnValueForMissingStub: _i4.Future<String>.value(
+          _i5.dummyValue<String>(
+            this,
+            Invocation.method(#checkSmartMode, []),
           ),
-        )),
-        returnValueForMissingStub:
-            _i4.Future<String>.value(_i5.dummyValue<String>(
-          this,
-          Invocation.method(
-            #checkSmartMode,
-            [],
-          ),
-        )),
+        ),
       ) as _i4.Future<String>);
 
   @override
@@ -196,17 +188,10 @@ class MockPollingNotifier extends _i2.AsyncNotifier<_i3.CoreTransactionData>
       _i2.AsyncValue<_i3.CoreTransactionData>?,
       _i2.AsyncValue<_i3.CoreTransactionData>,
     )? listener, {
-    void Function(
-      Object,
-      StackTrace,
-    )? onError,
+    void Function(Object, StackTrace)? onError,
   }) =>
       super.noSuchMethod(
-        Invocation.method(
-          #listenSelf,
-          [listener],
-          {#onError: onError},
-        ),
+        Invocation.method(#listenSelf, [listener], {#onError: onError}),
         returnValueForMissingStub: null,
       );
 
@@ -214,35 +199,22 @@ class MockPollingNotifier extends _i2.AsyncNotifier<_i3.CoreTransactionData>
   _i4.Future<_i3.CoreTransactionData> update(
     _i4.FutureOr<_i3.CoreTransactionData> Function(_i3.CoreTransactionData)?
         cb, {
-    _i4.FutureOr<_i3.CoreTransactionData> Function(
-      Object,
-      StackTrace,
-    )? onError,
+    _i4.FutureOr<_i3.CoreTransactionData> Function(Object, StackTrace)? onError,
   }) =>
       (super.noSuchMethod(
-        Invocation.method(
-          #update,
-          [cb],
-          {#onError: onError},
-        ),
+        Invocation.method(#update, [cb], {#onError: onError}),
         returnValue: _i4.Future<_i3.CoreTransactionData>.value(
-            _FakeCoreTransactionData_2(
-          this,
-          Invocation.method(
-            #update,
-            [cb],
-            {#onError: onError},
+          _FakeCoreTransactionData_2(
+            this,
+            Invocation.method(#update, [cb], {#onError: onError}),
           ),
-        )),
+        ),
         returnValueForMissingStub: _i4.Future<_i3.CoreTransactionData>.value(
-            _FakeCoreTransactionData_2(
-          this,
-          Invocation.method(
-            #update,
-            [cb],
-            {#onError: onError},
+          _FakeCoreTransactionData_2(
+            this,
+            Invocation.method(#update, [cb], {#onError: onError}),
           ),
-        )),
+        ),
       ) as _i4.Future<_i3.CoreTransactionData>);
 
   @override
@@ -251,13 +223,7 @@ class MockPollingNotifier extends _i2.AsyncNotifier<_i3.CoreTransactionData>
     _i2.AsyncValue<_i3.CoreTransactionData>? next,
   ) =>
       (super.noSuchMethod(
-        Invocation.method(
-          #updateShouldNotify,
-          [
-            previous,
-            next,
-          ],
-        ),
+        Invocation.method(#updateShouldNotify, [previous, next]),
         returnValue: false,
         returnValueForMissingStub: false,
       ) as bool);

@@ -2,7 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/page/components/widgets/write_guard.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/back_haul_info.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
@@ -101,7 +101,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                     controller.repeat();
                     ref
                         .read(pollingProvider.notifier)
-                        .forcePolling()
+                        .forcePollingWithClientSignals()
                         .then((value) {
                       controller.stop();
                     });
@@ -124,7 +124,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
 
     return StyledAppPageView.innerPage(
       onRefresh: () {
-        return ref.read(pollingProvider.notifier).forcePolling();
+        return ref
+            .read(pollingProvider.notifier)
+            .forcePollingWithClientSignals();
       },
       child: (context, constraints) => ResponsiveLayout.isMobileLayout(context)
           ? Column(
@@ -800,16 +802,10 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
           const AppGap.large2(),
           dashboardState.isHealthCheckSupported
               ? const SpeedTestWidget()
-              : AppCard(
-                  child: Tooltip(
-                    message: loc(context).featureUnavailableInRemoteMode,
-                    child: Opacity(
-                      opacity: BuildConfig.isRemote() ? 0.5 : 1,
-                      child: AbsorbPointer(
-                        absorbing: BuildConfig.isRemote(),
-                        child: const SpeedTestExternalWidget(),
-                      ),
-                    ),
+              : const AppCard(
+                  child: WriteGuard(
+                    localOnly: true,
+                    child: SpeedTestExternalWidget(),
                   ),
                 ),
         ],
