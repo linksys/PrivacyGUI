@@ -13,6 +13,7 @@ import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_rule_view.dart';
@@ -87,6 +88,23 @@ enum LocalWhereToGo {
   ;
 }
 
+/// Where a login that may not write is sent instead of [location], or null to
+/// let it through (#1637).
+///
+/// Covers the flows entered by goNamed or a typed URL that only exist to write:
+/// every PnP route (both trees share the [RoutePath.pnp] prefix), and cloud
+/// account login with its OTP steps, which would swap the remote assistance
+/// session for a full account session. PnP must not be entered at all: it also
+/// logs the user out and flips the login to local, which the JNAP gate cannot
+/// see.
+String? writeFlowRedirect(String location) {
+  if (location.startsWith(RoutePath.pnp) ||
+      location.startsWith(RoutePath.cloudLoginAccount)) {
+    return RoutePath.dashboardHome;
+  }
+  return null;
+}
+
 final routerKey = GlobalKey<NavigatorState>();
 final routerProvider = Provider<GoRouter>((ref) {
   final router = RouterNotifier(ref);
@@ -123,6 +141,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       addNodesRoute,
     ],
     redirect: (context, state) {
+      if (!ref.read(accessPolicyProvider).canWrite) {
+        final target = writeFlowRedirect(state.matchedLocation);
+        if (target != null) {
+          logger.i('[Route]: read-only: ${state.matchedLocation} -> $target');
+          return target;
+        }
+      }
       if (state.matchedLocation == '/') {
         return router._autoConfigurationLogic(state);
       } else if (state.matchedLocation == RoutePath.localLoginPassword) {

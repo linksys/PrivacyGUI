@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/core/cache/utility.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
@@ -84,6 +85,8 @@ class RouterRepository {
     int retries = 1,
     JNAPSideEffectOverrides? sideEffectOverrides,
   }) async {
+    // Before anything is built, so a refused write never reaches the router.
+    enforceAccess(ref, (policy) => policy.checkSend(action, data: data));
     cacheLevel ??= isMatchedJNAPNoCachePolicy(action)
         ? CacheLevel.noCache
         : CacheLevel.localCached;
@@ -117,6 +120,7 @@ class RouterRepository {
     int retries = 1,
     JNAPSideEffectOverrides? sideEffectOverrides,
   }) async {
+    enforceAccess(ref, (policy) => policy.checkTransaction(builder.commands));
     cacheLevel =
         builder.commands.any((entry) => isMatchedJNAPNoCachePolicy(entry.key))
             ? CacheLevel.noCache

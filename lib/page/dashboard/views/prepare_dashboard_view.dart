@@ -16,6 +16,7 @@ import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/page/select_network/providers/select_network_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -108,8 +109,15 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
     } else {
       // TODO #LINKSYS Error handling for unable to get deviceinfo
       logger.i('PREPARE :: Error handling for unable to get deviceinfo');
-      router.goNamed(RouteNamed.cloudLoginAccount,
-          extra: {'error': 'Unexpected'});
+      // Account login is redirected away for a login that may not write, so
+      // that one goes back to the session login, which shows the error.
+      if (ref.read(accessPolicyProvider).canWrite) {
+        router.goNamed(RouteNamed.cloudLoginAccount,
+            extra: {'error': 'Unexpected'});
+      } else {
+        router.goNamed(RouteNamed.cloudLoginAuth,
+            queryParameters: {'error': 'Unexpected'});
+      }
     }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
@@ -75,7 +76,12 @@ class DashboardHomeTitle extends ConsumerWidget {
                   ),
                 ],
               ),
-              if (!isLoading && !isOnline) _troubleshooting(context, ref),
+              // The troubleshooter is PnP, which a login that may not write is
+              // turned away from; the card would lead nowhere.
+              if (!isLoading &&
+                  !isOnline &&
+                  ref.watch(accessPolicyProvider).canWrite)
+                _troubleshooting(context, ref),
             ],
           );
   }

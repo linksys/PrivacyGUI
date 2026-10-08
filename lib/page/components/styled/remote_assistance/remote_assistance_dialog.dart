@@ -123,17 +123,20 @@ Future<void> showRemoteAssistanceDialog(BuildContext context, WidgetRef ref,
     if (endedUnderneath && context.mounted) {
       // Told after the fact rather than left to guess: the dialog vanishing on
       // its own reads as a glitch without this.
-      showSimpleAppDialog(
+      //
+      // The OK variant rather than a hand-rolled `actions` list, because `context`
+      // out here is the caller's, not this dialog's - `showDialog`'s `builder`
+      // shadows it only inside the call above. From the top bar that context sits
+      // under the dashboard ShellRoute, so `Navigator.of` resolved to the shell
+      // navigator and OK popped the dashboard route out of the match list instead
+      // of closing the notice, taking the notice with it and leaving a blank page.
+      // `showSimpleAppOkDialog` pops via `context.pop`, which asks GoRouter for the
+      // navigator actually on top rather than the nearest one above a context.
+      showSimpleAppOkDialog(
         context,
         dismissible: false,
         content:
             AppText.bodyMedium(loc(context).remoteAssistanceSessionExpired),
-        actions: [
-          AppTextButton(
-            loc(context).ok,
-            onTap: () => Navigator.of(context).pop(),
-          )
-        ],
       );
     }
   });

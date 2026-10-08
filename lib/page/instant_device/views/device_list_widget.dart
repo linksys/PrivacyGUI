@@ -11,6 +11,7 @@ import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/gap.dart';
 import 'package:privacygui_widgets/widgets/text/app_text.dart';
+import 'package:privacy_gui/page/components/widgets/write_guard.dart';
 
 class DeviceListWidget extends ConsumerStatefulWidget {
   final List<DeviceListItem> devices;
@@ -133,24 +134,28 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
             !device.isWired &&
             serviceHelper.isSupportClientDeauth()) ...[
           const AppGap.medium(),
-          AppIconButton.noPadding(
-            icon: LinksysIcons.bidirectional,
-            semanticLabel: 'deauth',
-            color: Theme.of(context).colorScheme.primary,
-            onTap: () {
-              widget.onItemDeauth?.call(device);
-            },
+          WriteGuard(
+            child: AppIconButton.noPadding(
+              icon: LinksysIcons.bidirectional,
+              semanticLabel: 'deauth',
+              color: Theme.of(context).colorScheme.primary,
+              onTap: () {
+                widget.onItemDeauth?.call(device);
+              },
+            ),
           ),
         ],
         if (widget.enableDelete) ...[
           const AppGap.medium(),
-          AppIconButton.noPadding(
-            icon: LinksysIcons.delete,
-            semanticLabel: 'delete',
-            color: Theme.of(context).colorScheme.error,
-            onTap: () {
-              widget.onItemDelete?.call(device);
-            },
+          WriteGuard(
+            child: AppIconButton.noPadding(
+              icon: LinksysIcons.delete,
+              semanticLabel: 'delete',
+              color: Theme.of(context).colorScheme.error,
+              onTap: () {
+                widget.onItemDelete?.call(device);
+              },
+            ),
           ),
         ],
       ],

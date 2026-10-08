@@ -4,13 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
+import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 
 class AdministrationSettingsView extends ArgumentsConsumerStatefulView {
   const AdministrationSettingsView({super.key, super.args});
@@ -21,7 +21,7 @@ class AdministrationSettingsView extends ArgumentsConsumerStatefulView {
 }
 
 class _AdministrationSettingsViewState
-    extends ConsumerState<AdministrationSettingsView> {
+    extends ConsumerState<AdministrationSettingsView> with PageSnackbarMixin {
   AdministrationSettingsState? _preservedState;
 
   @override
@@ -67,10 +67,9 @@ class _AdministrationSettingsViewState
                     .save()
                     .then((value) {
                   _preservedState = value;
-                  showSuccessSnackBar(context, loc(context).saved);
+                  showSuccessSnackBar(loc(context).saved);
                 }).onError((error, stackTrace) {
-                  showFailedSnackBar(
-                      context, loc(context).unknownErrorCode(error ?? ''));
+                  showErrorMessageSnackBar(error);
                 }));
           }),
       child: (context, constraints) => AppBasicLayout(

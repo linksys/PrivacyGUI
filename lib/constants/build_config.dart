@@ -84,6 +84,11 @@ class BuildConfig {
   static const bool enableRemoteAssistance =
       bool.fromEnvironment('enable_remote_assistance', defaultValue: false);
 
+  // Holds a remote login to read-only: every JNAP write is refused before it is
+  // sent. Off by default so a build that does not ask keeps today's behaviour.
+  static const bool remoteReadOnly =
+      bool.fromEnvironment('remote_read_only', defaultValue: false);
+
   @pragma('vm:entry-point')
   static load() async {
     logger.d('load build configuration');

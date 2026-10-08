@@ -106,6 +106,7 @@ class _AddRuleContentViewState
     return StyledAppPageView(
       title: loc(context).singlePortForwarding,
       bottomBar: PageBottomBar(
+        isWrite: false,
         isPositiveEnabled: _notifier.isRuleValid(),
         positiveLabel: _isEdit ? loc(context).update : loc(context).add,
         onPositiveTap: () {

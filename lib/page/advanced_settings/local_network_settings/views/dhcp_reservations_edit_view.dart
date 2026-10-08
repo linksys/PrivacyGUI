@@ -157,6 +157,7 @@ class _DHCPReservationsEditViewState
   PageBottomBar bottomBar(String viewType) {
     return switch (viewType) {
       'add' => PageBottomBar(
+          isWrite: false,
           isPositiveEnabled: enableSave,
           onPositiveTap: () {
             final result = DHCPReservation(
@@ -168,6 +169,7 @@ class _DHCPReservationsEditViewState
           },
         ),
       _ => PageBottomBar(
+          isWrite: false,
           isPositiveEnabled: enableSave,
           isNegitiveEnabled: true,
           negitiveLable: loc(context).delete,
