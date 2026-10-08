@@ -333,4 +333,45 @@ void main() {
       expect(isUnansweredTransportFailure('Something else entirely'), isFalse);
     });
   });
+  group('isUnansweredWifiWrite', () {
+    test('is true for everything isUnansweredTransportFailure accepts', () {
+      expect(
+        isUnansweredWifiWrite('Transport error: HTTP error: error sending '
+            'request: JsValue(TypeError: Failed to fetch)'),
+        isTrue,
+      );
+    });
+
+    test(
+        'is true for an HTTP 5xx with no router fault code — Guardian could '
+        'not reach a router reloading its radios (CLOUD_GUARDIANS#215)', () {
+      expect(
+        // Verbatim from #215's log.
+        isUnansweredWifiWrite(
+            'Transport error: Transport error: HTTP error: HTTP 500'),
+        isTrue,
+      );
+      expect(isUnansweredWifiWrite('Transport error: HTTP error: HTTP 503'),
+          isTrue);
+    });
+
+    test('is false for a 4xx — a 401 must end the session (#1627)', () {
+      expect(isUnansweredWifiWrite('Transport error: HTTP error: HTTP 401'),
+          isFalse);
+      expect(isUnansweredWifiWrite('Transport error: HTTP error: HTTP 404'),
+          isFalse);
+    });
+
+    test('is false when a 5xx carries a fault the router reported', () {
+      expect(
+        isUnansweredWifiWrite('Transport error: HTTP error: HTTP 500 '
+            'Received error response: Invalid value (code: 7012)'),
+        isFalse,
+      );
+    });
+
+    test('fails closed on a message it does not recognise', () {
+      expect(isUnansweredWifiWrite('Something else entirely'), isFalse);
+    });
+  });
 }

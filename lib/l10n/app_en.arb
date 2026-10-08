@@ -646,6 +646,7 @@
   },
   "remoteAssistanceSessionExpired": "Session expired",
   "quickSetup": "Quick Setup",
+  "quickSetupDiscardChangesDesc": "Switching Quick Setup will discard the changes you have not saved on this tab.",
   "applyToAllBandsDesc": "Apply the same WiFi settings to all bands at once",
   "pwaGetTheApp": "Get the App",
   "pwaInstallDescription": "Install for a better experience",

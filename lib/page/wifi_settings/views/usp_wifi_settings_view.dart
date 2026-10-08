@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/_shared/helpers/recovery_dialog_helper.dart';
-import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/capability/capability_provider.dart';
 import 'package:privacy_gui/core/capability/device_capability.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_notifier.dart';
 import 'package:privacy_gui/page/mac_filter/views/mac_filter_tab.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -18,6 +13,7 @@ import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provi
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/tabs/wifi_advanced_tab.dart';
 import 'package:privacy_gui/page/wifi_settings/views/tabs/wifi_list_tab.dart';
+import 'package:privacy_gui/page/wifi_settings/views/wifi_write_with_recovery.dart';
 
 class UspWifiSettingsView extends ConsumerStatefulWidget {
   /// How many tabs this page has. Shared with the `clamp` below so the two
@@ -231,34 +227,30 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
   // Save
   // ---------------------------------------------------------------------------
 
+  /// The tab's save, as one Wi-Fi write under one recovery — see
+  /// [runWifiWriteWithRecovery].
   Future<void> _onSave(BuildContext context, WidgetRef ref) async {
     final activeTab = _tabController.index;
     // MAC Filtering saves through its own flow (`macFilterBottomBar`), which
     // confirms overriding Instant Privacy and has no Wi-Fi reconnect step.
-
-    try {
-      final Future<void> task = switch (activeTab) {
-        0 => ref.read(uspWifiSettingsProvider.notifier).save(),
-        1 => ref.read(uspWifiAdvancedProvider.notifier).save(),
-        _ => Future.value(),
-      };
-      logger.d('[WiFi][Save] Starting save...');
-      await doSomethingWithSpinner(context, task);
-      logger.d('[WiFi][Save] Save completed, save spinner dismissed');
-
-      if (!context.mounted) return;
-
-      await showRecoveryDialog(
-        context,
-        ref,
-        trigger: RecoveryTrigger.operationalWifiChange,
-        successMessage: loc(context).wifiSettingsSaved,
-      );
-    } catch (e) {
-      logger.d('[WiFi][Save] Error: $e');
-      if (context.mounted) {
-        showFailedSnackBar(context, localizeServiceError(context, e));
-      }
-    }
+    if (activeTab != 0 && activeTab != 1) return;
+    await runWifiWriteWithRecovery(
+      context,
+      ref,
+      successMessage: loc(context).wifiSettingsSaved,
+      write: () async {
+        if (activeTab == 1) {
+          await ref.read(uspWifiAdvancedProvider.notifier).save();
+          return const WifiWriteConfirmed();
+        }
+        final wifi = ref.read(uspWifiSettingsProvider.notifier);
+        await wifi.save();
+        // Only this tab's save can leave the router away: a rename moves the
+        // browser off the network it is on.
+        return wifi.awaitsRouterRecovery
+            ? WifiWriteAwaitsRouter(wifi.confirmAfterRecovery)
+            : const WifiWriteConfirmed();
+      },
+    );
   }
 }

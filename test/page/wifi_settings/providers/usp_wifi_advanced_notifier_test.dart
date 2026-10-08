@@ -1,15 +1,33 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_write_confirm_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_advanced_service.dart';
+import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
 class MockUspWifiAdvancedService extends Mock
     implements UspWifiAdvancedService {}
+
+/// The plan builder never touches the client; this only satisfies its type.
+class _NoUsp extends Mock implements UspClient {}
+
+/// The real service, with its one GET answered by [_source]'s stub — so the
+/// read-back comparison under test is the production one.
+class _ReadBackVia extends UspWifiAdvancedService {
+  _ReadBackVia(this._source) : super(_NoUsp());
+  final UspWifiAdvancedService _source;
+
+  @override
+  Future<Map<String, bool>> fetchIeee80211h() => _source.fetchIeee80211h();
+}
 
 WifiRadioUIModel _radioModel({
   required String instancePath,
@@ -34,16 +52,64 @@ void main() {
 
   setUp(() {
     mockService = MockUspWifiAdvancedService();
+    // The plan and its read-back are the real service's, so these tests pin
+    // the real params and proof. Only the SET and the GET are mocked: `send`
+    // goes through the mocked setIeee80211hEnabled, so every `verify` of it
+    // below still sees the call, and the read-back reads fetchIeee80211h.
+    when(() => mockService.planIeee80211h(
+          current: any(named: 'current'),
+          radioPaths: any(named: 'radioPaths'),
+          enabled: any(named: 'enabled'),
+          forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
+        )).thenAnswer((inv) {
+      final current = inv.namedArguments[#current] as Map<String, bool>;
+      final radioPaths = inv.namedArguments[#radioPaths] as List<String>;
+      final enabled = inv.namedArguments[#enabled] as bool;
+      final force = inv.namedArguments[#forceAutoChannelPaths] as List<String>;
+      final real = UspWifiAdvancedService(_NoUsp()).planIeee80211h(
+        current: current,
+        radioPaths: radioPaths,
+        enabled: enabled,
+        forceAutoChannelPaths: force,
+      );
+      return WifiWritePlan(
+        params: real.params,
+        proof: real.proof,
+        send: () => mockService.setIeee80211hEnabled(
+          radioPaths: radioPaths,
+          enabled: enabled,
+          forceAutoChannelPaths: force,
+        ),
+      );
+    });
+    // The real comparison, over the mocked GET — not a copy of it.
+    when(() => mockService.isIeee80211hApplied(any())).thenAnswer((inv) =>
+        _ReadBackVia(mockService).isIeee80211hApplied(
+            inv.positionalArguments.first as Map<String, dynamic>));
+  });
+
+  setUpAll(() {
+    registerFallbackValue(<String, bool>{});
+    registerFallbackValue(<String, dynamic>{});
   });
 
   ProviderContainer createContainer({
     List<WifiRadioUIModel> radios = const [],
+    WifiDataNotifier Function()? wifiNotifier,
   }) {
     final container = ProviderContainer(
       overrides: [
         uspWifiAdvancedServiceProvider.overrideWithValue(mockService),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
-        wifiDataProvider.overrideWith(() => _StubWifiDataNotifier(radios)),
+        wifiDataProvider
+            .overrideWith(wifiNotifier ?? () => _StubWifiDataNotifier(radios)),
+        // Short timings, so the read-back path runs without real waits.
+        wifiAnswerWindowProvider
+            .overrideWithValue(const Duration(milliseconds: 50)),
+        wifiReadBackIntervalProvider
+            .overrideWithValue(const Duration(milliseconds: 10)),
+        wifiSaveDeadlineProvider
+            .overrideWithValue(const Duration(milliseconds: 200)),
       ],
     );
     container.listen(uspWifiAdvancedProvider, (_, __) {});
@@ -243,7 +309,7 @@ void main() {
             radioPaths: any(named: 'radioPaths'),
             enabled: any(named: 'enabled'),
             forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
-          )).thenAnswer((_) async {});
+          )).thenAnswer((_) async => WifiWriteOutcome.confirmed);
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -271,7 +337,7 @@ void main() {
             radioPaths: any(named: 'radioPaths'),
             enabled: any(named: 'enabled'),
             forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
-          )).thenAnswer((_) async {});
+          )).thenAnswer((_) async => WifiWriteOutcome.confirmed);
 
       final container = createContainer(radios: [
         // 2.4 GHz on ch 6 — never DFS, must not be forced.
@@ -313,7 +379,7 @@ void main() {
             radioPaths: any(named: 'radioPaths'),
             enabled: any(named: 'enabled'),
             forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
-          )).thenAnswer((_) async {});
+          )).thenAnswer((_) async => WifiWriteOutcome.confirmed);
 
       final container = createContainer(radios: [
         // 5 GHz on ch 36 (non-DFS) — no remediation needed.
@@ -346,7 +412,7 @@ void main() {
             radioPaths: any(named: 'radioPaths'),
             enabled: any(named: 'enabled'),
             forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
-          )).thenAnswer((_) async {});
+          )).thenAnswer((_) async => WifiWriteOutcome.confirmed);
 
       final container = createContainer(radios: [
         // Auto-channel already on: firmware will pick a legal channel itself.
@@ -399,7 +465,7 @@ void main() {
             radioPaths: any(named: 'radioPaths'),
             enabled: any(named: 'enabled'),
             forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
-          )).thenAnswer((_) async {});
+          )).thenAnswer((_) async => WifiWriteOutcome.confirmed);
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -423,6 +489,111 @@ void main() {
   // were true only by accident before, and nothing failed when they stopped being true:
   // the remediation went silent, and no test noticed.
   // -------------------------------------------------------------------------
+  group('UspWifiAdvancedNotifier - a lost reply is read back (#1460)', () {
+    // #1460: over Remote Assistance the DFS SET took 35.4 s and returned
+    // success, but the lock gave up at 30 s and the page reported a failure.
+    void stubDfs({required Map<String, bool> readsBack}) {
+      var first = true;
+      when(() => mockService.fetchIeee80211h()).thenAnswer((_) async {
+        if (first) {
+          first = false;
+          return {'Device.WiFi.Radio.1.': true};
+        }
+        return readsBack;
+      });
+      when(() => mockService.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: any(named: 'enabled'),
+            forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
+          )).thenAnswer((_) async => WifiWriteOutcome.unanswered);
+    }
+
+    test('succeeds when the radios read back the new DFS state', () async {
+      stubDfs(readsBack: {'Device.WiFi.Radio.1.': false});
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspWifiAdvancedProvider.notifier);
+      notifier.setDfsEnabled(false);
+
+      await notifier.save();
+
+      expect(container.read(uspWifiAdvancedProvider).status.isSaving, isFalse);
+      container.dispose();
+    });
+
+    test('outlasting the lock window is read back, not reported', () async {
+      when(() => mockService.fetchIeee80211h()).thenAnswer((_) async => {
+            'Device.WiFi.Radio.1.': false,
+          });
+      when(() => mockService.setIeee80211hEnabled(
+                radioPaths: any(named: 'radioPaths'),
+                enabled: any(named: 'enabled'),
+                forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
+              ))
+          // Never answers inside the 50 ms window — #1460's 35.4 s against 30.
+          .thenAnswer((_) => Completer<WifiWriteOutcome>().future);
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspWifiAdvancedProvider.notifier);
+      notifier.setDfsEnabled(true);
+      when(() => mockService.fetchIeee80211h()).thenAnswer((_) async => {
+            'Device.WiFi.Radio.1.': true,
+          });
+
+      await expectLater(notifier.save(), completes,
+          reason: 'past the window is a read-back, not an error');
+
+      // The SET never answered, so only reading the radios back could have
+      // settled the save.
+      verify(() => mockService.isIeee80211hApplied(
+          {'Device.WiFi.Radio.1.IEEE80211hEnabled': true})).called(1);
+      container.dispose();
+    });
+
+    test(
+        'a confirmed DFS write is NOT failed by the L1 refresh after it '
+        '(the 15 s throttler while the radios reload)', () async {
+      when(() => mockService.fetchIeee80211h()).thenAnswer((_) async => {
+            'Device.WiFi.Radio.1.': false,
+          });
+      when(() => mockService.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: any(named: 'enabled'),
+            forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
+          )).thenAnswer((_) async => WifiWriteOutcome.confirmed);
+      final l1 = _FailAfterFirstBuild();
+      final container = createContainer(wifiNotifier: () => l1);
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspWifiAdvancedProvider.notifier);
+      notifier.setDfsEnabled(true);
+      l1.fail = true;
+
+      await expectLater(notifier.save(), completes);
+
+      expect(l1.failures, greaterThan(0),
+          reason: 'the refresh must actually have failed, or this test '
+              'proves nothing');
+
+      verify(() => mockService.setIeee80211hEnabled(
+            radioPaths: ['Device.WiFi.Radio.1.'],
+            enabled: true,
+            forceAutoChannelPaths: const [],
+          )).called(1);
+      container.dispose();
+    });
+
+    test('fails when the radios never read back the new state', () async {
+      stubDfs(readsBack: {'Device.WiFi.Radio.1.': true});
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspWifiAdvancedProvider.notifier);
+      notifier.setDfsEnabled(false);
+
+      await expectLater(notifier.save(), throwsA(isA<ServiceError>()));
+      container.dispose();
+    });
+  });
+
   group('UspWifiAdvancedNotifier - #1587 Phase 1 contracts', () {
     test('DFS remediation reads L1 by value, not by an incidental subscription',
         () async {
@@ -443,7 +614,7 @@ void main() {
             radioPaths: any(named: 'radioPaths'),
             enabled: any(named: 'enabled'),
             forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
-          )).thenAnswer((_) async {});
+          )).thenAnswer((_) async => WifiWriteOutcome.confirmed);
 
       final container = ProviderContainer(
         overrides: [
@@ -496,7 +667,7 @@ void main() {
             radioPaths: any(named: 'radioPaths'),
             enabled: any(named: 'enabled'),
             forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
-          )).thenAnswer((_) async {});
+          )).thenAnswer((_) async => WifiWriteOutcome.confirmed);
 
       final container = ProviderContainer(
         overrides: [
@@ -543,7 +714,7 @@ void main() {
             radioPaths: any(named: 'radioPaths'),
             enabled: any(named: 'enabled'),
             forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
-          )).thenAnswer((_) async {});
+          )).thenAnswer((_) async => WifiWriteOutcome.confirmed);
 
       // Fails the first build, succeeds after a refresh. `wifiDataProvider` is not
       // autoDispose and has no retry, so without the one refresh in `performSave` every
@@ -646,6 +817,22 @@ class _StubWifiDataNotifier extends WifiDataNotifier {
           codegenContext: WifiCodegenContext.empty,
           radioModels: _radios,
         );
+}
+
+/// Builds normally until [fail] is set, then throws — the post-save refresh
+/// hitting the 15 s throttler.
+class _FailAfterFirstBuild extends WifiDataNotifier {
+  bool fail = false;
+  int failures = 0;
+
+  @override
+  Future<WifiData> build() async {
+    if (fail) {
+      failures++;
+      throw const NetworkError(detail: 'Throttler: request exceeded 15s');
+    }
+    return const WifiData.empty();
+  }
 }
 
 /// Throws on its first build and succeeds afterwards — for the retry contract.

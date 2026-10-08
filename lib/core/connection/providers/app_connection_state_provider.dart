@@ -303,6 +303,22 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
     await _runProbe();
   }
 
+  /// Ends the cooldown now and starts the probe loop, for a caller that knows
+  /// better than a fixed cooldown when the router is worth probing.
+  ///
+  /// A Wi-Fi save enters recovery when it starts, so there is one waiting state
+  /// and one dialog for the whole save — but FW 2.0.2 keeps answering for the
+  /// first ~38 s of the reload, so probing then would "recover" before anything
+  /// had restarted. The save holds the probe off with a long cooldown and calls
+  /// this once its own write has settled. Recovery then ends through the probe
+  /// loop as for every other trigger. A no-op when not waiting.
+  void startProbingNow() {
+    if (state != AppConnectionState.waitingForRecovery) return;
+    _cooldownTimer?.cancel();
+    _cooldownTimer = null;
+    _startProbeLoop();
+  }
+
   void _startProbeLoop() {
     _probeTimer?.cancel();
     _runProbe();

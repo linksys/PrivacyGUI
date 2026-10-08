@@ -255,6 +255,7 @@
   "protocol": "Protokol",
   "publicMac": "Publik",
   "quickSetup": "Pengaturan Cepat",
+  "quickSetupDiscardChangesDesc": "Mengubah Pengaturan Cepat akan membuang perubahan yang belum Anda simpan di tab ini.",
   "applyToAllBandsDesc": "Terapkan pengaturan WiFi yang sama ke semua pita sekaligus",
   "rebootChildTitle": "Nyalakan ulang node dan semua child/nya",
   "rebootOk": "Ya, Mulai Ulang Semua",

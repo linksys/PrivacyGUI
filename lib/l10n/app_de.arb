@@ -257,6 +257,7 @@
   "protocol": "Protokoll",
   "publicMac": "Öffentlich",
   "quickSetup": "Schnelleinrichtung",
+  "quickSetupDiscardChangesDesc": "Beim Umschalten der Schnelleinrichtung werden die nicht gespeicherten Änderungen auf diesem Tab verworfen.",
   "applyToAllBandsDesc": "Wenden Sie dieselben WLAN-Einstellungen gleichzeitig auf alle Bänder an",
   "rebootChildTitle": "Knoten und alle untergeordneten Knoten neu starten",
   "rebootOk": "Ja, alle neu starten",

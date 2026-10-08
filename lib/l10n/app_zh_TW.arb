@@ -258,6 +258,7 @@
   "protocol": "通訊協定",
   "publicMac": "公開",
   "quickSetup": "快速設定",
+  "quickSetupDiscardChangesDesc": "切換快速設定將捨棄您在此分頁上未儲存的變更。",
   "applyToAllBandsDesc": "同時將相同的 WiFi 設定應用到所有頻段",
   "rebootChildTitle": "重新啟動節點及其所有子節點",
   "rebootOk": "是的，重新啟動所有裝置",

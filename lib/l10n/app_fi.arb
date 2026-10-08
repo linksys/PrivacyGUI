@@ -255,6 +255,7 @@
   "protocol": "Protokolla",
   "publicMac": "Julkinen",
   "quickSetup": "Pika-asetus",
+  "quickSetupDiscardChangesDesc": "Pika-asetuksen vaihtaminen hylkää tämän välilehden tallentamattomat muutokset.",
   "applyToAllBandsDesc": "Käytä samoja WiFi-asetuksia kaikille taajuusalueille kerralla",
   "rebootChildTitle": "Käynnistä solmu ja kaikki sen alisolmut uudelleen",
   "rebootOk": "Kyllä, käynnistä kaikki uudelleen",

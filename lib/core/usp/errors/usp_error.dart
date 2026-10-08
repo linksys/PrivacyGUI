@@ -278,6 +278,28 @@ bool isUnansweredTransportFailure(String errorMessage) {
   return errorMessage.contains('Failed to fetch');
 }
 
+/// [isUnansweredTransportFailure], widened for a WiFi write over Remote
+/// Assistance.
+///
+/// Adds one shape only Remote Assistance produces: an `HTTP 5xx` carrying
+/// **no** router fault code. Guardian answers 500 when it cannot reach a router
+/// whose radios are reloading (CLOUD_GUARDIANS#215: the main-password SET came
+/// back `HTTP error: HTTP 500` after 25.9 s, and GETs read empty for ~20 s more
+/// until the router rejoined the cloud). A fault the router itself reported
+/// always carries `(code: N)`, so it is excluded, and a 4xx is never unanswered
+/// — a 401 must end the session (#1627).
+///
+/// A separate predicate rather than a wider [isUnansweredTransportFailure],
+/// because PnP uses that one and was bench-verified on it. Safe in local mode
+/// too: a WiFi caller reads the router back before it believes an unanswered
+/// write, and that read-back fails closed.
+bool isUnansweredWifiWrite(String errorMessage) {
+  if (isUnansweredTransportFailure(errorMessage)) return true;
+  if (_faultCode.hasMatch(errorMessage)) return false;
+  final status = _httpStatus.firstMatch(errorMessage);
+  return status != null && status.group(1)!.startsWith('5');
+}
+
 ServiceError _mapTransportError(UspError e) {
   final status = e.httpStatus;
   if (status != null) {

@@ -11,6 +11,14 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 const kDefaultDialogWidth = 328.0;
 
+/// Shows a spinner while [task] runs, and closes that spinner when it ends.
+///
+/// Closes the spinner it opened, **not** whatever is on top: it used to
+/// `pop()`, and if another dialog had been pushed over the spinner meanwhile,
+/// that pop closed the other dialog and left the spinner up for good — no
+/// barrier, no actions. That is what a Wi-Fi rename did on the bench (#1499):
+/// the reload dropped the event stream, the shell pushed "Connection lost" over
+/// "Processing", and the save's end closed the recovery dialog instead.
 Future<T?> doSomethingWithSpinner<T>(
   BuildContext context,
   Future<T> task, {
@@ -19,18 +27,17 @@ Future<T?> doSomethingWithSpinner<T>(
   List<String>? messages,
   Duration? period,
 }) async {
-  NavigatorState? navigator;
   final completer = Completer();
   Future.delayed(Duration.zero, () {
     try {
       if (context.mounted) {
-        navigator = Navigator.of(context, rootNavigator: true);
         showAppSpinnerDialog(
           context,
           title: title,
           icon: icon,
           messages: messages ?? [loc(context).processing],
           period: period,
+          dismissWhen: task,
         );
       }
     } catch (e) {
@@ -41,18 +48,7 @@ Future<T?> doSomethingWithSpinner<T>(
 
   await completer.future;
   await Future.delayed(const Duration(milliseconds: 100));
-  return task.then((value) {
-    return value;
-  }).onError((error, stackTrace) {
-    throw error ?? '';
-  }).whenComplete(() {
-    try {
-      navigator?.pop();
-    } catch (e) {
-      logger.w(
-          '[Dialog]: doSomethingWithSpinner failed to pop. This might be intentional if the caller pops a page. Error: $e');
-    }
-  });
+  return await task;
 }
 
 Future<T?> showAppSpinnerDialog<T>(
@@ -64,12 +60,13 @@ Future<T?> showAppSpinnerDialog<T>(
   List<String> messages = const [],
   Duration? period,
   List<Widget>? actions = const [],
+  Future<void>? dismissWhen,
 }) {
   return showAppDialog<T?>(
     context: context,
     barrierDismissible: false,
     builder: (context) {
-      return StatefulBuilder(builder: (context, setState) {
+      final spinner = StatefulBuilder(builder: (context, setState) {
         int currentIndex = 0;
         // Nothing to rotate unless there are at least two messages, and with
         // none at all the rotation is a bug: `messages[i % messages.length]` is
@@ -118,8 +115,60 @@ Future<T?> showAppSpinnerDialog<T>(
               );
             });
       });
+      return dismissWhen == null
+          ? spinner
+          : _CloseOwnRouteWhen(when: dismissWhen, child: spinner);
     },
   );
+}
+
+/// Closes the route it is built in once [when] completes, either way — that
+/// route, wherever it is in the stack, not whatever happens to be on top.
+///
+/// On top, it pops, so the spinner fades out as it always has. Under another
+/// route, it is removed in place and the route above it stays.
+class _CloseOwnRouteWhen extends StatefulWidget {
+  const _CloseOwnRouteWhen({required this.when, required this.child});
+
+  final Future<void> when;
+  final Widget child;
+
+  @override
+  State<_CloseOwnRouteWhen> createState() => _CloseOwnRouteWhenState();
+}
+
+class _CloseOwnRouteWhenState extends State<_CloseOwnRouteWhen> {
+  ModalRoute<dynamic>? _route;
+
+  @override
+  void initState() {
+    super.initState();
+    // The error is the caller's to handle; this only needs to know it ended.
+    widget.when.then((_) => _close(), onError: (_) => _close());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _route = ModalRoute.of(context);
+  }
+
+  void _close() {
+    final route = _route;
+    final navigator = route?.navigator;
+    // Gone already: the page under it was replaced, or someone closed it.
+    if (!mounted || route == null || navigator == null || !route.isActive) {
+      return;
+    }
+    if (route.isCurrent) {
+      navigator.pop();
+    } else {
+      navigator.removeRoute(route);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 Future<T?> showSubmitAppDialog<T>(

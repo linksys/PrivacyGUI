@@ -258,6 +258,7 @@
   "protocol": "プロトコル",
   "publicMac": "パブリック",
   "quickSetup": "クイック設定",
+  "quickSetupDiscardChangesDesc": "クイック設定を切り替えると、このタブで保存していない変更は破棄されます。",
   "applyToAllBandsDesc": "同じ WiFi 設定をすべてのバンドに一度に適用する",
   "rebootChildTitle": "ノードとそのすべての子ノードを再起動",
   "rebootOk": "はい、すべてを再起動します。",

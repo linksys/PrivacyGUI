@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/dashboard/views/dialogs/wifi_channel_dialog.dar
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/views/wifi_write_with_recovery.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -169,17 +170,21 @@ class UspWifiStatusCard extends ConsumerWidget {
       builder: (_) => WifiChannelDialog(radio: radio),
     );
     if (result == null || !context.mounted) return;
-    await performUspMutation(
+    // A channel change reloads every radio, like a page save, so it runs under
+    // the same one recovery: the dashboard's polling pauses instead of timing
+    // out against a reloading router (bench 2026-10-07).
+    await runWifiWriteWithRecovery(
       context,
       ref,
-      loadingKey: 'wifi',
-      mutation: () =>
-          ref.read(uspWifiSettingsProvider.notifier).updateRadioChannel(
-                radio.instancePath,
-                channel: result.channel,
-                autoChannel: result.autoChannel,
-              ),
       successMessage: loc(context).channelUpdated,
+      write: () async {
+        await ref.read(uspWifiSettingsProvider.notifier).updateRadioChannel(
+              radio.instancePath,
+              channel: result.channel,
+              autoChannel: result.autoChannel,
+            );
+        return const WifiWriteConfirmed();
+      },
     );
   }
 

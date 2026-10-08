@@ -257,6 +257,7 @@
   "protocol": "Protocol",
   "publicMac": "Openbaar",
   "quickSetup": "Snelle installatie",
+  "quickSetupDiscardChangesDesc": "Als u Snelle installatie omschakelt, worden de niet-opgeslagen wijzigingen op dit tabblad genegeerd.",
   "applyToAllBandsDesc": "Pas dezelfde WiFi-instellingen tegelijkertijd toe op alle banden",
   "rebootChildTitle": "Herstart de node en al zijn kind-/kinderen",
   "rebootOk": "Ja, alles opnieuw opstarten",

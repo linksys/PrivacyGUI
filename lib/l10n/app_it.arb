@@ -257,6 +257,7 @@
   "protocol": "Protocollo",
   "publicMac": "Pubblico",
   "quickSetup": "Configurazione rapida",
+  "quickSetupDiscardChangesDesc": "Cambiando la Configurazione rapida verranno annullate le modifiche non salvate in questa scheda.",
   "applyToAllBandsDesc": "Applica le stesse impostazioni WiFi a tutte le bande contemporaneamente",
   "rebootChildTitle": "Riavvia il nodo e tutti i suoi nodi figli",
   "rebootOk": "Sì, ripristina tutto",

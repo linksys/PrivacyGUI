@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
@@ -22,6 +24,10 @@ Future<void> showRecoveryDialog(
   String? title,
   String? message,
   String? successMessage,
+  // Keeps the dialog up past the recovery until this completes — for a caller
+  // with work left once the router is back (a Wi-Fi save reading back what it
+  // wrote), so the page is never shown before it is right.
+  Future<void>? holdUntil,
 }) async {
   logger
       .d('[Recovery] showRecoveryDialog: trigger=$trigger, cooldown=$cooldown, '
@@ -51,15 +57,17 @@ Future<void> showRecoveryDialog(
     }
   }
 
-  final navigator = Navigator.of(context, rootNavigator: true);
-
+  // Closes on recovery — this dialog's own route, not whatever is on top: a
+  // blind `pop()` here would close a dialog pushed over this one and leave this
+  // one up (the same defect `doSomethingWithSpinner` had, #1499).
+  final recovered = Completer<void>();
   final sub = ref.listenManual(appConnectionStateProvider, (prev, next) {
     logger.d('[Recovery] appConnectionState changed: $prev -> $next');
-    if (next == AppConnectionState.authenticated) {
-      logger.d('[Recovery] Popping recovery dialog (recovered)');
-      navigator.pop();
+    if (next == AppConnectionState.authenticated && !recovered.isCompleted) {
+      logger.d('[Recovery] Closing recovery dialog (recovered)');
+      recovered.complete();
     }
-    // loggedOut: don't pop — route redirect will replace the entire page stack
+    // loggedOut: don't close — route redirect will replace the entire page stack
   });
 
   logger.d('[Recovery] Showing recovery dialog');
@@ -100,6 +108,9 @@ Future<void> showRecoveryDialog(
       // non-nullable `Widget` so it cannot be failed by omission.
       surface.sessionExitAction(),
     ],
+    dismissWhen: holdUntil == null
+        ? recovered.future
+        : Future.wait([recovered.future, holdUntil]),
   );
   logger.d('[Recovery] Recovery dialog dismissed');
 
@@ -113,5 +124,31 @@ Future<void> showRecoveryDialog(
     if (successMessage != null) {
       showSuccessSnackBar(context, successMessage);
     }
+  }
+}
+
+/// Waits out a recovery that is already running, without showing anything.
+///
+/// For a caller that needs the router back but does not own the dialog for it:
+/// a natural recovery, whose "Connection lost" dialog the shell shows — as it
+/// does when a Wi-Fi rename drops the event stream mid-save (#1499). A second
+/// dialog stacked on that one would be two modals for one outage. Returns
+/// `true` once the app is back to `authenticated`,
+/// `false` if the session ended instead. Returns at once when no recovery is
+/// running.
+Future<bool> awaitRecovery(WidgetRef ref) async {
+  bool settled(AppConnectionState s) =>
+      s != AppConnectionState.waitingForRecovery;
+  final now = ref.read(appConnectionStateProvider);
+  if (settled(now)) return now == AppConnectionState.authenticated;
+
+  final done = Completer<AppConnectionState>();
+  final sub = ref.listenManual(appConnectionStateProvider, (_, next) {
+    if (settled(next) && !done.isCompleted) done.complete(next);
+  });
+  try {
+    return await done.future == AppConnectionState.authenticated;
+  } finally {
+    sub.close();
   }
 }
