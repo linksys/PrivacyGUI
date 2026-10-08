@@ -1,3 +1,9 @@
+import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_log_view.dart';
+import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_data_provider.dart';
+import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_page_provider.dart';
+import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_snapshot.dart';
+import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_section.dart';
+import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -119,7 +125,11 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
   @override
   Widget build(BuildContext context) {
     final form = widget.state.edited;
-    final isEditing = widget.isEditing;
+    final isEditing = widget.isEditing && !widget.state.status.isSaving;
+    final ipoe = ref.watch(autoIPoEDataProvider).valueOrNull;
+    final submission = ref.watch(autoIPoESubmissionProvider);
+    final rejection = ref.watch(autoIPoERejectionProvider);
+    final outcome = ipoe?.outcomeFor(submission) ?? AutoIPoEOutcome.idle;
 
     return UspSectionCard(
       title: loc(context).ipv4Connection,
@@ -133,7 +143,12 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
               identifier: 'internet-connection-type',
               itemIdentifier: _connectionTypeSlug,
               label: loc(context).connectionType,
-              items: UspWanConnectionType.values,
+              items: UspWanConnectionType.values
+                  .where((type) =>
+                      type != UspWanConnectionType.ipoe ||
+                      ipoe?.capabilities.isSupported == true ||
+                      form.connectionType == UspWanConnectionType.ipoe)
+                  .toList(),
               value: form.connectionType,
               itemAsString: (type) => type.localizedLabel(context),
               onChanged: (type) {
@@ -152,6 +167,25 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
           AppGap.md(),
           // Conditional fields based on connection type
           ..._buildTypeSpecificFields(form, isEditing),
+          if (ipoe != null && submission != null) ...[
+            AppGap.md(),
+            buildAutoIPoERuntime(
+                context,
+                ref,
+                ipoe,
+                rejection != null ? AutoIPoEOutcome.rejected : outcome,
+                submission,
+                inline: true),
+          ],
+          if (ipoe != null &&
+              form.connectionType == UspWanConnectionType.ipoe) ...[
+            AppGap.md(),
+            AutoIPoELogView(
+                log: ipoe.log,
+                onRefresh: () async =>
+                    await ref.read(autoIPoEDataProvider.notifier).refresh() !=
+                    null),
+          ],
         ],
       ),
     );
@@ -162,6 +196,18 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
     bool isEditing,
   ) {
     switch (form.connectionType) {
+      case UspWanConnectionType.ipoe:
+        final page = ref.watch(autoIPoEPageProvider);
+        if (page.status.loading) return [const AppLoader()];
+        return [
+          AutoIPoESection(
+              settings: page.current,
+              status: page.status.snapshot.runtime,
+              capabilities: page.status.snapshot.capabilities,
+              isEditing:
+                  isEditing && page.status.snapshot.capabilitiesAvailable,
+              onChanged: ref.read(autoIPoEPageProvider.notifier).updateSettings)
+        ];
       case UspWanConnectionType.dhcp:
         return [];
       case UspWanConnectionType.staticIp:

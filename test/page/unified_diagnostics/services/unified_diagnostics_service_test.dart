@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:privacy_gui/core/usp/services/active_ipv4_connection.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -432,9 +434,17 @@ void main() {
   });
 
   group('pingGateway', () {
-    test('derives gateway from WAN IP/mask and pings it', () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async =>
-          wanStatusResponse(ip: '203.0.113.50', mask: '255.255.255.0'));
+    test('uses the kernel next hop, not a guessed .1 gateway', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            ActiveIpv4Connection.path: jsonEncode({
+              'apiVersion': 1,
+              'available': true,
+              'state': 'Up',
+              'activeIPv4Route': true,
+              'gateway': '203.0.113.254',
+              'protocol': 'dhcp'
+            })
+          });
       fakeScope.pingResult = OperateResult(
         commandName: 'IPPing()',
         commandKey: 'k',
@@ -450,31 +460,25 @@ void main() {
 
       final result = await service.pingGateway();
 
-      expect(result.host, '203.0.113.1'); // Derived gateway
-      expect(fakeScope.calls.single.args['Host'], '203.0.113.1');
+      expect(result?.host, '203.0.113.254'); // Actual next hop
+      expect(fakeScope.calls.single.args['Host'], '203.0.113.254');
     });
 
-    test('falls back to 192.168.1.1 when WAN IP/mask are malformed', () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async => wanStatusResponse(
-            ip: 'not-an-ip',
-            mask: 'not-a-mask',
-          ));
-      fakeScope.pingResult = OperateResult(
-        commandName: 'IPPing()',
-        commandKey: 'k',
-        status: 'Complete',
-        outputArgs: const {
-          'SuccessCount': '3',
-          'FailureCount': '0',
-          'AverageResponseTime': '1',
-          'MinimumResponseTime': '1',
-          'MaximumResponseTime': '1',
-        },
-      );
-
-      // Cannot parse IP — int.parse on 'not-an-ip' throws inside _deriveGateway,
-      // which means the throw escapes pingGateway. Confirm error path.
-      expect(service.pingGateway(), throwsA(isA<FormatException>()));
+    test('missing gateway is skipped without probing a made-up address',
+        () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            ActiveIpv4Connection.path: jsonEncode({
+              'apiVersion': 1,
+              'available': true,
+              'state': 'Up',
+              'activeIPv4Route': true,
+              'gateway': '',
+              'protocol': 'pppoe',
+              'pointToPoint': true
+            })
+          });
+      expect(await service.pingGateway(), isNull);
+      expect(fakeScope.calls, isEmpty);
     });
 
     test('throws when WAN has no IP', () async {

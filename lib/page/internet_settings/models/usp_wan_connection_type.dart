@@ -3,6 +3,7 @@ enum UspWanConnectionType {
   dhcp,
   staticIp,
   pppoe,
+  ipoe,
   pptp,
   l2tp,
   bridge;
@@ -51,6 +52,7 @@ enum UspWanConnectionType {
         dhcp => 'Automatic Configuration - DHCP',
         staticIp => 'Static IP',
         pppoe => 'PPPoE',
+        ipoe => 'IPoE',
         pptp => 'PPTP',
         l2tp => 'L2TP',
         bridge => 'Bridge Mode',
@@ -58,6 +60,7 @@ enum UspWanConnectionType {
 
   /// The TR-181 `AddressingType` value to write back.
   String get addressingTypeValue => switch (this) {
+        ipoe => throw StateError('IPoE is configured through Auto-IPoE'),
         dhcp => 'DHCP',
         staticIp => 'Static',
         pppoe => 'IPCP',

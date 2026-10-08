@@ -437,6 +437,7 @@ void main() {
         RouteNamed.uspNotificationHistory: '/uspNotificationHistory',
         RouteNamed.uspStatistics: '/uspStatistics',
         RouteNamed.uspAdvancedSettings: '/uspAdvancedSettings',
+        RouteNamed.uspAutoIPoE: '/uspAdvancedSettings/uspAutoIPoE',
         RouteNamed.uspInternetSettings:
             '/uspAdvancedSettings/uspInternetSettings',
         RouteNamed.uspLocalNetwork: '/uspAdvancedSettings/uspLocalNetwork',

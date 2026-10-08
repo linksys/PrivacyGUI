@@ -175,6 +175,55 @@ void main() {
         container.dispose();
       });
 
+      test('skips an inapplicable tunnel gateway and still checks Internet',
+          () async {
+        final container = createContainer();
+        addTearDown(container.dispose);
+        when(() => mockService.checkWanStatus()).thenAnswer(
+          (_) async => const WanStatusUIModel(
+            status: 'Up',
+            ipAddress: '',
+            subnetMask: '',
+            addressingType: 'DS-Lite',
+            usesTunnel: true,
+          ),
+        );
+        when(() =>
+                mockService.pingGateway(repeatCount: any(named: 'repeatCount')))
+            .thenAnswer((_) async => null);
+        when(() => mockService.pingDns(
+                host: any(named: 'host'),
+                repeatCount: any(named: 'repeatCount')))
+            .thenAnswer((_) async => _createPingResult('8.8.8.8'));
+        when(() => mockService.pingInternet(
+                host: any(named: 'host'),
+                repeatCount: any(named: 'repeatCount')))
+            .thenAnswer((_) async => _createPingResult('1.1.1.1'));
+        await container
+            .read(unifiedDiagnosticsProvider.notifier)
+            .selectFlow(DiagnosticFlow.internet);
+        await Future.delayed(Duration.zero);
+        final state = container.read(unifiedDiagnosticsProvider);
+        expect(state.step, DiagnosticStep.showingResults);
+        expect(
+            state.results
+                .singleWhere((r) => r.step == DiagnosticStep.checkingWanStatus)
+                .isOk,
+            isTrue);
+        expect(
+            state.results
+                .singleWhere((r) => r.step == DiagnosticStep.pingGateway)
+                .isSkipped,
+            isTrue);
+        expect(
+            state.results
+                .singleWhere((r) => r.step == DiagnosticStep.pingInternet)
+                .isOk,
+            isTrue);
+        expect(
+            state.recommendations.any((r) => r.id == 'gateway_fail'), isFalse);
+      });
+
       test('records WAN error result and continues flow', () async {
         final container = createContainer();
         final notifier = container.read(unifiedDiagnosticsProvider.notifier);

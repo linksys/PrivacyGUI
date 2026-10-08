@@ -1,3 +1,5 @@
+import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/page/auto_ipoe/services/auto_ipoe_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
@@ -97,6 +99,16 @@ class PnpService {
   /// Returns true if WAN is up with a valid IP address.
   Future<bool> checkInternetConnected() async {
     try {
+      try {
+        final ipoe = await AutoIPoEService(_usp).fetch();
+        if (ipoe.capabilities.isSupported && ipoe.runtime.isCurrentWANType) {
+          return !ipoe.runtime.isBusy &&
+              ipoe.runtime.isEnabled &&
+              ipoe.runtime.applyState == AutoIPoEApplyState.active &&
+              ipoe.runtime.connectivityVerified == true &&
+              ipoe.runtime.hasVerifiedBackendConnectivity;
+        }
+      } on ResourceNotFoundError {/* Router without the optional adapter. */}
       final wan = await WanStatus.fetch(_usp);
       return wan.status == 'Up' && wan.ipAddress.isNotEmpty;
     } catch (e) {

@@ -1,3 +1,5 @@
+import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_view.dart';
+import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_page_provider.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';

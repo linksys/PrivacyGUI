@@ -1,3 +1,4 @@
+import 'package:privacy_gui/core/usp/services/active_ipv4_connection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/ipv6_address.dart';
@@ -43,6 +44,19 @@ class UspWanDataService {
   /// [WanStatusUIModel].
   Future<WanStatusUIModel> fetch() async {
     try {
+      final active = await ActiveIpv4Connection.fetch(_usp);
+      if (active != null) {
+        return WanStatusUIModel(
+          isUp: active.isUp,
+          ipAddress: active.address,
+          subnetMask: active.text('subnetMask'),
+          addressingType: active.label,
+          mtu: active.mtu,
+          gateway: active.gateway,
+          ipv6Enabled: active.isTunnel || active.ipv6.isNotEmpty,
+          ipv6Addresses: preferGlobalIpv6First(active.ipv6),
+        );
+      }
       final results = await Future.wait([
         _fetchWanStatusTolerantOfNoAddress(),
         _fetchGatewayAndIpv6Addresses(),
