@@ -1676,11 +1676,12 @@ class _Flow3State extends ConsumerState<_Flow3> {
             key: ValueKey('device-choice-${device.macAddress}'),
             selected: _selectedDevice?.macAddress == device.macAddress,
             contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-            leading: _selectedDevice?.macAddress == device.macAddress
-                ? Icon(LinksysIcons.checkCircleFilled,
-                    size: 20, color: theme.colorScheme.primary)
-                : Icon(LinksysIcons.circle,
-                    size: 20, color: theme.colorScheme.outlineVariant),
+            // Same radio control as the kit's AppRadioList; the tile handles taps.
+            leading: IgnorePointer(
+                child: Radio<String>(
+                    value: device.macAddress,
+                    groupValue: _selectedDevice?.macAddress,
+                    onChanged: loading ? null : (_) {})),
             title: AppText.bodyMedium(device.displayNameWithOui, maxLines: 2, overflow: TextOverflow.ellipsis),
             subtitle: AppText.bodySmall(device.isWireless ? 'WiFi' : 'Ethernet',
                 color: theme.colorScheme.onSurfaceVariant),
