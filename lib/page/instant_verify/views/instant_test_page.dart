@@ -126,16 +126,22 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: widget.backToMenu
-                    ? AppTextButton('Back to menu',
-                        icon: LinksysIcons.arrowBack,
-                        onTap: () => context.goNamed(RouteNamed.dashboardMenu))
-                    : AppTextButton('Back to router home',
-                        icon: LinksysIcons.arrowBack,
-                        onTap: () => context.goNamed(RouteNamed.dashboardHome)),
-              ),
+              if (widget.backToMenu)
+                // Hidden while a details page or flow shows its own title row.
+                Offstage(
+                  offstage: _showFlow || _details != null,
+                  child: InstantTestPageHeader(
+                      title: 'Instant-Test',
+                      backLabel: 'Back to menu',
+                      onBack: () => context.goNamed(RouteNamed.dashboardMenu)),
+                )
+              else
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: AppTextButton('Back to router home',
+                      icon: LinksysIcons.arrowBack,
+                      onTap: () => context.goNamed(RouteNamed.dashboardHome)),
+                ),
               Expanded(
                 child: Stack(
                   fit: StackFit.expand,

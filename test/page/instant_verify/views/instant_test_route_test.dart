@@ -78,8 +78,22 @@ void main() {
     expect(find.byType(TopNavigationMenu), findsOneWidget);
     expect(find.text('Back to router home'), findsNothing);
     expect(find.text('What needs help?'), findsOneWidget);
-    await tapText(tester, 'Back to menu');
+    // Standard page title row: back arrow, then the page name.
+    expect(find.text('Instant-Test'), findsOneWidget);
+    await tester.tap(find.byTooltip('Back to menu'));
+    await tester.pumpAndSettle();
     expect(find.text('Menu page'), findsOneWidget);
+  });
+
+  testWidgets('a flow shows only its own back control, not the menu title row',
+      (tester) async {
+    await open(tester);
+    await tapText(tester, "Internet isn't working");
+    expect(find.byTooltip('Back to menu'), findsNothing);
+    expect(find.byTooltip('Back to Instant-Test'), findsOneWidget);
+    await tester.tap(find.byTooltip('Back to Instant-Test'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Back to menu'), findsOneWidget);
   });
 
   testWidgets('flows are addressable so browser Back returns to the results',

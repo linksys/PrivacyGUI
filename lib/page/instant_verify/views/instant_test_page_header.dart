@@ -4,7 +4,8 @@ import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/text/app_text.dart';
 
-/// A balanced page title with a separate, predictable back target.
+/// The router's standard page title row (as in LinksysAppBar.withBack): a back
+/// arrow, then a left-aligned title. The back target keeps a specific label.
 class InstantTestPageHeader extends StatelessWidget {
   const InstantTestPageHeader(
       {super.key,
@@ -18,27 +19,33 @@ class InstantTestPageHeader extends StatelessWidget {
   final Widget? subtitle;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(
-            horizontal: Spacing.medium, vertical: Spacing.small3),
-        child: Row(children: [
-          SizedBox(
-              width: Spacing.large5,
-              height: Spacing.large5,
-              child: Tooltip(
-                  message: backLabel,
-                  child: AppIconButton(
-                      icon: LinksysIcons.arrowBack,
-                      semanticLabel: backLabel,
-                      onTap: onBack))),
-          Expanded(
-              child: Column(children: [
-            Semantics(
-                header: true,
-                child: AppText.titleLarge(title, textAlign: TextAlign.center)),
-            if (subtitle != null) subtitle!,
-          ])),
-          const SizedBox(width: Spacing.large5),
-        ]),
+  Widget build(BuildContext context) => ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: kToolbarHeight),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: Spacing.small2),
+          child: Row(children: [
+            ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: Spacing.large3),
+                child: Tooltip(
+                    message: backLabel,
+                    child: AppIconButton(
+                        padding: const EdgeInsets.all(Spacing.small1),
+                        icon: LinksysIcons.arrowBack,
+                        semanticLabel: backLabel,
+                        onTap: onBack))),
+            const SizedBox(width: Spacing.medium),
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                  Semantics(
+                      header: true,
+                      child: AppText.titleLarge(title,
+                          maxLines: 2, overflow: TextOverflow.ellipsis)),
+                  if (subtitle != null) subtitle!,
+                ])),
+          ]),
+        ),
       );
 }
