@@ -628,6 +628,16 @@ void main() {
       expect(find.text('Run Again'), findsOneWidget);
     });
 
+    testWidgets('"Run Again" sits in the page title row', (tester) async {
+      await tester.pumpWidget(_buildOverviewTab(_allClearState()));
+      await tester.pump();
+
+      final title = tester.getCenter(find.text('Instant-Test'));
+      final runAgain = tester.getCenter(find.text('Run Again'));
+      expect((title.dy - runAgain.dy).abs(), lessThan(24));
+      expect(runAgain.dx, greaterThan(title.dx));
+    });
+
     testWidgets('"Test scenarios" button gated on force=local (hidden in test env)',
         (tester) async {
       // The mock-scenario button is now gated on BuildConfig.forceCommandType

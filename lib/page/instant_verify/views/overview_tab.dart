@@ -134,11 +134,12 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
       backState: Navigator.of(context).canPop()
           ? StyledBackState.enabled
           : StyledBackState.none,
+      // Run Again sits in the title row, like refresh on Instant-Topology.
+      actions: [_runAgain(state)],
       child: (context, constraints) => DiagnosticSelectionArea(
           child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Align(alignment: Alignment.centerRight, child: _runAgain(state)),
           // Inline WAN-down callout (PRD v0.7 S-1); the guide link is in the footer.
           _LightGuideLink(
             showLink: false,

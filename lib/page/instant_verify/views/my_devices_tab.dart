@@ -27,15 +27,30 @@ class MyDevicesTab extends ConsumerWidget {
   const MyDevicesTab({super.key, this.onNavigateToFlow});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => StyledAppPageView(
-        title: 'Device details',
-        scrollable: true,
-        onRefresh: () => ref
-            .read(instantVerifyPivotProvider.notifier)
-            .fetch(forceSpeedTest: true),
-        child: (context, constraints) =>
-            DiagnosticSelectionArea(child: _content(context, ref)),
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final loading =
+        ref.watch(instantVerifyPivotProvider).phase == PivotLoadPhase.loading;
+    // Re-scan for devices (e.g. a device that joined after the last test).
+    void refresh() => ref
+        .read(instantVerifyPivotProvider.notifier)
+        .fetch(forceSpeedTest: true);
+    return StyledAppPageView(
+      title: 'Device details',
+      scrollable: true,
+      onRefresh: () async => refresh(),
+      // Refresh sits in the title row, as on Instant-Topology.
+      actions: [
+        AppIconButton.noPadding(
+          icon: LinksysIcons.refresh,
+          semanticLabel: 'Refresh devices',
+          color: Theme.of(context).colorScheme.primary,
+          onTap: loading ? null : refresh,
+        ),
+      ],
+      child: (context, constraints) =>
+          DiagnosticSelectionArea(child: _content(context, ref)),
+    );
+  }
 
   Widget _content(BuildContext context, WidgetRef ref) {
     final state = ref.watch(instantVerifyPivotProvider);
@@ -64,36 +79,14 @@ class MyDevicesTab extends ConsumerWidget {
     return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header ──────────────────────────────────────────────────
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppText.titleLarge(
-                      '$totalCount device${totalCount == 1 ? '' : 's'} connected',
-                    ),
-                    const AppGap.small1(),
-                    AppText.bodyMedium(
-                      '$wirelessCount wireless, $wiredCount wired',
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ],
-                ),
-              ),
-              // Re-scan for devices (e.g. a device that joined after the last test)
-              IconButton(
-                icon: const Icon(LinksysIcons.refresh),
-                tooltip: 'Refresh devices',
-                onPressed: state.phase == PivotLoadPhase.loading
-                    ? null
-                    : () => ref
-                        .read(instantVerifyPivotProvider.notifier)
-                        .fetch(forceSpeedTest: true),
-              ),
-            ],
+          // ── Summary (the page title row holds refresh) ─────────────
+          AppText.titleMedium(
+            '$totalCount device${totalCount == 1 ? '' : 's'} connected',
+          ),
+          const AppGap.small1(),
+          AppText.bodyMedium(
+            '$wirelessCount wireless, $wiredCount wired',
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           const AppGap.medium(),
 
