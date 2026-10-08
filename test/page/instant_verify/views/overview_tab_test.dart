@@ -246,7 +246,33 @@ void main() {
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
       await tester.pump();
 
-      expect(find.text('8 checks passed'), findsOneWidget);
+      // The count matches the rows under "View test details", and names
+      // what did not run, rather than an internal check total (QA: "which 13?").
+      expect(find.text('4 of 6 checks passed · Not run: Devices, Firmware'),
+          findsOneWidget);
+      expect(find.text('8 checks passed'), findsNothing);
+    });
+
+    testWidgets('skipped speed test is named instead of silently lowering the count',
+        (tester) async {
+      const laptop = DiagnosticClient(macAddress: 'AA:BB:CC:00:00:01',
+          hostname: 'Laptop', isWireless: true, signalDecibels: -50,
+          txRateMbps: 400, band: '5 GHz');
+      await tester.pumpWidget(_buildOverviewTab(InstantVerifyPivotState(
+        phase: PivotLoadPhase.complete,
+        browserTestStep: 'complete',
+        wanStatus: const {'wanStatus': 'Connected'},
+        deviceInfo: const {'modelNumber': 'MX6200'},
+        dnsCheck: const DnsCheckResult(resolved: true, latencyMs: 15),
+        clients: const [laptop],
+        deviceScores: [DeviceScore.compute(laptop)],
+        firmwareUpdate: const {'availableUpdate': null},
+        verdict: const Verdict(findings: [], checksRun: 11),
+        verdictIsPreliminary: false,
+      )));
+      await tester.pump();
+      expect(find.text('5 of 6 checks passed · Not run: Speed check'),
+          findsOneWidget);
     });
 
     testWidgets('shows 5 flow cards', (tester) async {

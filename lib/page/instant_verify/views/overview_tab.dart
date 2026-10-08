@@ -673,8 +673,8 @@ class _StatusCard extends StatelessWidget {
                     const Text("We didn't detect any issues",
                         style: TextStyle(
                             fontWeight: FontWeight.w600, fontSize: 16)),
-                    if (verdict != null && verdict.checksRun > 0)
-                      Text('${verdict.checksRun} checks passed',
+                    if (verdict.checksRun > 0)
+                      Text(_checksPassedLabel(state),
                           style: TextStyle(
                               fontSize: 12,
                               color: Colors.green.shade700)),
@@ -1389,8 +1389,47 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final state = widget.state;
+    final rows = _summaryRows(widget.state);
 
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: rows.asMap().entries.map((entry) {
+          final index = entry.key;
+          final row = entry.value;
+          return _SummaryRowWidget(
+            row: row,
+            isExpanded: _expandedIndex == index,
+            onTap: () => setState(() {
+              _expandedIndex = _expandedIndex == index ? null : index;
+            }),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+/// Headline count for the checks listed under "View test details", so the
+/// number always matches rows the user can open (QA: "which 13 items?").
+String _checksPassedLabel(InstantVerifyPivotState state) {
+  final rows = _summaryRows(state);
+  final passed = rows.where((r) =>
+      r.state == _CheckDisplayState.pass ||
+      r.state == _CheckDisplayState.available).length;
+  final notRun = [
+    for (final r in rows)
+      if (r.state == _CheckDisplayState.skipped) r.shortLabel,
+  ];
+  return '$passed of ${rows.length} checks passed'
+      '${notRun.isEmpty ? '' : ' · Not run: ${notRun.join(', ')}'}';
+}
+
+List<_SummaryRow> _summaryRows(InstantVerifyPivotState state) {
     // Firmware 3-state (PRD v0.7): pass / update available / not a failure
     final missingDeviceMeasurements = state.clients.any((client) => client.isWireless && (client.signalDecibels == null || client.txRateMbps == null));
     final bool fwUpToDate = !state.firmwareUpdateAvailable;
@@ -1419,7 +1458,7 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
     // The router's real address is the one the browser reached it at.
     final String routerAddress = Uri.base.host;
 
-    final rows = <_SummaryRow>[
+    return <_SummaryRow>[
       _SummaryRow(
         label: 'Router reached',
         state: state.deviceInfo == null ? _CheckDisplayState.skipped : _CheckDisplayState.pass,
@@ -1491,6 +1530,7 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
       ),
       _SummaryRow(
         label: 'Devices checked',
+        shortLabel: 'Devices',
         // Flag amber when any device has a weak signal \u2014 matches the
         // "weak WiFi" finding so the row reflects the top-level warning.
         state: state.clients.isEmpty
@@ -1509,6 +1549,7 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
       ),
       _SummaryRow(
         label: fwLabel,
+        shortLabel: 'Firmware',
         state: fwState,
         detail: fwUpToDate ? '' : state.availableFirmwareVersion ?? '',
         expandedDetail: state.firmwareUpdate == null || state.firmwareUpdate!.isEmpty
@@ -1520,46 +1561,28 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
               'Updates improve performance, fix bugs, and improve security.',
       ),
     ];
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        children: rows.asMap().entries.map((entry) {
-          final index = entry.key;
-          final row = entry.value;
-          return _SummaryRowWidget(
-            row: row,
-            isExpanded: _expandedIndex == index,
-            onTap: () => setState(() {
-              _expandedIndex = _expandedIndex == index ? null : index;
-            }),
-          );
-        }).toList(),
-      ),
-    );
-  }
 }
 
 enum _CheckDisplayState { pass, fail, warning, skipped, available }
 
 class _SummaryRow {
   final String label;
+  final String? _shortLabel;
   final _CheckDisplayState state;
   final String detail;
   final String expandedDetail;
   /// When set, shown instead of expandedDetail text in the expanded panel.
   final Widget? expandedWidget;
+  /// Stable name for summaries, where [label] varies with the result.
+  String get shortLabel => _shortLabel ?? label;
   const _SummaryRow({
     required this.label,
+    String? shortLabel,
     required this.state,
     required this.detail,
     required this.expandedDetail,
     this.expandedWidget,
-  });
+  }) : _shortLabel = shortLabel;
 }
 
 class _SummaryRowWidget extends StatelessWidget {
