@@ -24,7 +24,5 @@ final instantPrivacyDeviceListProvider = Provider((ref) {
               deviceList.any((e) => e.macAddress == device.macAddress) &&
               !nodeList.any((e) => e.getMacAddress() == device.macAddress))
           .toList()
-      : deviceList
-          .where((device) => !device.isWired && device.isOnline)
-          .toList();
+      : deviceList.where((device) => device.isOnlineWireless).toList();
 });

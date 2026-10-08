@@ -48,12 +48,27 @@ enum GRASessionStatus {
 /// "serialNumber":"65G10M27E03053",
 /// "modelNumber":"LN16-EU",
 /// "status":"ACTIVE",
-/// "expiredIn":-748,
+/// "expiredIn":2547,
 /// "createdAt":1748315872000,
 /// "statusChangedAt":1748315989000,
 /// "currentTime":1748316924838
 /// }
+///
+/// [expiredIn] is seconds **remaining** against the session's one-hour TTL, not
+/// seconds elapsed. Across 271 payloads in the logs attached to #1558 it always
+/// satisfied `expiredIn + (currentTime - createdAt) / 1000 == 3600`, and was
+/// never negative in any status. The negative sample this comment used to show
+/// is what led the polling loop to guard on `expiredIn < 0` and never run.
 class GRASessionInfo extends Equatable {
+  /// Seconds still to run, floored at zero.
+  ///
+  /// The one definition of "how long is left", so the polling loop's liveness
+  /// test and whatever counts down on screen cannot come apart.
+  int get remainingSeconds => expiredIn > 0 ? expiredIn : 0;
+
+  /// Whether the cloud still considers this session usable.
+  bool get isLive => status != GRASessionStatus.invalid && remainingSeconds > 0;
+
   final String id;
   final String serialNumber;
   final String modelNumber;

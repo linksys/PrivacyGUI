@@ -148,6 +148,11 @@ Future<String> getPackageInfo() async {
     'App ID: ${packageInfo.packageName}',
     'App Build Number: ${packageInfo.buildNumber}',
     'App Version: ${packageInfo.version}',
+    // The version alone cannot identify a build: local and remote come from
+    // the same source but are numbered by separate pipelines. The revision
+    // says which source, `Force` says which of the two builds.
+    'Source Revision: ${BuildConfig.sourceRevision}',
+    'Force: ${BuildConfig.forceCommandType.name}',
     if (!kIsWeb) 'Platform OS: ${Platform.operatingSystem}',
     if (!kIsWeb) 'OS version: ${Platform.operatingSystemVersion}',
     'OS: ${defaultTargetPlatform.name}',

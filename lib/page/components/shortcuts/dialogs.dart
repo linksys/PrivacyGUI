@@ -19,7 +19,9 @@ Future<T?> doSomethingWithSpinner<T>(
   BuildContext context,
   Future<T> task, {
   Widget? icon,
+  Widget? loadingWidget,
   String? title,
+  TextAlign? titleTextAlign,
   List<String>? messages,
   Duration? period,
 }) async {
@@ -31,7 +33,9 @@ Future<T?> doSomethingWithSpinner<T>(
       showAppSpinnerDialog(
         context,
         title: title,
+        titleTextAlign: titleTextAlign,
         icon: icon,
+        loadingWidget: loadingWidget,
         messages: messages ?? [loc(context).processing],
         period: period,
       );
@@ -61,6 +65,7 @@ Future<T?> showAppSpinnerDialog<T>(
   BuildContext context, {
   Widget? icon,
   String? title,
+  TextAlign? titleTextAlign,
   Widget? loadingWidget,
   double? width,
   List<String> messages = const [],
@@ -73,7 +78,9 @@ Future<T?> showAppSpinnerDialog<T>(
     builder: (context) {
       return StatefulBuilder(builder: (context, setState) {
         int currentIndex = 0;
-        final stream = Stream.periodic(period ?? const Duration(seconds: 3))
+        final stream = messages.isEmpty
+            ? const Stream<String>.empty()
+            : Stream.periodic(period ?? const Duration(seconds: 3))
             .map((_) => messages[currentIndex++ % messages.length]);
 
         return StreamBuilder<String>(
@@ -85,7 +92,10 @@ Future<T?> showAppSpinnerDialog<T>(
                 title: title != null
                     ? SizedBox(
                         width: width ?? kDefaultDialogWidth,
-                        child: AppText.titleLarge(title))
+                        child: AppText.titleLarge(
+                          title,
+                          textAlign: titleTextAlign,
+                        ))
                     : null,
                 content: SizedBox(
                   width: width ?? kDefaultDialogWidth,
@@ -333,10 +343,25 @@ Future<bool?> showUnsavedAlert(BuildContext context,
   );
 }
 
+int _routerNotFoundAlertsOnScreen = 0;
+
+/// Whether a router-not-found alert is on screen already.
+///
+/// Read by the background trigger in the app root container, so a failing poll never
+/// stacks a second copy on top of one a deliberate flow has already raised. The
+/// deliberate callers pointedly do not consult it: several of them pop a spinner
+/// from their `onComplete`, so suppressing their alert would leave that spinner
+/// up for good.
+bool get isRouterNotFoundAlertShowing => _routerNotFoundAlertsOnScreen > 0;
+
 Future<T?> showRouterNotFoundAlert<T>(BuildContext context, WidgetRef ref,
     {FutureOr<T?> Function()? onComplete}) {
   logger.d('[RouterNotFound] show Router not found alert');
-  return showSimpleAppDialog<T>(context,
+  // Counted only once the route is really on its way up: showDialog throws
+  // synchronously when there is no navigator to push onto, and a count raised
+  // for an alert that never appeared would suppress every later one for the rest
+  // of the session.
+  final dialog = showSimpleAppDialog<T>(context,
       dismissible: false,
       title: loc(context).routerNotFound,
       content: Column(
@@ -371,6 +396,10 @@ Future<T?> showRouterNotFoundAlert<T>(BuildContext context, WidgetRef ref,
           },
         ),
       ]);
+  _routerNotFoundAlertsOnScreen++;
+  return dialog.whenComplete(() {
+    _routerNotFoundAlertsOnScreen--;
+  });
 }
 
 Future<T?> showRedirectNewIpAlert<T>(

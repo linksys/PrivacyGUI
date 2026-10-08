@@ -117,6 +117,7 @@ enum JNAPAction {
   refreshSlaveBackhaulData,
   // nodes networkConnections
   getNodesWirelessNetworkConnections,
+  refreshNodesWirelessNetworkConnections,
   // nodes optimization
   setTopologyOptimizationSettings,
   getTopologyOptimizationSettings,
@@ -160,6 +161,14 @@ enum JNAPAction {
   // routerUpnp
   getUPnPSettings,
   setUPnPSettings,
+  // autoipoe
+  getAutoIPoECapabilities,
+  getAutoIPoESettings,
+  setAutoIPoESettings,
+  applyAutoIPoE,
+  getAutoIPoEStatus,
+  getAutoIPoELog,
+  resetAutoIPoE,
   // selectableWAN
   getPortConnectionStatus,
   getWANPort,

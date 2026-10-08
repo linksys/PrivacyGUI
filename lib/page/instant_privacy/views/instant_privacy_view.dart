@@ -206,7 +206,7 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
                   controller.repeat();
                   ref
                       .read(pollingProvider.notifier)
-                      .forcePolling()
+                      .forcePollingWithClientSignals()
                       .then((value) {
                     controller.stop();
                     setState(() {

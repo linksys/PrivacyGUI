@@ -51,6 +51,39 @@ class BuildConfig {
       int.fromEnvironment('refresh_time', defaultValue: 60);
   static const copyRightYear = int.fromEnvironment('year', defaultValue: 2025);
 
+  static const String unknownSourceRevision = 'unknown';
+
+  // Identifies the source a build came from, independently of its version
+  // number: local and remote are built from the same commit but numbered by
+  // separate pipelines, so the version alone cannot tell "same source,
+  // different build" from "different source". Set by build_web.sh; stays
+  // [unknownSourceRevision] for a build that did not go through it.
+  static const String sourceRevision = String.fromEnvironment('source_revision',
+      defaultValue: unknownSourceRevision);
+
+  /// How a revision is rendered beside a version string.
+  ///
+  /// Pure and takes the revision so both branches are testable; `const` inputs
+  /// mean the call folds away.
+  static String revisionSuffix(String revision) => ' ($revision)';
+
+  /// Always rendered, `unknown` included: a build that did not come through the
+  /// pipeline showing nothing is indistinguishable from a build made before any
+  /// of this existed, which is the ambiguity the stamp exists to remove.
+  static String get sourceRevisionSuffix => revisionSuffix(sourceRevision);
+
+  // Gates the three client-side remote assistance entry points: the support
+  // button in the top bar, the active-session poll in the polling provider, and
+  // the dashboard shell's passive dialog. Kept `const` so dart2js drops the
+  // guarded code from a default build - measured absent from the bundle - which
+  // is what commenting those sites out used to achieve.
+  //
+  // It does not gate the Guardian path (`initiateRemoteAssistanceCA`, reached on
+  // a remote login), which ships either way, so remote assistance code remains
+  // reachable in a default build even though none of these entry points do.
+  static const bool enableRemoteAssistance =
+      bool.fromEnvironment('enable_remote_assistance', defaultValue: false);
+
   @pragma('vm:entry-point')
   static load() async {
     logger.d('load build configuration');

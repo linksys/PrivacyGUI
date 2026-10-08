@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -47,6 +48,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
       (prevStatus, nextStatus) {
         logger.i(
             '[DashboardShell]: session status changed: $prevStatus -> $nextStatus');
+        if (!BuildConfig.enableRemoteAssistance) return;
         final loginType = ref.read(authProvider).value?.loginType;
         if (loginType != LoginType.local) return;
         // Do not auto-open a passive dialog if a remote assistance dialog

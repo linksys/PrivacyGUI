@@ -5,6 +5,9 @@ import 'package:privacy_gui/di.dart';
 final serviceHelper = getIt<ServiceHelper>();
 
 class ServiceHelper {
+  bool isSupportAutoIPoE([List<String>? services]) =>
+      isServiceSupport(JNAPService.autoIPoE, services);
+
   bool isSupportVPN([List<String>? services]) =>
       isServiceSupport(JNAPService.vpn, services);
 
@@ -70,4 +73,9 @@ class ServiceHelper {
 
   bool isSupportGetSTABSSID([List<String>? services]) =>
       isServiceSupport(JNAPService.macFilter2, services);
+
+  /// Both versions of the service carry RefreshNodesWirelessNetworkConnections.
+  bool isSupportNodesNetworkConnections([List<String>? services]) =>
+      isServiceSupport(JNAPService.nodesNetworkConnections, services) ||
+      isServiceSupport(JNAPService.nodesNetworkConnections2, services);
 }
