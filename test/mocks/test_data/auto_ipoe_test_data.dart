@@ -48,6 +48,34 @@ class AutoIPoETestData {
                                 : 'ProcessFailed',
                     connectivityVerified: verified)),
       );
+  static AutoIPoESnapshot recoverySnapshot({
+    required bool capabilitiesAvailable,
+    bool supported = false,
+    String? resetRequestId,
+  }) {
+    final resetComplete = resetRequestId != null;
+    final result = snapshot(
+      requestId: resetRequestId,
+      exitCode: resetComplete ? 0 : null,
+      reset: resetComplete,
+    );
+    return AutoIPoESnapshot(
+      capabilities:
+          supported ? result.capabilities : const AutoIPoECapabilities.init(),
+      capabilitiesAvailable: capabilitiesAvailable,
+      settings: resetComplete ? const AutoIPoESettings.init() : result.settings,
+      runtime: result.runtime.copyWith(
+        isEnabled: !resetComplete,
+        isCurrentWANType: !resetComplete,
+        needsResetBeforeLeaving: !resetComplete,
+      ),
+      requestId: result.requestId,
+      operationId: result.operationId,
+      exitCode: result.exitCode,
+      accepted: result.accepted,
+    );
+  }
+
   static Map<String, dynamic> wire({String apiVersion = '1'}) {
     final s = snapshot();
     return {

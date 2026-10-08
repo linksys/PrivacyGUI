@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import '../models/auto_ipoe_models.dart';
+import '../../models/auto_ipoe_models.dart';
 
 /// Read-only diagnostics shared by the inline Internet and PnP forms.
 class AutoIPoELogView extends StatefulWidget {

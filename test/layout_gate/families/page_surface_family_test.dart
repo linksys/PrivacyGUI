@@ -81,7 +81,7 @@ void main() {
   // forty-five pages, because six of those pages are swept more than once. The two
   // counts were equal for the whole of #1369 and the group title read "pages"
   // throughout, which is exactly the kind of coincidence a name should not be built on
-  // — `kPageViewCount` is 47, a third quantity again (page view *files*, which no case
+  // — `kPageViewCount` is 48, a third quantity again (page view *files*, which no case
   // can move), and it is equal to neither.
   //
   // **Two counts drifted before #1554 re-measured them, and only in the prose.** The

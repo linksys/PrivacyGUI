@@ -24,7 +24,7 @@ import '../providers/auto_ipoe_data_provider.dart';
 import '../providers/auto_ipoe_page_provider.dart';
 import '../services/auto_ipoe_service.dart';
 import 'auto_ipoe_section.dart';
-import 'auto_ipoe_log_view.dart';
+import 'widgets/auto_ipoe_log_view.dart';
 
 /// The route asks the mounted page to finish cleanup before leaving setup.
 /// The callback is cleared on disposal; an unmounted page cannot authorize exit.
@@ -147,7 +147,41 @@ class _AutoIPoEViewState extends ConsumerState<AutoIPoEView> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 AppText.bodyMedium(l.failedToLoadSettings),
-                _pnpBack(context),
+                if (snapshot.runtime.needsResetBeforeLeaving) ...[
+                  AppGap.md(),
+                  AppText.bodyMedium(l.autoIpoeResetBeforeSwitching),
+                ],
+                if (_actionError ?? state.status.error case final error?) ...[
+                  AppGap.md(),
+                  AppText.bodyMedium(localizeServiceError(context, error)),
+                ],
+                AppGap.lg(),
+                if (_leaving)
+                  const Center(child: AppLoader())
+                else
+                  Wrap(
+                    spacing: AppSpacing.md,
+                    runSpacing: AppSpacing.md,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      AppButton.text(
+                        identifier: 'auto-ipoe-pnp-retry-settings',
+                        label: l.retry,
+                        onTap: () => ref
+                            .read(autoIPoEPageProvider.notifier)
+                            .fetch(forceRemote: true),
+                      ),
+                      if (snapshot.runtime.needsResetBeforeLeaving &&
+                          editor != null)
+                        AppButton.primary(
+                          identifier: 'auto-ipoe-pnp-recovery-reset',
+                          label: l.autoIpoeReset,
+                          onTap: _back,
+                        )
+                      else
+                        _pnpBack(context),
+                    ],
+                  ),
               ],
             );
           }

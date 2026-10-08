@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
-import 'package:privacy_gui/page/auto_ipoe/views/auto_ipoe_log_view.dart';
+import 'package:privacy_gui/page/auto_ipoe/views/widgets/auto_ipoe_log_view.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 void main() {
