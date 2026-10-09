@@ -37,15 +37,11 @@ const back = page => button(page, 'back');
 const visible = (page, text) => page.getByText(text, {exact:true}).last().waitFor({state:'visible', timeout:10000});
 // StyledAppPageView (every PrivacyGUI page) labels its title "page title <Title>".
 const pageTitle = (page, title) => visible(page, `page title ${title}`);
-// Other findings, weak devices and weak WiFi nodes share one collapsed list
-// on the result card ("N more things we found").
+// Other findings, weak devices and weak WiFi nodes are listed in full on the
+// result card under "Also found"; there is no toggle.
 const openFoundList = async page => {
-  const toggle = page.getByRole('button', {name:/^(Hide )?\d+ more things? we found$/}).first();
-  await toggle.waitFor();
-  // The list keeps its state while a workflow is open on top of it.
-  if ((await toggle.innerText()).startsWith('Hide')) return;
-  await toggle.click();
-  await page.getByRole('button', {name:/^Hide \d+ more things? we found$/}).first().waitFor();
+  await visible(page, 'Also found');
+  assert.equal(await page.getByRole('button', {name:/more things? we found$/}).count(), 0);
 };
 // After a resize, accessibility boxes lag the relayout; wait until they stop moving.
 const settled = async locator => {
@@ -217,10 +213,9 @@ try {
   }
   for (const mobile of [false,true]) {
     await check(mobile?'optional-details-mobile':'optional-details-desktop',async p=>{
-      assert.equal(await p.getByText('Test details',{exact:true}).count(),0);
-      await clickInScrollView(p,'View test details');
-      await button(p,'Hide test details').waitFor();
-      await clickInScrollView(p,'Hide test details');
+      // Every check is listed on the result card, with nothing to open.
+      await visible(p,'What we checked');
+      assert.equal(await button(p,'View test details').count(),0);
       await clickInScrollView(p,'One device is slow');
       await button(p,'Office-Printer WiFi').click();
       await visible(p,'Weak WiFi signal');

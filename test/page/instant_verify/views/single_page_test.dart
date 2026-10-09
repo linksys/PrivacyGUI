@@ -184,27 +184,27 @@ void main() {
     // Other findings, weak devices and weak WiFi nodes share one list.
     expect(find.text('Devices that may need help'), findsNothing);
     expect(find.textContaining('Mesh Network'), findsNothing);
-    await tapText(tester,
-        tester.widget<Text>(find.textContaining('more things we found')).data!);
-    expect(find.text('Restart Router'), findsWidgets);
+    // Everything else found is listed without a toggle; the card offers
+    // the restart once.
+    expect(find.text('Also found'), findsOneWidget);
+    expect(find.textContaining('more things we found'), findsNothing);
+    expect(find.text('Restart Router'), findsOneWidget);
   });
 
-  testWidgets('the result and every problem choice fit on one desktop screen',
+  testWidgets('the result and its fix fit on one desktop screen; choices follow',
       (tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(1280, 800);
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await mount(tester, pivot: MockInstantVerifyPivotNotifier.new);
-    for (final label in [
-      'Your router is very busy',
-      'Restart Router',
-      "Internet isn't working",
-      "Doesn't reach a room",
-    ]) {
+    for (final label in ['Your router is very busy', 'Restart Router']) {
       expect(tester.getRect(find.text(label)).bottom, lessThan(800),
           reason: '$label should be visible without scrolling');
     }
+    // The full results come first; the problem choices sit under them.
+    expect(tester.getTopLeft(find.text("Internet isn't working")).dy,
+        greaterThan(tester.getTopLeft(find.text('What we checked')).dy));
   });
 
   testWidgets('problem choices sit three to a row and follow resizing',
@@ -461,8 +461,7 @@ void main() {
   testWidgets('failed internet check marks later checks as not run',
       (tester) async {
     await mount(tester, service: ProbeService()..gatewayUnavailable = true);
-    await tester.tap(find.text("Internet isn't working"));
-    await tester.pumpAndSettle();
+    await tapText(tester, "Internet isn't working");
     expect(find.text("Your device can't reach the router"), findsOneWidget);
     await tapText(tester, 'View test details');
     expect(find.text('Your router reached the internet — Not run'),

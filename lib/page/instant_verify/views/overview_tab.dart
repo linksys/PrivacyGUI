@@ -17,7 +17,6 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'dart:async';
 import 'package:go_router/go_router.dart';
-import 'details_disclosure.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -57,8 +56,6 @@ class OverviewTab extends ConsumerStatefulWidget {
 }
 
 class _OverviewTabState extends ConsumerState<OverviewTab> {
-  bool _findingsExpanded = false;
-  bool _checksExpanded = false;
   int _restartCountdown = 0;
   final _resultKey = GlobalKey();
 
@@ -149,12 +146,6 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
             // Run Again re-runs this result's checks, so it lives on the card.
             runAgain: _runAgain(state),
             state: state,
-            findingsExpanded: _findingsExpanded,
-            checksExpanded: _checksExpanded,
-            onToggleFindings: () =>
-                setState(() => _findingsExpanded = !_findingsExpanded),
-            onToggleChecks: () =>
-                setState(() => _checksExpanded = !_checksExpanded),
             onAction: _handleAction,
             onTroubleshootDevice: widget.onTroubleshootDevice,
             onTroubleshootWeakDevices: widget.onTroubleshootWeakDevices,
@@ -255,10 +246,6 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
       onTap: isBusy || cooldown > 0
           ? null
           : () {
-              setState(() {
-                _findingsExpanded = false;
-                _checksExpanded = false;
-              });
               // Explicit user re-run → force the speed test (bypass the 3-min
               // passive throttle). The provider still enforces the 15s hard
               // cooldown as the backstop.
@@ -446,10 +433,6 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
                     horizontal: Spacing.large1, vertical: 2),
                 onTap: () {
                   Navigator.pop(ctx);
-                  setState(() {
-                    _findingsExpanded = false;
-                    _checksExpanded = false;
-                  });
                   final router = GoRouter.maybeOf(context);
                   if (router != null &&
                       router.routeInformationProvider.value.uri.path != '/instant-prototype') {
@@ -490,10 +473,6 @@ class _ScenarioItem {
 
 class _StatusCard extends StatelessWidget {
   final InstantVerifyPivotState state;
-  final bool findingsExpanded;
-  final bool checksExpanded;
-  final VoidCallback onToggleFindings;
-  final VoidCallback onToggleChecks;
   final Future<void> Function(String actionKey) onAction;
   final VoidCallback? onViewClients;
   final ValueChanged<DiagnosticClient>? onTroubleshootDevice;
@@ -510,10 +489,6 @@ class _StatusCard extends StatelessWidget {
     super.key,
     this.runAgain,
     required this.state,
-    required this.findingsExpanded,
-    required this.checksExpanded,
-    required this.onToggleFindings,
-    required this.onToggleChecks,
     required this.onAction,
     this.onViewClients,
     this.onTroubleshootDevice,
@@ -544,10 +519,7 @@ class _StatusCard extends StatelessWidget {
             ],
           )),
           if (runAgain != null) ...[const AppGap.small2(), runAgain!],
-          if (more.isNotEmpty) ...[
-            const AppGap.small2(),
-            ..._moreSection(more),
-          ],
+          ..._alsoFound(more),
         ],
       ));
     }
@@ -586,36 +558,21 @@ class _StatusCard extends StatelessWidget {
             Row(children: [
               Icon(LinksysIcons.checkCircle, color: good, size: 24),
               const AppGap.small2(),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const AppText.titleMedium("We didn't detect any issues"),
-                    // The icon carries the green; green small text on the
-                    // card misses the 4.5:1 contrast minimum.
-                    if (verdict.checksRun > 0)
-                      AppText.bodySmall(_checksPassedLabel(state),
-                          color: scheme.onSurfaceVariant),
-                  ],
-                ),
+              // The count is under "What we checked" below.
+              const Expanded(
+                child: AppText.titleMedium("We didn't detect any issues"),
               ),
               if (runAgain != null) runAgain!,
             ]),
             // No verdict finding, but a weak device or WiFi node is still
             // worth a look.
-            if (more.isNotEmpty) ...[
-              const AppGap.small2(),
-              ..._moreSection(more),
-            ],
-            const AppGap.medium(),
-            if (showProblemCards)
+            ..._alsoFound(more),
+            if (showProblemCards) ...[
+              const AppGap.medium(),
               _problemCards(context,
                   'Still having a problem? Tell us what\'s happening and we\'ll help:'),
-            _CheckResultsExpand(
-              state: state,
-              expanded: checksExpanded,
-              onToggle: onToggleChecks,
-            ),
+            ],
+            _CheckResults(state: state),
           ],
         ),
       );
@@ -685,15 +642,19 @@ class _StatusCard extends StatelessWidget {
             ),
           ],
 
-          // One action row: the fix, then everything else we found.
-          const AppGap.small3(),
-          ..._moreSection(more,
-              fix: primary.hasAutoFix &&
-                      !(hasRestarted && primary.postRestartEscalation != null)
-                  ? AppFilledButton(primary.actionLabel!,
-                      onTap: () => onAction(primary.actionKey!),
-                      icon: _actionIcon(primary.actionKey!))
-                  : null),
+          // The fix for the headline finding.
+          if (primary.hasAutoFix &&
+              !(hasRestarted && primary.postRestartEscalation != null)) ...[
+            const AppGap.small3(),
+            Padding(
+              padding: const EdgeInsets.only(left: Spacing.large3),
+              child: AppFilledButton(primary.actionLabel!,
+                  onTap: () => onAction(primary.actionKey!),
+                  icon: _actionIcon(primary.actionKey!)),
+            ),
+          ],
+
+          ..._alsoFound(more),
 
           // U-01: keep the Fix-flow entry cards reachable even when a finding is
           // shown — the customer's problem may differ from what we detected.
@@ -704,57 +665,16 @@ class _StatusCard extends StatelessWidget {
             const AppGap.small2(),
           ],
 
-          _CheckResultsExpand(
-            state: state,
-            expanded: checksExpanded,
-            onToggle: onToggleChecks,
-          ),
+          _CheckResults(state: state),
         ],
       ),
     );
   }
 
-  static String _moreLabel(int count) =>
-      '$count more ${count == 1 ? 'thing' : 'things'} we found';
-
-  /// The action row (the fix, if any, then the "more" toggle) and, when
-  /// open, the list below it.
-  List<Widget> _moreSection(List<Widget> more, {Widget? fix}) => [
-        if (fix != null || more.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(left: Spacing.large3),
-            child: Wrap(
-              spacing: Spacing.medium,
-              runSpacing: Spacing.small2,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                if (fix != null) fix,
-                if (more.isNotEmpty)
-                  AppTextButton(
-                      findingsExpanded
-                          ? 'Hide ${_moreLabel(more.length)}'
-                          : _moreLabel(more.length),
-                      icon: findingsExpanded
-                          ? LinksysIcons.arrowDropUp
-                          : LinksysIcons.arrowDropDown,
-                      onTap: onToggleFindings),
-              ],
-            ),
-          ),
-        if (findingsExpanded && more.isNotEmpty)
-          Padding(
-            padding:
-                const EdgeInsets.only(left: Spacing.large3, top: Spacing.small2),
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (var i = 0; i < more.length; i++) ...[
-                    if (i > 0) const Divider(height: Spacing.medium),
-                    more[i],
-                  ],
-                ]),
-          ),
-      ];
+  /// Everything else this run found, always shown under the headline.
+  static List<Widget> _alsoFound(List<Widget> more) => more.isEmpty
+      ? const []
+      : [_ResultSection(title: 'Also found', rows: more)];
 
   /// Names are enough unless two devices share one; then the MAC tells
   /// them apart.
@@ -778,13 +698,23 @@ class _StatusCard extends StatelessWidget {
             ? const <VerdictFinding>[]
             : verdict.findings.skip(1))
         .where((f) => !(listDevices && f.aboutIssueDevices));
+    // The headline's fix button already offers this action; one button
+    // per action on the card.
+    final primary = verdict?.primaryFinding;
+    final fixShown = primary != null &&
+            primary.hasAutoFix &&
+            !(hasRestarted && primary.postRestartEscalation != null)
+        ? primary.actionKey
+        : null;
     final weakNodes = state.meshNodes.where((n) =>
         !n.isController &&
         (n.backhaulHealth == BackhaulHealth.weak ||
             n.backhaulHealth == BackhaulHealth.critical));
     return [
       for (final finding in findings)
-        _FindingRow(finding: finding, onAction: onAction),
+        _FindingRow(
+            finding: finding,
+            onAction: finding.actionKey == fixShown ? null : onAction),
       if (listDevices)
         for (final score in state.issueDevices.take(5))
           _MoreRow(
@@ -909,7 +839,8 @@ class _StatusCard extends StatelessWidget {
 
 class _FindingRow extends StatelessWidget {
   final VerdictFinding finding;
-  final Future<void> Function(String actionKey) onAction;
+  /// Null when the card's fix button already offers this finding's action.
+  final Future<void> Function(String actionKey)? onAction;
 
   const _FindingRow({required this.finding, required this.onAction});
 
@@ -917,9 +848,9 @@ class _FindingRow extends StatelessWidget {
   Widget build(BuildContext context) => _MoreRow(
         tone: _StatusCard._priorityTone(finding.priority),
         title: finding.headline,
-        action: finding.hasAutoFix
+        action: finding.hasAutoFix && onAction != null
             ? AppTextButton.noPadding(finding.actionLabel!,
-                onTap: () => onAction(finding.actionKey!))
+                onTap: () => onAction!(finding.actionKey!))
             : null,
       );
 }
@@ -952,65 +883,56 @@ class _MoreRow extends StatelessWidget {
   }
 }
 
-// ── Check results expand (post-completion) ────────────────────────────────────
+// ── Result sections (always shown under the headline) ────────────────────────
 
-class _CheckResultsExpand extends StatelessWidget {
-  final InstantVerifyPivotState state;
-  // Legacy host arguments; disclosure state belongs to the mounted details.
-  final bool expanded;
-  final VoidCallback onToggle;
-
-  const _CheckResultsExpand({
-    required this.state,
-    required this.expanded,
-    required this.onToggle,
-  });
+/// A titled list inside the result card, aligned with the headline text:
+/// a divider, the section title and its rows. Nothing is folded away.
+class _ResultSection extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final List<Widget> rows;
+  const _ResultSection({required this.title, this.subtitle, required this.rows});
 
   @override
   Widget build(BuildContext context) {
-    return DetailsDisclosure(
-      label: 'View test details',
-      child: _ChecklistSummary(state: state),
-    );
-  }
-}
-
-class _ChecklistSummary extends StatefulWidget {
-  final InstantVerifyPivotState state;
-  const _ChecklistSummary({required this.state});
-
-  @override
-  State<_ChecklistSummary> createState() => _ChecklistSummaryState();
-}
-
-class _ChecklistSummaryState extends State<_ChecklistSummary> {
-  int? _expandedIndex;
-
-  @override
-  Widget build(BuildContext context) {
-    final rows = _summaryRows(widget.state);
-
-    return AppCard(
-      padding: const EdgeInsets.all(Spacing.small3),
+    return Padding(
+      padding: const EdgeInsets.only(left: Spacing.large3),
       child: Column(
-        children: rows.asMap().entries.map((entry) {
-          final index = entry.key;
-          final row = entry.value;
-          return _SummaryRowWidget(
-            row: row,
-            isExpanded: _expandedIndex == index,
-            onTap: () => setState(() {
-              _expandedIndex = _expandedIndex == index ? null : index;
-            }),
-          );
-        }).toList(),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Divider(height: Spacing.large2),
+          Semantics(header: true, child: AppText.titleSmall(title)),
+          if (subtitle != null)
+            AppText.bodySmall(subtitle!,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
+          const AppGap.small2(),
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i > 0) const Divider(height: Spacing.medium),
+            rows[i],
+          ],
+        ],
       ),
     );
   }
 }
 
-/// Headline count for the checks listed under "View test details", so the
-/// number always matches rows the user can open (QA: "which 13 items?").
+/// Every check this run made and its result.
+class _CheckResults extends StatelessWidget {
+  final InstantVerifyPivotState state;
+  const _CheckResults({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    return _ResultSection(
+      title: 'What we checked',
+      subtitle: _checksPassedLabel(state),
+      rows: [for (final row in _summaryRows(state)) _CheckResultRow(row: row)],
+    );
+  }
+}
+
+/// Count for the checks listed under "What we checked", so the
+/// number always matches the rows shown (QA: "which 13 items?").
 String _checksPassedLabel(InstantVerifyPivotState state) {
   final rows = _summaryRows(state);
   final passed = rows.where((r) =>
@@ -1114,14 +1036,11 @@ List<_SummaryRow> _summaryRows(InstantVerifyPivotState state) {
                     '↑ ${state.speedTest!.uploadMbps.toStringAsFixed(0)} Mbps  '
                     '${state.speedTest!.latencyMs} ms delay'
                     '${state.speedTest!.latencyMs > 100 ? ' — high lag' : ''}',
-        expandedDetail: 'The speed test did not complete. Try running again.',
-        expandedWidget: state.speedTest != null
-            ? _SpeedGauge(
-                downloadMbps: state.speedTest!.downloadMbps,
-                uploadMbps: state.speedTest!.uploadMbps,
-                latencyMs: state.speedTest!.latencyMs,
-              )
-            : null,
+        expandedDetail: state.speedTest == null
+            ? 'The speed test did not complete. Try running again.'
+            : state.speedTest!.latencyMs > 100
+                ? 'A long delay can make video calls and games stutter.'
+                : '',
       ),
       _SummaryRow(
         label: 'Devices checked',
@@ -1165,9 +1084,8 @@ class _SummaryRow {
   final String? _shortLabel;
   final _CheckDisplayState state;
   final String detail;
+  /// What the result means; shown when the check did not pass.
   final String expandedDetail;
-  /// When set, shown instead of expandedDetail text in the expanded panel.
-  final Widget? expandedWidget;
   /// Stable name for summaries, where [label] varies with the result.
   String get shortLabel => _shortLabel ?? label;
   const _SummaryRow({
@@ -1176,24 +1094,18 @@ class _SummaryRow {
     required this.state,
     required this.detail,
     required this.expandedDetail,
-    this.expandedWidget,
   }) : _shortLabel = shortLabel;
 }
 
-class _SummaryRowWidget extends StatelessWidget {
+/// One check and its result, styled as the "Also found" rows. A check that
+/// did not pass also says what it means.
+class _CheckResultRow extends StatelessWidget {
   final _SummaryRow row;
-  final bool isExpanded;
-  final VoidCallback onTap;
-  const _SummaryRowWidget({
-    required this.row,
-    required this.isExpanded,
-    required this.onTap,
-  });
+  const _CheckResultRow({required this.row});
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final radius = CustomTheme.of(context).radius.asBorderRadius();
 
     IconData iconData;
     Color iconColor;
@@ -1209,61 +1121,35 @@ class _SummaryRowWidget extends StatelessWidget {
         iconColor = InstantTestTone.warning.color(context);
       case _CheckDisplayState.skipped:
         iconData = LinksysIcons.remove;
-        iconColor = scheme.outlineVariant;
+        iconColor = scheme.onSurfaceVariant;
       case _CheckDisplayState.available:
         iconData = LinksysIcons.cloudDownload;
         iconColor = InstantTestTone.info.color(context);
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        InkWell(
-          onTap: onTap,
-          borderRadius: radius.small,
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: Spacing.small2, top: 2),
-            child: Row(children: [
-              Icon(iconData, size: 16, color: iconColor),
-              const AppGap.small2(),
-              Expanded(
-                child: AppText.bodySmall(row.label),
-              ),
-              if (row.detail.isNotEmpty)
-                Flexible(
-                  flex: 2,
-                  child: AppText.bodySmall(
-                    row.detail,
-                    color: row.state == _CheckDisplayState.fail
-                        ? InstantTestTone.problem.color(context)
-                        : scheme.onSurfaceVariant,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              const AppGap.small1(),
-              Icon(
-                isExpanded ? LinksysIcons.arrowDropUp : LinksysIcons.arrowDropDown,
-                size: 14,
-                color: scheme.onSurfaceVariant,
-              ),
-            ]),
-          ),
-        ),
-        // Progressive disclosure (PRD v0.7 S-5)
-        if (isExpanded)
-          Padding(
-            padding: const EdgeInsets.only(
-                left: Spacing.large2, bottom: Spacing.small3, right: Spacing.small2),
-            // Indented under its row inside the summary card; no third
-            // nested frame.
-            child: row.expandedWidget ??
-                AppText.bodySmall(
-                  row.expandedDetail,
-                  color: scheme.onSurfaceVariant,
-                ),
-          ),
-      ],
+    final lines = [
+      if (row.detail.isNotEmpty) row.detail,
+      if (row.state != _CheckDisplayState.pass &&
+          row.expandedDetail.isNotEmpty)
+        row.expandedDetail,
+    ];
+
+    return AppListCard(
+      showBorder: false,
+      padding: EdgeInsets.zero,
+      leading: Icon(iconData, color: iconColor),
+      title: AppText.labelLarge(row.label),
+      description: lines.isEmpty
+          ? null
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // The icon carries the color; colored small text misses
+                // the contrast minimum.
+                for (final line in lines)
+                  AppText.bodySmall(line, color: scheme.onSurfaceVariant),
+              ],
+            ),
     );
   }
 }
@@ -1747,112 +1633,3 @@ class _RestartCountdown extends StatelessWidget {
   }
 }
 
-// ── Speed gauge widget shown in the speed row expanded panel ─────────────────
-
-class _SpeedGauge extends StatelessWidget {
-  final double downloadMbps;
-  final double uploadMbps;
-  final int latencyMs;
-
-  const _SpeedGauge({
-    required this.downloadMbps,
-    required this.uploadMbps,
-    required this.latencyMs,
-  });
-
-  static const double _maxMbps = 1000;
-
-  InstantTestTone _latencyTone(int ms) {
-    if (ms <= 50) return InstantTestTone.good;
-    if (ms <= 100) return InstantTestTone.warning;
-    return InstantTestTone.problem;
-  }
-
-  String _latencyLabel(int ms) {
-    if (ms <= 50) return 'Great';
-    if (ms <= 100) return 'OK';
-    return 'High';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final latColor = _latencyTone(latencyMs).color(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _GaugeRow(
-          label: 'Download',
-          value: '${downloadMbps.toStringAsFixed(0)} Mbps',
-          fraction: (downloadMbps / _maxMbps).clamp(0.0, 1.0),
-          color: InstantTestTone.info.color(context),
-        ),
-        const AppGap.small2(),
-        _GaugeRow(
-          label: 'Upload',
-          value: '${uploadMbps.toStringAsFixed(0)} Mbps',
-          fraction: (uploadMbps / _maxMbps).clamp(0.0, 1.0),
-          color: scheme.secondary,
-        ),
-        const AppGap.small2(),
-        Row(children: [
-          SizedBox(
-            width: 72,
-            child: AppText.bodySmall('Latency',
-                color: scheme.onSurfaceVariant),
-          ),
-          CircleAvatar(radius: 4, backgroundColor: latColor),
-          const AppGap.small2(),
-          AppText.bodySmall('$latencyMs ms —${_latencyLabel(latencyMs)}',
-              color: scheme.onSurfaceVariant),
-        ]),
-        const AppGap.small2(),
-        AppText.bodySmall(
-          'Speed measured from this device. '
-          'Results can vary by time of day and WiFi distance.',
-          color: scheme.onSurfaceVariant,
-        ),
-      ],
-    );
-  }
-}
-
-class _GaugeRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final double fraction;
-  final Color color;
-
-  const _GaugeRow({
-    required this.label,
-    required this.value,
-    required this.fraction,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Row(children: [
-      SizedBox(
-        width: 72,
-        child: AppText.bodySmall(label, color: scheme.onSurfaceVariant),
-      ),
-      Expanded(
-        child: ClipRRect(
-          borderRadius: CustomTheme.of(context).radius.asBorderRadius().small,
-          child: LinearProgressIndicator(
-            value: fraction,
-            minHeight: 6,
-            color: color,
-            backgroundColor:
-                Theme.of(context).colorSchemeExt.surfaceContainerHighest!,
-          ),
-        ),
-      ),
-      const AppGap.small2(),
-      AppText.bodySmall(value, color: scheme.onSurfaceVariant),
-    ]);
-  }
-}

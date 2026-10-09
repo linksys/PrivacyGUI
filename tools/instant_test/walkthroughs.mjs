@@ -206,9 +206,9 @@ export async function walkthroughs({check,button,visible,clickInScrollView,url})
   for(const title of ['No internet connection',"Websites aren't loading",'Slow internet + weak WiFi','Router overloaded + mesh issues','Configuration blocks']) {
     await check(`overview-${title.split(' ')[0].toLowerCase()}`,async p=>{
       await click(p,'Test scenarios');await tap(p,title);
-      await click(p,'View test details');await p.getByText(/Router reached/).waitFor();
-      await click(p,p.locator('flt-semantics[flt-tappable]').filter({hasText:'Router reached'}).last());await p.getByText(/We connected to your router/).waitFor();
-      await click(p,'Hide test details');
+      // Every check and its result is shown in full on the result card.
+      await visible(p,'What we checked');await p.getByText(/Router reached/).first().waitFor();
+      assert.equal(await p.getByRole('button',{name:'View test details'}).count(),0);
       // Network details is a child route; a hash-only change keeps the session.
       // StyledAppPageView labels its title "page title <Title>".
       await p.goto(`${url}/network`);await visible(p,'page title Network details');

@@ -72,14 +72,6 @@ void main() {
     expect(find.text('Your router is very busy'), findsOneWidget);
   }, screens: instantTestScreens);
 
-  testLocalizations('Instant-Test home - more things we found',
-      (tester, locale) async {
-    await tester.pumpWidget(instantTestLocApp(locale: locale));
-    await tester.pumpAndSettle();
-    await tapTextContaining(tester, 'more things we found');
-    expect(find.textContaining('Hide '), findsOneWidget);
-  }, screens: instantTestScreens);
-
   testLocalizations('Instant-Test home - no internet', (tester, locale) async {
     await tester.pumpWidget(instantTestLocApp(
       locale: locale,

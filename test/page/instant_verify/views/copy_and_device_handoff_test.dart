@@ -96,7 +96,15 @@ void main() {
     ], child: const InstantTestPage()));
     await tester.pumpAndSettle();
     expect(find.text('Your router is very busy'), findsOneWidget);
-    expect(find.textContaining('Help LB100 ('), findsNothing);
+    // The weak devices are listed under "Also found", not as the busy
+    // router's fix.
+    final alsoFound = tester.getTopLeft(find.text('Also found')).dy;
+    final links = find.textContaining('Help LB100 (');
+    expect(links, findsWidgets);
+    for (final link in links.evaluate()) {
+      expect(tester.getTopLeft(find.byWidget(link.widget)).dy,
+          greaterThan(alsoFound));
+    }
   });
 
   for (final device in devices.take(2)) {
