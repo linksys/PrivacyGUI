@@ -43,7 +43,7 @@ const pageTitle = (page, title) => visible(page, `page title ${title}`);
 const openFoundList = async (page, row) => {
   await visible(page, 'What we checked');
   if (await page.getByText(row).count() === 0) {
-    await clickInScrollView(page, page.getByRole('button', {name:/^Also found \(\d+\)$/}).first());
+    await clickInScrollView(page, page.getByRole('button', {name:/^Also found \(\d+\)/}).first());
   }
   await page.getByText(row).first().waitFor();
 };
@@ -267,9 +267,11 @@ try {
   });
   await check('mesh-health',async p=>{
     assert.equal(await p.getByText(/^Mesh Network/).count(),0,'No separate mesh card');
-    // A weak node leads into the coverage workflow.
-    await openFoundList(p,'MX6200 Bedroom has a weak connection to the router');
-    await clickInScrollView(p,p.getByRole('button',{name:/^MX6200 Bedroom has a weak connection/}).first());
+    // The node checks are listed; a slow node leads into the coverage workflow.
+    await visible(p,'WiFi node connections');
+    await visible(p,'WiFi node speed');
+    await openFoundList(p,'A child node is connected but not working well');
+    await clickInScrollView(p,p.getByRole('button',{name:/^A child node is connected but not working well/}).first());
     await pageTitle(p,"WiFi doesn't reach a room");
   });
   await check('responsive-layout-state',async p=>{

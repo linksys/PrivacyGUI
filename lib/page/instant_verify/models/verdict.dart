@@ -57,6 +57,18 @@ class VerdictFinding {
   bool get hasAutoFix => actionKey != null;
 }
 
+enum VerdictCheckStatus { pass, warning, notice }
+
+/// One check the engine ran beyond the core connection checks (router,
+/// internet, websites, speed, devices, firmware) and what it measured, so
+/// every finding traces back to a check in the results.
+class VerdictCheck {
+  final String label;
+  final VerdictCheckStatus status;
+  final String result;
+  const VerdictCheck(this.label, this.status, this.result);
+}
+
 /// Full verdict result: ranked findings + check count.
 class Verdict {
   final List<VerdictFinding> findings;
@@ -64,7 +76,11 @@ class Verdict {
   /// Total number of checks run (for "X checks passed" trust indicator).
   final int checksRun;
 
-  const Verdict({required this.findings, this.checksRun = 0});
+  /// The additional checks that ran, in run order.
+  final List<VerdictCheck> checks;
+
+  const Verdict(
+      {required this.findings, this.checksRun = 0, this.checks = const []});
 
   VerdictFinding? get primaryFinding =>
       findings.isEmpty ? null : findings.first;
@@ -156,6 +172,10 @@ class VerdictEngine {
     bool? isDeviceInApMode,          // Linksys is in AP mode — RFC1918 WAN IP is intentional
   }) {
     final findings = <VerdictFinding>[];
+    final checks = <VerdictCheck>[];
+    const pass = VerdictCheckStatus.pass;
+    const warning = VerdictCheckStatus.warning;
+    const notice = VerdictCheckStatus.notice;
     int checksRun = 0;
 
     // ── Check 1: Router reachable (ping 192.168.1.1) ─────────────────────
@@ -524,7 +544,10 @@ class VerdictEngine {
         final twoFourCount =
             wirelessClients.where((c) => c.band.contains('2.4')).length;
         final ratio = twoFourCount / wirelessClients.length;
-        if (ratio >= 0.6 && twoFourCount >= 4) {
+        final crowded = ratio >= 0.6 && twoFourCount >= 4;
+        checks.add(VerdictCheck('WiFi bands', crowded ? notice : pass,
+            '$twoFourCount of ${wirelessClients.length} devices on 2.4 GHz'));
+        if (crowded) {
           findings.add(VerdictFinding(
             priority: VerdictPriority.info,
             helpFlow: 4,
@@ -543,6 +566,12 @@ class VerdictEngine {
     if (meshNodes.length > 1) {
       checksRun++;
       final weakNodes = meshNodes.where((n) => n.hasWeakBackhaul).toList();
+      checks.add(VerdictCheck(
+          'WiFi node connections',
+          weakNodes.isEmpty ? pass : warning,
+          weakNodes.isEmpty
+              ? '${meshNodes.length - 1} connected well'
+              : 'Weak: ${weakNodes.map((n) => n.name).join(', ')}'));
       if (weakNodes.isNotEmpty) {
         final names = weakNodes.map((n) => n.name).join(', ');
         final count = weakNodes.length;
@@ -562,7 +591,13 @@ class VerdictEngine {
     }
 
     // ── Check 12: WiFi access restrictions ───────────────────────────────────
-    if (isWifiScheduleBlocking != null) checksRun++;
+    if (isWifiScheduleBlocking != null) {
+      checksRun++;
+      checks.add(VerdictCheck(
+          'WiFi schedule',
+          isWifiScheduleBlocking ? notice : pass,
+          isWifiScheduleBlocking ? 'May be turning WiFi off' : 'Not blocking'));
+    }
     if (isWifiScheduleBlocking == true) {
       findings.add(const VerdictFinding(
         priority: VerdictPriority.info,
@@ -571,7 +606,11 @@ class VerdictEngine {
         explanation: 'Your router has a WiFi schedule that turns off wireless access during certain hours. If your WiFi isn\'t working at a specific time, check your schedule settings.',
       ));
     }
-    if (isInstantPrivacyOn != null) checksRun++;
+    if (isInstantPrivacyOn != null) {
+      checksRun++;
+      checks.add(VerdictCheck('Instant Privacy', isInstantPrivacyOn ? warning : pass,
+          isInstantPrivacyOn ? "On — new devices can't join" : 'Off'));
+    }
     if (isInstantPrivacyOn == true) {
       findings.add(const VerdictFinding(
         priority: VerdictPriority.warning,
@@ -580,7 +619,11 @@ class VerdictEngine {
         explanation: 'Instant Privacy is on — new devices can\'t connect until it\'s turned off. Go to your router settings to disable Instant Privacy.',
       ));
     }
-    if (isInstantPauseActive != null) checksRun++;
+    if (isInstantPauseActive != null) {
+      checksRun++;
+      checks.add(VerdictCheck('Internet pause', isInstantPauseActive ? warning : pass,
+          isInstantPauseActive ? 'A pause is active' : 'No pause active'));
+    }
     if (isInstantPauseActive == true) {
       findings.add(const VerdictFinding(
         priority: VerdictPriority.warning,
@@ -597,7 +640,14 @@ class VerdictEngine {
     //   b) Both samples are high — confirmed sustained even across the run.
     // If only the start sample exists (preliminary verdict), skip CPU check
     // entirely — wait for the end sample to avoid false positives.
-    if (cpuLoadPct != null || memoryLoadPct != null) checksRun++;
+    if (cpuLoadPct != null || memoryLoadPct != null) {
+      checksRun++;
+      final busy = (cpuLoadPct ?? 0) > 80 || (memoryLoadPct ?? 0) > 85;
+      checks.add(VerdictCheck('Router load', busy ? warning : pass, [
+        if (cpuLoadPct != null) 'Processor $cpuLoadPct%',
+        if (memoryLoadPct != null) 'Memory $memoryLoadPct%',
+      ].join(' · ')));
+    }
     if (cpuLoadPct != null && cpuLoadPct > 80) {
       findings.add(VerdictFinding(
         priority: VerdictPriority.warning,
@@ -624,6 +674,8 @@ class VerdictEngine {
     // ── Check 14: Channel interference (SNR) ─────────────────────────────────
     if (wifiSnrDb != null) {
       checksRun++;
+      checks.add(VerdictCheck('WiFi interference', wifiSnrDb < 20 ? notice : pass,
+          wifiSnrDb < 20 ? 'Interference from nearby networks' : 'Clear'));
       if (wifiSnrDb < 20) {
         findings.add(const VerdictFinding(
           priority: VerdictPriority.info,
@@ -637,6 +689,8 @@ class VerdictEngine {
     // ── Check 15: WPA3 PMF Required (breaks IoT devices) ─────────────────────
     if (isPmfRequired != null) {
       checksRun++;
+      checks.add(VerdictCheck('Smart home compatibility', isPmfRequired ? warning : pass,
+          isPmfRequired ? 'Strict security may block some devices' : 'Compatible'));
       if (isPmfRequired) {
         findings.add(const VerdictFinding(
           priority: VerdictPriority.warning,
@@ -650,6 +704,8 @@ class VerdictEngine {
     // ── Check 16: Band steering mis-steer (item 28) ──────────────────────────
     if (isBandSteeringMissteer != null) {
       checksRun++;
+      checks.add(VerdictCheck('Band selection', isBandSteeringMissteer ? warning : pass,
+          isBandSteeringMissteer ? 'A device is stuck on 2.4 GHz' : 'Devices on the right band'));
       if (isBandSteeringMissteer) {
         findings.add(const VerdictFinding(
           priority: VerdictPriority.warning,
@@ -667,6 +723,8 @@ class VerdictEngine {
     // ── Check 17: Ethernet no-link (item 30) ─────────────────────────────────
     if (hasEthernetNoLink != null) {
       checksRun++;
+      checks.add(VerdictCheck('Wired connections', hasEthernetNoLink ? warning : pass,
+          hasEthernetNoLink ? 'A wired device has no link' : 'All linked'));
       if (hasEthernetNoLink) {
         findings.add(const VerdictFinding(
           priority: VerdictPriority.warning,
@@ -683,6 +741,8 @@ class VerdictEngine {
     // ── Check 18: Zombie mesh node (item 38) ─────────────────────────────────
     if (hasZombieMeshNode != null) {
       checksRun++;
+      checks.add(VerdictCheck('WiFi node speed', hasZombieMeshNode ? warning : pass,
+          hasZombieMeshNode ? 'A node is slower than expected' : 'As expected'));
       if (hasZombieMeshNode) {
         findings.add(const VerdictFinding(
           priority: VerdictPriority.warning,
@@ -703,6 +763,8 @@ class VerdictEngine {
     // ── Check 19: DHCP pool near capacity (item 43) ────────────────────────
     if (dhcpPoolUtilizationPct != null) {
       checksRun++;
+      checks.add(VerdictCheck('Device addresses', dhcpPoolUtilizationPct >= 90 ? warning : pass,
+          dhcpPoolUtilizationPct >= 90 ? '$dhcpPoolUtilizationPct% in use' : '$dhcpPoolUtilizationPct% in use'));
       if (dhcpPoolUtilizationPct >= 90) {
         findings.add(VerdictFinding(
           priority: VerdictPriority.warning,
@@ -739,6 +801,8 @@ class VerdictEngine {
     if (uptimeSeconds != null) {
       checksRun++;
       final days = uptimeSeconds ~/ 86400;
+      checks.add(VerdictCheck('Time since restart', days >= 30 ? notice : pass,
+          days < 1 ? 'Less than a day' : '$days day${days == 1 ? '' : 's'}'));
       if (days >= 30) {
         findings.add(VerdictFinding(
           priority: VerdictPriority.info,
@@ -757,6 +821,7 @@ class VerdictEngine {
     return Verdict(
       findings: findings,
       checksRun: checksRun > 0 ? checksRun : 8,
+      checks: checks,
     );
   }
 

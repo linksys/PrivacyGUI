@@ -130,6 +130,46 @@ MeshNodeInfo _satellite({
 }
 
 void main() {
+  // ── Checks behind the findings ────────────────────────────────────────────
+
+  group('Verdict — every finding traces to a recorded check', () {
+    test('each additional check that ran is recorded with its result', () {
+      final v = _compute(
+        cpuLoadPct: 88,
+        memoryLoadPct: 90,
+        hasEthernetNoLink: true,
+        isPmfRequired: false,
+        uptimeSeconds: 45 * 86400,
+      );
+      String? result(String label) =>
+          v.checks.where((c) => c.label == label).firstOrNull?.result;
+      VerdictCheckStatus? status(String label) =>
+          v.checks.where((c) => c.label == label).firstOrNull?.status;
+
+      expect(result('Router load'), 'Processor 88% · Memory 90%');
+      expect(status('Router load'), VerdictCheckStatus.warning);
+      expect(status('Wired connections'), VerdictCheckStatus.warning);
+      expect(result('Smart home compatibility'), 'Compatible');
+      expect(status('Smart home compatibility'), VerdictCheckStatus.pass);
+      expect(result('Time since restart'), '45 days');
+      expect(status('Time since restart'), VerdictCheckStatus.notice);
+    });
+
+    test('a check that did not run is not recorded', () {
+      final v = _compute();
+      expect(v.checks.map((c) => c.label),
+          isNot(contains('Router load')));
+      expect(v.checks.map((c) => c.label), isNot(contains('Wired connections')));
+    });
+
+    test('a clean result is recorded as a pass', () {
+      final v = _compute(cpuLoadPct: 20, memoryLoadPct: 40);
+      final load = v.checks.firstWhere((c) => c.label == 'Router load');
+      expect(load.status, VerdictCheckStatus.pass);
+      expect(v.findings.where((f) => f.headline.contains('load')), isEmpty);
+    });
+  });
+
   // ── Verdict model ─────────────────────────────────────────────────────────
 
   group('Verdict — model properties', () {

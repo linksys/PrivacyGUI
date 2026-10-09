@@ -22,7 +22,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
 import 'package:privacy_gui/page/instant_verify/models/verdict.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
@@ -697,8 +696,10 @@ class _StatusCard extends StatelessWidget {
   String _helpLabel(DiagnosticClient device) => 'Help ${_deviceName(device)}';
 
   /// Everything found besides the top result, one row and one action each:
-  /// other findings, devices with weak WiFi, and WiFi nodes with a weak link
-  /// to the router. Replaces the separate devices and mesh cards.
+  /// the engine's other findings, and devices with weak WiFi in place of
+  /// its weak-WiFi summary. Each traces to a row under "What we checked"
+  /// (WiFi nodes, for instance, to the node checks), so nothing here is
+  /// judged by a rule the check list doesn't show.
   List<Widget> _moreRows(BuildContext context,
       {required bool devicesUnderPrimary}) {
     final listDevices = !devicesUnderPrimary && state.issueDevices.isNotEmpty;
@@ -715,10 +716,6 @@ class _StatusCard extends StatelessWidget {
             !(hasRestarted && primary.postRestartEscalation != null)
         ? primary.actionKey
         : null;
-    final weakNodes = state.meshNodes.where((n) =>
-        !n.isController &&
-        (n.backhaulHealth == BackhaulHealth.weak ||
-            n.backhaulHealth == BackhaulHealth.critical));
     return [
       for (final finding in findings)
         _FindingRow(
@@ -744,16 +741,6 @@ class _StatusCard extends StatelessWidget {
           tone: InstantTestTone.warning,
           title: '${state.issueDevices.length - 5} more devices need help',
           onTap: onTroubleshootWeakDevices,
-        ),
-      for (final node in weakNodes)
-        _MoreRow(
-          tone: node.backhaulHealth == BackhaulHealth.critical
-              ? InstantTestTone.problem
-              : InstantTestTone.warning,
-          title: '${node.name} has a weak connection to the router',
-          detail: 'Move it closer to the router, or connect it with an Ethernet cable.',
-          // Coverage help covers moving or wiring a node.
-          onTap: onOpenHelp == null ? null : () => onOpenHelp!(4),
         ),
     ];
   }
@@ -941,24 +928,10 @@ class _ResultSectionState extends State<_ResultSection> {
         children: [
           const Divider(height: Spacing.large2),
           if (widget.collapsible)
-            MergeSemantics(
-              child: Semantics(
-                button: true,
-                child: InkWell(
-                  onTap: () => setState(() => _open = !_open),
-                  child: Row(children: [
-                    Expanded(
-                      child: AppText.titleSmall(
-                          '${widget.title} (${widget.rows.length})'),
-                    ),
-                    Icon(
-                        _open
-                            ? LinksysIcons.arrowDropUp
-                            : LinksysIcons.arrowDropDown,
-                        color: scheme.onSurfaceVariant),
-                  ]),
-                ),
-              ),
+            _FoldedHeader(
+              title: '${widget.title} (${widget.rows.length})',
+              open: _open,
+              onTap: () => setState(() => _open = !_open),
             )
           else
             Semantics(header: true, child: AppText.titleSmall(widget.title)),
@@ -972,6 +945,53 @@ class _ResultSectionState extends State<_ResultSection> {
             ],
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// The header of a folded section: a tinted banner that says more is here,
+/// with the warning tone the rows inside it carry.
+class _FoldedHeader extends StatelessWidget {
+  final String title;
+  final bool open;
+  final VoidCallback onTap;
+  const _FoldedHeader(
+      {required this.title, required this.open, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    const tone = InstantTestTone.warning;
+    final on = tone.onContainer(context);
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        child: AppCard(
+          showBorder: false,
+          color: tone.container(context),
+          padding: const EdgeInsets.symmetric(
+              horizontal: Spacing.medium, vertical: Spacing.small3),
+          onTap: onTap,
+          child: Row(children: [
+            Icon(tone.icon, color: on),
+            const AppGap.small2(),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.titleSmall(title, color: on),
+                  AppText.bodySmall(
+                      open
+                          ? 'Choose one for help fixing it'
+                          : 'More things worth a look. Show them',
+                      color: on),
+                ],
+              ),
+            ),
+            Icon(open ? LinksysIcons.arrowDropUp : LinksysIcons.arrowDropDown,
+                color: on),
+          ]),
+        ),
       ),
     );
   }
@@ -998,7 +1018,8 @@ String _checksPassedLabel(InstantVerifyPivotState state) {
   final rows = _summaryRows(state);
   final passed = rows.where((r) =>
       r.state == _CheckDisplayState.pass ||
-      r.state == _CheckDisplayState.available).length;
+      r.state == _CheckDisplayState.available ||
+      r.state == _CheckDisplayState.notice).length;
   final notRun = [
     for (final r in rows)
       if (r.state == _CheckDisplayState.skipped) r.shortLabel,
@@ -1135,10 +1156,23 @@ List<_SummaryRow> _summaryRows(InstantVerifyPivotState state) {
             : 'A newer version of your router\'s firmware is available. '
               'Updates improve performance, fix bugs, and improve security.',
       ),
+      // Every other check the engine ran, so each finding traces back to the
+      // check that found it.
+      for (final check in state.verdict?.checks ?? const <VerdictCheck>[])
+        _SummaryRow(
+          label: check.label,
+          state: switch (check.status) {
+            VerdictCheckStatus.pass => _CheckDisplayState.pass,
+            VerdictCheckStatus.warning => _CheckDisplayState.warning,
+            VerdictCheckStatus.notice => _CheckDisplayState.notice,
+          },
+          detail: check.result,
+          expandedDetail: '',
+        ),
     ];
 }
 
-enum _CheckDisplayState { pass, fail, warning, skipped, available }
+enum _CheckDisplayState { pass, fail, warning, skipped, available, notice }
 
 class _SummaryRow {
   final String label;
@@ -1185,6 +1219,9 @@ class _CheckResultRow extends StatelessWidget {
         iconColor = scheme.onSurfaceVariant;
       case _CheckDisplayState.available:
         iconData = LinksysIcons.cloudDownload;
+        iconColor = InstantTestTone.info.color(context);
+      case _CheckDisplayState.notice:
+        iconData = InstantTestTone.info.icon;
         iconColor = InstantTestTone.info.color(context);
     }
 

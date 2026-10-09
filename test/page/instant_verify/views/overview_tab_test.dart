@@ -574,18 +574,45 @@ void main() {
   });
 
   group('OverviewTab — mesh in the found list', () {
-    testWidgets('a weak WiFi node is listed with what else we found',
+    testWidgets('a weak WiFi node is listed from the node check that found it',
         (tester) async {
+      int? opened;
+      await tester.pumpWidget(_buildOverviewTab(
+          _meshState().copyWith(
+              verdict: const Verdict(checksRun: 11, findings: [
+            VerdictFinding(
+                priority: VerdictPriority.warning,
+                headline: 'Your router is under high load (88% CPU)',
+                explanation: 'A restart usually clears this.'),
+            VerdictFinding(
+                priority: VerdictPriority.warning,
+                helpFlow: 4,
+                headline: '1 child node has a weak connection to your router',
+                explanation: 'Bedroom is connected wirelessly with a weak signal.'),
+          ], checks: [
+            VerdictCheck('WiFi node connections', VerdictCheckStatus.warning,
+                'Weak: Bedroom'),
+          ])),
+          onOpenHelp: (flow) => opened = flow));
+      await tester.pump();
+
+      // No separate mesh card; the check list names the node.
+      expect(find.textContaining('Mesh Network'), findsNothing);
+      expect(find.text('Weak: Bedroom'), findsOneWidget);
+      await _openAlsoFound(tester);
+      await _tap(tester, '1 child node has a weak connection to your router');
+      expect(opened, 4);
+    });
+
+    testWidgets('a node the node checks pass is not listed as weak',
+        (tester) async {
+      // Bedroom's 45 Mbps link alone is not a finding; the card applies no
+      // rule of its own that the check list doesn't show.
       await tester.pumpWidget(_buildOverviewTab(_meshState()));
       await tester.pump();
 
-      // No separate mesh card: only the weak node needs attention.
-      expect(find.textContaining('Mesh Network'), findsNothing);
-      await _openAlsoFound(tester);
-      expect(find.text('Bedroom has a weak connection to the router'),
-          findsOneWidget);
-      expect(find.textContaining('Living Room'), findsNothing);
-      expect(find.textContaining('Kitchen'), findsNothing);
+      expect(find.textContaining('Also found'), findsNothing);
+      expect(find.textContaining('weak connection'), findsNothing);
     });
 
     testWidgets('nothing extra is listed for a single router', (tester) async {
@@ -688,6 +715,47 @@ void main() {
   });
 
   group('OverviewTab — check list', () {
+    testWidgets('the checks behind the findings are listed with their results',
+        (tester) async {
+      final base = _multipleFindingsState();
+      await tester.pumpWidget(_buildOverviewTab(base.copyWith(
+          verdict: Verdict(
+              checksRun: base.verdict!.checksRun,
+              findings: base.verdict!.findings,
+              checks: const [
+            VerdictCheck('Router load', VerdictCheckStatus.warning,
+                'Processor 88% · Memory 90%'),
+            VerdictCheck(
+                'Wired connections', VerdictCheckStatus.pass, 'All linked'),
+          ]))));
+      await tester.pump();
+
+      expect(find.text('Router load'), findsOneWidget);
+      expect(find.text('Processor 88% · Memory 90%'), findsOneWidget);
+      expect(find.text('Wired connections'), findsOneWidget);
+      // Listed under "What we checked", before the folded findings.
+      expect(tester.getTopLeft(find.text('Router load')).dy,
+          greaterThan(tester.getTopLeft(find.text('What we checked')).dy));
+      expect(tester.getTopLeft(find.text('Router load')).dy,
+          lessThan(tester.getTopLeft(find.text('Also found (3)')).dy));
+      // The count covers them too: 1 more passed, 1 more not passed.
+      expect(find.textContaining('of 8 checks passed'), findsOneWidget);
+    });
+
+    testWidgets('"Also found" is a tinted banner, not a plain heading',
+        (tester) async {
+      await tester.pumpWidget(_buildOverviewTab(_multipleFindingsState()));
+      await tester.pump();
+
+      final banner = tester.widget<AppCard>(find
+          .ancestor(
+              of: find.text('Also found (3)'), matching: find.byType(AppCard))
+          .first);
+      expect(banner.color, isNotNull);
+      expect(banner.onTap, isNotNull);
+      expect(find.text('More things worth a look. Show them'), findsOneWidget);
+    });
+
     testWidgets('lists every check and its result',
         (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
