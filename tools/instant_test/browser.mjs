@@ -37,11 +37,15 @@ const back = page => button(page, 'back');
 const visible = (page, text) => page.getByText(text, {exact:true}).last().waitFor({state:'visible', timeout:10000});
 // StyledAppPageView (every PrivacyGUI page) labels its title "page title <Title>".
 const pageTitle = (page, title) => visible(page, `page title ${title}`);
-// Other findings, weak devices and weak WiFi nodes are listed in full on the
-// result card under "Also found"; there is no toggle.
-const openFoundList = async page => {
-  await visible(page, 'Also found');
-  assert.equal(await page.getByRole('button', {name:/more things? we found$/}).count(), 0);
+// Other findings, weak devices and weak WiFi nodes fold under "Also found (N)"
+// below the check list. The section keeps its state while a workflow is open
+// on top of it, so open it only when the row we need is not showing.
+const openFoundList = async (page, row) => {
+  await visible(page, 'What we checked');
+  if (await page.getByText(row).count() === 0) {
+    await clickInScrollView(page, page.getByRole('button', {name:/^Also found \(\d+\)$/}).first());
+  }
+  await page.getByText(row).first().waitFor();
 };
 // After a resize, accessibility boxes lag the relayout; wait until they stop moving.
 const settled = async locator => {
@@ -249,8 +253,9 @@ try {
   }
   await check('weak-device-finding', async p=>{
     assert.equal(await p.getByText('Devices that may need help',{exact:true}).count(),0,'No separate devices card');
-    await openFoundList(p);
-    await clickInScrollView(p,'Help Office-Printer');
+    // The row itself opens the device's help.
+    await openFoundList(p,'Office-Printer has a slow WiFi connection');
+    await clickInScrollView(p,p.getByRole('button',{name:/^Office-Printer has a slow WiFi connection/}).first());
     await answered(p,'Device','Office-Printer');
     await answered(p,'Problem','Slow connection');
     assert.equal(await p.getByText('Link rate',{exact:true}).count(),0);
@@ -262,12 +267,10 @@ try {
   });
   await check('mesh-health',async p=>{
     assert.equal(await p.getByText(/^Mesh Network/).count(),0,'No separate mesh card');
-    await openFoundList(p);
-    await visible(p,'MX6200 Bedroom has a weak connection to the router');
-    await clickInScrollView(p,'View WiFi nodes');
-    await visible(p,'Connected wirelessly — Weak (45 Mbps)');
-    await pageTitle(p,'Network details');
-    assert.equal(await p.getByText('Connected wirelessly — Good (45 Mbps)',{exact:true}).count(),0);
+    // A weak node leads into the coverage workflow.
+    await openFoundList(p,'MX6200 Bedroom has a weak connection to the router');
+    await clickInScrollView(p,p.getByRole('button',{name:/^MX6200 Bedroom has a weak connection/}).first());
+    await pageTitle(p,"WiFi doesn't reach a room");
   });
   await check('responsive-layout-state',async p=>{
     await button(p,"Internet isn't working").click();
@@ -442,20 +445,20 @@ try {
   });
   for(const mobile of [false,true]) {
     await check(`warning-device-handoff-${mobile?'mobile':'desktop'}`,async p=>{
-      await openFoundList(p);
-      const action=p.getByRole('button',{name:/^Help /}).first();
+      await openFoundList(p,/ has a (slow|weak) WiFi/);
+      const action=p.getByRole('button',{name:/ has a (slow|weak) WiFi/}).first();
       await action.waitFor();
-      const label=await action.innerText();
+      const label=(await action.innerText()).split('\n')[0];
       // Names alone, unless two devices share one; then the MAC tells them apart.
-      assert.doesNotMatch(label,/\([A-Fa-f0-9:]+\)$/,'Unique device names need no MAC');
-      const name=label.replace(/^Help /,'');
+      const name=label.split(' has a ')[0];
+      assert.doesNotMatch(name,/\([A-Fa-f0-9:]+\)$/,'Unique device names need no MAC');
       await clickInScrollView(p,action);
       await answered(p,'Device',name);
       assert.equal(await p.getByText('Which device needs help?',{exact:true}).count(),0);
       await clickInScrollView(p,'Connection details');
       await visible(p,'Link rate');
       await clickInScrollView(p,back(p));
-      await openFoundList(p);
+      await openFoundList(p,/ has a (slow|weak) WiFi/);
       await action.waitFor();
     },mobile);
   }

@@ -37,6 +37,9 @@ class OverviewTab extends ConsumerStatefulWidget {
   final VoidCallback? onTroubleshootWeakDevices;
   final ValueChanged<DiagnosticClient>? onTroubleshootDevice;
   final void Function(int flowIndex)? onNavigateToFlow;
+  /// Opens a help flow by its route number; "Also found" rows use it to
+  /// lead into the workflow that fixes them.
+  final ValueChanged<int>? onOpenHelp;
   /// When false, the in-body "Something else?" symptom cards are hidden — the
   /// single-page host supplies its own workflow chooser instead.
   final bool showProblemCards;
@@ -48,6 +51,7 @@ class OverviewTab extends ConsumerStatefulWidget {
     this.onTroubleshootWeakDevices,
     this.onTroubleshootDevice,
     this.onNavigateToFlow,
+    this.onOpenHelp,
     this.showProblemCards = true,
   });
 
@@ -152,6 +156,7 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
             onViewNetwork: widget.onViewNetwork,
             onViewClients: widget.onViewClients,
             onNavigateToFlow: widget.onNavigateToFlow,
+            onOpenHelp: widget.onOpenHelp,
             showProblemCards: widget.showProblemCards,
             hasRestarted: state.hasRestartedThisSession,
           ),
@@ -479,6 +484,7 @@ class _StatusCard extends StatelessWidget {
   final VoidCallback? onTroubleshootWeakDevices;
   final VoidCallback? onViewNetwork;
   final void Function(int flowIndex)? onNavigateToFlow;
+  final ValueChanged<int>? onOpenHelp;
   final bool showProblemCards;
   final bool hasRestarted;
 
@@ -495,6 +501,7 @@ class _StatusCard extends StatelessWidget {
     this.onTroubleshootWeakDevices,
     this.onViewNetwork,
     this.onNavigateToFlow,
+    this.onOpenHelp,
     this.showProblemCards = true,
     this.hasRestarted = false,
   });
@@ -564,6 +571,7 @@ class _StatusCard extends StatelessWidget {
               ),
               if (runAgain != null) runAgain!,
             ]),
+            _CheckResults(state: state),
             // No verdict finding, but a weak device or WiFi node is still
             // worth a look.
             ..._alsoFound(more),
@@ -572,7 +580,6 @@ class _StatusCard extends StatelessWidget {
               _problemCards(context,
                   'Still having a problem? Tell us what\'s happening and we\'ll help:'),
             ],
-            _CheckResults(state: state),
           ],
         ),
       );
@@ -654,6 +661,7 @@ class _StatusCard extends StatelessWidget {
             ),
           ],
 
+          _CheckResults(state: state),
           ..._alsoFound(more),
 
           // U-01: keep the Fix-flow entry cards reachable even when a finding is
@@ -664,28 +672,29 @@ class _StatusCard extends StatelessWidget {
                 'Something else? Tell us what\'s happening and we\'ll help:'),
             const AppGap.small2(),
           ],
-
-          _CheckResults(state: state),
         ],
       ),
     );
   }
 
-  /// Everything else this run found, always shown under the headline.
+  /// Everything else this run found, folded under the check list; each row
+  /// leads into the workflow that fixes it.
   static List<Widget> _alsoFound(List<Widget> more) => more.isEmpty
       ? const []
-      : [_ResultSection(title: 'Also found', rows: more)];
+      : [_ResultSection(title: 'Also found', rows: more, collapsible: true)];
 
   /// Names are enough unless two devices share one; then the MAC tells
   /// them apart.
-  String _helpLabel(DiagnosticClient device) {
+  String _deviceName(DiagnosticClient device) {
     final sameName = state.issueDevices
         .where((score) => score.client.displayName == device.displayName)
         .length;
     return sameName > 1
-        ? 'Help ${device.displayName} (${device.macAddress})'
-        : 'Help ${device.displayName}';
+        ? '${device.displayName} (${device.macAddress})'
+        : device.displayName;
   }
+
+  String _helpLabel(DiagnosticClient device) => 'Help ${_deviceName(device)}';
 
   /// Everything found besides the top result, one row and one action each:
   /// other findings, devices with weak WiFi, and WiFi nodes with a weak link
@@ -714,30 +723,27 @@ class _StatusCard extends StatelessWidget {
       for (final finding in findings)
         _FindingRow(
             finding: finding,
+            onOpenHelp: onOpenHelp,
             onAction: finding.actionKey == fixShown ? null : onAction),
       if (listDevices)
         for (final score in state.issueDevices.take(5))
           _MoreRow(
             tone: InstantTestTone.warning,
-            title: _deviceTitle(score.client),
+            title: _deviceTitle(score.client, _deviceName(score.client)),
             detail: [
               if (score.client.signalDecibels != null)
                 '${score.client.signalDecibels} dBm',
               if (score.client.band.isNotEmpty) 'on ${score.client.band}',
             ].join(' '),
-            action: onTroubleshootDevice == null
+            onTap: onTroubleshootDevice == null
                 ? null
-                : AppTextButton.noPadding(_helpLabel(score.client),
-                    onTap: () => onTroubleshootDevice!(score.client)),
+                : () => onTroubleshootDevice!(score.client),
           ),
       if (listDevices && state.issueDevices.length > 5)
         _MoreRow(
           tone: InstantTestTone.warning,
           title: '${state.issueDevices.length - 5} more devices need help',
-          action: onTroubleshootWeakDevices == null
-              ? null
-              : AppTextButton.noPadding('Troubleshoot these devices',
-                  onTap: onTroubleshootWeakDevices),
+          onTap: onTroubleshootWeakDevices,
         ),
       for (final node in weakNodes)
         _MoreRow(
@@ -746,19 +752,17 @@ class _StatusCard extends StatelessWidget {
               : InstantTestTone.warning,
           title: '${node.name} has a weak connection to the router',
           detail: 'Move it closer to the router, or connect it with an Ethernet cable.',
-          action: onViewNetwork == null
-              ? null
-              : AppTextButton.noPadding('View WiFi nodes',
-                  onTap: onViewNetwork),
+          // Coverage help covers moving or wiring a node.
+          onTap: onOpenHelp == null ? null : () => onOpenHelp!(4),
         ),
     ];
   }
 
-  static String _deviceTitle(DiagnosticClient client) {
+  static String _deviceTitle(DiagnosticClient client, String name) {
     final weak = client.signalDecibels != null && client.signalDecibels! < -75;
     return weak
-        ? '${client.displayName} has a weak WiFi signal'
-        : '${client.displayName} has a slow WiFi connection';
+        ? '$name has a weak WiFi signal'
+        : '$name has a slow WiFi connection';
   }
 
   // Shared "what's wrong?" entry cards (U-01). Reachable from BOTH the all-clear
@@ -841,18 +845,27 @@ class _FindingRow extends StatelessWidget {
   final VerdictFinding finding;
   /// Null when the card's fix button already offers this finding's action.
   final Future<void> Function(String actionKey)? onAction;
+  final ValueChanged<int>? onOpenHelp;
 
-  const _FindingRow({required this.finding, required this.onAction});
+  const _FindingRow(
+      {required this.finding, required this.onAction, this.onOpenHelp});
 
+  /// A finding with a help flow opens it; one without (an update, a
+  /// restart) keeps its own action.
   @override
-  Widget build(BuildContext context) => _MoreRow(
-        tone: _StatusCard._priorityTone(finding.priority),
-        title: finding.headline,
-        action: finding.hasAutoFix && onAction != null
-            ? AppTextButton.noPadding(finding.actionLabel!,
-                onTap: () => onAction!(finding.actionKey!))
-            : null,
-      );
+  Widget build(BuildContext context) {
+    final flow = finding.helpFlow;
+    final opensFlow = flow != null && onOpenHelp != null;
+    return _MoreRow(
+      tone: _StatusCard._priorityTone(finding.priority),
+      title: finding.headline,
+      onTap: opensFlow ? () => onOpenHelp!(flow) : null,
+      action: !opensFlow && finding.hasAutoFix && onAction != null
+          ? AppTextButton.noPadding(finding.actionLabel!,
+              onTap: () => onAction!(finding.actionKey!))
+          : null,
+    );
+  }
 }
 
 // ── One row in "more things we found" ─────────────────────────────────────────
@@ -862,14 +875,20 @@ class _MoreRow extends StatelessWidget {
   final String title;
   final String? detail;
   final Widget? action;
+  /// Opens the workflow for this row; the whole row is the button.
+  final VoidCallback? onTap;
   const _MoreRow(
-      {required this.tone, required this.title, this.detail, this.action});
+      {required this.tone,
+      required this.title,
+      this.detail,
+      this.action,
+      this.onTap});
 
   /// An Instant-Admin row inside the result card: no border of its own,
   /// colored status icon, title and detail, and the row's action trailing.
   @override
   Widget build(BuildContext context) {
-    return AppListCard(
+    final row = AppListCard(
       showBorder: false,
       padding: EdgeInsets.zero,
       leading: Icon(tone.icon, color: tone.color(context)),
@@ -878,8 +897,13 @@ class _MoreRow extends StatelessWidget {
           ? AppText.bodySmall(detail!,
               color: Theme.of(context).colorScheme.onSurfaceVariant)
           : null,
-      trailing: action,
+      trailing: onTap != null ? const Icon(LinksysIcons.chevronRight) : action,
+      onTap: onTap,
     );
+    // Announced as one button, as the problem choices are.
+    return onTap == null
+        ? row
+        : MergeSemantics(child: Semantics(button: true, child: row));
   }
 }
 
@@ -887,28 +911,65 @@ class _MoreRow extends StatelessWidget {
 
 /// A titled list inside the result card, aligned with the headline text:
 /// a divider, the section title and its rows. Nothing is folded away.
-class _ResultSection extends StatelessWidget {
+class _ResultSection extends StatefulWidget {
   final String title;
   final String? subtitle;
   final List<Widget> rows;
-  const _ResultSection({required this.title, this.subtitle, required this.rows});
+  /// Starts folded, showing the title and how many rows it holds.
+  final bool collapsible;
+  const _ResultSection(
+      {required this.title,
+      this.subtitle,
+      required this.rows,
+      this.collapsible = false});
+
+  @override
+  State<_ResultSection> createState() => _ResultSectionState();
+}
+
+class _ResultSectionState extends State<_ResultSection> {
+  bool _open = false;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final open = !widget.collapsible || _open;
     return Padding(
       padding: const EdgeInsets.only(left: Spacing.large3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Divider(height: Spacing.large2),
-          Semantics(header: true, child: AppText.titleSmall(title)),
-          if (subtitle != null)
-            AppText.bodySmall(subtitle!,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
-          const AppGap.small2(),
-          for (var i = 0; i < rows.length; i++) ...[
-            if (i > 0) const Divider(height: Spacing.medium),
-            rows[i],
+          if (widget.collapsible)
+            MergeSemantics(
+              child: Semantics(
+                button: true,
+                child: InkWell(
+                  onTap: () => setState(() => _open = !_open),
+                  child: Row(children: [
+                    Expanded(
+                      child: AppText.titleSmall(
+                          '${widget.title} (${widget.rows.length})'),
+                    ),
+                    Icon(
+                        _open
+                            ? LinksysIcons.arrowDropUp
+                            : LinksysIcons.arrowDropDown,
+                        color: scheme.onSurfaceVariant),
+                  ]),
+                ),
+              ),
+            )
+          else
+            Semantics(header: true, child: AppText.titleSmall(widget.title)),
+          if (widget.subtitle != null)
+            AppText.bodySmall(widget.subtitle!, color: scheme.onSurfaceVariant),
+          if (open) ...[
+            const AppGap.small2(),
+            for (var i = 0; i < widget.rows.length; i++) ...[
+              if (i > 0) const Divider(height: Spacing.medium),
+              widget.rows[i],
+            ],
           ],
         ],
       ),

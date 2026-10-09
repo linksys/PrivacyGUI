@@ -30,6 +30,10 @@ class VerdictFinding {
   /// Which check number produced this finding (for post-restart escalation D-26).
   final int? checkNumber;
 
+  /// The help flow that walks through this problem (the route's `flow`
+  /// parameter), or null when the finding's own action is the whole fix.
+  final int? helpFlow;
+
   /// ISP escalation text to show after a failed restart attempt (D-26).
   final String? postRestartEscalation;
 
@@ -45,6 +49,7 @@ class VerdictFinding {
     this.actionLabel,
     this.actionKey,
     this.checkNumber,
+    this.helpFlow,
     this.postRestartEscalation,
     this.aboutIssueDevices = false,
   });
@@ -159,6 +164,7 @@ class VerdictEngine {
       if (!gatewayReachable) {
         findings.add(const VerdictFinding(
           priority: VerdictPriority.critical,
+          helpFlow: 1,
           headline: 'Your router can\'t be reached',
           explanation:
               'Try refreshing the page. If this keeps happening, your router may need a restart.',
@@ -177,6 +183,7 @@ class VerdictEngine {
       if (!wanConnected) {
         findings.add(const VerdictFinding(
           priority: VerdictPriority.critical,
+          helpFlow: 1,
           headline: 'No internet connection detected',
           explanation:
               'Check that:\n'
@@ -195,6 +202,7 @@ class VerdictEngine {
       if (!hasIp) {
         findings.add(VerdictFinding(
           priority: VerdictPriority.critical,
+          helpFlow: 1,
           headline: 'Your router connected but didn\'t get an address',
           explanation:
               'The router line is active but your internet provider didn\'t assign an '
@@ -330,6 +338,7 @@ class VerdictEngine {
 
         findings.add(VerdictFinding(
           priority: VerdictPriority.critical,
+          helpFlow: 1,
           headline: 'Websites aren\'t loading',
           explanation:
               'Verified: Router reachable \u2713  $ipText \u2713  '
@@ -367,6 +376,7 @@ class VerdictEngine {
       if (hasWeakDevices && downloadMbps < 25) {
         findings.add(VerdictFinding(
           priority: VerdictPriority.warning,
+          helpFlow: 2,
           headline: 'WiFi may be affecting the speed test',
           explanation:
               'This speed test runs from this device. We found connection issues on '
@@ -379,6 +389,7 @@ class VerdictEngine {
       if (downloadMbps < 5) {
         findings.add(VerdictFinding(
           priority: VerdictPriority.critical,
+          helpFlow: 2,
           headline:
               'Your internet is very slow (${downloadMbps.toStringAsFixed(0)} Mbps)',
           explanation:
@@ -400,6 +411,7 @@ class VerdictEngine {
             : '';
         findings.add(VerdictFinding(
           priority: VerdictPriority.warning,
+          helpFlow: 2,
           headline:
               'Your internet is slower than expected (${downloadMbps.toStringAsFixed(0)} Mbps$planText)',
           summary: 'Your internet is slower than expected',
@@ -425,6 +437,7 @@ class VerdictEngine {
     if (speedTestFailed && wanConnected != false && dnsWorking != false) {
       findings.add(const VerdictFinding(
         priority: VerdictPriority.warning,
+        helpFlow: 2,
         headline: "We couldn't finish the speed test",
         explanation:
             'The internet speed check didn\'t complete — this can happen on a '
@@ -440,6 +453,7 @@ class VerdictEngine {
       if (latencyMs > 100) {
         findings.add(VerdictFinding(
           priority: VerdictPriority.warning,
+          helpFlow: 2,
           headline: 'High lag detected (${latencyMs}ms)',
           explanation:
               'High latency causes delays in video calls and online games. '
@@ -493,6 +507,7 @@ class VerdictEngine {
 
         findings.add(VerdictFinding(
           priority: VerdictPriority.warning,
+          helpFlow: 31,
           headline: '$count $deviceWord with weak WiFi',
           explanation: advice,
           checkNumber: 7,
@@ -512,6 +527,7 @@ class VerdictEngine {
         if (ratio >= 0.6 && twoFourCount >= 4) {
           findings.add(VerdictFinding(
             priority: VerdictPriority.info,
+            helpFlow: 4,
             headline:
                 '$twoFourCount of ${wirelessClients.length} devices are on the slower 2.4 GHz band',
             explanation:
@@ -533,6 +549,7 @@ class VerdictEngine {
         final nodeWord = count == 1 ? 'child node' : 'child nodes';
         findings.add(VerdictFinding(
           priority: VerdictPriority.warning,
+          helpFlow: 4,
           headline:
               '$count $nodeWord ${count == 1 ? 'has' : 'have'} a weak connection to your router',
           explanation:
@@ -549,6 +566,7 @@ class VerdictEngine {
     if (isWifiScheduleBlocking == true) {
       findings.add(const VerdictFinding(
         priority: VerdictPriority.info,
+        helpFlow: 3,
         headline: 'Your WiFi schedule may be blocking connections',
         explanation: 'Your router has a WiFi schedule that turns off wireless access during certain hours. If your WiFi isn\'t working at a specific time, check your schedule settings.',
       ));
@@ -557,6 +575,7 @@ class VerdictEngine {
     if (isInstantPrivacyOn == true) {
       findings.add(const VerdictFinding(
         priority: VerdictPriority.warning,
+        helpFlow: 3,
         headline: 'Instant Privacy is blocking new devices',
         explanation: 'Instant Privacy is on — new devices can\'t connect until it\'s turned off. Go to your router settings to disable Instant Privacy.',
       ));
@@ -565,6 +584,7 @@ class VerdictEngine {
     if (isInstantPauseActive == true) {
       findings.add(const VerdictFinding(
         priority: VerdictPriority.warning,
+        helpFlow: 3,
         headline: 'Internet access is paused',
         explanation: 'A parental control pause is active. This blocks internet access for some devices. Check your parental control settings.',
       ));
@@ -581,6 +601,7 @@ class VerdictEngine {
     if (cpuLoadPct != null && cpuLoadPct > 80) {
       findings.add(VerdictFinding(
         priority: VerdictPriority.warning,
+        helpFlow: 2,
         headline: 'Your router is under high load ($cpuLoadPct% CPU)',
         summary: 'Your router is very busy',
         explanation: 'An overloaded processor can drop packets and slow all devices. A restart usually clears this.',
@@ -591,6 +612,7 @@ class VerdictEngine {
     if (memoryLoadPct != null && memoryLoadPct > 85) {
       findings.add(VerdictFinding(
         priority: VerdictPriority.warning,
+        helpFlow: 2,
         headline: 'Your router\'s memory is nearly full ($memoryLoadPct%)',
         summary: 'Your router is running low on memory',
         explanation: 'Low memory causes slowdowns and dropped connections. A restart will clear it.',
@@ -605,6 +627,7 @@ class VerdictEngine {
       if (wifiSnrDb < 20) {
         findings.add(const VerdictFinding(
           priority: VerdictPriority.info,
+          helpFlow: 5,
           headline: 'WiFi interference from nearby networks',
           explanation: 'Your 5 GHz radio is experiencing interference, likely from neighboring WiFi networks. This is common in apartments and dense buildings. Contact Linksys support about adjusting your WiFi channel.',
         ));
@@ -617,6 +640,7 @@ class VerdictEngine {
       if (isPmfRequired) {
         findings.add(const VerdictFinding(
           priority: VerdictPriority.warning,
+          helpFlow: 3,
           headline: 'WiFi security setting may block smart home devices',
           explanation: 'Your router has strict Protected Management Frames (PMF) enabled. Some smart home devices (Ring, Nest, smart bulbs) can\'t connect with this setting. Switch to WPA2/WPA3 compatibility mode in your WiFi Security settings.',
         ));
@@ -629,6 +653,7 @@ class VerdictEngine {
       if (isBandSteeringMissteer) {
         findings.add(const VerdictFinding(
           priority: VerdictPriority.warning,
+          helpFlow: 31,
           headline: 'A device is stuck on the slower 2.4 GHz band',
           explanation:
               'Your router has automatic band selection on, but one or more '
@@ -645,6 +670,7 @@ class VerdictEngine {
       if (hasEthernetNoLink) {
         findings.add(const VerdictFinding(
           priority: VerdictPriority.warning,
+          helpFlow: 3,
           headline: 'A wired device has no network link',
           explanation:
               'One or more devices are plugged in via Ethernet cable but '
@@ -660,6 +686,7 @@ class VerdictEngine {
       if (hasZombieMeshNode) {
         findings.add(const VerdictFinding(
           priority: VerdictPriority.warning,
+          helpFlow: 4,
           headline: 'A child node is connected but not working well',
           explanation:
               'One of your child nodes is connected to your router but '
@@ -679,6 +706,7 @@ class VerdictEngine {
       if (dhcpPoolUtilizationPct >= 90) {
         findings.add(VerdictFinding(
           priority: VerdictPriority.warning,
+          helpFlow: 3,
           headline:
               'Your network address pool is almost full ($dhcpPoolUtilizationPct% used)',
           explanation:

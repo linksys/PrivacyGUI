@@ -32,6 +32,7 @@ class _InstantTestPageState extends ConsumerState<InstantTestPage> {
             onSelect: (flow) => pushInstantTestHelp(context, ref, flow)),
         onNavigateToFlow: (index) =>
             pushInstantTestHelp(context, ref, index + 1),
+        onOpenHelp: (flow) => pushInstantTestHelp(context, ref, flow),
         onTroubleshootWeakDevices: () => pushInstantTestHelp(context, ref, 31),
         onViewNetwork: () => pushInstantTestNetwork(context, ref),
         onTroubleshootDevice: (device) =>

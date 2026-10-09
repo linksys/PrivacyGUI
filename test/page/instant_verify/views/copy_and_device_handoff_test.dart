@@ -98,13 +98,12 @@ void main() {
     expect(find.text('Your router is very busy'), findsOneWidget);
     // The weak devices are listed under "Also found", not as the busy
     // router's fix.
-    final alsoFound = tester.getTopLeft(find.text('Also found')).dy;
-    final links = find.textContaining('Help LB100 (');
-    expect(links, findsWidgets);
-    for (final link in links.evaluate()) {
-      expect(tester.getTopLeft(find.byWidget(link.widget)).dy,
-          greaterThan(alsoFound));
-    }
+    expect(find.textContaining('Help LB100 ('), findsNothing);
+    final header = find.textContaining('Also found (');
+    await tester.ensureVisible(header);
+    await tester.tap(header);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('LB100 (AA:'), findsWidgets);
   });
 
   for (final device in devices.take(2)) {

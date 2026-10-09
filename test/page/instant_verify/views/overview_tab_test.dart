@@ -194,6 +194,8 @@ Widget _buildOverviewTab(
   InstantVerifyPivotState state, {
   VoidCallback? onViewClients,
   void Function(int)? onNavigateToFlow,
+  ValueChanged<int>? onOpenHelp,
+  ValueChanged<DiagnosticClient>? onTroubleshootDevice,
 }) {
   final mockNotifier = MockInstantVerifyPivotNotifier(state);
   return testableWidget(
@@ -203,6 +205,8 @@ Widget _buildOverviewTab(
     child: OverviewTab(
       onViewClients: onViewClients,
       onNavigateToFlow: onNavigateToFlow,
+      onOpenHelp: onOpenHelp,
+      onTroubleshootDevice: onTroubleshootDevice,
     ),
   );
 }
@@ -211,6 +215,14 @@ Future<void> _tap(WidgetTester tester, String label) async {
   final target = find.text(label).last;
   await tester.ensureVisible(target);
   await tester.tap(target);
+  await tester.pump();
+}
+
+/// "Also found (N)" starts folded under the check list.
+Future<void> _openAlsoFound(WidgetTester tester) async {
+  final header = find.textContaining('Also found (');
+  await tester.ensureVisible(header);
+  await tester.tap(header);
   await tester.pump();
 }
 
@@ -349,7 +361,7 @@ void main() {
       await tester.pump();
 
       // Tap "My internet is slow" card (flow index 1)
-      await tester.tap(find.text('My internet\nis slow'));
+      await _tap(tester, 'My internet\nis slow');
       expect(navigatedFlow, 1);
     });
 
@@ -434,14 +446,14 @@ void main() {
           findsOneWidget);
     });
 
-    testWidgets('secondary findings are listed under "Also found"',
+    testWidgets('secondary findings fold under "Also found"',
         (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_multipleFindingsState()));
       await tester.pump();
 
-      // Shown in full; there is no toggle to open.
-      expect(find.textContaining('more things we found'), findsNothing);
-      expect(find.text('Also found'), findsOneWidget);
+      expect(find.text('Also found (3)'), findsOneWidget);
+      expect(find.text('High lag detected (120ms)'), findsNothing);
+      await _openAlsoFound(tester);
       for (final headline in [
         'High lag detected (120ms)',
         'A software update is available (2.0.0)',
@@ -449,17 +461,41 @@ void main() {
       ]) {
         expect(find.text(headline), findsOneWidget, reason: headline);
         expect(tester.getTopLeft(find.text(headline)).dy,
-            greaterThan(tester.getTopLeft(find.text('Also found')).dy),
+            greaterThan(tester.getTopLeft(find.text('Also found (3)')).dy),
             reason: headline);
       }
     });
 
-    testWidgets('"Also found" comes before "What we checked"', (tester) async {
+    testWidgets('"What we checked" comes before "Also found"', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_multipleFindingsState()));
       await tester.pump();
 
-      expect(tester.getTopLeft(find.text('Also found')).dy,
-          lessThan(tester.getTopLeft(find.text('What we checked')).dy));
+      expect(tester.getTopLeft(find.text('What we checked')).dy,
+          lessThan(tester.getTopLeft(find.text('Also found (3)')).dy));
+    });
+
+    testWidgets('a found row opens the workflow that fixes it', (tester) async {
+      int? opened;
+      final base = _multipleFindingsState();
+      await tester.pumpWidget(_buildOverviewTab(
+          base.copyWith(
+              verdict: Verdict(checksRun: 8, findings: [
+            base.verdict!.findings.first,
+            const VerdictFinding(
+                priority: VerdictPriority.warning,
+                headline: 'WiFi interference from nearby networks',
+                explanation: 'Busy channel.',
+                helpFlow: 5),
+          ])),
+          onOpenHelp: (flow) => opened = flow));
+      await tester.pump();
+      await _openAlsoFound(tester);
+      final row = find.ancestor(
+          of: find.text('WiFi interference from nearby networks'),
+          matching: find.byType(AppListCard));
+      expect(tester.widget<AppListCard>(row).trailing, isA<Icon>());
+      await _tap(tester, 'WiFi interference from nearby networks');
+      expect(opened, 5);
     });
   });
 
@@ -545,6 +581,7 @@ void main() {
 
       // No separate mesh card: only the weak node needs attention.
       expect(find.textContaining('Mesh Network'), findsNothing);
+      await _openAlsoFound(tester);
       expect(find.text('Bedroom has a weak connection to the router'),
           findsOneWidget);
       expect(find.textContaining('Living Room'), findsNothing);
@@ -555,7 +592,7 @@ void main() {
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
       await tester.pump();
 
-      expect(find.text('Also found'), findsNothing);
+      expect(find.textContaining('Also found'), findsNothing);
     });
   });
 
@@ -566,6 +603,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Devices that may need help'), findsNothing);
+      await _openAlsoFound(tester);
       expect(find.text('iPhone has a weak WiFi signal'), findsOneWidget);
       expect(find.text('-82 dBm on 2.4GHz'), findsOneWidget);
       // Plain names; no MAC address unless two devices share a name.
@@ -592,6 +630,7 @@ void main() {
       ]))));
       await tester.pump();
 
+      await _openAlsoFound(tester);
       expect(find.text('iPhone has a weak WiFi signal'), findsOneWidget);
       expect(find.text('1 device with weak WiFi'), findsNothing);
     });
@@ -760,7 +799,7 @@ void main() {
   });
 
   group('OverviewTab — primary action row', () {
-    testWidgets('the fix sits under the explanation, before everything else found',
+    testWidgets('the fix sits under the explanation, before the check list',
         (tester) async {
       // _multipleFindingsState() has 4 findings; the primary has a restart fix.
       await tester.pumpWidget(_buildOverviewTab(_multipleFindingsState()));
@@ -769,13 +808,15 @@ void main() {
       expect(find.textContaining('Start here'), findsNothing);
       // The 90-days finding also restarts the router; the card offers that
       // action once, as the fix.
+      await _openAlsoFound(tester);
       expect(find.text('Your router has been running for 90 days'),
           findsOneWidget);
       expect(find.text('Restart Router'), findsOneWidget);
       final fix = tester.getTopLeft(find.text('Restart Router'));
-      expect(fix.dy, lessThan(tester.getTopLeft(find.text('Also found')).dy));
+      expect(fix.dy,
+          lessThan(tester.getTopLeft(find.text('What we checked')).dy));
       // Aligned with the headline text, not the icon.
-      expect(tester.getTopLeft(find.text('Also found')).dx,
+      expect(tester.getTopLeft(find.text('What we checked')).dx,
           tester.getTopLeft(
               find.text('Your internet is slower than expected (15 Mbps)')).dx);
     });
@@ -828,6 +869,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_multipleFindingsState()));
       await tester.pump();
+      await _openAlsoFound(tester);
 
       for (final headline in [
         'High lag detected (120ms)',
@@ -856,6 +898,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_deviceIssuesState()));
       await tester.pump();
+      await _openAlsoFound(tester);
       final row = tester.widget<AppListCard>(find.ancestor(
           of: find.text('iPhone has a weak WiFi signal'),
           matching: find.byType(AppListCard)));
@@ -876,7 +919,7 @@ void main() {
       final tile = find.ancestor(
           of: find.text('My internet\nis slow'), matching: find.byType(AppCard));
       expect(tile, findsWidgets);
-      await tester.tap(find.text('My internet\nis slow'));
+      await _tap(tester, 'My internet\nis slow');
       expect(navigatedFlow, 1);
     });
 
