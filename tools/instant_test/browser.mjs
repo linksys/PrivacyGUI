@@ -37,14 +37,11 @@ const back = page => button(page, 'back');
 const visible = (page, text) => page.getByText(text, {exact:true}).last().waitFor({state:'visible', timeout:10000});
 // StyledAppPageView (every PrivacyGUI page) labels its title "page title <Title>".
 const pageTitle = (page, title) => visible(page, `page title ${title}`);
-// Other findings, weak devices and weak WiFi nodes fold under "Also found (N)"
-// below the check list. The section keeps its state while a workflow is open
-// on top of it, so open it only when the row we need is not showing.
+// Every problem is listed under its area in "What we checked" (Router,
+// Internet, Speed, Devices, WiFi nodes); there is nothing to open.
 const openFoundList = async (page, row) => {
   await visible(page, 'What we checked');
-  if (await page.getByText(row).count() === 0) {
-    await clickInScrollView(page, page.getByRole('button', {name:/^Also found \(\d+\)/}).first());
-  }
+  assert.equal(await page.getByText(/^Also found/).count(), 0, 'No separate found list');
   await page.getByText(row).first().waitFor();
 };
 // After a resize, accessibility boxes lag the relayout; wait until they stop moving.
@@ -267,9 +264,8 @@ try {
   });
   await check('mesh-health',async p=>{
     assert.equal(await p.getByText(/^Mesh Network/).count(),0,'No separate mesh card');
-    // The node checks are listed; a slow node leads into the coverage workflow.
-    await visible(p,'WiFi node connections');
-    await visible(p,'WiFi node speed');
+    // Node problems sit under WiFi nodes; a slow node leads into the coverage workflow.
+    await visible(p,'WiFi nodes');
     await openFoundList(p,'A child node is connected but not working well');
     await clickInScrollView(p,p.getByRole('button',{name:/^A child node is connected but not working well/}).first());
     await pageTitle(p,"WiFi doesn't reach a room");

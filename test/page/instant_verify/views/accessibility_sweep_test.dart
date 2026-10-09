@@ -213,8 +213,6 @@ String _help(int flow) => '$instantTestHome/help?flow=$flow';
 final _screens = <_Screen>[
   // Results page.
   _Screen('results: router busy'),
-  _Screen('results: router busy, also found open',
-      then: (t) => _tap(t, find.textContaining('Also found ('))),
   _Screen('results: all clear',
       pivot: () => _ResultNotifier(const InstantVerifyPivotState(
           phase: PivotLoadPhase.complete,

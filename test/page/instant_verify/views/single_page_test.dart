@@ -184,9 +184,10 @@ void main() {
     // Other findings, weak devices and weak WiFi nodes share one list.
     expect(find.text('Devices that may need help'), findsNothing);
     expect(find.textContaining('Mesh Network'), findsNothing);
-    // Everything else found folds under the check list; the card offers
-    // the restart once.
-    expect(find.textContaining('Also found ('), findsOneWidget);
+    // Other problems are listed under their area; the card offers the
+    // restart once.
+    expect(find.textContaining('Also found'), findsNothing);
+    expect(find.text('Devices'), findsOneWidget);
     expect(find.text('Restart Router'), findsOneWidget);
   });
 
@@ -407,10 +408,8 @@ void main() {
       'weak WiFi finding opens connection analysis, not cannot-connect advice',
       (tester) async {
     await mount(tester);
-    // Weak devices are listed by name with what else we found.
-    // The row itself opens the device's help.
-    await tapText(tester,
-        tester.widget<Text>(find.textContaining('Also found (')).data!);
+    // Weak devices are listed by name under Devices; the line itself opens
+    // the device's help.
     await tapText(tester,
         tester.widget<Text>(find.textContaining('Office printer has a')).data!);
     expect(answer(tester, 'Device'), 'Office printer');

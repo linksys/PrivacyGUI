@@ -64,6 +64,7 @@ InstantVerifyPivotState _criticalFindingState() {
           actionLabel: 'Restart Router',
           actionKey: 'restart_router',
           checkNumber: 4,
+          area: VerdictArea.internet,
           postRestartEscalation: 'Contact your provider.',
         ),
       ],
@@ -93,11 +94,13 @@ InstantVerifyPivotState _multipleFindingsState() {
           actionLabel: 'Restart Router',
           actionKey: 'restart_router',
           checkNumber: 6,
+          area: VerdictArea.speed,
         ),
         VerdictFinding(
           priority: VerdictPriority.warning,
           headline: 'High lag detected (120ms)',
           explanation: 'High latency causes delays.',
+          area: VerdictArea.speed,
         ),
         VerdictFinding(
           priority: VerdictPriority.info,
@@ -132,6 +135,7 @@ InstantVerifyPivotState _wanDownState() {
           priority: VerdictPriority.critical,
           headline: 'No internet connection detected',
           explanation: 'Check your modem.',
+          area: VerdictArea.internet,
         ),
       ],
       checksRun: 2,
@@ -218,13 +222,9 @@ Future<void> _tap(WidgetTester tester, String label) async {
   await tester.pump();
 }
 
-/// "Also found (N)" starts folded under the check list.
-Future<void> _openAlsoFound(WidgetTester tester) async {
-  final header = find.textContaining('Also found (');
-  await tester.ensureVisible(header);
-  await tester.tap(header);
-  await tester.pump();
-}
+/// Top edge of the first widget showing [text].
+double _top(WidgetTester tester, String text) =>
+    tester.getTopLeft(find.text(text).first).dy;
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 
@@ -314,7 +314,7 @@ void main() {
 
       // The count matches the rows under "What we checked", and names
       // what did not run, rather than an internal check total (QA: "which 13?").
-      expect(find.text('4 of 6 checks passed · Not run: Devices, Firmware'),
+      expect(find.text('3 of 4 look good · Not checked: Devices'),
           findsOneWidget);
       expect(find.text('8 checks passed'), findsNothing);
     });
@@ -337,7 +337,7 @@ void main() {
         verdictIsPreliminary: false,
       )));
       await tester.pump();
-      expect(find.text('5 of 6 checks passed · Not run: Speed check'),
+      expect(find.text('3 of 4 look good · Not checked: Speed'),
           findsOneWidget);
     });
 
@@ -384,9 +384,9 @@ void main() {
 
       expect(find.text('View test details'), findsNothing);
       expect(find.text('What we checked'), findsOneWidget);
-      expect(find.text('Router reached'), findsOneWidget);
+      expect(find.text('Router'), findsOneWidget);
       expect(
-          tester.getTopLeft(find.text('Router reached')).dy,
+          tester.getTopLeft(find.text('Router')).dy,
           greaterThan(tester
               .getTopLeft(find.text("We didn't detect any issues"))
               .dy));
@@ -397,9 +397,8 @@ void main() {
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
       await tester.pump();
 
-      expect(find.text('MX6200'), findsAtLeast(1));
-      expect(find.text('Connected'), findsOneWidget);
-      expect(find.text('Internet reachable'), findsOneWidget);
+      expect(find.textContaining('MX6200'), findsAtLeast(1));
+      expect(find.text('Connected · websites loading'), findsOneWidget);
     });
   });
 
@@ -446,35 +445,32 @@ void main() {
           findsOneWidget);
     });
 
-    testWidgets('secondary findings fold under "Also found"',
+    testWidgets('each other finding is listed once, under its area',
         (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_multipleFindingsState()));
       await tester.pump();
 
-      expect(find.text('Also found (3)'), findsOneWidget);
-      expect(find.text('High lag detected (120ms)'), findsNothing);
-      await _openAlsoFound(tester);
+      expect(find.textContaining('Also found'), findsNothing);
+      // Lag under Speed; the update and the long uptime under Router.
+      final lag = _top(tester, 'High lag detected (120ms)');
+      expect(lag, greaterThan(_top(tester, 'Speed')));
+      expect(lag, lessThan(_top(tester, 'Devices')));
       for (final headline in [
-        'High lag detected (120ms)',
         'A software update is available (2.0.0)',
         'Your router has been running for 90 days',
       ]) {
         expect(find.text(headline), findsOneWidget, reason: headline);
-        expect(tester.getTopLeft(find.text(headline)).dy,
-            greaterThan(tester.getTopLeft(find.text('Also found (3)')).dy),
-            reason: headline);
+        final y = _top(tester, headline);
+        expect(y, greaterThan(_top(tester, 'Router')), reason: headline);
+        expect(y, lessThan(_top(tester, 'Internet')), reason: headline);
       }
+      // The headline problem is the title, not repeated in the list.
+      expect(find.text('Your internet is slower than expected (15 Mbps)'),
+          findsOneWidget);
     });
 
-    testWidgets('"What we checked" comes before "Also found"', (tester) async {
-      await tester.pumpWidget(_buildOverviewTab(_multipleFindingsState()));
-      await tester.pump();
-
-      expect(tester.getTopLeft(find.text('What we checked')).dy,
-          lessThan(tester.getTopLeft(find.text('Also found (3)')).dy));
-    });
-
-    testWidgets('a found row opens the workflow that fixes it', (tester) async {
+    testWidgets('a listed problem opens the workflow that fixes it',
+        (tester) async {
       int? opened;
       final base = _multipleFindingsState();
       await tester.pumpWidget(_buildOverviewTab(
@@ -485,15 +481,13 @@ void main() {
                 priority: VerdictPriority.warning,
                 headline: 'WiFi interference from nearby networks',
                 explanation: 'Busy channel.',
+                area: VerdictArea.devices,
                 helpFlow: 5),
           ])),
           onOpenHelp: (flow) => opened = flow));
       await tester.pump();
-      await _openAlsoFound(tester);
-      final row = find.ancestor(
-          of: find.text('WiFi interference from nearby networks'),
-          matching: find.byType(AppListCard));
-      expect(tester.widget<AppListCard>(row).trailing, isA<Icon>());
+      expect(_top(tester, 'WiFi interference from nearby networks'),
+          greaterThan(_top(tester, 'Devices')));
       await _tap(tester, 'WiFi interference from nearby networks');
       expect(opened, 5);
     });
@@ -573,9 +567,8 @@ void main() {
     });
   });
 
-  group('OverviewTab — mesh in the found list', () {
-    testWidgets('a weak WiFi node is listed from the node check that found it',
-        (tester) async {
+  group('OverviewTab — WiFi nodes', () {
+    testWidgets('node problems are listed under WiFi nodes', (tester) async {
       int? opened;
       await tester.pumpWidget(_buildOverviewTab(
           _meshState().copyWith(
@@ -587,39 +580,33 @@ void main() {
             VerdictFinding(
                 priority: VerdictPriority.warning,
                 helpFlow: 4,
+                area: VerdictArea.nodes,
                 headline: '1 child node has a weak connection to your router',
                 explanation: 'Bedroom is connected wirelessly with a weak signal.'),
-          ], checks: [
-            VerdictCheck('WiFi node connections', VerdictCheckStatus.warning,
-                'Weak: Bedroom'),
           ])),
           onOpenHelp: (flow) => opened = flow));
       await tester.pump();
 
-      // No separate mesh card; the check list names the node.
       expect(find.textContaining('Mesh Network'), findsNothing);
-      expect(find.text('Weak: Bedroom'), findsOneWidget);
-      await _openAlsoFound(tester);
+      expect(_top(tester, '1 child node has a weak connection to your router'),
+          greaterThan(_top(tester, 'WiFi nodes')));
       await _tap(tester, '1 child node has a weak connection to your router');
       expect(opened, 4);
     });
 
-    testWidgets('a node the node checks pass is not listed as weak',
-        (tester) async {
-      // Bedroom's 45 Mbps link alone is not a finding; the card applies no
-      // rule of its own that the check list doesn't show.
+    testWidgets('healthy nodes are summed up in one line', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_meshState()));
       await tester.pump();
 
-      expect(find.textContaining('Also found'), findsNothing);
+      expect(find.text('2 nodes · connected well'), findsOneWidget);
       expect(find.textContaining('weak connection'), findsNothing);
     });
 
-    testWidgets('nothing extra is listed for a single router', (tester) async {
+    testWidgets('no WiFi nodes row without nodes', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
       await tester.pump();
 
-      expect(find.textContaining('Also found'), findsNothing);
+      expect(find.text('WiFi nodes'), findsNothing);
     });
   });
 
@@ -630,8 +617,9 @@ void main() {
       await tester.pump();
 
       expect(find.text('Devices that may need help'), findsNothing);
-      await _openAlsoFound(tester);
       expect(find.text('iPhone has a weak WiFi signal'), findsOneWidget);
+      expect(_top(tester, 'iPhone has a weak WiFi signal'),
+          greaterThan(_top(tester, 'Devices')));
       expect(find.text('-82 dBm on 2.4GHz'), findsOneWidget);
       // Plain names; no MAC address unless two devices share a name.
       expect(find.textContaining('AA:BB:CC:DD:EE:01'), findsNothing);
@@ -657,7 +645,6 @@ void main() {
       ]))));
       await tester.pump();
 
-      await _openAlsoFound(tester);
       expect(find.text('iPhone has a weak WiFi signal'), findsOneWidget);
       expect(find.text('1 device with weak WiFi'), findsNothing);
     });
@@ -715,57 +702,58 @@ void main() {
   });
 
   group('OverviewTab — check list', () {
-    testWidgets('the checks behind the findings are listed with their results',
-        (tester) async {
-      final base = _multipleFindingsState();
-      await tester.pumpWidget(_buildOverviewTab(base.copyWith(
-          verdict: Verdict(
-              checksRun: base.verdict!.checksRun,
-              findings: base.verdict!.findings,
-              checks: const [
-            VerdictCheck('Router load', VerdictCheckStatus.warning,
-                'Processor 88% · Memory 90%'),
-            VerdictCheck(
-                'Wired connections', VerdictCheckStatus.pass, 'All linked'),
-          ]))));
+    testWidgets('router measurements show in the Router row', (tester) async {
+      await tester.pumpWidget(_buildOverviewTab(_allClearState().copyWith(
+          verdict: const Verdict(findings: [], checksRun: 8, checks: [
+        VerdictCheck(VerdictArea.router, 'Router load', VerdictCheckStatus.pass,
+            'Processor 20% · Memory 40%'),
+        VerdictCheck(VerdictArea.router, 'Time since restart',
+            VerdictCheckStatus.pass, '1 day'),
+      ]))));
       await tester.pump();
 
-      expect(find.text('Router load'), findsOneWidget);
-      expect(find.text('Processor 88% · Memory 90%'), findsOneWidget);
-      expect(find.text('Wired connections'), findsOneWidget);
-      // Listed under "What we checked", before the folded findings.
-      expect(tester.getTopLeft(find.text('Router load')).dy,
-          greaterThan(tester.getTopLeft(find.text('What we checked')).dy));
-      expect(tester.getTopLeft(find.text('Router load')).dy,
-          lessThan(tester.getTopLeft(find.text('Also found (3)')).dy));
-      // The count covers them too: 1 more passed, 1 more not passed.
-      expect(find.textContaining('of 8 checks passed'), findsOneWidget);
+      expect(
+          find.text(
+              "MX6200 · Processor 20% · Memory 40% · Up 1 day · Update check didn't run"),
+          findsOneWidget);
     });
 
-    testWidgets('"Also found" is a tinted banner, not a plain heading',
-        (tester) async {
+    testWidgets('a measurement a problem names is not repeated', (tester) async {
+      await tester.pumpWidget(_buildOverviewTab(_allClearState().copyWith(
+          verdict: const Verdict(checksRun: 8, findings: [
+        VerdictFinding(
+            priority: VerdictPriority.warning,
+            headline: 'Your router is under high load (88% CPU)',
+            explanation: 'A restart usually clears this.'),
+        VerdictFinding(
+            priority: VerdictPriority.warning,
+            headline: "Your router's memory is nearly full (90%)",
+            explanation: 'A restart will clear it.'),
+      ], checks: [
+        VerdictCheck(VerdictArea.router, 'Router load',
+            VerdictCheckStatus.warning, 'Processor 88% · Memory 90%'),
+      ]))));
+      await tester.pump();
+
+      expect(find.textContaining('Processor 88%'), findsNothing);
+      expect(find.text("Your router's memory is nearly full (90%)"),
+          findsOneWidget);
+    });
+
+    testWidgets('there is no separate "Also found" list', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_multipleFindingsState()));
       await tester.pump();
 
-      final banner = tester.widget<AppCard>(find
-          .ancestor(
-              of: find.text('Also found (3)'), matching: find.byType(AppCard))
-          .first);
-      expect(banner.color, isNotNull);
-      expect(banner.onTap, isNotNull);
-      expect(find.text('More things worth a look. Show them'), findsOneWidget);
+      expect(find.textContaining('Also found'), findsNothing);
     });
 
-    testWidgets('lists every check and its result',
-        (tester) async {
+    testWidgets('lists one row per area', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
       await tester.pump();
 
-      expect(find.text('Router reached'), findsOneWidget);
-      expect(find.text('Internet connected'), findsOneWidget);
-      expect(find.text('Websites loading'), findsOneWidget);
-      expect(find.text('Speed check'), findsOneWidget);
-      expect(find.text('Devices checked'), findsOneWidget);
+      for (final area in ['Router', 'Internet', 'Speed', 'Devices']) {
+        expect(find.text(area), findsOneWidget, reason: area);
+      }
     });
 
     testWidgets('a check that did not pass says what it means; a pass does not',
@@ -814,8 +802,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Not confirmed'), findsOneWidget);
-      expect(find.text('Not tested'), findsOneWidget);
-      expect(find.text('Internet reachable'), findsNothing);
+      expect(find.text('Connected · websites loading'), findsNothing);
     });
 
     testWidgets('successful DNS shows evidence of internet reachability',
@@ -832,8 +819,8 @@ void main() {
       await tester.pumpWidget(_buildOverviewTab(state));
       await tester.pump();
 
-      expect(find.text('Internet reachable'), findsOneWidget);
-      expect(find.text('Not tested'), findsNothing);
+      expect(find.text('Connected · websites loading'), findsOneWidget);
+      expect(find.text('Not confirmed'), findsNothing);
     });
 
     testWidgets(
@@ -851,9 +838,8 @@ void main() {
       await tester.pumpWidget(_buildOverviewTab(state));
       await tester.pump();
 
-      expect(find.text('Internet not responding'), findsOneWidget);
       expect(find.text('No internet service'), findsOneWidget);
-      expect(find.text('Internet reachable'), findsNothing);
+      expect(find.text('Connected · websites loading'), findsNothing);
     });
 
     testWidgets('WAN disconnected shows no internet service in details',
@@ -876,7 +862,6 @@ void main() {
       expect(find.textContaining('Start here'), findsNothing);
       // The 90-days finding also restarts the router; the card offers that
       // action once, as the fix.
-      await _openAlsoFound(tester);
       expect(find.text('Your router has been running for 90 days'),
           findsOneWidget);
       expect(find.text('Restart Router'), findsOneWidget);
@@ -933,47 +918,36 @@ void main() {
       }
     });
 
-    testWidgets('everything else found is a borderless AppListCard row',
-        (tester) async {
+    testWidgets('each area is a borderless AppListCard row', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_multipleFindingsState()));
       await tester.pump();
-      await _openAlsoFound(tester);
 
-      for (final headline in [
-        'High lag detected (120ms)',
-        'A software update is available (2.0.0)',
-        'Your router has been running for 90 days',
-      ]) {
+      for (final area in ['Router', 'Internet', 'Speed', 'Devices']) {
         final row = find.ancestor(
-            of: find.text(headline), matching: find.byType(AppListCard));
-        expect(row, findsOneWidget, reason: headline);
+            of: find.text(area), matching: find.byType(AppListCard));
+        expect(row, findsOneWidget, reason: area);
         final card = tester.widget<AppListCard>(row);
-        expect(card.showBorder, isFalse, reason: headline);
-        expect(card.leading, isA<Icon>(), reason: headline);
+        expect(card.showBorder, isFalse, reason: area);
+        expect(card.leading, isA<Icon>(), reason: area);
       }
-      // The row's fix is its trailing action.
-      final update = tester.widget<AppListCard>(find.ancestor(
-          of: find.text('A software update is available (2.0.0)'),
-          matching: find.byType(AppListCard)));
-      expect(update.trailing, isNotNull);
-      expect(
-          find.descendant(
-              of: find.byWidget(update), matching: find.text('Update Now')),
-          findsOneWidget);
+      // A one-step fix stays beside its problem.
+      final update = tester.getCenter(find.text('Update Now'));
+      final text =
+          tester.getCenter(find.text('A software update is available (2.0.0)'));
+      expect((update.dy - text.dy).abs(), lessThan(12));
+      expect(update.dx, greaterThan(text.dx));
     });
 
-    testWidgets('a weak device row shows its detail as the description',
+    testWidgets('a weak device shows its signal under its name',
         (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_deviceIssuesState()));
       await tester.pump();
-      await _openAlsoFound(tester);
-      final row = tester.widget<AppListCard>(find.ancestor(
+      final row = find.ancestor(
           of: find.text('iPhone has a weak WiFi signal'),
-          matching: find.byType(AppListCard)));
-      expect(row.showBorder, isFalse);
+          matching: find.byType(AppListCard));
+      expect(tester.widget<AppListCard>(row).showBorder, isFalse);
       expect(
-          find.descendant(
-              of: find.byWidget(row), matching: find.text('-82 dBm on 2.4GHz')),
+          find.descendant(of: row, matching: find.text('-82 dBm on 2.4GHz')),
           findsOneWidget);
     });
 

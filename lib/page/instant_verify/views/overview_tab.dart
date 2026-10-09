@@ -512,7 +512,6 @@ class _StatusCard extends StatelessWidget {
     if (state.errorMessage != null ||
         (state.phase == PivotLoadPhase.complete && state.verdict == null)) {
       // Device and node data can still be current when the run fails.
-      final more = _moreRows(context, devicesUnderPrimary: false);
       return _card(context, child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -525,7 +524,7 @@ class _StatusCard extends StatelessWidget {
             ],
           )),
           if (runAgain != null) ...[const AppGap.small2(), runAgain!],
-          ..._alsoFound(more),
+          _results(primary: null, devicesUnderPrimary: false),
         ],
       ));
     }
@@ -549,13 +548,12 @@ class _StatusCard extends StatelessWidget {
 
     // Note: a failed/incomplete speed test now surfaces as a real VerdictEngine
     // warning finding ("We couldn't finish the speed test"), so it shows at the
-    // top alongside any other findings and the Speed-check row flags amber.
+    // top alongside any other findings and the Speed row flags amber.
     // No special-case card needed here.
 
     // All clear state — "We didn't detect any issues" + flow cards (PRD v0.7 D-16)
     if (verdict!.isAllClear) {
       final good = InstantTestTone.good.color(context);
-      final more = _moreRows(context, devicesUnderPrimary: false);
       return _card(
         context,
         child: Column(
@@ -570,10 +568,7 @@ class _StatusCard extends StatelessWidget {
               ),
               if (runAgain != null) runAgain!,
             ]),
-            _CheckResults(state: state),
-            // No verdict finding, but a weak device or WiFi node is still
-            // worth a look.
-            ..._alsoFound(more),
+            _results(primary: null, devicesUnderPrimary: false),
             if (showProblemCards) ...[
               const AppGap.medium(),
               _problemCards(context,
@@ -591,8 +586,6 @@ class _StatusCard extends StatelessWidget {
     final devicesUnderPrimary = onTroubleshootDevice != null &&
         primary.checkNumber == 7 &&
         state.issueDevices.isNotEmpty;
-    final more =
-        _moreRows(context, devicesUnderPrimary: devicesUnderPrimary);
 
     return _card(
       context,
@@ -649,8 +642,7 @@ class _StatusCard extends StatelessWidget {
           ],
 
           // The fix for the headline finding.
-          if (primary.hasAutoFix &&
-              !(hasRestarted && primary.postRestartEscalation != null)) ...[
+          if (_fixShown(primary)) ...[
             const AppGap.small3(),
             Padding(
               padding: const EdgeInsets.only(left: Spacing.large3),
@@ -660,8 +652,7 @@ class _StatusCard extends StatelessWidget {
             ),
           ],
 
-          _CheckResults(state: state),
-          ..._alsoFound(more),
+          _results(primary: primary, devicesUnderPrimary: devicesUnderPrimary),
 
           // U-01: keep the Fix-flow entry cards reachable even when a finding is
           // shown — the customer's problem may differ from what we detected.
@@ -676,81 +667,29 @@ class _StatusCard extends StatelessWidget {
     );
   }
 
-  /// Everything else this run found, folded under the check list; each row
-  /// leads into the workflow that fixes it.
-  static List<Widget> _alsoFound(List<Widget> more) => more.isEmpty
-      ? const []
-      : [_ResultSection(title: 'Also found', rows: more, collapsible: true)];
+  bool _fixShown(VerdictFinding primary) =>
+      primary.hasAutoFix &&
+      !(hasRestarted && primary.postRestartEscalation != null);
+
+  Widget _results(
+          {required VerdictFinding? primary,
+          required bool devicesUnderPrimary}) =>
+      _CheckResults(
+        state: state,
+        primary: primary,
+        fixShown:
+            primary != null && _fixShown(primary) ? primary.actionKey : null,
+        listDevices: !devicesUnderPrimary,
+        onAction: onAction,
+        onOpenHelp: onOpenHelp,
+        onTroubleshootDevice: onTroubleshootDevice,
+        onTroubleshootWeakDevices: onTroubleshootWeakDevices,
+      );
 
   /// Names are enough unless two devices share one; then the MAC tells
   /// them apart.
-  String _deviceName(DiagnosticClient device) {
-    final sameName = state.issueDevices
-        .where((score) => score.client.displayName == device.displayName)
-        .length;
-    return sameName > 1
-        ? '${device.displayName} (${device.macAddress})'
-        : device.displayName;
-  }
-
-  String _helpLabel(DiagnosticClient device) => 'Help ${_deviceName(device)}';
-
-  /// Everything found besides the top result, one row and one action each:
-  /// the engine's other findings, and devices with weak WiFi in place of
-  /// its weak-WiFi summary. Each traces to a row under "What we checked"
-  /// (WiFi nodes, for instance, to the node checks), so nothing here is
-  /// judged by a rule the check list doesn't show.
-  List<Widget> _moreRows(BuildContext context,
-      {required bool devicesUnderPrimary}) {
-    final listDevices = !devicesUnderPrimary && state.issueDevices.isNotEmpty;
-    final verdict = state.verdict;
-    final findings = (verdict == null || verdict.isAllClear
-            ? const <VerdictFinding>[]
-            : verdict.findings.skip(1))
-        .where((f) => !(listDevices && f.aboutIssueDevices));
-    // The headline's fix button already offers this action; one button
-    // per action on the card.
-    final primary = verdict?.primaryFinding;
-    final fixShown = primary != null &&
-            primary.hasAutoFix &&
-            !(hasRestarted && primary.postRestartEscalation != null)
-        ? primary.actionKey
-        : null;
-    return [
-      for (final finding in findings)
-        _FindingRow(
-            finding: finding,
-            onOpenHelp: onOpenHelp,
-            onAction: finding.actionKey == fixShown ? null : onAction),
-      if (listDevices)
-        for (final score in state.issueDevices.take(5))
-          _MoreRow(
-            tone: InstantTestTone.warning,
-            title: _deviceTitle(score.client, _deviceName(score.client)),
-            detail: [
-              if (score.client.signalDecibels != null)
-                '${score.client.signalDecibels} dBm',
-              if (score.client.band.isNotEmpty) 'on ${score.client.band}',
-            ].join(' '),
-            onTap: onTroubleshootDevice == null
-                ? null
-                : () => onTroubleshootDevice!(score.client),
-          ),
-      if (listDevices && state.issueDevices.length > 5)
-        _MoreRow(
-          tone: InstantTestTone.warning,
-          title: '${state.issueDevices.length - 5} more devices need help',
-          onTap: onTroubleshootWeakDevices,
-        ),
-    ];
-  }
-
-  static String _deviceTitle(DiagnosticClient client, String name) {
-    final weak = client.signalDecibels != null && client.signalDecibels! < -75;
-    return weak
-        ? '$name has a weak WiFi signal'
-        : '$name has a slow WiFi connection';
-  }
+  String _helpLabel(DiagnosticClient device) =>
+      'Help ${_deviceName(state, device)}';
 
   // Shared "what's wrong?" entry cards (U-01). Reachable from BOTH the all-clear
   // state AND any findings/warning state — previously they only rendered when
@@ -826,428 +765,422 @@ class _StatusCard extends StatelessWidget {
   }
 }
 
-// ── Finding row (secondary findings) ─────────────────────────────────────────
-
-class _FindingRow extends StatelessWidget {
-  final VerdictFinding finding;
-  /// Null when the card's fix button already offers this finding's action.
-  final Future<void> Function(String actionKey)? onAction;
-  final ValueChanged<int>? onOpenHelp;
-
-  const _FindingRow(
-      {required this.finding, required this.onAction, this.onOpenHelp});
-
-  /// A finding with a help flow opens it; one without (an update, a
-  /// restart) keeps its own action.
-  @override
-  Widget build(BuildContext context) {
-    final flow = finding.helpFlow;
-    final opensFlow = flow != null && onOpenHelp != null;
-    return _MoreRow(
-      tone: _StatusCard._priorityTone(finding.priority),
-      title: finding.headline,
-      onTap: opensFlow ? () => onOpenHelp!(flow) : null,
-      action: !opensFlow && finding.hasAutoFix && onAction != null
-          ? AppTextButton.noPadding(finding.actionLabel!,
-              onTap: () => onAction!(finding.actionKey!))
-          : null,
-    );
-  }
+/// Names are enough unless two devices share one; then the MAC tells
+/// them apart.
+String _deviceName(InstantVerifyPivotState state, DiagnosticClient device) {
+  final sameName = state.issueDevices
+      .where((score) => score.client.displayName == device.displayName)
+      .length;
+  return sameName > 1
+      ? '${device.displayName} (${device.macAddress})'
+      : device.displayName;
 }
 
-// ── One row in "more things we found" ─────────────────────────────────────────
+// ── What we checked ──────────────────────────────────────────────────────────
 
-class _MoreRow extends StatelessWidget {
-  final InstantTestTone tone;
-  final String title;
+enum _CheckDisplayState { pass, fail, warning, skipped, notice }
+
+/// One problem under an area: opens its help flow, or carries its own
+/// action when its fix is a single step (an update, a restart).
+class _Issue {
+  final String text;
   final String? detail;
-  final Widget? action;
-  /// Opens the workflow for this row; the whole row is the button.
   final VoidCallback? onTap;
-  const _MoreRow(
-      {required this.tone,
-      required this.title,
-      this.detail,
-      this.action,
-      this.onTap});
-
-  /// An Instant-Admin row inside the result card: no border of its own,
-  /// colored status icon, title and detail, and the row's action trailing.
-  @override
-  Widget build(BuildContext context) {
-    final row = AppListCard(
-      showBorder: false,
-      padding: EdgeInsets.zero,
-      leading: Icon(tone.icon, color: tone.color(context)),
-      title: AppText.labelLarge(title),
-      description: detail != null && detail!.isNotEmpty
-          ? AppText.bodySmall(detail!,
-              color: Theme.of(context).colorScheme.onSurfaceVariant)
-          : null,
-      trailing: onTap != null ? const Icon(LinksysIcons.chevronRight) : action,
-      onTap: onTap,
-    );
-    // Announced as one button, as the problem choices are.
-    return onTap == null
-        ? row
-        : MergeSemantics(child: Semantics(button: true, child: row));
-  }
+  final Widget? action;
+  const _Issue(this.text, {this.detail, this.onTap, this.action});
 }
 
-// ── Result sections (always shown under the headline) ────────────────────────
+/// One part of the network: what we measured, and any problems in it.
+class _Area {
+  final String label;
+  final _CheckDisplayState state;
+  final String result;
 
-/// A titled list inside the result card, aligned with the headline text:
-/// a divider, the section title and its rows. Nothing is folded away.
-class _ResultSection extends StatefulWidget {
-  final String title;
-  final String? subtitle;
-  final List<Widget> rows;
-  /// Starts folded, showing the title and how many rows it holds.
-  final bool collapsible;
-  const _ResultSection(
-      {required this.title,
-      this.subtitle,
-      required this.rows,
-      this.collapsible = false});
-
-  @override
-  State<_ResultSection> createState() => _ResultSectionState();
+  /// Shown only when the area could not be checked.
+  final String? explanation;
+  final List<_Issue> issues;
+  const _Area(this.label, this.state, this.result,
+      {this.explanation, this.issues = const []});
 }
 
-class _ResultSectionState extends State<_ResultSection> {
-  bool _open = false;
+/// Every check, grouped by the part of the network it looks at: router,
+/// internet, speed, devices (wired and WiFi) and, when the network has
+/// them, WiFi nodes. A problem is listed once, under its area, and leads
+/// to its fix; the headline problem is the card's title instead.
+class _CheckResults extends StatelessWidget {
+  final InstantVerifyPivotState state;
+  final VerdictFinding? primary;
+
+  /// The action the card's fix button already offers.
+  final String? fixShown;
+
+  /// False when the weak devices are already listed under the headline.
+  final bool listDevices;
+  final Future<void> Function(String actionKey) onAction;
+  final ValueChanged<int>? onOpenHelp;
+  final ValueChanged<DiagnosticClient>? onTroubleshootDevice;
+  final VoidCallback? onTroubleshootWeakDevices;
+
+  const _CheckResults({
+    required this.state,
+    required this.primary,
+    required this.fixShown,
+    required this.listDevices,
+    required this.onAction,
+    this.onOpenHelp,
+    this.onTroubleshootDevice,
+    this.onTroubleshootWeakDevices,
+  });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final open = !widget.collapsible || _open;
+    final areas = _areas(state, primary: primary, issueFor: _issue,
+        deviceIssues: listDevices ? _deviceIssues() : const []);
     return Padding(
       padding: const EdgeInsets.only(left: Spacing.large3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Divider(height: Spacing.large2),
-          if (widget.collapsible)
-            _FoldedHeader(
-              title: '${widget.title} (${widget.rows.length})',
-              open: _open,
-              onTap: () => setState(() => _open = !_open),
-            )
-          else
-            Semantics(header: true, child: AppText.titleSmall(widget.title)),
-          if (widget.subtitle != null)
-            AppText.bodySmall(widget.subtitle!, color: scheme.onSurfaceVariant),
-          if (open) ...[
-            const AppGap.small2(),
-            for (var i = 0; i < widget.rows.length; i++) ...[
-              if (i > 0) const Divider(height: Spacing.medium),
-              widget.rows[i],
-            ],
+          Semantics(
+              header: true, child: const AppText.titleSmall('What we checked')),
+          AppText.bodySmall(_areasLabel(areas), color: scheme.onSurfaceVariant),
+          const AppGap.small2(),
+          for (var i = 0; i < areas.length; i++) ...[
+            if (i > 0) const Divider(height: Spacing.medium),
+            _AreaRow(area: areas[i]),
           ],
+        ],
+      ),
+    );
+  }
+
+  _Issue _issue(VerdictFinding finding) {
+    final flow = finding.helpFlow;
+    if (flow != null && onOpenHelp != null) {
+      return _Issue(finding.headline, onTap: () => onOpenHelp!(flow));
+    }
+    return _Issue(finding.headline,
+        action: finding.hasAutoFix && finding.actionKey != fixShown
+            ? AppTextButton.noPadding(finding.actionLabel!,
+                onTap: () => onAction(finding.actionKey!))
+            : null);
+  }
+
+  List<_Issue> _deviceIssues() => [
+        for (final score in state.issueDevices.take(5))
+          _Issue(
+            _deviceTitle(score.client, _deviceName(state, score.client)),
+            detail: [
+              if (score.client.signalDecibels != null)
+                '${score.client.signalDecibels} dBm',
+              if (score.client.band.isNotEmpty) 'on ${score.client.band}',
+            ].join(' '),
+            onTap: onTroubleshootDevice == null
+                ? null
+                : () => onTroubleshootDevice!(score.client),
+          ),
+        if (state.issueDevices.length > 5)
+          _Issue('${state.issueDevices.length - 5} more devices need help',
+              onTap: onTroubleshootWeakDevices),
+      ];
+
+  static String _deviceTitle(DiagnosticClient client, String name) {
+    final weak = client.signalDecibels != null && client.signalDecibels! < -75;
+    return weak
+        ? '$name has a weak WiFi signal'
+        : '$name has a slow WiFi connection';
+  }
+}
+
+/// "3 of 5 look good", naming what could not be checked, so the count
+/// always matches the rows shown (QA: "which 13 items?").
+String _areasLabel(List<_Area> areas) {
+  final good = areas
+      .where((a) =>
+          a.state == _CheckDisplayState.pass ||
+          a.state == _CheckDisplayState.notice)
+      .length;
+  final notRun = [
+    for (final a in areas)
+      if (a.state == _CheckDisplayState.skipped) a.label,
+  ];
+  return '$good of ${areas.length} look good'
+      '${notRun.isEmpty ? '' : ' · Not checked: ${notRun.join(', ')}'}';
+}
+
+_CheckDisplayState _stateFor(VerdictPriority priority) => switch (priority) {
+      VerdictPriority.critical => _CheckDisplayState.fail,
+      VerdictPriority.warning => _CheckDisplayState.warning,
+      VerdictPriority.info => _CheckDisplayState.notice,
+      VerdictPriority.allClear => _CheckDisplayState.pass,
+    };
+
+/// The worse of two states, failure first.
+_CheckDisplayState _worse(_CheckDisplayState a, _CheckDisplayState b) {
+  const order = [
+    _CheckDisplayState.fail,
+    _CheckDisplayState.warning,
+    _CheckDisplayState.skipped,
+    _CheckDisplayState.notice,
+    _CheckDisplayState.pass,
+  ];
+  return order.indexOf(a) <= order.indexOf(b) ? a : b;
+}
+
+List<_Area> _areas(
+  InstantVerifyPivotState state, {
+  required VerdictFinding? primary,
+  required _Issue Function(VerdictFinding) issueFor,
+  required List<_Issue> deviceIssues,
+}) {
+  final verdict = state.verdict;
+  final findings = verdict?.findings ?? const <VerdictFinding>[];
+  final checks = verdict?.checks ?? const <VerdictCheck>[];
+  VerdictCheck? check(String label) =>
+      checks.where((c) => c.label == label).firstOrNull;
+
+  // Findings in an area: the worst sets its state; all but the headline are
+  // listed under it. Weak devices are listed by name instead of as a count.
+  _CheckDisplayState worst(VerdictArea area, _CheckDisplayState base) =>
+      findings
+          .where((f) => f.area == area)
+          .map((f) => _stateFor(f.priority))
+          .fold(base, _worse);
+  List<_Issue> issues(VerdictArea area) => [
+        for (final f in findings)
+          if (f.area == area &&
+              !identical(f, primary) &&
+              !(f.aboutIssueDevices && deviceIssues.isNotEmpty))
+            issueFor(f),
+      ];
+
+  // ── Router: reached, load, time since restart, software ──
+  final reached = state.deviceInfo != null;
+  final load = check('Router load');
+  final uptime = check('Time since restart');
+  final routerIssues = issues(VerdictArea.router);
+  final firmwareChecked =
+      state.firmwareUpdate != null && state.firmwareUpdate!.isNotEmpty;
+  final router = _Area(
+    'Router',
+    reached ? worst(VerdictArea.router, _CheckDisplayState.pass)
+        : _CheckDisplayState.skipped,
+    reached
+        ? [
+            if (state.routerModel != null) state.routerModel!,
+            // A measurement already named by a problem isn't repeated.
+            if (load != null && load.status == VerdictCheckStatus.pass)
+              load.result,
+            if (uptime != null && uptime.status == VerdictCheckStatus.pass)
+              'Up ${uptime.result.toLowerCase()}',
+            if (!firmwareChecked)
+              "Update check didn't run"
+            else if (!state.firmwareUpdateAvailable)
+              'Software up to date',
+          ].join(' · ')
+        : 'Not reached',
+    explanation: reached
+        ? null
+        : 'Router information was unavailable. Run the checks again.',
+    issues: routerIssues,
+  );
+
+  // ── Internet: connection and websites ──
+  final dns = state.dnsCheck;
+  final internetDown = dns == null
+      ? state.wanStatus != null && !state.wanConnected
+      : !(dns.resolved || (state.publicDnsCheck?.resolved ?? false));
+  final internet = _Area(
+    'Internet',
+    dns == null && !internetDown
+        ? _CheckDisplayState.skipped
+        : worst(
+            VerdictArea.internet,
+            internetDown || !dns!.resolved
+                ? _CheckDisplayState.fail
+                : _CheckDisplayState.pass),
+    internetDown
+        ? 'No internet service'
+        : dns == null
+            ? 'Not confirmed'
+            : dns.resolved
+                ? 'Connected · websites loading'
+                : "Connected, but websites aren't loading",
+    explanation: dns == null && !internetDown
+        ? "Internet access wasn't confirmed by this run. Choose Internet isn't working for help."
+        : null,
+    issues: issues(VerdictArea.internet),
+  );
+
+  // ── Speed ──
+  final speed = state.speedTest;
+  final speedArea = _Area(
+    'Speed',
+    state.speedTestFailed
+        ? _CheckDisplayState.warning
+        : speed == null
+            ? _CheckDisplayState.skipped
+            : worst(
+                VerdictArea.speed,
+                speed.latencyMs > 100
+                    ? _CheckDisplayState.warning
+                    : _CheckDisplayState.pass),
+    state.speedTestFailed
+        ? "Didn't complete"
+        : speed == null
+            ? 'Not completed'
+            : '↓ ${speed.downloadMbps.toStringAsFixed(0)} Mbps  '
+                '↑ ${speed.uploadMbps.toStringAsFixed(0)} Mbps  '
+                '${speed.latencyMs} ms delay',
+    explanation: speed == null
+        ? 'The speed test did not complete. Try running again.'
+        : null,
+    issues: issues(VerdictArea.speed),
+  );
+
+  // ── Devices: wired and WiFi, and what affects them joining ──
+  final clients = state.clients;
+  final wired = clients.where((c) => !c.isWireless).length;
+  final missingMeasurements = clients.any((c) =>
+      c.isWireless && (c.signalDecibels == null || c.txRateMbps == null));
+  final deviceArea = [...deviceIssues, ...issues(VerdictArea.devices)];
+  final devices = _Area(
+    'Devices',
+    clients.isEmpty
+        ? _CheckDisplayState.skipped
+        : worst(
+            VerdictArea.devices,
+            state.issueDevices.isNotEmpty
+                ? _CheckDisplayState.warning
+                : missingMeasurements
+                    ? _CheckDisplayState.skipped
+                    : _CheckDisplayState.pass),
+    clients.isEmpty
+        ? 'No devices found'
+        : [
+            '${clients.length - wired} on WiFi',
+            if (wired > 0) '$wired wired',
+            if (deviceArea.isEmpty)
+              missingMeasurements
+                  ? 'Some measurements unavailable'
+                  : 'No problems found',
+          ].join(' · '),
+    explanation: clients.isEmpty ? 'No connected devices were detected.' : null,
+    issues: deviceArea,
+  );
+
+  // ── WiFi nodes: only when the network has them ──
+  final children = state.meshNodes.where((n) => !n.isController).length;
+  final nodeIssues = issues(VerdictArea.nodes);
+
+  return [
+    router,
+    internet,
+    speedArea,
+    devices,
+    if (children > 0)
+      _Area(
+        'WiFi nodes',
+        worst(VerdictArea.nodes, _CheckDisplayState.pass),
+        [
+          '$children node${children == 1 ? '' : 's'}',
+          if (nodeIssues.isEmpty &&
+              !findings.any((f) => f.area == VerdictArea.nodes))
+            'connected well',
+        ].join(' · '),
+        issues: nodeIssues,
+      ),
+  ];
+}
+
+/// One area: status icon, name and result, then each problem in it.
+class _AreaRow extends StatelessWidget {
+  final _Area area;
+  const _AreaRow({required this.area});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final (iconData, iconColor) = switch (area.state) {
+      _CheckDisplayState.pass => (
+          InstantTestTone.good.icon,
+          InstantTestTone.good.color(context)
+        ),
+      _CheckDisplayState.fail => (
+          LinksysIcons.close,
+          InstantTestTone.problem.color(context)
+        ),
+      _CheckDisplayState.warning => (
+          InstantTestTone.warning.icon,
+          InstantTestTone.warning.color(context)
+        ),
+      _CheckDisplayState.skipped => (LinksysIcons.remove, scheme.onSurfaceVariant),
+      _CheckDisplayState.notice => (
+          InstantTestTone.info.icon,
+          InstantTestTone.info.color(context)
+        ),
+    };
+
+    return AppListCard(
+      showBorder: false,
+      padding: EdgeInsets.zero,
+      leading: Icon(iconData, color: iconColor),
+      title: AppText.labelLarge(area.label),
+      description: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // The icon carries the color; colored small text misses the
+          // contrast minimum.
+          if (area.result.isNotEmpty)
+            AppText.bodySmall(area.result, color: scheme.onSurfaceVariant),
+          if (area.explanation != null)
+            AppText.bodySmall(area.explanation!,
+                color: scheme.onSurfaceVariant),
+          for (final issue in area.issues) _IssueLine(issue: issue),
         ],
       ),
     );
   }
 }
 
-/// The header of a folded section: a tinted banner that says more is here,
-/// with the warning tone the rows inside it carry.
-class _FoldedHeader extends StatelessWidget {
-  final String title;
-  final bool open;
-  final VoidCallback onTap;
-  const _FoldedHeader(
-      {required this.title, required this.open, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    const tone = InstantTestTone.warning;
-    final on = tone.onContainer(context);
-    return MergeSemantics(
-      child: Semantics(
-        button: true,
-        child: AppCard(
-          showBorder: false,
-          color: tone.container(context),
-          padding: const EdgeInsets.symmetric(
-              horizontal: Spacing.medium, vertical: Spacing.small3),
-          onTap: onTap,
-          child: Row(children: [
-            Icon(tone.icon, color: on),
-            const AppGap.small2(),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppText.titleSmall(title, color: on),
-                  AppText.bodySmall(
-                      open
-                          ? 'Choose one for help fixing it'
-                          : 'More things worth a look. Show them',
-                      color: on),
-                ],
-              ),
-            ),
-            Icon(open ? LinksysIcons.arrowDropUp : LinksysIcons.arrowDropDown,
-                color: on),
-          ]),
-        ),
-      ),
-    );
-  }
-}
-
-/// Every check this run made and its result.
-class _CheckResults extends StatelessWidget {
-  final InstantVerifyPivotState state;
-  const _CheckResults({required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    return _ResultSection(
-      title: 'What we checked',
-      subtitle: _checksPassedLabel(state),
-      rows: [for (final row in _summaryRows(state)) _CheckResultRow(row: row)],
-    );
-  }
-}
-
-/// Count for the checks listed under "What we checked", so the
-/// number always matches the rows shown (QA: "which 13 items?").
-String _checksPassedLabel(InstantVerifyPivotState state) {
-  final rows = _summaryRows(state);
-  final passed = rows.where((r) =>
-      r.state == _CheckDisplayState.pass ||
-      r.state == _CheckDisplayState.available ||
-      r.state == _CheckDisplayState.notice).length;
-  final notRun = [
-    for (final r in rows)
-      if (r.state == _CheckDisplayState.skipped) r.shortLabel,
-  ];
-  return '$passed of ${rows.length} checks passed'
-      '${notRun.isEmpty ? '' : ' · Not run: ${notRun.join(', ')}'}';
-}
-
-List<_SummaryRow> _summaryRows(InstantVerifyPivotState state) {
-    // Firmware 3-state (PRD v0.7): pass / update available / not a failure
-    final missingDeviceMeasurements = state.clients.any((client) => client.isWireless && (client.signalDecibels == null || client.txRateMbps == null));
-    final bool fwUpToDate = !state.firmwareUpdateAvailable;
-    final String fwLabel = state.firmwareUpdateAvailable
-        ? 'Firmware update available'
-        : state.firmwareUpdate == null || state.firmwareUpdate!.isEmpty
-            ? 'Firmware not checked'
-            : 'No firmware update found';
-    // Use a special "available" state icon — not pass, not fail
-    final _CheckDisplayState fwState = state.firmwareUpdateAvailable
-        ? _CheckDisplayState.available
-        : state.firmwareUpdate == null || state.firmwareUpdate!.isEmpty
-            ? _CheckDisplayState.skipped
-            : _CheckDisplayState.pass;
-
-    // "Internet connected" must reflect real reachability, not just the JNAP
-    // WAN status — which can report Connected even with the WAN cable unplugged
-    // (Q-04). Prefer the actual internet reachability test (DNS lookup, or the
-    // public-DNS fallback that distinguishes ISP-DNS-down from internet-down).
-    // Fall back to the JNAP signal only before the reachability test has run.
-    final internetUntested = state.dnsCheck == null && (state.wanStatus == null || state.wanConnected);
-    final bool internetReachable = state.dnsCheck == null
-        ? state.wanConnected
-        : (state.dnsCheck!.resolved || (state.publicDnsCheck?.resolved ?? false));
-
-    // The router's real address is the one the browser reached it at.
-    final String routerAddress = Uri.base.host;
-
-    return <_SummaryRow>[
-      _SummaryRow(
-        label: 'Router reached',
-        state: state.deviceInfo == null ? _CheckDisplayState.skipped : _CheckDisplayState.pass,
-        detail: state.routerModel ?? '',
-        expandedDetail: state.deviceInfo == null
-            ? 'Router information was unavailable. Run the checks again.'
-            : 'We connected to your router${routerAddress.isNotEmpty ? ' at $routerAddress' : ''}. '
-            'This means your device can communicate with your router over WiFi or Ethernet.',
-      ),
-      _SummaryRow(
-        label: 'Internet connected',
-        state: internetUntested ? _CheckDisplayState.skipped : internetReachable ? _CheckDisplayState.pass : _CheckDisplayState.fail,
-        detail: internetUntested ? 'Not confirmed' : internetReachable ? 'Connected' : 'No internet service',
-        expandedDetail: internetUntested
-            ? 'Internet access was not confirmed by this run. Choose Internet isn\'t working for help.'
-            : internetReachable
-            ? 'The connection check reached the internet.'
-            : 'We could not confirm internet access. Choose Internet isn\'t working for guided checks.',
-      ),
-      _SummaryRow(
-        label: 'Websites loading',
-        state: state.dnsCheck == null
-            ? _CheckDisplayState.skipped
-            : state.dnsCheck!.resolved
-                ? _CheckDisplayState.pass
-                : _CheckDisplayState.fail,
-        detail: state.dnsCheck == null
-            ? 'Not tested'
-            : state.dnsCheck!.resolved
-                ? 'Internet reachable'
-                : 'Internet not responding',
-        expandedDetail: state.dnsCheck == null
-            ? 'Website access was not checked. Run the checks again or choose Internet isn\'t working for help.'
-            : state.dnsCheck?.resolved == true
-            ? 'We sent a request to look up a website address (like google.com). '
-              'Your router found it — websites should load normally.'
-            : 'We tried to look up a website address and your router couldn\'t find it. '
-              'This means websites may not load even though your router shows connected.',
-      ),
-      _SummaryRow(
-        label: 'Speed check',
-        // Flag high latency (>100ms) as a warning so the row visually matches
-        // the "High lag detected" finding — otherwise a green pass row makes
-        // the warning seem to come from nowhere.
-        // Failed (ran but didn't complete) → warning, not a neutral "skipped".
-        state: state.speedTestFailed
-            ? _CheckDisplayState.warning
-            : state.speedTest == null
-                ? _CheckDisplayState.skipped
-                : (state.speedTest!.latencyMs > 100
-                    ? _CheckDisplayState.warning
-                    : _CheckDisplayState.pass),
-        detail: state.speedTestFailed
-            ? "Didn't complete — try again"
-            : state.speedTest == null
-                ? 'Not completed'
-                : '↓ ${state.speedTest!.downloadMbps.toStringAsFixed(0)} Mbps  '
-                    '↑ ${state.speedTest!.uploadMbps.toStringAsFixed(0)} Mbps  '
-                    '${state.speedTest!.latencyMs} ms delay'
-                    '${state.speedTest!.latencyMs > 100 ? ' — high lag' : ''}',
-        expandedDetail: state.speedTest == null
-            ? 'The speed test did not complete. Try running again.'
-            : state.speedTest!.latencyMs > 100
-                ? 'A long delay can make video calls and games stutter.'
-                : '',
-      ),
-      _SummaryRow(
-        label: 'Devices checked',
-        shortLabel: 'Devices',
-        // Flag amber when any device has a weak signal — matches the
-        // "weak WiFi" finding so the row reflects the top-level warning.
-        state: state.clients.isEmpty
-            ? _CheckDisplayState.skipped
-            : (state.issueDevices.isNotEmpty
-                ? _CheckDisplayState.warning
-                : missingDeviceMeasurements ? _CheckDisplayState.skipped : _CheckDisplayState.pass),
-        detail: state.clients.isEmpty
-            ? 'No devices found'
-            : '${state.clients.length} device${state.clients.length == 1 ? '' : 's'} — '
-                '${state.issueDevices.isNotEmpty ? '${state.issueDevices.length} may need help' : missingDeviceMeasurements ? 'Some measurements unavailable' : 'No issues detected'}',
-        expandedDetail: state.clients.isEmpty
-            ? 'No connected devices were detected.'
-            : 'We reviewed the connection measurements available from your router. '
-              '${state.issueDevices.isEmpty ? 'No device issues were detected in those measurements. Some devices may not report signal or speed.' : '${state.issueDevices.length} device${state.issueDevices.length == 1 ? ' may' : 's may'} have a weak signal or a slow WiFi connection. Choose One device is slow to select a device and get help.'}',
-      ),
-      _SummaryRow(
-        label: fwLabel,
-        shortLabel: 'Firmware',
-        state: fwState,
-        detail: fwUpToDate ? '' : state.availableFirmwareVersion ?? '',
-        expandedDetail: state.firmwareUpdate == null || state.firmwareUpdate!.isEmpty
-            ? 'Your router did not provide an update result. Try running the checks again.'
-            : fwUpToDate
-            ? 'Your router did not report an available update. '
-              'Updates improve performance and security.'
-            : 'A newer version of your router\'s firmware is available. '
-              'Updates improve performance, fix bugs, and improve security.',
-      ),
-      // Every other check the engine ran, so each finding traces back to the
-      // check that found it.
-      for (final check in state.verdict?.checks ?? const <VerdictCheck>[])
-        _SummaryRow(
-          label: check.label,
-          state: switch (check.status) {
-            VerdictCheckStatus.pass => _CheckDisplayState.pass,
-            VerdictCheckStatus.warning => _CheckDisplayState.warning,
-            VerdictCheckStatus.notice => _CheckDisplayState.notice,
-          },
-          detail: check.result,
-          expandedDetail: '',
-        ),
-    ];
-}
-
-enum _CheckDisplayState { pass, fail, warning, skipped, available, notice }
-
-class _SummaryRow {
-  final String label;
-  final String? _shortLabel;
-  final _CheckDisplayState state;
-  final String detail;
-  /// What the result means; shown when the check did not pass.
-  final String expandedDetail;
-  /// Stable name for summaries, where [label] varies with the result.
-  String get shortLabel => _shortLabel ?? label;
-  const _SummaryRow({
-    required this.label,
-    String? shortLabel,
-    required this.state,
-    required this.detail,
-    required this.expandedDetail,
-  }) : _shortLabel = shortLabel;
-}
-
-/// One check and its result, styled as the "Also found" rows. A check that
-/// did not pass also says what it means.
-class _CheckResultRow extends StatelessWidget {
-  final _SummaryRow row;
-  const _CheckResultRow({required this.row});
+/// A problem under its area. A line that opens a help flow is one button
+/// with a chevron; one with its own fix shows that action.
+class _IssueLine extends StatelessWidget {
+  final _Issue issue;
+  const _IssueLine({required this.issue});
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-
-    IconData iconData;
-    Color iconColor;
-    switch (row.state) {
-      case _CheckDisplayState.pass:
-        iconData = InstantTestTone.good.icon;
-        iconColor = InstantTestTone.good.color(context);
-      case _CheckDisplayState.fail:
-        iconData = LinksysIcons.close;
-        iconColor = InstantTestTone.problem.color(context);
-      case _CheckDisplayState.warning:
-        iconData = InstantTestTone.warning.icon;
-        iconColor = InstantTestTone.warning.color(context);
-      case _CheckDisplayState.skipped:
-        iconData = LinksysIcons.remove;
-        iconColor = scheme.onSurfaceVariant;
-      case _CheckDisplayState.available:
-        iconData = LinksysIcons.cloudDownload;
-        iconColor = InstantTestTone.info.color(context);
-      case _CheckDisplayState.notice:
-        iconData = InstantTestTone.info.icon;
-        iconColor = InstantTestTone.info.color(context);
-    }
-
-    final lines = [
-      if (row.detail.isNotEmpty) row.detail,
-      if (row.state != _CheckDisplayState.pass &&
-          row.expandedDetail.isNotEmpty)
-        row.expandedDetail,
-    ];
-
-    return AppListCard(
-      showBorder: false,
-      padding: EdgeInsets.zero,
-      leading: Icon(iconData, color: iconColor),
-      title: AppText.labelLarge(row.label),
-      description: lines.isEmpty
-          ? null
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // The icon carries the color; colored small text misses
-                // the contrast minimum.
-                for (final line in lines)
-                  AppText.bodySmall(line, color: scheme.onSurfaceVariant),
-              ],
-            ),
+    final line = Padding(
+      padding: const EdgeInsets.only(top: Spacing.small2),
+      child: Row(children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppText.bodyMedium(issue.text),
+              if (issue.detail != null && issue.detail!.isNotEmpty)
+                AppText.bodySmall(issue.detail!,
+                    color: scheme.onSurfaceVariant),
+            ],
+          ),
+        ),
+        if (issue.onTap != null)
+          Icon(LinksysIcons.chevronRight, color: scheme.primary)
+        else if (issue.action != null)
+          issue.action!,
+      ]),
+    );
+    if (issue.onTap == null) return line;
+    // Announced as one button, as the problem choices are.
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        child: InkWell(onTap: issue.onTap, child: line),
+      ),
     );
   }
 }
