@@ -140,6 +140,7 @@ try {
     assert.equal(await p.getByText('Checking your connection',{exact:true}).count(),0);
     assert.equal(await p.getByText("We didn't detect any issues",{exact:true}).count(),0);
     await button(p,'Run Again').waitFor();
+    assert.equal(await p.getByText('What we checked',{exact:true}).count(),0);
   });
   for (const mobile of [false, true]) {
     await check(`demo-controls-${mobile ? 'mobile' : 'desktop'}`, async p => {

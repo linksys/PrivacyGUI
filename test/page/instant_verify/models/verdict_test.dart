@@ -34,6 +34,7 @@ Verdict _compute({
   bool? hasZombieMeshNode,
   int? dhcpPoolUtilizationPct,
   bool? isDeviceInApMode,
+  List<String>? dnsServers,
 }) {
   return VerdictEngine.compute(
     gatewayReachable: gatewayReachable,
@@ -62,6 +63,7 @@ Verdict _compute({
     hasZombieMeshNode: hasZombieMeshNode,
     dhcpPoolUtilizationPct: dhcpPoolUtilizationPct,
     isDeviceInApMode: isDeviceInApMode,
+    dnsServers: dnsServers,
   );
 }
 
@@ -340,16 +342,24 @@ void main() {
       expect(finding.priority, VerdictPriority.critical);
       expect(finding.headline.toLowerCase(),
           anyOf(contains('website'), contains('internet')));
-      expect(finding.explanation, contains('WAN IP assigned'));
+      // The check list shows what passed; the explanation says what is wrong
+      // and what helps, in a few sentences.
+      expect(finding.explanation, contains('DNS'));
+      expect(finding.explanation, isNot(contains('Verified')));
+      expect(finding.explanation, isNot(contains('Possible causes')));
+      expect(finding.explanation, isNot(contains('\n')));
       expect(finding.postRestartEscalation, isNotNull);
       expect(finding.postRestartEscalation, contains('websites'));
     });
 
-    test('DNS failing with empty WAN IP → shows "WAN connected" text', () {
-      // wanIpAddress null or empty should use fallback text
-      final v = _compute(dnsWorking: false, wanIpAddress: null);
-      final finding = v.findings.firstWhere((f) => f.checkNumber == 4);
-      expect(finding.explanation, contains('WAN connected'));
+    test('DNS failing names custom DNS servers, not ISP-assigned ones', () {
+      final custom = _compute(
+          dnsWorking: false, dnsServers: ['192.168.1.1', '9.9.9.9']);
+      expect(custom.findings.firstWhere((f) => f.checkNumber == 4).explanation,
+          contains('custom DNS servers (9.9.9.9)'));
+      final isp = _compute(dnsWorking: false, dnsServers: ['172.30.1.105']);
+      expect(isp.findings.firstWhere((f) => f.checkNumber == 4).explanation,
+          isNot(contains('172.30.1.105')));
     });
 
     test('DNS null → skipped', () {
@@ -1015,6 +1025,25 @@ void main() {
           (f) => f.headline.toLowerCase().contains('stuck') ||
               f.headline.toLowerCase().contains('band'));
       expect(finding.priority, VerdictPriority.warning);
+    });
+
+    test('missteer with a crowded 2.4 GHz band is one finding', () {
+      final crowded = [
+        for (var i = 0; i < 5; i++)
+          _client(mac: 'AA:BB:CC:DD:EE:0$i', band: '2.4GHz', signal: -50,
+              txRate: 100, rxRate: 100),
+      ];
+      final v = _compute(clients: crowded, isBandSteeringMissteer: true);
+      final band = v.findings
+          .where((f) => f.headline.contains('2.4 GHz'))
+          .toList();
+      expect(band, hasLength(1));
+      expect(band.single.headline, '5 of 5 devices are on the slower 2.4 GHz band');
+      expect(band.single.priority, VerdictPriority.warning);
+      expect(band.single.explanation, contains('stuck on 2.4 GHz'));
+      // Both checks still ran.
+      expect(v.checks.map((c) => c.label),
+          containsAll(['WiFi bands', 'Band selection']));
     });
 
     test('no missteer → no finding', () {

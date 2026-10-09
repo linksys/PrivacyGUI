@@ -207,7 +207,7 @@ export async function walkthroughs({check,button,visible,clickInScrollView,url})
     await check(`overview-${title.split(' ')[0].toLowerCase()}`,async p=>{
       await click(p,'Test scenarios');await tap(p,title);
       // Every check and its result is shown in full on the result card.
-      await visible(p,'What we checked');await p.getByText(/Router reached/).first().waitFor();
+      await visible(p,'What we checked');await p.getByText(/^MX6200/).first().waitFor();
       assert.equal(await p.getByRole('button',{name:'View test details'}).count(),0);
       // Network details is a child route; a hash-only change keeps the session.
       // StyledAppPageView labels its title "page title <Title>".

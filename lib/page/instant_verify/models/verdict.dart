@@ -266,48 +266,22 @@ class VerdictEngine {
     if (dnsWorking != null && wanConnected != false) {
       checksRun++;
       if (!dnsWorking) {
-        final ipText = (wanIpAddress != null && wanIpAddress.isNotEmpty)
-            ? 'WAN IP assigned ($wanIpAddress)'
-            : 'WAN connected';
-
-        // ── DNS server info ──────────────────────────────────────────────
-        final dnsBlock = StringBuffer();
-        if (dnsServers != null && dnsServers.isNotEmpty) {
-          dnsBlock.write('\n\nDNS servers your router is using:');
-          for (final s in dnsServers) {
-            dnsBlock.write('\n  \u2022 $s  (${_labelDnsServer(s)})');
-          }
-          // Categorise: all ISP-assigned vs custom
-          final allIsp = dnsServers.every(_isIspOrPrivateDns);
-          final hasCustom = dnsServers.any((s) => !_isIspOrPrivateDns(s));
-          if (allIsp) {
-            dnsBlock.write(
-                '\n\nThese are assigned by your ISP. If their DNS servers are down, '
-                'websites won\'t load even though your router is connected.');
-          } else if (hasCustom) {
-            dnsBlock.write(
-                '\n\nYou\'re using custom DNS servers. If they\'re unreachable '
-                'from your location, try switching back to automatic (ISP) DNS.');
-          }
-        }
-
-        // ── WAN type note ────────────────────────────────────────────────
-        String wanTypeNote = '';
-        if (wanType == 'PPPoE' || wanType == 'PPTP' || wanType == 'L2TP') {
-          wanTypeNote = '\n\nYour connection type is $wanType — '
-              'if the session dropped, a restart re-establishes it.';
-        }
-
-        // ── Parental controls / pause note ───────────────────────────────
+        // The checks list already shows the router and internet results;
+        // the explanation says only what is wrong and what helps.
+        final custom = dnsServers
+                ?.where((s) => !_isIspOrPrivateDns(s))
+                .toList() ??
+            const <String>[];
+        final dnsNote = custom.isEmpty
+            ? ''
+            : ' You\'re using custom DNS servers (${custom.join(', ')}). If '
+                'they can\'t be reached, switch back to automatic DNS.';
+        final wanTypeNote =
+            (wanType == 'PPPoE' || wanType == 'PPTP' || wanType == 'L2TP')
+                ? ' If your $wanType session dropped, a restart reconnects it.'
+                : '';
         final pcNote = isInstantPauseActive == true
-            ? '\n\nParental controls are active — internet access may be '
-              'paused for some devices.'
-            : '';
-
-        // ── IPv6 note ────────────────────────────────────────────────────
-        final ipv6Note = (wanIpv6Connected == false)
-            ? '\n\nIPv6 is not connected — this is normal for most home '
-              'connections and is not the cause of this issue.'
+            ? ' Internet access is also paused for some devices.'
             : '';
 
         // ── Three-way root-cause differentiation ─────────────────────────
@@ -325,9 +299,8 @@ class VerdictEngine {
           if (configuredDnsReachable == true) {
             // DNS servers are reachable by IP but DNS service isn't working
             rootCauseContext =
-                '\n\nDiagnosis: DNS servers are online but not responding to '
-                'queries — likely a DNS service issue on your ISP\'s side. '
-                'Restarting your router clears the DNS cache.';
+                'Your provider\'s DNS servers are online but not answering. '
+                'Restarting your router clears its DNS cache.';
             postRestartMsg =
                 'Since restarting didn\'t fix it, your ISP\'s DNS service is '
                 'likely having an issue. Contact your provider and say: '
@@ -336,10 +309,8 @@ class VerdictEngine {
           } else if (configuredDnsReachable == false) {
             // Can't even ping the ISP DNS IPs — routing is broken
             rootCauseContext =
-                '\n\nDiagnosis: Cannot reach your ISP\'s DNS servers — there '
-                'may be a routing issue between your router and your provider. '
-                'Try restarting both your modem and router (modem first, '
-                'wait 30 seconds, then the router).';
+                'Your router can\'t reach your provider\'s DNS servers. '
+                'Restart your modem, wait 30 seconds, then restart the router.';
             postRestartMsg =
                 'Since restarting didn\'t fix it, there\'s likely a routing '
                 'issue between your modem and ISP. Contact your provider and '
@@ -348,8 +319,8 @@ class VerdictEngine {
           } else {
             // Public DNS works, configured DNS status unknown
             rootCauseContext =
-                '\n\nYour internet connection is working — only the DNS lookup '
-                'service is failing. Restarting your router clears the DNS cache.';
+                'Your internet connection works; only website lookups (DNS) '
+                'are failing. Restarting your router clears its DNS cache.';
             postRestartMsg =
                 'Since restarting didn\'t fix it, your ISP\'s DNS servers may '
                 'be having an outage. Contact your provider and say: '
@@ -358,13 +329,13 @@ class VerdictEngine {
           }
         } else if (publicDnsWorking == false) {
           rootCauseContext =
-              '\n\nDiagnosis: Internet appears to be unreachable — not just '
-              'DNS. This may be a wider outage from your provider. '
-              'Check that all cables are firmly connected, then restart '
-              'your modem and router.';
+              'The internet itself looks unreachable, which may be an outage '
+              'at your provider. Check the cables, then restart your modem '
+              'and router.';
           postRestartMsg = _ispEscalation('websites won\'t load');
         } else {
-          rootCauseContext = '';
+          rootCauseContext = 'Your router is connected, but website lookups '
+              '(DNS) are failing. A restart usually fixes this.';
           postRestartMsg = _ispEscalation('websites won\'t load');
         }
 
@@ -373,18 +344,7 @@ class VerdictEngine {
           helpFlow: 1,
           area: VerdictArea.internet,
           headline: 'Websites aren\'t loading',
-          explanation:
-              'Verified: Router reachable \u2713  $ipText \u2713  '
-              'Website access: not working \u2717'
-              '$dnsBlock'
-              '$rootCauseContext'
-              '\n\nPossible causes:'
-              '\n  \u2022 ISP DNS servers temporarily down'
-              '\n  \u2022 ISP network issue between router and DNS'
-              '\n  \u2022 DNS cache on router needs clearing (restart fixes this)'
-              '$wanTypeNote'
-              '$pcNote'
-              '$ipv6Note',
+          explanation: '$rootCauseContext$dnsNote$wanTypeNote$pcNote',
           actionLabel: 'Restart Router',
           actionKey: actionRestartRouter,
           checkNumber: 4,
@@ -556,6 +516,8 @@ class VerdictEngine {
     }
 
     // ── Check 8: 2.4 GHz band overcrowding ───────────────────────────────
+    // Check 16 (band selection) folds into this finding when both fire.
+    VerdictFinding? crowding;
     if (clients.isNotEmpty) {
       final wirelessClients = clients.where((c) => c.isWireless).toList();
       if (wirelessClients.length >= 4) {
@@ -567,7 +529,7 @@ class VerdictEngine {
         checks.add(VerdictCheck(VerdictArea.devices, 'WiFi bands', crowded ? notice : pass,
             '$twoFourCount of ${wirelessClients.length} devices on 2.4 GHz'));
         if (crowded) {
-          findings.add(VerdictFinding(
+          findings.add(crowding = VerdictFinding(
             priority: VerdictPriority.info,
             helpFlow: 4,
             area: VerdictArea.devices,
@@ -734,7 +696,22 @@ class VerdictEngine {
       checksRun++;
       checks.add(VerdictCheck(VerdictArea.devices, 'Band selection', isBandSteeringMissteer ? warning : pass,
           isBandSteeringMissteer ? 'A device is stuck on 2.4 GHz' : 'Devices on the right band'));
-      if (isBandSteeringMissteer) {
+      if (isBandSteeringMissteer && crowding != null) {
+        // One problem, one line: the crowding count, with the stuck device
+        // as the reason it matters. It takes the band-selection finding's
+        // place, so it doesn't rank above earlier warnings.
+        findings.remove(crowding);
+        findings.add(VerdictFinding(
+          priority: VerdictPriority.warning,
+          helpFlow: crowding.helpFlow,
+          area: VerdictArea.devices,
+          headline: crowding.headline,
+          explanation: '${crowding.explanation} Some of these devices can '
+              'use 5 GHz but are stuck on 2.4 GHz; moving them closer to '
+              'your router, or forgetting and reconnecting, usually fixes '
+              'this.',
+        ));
+      } else if (isBandSteeringMissteer) {
         findings.add(const VerdictFinding(
           priority: VerdictPriority.warning,
           helpFlow: 31,
@@ -871,21 +848,6 @@ class VerdictEngine {
     if (a == 172 && b >= 16 && b <= 31) return true;
     if (a == 192 && b == 168) return true;
     return false;
-  }
-
-  /// Human-readable label for a DNS server address.
-  static String _labelDnsServer(String ip) {
-    switch (ip) {
-      case '8.8.8.8': return 'Google Public DNS';
-      case '8.8.4.4': return 'Google Public DNS';
-      case '1.1.1.1': return 'Cloudflare DNS';
-      case '1.0.0.1': return 'Cloudflare DNS';
-      case '208.67.222.222': return 'OpenDNS';
-      case '208.67.220.220': return 'OpenDNS';
-      case '9.9.9.9': return 'Quad9';
-      case '149.112.112.112': return 'Quad9';
-    }
-    return _isIspOrPrivateDns(ip) ? 'assigned by your ISP' : 'custom DNS';
   }
 
   /// Generates ISP escalation text (PRD v0.7 D-26, D-31, D-32).

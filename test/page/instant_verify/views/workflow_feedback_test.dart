@@ -74,6 +74,15 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.text('Run Again'), findsOneWidget);
     expect(find.text('No internet connection detected.'), findsNothing);
+    // Nothing was measured: no list of "not checked" rows, and Run Again
+    // sits beside the title as on every other result.
+    expect(find.text('What we checked'), findsNothing);
+    expect(
+        tester.getTopLeft(find.text('Run Again')).dy,
+        lessThan(tester
+            .getBottomLeft(
+                find.text("We couldn't finish checking your connection"))
+            .dy));
   });
 
   testWidgets('home removes the device and network shortcuts', (tester) async {

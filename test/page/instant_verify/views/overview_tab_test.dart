@@ -756,16 +756,45 @@ void main() {
       }
     });
 
-    testWidgets('a check that did not pass says what it means; a pass does not',
-        (tester) async {
+    testWidgets('each area says its result in one line', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
       await tester.pump();
 
       // Router reached passed: its result only.
       expect(find.textContaining('We connected to your router'), findsNothing);
-      // Devices did not run: the row explains.
-      expect(find.textContaining('No connected devices were detected.'),
+      // Devices did not run: one line, not a result plus a restatement.
+      expect(find.text('No devices found'), findsOneWidget);
+      expect(find.textContaining('No connected devices were detected'),
+          findsNothing);
+    });
+
+    testWidgets('speed reads in words; no arrows the fonts may lack',
+        (tester) async {
+      final state = _allClearState().copyWith(
+          speedTest: const SpeedTestResult(
+              downloadMbps: 120, uploadMbps: 45, latencyMs: 18, jitterMs: 2));
+      await tester.pumpWidget(_buildOverviewTab(state));
+      await tester.pump();
+
+      expect(find.text('120 Mbps down · 45 Mbps up · 18 ms delay'),
           findsOneWidget);
+    });
+
+    testWidgets('with no internet, speed says why it did not run',
+        (tester) async {
+      final state = InstantVerifyPivotState(
+        phase: PivotLoadPhase.complete,
+        browserTestStep: 'complete',
+        wanStatus: const {'wanStatus': 'Disconnected'},
+        deviceInfo: const {'modelNumber': 'MX6200'},
+        verdict: const Verdict(findings: [], checksRun: 2),
+        verdictIsPreliminary: false,
+      );
+      await tester.pumpWidget(_buildOverviewTab(state));
+      await tester.pump();
+
+      expect(find.text('Needs a working internet connection'), findsOneWidget);
+      expect(find.textContaining('Try running again'), findsNothing);
     });
   });
 

@@ -511,20 +511,33 @@ class _StatusCard extends StatelessWidget {
 
     if (state.errorMessage != null ||
         (state.phase == PivotLoadPhase.complete && state.verdict == null)) {
-      // Device and node data can still be current when the run fails.
+      // Device and node data can still be current when the run fails; with
+      // nothing measured, a list of "not checked" rows would only repeat
+      // the title.
+      final measured = state.deviceInfo != null ||
+          state.clients.isNotEmpty ||
+          state.dnsCheck != null ||
+          state.speedTest != null;
       return _card(context, child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Semantics(liveRegion: true, child: const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppText.titleMedium("We couldn't finish checking your connection"),
-              AppGap.small2(),
-              AppText.bodyMedium('Make sure this device is connected to your router, then choose Run Again. You can also choose a problem below for guided help.'),
-            ],
-          )),
-          if (runAgain != null) ...[const AppGap.small2(), runAgain!],
-          _results(primary: null, devicesUnderPrimary: false),
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            _priorityIcon(context, VerdictPriority.warning),
+            const AppGap.small2(),
+            Expanded(
+              child: Semantics(liveRegion: true, child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.titleMedium(
+                      "We couldn't finish checking your connection"),
+                  AppGap.small1(),
+                  AppText.bodyMedium('Make sure this device is connected to your router, then choose Run Again. You can also choose a problem below for guided help.'),
+                ],
+              )),
+            ),
+            if (runAgain != null) runAgain!,
+          ]),
+          if (measured) _results(primary: null, devicesUnderPrimary: false),
         ],
       ));
     }
@@ -795,12 +808,8 @@ class _Area {
   final String label;
   final _CheckDisplayState state;
   final String result;
-
-  /// Shown only when the area could not be checked.
-  final String? explanation;
   final List<_Issue> issues;
-  const _Area(this.label, this.state, this.result,
-      {this.explanation, this.issues = const []});
+  const _Area(this.label, this.state, this.result, {this.issues = const []});
 }
 
 /// Every check, grouped by the part of the network it looks at: router,
@@ -980,10 +989,7 @@ List<_Area> _areas(
             else if (!state.firmwareUpdateAvailable)
               'Software up to date',
           ].join(' · ')
-        : 'Not reached',
-    explanation: reached
-        ? null
-        : 'Router information was unavailable. Run the checks again.',
+        : "Couldn't reach the router",
     issues: routerIssues,
   );
 
@@ -1008,14 +1014,12 @@ List<_Area> _areas(
             : dns.resolved
                 ? 'Connected · websites loading'
                 : "Connected, but websites aren't loading",
-    explanation: dns == null && !internetDown
-        ? "Internet access wasn't confirmed by this run. Choose Internet isn't working for help."
-        : null,
     issues: issues(VerdictArea.internet),
   );
 
-  // ── Speed ──
+  // ── Speed: can't run without a working connection ──
   final speed = state.speedTest;
+  final noInternet = internetDown || (dns != null && !dns.resolved);
   final speedArea = _Area(
     'Speed',
     state.speedTestFailed
@@ -1030,13 +1034,12 @@ List<_Area> _areas(
     state.speedTestFailed
         ? "Didn't complete"
         : speed == null
-            ? 'Not completed'
-            : '↓ ${speed.downloadMbps.toStringAsFixed(0)} Mbps  '
-                '↑ ${speed.uploadMbps.toStringAsFixed(0)} Mbps  '
+            ? noInternet
+                ? 'Needs a working internet connection'
+                : "Didn't run"
+            : '${speed.downloadMbps.toStringAsFixed(0)} Mbps down · '
+                '${speed.uploadMbps.toStringAsFixed(0)} Mbps up · '
                 '${speed.latencyMs} ms delay',
-    explanation: speed == null
-        ? 'The speed test did not complete. Try running again.'
-        : null,
     issues: issues(VerdictArea.speed),
   );
 
@@ -1067,7 +1070,6 @@ List<_Area> _areas(
                   ? 'Some measurements unavailable'
                   : 'No problems found',
           ].join(' · '),
-    explanation: clients.isEmpty ? 'No connected devices were detected.' : null,
     issues: deviceArea,
   );
 
@@ -1135,9 +1137,6 @@ class _AreaRow extends StatelessWidget {
           // contrast minimum.
           if (area.result.isNotEmpty)
             AppText.bodySmall(area.result, color: scheme.onSurfaceVariant),
-          if (area.explanation != null)
-            AppText.bodySmall(area.explanation!,
-                color: scheme.onSurfaceVariant),
           for (final issue in area.issues) _IssueLine(issue: issue),
         ],
       ),
