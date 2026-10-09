@@ -637,7 +637,7 @@ class VerdictEngine {
     if (cpuLoadPct != null && cpuLoadPct > 80) {
       findings.add(VerdictFinding(
         priority: VerdictPriority.warning,
-        helpFlow: 2,
+        // Restarting is the fix; no help flow.
         area: VerdictArea.router,
         headline: 'Your router is under high load ($cpuLoadPct% CPU)',
         summary: 'Your router is very busy',
@@ -649,7 +649,7 @@ class VerdictEngine {
     if (memoryLoadPct != null && memoryLoadPct > 85) {
       findings.add(VerdictFinding(
         priority: VerdictPriority.warning,
-        helpFlow: 2,
+        // Restarting is the fix; no help flow.
         area: VerdictArea.router,
         headline: 'Your router\'s memory is nearly full ($memoryLoadPct%)',
         summary: 'Your router is running low on memory',

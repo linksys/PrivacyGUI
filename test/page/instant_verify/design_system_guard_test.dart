@@ -21,6 +21,9 @@ const _banned = <String, String>{
   r'BorderRadius\.circular\(|Radius\.circular\(':
       'use CustomTheme.of(context).radius',
   r'(?<![A-Za-z])Text\(': 'use AppText.<level>',
+  // The router's bundled fonts lack these; they render as blank boxes.
+  "['\"][^'\"]*[←-⇿✓✗]":
+      'say it in words (arrow and check glyphs are not in the bundled fonts)',
 };
 
 /// Every Instant-Test view is built from the kit's cards (AppCard,

@@ -742,7 +742,7 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: AppText.bodyMedium(
-                      'Go to Help Me Fix It → Device connectivity issues',
+                      'Choose Device won\'t connect for guided help',
                       color: colors.onInverseSurface),
                   duration: const Duration(seconds: 3),
                   behavior: SnackBarBehavior.floating,

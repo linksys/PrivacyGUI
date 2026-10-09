@@ -740,6 +740,73 @@ void main() {
           findsOneWidget);
     });
 
+    testWidgets('a busy router offers Restart once, not a help flow',
+        (tester) async {
+      // Built by the engine, so the findings carry its real actions.
+      final verdict = VerdictEngine.compute(
+        gatewayReachable: true,
+        wanConnected: true,
+        dnsWorking: true,
+        wanIpAddress: '98.137.11.163',
+        downloadMbps: 100,
+        latencyMs: 20,
+        firmwareUpdateAvailable: false,
+        firmwareVersion: null,
+        uptimeSeconds: 86400,
+        planSpeedMbps: null,
+        cpuLoadPct: 88,
+        memoryLoadPct: 90,
+        deviceScores: const [],
+        clients: const [],
+        meshNodes: const [],
+      );
+      for (final f in verdict.findings) {
+        expect(f.helpFlow, isNull, reason: f.headline);
+      }
+      int? opened;
+      await tester.pumpWidget(_buildOverviewTab(
+          _allClearState().copyWith(verdict: verdict),
+          onOpenHelp: (flow) => opened = flow));
+      await tester.pump();
+
+      // CPU is the headline with the Restart button; the memory line under
+      // Router doesn't repeat it and doesn't open a flow.
+      expect(find.text('Restart Router'), findsOneWidget);
+      final memory = find.text("Your router's memory is nearly full (90%)");
+      await tester.ensureVisible(memory);
+      await tester.tap(memory);
+      await tester.pump();
+      expect(opened, isNull);
+    });
+
+    testWidgets('a busy router under another headline gets its own Restart',
+        (tester) async {
+      final verdict = VerdictEngine.compute(
+        gatewayReachable: true,
+        wanConnected: true,
+        dnsWorking: true,
+        wanIpAddress: '98.137.11.163',
+        downloadMbps: 100,
+        latencyMs: 20,
+        firmwareUpdateAvailable: false,
+        firmwareVersion: null,
+        uptimeSeconds: 86400,
+        planSpeedMbps: null,
+        memoryLoadPct: 90,
+        isInstantPrivacyOn: true,
+        deviceScores: const [],
+        clients: const [],
+        meshNodes: const [],
+      );
+      expect(verdict.primaryFinding!.headline,
+          isNot(contains('memory')));
+      await tester.pumpWidget(_buildOverviewTab(
+          _allClearState().copyWith(verdict: verdict)));
+      await tester.pump();
+
+      expect(find.text('Restart Router'), findsOneWidget);
+    });
+
     testWidgets('there is no separate "Also found" list', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_multipleFindingsState()));
       await tester.pump();

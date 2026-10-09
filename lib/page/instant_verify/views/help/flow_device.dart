@@ -942,7 +942,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       ChannelOptimizeStatus.optimized => (
           'Your WiFi channels are tuned',
           'We moved your WiFi to clearer channels to reduce interference.'
-              '${result.changes.isNotEmpty ? '\n\n${result.changes.map((c) => '• ${c.band}: channel ${c.from} → ${c.to}').join('\n')}' : ''}'
+              '${result.changes.isNotEmpty ? '\n\n${result.changes.map((c) => '• ${c.band}: channel ${c.from} to ${c.to}').join('\n')}' : ''}'
         ),
       ChannelOptimizeStatus.alreadyOptimal => (
           'Already on the best channels',
