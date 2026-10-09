@@ -279,7 +279,9 @@ class _Flow1State extends ConsumerState<_Flow1> {
             const AppGap.small2(),
             _ispScript(context,
                 'My router is connected to your equipment but the internet isn\'t working. I checked all the cables. Please check if there\'s an outage or provisioning issue.'),
-            const _SessionSummaryCard(websiteStatus: 'Not checked in this test'),
+            const _SessionSummaryCard(
+                websiteStatus: 'Not checked in this test',
+                internetReached: false),
             const AppGap.small3(),
             Align(
               alignment: Alignment.centerLeft,

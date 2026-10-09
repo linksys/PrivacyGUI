@@ -628,6 +628,18 @@ void main() {
     expect(find.text('Step 1 of 3'), findsOneWidget);
   });
 
+  testWidgets('agent summary does not call WAN "Connected" when the internet check failed',
+      (tester) async {
+    // The preview mock reports the router's WAN link as up.
+    await mount(tester,
+        pivot: MockInstantVerifyPivotNotifier.new,
+        service: ProbeService()..internetUnavailable = true);
+    await tapText(tester, "Internet isn't working");
+    expect(find.text("Your router can't reach the internet"), findsOneWidget);
+    expect(find.text('Link up, but no internet access'), findsOneWidget);
+    expect(find.text('Connected'), findsNothing);
+  });
+
   testWidgets('escalation does not present old website results as current', (tester) async {
     await mount(tester,
         notifier: FixtureNotifier(dnsCheck: const DnsCheckResult(resolved: true)),

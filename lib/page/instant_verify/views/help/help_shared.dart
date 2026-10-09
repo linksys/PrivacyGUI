@@ -175,10 +175,16 @@ class _LoadingButton extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _SessionSummaryCard extends ConsumerWidget {
-  const _SessionSummaryCard({this.websiteStatus, this.speedStatus});
+  const _SessionSummaryCard(
+      {this.websiteStatus, this.speedStatus, this.internetReached});
   // Flow-local checks can be newer than the overview's provider snapshot.
   final String? websiteStatus;
   final String? speedStatus;
+
+  /// The flow's own internet probe. When it failed while the router still
+  /// reports its internet (WAN) link as up, "WAN Connected" alone reads as a
+  /// contradiction of the result, so the summary says both.
+  final bool? internetReached;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -191,7 +197,14 @@ class _SessionSummaryCard extends ConsumerWidget {
       rows.add(_summaryRow(context, 'Router', state.routerModel!));
 
     if (state.wanStatus != null)
-      rows.add(_summaryRow(context, 'WAN', state.wanConnected ? 'Connected' : 'Not connected'));
+      rows.add(_summaryRow(
+          context,
+          'WAN',
+          !state.wanConnected
+              ? 'Not connected'
+              : internetReached == false
+                  ? 'Link up, but no internet access'
+                  : 'Connected'));
 
     if (state.wanIpAddress != null && state.wanIpAddress!.isNotEmpty)
       rows.add(_summaryRow(context, 'WAN IP', state.wanIpAddress!));

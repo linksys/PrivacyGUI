@@ -491,11 +491,18 @@ void main() {
       expect(find.text('No internet connection detected'), findsOneWidget);
     });
 
-    testWidgets('shows WAN-down inline light guide callout', (tester) async {
+    testWidgets('the light check follows the result without repeating it',
+        (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_wanDownState()));
       await tester.pump();
 
-      expect(find.text('No internet connection detected.'), findsAtLeast(1));
+      // The finding states the problem once; the callout is the next step.
+      expect(find.textContaining('No internet connection detected'),
+          findsOneWidget);
+      expect(find.text("Check your router's light"), findsOneWidget);
+      expect(tester.getTopLeft(find.text("Check your router's light")).dy,
+          greaterThan(
+              tester.getTopLeft(find.text('No internet connection detected')).dy));
     });
   });
 
@@ -630,15 +637,27 @@ void main() {
       expect(find.text('Run Again'), findsOneWidget);
     });
 
-    testWidgets('"Run Again" sits in the page title row', (tester) async {
-      await tester.pumpWidget(_buildOverviewTab(_allClearState()));
-      await tester.pump();
+    for (final (name, state, headline) in [
+      ('all clear', _allClearState(), "We didn't detect any issues"),
+      ('findings', _multipleFindingsState(),
+          'Your internet is slower than expected (15 Mbps)'),
+    ]) {
+      testWidgets('"Run Again" sits in the result card ($name)', (tester) async {
+        await tester.pumpWidget(_buildOverviewTab(state));
+        await tester.pump();
 
-      final title = tester.getCenter(find.text('Instant-Test'));
-      final runAgain = tester.getCenter(find.text('Run Again'));
-      expect((title.dy - runAgain.dy).abs(), lessThan(24));
-      expect(runAgain.dx, greaterThan(title.dx));
-    });
+        // It re-runs the checks this card reports, so it belongs to the card,
+        // on the headline row, not the page title row.
+        final card = find.ancestor(
+            of: find.text(headline), matching: find.byType(AppCard)).first;
+        expect(find.descendant(of: card, matching: find.text('Run Again')),
+            findsOneWidget);
+        final head = tester.getCenter(find.text(headline));
+        final runAgain = tester.getCenter(find.text('Run Again'));
+        expect((head.dy - runAgain.dy).abs(), lessThan(24));
+        expect(runAgain.dx, greaterThan(head.dx));
+      });
+    }
 
     testWidgets('"Test scenarios" button gated on force=local (hidden in test env)',
         (tester) async {
@@ -895,7 +914,7 @@ void main() {
       expect(navigatedFlow, 1);
     });
 
-    testWidgets('WAN-down callout is a blocking AppSettingCard (error border)',
+    testWidgets('WAN-down light check is a non-blocking AppSettingCard',
         (tester) async {
       // The light guide dialog needs the same tall surface as its own test.
       tester.view.physicalSize = const Size(800, 1200);
@@ -905,13 +924,13 @@ void main() {
       await tester.pumpWidget(_buildOverviewTab(_wanDownState()));
       await tester.pump();
       final callout = find.ancestor(
-          of: find.text('No internet connection detected.'),
+          of: find.text("Check your router's light"),
           matching: find.byType(AppSettingCard));
       expect(callout, findsOneWidget);
       final card = tester.widget<AppSettingCard>(callout);
-      final context = tester.element(callout);
-      expect(card.borderColor, Theme.of(context).colorScheme.error);
-      expect(card.description, "Check your router's light. What color is it?");
+      // The result card carries the error; this is the next step.
+      expect(card.borderColor, isNull);
+      expect(card.description, 'Its color shows where the connection stops.');
       expect(
           find.descendant(
               of: callout, matching: find.text('What does my light mean?')),

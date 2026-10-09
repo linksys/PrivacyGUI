@@ -134,22 +134,14 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
       backState: Navigator.of(context).canPop()
           ? StyledBackState.enabled
           : StyledBackState.none,
-      // Run Again sits in the title row, like refresh on Instant-Topology.
-      actions: [_runAgain(state)],
       child: (context, constraints) => DiagnosticSelectionArea(
           child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Inline WAN-down callout (PRD v0.7 S-1); the guide link is in the footer.
-          _LightGuideLink(
-            showLink: false,
-            showInlineCallout: state.wanStatus != null && state.errorMessage == null &&
-                state.phase != PivotLoadPhase.idle &&
-                state.phase != PivotLoadPhase.loading &&
-                !state.wanConnected,
-          ),
           _StatusCard(
             key: _resultKey,
+            // Run Again re-runs this result's checks, so it lives on the card.
+            runAgain: _runAgain(state),
             state: state,
             findingsExpanded: _findingsExpanded,
             checksExpanded: _checksExpanded,
@@ -166,6 +158,15 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
             showProblemCards: widget.showProblemCards,
             hasRestarted: state.hasRestartedThisSession,
           ),
+          // WAN down: the next step after the result (PRD v0.7 S-1). The
+          // general guide link is in the footer.
+          if (state.wanStatus != null && state.errorMessage == null &&
+              state.phase != PivotLoadPhase.idle &&
+              state.phase != PivotLoadPhase.loading &&
+              !state.wanConnected) ...[
+            const AppGap.small2(),
+            const _LightGuideLink(showLink: false, showInlineCallout: true),
+          ],
           if (state.recentPriorRestart &&
               state.verdict != null &&
               state.verdict!.findings.isNotEmpty) ...[
@@ -499,8 +500,12 @@ class _StatusCard extends StatelessWidget {
   final bool showProblemCards;
   final bool hasRestarted;
 
+  /// Re-runs the checks this card reports; shown at the card's top right.
+  final Widget? runAgain;
+
   const _StatusCard({
     super.key,
+    this.runAgain,
     required this.state,
     required this.findingsExpanded,
     required this.checksExpanded,
@@ -535,6 +540,7 @@ class _StatusCard extends StatelessWidget {
               AppText.bodyMedium('Make sure this device is connected to your router, then choose Run Again. You can also choose a problem below for guided help.'),
             ],
           )),
+          if (runAgain != null) ...[const AppGap.small2(), runAgain!],
           if (more.isNotEmpty) ...[
             const AppGap.small2(),
             ..._moreSection(more),
@@ -588,6 +594,7 @@ class _StatusCard extends StatelessWidget {
                   ],
                 ),
               ),
+              if (runAgain != null) runAgain!,
             ]),
             // No verdict finding, but a weak device or WiFi node is still
             // worth a look.
@@ -633,6 +640,7 @@ class _StatusCard extends StatelessWidget {
                 primary.summary ?? primary.headline,
               ),
             ),
+            if (runAgain != null) runAgain!,
           ]),
           const AppGap.small1(),
           // One paragraph: the measured fact (when the title is a summary),
@@ -1507,19 +1515,19 @@ class _LightGuideLink extends StatelessWidget {
         // Inline WAN-down callout: a blocking warning, so Instant-Privacy's
         // warning card with the error border.
         if (showInlineCallout)
+          // The result card already reports "No internet connection
+          // detected"; this is the next step, not a second error.
           AppSettingCard(
-            title: 'No internet connection detected.',
-            description: "Check your router's light. What color is it?",
+            title: "Check your router's light",
+            description: 'Its color shows where the connection stops.',
             leading: Icon(
-              InstantTestTone.problem.icon,
-              color: Theme.of(context).colorScheme.error,
+              LinksysIcons.lightBulb,
+              color: Theme.of(context).colorScheme.primary,
             ),
             trailing: AppTextButton.noPadding(
               'What does my light mean?',
               onTap: () => _showLightGuide(context),
             ),
-            borderColor: Theme.of(context).colorScheme.error,
-            margin: const EdgeInsets.only(bottom: Spacing.small2),
           ),
         if (showLink)
           AppTextButton('What does my router light mean?',
