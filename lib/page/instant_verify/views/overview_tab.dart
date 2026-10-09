@@ -123,6 +123,12 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
   Widget build(BuildContext context) {
     final state = ref.watch(instantVerifyPivotProvider);
     ref.listen(instantVerifyPivotProvider.select((s) => s.phase), _revealResult);
+    // WAN down: the light check follows the result as the next step.
+    final lightCheck = state.wanStatus != null &&
+        state.errorMessage == null &&
+        state.phase != PivotLoadPhase.idle &&
+        state.phase != PivotLoadPhase.loading &&
+        !state.wanConnected;
 
     // Density pass (QA 2026-10-07 #3/#5): one column, one result card that
     // also lists everything else we found, compact problem choices, and the
@@ -158,12 +164,9 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
             showProblemCards: widget.showProblemCards,
             hasRestarted: state.hasRestartedThisSession,
           ),
-          // WAN down: the next step after the result (PRD v0.7 S-1). The
-          // general guide link is in the footer.
-          if (state.wanStatus != null && state.errorMessage == null &&
-              state.phase != PivotLoadPhase.idle &&
-              state.phase != PivotLoadPhase.loading &&
-              !state.wanConnected) ...[
+          // WAN down: the next step after the result (PRD v0.7 S-1).
+          // Otherwise the general guide link is in the footer.
+          if (lightCheck) ...[
             const AppGap.small2(),
             const _LightGuideLink(showLink: false, showInlineCallout: true),
           ],
@@ -197,7 +200,7 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
             crossAxisAlignment: WrapCrossAlignment.center,
             spacing: Spacing.medium,
             children: [
-              const _LightGuideLink(),
+              if (!lightCheck) const _LightGuideLink(),
               Wrap(spacing: Spacing.small1, children: [
                 AppText.bodySmall('Still need help?',
                     color: Theme.of(context).colorScheme.onSurfaceVariant),
@@ -1519,16 +1522,22 @@ class _LightGuideLink extends StatelessWidget {
         if (showInlineCallout)
           // The result card already reports "No internet connection
           // detected"; this is the next step, not a second error.
-          AppSettingCard(
-            title: "Check your router's light",
-            description: 'Its color shows where the connection stops.',
-            leading: Icon(
-              LinksysIcons.lightBulb,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            trailing: AppTextButton.noPadding(
-              'What does my light mean?',
-              onTap: () => _showLightGuide(context),
+          // One tappable row with a chevron, like Instant-Admin's Time zone
+          // row, so it fits phone widths without a squeezed trailing button.
+          MergeSemantics(
+            child: Semantics(
+              button: true,
+              child: AppSettingCard(
+                title: "Check your router's light",
+                description:
+                    'Its color shows where the connection stops. See what each light means.',
+                leading: Icon(
+                  LinksysIcons.lightBulb,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                trailing: const Icon(LinksysIcons.chevronRight),
+                onTap: () => _showLightGuide(context),
+              ),
             ),
           ),
         if (showLink)

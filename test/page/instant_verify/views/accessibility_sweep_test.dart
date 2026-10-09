@@ -192,16 +192,13 @@ String _describeStop(FocusNode stop) {
 
 class _Screen {
   const _Screen(this.name,
-      {this.location = instantTestHome, this.pivot, this.then, this.overflowsOnPhone = false});
+      {this.location = instantTestHome, this.pivot, this.then});
   final String name;
   final String location;
   final InstantVerifyPivotNotifier Function()? pivot;
 
   /// One answer or disclosure after the page opens.
   final Future<void> Function(WidgetTester tester)? then;
-
-  /// Known layout issue under the test font, not an accessibility check.
-  final bool overflowsOnPhone;
 }
 
 Future<void> _tap(WidgetTester tester, Finder finder) async {
@@ -223,8 +220,7 @@ final _screens = <_Screen>[
           verdictIsPreliminary: false,
           verdict: Verdict(findings: [], checksRun: 8)))),
   _Screen('results: no internet',
-      pivot: () => MockInstantVerifyPivotNotifier(overviewScenario: 0),
-      overflowsOnPhone: true),
+      pivot: () => MockInstantVerifyPivotNotifier(overviewScenario: 0)),
   _Screen("results: couldn't finish",
       pivot: () => _ResultNotifier(const InstantVerifyPivotState(
           phase: PivotLoadPhase.complete,
@@ -321,13 +317,8 @@ Future<void> _sweep(WidgetTester tester, _Screen screen, double width) async {
         .overrideWithValue(MockBrowserDiagnosticService()),
   ]));
   await tester.pumpAndSettle();
-  if (screen.overflowsOnPhone && width < 600) {
-    // The WAN-down callout's trailing "What does my light mean?" button does
-    // not wrap; under the wide test font it overflows the card at phone
-    // width. Reported separately; not one of the checks here.
-    expect(tester.takeException().toString(),
-        contains('A RenderFlex overflowed'));
-  }
+  // Every screen must lay out without overflow at both widths.
+  expect(tester.takeException(), isNull);
   if (screen.then != null) await screen.then!(tester);
 
   // Check 1, before Tab moves focus highlights around.

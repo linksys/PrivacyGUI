@@ -500,6 +500,8 @@ void main() {
       expect(find.textContaining('No internet connection detected'),
           findsOneWidget);
       expect(find.text("Check your router's light"), findsOneWidget);
+      // ...and the footer doesn't offer the same guide a second time.
+      expect(find.text('What does my router light mean?'), findsNothing);
       expect(tester.getTopLeft(find.text("Check your router's light")).dy,
           greaterThan(
               tester.getTopLeft(find.text('No internet connection detected')).dy));
@@ -930,12 +932,11 @@ void main() {
       final card = tester.widget<AppSettingCard>(callout);
       // The result card carries the error; this is the next step.
       expect(card.borderColor, isNull);
-      expect(card.description, 'Its color shows where the connection stops.');
-      expect(
-          find.descendant(
-              of: callout, matching: find.text('What does my light mean?')),
-          findsOneWidget);
-      await tester.tap(find.text('What does my light mean?'));
+      expect(card.description,
+          'Its color shows where the connection stops. See what each light means.');
+      // The whole row opens the guide, like Instant-Admin's Time zone row.
+      expect(card.onTap, isNotNull);
+      await tester.tap(callout);
       await tester.pumpAndSettle();
       expect(find.text('Solid red'), findsOneWidget);
     });
