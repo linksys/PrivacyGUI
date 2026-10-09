@@ -17,7 +17,9 @@ class DiagnosticSelectionArea extends StatefulWidget {
 
 class _DiagnosticSelectionAreaState extends State<DiagnosticSelectionArea> {
   String? _selection;
-  final _selectionFocus = FocusNode();
+  // Selecting with the pointer still focuses the area for copy; Tab skips it,
+  // as it has nothing to name or activate.
+  final _selectionFocus = FocusNode(skipTraversal: true);
   static int _webAreas = 0;
   static bool _restoreBrowserMenu = false;
   static Future<void> _menuChange = Future<void>.value();

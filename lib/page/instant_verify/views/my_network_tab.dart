@@ -282,8 +282,9 @@ class _SatelliteNodeCard extends StatelessWidget {
       backhaulLabel = 'Connected wirelessly — Moderate$speedSuffix';
       backhaulTone = InstantTestTone.warning;
     } else if (health == BackhaulHealth.strong) {
+      // No tone color: green body text on the card misses the 4.5:1
+      // contrast minimum, and "Good" already says it.
       backhaulLabel = 'Connected wirelessly — Good$speedSuffix';
-      backhaulTone = InstantTestTone.good;
     } else {
       // Online but no backhaul health data — don't assert "Good".
       backhaulLabel = 'Connected wirelessly — Health unknown';

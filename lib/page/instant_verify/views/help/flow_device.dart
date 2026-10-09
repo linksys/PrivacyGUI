@@ -149,7 +149,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
         // when selected. The card is the one control (taps, focus, selected
         // state); the radio is decoration with no Tab stop or screen-reader
         // node of its own, same look as the kit's AppRadioList.
-        Semantics(
+        // MergeSemantics puts the role on the card's tappable node.
+        MergeSemantics(child: Semantics(
           button: true,
           selected: _selectedDevice?.macAddress == device.macAddress,
           child: AppListCard(
@@ -175,7 +176,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
               _step = 2;
             }),
           ),
-        ),
+        )),
         const AppGap.small1(),
       ],
       if (matches.length > _devicesPerPage)

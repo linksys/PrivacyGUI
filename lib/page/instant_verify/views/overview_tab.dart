@@ -588,9 +588,11 @@ class _StatusCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const AppText.titleMedium("We didn't detect any issues"),
+                    // The icon carries the green; green small text on the
+                    // card misses the 4.5:1 contrast minimum.
                     if (verdict.checksRun > 0)
                       AppText.bodySmall(_checksPassedLabel(state),
-                          color: good),
+                          color: scheme.onSurfaceVariant),
                   ],
                 ),
               ),

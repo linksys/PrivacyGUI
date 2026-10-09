@@ -124,18 +124,20 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
 
   /// A choice row inside the step card, as Instant-Admin's rows: a
   /// borderless AppListCard between dividers.
-  // Announced as a button, as the device picker rows are.
+  // Announced as one button, as the device picker rows are.
   Widget _option(IconData icon, String title, String detail, int step) =>
-      Semantics(
-        button: true,
-        child: AppListCard(
-          showBorder: false,
-          padding: EdgeInsets.zero,
-          leading: Icon(icon),
-          title: AppText.bodyMedium(title),
-          description: AppText.bodySmall(detail),
-          trailing: const Icon(LinksysIcons.chevronRight),
-          onTap: () => _pushStep(step),
+      MergeSemantics(
+        child: Semantics(
+          button: true,
+          child: AppListCard(
+            showBorder: false,
+            padding: EdgeInsets.zero,
+            leading: Icon(icon),
+            title: AppText.bodyMedium(title),
+            description: AppText.bodySmall(detail),
+            trailing: const Icon(LinksysIcons.chevronRight),
+            onTap: () => _pushStep(step),
+          ),
         ),
       );
 

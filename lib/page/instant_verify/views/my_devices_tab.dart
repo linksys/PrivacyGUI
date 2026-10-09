@@ -362,30 +362,39 @@ class _NodeGroupState extends State<_NodeGroup> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Group heading: a borderless list row that collapses the group.
-          AppListCard(
-            showBorder: false,
-            padding: const EdgeInsets.symmetric(
-                horizontal: Spacing.small2, vertical: Spacing.small2),
-            onTap: () => setState(() => _expanded = !_expanded),
-            leading: Icon(
-              _expanded ? LinksysIcons.arrowDropDown : LinksysIcons.chevronRight,
-              color: colors.onSurfaceVariant,
-            ),
-            title: AppText.titleMedium(widget.label),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppText.bodySmall(
-                  '$clientCount device${clientCount == 1 ? '' : 's'}',
+          // Group heading: a borderless list row that collapses the group,
+          // announced as one button that is expanded or collapsed.
+          MergeSemantics(
+            child: Semantics(
+              button: true,
+              expanded: _expanded,
+              child: AppListCard(
+                showBorder: false,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: Spacing.small2, vertical: Spacing.small2),
+                onTap: () => setState(() => _expanded = !_expanded),
+                leading: Icon(
+                  _expanded
+                      ? LinksysIcons.arrowDropDown
+                      : LinksysIcons.chevronRight,
                   color: colors.onSurfaceVariant,
                 ),
-                if (widget.node?.hasWeakBackhaul == true) ...[
-                  const AppGap.small2(),
-                  Icon(InstantTestTone.warning.icon,
-                      color: InstantTestTone.warning.color(context)),
-                ],
-              ],
+                title: AppText.titleMedium(widget.label),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppText.bodySmall(
+                      '$clientCount device${clientCount == 1 ? '' : 's'}',
+                      color: colors.onSurfaceVariant,
+                    ),
+                    if (widget.node?.hasWeakBackhaul == true) ...[
+                      const AppGap.small2(),
+                      Icon(InstantTestTone.warning.icon,
+                          color: InstantTestTone.warning.color(context)),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ),
           if (_expanded) ...[
@@ -427,18 +436,24 @@ class _DeviceRow extends StatelessWidget {
 
     // The Devices page's device card: icon, name, band, status. The band
     // sits under the name so narrow phones keep room for the status.
-    final card = AppDeviceListCard(
-      leading: _deviceIcon(client),
-      title: client.displayNameWithOui,
-      description: client.isWireless
-          ? AppText.bodyMedium(
-              client.band,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            )
-          : null,
-      trailing: _badgeStatus(context, badge),
-      onTap: () => _showDeviceDetail(context, client, state,
-          onNavigateToFlow: onNavigateToFlow),
+    // Announced as one button that opens the device's details.
+    final card = MergeSemantics(
+      child: Semantics(
+        button: true,
+        child: AppDeviceListCard(
+          leading: _deviceIcon(client),
+          title: client.displayNameWithOui,
+          description: client.isWireless
+              ? AppText.bodyMedium(
+                  client.band,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                )
+              : null,
+          trailing: _badgeStatus(context, badge),
+          onTap: () => _showDeviceDetail(context, client, state,
+              onNavigateToFlow: onNavigateToFlow),
+        ),
+      ),
     );
     return client.hostname == null && client.manufacturer != null
         ? Tooltip(
