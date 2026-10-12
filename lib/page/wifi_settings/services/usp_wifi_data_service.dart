@@ -117,6 +117,23 @@ class UspWifiDataService {
     final accessPoints = results[2] as WiFiAccessPoints;
     final rawWifiClientMap = results[3] as Map<String, WifiClient>;
 
+    // A router always has radios, every radio carries SSIDs, and every SSID
+    // has an access point. A table with no rows is the router answering while
+    // its radios reload — FW 2.0.2 returns exactly that, even after the
+    // recovery probe has passed (bench 2026-10-07: 4 SSIDs and 0 APs 3 s
+    // after one save's recovery; all three tables empty 1 s after another's,
+    // cached as "no networks" and opened on 8 s later). A failed read, so the
+    // orchestrator's provider retry reads it again instead of the page
+    // rendering a router with no WiFi.
+    if (radios.items.isEmpty ||
+        ssids.items.isEmpty ||
+        accessPoints.items.isEmpty) {
+      throw NetworkError(
+          detail: 'WiFi read returned an empty table '
+              '(${radios.items.length} radios, ${ssids.items.length} SSIDs, '
+              '${accessPoints.items.length} APs)');
+    }
+
     // Cross-reference AP → SSID → Radio to get band + SSID name per client
     final connectionDetailMap = _buildConnectionDetailMap(
       wifiClientMap: rawWifiClientMap,

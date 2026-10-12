@@ -61,6 +61,7 @@ class RoutePath {
   static const uspLocalNetwork = 'uspLocalNetwork';
   static const uspFirewall = 'uspFirewall';
   static const uspDmz = 'uspDmz';
+  static const uspAdministration = 'uspAdministration';
   static const uspPortForwardingDetail = 'uspPortForwardingDetail';
   static const uspStaticRouting = 'uspStaticRouting';
   static const uspIpv6PortService = 'uspIpv6PortService';
@@ -213,6 +214,9 @@ class RouteNamed {
   static const uspNotificationHistory = 'uspNotificationHistory';
   static const uspFirewall = 'uspFirewall';
   static const uspDmz = 'uspDmz';
+  // Advanced Settings → Administration (UPnP, #1660). Not [uspAdmin], the
+  // menu's password / time zone / reboot page.
+  static const uspAdministration = 'uspAdministration';
   static const uspLocalNetwork = 'uspLocalNetwork';
   static const uspStaticRouting = 'uspStaticRouting';
   static const uspAdvancedSettings = 'uspAdvancedSettings';
