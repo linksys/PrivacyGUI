@@ -687,13 +687,37 @@ class UspClient {
   Future<Map<String, dynamic>> set(Object pathOrParams,
       {dynamic singleValue, bool allowPartial = false}) async {
     if (pathOrParams is String && singleValue != null) {
-      return await _singleSet(pathOrParams, singleValue.toString());
+      return _invalidatingReads(
+          () => _singleSet(pathOrParams, singleValue.toString()));
     } else if (pathOrParams is Map) {
-      return await _batchSet(pathOrParams.cast<String, dynamic>(),
-          allowPartial: allowPartial);
+      return _invalidatingReads(() => _batchSet(
+          pathOrParams.cast<String, dynamic>(),
+          allowPartial: allowPartial));
     }
     throw ArgumentError(
         'set() expects (String, value) or (Map<String, dynamic>)');
+  }
+
+  /// Runs a write, then drops the [throttler]'s completed-GET cache.
+  ///
+  /// That cache answers a repeated read for 5 s and is keyed on the request's
+  /// paths alone, so without this a read issued inside that window *after* a
+  /// write is answered with the value from *before* it. Measured on the bench
+  /// (#1660): a confirming read 1 ms after a landed `Set` of
+  /// `Device.UPnP.Device.Enable` returned the old value without dispatching a
+  /// GET, and the switch drew OFF on a router that was ON. Every page that
+  /// saves and then re-reads goes through here.
+  ///
+  /// In `finally`: a write that threw may still have changed the router, and
+  /// one extra GET costs less than a stale answer. Only completed results are
+  /// dropped — a GET already in flight keeps its callers, the same line
+  /// [BridgeRequestThrottler.clearCache] draws.
+  Future<T> _invalidatingReads<T>(Future<T> Function() write) async {
+    try {
+      return await write();
+    } finally {
+      throttler?.clearCache();
+    }
   }
 
   Future<Map<String, dynamic>> _singleSet(String path, String value) async {
@@ -759,6 +783,12 @@ class UspClient {
   /// `{path, value}` maps. Groups are processed in order; params within a
   /// group are sent together in one Set message.
   Future<Map<String, dynamic>> setOrdered(
+          List<List<Map<String, String>>> parameterGroups,
+          {bool allowPartial = false}) =>
+      _invalidatingReads(
+          () => _setOrdered(parameterGroups, allowPartial: allowPartial));
+
+  Future<Map<String, dynamic>> _setOrdered(
       List<List<Map<String, String>>> parameterGroups,
       {bool allowPartial = false}) async {
     final id = _genReqId();
@@ -799,10 +829,11 @@ class UspClient {
       {bool allowPartial = false}) async {
     if (items.length == 1) {
       final item = items.first;
-      return await _singleAdd(item['path'] as String,
-          item['params'] as Map<String, dynamic>? ?? {});
+      return _invalidatingReads(() => _singleAdd(item['path'] as String,
+          item['params'] as Map<String, dynamic>? ?? {}));
     }
-    return await _batchAdd(items, allowPartial: allowPartial);
+    return _invalidatingReads(
+        () => _batchAdd(items, allowPartial: allowPartial));
   }
 
   Future<Map<String, dynamic>> _singleAdd(
@@ -868,9 +899,10 @@ class UspClient {
   Future<Map<String, dynamic>> delete(List<String> paths,
       {bool allowPartial = false}) async {
     if (paths.length == 1) {
-      return await _singleDelete(paths.first);
+      return _invalidatingReads(() => _singleDelete(paths.first));
     }
-    return await _batchDelete(paths, allowPartial: allowPartial);
+    return _invalidatingReads(
+        () => _batchDelete(paths, allowPartial: allowPartial));
   }
 
   Future<Map<String, dynamic>> _singleDelete(String path) async {
@@ -932,6 +964,11 @@ class UspClient {
   /// Returns a flat map containing `commandKey` (for SSE correlation) and
   /// all output arguments from the Operate response.
   Future<Map<String, dynamic>> operate(String command,
+          {Map<String, String> args = const {}}) =>
+      // An Operate can change data as well (SetTimeSettings, SetMACFilter).
+      _invalidatingReads(() => _operate(command, args: args));
+
+  Future<Map<String, dynamic>> _operate(String command,
       {Map<String, String> args = const {}}) async {
     final id = _genReqId();
     _lastCallRetried = false;

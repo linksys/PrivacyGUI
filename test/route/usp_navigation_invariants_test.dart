@@ -340,6 +340,7 @@ const _fallbackRoutes = <String>[
   RouteNamed.uspStaticRouting,
   RouteNamed.uspIpv6PortService,
   RouteNamed.uspDmz,
+  RouteNamed.uspAdministration,
   RouteNamed.uspDeviceDetail,
 ];
 
@@ -441,6 +442,7 @@ void main() {
         RouteNamed.uspLocalNetwork: '/uspAdvancedSettings/uspLocalNetwork',
         RouteNamed.uspFirewall: '/uspAdvancedSettings/uspFirewall',
         RouteNamed.uspDmz: '/uspAdvancedSettings/uspDmz',
+        RouteNamed.uspAdministration: '/uspAdvancedSettings/uspAdministration',
         RouteNamed.uspPortForwardingDetail:
             '/uspAdvancedSettings/uspPortForwardingDetail',
         RouteNamed.uspStaticRouting: '/uspAdvancedSettings/uspStaticRouting',
@@ -528,6 +530,7 @@ void main() {
             RouteNamed.uspStaticRouting: RouteNamed.uspAdvancedSettings,
             RouteNamed.uspIpv6PortService: RouteNamed.uspFirewall,
             RouteNamed.uspDmz: RouteNamed.uspAdvancedSettings,
+            RouteNamed.uspAdministration: RouteNamed.uspAdvancedSettings,
             RouteNamed.uspDeviceDetail: RouteNamed.uspDeviceList,
           },
           reason: 'these are nested, so the value is unreachable. Kept, not '

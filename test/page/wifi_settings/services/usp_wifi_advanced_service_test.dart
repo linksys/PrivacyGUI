@@ -260,4 +260,117 @@ void main() {
       );
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Mesh steering (#1661)
+  // -------------------------------------------------------------------------
+
+  group('UspWifiAdvancedService - fetchSteering', () {
+    test('reads both Device.X_LINKSYS_Mesh leaves in one Get', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            'Device.X_LINKSYS_Mesh.ClientSteeringEnabled': '1',
+            'Device.X_LINKSYS_Mesh.NodeSteeringEnabled': '0',
+          });
+
+      final result = await svc.fetchSteering();
+
+      expect(result.clientSteering, isTrue);
+      expect(result.nodeSteering, isFalse);
+      verify(() => mockUsp.get([
+            'Device.X_LINKSYS_Mesh.ClientSteeringEnabled',
+            'Device.X_LINKSYS_Mesh.NodeSteeringEnabled',
+          ])).called(1);
+    });
+
+    test('a missing leaf maps to a ServiceError, not a silent false', () {
+      // The codegen class requires both leaves, so a firmware without the
+      // object fails the fetch (9998) instead of drawing two OFF switches.
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            'Device.X_LINKSYS_Mesh.ClientSteeringEnabled': '1',
+          });
+
+      expect(() => svc.fetchSteering(), throwsA(isA<ServiceError>()));
+    });
+
+    test('maps a USP error to ServiceError', () {
+      when(() => mockUsp.get(any()))
+          .thenThrow('Get failed: Transport error: Connection refused');
+
+      expect(() => svc.fetchSteering(), throwsA(isA<ConnectivityError>()));
+    });
+  });
+
+  group('UspWifiAdvancedService - setSteering', () {
+    test('writes only the leaves it is given, in one Set', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => _setSuccess());
+
+      await svc.setSteering(clientSteering: true);
+
+      verify(() => mockUsp.set(
+            {'Device.X_LINKSYS_Mesh.ClientSteeringEnabled': true},
+            allowPartial: false,
+          )).called(1);
+    });
+
+    test('both leaves go out in the same Set', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => _setSuccess());
+
+      await svc.setSteering(clientSteering: false, nodeSteering: true);
+
+      verify(() => mockUsp.set(
+            {
+              'Device.X_LINKSYS_Mesh.ClientSteeringEnabled': false,
+              'Device.X_LINKSYS_Mesh.NodeSteeringEnabled': true,
+            },
+            allowPartial: false,
+          )).called(1);
+    });
+
+    test('nothing to write sends nothing', () async {
+      await svc.setSteering();
+
+      verifyNever(
+          () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
+    });
+
+    test('a refused value throws UspCompleteFailureError', () {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => _setFailure(
+                path: 'Device.X_LINKSYS_Mesh.NodeSteeringEnabled',
+                errorCode: 9007,
+                errorMessage: 'Invalid parameter value',
+              ));
+
+      expect(
+        () => svc.setSteering(nodeSteering: true),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+
+    test('one switch refused while the other lands is a partial failure', () {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => _setPartial(
+                path: 'Device.X_LINKSYS_Mesh.NodeSteeringEnabled',
+                errorCode: 9007,
+                errorMessage: 'Invalid parameter value',
+              ));
+
+      expect(
+        () => svc.setSteering(clientSteering: true, nodeSteering: true),
+        throwsA(isA<UspPartialFailureError>()),
+      );
+    });
+
+    test('a transport error maps to ServiceError', () {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenThrow('Set failed: Transport error: Connection refused');
+
+      expect(
+        () => svc.setSteering(clientSteering: true),
+        throwsA(isA<ConnectivityError>()),
+      );
+    });
+  });
 }
