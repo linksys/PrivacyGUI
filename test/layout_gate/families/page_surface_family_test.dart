@@ -224,6 +224,10 @@ void main() {
           // has four content states, three of which cannot overflow, and its list
           // sits below the filter that proves the first premise.
           'notification_history',
+          // #1660: Advanced Settings → Administration, a new page view file that
+          // arrives with the `lib/` change creating it — the 48th. Not `admin`
+          // above, the menu's page with the same title.
+          'administration',
         ],
         // Updated by #1377, #1378, #1379 and #1380, and the wording is the point of
         // the test.

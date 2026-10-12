@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_notifier.dart';
 import 'package:privacy_gui/page/mac_filter/views/mac_filter_tab.dart';
@@ -234,6 +237,28 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
     // MAC Filtering saves through its own flow (`macFilterBottomBar`), which
     // confirms overriding Instant Privacy and has no Wi-Fi reconnect step.
     if (activeTab != 0 && activeTab != 1) return;
+
+    // Read before the save: once it lands the tab is clean and would say no.
+    // Every WiFi-tab write restarts the radios; on Advanced only the DFS one
+    // does, and a steering-only save is applied without dropping the browser,
+    // so there is no reconnect to wait for and no recovery to enter (#1661).
+    final restartsRadios =
+        activeTab == 0 || ref.read(uspWifiAdvancedProvider).changesDfs;
+    if (!restartsRadios) {
+      try {
+        await doSomethingWithSpinner(
+            context, ref.read(uspWifiAdvancedProvider.notifier).save());
+        if (context.mounted) {
+          showSuccessSnackBar(context, loc(context).wifiSettingsSaved);
+        }
+      } on ServiceError catch (e) {
+        if (context.mounted) {
+          showFailedSnackBar(context, localizeServiceError(context, e));
+        }
+      }
+      return;
+    }
+
     await runWifiWriteWithRecovery(
       context,
       ref,
