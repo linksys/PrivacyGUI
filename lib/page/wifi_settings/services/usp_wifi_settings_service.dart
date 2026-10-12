@@ -731,12 +731,21 @@ class UspWifiSettingsService {
 
 /// Parses a comma-separated TR-181 Security.ModesSupported string into a trimmed list.
 /// e.g. "None, WPA2-Personal, WPA3-Personal" → ['None', 'WPA2-Personal', 'WPA3-Personal']
+///
+/// Enterprise modes are dropped (#1046). They authenticate against a RADIUS
+/// server, and the app has no UI for its address, port or secret, so a user
+/// who picked one would be left with a mode the app cannot finish setting up.
+/// FW 2.0 lists them on the guest AccessPoints but not on the main ones, so
+/// this leaves guest offering the same modes as main.
+///
+/// This excludes Enterprise rather than allowing a fixed set, so a future
+/// non-Enterprise mode the firmware adds still reaches the picker.
 List<String> _parseModesSupported(String raw) {
   if (raw.isEmpty) return [];
   return raw
       .split(',')
       .map((s) => s.trim())
-      .where((s) => s.isNotEmpty)
+      .where((s) => s.isNotEmpty && !s.contains('Enterprise'))
       .toList();
 }
 
