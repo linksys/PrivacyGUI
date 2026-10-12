@@ -3,6 +3,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_advanced_service.dart';
+import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -38,6 +39,20 @@ Map<String, dynamic> _setFailure({
         'data': <String, dynamic>{},
         'error': {
           path: {'errorCode': errorCode, 'errorMessage': errorMessage},
+        },
+      },
+    };
+
+/// A per-path SET error whose request never got an answer.
+Map<String, dynamic> _setUnanswered() => {
+      'success': false,
+      'result': {
+        'data': <String, dynamic>{},
+        'error': {
+          'Device.WiFi.Radio.1.IEEE80211hEnabled': {
+            'errorCode': 9999,
+            'errorMessage': 'Transport error: Failed to fetch',
+          },
         },
       },
     };
@@ -167,6 +182,110 @@ void main() {
             'Device.WiFi.Radio.2.IEEE80211hEnabled': false,
             'Device.WiFi.Radio.2.AutoChannelEnable': true,
           })).called(1);
+    });
+
+    test(
+        'a lost reply is "unanswered", not a failure — #1460: the DFS SET '
+        'took 35.4 s and had applied', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => _setUnanswered());
+
+      final outcome = await svc.setIeee80211hEnabled(
+        radioPaths: ['Device.WiFi.Radio.1.'],
+        enabled: false,
+      );
+
+      expect(outcome, WifiWriteOutcome.unanswered);
+    });
+
+    test('an answered SET is confirmed', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => _setSuccess());
+
+      expect(
+        await svc.setIeee80211hEnabled(
+          radioPaths: ['Device.WiFi.Radio.1.'],
+          enabled: true,
+        ),
+        WifiWriteOutcome.confirmed,
+      );
+    });
+
+    group('planIeee80211h', () {
+      test(
+          'proof is only the radios whose DFS value changes — an unchanged '
+          'one would read back "matching" either way', () {
+        final plan = svc.planIeee80211h(
+          current: {
+            'Device.WiFi.Radio.1.': true,
+            'Device.WiFi.Radio.2.': false
+          },
+          radioPaths: ['Device.WiFi.Radio.1.', 'Device.WiFi.Radio.2.'],
+          enabled: false,
+          forceAutoChannelPaths: ['Device.WiFi.Radio.1.'],
+        );
+
+        expect(plan.params, {
+          'Device.WiFi.Radio.1.IEEE80211hEnabled': false,
+          'Device.WiFi.Radio.2.IEEE80211hEnabled': false,
+          'Device.WiFi.Radio.1.AutoChannelEnable': true,
+        });
+        // Radio.2 was already off; the forced AutoChannelEnable rides along.
+        expect(plan.proof, {'Device.WiFi.Radio.1.IEEE80211hEnabled': false});
+      });
+
+      test("the plan's send issues exactly the planned params, once", () async {
+        when(() => mockUsp.set(any())).thenAnswer((_) async => _setSuccess());
+        final plan = svc.planIeee80211h(
+          current: {'Device.WiFi.Radio.1.': true},
+          radioPaths: ['Device.WiFi.Radio.1.'],
+          enabled: false,
+          forceAutoChannelPaths: ['Device.WiFi.Radio.1.'],
+        );
+
+        expect(await plan.send(), WifiWriteOutcome.confirmed);
+
+        verify(() => mockUsp.set(plan.params)).called(1);
+      });
+
+      test('read-back fails closed on an empty proof, and reads nothing',
+          () async {
+        expect(await svc.isIeee80211hApplied(const {}), isFalse);
+        verifyNever(() => mockUsp.get(any()));
+      });
+
+      test('read-back is true only when every proved radio reads back',
+          () async {
+        when(() => mockUsp.get(any())).thenAnswer((_) async => {
+              'Device.WiFi.Radio.1.IEEE80211hEnabled': false,
+              'Device.WiFi.Radio.2.IEEE80211hEnabled': true,
+            });
+
+        expect(
+          await svc.isIeee80211hApplied(
+              {'Device.WiFi.Radio.1.IEEE80211hEnabled': false}),
+          isTrue,
+        );
+        expect(
+          await svc.isIeee80211hApplied({
+            'Device.WiFi.Radio.1.IEEE80211hEnabled': false,
+            'Device.WiFi.Radio.2.IEEE80211hEnabled': false,
+          }),
+          isFalse,
+        );
+      });
+
+      test(
+          'a radio missing from the read-back is a failed read, not "not '
+          'applied" — the router answers with no rows while it reloads',
+          () async {
+        // Bench round 3, 2026-10-07: WiFi GETs came back `{}` mid-reload.
+        when(() => mockUsp.get(any())).thenAnswer((_) async => {});
+
+        expect(
+          svc.isIeee80211hApplied(
+              {'Device.WiFi.Radio.1.IEEE80211hEnabled': false}),
+          throwsA(isA<ServiceError>()),
+        );
+      });
     });
 
     test('empty forceAutoChannelPaths writes no AutoChannelEnable', () async {

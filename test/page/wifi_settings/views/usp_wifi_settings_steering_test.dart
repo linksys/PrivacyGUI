@@ -4,10 +4,12 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_advanced_service.dart';
+import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -18,6 +20,8 @@ import '../../../util/app_test_fonts.dart';
 
 class MockUspWifiAdvancedService extends Mock
     implements UspWifiAdvancedService {}
+
+class _NoUsp extends Mock implements UspClient {}
 
 /// The two steering switches on the Advanced tab (#1661), on the real page: what
 /// they show, and what a save does with them.
@@ -45,6 +49,37 @@ void main() {
           clientSteering: any(named: 'clientSteering'),
           nodeSteering: any(named: 'nodeSteering'),
         )).thenAnswer((_) async {});
+    // A DFS save builds its one SET with the real service's plan (#1460); only
+    // the SET itself goes through the mock, so a test can stub its answer.
+    when(() => svc.planIeee80211h(
+          current: any(named: 'current'),
+          radioPaths: any(named: 'radioPaths'),
+          enabled: any(named: 'enabled'),
+          forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
+        )).thenAnswer((inv) {
+      final radioPaths = inv.namedArguments[#radioPaths] as List<String>;
+      final enabled = inv.namedArguments[#enabled] as bool;
+      final force = inv.namedArguments[#forceAutoChannelPaths] as List<String>;
+      final real = UspWifiAdvancedService(_NoUsp()).planIeee80211h(
+        current: inv.namedArguments[#current] as Map<String, bool>,
+        radioPaths: radioPaths,
+        enabled: enabled,
+        forceAutoChannelPaths: force,
+      );
+      return WifiWritePlan(
+        params: real.params,
+        proof: real.proof,
+        send: () => svc.setIeee80211hEnabled(
+          radioPaths: radioPaths,
+          enabled: enabled,
+          forceAutoChannelPaths: force,
+        ),
+      );
+    });
+  });
+
+  setUpAll(() {
+    registerFallbackValue(<String, bool>{});
   });
 
   Finder switchWith(String identifier) => find
@@ -129,7 +164,7 @@ void main() {
             radioPaths: any(named: 'radioPaths'),
             enabled: any(named: 'enabled'),
             forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
-          )).thenAnswer((_) async {});
+          )).thenAnswer((_) async => WifiWriteOutcome.confirmed);
       await pumpAdvanced(tester);
 
       await tester.tap(switchWith('wifi-advanced-dfs'));
