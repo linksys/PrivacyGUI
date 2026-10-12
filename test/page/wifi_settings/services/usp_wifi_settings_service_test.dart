@@ -11,6 +11,8 @@ import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dar
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
+import '../../../mocks/test_data/wifi_settings_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 // WASM v0.11.0 response helpers
@@ -1539,6 +1541,126 @@ void main() {
         await capturedModeEnabled(band: '5GHz', selectedMode: 'None'),
         'None',
       );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Security.ModesSupported — Enterprise modes are not offered (#1046)
+  // -------------------------------------------------------------------------
+
+  group('supportedSecurityModes — Enterprise modes dropped (#1046)', () {
+    // Security.ModesSupported as read on FW 2.0.2.26091803 (M60).
+    const fw2Guest = 'None,WPA2-Personal,WPA3-Personal,'
+        'WPA3-Personal-Transition,WPA-Enterprise,WPA2-Enterprise,'
+        'WPA3-Enterprise,WPA-WPA2-Enterprise';
+    const fw2Main = 'None,WPA2-Personal,WPA3-Personal,WPA3-Personal-Transition';
+    const configurable = [
+      'None',
+      'WPA2-Personal',
+      'WPA3-Personal',
+      'WPA3-Personal-Transition',
+    ];
+
+    /// Dual-band main + guest, as FW 2.0 wires them: SSID.1/.2 main on
+    /// Radio.1/.2, SSID.3/.4 guest on the same radios.
+    List<WifiNetworkUIModel> buildDualBand({
+      String mainModes = fw2Main,
+      String guestModes = fw2Guest,
+    }) =>
+        svc.buildWifiNetworks(
+          ssids: WiFiSsids(items: [
+            WifiSettingsTestData.createSsid(
+                instancePath: 'Device.WiFi.SSID.1.',
+                ssid: 'Home',
+                lowerLayers: 'Device.WiFi.Radio.1.',
+                alias: 'wifi-2g'),
+            WifiSettingsTestData.createSsid(
+                instancePath: 'Device.WiFi.SSID.2.',
+                ssid: 'Home',
+                lowerLayers: 'Device.WiFi.Radio.2.',
+                alias: 'wifi-5g'),
+            WifiSettingsTestData.createSsid(
+                instancePath: 'Device.WiFi.SSID.3.',
+                ssid: 'Home-guest',
+                enable: false,
+                lowerLayers: 'Device.WiFi.Radio.1.',
+                alias: 'wifi-2g-guest'),
+            WifiSettingsTestData.createSsid(
+                instancePath: 'Device.WiFi.SSID.4.',
+                ssid: 'Home-guest',
+                enable: false,
+                lowerLayers: 'Device.WiFi.Radio.2.',
+                alias: 'wifi-5g-guest'),
+          ]),
+          accessPoints: WiFiAccessPoints(items: [
+            for (final (i, modes) in [
+              (1, mainModes),
+              (2, mainModes),
+              (3, guestModes),
+              (4, guestModes),
+            ])
+              WifiSettingsTestData.createAccessPoint(
+                instancePath: 'Device.WiFi.AccessPoint.$i.',
+                ssidReference: 'Device.WiFi.SSID.$i.',
+                modesSupported: modes,
+              ),
+          ]),
+          radios: WiFiRadios(items: [
+            WifiSettingsTestData.createRadio(
+                instancePath: 'Device.WiFi.Radio.1.',
+                operatingFrequencyBand: '2.4GHz'),
+            WifiSettingsTestData.createRadio(
+                instancePath: 'Device.WiFi.Radio.2.',
+                operatingFrequencyBand: '5GHz'),
+          ]),
+        );
+
+    test('FW 2.0 guest list keeps only the configurable modes, in order', () {
+      final guests = buildDualBand().where((n) => n.isGuest).toList();
+
+      expect(guests, hasLength(2));
+      for (final g in guests) {
+        expect(g.supportedSecurityModes, configurable);
+      }
+    });
+
+    test('main list, which has no Enterprise mode, is unchanged', () {
+      final mains = buildDualBand().where((n) => !n.isGuest).toList();
+
+      expect(mains, hasLength(2));
+      for (final m in mains) {
+        expect(m.supportedSecurityModes, configurable);
+      }
+    });
+
+    test('an Enterprise-only list parses to empty, as an empty list does', () {
+      final guests = buildDualBand(
+        guestModes: 'WPA2-Enterprise,WPA3-Enterprise',
+      ).where((n) => n.isGuest);
+
+      // Empty is what hides the Password and Security mode rows.
+      for (final g in guests) {
+        expect(g.supportedSecurityModes, isEmpty);
+      }
+    });
+
+    test('a mode the app does not special-case still reaches the picker', () {
+      final guests = buildDualBand(
+        guestModes: 'WPA2-Personal,OWE,WPA2-Enterprise',
+      ).where((n) => n.isGuest);
+
+      for (final g in guests) {
+        expect(g.supportedSecurityModes, ['WPA2-Personal', 'OWE']);
+      }
+    });
+
+    test('Quick Setup guest intersection offers no Enterprise mode', () {
+      final quickSetup = svc.buildQuickSetupNetworks(buildDualBand());
+
+      expect(quickSetup.isQuickSetup, isTrue);
+      expect(quickSetup.guest, isNotNull);
+      expect(quickSetup.guest!.supportedSecurityModes, configurable);
+      expect(quickSetup.main!.supportedSecurityModes, configurable);
     });
   });
 }
