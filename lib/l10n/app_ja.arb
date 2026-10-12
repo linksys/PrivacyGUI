@@ -828,6 +828,7 @@
   "noPresetSelected": "プリセットが選択されていません",
   "noReservationIpMayChange": "予約なし。再接続時に IP が変わる場合があります。",
   "noSinglePortRules": "単一ポート転送ルールが設定されていません",
+  "maxRulesReached": "ルールの最大数に達しました",
   "noSsid": "(SSID なし)",
   "noTargetBankAvailable": "利用可能なターゲットバンクがありません",
   "noTimezonesFound": "タイムゾーンが見つかりません",

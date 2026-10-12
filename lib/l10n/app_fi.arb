@@ -828,6 +828,7 @@
   "noPresetSelected": "Esiasetusta ei ole valittu",
   "noReservationIpMayChange": "Ei varausta. IP voi muuttua uudelleenyhdistettäessä.",
   "noSinglePortRules": "Yhtään yksittäisen portin ohjaussääntöä ei ole määritetty",
+  "maxRulesReached": "Sääntöjen enimmäismäärä on saavutettu",
   "noSsid": "(Ei SSID:tä)",
   "noTargetBankAvailable": "Kohdepankkia ei ole saatavilla",
   "noTimezonesFound": "Aikavyöhykkeitä ei löytynyt",

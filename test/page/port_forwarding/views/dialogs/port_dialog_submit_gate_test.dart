@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/page/dashboard/views/dialogs/port_forwarding_dialog.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/views/dialogs/port_range_forwarding_dialog.dart';
@@ -104,11 +105,112 @@ Future<void> _blur(WidgetTester tester, String title) async {
 }
 
 void main() {
+  // The single-port dialog is opened from the Single Port tab and from the
+  // dashboard card. The same FWDEV#204 rules apply, because FW 2.0.3 drops a
+  // refused field on Add and still creates the rule (fwdev204_run2.log A-B).
+  group('single port forwarding dialog', () {
+    const lan = (ip: '192.168.1.1', mask: '255.255.255.0');
+    const taken = PortForwardingRuleUIModel(
+      description: 'Web',
+      externalPort: 8080,
+      internalPort: 80,
+      internalClient: '192.168.1.60',
+      protocol: 'UDP',
+      enabled: false,
+    );
+
+    Future<void> fillValid(WidgetTester tester) async {
+      await _type(tester, 'pf-single-description', 'Camera');
+      await _type(tester, 'pf-single-external-port', '8080');
+      await _type(tester, 'pf-single-internal-port', '80');
+      await _type(tester, 'pf-single-internal-ip', '192.168.1.50');
+      await _blur(tester, 'Add Port Forwarding');
+    }
+
+    Future<_Outcome<PortForwardingDialogResult>> open(WidgetTester tester) =>
+        _pumpAndOpen<PortForwardingDialogResult>(
+          tester,
+          PortForwardingDialog(
+            otherRules: const [taken],
+            lanIp: lan.ip,
+            lanSubnetMask: lan.mask,
+          ),
+        );
+
+    Future<void> pick(WidgetTester tester, String protocol) async {
+      await tester.ensureVisible(find.text(protocol));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(protocol));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+        'a port another rule holds on a shared protocol is not '
+        'submitted, and the error follows the protocol', (tester) async {
+      final outcome = await open(tester);
+      await fillValid(tester);
+      expect(_errorTextOf(tester, 'pf-single-external-port'), isNull,
+          reason: 'TCP does not collide with the UDP rule');
+
+      await pick(tester, 'Both');
+      expect(_errorTextOf(tester, 'pf-single-external-port'),
+          startsWith('The rules cannot be created'));
+      await tester.tap(find.bySemanticsIdentifier('pf-single-submit'));
+      await tester.pumpAndSettle();
+      expect(outcome.closed, isFalse);
+
+      await pick(tester, 'TCP');
+      expect(_errorTextOf(tester, 'pf-single-external-port'), isNull);
+    }, variant: _onDesktop);
+
+    testWidgets('a destination that is not a LAN host is not submitted',
+        (tester) async {
+      final outcome = await open(tester);
+      await fillValid(tester);
+      await tester.tap(_field('pf-single-internal-ip'));
+      await _type(tester, 'pf-single-internal-ip', '192.168.1.1');
+      await _blur(tester, 'Add Port Forwarding');
+
+      await tester.tap(find.bySemanticsIdentifier('pf-single-submit'));
+      await tester.pumpAndSettle();
+
+      expect(outcome.closed, isFalse);
+      expect(
+          _errorTextOf(tester, 'pf-single-internal-ip'), 'Invalid IP address');
+    }, variant: _onDesktop);
+
+    testWidgets('a description over 32 bytes is not submitted', (tester) async {
+      final outcome = await open(tester);
+      await fillValid(tester);
+      await tester.tap(_field('pf-single-description'));
+      await _type(tester, 'pf-single-description', '網' * 11);
+      await _blur(tester, 'Add Port Forwarding');
+
+      await tester.tap(find.bySemanticsIdentifier('pf-single-submit'));
+      await tester.pumpAndSettle();
+
+      expect(outcome.closed, isFalse);
+      expect(_errorTextOf(tester, 'pf-single-description'),
+          'Must be 32 characters or less');
+    }, variant: _onDesktop);
+
+    testWidgets('a valid form submits what was typed', (tester) async {
+      final outcome = await open(tester);
+      await fillValid(tester);
+
+      await tester.tap(find.bySemanticsIdentifier('pf-single-submit'));
+      await tester.pumpAndSettle();
+
+      expect(outcome.closed, isTrue);
+      expect(outcome.result!.externalPort, 8080);
+      expect(outcome.result!.internalClient, '192.168.1.50');
+    }, variant: _onDesktop);
+  });
+
   group('port range forwarding dialog', () {
     Future<void> fillValid(WidgetTester tester) async {
       await _type(tester, 'pf-range-external-port-start', '3000');
       await _type(tester, 'pf-range-external-port-end', '3010');
-      await _type(tester, 'pf-range-internal-port', '3000');
       await _type(tester, 'pf-range-internal-ip', '192.168.1.50');
       await _blur(tester, 'Add Port Range Forwarding');
     }
@@ -123,11 +225,16 @@ void main() {
       await fillValid(tester);
 
       // Retype one box and press Add without leaving it first.
-      await tester.tap(_field('pf-range-internal-port'));
-      await _type(tester, 'pf-range-internal-port', '99999');
+      await tester.tap(_field('pf-range-external-port-end'));
+      await _type(tester, 'pf-range-external-port-end', '99999');
       // Still focused, so no error text yet: showing it mid-edit is what
       // rebuilds the field and drops focus. Only the gate has moved.
-      expect(_errorTextOf(tester, 'pf-range-internal-port'), isNull);
+      expect(
+        tester
+            .widget<AppRangeInput>(find.byType(AppRangeInput).first)
+            .errorText,
+        isNull,
+      );
       await tester.tap(find.bySemanticsIdentifier('pf-range-submit'));
       await tester.pumpAndSettle();
 
@@ -149,8 +256,154 @@ void main() {
       final r = outcome.result!;
       expect(r.externalPortStart, 3000);
       expect(r.externalPortEnd, 3010);
-      expect(r.internalPort, 3000);
       expect(r.internalClient, '192.168.1.50');
+    }, variant: _onDesktop);
+
+    // FWDEV#204: "Range rules: send InternalPort = ExternalPort (ports are
+    // kept, as on 1.0)", and 1.x's range rule has no internal port at all
+    // (#1080). FW 2.0.3 stores any value without checking it.
+    testWidgets('has no internal port field, and forwards the start port',
+        (tester) async {
+      final outcome = await _pumpAndOpen<PortRangeForwardingDialogResult>(
+        tester,
+        const PortRangeForwardingDialog(),
+      );
+
+      expect(
+          find.bySemanticsIdentifier('pf-range-internal-port'), findsNothing);
+
+      await fillValid(tester);
+      await tester.tap(find.bySemanticsIdentifier('pf-range-submit'));
+      await tester.pumpAndSettle();
+
+      expect(outcome.result!.internalPort, 3000);
+    }, variant: _onDesktop);
+
+    // FW 2.0.3 does not refuse a range over an existing single port: it stores
+    // both rules, enabled and overlapping (fwdev204_run2.log B2). So the
+    // dialog is the only place this can be stopped.
+    testWidgets('a range overlapping another rule is not submitted',
+        (tester) async {
+      final outcome = await _pumpAndOpen<PortRangeForwardingDialogResult>(
+        tester,
+        const PortRangeForwardingDialog(
+          otherRules: [
+            PortForwardingRuleUIModel(
+              description: 'Web',
+              externalPort: 3005,
+              internalPort: 80,
+              internalClient: '192.168.1.60',
+              protocol: 'Both',
+              enabled: false,
+            ),
+          ],
+        ),
+      );
+      await fillValid(tester);
+
+      await tester.tap(find.bySemanticsIdentifier('pf-range-submit'));
+      await tester.pumpAndSettle();
+
+      expect(outcome.closed, isFalse);
+      expect(
+        tester
+            .widget<AppRangeInput>(find.byType(AppRangeInput).first)
+            .errorText,
+        startsWith('The rules cannot be created'),
+      );
+    }, variant: _onDesktop);
+
+    testWidgets(
+        'switching the protocol onto a taken one shows the overlap, and back '
+        'clears it', (tester) async {
+      final outcome = await _pumpAndOpen<PortRangeForwardingDialogResult>(
+        tester,
+        const PortRangeForwardingDialog(
+          otherRules: [
+            PortForwardingRuleUIModel(
+              description: 'Game',
+              externalPort: 3005,
+              internalPort: 3005,
+              internalClient: '192.168.1.60',
+              protocol: 'UDP',
+              enabled: true,
+            ),
+          ],
+        ),
+      );
+      await fillValid(tester);
+      String? rangeError() => tester
+          .widget<AppRangeInput>(find.byType(AppRangeInput).first)
+          .errorText;
+      expect(rangeError(), isNull, reason: 'TCP does not collide with UDP');
+
+      // The error text makes the dialog taller, so scroll each segment into view
+      // first, as a user would.
+      Future<void> pick(String protocol) async {
+        await tester.ensureVisible(find.text(protocol));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(protocol));
+        await tester.pumpAndSettle();
+      }
+
+      await pick('UDP');
+      expect(rangeError(), startsWith('The rules cannot be created'));
+
+      await pick('TCP');
+      expect(rangeError(), isNull);
+      await tester.tap(find.bySemanticsIdentifier('pf-range-submit'));
+      await tester.pumpAndSettle();
+      expect(outcome.closed, isTrue);
+    }, variant: _onDesktop);
+
+    // FW 2.0.3 drops a destination that is not a LAN host and still creates
+    // the rule, enabled, forwarding to nothing (fwdev204_run2.log A2-A4).
+    for (final (ip, why) in const [
+      ('192.168.1.1', 'the router itself'),
+      ('10.9.9.9', 'outside the LAN subnet'),
+      ('192.168.1.255', 'the broadcast address'),
+      ('192.168.1.0', 'the network address'),
+    ]) {
+      testWidgets('a destination that is $why is not submitted',
+          (tester) async {
+        final outcome = await _pumpAndOpen<PortRangeForwardingDialogResult>(
+          tester,
+          const PortRangeForwardingDialog(
+            lanIp: '192.168.1.1',
+            lanSubnetMask: '255.255.255.0',
+          ),
+        );
+        await fillValid(tester);
+        await tester.tap(_field('pf-range-internal-ip'));
+        await _type(tester, 'pf-range-internal-ip', ip);
+        await _blur(tester, 'Add Port Range Forwarding');
+
+        await tester.tap(find.bySemanticsIdentifier('pf-range-submit'));
+        await tester.pumpAndSettle();
+
+        expect(outcome.closed, isFalse);
+        expect(
+            _errorTextOf(tester, 'pf-range-internal-ip'), 'Invalid IP address');
+      }, variant: _onDesktop);
+    }
+
+    // FW counts the description in bytes. Eleven CJK characters are 33 bytes,
+    // which FW clears on Add while saving the rule (fwdev204_run2.log A1).
+    testWidgets('a description over 32 bytes is not submitted', (tester) async {
+      final outcome = await _pumpAndOpen<PortRangeForwardingDialogResult>(
+        tester,
+        const PortRangeForwardingDialog(),
+      );
+      await fillValid(tester);
+      await tester.tap(_field('pf-range-description'));
+      await _type(tester, 'pf-range-description', '網' * 11);
+      await _blur(tester, 'Add Port Range Forwarding');
+
+      await tester.tap(find.bySemanticsIdentifier('pf-range-submit'));
+      await tester.pumpAndSettle();
+
+      expect(outcome.closed, isFalse);
+      expect(_errorTextOf(tester, 'pf-range-description'), 'Max 32 characters');
     }, variant: _onDesktop);
 
     testWidgets(
@@ -270,6 +523,115 @@ void main() {
       expect(r.forwardPortEndRange, 0);
     }, variant: _onDesktop);
 
+    // FWDEV#204: "1.0 used TCP+UDP for both, so send Both to match it", and
+    // its trigger overlap check does not compare protocols. 1.x's trigger rule
+    // has no protocol at all (#1080).
+    testWidgets('has no protocol choice, and sends Both for both ranges',
+        (tester) async {
+      final outcome = await _pumpAndOpen<PortTriggeringDialogResult>(
+        tester,
+        const PortTriggeringDialog(),
+      );
+
+      expect(find.byType(SegmentedButton<String>), findsNothing);
+
+      await fillValid(tester);
+      await tester.tap(find.bySemanticsIdentifier('port-triggering-submit'));
+      await tester.pumpAndSettle();
+
+      expect(outcome.result!.triggerProtocol, 'Both');
+      expect(outcome.result!.forwardProtocol, 'Both');
+    }, variant: _onDesktop);
+
+    testWidgets('a trigger range overlapping another rule\'s is not submitted',
+        (tester) async {
+      final outcome = await _pumpAndOpen<PortTriggeringDialogResult>(
+        tester,
+        const PortTriggeringDialog(
+          otherRules: [
+            PortTriggeringRuleUIModel(
+              enabled: false,
+              description: 'Chat',
+              triggerPort: 90,
+              triggerPortEndRange: 110,
+              triggerProtocol: 'Both',
+              forwardRules: [
+                PortTriggerForwardRuleUIModel(
+                  forwardPort: 5000,
+                  forwardProtocol: 'Both',
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+      await fillValid(tester);
+
+      await tester.tap(find.bySemanticsIdentifier('port-triggering-submit'));
+      await tester.pumpAndSettle();
+
+      expect(outcome.closed, isFalse);
+      expect(
+        tester
+            .widget<AppRangeInput>(find.byType(AppRangeInput).first)
+            .errorText,
+        startsWith('The rules cannot be created'),
+      );
+    }, variant: _onDesktop);
+
+    testWidgets(
+        'a forwarded range overlapping another rule\'s is not submitted',
+        (tester) async {
+      final outcome = await _pumpAndOpen<PortTriggeringDialogResult>(
+        tester,
+        const PortTriggeringDialog(
+          otherRules: [
+            PortTriggeringRuleUIModel(
+              enabled: true,
+              description: 'Chat',
+              triggerPort: 9000,
+              triggerProtocol: 'Both',
+              forwardRules: [
+                PortTriggerForwardRuleUIModel(
+                  forwardPort: 190,
+                  forwardPortEndRange: 210,
+                  forwardProtocol: 'Both',
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+      await fillValid(tester);
+
+      await tester.tap(find.bySemanticsIdentifier('port-triggering-submit'));
+      await tester.pumpAndSettle();
+
+      expect(outcome.closed, isFalse);
+      expect(
+        tester.widget<AppRangeInput>(find.byType(AppRangeInput).last).errorText,
+        startsWith('The rules cannot be created'),
+      );
+    }, variant: _onDesktop);
+
+    testWidgets('a description over 32 bytes is not submitted', (tester) async {
+      final outcome = await _pumpAndOpen<PortTriggeringDialogResult>(
+        tester,
+        const PortTriggeringDialog(),
+      );
+      await fillValid(tester);
+      await tester.tap(_field('pf-trigger-description'));
+      await _type(tester, 'pf-trigger-description', '網' * 11);
+      await _blur(tester, 'Add Port Range Triggering');
+
+      await tester.tap(find.bySemanticsIdentifier('port-triggering-submit'));
+      await tester.pumpAndSettle();
+
+      expect(outcome.closed, isFalse);
+      expect(
+          _errorTextOf(tester, 'pf-trigger-description'), 'Max 32 characters');
+    }, variant: _onDesktop);
+
     testWidgets(
         'editing only the description of a stored rule saves, and keeps its '
         'ports', (tester) async {
@@ -306,7 +668,9 @@ void main() {
       expect(r.triggerPortEndRange, 0);
       expect(r.forwardPort, 6113);
       expect(r.forwardPortEndRange, 6119);
-      expect(r.forwardProtocol, 'UDP');
+      // 1.x keeps no protocol for a trigger, so a stored UDP is saved as Both.
+      expect(r.triggerProtocol, 'Both');
+      expect(r.forwardProtocol, 'Both');
     }, variant: _onDesktop);
 
     testWidgets(

@@ -178,13 +178,18 @@ class UspPortForwardingService {
   ///
   /// Lenient mode: partial success is acceptable (log warning),
   /// only throws if ALL operations fail.
+  /// FWDEV#204: a range forwards to the same ports on the LAN host, so its
+  /// internal port is its start port, as on 1.x (#1080). A stored range may
+  /// carry another value, and every Set sends the whole rule.
+  static int _internalPortFor(PortForwardingRuleUIModel r) =>
+      r.isPortRange ? r.externalPort : r.internalPort;
+
   Future<({int added, int updated, int deleted})> saveForwardingBatch({
     required List<PortForwardingRuleUIModel> original,
     required List<PortForwardingRuleUIModel> current,
   }) async {
     try {
-      int totalOps = 0;
-      int failedOps = 0;
+      final tally = _BatchTally('[PortForwarding]');
 
       // 1. Delete (sequential, reverse order to avoid firmware renumbering)
       final currentPaths = <String>{
@@ -196,53 +201,13 @@ class UspPortForwardingService {
               r.instancePath != null && !currentPaths.contains(r.instancePath))
           .toList();
       for (final r in toDelete.reversed) {
-        totalOps++;
         final result = await PortForwarding.delete(_usp, [r.instancePath!]);
-        final parsed = UspResultParser.parseDeleteResult(result);
-        switch (parsed) {
-          case UspSuccess():
-            break;
-          case UspPartialSuccess(failures: final f):
-            logger
-                .w('[PortForwarding] Delete partial: ${f.first.errorMessage}');
-          case UspFailure(errors: final e):
-            failedOps++;
-            logger
-                .w('[PortForwarding]: Delete failed: ${e.first.errorMessage}');
-        }
+        tally.record('Delete', UspResultParser.parseDeleteResult(result));
       }
 
-      // 2. Add (single batch call)
-      final toAdd = current.where((r) => r.instancePath == null).toList();
-      if (toAdd.isNotEmpty) {
-        totalOps++;
-        final result = await PortForwarding.add(
-          _usp,
-          toAdd
-              .map((r) => {
-                    'Enable': r.enabled,
-                    'ExternalPort': r.externalPort,
-                    'ExternalPortEndRange': r.externalPortEndRange,
-                    'InternalPort': r.internalPort,
-                    'InternalClient': r.internalClient,
-                    'Protocol': r.protocol,
-                    'Description': r.description,
-                  })
-              .toList(),
-        );
-        final parsed = UspResultParser.parseAddResult(result);
-        switch (parsed) {
-          case UspSuccess():
-            break;
-          case UspPartialSuccess(failures: final f):
-            logger.w('[PortForwarding]: Add partial: ${f.first.errorMessage}');
-          case UspFailure(errors: final e):
-            failedOps++;
-            logger.w('[PortForwarding]: Add failed: ${e.first.errorMessage}');
-        }
-      }
-
-      // 3. Update (single batch call)
+      // 2. Update (single batch call), before Add: a rule moved off a port
+      // frees it, and an Add sent first would find the port still taken.
+      // FW 2.0.3 stores such an Add with ExternalPort = 0 (FWDEV#204).
       final originalByPath = <String, PortForwardingRuleUIModel>{
         for (final r in original)
           if (r.instancePath != null) r.instancePath!: r,
@@ -258,7 +223,7 @@ class UspPortForwardingService {
             enabled: cur.enabled,
             externalPort: cur.externalPort,
             externalPortEndRange: cur.externalPortEndRange,
-            internalPort: cur.internalPort,
+            internalPort: _internalPortFor(cur),
             internalClient: cur.internalClient,
             protocol: cur.protocol,
             description: cur.description,
@@ -266,29 +231,31 @@ class UspPortForwardingService {
         }
       }
       if (toUpdate.isNotEmpty) {
-        totalOps++;
         final result = await PortForwarding.update(_usp, toUpdate);
-        final parsed = UspResultParser.parseSetResult(result);
-        switch (parsed) {
-          case UspSuccess():
-            break;
-          case UspPartialSuccess(failures: final f):
-            logger
-                .w('[PortForwarding] Update partial: ${f.first.errorMessage}');
-          case UspFailure(errors: final e):
-            failedOps++;
-            logger
-                .w('[PortForwarding]: Update failed: ${e.first.errorMessage}');
-        }
+        tally.record('Update', UspResultParser.parseSetResult(result));
       }
 
-      // All operations failed → throw
-      if (totalOps > 0 && failedOps == totalOps) {
-        throw UspCompleteFailureError(
-          summary: 'All forwarding batch operations failed',
-          failures: const [],
+      // 3. Add (single batch call)
+      final toAdd = current.where((r) => r.instancePath == null).toList();
+      if (toAdd.isNotEmpty) {
+        final result = await PortForwarding.add(
+          _usp,
+          toAdd
+              .map((r) => {
+                    'Enable': r.enabled,
+                    'ExternalPort': r.externalPort,
+                    'ExternalPortEndRange': r.externalPortEndRange,
+                    'InternalPort': _internalPortFor(r),
+                    'InternalClient': r.internalClient,
+                    'Protocol': r.protocol,
+                    'Description': r.description,
+                  })
+              .toList(),
         );
+        tally.record('Add', UspResultParser.parseAddResult(result));
       }
+
+      tally.throwIfAnyFailed();
 
       return (
         added: toAdd.length,
@@ -314,8 +281,7 @@ class UspPortForwardingService {
     required List<PortTriggeringRuleUIModel> current,
   }) async {
     try {
-      int totalOps = 0;
-      int failedOps = 0;
+      final tally = _BatchTally('[PortTriggering]');
 
       // 1. Delete (sequential, reverse order to avoid firmware renumbering)
       final currentPaths = <String>{
@@ -327,78 +293,13 @@ class UspPortForwardingService {
               r.instancePath != null && !currentPaths.contains(r.instancePath))
           .toList();
       for (final r in toDelete.reversed) {
-        totalOps++;
         final result = await PortTriggering.delete(_usp, [r.instancePath!]);
-        final parsed = UspResultParser.parseDeleteResult(result);
-        switch (parsed) {
-          case UspSuccess():
-            break;
-          case UspPartialSuccess(failures: final f):
-            logger
-                .w('[PortTriggering]: Delete partial: ${f.first.errorMessage}');
-          case UspFailure(errors: final e):
-            failedOps++;
-            logger
-                .w('[PortTriggering]: Delete failed: ${e.first.errorMessage}');
-        }
+        tally.record('Delete', UspResultParser.parseDeleteResult(result));
       }
 
-      // 2. Add (parent + forward rules)
-      final toAdd = current.where((r) => r.instancePath == null).toList();
-      for (final r in toAdd) {
-        totalOps++;
-        final result = await PortTriggering.add(
-          _usp,
-          [
-            {
-              'Enable': r.enabled,
-              'Description': r.description,
-              'Port': r.triggerPort,
-              'PortEndRange': r.triggerPortEndRange,
-              'Protocol': r.triggerProtocol,
-            }
-          ],
-        );
-
-        // Extract instance path from structured response
-        final parsedResult = UspResultParser.parseAddResult(result);
-        String? parentPath;
-        switch (parsedResult) {
-          case UspSuccess():
-            final createdInstances = parsedResult.allCreatedInstances;
-            if (createdInstances.isNotEmpty) {
-              parentPath = createdInstances.first.affectedPath;
-            }
-          case UspPartialSuccess(failures: final f):
-            logger.w(
-                '[PortTriggering]: Add parent partial: ${f.first.errorMessage}');
-            final createdInstances = parsedResult.successes
-                .expand((s) => s.createdInstances ?? <UspCreatedInstance>[])
-                .toList();
-            if (createdInstances.isNotEmpty) {
-              parentPath = createdInstances.first.affectedPath;
-            }
-          case UspFailure(errors: final e):
-            failedOps++;
-            logger.w(
-                '[PortTriggering]: Add parent failed: ${e.first.errorMessage}');
-        }
-
-        // Add forward rules only if parent was created
-        if (parentPath != null) {
-          for (final fr in r.forwardRules) {
-            await PortTriggering.addPortTriggerForwardRule(
-              _usp,
-              parentPath,
-              forwardPort: fr.forwardPort,
-              forwardPortEndRange: fr.forwardPortEndRange,
-              forwardProtocol: fr.forwardProtocol,
-            );
-          }
-        }
-      }
-
-      // 3. Update parent-level fields AND reconcile nested forward rules.
+      // 2. Update parent-level fields AND reconcile nested forward rules,
+      // before Add, for the same reason as forwarding: a trigger moved off a
+      // port frees it for a trigger Added in the same save (FWDEV#204).
       //
       // The parent Set (PortTrigger.{i}) only carries the trigger fields
       // (Enable/Description/Port/PortEndRange/Protocol). The forwarded ports
@@ -416,7 +317,7 @@ class UspPortForwardingService {
         if (orig == null) continue;
         if (cur == orig) continue;
 
-        // 3a. Parent-level trigger fields.
+        // 2a. Parent-level trigger fields.
         if (cur.enabled != orig.enabled ||
             cur.description != orig.description ||
             cur.triggerPort != orig.triggerPort ||
@@ -432,41 +333,80 @@ class UspPortForwardingService {
           ));
         }
 
-        // 3b. Nested forwarded-port rules.
+        // 2b. Nested forwarded-port rules.
         if (cur.forwardRules != orig.forwardRules) {
-          final (int fwdOps, int fwdFailed) = await _reconcileForwardRules(
+          await _reconcileForwardRules(
+            tally,
             parentPath: cur.instancePath!,
             original: orig.forwardRules,
             current: cur.forwardRules,
           );
-          totalOps += fwdOps;
-          failedOps += fwdFailed;
         }
       }
       if (toUpdate.isNotEmpty) {
-        totalOps++;
         final result = await PortTriggering.update(_usp, toUpdate);
-        final parsed = UspResultParser.parseSetResult(result);
-        switch (parsed) {
+        tally.record('Update', UspResultParser.parseSetResult(result));
+      }
+
+      // 3. Add (parent + forward rules)
+      final toAdd = current.where((r) => r.instancePath == null).toList();
+      for (final r in toAdd) {
+        final result = await PortTriggering.add(
+          _usp,
+          [
+            {
+              'Enable': r.enabled,
+              'Description': r.description,
+              'Port': r.triggerPort,
+              'PortEndRange': r.triggerPortEndRange,
+              'Protocol': r.triggerProtocol,
+            }
+          ],
+        );
+
+        // Extract instance path from structured response
+        final parsedResult = UspResultParser.parseAddResult(result);
+        tally.record('Add parent', parsedResult);
+        String? parentPath;
+        switch (parsedResult) {
           case UspSuccess():
+            final createdInstances = parsedResult.allCreatedInstances;
+            if (createdInstances.isNotEmpty) {
+              parentPath = createdInstances.first.affectedPath;
+            }
+          case UspPartialSuccess():
+            final createdInstances = parsedResult.successes
+                .expand((s) => s.createdInstances ?? <UspCreatedInstance>[])
+                .toList();
+            if (createdInstances.isNotEmpty) {
+              parentPath = createdInstances.first.affectedPath;
+            }
+          case UspFailure():
             break;
-          case UspPartialSuccess(failures: final f):
-            logger
-                .w('[PortTriggering]: Update partial: ${f.first.errorMessage}');
-          case UspFailure(errors: final e):
-            failedOps++;
-            logger
-                .w('[PortTriggering]: Update failed: ${e.first.errorMessage}');
+        }
+
+        // Add forward rules only if parent was created. A parent Add that
+        // succeeded without naming its instance leaves them unwritable, which
+        // is a failed save, not a skipped step.
+        if (parentPath == null && parsedResult is! UspFailure) {
+          tally.recordMissing('Add parent',
+              'no instance path returned for trigger ${r.triggerPortDisplay}');
+        }
+        if (parentPath != null) {
+          for (final fr in r.forwardRules) {
+            final fwd = await PortTriggering.addPortTriggerForwardRule(
+              _usp,
+              parentPath,
+              forwardPort: fr.forwardPort,
+              forwardPortEndRange: fr.forwardPortEndRange,
+              forwardProtocol: fr.forwardProtocol,
+            );
+            tally.record('Add forward', UspResultParser.parseAddResult(fwd));
+          }
         }
       }
 
-      // All operations failed → throw
-      if (totalOps > 0 && failedOps == totalOps) {
-        throw UspCompleteFailureError(
-          summary: 'All triggering batch operations failed',
-          failures: const [],
-        );
-      }
+      tally.throwIfAnyFailed();
 
       return (
         added: toAdd.length,
@@ -486,17 +426,14 @@ class UspPortForwardingService {
   /// Add / Set / Delete calls against the `Rule.{j}` sub-table. Existing rules
   /// (non-null instancePath) whose values changed are updated in place via
   /// [UspClient.set]; rules that vanished are deleted; brand-new rules
-  /// (null instancePath) are added. Returns the number of operations attempted
-  /// and how many failed, so the caller can fold them into its lenient
-  /// all-or-nothing tally.
-  Future<(int, int)> _reconcileForwardRules({
+  /// (null instancePath) are added. Every result goes into [tally], so a
+  /// refused forward rule fails the whole save.
+  Future<void> _reconcileForwardRules(
+    _BatchTally tally, {
     required String parentPath,
     required List<PortTriggerForwardRuleUIModel> original,
     required List<PortTriggerForwardRuleUIModel> current,
   }) async {
-    int ops = 0;
-    int failed = 0;
-
     // 1. Delete forward rules that no longer exist in current.
     final currentPaths = <String>{
       for (final r in current)
@@ -507,21 +444,9 @@ class UspPortForwardingService {
             r.instancePath != null && !currentPaths.contains(r.instancePath))
         .toList();
     for (final r in toDelete.reversed) {
-      ops++;
       final result = await PortTriggering.deletePortTriggerForwardRule(
           _usp, r.instancePath!);
-      final parsed = UspResultParser.parseDeleteResult(result);
-      switch (parsed) {
-        case UspSuccess():
-          break;
-        case UspPartialSuccess(failures: final f):
-          logger.w(
-              '[PortTriggering]: Forward delete partial: ${f.first.errorMessage}');
-        case UspFailure(errors: final e):
-          failed++;
-          logger.w(
-              '[PortTriggering]: Forward delete failed: ${e.first.errorMessage}');
-      }
+      tally.record('Delete forward', UspResultParser.parseDeleteResult(result));
     }
 
     // 2. Update existing forward rules whose values changed (in-place Set).
@@ -540,26 +465,13 @@ class UspPortForwardingService {
       updateParams['${cur.instancePath}Protocol'] = cur.forwardProtocol;
     }
     if (updateParams.isNotEmpty) {
-      ops++;
       final result = await _usp.set(updateParams);
-      final parsed = UspResultParser.parseSetResult(result);
-      switch (parsed) {
-        case UspSuccess():
-          break;
-        case UspPartialSuccess(failures: final f):
-          logger.w(
-              '[PortTriggering]: Forward update partial: ${f.first.errorMessage}');
-        case UspFailure(errors: final e):
-          failed++;
-          logger.w(
-              '[PortTriggering]: Forward update failed: ${e.first.errorMessage}');
-      }
+      tally.record('Update forward', UspResultParser.parseSetResult(result));
     }
 
     // 3. Add brand-new forward rules (null instancePath).
     final toAdd = current.where((r) => r.instancePath == null).toList();
     for (final fr in toAdd) {
-      ops++;
       final result = await PortTriggering.addPortTriggerForwardRule(
         _usp,
         parentPath,
@@ -567,20 +479,66 @@ class UspPortForwardingService {
         forwardPortEndRange: fr.forwardPortEndRange,
         forwardProtocol: fr.forwardProtocol,
       );
-      final parsed = UspResultParser.parseAddResult(result);
-      switch (parsed) {
-        case UspSuccess():
-          break;
-        case UspPartialSuccess(failures: final f):
-          logger.w(
-              '[PortTriggering]: Forward add partial: ${f.first.errorMessage}');
-        case UspFailure(errors: final e):
-          failed++;
-          logger.w(
-              '[PortTriggering]: Forward add failed: ${e.first.errorMessage}');
-      }
+      tally.record('Add forward', UspResultParser.parseAddResult(result));
     }
+  }
+}
 
-    return (ops, failed);
+/// The outcome of every step in one batch save.
+///
+/// Any step that failed, partly or fully, fails the save: the batch used to
+/// throw only when *every* step failed, so a save that left a rule behind on
+/// the router still reported "saved". The router's own error for the first
+/// failure is what the user is shown.
+class _BatchTally {
+  /// [_tag] is the grep-friendly log prefix, `[PortForwarding]` or
+  /// `[PortTriggering]`.
+  _BatchTally(this._tag);
+
+  final String _tag;
+  final List<UspErrorDetail> _failures = [];
+  int _steps = 0;
+  int _failedSteps = 0;
+
+  void record(String step, UspOperationResult<dynamic> result) {
+    _steps++;
+    final List<UspErrorDetail> failures;
+    switch (result) {
+      case UspSuccess():
+        return;
+      case UspPartialSuccess(failures: final f):
+        failures = f;
+      case UspFailure(errors: final e):
+        _failedSteps++;
+        failures = e;
+    }
+    _failures.addAll(failures);
+    logger.w('$_tag: $step failed: '
+        '${failures.map((f) => f.errorMessage).join('; ')}');
+  }
+
+  /// A step whose result said success but left the save unable to go on.
+  void recordMissing(String step, String why) {
+    _steps++;
+    _failedSteps++;
+    _failures.add(UspErrorDetail(
+      requestedPath: '',
+      errorCode: 0,
+      errorMessage: why,
+    ));
+    logger.w('$_tag: $step failed: $why');
+  }
+
+  void throwIfAnyFailed() {
+    if (_failures.isEmpty) return;
+    final summary = '$_tag batch: ${_failures.first.errorMessage}';
+    if (_failedSteps == _steps) {
+      throw UspCompleteFailureError(summary: summary, failures: _failures);
+    }
+    throw UspPartialFailureError(
+      summary: summary,
+      successPaths: const [],
+      failures: _failures,
+    );
   }
 }

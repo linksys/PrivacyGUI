@@ -828,6 +828,7 @@
   "noPresetSelected": "Ingen forudindstilling valgt",
   "noReservationIpMayChange": "Ingen reservation. IP kan ændres ved gentilslutning.",
   "noSinglePortRules": "Ingen regler for enkeltport-videresendelse konfigureret",
+  "maxRulesReached": "Det maksimale antal regler er nået",
   "noSsid": "(Ingen SSID)",
   "noTargetBankAvailable": "Ingen målbank tilgængelig",
   "noTimezonesFound": "Ingen tidszoner fundet",

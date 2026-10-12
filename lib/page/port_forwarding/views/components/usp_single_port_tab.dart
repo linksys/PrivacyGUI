@@ -9,18 +9,28 @@ import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/usp_port_forwarding_page_notifier.dart';
 import 'package:privacy_gui/page/dashboard/views/dialogs/port_forwarding_dialog.dart';
+import 'package:privacy_gui/page/port_forwarding/services/port_rule_limits.dart';
+import 'package:privacy_gui/page/port_forwarding/views/components/lan_for_rule_dialog.dart';
+import 'package:privacy_gui/page/port_forwarding/views/components/rule_limit_note.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Tab 1: Single Port Forwarding — shows rules where isSinglePort == true.
 class UspSinglePortTab extends ConsumerWidget {
   final List<PortForwardingRuleUIModel> rules;
+
+  /// Every forwarding rule, range ones included: a single port may not overlap
+  /// a range either (FWDEV#204).
+  final List<PortForwardingRuleUIModel> allForwardingRules;
   final bool isSaving;
 
   const UspSinglePortTab({
     super.key,
     required this.rules,
+    this.allForwardingRules = const [],
     this.isSaving = false,
   });
+
+  bool get _isFull => rules.length >= kMaxSinglePortForwardingRules;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -47,10 +57,13 @@ class UspSinglePortTab extends ConsumerWidget {
             AppIconButton(
               icon: AppIcon.font(Icons.add, size: 20),
               identifier: 'pf-add-single-port',
-              onTap: isSaving ? null : () => _showAddDialog(context, ref),
+              onTap: isSaving || _isFull
+                  ? null
+                  : () => _showAddDialog(context, ref),
             ),
           ],
         ),
+        if (_isFull) const RuleLimitNote(),
         AppGap.lg(),
         if (rules.isEmpty)
           DetailEmptyBlock(
@@ -141,10 +154,17 @@ class UspSinglePortTab extends ConsumerWidget {
   }
 
   Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
+    final lan = await lanForRuleDialog(context, ref);
+    if (lan == null || !context.mounted) return;
     final deviceOptions = _buildIpv4DeviceOptions(ref);
     final result = await showAppDialog<PortForwardingDialogResult>(
       context: context,
-      builder: (_) => PortForwardingDialog(deviceOptions: deviceOptions),
+      builder: (_) => PortForwardingDialog(
+        deviceOptions: deviceOptions,
+        otherRules: allForwardingRules,
+        lanIp: lan.ip,
+        lanSubnetMask: lan.mask,
+      ),
     );
     if (result == null || !context.mounted) return;
     ref.read(uspPortForwardingPageProvider.notifier).addForwardingRule(
@@ -161,11 +181,18 @@ class UspSinglePortTab extends ConsumerWidget {
 
   Future<void> _showEditDialog(BuildContext context, WidgetRef ref,
       PortForwardingRuleUIModel rule) async {
+    final lan = await lanForRuleDialog(context, ref);
+    if (lan == null || !context.mounted) return;
     final deviceOptions = _buildIpv4DeviceOptions(ref);
     final result = await showAppDialog<PortForwardingDialogResult>(
       context: context,
-      builder: (_) =>
-          PortForwardingDialog(rule: rule, deviceOptions: deviceOptions),
+      builder: (_) => PortForwardingDialog(
+        rule: rule,
+        deviceOptions: deviceOptions,
+        otherRules: othersThan(allForwardingRules, rule),
+        lanIp: lan.ip,
+        lanSubnetMask: lan.mask,
+      ),
     );
     if (result == null || !context.mounted) return;
     ref.read(uspPortForwardingPageProvider.notifier).editForwardingRule(

@@ -79,6 +79,24 @@ class UspPortForwardingPageNotifier
   }
 
   // ---------------------------------------------------------------------------
+  // save — re-read the router after a partial failure
+  // ---------------------------------------------------------------------------
+
+  /// A partly failed batch has already written some rules. Re-read the router
+  /// so those rules carry their instance paths: otherwise a second Save would
+  /// Add them again. The error still reaches the page. A complete failure
+  /// changed nothing, so the user's edits are kept for a retry.
+  @override
+  Future<PortForwardingPageFeatureState> save() async {
+    try {
+      return await super.save();
+    } on UspPartialFailureError {
+      await fetch(forceRemote: true);
+      rethrow;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // performSave — diff original vs current, batch API calls
   // ---------------------------------------------------------------------------
 

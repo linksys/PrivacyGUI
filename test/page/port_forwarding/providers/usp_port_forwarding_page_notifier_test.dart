@@ -310,6 +310,55 @@ void main() {
       container.dispose();
     });
 
+    // A failed batch can still have written some of its rules. Without a
+    // re-read, a rule the router already holds stays unsaved in the working
+    // copy (no instancePath), so pressing Save again Adds it a second time.
+    test('a partly failed save re-reads the router and still fails', () async {
+      stubFetch();
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      const added = PortForwardingRuleUIModel(
+        description: 'HTTPS',
+        externalPort: 443,
+        internalPort: 443,
+        internalClient: '192.168.1.100',
+        protocol: 'TCP',
+        enabled: true,
+      );
+      when(() => mockService.saveForwardingBatch(
+            original: any(named: 'original'),
+            current: any(named: 'current'),
+          )).thenThrow(const UspPartialFailureError(
+        summary: 'forwarding batch: Delete rejected',
+        successPaths: [],
+        failures: [],
+      ));
+      when(() => mockService.saveTriggeringBatch(
+            original: any(named: 'original'),
+            current: any(named: 'current'),
+          )).thenAnswer((_) async => (added: 0, updated: 0, deleted: 0));
+
+      final notifier = container.read(uspPortForwardingPageProvider.notifier);
+      notifier.addForwardingRule(added);
+      // What the router holds after the batch: the Add went through.
+      stubFetch(forwarding: [pf1, pf2]);
+
+      await expectLater(
+          notifier.save(), throwsA(isA<UspPartialFailureError>()));
+
+      final state = container.read(uspPortForwardingPageProvider);
+      expect(state.settings.current.forwardingRules, [pf1, pf2],
+          reason: 'the working copy is what the router holds now');
+      expect(
+          state.settings.current.forwardingRules
+              .where((r) => r.instancePath == null),
+          isEmpty,
+          reason: 'nothing is left to be Added again');
+      expect(state.status.isSaving, isFalse);
+      container.dispose();
+    });
+
     test('isDirty after adding, clean after revert', () async {
       stubFetch();
       final container = createContainer();

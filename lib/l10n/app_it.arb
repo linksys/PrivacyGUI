@@ -828,6 +828,7 @@
   "noPresetSelected": "Nessun preset selezionato",
   "noReservationIpMayChange": "Nessuna prenotazione. L'IP potrebbe cambiare alla riconnessione.",
   "noSinglePortRules": "Nessuna regola di inoltro porta singola configurata",
+  "maxRulesReached": "Numero massimo di regole raggiunto",
   "noSsid": "(Nessun SSID)",
   "noTargetBankAvailable": "Nessun bank di destinazione disponibile",
   "noTimezonesFound": "Nessun fuso orario trovato",

@@ -828,6 +828,7 @@
   "noPresetSelected": "Nie wybrano ustawienia wstępnego",
   "noReservationIpMayChange": "Brak rezerwacji. Adres IP może się zmienić po ponownym połączeniu.",
   "noSinglePortRules": "Nie skonfigurowano reguł przekierowania pojedynczego portu",
+  "maxRulesReached": "Osiągnięto maksymalną liczbę reguł",
   "noSsid": "(Brak SSID)",
   "noTargetBankAvailable": "Brak dostępnego banku docelowego",
   "noTimezonesFound": "Nie znaleziono stref czasowych",

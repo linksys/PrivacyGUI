@@ -828,6 +828,7 @@
   "noPresetSelected": "ยังไม่ได้เลือกพรีเซ็ต",
   "noReservationIpMayChange": "ไม่มีการสำรอง IP อาจเปลี่ยนเมื่อเชื่อมต่อใหม่",
   "noSinglePortRules": "ยังไม่มีการกำหนดค่ากฎการส่งต่อพอร์ตเดี่ยว",
+  "maxRulesReached": "ถึงจำนวนกฎสูงสุดแล้ว",
   "noSsid": "(ไม่มี SSID)",
   "noTargetBankAvailable": "ไม่มีแบงก์เป้าหมายที่พร้อมใช้งาน",
   "noTimezonesFound": "ไม่พบเขตเวลา",

@@ -828,6 +828,7 @@
   "noPresetSelected": "لم يتم اختيار إعداد مسبق",
   "noReservationIpMayChange": "لا يوجد حجز. قد يتغير IP عند إعادة الاتصال.",
   "noSinglePortRules": "لم يتم تكوين قواعد إعادة توجيه منفذ مفرد",
+  "maxRulesReached": "تم الوصول إلى الحد الأقصى لعدد القواعد",
   "noSsid": "(لا يوجد SSID)",
   "noTargetBankAvailable": "لا يوجد بنك مستهدف متاح",
   "noTimezonesFound": "لم يتم العثور على مناطق زمنية",

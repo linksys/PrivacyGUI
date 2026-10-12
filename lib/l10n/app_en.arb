@@ -1348,6 +1348,7 @@
   "ruleAdded": "Rule added",
   "singlePortForwarding": "Single Port Forwarding",
   "noSinglePortRules": "No single port forwarding rules configured",
+  "maxRulesReached": "Maximum number of rules reached",
   "portRangeForwarding": "Port Range Forwarding",
   "noPortRangeRules": "No port range forwarding rules configured",
   "portTriggering": "Port Range Triggering",

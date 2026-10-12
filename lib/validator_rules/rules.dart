@@ -642,7 +642,11 @@ class HostValidForGivenRouterIPAddressAndSubnetMaskRule extends ValidationRule {
 
   bool _isIPValidForSubnet(int ipAddressNum, int subnetMaskNum) {
     final networkIdNum = (ipAddressNum & subnetMaskNum) >>> 0;
-    final broadcastIdNum = (~subnetMaskNum | networkIdNum) >>> 0;
+    // On the Dart VM ints are 64-bit, so `~` sets the high 32 bits as well;
+    // mask them off or the broadcast address comes out negative and matches
+    // nothing. The JS build was already unsigned 32-bit, so this affected tests
+    // and the VM, not the shipped web app.
+    final broadcastIdNum = networkIdNum | (~subnetMaskNum & 0xFFFFFFFF);
     return ipAddressNum != networkIdNum && ipAddressNum != broadcastIdNum;
   }
 }

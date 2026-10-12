@@ -828,6 +828,7 @@
   "noPresetSelected": "未選擇任何預設組合",
   "noReservationIpMayChange": "沒有保留。IP 在重新連線時可能會變更。",
   "noSinglePortRules": "未設定任何單一連接埠轉送規則",
+  "maxRulesReached": "已達到規則數量上限",
   "noSsid": "（無 SSID）",
   "noTargetBankAvailable": "沒有可用的目標儲存庫",
   "noTimezonesFound": "找不到時區",

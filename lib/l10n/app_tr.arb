@@ -828,6 +828,7 @@
   "noPresetSelected": "Önceden ayarlanmış değer seçilmedi",
   "noReservationIpMayChange": "Ayırma yok. Yeniden bağlantıda IP değişebilir.",
   "noSinglePortRules": "Yapılandırılmış tek port yönlendirme kuralı yok",
+  "maxRulesReached": "Maksimum kural sayısına ulaşıldı",
   "noSsid": "(SSID Yok)",
   "noTargetBankAvailable": "Kullanılabilir hedef banka yok",
   "noTimezonesFound": "Saat dilimi bulunamadı",

@@ -7,6 +7,8 @@ import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/usp_port_forwarding_page_notifier.dart';
+import 'package:privacy_gui/page/port_forwarding/services/port_rule_limits.dart';
+import 'package:privacy_gui/page/port_forwarding/views/components/rule_limit_note.dart';
 import 'package:privacy_gui/page/port_forwarding/views/dialogs/port_triggering_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -20,6 +22,8 @@ class UspPortTriggeringTab extends ConsumerWidget {
     required this.rules,
     this.isSaving = false,
   });
+
+  bool get _isFull => rules.length >= kMaxPortTriggeringRules;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,10 +45,13 @@ class UspPortTriggeringTab extends ConsumerWidget {
             AppIconButton(
               icon: AppIcon.font(Icons.add, size: 20),
               identifier: 'pf-add-port-triggering',
-              onTap: isSaving ? null : () => _showAddDialog(context, ref),
+              onTap: isSaving || _isFull
+                  ? null
+                  : () => _showAddDialog(context, ref),
             ),
           ],
         ),
+        if (_isFull) const RuleLimitNote(),
         AppGap.lg(),
         if (rules.isEmpty)
           DetailEmptyBlock(
@@ -114,7 +121,7 @@ class UspPortTriggeringTab extends ConsumerWidget {
   Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
     final result = await showAppDialog<PortTriggeringDialogResult>(
       context: context,
-      builder: (_) => const PortTriggeringDialog(),
+      builder: (_) => PortTriggeringDialog(otherRules: rules),
     );
     if (result == null || !context.mounted) return;
     ref.read(uspPortForwardingPageProvider.notifier).addTriggeringRule(
@@ -139,7 +146,10 @@ class UspPortTriggeringTab extends ConsumerWidget {
       PortTriggeringRuleUIModel rule) async {
     final result = await showAppDialog<PortTriggeringDialogResult>(
       context: context,
-      builder: (_) => PortTriggeringDialog(rule: rule),
+      builder: (_) => PortTriggeringDialog(
+        rule: rule,
+        otherRules: othersThan(rules, rule),
+      ),
     );
     if (result == null || !context.mounted) return;
     ref.read(uspPortForwardingPageProvider.notifier).editTriggeringRule(

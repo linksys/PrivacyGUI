@@ -828,6 +828,7 @@
   "noPresetSelected": "Предустановка не выбрана",
   "noReservationIpMayChange": "Нет резервирования. IP может измениться при переподключении.",
   "noSinglePortRules": "Правила переадресации одиночного порта не настроены",
+  "maxRulesReached": "Достигнуто максимальное количество правил",
   "noSsid": "(Нет SSID)",
   "noTargetBankAvailable": "Нет доступного целевого банка",
   "noTimezonesFound": "Часовые пояса не найдены",

@@ -828,6 +828,7 @@
   "noPresetSelected": "Chưa chọn cài đặt sẵn",
   "noReservationIpMayChange": "Không có địa chỉ dành riêng. IP có thể thay đổi khi kết nối lại.",
   "noSinglePortRules": "Chưa cấu hình quy tắc chuyển tiếp cổng đơn nào",
+  "maxRulesReached": "Đã đạt số lượng quy tắc tối đa",
   "noSsid": "(Không có SSID)",
   "noTargetBankAvailable": "Không có phân vùng đích khả dụng",
   "noTimezonesFound": "Không tìm thấy múi giờ nào",

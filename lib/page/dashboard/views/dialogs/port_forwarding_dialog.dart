@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
+import 'package:privacy_gui/page/port_forwarding/services/port_rule_limits.dart';
+import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -30,10 +32,24 @@ class PortForwardingDialog extends StatefulWidget {
   final PortForwardingRuleUIModel? rule;
   final List<AppAutoCompleteOption> deviceOptions;
 
+  /// Every other forwarding rule, single-port and range alike, without [rule].
+  /// The port may not overlap one of them on a shared protocol: FW 2.0.3 saves
+  /// an overlapping Add with `ExternalPort = 0` (FWDEV#204).
+  final List<PortForwardingRuleUIModel> otherRules;
+
+  /// The router's LAN address and mask. With both, the destination must be a
+  /// LAN host: FW 2.0.3 clears any other destination and still saves the rule.
+  /// Null skips that check and keeps the format checks only.
+  final String? lanIp;
+  final String? lanSubnetMask;
+
   const PortForwardingDialog({
     super.key,
     this.rule,
     this.deviceOptions = const [],
+    this.otherRules = const [],
+    this.lanIp,
+    this.lanSubnetMask,
   });
 
   @override
@@ -134,7 +150,7 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
     if (desc.isNotEmpty) {
       if (!_noWhitespaceRule.validate(desc)) {
         errors['description'] = loc(context).noLeadingTrailingSpaces;
-      } else if (desc.length > 32) {
+      } else if (descriptionTooLong(desc)) {
         errors['description'] = loc(context).mustBe32CharsOrLess;
       }
     }
@@ -144,6 +160,13 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
       final ext = int.tryParse(extPort);
       if (ext == null || ext < 1 || ext > 65535) {
         errors['externalPort'] = loc(context).portMustBe1To65535;
+      } else if (forwardingOverlaps(
+        externalPort: ext,
+        externalPortEndRange: 0,
+        protocol: _protocol,
+        others: widget.otherRules,
+      )) {
+        errors['externalPort'] = loc(context).rulesOverlapError;
       }
     }
 
@@ -161,6 +184,11 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
         errors['internalClient'] = loc(context).invalidIpv4Format;
       } else if (!_ipNoReservedRule.validate(client)) {
         errors['internalClient'] = loc(context).reservedIpNotAllowed;
+      } else if (widget.lanIp != null &&
+          widget.lanSubnetMask != null &&
+          !IpAddressAsLocalIpValidator(widget.lanIp!, widget.lanSubnetMask!)
+              .validate(client)) {
+        errors['internalClient'] = loc(context).invalidIpAddress;
       }
     }
 
@@ -269,7 +297,11 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
                   ButtonSegment(value: 'Both', label: Text(loc(context).both)),
                 ],
                 selected: {_protocol},
-                onSelectionChanged: (v) => setState(() => _protocol = v.first),
+                // An overlap depends on the protocol, so re-check the port.
+                onSelectionChanged: (v) {
+                  _protocol = v.first;
+                  _validate(context);
+                },
               ),
             ],
           ),

@@ -828,6 +828,7 @@
   "noPresetSelected": "Keine Voreinstellung ausgewählt",
   "noReservationIpMayChange": "Keine Reservierung. Die IP kann sich beim erneuten Verbinden ändern.",
   "noSinglePortRules": "Keine Einzelport-Weiterleitungsregeln konfiguriert",
+  "maxRulesReached": "Maximale Anzahl an Regeln erreicht",
   "noSsid": "(Keine SSID)",
   "noTargetBankAvailable": "Keine Zielbank verfügbar",
   "noTimezonesFound": "Keine Zeitzonen gefunden",

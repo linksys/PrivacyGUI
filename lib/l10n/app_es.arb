@@ -828,6 +828,7 @@
   "noPresetSelected": "No hay ningún preajuste seleccionado",
   "noReservationIpMayChange": "Sin reserva. La IP puede cambiar al reconectarse.",
   "noSinglePortRules": "No hay reglas de reenvío de un solo puerto configuradas",
+  "maxRulesReached": "Se ha alcanzado el número máximo de reglas",
   "noSsid": "(Sin SSID)",
   "noTargetBankAvailable": "No hay banco de destino disponible",
   "noTimezonesFound": "No se han encontrado zonas horarias",

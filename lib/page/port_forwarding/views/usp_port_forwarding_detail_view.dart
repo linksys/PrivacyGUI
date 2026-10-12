@@ -143,11 +143,15 @@ class _UspPortForwardingDetailViewState
           _buildTabContent(
               status,
               UspSinglePortTab(
-                  rules: singlePortRules, isSaving: status.isSaving)),
+                  rules: singlePortRules,
+                  allForwardingRules: settings.forwardingRules,
+                  isSaving: status.isSaving)),
           _buildTabContent(
               status,
               UspPortRangeTab(
-                  rules: portRangeRules, isSaving: status.isSaving)),
+                  rules: portRangeRules,
+                  allForwardingRules: settings.forwardingRules,
+                  isSaving: status.isSaving)),
           _buildTabContent(
               status,
               UspPortTriggeringTab(
