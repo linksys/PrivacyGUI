@@ -10,7 +10,11 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// Tab 2 — Advanced WiFi settings.
 ///
 /// Implements:
+///   - Client steering: Device.X_LINKSYS_Mesh.ClientSteeringEnabled (#1661)
+///   - Node steering: Device.X_LINKSYS_Mesh.NodeSteeringEnabled (#1661)
 ///   - DFS (IEEE 802.11h): Device.WiFi.Radio.{i}.IEEE80211hEnabled
+///
+/// In 1.x's order: the two steering switches, then DFS.
 ///
 /// Uses buffered save (Type A pattern): toggle updates local state only,
 /// user must press Save (page-level bottom bar) to persist changes.
@@ -50,65 +54,45 @@ class UspWifiAdvancedTab extends ConsumerWidget {
   ) {
     final notifier = ref.read(uspWifiAdvancedProvider.notifier);
     final settings = state.settings.current;
-    final disabled = state.status.isSaving;
+    final busy = state.status.isSaving;
 
-    if (settings.ieee80211hByRadio.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: AppText.bodyMedium(
-            loc(context).noAdvancedWifiSettings,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      );
-    }
-
+    // No "nothing here" state any more: a fetch that succeeded read both
+    // steering switches (the definition requires them), so the tab always has
+    // those two rows. A firmware whose radios report no IEEE 802.11h drops the
+    // DFS card only.
     final content = SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── DFS (IEEE 802.11h) ───────────────────────────────────────
-          AppCard(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: LayoutBlock(
-              padding: const EdgeInsets.symmetric(
-                vertical: AppSpacing.sm,
-                horizontal: AppSpacing.md,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: AppText.labelLarge(
-                            loc(context).dynamicFrequencySelection),
-                      ),
-                      AppSwitch(
-                        value: settings.isDfsEnabled,
-                        // Same busy treatment the rule rows carry — see
-                        // `usp_single_port_tab.dart` for why a null `onChanged`
-                        // was not one (#1542). `disabled` here *is*
-                        // `status.isSaving`.
-                        isLoading: disabled,
-                        busySemanticLabel:
-                            disabled ? loc(context).processing : null,
-                        onChanged:
-                            disabled ? null : (v) => notifier.setDfsEnabled(v),
-                      ),
-                    ],
-                  ),
-                  AppGap.md(),
-                  AppText.bodyMedium(
-                    loc(context).dfsDescription,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ],
-              ),
-            ),
+          _AdvancedSwitchCard(
+            identifier: 'wifi-advanced-client-steering',
+            title: loc(context).clientSteering,
+            description: loc(context).clientSteeringDesc,
+            value: settings.clientSteering,
+            busy: busy,
+            onChanged: notifier.setClientSteering,
           ),
+          AppGap.md(),
+          _AdvancedSwitchCard(
+            identifier: 'wifi-advanced-node-steering',
+            title: loc(context).nodeSteering,
+            description: loc(context).nodeSteeringDesc,
+            value: settings.nodeSteering,
+            busy: busy,
+            onChanged: notifier.setNodeSteering,
+          ),
+          if (settings.ieee80211hByRadio.isNotEmpty) ...[
+            AppGap.md(),
+            _AdvancedSwitchCard(
+              identifier: 'wifi-advanced-dfs',
+              title: loc(context).dynamicFrequencySelection,
+              description: loc(context).dfsDescription,
+              value: settings.isDfsEnabled,
+              busy: busy,
+              onChanged: notifier.setDfsEnabled,
+            ),
+          ],
         ],
       ),
     );
@@ -118,6 +102,67 @@ class UspWifiAdvancedTab extends ConsumerWidget {
       desktop: (ctx) => Center(
           child: SizedBox(
               width: ctx.colWidth(8, baseColumns: 12), child: content)),
+    );
+  }
+}
+
+/// One card per switch: the title beside the switch, the description under
+/// both. The DFS card's shape, now shared by the two steering cards.
+///
+/// Not `SwitchBlock`: it has no busy state, and every switch on this tab shows
+/// the save in flight (#1542).
+class _AdvancedSwitchCard extends StatelessWidget {
+  final String identifier;
+  final String title;
+  final String description;
+  final bool value;
+  final bool busy;
+  final ValueChanged<bool> onChanged;
+
+  const _AdvancedSwitchCard({
+    required this.identifier,
+    required this.title,
+    required this.description,
+    required this.value,
+    required this.busy,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: LayoutBlock(
+        padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.sm,
+          horizontal: AppSpacing.md,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(child: AppText.labelLarge(title)),
+                AppSwitch(
+                  identifier: identifier,
+                  value: value,
+                  // Same busy treatment the rule rows carry — see
+                  // `usp_single_port_tab.dart` for why a null `onChanged` was
+                  // not one (#1542). `busy` here *is* `status.isSaving`.
+                  isLoading: busy,
+                  busySemanticLabel: busy ? loc(context).processing : null,
+                  onChanged: busy ? null : onChanged,
+                ),
+              ],
+            ),
+            AppGap.md(),
+            AppText.bodyMedium(
+              description,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
