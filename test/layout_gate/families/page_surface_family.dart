@@ -159,6 +159,7 @@ class PageSurfaceCase {
     required this.requires,
     required this.forbids,
     this.needsMaterialAncestor = false,
+    this.sharesTabWith,
   });
 
   /// The sweep name's suffix — `page.dhcp` — and therefore part of every cell id.
@@ -203,6 +204,16 @@ class PageSurfaceCase {
   /// edit someone has to defend. What it may **not** become is the real shell — see
   /// [kSliverDashboardPageCase] for why no page here is pumped under one.
   final bool needsMaterialAncestor;
+
+  /// The id of the tab case this one is a second fixture state of, or null.
+  ///
+  /// A page swept per tab gives each tab one case, and a second case on the same
+  /// `initialTab` has always meant a wrong literal the view's `clamp` folded onto
+  /// a swept tab. #1611 needed the honest version of it — each port forwarding tab
+  /// with its list at the rule limit — so the second case says which tab it shares,
+  /// and `page_surface_family_test.dart` checks the claim against the tab both
+  /// cases open. Unmarked duplicates still fail there.
+  final String? sharesTabWith;
 
   /// [view] as the family actually pumps it.
   ///
