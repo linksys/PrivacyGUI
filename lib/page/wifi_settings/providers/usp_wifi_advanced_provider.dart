@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -49,11 +51,18 @@ class UspWifiAdvancedNotifier
   }) async {
     try {
       final ieee80211h = await _svc.fetchIeee80211h();
+      final steering = await _svc.fetchSteering();
 
-      logger.d('[USP][WiFi][Advanced]: Fetched — radios=${ieee80211h.length}');
+      logger.d('[USP][WiFi][Advanced]: Fetched — radios=${ieee80211h.length}, '
+          'clientSteering=${steering.clientSteering}, '
+          'nodeSteering=${steering.nodeSteering}');
 
       return (
-        WifiAdvancedSettings(ieee80211hByRadio: ieee80211h),
+        WifiAdvancedSettings(
+          ieee80211hByRadio: ieee80211h,
+          clientSteering: steering.clientSteering,
+          nodeSteering: steering.nodeSteering,
+        ),
         const WifiAdvancedStatus(),
       );
     } on ServiceError catch (e) {
@@ -92,6 +101,87 @@ class UspWifiAdvancedNotifier
 
   @override
   Future<void> performSave() async {
+    // Steering first, and only the switches that changed (#1661). It is applied
+    // at once with no radio reload, so it is sent before the DFS write rather
+    // than into the reload that write starts.
+    await _saveSteering();
+    if (!state.changesDfs) return;
+    await _saveIeee80211h();
+  }
+
+  /// Writes the changed steering switches, then makes them the saved values.
+  ///
+  /// Marked saved here, before the DFS write, because the two are separate Sets:
+  /// a DFS failure after this one landed must not leave a written switch reading
+  /// as an unsaved edit. A refused Set re-reads the device so the switches show
+  /// what it holds, then rethrows. A refused DFS write is left as it was before
+  /// #1661 — its error and read-back belong to #1499/#1460.
+  Future<void> _saveSteering() async {
+    final original = state.settings.original;
+    final current = state.settings.current;
+    final client = current.clientSteering != original.clientSteering
+        ? current.clientSteering
+        : null;
+    final node = current.nodeSteering != original.nodeSteering
+        ? current.nodeSteering
+        : null;
+    if (client == null && node == null) return;
+
+    try {
+      try {
+        await ref.read(uspMutationLockProvider).withLock(() async {
+          await _svc.setSteering(clientSteering: client, nodeSteering: node);
+        });
+      } on TimeoutException catch (e) {
+        // The lock's own window, which the service never sees to map. Folded
+        // so it reaches the re-read below and the view as a timeout; same fold
+        // as `firmware_auto_update_data_provider.dart`.
+        throw TimeoutError(
+          detail: 'the steering write was not answered (${e.message ?? '30s'})',
+        );
+      }
+    } on ServiceError {
+      await _rereadSteering();
+      rethrow;
+    }
+
+    logger.d('[USP][WiFi][Advanced]: Steering saved — '
+        'client=$client, node=$node');
+    state = state.copyWith(
+      settings: state.settings.copyWith(
+        original: state.settings.original.copyWith(
+          clientSteering: current.clientSteering,
+          nodeSteering: current.nodeSteering,
+        ),
+      ),
+    );
+  }
+
+  /// Puts the device's steering values into both sides of the working copy, so
+  /// a refused write leaves the switches at what the router still holds. If the
+  /// re-read fails too, the edit stays pending and the caller's error stands.
+  Future<void> _rereadSteering() async {
+    try {
+      final now = await _svc.fetchSteering();
+      WifiAdvancedSettings apply(WifiAdvancedSettings s) => s.copyWith(
+            clientSteering: now.clientSteering,
+            nodeSteering: now.nodeSteering,
+          );
+      state = state.copyWith(
+        settings: state.settings.copyWith(
+          original: apply(state.settings.original),
+          current: apply(state.settings.current),
+        ),
+      );
+    } on ServiceError catch (e) {
+      logger.w(
+          '[USP][WiFi][Advanced]: Steering re-read after a failed write '
+          'also failed',
+          error: e);
+    }
+  }
+
+  Future<void> _saveIeee80211h() async {
     // THIS SAVE WRITES TWO NAMED FIELDS, not the whole object. `setIeee80211hEnabled`
     // sets `IEEE80211hEnabled` on the listed radios plus `AutoChannelEnable` on the
     // remediated ones, so a value the device changed elsewhere while this page was open
@@ -186,18 +276,22 @@ class UspWifiAdvancedNotifier
   void setDfsEnabled(bool enabled) {
     final original = state.settings.original;
 
+    final current = state.settings.current;
+
     // When the user toggles back to the original effective DFS state, restore
     // the original per-radio map so the dirty flag clears correctly. Without
     // this, mixed per-radio values (e.g. 2.4 GHz=false, 5 GHz=true) would
-    // never match after a uniform set-all toggle.
+    // never match after a uniform set-all toggle. Only the map: a pending
+    // steering edit is not DFS's to undo.
     if (enabled == original.isDfsEnabled) {
       state = state.copyWith(
-        settings: state.settings.update(original),
+        settings: state.settings.update(
+          current.copyWith(ieee80211hByRadio: original.ieee80211hByRadio),
+        ),
       );
       return;
     }
 
-    final current = state.settings.current;
     final updated = current.copyWith(
       ieee80211hByRadio: {
         for (final path in current.ieee80211hByRadio.keys) path: enabled,
@@ -206,6 +300,24 @@ class UspWifiAdvancedNotifier
 
     state = state.copyWith(
       settings: state.settings.update(updated),
+    );
+  }
+
+  /// Toggle client steering. Buffered like [setDfsEnabled]; save() writes it.
+  void setClientSteering(bool enabled) {
+    state = state.copyWith(
+      settings: state.settings.update(
+        state.settings.current.copyWith(clientSteering: enabled),
+      ),
+    );
+  }
+
+  /// Toggle node steering. Buffered like [setDfsEnabled]; save() writes it.
+  void setNodeSteering(bool enabled) {
+    state = state.copyWith(
+      settings: state.settings.update(
+        state.settings.current.copyWith(nodeSteering: enabled),
+      ),
     );
   }
 }

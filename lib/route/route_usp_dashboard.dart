@@ -235,6 +235,12 @@ final uspDashboardRoute = ShellRoute(
           preservableProvider: uspDmzProvider.notifier,
         ),
         LinksysRoute(
+          name: RouteNamed.uspAdministration,
+          path: RoutePath.uspAdministration,
+          builder: (context, state) => const UspAdministrationView(),
+          preservableProvider: uspAdministrationProvider.notifier,
+        ),
+        LinksysRoute(
           name: RouteNamed.uspPortForwardingDetail,
           path: RoutePath.uspPortForwardingDetail,
           builder: (context, state) => UspPortForwardingDetailView(

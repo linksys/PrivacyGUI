@@ -542,6 +542,14 @@ void main() {
     expectedCellCount: 234,
   );
 
+  // `administration` — #1660, the 48th page view file: Advanced Settings →
+  // Administration, holding the UPnP switch. Not `admin`, the menu's page with the
+  // same title. One card; see `kAdministrationPageCase`.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kAdministrationPageCase),
+    expectedCellCount: 234,
+  );
+
   // The premise `requires` cannot state. Each row's inline summary is read from a
   // provider the fixture overrides, and every way that override can go wrong
   // renders **text**: a read still pending is "Loading…", a failed one is the
