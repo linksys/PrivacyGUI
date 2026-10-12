@@ -64,12 +64,3 @@ abstract class FirmwareUploadStrategy {
   /// propagate. Always call this, even if prepare() or uploadChunk() failed.
   Future<void> finalize();
 }
-
-/// Identifies which upload transport is being used.
-enum UploadMethod {
-  /// HTTP chunked push via `Device.LocalAgent.X_LINKSYS_Download()`.
-  http,
-
-  /// WebSocket binary push direct to OBUSPA.
-  websocket,
-}

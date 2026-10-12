@@ -11,6 +11,8 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_chunker.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_http_upload_strategy.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service_factory.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_upload_cancelled_exception.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_upload_method.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_upload_strategy.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_ws_strategy_factory.dart';
 
@@ -50,13 +52,6 @@ Future<String> _fetchEndpointId(UspClient client) async {
     throw StateError('Failed to fetch router EndpointID');
   }
   return endpointId;
-}
-
-class FirmwareUploadCancelledException implements Exception {
-  const FirmwareUploadCancelledException();
-
-  @override
-  String toString() => 'Firmware upload cancelled by user';
 }
 
 const _tag = '[FirmwareUpdate]';

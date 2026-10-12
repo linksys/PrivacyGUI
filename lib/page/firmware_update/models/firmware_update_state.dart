@@ -4,7 +4,7 @@ import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_progress.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
-import 'package:privacy_gui/page/firmware_update/services/firmware_upload_strategy.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_upload_method.dart';
 
 class FirmwareUpdateState extends Equatable {
   final FirmwareUpdatePhase phase;

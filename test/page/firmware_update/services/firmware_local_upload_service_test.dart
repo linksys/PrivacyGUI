@@ -9,6 +9,8 @@ import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_chunker.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_upload_cancelled_exception.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_upload_method.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_upload_strategy.dart';
 
 class MockUspClient extends Mock implements UspClient {}
