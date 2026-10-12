@@ -8,7 +8,7 @@ import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notif
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_settings.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_status.dart';
-import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
 import 'package:privacy_gui/page/menu/views/usp_menu_view.dart';
 import 'package:privacy_gui/page/models/menu_badge.dart';
 

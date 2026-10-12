@@ -23,7 +23,7 @@ import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state
 import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_settings.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_status.dart';
-import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 import 'package:privacy_gui/core/capability/capability_provider.dart';
 import 'package:privacy_gui/core/capability/device_capability.dart';

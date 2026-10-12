@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
 
 /// User-editable MAC-filter settings, shared by both the MAC Filter page
 /// (Deny/Disabled) and Instant Privacy (Allow/Disabled).

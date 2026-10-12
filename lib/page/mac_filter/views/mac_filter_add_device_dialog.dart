@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_device_ui_model.dart';
-import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_rules.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Opens the shared "add device manually" dialog used by both the MAC Filter
@@ -66,8 +66,8 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
   String? _errorFor(String raw) {
     final value = raw.trim();
     if (value.isEmpty) return null;
-    if (!UspMacFilterService.validateMac(value)) return 'invalidMacFormat';
-    final normalized = UspMacFilterService.normalizeMac(value);
+    if (!MacFilterRules.validateMac(value)) return 'invalidMacFormat';
+    final normalized = MacFilterRules.normalizeMac(value);
     final present = widget.existingMacs
         .map((m) => m.toUpperCase())
         .contains(normalized.toUpperCase());
@@ -87,7 +87,7 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
       };
 
   void _confirm() {
-    widget.onAdd(UspMacFilterService.normalizeMac(_controller.text));
+    widget.onAdd(MacFilterRules.normalizeMac(_controller.text));
     Navigator.of(context).pop();
   }
 

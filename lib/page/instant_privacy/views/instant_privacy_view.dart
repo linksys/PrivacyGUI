@@ -9,7 +9,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
-import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_rules.dart';
 import 'package:privacy_gui/page/mac_filter/views/mac_filter_add_device_dialog.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -63,7 +63,7 @@ class InstantPrivacyView extends ConsumerWidget {
     // the switch is turned back off.
     final macs = state.allowedMacs;
     final unsaveable = state.isEnabled &&
-        (macs.isEmpty || macs.length > UspMacFilterService.maxAddresses);
+        (macs.isEmpty || macs.length > MacFilterRules.maxAddresses);
     return UiKitBottomBarConfig(
       positiveLabel: loc(context).save,
       isPositiveEnabled: !state.status.isSaving && !unsaveable,
@@ -155,7 +155,7 @@ class InstantPrivacyView extends ConsumerWidget {
   Widget _buildDeviceList(
       BuildContext context, WidgetRef ref, UspInstantPrivacyState state) {
     final macs = state.allowedMacs;
-    final atLimit = macs.length >= UspMacFilterService.maxAddresses;
+    final atLimit = macs.length >= MacFilterRules.maxAddresses;
     return SizedBox(
       width: double.infinity,
       child: Column(
@@ -178,8 +178,8 @@ class InstantPrivacyView extends ConsumerWidget {
           ),
           AppGap.md(),
           if (atLimit) ...[
-            AppText.bodySmall(loc(context)
-                .macFilterMaxReached(UspMacFilterService.maxAddresses)),
+            AppText.bodySmall(
+                loc(context).macFilterMaxReached(MacFilterRules.maxAddresses)),
             AppGap.sm(),
           ],
           if (macs.isEmpty)
