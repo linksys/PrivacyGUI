@@ -28,7 +28,7 @@ import '../../mocks/provider_overrides/mock_common.dart';
 /// lives in the shared `_buildCard`, but covering both widths proves neither
 /// responsive branch drops the hook.
 void main() {
-  // Fixed E2E hooks assigned to the six entry cards, in list order.
+  // Fixed E2E hooks assigned to the seven entry cards, in list order.
   const expectedIdentifiers = <String>[
     'advanced-settings-internet',
     'advanced-settings-local-network',
@@ -36,6 +36,7 @@ void main() {
     'advanced-settings-dmz',
     'advanced-settings-port-forwarding',
     'advanced-settings-static-routing',
+    'advanced-settings-administration', // #1660
   ];
 
   setUpAll(() {

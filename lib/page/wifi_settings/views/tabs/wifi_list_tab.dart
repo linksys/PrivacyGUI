@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
@@ -109,9 +110,7 @@ class UspWifiListTab extends ConsumerWidget {
                   AppSwitch(
                     value: quickSetupEnabled,
                     identifier: 'wifi-quick-setup',
-                    onChanged: (v) => ref
-                        .read(uspWifiSettingsProvider.notifier)
-                        .setQuickSetupEnabled(v),
+                    onChanged: (v) => _toggleQuickSetup(context, ref, v),
                   ),
                 ],
               ),
@@ -130,6 +129,30 @@ class UspWifiListTab extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Flips Quick Setup, asking first when the tab holds unsaved edits.
+  ///
+  /// The switch is inside this tab, so the page's tab-switch dirty guard never
+  /// sees it. Flipping it silently made the unsaved per-network edits the new
+  /// baseline, Quick Setup hid them, and a later save then reasoned about the
+  /// router from values it did not hold (#1499 review round 2). Asking, and
+  /// discarding on "yes", is the same choice leaving a tab offers.
+  Future<void> _toggleQuickSetup(
+    BuildContext context,
+    WidgetRef ref,
+    bool enabled,
+  ) async {
+    final notifier = ref.read(uspWifiSettingsProvider.notifier);
+    if (notifier.isDirty()) {
+      final discard = await showUnsavedAlert(
+        context,
+        message: loc(context).quickSetupDiscardChangesDesc,
+      );
+      if (discard != true) return;
+      notifier.revert();
+    }
+    notifier.setQuickSetupEnabled(enabled);
   }
 
   Widget _buildQuickSetupGrid(
