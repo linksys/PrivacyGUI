@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
-import 'package:privacy_gui/page/port_forwarding/services/port_rule_limits.dart';
+import 'package:privacy_gui/page/port_forwarding/models/port_rule_limits.dart';
 
 import '../../../mocks/test_data/port_forwarding_test_data.dart';
 

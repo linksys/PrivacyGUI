@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
-import 'package:privacy_gui/page/port_forwarding/services/port_rule_limits.dart';
+import 'package:privacy_gui/page/port_forwarding/models/port_rule_limits.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:ui_kit_library/ui_kit.dart';

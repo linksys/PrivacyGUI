@@ -1,3 +1,11 @@
+/// The rules a forwarding or triggering rule must meet before it is saved:
+/// FWDEV#204's limits and checks, as pure functions over the UI models.
+///
+/// Here in `models/` rather than `services/` because the dialogs and tabs use
+/// them, and the Presentation layer may depend on models, not on services
+/// (constitution §5.4; §5.4.4 #4 lets UI models carry validation logic).
+library;
+
 import 'dart:convert';
 
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
