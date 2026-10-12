@@ -346,7 +346,48 @@ Allowed finders for interactions:
 
 ### Shared Interactions
 
-UI components that are shared across multiple pages (e.g., the saving spinner dialog triggered by `doSomethingWithSpinner`) should be tested once in a shared test file (`test/golden_test/page/shared/shared_states_test.dart`) rather than duplicated in every feature test. Individual feature tests should NOT include a `saving` state — since the spinner is an imperative overlay (not provider-state-driven), it requires an interaction to capture, and testing it once is sufficient.
+UI components that are shared across multiple pages (e.g., the saving spinner dialog triggered by `doSomethingWithSpinner`) are tested once in a shared test under `test/golden_test/page/shared/` rather than duplicated in every feature test. See [Transient Overlays](#transient-overlays) for which overlays those are and how they are captured.
+
+---
+
+## Transient Overlays
+
+Spinners, snackbars and dialogs are shown imperatively (a function call, not a provider state) and disappear on their own, so a golden has to open them and hold them open long enough to capture (#905).
+
+### Where each overlay is tested
+
+A shared overlay is captured once, in its own test, and not repeated in every page that shows it. What the helper decides belongs in the shared test: chrome, loading state, default text, mode-dependent actions. What the caller passes in stays in that page's test: form fields, page-specific copy.
+
+| Overlay | Test | Captures |
+|---------|------|----------|
+| `doSomethingWithSpinner` | `shared/shared_states_test.dart` (`saving_spinner`) | The spinner with its "Processing..." line |
+| `showUnsavedAlert` | `shared/shared_states_test.dart` (`discard_changes_dialog`) | The discard changes dialog |
+| `showSuccessSnackBar` / `showFailedSnackBar` | `shared/shared_snackbars_test.dart` | One golden per message, from a table |
+| `showRecoveryDialog` | `shared/shared_recovery_dialog_test.dart` | Each caller's title/message, and the Remote Assistance exit action (on reboot: a Wi-Fi change opens no dialog in that mode) |
+| `showSubmitAppDialog` | `shared/shared_dialogs_test.dart` (`submit_loading`) | The loading frame after submit |
+| `showListSelectionDialog` | `shared/shared_dialogs_test.dart` (`list_selection`) | The speed test server picker |
+| `showFirmwareUpdateRecoveryDialog` | `firmware_update/localizations/firmware_recovery_dialog_test.dart` | Every probe state, retrying, still waiting, Remote Assistance |
+| Page-specific dialogs (add/edit/delete forms, confirmations) | That page's own test, as `dialog_*` interactions | The caller's content |
+
+Snackbars are the exception to "caller content stays in the page". The message is a single string in a fixed frame, and the reason to capture it is the translation, so every message shown through `showSuccessSnackBar` / `showFailedSnackBar` is captured in `shared_snackbars_test.dart`: direct calls, `performUspMutation`'s `successMessage`, and `showRecoveryDialog`'s `successMessage`. When a call site gains a new message, add a row to that file's table. Hard-coded English messages are left out until they are localized, because a per-locale golden of them shows nothing new. A snackbar built directly with `ScaffoldMessenger.of(context).showSnackBar` has its own frame and belongs to the page that owns it.
+
+An overlay suite has no `states`, only `interactions`: there is nothing to show before the overlay opens, and a state would be a blank golden in every locale and device. The runner accepts a config with either one non-empty.
+
+A feature test does **not** add a spinner, snackbar or recovery dialog interaction.
+
+### How to capture one
+
+- **Trigger the overlay through the same entry point production uses.** Never use a lower-level helper with different defaults, and never a replica widget. The `saving_spinner` golden used to call `showAppSpinnerDialog` directly and showed a spinner without the "Processing..." line every real caller has; the firmware recovery golden used to render a hand-written copy whose English strings never changed with the locale.
+- **Hold Future-driven overlays open with a future that never completes**, then pump past the helper's own delays. `Completer<void>().future` leaves no timer behind; a long `Future.delayed` leaves one pending and fails the test at teardown.
+- **Pump with `pumpOverlayIn(tester)`** (`golden_interactions.dart`). It covers `doSomethingWithSpinner`'s deferred open, `showAppDialog`'s 200ms transition and a snackbar's 250ms transition, which `disableAnimations` does not shorten.
+- **Call helpers that need a `WidgetRef` from `OverlayHost`** (`golden_framework/overlay_host.dart`). Its element is both the `BuildContext` and the `WidgetRef`, so `overlayHostOf(tester)` gives both, under the cell's own overrides.
+- **Select mode-dependent content by overriding the mode profile** (`appModeProfileProvider.overrideWithValue(const RemoteModeProfile())`), never with a flag.
+- **Pin content that derives from timers or the clock.** A test advances fake time, which moves `clock.now()` (`package:clock`) but not `DateTime.now()`. An overlay that reads the time must read it through `clock.now()`, or its text follows the machine's speed and the golden flakes; the firmware recovery dialog's countdown does, so its golden reads its full `baseline`, and `baseline: Duration.zero` gives the elapsed copy.
+- **Drive one-golden-per-message captures from a single table** in the test, built through the call site's own localizer (`loc(context)`, `localizeServiceError`, `localizeFirmwareFailure`), never from pre-written English strings.
+
+### Why dialogs can read providers
+
+Alchemist mounts its own `Navigator` above the widget a golden builds, and `Navigator.of(context, rootNavigator: true)` returns the furthest navigator up the tree. Routes pushed by `showDialog` or `showAppDialog` therefore land outside the app's `MaterialApp`, and a dialog that reads a provider while building would throw "No ProviderScope found". The runner exposes each cell's `ProviderContainer` both inside the app and outside alchemist's wrapper (`_goldenContainer` in `golden_runner.dart`), the same way it provides `Localizations` out there, so a dialog and the page behind it read one set of providers, as in the app.
 
 ---
 
@@ -469,6 +510,9 @@ void runViewGoldenTests(GoldenTestConfig config) {
             final name = _goldenFileName(
               config.viewName, stateEntry.key, device, locale, theme,
             );
+            // One container per cell, set by `builder` and read by
+            // `pumpWidget`; see "Why dialogs can read providers".
+            late ProviderContainer container;
 
             goldenTest(
               '${config.viewName} - ${stateEntry.key} - ${device.name} - ...',
@@ -486,12 +530,16 @@ void runViewGoldenTests(GoldenTestConfig config) {
                 await tester.binding.setSurfaceSize(effectiveSize);
                 tester.view.physicalSize = effectiveSize;
                 tester.view.devicePixelRatio = 1.0;
-                await tester.pumpWidget(widget);
+                // The container's scope and the app's Localizations again,
+                // outside alchemist's Navigator.
+                await tester.pumpWidget(
+                  _outsideAlchemist(container, locale, widget),
+                );
               },
               builder: () => _buildGoldenWidget(
                 config.view(),
                 config.shell,
-                stateEntry.value,
+                container = _goldenContainer(stateEntry.value),
                 effectiveSize,
                 locale,
                 theme,
@@ -686,8 +734,10 @@ void _validateConfig(GoldenTestConfig config) {
   // viewName: snake_case, non-empty
   assert(RegExp(r'^[a-z][a-z0-9_]*$').hasMatch(config.viewName));
 
-  // At least one state must be defined
-  assert(config.states.isNotEmpty, 'states must contain at least one entry (e.g., "data").');
+  // At least one golden: a state, or an interaction (overlay suites have only
+  // interactions, since there is nothing to show before the overlay opens)
+  assert(config.states.isNotEmpty || (config.interactions?.isNotEmpty ?? false),
+      'states or interactions must contain at least one entry (e.g., "data").');
 
   // All state/interaction keys: snake_case
   final allKeys = {...config.states.keys, ...?config.interactions?.keys};
@@ -736,6 +786,8 @@ test/golden_test/
                                   #   from test/util/test_viewports.dart, which a
                                   #   non-golden card test reads too — #1361)
     golden_runner.dart            # runViewGoldenTests(), _buildGoldenWidget()
+    golden_interactions.dart      # settleWithTimeout(), pumpOverlayIn(), switchToTab()
+    overlay_host.dart             # OverlayHost: a host whose element is a WidgetRef
     mocks/
       mock_firewall.dart          # FixedFirewallNotifier + firewallOverrides()
       mock_dashboard.dart         # Dashboard-specific mocks + stub widget factory
@@ -824,7 +876,7 @@ Beyond the basics, enumerate every state that produces a distinct visual output:
 - **Empty states** (e.g., empty list) for list-based views
 
 States that should NOT be in individual feature tests:
-- **Saving spinner** — this is a shared UI overlay (`doSomethingWithSpinner`), not provider-state-driven. Tested once in `shared_states_test.dart` via interaction.
+- **Saving spinner, snackbars, recovery dialogs** — shared UI overlays, not provider-state-driven. Each is tested once under `test/golden_test/page/shared/`; see [Transient Overlays](#transient-overlays).
 
 ### Validation Error Coverage
 

@@ -90,6 +90,9 @@ void runViewGoldenTests(GoldenTestConfig config) {
               locale,
               theme,
             );
+            // Set by `builder`, read by `pumpWidget`, which alchemist runs in
+            // that order; see [_goldenContainer].
+            late ProviderContainer container;
 
             goldenTest(
               '${config.viewName} - ${stateEntry.key} - ${device.name} - ${_localeTag(locale)}${theme == Brightness.dark ? ' - dark' : ''}',
@@ -117,22 +120,17 @@ void runViewGoldenTests(GoldenTestConfig config) {
                 await tester.binding.setSurfaceSize(effectiveSize);
                 tester.view.physicalSize = effectiveSize;
                 tester.view.devicePixelRatio = 1.0;
-                // Wrap with Localizations so dialogs using root navigator
-                // (showGeneralDialog with useRootNavigator: true) can access
-                // AppLocalizations. The widget tree from alchemist's wrapper
-                // doesn't include our app's Localizations.
+                // Dialogs pushed on the root navigator (showGeneralDialog with
+                // useRootNavigator: true) land above the app's own Localizations
+                // and ProviderScope, so both are provided again out here.
                 await tester.pumpWidget(
-                  Localizations(
-                    locale: locale,
-                    delegates: AppLocalizations.localizationsDelegates,
-                    child: widget,
-                  ),
+                  _outsideAlchemist(container, locale, widget),
                 );
               },
               builder: () => _buildGoldenWidget(
                 config.view(),
                 config.shell,
-                stateEntry.value,
+                container = _goldenContainer(stateEntry.value),
                 effectiveSize,
                 locale,
                 theme,
@@ -157,6 +155,7 @@ void runViewGoldenTests(GoldenTestConfig config) {
                 locale,
                 theme,
               );
+              late ProviderContainer container;
 
               goldenTest(
                 '${config.viewName} - ${interactionEntry.key} - ${device.name} - ${_localeTag(locale)}${theme == Brightness.dark ? ' - dark' : ''}',
@@ -182,21 +181,15 @@ void runViewGoldenTests(GoldenTestConfig config) {
                   await tester.binding.setSurfaceSize(effectiveSize);
                   tester.view.physicalSize = effectiveSize;
                   tester.view.devicePixelRatio = 1.0;
-                  // Wrap with Localizations so dialogs using root navigator
-                  // (showGeneralDialog with useRootNavigator: true) can access
-                  // AppLocalizations.
+                  // Same wrapping as a state cell; see [_outsideAlchemist].
                   await tester.pumpWidget(
-                    Localizations(
-                      locale: locale,
-                      delegates: AppLocalizations.localizationsDelegates,
-                      child: widget,
-                    ),
+                    _outsideAlchemist(container, locale, widget),
                   );
                 },
                 builder: () => _buildGoldenWidget(
                   config.view(),
                   config.shell,
-                  interactionEntry.value.setup,
+                  container = _goldenContainer(interactionEntry.value.setup),
                   effectiveSize,
                   locale,
                   theme,
@@ -262,9 +255,12 @@ void _validateConfig(GoldenTestConfig config) {
     );
   }
 
-  if (config.states.isEmpty) {
+  // A config may be interactions only: an overlay suite (#905) has nothing to
+  // show before its overlay opens, and a state there would be a blank golden in
+  // every locale and device. What must exist is at least one golden.
+  if (config.states.isEmpty && (config.interactions?.isEmpty ?? true)) {
     throw ArgumentError(
-      'states must contain at least one entry (e.g., "data").',
+      'states or interactions must contain at least one entry (e.g., "data").',
     );
   }
 
@@ -287,18 +283,85 @@ void _validateConfig(GoldenTestConfig config) {
   }
 }
 
+/// The provider container for one golden cell: the shared overrides plus the
+/// cell's own [setup].
+///
+/// Built once per cell and exposed by two scopes, one inside the app the golden
+/// builds ([_buildGoldenWidget]) and one in the cell's `pumpWidget`, outside
+/// everything. The second exists because alchemist mounts its own [Navigator]
+/// *above* the golden's widget, and `Navigator.of(context, rootNavigator: true)`
+/// returns the furthest navigator up the tree. `showDialog` and `showAppDialog`
+/// both default to the root navigator, so their routes are pushed onto
+/// alchemist's, outside the app's scope, and a dialog that reads a provider
+/// while building throws "No ProviderScope found" (#905, the firmware recovery
+/// dialog). The app has no navigator above its scope; the second scope gives the
+/// golden tree the same property. Same container on both sides, so a dialog and
+/// the page behind it read one set of providers, as they do in the app.
+///
+/// Disposed by [_outsideAlchemist] when the tree unmounts, not here.
+ProviderContainer _goldenContainer(MockSetup setup) {
+  final overrides = <Override>[];
+  overrides.addAll(commonOverrides());
+  setup(overrides);
+  return ProviderContainer(overrides: overrides);
+}
+
+/// The cell's widget under [container]'s scope and inside the app's localization
+/// delegates, for `pumpWidget` to mount outside alchemist's wrapper. See
+/// [_goldenContainer] for why the scope is needed out here.
+Widget _outsideAlchemist(
+  ProviderContainer container,
+  Locale locale,
+  Widget widget,
+) =>
+    _DisposesContainer(
+      container: container,
+      child: UncontrolledProviderScope(
+        container: container,
+        child: Localizations(
+          locale: locale,
+          delegates: AppLocalizations.localizationsDelegates,
+          child: widget,
+        ),
+      ),
+    );
+
+/// Disposes [container] when this widget is unmounted.
+///
+/// That is when `ProviderScope` disposed the container it owned, and the timing
+/// matters: `testWidgets` unmounts the tree and *then* asserts no timer is
+/// pending, while `addTearDown` runs after that assertion. A provider that
+/// cancels a timer in `ref.onDispose` passes only if the container goes with the
+/// tree. Guarded by `golden_runner_container_test.dart`.
+class _DisposesContainer extends StatefulWidget {
+  final ProviderContainer container;
+  final Widget child;
+
+  const _DisposesContainer({required this.container, required this.child});
+
+  @override
+  State<_DisposesContainer> createState() => _DisposesContainerState();
+}
+
+class _DisposesContainerState extends State<_DisposesContainer> {
+  @override
+  void dispose() {
+    widget.container.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
 Widget _buildGoldenWidget(
   Widget child,
   ShellType shell,
-  MockSetup setup,
+  ProviderContainer container,
   Size screenSize,
   Locale locale,
   Brightness brightness,
 ) {
-  final overrides = <Override>[];
-  overrides.addAll(commonOverrides());
-  setup(overrides);
-
   Widget wrappedChild;
   switch (shell) {
     case ShellType.pageView:
@@ -330,8 +393,8 @@ Widget _buildGoldenWidget(
 
   return SizedBox.expand(
     child: _PackageInfoStub(
-      child: ProviderScope(
-        overrides: overrides,
+      child: UncontrolledProviderScope(
+        container: container,
         child: MaterialApp.router(
           locale: locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
