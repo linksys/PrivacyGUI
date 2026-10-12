@@ -52,6 +52,14 @@ class UspFirewallNotifier extends AutoDisposeNotifier<FirewallFeatureState>
       final uiModel = data.firewallModel;
       final ruleContext = data.ruleContext;
 
+      // Without a single named rule every toggle would show a default the
+      // router never reported (#1611).
+      if (ruleContext.isEmpty) {
+        throw const ResourceNotFoundError(
+          detail: 'No known firewall rule on the router',
+        );
+      }
+
       logger.d('[USP][Firewall]: Fetched — '
           'spiV4: ${uiModel.isIPv4FirewallEnabled}, '
           'spiV6: ${uiModel.isIPv6FirewallEnabled}');

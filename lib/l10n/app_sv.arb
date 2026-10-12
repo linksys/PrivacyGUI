@@ -102,6 +102,7 @@
   "filterAnonymous": "Filtrera anonyma internetbegäran",
   "filterIdent": "Filtrera ident (Port 113)",
   "filterMulticast": "Filtrera multicast",
+  "filterInternetNATRedirection": "Filtrera NAT-omdirigeringar via internet",
   "filters": "Filtrera",
   "firewall": "Brandvägg",
   "firmwareUpdate": "Uppdatering av fast programvara",

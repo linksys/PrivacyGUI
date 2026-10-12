@@ -102,6 +102,7 @@
   "filterAnonymous": "Anonim İnternet isteklerini engelle",
   "filterIdent": "Ident filtresi (Port 113)",
   "filterMulticast": "Çoklu yayınları engelle",
+  "filterInternetNATRedirection": "İnternet NAT yeniden yönlendirmeyi engelle",
   "filters": "Filtreler",
   "firewall": "Güvenlik Duvarı",
   "firmwareUpdate": "Bellenim güncellemesi",

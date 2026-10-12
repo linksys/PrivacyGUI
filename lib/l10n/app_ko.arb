@@ -102,6 +102,7 @@
   "filterAnonymous": "익명의 인터넷 요청 필터링",
   "filterIdent": "ID 필터링(포트 113)",
   "filterMulticast": "멀티캐스트 필터",
+  "filterInternetNATRedirection": "인터넷 NAT 리디렉션 필터링",
   "filters": "필터",
   "firewall": "방화벽",
   "firmwareUpdate": "펌웨어 업데이트",

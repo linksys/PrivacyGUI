@@ -191,6 +191,7 @@
   "filterAnonymous": "Filter anonymous Internet requests",
   "filterIdent": "Filter ident (Port 113)",
   "filterMulticast": "Filter multicast",
+  "filterInternetNATRedirection": "Filter Internet NAT redirection",
   "filters": "Filters",
   "firewall": "Firewall",
   "firewallRules": "Firewall Rules",

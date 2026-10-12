@@ -102,6 +102,7 @@
   "filterAnonymous": "Filtrage des requêtes Internet anonymes",
   "filterIdent": "Filtrage IDENT (port 113)",
   "filterMulticast": "Filtrage multidiffusion",
+  "filterInternetNATRedirection": "Filtrage de redirection NAT Internet",
   "filters": "Filtres",
   "firewall": "Pare-feu",
   "firmwareUpdate": "Mise à jour du microprogramme",

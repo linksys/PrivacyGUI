@@ -102,6 +102,7 @@
   "filterAnonymous": "Фильтрация анонимных интернет-запросов",
   "filterIdent": "Фильтрация IDENT (Порт 113)",
   "filterMulticast": "Фильтрация групповой передачи",
+  "filterInternetNATRedirection": "Фильтрация интернет-переадресации NAT",
   "filters": "Фильтры",
   "firewall": "Брандмауэр",
   "firmwareUpdate": "Обновление прошивки",

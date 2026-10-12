@@ -102,6 +102,7 @@
   "filterAnonymous": "تصفية طلبات إنترنت المجهولة",
   "filterIdent": "تصفية التعريف (المنفذ 113)",
   "filterMulticast": "تصفية البث المتعدد",
+  "filterInternetNATRedirection": "تصفية إعادة توجيه NAT عبر إنترنت",
   "filters": "المرشحات",
   "firewall": "جدار الحماية",
   "firmwareUpdate": "تحديث البرنامج الثابت",

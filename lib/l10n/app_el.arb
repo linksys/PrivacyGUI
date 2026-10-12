@@ -102,6 +102,7 @@
   "filterAnonymous": "Φιλτράρισμα ανώνυμων αιτημάτων Internet",
   "filterIdent": "Φιλτράρισμα ident (Θύρα 113)",
   "filterMulticast": "Φιλτράρισμα multicast",
+  "filterInternetNATRedirection": "Ανακατεύθυνση φιλτραρίσματος Internet NAT",
   "filters": "Φίλτρα",
   "firewall": "Τείχος προστασίας",
   "firmwareUpdate": "Ενημέρωση υλικολογισμικού",

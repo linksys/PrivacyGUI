@@ -102,6 +102,7 @@
   "filterAnonymous": "Filter permintaan Internet anonim",
   "filterIdent": "Filter ident (Port 113)",
   "filterMulticast": "Filter multicast",
+  "filterInternetNATRedirection": "Filter pengalihan NAT Internet",
   "filters": "Filter",
   "firewall": "Firewall",
   "firmwareUpdate": "Pembaruan firmware",

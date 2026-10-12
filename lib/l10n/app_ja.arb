@@ -102,6 +102,7 @@
   "filterAnonymous": "匿名インターネット リクエストをフィルター処理します",
   "filterIdent": "フィルター ID (ポート 113)",
   "filterMulticast": "マルチキャストをフィルター処理します",
+  "filterInternetNATRedirection": "インターネットNATリダイレクトをフィルター",
   "filters": "フィルター",
   "firewall": "ファイアウォール",
   "firmwareUpdate": "ファームウェアの更新",

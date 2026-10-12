@@ -102,6 +102,7 @@
   "filterAnonymous": "过滤匿名Internet请求",
   "filterIdent": "过滤ident协议（端口号113）",
   "filterMulticast": "过滤组播",
+  "filterInternetNATRedirection": "过滤Internet NAT重定向",
   "filters": "筛选器",
   "firewall": "防火墙",
   "firmwareUpdate": "固件更新",

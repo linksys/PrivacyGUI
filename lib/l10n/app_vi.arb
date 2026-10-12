@@ -102,6 +102,7 @@
   "filterAnonymous": "Lọc các yêu cầu Internet ẩn danh",
   "filterIdent": "Lọc nhận dạng (cổng 113)",
   "filterMulticast": "Lọc multicast",
+  "filterInternetNATRedirection": "Lọc Chuyển hướng Internet NAT",
   "filters": "Bộ lọc",
   "firewall": "Tường lửa",
   "firmwareUpdate": "Cập nhật bản firmware",

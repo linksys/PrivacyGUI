@@ -102,6 +102,7 @@
   "filterAnonymous": "กรองการร้องขออินเทอร์เน็ตที่ไม่มีชื่อ",
   "filterIdent": "กรอง ident (พอร์ต 113)",
   "filterMulticast": "กรองมัลติคาสท์",
+  "filterInternetNATRedirection": "กรองการเปลี่ยนเส้นทาง NAT ของอินเทอร์เน็ต",
   "filters": "ตัวกรอง",
   "firewall": "ไฟร์วอลล์",
   "firmwareUpdate": "การอัปเดตเฟิร์มแวร์",

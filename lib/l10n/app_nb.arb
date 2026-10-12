@@ -102,6 +102,7 @@
   "filterAnonymous": "Filtrer anonyme Internett-adresser",
   "filterIdent": "Filter ident (Port 113)",
   "filterMulticast": "Filtrer multikasting",
+  "filterInternetNATRedirection": "Filtrer Internett-NAT-omdirigering",
   "filters": "Filtrer",
   "firewall": "Brannmur",
   "firmwareUpdate": "Fastvareoppdatering",

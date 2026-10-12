@@ -9,6 +9,8 @@ import 'package:privacy_gui/page/firewall/providers/usp_firewall_notifier.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/firewall/services/usp_firewall_service.dart';
 
+import '../../../mocks/test_data/firewall_test_data.dart';
+
 class MockUspFirewallService extends Mock implements UspFirewallService {}
 
 /// Test-only notifier that returns canned data instead of real fetch.
@@ -33,7 +35,7 @@ void main() {
       isIPv6FirewallEnabled: false,
       blockIPSec: true,
     ),
-    ruleContext: FirewallRuleContext.empty,
+    ruleContext: FirewallTestData.createNamedRuleContext(),
     ruleSummaries: const [],
     dmzModel: const DmzUIModel.disabled(),
     dmzSummaries: const [],
@@ -167,6 +169,22 @@ void main() {
 
       final state = container.read(uspFirewallProvider);
       expect(state.status.error, isA<NetworkError>());
+      container.dispose();
+    });
+
+    // FW 2.0.2 carried none of the named rules. The page rendered fixed,
+    // fabricated toggle positions instead of saying it could not read them
+    // (#1611).
+    test('fetch with no recognised firewall rule sets error status', () async {
+      final container = createContainer(
+        data: FirewallTestData.createFirewallData(
+          ruleContext: FirewallRuleContext.empty,
+        ),
+      );
+      await Future.delayed(Duration.zero);
+
+      final state = container.read(uspFirewallProvider);
+      expect(state.status.error, isA<ResourceNotFoundError>());
       container.dispose();
     });
 

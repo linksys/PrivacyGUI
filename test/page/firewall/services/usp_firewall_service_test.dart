@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
@@ -133,13 +134,49 @@ void main() {
       expect(model.blockL2TP, isFalse);
     });
 
-    test('missing rules default to false', () {
+    // FLWRT 2.0.3 ships RULE_NAT_REDIRECTION as an Accept rule, enabled by
+    // default: NAT loopback allowed, so "Filter Internet NAT redirection" reads
+    // OFF (FWDEV#204, measured on 2.0.3.26100921).
+    test('NAT redirection: an enabled rule reads as not blocked', () {
+      final map = UspFirewallService.parseFirewallRules(
+        FirewallChainRules(items: [
+          _rule('p.31.', enable: true, description: 'RULE_NAT_REDIRECTION'),
+        ]),
+      );
+
+      final model = UspFirewallService.buildUIModel(rules: map);
+
+      expect(model.blockNATRedirection, isFalse);
+    });
+
+    test('NAT redirection: a disabled rule reads as blocked', () {
+      final map = UspFirewallService.parseFirewallRules(
+        FirewallChainRules(items: [
+          _rule('p.31.', enable: false, description: 'RULE_NAT_REDIRECTION'),
+        ]),
+      );
+
+      final model = UspFirewallService.buildUIModel(rules: map);
+
+      expect(model.blockNATRedirection, isTrue);
+    });
+
+    // This test was named "missing rules default to false" and asserted the
+    // IPv4 switch read true: an Accept rule with no rule read as "filter on",
+    // a value no router reported. A switch with no rule behind it does
+    // nothing, so it reads off (#1611).
+    test('a switch with no rule behind it reads off', () {
       final model = UspFirewallService.buildUIModel(rules: {});
 
-      // Accept rules with missing key: !(null?.enable ?? false) → !false → true
-      expect(model.isIPv4FirewallEnabled, isTrue);
-      // Drop rules with missing key: null?.enable ?? false → false
+      expect(model.isIPv4FirewallEnabled, isFalse);
+      expect(model.isIPv6FirewallEnabled, isFalse);
+      expect(model.blockAnonymousRequests, isFalse);
+      expect(model.blockMulticast, isFalse);
+      expect(model.blockIDENT, isFalse);
+      expect(model.blockNATRedirection, isFalse);
       expect(model.blockIPSec, isFalse);
+      expect(model.blockPPTP, isFalse);
+      expect(model.blockL2TP, isFalse);
     });
   });
 
@@ -238,6 +275,22 @@ void main() {
       expect(updates, hasLength(5));
     });
 
+    test('NAT redirection: blocking it disables the rule', () {
+      final rules = {
+        'natRedirection': _rule('p.31.', enable: true, description: ''),
+      };
+
+      final updates = service.buildSetPayload(
+        original: FirewallUIModel(blockNATRedirection: false),
+        pending: FirewallUIModel(blockNATRedirection: true),
+        rules: rules,
+      );
+
+      expect(updates, hasLength(1));
+      expect(updates.single.instancePath, 'p.31.');
+      expect(updates.single.enable, isFalse);
+    });
+
     test('missing rule in map is silently skipped', () {
       // Change IPv4 SPI but only one of the paired rules exists
       final rules = {
@@ -278,6 +331,97 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // FirewallRuleContext.controls
+  // ---------------------------------------------------------------------------
+
+  // A switch whose rule is absent shows a value the router never reported, and
+  // saving it with a matched one wrote only the matched one (#1611).
+  group('FirewallRuleContext — controls', () {
+    test('a switch is controllable only when every rule behind it is present',
+        () {
+      final context = FirewallRuleContext.fromMap({
+        'spiV4Input': _rule('p.21.', enable: false, description: ''),
+        // spiV4Forward missing: the IPv4 switch is a pair
+        'ident': _rule('p.26.', enable: false, description: ''),
+      });
+
+      expect(context.controls(FirewallSwitch.ipv4Firewall), isFalse);
+      expect(context.controls(FirewallSwitch.ident), isTrue);
+      expect(context.controls(FirewallSwitch.natRedirection), isFalse);
+    });
+
+    test('the 2.0.3 rule set controls every switch', () {
+      final context = FirewallRuleContext.fromMap(
+        UspFirewallService.parseFirewallRules(FirewallChainRules(items: [
+          for (final (i, d) in const [
+            (11, 'UDP_FORWARD_FOR_IGMP'),
+            (21, 'RULE_SPI_IPV4_INPUT'),
+            (22, 'RULE_SPI_IPV4_FORWARD'),
+            (23, 'RULE_SPI_IPV6_INPUT'),
+            (24, 'RULE_SPI_IPV6_FORWARD'),
+            (25, 'RULE_PING_IPV4'),
+            (26, 'RULE_IDENT_WAN'),
+            (27, 'RULE_LAN2WAN_IPSEC'),
+            (28, 'RULE_IPSEC_ESP'),
+            (29, 'RULE_LAN2WAN_PPTP'),
+            (30, 'RULE_LAN2WAN_L2TP'),
+            (31, 'RULE_NAT_REDIRECTION'),
+          ])
+            _rule('p.$i.', enable: false, description: d),
+        ])),
+      );
+
+      for (final s in FirewallSwitch.values) {
+        expect(context.controls(s), isTrue, reason: '$s');
+      }
+    });
+
+    // The table behind `controls` and the one inside buildSetPayload are the
+    // same fact written twice; this keeps them from drifting apart.
+    test('every switch a context controls produces a write', () {
+      final all = FirewallRuleContext.fromMap({
+        for (final key in FirewallSwitch.values.expand(debugRuleKeysOf))
+          key: _rule('p.$key.', enable: false, description: ''),
+      });
+      const off = FirewallUIModel(
+        isIPv4FirewallEnabled: false,
+        isIPv6FirewallEnabled: false,
+        blockIPSec: false,
+        blockPPTP: false,
+        blockL2TP: false,
+        blockAnonymousRequests: false,
+        blockMulticast: false,
+        blockIDENT: false,
+        blockNATRedirection: false,
+      );
+      const on = FirewallUIModel(
+        isIPv4FirewallEnabled: true,
+        isIPv6FirewallEnabled: true,
+        blockIPSec: true,
+        blockPPTP: true,
+        blockL2TP: true,
+        blockAnonymousRequests: true,
+        blockMulticast: true,
+        blockIDENT: true,
+        blockNATRedirection: true,
+      );
+
+      final written = service
+          .buildSetPayload(original: off, pending: on, rules: all.debugRuleMap)
+          .map((u) => u.instancePath)
+          .toSet();
+
+      expect(
+        written,
+        {
+          for (final key in FirewallSwitch.values.expand(debugRuleKeysOf))
+            'p.$key.',
+        },
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // save
   // ---------------------------------------------------------------------------
 
@@ -294,6 +438,27 @@ void main() {
 
       expect(count, 0);
       verifyNever(() => mockUsp.set(any()));
+    });
+
+    // FW 2.0.2 shipped none of the named rules, so a toggle had nothing to
+    // write: the save sent nothing and still reported success (#1611).
+    test(
+        'a changed toggle whose rule is absent fails instead of saving nothing',
+        () async {
+      final context = FirewallRuleContext.fromMap({
+        'pptp': _rule('p.23.', enable: false, description: 'RULE_LAN2WAN_PPTP'),
+      });
+
+      await expectLater(
+        service.save(
+          original: FirewallUIModel(blockIDENT: false),
+          pending: FirewallUIModel(blockIDENT: true),
+          context: context,
+        ),
+        throwsA(isA<ResourceNotFoundError>()),
+      );
+      verifyNever(
+          () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
     });
 
     test('changed toggles call updateMany and return count', () async {

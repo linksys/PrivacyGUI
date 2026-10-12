@@ -102,6 +102,7 @@
   "filterAnonymous": "Suodata anonyymit Internet-pyynnöt",
   "filterIdent": "Suodata ident (portti 113)",
   "filterMulticast": "Suodata monilähetys",
+  "filterInternetNATRedirection": "Suodata Internetin NAT-uudelleenohjaus",
   "filters": "Suodattimet",
   "firewall": "Palomuuri",
   "firmwareUpdate": "Laiteohjelmiston päivitys",
