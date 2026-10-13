@@ -12,12 +12,14 @@ import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
 import 'package:privacy_gui/page/instant_safety/models/safe_browsing_ui_model.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
+import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_feature_state.dart';
 import 'package:privacy_gui/page/ipv6_port_service/providers/usp_ipv6_port_service_notifier.dart';
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/ethernet_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_triggering_data_provider.dart';
+import 'package:privacy_gui/page/static_routing/models/static_routing_feature_state.dart';
 import 'package:privacy_gui/page/static_routing/providers/usp_static_routing_notifier.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 
@@ -38,10 +40,29 @@ class PdfReport {
   PdfReport(this._ref);
 
   /// Generate the report from the data as it is now and open it.
-  Future<void> open() => UspPdfService.generatePdf(snapshot());
+  Future<void> open() async => UspPdfService.generatePdf(await snapshot());
 
   /// Aggregates the current state of every domain provider the report shows.
-  PdfReportData snapshot() {
+  Future<PdfReportData> snapshot() async {
+    // Static routes and IPv6 rules have no L1 provider; their page notifiers
+    // are the only source. Nothing on the dashboard holds them, so a bare read
+    // got the empty initial state, the fetch landed after the report was built,
+    // and the PDF skipped both sections. A listener whose callback does nothing
+    // holds each one alive for one fetch, then lets it dispose as before.
+    final holdRouting = _ref.listen(uspStaticRoutingProvider, (_, __) {});
+    final holdIpv6 = _ref.listen(uspIpv6PortServiceProvider, (_, __) {});
+    final StaticRoutingFeatureState staticRoutes;
+    final Ipv6PortServiceFeatureState ipv6Rules;
+    try {
+      (staticRoutes, ipv6Rules) = await (
+        _ref.read(uspStaticRoutingProvider.notifier).fetch(),
+        _ref.read(uspIpv6PortServiceProvider.notifier).fetch(),
+      ).wait;
+    } finally {
+      holdRouting.close();
+      holdIpv6.close();
+    }
+
     final fwData = _ref.read(firewallDataProvider).valueOrNull;
     final lanData = _ref.read(lanDataProvider).valueOrNull;
 
@@ -53,9 +74,8 @@ class PdfReport {
       systemMonitor: _ref.read(uspSystemMonitorProvider),
       firewallSettings: fwData?.firewallModel ?? const FirewallUIModel(),
       dmzSettings: fwData?.dmzModel ?? const DmzUIModel.disabled(),
-      staticRoutes: _ref.read(uspStaticRoutingProvider).settings.current.routes,
-      ipv6PortRules:
-          _ref.read(uspIpv6PortServiceProvider).settings.current.rules,
+      staticRoutes: staticRoutes.settings.current.routes,
+      ipv6PortRules: ipv6Rules.settings.current.rules,
       // Built from L1 LAN data (DNS servers).
       safeBrowsing: lanData == null
           ? null
