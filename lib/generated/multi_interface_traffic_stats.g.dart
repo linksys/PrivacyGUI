@@ -6,6 +6,8 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 /// Multi-interface traffic statistics for WAN vs LAN comparison
 class MultiInterfaceTrafficStats {
+  final String wanInstancePath;
+  final String lanInstancePath;
   final int wanBytesSent;
   final int wanBytesReceived;
   final int wanPacketsSent;
@@ -24,6 +26,8 @@ class MultiInterfaceTrafficStats {
   final int lanDiscardPacketsReceived;
 
   const MultiInterfaceTrafficStats({
+    required this.wanInstancePath,
+    required this.lanInstancePath,
     required this.wanBytesSent,
     required this.wanBytesReceived,
     required this.wanPacketsSent,
@@ -54,8 +58,7 @@ class MultiInterfaceTrafficStats {
         }
       }
     }
-    // Fallback to hardcoded instance 2
-    return 'Device.IP.Interface.2.';
+    throw 'Get failed: Could not resolve Device.IP.Interface instance with Alias=wan (code: 9996)';
   }
 
   /// Resolve lan interface index by searching for Alias='lan'
@@ -70,8 +73,7 @@ class MultiInterfaceTrafficStats {
         }
       }
     }
-    // Fallback to hardcoded instance 1
-    return 'Device.IP.Interface.1.';
+    throw 'Get failed: Could not resolve Device.IP.Interface instance with Alias=lan (code: 9996)';
   }
 
   /// Build parameter paths using resolved interface paths
@@ -105,6 +107,8 @@ class MultiInterfaceTrafficStats {
   factory MultiInterfaceTrafficStats._fromResponse(
       Map<String, dynamic> response, String wanPath, String lanPath) {
     return MultiInterfaceTrafficStats(
+      wanInstancePath: wanPath,
+      lanInstancePath: lanPath,
       wanBytesSent: int.tryParse(
               response['${wanPath}Stats.BytesSent']?.toString() ?? '') ??
           0,
@@ -163,6 +167,8 @@ class MultiInterfaceTrafficStats {
   @override
   String toString() {
     return 'MultiInterfaceTrafficStats('
+        'wanInstancePath: $wanInstancePath, '
+        'lanInstancePath: $lanInstancePath, '
         'wanBytesSent: $wanBytesSent, '
         'wanBytesReceived: $wanBytesReceived, '
         'wanPacketsSent: $wanPacketsSent, '

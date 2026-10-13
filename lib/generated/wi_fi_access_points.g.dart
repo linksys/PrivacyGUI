@@ -29,6 +29,22 @@ class WiFiAccessPoint {
     required this.ssidAdvertisementEnabled,
     required this.ssidReference,
   });
+
+  @override
+  String toString() {
+    return 'WiFiAccessPoint('
+        'instancePath: $instancePath, '
+        'alias: $alias, '
+        'enable: $enable, '
+        'status: $status, '
+        'modesSupported: $modesSupported, '
+        'securityModeEnabled: $securityModeEnabled, '
+        'encryptionMode: $encryptionMode, '
+        'keyPassphrase: $keyPassphrase, '
+        'ssidAdvertisementEnabled: $ssidAdvertisementEnabled, '
+        'ssidReference: $ssidReference'
+        ')';
+  }
 }
 
 /// Update descriptor for WiFiAccessPoint instances
@@ -53,6 +69,9 @@ class WiFiAccessPoints {
   final List<WiFiAccessPoint> items;
 
   const WiFiAccessPoints({required this.items});
+
+  @override
+  String toString() => 'WiFiAccessPoints(items: $items)';
 
   static const _paths = [
     'Device.WiFi.AccessPoint.*.Alias',
@@ -87,25 +106,6 @@ class WiFiAccessPoints {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}Alias'],
-        response['${p}Enable'],
-        response['${p}Status'],
-        response['${p}Security.ModesSupported'],
-        response['${p}Security.ModeEnabled'],
-        response['${p}Security.EncryptionMode'],
-        response['${p}Security.KeyPassphrase'],
-        response['${p}SSIDAdvertisementEnabled'],
-        response['${p}SSIDReference']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final missing = <String>[];
       if (!response.containsKey('${p}Enable')) {
         missing.add('${p}Enable');
@@ -160,10 +160,9 @@ class WiFiAccessPoints {
     return WiFiAccessPoints(items: items);
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-      UspClient client, List<WiFiAccessPointUpdate> updates,
-      {bool allowPartial = false}) async {
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams(
+      List<WiFiAccessPointUpdate> updates) {
     final params = <String, dynamic>{};
     for (final update in updates) {
       if (update.enable != null) {
@@ -182,6 +181,14 @@ class WiFiAccessPoints {
             update.ssidAdvertisementEnabled;
       }
     }
+    return params;
+  }
+
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+      UspClient client, List<WiFiAccessPointUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateParams(updates);
     if (params.isEmpty) {
       return {
         'success': true,

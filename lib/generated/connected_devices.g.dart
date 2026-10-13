@@ -13,6 +13,14 @@ class ConnectedDeviceIpv4 {
     required this.instancePath,
     required this.address,
   });
+
+  @override
+  String toString() {
+    return 'ConnectedDeviceIpv4('
+        'instancePath: $instancePath, '
+        'address: $address'
+        ')';
+  }
 }
 
 /// Nested instance from parent multi-instance table
@@ -24,6 +32,14 @@ class ConnectedDeviceIpv6 {
     required this.instancePath,
     required this.address,
   });
+
+  @override
+  String toString() {
+    return 'ConnectedDeviceIpv6('
+        'instancePath: $instancePath, '
+        'address: $address'
+        ')';
+  }
 }
 
 /// Single instance from ConnectedDevices
@@ -79,6 +95,36 @@ class ConnectedDevice {
     required this.ipv4Addresses,
     required this.ipv6Addresses,
   });
+
+  @override
+  String toString() {
+    return 'ConnectedDevice('
+        'instancePath: $instancePath, '
+        'macAddress: $macAddress, '
+        'ipAddress: $ipAddress, '
+        'hostName: $hostName, '
+        'isActive: $isActive, '
+        'activeLastChange: $activeLastChange, '
+        'interface_: $interface_, '
+        'layer3Interface: $layer3Interface, '
+        'interfaceType: $interfaceType, '
+        'addressSource: $addressSource, '
+        'dhcpClient: $dhcpClient, '
+        'associatedDevice: $associatedDevice, '
+        'deviceId: $deviceId, '
+        'deviceRole: $deviceRole, '
+        'friendlyName: $friendlyName, '
+        'manufacturer: $manufacturer, '
+        'modelName: $modelName, '
+        'operatingSystem: $operatingSystem, '
+        'parentNodeId: $parentNodeId, '
+        'signalStrength: $signalStrength, '
+        'lastDataDownlinkRate: $lastDataDownlinkRate, '
+        'lastDataUplinkRate: $lastDataUplinkRate, '
+        'ipv4Addresses: $ipv4Addresses, '
+        'ipv6Addresses: $ipv6Addresses'
+        ')';
+  }
 }
 
 /// Network connected devices (multi-instance)
@@ -86,6 +132,9 @@ class ConnectedDevices {
   final List<ConnectedDevice> items;
 
   const ConnectedDevices({required this.items});
+
+  @override
+  String toString() => 'ConnectedDevices(items: $items)';
 
   static const _paths = [
     'Device.Hosts.Host.*.PhysAddress',
@@ -134,37 +183,6 @@ class ConnectedDevices {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}PhysAddress'],
-        response['${p}IPAddress'],
-        response['${p}HostName'],
-        response['${p}Active'],
-        response['${p}ActiveLastChange'],
-        response['${p}Layer1Interface'],
-        response['${p}Layer3Interface'],
-        response['${p}InterfaceType'],
-        response['${p}AddressSource'],
-        response['${p}DHCPClient'],
-        response['${p}AssociatedDevice'],
-        response['${p}DeviceID'],
-        response['${p}DeviceRole'],
-        response['${p}FriendlyName'],
-        response['${p}Manufacturer'],
-        response['${p}ModelName'],
-        response['${p}OperatingSystem'],
-        response['${p}ParentNodeID'],
-        response['${p}SignalStrength'],
-        response['${p}LastDataDownlinkRate'],
-        response['${p}LastDataUplinkRate']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final childBase_0 = '${p}IPv4Address.';
       final childIds_0 = <String>{};
       for (final key in response.keys) {

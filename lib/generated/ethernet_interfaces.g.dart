@@ -21,6 +21,18 @@ class EthernetInterface {
     required this.upstream,
     required this.currentBitRate,
   });
+
+  @override
+  String toString() {
+    return 'EthernetInterface('
+        'instancePath: $instancePath, '
+        'alias: $alias, '
+        'name: $name, '
+        'status: $status, '
+        'upstream: $upstream, '
+        'currentBitRate: $currentBitRate'
+        ')';
+  }
 }
 
 /// Physical Ethernet port status
@@ -28,6 +40,9 @@ class EthernetInterfaces {
   final List<EthernetInterface> items;
 
   const EthernetInterfaces({required this.items});
+
+  @override
+  String toString() => 'EthernetInterfaces(items: $items)';
 
   static const _paths = [
     'Device.Ethernet.Interface.*.Alias',
@@ -58,21 +73,6 @@ class EthernetInterfaces {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}Alias'],
-        response['${p}Name'],
-        response['${p}Status'],
-        response['${p}Upstream'],
-        response['${p}CurrentBitRate']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final missing = <String>[];
       if (!response.containsKey('${p}Name')) {
         missing.add('${p}Name');

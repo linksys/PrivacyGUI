@@ -25,6 +25,20 @@ class WifiClient {
     required this.lastDataUplinkRate,
     required this.active,
   });
+
+  @override
+  String toString() {
+    return 'WifiClient('
+        'instancePath: $instancePath, '
+        'parentPath: $parentPath, '
+        'macAddress: $macAddress, '
+        'signalStrength: $signalStrength, '
+        'noise: $noise, '
+        'lastDataDownlinkRate: $lastDataDownlinkRate, '
+        'lastDataUplinkRate: $lastDataUplinkRate, '
+        'active: $active'
+        ')';
+  }
 }
 
 /// WiFi clients across all access points (flattened view)
@@ -32,6 +46,9 @@ class WifiClients {
   final List<WifiClient> items;
 
   const WifiClients({required this.items});
+
+  @override
+  String toString() => 'WifiClients(items: $items)';
 
   static const _paths = [
     'Device.WiFi.AccessPoint.*.AssociatedDevice.*.MACAddress',
@@ -77,22 +94,6 @@ class WifiClients {
             (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
       for (final cid in sortedChildren) {
         final cp = '$childBase$cid.';
-        if ([
-          response['${cp}MACAddress'],
-          response['${cp}SignalStrength'],
-          response['${cp}Noise'],
-          response['${cp}LastDataDownlinkRate'],
-          response['${cp}LastDataUplinkRate'],
-          response['${cp}Active']
-        ].every((v) =>
-            v == null ||
-            v == '' ||
-            v == '0' ||
-            v == 0 ||
-            v == false ||
-            v == 'false')) {
-          continue;
-        }
         items.add(WifiClient(
           instancePath: cp,
           parentPath: parentPath,

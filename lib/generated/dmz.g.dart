@@ -23,6 +23,19 @@ class DmzEntry {
     required this.description,
     required this.status,
   });
+
+  @override
+  String toString() {
+    return 'DmzEntry('
+        'instancePath: $instancePath, '
+        'enable: $enable, '
+        'destIp: $destIp, '
+        'sourcePrefix: $sourcePrefix, '
+        'interface_: $interface_, '
+        'description: $description, '
+        'status: $status'
+        ')';
+  }
 }
 
 /// Update descriptor for DmzEntry instances
@@ -49,6 +62,9 @@ class Dmz {
   final List<DmzEntry> items;
 
   const Dmz({required this.items});
+
+  @override
+  String toString() => 'Dmz(items: $items)';
 
   static const _paths = [
     'Device.Firewall.DMZ.*.Enable',
@@ -80,22 +96,6 @@ class Dmz {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}Enable'],
-        response['${p}DestIP'],
-        response['${p}SourcePrefix'],
-        response['${p}Interface'],
-        response['${p}Description'],
-        response['${p}Status']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final missing = <String>[];
       if (!response.containsKey('${p}Enable')) {
         missing.add('${p}Enable');
@@ -133,10 +133,8 @@ class Dmz {
     return Dmz(items: items);
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-      UspClient client, List<DmzEntryUpdate> updates,
-      {bool allowPartial = false}) async {
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams(List<DmzEntryUpdate> updates) {
     final params = <String, dynamic>{};
     for (final update in updates) {
       if (update.enable != null) {
@@ -155,6 +153,14 @@ class Dmz {
         params['${update.instancePath}Description'] = update.description;
       }
     }
+    return params;
+  }
+
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+      UspClient client, List<DmzEntryUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateParams(updates);
     if (params.isEmpty) {
       return {
         'success': true,
