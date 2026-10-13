@@ -1,6 +1,21 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart'
     show ruleIdentifierKey;
+import 'package:privacy_gui/util/network_utils.dart';
+import 'package:privacy_gui/validator_rules/rules.dart';
+
+/// Error keys returned by [StaticRouteUIModel.validateRoute].
+/// Use these to map to l10n strings in the View layer.
+class StaticRoutingErrorKeys {
+  static const nameRequired = 'nameRequired';
+  static const nameTooLong = 'nameTooLong';
+  static const destIpRequired = 'destIpRequired';
+  static const invalidIpAddress = 'invalidIpAddress';
+  static const subnetMaskRequired = 'subnetMaskRequired';
+  static const invalidSubnetMask = 'invalidSubnetMask';
+  static const gatewayMustBeWithinLanSubnet = 'gatewayMustBeWithinLanSubnet';
+  static const gatewayMustBeOutsideLanSubnet = 'gatewayMustBeOutsideLanSubnet';
+}
 
 /// UI model for a single static route entry.
 ///
@@ -32,6 +47,66 @@ class StaticRouteUIModel extends Equatable {
   /// "web-server"); falls back to the saved instance number, then "unnamed",
   /// so it is always non-empty and never collides across rows.
   String get identifierKey => ruleIdentifierKey(name, instancePath);
+
+  /// The interface choices the route dialog offers, as display names.
+  static const interfaceOptions = ['LAN', 'Internet'];
+
+  /// Validate a route entry. Returns a map of field → [StaticRoutingErrorKeys]
+  /// key.
+  ///
+  /// When [lanIp] and [lanSubnetMask] are provided, validates gateway subnet:
+  /// - LAN interface: gateway must be within LAN subnet
+  /// - Internet interface: gateway must be outside LAN subnet
+  static Map<String, String> validateRoute({
+    required String name,
+    required String destIp,
+    required String subnetMask,
+    required String gateway,
+    String? interfaceName,
+    String? lanIp,
+    String? lanSubnetMask,
+  }) {
+    final errors = <String, String>{};
+    if (name.isEmpty) {
+      errors['name'] = StaticRoutingErrorKeys.nameRequired;
+    } else if (name.length > 32) {
+      errors['name'] = StaticRoutingErrorKeys.nameTooLong;
+    }
+    if (destIp.isEmpty) {
+      errors['destIp'] = StaticRoutingErrorKeys.destIpRequired;
+    } else if (!NetworkUtils.isValidIpAddress(destIp)) {
+      errors['destIp'] = StaticRoutingErrorKeys.invalidIpAddress;
+    }
+    if (subnetMask.isEmpty) {
+      errors['subnetMask'] = StaticRoutingErrorKeys.subnetMaskRequired;
+    } else if (!NetworkUtils.isValidSubnetMask(subnetMask)) {
+      errors['subnetMask'] = StaticRoutingErrorKeys.invalidSubnetMask;
+    }
+    if (gateway.isNotEmpty && !NetworkUtils.isValidIpAddress(gateway)) {
+      errors['gateway'] = StaticRoutingErrorKeys.invalidIpAddress;
+    } else if (gateway.isNotEmpty &&
+        interfaceName != null &&
+        lanIp != null &&
+        lanIp.isNotEmpty &&
+        lanSubnetMask != null &&
+        lanSubnetMask.isNotEmpty &&
+        NetworkUtils.isValidIpAddress(lanIp) &&
+        NetworkUtils.isValidSubnetMask(lanSubnetMask)) {
+      // Validate gateway subnet based on interface selection.
+      final lanSubnetRule = HostValidForGivenRouterIPAddressAndSubnetMaskRule(
+        lanIp,
+        lanSubnetMask,
+      );
+      final isInLan = lanSubnetRule.validate(gateway);
+      if (interfaceName == 'LAN' && !isInLan) {
+        errors['gateway'] = StaticRoutingErrorKeys.gatewayMustBeWithinLanSubnet;
+      } else if (interfaceName == 'Internet' && isInLan) {
+        errors['gateway'] =
+            StaticRoutingErrorKeys.gatewayMustBeOutsideLanSubnet;
+      }
+    }
+    return errors;
+  }
 
   StaticRouteUIModel copyWith({
     String? instancePath,
