@@ -29,6 +29,12 @@ class UspFirewallNotifier extends AutoDisposeNotifier<FirewallFeatureState>
             FirewallFeatureState> {
   UspFirewallService get _svc => ref.read(uspFirewallServiceProvider);
 
+  /// The rules from the same read as the page's model and its
+  /// [FirewallStatus.lockedSwitches]. A save writes against these, never a
+  /// later refresh of `firewallDataProvider`: if the two disagreed, a switch
+  /// shown unlocked could be skipped without a word (#1611).
+  FirewallRuleContext _rules = FirewallRuleContext.empty;
+
   @override
   FirewallFeatureState build() {
     // Synchronous build with loading state; async fetch follows immediately.
@@ -60,6 +66,7 @@ class UspFirewallNotifier extends AutoDisposeNotifier<FirewallFeatureState>
         );
       }
 
+      _rules = ruleContext;
       logger.d('[USP][Firewall]: Fetched — '
           'spiV4: ${uiModel.isIPv4FirewallEnabled}, '
           'spiV6: ${uiModel.isIPv6FirewallEnabled}');
@@ -92,13 +99,12 @@ class UspFirewallNotifier extends AutoDisposeNotifier<FirewallFeatureState>
 
     try {
       final settings = state.settings.current;
-      final rules = (await ref.read(firewallDataProvider.future)).ruleContext;
 
       await ref.read(uspMutationLockProvider).withLock(() async {
         final count = await _svc.save(
           original: state.settings.original.model,
           pending: settings.model,
-          context: rules,
+          context: _rules,
         );
 
         logger.d('[USP][Firewall]: Saved — $count rules updated');

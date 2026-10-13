@@ -4,8 +4,8 @@ import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 /// User-editable firewall settings.
 ///
 /// The rules a save writes against are not here: they are what the router
-/// reported, not something the user edits, so the notifier reads them from
-/// `firewallDataProvider` when it saves.
+/// reported, not something the user edits, so the notifier keeps them from the
+/// same fetch that produced this model.
 class FirewallSettings extends Equatable {
   final FirewallUIModel model;
 
