@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
@@ -92,11 +93,21 @@ class _WifiAdvancedSettingsViewState
   Future save() {
     return doSomethingWithSpinner(
       context,
-      ref.read(wifiAdvancedProvider.notifier).save().then((state) async {
-        // Fetch wifi list to update the wifi list state
-        await ref.read(wifiListProvider.notifier).fetch(true);
-        return state;
-      }).then(
+      // Held as one with the Wi-Fi list read that follows the save: that read is
+      // as likely as the save's own to be the first thing a dropped operator's
+      // silence reaches (#1683).
+      ref
+          .read(pollingProvider.notifier)
+          .holdWhile(() => ref
+                  .read(wifiAdvancedProvider.notifier)
+                  .save()
+                  .then((state) async {
+                // Fetch wifi list to update the wifi list state
+                await refreshAfterWrite(
+                    () => ref.read(wifiListProvider.notifier).fetch(true));
+                return state;
+              }))
+          .then(
         (state) {
           success(state);
         },

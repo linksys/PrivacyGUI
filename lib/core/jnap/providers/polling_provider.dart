@@ -213,6 +213,29 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
 
   bool get paused => _paused;
 
+  /// Pauses polling, runs [flow], and once it settles - whichever way it ends -
+  /// starts polling afresh.
+  ///
+  /// For a flow that takes the router away on purpose and reports that itself.
+  /// #1683: a Wi-Fi save drops a wireless operator off the network some twenty
+  /// seconds after the router accepts the change - after the save's own boot
+  /// check has already passed - so a poll running alongside it went silent for
+  /// those same twenty seconds and pushed a second router-not-found alert in
+  /// from behind, over the save's spinner.
+  ///
+  /// Paused before [flow] is started, so nothing it sends goes out alongside a
+  /// poll. Polling that is already paused is left to whoever paused it: PnP, a
+  /// remote assistance session, or an outer hold, which is how a hold nests.
+  Future<T> holdWhile<T>(Future<T> Function() flow) {
+    if (_paused) {
+      return flow();
+    }
+    paused = true;
+    return Future.sync(flow).whenComplete(() {
+      paused = false;
+    });
+  }
+
   List<MapEntry<JNAPAction, Map<String, dynamic>>> _coreTransactions = [];
 
   /// The mode the router last reported, or null while it has never answered.

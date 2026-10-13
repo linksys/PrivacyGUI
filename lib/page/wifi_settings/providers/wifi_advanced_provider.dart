@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
@@ -142,8 +144,10 @@ class WifiAdvancedSettingsNotifier extends Notifier<WifiAdvancedSettingsState> {
     });
   }
 
+  /// Writes the page's settings, then reads them back, with polling held: the
+  /// same reasons as [WifiListNotifier.save].
   Future<WifiAdvancedSettingsState> save() {
-    return ref
+    return ref.read(pollingProvider.notifier).holdWhile(() => ref
         .read(routerRepositoryProvider)
         .transaction(
           JNAPTransactionBuilder(
@@ -157,7 +161,7 @@ class WifiAdvancedSettingsNotifier extends Notifier<WifiAdvancedSettingsState> {
               ),
               auth: true),
         )
-        .then((_) => fetch(true));
+        .then((_) => refreshAfterWrite(() => fetch(true))));
   }
 
   void setClientSteeringEnabled(bool value) {
