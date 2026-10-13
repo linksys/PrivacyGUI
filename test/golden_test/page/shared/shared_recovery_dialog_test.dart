@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
@@ -27,7 +29,7 @@ import '../../golden_framework/overlay_host.dart';
 /// Remote Assistance ever sees it.
 ///
 /// The connection state is pinned to `waitingForRecovery`, so the dialog stays
-/// up: it pops only on a transition into `authenticated`, which never comes.
+/// up: it closes only on a transition into `authenticated`, which never comes.
 void main() {
   runViewGoldenTests(
     GoldenTestConfig(
@@ -72,14 +74,19 @@ void main() {
             message: loc(host.context).factoryResetWaitMessage,
           ),
         ),
-        // `UspWifiSettingsView` after a save. No title or message of its own, so
-        // this is the helper's default title and the surface's message.
+        // `wifiWriteWithRecovery` (`wifi_write_with_recovery.dart`) around a
+        // Wi-Fi save. No title or message of its own, so this is the helper's
+        // default title and the surface's message. The caller has entered the
+        // waiting state itself, and holds the dialog open until the save has
+        // settled; `holdUntil` is a future that never completes, which keeps the
+        // dialog up for the capture the same way the pinned state does.
         'wifi_change': _open(
           (host) => showRecoveryDialog(
             host.context,
             host.ref,
             trigger: RecoveryTrigger.operationalWifiChange,
-            successMessage: loc(host.context).wifiSettingsSaved,
+            skipEnterWaiting: true,
+            holdUntil: Completer<void>().future,
           ),
         ),
         // `UspDashboardShell` when the SSE stream drops on its own. The

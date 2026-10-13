@@ -34,9 +34,10 @@ import '../../golden_framework/golden_test_config.dart';
 /// pre-written English string, because then it would be a picture of the test,
 /// not of the app. When a call site gains a message, it gains a row here.
 ///
-/// The messages come from three places, and a new one in any of them needs a
-/// row: direct calls in the views, `performUspMutation`'s `successMessage`, and
-/// `showRecoveryDialog`'s `successMessage` (shown once the router is back).
+/// The messages come from four places, and a new one in any of them needs a
+/// row: direct calls in the views, and the `successMessage` that
+/// `performUspMutation`, `showRecoveryDialog` (once the router is back) and
+/// `runWifiWriteWithRecovery` each forward.
 ///
 /// Not in the table:
 /// - The hard-coded English strings in `package_widget_renderer.dart` and the

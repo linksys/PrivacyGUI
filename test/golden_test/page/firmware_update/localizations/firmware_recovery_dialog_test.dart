@@ -4,7 +4,6 @@ import 'package:privacy_gui/core/connection/services/recovery_probe_service.dart
 import 'package:privacy_gui/core/mode/app_mode_profile.dart';
 import 'package:privacy_gui/core/mode/remote_mode_profile.dart';
 import 'package:privacy_gui/page/firmware_update/views/dialogs/firmware_update_recovery_dialog.dart';
-import 'package:ui_kit_library/ui_kit.dart' show AppButton;
 
 import '../../../golden_framework/golden_runner.dart';
 import '../../../golden_framework/golden_test_config.dart';
@@ -77,7 +76,10 @@ void main() {
             retryNeverCompletes: true,
           ),
           then: (tester) async {
-            await tester.tap(find.byType(AppButton).last);
+            // By the button's E2E identifier, not its position among the
+            // dialog's actions, so a reordered action list still taps Retry.
+            await tester
+                .tap(find.bySemanticsIdentifier('firmware-recovery-retry'));
             await tester.pump();
           },
         ),

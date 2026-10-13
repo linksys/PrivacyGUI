@@ -369,7 +369,7 @@ A shared overlay is captured once, in its own test, and not repeated in every pa
 | `showFirmwareUpdateRecoveryDialog` | `firmware_update/localizations/firmware_recovery_dialog_test.dart` | Every probe state, retrying, still waiting, Remote Assistance |
 | Page-specific dialogs (add/edit/delete forms, confirmations) | That page's own test, as `dialog_*` interactions | The caller's content |
 
-Snackbars are the exception to "caller content stays in the page". The message is a single string in a fixed frame, and the reason to capture it is the translation, so every message shown through `showSuccessSnackBar` / `showFailedSnackBar` is captured in `shared_snackbars_test.dart`: direct calls, `performUspMutation`'s `successMessage`, and `showRecoveryDialog`'s `successMessage`. When a call site gains a new message, add a row to that file's table. Hard-coded English messages are left out until they are localized, because a per-locale golden of them shows nothing new. A snackbar built directly with `ScaffoldMessenger.of(context).showSnackBar` has its own frame and belongs to the page that owns it.
+Snackbars are the exception to "caller content stays in the page". The message is a single string in a fixed frame, and the reason to capture it is the translation, so every message shown through `showSuccessSnackBar` / `showFailedSnackBar` is captured in `shared_snackbars_test.dart`: direct calls, and the `successMessage` that `performUspMutation`, `showRecoveryDialog` and `runWifiWriteWithRecovery` forward. When a call site gains a new message, add a row to that file's table. Hard-coded English messages are left out until they are localized, because a per-locale golden of them shows nothing new. A snackbar built directly with `ScaffoldMessenger.of(context).showSnackBar` has its own frame and belongs to the page that owns it.
 
 An overlay suite has no `states`, only `interactions`: there is nothing to show before the overlay opens, and a state would be a blank golden in every locale and device. The runner accepts a config with either one non-empty.
 
@@ -380,7 +380,7 @@ A feature test does **not** add a spinner, snackbar or recovery dialog interacti
 - **Trigger the overlay through the same entry point production uses.** Never use a lower-level helper with different defaults, and never a replica widget. The `saving_spinner` golden used to call `showAppSpinnerDialog` directly and showed a spinner without the "Processing..." line every real caller has; the firmware recovery golden used to render a hand-written copy whose English strings never changed with the locale.
 - **Hold Future-driven overlays open with a future that never completes**, then pump past the helper's own delays. `Completer<void>().future` leaves no timer behind; a long `Future.delayed` leaves one pending and fails the test at teardown.
 - **Pump with `pumpOverlayIn(tester)`** (`golden_interactions.dart`). It covers `doSomethingWithSpinner`'s deferred open, `showAppDialog`'s 200ms transition and a snackbar's 250ms transition, which `disableAnimations` does not shorten.
-- **Call helpers that need a `WidgetRef` from `OverlayHost`** (`golden_framework/overlay_host.dart`). Its element is both the `BuildContext` and the `WidgetRef`, so `overlayHostOf(tester)` gives both, under the cell's own overrides.
+- **Call helpers that need a `WidgetRef` from `OverlayHost`** (`golden_framework/overlay_host.dart`). It is a `ConsumerStatefulWidget`, and `overlayHostOf(tester)` returns its state's `context` and `ref`, under the cell's own overrides.
 - **Select mode-dependent content by overriding the mode profile** (`appModeProfileProvider.overrideWithValue(const RemoteModeProfile())`), never with a flag.
 - **Pin content that derives from timers or the clock.** A test advances fake time, which moves `clock.now()` (`package:clock`) but not `DateTime.now()`. An overlay that reads the time must read it through `clock.now()`, or its text follows the machine's speed and the golden flakes; the firmware recovery dialog's countdown does, so its golden reads its full `baseline`, and `baseline: Duration.zero` gives the elapsed copy.
 - **Drive one-golden-per-message captures from a single table** in the test, built through the call site's own localizer (`loc(context)`, `localizeServiceError`, `localizeFirmwareFailure`), never from pre-written English strings.
@@ -787,7 +787,7 @@ test/golden_test/
                                   #   non-golden card test reads too — #1361)
     golden_runner.dart            # runViewGoldenTests(), _buildGoldenWidget()
     golden_interactions.dart      # settleWithTimeout(), pumpOverlayIn(), switchToTab()
-    overlay_host.dart             # OverlayHost: a host whose element is a WidgetRef
+    overlay_host.dart             # OverlayHost: a host that hands tests a context + WidgetRef
     mocks/
       mock_firewall.dart          # FixedFirewallNotifier + firewallOverrides()
       mock_dashboard.dart         # Dashboard-specific mocks + stub widget factory
