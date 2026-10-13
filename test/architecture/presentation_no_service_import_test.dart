@@ -5,16 +5,14 @@
 //
 // Nothing else enforces it. `flutter analyze` has no rule for import direction,
 // and every test of a feature keeps passing when a view imports a service, which
-// is how sixteen files came to do it while the rule stood. This test is the rule.
+// is how twenty-six files came to do it while the rule stood: sixteen into a
+// feature's `services/`, ten into `lib/core/**/services/`. This test is the rule.
 //
 // What it does not check: that a view reads only providers. A view may still
 // import a model, a widget, a util or another view. The one thing it may not do is
-// name a file under a feature's `services/`.
+// name a file under a `services/` directory, a feature's or `lib/core/`'s.
 //
 // Also outside it, each a known gap rather than an oversight:
-// - `lib/core/**/services/`. Ten imports from these layers reach it today (the
-//   SSE managers, the recovery probe, the remote assistance service); they are
-//   not a feature's service layer, and whether they belong is its own question.
 // - `export` directives. A provider may re-export a service's types.
 // - `helpers/` and other directories not in [_layers].
 
@@ -44,17 +42,29 @@ const _allowed = <String, String>{
   // decided against (2026-10-12).
   'lib/page/ai_assistant/views/router_assistant_view.dart':
       'reads a service Provider<T>; page has no notifier',
+
+  // A developer tool whose job is to talk to USP directly: it builds its own
+  // `UspClient` / `UspBridgeClient` against a URL the developer types, so there
+  // is no service to route it through that would not be this view again.
+  'lib/page/test_console/views/usp_test_console_view.dart':
+      'developer USP console; builds its own client by design',
+
+  // A debt left on purpose: the widget holds a whole data layer (USP reads, CGI
+  // calls, SSE subscription, polling) and imports the throttler for one enum.
+  // Moving the enum would make this green and fix nothing, and package widgets
+  // may be removed outright, so the data layer is not moved for now
+  // (2026-10-13). If they stay, it moves to a service and a notifier.
+  'lib/page/dashboard/widgets/package_widget_renderer.dart':
+      'holds its own data layer; package widgets may be removed',
 };
 
-/// An import of a file under a `services/` directory in `lib/page/`: absolute at
-/// any depth (`login/auto_parent/services/`), or relative, including into another
-/// feature (`../../other/services/`). Either quote. `[a-z0-9_/]` because feature
-/// directories carry digits (`ipv6_port_service`) and nest.
-///
-/// `lib/core/**/services/` is not matched: it is not a feature's service layer,
-/// and is reached with `package:privacy_gui/core/`, never a relative path.
+/// An import of a file under a `services/` directory: a feature's at any depth
+/// (`login/auto_parent/services/`) or `lib/core/`'s (`core/usp/services/`),
+/// absolute or relative, including into another feature (`../../other/services/`).
+/// Either quote. `[a-z0-9_/]` because directories carry digits
+/// (`ipv6_port_service`) and nest.
 final _serviceImport = RegExp(
-  r"""^\s*import\s+['"](package:privacy_gui/page/[a-z0-9_/]*/services/|(\.\./)+([a-z0-9_]+/)*services/)[^'"]*['"]""",
+  r"""^\s*import\s+['"](package:privacy_gui/(page|core)/[a-z0-9_/]*/services/|(\.\./)+([a-z0-9_]+/)*services/)[^'"]*['"]""",
   multiLine: true,
 );
 
