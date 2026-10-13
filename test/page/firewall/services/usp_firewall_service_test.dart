@@ -163,9 +163,13 @@ void main() {
 
     // This test was named "missing rules default to false" and asserted the
     // IPv4 switch read true: an Accept rule with no rule read as "filter on",
-    // a value no router reported. A switch with no rule behind it does
-    // nothing, so it reads off (#1611).
-    test('a switch with no rule behind it reads off', () {
+    // a value no router reported. With no rule behind it nothing is filtered
+    // or blocked, and the model says so (#1611).
+    //
+    // Note the VPN switches: the page shows passthrough, `!block`, so these
+    // `false`s render ON. That is deliberate (2026-10-13): no Drop rule means
+    // the traffic does pass, and the switch is locked either way.
+    test('a switch with no rule behind it filters and blocks nothing', () {
       final model = UspFirewallService.buildUIModel(rules: {});
 
       expect(model.isIPv4FirewallEnabled, isFalse);
