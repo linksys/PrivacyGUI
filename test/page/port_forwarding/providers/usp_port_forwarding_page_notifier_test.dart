@@ -8,11 +8,21 @@ import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
+import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
+import 'package:privacy_gui/page/port_forwarding/providers/port_triggering_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/usp_port_forwarding_page_notifier.dart';
+import 'package:privacy_gui/page/port_forwarding/services/usp_port_forwarding_data_service.dart';
 import 'package:privacy_gui/page/port_forwarding/services/usp_port_forwarding_service.dart';
+import 'package:privacy_gui/page/port_forwarding/services/usp_port_triggering_data_service.dart';
 
 class MockUspPortForwardingService extends Mock
     implements UspPortForwardingService {}
+
+class MockUspPortForwardingDataService extends Mock
+    implements UspPortForwardingDataService {}
+
+class MockUspPortTriggeringDataService extends Mock
+    implements UspPortTriggeringDataService {}
 
 void main() {
   late MockUspPortForwardingService mockService;
@@ -357,6 +367,151 @@ void main() {
           reason: 'nothing is left to be Added again');
       expect(state.status.isSaving, isFalse);
       container.dispose();
+    });
+
+    // Each batch is tallied on its own, so a triggering batch that wrote
+    // nothing reports a complete failure even when the forwarding batch before
+    // it wrote every rule. The page must treat that as a partial save.
+    test('a later batch failing after an earlier one wrote re-reads the router',
+        () async {
+      stubFetch();
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      const added = PortForwardingRuleUIModel(
+        description: 'HTTPS',
+        externalPort: 443,
+        internalPort: 443,
+        internalClient: '192.168.1.100',
+        protocol: 'TCP',
+        enabled: true,
+      );
+      when(() => mockService.saveForwardingBatch(
+            original: any(named: 'original'),
+            current: any(named: 'current'),
+          )).thenAnswer((_) async => (added: 1, updated: 0, deleted: 0));
+      when(() => mockService.saveTriggeringBatch(
+            original: any(named: 'original'),
+            current: any(named: 'current'),
+          )).thenThrow(const UspCompleteFailureError(
+        summary: 'triggering batch: Add rejected',
+        failures: [],
+      ));
+
+      final notifier = container.read(uspPortForwardingPageProvider.notifier);
+      notifier.addForwardingRule(added);
+      notifier.addTriggeringRule(const PortTriggeringRuleUIModel(
+        enabled: true,
+        description: 'Voice',
+        triggerPort: 5060,
+        triggerProtocol: 'UDP',
+      ));
+      // What the router holds after the forwarding batch: its Add went through.
+      stubFetch(forwarding: [pf1, pf2]);
+
+      await expectLater(
+          notifier.save(), throwsA(isA<UspCompleteFailureError>()));
+
+      expect(
+          container
+              .read(uspPortForwardingPageProvider)
+              .settings
+              .current
+              .forwardingRules
+              .where((r) => r.instancePath == null),
+          isEmpty,
+          reason: 'the forwarding rule the router took is not Added again');
+      container.dispose();
+    });
+
+    test('a save that wrote nothing keeps the edits for a retry', () async {
+      stubFetch();
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      const added = PortForwardingRuleUIModel(
+        description: 'HTTPS',
+        externalPort: 443,
+        internalPort: 443,
+        internalClient: '192.168.1.100',
+        protocol: 'TCP',
+        enabled: true,
+      );
+      when(() => mockService.saveForwardingBatch(
+            original: any(named: 'original'),
+            current: any(named: 'current'),
+          )).thenThrow(const UspCompleteFailureError(
+        summary: 'forwarding batch: Add rejected',
+        failures: [],
+      ));
+
+      final notifier = container.read(uspPortForwardingPageProvider.notifier);
+      notifier.addForwardingRule(added);
+
+      await expectLater(
+          notifier.save(), throwsA(isA<UspCompleteFailureError>()));
+
+      expect(
+          container
+              .read(uspPortForwardingPageProvider)
+              .settings
+              .current
+              .forwardingRules,
+          contains(added));
+      container.dispose();
+    });
+
+    // The dashboard card and the dialogs' overlap and limit checks read L1.
+    test('a save that wrote something refreshes the shared rule lists',
+        () async {
+      stubFetch();
+      final pfData = MockUspPortForwardingDataService();
+      final ptData = MockUspPortTriggeringDataService();
+      when(() => pfData.fetch()).thenAnswer((_) async => [pf1]);
+      when(() => ptData.fetch()).thenAnswer((_) async => [pt1]);
+      final container = ProviderContainer(overrides: [
+        uspPortForwardingServiceProvider.overrideWithValue(mockService),
+        uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+        uspPortForwardingDataServiceProvider.overrideWithValue(pfData),
+        uspPortTriggeringDataServiceProvider.overrideWithValue(ptData),
+      ]);
+      addTearDown(container.dispose);
+      container.listen(uspPortForwardingPageProvider, (_, __) {});
+      container.listen(portForwardingDataProvider, (_, __) {});
+      container.listen(portTriggeringDataProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+      await container.read(portForwardingDataProvider.future);
+      await container.read(portTriggeringDataProvider.future);
+      clearInteractions(pfData);
+      clearInteractions(ptData);
+
+      when(() => mockService.saveForwardingBatch(
+            original: any(named: 'original'),
+            current: any(named: 'current'),
+          )).thenAnswer((_) async => (added: 1, updated: 0, deleted: 0));
+      when(() => mockService.saveTriggeringBatch(
+            original: any(named: 'original'),
+            current: any(named: 'current'),
+          )).thenThrow(const UspCompleteFailureError(
+        summary: 'triggering batch: Add rejected',
+        failures: [],
+      ));
+
+      final notifier = container.read(uspPortForwardingPageProvider.notifier);
+      notifier.addForwardingRule(const PortForwardingRuleUIModel(
+        description: 'HTTPS',
+        externalPort: 443,
+        internalPort: 443,
+        internalClient: '192.168.1.100',
+        protocol: 'TCP',
+        enabled: true,
+      ));
+      await expectLater(notifier.save(), throwsA(isA<ServiceError>()));
+      await container.read(portForwardingDataProvider.future);
+      await container.read(portTriggeringDataProvider.future);
+
+      verify(() => pfData.fetch()).called(1);
+      verify(() => ptData.fetch()).called(1);
     });
 
     test('isDirty after adding, clean after revert', () async {

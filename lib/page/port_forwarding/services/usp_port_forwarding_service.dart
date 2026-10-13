@@ -174,16 +174,18 @@ class UspPortForwardingService {
   // Save — Port Forwarding (batch)
   // ---------------------------------------------------------------------------
 
-  /// Batch save port forwarding rules: diff original vs current.
-  ///
-  /// Lenient mode: partial success is acceptable (log warning),
-  /// only throws if ALL operations fail.
   /// FWDEV#204: a range forwards to the same ports on the LAN host, so its
   /// internal port is its start port, as on 1.x (#1080). A stored range may
   /// carry another value, and every Set sends the whole rule.
   static int _internalPortFor(PortForwardingRuleUIModel r) =>
       r.isPortRange ? r.externalPort : r.internalPort;
 
+  /// Batch save port forwarding rules: diff original vs current.
+  ///
+  /// Every step runs; any failed step fails the batch once they are done
+  /// ([UspCompleteFailureError] when every step failed, otherwise
+  /// [UspPartialFailureError]). Counts are returned only when every step
+  /// succeeded.
   Future<({int added, int updated, int deleted})> saveForwardingBatch({
     required List<PortForwardingRuleUIModel> original,
     required List<PortForwardingRuleUIModel> current,
@@ -274,8 +276,8 @@ class UspPortForwardingService {
 
   /// Batch save port triggering rules: diff original vs current.
   ///
-  /// Lenient mode: partial success is acceptable (log warning),
-  /// only throws if ALL operations fail.
+  /// Fails the same way as [saveForwardingBatch]: any failed step fails the
+  /// batch once every step has run.
   Future<({int added, int updated, int deleted})> saveTriggeringBatch({
     required List<PortTriggeringRuleUIModel> original,
     required List<PortTriggeringRuleUIModel> current,

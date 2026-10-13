@@ -82,19 +82,32 @@ class UspPortForwardingPageNotifier
   // save — re-read the router after a partial failure
   // ---------------------------------------------------------------------------
 
-  /// A partly failed batch has already written some rules. Re-read the router
-  /// so those rules carry their instance paths: otherwise a second Save would
-  /// Add them again. The error still reaches the page. A complete failure
-  /// changed nothing, so the user's edits are kept for a retry.
+  /// A failed save that has already written some rules re-reads the router, so
+  /// those rules carry their instance paths: otherwise a second Save would Add
+  /// them again. The error still reaches the page. A save that wrote nothing
+  /// keeps the user's edits for a retry.
+  ///
+  /// "Wrote some" is a partial failure inside one batch, or any failure after
+  /// the forwarding batch finished: each batch is tallied on its own, so a
+  /// triggering batch that wrote nothing reports a complete failure even when
+  /// the forwarding batch before it wrote every rule.
   @override
   Future<PortForwardingPageFeatureState> save() async {
     try {
       return await super.save();
-    } on UspPartialFailureError {
-      await fetch(forceRemote: true);
+    } on ServiceError catch (e) {
+      if (_wroteAnyOf(e)) await fetch(forceRemote: true);
       rethrow;
     }
   }
+
+  /// Whether the forwarding batch of the save in flight wrote a rule. Set by
+  /// [performSave].
+  bool _forwardingWrote = false;
+
+  /// Whether a save that failed with [e] had already written something.
+  bool _wroteAnyOf(ServiceError e) =>
+      e is UspPartialFailureError || _forwardingWrote;
 
   // ---------------------------------------------------------------------------
   // performSave — diff original vs current, batch API calls
@@ -106,6 +119,7 @@ class UspPortForwardingPageNotifier
       status: state.status.copyWith(isSaving: true),
     );
 
+    _forwardingWrote = false;
     try {
       final originalPf = state.settings.original.forwardingRules;
       final currentPf = state.settings.current.forwardingRules;
@@ -117,6 +131,8 @@ class UspPortForwardingPageNotifier
           original: originalPf,
           current: currentPf,
         );
+        _forwardingWrote =
+            pfResult.added + pfResult.updated + pfResult.deleted > 0;
 
         final ptResult = await _svc.saveTriggeringBatch(
           original: originalPt,
@@ -130,17 +146,24 @@ class UspPortForwardingPageNotifier
             'deleted: ${ptResult.deleted}');
       });
 
-      // Invalidate Layer 1 providers to refresh dashboard card
-      ref.invalidate(portForwardingDataProvider);
-      ref.invalidate(portTriggeringDataProvider);
+      _refreshSharedLists();
     } on ServiceError catch (e) {
       logger.e('[USP][Firewall][PortForwarding]: Save failed', error: e);
+      // The dashboard card and the dialogs' overlap and limit checks read the
+      // shared lists, so a save that wrote anything refreshes them too.
+      if (_wroteAnyOf(e)) _refreshSharedLists();
       rethrow;
     } finally {
       state = state.copyWith(
         status: state.status.copyWith(isSaving: false),
       );
     }
+  }
+
+  /// Invalidate Layer 1 so the dashboard card re-reads the router.
+  void _refreshSharedLists() {
+    ref.invalidate(portForwardingDataProvider);
+    ref.invalidate(portTriggeringDataProvider);
   }
 
   // ---------------------------------------------------------------------------
