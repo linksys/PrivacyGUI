@@ -14,12 +14,15 @@ import 'package:privacy_gui/page/unified_diagnostics/providers/speed_test_notifi
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_result.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/providers/unified_diagnostics_notifier.dart';
+import 'package:privacy_gui/page/unified_diagnostics/services/diagnostic_report_service.dart';
 import 'package:privacy_gui/page/unified_diagnostics/services/unified_diagnostics_service.dart';
 
 class _MockUnifiedDiagnosticsService extends Mock
     implements UnifiedDiagnosticsService {}
 
 class _MockExecutor extends Mock implements NetworkDiagnosticsExecutor {}
+
+class _MockReportService extends Mock implements DiagnosticReportService {}
 
 class _MockScope extends Mock implements DiagnosticScope {}
 
@@ -96,6 +99,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(_FakeScope());
+    registerFallbackValue(const UnifiedDiagnosticsState());
   });
 
   ProviderContainer createContainer() {
@@ -1339,6 +1343,35 @@ void main() {
 
         // Should have run twice
         verify(() => mockService.checkWanStatus()).called(2);
+        container.dispose();
+      });
+    });
+
+    group('shareReport', () {
+      test('shares the report of the state the user is looking at', () async {
+        final reportService = _MockReportService();
+        when(() => reportService.share(any())).thenAnswer((_) async {});
+        final container = ProviderContainer(
+          overrides: [
+            unifiedDiagnosticsServiceProvider.overrideWithValue(mockService),
+            networkDiagnosticsExecutorProvider.overrideWithValue(mockExecutor),
+            diagnosticReportServiceProvider.overrideWithValue(reportService),
+          ],
+        );
+        container.listen(unifiedDiagnosticsProvider, (_, __) {});
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+        notifier.state = const UnifiedDiagnosticsState(
+          step: DiagnosticStep.showingResults,
+          flow: DiagnosticFlow.internet,
+        );
+
+        await notifier.shareReport();
+
+        final shared = verify(() => reportService.share(captureAny()))
+            .captured
+            .single as UnifiedDiagnosticsState;
+        expect(shared.step, DiagnosticStep.showingResults);
+        expect(shared.flow, DiagnosticFlow.internet);
         container.dispose();
       });
     });
