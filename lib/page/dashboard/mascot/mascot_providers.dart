@@ -6,9 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/demo/providers/demo_ui_provider.dart';
-import 'package:privacy_gui/page/_shared/services/usp_pdf_service.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
-import 'package:privacy_gui/page/dashboard/providers/pdf_report_data_provider.dart';
+import 'package:privacy_gui/page/dashboard/providers/pdf_report_provider.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/providers/unified_diagnostics_notifier.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
@@ -180,9 +179,7 @@ DiagnosticsResult _buildResultFromState(Ref ref) {
 
 /// Generate and open PDF report.
 Future<void> _printReport(Ref ref) async {
-  final reportData = ref.read(pdfReportDataProvider);
-  if (reportData == null) return;
-  await UspPdfService.generatePdf(reportData);
+  await ref.read(pdfReportProvider).open();
 }
 
 /// Toggle the Theme Studio panel.
