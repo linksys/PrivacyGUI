@@ -9,17 +9,19 @@
 /// overrides do not match it.
 ///
 /// The one page in the wave whose fixture is a **service** rather than a notifier
-/// state, because the view holds its own state in `setState` and the only thing that
-/// moves it is one awaited call:
+/// state: `remoteAssistanceConfirmProvider` starts at `idle` and the only thing that
+/// moves it is one awaited call, so overriding the service drives the real notifier
+/// through validation exactly as Guardian would:
 ///
 /// ```dart
-/// final service = ref.read(remoteAssistanceServiceProvider);
-/// final sessionInfo = await service.fetchSessionInfoForCA(...);
+/// // RemoteAssistanceConfirmNotifier.validate
+/// final info = await ref.read(remoteAssistanceServiceProvider)
+///     .fetchSessionInfoForCA(...);
 /// ```
 ///
-/// Unoverridden that reaches `GuardianApiClient`, throws, and the view lands in its
-/// `catch` with `'An unexpected error occurred.'` and a null `_sessionInfo` — so the
-/// page renders one error box and **no** session status card. That card is the whole
+/// Unoverridden that reaches `GuardianApiClient`, throws, and the notifier lands in
+/// `error` with a null `sessionInfo` — so the page renders one error box and **no**
+/// session status card. That card is the whole
 /// layout story on this page (an 80px router image beside an `Expanded` column of
 /// model, serial, status badge and countdown), so an unoverridden cell measures the
 /// narrow half of the page and reports it green.
