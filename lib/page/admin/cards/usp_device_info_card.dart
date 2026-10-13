@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
@@ -174,9 +173,14 @@ class UspDeviceInfoCard extends ConsumerWidget {
                 context,
                 label: label,
                 child: InkWell(
-                  onTap: () => context.pushNamed(
-                    RouteNamed.uspNodeDetail,
-                    queryParameters: {'deviceId': deviceId},
+                  // Through the shared helper, so a presented copy of this
+                  // footer closes its presentation first (#1453).
+                  onTap: () => navigateFromCard(
+                    context,
+                    (router) => router.pushNamed(
+                      RouteNamed.uspNodeDetail,
+                      queryParameters: {'deviceId': deviceId},
+                    ),
                   ),
                   borderRadius: BorderRadius.circular(4),
                   child: Row(

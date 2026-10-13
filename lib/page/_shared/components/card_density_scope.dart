@@ -88,6 +88,10 @@ class CardDensityScope extends InheritedWidget {
   /// do. Topology cannot: the presentation is a box of its own with no `ClipRect`
   /// competing for the space, so the graph is pannable there and its nodes want
   /// the spacing the dashboard cell had to double to look right.
+  ///
+  /// The detail link cannot either: in a presentation it has to close the
+  /// presentation before it navigates, and in the grid there is nothing to close
+  /// (`navigateFromCard`, #1453).
   final bool presented;
 
   /// The density in effect at [context], or [CardDensity.normal] outside any
