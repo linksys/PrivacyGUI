@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
 import 'package:privacy_gui/generated/dns_client.g.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/device_score.dart';
+import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_probe_ui_models.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/providers/speed_test_notifier.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_result.dart';

@@ -1,11 +1,11 @@
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/models/operate_result.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/device_score.dart';
+import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_probe_ui_models.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_result.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/manual_tools_state.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
-import 'package:privacy_gui/page/unified_diagnostics/services/unified_diagnostics_service.dart';
 
 // =============================================================================
 // Idle — start screen before any diagnostic

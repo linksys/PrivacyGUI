@@ -10,6 +10,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 // import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
 // import 'package:privacy_gui/page/unified_diagnostics/providers/speed_test_notifier.dart';
 
+import '../models/diagnostic_probe_ui_models.dart';
 import '../models/diagnostic_result.dart';
 import '../models/diagnostic_state.dart';
 import '../services/unified_diagnostics_service.dart';
