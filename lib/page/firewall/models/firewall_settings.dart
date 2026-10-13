@@ -1,34 +1,22 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
-import 'package:privacy_gui/page/firewall/services/usp_firewall_service.dart';
 
 /// User-editable firewall settings.
 ///
-/// Wraps the [FirewallUIModel] (presentation toggles) and the opaque
-/// [FirewallRuleContext] (needed for building SET payloads on save).
+/// The rules a save writes against are not here: they are what the router
+/// reported, not something the user edits, so the notifier reads them from
+/// `firewallDataProvider` when it saves.
 class FirewallSettings extends Equatable {
   final FirewallUIModel model;
-  final FirewallRuleContext ruleContext;
 
-  const FirewallSettings({
-    required this.model,
-    required this.ruleContext,
-  });
+  const FirewallSettings({required this.model});
 
-  const FirewallSettings.empty()
-      : model = const FirewallUIModel(),
-        ruleContext = FirewallRuleContext.empty;
+  const FirewallSettings.empty() : model = const FirewallUIModel();
 
-  FirewallSettings copyWith({
-    FirewallUIModel? model,
-    FirewallRuleContext? ruleContext,
-  }) {
-    return FirewallSettings(
-      model: model ?? this.model,
-      ruleContext: ruleContext ?? this.ruleContext,
-    );
+  FirewallSettings copyWith({FirewallUIModel? model}) {
+    return FirewallSettings(model: model ?? this.model);
   }
 
   @override
-  List<Object?> get props => [model, ruleContext];
+  List<Object?> get props => [model];
 }

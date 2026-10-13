@@ -50,10 +50,12 @@ class FirewallRuleContext extends Equatable {
   /// can be read or written.
   bool get isEmpty => _ruleMap.isEmpty;
 
-  /// Whether every rule behind [s] is on the router. A switch without them
+  /// The switches missing at least one of their rules on the router. Each
   /// would show a value the router never reported, and a save would skip it.
-  bool controls(FirewallSwitch s) =>
-      _switchRuleKeys[s]!.every(_ruleMap.containsKey);
+  Set<FirewallSwitch> get lockedSwitches => {
+        for (final s in FirewallSwitch.values)
+          if (!_switchRuleKeys[s]!.every(_ruleMap.containsKey)) s,
+      };
 
   /// The parsed rules, for tests that hand a context to `buildSetPayload`.
   @visibleForTesting

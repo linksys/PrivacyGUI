@@ -65,8 +65,11 @@ class UspFirewallNotifier extends AutoDisposeNotifier<FirewallFeatureState>
           'spiV6: ${uiModel.isIPv6FirewallEnabled}');
 
       return (
-        FirewallSettings(model: uiModel, ruleContext: ruleContext),
-        const FirewallStatus(isLoading: false),
+        FirewallSettings(model: uiModel),
+        FirewallStatus(
+          isLoading: false,
+          lockedSwitches: ruleContext.lockedSwitches,
+        ),
       );
     } on ServiceError catch (e) {
       logger.e('[USP][Firewall]: Fetch failed', error: e);
@@ -89,12 +92,13 @@ class UspFirewallNotifier extends AutoDisposeNotifier<FirewallFeatureState>
 
     try {
       final settings = state.settings.current;
+      final rules = (await ref.read(firewallDataProvider.future)).ruleContext;
 
       await ref.read(uspMutationLockProvider).withLock(() async {
         final count = await _svc.save(
           original: state.settings.original.model,
           pending: settings.model,
-          context: settings.ruleContext,
+          context: rules,
         );
 
         logger.d('[USP][Firewall]: Saved — $count rules updated');

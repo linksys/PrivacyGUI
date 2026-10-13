@@ -335,26 +335,25 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // FirewallRuleContext.controls
+  // FirewallRuleContext.lockedSwitches
   // ---------------------------------------------------------------------------
 
   // A switch whose rule is absent shows a value the router never reported, and
   // saving it with a matched one wrote only the matched one (#1611).
-  group('FirewallRuleContext — controls', () {
-    test('a switch is controllable only when every rule behind it is present',
-        () {
+  group('FirewallRuleContext — lockedSwitches', () {
+    test('a switch is locked unless every rule behind it is present', () {
       final context = FirewallRuleContext.fromMap({
         'spiV4Input': _rule('p.21.', enable: false, description: ''),
         // spiV4Forward missing: the IPv4 switch is a pair
         'ident': _rule('p.26.', enable: false, description: ''),
       });
 
-      expect(context.controls(FirewallSwitch.ipv4Firewall), isFalse);
-      expect(context.controls(FirewallSwitch.ident), isTrue);
-      expect(context.controls(FirewallSwitch.natRedirection), isFalse);
+      expect(context.lockedSwitches, contains(FirewallSwitch.ipv4Firewall));
+      expect(context.lockedSwitches, isNot(contains(FirewallSwitch.ident)));
+      expect(context.lockedSwitches, contains(FirewallSwitch.natRedirection));
     });
 
-    test('the 2.0.3 rule set controls every switch', () {
+    test('the 2.0.3 rule set locks no switch', () {
       final context = FirewallRuleContext.fromMap(
         UspFirewallService.parseFirewallRules(FirewallChainRules(items: [
           for (final (i, d) in const [
@@ -375,14 +374,12 @@ void main() {
         ])),
       );
 
-      for (final s in FirewallSwitch.values) {
-        expect(context.controls(s), isTrue, reason: '$s');
-      }
+      expect(context.lockedSwitches, isEmpty);
     });
 
-    // The table behind `controls` and the one inside buildSetPayload are the
-    // same fact written twice; this keeps them from drifting apart.
-    test('every switch a context controls produces a write', () {
+    // The table behind `lockedSwitches` and the one inside buildSetPayload are
+    // the same fact written twice; this keeps them from drifting apart.
+    test('every switch a context does not lock produces a write', () {
       final all = FirewallRuleContext.fromMap({
         for (final key in FirewallSwitch.values.expand(debugRuleKeysOf))
           key: _rule('p.$key.', enable: false, description: ''),
