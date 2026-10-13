@@ -52,7 +52,7 @@ class FixedInstantPrivacyNotifier extends UspInstantPrivacyNotifier {
 ///
 /// [lanInfo] is required rather than defaulted so the case naming it also owns the
 /// choice: the view reads exactly one field off it (`dnsServers`, through
-/// `UspInstantSafetyService.isOpenDns`), which decides `MenuBadge.on` vs
+/// `SafeBrowsingUIModel.isOpenDns`), which decides `MenuBadge.on` vs
 /// `MenuBadge.off` — two labels of near-identical width, both of which put an
 /// `AppBadge` in the row. So the presence of a value is the axis here, not which
 /// value it is.

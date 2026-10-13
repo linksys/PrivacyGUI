@@ -13,22 +13,10 @@ final uspInstantSafetyServiceProvider = Provider<UspInstantSafetyService>(
 
 /// Transforms codegen [LanNetworkInfo] into [SafeBrowsingUIModel] and provides
 /// DNS value mapping for save operations.
-///
-/// OpenDNS Family Shield IPs are identical to the JNAP version (NOW-713).
 class UspInstantSafetyService {
   final UspClient _usp;
 
   UspInstantSafetyService(this._usp);
-
-  static const _openDnsDns1 = '208.67.222.222';
-  static const _openDnsDns2 = '208.67.220.220';
-  static const _openDnsValue = '$_openDnsDns1,$_openDnsDns2';
-
-  /// Returns true if the DNS servers string indicates OpenDNS is active.
-  static bool isOpenDns(String dnsServers) {
-    final first = dnsServers.split(',').firstOrNull?.trim() ?? '';
-    return first == _openDnsDns1;
-  }
 
   // ─── CRUD ──────────────────────────────────────────────────
 
@@ -90,14 +78,14 @@ class UspInstantSafetyService {
 
   /// Detect safe browsing type from the raw DNS servers string.
   SafeBrowsingType _detectType(String dnsServers) {
-    return isOpenDns(dnsServers)
+    return SafeBrowsingUIModel.isOpenDns(dnsServers)
         ? SafeBrowsingType.openDNS
         : SafeBrowsingType.off;
   }
 
   /// Returns the DNS servers value to write for the given type.
   String dnsValueForType(SafeBrowsingType type) => switch (type) {
-        SafeBrowsingType.openDNS => _openDnsValue,
+        SafeBrowsingType.openDNS => SafeBrowsingUIModel.openDnsServers,
         SafeBrowsingType.off => '',
       };
 }

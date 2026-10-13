@@ -10,7 +10,6 @@ import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
 import 'package:privacy_gui/page/instant_safety/models/safe_browsing_ui_model.dart';
-import 'package:privacy_gui/page/instant_safety/services/instant_safety_service.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/ipv6_port_service/providers/usp_ipv6_port_service_notifier.dart';
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
@@ -33,7 +32,7 @@ final pdfReportDataProvider = Provider<PdfReportData?>((ref) {
   SafeBrowsingUIModel? safeBrowsingModel;
   if (lanData != null) {
     final dnsServers = lanData.model.dnsServers;
-    final isOpenDns = UspInstantSafetyService.isOpenDns(dnsServers);
+    final isOpenDns = SafeBrowsingUIModel.isOpenDns(dnsServers);
     safeBrowsingModel = SafeBrowsingUIModel(
       type: isOpenDns ? SafeBrowsingType.openDNS : SafeBrowsingType.off,
       currentDnsServers: dnsServers,
