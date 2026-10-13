@@ -1,22 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/connection/models/probe_result.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/mode/credential_strategy.dart';
 import 'package:privacy_gui/framework/mode/transport_strategy.dart';
-
-/// What one probe attempt found.
-enum ProbeResult {
-  /// The router did not answer, or answered and then failed a step that could
-  /// still succeed later. Keep waiting.
-  unreachable,
-
-  /// The router is back and the app may keep the session it had.
-  recovered,
-
-  /// The router is back and it is not the same router. Only reachable where a
-  /// stored fingerprint exists to disagree with — see
-  /// [CredentialStrategy.reestablishAfterOutage].
-  serialMismatch,
-}
 
 /// Probes the router while the app is waiting for it to come back.
 ///

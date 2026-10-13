@@ -3,8 +3,9 @@ import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
+import 'package:privacy_gui/core/usp/models/sse_connection_state.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
+import 'package:privacy_gui/core/usp/models/core_subscription_state.dart';
 import 'package:privacy_gui/core/usp/services/sse_remote_strategy.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';

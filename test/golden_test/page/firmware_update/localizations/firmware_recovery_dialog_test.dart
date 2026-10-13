@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
-import 'package:privacy_gui/core/connection/services/recovery_probe_service.dart';
+import 'package:privacy_gui/core/connection/models/probe_result.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../golden_framework/golden_runner.dart';
