@@ -45,17 +45,6 @@ class PdfReport {
     final fwData = _ref.read(firewallDataProvider).valueOrNull;
     final lanData = _ref.read(lanDataProvider).valueOrNull;
 
-    // Build SafeBrowsingUIModel from L1 LAN data (DNS servers)
-    SafeBrowsingUIModel? safeBrowsingModel;
-    if (lanData != null) {
-      final dnsServers = lanData.model.dnsServers;
-      final isOpenDns = SafeBrowsingUIModel.isOpenDns(dnsServers);
-      safeBrowsingModel = SafeBrowsingUIModel(
-        type: isOpenDns ? SafeBrowsingType.openDNS : SafeBrowsingType.off,
-        currentDnsServers: dnsServers,
-      );
-    }
-
     return PdfReportData(
       ethernetPortModels:
           _ref.read(ethernetDataProvider).valueOrNull?.ethernetPortModels,
@@ -67,7 +56,10 @@ class PdfReport {
       staticRoutes: _ref.read(uspStaticRoutingProvider).settings.current.routes,
       ipv6PortRules:
           _ref.read(uspIpv6PortServiceProvider).settings.current.rules,
-      safeBrowsing: safeBrowsingModel,
+      // Built from L1 LAN data (DNS servers).
+      safeBrowsing: lanData == null
+          ? null
+          : SafeBrowsingUIModel.fromDnsServers(lanData.model.dnsServers),
       lanInfo: lanData?.model,
       timeSettings: _ref.read(timeDataProvider).valueOrNull?.model,
       dhcpClients: _ref.read(dhcpDataProvider).valueOrNull?.clientModels,

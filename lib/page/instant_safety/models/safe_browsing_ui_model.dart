@@ -18,6 +18,15 @@ class SafeBrowsingUIModel extends Equatable {
     this.currentDnsServers = '',
   });
 
+  /// Reads the preset from the router's raw DNS servers value.
+  factory SafeBrowsingUIModel.fromDnsServers(String dnsServers) =>
+      SafeBrowsingUIModel(
+        type: isOpenDns(dnsServers)
+            ? SafeBrowsingType.openDNS
+            : SafeBrowsingType.off,
+        currentDnsServers: dnsServers,
+      );
+
   bool get isEnabled => type != SafeBrowsingType.off;
 
   /// OpenDNS Family Shield, identical to the JNAP version (NOW-713).

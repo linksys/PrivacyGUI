@@ -68,20 +68,8 @@ class UspInstantSafetyService {
   // ─── Transform ─────────────────────────────────────────────
 
   /// Codegen LanNetworkInfo → SafeBrowsingUIModel.
-  SafeBrowsingUIModel buildUIModel(LanNetworkInfo data) {
-    final type = _detectType(data.dnsServers);
-    return SafeBrowsingUIModel(
-      type: type,
-      currentDnsServers: data.dnsServers,
-    );
-  }
-
-  /// Detect safe browsing type from the raw DNS servers string.
-  SafeBrowsingType _detectType(String dnsServers) {
-    return SafeBrowsingUIModel.isOpenDns(dnsServers)
-        ? SafeBrowsingType.openDNS
-        : SafeBrowsingType.off;
-  }
+  SafeBrowsingUIModel buildUIModel(LanNetworkInfo data) =>
+      SafeBrowsingUIModel.fromDnsServers(data.dnsServers);
 
   /// Returns the DNS servers value to write for the given type.
   String dnsValueForType(SafeBrowsingType type) => switch (type) {

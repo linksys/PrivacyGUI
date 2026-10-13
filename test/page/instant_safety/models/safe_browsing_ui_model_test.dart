@@ -23,4 +23,26 @@ void main() {
       expect(SafeBrowsingUIModel.isOpenDns(''), isFalse);
     });
   });
+
+  group('SafeBrowsingUIModel.fromDnsServers', () {
+    test('OpenDNS servers read as OpenDNS, keeping the raw value', () {
+      expect(
+        SafeBrowsingUIModel.fromDnsServers('208.67.222.222,208.67.220.220'),
+        const SafeBrowsingUIModel(
+          type: SafeBrowsingType.openDNS,
+          currentDnsServers: '208.67.222.222,208.67.220.220',
+        ),
+      );
+    });
+
+    test('any other servers read as off', () {
+      expect(
+        SafeBrowsingUIModel.fromDnsServers('8.8.8.8'),
+        const SafeBrowsingUIModel(
+          type: SafeBrowsingType.off,
+          currentDnsServers: '8.8.8.8',
+        ),
+      );
+    });
+  });
 }
