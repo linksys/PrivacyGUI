@@ -9,7 +9,14 @@
 //
 // What it does not check: that a view reads only providers. A view may still
 // import a model, a widget, a util or another view. The one thing it may not do is
-// name a file under `services/`.
+// name a file under a feature's `services/`.
+//
+// Also outside it, each a known gap rather than an oversight:
+// - `lib/core/**/services/`. Ten imports from these layers reach it today (the
+//   SSE managers, the recovery probe, the remote assistance service); they are
+//   not a feature's service layer, and whether they belong is its own question.
+// - `export` directives. A provider may re-export a service's types.
+// - `helpers/` and other directories not in [_layers].
 
 import 'dart:io';
 
@@ -39,10 +46,15 @@ const _allowed = <String, String>{
       'reads a service Provider<T>; page has no notifier',
 };
 
-/// `import '…/services/…'`, absolute or relative. `[a-z0-9_]` because feature
-/// directories carry digits (`ipv6_port_service`).
+/// An import of a file under a `services/` directory in `lib/page/`: absolute at
+/// any depth (`login/auto_parent/services/`), or relative, including into another
+/// feature (`../../other/services/`). Either quote. `[a-z0-9_/]` because feature
+/// directories carry digits (`ipv6_port_service`) and nest.
+///
+/// `lib/core/**/services/` is not matched: it is not a feature's service layer,
+/// and is reached with `package:privacy_gui/core/`, never a relative path.
 final _serviceImport = RegExp(
-  r"""^\s*import\s+'(package:privacy_gui/page/[a-z0-9_]+/services/|(\.\./)+services/)[^']*'""",
+  r"""^\s*import\s+['"](package:privacy_gui/page/[a-z0-9_/]*/services/|(\.\./)+([a-z0-9_]+/)*services/)[^'"]*['"]""",
   multiLine: true,
 );
 
