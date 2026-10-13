@@ -26,7 +26,6 @@ import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.da
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_file_picker_service.dart';
-import 'package:privacy_gui/page/firmware_update/models/firmware_upload_cancelled_exception.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_router_ota_check_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_router_ota_install_service.dart';
@@ -628,7 +627,7 @@ void main() {
             commandKey: any(named: 'commandKey'),
             isCancelled: any(named: 'isCancelled'),
             onProgress: any(named: 'onProgress'),
-          )).thenThrow(const FirmwareUploadCancelledException());
+          )).thenThrow(const OperationCancelledError());
       final container = createContainer(
         picker: _StubPickerService(
           FirmwarePickedFile(name: 'fw.img', size: bytes.length, bytes: bytes),
@@ -640,12 +639,14 @@ void main() {
       await notifier.pickAndValidateFile();
       await expectLater(
         notifier.runUpload(commandKey: 'cmd-1'),
-        throwsA(isA<FirmwareUploadCancelledException>()),
+        throwsA(isA<OperationCancelledError>()),
       );
 
       final state = container.read(firmwareUpdateNotifierProvider);
       expect(state.phase, FirmwareUpdatePhase.idle);
       expect(notifier.pickedBytes, isNull);
+      // A cancel is the user's own choice, not a failure to report.
+      expect(state.failure, isNull);
     });
 
     test('runUpload propagates ServiceError and transitions to failed',

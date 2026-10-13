@@ -18,7 +18,6 @@ import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.da
 import 'package:privacy_gui/page/firmware_update/providers/firmware_auto_update_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_file_picker_service.dart';
-import 'package:privacy_gui/page/firmware_update/models/firmware_upload_cancelled_exception.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_router_ota_check_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_router_ota_install_service.dart';
@@ -517,7 +516,8 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       );
       // Capture final upload method in state
       _setState(state.copyWith(uploadMethod: _uploader.lastUsedMethod));
-    } on FirmwareUploadCancelledException {
+    } on OperationCancelledError {
+      // Ahead of the ServiceError arm, which would report it as a failure.
       logger.i('[FirmwareUpdate] upload cancelled by user');
       cancel();
       rethrow;

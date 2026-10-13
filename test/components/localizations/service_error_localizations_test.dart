@@ -62,6 +62,8 @@ void main() {
         const StorageError(): l.errorUnexpected,
         const SerialNumberMismatchError(expected: 'a', actual: 'b'):
             l.errorUnexpected,
+        // The user's own cancel: callers return before localizing it.
+        const OperationCancelledError(): l.errorUnexpected,
       };
 
       cases.forEach((error, expected) {
