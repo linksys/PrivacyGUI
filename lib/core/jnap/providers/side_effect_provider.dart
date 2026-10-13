@@ -355,14 +355,19 @@ class JNAPSideEffectError extends JNAPError {
 }
 
 /// Whether [error] says the router gave no answer at all, as opposed to
-/// answering with a refusal. The same test as RouterNotifier's
-/// `_isRouterTemporarilyUnreachable`.
+/// answering with a refusal. RouterNotifier's `_isRouterTemporarilyUnreachable`
+/// tests the first two of these.
 ///
 /// A refused or dropped connection reaches the app as a [ClientException], and
-/// a request nobody answered as a [TimeoutException]. A [JNAPError] is an
-/// answer - the router is there and talking - so it is never one of these.
+/// a request nobody answered as a [TimeoutException]. Behind a proxy - nginx on
+/// a developer's machine, or one in a deployment - the proxy answers for a
+/// router that has gone, with an HTML 502 or 504 page, and decoding that as a
+/// JNAP response is a [FormatException]. A [JNAPError] is an answer - the
+/// router is there and talking - so it is never one of these.
 bool _isNoAnswer(Object? error) =>
-    error is ClientException || error is TimeoutException;
+    error is ClientException ||
+    error is TimeoutException ||
+    error is FormatException;
 
 /// Runs [refresh], the read that follows a write the router has already
 /// accepted, and reports a router that gave no answer as a

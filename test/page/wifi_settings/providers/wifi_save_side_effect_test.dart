@@ -166,6 +166,20 @@ void main() {
       );
     });
 
+    test('reports a gateway error in place of the router as it having gone',
+        () async {
+      // A proxy in front of the router - nginx on a developer's machine, or one
+      // in a deployment - answers for it once it has gone, with an HTML 502 or
+      // 504 page. The JSON decode of that page is what the save then sees.
+      answerRead = () => Future.error(const FormatException(
+          'Unexpected character', '<html><head><title>502 Bad Gateway'));
+
+      await expectLater(
+        container.read(wifiListProvider.notifier).save(),
+        throwsA(isA<JNAPSideEffectError>()),
+      );
+    });
+
     test('still reports an error the router answered with', () async {
       // The router is there and talking; this is not the operator being cut
       // off, and calling it 'Router Not Found' would be a plain untruth. Not a
