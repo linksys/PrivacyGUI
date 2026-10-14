@@ -87,6 +87,37 @@ void main() {
       expect(s.errorMessage, 'Token expired or invalid');
     });
 
+    test('a throw that is not a ServiceError still ends validation', () async {
+      final c = containerWith(() => throw StateError('malformed answer'));
+      addTearDown(c.dispose);
+
+      final s = await validate(c);
+
+      expect(s.phase, RemoteAssistanceConfirmPhase.error,
+          reason: 'not stuck on validating, so Retry is offered');
+      expect(s.errorMessage, 'An unexpected error occurred. Please try again.');
+    });
+
+    test('a retry stops the previous countdown', () {
+      fakeAsync((async) {
+        final c = containerWith(RemoteAssistanceTestData.activeSession);
+        final n = c.read(remoteAssistanceConfirmProvider.notifier);
+        n.validate(
+          sessionId: RemoteAssistanceTestData.testSessionId,
+          token: RemoteAssistanceTestData.testSessionToken,
+        );
+        async.flushMicrotasks();
+        n.validate(
+          sessionId: RemoteAssistanceTestData.testSessionId,
+          token: RemoteAssistanceTestData.testSessionToken,
+        );
+        async.flushMicrotasks();
+
+        expect(async.periodicTimerCount, 1);
+        c.dispose();
+      });
+    });
+
     test('no answer within 15 s is a timeout error', () {
       fakeAsync((async) {
         final c = containerWith(null);
@@ -144,6 +175,27 @@ void main() {
         expect(async.periodicTimerCount, 1);
 
         c.dispose();
+
+        expect(async.periodicTimerCount, 0);
+      });
+    });
+
+    // The old view checked `mounted` after the await; leaving mid-validation
+    // must not start a countdown nobody can cancel.
+    test('leaving the page while Guardian is answering starts no countdown',
+        () {
+      fakeAsync((async) {
+        final answer = Completer<GRASessionInfo>();
+        final c = containerWith(() => answer.future);
+        c.read(remoteAssistanceConfirmProvider.notifier).validate(
+              sessionId: RemoteAssistanceTestData.testSessionId,
+              token: RemoteAssistanceTestData.testSessionToken,
+            );
+        async.flushMicrotasks();
+
+        c.dispose();
+        answer.complete(RemoteAssistanceTestData.activeSession());
+        async.flushMicrotasks();
 
         expect(async.periodicTimerCount, 0);
       });

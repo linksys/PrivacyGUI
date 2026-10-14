@@ -24,9 +24,17 @@ class RemoteAssistanceConfirmNotifier
 
   Timer? _countdown;
 
+  /// Set once the page is gone. [validate] awaits Guardian, and an answer that
+  /// lands after that must not start a countdown nothing can cancel; the view
+  /// this came from checked `mounted` for the same reason.
+  bool _disposed = false;
+
   @override
   RemoteAssistanceConfirmState build() {
-    ref.onDispose(() => _countdown?.cancel());
+    ref.onDispose(() {
+      _disposed = true;
+      _countdown?.cancel();
+    });
     return const RemoteAssistanceConfirmState();
   }
 
@@ -35,6 +43,8 @@ class RemoteAssistanceConfirmNotifier
     required String sessionId,
     required String token,
   }) async {
+    // A retry must not leave the previous session's countdown running.
+    _countdown?.cancel();
     state = state.copyWith(
       phase: RemoteAssistanceConfirmPhase.validating,
       clearError: true,
@@ -45,6 +55,7 @@ class RemoteAssistanceConfirmNotifier
           .fetchSessionInfoForCA(sessionToken: token, sessionId: sessionId)
           .timeout(validationTimeout,
               onTimeout: () => throw const TimeoutError());
+      if (_disposed) return;
 
       if (info.status == GRASessionStatus.invalid) {
         _fail('Session is invalid or expired', sessionInfo: info);
@@ -65,8 +76,17 @@ class RemoteAssistanceConfirmNotifier
       logger.d('[RA] Session validated: ${info.status}, '
           'expires in ${state.remainingSeconds}s');
     } on ServiceError catch (e) {
+      if (_disposed) return;
       logger.e('[RA] Validate failed: $e');
       _fail(_messageFor(e));
+    } catch (e, st) {
+      // Not a data-layer error to handle (the service maps those): a throw
+      // after the await, reading the answer. Without this arm the page would
+      // stay on `validating` with no retry, which the view it came from
+      // avoided the same way.
+      if (_disposed) return;
+      logger.e('[RA] Validate failed unexpectedly', error: e, stackTrace: st);
+      _fail('An unexpected error occurred. Please try again.');
     }
   }
 
