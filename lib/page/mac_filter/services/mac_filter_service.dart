@@ -10,27 +10,8 @@ import 'package:privacy_gui/generated/mac_filter_network_operations.g.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_device_role.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_device_ui_model.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_fetch_result.dart';
-
-/// The network-wide MAC filter mode (`X_LINKSYS_MACFilterMode`).
-///
-/// Instant Privacy is this feature in [allow] mode; the MAC Filter page also
-/// offers [deny]. The wire values are the exact strings the firmware accepts.
-enum MacFilterMode {
-  disabled('Disabled'),
-  allow('Allow'),
-  deny('Deny');
-
-  const MacFilterMode(this.wire);
-  final String wire;
-
-  static MacFilterMode fromWire(String value) => switch (value) {
-        'Allow' => MacFilterMode.allow,
-        'Deny' => MacFilterMode.deny,
-        // Anything else (including 'Disabled' and any unexpected value) is
-        // treated as off — the safe default for a filter.
-        _ => MacFilterMode.disabled,
-      };
-}
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_rules.dart';
 
 /// The resolved MAC filter state read from the device.
 class MacFilterData {
@@ -61,19 +42,6 @@ class UspMacFilterService {
 
   final UspClient _usp;
 
-  /// Firmware default (linksys/FWDEV#194); not exposed as a data-model path.
-  static const int maxAddresses = 64;
-
-  static final _macRegExp = RegExp(
-    r'^([0-9A-Fa-f]{2}[:\-]){5}[0-9A-Fa-f]{2}$',
-  );
-
-  static bool validateMac(String mac) => _macRegExp.hasMatch(mac.trim());
-
-  /// Uppercase colon-separated canonical form. Precondition: passes [validateMac].
-  static String normalizeMac(String mac) =>
-      mac.trim().toUpperCase().replaceAll('-', ':');
-
   /// Fetches everything the page needs: the mode + list, and the online
   /// **wireless** clients — Instant Privacy's pre-fill and both pages' Add picker.
   ///
@@ -99,7 +67,7 @@ class UspMacFilterService {
               _isWireless(d) &&
               d.macAddress.isNotEmpty)
           .map((d) => MacFilterDeviceUIModel(
-                mac: normalizeMac(d.macAddress),
+                mac: MacFilterRules.normalizeMac(d.macAddress),
                 displayName: d.hostName.isNotEmpty ? d.hostName : d.macAddress,
                 isPrivateMac: OuiLookup.isRandomizedMac(d.macAddress),
                 ipAddress: d.ipAddress,
@@ -159,14 +127,14 @@ class UspMacFilterService {
           detail: 'Allow mode requires at least one address');
     }
     for (final mac in normalized) {
-      if (!validateMac(mac)) {
+      if (!MacFilterRules.validateMac(mac)) {
         throw InvalidInputError(detail: 'Invalid MAC address: $mac');
       }
     }
-    if (normalized.length > maxAddresses) {
+    if (normalized.length > MacFilterRules.maxAddresses) {
       throw InvalidInputError(
           detail:
-              'At most $maxAddresses addresses (${normalized.length} given)');
+              'At most ${MacFilterRules.maxAddresses} addresses (${normalized.length} given)');
     }
 
     try {
@@ -201,7 +169,9 @@ class UspMacFilterService {
     for (final mac in macs) {
       // Normalize only well-formed entries; a malformed one is passed through
       // unchanged so the syntax check below can reject it with its raw text.
-      final value = validateMac(mac) ? normalizeMac(mac) : mac.trim();
+      final value = MacFilterRules.validateMac(mac)
+          ? MacFilterRules.normalizeMac(mac)
+          : mac.trim();
       if (value.isEmpty || !seen.add(value.toUpperCase())) continue;
       out.add(value);
     }

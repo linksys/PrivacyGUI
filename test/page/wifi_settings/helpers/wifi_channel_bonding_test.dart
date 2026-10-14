@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/page/wifi_settings/services/wifi_channel_bonding.dart';
+import 'package:privacy_gui/page/wifi_settings/helpers/wifi_channel_bonding.dart';
 
 void main() {
   // ---------------------------------------------------------------------------

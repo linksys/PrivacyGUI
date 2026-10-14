@@ -113,6 +113,27 @@ class AutoIPoEDataNotifier extends AsyncNotifier<AutoIPoESnapshot> {
 
   bool _current(int generation) => !_disposed && generation == _generation;
 
+  /// Identifies the connection a view action started on, for [ownsSession].
+  /// Opaque to callers, so presentation never holds the service itself.
+  Object sessionToken() => _service;
+
+  /// Whether [token] still names the live connection: the same service
+  /// instance, and one whose connection has not been replaced or retired.
+  bool ownsSession(Object token) {
+    if (!_isSupported) return false;
+    try {
+      final service = _service;
+      if (!identical(token, service)) return false;
+      service.checkConnection();
+      return true;
+    } on NotAuthenticatedError {
+      // A stable client can have been rebound since this service was created.
+      return false;
+    } on ResourceNotFoundError {
+      return false;
+    }
+  }
+
   Future<AutoIPoESnapshot?> refresh() async {
     if (!_isSupported || _reading || _disposed) return null;
     _reading = true;

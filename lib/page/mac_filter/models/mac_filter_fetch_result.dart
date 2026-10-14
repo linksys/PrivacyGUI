@@ -1,7 +1,7 @@
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_device_ui_model.dart';
-import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
 
-/// What [UspMacFilterService.fetchAll] hands a notifier: the device's current
+/// What `UspMacFilterService.fetchAll` hands a notifier: the device's current
 /// mode + list, plus the connected devices for the picker / pre-populate.
 class MacFilterFetchResult {
   final MacFilterMode mode;

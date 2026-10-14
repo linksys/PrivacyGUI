@@ -31,7 +31,7 @@
 
 **Technical Implementation Details**:
 ```dart
-// lib/page/wifi_settings/services/wifi_channel_bonding.dart
+// lib/page/wifi_settings/helpers/wifi_channel_bonding.dart
 Map<String, List<int>> computeChannelsPerBandwidth({
   required String band,                    // 2.4/5/6 GHz
   required List<int> possibleChannels,     // Regulatory domain + DFS considerations

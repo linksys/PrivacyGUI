@@ -25,7 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/core/usp/services/sse_manager.dart';
+import 'package:privacy_gui/core/usp/models/core_subscription_state.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/components/remote_session_readiness_gate.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';

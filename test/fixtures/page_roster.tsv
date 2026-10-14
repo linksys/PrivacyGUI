@@ -427,6 +427,31 @@
 # second-state cells. The trailing-space form does NOT help, because the coordinate suffix follows
 # second-state immediately: use --plain-name 'page.unified_diagnostics screen_px' for the idle case alone,
 # second-state and 'page.unified_diagnostics_' for the eight added ones.
+# second-state THE FIRST SECOND CASES ON A TAB (#1611, 2026-10-12). usp_port_forwarding_detail_view.dart
+# second-state already carried three cases, one per tab; it now carries six. Each tab again with its list
+# second-state at FWDEV#204's rule limit (50 single-port, 25 range, 25 triggering), where a RuleLimitNote
+# second-state row appears under the header and Add is disabled. Same row, same mechanism as the pnp and
+# second-state firmware pairs above; what is new is that each new case shares its initialTab with a tab
+# second-state case, which page_surface_family_test.dart allowed only once `sharesTabWith` existed.
+# second-state Figures, this column's own basis (--plain-name 'page.port_', --reporter json, each group's
+# second-state nine coordinate tests summed / 234, three runs, median), with the three tab cases measured in
+# second-state the same runs as the controls:
+# second-state
+# second-state   usp_port_forwarding_detail...  row 21.6   tab 0 full  96.7 (96.6 / 109.9 / 96.7)  ctl 25.3
+# second-state                                             tab 1 full  52.9 (52.9 /  54.3 / 51.3)  ctl 17.7
+# second-state                                             tab 2 full  50.8 (56.4 /  50.2 / 50.8)  ctl 15.9
+# second-state
+# second-state THE INHERITANCE ERROR RUNS THE OTHER WAY FOR THE FIRST TIME. Every earlier second case cost
+# second-state at most what its row did; these cost 3.0x to 3.8x their controls, so the row UNDER-projects
+# second-state them. The cause is not the new row but the fixture: the default scene holds two to four rules
+# second-state per list and a full one holds 50 or 25, so each cell lays out an order of magnitude more
+# second-state rule rows. It is still the trees-not-mechanism rule, read from the other side. Run 2 was slow
+# second-state across all six groups alike (controls 31.1 / 30.8 / 24.0), which is the box, so the medians
+# second-state are taken over it rather than without it. Cost to the gate: about 702 x 67ms, ~47s on one
+# second-state lane.
+# second-state PREFIX CONSEQUENCE, the third time: page.port_forwarding is a prefix of
+# second-state page.port_forwarding_full, so --plain-name 'page.port_forwarding' runs both. Use
+# second-state 'page.port_forwarding screen_px' for the tab case alone.
 # added PnpIPoEView (#1664): supported-ready settings fixture, 234 cells, 2026-10-08.
 # Auto-IPoE moved to PnP; capability-backed ready state is exercised by page.pnp_ipoe:
 # added ms/cell 35.3 / 35.6 / 35.0; median 35.3. The PnP ready fixture has no log widget.

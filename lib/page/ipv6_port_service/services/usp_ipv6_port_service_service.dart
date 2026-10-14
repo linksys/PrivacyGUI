@@ -6,7 +6,6 @@ import 'package:privacy_gui/generated/ipv6port_service.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
-import 'package:privacy_gui/validator_rules/rules.dart';
 
 final uspIpv6PortServiceServiceProvider = Provider<UspIpv6PortServiceService>(
   (ref) => UspIpv6PortServiceService(ref.read(uspClientProvider)!),
@@ -161,8 +160,6 @@ class UspIpv6PortServiceService {
   // Protocol IANA <-> display mapping
   // ---------------------------------------------------------------------------
 
-  static const protocolOptions = ['TCP', 'UDP', 'Both'];
-
   static const _ianaToDisplay = {
     6: 'TCP',
     17: 'UDP',
@@ -211,56 +208,5 @@ class UspIpv6PortServiceService {
               endPort: r.destPortRangeMax,
             ))
         .toList();
-  }
-
-  // ---------------------------------------------------------------------------
-  // Validation
-  // ---------------------------------------------------------------------------
-
-  /// Validate rule fields. Returns a map of field key -> error message.
-  static Map<String, String> validateRule({
-    required String description,
-    required String ipv6Address,
-    required String startPort,
-    required String endPort,
-  }) {
-    final errors = <String, String>{};
-
-    if (description.isEmpty) {
-      errors['description'] = 'Name is required';
-    } else if (!NoSurroundWhitespaceRule().validate(description)) {
-      errors['description'] = 'Name must not have leading or trailing spaces';
-    } else if (description.length > 32) {
-      errors['description'] = 'Name must be 32 characters or less';
-    }
-
-    if (ipv6Address.isEmpty) {
-      errors['ipv6Address'] = 'IPv6 address is required';
-    } else if (!IPv6Rule().validate(ipv6Address)) {
-      errors['ipv6Address'] = 'Invalid IPv6 address format';
-    } else if (!IPv6WithReservedRule().validate(ipv6Address)) {
-      errors['ipv6Address'] = 'Reserved IPv6 address is not allowed';
-    }
-
-    final start = int.tryParse(startPort);
-    final end = int.tryParse(endPort);
-
-    if (startPort.isEmpty || start == null) {
-      errors['startPort'] = 'Start port is required';
-    } else if (start < 1 || start > 65535) {
-      errors['startPort'] = 'Port must be 1-65535';
-    }
-
-    if (endPort.isEmpty || end == null) {
-      errors['endPort'] = 'End port is required';
-    } else if (end < 1 || end > 65535) {
-      errors['endPort'] = 'Port must be 1-65535';
-    }
-
-    if (start != null && end != null && end < start) {
-      errors['endPort'] = 'End port must be >= start port';
-    }
-
-    return errors;
   }
 }

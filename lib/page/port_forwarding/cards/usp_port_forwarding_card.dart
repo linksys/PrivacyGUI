@@ -12,6 +12,8 @@ import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_triggering_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/usp_port_forwarding_page_notifier.dart';
+import 'package:privacy_gui/page/port_forwarding/models/port_rule_limits.dart';
+import 'package:privacy_gui/page/port_forwarding/views/components/lan_for_rule_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspPortForwardingCard extends ConsumerWidget {
@@ -27,13 +29,19 @@ class UspPortForwardingCard extends ConsumerWidget {
     final rules = pfData?.ruleModels ?? [];
     final triggers = ptData?.ruleModels ?? [];
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'portForwarding';
+    // The card adds single-port rules only. No room for the reason here; the
+    // Single Port tab behind "View all" shows it.
+    final isFull = rules.where((r) => r.isSinglePort).length >=
+        kMaxSinglePortForwardingRules;
 
     return DashboardCardTemplate.multiSection(
       title: loc(context).portRules,
       trailing: AppIconButton(
         icon: AppIcon.font(Icons.add, size: 20),
-        onTap:
-            isLoading ? null : () => _showAddPortForwardingDialog(context, ref),
+        identifier: 'pf-card-add',
+        onTap: isLoading || isFull
+            ? null
+            : () => _showAddPortForwardingDialog(context, ref, rules),
       ),
       // Both kinds of rule in one number, which is what this card's title says
       // it is ("Port rules") and what its footer already counts. Splitting them
@@ -129,11 +137,17 @@ class UspPortForwardingCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _showAddPortForwardingDialog(
-      BuildContext context, WidgetRef ref) async {
+  Future<void> _showAddPortForwardingDialog(BuildContext context, WidgetRef ref,
+      List<PortForwardingRuleUIModel> rules) async {
+    final lan = await lanForRuleDialog(context, ref);
+    if (lan == null || !context.mounted) return;
     final result = await showAppDialog<PortForwardingDialogResult>(
       context: context,
-      builder: (_) => const PortForwardingDialog(),
+      builder: (_) => PortForwardingDialog(
+        otherRules: rules,
+        lanIp: lan.ip,
+        lanSubnetMask: lan.mask,
+      ),
     );
     if (result == null || !context.mounted) return;
     await performUspMutation(

@@ -19,7 +19,6 @@ import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.da
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
-import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_install_phase_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_router_status_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_state_unreadable_card.dart';
@@ -362,7 +361,7 @@ class _FirmwareUpdateViewState extends ConsumerState<FirmwareUpdateView> {
     final commandKey = DateTime.now().millisecondsSinceEpoch.toString();
     try {
       await notifier.runUpload(commandKey: commandKey);
-    } on FirmwareUploadCancelledException {
+    } on OperationCancelledError {
       return;
     } on UnauthorizedError catch (e) {
       // #1496: the mode refused the operation, and unlike every other failure

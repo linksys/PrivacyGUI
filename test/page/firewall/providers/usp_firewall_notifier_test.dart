@@ -9,6 +9,8 @@ import 'package:privacy_gui/page/firewall/providers/usp_firewall_notifier.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/firewall/services/usp_firewall_service.dart';
 
+import '../../../mocks/test_data/firewall_test_data.dart';
+
 class MockUspFirewallService extends Mock implements UspFirewallService {}
 
 /// Test-only notifier that returns canned data instead of real fetch.
@@ -33,7 +35,7 @@ void main() {
       isIPv6FirewallEnabled: false,
       blockIPSec: true,
     ),
-    ruleContext: FirewallRuleContext.empty,
+    ruleContext: FirewallTestData.createNamedRuleContext(),
     ruleSummaries: const [],
     dmzModel: const DmzUIModel.disabled(),
     dmzSummaries: const [],
@@ -107,6 +109,105 @@ void main() {
       container.dispose();
     });
 
+    test('performSave writes against the rules the router reported', () async {
+      when(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+            context: any(named: 'context'),
+          )).thenAnswer((_) async => 1);
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspFirewallProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(isIPv6FirewallEnabled: true));
+      await notifier.save();
+
+      final sent = verify(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+            context: captureAny(named: 'context'),
+          )).captured.single;
+      expect(sent, testData.ruleContext);
+      container.dispose();
+    });
+
+    // The locks on screen and the rules a save writes against come from the
+    // same read. Taking the rules again at save time let a refresh in between
+    // unlock-and-skip a switch, which is the #1611 partial write.
+    test('performSave uses the rules the page loaded with, not a later refresh',
+        () async {
+      when(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+            context: any(named: 'context'),
+          )).thenAnswer((_) async => 1);
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      container.read(firewallDataProvider.notifier).state = AsyncData(
+        FirewallTestData.createFirewallData(
+          ruleContext: FirewallTestData.createNamedRuleContext(
+            without: const {'RULE_NAT_REDIRECTION'},
+          ),
+        ),
+      );
+
+      final notifier = container.read(uspFirewallProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(isIPv6FirewallEnabled: true));
+      await notifier.save();
+
+      final sent = verify(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+            context: captureAny(named: 'context'),
+          )).captured.first;
+      expect(sent, testData.ruleContext);
+      container.dispose();
+    });
+
+    test('performSave does not depend on the shared data being readable',
+        () async {
+      when(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+            context: any(named: 'context'),
+          )).thenAnswer((_) async => 1);
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      container.read(firewallDataProvider.notifier).state = AsyncError(
+          const NetworkError(detail: 'refresh failed'), StackTrace.empty);
+
+      final notifier = container.read(uspFirewallProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(isIPv6FirewallEnabled: true));
+      await notifier.save();
+
+      verify(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+            context: any(named: 'context'),
+          )).called(1);
+      container.dispose();
+    });
+
+    test('a switch whose rule is not on the router is locked', () async {
+      final container = createContainer(
+        data: FirewallTestData.createFirewallData(
+          ruleContext: FirewallTestData.createNamedRuleContext(
+            without: const {'RULE_NAT_REDIRECTION'},
+          ),
+        ),
+      );
+      await Future.delayed(Duration.zero);
+
+      expect(container.read(uspFirewallProvider).status.lockedSwitches,
+          {FirewallSwitch.natRedirection});
+      container.dispose();
+    });
+
     test('updateSetting mutates current model', () async {
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -167,6 +268,22 @@ void main() {
 
       final state = container.read(uspFirewallProvider);
       expect(state.status.error, isA<NetworkError>());
+      container.dispose();
+    });
+
+    // FW 2.0.2 carried none of the named rules. The page rendered fixed,
+    // fabricated toggle positions instead of saying it could not read them
+    // (#1611).
+    test('fetch with no recognised firewall rule sets error status', () async {
+      final container = createContainer(
+        data: FirewallTestData.createFirewallData(
+          ruleContext: FirewallRuleContext.empty,
+        ),
+      );
+      await Future.delayed(Duration.zero);
+
+      final state = container.read(uspFirewallProvider);
+      expect(state.status.error, isA<ResourceNotFoundError>());
       container.dispose();
     });
 

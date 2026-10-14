@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
+import 'package:privacy_gui/page/port_forwarding/models/port_rule_limits.dart';
+import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -36,10 +38,24 @@ class PortRangeForwardingDialog extends StatefulWidget {
   /// field stays a plain text input, which is what it was before #1081.
   final List<AppAutoCompleteOption> deviceOptions;
 
+  /// Every other forwarding rule, single-port and range alike, without [rule].
+  /// The new range may not overlap one of them: FW 2.0.3 stores an overlapping
+  /// range without refusing it (FWDEV#204).
+  final List<PortForwardingRuleUIModel> otherRules;
+
+  /// The router's LAN address and mask. With both, the destination must be a
+  /// LAN host: FW 2.0.3 clears any other destination and still saves the rule
+  /// (FWDEV#204). Null skips that check and keeps the format check only.
+  final String? lanIp;
+  final String? lanSubnetMask;
+
   const PortRangeForwardingDialog({
     super.key,
     this.rule,
     this.deviceOptions = const [],
+    this.otherRules = const [],
+    this.lanIp,
+    this.lanSubnetMask,
   });
 
   @override
@@ -53,7 +69,6 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
   late TextEditingController _descController;
   late TextEditingController _extPortStartController;
   late TextEditingController _extPortEndController;
-  late TextEditingController _intPortController;
   late TextEditingController _intClientController;
   // Focus nodes so validation runs on focus-loss, not per keystroke —
   // validating in onChanged calls setState with a changed _errors map, which
@@ -63,7 +78,6 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
   final _descFocus = FocusNode();
   final _extPortStartFocus = FocusNode();
   final _extPortEndFocus = FocusNode();
-  final _intPortFocus = FocusNode();
   final _intClientFocus = FocusNode();
   late String _protocol;
   late bool _enabled;
@@ -83,7 +97,6 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
   bool get _hasRequiredInput =>
       _extPortStartController.text.trim().isNotEmpty &&
       _extPortEndController.text.trim().isNotEmpty &&
-      _intPortController.text.trim().isNotEmpty &&
       _intClientController.text.trim().isNotEmpty;
 
   @override
@@ -95,8 +108,6 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
         TextEditingController(text: r != null ? '${r.externalPort}' : '');
     _extPortEndController = TextEditingController(
         text: r != null ? '${r.externalPortEndRange}' : '');
-    _intPortController =
-        TextEditingController(text: r != null ? '${r.internalPort}' : '');
     _intClientController = TextEditingController(text: r?.internalClient ?? '');
     _protocol = r?.protocol ?? 'TCP';
     _enabled = r?.enabled ?? true;
@@ -109,7 +120,6 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
       _descFocus,
       _extPortStartFocus,
       _extPortEndFocus,
-      _intPortFocus,
       _intClientFocus,
     ]) {
       f.addListener(() {
@@ -130,12 +140,10 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
     _descController.dispose();
     _extPortStartController.dispose();
     _extPortEndController.dispose();
-    _intPortController.dispose();
     _intClientController.dispose();
     _descFocus.dispose();
     _extPortStartFocus.dispose();
     _extPortEndFocus.dispose();
-    _intPortFocus.dispose();
     _intClientFocus.dispose();
     super.dispose();
   }
@@ -149,10 +157,9 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
     final desc = _descController.text.trim();
     final extStartText = _extPortStartController.text.trim();
     final extEndText = _extPortEndController.text.trim();
-    final intPortText = _intPortController.text.trim();
     final client = _intClientController.text.trim();
 
-    if (desc.isNotEmpty && desc.length > 32) {
+    if (descriptionTooLong(desc)) {
       errors['description'] = 'max32Characters';
     }
 
@@ -171,22 +178,32 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
         final start = int.tryParse(extStartText);
         if (start != null && port <= start) {
           errors['extEnd'] = 'mustBeGreaterThanStartPort';
+        } else if (start != null &&
+            forwardingOverlaps(
+              externalPort: start,
+              externalPortEndRange: port,
+              protocol: _protocol,
+              others: widget.otherRules,
+            )) {
+          errors['extEnd'] = 'rulesOverlapError';
         }
-      }
-    }
-
-    if (intPortText.isNotEmpty) {
-      final port = int.tryParse(intPortText);
-      if (port == null || port < 1 || port > 65535) {
-        errors['intPort'] = 'portMustBe1To65535';
       }
     }
 
     if (client.isNotEmpty && !_ipRule.validate(client)) {
       errors['client'] = 'invalidIpv4Format';
+    } else if (client.isNotEmpty && !_isLanHost(client)) {
+      errors['client'] = 'invalidIpAddress';
     }
 
     return errors;
+  }
+
+  bool _isLanHost(String ip) {
+    final lanIp = widget.lanIp;
+    final mask = widget.lanSubnetMask;
+    if (lanIp == null || mask == null) return true;
+    return IpAddressAsLocalIpValidator(lanIp, mask).validate(ip);
   }
 
   String? _localizeError(String? key) {
@@ -196,6 +213,8 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
       'portMustBe1To65535' => loc(context).portMustBe1To65535,
       'mustBeGreaterThanStartPort' => loc(context).mustBeGreaterThanStartPort,
       'invalidIpv4Format' => loc(context).invalidIpv4Format,
+      'rulesOverlapError' => loc(context).rulesOverlapError,
+      'invalidIpAddress' => loc(context).invalidIpAddress,
       _ => key,
     };
   }
@@ -257,16 +276,8 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
             onChanged: (_, __) => _onInputChanged(),
           ),
           AppGap.lg(),
-          AppTextFormField(
-            controller: _intPortController,
-            focusNode: _intPortFocus,
-            identifier: 'pf-range-internal-port',
-            label: loc(context).internalPort,
-            keyboardType: TextInputType.number,
-            externalErrorText: _localizeError(_errors['intPort']),
-            onChanged: (_) => _onInputChanged(),
-          ),
-          AppGap.lg(),
+          // No internal port: as on 1.x, a range is forwarded to the same ports
+          // on the LAN host, and FWDEV#204 says to send the start port (#1080).
           // Same device picker the single-port dialog has had since #1172: the
           // two dialogs write the same TR-181 field, so typing the IP by hand in
           // one and picking a device in the other was a gap, not a design.
@@ -303,7 +314,11 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
                   ButtonSegment(value: 'Both', label: Text(loc(context).both)),
                 ],
                 selected: {_protocol},
-                onSelectionChanged: (v) => setState(() => _protocol = v.first),
+                // An overlap depends on the protocol, so re-check the ports.
+                onSelectionChanged: (v) {
+                  _protocol = v.first;
+                  _validate();
+                },
               ),
             ],
           ),
@@ -339,13 +354,12 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
   void _submit() {
     final extStart = int.tryParse(_extPortStartController.text.trim());
     final extEnd = int.tryParse(_extPortEndController.text.trim());
-    final intPort = int.tryParse(_intPortController.text.trim());
-    if (extStart == null || extEnd == null || intPort == null) return;
+    if (extStart == null || extEnd == null) return;
     context.pop(PortRangeForwardingDialogResult(
       description: _descController.text.trim(),
       externalPortStart: extStart,
       externalPortEnd: extEnd,
-      internalPort: intPort,
+      internalPort: extStart,
       internalClient: _intClientController.text.trim(),
       protocol: _protocol,
       enabled: _enabled,

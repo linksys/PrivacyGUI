@@ -18,7 +18,6 @@ import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_models.dart'
 import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_snapshot.dart';
 import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_data_provider.dart';
 import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_page_provider.dart';
-import 'package:privacy_gui/page/internet_settings/services/auto_ipoe_service.dart';
 import 'package:privacy_gui/page/internet_settings/views/sections/auto_ipoe_runtime.dart';
 import 'package:privacy_gui/page/internet_settings/views/sections/auto_ipoe_section.dart';
 import 'package:privacy_gui/page/internet_settings/views/sections/auto_ipoe_log_view.dart';
@@ -49,9 +48,9 @@ class _PnpIPoEViewState extends ConsumerState<PnpIPoEView> {
   bool _recoveringSession = false;
   String? _requestId;
   AutoIPoESettings? _draft;
-  AutoIPoEService? _attemptService;
+  Object? _attemptSession;
   Object? _actionError;
-  AutoIPoEService? _actionErrorService;
+  Object? _actionErrorSession;
   bool _allowPnpExit = false;
   AutoIPoEPnpExitGuard? _exitGuard;
 
@@ -94,7 +93,7 @@ class _PnpIPoEViewState extends ConsumerState<PnpIPoEView> {
     final readState = ref.watch(autoIPoEDataProvider);
     final readError = readState.error;
     if (!readState.isLoading) _recoverPnpSession(readError);
-    _recoverPnpSession(_actionError, origin: _actionErrorService);
+    _recoverPnpSession(_actionError, origin: _actionErrorSession);
     final retryRead = outcome == AutoIPoEOutcome.pending && readError != null;
     final retry = _actionError != null ||
         retryRead ||
@@ -275,21 +274,14 @@ class _PnpIPoEViewState extends ConsumerState<PnpIPoEView> {
     );
   }
 
-  bool _ownsCurrentSession(AutoIPoEService service) {
-    if (!_supportsAutoIPoE) return false;
-    try {
-      if (!identical(service, ref.read(autoIPoEServiceProvider))) return false;
-      service.checkConnection();
-      return true;
-    } on NotAuthenticatedError {
-      // A stable client can have been rebound since this service was created.
-      return false;
-    } on ResourceNotFoundError {
-      return false;
-    }
-  }
+  bool _ownsCurrentSession(Object session) =>
+      _supportsAutoIPoE &&
+      ref.read(autoIPoEDataProvider.notifier).ownsSession(session);
 
-  void _recoverPnpSession(Object? error, {AutoIPoEService? origin}) {
+  Object _currentSession() =>
+      ref.read(autoIPoEDataProvider.notifier).sessionToken();
+
+  void _recoverPnpSession(Object? error, {Object? origin}) {
     if (!_supportsAutoIPoE ||
         _recoveringSession ||
         (error is! NotAuthenticatedError &&
@@ -297,16 +289,16 @@ class _PnpIPoEViewState extends ConsumerState<PnpIPoEView> {
             error is! SessionTokenExpiredError)) {
       return;
     }
-    final service = ref.read(autoIPoEServiceProvider);
-    if ((origin != null && !identical(origin, service)) ||
-        !_ownsCurrentSession(service)) {
+    final session = _currentSession();
+    if ((origin != null && !identical(origin, session)) ||
+        !_ownsCurrentSession(session)) {
       return;
     }
     _recoveringSession = true;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       // Do not end a replacement session for an error from the previous one.
-      if (!_ownsCurrentSession(service) ||
+      if (!_ownsCurrentSession(session) ||
           ref.read(autoIPoEDataProvider).isLoading ||
           (!identical(error, ref.read(autoIPoEDataProvider).error) &&
               !identical(error, _actionError))) {
@@ -355,21 +347,21 @@ class _PnpIPoEViewState extends ConsumerState<PnpIPoEView> {
     });
     _requestId = null;
     _draft = page.current;
-    final service = ref.read(autoIPoEServiceProvider);
-    _attemptService = service;
+    final session = _currentSession();
+    _attemptSession = session;
     try {
       await ref.read(autoIPoEPageProvider.notifier).saveForPnp();
-      if (!_ownsCurrentSession(service)) return;
+      if (!_ownsCurrentSession(session)) return;
       final current = ref.read(autoIPoESubmissionProvider);
       if (current?.reset == false &&
           current?.requestId != submission?.requestId) {
         _requestId = current!.requestId;
       }
     } catch (e) {
-      if (mounted && _ownsCurrentSession(service)) {
+      if (mounted && _ownsCurrentSession(session)) {
         setState(() {
           _actionError = e;
-          _actionErrorService = service;
+          _actionErrorSession = session;
         });
       }
     } finally {
@@ -387,8 +379,8 @@ class _PnpIPoEViewState extends ConsumerState<PnpIPoEView> {
         _requestId == null) {
       return;
     }
-    final service = _attemptService;
-    if (service == null || !_ownsCurrentSession(service)) return;
+    final session = _attemptSession;
+    if (session == null || !_ownsCurrentSession(session)) return;
     final page = ref.read(autoIPoEPageProvider);
     final submission = ref.read(autoIPoESubmissionProvider);
     if (submission?.requestId != _requestId ||
@@ -407,7 +399,7 @@ class _PnpIPoEViewState extends ConsumerState<PnpIPoEView> {
 
   Future<void> _continuePnp() async {
     if (!_supportsAutoIPoE || _continuing) return;
-    final service = ref.read(autoIPoEServiceProvider);
+    final session = _currentSession();
     setState(() {
       _continuing = true;
       _actionError = null;
@@ -415,7 +407,7 @@ class _PnpIPoEViewState extends ConsumerState<PnpIPoEView> {
     _requestId = null;
     try {
       await ref.read(pnpProvider.notifier).startPostLoginFlow();
-      if (_ownsCurrentSession(service)) {
+      if (_ownsCurrentSession(session)) {
         // Only verified forward completion may leave without restoring WAN.
         ref.read(autoIPoEPageProvider.notifier).markAsSaved();
         _allowPnpExit = true;
@@ -427,9 +419,9 @@ class _PnpIPoEViewState extends ConsumerState<PnpIPoEView> {
       if (mounted) {
         setState(() {
           _continuing = false;
-          if (_ownsCurrentSession(service)) {
+          if (_ownsCurrentSession(session)) {
             _actionError = e;
-            _actionErrorService = service;
+            _actionErrorSession = session;
           }
         });
       }
@@ -448,7 +440,7 @@ class _PnpIPoEViewState extends ConsumerState<PnpIPoEView> {
       if (!mounted) return false;
       _requestId = null;
       _draft = null;
-      _attemptService = null;
+      _attemptSession = null;
       ref.read(autoIPoEPageProvider.notifier).revert();
       _allowPnpExit = true;
       return true;
@@ -461,7 +453,7 @@ class _PnpIPoEViewState extends ConsumerState<PnpIPoEView> {
       return true;
     }
     final hadAttempt = _started;
-    final service = ref.read(autoIPoEServiceProvider);
+    final session = _currentSession();
     setState(() {
       _leaving = true;
       _actionError = null;
@@ -475,18 +467,18 @@ class _PnpIPoEViewState extends ConsumerState<PnpIPoEView> {
           .leavePnp(resetIfIdle: hadAttempt);
       if (!mounted) return false;
       if (!_supportsAutoIPoE) return await _preparePnpExit();
-      if (!_ownsCurrentSession(service)) return false;
+      if (!_ownsCurrentSession(session)) return false;
       // Cleanup is complete, so the route's subsequent dirty guard has nothing
       // left to discard and cannot keep the user on a half-exited page.
       ref.read(autoIPoEPageProvider.notifier).revert();
       _allowPnpExit = true;
       return true;
     } catch (e) {
-      if (mounted && _ownsCurrentSession(service)) {
+      if (mounted && _ownsCurrentSession(session)) {
         setState(() {
           _started = true;
           _actionError = e;
-          _actionErrorService = service;
+          _actionErrorSession = session;
         });
       }
       return false;

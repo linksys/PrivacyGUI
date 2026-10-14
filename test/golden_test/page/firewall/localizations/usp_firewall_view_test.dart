@@ -22,6 +22,15 @@ void main() {
         'edit_dirty': (overrides) => overrides.addAll(
               firewallOverrides(dirtyState()),
             ),
+        // A router missing one rule: that switch is locked (#1611).
+        'missing_rule': (overrides) => overrides.addAll(
+              firewallOverrides(missingNatRuleState),
+            ),
+        // What a router with no named rule gets instead of fabricated
+        // switches (#1611).
+        'error': (overrides) => overrides.addAll(
+              firewallOverrides(errorState),
+            ),
       },
     ),
   );

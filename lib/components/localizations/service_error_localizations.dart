@@ -48,6 +48,8 @@ String localizeServiceError(BuildContext context, Object error) {
     // Infrastructure-level: caught at session/auth layer, never reaches UI.
     StorageError() => l.errorUnexpected,
     SerialNumberMismatchError() => l.errorUnexpected,
+    // The user's own cancel: callers return before localizing it.
+    OperationCancelledError() => l.errorUnexpected,
   };
 }
 

@@ -6,6 +6,8 @@ import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_settings.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_status.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_state.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_rules.dart';
 import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
 
 final uspMacFilterProvider =
@@ -107,7 +109,7 @@ class UspMacFilterNotifier extends AutoDisposeNotifier<MacFilterState>
   }
 
   void addMac(String mac) {
-    final normalized = UspMacFilterService.normalizeMac(mac);
+    final normalized = MacFilterRules.normalizeMac(mac);
     final current = state.settings.current;
     if (current.macs
         .map((m) => m.toUpperCase())

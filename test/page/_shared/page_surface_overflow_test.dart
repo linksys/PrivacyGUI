@@ -211,6 +211,21 @@ void main() {
     expectedCellCount: 234,
   );
 
+  // #1611: the same three tabs with each list at its rule limit, so the
+  // `RuleLimitNote` row under each header is measured.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPortForwardingFullPageCase),
+    expectedCellCount: 234,
+  );
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPortRangeFullPageCase),
+    expectedCellCount: 234,
+  );
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPortTriggeringFullPageCase),
+    expectedCellCount: 234,
+  );
+
   // Wave 2 (#1378): the instant_setup flow, in flow order — eight here and the
   // ninth (`pnp_setup`) at the end of the file, where its own comment says why it
   // is out of order. `pnp_complete_view` is the tenth view and stays excluded as

@@ -1,3 +1,4 @@
+import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
@@ -22,6 +23,7 @@ class FirewallTestData {
     bool blockAnonymousRequests = false,
     bool blockMulticast = false,
     bool blockIDENT = false,
+    bool blockNATRedirection = false,
   }) =>
       FirewallUIModel(
         isIPv4FirewallEnabled: isIPv4FirewallEnabled,
@@ -32,6 +34,7 @@ class FirewallTestData {
         blockAnonymousRequests: blockAnonymousRequests,
         blockMulticast: blockMulticast,
         blockIDENT: blockIDENT,
+        blockNATRedirection: blockNATRedirection,
       );
 
   static DmzUIModel createDmzUIModel({
@@ -76,6 +79,54 @@ class FirewallTestData {
       DmzEntrySummary(enable: enable, destIp: destIp);
 
   static List<DmzEntrySummary> createDmzSummaries() => [createDmzSummary()];
+
+  // ---------------------------------------------------------------------------
+  // Chain rules / rule context
+  // ---------------------------------------------------------------------------
+
+  /// The 12 named rules FLWRT 2.0.3 adds to `Device.Firewall.Chain.1`, at the
+  /// instance numbers and default `Enable` values read off M60
+  /// `2.0.3.26100921` (FWDEV#204).
+  static FirewallChainRules createNamedChainRules({
+    Set<String> without = const {},
+  }) =>
+      FirewallChainRules(
+        items: [
+          for (final (i, desc, enable, target) in const [
+            (11, 'UDP_FORWARD_FOR_IGMP', true, 'Accept'),
+            (21, 'RULE_SPI_IPV4_INPUT', false, 'Accept'),
+            (22, 'RULE_SPI_IPV4_FORWARD', false, 'Accept'),
+            (23, 'RULE_SPI_IPV6_INPUT', false, 'Accept'),
+            (24, 'RULE_SPI_IPV6_FORWARD', false, 'Accept'),
+            (25, 'RULE_PING_IPV4', false, 'Accept'),
+            (26, 'RULE_IDENT_WAN', false, 'Accept'),
+            (27, 'RULE_LAN2WAN_IPSEC', false, 'Drop'),
+            (28, 'RULE_IPSEC_ESP', false, 'Drop'),
+            (29, 'RULE_LAN2WAN_PPTP', false, 'Drop'),
+            (30, 'RULE_LAN2WAN_L2TP', false, 'Drop'),
+            (31, 'RULE_NAT_REDIRECTION', true, 'Accept'),
+          ])
+            if (!without.contains(desc))
+              FirewallChainRule(
+                instancePath: 'Device.Firewall.Chain.1.Rule.$i.',
+                enable: enable,
+                description: desc,
+                target: target,
+              ),
+        ],
+      );
+
+  /// A context holding every named rule, the way the firewall page sees a
+  /// router it can read.
+  ///
+  /// [without] drops rules by `Description`, for a router missing some of them.
+  static FirewallRuleContext createNamedRuleContext({
+    Set<String> without = const {},
+  }) =>
+      FirewallRuleContext.fromMap(
+        UspFirewallService.parseFirewallRules(
+            createNamedChainRules(without: without)),
+      );
 
   // ---------------------------------------------------------------------------
   // Service fetch result

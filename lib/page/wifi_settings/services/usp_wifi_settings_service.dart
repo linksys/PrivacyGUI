@@ -13,7 +13,7 @@ import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart
 import 'package:privacy_gui/page/wifi_settings/models/wifi_quick_setup_network.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart';
-import 'package:privacy_gui/page/wifi_settings/services/wifi_channel_bonding.dart';
+import 'package:privacy_gui/page/wifi_settings/helpers/wifi_channel_bonding.dart';
 import 'package:privacy_gui/page/_shared/utils/wifi_guest_detection.dart';
 
 final uspWifiSettingsServiceProvider = Provider<UspWifiSettingsService>(

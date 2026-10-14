@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_ui_model.dart';
-import 'package:privacy_gui/page/static_routing/services/usp_static_routing_service.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Result returned by [StaticRouteDialog].
@@ -95,7 +94,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
   }
 
   Map<String, String> _computeErrors() {
-    return UspStaticRoutingService.validateRoute(
+    return StaticRouteUIModel.validateRoute(
       name: _nameController.text.trim(),
       destIp: _destIpController.text.trim(),
       subnetMask: _subnetMaskController.text.trim(),
@@ -202,7 +201,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
               children: [
                 AppText.bodyMedium(loc(context).labelInterface),
                 SegmentedButton<String>(
-                  segments: UspStaticRoutingService.interfaceOptions
+                  segments: StaticRouteUIModel.interfaceOptions
                       .map((name) =>
                           ButtonSegment(value: name, label: Text(name)))
                       .toList(),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
-import 'package:privacy_gui/page/ipv6_port_service/services/usp_ipv6_port_service_service.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Result returned by [Ipv6PortServiceRuleDialog].
@@ -103,7 +102,7 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
   /// Full validation (shows error text) — only run on focus-loss.
   void _validate() {
     setState(() {
-      _errors = UspIpv6PortServiceService.validateRule(
+      _errors = Ipv6PortServiceRuleUIModel.validateRule(
         description: _descriptionController.text.trim(),
         ipv6Address: _ipv6Controller.text.trim(),
         startPort: _startPortController.text.trim(),
@@ -118,7 +117,7 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
   void _onInputChanged() => setState(() {});
 
   bool get _isFormValid {
-    final errors = UspIpv6PortServiceService.validateRule(
+    final errors = Ipv6PortServiceRuleUIModel.validateRule(
       description: _descriptionController.text.trim(),
       ipv6Address: _ipv6Controller.text.trim(),
       startPort: _startPortController.text.trim(),
@@ -187,7 +186,7 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
                 // localized. Only the label is translated, and only for 'Both';
                 // TCP/UDP are protocol names that stay as-is in every locale
                 // (matching the other port-forwarding dialogs).
-                segments: UspIpv6PortServiceService.protocolOptions
+                segments: Ipv6PortServiceRuleUIModel.protocolOptions
                     .map((name) => ButtonSegment(
                           value: name,
                           label:
@@ -210,7 +209,7 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
             startIdentifier: 'ipv6-rule-start-port',
             endIdentifier: 'ipv6-rule-end-port',
             // Raises the numeric keyboard only; it does not restrict input, so
-            // the 1..65535 bounds still come from UspIpv6PortServiceService
+            // the 1..65535 bounds still come from Ipv6PortServiceRuleUIModel
             // .validateRule, which owns this dialog's whole rule check (#1537).
             keyboardType: TextInputType.number,
             errorText: _errors['startPort'] ?? _errors['endPort'],

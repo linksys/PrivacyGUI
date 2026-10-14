@@ -6,27 +6,12 @@ import 'package:privacy_gui/generated/static_routing.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_ui_model.dart';
-import 'package:privacy_gui/util/network_utils.dart';
-import 'package:privacy_gui/validator_rules/rules.dart';
 
 final uspStaticRoutingServiceProvider = Provider<UspStaticRoutingService>(
   (ref) => UspStaticRoutingService(ref.read(uspClientProvider)!),
 );
 
-/// Error keys returned by [UspStaticRoutingService.validateRoute].
-/// Use these to map to l10n strings in the View layer.
-class StaticRoutingErrorKeys {
-  static const nameRequired = 'nameRequired';
-  static const nameTooLong = 'nameTooLong';
-  static const destIpRequired = 'destIpRequired';
-  static const invalidIpAddress = 'invalidIpAddress';
-  static const subnetMaskRequired = 'subnetMaskRequired';
-  static const invalidSubnetMask = 'invalidSubnetMask';
-  static const gatewayMustBeWithinLanSubnet = 'gatewayMustBeWithinLanSubnet';
-  static const gatewayMustBeOutsideLanSubnet = 'gatewayMustBeOutsideLanSubnet';
-}
-
-/// Service layer for Static Routing — encapsulates codegen CRUD + transform + validation.
+/// Service layer for Static Routing — encapsulates codegen CRUD + transform.
 class UspStaticRoutingService {
   final UspClient _usp;
 
@@ -41,8 +26,6 @@ class UspStaticRoutingService {
     'LAN': 'Device.IP.Interface.1',
     'Internet': 'Device.IP.Interface.2',
   };
-
-  static const interfaceOptions = ['LAN', 'Internet'];
 
   // ---------------------------------------------------------------------------
   // CRUD
@@ -205,65 +188,5 @@ class UspStaticRoutingService {
   /// Convert display name back to TR-181 interface path.
   String mapDisplayToInterface(String displayName) {
     return _reverseInterfaceMap[displayName] ?? displayName;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Validation
-  // ---------------------------------------------------------------------------
-
-  /// Validate a route entry. Returns a map of field → error message.
-  ///
-  /// When [lanIp] and [lanSubnetMask] are provided, validates gateway subnet:
-  /// - LAN interface: gateway must be within LAN subnet
-  /// - Internet interface: gateway must be outside LAN subnet
-  static Map<String, String> validateRoute({
-    required String name,
-    required String destIp,
-    required String subnetMask,
-    required String gateway,
-    String? interfaceName,
-    String? lanIp,
-    String? lanSubnetMask,
-  }) {
-    final errors = <String, String>{};
-    if (name.isEmpty) {
-      errors['name'] = StaticRoutingErrorKeys.nameRequired;
-    } else if (name.length > 32) {
-      errors['name'] = StaticRoutingErrorKeys.nameTooLong;
-    }
-    if (destIp.isEmpty) {
-      errors['destIp'] = StaticRoutingErrorKeys.destIpRequired;
-    } else if (!NetworkUtils.isValidIpAddress(destIp)) {
-      errors['destIp'] = StaticRoutingErrorKeys.invalidIpAddress;
-    }
-    if (subnetMask.isEmpty) {
-      errors['subnetMask'] = StaticRoutingErrorKeys.subnetMaskRequired;
-    } else if (!NetworkUtils.isValidSubnetMask(subnetMask)) {
-      errors['subnetMask'] = StaticRoutingErrorKeys.invalidSubnetMask;
-    }
-    if (gateway.isNotEmpty && !NetworkUtils.isValidIpAddress(gateway)) {
-      errors['gateway'] = StaticRoutingErrorKeys.invalidIpAddress;
-    } else if (gateway.isNotEmpty &&
-        interfaceName != null &&
-        lanIp != null &&
-        lanIp.isNotEmpty &&
-        lanSubnetMask != null &&
-        lanSubnetMask.isNotEmpty &&
-        NetworkUtils.isValidIpAddress(lanIp) &&
-        NetworkUtils.isValidSubnetMask(lanSubnetMask)) {
-      // Validate gateway subnet based on interface selection.
-      final lanSubnetRule = HostValidForGivenRouterIPAddressAndSubnetMaskRule(
-        lanIp,
-        lanSubnetMask,
-      );
-      final isInLan = lanSubnetRule.validate(gateway);
-      if (interfaceName == 'LAN' && !isInLan) {
-        errors['gateway'] = StaticRoutingErrorKeys.gatewayMustBeWithinLanSubnet;
-      } else if (interfaceName == 'Internet' && isInLan) {
-        errors['gateway'] =
-            StaticRoutingErrorKeys.gatewayMustBeOutsideLanSubnet;
-      }
-    }
-    return errors;
   }
 }

@@ -1,6 +1,20 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 
+/// The switches on the Firewall page. Which router rules implement each is the
+/// service's business; the page only asks whether one can be used.
+enum FirewallSwitch {
+  ipv4Firewall,
+  ipv6Firewall,
+  ipsec,
+  pptp,
+  l2tp,
+  anonymousRequests,
+  multicast,
+  natRedirection,
+  ident,
+}
+
 /// Presentation Layer Model for firewall settings.
 ///
 /// Maps to JNAP GetFirewallSettings / SetFirewallSettings fields.
@@ -31,6 +45,10 @@ class FirewallUIModel extends Equatable with DiagnosticLoggable {
   /// Block IDENT protocol (TCP port 113).
   final bool blockIDENT;
 
+  /// Block NAT redirection (NAT loopback): a LAN client reaching a forwarded
+  /// service through the router's WAN address.
+  final bool blockNATRedirection;
+
   const FirewallUIModel({
     this.isIPv4FirewallEnabled = true,
     this.isIPv6FirewallEnabled = true,
@@ -40,6 +58,7 @@ class FirewallUIModel extends Equatable with DiagnosticLoggable {
     this.blockAnonymousRequests = false,
     this.blockMulticast = false,
     this.blockIDENT = false,
+    this.blockNATRedirection = false,
   });
 
   FirewallUIModel copyWith({
@@ -51,6 +70,7 @@ class FirewallUIModel extends Equatable with DiagnosticLoggable {
     bool? blockAnonymousRequests,
     bool? blockMulticast,
     bool? blockIDENT,
+    bool? blockNATRedirection,
   }) {
     return FirewallUIModel(
       isIPv4FirewallEnabled:
@@ -64,6 +84,7 @@ class FirewallUIModel extends Equatable with DiagnosticLoggable {
           blockAnonymousRequests ?? this.blockAnonymousRequests,
       blockMulticast: blockMulticast ?? this.blockMulticast,
       blockIDENT: blockIDENT ?? this.blockIDENT,
+      blockNATRedirection: blockNATRedirection ?? this.blockNATRedirection,
     );
   }
 
@@ -80,5 +101,6 @@ class FirewallUIModel extends Equatable with DiagnosticLoggable {
         'blockAnonymousRequests': blockAnonymousRequests,
         'blockMulticast': blockMulticast,
         'blockIDENT': blockIDENT,
+        'blockNATRedirection': blockNATRedirection,
       };
 }

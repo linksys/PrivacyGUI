@@ -139,9 +139,9 @@ import 'package:privacy_gui/page/login/auto_parent/views/auto_parent_first_login
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
 import 'package:privacy_gui/page/login/views/local_router_recovery_view.dart';
 import 'package:privacy_gui/page/login/views/login_local_view.dart';
-import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart'
-    show MacFilterMode;
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
 import 'package:privacy_gui/page/menu/views/usp_menu_view.dart';
+import 'package:privacy_gui/page/port_forwarding/views/components/rule_limit_note.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_port_range_tab.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_port_triggering_tab.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_single_port_tab.dart';
@@ -611,6 +611,50 @@ final kPortTriggeringPageCase = PageSurfaceCase(
   overrides: () => portForwardingOverrides(pf.dataState()),
   requires: const [UspPortTriggeringTab],
   forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
+);
+
+/// The three port forwarding tabs again, each with its list at FWDEV#204's rule
+/// limit (#1611): 50 single-port, 25 range and 25 triggering rules.
+///
+/// A full list grows each tab by one row the default fixture never renders: the
+/// [RuleLimitNote] under the header, saying why Add is disabled. It is a row of its
+/// own rather than a neighbour of the Add button, so a long locale wraps it instead
+/// of pushing the button off the edge the way the header title once did (#1377) —
+/// and these cells are what show that it does. [RuleLimitNote] is each case's own
+/// premise: no tab case requires it, and the default fixture is far below every
+/// limit, so a fixture that drifted below one would fail rather than sweep the
+/// sibling tab case's tree twice.
+///
+/// `sharesTabWith` marks each as a fixture state of the tab case it shares a tab
+/// with, which is the one way `page_surface_family_test.dart` accepts two cases on
+/// one `initialTab`.
+final kPortForwardingFullPageCase = PageSurfaceCase(
+  id: 'port_forwarding_full',
+  view: () => const UspPortForwardingDetailView(),
+  overrides: () => portForwardingOverrides(pf.fullDataState),
+  requires: const [UspSinglePortTab, RuleLimitNote],
+  forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
+  sharesTabWith: 'port_forwarding',
+);
+
+/// [kPortForwardingFullPageCase] on the Port Range tab.
+final kPortRangeFullPageCase = PageSurfaceCase(
+  id: 'port_range_full',
+  view: () => const UspPortForwardingDetailView(initialTab: 1),
+  overrides: () => portForwardingOverrides(pf.fullDataState),
+  requires: const [UspPortRangeTab, RuleLimitNote],
+  forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
+  sharesTabWith: 'port_range',
+);
+
+/// [kPortForwardingFullPageCase] on the Port Triggering tab.
+final kPortTriggeringFullPageCase = PageSurfaceCase(
+  id: 'port_triggering_full',
+  view: () => const UspPortForwardingDetailView(initialTab: 2),
+  overrides: () => portForwardingOverrides(pf.fullDataState),
+  requires: const [UspPortTriggeringTab, RuleLimitNote],
+  forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
+  sharesTabWith: 'port_triggering',
 );
 
 // ===========================================================================
@@ -1952,21 +1996,22 @@ final kAdministrationPageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView],
 );
 
-/// `usp_firewall_view` — nine rows in three cards: two SPI switches, three VPN
-/// passthrough switches, three internet filters and a link out to IPv6 port service.
+/// `usp_firewall_view` — ten rows in three cards: two SPI switches, three VPN
+/// passthrough switches, four internet filters and a link out to IPv6 port service.
 ///
 /// **The family's densest label-plus-control page, and the one with no branch at all.**
 /// Every row is a [SwitchBlock] — a label on the left, a fixed-width `AppSwitch` on the
 /// right — and the labels are the longest in the advanced-settings area
-/// (`ipv4SpiFirewall`, `ipsecPassthrough`, `filterAnonymous`). Nine of them render
-/// unconditionally, so unlike [kDmzPageCase] there is no state in which this page shows
-/// less, and unlike every card page there is no grid to absorb a long string by
-/// reflowing. What a cell measures is nine independent label/control rows at the same
-/// width, which is nine chances for one locale to be the long one.
+/// (`ipv4SpiFirewall`, `ipsecPassthrough`, `filterAnonymous`,
+/// `filterInternetNATRedirection`). Ten of them render unconditionally, so unlike
+/// [kDmzPageCase] there is no state in which this page shows less, and unlike every card
+/// page there is no grid to absorb a long string by reflowing. What a cell measures is
+/// ten independent label/control rows at the same width, which is ten chances for one
+/// locale to be the long one.
 ///
 /// The premise is [SwitchBlock] and [NavLinkBlock] — the two row types — and nothing
-/// finer. There is no count here on purpose: the page reads eight booleans out of one
-/// model and renders the same nine rows whichever way they are set, so a fixture cannot
+/// finer. There is no count here on purpose: the page reads nine booleans out of one
+/// model and renders the same ten rows whichever way they are set, so a fixture cannot
 /// silently reduce what this sweep measures the way `apps`' badge or `dmz`' switch can.
 /// The only fixture failure available is "no content at all", and that is what these two
 /// types plus the two `forbids` cover.
@@ -2765,6 +2810,9 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kPortForwardingPageCase,
   kPortRangePageCase,
   kPortTriggeringPageCase,
+  kPortForwardingFullPageCase,
+  kPortRangeFullPageCase,
+  kPortTriggeringFullPageCase,
   // Wave 2 (#1378), in flow order rather than cost order — the flow is what makes
   // the set legible, and every page in it costs about the same anyway.
   kPnpEntryPageCase,
