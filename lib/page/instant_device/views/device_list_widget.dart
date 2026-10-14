@@ -5,7 +5,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/instant_device/extensions/icon_device_category_ext.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
-import 'package:privacy_gui/page/instant_device/views/client_removal_button.dart';
+import 'package:privacy_gui/page/instant_device/views/client_action_menu.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
@@ -137,9 +137,10 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
             device.isOnlineWireless &&
             device.macAddress.isNotEmpty) ...[
           const AppGap.medium(),
-          ClientRemovalButton(device: device),
+          ClientActionMenu(device: device),
         ],
         if (widget.enableDeauth &&
+            !widget.enableRemove &&
             !device.isWired &&
             serviceHelper.isSupportClientDeauth()) ...[
           const AppGap.medium(),

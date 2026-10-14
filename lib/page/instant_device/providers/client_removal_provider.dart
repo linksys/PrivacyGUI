@@ -12,6 +12,7 @@ import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_provider.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
+import 'package:privacy_gui/page/instant_device/providers/client_access_policy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 
 enum ClientRemovalOutcome {
@@ -163,6 +164,9 @@ class ClientRemovalService {
         if (ref.exists(instantPrivacyProvider)) {
           ref.invalidate(instantPrivacyProvider);
         }
+        if (ref.exists(clientAccessPolicyProvider)) {
+          ref.invalidate(clientAccessPolicyProvider);
+        }
         try {
           final applied = await _settings(repo);
           if (applied.macFilterMode.toLowerCase() != mode.toLowerCase() ||
@@ -197,6 +201,70 @@ class ClientRemovalService {
       }
       return outcome;
     } finally {
+      _busy = false;
+    }
+  }
+
+  /// Restore only this MAC using a fresh policy; leave the policy mode and
+  /// every other client's access unchanged. Never deauthenticate on restore.
+  Future<bool> restore(String macAddress) async {
+    if (_busy) throw const ClientRemovalException(ClientRemovalFailure.busy);
+    final mac = macAddress.toUpperCase();
+    if (!RegExp(r'^(?:[0-9A-F]{2}:){5}[0-9A-F]{2}$').hasMatch(mac) ||
+        mac == '00:00:00:00:00:00' ||
+        int.parse(mac.substring(0, 2), radix: 16).isOdd) {
+      throw const ClientRemovalException(ClientRemovalFailure.unavailable);
+    }
+    _busy = true;
+    try {
+      enforceAccess(
+          ref, (policy) => policy.checkWrite(JNAPAction.setMACFilterSettings));
+      final repo = ref.read(routerRepositoryProvider);
+      final before = await _settings(repo);
+      final addresses = before.macAddresses.map((a) => a.toUpperCase()).toSet();
+      switch (before.macFilterMode.toLowerCase()) {
+        case 'disabled':
+          return true;
+        case 'deny':
+          addresses.remove(mac);
+        case 'allow':
+          addresses.add(mac);
+        default:
+          throw const ClientRemovalException(
+              ClientRemovalFailure.unsupportedPolicy);
+      }
+      if (addresses.length > before.maxMACAddresses) {
+        throw const ClientRemovalException(ClientRemovalFailure.capacity);
+      }
+      if (!const SetEquality<String>().equals(
+          before.macAddresses.map((a) => a.toUpperCase()).toSet(), addresses)) {
+        await repo.send(JNAPAction.setMACFilterSettings,
+            data: {
+              'macFilterMode': before.macFilterMode,
+              'macAddresses': addresses.toList()
+            },
+            auth: true,
+            fetchRemote: true,
+            cacheLevel: CacheLevel.noCache);
+        if (ref.exists(instantPrivacyProvider)) {
+          ref.invalidate(instantPrivacyProvider);
+        }
+        try {
+          final applied = await _settings(repo);
+          return applied.macFilterMode.toLowerCase() ==
+                  before.macFilterMode.toLowerCase() &&
+              const SetEquality<String>().equals(
+                  applied.macAddresses.map((a) => a.toUpperCase()).toSet(),
+                  addresses);
+        } catch (_) {
+          return false;
+        }
+      }
+      return true;
+    } finally {
+      if (ref.exists(clientAccessPolicyProvider)) {
+        ref.invalidate(clientAccessPolicyProvider);
+      }
       _busy = false;
     }
   }

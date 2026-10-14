@@ -15,26 +15,51 @@ import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart
 import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
-class ClientRemovalButton extends ConsumerStatefulWidget {
-  const ClientRemovalButton({super.key, required this.device});
+class ClientActionMenu extends ConsumerStatefulWidget {
+  const ClientActionMenu(
+      {super.key, required this.device, this.restricted = false});
   final DeviceListItem device;
+  final bool restricted;
 
   @override
-  ConsumerState<ClientRemovalButton> createState() =>
-      _ClientRemovalButtonState();
+  ConsumerState<ClientActionMenu> createState() => _ClientActionMenuState();
 }
 
-class _ClientRemovalButtonState extends ConsumerState<ClientRemovalButton> {
+class _ClientActionMenuState extends ConsumerState<ClientActionMenu> {
   @override
   Widget build(BuildContext context) {
-    if (!widget.device.isOnlineWireless || widget.device.macAddress.isEmpty) {
+    if ((!widget.restricted && !widget.device.isOnlineWireless) ||
+        widget.device.macAddress.isEmpty) {
       return const SizedBox.shrink();
     }
     return WriteGuard(
-      child: AppTextButton.noPadding(
-        loc(context).removeClient,
-        color: Theme.of(context).colorScheme.error,
-        onTap: _confirm,
+      child: PopupMenuButton<String>(
+        tooltip: loc(context).clientDeviceActions,
+        icon: const Icon(Icons.more_horiz),
+        itemBuilder: (context) => [
+          if (widget.restricted)
+            PopupMenuItem(
+                value: 'restore', child: Text(loc(context).restoreClientAccess))
+          else ...[
+            PopupMenuItem(
+                value: 'remove', child: Text(loc(context).removeClient)),
+            PopupMenuItem(
+              enabled: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(loc(context).blockClientTraffic),
+                  Text(loc(context).blockClientTrafficUnavailable,
+                      style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ),
+            ),
+          ],
+        ],
+        onSelected: (action) {
+          if (action == 'remove') _confirm();
+          if (action == 'restore') _confirmRestore();
+        },
       ),
     );
   }
@@ -93,6 +118,39 @@ class _ClientRemovalButtonState extends ConsumerState<ClientRemovalButton> {
       snackbar.showFailedSnackBar(actionContext, message);
     } else {
       snackbar.showSuccessSnackBar(actionContext, message);
+    }
+  }
+
+  Future<void> _confirmRestore() async {
+    final actionContext = Navigator.of(context, rootNavigator: true).context;
+    final strings = loc(context);
+    final container = ProviderScope.containerOf(context, listen: false);
+    final mac = widget.device.macAddress;
+    final result = await showSubmitAppDialog<bool>(
+      context,
+      title: '${strings.restoreClientAccess}: ${widget.device.name}',
+      positiveLabel: strings.restoreClientAccess,
+      checkPositiveEnabled: () => container.read(accessPolicyProvider).canWrite,
+      contentBuilder: (_, __, ___) =>
+          Text(strings.restoreClientAccessDescription),
+      event: () => container.read(clientRemovalProvider).restore(mac),
+      onError: (error, _) {
+        if (!actionContext.mounted || error is ReadOnlyAccessException) return;
+        snackbar.showFailedSnackBar(
+            actionContext,
+            error is ClientRemovalException &&
+                    error.failure == ClientRemovalFailure.capacity
+                ? strings.restoreClientAccessCapacity
+                : strings.restoreClientAccessFailed);
+      },
+    );
+    if (!actionContext.mounted || result == null) return;
+    if (result) {
+      snackbar.showSuccessSnackBar(
+          actionContext, strings.restoreClientAccessSaved);
+    } else {
+      snackbar.showFailedSnackBar(
+          actionContext, strings.restoreClientAccessFailed);
     }
   }
 }

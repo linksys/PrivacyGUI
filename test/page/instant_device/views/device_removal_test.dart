@@ -121,6 +121,8 @@ void main() {
 
   testWidgets('live wireless clients offer Remove in details', (tester) async {
     await pumpDetail(tester, online: true, wired: false);
+    await tester.tap(find.byTooltip('Device actions'));
+    await tester.pumpAndSettle();
     expect(find.text('Remove'), findsOneWidget);
   });
 

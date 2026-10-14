@@ -6,7 +6,7 @@ import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/page/instant_device/providers/client_removal_provider.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
-import 'package:privacy_gui/page/instant_device/views/client_removal_button.dart';
+import 'package:privacy_gui/page/instant_device/views/client_action_menu.dart';
 
 import '../../../common/config.dart';
 import '../../../common/di.dart';
@@ -22,6 +22,8 @@ const _client = DeviceListItem(
 class _Removals extends ClientRemovalService {
   _Removals(super.ref);
   final calls = <String>[];
+  final restores = <String>[];
+  bool restoreVerified = true;
   ClientRemovalOutcome outcome = ClientRemovalOutcome.disconnectRequested;
   Object? error;
   Future<void> Function()? beforeComplete;
@@ -33,6 +35,14 @@ class _Removals extends ClientRemovalService {
     if (error != null) throw error!;
     return outcome;
   }
+
+  @override
+  Future<bool> restore(String mac) async {
+    restores.add(mac);
+    await beforeComplete?.call();
+    if (error != null) throw error!;
+    return restoreVerified;
+  }
 }
 
 void main() {
@@ -43,6 +53,7 @@ void main() {
   Future<void> pump(WidgetTester tester,
       {bool writable = true,
       bool mobile = false,
+      bool restricted = false,
       DeviceListItem client = _client}) async {
     await tester.setScreenSize(mobile ? device480w : device1440w);
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -60,7 +71,7 @@ void main() {
           body: ValueListenableBuilder<bool>(
         valueListenable: visible,
         builder: (_, show, __) => show
-            ? ClientRemovalButton(device: client)
+            ? ClientActionMenu(device: client, restricted: restricted)
             : const Text('Client left the list'),
       )),
     ));
@@ -68,6 +79,8 @@ void main() {
   }
 
   Future<void> confirm(WidgetTester tester) async {
+    await tester.tap(find.byTooltip('Device actions'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Remove'));
     await tester.pumpAndSettle();
     expect(find.text('Remove: Phone'), findsOneWidget);
@@ -105,9 +118,10 @@ void main() {
 
   testWidgets('read-only login cannot open the confirmation', (tester) async {
     await pump(tester, writable: false);
-    await tester.tap(find.text('Remove'), warnIfMissed: false);
+    await tester.tap(find.byTooltip('Device actions'), warnIfMissed: false);
     await tester.pumpAndSettle();
     expect(find.byType(AlertDialog), findsNothing);
+    expect(find.text('Remove'), findsNothing);
   });
 
   testWidgets('wired clients do not get WiFi removal', (tester) async {
@@ -119,6 +133,8 @@ void main() {
       (tester) async {
     await pump(tester);
     when(serviceHelper.isSupportClientDeauth()).thenReturn(false);
+    await tester.tap(find.byTooltip('Device actions'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Remove'));
     await tester.pumpAndSettle();
     expect(find.textContaining('does not support immediate disconnection'),
@@ -130,7 +146,7 @@ void main() {
     await pump(tester);
     await confirm(tester);
     final container = ProviderScope.containerOf(
-        tester.element(find.byType(ClientRemovalButton)));
+        tester.element(find.byType(ClientActionMenu)));
     container.read(clientRemovalProvider);
     removals.outcome = ClientRemovalOutcome.disconnectFailed;
     await submit(tester);
@@ -145,14 +161,14 @@ void main() {
     await pump(tester);
     await confirm(tester);
     final container = ProviderScope.containerOf(
-        tester.element(find.byType(ClientRemovalButton)));
+        tester.element(find.byType(ClientActionMenu)));
     container.read(clientRemovalProvider);
     removals.beforeComplete = () async {
       visible.value = false;
       await Future<void>.delayed(const Duration(milliseconds: 100));
     };
     await submit(tester);
-    expect(find.byType(ClientRemovalButton), findsNothing);
+    expect(find.byType(ClientActionMenu), findsNothing);
     expect(find.text('WiFi access removed. A disconnect was requested.'),
         findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -163,7 +179,7 @@ void main() {
     await pump(tester);
     await confirm(tester);
     final container = ProviderScope.containerOf(
-        tester.element(find.byType(ClientRemovalButton)));
+        tester.element(find.byType(ClientActionMenu)));
     container.read(clientRemovalProvider);
     removals.error =
         const ClientRemovalException(ClientRemovalFailure.protectedDevice);
@@ -182,7 +198,7 @@ void main() {
     await pump(tester);
     await confirm(tester);
     final container = ProviderScope.containerOf(
-        tester.element(find.byType(ClientRemovalButton)));
+        tester.element(find.byType(ClientActionMenu)));
     container.read(clientRemovalProvider);
     removals.outcome = ClientRemovalOutcome.unverified;
     await submit(tester);
@@ -190,4 +206,51 @@ void main() {
         findsOneWidget);
     expect(find.textContaining('WiFi access removed'), findsNothing);
   });
+
+  testWidgets('Block is explicitly unavailable and never starts removal',
+      (tester) async {
+    await pump(tester);
+    await tester.tap(find.byTooltip('Device actions'));
+    await tester.pumpAndSettle();
+    expect(find.text('Traffic blocking · Coming soon'), findsOneWidget);
+    await tester.tap(find.text('Block'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsNothing);
+    final container = ProviderScope.containerOf(
+        tester.element(find.byType(ClientActionMenu)));
+    container.read(clientRemovalProvider);
+    expect(removals.calls, isEmpty);
+  });
+
+  for (final verified in [true, false]) {
+    testWidgets(
+        'restore reports verification $verified after the row disappears',
+        (tester) async {
+      await pump(tester,
+          restricted: true, client: _client.copyWith(isOnline: false));
+      await tester.tap(find.byTooltip('Device actions'));
+      await tester.pumpAndSettle();
+      expect(find.text('Remove'), findsNothing);
+      await tester.tap(find.text('Restore access'));
+      await tester.pumpAndSettle();
+      final container = ProviderScope.containerOf(
+          tester.element(find.byType(ClientActionMenu)));
+      container.read(clientRemovalProvider);
+      removals.restoreVerified = verified;
+      removals.beforeComplete = () async {
+        visible.value = false;
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      };
+      await tester.tap(find.descendant(
+          of: find.byType(AlertDialog), matching: find.text('Restore access')));
+      await tester.pumpAndSettle();
+      expect(removals.restores, [_client.macAddress]);
+      expect(
+          find.text(verified
+              ? 'WiFi access restored. The device can reconnect.'
+              : 'Restored access could not be verified. Refresh the access rules before retrying.'),
+          findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

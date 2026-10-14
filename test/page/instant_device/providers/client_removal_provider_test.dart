@@ -20,6 +20,7 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/instant_device/providers/client_removal_provider.dart';
+import 'package:privacy_gui/page/instant_device/providers/client_access_policy_provider.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_provider.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
@@ -154,6 +155,14 @@ void main() {
   Matcher failure(ClientRemovalFailure reason) =>
       throwsA(isA<ClientRemovalException>()
           .having((error) => error.failure, 'reason', reason));
+
+  Future<List<DeviceListItem>> restrictedList() async {
+    final subscription =
+        container.listen(restrictedDevicesProvider, (_, __) {});
+    addTearDown(subscription.close);
+    await container.read(clientAccessPolicyProvider.future);
+    return container.read(restrictedDevicesProvider).requireValue;
+  }
 
   setUp(() {
     buildBetterActions(JNAPService.appSupportedServices
@@ -390,5 +399,117 @@ void main() {
     waiting.complete();
     await first;
     expect(router.sent(JNAPAction.setMACFilterSettings), hasLength(1));
+  });
+
+  for (final mode in ['Deny', 'Allow']) {
+    test('restore preserves $mode mode and every other client, without deauth',
+        () async {
+      router.settings = router.settings.copyWith(
+          macFilterMode: mode,
+          macAddresses: mode == 'Deny' ? [_otherMac, _mac] : [_otherMac]);
+      create();
+      expect(
+          await container
+              .read(clientRemovalProvider)
+              .restore(_mac.toLowerCase()),
+          isTrue);
+      expect(router.settings.macFilterMode, mode);
+      expect(router.settings.macAddresses,
+          mode == 'Deny' ? [_otherMac] : [_otherMac, _mac]);
+      expect(router.sent(JNAPAction.clientDeauth), isEmpty);
+      expect(
+          router.actions,
+          [
+            JNAPAction.getMACFilterSettings,
+            JNAPAction.setMACFilterSettings,
+            JNAPAction.getMACFilterSettings
+          ].map((a) => a.actionValue));
+    });
+  }
+
+  test('restore does not claim success if the router ignores the write',
+      () async {
+    router.settings =
+        router.settings.copyWith(macFilterMode: 'Deny', macAddresses: [_mac]);
+    router.applyWrites = false;
+    create();
+    expect(await container.read(clientRemovalProvider).restore(_mac), isFalse);
+    expect(router.settings.macAddresses, [_mac]);
+  });
+
+  test('read-only restore sends no router commands', () async {
+    create(writable: false);
+    await expectLater(container.read(clientRemovalProvider).restore(_mac),
+        throwsA(isA<ReadOnlyAccessException>()));
+    expect(router.commands, isEmpty);
+  });
+
+  test('restore refuses a full allow list without changing other access',
+      () async {
+    router.settings = const MACFilterSettings(
+        macFilterMode: 'Allow', maxMACAddresses: 1, macAddresses: [_otherMac]);
+    create();
+    await expectLater(container.read(clientRemovalProvider).restore(_mac),
+        failure(ClientRemovalFailure.capacity));
+    expect(router.sent(JNAPAction.setMACFilterSettings), isEmpty);
+  });
+
+  test(
+      'disabled filtering is already restored without activating inactive rules',
+      () async {
+    router.settings = router.settings.copyWith(macAddresses: [_mac]);
+    create();
+    expect(await container.read(clientRemovalProvider).restore(_mac), isTrue);
+    expect(router.sent(JNAPAction.setMACFilterSettings), isEmpty);
+  });
+
+  test('denied MACs remain visible even when the device record is gone',
+      () async {
+    router.settings =
+        router.settings.copyWith(macFilterMode: 'Deny', macAddresses: [_mac]);
+    create(client: _client.copyWith(macAddress: _otherMac, isOnline: false));
+    final removed = await restrictedList();
+    expect(removed.map((d) => d.macAddress), [_mac]);
+    expect(removed.single.name, _mac);
+    expect(removed.any((d) => d.macAddress == _otherMac), isFalse);
+  });
+
+  test('allow mode finds restricted WiFi aliases and excludes wired interfaces',
+      () async {
+    router.settings = router.settings
+        .copyWith(macFilterMode: 'Allow', macAddresses: [_otherMac]);
+    final state = DeviceManagerState.fromMap(deviceManagerCherry7TestState);
+    final client = state.externalDevices.first
+        .copyWith(deviceID: 'phone', connections: [], knownInterfaces: const [
+      RawDeviceKnownInterface(macAddress: _mac, interfaceType: 'Wireless'),
+      RawDeviceKnownInterface(macAddress: _otherMac, interfaceType: 'Wired')
+    ]);
+    create(
+        client: _client.copyWith(
+            macAddress: _otherMac, isOnline: false, isWired: true),
+        managerState: state.copyWith(deviceList: [client]));
+    final removed = await restrictedList();
+    expect(removed.map((d) => d.macAddress), [_mac]);
+    expect(removed.single.name, 'Phone');
+  });
+
+  test('inactive MAC entries never make ordinary offline clients removed',
+      () async {
+    router.settings = router.settings.copyWith(macAddresses: [_mac]);
+    create(client: _client.copyWith(isOnline: false));
+    expect(await restrictedList(), isEmpty);
+  });
+
+  test(
+      'a failed policy fetch reports an error instead of an empty restricted list',
+      () async {
+    router.fail = JNAPAction.getMACFilterSettings;
+    create();
+    final subscription =
+        container.listen(restrictedDevicesProvider, (_, __) {});
+    addTearDown(subscription.close);
+    await expectLater(
+        container.read(clientAccessPolicyProvider.future), throwsA(anything));
+    expect(container.read(restrictedDevicesProvider).hasError, isTrue);
   });
 }
