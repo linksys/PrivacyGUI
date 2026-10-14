@@ -23,6 +23,7 @@ import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/extensions/icon_device_category_ext.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -95,6 +96,16 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView>
         return StyledAppPageView(
           padding: const EdgeInsets.only(),
           title: state.item.name,
+          actions: [
+            if (!state.item.isOnline && state.item.deviceId.isNotEmpty)
+              WriteGuard(
+                child: AppTextButton.noPadding(
+                  loc(context).nDevicesDeleteDevicesTitle(1),
+                  color: Theme.of(context).colorScheme.error,
+                  onTap: () => _removeDevice(state.item.deviceId),
+                ),
+              ),
+          ],
           scrollable: true,
           child: (context, constraints) => AppBasicLayout(
             content: ResponsiveLayout(
@@ -455,6 +466,44 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView>
     return IconDeviceCategory.values.indexWhere((element) {
       return element.name == currentIconValue;
     });
+  }
+
+  Future<void> _removeDevice(String deviceId) async {
+    final confirmed = await showSimpleAppDialog<bool>(
+      context,
+      title: loc(context).nDevicesDeleteDevicesTitle(1),
+      content:
+          AppText.bodyMedium(loc(context).nDevicesDeleteDevicesDescription(1)),
+      actions: [
+        AppTextButton(loc(context).cancel, onTap: () => context.pop(false)),
+        WriteGuard(
+          child: AppTextButton(
+            loc(context).delete,
+            color: Theme.of(context).colorScheme.error,
+            onTap: () => context.pop(true),
+          ),
+        ),
+      ],
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      Object? deletionError;
+      await doSomethingWithSpinner(
+        context,
+        ref
+            .read(deviceManagerProvider.notifier)
+            .deleteDevices(deviceIds: [deviceId]).catchError((Object error) {
+          // Attach immediately: the spinner waits before observing its task.
+          deletionError = error;
+        }),
+      );
+      if (deletionError != null) throw deletionError!;
+      if (!mounted) return;
+      showSuccessSnackBar(loc(context).deviceDeleted);
+      context.goNamed(RouteNamed.menuInstantDevices);
+    } catch (error) {
+      if (mounted) showErrorMessageSnackBar(error);
+    }
   }
 
   String _formatEmptyValue(String? value) {

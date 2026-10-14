@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/components/widgets/write_guard.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/views/device_list_widget.dart';
 import 'package:privacy_gui/page/instant_device/views/devices_filter_widget.dart';
@@ -73,6 +74,13 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView>
               },
             ),
       actions: [
+        if (isOnlineFilter)
+          AppTextButton.noPadding(
+            loc(context).offlineDevices,
+            onTap: () => ref
+                .read(deviceFilterConfigProvider.notifier)
+                .updateConnectionFilter(false),
+          ),
         AnimatedRefreshContainer(
           builder: (controller) {
             return AppTextButton.noPadding(
@@ -191,6 +199,7 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView>
         child: DeviceListWidget(
           devices: filteredDeviceList,
           isEdit: !isOnlineFilter,
+          enableDelete: !isOnlineFilter,
           enableDeauth: isOnlineFilter,
           isItemSelected: (item) => _selectedList.contains(item.deviceId),
           onItemSelected: (value, item) {
@@ -208,6 +217,9 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView>
           },
           onItemDeauth: (item) {
             _showConfirmDeauthDialog(item.macAddress);
+          },
+          onItemDelete: (item) {
+            _showConfirmDeleteDialog([item.deviceId]);
           },
         ),
       ),
@@ -238,12 +250,13 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView>
   }
 
   void _showConfirmDeleteDialog(List<String> selectedList) {
+    final deviceIds = List<String>.unmodifiable(selectedList);
     showSimpleAppDialog(
       context,
       dismissible: false,
-      title: loc(context).nDevicesDeleteDevicesTitle(selectedList.length),
+      title: loc(context).nDevicesDeleteDevicesTitle(deviceIds.length),
       content: AppText.bodyLarge(
-          loc(context).nDevicesDeleteDevicesDescription(selectedList.length)),
+          loc(context).nDevicesDeleteDevicesDescription(deviceIds.length)),
       actions: [
         AppTextButton(
           loc(context).cancel,
@@ -252,13 +265,15 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView>
             context.pop();
           },
         ),
-        AppTextButton(
-          loc(context).delete,
-          color: Theme.of(context).colorScheme.error,
-          onTap: () {
-            _removeDevices(selectedList);
-            context.pop();
-          },
+        WriteGuard(
+          child: AppTextButton(
+            loc(context).delete,
+            color: Theme.of(context).colorScheme.error,
+            onTap: () {
+              context.pop();
+              _removeDevices(deviceIds);
+            },
+          ),
         ),
       ],
     );

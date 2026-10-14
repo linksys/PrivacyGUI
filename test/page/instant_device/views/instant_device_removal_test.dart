@@ -1,0 +1,135 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/page/instant_device/_instant_device.dart';
+import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_state.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_list_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
+import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/route/route_model.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+
+import '../../../common/config.dart';
+import '../../../common/di.dart';
+import '../../../common/test_responsive_widget.dart';
+import '../../../common/testable_router.dart';
+import '../../../mocks/dashboard_manager_notifier_mocks.dart';
+import '../../../mocks/device_filter_config_notifier_mocks.dart';
+import '../../../mocks/device_manager_notifier_mocks.dart';
+import '../../../mocks/wifi_list_notifier_mocks.dart';
+import '../../../test_data/wifi_list_test_state.dart';
+
+void main() {
+  mockDependencyRegister();
+  late MockDeviceManagerNotifier manager;
+  late MockDeviceFilterConfigNotifier filter;
+  const clients = [
+    DeviceListItem(deviceId: 'client-1', name: 'Old phone'),
+    DeviceListItem(deviceId: 'client-2', name: 'Old laptop'),
+  ];
+
+  Future<void> pumpList(WidgetTester tester,
+      {bool online = false, bool writable = true, bool mobile = false}) async {
+    await tester.setScreenSize(mobile ? device480w : device1440w);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    manager = MockDeviceManagerNotifier();
+    when(manager.build()).thenReturn(const DeviceManagerState());
+    filter = MockDeviceFilterConfigNotifier();
+    when(filter.build()).thenReturn(DeviceFilterConfigState(
+        connectionFilter: online,
+        nodeFilter: const [],
+        wifiFilter: const [],
+        bandFilter: const []));
+    final wifi = MockWifiListNotifier();
+    when(wifi.build()).thenReturn(WiFiState.fromMap(wifiListTestState));
+    final dashboard = MockDashboardManagerNotifier();
+    when(dashboard.build()).thenReturn(const DashboardManagerState());
+    await tester.pumpWidget(testableSingleRoute(
+      locale: const Locale('en'),
+      overrides: [
+        deviceManagerProvider.overrideWith(() => manager),
+        deviceFilterConfigProvider.overrideWith(() => filter),
+        filteredDeviceListProvider.overrideWith((_) => clients
+            .map((device) => device.copyWith(isOnline: online, isWired: true))
+            .toList()),
+        wifiListProvider.overrideWith(() => wifi),
+        dashboardManagerProvider.overrideWith(() => dashboard),
+        accessPolicyProvider
+            .overrideWithValue(AccessPolicy(canWrite: writable)),
+      ],
+      child: const InstantDeviceView(),
+      extraRoutes: [
+        LinksysRoute(
+          name: RouteNamed.deviceDetails,
+          path: '/details',
+          builder: (_, __) => const Scaffold(body: Text('Client details')),
+        ),
+      ],
+    ));
+    await tester.pumpAndSettle();
+  }
+
+  for (final mobile in [false, true]) {
+    testWidgets(
+        'row delete confirms only the chosen client (${mobile ? 'mobile' : 'desktop'})',
+        (tester) async {
+      await pumpList(tester, mobile: mobile);
+      await tester.tap(find.byIcon(LinksysIcons.delete).first);
+      await tester.pumpAndSettle();
+      expect(find.text('Delete device'), findsOneWidget);
+      verifyNever(manager.deleteDevices(deviceIds: anyNamed('deviceIds')));
+      await tester.tap(find.descendant(
+          of: find.byType(AlertDialog), matching: find.text('Delete')));
+      await tester.pumpAndSettle();
+      verify(manager.deleteDevices(deviceIds: ['client-1'])).called(1);
+      expect(find.text('Device deleted.'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('online view links directly to offline devices', (tester) async {
+    await pumpList(tester, online: true);
+    expect(find.byIcon(LinksysIcons.delete), findsNothing);
+    await tester.tap(find.text('Offline devices'));
+    verify(filter.updateConnectionFilter(false)).called(1);
+  });
+
+  testWidgets('cancel does not delete the client', (tester) async {
+    await pumpList(tester);
+    await tester.tap(find.byIcon(LinksysIcons.delete).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    verifyNever(manager.deleteDevices(deviceIds: anyNamed('deviceIds')));
+  });
+
+  testWidgets('read-only row action does not open confirmation',
+      (tester) async {
+    await pumpList(tester, writable: false);
+    await tester.tap(find.byIcon(LinksysIcons.delete).first,
+        warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsNothing);
+    verifyNever(manager.deleteDevices(deviceIds: anyNamed('deviceIds')));
+  });
+
+  testWidgets('bulk deletion remains available', (tester) async {
+    await pumpList(tester);
+    await tester.tap(find.text('Select All'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(AppFilledButton).last);
+    await tester.pumpAndSettle();
+    expect(find.text('Delete devices'), findsOneWidget);
+    await tester.tap(find.descendant(
+        of: find.byType(AlertDialog), matching: find.text('Delete')));
+    await tester.pumpAndSettle();
+    verify(manager.deleteDevices(deviceIds: ['client-1', 'client-2']))
+        .called(1);
+  });
+}
