@@ -27,19 +27,28 @@ Future<T?> doSomethingWithSpinner<T>(
   Duration? period,
 }) async {
   NavigatorState? navigator;
+  // The spinner's own route, held so that it is the one taken away when the task
+  // ends. Popping whatever is on top came to the same thing until #1419 gave the
+  // app a dialog that arrives on its own - the background router-not-found alert
+  // - and in #1683 the spinner closed that alert instead and stayed up for good.
+  Route<void>? spinner;
   final completer = Completer();
   Future.delayed(Duration.zero, () {
     try {
       navigator = Navigator.of(context, rootNavigator: true);
-      showAppSpinnerDialog(
+      spinner = _spinnerDialogRoute(
         context,
-        title: title,
-        titleTextAlign: titleTextAlign,
-        icon: icon,
-        loadingWidget: loadingWidget,
-        messages: messages ?? [loc(context).processing],
-        period: period,
+        navigator!,
+        _spinnerDialogBuilder(
+          title: title,
+          titleTextAlign: titleTextAlign,
+          icon: icon,
+          loadingWidget: loadingWidget,
+          messages: messages ?? [loc(context).processing],
+          period: period,
+        ),
       );
+      navigator!.push(spinner!);
     } catch (e) {
       logger.w('Could not show spinner dialog: $e');
     }
@@ -53,13 +62,42 @@ Future<T?> doSomethingWithSpinner<T>(
   }).onError((error, stackTrace) {
     throw error ?? '';
   }).whenComplete(() {
+    final route = spinner;
+    // Already gone if the caller took it away itself.
+    if (route == null || !route.isActive) {
+      return;
+    }
     try {
-      navigator?.pop();
+      if (route.isCurrent) {
+        navigator?.pop();
+      } else {
+        // Something was pushed over it while the task ran, and is still there for
+        // a reason of its own.
+        navigator?.removeRoute(route);
+      }
     } catch (e) {
-      logger.w(
-          'doSomethingWithSpinner failed to pop. This might be intentional if the caller pops a page. Error: $e');
+      logger.w('doSomethingWithSpinner failed to take its spinner away: $e');
     }
   });
+}
+
+/// The route [showDialog] would push for [builder], built here so that the
+/// caller keeps hold of it - [showDialog] hands back only the route's result.
+DialogRoute<void> _spinnerDialogRoute(
+  BuildContext context,
+  NavigatorState navigator,
+  WidgetBuilder builder,
+) {
+  return DialogRoute<void>(
+    context: context,
+    builder: builder,
+    barrierColor: DialogTheme.of(context).barrierColor ??
+        Theme.of(context).dialogTheme.barrierColor ??
+        Colors.black54,
+    barrierDismissible: false,
+    themes: InheritedTheme.capture(from: context, to: navigator.context),
+    traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop,
+  );
 }
 
 Future<T?> showAppSpinnerDialog<T>(
@@ -76,44 +114,66 @@ Future<T?> showAppSpinnerDialog<T>(
   return showDialog<T?>(
     context: context,
     barrierDismissible: false,
-    builder: (context) {
-      return StatefulBuilder(builder: (context, setState) {
-        int currentIndex = 0;
-        final stream = messages.isEmpty
-            ? const Stream<String>.empty()
-            : Stream.periodic(period ?? const Duration(seconds: 3))
-            .map((_) => messages[currentIndex++ % messages.length]);
-
-        return StreamBuilder<String>(
-            stream: stream,
-            initialData: messages.firstOrNull,
-            builder: (context, snapshot) {
-              return AlertDialog(
-                icon: icon,
-                title: title != null
-                    ? SizedBox(
-                        width: width ?? kDefaultDialogWidth,
-                        child: AppText.titleLarge(
-                          title,
-                          textAlign: titleTextAlign,
-                        ))
-                    : null,
-                content: SizedBox(
-                  width: width ?? kDefaultDialogWidth,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      loadingWidget ?? const AppSpinner(),
-                      if (snapshot.hasData) AppText.labelLarge(snapshot.data!)
-                    ],
-                  ),
-                ),
-                actions: actions,
-              );
-            });
-      });
-    },
+    builder: _spinnerDialogBuilder(
+      icon: icon,
+      title: title,
+      titleTextAlign: titleTextAlign,
+      loadingWidget: loadingWidget,
+      width: width,
+      messages: messages,
+      period: period,
+      actions: actions,
+    ),
   );
+}
+
+WidgetBuilder _spinnerDialogBuilder({
+  Widget? icon,
+  String? title,
+  TextAlign? titleTextAlign,
+  Widget? loadingWidget,
+  double? width,
+  List<String> messages = const [],
+  Duration? period,
+  List<Widget>? actions = const [],
+}) {
+  return (context) {
+    return StatefulBuilder(builder: (context, setState) {
+      int currentIndex = 0;
+      final stream = messages.isEmpty
+          ? const Stream<String>.empty()
+          : Stream.periodic(period ?? const Duration(seconds: 3))
+              .map((_) => messages[currentIndex++ % messages.length]);
+
+      return StreamBuilder<String>(
+          stream: stream,
+          initialData: messages.firstOrNull,
+          builder: (context, snapshot) {
+            return AlertDialog(
+              icon: icon,
+              title: title != null
+                  ? SizedBox(
+                      width: width ?? kDefaultDialogWidth,
+                      child: AppText.titleLarge(
+                        title,
+                        textAlign: titleTextAlign,
+                      ))
+                  : null,
+              content: SizedBox(
+                width: width ?? kDefaultDialogWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    loadingWidget ?? const AppSpinner(),
+                    if (snapshot.hasData) AppText.labelLarge(snapshot.data!)
+                  ],
+                ),
+              ),
+              actions: actions,
+            );
+          });
+    });
+  };
 }
 
 Future<T?> showSubmitAppDialog<T>(

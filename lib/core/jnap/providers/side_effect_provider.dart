@@ -1,8 +1,11 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' show ClientException;
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -350,3 +353,35 @@ class JNAPSideEffectError extends JNAPError {
   const JNAPSideEffectError([this.attach, this.lastHandledResult])
       : super(result: 'JNAP handle side effect error');
 }
+
+/// Whether [error] says the router gave no answer at all, as opposed to
+/// answering with a refusal. RouterNotifier's `_isRouterTemporarilyUnreachable`
+/// tests the first two of these.
+///
+/// A refused or dropped connection reaches the app as a [ClientException], and
+/// a request nobody answered as a [TimeoutException]. Behind a proxy - nginx on
+/// a developer's machine, or one in a deployment - the proxy answers for a
+/// router that has gone, with an HTML 502 or 504 page, and decoding that as a
+/// JNAP response is a [FormatException]. A [JNAPError] is an answer - the
+/// router is there and talking - so it is never one of these.
+bool _isNoAnswer(Object? error) =>
+    error is ClientException ||
+    error is TimeoutException ||
+    error is FormatException;
+
+/// Runs [refresh], the read that follows a write the router has already
+/// accepted, and reports a router that gave no answer as a
+/// [JNAPSideEffectError] - the error a save page meets with its router-not-found
+/// alert rather than an error snackbar.
+///
+/// #1683: a Wi-Fi change takes a wireless operator off the network with it, and
+/// it can do so after its side-effect check has already found the router back
+/// (see [PollingNotifier.holdWhile]), so the refresh is the first thing to hear
+/// the silence. Reported as it came, a change that had been saved surfaced as
+/// "Unknown error"; what the operator needs is the alert that tells them to
+/// rejoin on the new settings.
+Future<T> refreshAfterWrite<T>(Future<T> Function() refresh) =>
+    refresh().catchError(
+      (Object error) => throw const JNAPSideEffectError(),
+      test: _isNoAnswer,
+    );
