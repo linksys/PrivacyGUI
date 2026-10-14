@@ -136,8 +136,7 @@ import 'package:privacy_gui/page/login/auto_parent/views/auto_parent_first_login
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
 import 'package:privacy_gui/page/login/views/local_router_recovery_view.dart';
 import 'package:privacy_gui/page/login/views/login_local_view.dart';
-import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart'
-    show MacFilterMode;
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
 import 'package:privacy_gui/page/menu/views/usp_menu_view.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/rule_limit_note.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_port_range_tab.dart';

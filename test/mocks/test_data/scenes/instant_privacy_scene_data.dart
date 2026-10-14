@@ -9,7 +9,7 @@ import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_device_ui_model.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_settings.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_status.dart';
-import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
 
 const _devices = [
   MacFilterDeviceUIModel(

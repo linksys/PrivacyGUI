@@ -17,7 +17,7 @@ import 'package:privacy_gui/providers/app_settings/app_settings.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
+import 'package:privacy_gui/core/usp/models/sse_connection_state.dart';
 import 'package:privacy_gui/providers/theme_config_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';

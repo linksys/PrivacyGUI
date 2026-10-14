@@ -82,12 +82,11 @@ class UspFirewallView extends ConsumerWidget {
   ) {
     final notifier = ref.read(uspFirewallProvider.notifier);
     final fw = state.current.model;
-    final rules = state.current.ruleContext;
     // A switch is locked while saving, and when its rule is not on the router:
     // it would show a value the router never reported, and a save would write
     // nothing for it (#1611).
     bool locked(FirewallSwitch s) =>
-        state.status.isSaving || !rules.controls(s);
+        state.status.isSaving || state.status.lockedSwitches.contains(s);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -53,11 +53,6 @@ const dirtyCurrentModel = FirewallUIModel(
 
 /// The 12 named rules FLWRT 2.0.3 ships (FWDEV#204), so every switch can be
 /// used. [without] drops rules by `Description`, for a router missing some.
-FirewallRuleContext namedRuleContext({Set<String> without = const {}}) =>
-    FirewallRuleContext.fromMap(UspFirewallService.parseFirewallRules(
-        namedChainRules(without: without)));
-
-/// The chain rules behind [namedRuleContext].
 FirewallChainRules namedChainRules({Set<String> without = const {}}) =>
     FirewallChainRules(items: [
       for (final d in const [
@@ -85,27 +80,18 @@ FirewallChainRules namedChainRules({Set<String> without = const {}}) =>
 
 FirewallFeatureState dataState(
   FirewallUIModel model, {
-  FirewallRuleContext? ruleContext,
+  Set<FirewallSwitch> lockedSwitches = const {},
 }) {
-  final settings = FirewallSettings(
-    model: model,
-    ruleContext: ruleContext ?? namedRuleContext(),
-  );
+  final settings = FirewallSettings(model: model);
   return FirewallFeatureState(
     settings: Preservable(original: settings, current: settings),
-    status: const FirewallStatus(isLoading: false),
+    status: FirewallStatus(isLoading: false, lockedSwitches: lockedSwitches),
   );
 }
 
 FirewallFeatureState dirtyState({bool isSaving = false}) {
-  final original = FirewallSettings(
-    model: allOnModel,
-    ruleContext: namedRuleContext(),
-  );
-  final current = FirewallSettings(
-    model: dirtyCurrentModel,
-    ruleContext: namedRuleContext(),
-  );
+  const original = FirewallSettings(model: allOnModel);
+  const current = FirewallSettings(model: dirtyCurrentModel);
   return FirewallFeatureState(
     settings: Preservable(original: original, current: current),
     status: FirewallStatus(isLoading: false, isSaving: isSaving),
@@ -114,13 +100,13 @@ FirewallFeatureState dirtyState({bool isSaving = false}) {
 
 /// A router missing one named rule: its switch is locked and reads off, the
 /// rest work. Built through the service as a fetch builds it, so the model and
-/// the context cannot disagree the way a hand-picked model would.
+/// the locks cannot disagree the way a hand-picked model would.
 FirewallFeatureState get missingNatRuleState {
   final rules = UspFirewallService.parseFirewallRules(
       namedChainRules(without: const {'RULE_NAT_REDIRECTION'}));
   return dataState(
     UspFirewallService.buildUIModel(rules: rules),
-    ruleContext: FirewallRuleContext.fromMap(rules),
+    lockedSwitches: FirewallRuleContext.fromMap(rules).lockedSwitches,
   );
 }
 

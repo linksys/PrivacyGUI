@@ -13,14 +13,14 @@ import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/cloud_const.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
-import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/framework/mode/session_request.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/core/cloud/services/remote_assistance_service.dart';
+import 'package:privacy_gui/page/remote_assistance/models/remote_assistance_confirm_state.dart';
+import 'package:privacy_gui/page/remote_assistance/providers/remote_assistance_confirm_notifier.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -41,19 +41,14 @@ class RemoteAssistanceConfirmView extends ConsumerStatefulWidget {
       _RemoteAssistanceConfirmViewState();
 }
 
-enum _ViewState { idle, validating, validated, connecting, error }
-
 class _RemoteAssistanceConfirmViewState
     extends ConsumerState<RemoteAssistanceConfirmView> {
-  _ViewState _viewState = _ViewState.idle;
-  String? _errorMessage;
-  GRASessionInfo? _sessionInfo;
-  Timer? _countdownTimer;
-  int? _remainingSeconds;
-
   bool get _hasValidSessionId => widget.sessionId.isNotEmpty;
   bool get _hasToken => widget.token.isNotEmpty;
   bool get _hasRequiredParams => _hasValidSessionId && _hasToken;
+
+  RemoteAssistanceConfirmNotifier get _notifier =>
+      ref.read(remoteAssistanceConfirmProvider.notifier);
 
   @override
   void initState() {
@@ -74,113 +69,21 @@ class _RemoteAssistanceConfirmViewState
     }
   }
 
-  @override
-  void dispose() {
-    _countdownTimer?.cancel();
-    super.dispose();
-  }
-
-  bool get _canConnect =>
-      _viewState == _ViewState.validated &&
-      _sessionInfo != null &&
-      _sessionInfo!.status == GRASessionStatus.active;
-
-  Future<void> _validateToken() async {
+  void _validateToken() {
     if (!_hasRequiredParams) return;
-
-    setState(() {
-      _viewState = _ViewState.validating;
-      _errorMessage = null;
-    });
-
-    try {
-      final service = ref.read(remoteAssistanceServiceProvider);
-      final sessionInfo = await service
-          .fetchSessionInfoForCA(
-            sessionToken: widget.token,
-            sessionId: widget.sessionId,
-          )
-          .timeout(const Duration(seconds: 15));
-
-      if (!mounted) return;
-
-      if (sessionInfo.status == GRASessionStatus.invalid) {
-        setState(() {
-          _viewState = _ViewState.error;
-          _errorMessage = 'Session is invalid or expired';
-          _sessionInfo = sessionInfo;
-        });
-        return;
-      }
-
-      if (sessionInfo.status != GRASessionStatus.active) {
-        setState(() {
-          _viewState = _ViewState.error;
-          _errorMessage =
-              'Session is not active (${_statusToText(sessionInfo.status)})';
-          _sessionInfo = sessionInfo;
-        });
-        return;
-      }
-
-      setState(() {
-        _viewState = _ViewState.validated;
-        _sessionInfo = sessionInfo;
-        _remainingSeconds = sessionInfo.expiredIn.abs();
-      });
-
-      _startCountdown();
-      logger.d('[RA] Session validated: ${sessionInfo.status}, '
-          'expires in ${_remainingSeconds}s');
-    } on TimeoutException {
-      if (!mounted) return;
-      setState(() {
-        _viewState = _ViewState.error;
-        _errorMessage = 'Connection timed out. Please try again.';
-      });
-    } on ServiceError catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _viewState = _ViewState.error;
-        _errorMessage = _mapServiceError(e);
-      });
-    } catch (e) {
-      logger.e('[RA] Validate failed: $e');
-      if (!mounted) return;
-      setState(() {
-        _viewState = _ViewState.error;
-        _errorMessage = 'An unexpected error occurred. Please try again.';
-      });
-    }
-  }
-
-  String _mapServiceError(ServiceError error) {
-    return switch (error) {
-      SessionTokenExpiredError() => 'Token expired or invalid',
-      UnauthorizedError() => 'Unauthorized - invalid token',
-      ResourceNotFoundError() => 'Session not found',
-      NetworkError(:final detail) =>
-        'Network error${detail != null ? ': $detail' : ' - please try again'}',
-      InvalidInputError(:final detail) =>
-        'Invalid input${detail != null ? ': $detail' : ''}',
-      UnexpectedError(:final detail) =>
-        'Validation failed${detail != null ? ': $detail' : ''}',
-      _ => 'Validation failed: ${error.toString()}',
-    };
+    _notifier.validate(sessionId: widget.sessionId, token: widget.token);
   }
 
   Future<void> _connect() async {
-    if (!_canConnect) return;
+    final state = ref.read(remoteAssistanceConfirmProvider);
+    if (!state.canConnect) return;
 
-    setState(() {
-      _viewState = _ViewState.connecting;
-      _errorMessage = null;
-    });
+    _notifier.beginConnect();
 
     try {
       await doSomethingWithSpinner(
         context,
-        _doConnect(),
+        _doConnect(state),
       );
 
       // Navigate AFTER spinner completes to avoid orphaned dialog
@@ -189,10 +92,7 @@ class _RemoteAssistanceConfirmViewState
     } catch (e) {
       logger.e('[RA] Connection failed: $e');
       if (!mounted) return;
-      setState(() {
-        _viewState = _ViewState.validated;
-        _errorMessage = 'Connection failed: ${e.toString()}';
-      });
+      _notifier.connectFailed('Connection failed: ${e.toString()}');
     }
   }
 
@@ -201,44 +101,21 @@ class _RemoteAssistanceConfirmViewState
   /// #1474 phase 9 moved the transport config, `activate()` and the
   /// `updateSessionInfo()` bookkeeping into `RemoteSessionStrategy.start()`, which
   /// is the remote half of the same member `AuthNotifier.localLogin` reaches for the
-  /// local half. This view keeps what is genuinely its own: the validated
-  /// [_sessionInfo] and countdown it learned from Guardian, the spinner, and the
+  /// local half. This view keeps what is genuinely its own: the spinner, and the
   /// "Connection failed" surface in [_connect] that catches whatever `start` throws.
+  /// The validated session and its countdown are `remoteAssistanceConfirmProvider`'s.
   ///
   /// Via `AuthNotifier.openSession` because `start` takes a `Ref` and a widget holds
   /// a `WidgetRef`; see that method for why the funnel lives there.
-  Future<void> _doConnect() async {
+  Future<void> _doConnect(RemoteAssistanceConfirmState state) async {
     await ref.read(authProvider.notifier).openSession(
           SupportSessionRequest(
             sessionId: widget.sessionId,
             token: widget.token,
-            sessionInfo: _sessionInfo,
-            remainingSeconds: _remainingSeconds,
+            sessionInfo: state.sessionInfo,
+            remainingSeconds: state.remainingSeconds,
           ),
         );
-  }
-
-  void _startCountdown() {
-    _countdownTimer?.cancel();
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-
-      final remaining = _remainingSeconds;
-      if (remaining == null || remaining <= 0) {
-        timer.cancel();
-        setState(() {
-          _remainingSeconds = 0;
-          _viewState = _ViewState.error;
-          _errorMessage = 'Session has expired';
-        });
-        return;
-      }
-
-      setState(() => _remainingSeconds = remaining - 1);
-    });
   }
 
   String _formatDuration(int seconds) {
@@ -254,17 +131,10 @@ class _RemoteAssistanceConfirmViewState
     return '${secs}s';
   }
 
-  String _statusToText(GRASessionStatus status) {
-    return switch (status) {
-      GRASessionStatus.active => 'Active',
-      GRASessionStatus.pending => 'Pending',
-      GRASessionStatus.initiate => 'Initiating',
-      GRASessionStatus.invalid => 'Invalid',
-    };
-  }
-
-  Widget _buildSessionStatusCard(BuildContext context) {
-    final sessionInfo = _sessionInfo!;
+  Widget _buildSessionStatusCard(
+      BuildContext context, RemoteAssistanceConfirmState state) {
+    final sessionInfo = state.sessionInfo!;
+    final remainingSeconds = state.remainingSeconds;
     final colorScheme = Theme.of(context).colorScheme;
 
     final statusColor = switch (sessionInfo.status) {
@@ -335,13 +205,14 @@ class _RemoteAssistanceConfirmViewState
                       Icon(Icons.circle, size: 8, color: statusColor),
                       AppGap.xs(),
                       AppText.labelSmall(
-                        _statusToText(sessionInfo.status),
+                        RemoteAssistanceConfirmNotifier.statusText(
+                            sessionInfo.status),
                         color: statusColor,
                       ),
                     ],
                   ),
                 ),
-                if (_remainingSeconds != null && _remainingSeconds! > 0) ...[
+                if (remainingSeconds != null && remainingSeconds > 0) ...[
                   AppGap.sm(),
                   Row(
                     children: [
@@ -352,7 +223,7 @@ class _RemoteAssistanceConfirmViewState
                       ),
                       AppGap.xs(),
                       AppText.bodySmall(
-                        _formatDuration(_remainingSeconds!),
+                        _formatDuration(remainingSeconds),
                         color: colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                     ],
@@ -369,6 +240,7 @@ class _RemoteAssistanceConfirmViewState
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final state = ref.watch(remoteAssistanceConfirmProvider);
 
     // Show session ended view
     if (widget.sessionEnded) {
@@ -397,7 +269,7 @@ class _RemoteAssistanceConfirmViewState
           // hook, `ra-confirm-error-message` — not for this hook to leave
           // `validated`, which a failure never does.
           child: AppCard(
-            identifier: 'ra-confirm-state-${_viewState.name}',
+            identifier: 'ra-confirm-state-${state.phase.name}',
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -413,7 +285,7 @@ class _RemoteAssistanceConfirmViewState
                   'Environment: ${cloudEnvironmentConfig[kCloudBase]}',
                   color: colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
-                if (_viewState == _ViewState.validating) ...[
+                if (state.phase == RemoteAssistanceConfirmPhase.validating) ...[
                   AppGap.xxxl(),
                   Center(
                     child: Column(
@@ -425,7 +297,7 @@ class _RemoteAssistanceConfirmViewState
                     ),
                   ),
                 ],
-                if (_errorMessage != null) ...[
+                if (state.errorMessage != null) ...[
                   AppGap.lg(),
                   // Keyed on the box, not on the view state: a failed Connect
                   // shows it while the state stays `validated` (see the card
@@ -446,7 +318,7 @@ class _RemoteAssistanceConfirmViewState
                           AppGap.md(),
                           Expanded(
                             child: AppText.bodyMedium(
-                              _errorMessage!,
+                              state.errorMessage!,
                               color: colorScheme.onErrorContainer,
                             ),
                           ),
@@ -462,24 +334,27 @@ class _RemoteAssistanceConfirmViewState
                     onTap: _validateToken,
                   ),
                 ],
-                if (_sessionInfo != null &&
-                    _sessionInfo!.modelNumber.isNotEmpty) ...[
+                if (state.sessionInfo != null &&
+                    state.sessionInfo!.modelNumber.isNotEmpty) ...[
                   AppGap.lg(),
-                  _buildSessionStatusCard(context),
+                  _buildSessionStatusCard(context, state),
                 ],
-                if (_canConnect) ...[
+                if (state.canConnect) ...[
                   AppGap.xxxl(),
                   SizedBox(
                     width: double.infinity,
                     child: AppButton(
-                      label: _viewState == _ViewState.connecting
-                          ? 'Connecting...'
-                          : 'Connect',
+                      label:
+                          state.phase == RemoteAssistanceConfirmPhase.connecting
+                              ? 'Connecting...'
+                              : 'Connect',
                       identifier: 'ra-confirm-connect',
                       variant: SurfaceVariant.highlight,
                       size: AppButtonSize.small,
                       onTap:
-                          _viewState == _ViewState.connecting ? null : _connect,
+                          state.phase == RemoteAssistanceConfirmPhase.connecting
+                              ? null
+                              : _connect,
                     ),
                   ),
                   AppGap.md(),
@@ -565,7 +440,7 @@ class _RemoteAssistanceConfirmViewState
           width: context.colWidth(4),
           child: AppCard(
             // The terminal surface an agent lands on after End Session — or after
-            // any automatic ending (#1323). A separate view, not a `_viewState`,
+            // any automatic ending (#1323). A separate view, not a phase,
             // so it has its own hook rather than a fifth `ra-confirm-state-*`.
             identifier: 'ra-confirm-ended',
             child: Column(

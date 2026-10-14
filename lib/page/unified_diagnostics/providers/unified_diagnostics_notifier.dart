@@ -10,8 +10,10 @@ import 'package:privacy_gui/core/utils/logger.dart';
 // import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
 // import 'package:privacy_gui/page/unified_diagnostics/providers/speed_test_notifier.dart';
 
+import '../models/diagnostic_probe_ui_models.dart';
 import '../models/diagnostic_result.dart';
 import '../models/diagnostic_state.dart';
+import '../services/diagnostic_report_service.dart';
 import '../services/unified_diagnostics_service.dart';
 
 final unifiedDiagnosticsProvider = AutoDisposeNotifierProvider<
@@ -322,6 +324,10 @@ class UnifiedDiagnosticsNotifier
     // No prior context — full diagnostic was the entry point.
     await runFullDiagnostic();
   }
+
+  /// Share the current results as a plain-text report.
+  Future<void> shareReport() =>
+      ref.read(diagnosticReportServiceProvider).share(state);
 
   /// Navigate one step back in the diagnostic flow without leaving the page.
   /// Returns true if the back was handled here, false if the caller should

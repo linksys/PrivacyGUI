@@ -3,7 +3,7 @@ import 'package:privacy_gui/core/utils/wifi.dart';
 
 import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/device_score.dart';
-import 'package:privacy_gui/page/unified_diagnostics/services/unified_diagnostics_service.dart';
+import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_probe_ui_models.dart';
 import 'diagnostic_state.dart';
 
 /// Severity level of a diagnostic result.

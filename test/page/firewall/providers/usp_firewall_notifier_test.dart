@@ -109,6 +109,105 @@ void main() {
       container.dispose();
     });
 
+    test('performSave writes against the rules the router reported', () async {
+      when(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+            context: any(named: 'context'),
+          )).thenAnswer((_) async => 1);
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspFirewallProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(isIPv6FirewallEnabled: true));
+      await notifier.save();
+
+      final sent = verify(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+            context: captureAny(named: 'context'),
+          )).captured.single;
+      expect(sent, testData.ruleContext);
+      container.dispose();
+    });
+
+    // The locks on screen and the rules a save writes against come from the
+    // same read. Taking the rules again at save time let a refresh in between
+    // unlock-and-skip a switch, which is the #1611 partial write.
+    test('performSave uses the rules the page loaded with, not a later refresh',
+        () async {
+      when(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+            context: any(named: 'context'),
+          )).thenAnswer((_) async => 1);
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      container.read(firewallDataProvider.notifier).state = AsyncData(
+        FirewallTestData.createFirewallData(
+          ruleContext: FirewallTestData.createNamedRuleContext(
+            without: const {'RULE_NAT_REDIRECTION'},
+          ),
+        ),
+      );
+
+      final notifier = container.read(uspFirewallProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(isIPv6FirewallEnabled: true));
+      await notifier.save();
+
+      final sent = verify(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+            context: captureAny(named: 'context'),
+          )).captured.first;
+      expect(sent, testData.ruleContext);
+      container.dispose();
+    });
+
+    test('performSave does not depend on the shared data being readable',
+        () async {
+      when(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+            context: any(named: 'context'),
+          )).thenAnswer((_) async => 1);
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      container.read(firewallDataProvider.notifier).state = AsyncError(
+          const NetworkError(detail: 'refresh failed'), StackTrace.empty);
+
+      final notifier = container.read(uspFirewallProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(isIPv6FirewallEnabled: true));
+      await notifier.save();
+
+      verify(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+            context: any(named: 'context'),
+          )).called(1);
+      container.dispose();
+    });
+
+    test('a switch whose rule is not on the router is locked', () async {
+      final container = createContainer(
+        data: FirewallTestData.createFirewallData(
+          ruleContext: FirewallTestData.createNamedRuleContext(
+            without: const {'RULE_NAT_REDIRECTION'},
+          ),
+        ),
+      );
+      await Future.delayed(Duration.zero);
+
+      expect(container.read(uspFirewallProvider).status.lockedSwitches,
+          {FirewallSwitch.natRedirection});
+      container.dispose();
+    });
+
     test('updateSetting mutates current model', () async {
       final container = createContainer();
       await Future.delayed(Duration.zero);

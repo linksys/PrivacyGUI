@@ -516,7 +516,8 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       );
       // Capture final upload method in state
       _setState(state.copyWith(uploadMethod: _uploader.lastUsedMethod));
-    } on FirmwareUploadCancelledException {
+    } on OperationCancelledError {
+      // Ahead of the ServiceError arm, which would report it as a failure.
       logger.i('[FirmwareUpdate] upload cancelled by user');
       cancel();
       rethrow;

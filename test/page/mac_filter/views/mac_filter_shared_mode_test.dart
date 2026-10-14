@@ -8,7 +8,8 @@ import 'package:privacy_gui/page/mac_filter/models/mac_filter_settings.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_status.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_notifier.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_state.dart';
-import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_rules.dart';
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -222,7 +223,7 @@ void main() {
     testWidgets('an over-full allow list cannot be saved until trimmed',
         (tester) async {
       final online = [
-        for (var i = 0; i <= UspMacFilterService.maxAddresses; i++)
+        for (var i = 0; i <= MacFilterRules.maxAddresses; i++)
           MacFilterDeviceUIModel(
             mac: 'AA:BB:CC:DD:EE:${i.toRadixString(16).padLeft(2, '0')}'
                 .toUpperCase(),
@@ -242,7 +243,7 @@ void main() {
 
       expect(tester.widget<AppButton>(saveButton()).onTap, isNull,
           reason: '${online.length} addresses is over the '
-              '${UspMacFilterService.maxAddresses} the firmware accepts');
+              '${MacFilterRules.maxAddresses} the firmware accepts');
 
       // 65 rows reach past the surface, so scroll the last one in — and pump,
       // because the scroll only moves the row on the next layout; tapping
@@ -261,7 +262,7 @@ void main() {
 
     testWidgets('a full allow list offers no Add', (tester) async {
       final full = [
-        for (var i = 0; i < UspMacFilterService.maxAddresses; i++)
+        for (var i = 0; i < MacFilterRules.maxAddresses; i++)
           'AA:BB:CC:DD:${(i ~/ 256).toRadixString(16).padLeft(2, '0')}:'
                   '${(i % 256).toRadixString(16).padLeft(2, '0')}'
               .toUpperCase(),

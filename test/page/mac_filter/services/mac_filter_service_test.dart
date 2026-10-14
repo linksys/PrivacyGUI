@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
 import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
 
 class MockUspClient extends Mock implements UspClient {}
@@ -42,30 +43,6 @@ void main() {
               }
             });
   }
-
-  // ---------------------------------------------------------------------------
-  // static validation helpers
-  // ---------------------------------------------------------------------------
-
-  group('validateMac', () {
-    test('accepts colon and dash forms, rejects garbage', () {
-      expect(UspMacFilterService.validateMac('AA:BB:CC:DD:EE:01'), isTrue);
-      expect(UspMacFilterService.validateMac('aa-bb-cc-dd-ee-01'), isTrue);
-      expect(UspMacFilterService.validateMac('  AA:BB:CC:DD:EE:01  '), isTrue);
-      expect(UspMacFilterService.validateMac('zz:zz:zz:zz:zz:zz'), isFalse);
-      expect(UspMacFilterService.validateMac('AA:BB:CC'), isFalse);
-      expect(UspMacFilterService.validateMac(''), isFalse);
-    });
-  });
-
-  group('normalizeMac', () {
-    test('uppercases and colon-separates', () {
-      expect(UspMacFilterService.normalizeMac('aa-bb-cc-dd-ee-01'),
-          'AA:BB:CC:DD:EE:01');
-      expect(UspMacFilterService.normalizeMac('  aa:bb:cc:dd:ee:01 '),
-          'AA:BB:CC:DD:EE:01');
-    });
-  });
 
   // ---------------------------------------------------------------------------
   // fetch — read side (comma-split, mode parse)

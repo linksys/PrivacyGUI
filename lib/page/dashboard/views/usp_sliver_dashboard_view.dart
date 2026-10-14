@@ -18,8 +18,7 @@ import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart'
 import 'package:privacy_gui/page/_shared/providers/usp_device_analytics_notifier.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
-import 'package:privacy_gui/page/_shared/services/usp_pdf_service.dart';
-import 'package:privacy_gui/page/dashboard/providers/pdf_report_data_provider.dart';
+import 'package:privacy_gui/page/dashboard/providers/pdf_report_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/settings/usp_layout_settings_panel.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:go_router/go_router.dart';
@@ -296,12 +295,7 @@ class _UspSliverDashboardViewState
 
         if (!context.mounted) return;
 
-        final reportData = ref.read(pdfReportDataProvider);
-        if (reportData == null) return;
-        doSomethingWithSpinner(
-          context,
-          UspPdfService.generatePdf(reportData),
-        );
+        doSomethingWithSpinner(context, ref.read(pdfReportProvider).open());
       },
       onRefresh: () =>
           ref.read(dashboardOrchestratorProvider.notifier).refreshAll(),

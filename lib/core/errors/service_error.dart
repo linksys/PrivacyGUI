@@ -241,6 +241,14 @@ final class SerialNumberMismatchError extends ServiceError {
       {required this.expected, required this.actual, super.code, super.detail});
 }
 
+/// The user cancelled the operation (e.g. a local firmware upload).
+///
+/// Not a failure: callers stop quietly instead of reporting it, and catch it
+/// before a general `on ServiceError` arm that would.
+final class OperationCancelledError extends ServiceError {
+  const OperationCancelledError({super.code, super.detail});
+}
+
 /// Router connectivity error (cannot reach router)
 final class ConnectivityError extends ServiceError {
   const ConnectivityError({super.code, super.detail});

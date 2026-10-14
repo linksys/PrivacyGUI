@@ -35,6 +35,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
+import 'package:privacy_gui/core/usp/models/sse_connection_state.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 

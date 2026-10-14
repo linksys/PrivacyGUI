@@ -8,7 +8,6 @@ import 'package:privacy_gui/route/constants.dart';
 import '../../models/diagnostic_result.dart';
 import '../../models/diagnostic_state.dart';
 import '../../providers/unified_diagnostics_notifier.dart';
-import '../../services/diagnostic_report_service.dart';
 import 'diagnostic_result_card.dart';
 import 'diagnostic_results_grid.dart';
 import 'recommendation_card.dart';
@@ -46,6 +45,8 @@ class DiagnosticResultsView extends ConsumerWidget {
         onRestart: () =>
             ref.read(unifiedDiagnosticsProvider.notifier).restart(),
         onDone: () => _returnToDashboard(context, ref),
+        onExport: () =>
+            ref.read(unifiedDiagnosticsProvider.notifier).shareReport(),
       ),
       desktop: (context) {
         // Only split into two columns when BOTH sides have meaningful content.
@@ -62,6 +63,8 @@ class DiagnosticResultsView extends ConsumerWidget {
           onRestart: () =>
               ref.read(unifiedDiagnosticsProvider.notifier).restart(),
           onDone: () => _returnToDashboard(context, ref),
+          onExport: () =>
+              ref.read(unifiedDiagnosticsProvider.notifier).shareReport(),
         );
       },
     );
@@ -95,6 +98,7 @@ class _ResultsLayout extends StatelessWidget {
   final bool sideBySide;
   final VoidCallback onRestart;
   final VoidCallback onDone;
+  final VoidCallback onExport;
 
   const _ResultsLayout({
     required this.state,
@@ -105,6 +109,7 @@ class _ResultsLayout extends StatelessWidget {
     required this.sideBySide,
     required this.onRestart,
     required this.onDone,
+    required this.onExport,
   });
 
   @override
@@ -149,7 +154,7 @@ class _ResultsLayout extends StatelessWidget {
         _ActionBar(
           onRestart: onRestart,
           onDone: onDone,
-          state: state,
+          onExport: onExport,
           fullWidth: !sideBySide,
         ),
       ],
@@ -190,7 +195,7 @@ class _RecommendationsSection extends StatelessWidget {
 class _ActionBar extends StatelessWidget {
   final VoidCallback onRestart;
   final VoidCallback onDone;
-  final UnifiedDiagnosticsState state;
+  final VoidCallback onExport;
 
   /// Mobile / single-column desktop fills width. Side-by-side desktop caps
   /// the action bar at 6/12 cols centered — full-width buttons on a wide
@@ -200,7 +205,7 @@ class _ActionBar extends StatelessWidget {
   const _ActionBar({
     required this.onRestart,
     required this.onDone,
-    required this.state,
+    required this.onExport,
     required this.fullWidth,
   });
 
@@ -227,7 +232,7 @@ class _ActionBar extends StatelessWidget {
     final exportLink = AppButton.text(
       label: loc(context).exportDiagnosticsReport,
       identifier: 'diagnostic-export',
-      onTap: () => const DiagnosticReportService().share(state),
+      onTap: onExport,
     );
     final stack = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
