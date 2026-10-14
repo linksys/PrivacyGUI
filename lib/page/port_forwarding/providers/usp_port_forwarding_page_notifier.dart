@@ -79,7 +79,7 @@ class UspPortForwardingPageNotifier
   }
 
   // ---------------------------------------------------------------------------
-  // save — re-read the router after a partial failure
+  // save — re-read the router after a save that wrote some rules
   // ---------------------------------------------------------------------------
 
   /// A failed save that has already written some rules re-reads the router, so
@@ -87,27 +87,17 @@ class UspPortForwardingPageNotifier
   /// them again. The error still reaches the page. A save that wrote nothing
   /// keeps the user's edits for a retry.
   ///
-  /// "Wrote some" is a partial failure inside one batch, or any failure after
-  /// the forwarding batch finished: each batch is tallied on its own, so a
-  /// triggering batch that wrote nothing reports a complete failure even when
-  /// the forwarding batch before it wrote every rule.
+  /// [performSave] reports "wrote some" as a [UspPartialFailureError], whichever
+  /// batch it came from, so the error type alone tells the two apart.
   @override
   Future<PortForwardingPageFeatureState> save() async {
     try {
       return await super.save();
-    } on ServiceError catch (e) {
-      if (_wroteAnyOf(e)) await fetch(forceRemote: true);
+    } on UspPartialFailureError {
+      await fetch(forceRemote: true);
       rethrow;
     }
   }
-
-  /// Whether the forwarding batch of the save in flight wrote a rule. Set by
-  /// [performSave].
-  bool _forwardingWrote = false;
-
-  /// Whether a save that failed with [e] had already written something.
-  bool _wroteAnyOf(ServiceError e) =>
-      e is UspPartialFailureError || _forwardingWrote;
 
   // ---------------------------------------------------------------------------
   // performSave — diff original vs current, batch API calls
@@ -119,44 +109,75 @@ class UspPortForwardingPageNotifier
       status: state.status.copyWith(isSaving: true),
     );
 
-    _forwardingWrote = false;
     try {
       final originalPf = state.settings.original.forwardingRules;
       final currentPf = state.settings.current.forwardingRules;
       final originalPt = state.settings.original.triggeringRules;
       final currentPt = state.settings.current.triggeringRules;
 
-      await ref.read(uspMutationLockProvider).withLock(() async {
-        final pfResult = await _svc.saveForwardingBatch(
-          original: originalPf,
-          current: currentPf,
-        );
-        _forwardingWrote =
-            pfResult.added + pfResult.updated + pfResult.deleted > 0;
-
-        final ptResult = await _svc.saveTriggeringBatch(
-          original: originalPt,
-          current: currentPt,
-        );
-
-        logger.d('[USP][Firewall][PortForwarding]: Batch save — '
-            'PF added: ${pfResult.added}, updated: ${pfResult.updated}, '
-            'deleted: ${pfResult.deleted} | '
-            'PT added: ${ptResult.added}, updated: ${ptResult.updated}, '
-            'deleted: ${ptResult.deleted}');
+      // Both batches always run: a refused forwarding step must not keep the
+      // triggering edits in the same Save from being sent.
+      final (pf, pt) =
+          await ref.read(uspMutationLockProvider).withLock(() async {
+        final pf = await _runBatch(() => _svc.saveForwardingBatch(
+              original: originalPf,
+              current: currentPf,
+            ));
+        final pt = await _runBatch(() => _svc.saveTriggeringBatch(
+              original: originalPt,
+              current: currentPt,
+            ));
+        return (pf, pt);
       });
 
-      _refreshSharedLists();
-    } on ServiceError catch (e) {
-      logger.e('[USP][Firewall][PortForwarding]: Save failed', error: e);
+      final wrote = pf.wrote || pt.wrote;
       // The dashboard card and the dialogs' overlap and limit checks read the
-      // shared lists, so a save that wrote anything refreshes them too.
-      if (_wroteAnyOf(e)) _refreshSharedLists();
-      rethrow;
+      // shared lists, so a save that wrote anything refreshes them.
+      if (wrote) _refreshSharedLists();
+
+      final error = pf.error ?? pt.error;
+      if (error == null) return;
+      logger.e('[USP][Firewall][PortForwarding]: Save failed', error: error);
+      // Each batch is tallied on its own, so one that wrote nothing reports a
+      // complete failure even when the other wrote every rule. For the save as
+      // a whole that is a partial failure, and [save] re-reads on that.
+      if (wrote && error is! UspPartialFailureError) {
+        throw UspPartialFailureError(
+          summary: error.toString(),
+          successPaths: const [],
+          failures: switch (error) {
+            UspCompleteFailureError(:final failures) => failures,
+            _ => const [],
+          },
+          code: error.code,
+          detail: error.detail,
+        );
+      }
+      throw error;
     } finally {
       state = state.copyWith(
         status: state.status.copyWith(isSaving: false),
       );
+    }
+  }
+
+  /// Run one batch, reporting what it did instead of throwing.
+  ///
+  /// "Wrote" follows the tally's classes: a returned count above zero or a
+  /// partial failure wrote rules, a complete failure wrote none. Any other
+  /// [ServiceError] (transport, timeout) is counted as nothing written.
+  Future<({bool wrote, ServiceError? error})> _runBatch(
+    Future<({int added, int updated, int deleted})> Function() batch,
+  ) async {
+    try {
+      final r = await batch();
+      logger.d('[USP][Firewall][PortForwarding]: Batch — '
+          'added: ${r.added}, updated: ${r.updated}, deleted: ${r.deleted}');
+      return (wrote: r.added + r.updated + r.deleted > 0, error: null);
+    } on UspPartialFailureError catch (e) {
+      return (wrote: true, error: e);
+    } on ServiceError catch (e) {
+      return (wrote: false, error: e);
     }
   }
 
