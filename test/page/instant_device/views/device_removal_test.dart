@@ -119,9 +119,9 @@ void main() {
     expect(find.text('Delete device'), findsNothing);
   });
 
-  testWidgets('live wireless clients offer Block in details', (tester) async {
+  testWidgets('live wireless clients offer Remove in details', (tester) async {
     await pumpDetail(tester, online: true, wired: false);
-    expect(find.text('Block'), findsOneWidget);
+    expect(find.text('Remove'), findsOneWidget);
   });
 
   testWidgets('read-only login cannot confirm deletion', (tester) async {

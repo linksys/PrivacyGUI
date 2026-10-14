@@ -5,7 +5,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/instant_device/extensions/icon_device_category_ext.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
-import 'package:privacy_gui/page/instant_device/views/client_block_button.dart';
+import 'package:privacy_gui/page/instant_device/views/client_removal_button.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/buttons/button.dart';
 import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
@@ -19,7 +19,7 @@ class DeviceListWidget extends ConsumerStatefulWidget {
   final bool isEdit;
   final bool enableDeauth;
   final bool enableDelete;
-  final bool enableBlock;
+  final bool enableRemove;
   final bool Function(DeviceListItem)? isItemSelected;
   final void Function(DeviceListItem)? onItemClick;
   final void Function(bool, DeviceListItem)? onItemSelected;
@@ -34,7 +34,7 @@ class DeviceListWidget extends ConsumerStatefulWidget {
     this.isEdit = false,
     this.enableDeauth = false,
     this.enableDelete = false,
-    this.enableBlock = false,
+    this.enableRemove = false,
     this.isItemSelected,
     this.onItemClick,
     this.onItemSelected,
@@ -133,11 +133,11 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
           isOnline: device.isOnline,
           isWired: device.isWired,
         ),
-        if (widget.enableBlock &&
+        if (widget.enableRemove &&
             device.isOnlineWireless &&
             device.macAddress.isNotEmpty) ...[
           const AppGap.medium(),
-          ClientBlockButton(device: device),
+          ClientRemovalButton(device: device),
         ],
         if (widget.enableDeauth &&
             !device.isWired &&

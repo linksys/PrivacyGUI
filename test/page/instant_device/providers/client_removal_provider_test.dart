@@ -19,7 +19,7 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/page/instant_device/providers/client_block_provider.dart';
+import 'package:privacy_gui/page/instant_device/providers/client_removal_provider.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_provider.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
@@ -149,10 +149,10 @@ void main() {
     addTearDown(container.dispose);
   }
 
-  Future<ClientBlockOutcome> block() =>
-      container.read(clientBlockProvider).block('phone');
-  Matcher failure(ClientBlockFailure reason) =>
-      throwsA(isA<ClientBlockException>()
+  Future<ClientRemovalOutcome> remove() =>
+      container.read(clientRemovalProvider).remove('phone');
+  Matcher failure(ClientRemovalFailure reason) =>
+      throwsA(isA<ClientRemovalException>()
           .having((error) => error.failure, 'reason', reason));
 
   setUp(() {
@@ -170,7 +170,7 @@ void main() {
       () async {
     router.settings = router.settings.copyWith(macAddresses: [_otherMac]);
     create();
-    expect(await block(), ClientBlockOutcome.disconnectRequested);
+    expect(await remove(), ClientRemovalOutcome.disconnectRequested);
     expect(router.settings.macFilterMode, 'Deny');
     expect(router.settings.macAddresses, [_mac]);
     expect(
@@ -191,11 +191,11 @@ void main() {
     verify(polling.forcePolling()).called(1);
   });
 
-  test('deny policy preserves other blocked clients', () async {
+  test('deny policy preserves other denied clients', () async {
     router.settings = router.settings
         .copyWith(macFilterMode: 'Deny', macAddresses: [_otherMac]);
     create();
-    await block();
+    await remove();
     expect(router.settings.macAddresses, [_otherMac, _mac]);
   });
 
@@ -204,7 +204,7 @@ void main() {
         macFilterMode: 'Allow',
         macAddresses: [_otherMac, _mac.toLowerCase(), '02:00:00:00:00:03']);
     create();
-    await block();
+    await remove();
     expect(router.settings.macFilterMode, 'Allow');
     expect(router.settings.macAddresses, [_otherMac, '02:00:00:00:00:03']);
   });
@@ -214,7 +214,7 @@ void main() {
     router.settings = router.settings
         .copyWith(macFilterMode: 'Deny', macAddresses: [_mac.toLowerCase()]);
     create();
-    await block();
+    await remove();
     expect(router.sent(JNAPAction.setMACFilterSettings), isEmpty);
     expect(router.sent(JNAPAction.clientDeauth), hasLength(1));
   });
@@ -222,16 +222,16 @@ void main() {
   test('failed policy save never sends deauth', () async {
     router.fail = JNAPAction.setMACFilterSettings;
     create();
-    await expectLater(block(), throwsA(anything));
+    await expectLater(remove(), throwsA(anything));
     expect(router.sent(JNAPAction.clientDeauth), isEmpty);
     expect(router.settings.macFilterMode, 'Disabled');
   });
 
-  test('failed readback does not deauth or pretend the block was verified',
+  test('failed readback does not deauth or pretend the removal was verified',
       () async {
     router.applyWrites = false;
     create();
-    expect(await block(), ClientBlockOutcome.unverified);
+    expect(await remove(), ClientRemovalOutcome.unverified);
     expect(router.sent(JNAPAction.clientDeauth), isEmpty);
   });
 
@@ -239,31 +239,32 @@ void main() {
       () async {
     router.fail = JNAPAction.clientDeauth;
     create();
-    expect(await block(), ClientBlockOutcome.disconnectFailed);
+    expect(await remove(), ClientRemovalOutcome.disconnectFailed);
     expect(router.settings.macAddresses, [_mac]);
   });
 
-  test('routers without deauth support still persist the admission block',
+  test('routers without deauth support still persist the admission restriction',
       () async {
     when(serviceHelper.isSupportClientDeauth()).thenReturn(false);
     create();
-    expect(await block(), ClientBlockOutcome.policyOnly);
+    expect(await remove(), ClientRemovalOutcome.policyOnly);
     expect(router.settings.macAddresses, [_mac]);
     expect(router.sent(JNAPAction.clientDeauth), isEmpty);
   });
 
-  test('refresh failure does not undo or misreport a saved block', () async {
+  test('refresh failure does not undo or misreport a saved access restriction',
+      () async {
     when(polling.forcePolling())
         .thenAnswer((_) async => throw StateError('poll failed'));
     create();
-    expect(await block(), ClientBlockOutcome.disconnectRequested);
+    expect(await remove(), ClientRemovalOutcome.disconnectRequested);
     expect(router.settings.macAddresses, [_mac]);
   });
 
   test('current client is protected before any write', () async {
     router.localId = 'phone';
     create();
-    await expectLater(block(), failure(ClientBlockFailure.protectedDevice));
+    await expectLater(remove(), failure(ClientRemovalFailure.protectedDevice));
     expect(router.sent(JNAPAction.setMACFilterSettings), isEmpty);
     expect(router.sent(JNAPAction.clientDeauth), isEmpty);
   });
@@ -272,7 +273,7 @@ void main() {
       () async {
     router.localId = '';
     create();
-    await expectLater(block(), failure(ClientBlockFailure.unavailable));
+    await expectLater(remove(), failure(ClientRemovalFailure.unavailable));
     expect(router.sent(JNAPAction.setMACFilterSettings), isEmpty);
   });
 
@@ -284,7 +285,7 @@ void main() {
     );
     router.localId = administrator.deviceID;
     create(managerState: state.copyWith(deviceList: [administrator]));
-    await expectLater(block(), failure(ClientBlockFailure.protectedDevice));
+    await expectLater(remove(), failure(ClientRemovalFailure.protectedDevice));
     expect(router.sent(JNAPAction.setMACFilterSettings), isEmpty);
   });
 
@@ -292,12 +293,11 @@ void main() {
       'full-access remote login does not identify the cloud server as a local client',
       () async {
     create(remote: true);
-    expect(await block(), ClientBlockOutcome.disconnectRequested);
+    expect(await remove(), ClientRemovalOutcome.disconnectRequested);
     expect(router.sent(JNAPAction.getLocalDevice), isEmpty);
   });
 
-  test(
-      'blocking uses the active station MAC instead of another known interface',
+  test('removal uses the active station MAC instead of another known interface',
       () async {
     final state = DeviceManagerState.fromMap(deviceManagerCherry7TestState);
     final client = state.externalDevices.first.copyWith(
@@ -307,7 +307,7 @@ void main() {
     create(
         client: _client.copyWith(macAddress: _otherMac),
         managerState: state.copyWith(deviceList: [client]));
-    await block();
+    await remove();
     expect(router.settings.macAddresses, [_mac]);
     expect(router.sent(JNAPAction.clientDeauth).single.spec.data,
         {'macAddress': _mac});
@@ -318,7 +318,7 @@ void main() {
     final node = state.nodeDevices.first;
     final mac = node.knownInterfaces!.first.macAddress;
     create(client: _client.copyWith(macAddress: mac), managerState: state);
-    await expectLater(block(), failure(ClientBlockFailure.protectedDevice));
+    await expectLater(remove(), failure(ClientRemovalFailure.protectedDevice));
     expect(router.commands, isEmpty);
   });
 
@@ -326,7 +326,7 @@ void main() {
     when(serviceHelper.isSupportGetSTABSSID()).thenReturn(true);
     router.bssids = [_mac.toLowerCase()];
     create();
-    await expectLater(block(), failure(ClientBlockFailure.protectedDevice));
+    await expectLater(remove(), failure(ClientRemovalFailure.protectedDevice));
     expect(router.sent(JNAPAction.setMACFilterSettings), isEmpty);
   });
 
@@ -334,7 +334,7 @@ void main() {
     router.settings = const MACFilterSettings(
         macFilterMode: 'Deny', maxMACAddresses: 1, macAddresses: [_otherMac]);
     create();
-    await expectLater(block(), failure(ClientBlockFailure.capacity));
+    await expectLater(remove(), failure(ClientRemovalFailure.capacity));
     expect(router.sent(JNAPAction.setMACFilterSettings), isEmpty);
     expect(router.sent(JNAPAction.clientDeauth), isEmpty);
   });
@@ -342,7 +342,8 @@ void main() {
   test('unknown policy is preserved without a write', () async {
     router.settings = router.settings.copyWith(macFilterMode: 'Unknown');
     create();
-    await expectLater(block(), failure(ClientBlockFailure.unsupportedPolicy));
+    await expectLater(
+        remove(), failure(ClientRemovalFailure.unsupportedPolicy));
     expect(router.sent(JNAPAction.setMACFilterSettings), isEmpty);
   });
 
@@ -354,7 +355,7 @@ void main() {
   ]) {
     test('non-WiFi, stale or invalid target is refused: $client', () async {
       create(client: client);
-      await expectLater(block(), failure(ClientBlockFailure.unavailable));
+      await expectLater(remove(), failure(ClientRemovalFailure.unavailable));
       expect(router.commands, isEmpty);
     });
   }
@@ -362,7 +363,7 @@ void main() {
   test('read-only access refuses the operation before any router command',
       () async {
     create(writable: false);
-    await expectLater(block(), throwsA(isA<ReadOnlyAccessException>()));
+    await expectLater(remove(), throwsA(isA<ReadOnlyAccessException>()));
     expect(router.commands, isEmpty);
   });
 
@@ -370,7 +371,7 @@ void main() {
     create();
     router.beforeSettingsRead =
         () async => devices.update(_client.copyWith(isWired: true));
-    await expectLater(block(), failure(ClientBlockFailure.unavailable));
+    await expectLater(remove(), failure(ClientRemovalFailure.unavailable));
     expect(router.sent(JNAPAction.setMACFilterSettings), isEmpty);
     expect(router.sent(JNAPAction.clientDeauth), isEmpty);
   });
@@ -383,9 +384,9 @@ void main() {
       await waiting.future;
     };
     create();
-    final first = block();
+    final first = remove();
     await entered.future;
-    await expectLater(block(), failure(ClientBlockFailure.busy));
+    await expectLater(remove(), failure(ClientRemovalFailure.busy));
     waiting.complete();
     await first;
     expect(router.sent(JNAPAction.setMACFilterSettings), hasLength(1));

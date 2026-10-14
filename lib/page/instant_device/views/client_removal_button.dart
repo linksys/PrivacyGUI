@@ -10,20 +10,21 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart'
     as snackbar;
 import 'package:privacy_gui/page/components/widgets/write_guard.dart';
-import 'package:privacy_gui/page/instant_device/providers/client_block_provider.dart';
+import 'package:privacy_gui/page/instant_device/providers/client_removal_provider.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
-class ClientBlockButton extends ConsumerStatefulWidget {
-  const ClientBlockButton({super.key, required this.device});
+class ClientRemovalButton extends ConsumerStatefulWidget {
+  const ClientRemovalButton({super.key, required this.device});
   final DeviceListItem device;
 
   @override
-  ConsumerState<ClientBlockButton> createState() => _ClientBlockButtonState();
+  ConsumerState<ClientRemovalButton> createState() =>
+      _ClientRemovalButtonState();
 }
 
-class _ClientBlockButtonState extends ConsumerState<ClientBlockButton> {
+class _ClientRemovalButtonState extends ConsumerState<ClientRemovalButton> {
   @override
   Widget build(BuildContext context) {
     if (!widget.device.isOnlineWireless || widget.device.macAddress.isEmpty) {
@@ -31,7 +32,7 @@ class _ClientBlockButtonState extends ConsumerState<ClientBlockButton> {
     }
     return WriteGuard(
       child: AppTextButton.noPadding(
-        loc(context).blockClient,
+        loc(context).removeClient,
         color: Theme.of(context).colorScheme.error,
         onTap: _confirm,
       ),
@@ -44,27 +45,28 @@ class _ClientBlockButtonState extends ConsumerState<ClientBlockButton> {
     final actionContext = Navigator.of(context, rootNavigator: true).context;
     final strings = loc(context);
     final container = ProviderScope.containerOf(context, listen: false);
-    final result = await showSubmitAppDialog<ClientBlockOutcome>(
+    final result = await showSubmitAppDialog<ClientRemovalOutcome>(
       context,
-      title: '${loc(context).blockClient}: ${device.name}',
-      positiveLabel: loc(context).blockClient,
+      title: '${loc(context).removeClient}: ${device.name}',
+      positiveLabel: loc(context).removeClient,
       checkPositiveEnabled: () => container.read(accessPolicyProvider).canWrite,
       contentBuilder: (context, _, __) => AppText.bodyMedium(
         serviceHelper.isSupportClientDeauth()
-            ? loc(context).blockClientDescription
-            : loc(context).blockClientPolicyOnlyDescription,
+            ? loc(context).removeClientDescription
+            : loc(context).removeClientPolicyOnlyDescription,
       ),
-      event: () => container.read(clientBlockProvider).block(device.deviceId),
+      event: () =>
+          container.read(clientRemovalProvider).remove(device.deviceId),
       onError: (error, _) {
         if (!actionContext.mounted || error is ReadOnlyAccessException) return;
-        if (error is ClientBlockException) {
+        if (error is ClientRemovalException) {
           snackbar.showFailedSnackBar(
               actionContext,
               switch (error.failure) {
-                ClientBlockFailure.protectedDevice =>
-                  strings.blockClientProtected,
-                ClientBlockFailure.capacity => strings.blockClientCapacity,
-                _ => strings.blockClientUnavailable,
+                ClientRemovalFailure.protectedDevice =>
+                  strings.removeClientProtected,
+                ClientRemovalFailure.capacity => strings.removeClientCapacity,
+                _ => strings.removeClientUnavailable,
               });
         } else {
           snackbar.showFailedSnackBar(
@@ -80,14 +82,14 @@ class _ClientBlockButtonState extends ConsumerState<ClientBlockButton> {
     );
     if (!actionContext.mounted || result == null) return;
     final message = switch (result) {
-      ClientBlockOutcome.disconnectRequested => strings.blockClientSaved,
-      ClientBlockOutcome.policyOnly => strings.blockClientPolicyOnlySaved,
-      ClientBlockOutcome.disconnectFailed =>
-        strings.blockClientDisconnectFailed,
-      ClientBlockOutcome.unverified => strings.blockClientUnverified,
+      ClientRemovalOutcome.disconnectRequested => strings.removeClientSaved,
+      ClientRemovalOutcome.policyOnly => strings.removeClientPolicyOnlySaved,
+      ClientRemovalOutcome.disconnectFailed =>
+        strings.removeClientDisconnectFailed,
+      ClientRemovalOutcome.unverified => strings.removeClientUnverified,
     };
-    if (result == ClientBlockOutcome.disconnectFailed ||
-        result == ClientBlockOutcome.unverified) {
+    if (result == ClientRemovalOutcome.disconnectFailed ||
+        result == ClientRemovalOutcome.unverified) {
       snackbar.showFailedSnackBar(actionContext, message);
     } else {
       snackbar.showSuccessSnackBar(actionContext, message);

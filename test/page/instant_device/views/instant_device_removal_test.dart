@@ -108,9 +108,9 @@ void main() {
     verify(filter.updateConnectionFilter(false)).called(1);
   });
 
-  testWidgets('live wireless clients offer Block in the list', (tester) async {
+  testWidgets('live wireless clients offer Remove in the list', (tester) async {
     await pumpList(tester, online: true, wired: false);
-    expect(find.text('Block'), findsNWidgets(2));
+    expect(find.text('Remove'), findsNWidgets(2));
   });
 
   testWidgets('cancel does not delete the client', (tester) async {

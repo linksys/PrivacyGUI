@@ -14,14 +14,14 @@ import 'package:privacy_gui/page/instant_device/providers/device_list_provider.d
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 
-enum ClientBlockOutcome {
+enum ClientRemovalOutcome {
   disconnectRequested,
   policyOnly,
   disconnectFailed,
   unverified
 }
 
-enum ClientBlockFailure {
+enum ClientRemovalFailure {
   unavailable,
   protectedDevice,
   capacity,
@@ -29,17 +29,17 @@ enum ClientBlockFailure {
   busy
 }
 
-class ClientBlockException implements Exception {
-  const ClientBlockException(this.failure);
-  final ClientBlockFailure failure;
+class ClientRemovalException implements Exception {
+  const ClientRemovalException(this.failure);
+  final ClientRemovalFailure failure;
 }
 
-final clientBlockProvider = Provider((ref) => ClientBlockService(ref));
+final clientRemovalProvider = Provider((ref) => ClientRemovalService(ref));
 
 /// Changes Wi-Fi admission first, then asks the router to deauthenticate the
-/// station. A saved block remains in place if the immediate disconnect fails.
-class ClientBlockService {
-  ClientBlockService(this.ref);
+/// station. A saved access restriction remains in place if the immediate disconnect fails.
+class ClientRemovalService {
+  ClientRemovalService(this.ref);
   final Ref ref;
   bool _busy = false;
 
@@ -57,7 +57,7 @@ class ClientBlockService {
       // the station actually connected now for both admission and deauth.
       final connection = connectedDevice.connections.firstOrNull;
       if (connection == null) {
-        throw const ClientBlockException(ClientBlockFailure.unavailable);
+        throw const ClientRemovalException(ClientRemovalFailure.unavailable);
       }
       item = item?.copyWith(macAddress: connection.macAddress);
     }
@@ -67,7 +67,7 @@ class ClientBlockService {
             .hasMatch(item.macAddress) ||
         item.macAddress == '00:00:00:00:00:00' ||
         int.parse(item.macAddress.substring(0, 2), radix: 16).isOdd) {
-      throw const ClientBlockException(ClientBlockFailure.unavailable);
+      throw const ClientRemovalException(ClientRemovalFailure.unavailable);
     }
     return item;
   }
@@ -87,8 +87,8 @@ class ClientBlockService {
       ))
           .output);
 
-  Future<ClientBlockOutcome> block(String deviceId) async {
-    if (_busy) throw const ClientBlockException(ClientBlockFailure.busy);
+  Future<ClientRemovalOutcome> remove(String deviceId) async {
+    if (_busy) throw const ClientRemovalException(ClientRemovalFailure.busy);
     _busy = true;
     try {
       enforceAccess(
@@ -98,7 +98,8 @@ class ClientBlockService {
       final manager = ref.read(deviceManagerProvider);
       if (manager.nodeDevices
           .any((node) => node.deviceID == deviceId || _hasMac(node, mac))) {
-        throw const ClientBlockException(ClientBlockFailure.protectedDevice);
+        throw const ClientRemovalException(
+            ClientRemovalFailure.protectedDevice);
       }
       final repo = ref.read(routerRepositoryProvider);
       if (!ref.read(isRemoteLoginProvider)) {
@@ -106,12 +107,13 @@ class ClientBlockService {
             auth: true, fetchRemote: true, cacheLevel: CacheLevel.noCache);
         final localId = local.output['deviceID'];
         if (localId is! String || localId.isEmpty) {
-          throw const ClientBlockException(ClientBlockFailure.unavailable);
+          throw const ClientRemovalException(ClientRemovalFailure.unavailable);
         }
         if (localId == deviceId ||
             manager.deviceList.any((device) =>
                 device.deviceID == localId && _hasMac(device, mac))) {
-          throw const ClientBlockException(ClientBlockFailure.protectedDevice);
+          throw const ClientRemovalException(
+              ClientRemovalFailure.protectedDevice);
         }
       }
       if (serviceHelper.isSupportGetSTABSSID()) {
@@ -119,7 +121,8 @@ class ClientBlockService {
             auth: true, fetchRemote: true, cacheLevel: CacheLevel.noCache);
         if (List<String>.from(result.output['staBSSIDS'])
             .any((address) => address.toUpperCase() == mac)) {
-          throw const ClientBlockException(ClientBlockFailure.protectedDevice);
+          throw const ClientRemovalException(
+              ClientRemovalFailure.protectedDevice);
         }
       }
       final before = await _settings(repo);
@@ -140,15 +143,15 @@ class ClientBlockService {
           mode = 'Allow';
           addresses = {...existing}..remove(mac);
         default:
-          throw const ClientBlockException(
-              ClientBlockFailure.unsupportedPolicy);
+          throw const ClientRemovalException(
+              ClientRemovalFailure.unsupportedPolicy);
       }
       if (addresses.length > before.maxMACAddresses) {
-        throw const ClientBlockException(ClientBlockFailure.capacity);
+        throw const ClientRemovalException(ClientRemovalFailure.capacity);
       }
       // The client may have moved to Ethernet or disappeared during the reads.
       if (_target(deviceId).macAddress.toUpperCase() != mac) {
-        throw const ClientBlockException(ClientBlockFailure.unavailable);
+        throw const ClientRemovalException(ClientRemovalFailure.unavailable);
       }
       if (before.macFilterMode.toLowerCase() != mode.toLowerCase() ||
           !const SetEquality<String>().equals(existing, addresses)) {
@@ -168,13 +171,13 @@ class ClientBlockService {
                       .map((address) => address.toUpperCase())
                       .toSet(),
                   addresses)) {
-            return ClientBlockOutcome.unverified;
+            return ClientRemovalOutcome.unverified;
           }
         } catch (_) {
-          return ClientBlockOutcome.unverified;
+          return ClientRemovalOutcome.unverified;
         }
       }
-      var outcome = ClientBlockOutcome.policyOnly;
+      var outcome = ClientRemovalOutcome.policyOnly;
       if (serviceHelper.isSupportClientDeauth()) {
         try {
           await repo.send(JNAPAction.clientDeauth,
@@ -182,15 +185,15 @@ class ClientBlockService {
               auth: true,
               fetchRemote: true,
               cacheLevel: CacheLevel.noCache);
-          outcome = ClientBlockOutcome.disconnectRequested;
+          outcome = ClientRemovalOutcome.disconnectRequested;
         } catch (_) {
-          outcome = ClientBlockOutcome.disconnectFailed;
+          outcome = ClientRemovalOutcome.disconnectFailed;
         }
       }
       try {
         await ref.read(pollingProvider.notifier).forcePolling();
       } catch (_) {
-        logger.w('Client block saved; device-list refresh failed.');
+        logger.w('Client removal saved; device-list refresh failed.');
       }
       return outcome;
     } finally {
