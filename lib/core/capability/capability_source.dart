@@ -45,15 +45,12 @@ class GetProbeCapabilitySource implements CapabilitySource {
     const capabilities = DeviceCapability.values;
     final paths = [for (final c in capabilities) capabilityProbePath(c)];
 
-    final Map<String, dynamic> response;
+    Map<String, dynamic> response;
     try {
-      // One batch Get (one round-trip through the throttler) for every path.
+      // Keep the normal path to one round-trip through the throttler.
       response = await usp.get(paths);
     } catch (e) {
-      // A failed probe cannot distinguish which paths exist, so fail closed for
-      // all of them — mirrors `SessionService._fetchDeviceUuid`: the absence is
-      // the outcome, kept in the log rather than a thrown type.
-      logger.w('$_tag probe Get failed, all capabilities unavailable: $e');
+      logger.w('$_tag batch probe failed: $e');
       return DeviceCapabilities.empty;
     }
 
@@ -63,7 +60,7 @@ class GetProbeCapabilitySource implements CapabilitySource {
       final value = response[path];
       // Present AND non-empty. `containsKey` false (silently omitted) or an
       // empty-string value both mean unsupported.
-      if (value != null && value.toString().isNotEmpty) {
+      if (value != null && value.toString().trim().isNotEmpty) {
         supported.add(capability);
       } else {
         logger.d(

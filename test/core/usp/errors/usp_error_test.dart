@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 void main() {
   group('parseUspError', () {
@@ -301,6 +305,48 @@ void main() {
       const raw = 'Get failed: Protocol error: Malformed message: bad data';
       expect(mapUspErrorToServiceError(raw), isA<UnexpectedError>());
     });
+  });
+
+  group('shared Operate error contract', () {
+    final cases = jsonDecode(
+      File('test/web/usp_operate_errors.json').readAsStringSync(),
+    ) as List<dynamic>;
+    for (final entry in cases) {
+      final fixture = entry as Map<String, dynamic>;
+      test(fixture['name'] as String, () {
+        String? raw;
+        try {
+          UspClient.extractOperateResult({
+            'success': false,
+            'result': {
+              'data': <String, dynamic>{},
+              'error': {
+                'Device.X_LINKSYS_AutoIPoE.Apply()': {
+                  'errorCode': fixture['errorCode'],
+                  'errorMessage': fixture['errorMessage'],
+                },
+              },
+            },
+          });
+        } catch (error) {
+          raw = error as String;
+        }
+        expect(raw, isNotNull);
+        final parsed = parseUspError(raw!);
+        expect(parsed, isNotNull);
+        expect(parsed!.operation, 'Operate');
+        expect(parsed.category.name, fixture['category']);
+        expect(parsed.faultCode, fixture['faultCode']);
+        expect(parsed.httpStatus, fixture['httpStatus']);
+        final mapped = mapUspErrorToServiceError(raw);
+        expect(mapped.runtimeType.toString(), fixture['serviceError']);
+        if (mapped is UspCompleteFailureError) {
+          expect(mapped.failures.single.errorCode, fixture['faultCode']);
+        } else {
+          expect(mapped.code, fixture['mappedCode']);
+        }
+      });
+    }
   });
 
   group('isUnansweredTransportFailure', () {
