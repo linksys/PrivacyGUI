@@ -1,4 +1,9 @@
+import 'package:privacy_gui/core/capability/device_capability.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_data_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
@@ -29,9 +34,9 @@ class _PnpIspSettingsViewState extends ConsumerState<PnpIspSettingsView> {
 
   Future<void> _onDhcpTap() async {
     setState(() => _dhcpSaving = true);
-    await ref.read(pnpProvider.notifier).saveIspWithProgress(
-          const PnpIspConfig(type: IspConnectionType.dhcp),
-        );
+    await ref
+        .read(pnpProvider.notifier)
+        .saveIspWithProgress(const PnpIspConfig(type: IspConnectionType.dhcp));
     if (!mounted) return;
     setState(() => _dhcpSaving = false);
 
@@ -67,9 +72,8 @@ class _PnpIspSettingsViewState extends ConsumerState<PnpIspSettingsView> {
         scrollable: false,
         appBarStyle: UiKitAppBarStyle.none,
         useMainPadding: false,
-        child: (context, constraints) => PnpIspSavingProgress(
-          phase: ispSavingPhase,
-        ),
+        child: (context, constraints) =>
+            PnpIspSavingProgress(phase: ispSavingPhase),
       );
     }
 
@@ -89,67 +93,107 @@ class _PnpIspSettingsViewState extends ConsumerState<PnpIspSettingsView> {
   }
 
   Widget _buildTypeSelection(BuildContext context) {
+    final result = ref.watch(autoIPoEDataProvider);
+    // Never expose alternative WAN writes while ownership is still unknown.
+    if (result.isLoading) return const Center(child: AppLoader());
+    if (result.hasError && result.error is! ResourceNotFoundError) {
+      return ServiceErrorView(
+        error:
+            result.error is ServiceError ? result.error as ServiceError : null,
+        title: loc(context).failedToLoadSettings,
+        onRetry: () => ref.invalidate(autoIPoEDataProvider),
+      );
+    }
+    final ipoe = result.valueOrNull;
+    final managed = ipoe?.runtime.needsResetBeforeLeaving == true;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         AppText.headlineSmall(loc(context).pnpIspTypeSelectionTitle),
         AppGap.xxxl(),
-        _buildTypeCard(
-          context,
-          icon: Icons.refresh,
-          title: 'DHCP',
-          description: loc(context).pnpIspTypeSelectionDhcpDesc,
-          onTap: _onDhcpTap,
-        ),
-        AppGap.md(),
-        _buildTypeCard(
-          context,
-          icon: Icons.vpn_key_outlined,
-          title: 'PPPoE',
-          description: loc(context).pnpIspTypeSelectionPppoeDesc,
-          onTap: () => context.goNamed(RouteNamed.pnpPPPOE),
-        ),
-        AppGap.md(),
-        _buildTypeCard(
-          context,
-          icon: Icons.pin_outlined,
-          title: loc(context).ipAddress,
-          description: loc(context).pnpIspTypeSelectionStaticDesc,
-          onTap: () => context.goNamed(RouteNamed.pnpStaticIp),
-        ),
+        if (!managed) ...[
+          _buildTypeCard(
+            context,
+            identifier: 'pnp-isp-dhcp',
+            icon: Icons.refresh,
+            title: 'DHCP',
+            description: loc(context).pnpIspTypeSelectionDhcpDesc,
+            onTap: _onDhcpTap,
+          ),
+          AppGap.md(),
+        ],
+        if (ref
+                .watch(deviceCapabilitiesProvider)
+                .has(DeviceCapability.autoIPoE) &&
+            (managed || ipoe?.capabilities.isSupported == true)) ...[
+          _buildTypeCard(
+            context,
+            identifier: 'pnp-isp-ipoe',
+            icon: Icons.public,
+            title: loc(context).connectionTypeIpoe,
+            description: managed
+                ? loc(context).autoIpoeResetBeforeSwitching
+                : loc(context).autoIpoePnpDescription,
+            onTap: () => context.pushNamed(RouteNamed.pnpAutoIPoE),
+          ),
+          AppGap.md(),
+        ],
+        if (!managed) ...[
+          _buildTypeCard(
+            context,
+            identifier: 'pnp-isp-pppoe',
+            icon: Icons.vpn_key_outlined,
+            title: 'PPPoE',
+            description: loc(context).pnpIspTypeSelectionPppoeDesc,
+            onTap: () => context.goNamed(RouteNamed.pnpPPPOE),
+          ),
+          AppGap.md(),
+          _buildTypeCard(
+            context,
+            identifier: 'pnp-isp-static',
+            icon: Icons.pin_outlined,
+            title: loc(context).ipAddress,
+            description: loc(context).pnpIspTypeSelectionStaticDesc,
+            onTap: () => context.goNamed(RouteNamed.pnpStaticIp),
+          ),
+        ],
       ],
     );
   }
 
   Widget _buildTypeCard(
     BuildContext context, {
+    required String identifier,
     required IconData icon,
     required String title,
     required String description,
     required VoidCallback onTap,
   }) {
-    return AppCard(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Row(
-            children: [
-              AppIcon.font(icon, size: 28),
-              AppGap.md(),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppText.titleSmall(title),
-                    AppGap.xs(),
-                    AppText.bodySmall(description),
-                  ],
+    return Semantics(
+      identifier: identifier,
+      child: AppCard(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Row(
+              children: [
+                AppIcon.font(icon, size: 28),
+                AppGap.md(),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppText.titleSmall(title),
+                      AppGap.xs(),
+                      AppText.bodySmall(description),
+                    ],
+                  ),
                 ),
-              ),
-              AppIcon.font(Icons.chevron_right),
-            ],
+                AppIcon.font(Icons.chevron_right),
+              ],
+            ),
           ),
         ),
       ),

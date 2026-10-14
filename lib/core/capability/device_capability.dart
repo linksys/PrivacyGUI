@@ -18,6 +18,9 @@ enum DeviceCapability {
   /// (linksys/FWDEV#194). The old `Device.WiFi.AccessPoint.*` path is dead on
   /// FLWRT 2.0, so this gates the shared MAC-filter feature (#1636).
   wifiMacFilter,
+
+  /// Auto-IPoE settings and operations exposed by the connected router.
+  autoIPoE,
 }
 
 /// The resolved set of capabilities the connected device supports.

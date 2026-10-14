@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
@@ -26,10 +25,16 @@ class UspDeviceInfoCard extends ConsumerWidget {
         this.info ?? ref.watch(systemInfoDataProvider).valueOrNull?.model;
     if (info == null) return const CardSkeleton.info(rows: 5);
 
-    // Get MAC and hostname from master node
+    // The router's own MAC, not the master node's ID. On FLWRT 2.0 the master
+    // node is identified only through DataElements, which answers after the
+    // device list does, so at login, on every refresh and whenever DataElements
+    // has no controller row the node's ID is the literal 'GATEWAY' (#1665).
+    final macAddress = info.baseMacAddress;
+
+    // Hostname and the detail link still come from the master node: the link
+    // needs a node lookup key, and the synthetic master resolves too.
     final devicesData = ref.watch(devicesDataProvider).valueOrNull;
     final masterNode = devicesData?.nodes.where((n) => n.isMaster).firstOrNull;
-    final macAddress = masterNode?.deviceId;
     final hostName = masterNode?.displayName;
 
     final iconName = routerIconTestByModel(
@@ -130,10 +135,10 @@ class UspDeviceInfoCard extends ConsumerWidget {
                 value: info.serialNumber,
                 copyable: true,
               ),
-              if (macAddress != null && macAddress.isNotEmpty)
+              if (macAddress != null)
                 InfoGridItem(
                   label: 'MAC',
-                  value: macAddress.toUpperCase(),
+                  value: macAddress,
                   copyable: true,
                 ),
             ],
@@ -168,9 +173,14 @@ class UspDeviceInfoCard extends ConsumerWidget {
                 context,
                 label: label,
                 child: InkWell(
-                  onTap: () => context.pushNamed(
-                    RouteNamed.uspNodeDetail,
-                    queryParameters: {'deviceId': deviceId},
+                  // Through the shared helper, so a presented copy of this
+                  // footer closes its presentation first (#1453).
+                  onTap: () => navigateFromCard(
+                    context,
+                    (router) => router.pushNamed(
+                      RouteNamed.uspNodeDetail,
+                      queryParameters: {'deviceId': deviceId},
+                    ),
                   ),
                   borderRadius: BorderRadius.circular(4),
                   child: Row(

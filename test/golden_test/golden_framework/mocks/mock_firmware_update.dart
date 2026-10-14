@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
@@ -201,14 +203,17 @@ class FixedAppConnectionStateNotifier extends AppConnectionStateNotifier {
   final AppConnectionState _fixedState;
   final int _consecutiveFailures;
   final ProbeResult? _lastProbeResult;
+  final bool _retryNeverCompletes;
 
   FixedAppConnectionStateNotifier({
     required AppConnectionState fixedState,
     int consecutiveFailures = 0,
     ProbeResult? lastProbeResult,
+    bool retryNeverCompletes = false,
   })  : _fixedState = fixedState,
         _consecutiveFailures = consecutiveFailures,
-        _lastProbeResult = lastProbeResult;
+        _lastProbeResult = lastProbeResult,
+        _retryNeverCompletes = retryNeverCompletes;
 
   @override
   AppConnectionState build() => _fixedState;
@@ -229,13 +234,18 @@ class FixedAppConnectionStateNotifier extends AppConnectionStateNotifier {
   @override
   void exitToLogout() {}
 
+  /// Holds a retry open when asked to, so a golden can capture the firmware
+  /// recovery dialog's "Checking…" button. A completer that never completes
+  /// leaves no timer behind, unlike a long `Future.delayed`.
   @override
-  Future<void> retryNow() async {}
+  Future<void> retryNow() =>
+      _retryNeverCompletes ? Completer<void>().future : Future.value();
 }
 
 List<Override> recoveryDialogOverrides({
   int consecutiveFailures = 0,
   ProbeResult? lastProbeResult,
+  bool retryNeverCompletes = false,
 }) =>
     [
       appConnectionStateProvider.overrideWith(
@@ -243,6 +253,7 @@ List<Override> recoveryDialogOverrides({
           fixedState: AppConnectionState.waitingForRecovery,
           consecutiveFailures: consecutiveFailures,
           lastProbeResult: lastProbeResult,
+          retryNeverCompletes: retryNeverCompletes,
         ),
       ),
     ];

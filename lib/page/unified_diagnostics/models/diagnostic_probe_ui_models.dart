@@ -9,16 +9,18 @@ class WanStatusUIModel {
   final String ipAddress;
   final String subnetMask;
   final String addressingType;
+  final bool usesTunnel;
 
   const WanStatusUIModel({
     required this.status,
     required this.ipAddress,
     required this.subnetMask,
     required this.addressingType,
+    this.usesTunnel = false,
   });
 
   bool get isUp => status == 'Up';
-  bool get hasIp => ipAddress.isNotEmpty;
+  bool get hasIp => ipAddress.isNotEmpty || (usesTunnel && isUp);
 }
 
 /// DHCP pool usage information.

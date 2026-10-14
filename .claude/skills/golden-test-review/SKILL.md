@@ -151,6 +151,8 @@ UI Kit's `AppDialog` does NOT include a `Material` widget. The standard Flutter 
 
 The fix is to use `showAppDialog` in production code, which wraps with `Theme > Portal > Material(type: transparency)`.
 
+A dialog that reads a provider while building (`ref.watch` inside the route) works with either helper: the runner provides each cell's `ProviderContainer` outside alchemist's own `Navigator` as well, so routes pushed on the root navigator still find it (#905).
+
 ### Identifying Buttons in Row-Based Lists
 
 For lists where each row has edit/delete buttons plus a header add button:
@@ -236,10 +238,15 @@ Name by what becomes visible:
 
 ## Shared States (Do NOT Include)
 
-These are tested once in `shared_states_test.dart` — DO NOT duplicate per feature:
-- Saving spinner (`doSomethingWithSpinner`)
-- Loading state (shared loading UI)
-- Generic error state (shared error UI)
+These are tested once under `test/golden_test/page/shared/` — DO NOT duplicate per feature, and do not report them as missing from a page:
+- Saving spinner (`doSomethingWithSpinner`) — `shared_states_test.dart`
+- Discard changes dialog (`showUnsavedAlert`) — `shared_states_test.dart`
+- Loading state (shared loading UI) and generic error state (shared error UI)
+- Snackbars (`showSuccessSnackBar` / `showFailedSnackBar`) — `shared_snackbars_test.dart`. A page that adds a **new** localized snackbar message needs a row in that file's table, not an interaction in its own test.
+- Recovery dialog (`showRecoveryDialog`) — `shared_recovery_dialog_test.dart`. A **new** caller with its own title/message needs an interaction there.
+- Submit dialog loading frame (`showSubmitAppDialog`) and list selection dialog (`showListSelectionDialog`) — `shared_dialogs_test.dart`
+
+The page still owns its own dialogs: add/edit/delete forms, confirmations and their validation are the caller's content and stay in the page test. For how shared overlays are triggered and held open, see the spec's **Transient Overlays** section (`doc/screenshot_test/golden_test_specification.md`).
 
 ## Output Format
 
@@ -293,3 +300,5 @@ After analysis, present findings to the user as:
 | Not scoping button finder to specific tab | Use `find.descendant(of: find.byType(TabWidget), ...)` |
 | Assuming validation exists without checking | Read the dialog source — some dialogs have no validation |
 | Adding saving_spinner per feature | This is shared — test once in shared_states_test.dart |
+| Adding a snackbar or recovery dialog interaction per feature | Shared — add a row or an interaction to the shared test instead (see Shared States) |
+| Rendering a copy of a dialog because the real one is private or needs a `WidgetRef` | Open the real one from `OverlayHost` (`golden_framework/overlay_host.dart`) |

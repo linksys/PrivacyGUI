@@ -1,123 +1,119 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/connection/models/probe_result.dart';
-import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/core/mode/app_mode_profile.dart';
+import 'package:privacy_gui/core/mode/remote_mode_profile.dart';
+import 'package:privacy_gui/page/firmware_update/views/dialogs/firmware_update_recovery_dialog.dart';
 
 import '../../../golden_framework/golden_runner.dart';
 import '../../../golden_framework/golden_test_config.dart';
 import '../../../golden_framework/mocks/mock_firmware_update.dart';
+import '../../../golden_framework/overlay_host.dart';
 
-class _TestableRecoveryDialog extends ConsumerWidget {
-  const _TestableRecoveryDialog();
-
-  static const _baseline = Duration(minutes: 4);
-
-  String _formatRemaining(Duration d) {
-    final m = d.inMinutes;
-    final s = d.inSeconds % 60;
-    return '${m}m ${s.toString().padLeft(2, '0')}s';
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.watch(appConnectionStateProvider.notifier);
-    final consecutive = notifier.consecutiveFailures;
-    final lastResult = notifier.lastProbeResult;
-
-    const kFirmwareWifiSwitchWarningAfter = Duration(seconds: 90);
-    final wifiSwitchWarning =
-        consecutive * 10 >= kFirmwareWifiSwitchWarningAfter.inSeconds;
-
-    final countdownText =
-        'Estimated time remaining: ${_formatRemaining(_baseline)}';
-
-    final probeIndicator = switch (lastResult) {
-      ProbeResult.recovered => 'Connection restored',
-      ProbeResult.unreachable =>
-        'Last check: router not yet responding (attempt $consecutive)',
-      ProbeResult.serialMismatch => 'Router identity mismatch',
-      null => 'Waiting for first connection check',
-    };
-
-    return Scaffold(
-      backgroundColor: Colors.black54,
-      body: Center(
-        child: AppDialog(
-          title: SizedBox(
-            width: 360,
-            child: AppText.titleLarge('Router is rebooting'),
-          ),
-          content: SizedBox(
-            width: 360,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Center(child: AppLoader()),
-                AppGap.lg(),
-                AppText.bodyMedium(countdownText),
-                AppGap.sm(),
-                AppText.bodySmall(probeIndicator),
-                if (wifiSwitchWarning) ...[
-                  AppGap.lg(),
-                  AppText.bodyMedium(
-                    'No response from your router. Please confirm your '
-                    'computer is still connected to the router\'s Wi-Fi, then '
-                    'tap Retry now.',
-                  ),
-                ],
-              ],
-            ),
-          ),
-          actions: [
-            AppButton.text(
-              label: 'Return to login page',
-              onTap: () {},
-            ),
-            AppButton.primary(
-              label: 'Retry now',
-              onTap: () {},
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
+/// The dialog a firmware upgrade waits behind while the router reboots, opened
+/// through `showFirmwareUpdateRecoveryDialog` itself (#905).
+///
+/// This file used to render a hand-written copy of the dialog, because the real
+/// one is a private widget reachable only through a function that takes a
+/// `WidgetRef`. The copy hard-coded its English strings, so every locale's
+/// golden read English, and it had stopped tracking the real dialog: no
+/// `sessionExitAction()`, no "Checking…" state, no "still waiting" copy.
+/// [OverlayHost] supplies the `ref`, so the copy is gone.
+///
+/// What each probe state shows comes from the pinned connection notifier. The
+/// countdown is the dialog's own 1-second ticker against `baseline`, read from
+/// `clock.now()`, so it follows the test's fake time and not the machine's: the
+/// runner advances less than a second before the capture, which reads the full
+/// default baseline, and would read exactly one second less if it ever advanced
+/// further. `baseline: Duration.zero` is the elapsed case.
 void main() {
   runViewGoldenTests(
     GoldenTestConfig(
       viewName: 'firmware_recovery_dialog',
-      view: () => const _TestableRecoveryDialog(),
+      view: () => const OverlayHost(),
       shell: ShellType.custom,
-      states: {
-        'waiting_initial': (overrides) => overrides.addAll(
-              recoveryDialogOverrides(
-                consecutiveFailures: 0,
-                lastProbeResult: null,
-              ),
+      states: const {},
+      interactions: {
+        'waiting_initial': _open(
+          recoveryDialogOverrides(
+            consecutiveFailures: 0,
+            lastProbeResult: null,
+          ),
+        ),
+        'waiting_unreachable': _open(
+          recoveryDialogOverrides(
+            consecutiveFailures: 3,
+            lastProbeResult: ProbeResult.unreachable,
+          ),
+        ),
+        // Ten failed 10-second probes is the 90-second threshold
+        // (`kFirmwareWifiSwitchWarningAfter`) at which the Wi-Fi warning appears.
+        'wifi_warning': _open(
+          recoveryDialogOverrides(
+            consecutiveFailures: 10,
+            lastProbeResult: ProbeResult.unreachable,
+          ),
+        ),
+        'serial_mismatch': _open(
+          recoveryDialogOverrides(
+            consecutiveFailures: 1,
+            lastProbeResult: ProbeResult.serialMismatch,
+          ),
+        ),
+        // The countdown has run out and the router is still away.
+        'still_waiting': _open(
+          recoveryDialogOverrides(
+            consecutiveFailures: 3,
+            lastProbeResult: ProbeResult.unreachable,
+          ),
+          baseline: Duration.zero,
+        ),
+        // The user tapped Retry now and the probe has not answered yet.
+        'retrying': _open(
+          recoveryDialogOverrides(
+            consecutiveFailures: 3,
+            lastProbeResult: ProbeResult.unreachable,
+            retryNeverCompletes: true,
+          ),
+          then: (tester) async {
+            // By the button's E2E identifier, not its position among the
+            // dialog's actions, so a reordered action list still taps Retry.
+            await tester
+                .tap(find.bySemanticsIdentifier('firmware-recovery-retry'));
+            await tester.pump();
+          },
+        ),
+        // Remote Assistance: the exit action ends the Guardian session instead
+        // of offering a login page the one-shot token cannot get back into.
+        'remote_assistance': _open(
+          [
+            ...recoveryDialogOverrides(
+              consecutiveFailures: 3,
+              lastProbeResult: ProbeResult.unreachable,
             ),
-        'waiting_unreachable': (overrides) => overrides.addAll(
-              recoveryDialogOverrides(
-                consecutiveFailures: 3,
-                lastProbeResult: ProbeResult.unreachable,
-              ),
-            ),
-        'wifi_warning': (overrides) => overrides.addAll(
-              recoveryDialogOverrides(
-                consecutiveFailures: 10,
-                lastProbeResult: ProbeResult.unreachable,
-              ),
-            ),
-        'serial_mismatch': (overrides) => overrides.addAll(
-              recoveryDialogOverrides(
-                consecutiveFailures: 1,
-                lastProbeResult: ProbeResult.serialMismatch,
-              ),
-            ),
+            appModeProfileProvider.overrideWithValue(const RemoteModeProfile()),
+          ],
+        ),
       },
     ),
   );
 }
+
+Interaction _open(
+  List<Override> overrides, {
+  Duration baseline = kFirmwareRebootBaseline,
+  Future<void> Function(WidgetTester tester)? then,
+}) =>
+    Interaction(
+      setup: (list) => list.addAll(overrides),
+      steps: (tester) async {
+        final host = overlayHostOf(tester);
+        showFirmwareUpdateRecoveryDialog(
+          host.context,
+          host.ref,
+          baseline: baseline,
+        );
+        await pumpOverlayIn(tester);
+        await then?.call(tester);
+      },
+    );

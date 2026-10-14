@@ -28,6 +28,21 @@ Future<void> settleWithTimeout(WidgetTester tester) async {
   }
 }
 
+/// Pumps an overlay opened from an interaction step until it is on screen and
+/// fully transitioned in.
+///
+/// Two pumps, for two different waits. The first runs anything scheduled on a
+/// zero-delay timer, which is how `doSomethingWithSpinner` opens its dialog: it
+/// calls `showAppSpinnerDialog` from `Future.delayed(Duration.zero)` rather
+/// than directly. The second advances 300ms: past that helper's own 100ms wait,
+/// past `showAppDialog`'s 200ms enter transition, and past the 250ms one
+/// `ScaffoldMessenger` gives a snackbar, which `disableAnimations` does not
+/// shorten. The capture is the settled overlay, not a frame of it fading in.
+Future<void> pumpOverlayIn(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
+}
+
 /// Switches to the tab at [index] by driving the [TabController] directly,
 /// then settles the tab-change animation via [settleWithTimeout].
 ///

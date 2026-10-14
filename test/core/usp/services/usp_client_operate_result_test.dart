@@ -109,11 +109,8 @@ void main() {
       );
     });
 
-    test('a non-unified response is still passed through untouched', () {
-      // The fallback the reordering must not have eaten: no `success` key at all,
-      // no `result` — a pre-0.13.0 shape, returned as-is.
-      final raw = {'commandKey': 'k', 'outputArgs': <String, String>{}};
-
+    test('an already-flat response is passed through untouched', () {
+      final raw = {'commandKey': 'k', 'Result': 'accepted'};
       expect(UspClient.extractOperateResult(raw), same(raw));
     });
 
