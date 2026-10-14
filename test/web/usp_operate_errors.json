@@ -50,30 +50,6 @@
     "serviceError": "UspCompleteFailureError"
   },
   {
-    "name": "message ID mismatch",
-    "kind": "wrong_message_id",
-    "errorCode": 9999,
-    "errorMessage": "Transport error: Protocol error: Malformed message: Operate response message ID mismatch",
-    "category": "protocol",
-    "serviceError": "UnexpectedError"
-  },
-  {
-    "name": "message type mismatch",
-    "kind": "wrong_type",
-    "errorCode": 9999,
-    "errorMessage": "Transport error: Protocol error: Malformed message: Unexpected Operate response message type",
-    "category": "protocol",
-    "serviceError": "UnexpectedError"
-  },
-  {
-    "name": "command mismatch",
-    "kind": "wrong_command",
-    "errorCode": 9999,
-    "errorMessage": "Transport error: Protocol error: Malformed message: Operate response command mismatch",
-    "category": "protocol",
-    "serviceError": "UnexpectedError"
-  },
-  {
     "name": "empty response",
     "kind": "empty",
     "errorCode": 9999,

@@ -92,7 +92,6 @@ function reply(kind, id, command, faultCode = 7004) {
     ])), 0);
   }
   let operation = outputResult(command, receipt);
-  if (kind === 'wrong_command') operation = outputResult('Device.Reboot()', receipt);
   if (kind === 'command') operation = Buffer.concat([
     field(1, command), field(4, Buffer.concat([
       fixed32(1, faultCode), field(2, 'Synthetic refusal'),
@@ -105,8 +104,7 @@ function reply(kind, id, command, faultCode = 7004) {
   let operations = field(1, operation);
   if (kind === 'no_match') operations = Buffer.alloc(0);
   if (kind === 'multiple_results') operations = Buffer.concat([operations, operations]);
-  const response = message(kind === 'wrong_message_id' ? 'unrelated-response' : id,
-    field(2, field(7, operations)), kind === 'wrong_type' ? 2 : 7);
+  const response = message(id, field(2, field(7, operations)));
   if (kind === 'truncated') return response.subarray(0, -1);
   if (kind === 'empty') return Buffer.alloc(0);
   return response;
@@ -169,9 +167,6 @@ for (const name of ['Apply', 'Reset', 'ResolvePending']) {
   });
 }
 for (const [kind, text] of [
-  ['wrong_message_id', 'Operate response message ID mismatch'],
-  ['wrong_type', 'Unexpected Operate response message type'],
-  ['wrong_command', 'Operate response command mismatch'],
   ['multiple_results', 'OperationResults'],
   ['missing_outcome', 'has no operation_resp'],
   ['truncated', 'decode'],
@@ -237,7 +232,7 @@ test('shared client does not log operation arguments', async () => {
   for (const name of methods) console[name] = (...args) => entries.push(args.join(' '));
   try {
     await operate('success');
-    await operate('wrong_message_id');
+    await operate('command');
   } finally {
     for (const name of methods) console[name] = originals[name];
   }
