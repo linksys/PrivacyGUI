@@ -41,13 +41,16 @@ void main() {
       ExternalDeviceDetailState.fromMap(deviceDetailsTestState1).item;
 
   Future<void> pumpDetail(WidgetTester tester,
-      {bool online = false, bool writable = true, bool mobile = false}) async {
+      {bool online = false,
+      bool writable = true,
+      bool mobile = false,
+      bool wired = true}) async {
     await tester.setScreenSize(mobile ? device480w : device1440w);
     addTearDown(() => tester.binding.setSurfaceSize(null));
     manager = MockDeviceManagerNotifier();
     when(manager.build())
         .thenReturn(DeviceManagerState.fromMap(deviceManagerCherry7TestState));
-    devices = _DeviceList(fixture.copyWith(isOnline: online, isWired: true));
+    devices = _DeviceList(fixture.copyWith(isOnline: online, isWired: wired));
     final settings = MockLocalNetworkSettingsNotifier();
     when(settings.build()).thenReturn(
         LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
@@ -114,6 +117,11 @@ void main() {
   testWidgets('online clients cannot be deleted', (tester) async {
     await pumpDetail(tester, online: true);
     expect(find.text('Delete device'), findsNothing);
+  });
+
+  testWidgets('live wireless clients offer Block in details', (tester) async {
+    await pumpDetail(tester, online: true, wired: false);
+    expect(find.text('Block'), findsOneWidget);
   });
 
   testWidgets('read-only login cannot confirm deletion', (tester) async {

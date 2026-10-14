@@ -22,6 +22,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
+import 'package:privacy_gui/page/instant_device/views/client_block_button.dart';
 import 'package:privacy_gui/page/instant_device/extensions/icon_device_category_ext.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
@@ -97,6 +98,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView>
           padding: const EdgeInsets.only(),
           title: state.item.name,
           actions: [
+            if (state.item.isOnlineWireless)
+              ClientBlockButton(device: state.item),
             if (!state.item.isOnline && state.item.deviceId.isNotEmpty)
               WriteGuard(
                 child: AppTextButton.noPadding(

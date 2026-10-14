@@ -35,7 +35,10 @@ void main() {
   ];
 
   Future<void> pumpList(WidgetTester tester,
-      {bool online = false, bool writable = true, bool mobile = false}) async {
+      {bool online = false,
+      bool writable = true,
+      bool mobile = false,
+      bool wired = true}) async {
     await tester.setScreenSize(mobile ? device480w : device1440w);
     addTearDown(() => tester.binding.setSurfaceSize(null));
     manager = MockDeviceManagerNotifier();
@@ -56,7 +59,12 @@ void main() {
         deviceManagerProvider.overrideWith(() => manager),
         deviceFilterConfigProvider.overrideWith(() => filter),
         filteredDeviceListProvider.overrideWith((_) => clients
-            .map((device) => device.copyWith(isOnline: online, isWired: true))
+            .map((device) => device.copyWith(
+                isOnline: online,
+                isWired: wired,
+                macAddress: device.deviceId == 'client-1'
+                    ? '02:00:00:00:00:01'
+                    : '02:00:00:00:00:02'))
             .toList()),
         wifiListProvider.overrideWith(() => wifi),
         dashboardManagerProvider.overrideWith(() => dashboard),
@@ -98,6 +106,11 @@ void main() {
     expect(find.byIcon(LinksysIcons.delete), findsNothing);
     await tester.tap(find.text('Offline devices'));
     verify(filter.updateConnectionFilter(false)).called(1);
+  });
+
+  testWidgets('live wireless clients offer Block in the list', (tester) async {
+    await pumpList(tester, online: true, wired: false);
+    expect(find.text('Block'), findsNWidgets(2));
   });
 
   testWidgets('cancel does not delete the client', (tester) async {

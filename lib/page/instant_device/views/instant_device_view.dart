@@ -200,6 +200,7 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView>
           devices: filteredDeviceList,
           isEdit: !isOnlineFilter,
           enableDelete: !isOnlineFilter,
+          enableBlock: isOnlineFilter,
           enableDeauth: isOnlineFilter,
           isItemSelected: (item) => _selectedList.contains(item.deviceId),
           onItemSelected: (value, item) {
