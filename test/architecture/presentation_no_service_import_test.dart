@@ -14,7 +14,9 @@
 //
 // Also outside it, each a known gap rather than an oversight:
 // - `export` directives. A provider may re-export a service's types.
-// - `helpers/` and other directories not in [_layers].
+// - `helpers/` and other directories not in [_layers]. `support/shared_widgets/`
+//   is the one UI-named one: its `components/` are scanned, and its only
+//   service imports are in `generators/`, which are logic, not UI.
 
 import 'dart:io';
 
@@ -64,7 +66,7 @@ const _allowed = <String, String>{
 /// Either quote. `[a-z0-9_/]` because directories carry digits
 /// (`ipv6_port_service`) and nest.
 final _serviceImport = RegExp(
-  r"""^\s*import\s+['"](package:privacy_gui/(page|core)/[a-z0-9_/]*/services/|(\.\./)+([a-z0-9_]+/)*services/)[^'"]*['"]""",
+  r"""^\s*import\s+['"](package:privacy_gui/(page|core)/([a-z0-9_]+/)*services/|(\.\./)+([a-z0-9_]+/)*services/)[^'"]*['"]""",
   multiLine: true,
 );
 
