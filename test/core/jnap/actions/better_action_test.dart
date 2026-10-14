@@ -48,4 +48,17 @@ void main() {
       JNAPAction.pnpSetAdminPassword.actionValue,
     );
   });
+
+  test('Smart QoS actions use the domain API namespace', () {
+    buildBetterActions([JNAPService.smartQoS.value]);
+
+    expect('http://linksys.com/jnap/smartqos/GetSmartQoSSettings',
+        JNAPAction.getSmartQoSSettings.actionValue);
+    expect('http://linksys.com/jnap/smartqos/SetSmartQoSSettings',
+        JNAPAction.setSmartQoSSettings.actionValue);
+    expect('http://linksys.com/jnap/smartqos/GetSmartQoSRecommendation',
+        JNAPAction.getSmartQoSRecommendation.actionValue);
+    expect('http://linksys.com/jnap/smartqos/StoreSpeedTestResult',
+        JNAPAction.storeSmartQoSSpeedTestResult.actionValue);
+  });
 }
