@@ -761,7 +761,6 @@ void _pnpTests() {
                   const AutoIPoESnapshot(),
                   outcome,
                   const AutoIPoESubmission('pending', reset: false),
-                  inline: true,
                   showRecoveryActions: false,
                 ),
               ),

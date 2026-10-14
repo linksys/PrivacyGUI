@@ -139,7 +139,6 @@ void _supportedDeviceTests() {
                         AutoIPoEOutcome.pending,
                         const AutoIPoESubmission(AutoIPoETestData.id,
                             reset: false),
-                        inline: true,
                       ))),
         ),
       ));

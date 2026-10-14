@@ -17,7 +17,6 @@ Widget buildAutoIPoERuntime(
   AutoIPoESnapshot snapshot,
   AutoIPoEOutcome outcome,
   AutoIPoESubmission? submission, {
-  bool inline = false,
   bool showRecoveryActions = true,
 }) {
   final l = loc(context);
@@ -29,10 +28,9 @@ Widget buildAutoIPoERuntime(
   final rejection = ref.watch(autoIPoERejectionProvider);
   final readError = ref.watch(autoIPoEDataProvider).error;
   if (outcome == AutoIPoEOutcome.pending && readError != null) {
-    final message = AppText.bodyMedium(
+    return AppText.bodyMedium(
       localizeServiceError(context, readError),
     );
-    return inline ? message : AppCard(child: message);
   }
   final issue = AutoIPoEIssueMapper.from(
     status: rejection == null
@@ -64,7 +62,7 @@ Widget buildAutoIPoERuntime(
     AutoIPoEOutcome.pending => l.autoIpoeRecoveryNoDuplicateApply,
     _ => '',
   };
-  final content = Column(
+  return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       AppText.titleMedium(title),
@@ -135,5 +133,4 @@ Widget buildAutoIPoERuntime(
       ],
     ],
   );
-  return inline ? content : AppCard(child: content);
 }

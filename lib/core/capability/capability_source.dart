@@ -50,18 +50,8 @@ class GetProbeCapabilitySource implements CapabilitySource {
       // Keep the normal path to one round-trip through the throttler.
       response = await usp.get(paths);
     } catch (e) {
-      // An unknown optional path can fault the entire batch. Probe each path
-      // separately so one unsupported feature cannot hide an unrelated one.
-      logger.w('$_tag batch probe failed, retrying individual paths: $e');
-      response = <String, dynamic>{};
-      for (final path in paths) {
-        try {
-          final result = await usp.get([path]);
-          if (result.containsKey(path)) response[path] = result[path];
-        } catch (error) {
-          logger.d('$_tag path $path unavailable: $error');
-        }
-      }
+      logger.w('$_tag batch probe failed: $e');
+      return DeviceCapabilities.empty;
     }
 
     final supported = <DeviceCapability>{};

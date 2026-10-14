@@ -267,8 +267,8 @@ jobs:
         run: bash run_tests.sh
 
 
-      - name: Native USP operation contract tests
-        run: node --test test/web/usp_native_operate_test.mjs
+      - name: Shared USP operation contract tests
+        run: node --test test/web/usp_operate_test.mjs
 
   # ------------------------------------------------------------------------
   # 3. The layout gate, on its own, because it is ~85% of the pipeline's wall

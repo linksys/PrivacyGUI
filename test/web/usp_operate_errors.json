@@ -1,0 +1,84 @@
+[
+  {
+    "name": "expired HTTP session",
+    "kind": "http",
+    "status": 401,
+    "errorCode": 9999,
+    "errorMessage": "Transport error: Transport error: HTTP error: HTTP 401",
+    "category": "transport",
+    "httpStatus": 401,
+    "mappedCode": 401,
+    "serviceError": "NotAuthenticatedError"
+  },
+  {
+    "name": "HTTP service unavailable",
+    "kind": "http",
+    "status": 503,
+    "errorCode": 9999,
+    "errorMessage": "Transport error: Transport error: HTTP error: HTTP 503",
+    "category": "transport",
+    "httpStatus": 503,
+    "mappedCode": 503,
+    "serviceError": "NetworkError"
+  },
+  {
+    "name": "fetch failure",
+    "kind": "network",
+    "errorCode": 9999,
+    "errorMessage": "Transport error: Transport error: HTTP error: error sending request:",
+    "category": "transport",
+    "serviceError": "NetworkError"
+  },
+  {
+    "name": "protocol fault",
+    "kind": "protocol",
+    "faultCode": 7004,
+    "errorCode": 9999,
+    "errorMessage": "Transport error: Protocol error: Decoding error: Received error response: Synthetic refusal (code: 7004)",
+    "category": "protocol",
+    "mappedCode": 7004,
+    "serviceError": "InvalidInputError"
+  },
+  {
+    "name": "command refusal",
+    "kind": "command",
+    "faultCode": 7022,
+    "errorCode": 7022,
+    "errorMessage": "Synthetic refusal",
+    "category": "operation",
+    "mappedCode": 7022,
+    "serviceError": "UspCompleteFailureError"
+  },
+  {
+    "name": "message ID mismatch",
+    "kind": "wrong_message_id",
+    "errorCode": 9999,
+    "errorMessage": "Transport error: Protocol error: Malformed message: Operate response message ID mismatch",
+    "category": "protocol",
+    "serviceError": "UnexpectedError"
+  },
+  {
+    "name": "message type mismatch",
+    "kind": "wrong_type",
+    "errorCode": 9999,
+    "errorMessage": "Transport error: Protocol error: Malformed message: Unexpected Operate response message type",
+    "category": "protocol",
+    "serviceError": "UnexpectedError"
+  },
+  {
+    "name": "command mismatch",
+    "kind": "wrong_command",
+    "errorCode": 9999,
+    "errorMessage": "Transport error: Protocol error: Malformed message: Operate response command mismatch",
+    "category": "protocol",
+    "serviceError": "UnexpectedError"
+  },
+  {
+    "name": "empty response",
+    "kind": "empty",
+    "errorCode": 9999,
+    "errorMessage": "Transport error: Protocol error: Decoding error: Empty response data",
+    "category": "protocol",
+    "serviceError": "UnexpectedError"
+  }
+]

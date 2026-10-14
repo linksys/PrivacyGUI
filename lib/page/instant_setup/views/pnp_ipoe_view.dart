@@ -228,7 +228,6 @@ class _PnpIPoEViewState extends ConsumerState<PnpIPoEView> {
                           ? AutoIPoEOutcome.pending
                           : outcome,
                       submission,
-                      inline: true,
                       showRecoveryActions: false,
                     ),
                   ],

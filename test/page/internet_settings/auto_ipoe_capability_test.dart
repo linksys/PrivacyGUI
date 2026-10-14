@@ -15,6 +15,7 @@ import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_models.dart'
 import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_snapshot.dart';
 import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_data_provider.dart';
 import 'package:privacy_gui/page/internet_settings/services/auto_ipoe_service.dart';
+import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_notifier.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_isp_settings_view.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
@@ -113,26 +114,56 @@ void main() {
           throwsA(isA<ResourceNotFoundError>()));
     });
 
-    testWidgets('a previous IPoE draft cannot stay editable without capability',
-        (tester) async {
-      final fixture = IPoEFixture(supported: false);
-      addTearDown(fixture.dispose);
-      await fixture.ready();
-      fixture.notifier.updateConnectionType(UspWanConnectionType.ipoe);
-      await tester.pumpWidget(host(fixture));
-      await tester.pumpAndSettle();
-      expect(
-          find.byWidgetPredicate((w) => w is AppDropdown<UspWanConnectionType>),
-          findsNothing);
-      expect(
-          tester
-              .widget<AutoIPoESection>(find.byType(AutoIPoESection))
-              .isEditing,
-          isFalse);
-      verifyZeroInteractions(fixture.ipoe);
-      expect(fixture.calls, isEmpty);
-      expect(tester.takeException(), isNull);
-    });
+    for (final type in [
+      UspWanConnectionType.dhcp,
+      UspWanConnectionType.pppoe
+    ]) {
+      testWidgets(
+          'missing capability still allows switching from IPoE to $type',
+          (tester) async {
+        final fixture = IPoEFixture(supported: false);
+        addTearDown(fixture.dispose);
+        await fixture.ready();
+        fixture.notifier.updateConnectionType(UspWanConnectionType.ipoe);
+        await tester.pumpWidget(host(fixture));
+        await tester.pumpAndSettle();
+        final selector = find.byWidgetPredicate((w) =>
+            w is AppDropdown<UspWanConnectionType> &&
+            w.identifier == 'internet-connection-type');
+        final dropdown =
+            tester.widget<AppDropdown<UspWanConnectionType>>(selector);
+        expect(dropdown.value, UspWanConnectionType.ipoe);
+        expect(dropdown.items, isNot(contains(UspWanConnectionType.ipoe)));
+        expect(
+            tester
+                .widget<AutoIPoESection>(find.byType(AutoIPoESection))
+                .isEditing,
+            isFalse);
+
+        await tester.tap(selector);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byWidgetPredicate((w) =>
+            w is Semantics &&
+            w.properties.identifier == dropdown.itemIdentifier!(type)));
+        await tester.pumpAndSettle();
+
+        expect(
+            fixture.container.read(uspInternetSettingsProvider).connectionType,
+            type);
+        expect(find.byType(AutoIPoESection), findsNothing);
+        expect(tester.widget<AppDropdown<UspWanConnectionType>>(selector).items,
+            isNot(contains(UspWanConnectionType.ipoe)));
+        verifyZeroInteractions(fixture.ipoe);
+        expect(fixture.calls, isEmpty);
+        if (type == UspWanConnectionType.dhcp) {
+          await fixture.notifier.save();
+          await tester.pumpAndSettle();
+          expect(fixture.calls, ['ordinary']);
+          verifyZeroInteractions(fixture.ipoe);
+        }
+        expect(tester.takeException(), isNull);
+      });
+    }
 
     test('service rejects reads, writes and recovery before using USP or login',
         () async {

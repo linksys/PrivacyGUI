@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 void main() {
   group('parseUspError', () {
@@ -306,15 +307,32 @@ void main() {
     });
   });
 
-  group('native Operate error contract', () {
+  group('shared Operate error contract', () {
     final cases = jsonDecode(
-      File('test/web/usp_native_operate_errors.json').readAsStringSync(),
+      File('test/web/usp_operate_errors.json').readAsStringSync(),
     ) as List<dynamic>;
     for (final entry in cases) {
       final fixture = entry as Map<String, dynamic>;
       test(fixture['name'] as String, () {
-        final raw = fixture['error'] as String;
-        final parsed = parseUspError(raw);
+        String? raw;
+        try {
+          UspClient.extractOperateResult({
+            'success': false,
+            'result': {
+              'data': <String, dynamic>{},
+              'error': {
+                'Device.X_LINKSYS_AutoIPoE.Apply()': {
+                  'errorCode': fixture['errorCode'],
+                  'errorMessage': fixture['errorMessage'],
+                },
+              },
+            },
+          });
+        } catch (error) {
+          raw = error as String;
+        }
+        expect(raw, isNotNull);
+        final parsed = parseUspError(raw!);
         expect(parsed, isNotNull);
         expect(parsed!.operation, 'Operate');
         expect(parsed.category.name, fixture['category']);
@@ -325,7 +343,7 @@ void main() {
         if (mapped is UspCompleteFailureError) {
           expect(mapped.failures.single.errorCode, fixture['faultCode']);
         } else {
-          expect(mapped.code, fixture['faultCode'] ?? fixture['httpStatus']);
+          expect(mapped.code, fixture['mappedCode']);
         }
       });
     }

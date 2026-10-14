@@ -81,7 +81,7 @@ const String kPageViewRoot = 'lib/page';
 /// (`usp_notification_history_view.dart`) and 47 → 48 at #1660
 /// (`usp_administration_view.dart`), both the same kind of move.
 /// 48 → 49 at #1664: PnpIPoEView is a routed page with a supported-ready sweep fixture.
-/// Its inline log widget lives under views/widgets/ and is not a page.
+/// Its inline log widget lives under views/sections/ and is not a page.
 const int kPageViewCount = 49;
 
 /// The marker for a column with no value, spelled as the overflow baselines spell

@@ -11,16 +11,14 @@ Files in this repo that are built or generated from `linksys/usp_framework` and 
 
 ## Manifest
 
-**Last updated**: 2026-09-30 (usp-codegen 0.16.0 → 0.17.0: `json-list` operate-input type, linksys/usp_framework#67)
+**Last updated**: 2026-10-13 (local shared-client operation-correlation candidate)
 
-The web package records reviewed `usp_framework` commit
-`d135f4df652684bc176bc02d83ec4a1c7b84c65c` (merged `main`, PR #59 — the
-unmodified Broadband Forum USP schemas, which fixed `OperateResp` swallowing
-synchronous failures) and was built with both the
-`wasm` and `websocket` features. Machine-verifiable local hashes and the
-reviewed upstream paths are recorded in `web/usp-artifacts.json`. Consumer CI
-does not authenticate the cross-repository commit reference; the producer
-repository owns the source-to-committed-package rebuild gate.
+The shared USP client candidate is recorded at local commit
+`6ca21c7c340696a22aebd6500a204194c8ce588f`, based on reviewed upstream `main`
+`deb9e303ea0d5a92fe40256330ed5e150274d93d`. It adds response correlation
+for operation calls. The candidate remains local and must be published and
+reviewed in `linksys/usp_framework` before consumer promotion.
+
 
 The generated TypeScript surface includes `UspClient.subscribe()` and
 `unsubscribe()`, but PrivacyGUI intentionally does not bind those methods.

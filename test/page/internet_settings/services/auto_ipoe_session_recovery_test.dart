@@ -5,7 +5,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
-import 'package:privacy_gui/core/usp/transport/usp_get_response.dart';
 import 'package:privacy_gui/core/usp/transport/usp_transport.dart';
 import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_snapshot.dart';
 import 'package:privacy_gui/page/internet_settings/services/auto_ipoe_service.dart';
@@ -34,22 +33,11 @@ void _supportedDeviceTests() {
     transport = MockGetTransport();
     client = UspClient.withTransport(transport);
     service = AutoIPoEService(client);
-    when(() => transport.get(any())).thenAnswer((call) async {
-      final paths = call.positionalArguments.single as List<String>;
+    when(() => transport.get(any())).thenAnswer((_) async {
       if (expired) {
-        return decodeUspGetResponse({
-          'success': false,
-          'result': {
-            'data': <String, String>{},
-            'error': {
-              for (final path in paths)
-                path: {
-                  'errorCode': 9999,
-                  'errorMessage': 'Transport error: HTTP error: HTTP $status',
-                },
-            },
-          },
-        });
+        // Exercise the existing rejected-request path. Fulfilled code-9999
+        // GET failures remain deferred to PrivacyGUI #1212.
+        throw 'Get failed: Transport error: HTTP error: HTTP $status';
       }
       final completed = AutoIPoETestData.snapshot(
           requestId: AutoIPoETestData.id, exitCode: 0, verified: true);
@@ -61,14 +49,11 @@ void _supportedDeviceTests() {
         'exitCode': 0,
         'accepted': true,
       });
-      return decodeUspGetResponse({
-        'success': true,
-        'result': {'data': wire},
-      });
+      return Map<String, String>.from(wire);
     });
   });
 
-  test('fulfilled 401 refreshes then reads the existing completed operation',
+  test('rejected 401 refreshes then reads the existing completed operation',
       () async {
     await service.storeSubmission(submission);
     when(() => transport.refreshToken()).thenAnswer((_) async {
@@ -82,8 +67,7 @@ void _supportedDeviceTests() {
     verifyNoMoreInteractions(transport);
   });
 
-  test('clock-expired token remains an auth error and preserves the request',
-      () async {
+  test('rejected GET with failed refresh preserves the request', () async {
     await service.storeSubmission(submission);
     when(() => transport.refreshToken()).thenThrow(
         'RefreshToken failed: Transport error: HTTP error: HTTP 401');
@@ -104,7 +88,7 @@ void _supportedDeviceTests() {
     verifyNoMoreInteractions(transport);
   });
 
-  test('remote rejected credential ends once without local refresh', () async {
+  test('remote rejected GET ends once without local refresh', () async {
     client.authBehavior = AuthBehavior.remote;
     var ended = 0;
     client.onForceLogout = () => ended++;
@@ -114,7 +98,7 @@ void _supportedDeviceTests() {
     verifyNoMoreInteractions(transport);
   });
 
-  test('temporary network failure is not missing settings or an auth retry',
+  test('rejected network request is not missing settings or an auth retry',
       () async {
     status = 503;
     await expectLater(service.fetch(), throwsA(isA<NetworkError>()));

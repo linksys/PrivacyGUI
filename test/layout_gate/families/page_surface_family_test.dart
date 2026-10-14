@@ -83,7 +83,7 @@ double _contentWidth(double screen) =>
 void main() {
   test('Auto-IPoE fixture pins supported ready content and controls', () {
     expect(gateAutoIPoESnapshot.capabilities.isSupported, isTrue);
-    expect(gateAutoIPoESnapshot.outcomeFor(gateAutoIPoESubmission),
+    expect(gateAutoIPoESnapshot.outcomeFor(ipoeSubmission),
         AutoIPoEOutcome.succeeded);
     expect(gateAutoIPoEPageState.status.loading, isFalse);
     expect(gateAutoIPoEPageState.status.error, isNull);

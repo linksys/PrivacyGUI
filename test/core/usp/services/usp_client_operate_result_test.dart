@@ -114,15 +114,6 @@ void main() {
       expect(UspClient.extractOperateResult(raw), same(raw));
     });
 
-    test('direct output arguments are flattened for the native adapter', () {
-      final raw = {
-        'commandKey': 'k',
-        'outputArgs': {'Result': 'accepted'}
-      };
-      expect(UspClient.extractOperateResult(raw),
-          {'commandKey': 'k', 'Result': 'accepted'});
-    });
-
     test('an integral code arriving as a double still reads as a fault code',
         () {
       // JS numbers are doubles, and `errorCode` crosses the interop boundary

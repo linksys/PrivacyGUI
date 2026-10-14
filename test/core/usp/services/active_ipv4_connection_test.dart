@@ -43,7 +43,9 @@ void main() {
       expect(wan.addressingType, kind);
       expect(wan.mtu, 1460);
       expect(wan.gateway, '');
-      final diag = UnifiedDiagnosticsService(client, autoIPoESupported: true);
+      final diag = UnifiedDiagnosticsService(client,
+          fetchWan: UspWanDataService(client, autoIPoESupported: true).fetch,
+          autoIPoESupported: true);
       expect((await diag.checkWanStatus()).hasIp, true);
       expect(await diag.pingGateway(), isNull);
     });
@@ -64,8 +66,9 @@ void main() {
 
     final wan =
         await UspWanDataService(client, autoIPoESupported: true).fetch();
-    final diagnostics =
-        UnifiedDiagnosticsService(client, autoIPoESupported: true);
+    final diagnostics = UnifiedDiagnosticsService(client,
+        fetchWan: UspWanDataService(client, autoIPoESupported: true).fetch,
+        autoIPoESupported: true);
 
     expect(wan.isUp, isFalse);
     expect(wan.addressingType, 'MAP-E');

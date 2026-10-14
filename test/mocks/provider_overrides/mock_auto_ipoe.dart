@@ -29,7 +29,7 @@ class FixedAutoIPoEPageNotifier extends AutoIPoEPageNotifier {
 List<Override> autoIPoEOverrides({
   AutoIPoESnapshot? snapshot,
   AutoIPoEPageState? pageState,
-  AutoIPoESubmission? submission = gateAutoIPoESubmission,
+  AutoIPoESubmission? submission = ipoeSubmission,
 }) =>
     [
       deviceCapabilitiesProvider

@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart'
+    show unwrapUspClientError;
 import 'package:privacy_gui/core/usp/models/usp_operation_result.dart';
 import 'package:privacy_gui/core/usp/transport/usp_transport.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -1116,9 +1118,9 @@ class UspClient {
     }
 
     final result = raw['result'] as Map?;
-    final data = result == null ? raw : result['data'] as Map?;
+    if (result == null) return raw;
+    final data = result['data'] as Map?;
     if (data == null) return {};
-    if (result == null && !data.containsKey('outputArgs')) return raw;
 
     final output = <String, dynamic>{};
     final commandKey = data['commandKey']?.toString();
@@ -1161,6 +1163,14 @@ class UspClient {
       } else if (detail != null) {
         message = detail.toString();
       }
+    }
+
+    // Client failures retain their category so services can distinguish an
+    // expired session or lost response from a command the agent refused.
+    if (code == 9999 &&
+        message != null &&
+        message.startsWith('Transport error: ')) {
+      return 'Operate failed: ${unwrapUspClientError(message)}';
     }
 
     final what = path ?? 'the command';

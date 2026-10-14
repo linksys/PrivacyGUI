@@ -121,41 +121,29 @@ void main() {
   });
 
   group('GetProbeCapabilitySource — batching', () {
-    test('an unsupported Auto-IPoE path does not hide MAC filtering', () async {
-      final autoIPoEPath = capabilityProbePath(DeviceCapability.autoIPoE);
-      when(() => usp.get(any())).thenAnswer((invocation) async {
-        final paths = invocation.positionalArguments.single as List<String>;
-        if (paths.contains(autoIPoEPath)) {
-          throw const ResourceNotFoundError(code: 7026);
-        }
-        return {macFilterPath: 'Disabled'};
+    for (final failure in <String, Object>{
+      'unknown path': const ResourceNotFoundError(code: 7026),
+      'expired session': const SessionTokenExpiredError(),
+      'network failure': const ConnectivityError(),
+      'unexpected error': Exception('unexpected'),
+    }.entries) {
+      test('${failure.key} fails closed without individual retries', () async {
+        when(() => usp.get(any())).thenThrow(failure.value);
+
+        final caps = await source.resolveAll(usp);
+
+        expect(caps, DeviceCapabilities.empty);
+        final requests =
+            verify(() => usp.get(captureAny())).captured.cast<List<String>>();
+        expect(requests, [
+          [
+            for (final capability in DeviceCapability.values)
+              capabilityProbePath(capability)
+          ],
+        ]);
+        verifyNoMoreInteractions(usp);
       });
-
-      final caps = await source.resolveAll(usp);
-
-      expect(caps.has(DeviceCapability.autoIPoE), isFalse);
-      expect(caps.has(DeviceCapability.wifiMacFilter), isTrue);
-      final requests =
-          verify(() => usp.get(captureAny())).captured.cast<List<String>>();
-      expect(requests, hasLength(1 + DeviceCapability.values.length));
-      expect(requests.first, containsAll([autoIPoEPath, macFilterPath]));
-      expect(
-          requests.skip(1),
-          containsAll([
-            [autoIPoEPath],
-            [macFilterPath],
-          ]));
-    });
-
-    test('failed batch and individual probes safely resolve to empty',
-        () async {
-      when(() => usp.get(any())).thenThrow(const ResourceNotFoundError());
-
-      final caps = await source.resolveAll(usp);
-
-      expect(caps, DeviceCapabilities.empty);
-      verify(() => usp.get(any())).called(1 + DeviceCapability.values.length);
-    });
+    }
 
     test('probes every declared capability path in one Get', () async {
       when(() => usp.get(any())).thenAnswer((_) async => <String, dynamic>{});

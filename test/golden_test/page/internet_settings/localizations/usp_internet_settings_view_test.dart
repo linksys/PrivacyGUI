@@ -4,7 +4,7 @@ import '../../../golden_framework/golden_runner.dart';
 import '../../../golden_framework/golden_test_config.dart';
 import '../../../../mocks/provider_overrides/mock_auto_ipoe.dart';
 import '../../../../mocks/provider_overrides/mock_internet_settings.dart';
-import '../fixtures/auto_ipoe_golden_scenes.dart';
+import '../../../../mocks/test_data/scenes/auto_ipoe_scene_data.dart';
 import '../../../../mocks/test_data/scenes/internet_settings_scene_data.dart';
 
 void main() {
@@ -19,7 +19,7 @@ void main() {
               ...internetSettingsOverrides(dataState(ipoeForm)),
               ...autoIPoEOverrides(
                 snapshot: ipoeReadySnapshot,
-                pageState: ipoeGoldenPageState(ipoeReadySnapshot),
+                pageState: ipoeReadyPageState,
                 submission: null,
               ),
             ]),
@@ -29,7 +29,7 @@ void main() {
               ),
               ...autoIPoEOverrides(
                 snapshot: ipoeReadySnapshot,
-                pageState: ipoeGoldenPageState(ipoeReadySnapshot),
+                pageState: ipoeReadyPageState,
                 submission: null,
               ),
             ]),
@@ -39,7 +39,7 @@ void main() {
               ),
               ...autoIPoEOverrides(
                 snapshot: ipoeStaticIpSnapshot,
-                pageState: ipoeGoldenPageState(ipoeStaticIpSnapshot),
+                pageState: ipoeStaticIpPageState,
                 submission: null,
               ),
             ]),

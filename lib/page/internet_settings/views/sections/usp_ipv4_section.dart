@@ -129,9 +129,9 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
     final form = widget.state.edited;
     final supportsAutoIPoE =
         ref.watch(deviceCapabilitiesProvider).has(DeviceCapability.autoIPoE);
-    // A session can lose capability while the previous device's form is visible.
-    final isEditing = widget.isEditing &&
-        !widget.state.status.isSaving &&
+    final isEditing = widget.isEditing && !widget.state.status.isSaving;
+    // Capability loss must not trap the user on an IPoE draft.
+    final canEditFields = isEditing &&
         (form.connectionType != UspWanConnectionType.ipoe || supportsAutoIPoE);
     final ipoe = ref.watch(autoIPoEDataProvider).valueOrNull;
     final submission = ref.watch(autoIPoESubmissionProvider);
@@ -175,7 +175,7 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
             ),
           AppGap.md(),
           // Conditional fields based on connection type
-          ..._buildTypeSpecificFields(form, isEditing),
+          ..._buildTypeSpecificFields(form, canEditFields),
           if (ipoe != null && submission != null) ...[
             AppGap.md(),
             buildAutoIPoERuntime(
@@ -183,8 +183,7 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
                 ref,
                 ipoe,
                 rejection != null ? AutoIPoEOutcome.rejected : outcome,
-                submission,
-                inline: true),
+                submission),
           ],
           if (ipoe != null &&
               form.connectionType == UspWanConnectionType.ipoe) ...[

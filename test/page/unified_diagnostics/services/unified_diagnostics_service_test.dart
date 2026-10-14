@@ -14,8 +14,13 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_result.dart';
 import 'package:privacy_gui/page/unified_diagnostics/services/unified_diagnostics_service.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
+import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart'
+    as wan;
+import 'package:privacy_gui/page/internet_settings/services/usp_wan_data_service.dart';
 
 class MockUspClient extends Mock implements UspClient {}
+
+class MockUspWanDataService extends Mock implements UspWanDataService {}
 
 class _MockExecutor extends Mock implements NetworkDiagnosticsExecutor {}
 
@@ -156,7 +161,8 @@ void main() {
     when(() => mockExecutor.acquireScope(
           referencePaths: any(named: 'referencePaths'),
         )).thenAnswer((_) async => fakeScope);
-    service = UnifiedDiagnosticsService(mockUsp, autoIPoESupported: false);
+    service = UnifiedDiagnosticsService(mockUsp,
+        fetchWan: UspWanDataService(mockUsp).fetch, autoIPoESupported: false);
     service.attachScope(fakeScope);
   });
 
@@ -391,6 +397,83 @@ void main() {
     });
   }
 
+  group('WAN provider composition', () {
+    const wanStatus = wan.WanStatusUIModel(
+      isUp: true,
+      ipAddress: '198.51.100.10',
+      subnetMask: '255.255.255.0',
+      addressingType: 'DHCP',
+      mtu: 1500,
+      gateway: '198.51.100.254',
+    );
+    late MockUspWanDataService wanService;
+    late ProviderContainer container;
+
+    setUp(() {
+      wanService = MockUspWanDataService();
+      container = ProviderContainer(overrides: [
+        uspClientProvider.overrideWithValue(mockUsp),
+        deviceCapabilitiesProvider.overrideWithValue(DeviceCapabilities.empty),
+        uspWanDataServiceProvider.overrideWithValue(wanService),
+      ]);
+      addTearDown(container.dispose);
+    });
+
+    test('WAN status and gateway ping use the injected WAN reader', () async {
+      when(() => wanService.fetch()).thenAnswer((_) async => wanStatus);
+      fakeScope.pingResult = OperateResult(
+        commandName: 'IPPing()',
+        commandKey: 'k',
+        status: 'Complete',
+        outputArgs: const {},
+      );
+      final diagnostics = container.read(unifiedDiagnosticsServiceProvider)!
+        ..attachScope(fakeScope);
+
+      final status = await diagnostics.checkWanStatus();
+      final gateway = await diagnostics.pingGateway();
+
+      expect(status.ipAddress, wanStatus.ipAddress);
+      expect(status.isUp, isTrue);
+      expect(gateway?.host, wanStatus.gateway);
+      verify(() => wanService.fetch()).called(2);
+      verifyZeroInteractions(mockUsp);
+    });
+
+    test('replacing the WAN provider fences the previous reader', () async {
+      when(() => wanService.fetch()).thenAnswer((_) async => wanStatus);
+      final previous = container.read(unifiedDiagnosticsServiceProvider)!;
+      final replacement = MockUspWanDataService();
+      when(() => replacement.fetch()).thenAnswer((_) async => wanStatus);
+
+      container.updateOverrides([
+        uspClientProvider.overrideWithValue(mockUsp),
+        deviceCapabilitiesProvider.overrideWithValue(DeviceCapabilities.empty),
+        uspWanDataServiceProvider.overrideWithValue(replacement),
+      ]);
+      final current = container.read(unifiedDiagnosticsServiceProvider)!;
+
+      expect(current, isNot(same(previous)));
+      await expectLater(
+          previous.checkWanStatus(), throwsA(isA<ResourceNotFoundError>()));
+      expect((await current.checkWanStatus()).ipAddress, wanStatus.ipAddress);
+      verifyZeroInteractions(wanService);
+      verify(() => replacement.fetch()).called(1);
+      verifyZeroInteractions(mockUsp);
+    });
+
+    test('both callers preserve errors from the injected WAN reader', () async {
+      const error = NotAuthenticatedError();
+      when(() => wanService.fetch()).thenThrow(error);
+      final diagnostics = container.read(unifiedDiagnosticsServiceProvider)!;
+
+      await expectLater(diagnostics.checkWanStatus(), throwsA(same(error)));
+      await expectLater(diagnostics.pingGateway(), throwsA(same(error)));
+      verify(() => wanService.fetch()).called(2);
+      verifyZeroInteractions(mockUsp);
+    });
+  });
+
   test(
       'capability loss fences an old service before a fallback connection read',
       () async {
@@ -457,7 +540,8 @@ void main() {
 
   group('Scope contract', () {
     test('throws when no scope is attached', () async {
-      final unsetService = UnifiedDiagnosticsService(mockUsp);
+      final unsetService = UnifiedDiagnosticsService(mockUsp,
+          fetchWan: UspWanDataService(mockUsp).fetch);
       expect(unsetService.ping('8.8.8.8'), throwsA(isA<StateError>()));
     });
 
@@ -569,7 +653,9 @@ void main() {
     }
 
     test('uses the kernel next hop, not a guessed .1 gateway', () async {
-      service = UnifiedDiagnosticsService(mockUsp, autoIPoESupported: true)
+      service = UnifiedDiagnosticsService(mockUsp,
+          fetchWan: UspWanDataService(mockUsp, autoIPoESupported: true).fetch,
+          autoIPoESupported: true)
         ..attachScope(fakeScope);
       when(() => mockUsp.get(any())).thenAnswer((_) async => {
             ActiveIpv4Connection.path: jsonEncode({
@@ -602,7 +688,9 @@ void main() {
 
     test('missing gateway is skipped without probing a made-up address',
         () async {
-      service = UnifiedDiagnosticsService(mockUsp, autoIPoESupported: true)
+      service = UnifiedDiagnosticsService(mockUsp,
+          fetchWan: UspWanDataService(mockUsp, autoIPoESupported: true).fetch,
+          autoIPoESupported: true)
         ..attachScope(fakeScope);
       when(() => mockUsp.get(any())).thenAnswer((_) async => {
             ActiveIpv4Connection.path: jsonEncode({

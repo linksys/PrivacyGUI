@@ -2,6 +2,8 @@ import 'package:privacy_gui/core/capability/capability_provider.dart';
 import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/usp/services/active_ipv4_connection.dart';
 import 'package:privacy_gui/page/internet_settings/services/usp_wan_data_service.dart';
+import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart'
+    as wan;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
@@ -33,6 +35,7 @@ final unifiedDiagnosticsServiceProvider =
   ref.onDispose(() => active = false);
   return UnifiedDiagnosticsService(
     usp,
+    fetchWan: ref.watch(uspWanDataServiceProvider).fetch,
     isAvailable: () => active,
     autoIPoESupported:
         ref.watch(deviceCapabilitiesProvider).has(DeviceCapability.autoIPoE),
@@ -48,6 +51,7 @@ final unifiedDiagnosticsServiceProvider =
 ///   notifier — call [attachScope] before invoking any Operate-based method.
 class UnifiedDiagnosticsService {
   final UspClient _usp;
+  final Future<wan.WanStatusUIModel> Function() _fetchWan;
   final bool _autoIPoESupported;
   final bool Function()? _isAvailable;
   DiagnosticScope? _scope;
@@ -58,8 +62,11 @@ class UnifiedDiagnosticsService {
   static const _defaultTracerouteHost = '8.8.8.8';
 
   UnifiedDiagnosticsService(this._usp,
-      {bool autoIPoESupported = false, bool Function()? isAvailable})
-      : _autoIPoESupported = autoIPoESupported,
+      {required Future<wan.WanStatusUIModel> Function() fetchWan,
+      bool autoIPoESupported = false,
+      bool Function()? isAvailable})
+      : _fetchWan = fetchWan,
+        _autoIPoESupported = autoIPoESupported,
         _isAvailable = isAvailable;
 
   void _checkAvailable() {
@@ -88,14 +95,11 @@ class UnifiedDiagnosticsService {
 
   // ─── WAN Status ──────────────────────────────────────────
 
-  /// Check WAN interface status using codegen WanStatus.
+  /// Check WAN interface status through the provider-supplied reader.
   Future<WanStatusUIModel> checkWanStatus() async {
     _checkAvailable();
     logger.d('[Diagnostics] Checking WAN status');
-    final wan = await UspWanDataService(
-      _usp,
-      autoIPoESupported: _autoIPoESupported,
-    ).fetch();
+    final wan = await _fetchWan();
     _checkAvailable();
     return WanStatusUIModel(
       status: wan.isUp ? 'Up' : 'Down',
@@ -154,10 +158,7 @@ class UnifiedDiagnosticsService {
       if (active.gateway.isEmpty) return null;
       return ping(active.gateway, repeatCount: repeatCount);
     }
-    final wan = await UspWanDataService(
-      _usp,
-      autoIPoESupported: _autoIPoESupported,
-    ).fetch();
+    final wan = await _fetchWan();
     _checkAvailable();
     if (!wan.isUp) throw const ConnectivityError(detail: 'WAN is down');
     if (wan.gateway.isEmpty) return null;

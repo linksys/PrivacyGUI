@@ -8,8 +8,6 @@ window.__uspClientReady = (async function () {
   try {
     const module = await import(uspAssetUrl('usp_client.js'));
     await module.default({module_or_path: uspAssetUrl('usp_client_bg.wasm')});
-    const {installNativeOperate} = await import(uspAssetUrl('usp_native_operate.js'));
-    installNativeOperate(module.UspClient);
     window.UspClient = module.UspClient;
     window.UspClientBuilder = module.UspClientBuilder;
     // WebSocket client and record builders for firmware upload (Method 2)
