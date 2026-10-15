@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/page/admin/services/usp_system_info_data_service.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
@@ -393,6 +394,24 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
           name: name,
           userTypeCode: userTypeCode,
         );
+    await _refetchPreservingMesh();
+  }
+
+  /// Writes the name the user gave the router (#1691), then reads system info
+  /// and the devices back: the master node takes its name from system info,
+  /// and this provider only reads system info when it fetches.
+  ///
+  /// Errors are handled as in [updateIdentity].
+  Future<void> updateRouterName(String name) async {
+    await ref.read(uspSystemInfoDataServiceProvider).updateRouterName(name);
+    ref.invalidate(systemInfoDataProvider);
+    try {
+      await ref.read(systemInfoDataProvider.future);
+    } catch (e, st) {
+      logger.w('[USP][DevicesData]: system info read-back after a router '
+          'rename failed, keeping previous value',
+          error: e, stackTrace: st);
+    }
     await _refetchPreservingMesh();
   }
 

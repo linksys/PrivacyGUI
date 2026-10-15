@@ -23,6 +23,7 @@ Future<void> _pumpAndOpen(
   WidgetTester tester, {
   String initialName = '',
   DeviceCategory initialCategory = DeviceCategory.unknown,
+  bool showIcon = true,
   required void Function(_Result?) onPopped,
 }) async {
   final router = GoRouter(
@@ -40,6 +41,7 @@ Future<void> _pumpAndOpen(
                       initialName: initialName,
                       initialCategory: initialCategory,
                       detectedName: 'android-1a2b',
+                      showIcon: showIcon,
                     ),
                   ));
                 },
@@ -157,5 +159,25 @@ void main() {
     await tester.pumpAndSettle();
     expect(poppedCalled, isFalse);
     expect(find.byType(DeviceIdentityEditDialog), findsOneWidget);
+  });
+
+  // The router is named, not typed: the node page reuses the dialog without
+  // the icon choice (#1691).
+  testWidgets('without the icon choice, only the name is edited',
+      (tester) async {
+    _Result? popped;
+    await _pumpAndOpen(
+      tester,
+      initialName: 'Office',
+      showIcon: false,
+      onPopped: (r) => popped = r,
+    );
+
+    expect(find.text(l.deviceIcon), findsNothing);
+    expect(find.text(l.auto), findsNothing);
+    await tester.enterText(find.byType(TextField), 'Study');
+    await tester.tap(save());
+    await tester.pumpAndSettle();
+    expect(popped?.name, 'Study');
   });
 }

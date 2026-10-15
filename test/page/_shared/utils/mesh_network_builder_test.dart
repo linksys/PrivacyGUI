@@ -90,6 +90,8 @@ void main() {
     String manufacturer = 'Linksys',
     String serialNumber = 'SN-REAL-12345',
     String softwareVersion = '2.0.1.216125',
+    String? userDeviceLocation,
+    String? friendlyName,
   }) {
     return SystemInfoUIModel(
       manufacturer: manufacturer,
@@ -101,6 +103,8 @@ void main() {
       totalMemory: 0,
       freeMemory: 0,
       cpuUsage: 0,
+      userDeviceLocation: userDeviceLocation,
+      friendlyName: friendlyName,
     );
   }
 
@@ -1684,6 +1688,42 @@ void main() {
         expect(client.modelName, isNull);
         expect(client.operatingSystem, isNull);
         expect(client.displayName, 'host');
+      });
+    });
+
+    // The router's own name (#1691). The controller has no Hosts row, so its
+    // name is on DeviceInfo, and only X_LINKSYS_UserDeviceLocation is written.
+    // Measured on 2.0.3.26101472: writing the location leaves FriendlyName
+    // "", so the app, not the firmware, puts the location first.
+    group('master name from DeviceInfo (#1691)', () {
+      MasterNode buildMaster(SystemInfoUIModel systemInfo) =>
+          MeshNetworkBuilder.build(
+            connectedDevices: const ConnectedDevices(items: []),
+            wifiClientMap: {},
+            connectionDetailMap: {},
+            meshTopology: MeshTopologyInfo.empty,
+            gatewayName: 'M60',
+            systemInfo: systemInfo,
+          ).master;
+
+      test('the location the user gave is the name', () {
+        final master = buildMaster(buildSystemInfo(
+          userDeviceLocation: 'Office',
+          friendlyName: 'Main router',
+        ));
+        expect(master.userDeviceLocation, 'Office');
+        expect(master.displayName, 'Office');
+      });
+
+      test('with no location, DeviceInfo.FriendlyName is the name', () {
+        final master = buildMaster(buildSystemInfo(friendlyName: 'Main router'));
+        expect(master.userDeviceLocation, isNull);
+        expect(master.displayName, 'Main router');
+      });
+
+      test('with neither, the name is what it is today', () {
+        final master = buildMaster(buildSystemInfo(modelName: 'M60'));
+        expect(master.displayName, 'M60');
       });
     });
   });

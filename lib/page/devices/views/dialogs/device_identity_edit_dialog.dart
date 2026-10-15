@@ -31,11 +31,16 @@ class DeviceIdentityEditDialog extends StatefulWidget {
   /// What an empty name falls back to, shown as the field's hint.
   final String detectedName;
 
+  /// Whether the icon choice is offered. Off for the router, which is named
+  /// but not typed; the popped category is then always [initialCategory].
+  final bool showIcon;
+
   const DeviceIdentityEditDialog({
     super.key,
     required this.initialName,
     required this.initialCategory,
     required this.detectedName,
+    this.showIcon = true,
   });
 
   @override
@@ -94,26 +99,28 @@ class _DeviceIdentityEditDialogState extends State<DeviceIdentityEditDialog> {
             loc(context).deviceNameHint,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
-          AppGap.lg(),
-          AppText.labelLarge(loc(context).deviceIcon),
-          AppGap.sm(),
-          AppChipGroup(
-            chips: [
-              for (final c in _choices)
-                ChipItem(
-                  label: c == DeviceCategory.unknown
-                      ? loc(context).auto
-                      : c.displayName,
-                  icon: c.icon,
-                  identifier: 'device-identity-icon-${c.name}',
-                ),
-            ],
-            selectedIndices: {_choices.indexOf(_category)},
-            onSelectionChanged: (selected) {
-              if (selected.isEmpty) return;
-              setState(() => _category = _choices[selected.first]);
-            },
-          ),
+          if (widget.showIcon) ...[
+            AppGap.lg(),
+            AppText.labelLarge(loc(context).deviceIcon),
+            AppGap.sm(),
+            AppChipGroup(
+              chips: [
+                for (final c in _choices)
+                  ChipItem(
+                    label: c == DeviceCategory.unknown
+                        ? loc(context).auto
+                        : c.displayName,
+                    icon: c.icon,
+                    identifier: 'device-identity-icon-${c.name}',
+                  ),
+              ],
+              selectedIndices: {_choices.indexOf(_category)},
+              onSelectionChanged: (selected) {
+                if (selected.isEmpty) return;
+                setState(() => _category = _choices[selected.first]);
+              },
+            ),
+          ],
         ],
       ),
       actions: [

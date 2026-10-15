@@ -82,7 +82,49 @@ class UspSystemInfoDataService {
       cpuUsage: systemInfo.cpuUsage,
       firmwareImages: fwModels,
       baseMacAddress: _nonEmptyUpper(systemInfo.baseMacAddress),
+      userDeviceLocation: _nonEmpty(systemInfo.userDeviceLocation),
+      friendlyName: _nonEmpty(systemInfo.friendlyName),
     );
+  }
+
+  /// Writes the name the user gave the router (#1691).
+  ///
+  /// Only `DeviceInfo.X_LINKSYS_UserDeviceLocation`, as for a client; the
+  /// app does not write `FriendlyName`. `''` clears it. The firmware refuses
+  /// more than 64 bytes and keeps the old value.
+  Future<void> updateRouterName(String name) async {
+    try {
+      final result = await SystemInfo.update(_usp, userDeviceLocation: name);
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(
+            :final errorSummary,
+            :final successes,
+            :final failures
+          ):
+          throw UspPartialFailureError(
+            summary: 'Router name partial failure: $errorSummary',
+            successPaths: successes.map((s) => s.requestedPath).toList(),
+            failures: failures,
+          );
+        case UspFailure(:final errorSummary, :final errors):
+          throw UspCompleteFailureError(
+            summary: 'Router name update failed: $errorSummary',
+            failures: errors,
+          );
+      }
+    } catch (e) {
+      if (e is ServiceError) rethrow;
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  /// [value] trimmed, or null when the router reports `""` (unset).
+  static String? _nonEmpty(String? value) {
+    final text = value?.trim();
+    return (text == null || text.isEmpty) ? null : text;
   }
 
   /// Same normalisation `SessionService` gives this leaf for Remote Assistance,

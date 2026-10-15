@@ -474,10 +474,20 @@ class MeshNetworkBuilder {
         masterMeshInfo?.deviceId ??
         'GATEWAY';
 
+    // The router names itself on DeviceInfo, not on a Hosts row (#1691). The
+    // location the user gave comes first, then FriendlyName, which the app does
+    // not write: unlike a client's, the firmware does not fill it from the
+    // location (measured on 2.0.3.26101472). Neither set, `displayName` falls
+    // to the host name and the model as before.
+    final userDeviceLocation = nonEmpty(systemInfo?.userDeviceLocation);
+
     return MasterNode(
       deviceId: deviceId,
       dataElementsId: masterMeshInfo?.deviceId,
-      friendlyName: masterDevice?.friendlyName,
+      friendlyName: userDeviceLocation ??
+          nonEmpty(systemInfo?.friendlyName) ??
+          masterDevice?.friendlyName,
+      userDeviceLocation: userDeviceLocation,
       hostName: masterDevice?.hostName ?? gatewayName,
       // `system_info` first, DataElements second — and the order is the fix,
       // not a preference. The controller row's identity fields are prplMesh
