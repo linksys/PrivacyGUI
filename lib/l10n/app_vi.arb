@@ -832,7 +832,7 @@
   "editDevice": "Chỉnh sửa thiết bị",
   "deviceIcon": "Biểu tượng",
   "deviceNameTooLong": "Tên quá dài",
-  "deviceNameHint": "Để trống để dùng tên được phát hiện",
+  "deviceNameHint": "Để trống để hiển thị tên mặc định",
   "noSsid": "(Không có SSID)",
   "noTargetBankAvailable": "Không có phân vùng đích khả dụng",
   "noTimezonesFound": "Không tìm thấy múi giờ nào",

@@ -832,7 +832,7 @@
   "editDevice": "Redigera enhet",
   "deviceIcon": "Ikon",
   "deviceNameTooLong": "Namnet är för långt",
-  "deviceNameHint": "Lämna tomt för att använda det identifierade namnet",
+  "deviceNameHint": "Lämna tomt för att visa standardnamnet",
   "noSsid": "(Inget SSID)",
   "noTargetBankAvailable": "Ingen målbank tillgänglig",
   "noTimezonesFound": "Inga tidszoner hittades",

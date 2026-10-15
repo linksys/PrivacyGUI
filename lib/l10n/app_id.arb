@@ -832,7 +832,7 @@
   "editDevice": "Edit perangkat",
   "deviceIcon": "Ikon",
   "deviceNameTooLong": "Nama terlalu panjang",
-  "deviceNameHint": "Biarkan kosong untuk menggunakan nama yang terdeteksi",
+  "deviceNameHint": "Biarkan kosong untuk menampilkan nama default",
   "noSsid": "(Tanpa SSID)",
   "noTargetBankAvailable": "Tidak ada bank target yang tersedia",
   "noTimezonesFound": "Tidak ada zona waktu yang ditemukan",

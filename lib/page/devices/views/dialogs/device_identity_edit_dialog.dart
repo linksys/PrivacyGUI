@@ -19,6 +19,8 @@ bool isDeviceNameTooLong(String name) => !_nameRule.validate(name);
 ///
 /// Pops with `(name, category)` on save, or null on cancel. [DeviceCategory.unknown]
 /// is the "Auto" choice: it clears the user's icon, so the detected type shows.
+/// Reset pops `('', unknown)` at once, which clears both and returns the device
+/// to what the firmware detected; it is off when nothing is set.
 class DeviceIdentityEditDialog extends StatefulWidget {
   /// The name the user gave, or empty when there is none.
   final String initialName;
@@ -54,6 +56,11 @@ class _DeviceIdentityEditDialogState extends State<DeviceIdentityEditDialog> {
 
   bool get _tooLong => isDeviceNameTooLong(_nameController.text.trim());
 
+  /// Whether the user has set anything that Reset would clear.
+  bool get _hasUserValues =>
+      widget.initialName.isNotEmpty ||
+      widget.initialCategory != DeviceCategory.unknown;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -76,11 +83,16 @@ class _DeviceIdentityEditDialogState extends State<DeviceIdentityEditDialog> {
           AppTextField(
             controller: _nameController,
             identifier: 'device-identity-name',
-            hintText: widget.detectedName.isNotEmpty
-                ? widget.detectedName
-                : loc(context).deviceNameHint,
+            hintText: widget.detectedName,
             errorText: _tooLong ? loc(context).deviceNameTooLong : null,
             onChanged: (_) => setState(() {}),
+          ),
+          AppGap.xs(),
+          // Always shown, not a placeholder: a filled-in name hides the
+          // placeholder, and that is when the user needs to know it.
+          AppText.bodySmall(
+            loc(context).deviceNameHint,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           AppGap.lg(),
           AppText.labelLarge(loc(context).deviceIcon),
@@ -105,6 +117,13 @@ class _DeviceIdentityEditDialogState extends State<DeviceIdentityEditDialog> {
         ],
       ),
       actions: [
+        AppButton.text(
+          identifier: 'device-identity-reset',
+          label: loc(context).reset,
+          onTap: _hasUserValues
+              ? () => context.pop((name: '', category: DeviceCategory.unknown))
+              : null,
+        ),
         AppButton.text(
           identifier: 'device-identity-cancel',
           label: loc(context).cancel,

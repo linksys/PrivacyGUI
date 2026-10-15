@@ -832,7 +832,7 @@
   "editDevice": "Apparaat bewerken",
   "deviceIcon": "Pictogram",
   "deviceNameTooLong": "De naam is te lang",
-  "deviceNameHint": "Laat leeg om de gedetecteerde naam te gebruiken",
+  "deviceNameHint": "Laat leeg om de standaardnaam te tonen",
   "noSsid": "(Geen SSID)",
   "noTargetBankAvailable": "Geen doelbank beschikbaar",
   "noTimezonesFound": "Geen tijdzones gevonden",

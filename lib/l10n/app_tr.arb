@@ -832,7 +832,7 @@
   "editDevice": "Cihazı düzenle",
   "deviceIcon": "Simge",
   "deviceNameTooLong": "Ad çok uzun",
-  "deviceNameHint": "Algılanan adı kullanmak için boş bırakın",
+  "deviceNameHint": "Varsayılan adı göstermek için boş bırakın",
   "noSsid": "(SSID Yok)",
   "noTargetBankAvailable": "Kullanılabilir hedef banka yok",
   "noTimezonesFound": "Saat dilimi bulunamadı",

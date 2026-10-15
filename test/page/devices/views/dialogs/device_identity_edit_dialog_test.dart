@@ -76,6 +76,9 @@ void main() {
     await _pumpAndOpen(tester, onPopped: (r) => popped = r);
 
     await tester.enterText(find.byType(TextField), '  Living room TV  ');
+    // The chips scroll inside the dialog on the 800×600 test surface.
+    await tester.ensureVisible(find.text(DeviceCategory.tv.displayName));
+    await tester.pumpAndSettle();
     await tester.tap(find.text(DeviceCategory.tv.displayName));
     await tester.pumpAndSettle();
     await tester.tap(save());
@@ -101,6 +104,43 @@ void main() {
 
     expect(popped?.name, 'Kitchen');
     expect(popped?.category, DeviceCategory.unknown);
+  });
+
+  testWidgets('the empty-name hint shows even with a name filled in',
+      (tester) async {
+    await _pumpAndOpen(tester, initialName: 'Kitchen', onPopped: (_) {});
+
+    expect(find.text(l.deviceNameHint), findsOneWidget);
+  });
+
+  testWidgets('Reset pops a cleared name and Auto, whatever was edited',
+      (tester) async {
+    _Result? popped;
+    await _pumpAndOpen(
+      tester,
+      initialName: 'Kitchen',
+      initialCategory: DeviceCategory.camera,
+      onPopped: (r) => popped = r,
+    );
+
+    await tester.enterText(find.byType(TextField), 'Something else');
+    await tester.tap(find.widgetWithText(AppButton, l.reset));
+    await tester.pumpAndSettle();
+
+    expect(popped?.name, '');
+    expect(popped?.category, DeviceCategory.unknown);
+  });
+
+  testWidgets('Reset does nothing for a device with nothing set',
+      (tester) async {
+    var poppedCalled = false;
+    await _pumpAndOpen(tester, onPopped: (_) => poppedCalled = true);
+
+    await tester.tap(find.widgetWithText(AppButton, l.reset));
+    await tester.pumpAndSettle();
+
+    expect(poppedCalled, isFalse);
+    expect(find.byType(DeviceIdentityEditDialog), findsOneWidget);
   });
 
   testWidgets('a name over 64 bytes shows the error and cannot be saved',

@@ -832,7 +832,7 @@
   "editDevice": "Rediger enhed",
   "deviceIcon": "Ikon",
   "deviceNameTooLong": "Navnet er for langt",
-  "deviceNameHint": "Lad feltet være tomt for at bruge det registrerede navn",
+  "deviceNameHint": "Lad feltet være tomt for at vise standardnavnet",
   "noSsid": "(Ingen SSID)",
   "noTargetBankAvailable": "Ingen målbank tilgængelig",
   "noTimezonesFound": "Ingen tidszoner fundet",

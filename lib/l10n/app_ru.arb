@@ -832,7 +832,7 @@
   "editDevice": "Изменить устройство",
   "deviceIcon": "Значок",
   "deviceNameTooLong": "Слишком длинное имя",
-  "deviceNameHint": "Оставьте пустым, чтобы использовать обнаруженное имя",
+  "deviceNameHint": "Оставьте пустым, чтобы показать имя по умолчанию",
   "noSsid": "(Нет SSID)",
   "noTargetBankAvailable": "Нет доступного целевого банка",
   "noTimezonesFound": "Часовые пояса не найдены",

@@ -156,7 +156,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AppText.titleLarge(device.displayName),
+                      _buildDeviceName(context, device),
                       AppGap.xxs(),
                       AppText.labelMedium(
                         category.displayName,
@@ -165,15 +165,6 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                     ],
                   ),
                 ),
-                if (device.hostInstancePath != null)
-                  AppIconButton(
-                    icon: AppIcon.font(Icons.edit, size: 18),
-                    semanticLabel: loc(context).editDevice,
-                    identifier: 'device-detail-edit-identity',
-                    onTap: ref.watch(uspMutationLoadingProvider) == 'identity'
-                        ? null
-                        : () => _editIdentity(context, ref, device),
-                  ),
                 DetailStatusBadge(isActive: device.isActive),
               ],
             ),
@@ -805,6 +796,38 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                     ),
                   ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// The device name, with an edit pen right after it, styled like the copy
+  /// icon of [DetailCopyableText]. Only the pen is tappable.
+  Widget _buildDeviceName(BuildContext context, ClientDevice device) {
+    final name = AppText.titleLarge(device.displayName);
+    if (device.hostInstancePath == null) return name;
+    final busy = ref.watch(uspMutationLoadingProvider) == 'identity';
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(child: name),
+        AppGap.xs(),
+        Semantics(
+          button: true,
+          label: loc(context).editDevice,
+          identifier: 'device-detail-edit-identity',
+          child: InkWell(
+            onTap: busy ? null : () => _editIdentity(context, ref, device),
+            borderRadius: BorderRadius.circular(AppSpacing.xxs),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xxs),
+              child: Icon(
+                Icons.edit,
+                size: 16,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
           ),
         ),
       ],

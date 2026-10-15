@@ -832,7 +832,7 @@
   "editDevice": "Gerät bearbeiten",
   "deviceIcon": "Symbol",
   "deviceNameTooLong": "Der Name ist zu lang",
-  "deviceNameHint": "Leer lassen, um den erkannten Namen zu verwenden",
+  "deviceNameHint": "Leer lassen, um den Standardnamen anzuzeigen",
   "noSsid": "(Keine SSID)",
   "noTargetBankAvailable": "Keine Zielbank verfügbar",
   "noTimezonesFound": "Keine Zeitzonen gefunden",

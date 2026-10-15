@@ -832,7 +832,7 @@
   "editDevice": "编辑设备",
   "deviceIcon": "图标",
   "deviceNameTooLong": "名称过长",
-  "deviceNameHint": "留空则使用检测到的名称",
+  "deviceNameHint": "留空则显示默认名称",
   "noSsid": "（无 SSID）",
   "noTargetBankAvailable": "没有可用的目标分区",
   "noTimezonesFound": "未找到时区",

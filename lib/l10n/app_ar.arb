@@ -832,7 +832,7 @@
   "editDevice": "تعديل الجهاز",
   "deviceIcon": "الأيقونة",
   "deviceNameTooLong": "الاسم طويل جدًا",
-  "deviceNameHint": "اتركه فارغًا لاستخدام الاسم المكتشف",
+  "deviceNameHint": "اتركه فارغًا لعرض الاسم الافتراضي",
   "noSsid": "(لا يوجد SSID)",
   "noTargetBankAvailable": "لا يوجد بنك مستهدف متاح",
   "noTimezonesFound": "لم يتم العثور على مناطق زمنية",
