@@ -40,7 +40,7 @@ class DeviceClassifier {
   /// firmware's FriendlyName before the HostName.
   static DeviceCategory classifyClient(ClientDevice device) {
     return _fromFirmwareType(device.userDeviceType) ??
-        _fromFirmwareType(device.deviceType) ??
+        _fromFirmwareType(device.deviceType, model: device.modelName) ??
         _matchHostnamePattern(device.friendlyName ?? '') ??
         classify(hostname: device.hostName, mac: device.mac);
   }
@@ -55,12 +55,18 @@ class DeviceClassifier {
   /// absent or not one this app has a category for.
   ///
   /// The strings are LinksysWRT 1.0's, which devidentd keeps on FL-WRT 2.0 and
-  /// `icon_rules_data.dart` already matches on.
-  static DeviceCategory? _fromFirmwareType(String? type) {
+  /// `icon_rules_data.dart` already matches on. `Mobile` also covers a Kindle
+  /// and an iPod Touch, which only the [model] tells apart from a phone, as
+  /// that file's `Mobile|Phone` rules do.
+  static DeviceCategory? _fromFirmwareType(String? type, {String? model}) {
     if (type == null) return null;
     // Every WeMo type is a smart-home appliance except the camera.
     if (type == 'WeMoNetCam') return DeviceCategory.camera;
     if (type.startsWith('WeMo')) return DeviceCategory.iot;
+    if (type == 'Mobile') {
+      if (model?.contains('Kindle') == true) return DeviceCategory.tablet;
+      if (model?.contains('iPod') == true) return DeviceCategory.mediaPlayer;
+    }
     return switch (type) {
       'Phone' || 'Mobile' => DeviceCategory.phone,
       'Tablet' => DeviceCategory.tablet,

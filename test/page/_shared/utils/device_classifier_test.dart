@@ -496,6 +496,27 @@ void main() {
       expect(DeviceClassifier.classifyClient(device), DeviceCategory.computer);
     });
 
+    // devregex.json types a Kindle and an iPod Touch as `Mobile`, and only the
+    // model tells them apart from a phone — as `icon_rules_data.dart` does.
+    test('a Mobile Kindle is a tablet, as its host name says today', () {
+      final device = DevicesTestData.createWifiClient(
+        hostName: 'kindle-1a2b3c',
+        deviceType: 'Mobile',
+        modelName: 'Kindle',
+      );
+      expect(DeviceClassifier.classifyClient(device), DeviceCategory.tablet);
+    });
+
+    test('a Mobile iPod Touch is a media player', () {
+      final device = DevicesTestData.createWifiClient(
+        hostName: '',
+        deviceType: 'Mobile',
+        modelName: 'iPod Touch',
+      );
+      expect(
+          DeviceClassifier.classifyClient(device), DeviceCategory.mediaPlayer);
+    });
+
     test('name patterns match FriendlyName before HostName', () {
       final device = DevicesTestData.createWifiClient(
         friendlyName: "Austin's iPad",
@@ -516,40 +537,6 @@ void main() {
       final device = DevicesTestData.createWifiClient(hostName: 'PlayStation5');
       expect(
           DeviceClassifier.classifyClient(device), DeviceCategory.gameConsole);
-    });
-
-    test('the firmware manufacturer wins over the OUI', () {
-      final device = DevicesTestData.createWifiClient(
-        mac: '00:14:22:12:34:56', // Dell by OUI
-        manufacturer: 'Apple',
-      );
-      expect(DeviceClassifier.manufacturerOf(device), 'Apple');
-    });
-
-    test('an iPhone with a randomised MAC shows Apple, not Private/Random', () {
-      final device = DevicesTestData.createWifiClient(
-        mac: 'BA:16:44:9F:EB:8B',
-        manufacturer: 'Apple',
-      );
-      expect(DeviceClassifier.manufacturerOf(device), 'Apple');
-    });
-
-    test('with no firmware manufacturer, the OUI decides as today', () {
-      expect(
-        DeviceClassifier.manufacturerOf(
-            DevicesTestData.createWifiClient(mac: '00:14:22:12:34:56')),
-        'Dell Inc.',
-      );
-      expect(
-        DeviceClassifier.manufacturerOf(
-            DevicesTestData.createWifiClient(mac: 'BA:16:44:9F:EB:8B')),
-        'Private/Random',
-      );
-      expect(
-        DeviceClassifier.manufacturerOf(
-            DevicesTestData.createWifiClient(mac: '11:22:33:44:55:01')),
-        isNull,
-      );
     });
 
     // Every distinct "type" in devidentd's devregex.json at feed_premium
@@ -601,5 +588,42 @@ void main() {
         expect(DeviceClassifier.classifyClient(device), expected);
       });
     }
+  });
+
+  // The firmware's manufacturer first, the OUI only when it has none (#1693).
+  group('DeviceClassifier manufacturerOf (#1693)', () {
+    test('the firmware manufacturer wins over the OUI', () {
+      final device = DevicesTestData.createWifiClient(
+        mac: '00:14:22:12:34:56', // Dell by OUI
+        manufacturer: 'Apple',
+      );
+      expect(DeviceClassifier.manufacturerOf(device), 'Apple');
+    });
+
+    test('an iPhone with a randomised MAC shows Apple, not Private/Random', () {
+      final device = DevicesTestData.createWifiClient(
+        mac: 'BA:16:44:9F:EB:8B',
+        manufacturer: 'Apple',
+      );
+      expect(DeviceClassifier.manufacturerOf(device), 'Apple');
+    });
+
+    test('with no firmware manufacturer, the OUI decides as today', () {
+      expect(
+        DeviceClassifier.manufacturerOf(
+            DevicesTestData.createWifiClient(mac: '00:14:22:12:34:56')),
+        'Dell Inc.',
+      );
+      expect(
+        DeviceClassifier.manufacturerOf(
+            DevicesTestData.createWifiClient(mac: 'BA:16:44:9F:EB:8B')),
+        'Private/Random',
+      );
+      expect(
+        DeviceClassifier.manufacturerOf(
+            DevicesTestData.createWifiClient(mac: '11:22:33:44:55:01')),
+        isNull,
+      );
+    });
   });
 }

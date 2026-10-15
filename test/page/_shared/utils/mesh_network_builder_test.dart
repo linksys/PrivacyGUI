@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
@@ -7,6 +8,7 @@ import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
+import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_network_builder.dart';
 
 void main() {
@@ -1623,6 +1625,25 @@ void main() {
         expect(client.userDeviceType, isNull);
         expect(client.friendlyName, isNull);
         expect(client.displayName, 'android-1a2b3c');
+      });
+
+      test('a host the firmware has not identified classifies as today', () {
+        OuiLookup.initializeForTesting(const {'001422': 'Dell Inc.'});
+        addTearDown(OuiLookup.reset);
+
+        final client = buildOne(buildConnectedDevice(
+          macAddress: '00:14:22:12:34:56',
+          hostName: 'PlayStation5',
+          interface_: 'Device.WiFi.Radio.1',
+          linksysManufacturer: '',
+          linksysDeviceType: '',
+          linksysFriendlyName: '',
+          linksysUserDeviceType: '',
+        ));
+
+        expect(DeviceClassifier.classifyClient(client),
+            DeviceCategory.gameConsole);
+        expect(DeviceClassifier.manufacturerOf(client), 'Dell Inc.');
       });
 
       test('the unprefixed 1.0 leaves are not read', () {

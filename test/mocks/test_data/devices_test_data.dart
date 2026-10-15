@@ -153,6 +153,7 @@ class DevicesTestData {
     String? parentNodeName,
     List<ClientInterfaceInfo> additionalInterfaces = const [],
     String? manufacturer,
+    String? modelName,
     String? deviceType,
     String? userDeviceType,
   }) =>
@@ -168,6 +169,7 @@ class DevicesTestData {
         parentNodeName: parentNodeName,
         additionalInterfaces: additionalInterfaces,
         manufacturer: manufacturer,
+        modelName: modelName,
         deviceType: deviceType,
         userDeviceType: userDeviceType,
       );
