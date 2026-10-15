@@ -498,4 +498,105 @@ void main() {
       expect(device.additionalInterfaces.first.isActive, isFalse);
     });
   });
+
+  // The detail page names a client and picks its icon (#1691): the name is
+  // X_LINKSYS_UserDeviceLocation, the icon the app's own code in
+  // X_LINKSYS_UserDeviceType, both on the client's Hosts.Host row.
+  group('UspDevicesDataService — updateIdentity', () {
+    Map<String, dynamic> setSuccess() => {
+          'success': true,
+          'result': {'data': <String, dynamic>{}},
+        };
+
+    test('a fetched client carries its Hosts.Host path', () async {
+      final result = await svc.fetch(
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        gatewayName: 'Router',
+      );
+
+      final laptop = result.meshNetwork.allClients
+          .firstWhere((d) => d.mac == 'AA:BB:CC:DD:EE:01');
+      expect(laptop.hostInstancePath, 'Device.Hosts.Host.1.');
+    });
+
+    test('writes the name and the icon code in one Set', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => setSuccess());
+
+      await svc.updateIdentity(
+        hostInstancePath: 'Device.Hosts.Host.3.',
+        name: 'Living room TV',
+        userTypeCode: '4',
+      );
+
+      verify(() => mockUsp.set(
+            {
+              'Device.Hosts.Host.3.X_LINKSYS_UserDeviceLocation':
+                  'Living room TV',
+              'Device.Hosts.Host.3.X_LINKSYS_UserDeviceType': '4',
+            },
+            allowPartial: false,
+          )).called(1);
+    });
+
+    test('an empty name and an empty code are written, which clears them',
+        () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => setSuccess());
+
+      await svc.updateIdentity(
+        hostInstancePath: 'Device.Hosts.Host.3.',
+        name: '',
+        userTypeCode: '',
+      );
+
+      verify(() => mockUsp.set(
+            {
+              'Device.Hosts.Host.3.X_LINKSYS_UserDeviceLocation': '',
+              'Device.Hosts.Host.3.X_LINKSYS_UserDeviceType': '',
+            },
+            allowPartial: false,
+          )).called(1);
+    });
+
+    test('a refused Set throws UspCompleteFailureError', () {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': false,
+                'result': {
+                  'data': <String, dynamic>{},
+                  'error': {
+                    'Device.Hosts.Host.3.X_LINKSYS_UserDeviceLocation': {
+                      'errorCode': 9007,
+                      'errorMessage': 'Invalid parameter value',
+                    },
+                  },
+                },
+              });
+
+      expect(
+        () => svc.updateIdentity(
+          hostInstancePath: 'Device.Hosts.Host.3.',
+          name: 'x',
+          userTypeCode: '1',
+        ),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+
+    test('a transport error maps to ServiceError', () {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenThrow('Set failed: Transport error: Connection refused');
+
+      expect(
+        () => svc.updateIdentity(
+          hostInstancePath: 'Device.Hosts.Host.3.',
+          name: 'x',
+          userTypeCode: '1',
+        ),
+        throwsA(isA<ConnectivityError>()),
+      );
+    });
+  });
 }

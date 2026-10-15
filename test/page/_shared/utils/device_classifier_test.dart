@@ -590,6 +590,57 @@ void main() {
     }
   });
 
+  // The icon a user picks is stored in X_LINKSYS_UserDeviceType as a number the
+  // app owns, so the app defines the categories, not the firmware (#1691).
+  group('DeviceCategory user type codes (#1691)', () {
+    // Pinned literals: a stored code must keep its meaning across releases,
+    // so reordering the enum must not change any of these.
+    const pinned = <DeviceCategory, String>{
+      DeviceCategory.phone: '1',
+      DeviceCategory.tablet: '2',
+      DeviceCategory.computer: '3',
+      DeviceCategory.tv: '4',
+      DeviceCategory.gameConsole: '5',
+      DeviceCategory.mediaPlayer: '6',
+      DeviceCategory.smartSpeaker: '7',
+      DeviceCategory.camera: '8',
+      DeviceCategory.printer: '9',
+      DeviceCategory.networkDevice: '10',
+      DeviceCategory.iot: '11',
+      DeviceCategory.wearable: '12',
+    };
+
+    test('each category has its pinned code', () {
+      for (final entry in pinned.entries) {
+        expect(entry.key.userTypeCode, entry.value, reason: entry.key.name);
+      }
+    });
+
+    test('unknown has no code: picking it clears the user type', () {
+      expect(DeviceCategory.unknown.userTypeCode, '');
+    });
+
+    test('a code reads back as its category', () {
+      for (final entry in pinned.entries) {
+        expect(DeviceCategory.fromUserTypeCode(entry.value), entry.key);
+      }
+    });
+
+    test('a value that is not a code reads as no category', () {
+      for (final value in [null, '', '0', '13', 'phone', ' 4', '4.0']) {
+        expect(DeviceCategory.fromUserTypeCode(value), isNull, reason: value);
+      }
+    });
+
+    test('a user type code wins over the firmware type', () {
+      final device = DevicesTestData.createWifiClient(
+        deviceType: 'Phone',
+        userDeviceType: '4',
+      );
+      expect(DeviceClassifier.classifyClient(device), DeviceCategory.tv);
+    });
+  });
+
   // The firmware's manufacturer first, the OUI only when it has none (#1693).
   group('DeviceClassifier manufacturerOf (#1693)', () {
     test('the firmware manufacturer wins over the OUI', () {

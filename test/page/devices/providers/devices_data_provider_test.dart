@@ -420,6 +420,72 @@ void main() {
   // provider's own downstream listeners then saw as well. See
   // doc/riverpod/listen_site_audit.md (#1502 AC-4).
   // -------------------------------------------------------------------------
+  // The detail page's save (#1691): write through the service, then read the
+  // devices back so the page shows what the router now holds.
+  group('DevicesDataNotifier — updateIdentity', () {
+    void stubUpdate(Future<void> Function() answer) {
+      when(() => mockDevicesSvc.updateIdentity(
+            hostInstancePath: any(named: 'hostInstancePath'),
+            name: any(named: 'name'),
+            userTypeCode: any(named: 'userTypeCode'),
+          )).thenAnswer((_) => answer());
+    }
+
+    int fetchCount() => verify(() => mockDevicesSvc.fetch(
+          wifiClientMap: any(named: 'wifiClientMap'),
+          connectionDetailMap: any(named: 'connectionDetailMap'),
+          gatewayName: any(named: 'gatewayName'),
+          systemInfo: any(named: 'systemInfo'),
+        )).callCount;
+
+    test('writes through the service, then reads the devices back', () async {
+      stubUpdate(() async {});
+      final container = createContainer();
+      await container.read(devicesDataProvider.future);
+      fetchCount(); // resets the count: build's own fetch
+
+      await container.read(devicesDataProvider.notifier).updateIdentity(
+            hostInstancePath: 'Device.Hosts.Host.3.',
+            name: 'Living room TV',
+            userTypeCode: '4',
+          );
+
+      verify(() => mockDevicesSvc.updateIdentity(
+            hostInstancePath: 'Device.Hosts.Host.3.',
+            name: 'Living room TV',
+            userTypeCode: '4',
+          )).called(1);
+      expect(fetchCount(), 1);
+      container.dispose();
+    });
+
+    test('a refused write is thrown and nothing is read back', () async {
+      stubUpdate(() async => throw const UspCompleteFailureError(
+            summary: 'refused',
+            failures: [],
+          ));
+      final container = createContainer();
+      await container.read(devicesDataProvider.future);
+      fetchCount();
+
+      await expectLater(
+        container.read(devicesDataProvider.notifier).updateIdentity(
+              hostInstancePath: 'Device.Hosts.Host.3.',
+              name: 'x',
+              userTypeCode: '1',
+            ),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+      verifyNever(() => mockDevicesSvc.fetch(
+            wifiClientMap: any(named: 'wifiClientMap'),
+            connectionDetailMap: any(named: 'connectionDetailMap'),
+            gatewayName: any(named: 'gatewayName'),
+            systemInfo: any(named: 'systemInfo'),
+          ));
+      container.dispose();
+    });
+  });
+
   group('DevicesDataNotifier — wifi data re-notification', () {
     test('a wifi refetch rebuilds the mesh exactly once', () async {
       // The listener early-returns on DevicesCodegenContext.empty, so the fetch

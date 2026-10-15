@@ -375,7 +375,9 @@ class MeshNetworkBuilder {
       operatingSystem: nonEmpty(device.linksysOperatingSystem),
       deviceType: nonEmpty(device.linksysDeviceType),
       userDeviceType: nonEmpty(device.linksysUserDeviceType),
+      userDeviceName: nonEmpty(device.linksysUserDeviceLocation),
       hostsDeviceId: device.deviceId,
+      hostInstancePath: device.instancePath,
     );
   }
 

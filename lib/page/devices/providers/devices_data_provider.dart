@@ -377,6 +377,25 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     });
   }
 
+  /// Writes the name and icon the user gave a client (#1691), then reads the
+  /// devices back so every surface shows what the router now holds.
+  ///
+  /// A refused write is thrown for the caller to report. A read-back that
+  /// fails after a successful write is not: the save happened, so it keeps the
+  /// previous value and the next push corrects it.
+  Future<void> updateIdentity({
+    required String hostInstancePath,
+    required String name,
+    required String userTypeCode,
+  }) async {
+    await ref.read(uspDevicesDataServiceProvider).updateIdentity(
+          hostInstancePath: hostInstancePath,
+          name: name,
+          userTypeCode: userTypeCode,
+        );
+    await _refetchPreservingMesh();
+  }
+
   /// Refetch device data while preserving the existing mesh topology.
   /// This prevents the slave node from flickering during SSE-triggered refreshes.
   Future<void> _refetchPreservingMesh() async {

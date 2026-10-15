@@ -4,24 +4,41 @@ import 'package:privacy_gui/page/_shared/models/client_device.dart';
 
 /// Device category for UI display and filtering.
 enum DeviceCategory {
-  phone('Phone', 'smartphone'),
-  tablet('Tablet', 'tablet'),
-  computer('Computer', 'computer'),
-  tv('TV', 'tv'),
-  gameConsole('Game Console', 'sports_esports'),
-  mediaPlayer('Media Player', 'cast'),
-  smartSpeaker('Smart Speaker', 'speaker'),
-  camera('Camera', 'videocam'),
-  printer('Printer', 'print'),
-  networkDevice('Network Device', 'router'),
-  iot('Smart Home', 'lightbulb'),
-  wearable('Wearable', 'watch'),
-  unknown('Unknown', 'devices_other');
+  phone('Phone', 'smartphone', '1'),
+  tablet('Tablet', 'tablet', '2'),
+  computer('Computer', 'computer', '3'),
+  tv('TV', 'tv', '4'),
+  gameConsole('Game Console', 'sports_esports', '5'),
+  mediaPlayer('Media Player', 'cast', '6'),
+  smartSpeaker('Smart Speaker', 'speaker', '7'),
+  camera('Camera', 'videocam', '8'),
+  printer('Printer', 'print', '9'),
+  networkDevice('Network Device', 'router', '10'),
+  iot('Smart Home', 'lightbulb', '11'),
+  wearable('Wearable', 'watch', '12'),
+  unknown('Unknown', 'devices_other', '');
 
-  const DeviceCategory(this.displayName, this.iconName);
+  const DeviceCategory(this.displayName, this.iconName, this.userTypeCode);
 
   final String displayName;
   final String iconName;
+
+  /// What the app writes to `X_LINKSYS_UserDeviceType` when the user picks this
+  /// category (#1691). The router keeps it per MAC, so a code is permanent:
+  /// never renumber or reuse one, and give a new category the next number.
+  /// Deliberately not [index], which reordering the enum would change.
+  /// `''` for [unknown], which clears the user's choice.
+  final String userTypeCode;
+
+  /// The category a stored `X_LINKSYS_UserDeviceType` code stands for, or null
+  /// when [code] is not one of ours.
+  static DeviceCategory? fromUserTypeCode(String? code) {
+    if (code == null || code.isEmpty) return null;
+    for (final category in values) {
+      if (category.userTypeCode == code) return category;
+    }
+    return null;
+  }
 }
 
 /// Classifies network devices.
@@ -36,10 +53,13 @@ class DeviceClassifier {
   /// Category of a client.
   ///
   /// The type the user set, then the type the firmware detected, and the
-  /// heuristics only when neither maps (#1693). The name patterns try the
-  /// firmware's FriendlyName before the HostName.
+  /// heuristics only when neither maps (#1693). The user's type is the app's
+  /// own code ([DeviceCategory.userTypeCode], #1691), or a devregex string if
+  /// another client wrote one. The name patterns try the firmware's
+  /// FriendlyName before the HostName.
   static DeviceCategory classifyClient(ClientDevice device) {
-    return _fromFirmwareType(device.userDeviceType) ??
+    return DeviceCategory.fromUserTypeCode(device.userDeviceType) ??
+        _fromFirmwareType(device.userDeviceType) ??
         _fromFirmwareType(device.deviceType, model: device.modelName) ??
         _matchHostnamePattern(device.friendlyName ?? '') ??
         classify(hostname: device.hostName, mac: device.mac);

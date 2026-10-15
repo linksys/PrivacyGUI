@@ -38,6 +38,7 @@ void main() {
     String? linksysDeviceType,
     String? linksysFriendlyName,
     String? linksysUserDeviceType,
+    String? linksysUserDeviceLocation,
   }) {
     return ConnectedDevice(
       instancePath: 'Device.Hosts.Host.1.',
@@ -64,6 +65,7 @@ void main() {
       linksysDeviceType: linksysDeviceType,
       linksysFriendlyName: linksysFriendlyName,
       linksysUserDeviceType: linksysUserDeviceType,
+      linksysUserDeviceLocation: linksysUserDeviceLocation,
     );
   }
 
@@ -1644,6 +1646,26 @@ void main() {
         expect(DeviceClassifier.classifyClient(client),
             DeviceCategory.gameConsole);
         expect(DeviceClassifier.manufacturerOf(client), 'Dell Inc.');
+      });
+
+      // The detail page edits the name the user gave (#1691), which is not
+      // FriendlyName: that is the firmware's pick of several names.
+      test('carries the name the user gave, apart from FriendlyName', () {
+        final client = buildOne(buildConnectedDevice(
+          macAddress: '11:22:33:44:55:01',
+          interface_: 'Device.WiFi.Radio.1',
+          linksysFriendlyName: 'Living room TV',
+          linksysUserDeviceLocation: 'Living room TV',
+        ));
+        expect(client.userDeviceName, 'Living room TV');
+
+        final unnamed = buildOne(buildConnectedDevice(
+          macAddress: '11:22:33:44:55:01',
+          interface_: 'Device.WiFi.Radio.1',
+          linksysFriendlyName: 'android-1a2b',
+          linksysUserDeviceLocation: '',
+        ));
+        expect(unnamed.userDeviceName, isNull);
       });
 
       test('the unprefixed 1.0 leaves are not read', () {

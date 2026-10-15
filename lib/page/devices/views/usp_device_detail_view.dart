@@ -13,6 +13,8 @@ import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/page/devices/providers/device_detail_provider.dart';
+import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
+import 'package:privacy_gui/page/devices/views/dialogs/device_identity_edit_dialog.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/util/network_utils.dart';
@@ -163,6 +165,15 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                     ],
                   ),
                 ),
+                if (device.hostInstancePath != null)
+                  AppIconButton(
+                    icon: AppIcon.font(Icons.edit, size: 18),
+                    semanticLabel: loc(context).editDevice,
+                    identifier: 'device-detail-edit-identity',
+                    onTap: ref.watch(uspMutationLoadingProvider) == 'identity'
+                        ? null
+                        : () => _editIdentity(context, ref, device),
+                  ),
                 DetailStatusBadge(isActive: device.isActive),
               ],
             ),
@@ -797,6 +808,39 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
           ),
         ),
       ],
+    );
+  }
+
+  // ===========================================================================
+  // Identity Actions
+  // ===========================================================================
+
+  /// Names the client and picks its icon (#1691). Saved at once, like the DHCP
+  /// actions below: the dialog is the confirmation.
+  Future<void> _editIdentity(
+      BuildContext context, WidgetRef ref, ClientDevice device) async {
+    final result =
+        await showAppDialog<({String name, DeviceCategory category})>(
+      context: context,
+      builder: (_) => DeviceIdentityEditDialog(
+        initialName: device.userDeviceName ?? '',
+        initialCategory:
+            DeviceCategory.fromUserTypeCode(device.userDeviceType) ??
+                DeviceCategory.unknown,
+        detectedName: device.hostName,
+      ),
+    );
+    if (result == null || !context.mounted) return;
+    await performUspMutation(
+      context,
+      ref,
+      loadingKey: 'identity',
+      mutation: () => ref.read(devicesDataProvider.notifier).updateIdentity(
+            hostInstancePath: device.hostInstancePath!,
+            name: result.name,
+            userTypeCode: result.category.userTypeCode,
+          ),
+      successMessage: loc(context).changesSaved,
     );
   }
 
