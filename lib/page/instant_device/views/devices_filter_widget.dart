@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
+import 'package:privacy_gui/page/instant_device/providers/client_access_policy_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_list_provider.dart';
 import 'package:privacy_gui/util/extensions.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -18,12 +19,18 @@ class DevicesFilterWidget extends ConsumerStatefulWidget {
   final List<String>? preselectedNodeId;
   final bool onlineOnly;
   final bool scrollable;
+  final bool restrictedDevicesSelected;
+  final VoidCallback? onRestrictedDevicesSelected;
+  final VoidCallback? onConnectionSelected;
 
   const DevicesFilterWidget({
     super.key,
     this.preselectedNodeId,
     this.onlineOnly = false,
     this.scrollable = true,
+    this.restrictedDevicesSelected = false,
+    this.onRestrictedDevicesSelected,
+    this.onConnectionSelected,
   });
 
   @override
@@ -79,7 +86,8 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
     final selectedNodeId = filterConfig.nodeFilter;
     final selectedWifi = filterConfig.wifiFilter;
     final selectedBand = filterConfig.bandFilter;
-    final selectConnection = filterConfig.connectionFilter;
+    final selectConnection =
+        filterConfig.connectionFilter && !widget.restrictedDevicesSelected;
     final showOrphan = filterConfig.showOrphanNodes;
 
     if (showOrphan) {
@@ -116,7 +124,7 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
   }
 }
 
-class _FiltersWidget extends StatelessWidget {
+class _FiltersWidget extends ConsumerWidget {
   const _FiltersWidget({
     super.key,
     required this.widget,
@@ -141,7 +149,7 @@ class _FiltersWidget extends StatelessWidget {
   final List<String> selectedBand;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       alignment: Alignment.bottomLeft,
       child: Padding(
@@ -159,15 +167,28 @@ class _FiltersWidget extends StatelessWidget {
                   if (!widget.onlineOnly) (loc(context).offline, false)
                 ],
                 chipName: (data) => data?.$1 ?? '',
-                checkIsSelected: (data) => selectConnection == (data?.$2),
+                checkIsSelected: (data) =>
+                    !widget.restrictedDevicesSelected &&
+                    selectConnection == (data?.$2),
                 onSelected: (data, value) {
                   if (data == null) {
                     return;
                   }
                   if (value) {
+                    widget.onConnectionSelected?.call();
                     notifier.updateConnectionFilter(data.$2);
                   }
                 }),
+            if (widget.onRestrictedDevicesSelected != null &&
+                (ref.watch(restrictedDevicesProvider).valueOrNull?.isNotEmpty ??
+                    false)) ...[
+              FilterChip(
+                label: Text(loc(context).blockedRemovedDevices),
+                selected: widget.restrictedDevicesSelected,
+                onSelected: (_) => widget.onRestrictedDevicesSelected?.call(),
+              ),
+              const AppGap.medium(),
+            ],
             FilteredChipsWidget<(String, String)>(
                 title: loc(context).connectedVia,
                 dataList: connectedList,
@@ -239,6 +260,7 @@ class _FiltersWidget extends StatelessWidget {
               loc(context).resetFilters,
               icon: LinksysIcons.restartAlt,
               onTap: () {
+                widget.onConnectionSelected?.call();
                 notifier.initFilter(
                     preselectedNodeId: widget.preselectedNodeId);
               },
