@@ -27,6 +27,15 @@ void main() {
     int? lastDataDownlinkRate,
     int? lastDataUplinkRate,
     String? deviceId,
+    String manufacturer = '',
+    String modelName = '',
+    String operatingSystem = '',
+    String? linksysManufacturer,
+    String? linksysModelName,
+    String? linksysOperatingSystem,
+    String? linksysDeviceType,
+    String? linksysFriendlyName,
+    String? linksysUserDeviceType,
   }) {
     return ConnectedDevice(
       instancePath: 'Device.Hosts.Host.1.',
@@ -44,9 +53,15 @@ void main() {
       deviceId: deviceId,
       ipv4Addresses: const [],
       ipv6Addresses: const [],
-      manufacturer: '',
-      modelName: '',
-      operatingSystem: '',
+      manufacturer: manufacturer,
+      modelName: modelName,
+      operatingSystem: operatingSystem,
+      linksysManufacturer: linksysManufacturer,
+      linksysModelName: linksysModelName,
+      linksysOperatingSystem: linksysOperatingSystem,
+      linksysDeviceType: linksysDeviceType,
+      linksysFriendlyName: linksysFriendlyName,
+      linksysUserDeviceType: linksysUserDeviceType,
     );
   }
 
@@ -1550,6 +1565,82 @@ void main() {
 
         expect(result.slaves.single.model, 'MX5500');
         expect(result.master.model, 'MR7500');
+      });
+    });
+
+    // FL-WRT 2.0 serves a client's identity from devidentd under the
+    // X_LINKSYS_ prefix (FWDEV#207). A leaf it has not identified reads "",
+    // never absent, so "" is what has to fall back.
+    group('client identity from X_LINKSYS_ leaves (#1693)', () {
+      ClientDevice buildOne(ConnectedDevice host) => MeshNetworkBuilder.build(
+            connectedDevices: ConnectedDevices(items: [host]),
+            wifiClientMap: {},
+            connectionDetailMap: {},
+            meshTopology: MeshTopologyInfo.empty,
+            gatewayName: 'Router',
+          ).allClients.single;
+
+      test('carries the firmware values onto the client', () {
+        final client = buildOne(buildConnectedDevice(
+          macAddress: '11:22:33:44:55:01',
+          hostName: 'iPhone',
+          interface_: 'Device.WiFi.Radio.1',
+          linksysManufacturer: 'Apple',
+          linksysModelName: 'iPhone',
+          linksysOperatingSystem: 'iOS',
+          linksysDeviceType: 'Phone',
+          linksysFriendlyName: "Austin's iPhone",
+          linksysUserDeviceType: 'Tablet',
+        ));
+
+        expect(client.manufacturer, 'Apple');
+        expect(client.modelName, 'iPhone');
+        expect(client.operatingSystem, 'iOS');
+        expect(client.deviceType, 'Phone');
+        expect(client.userDeviceType, 'Tablet');
+        expect(client.friendlyName, "Austin's iPhone");
+        expect(client.displayName, "Austin's iPhone");
+      });
+
+      test('a leaf reading "" leaves the field null, so the name is HostName',
+          () {
+        final client = buildOne(buildConnectedDevice(
+          macAddress: '11:22:33:44:55:01',
+          hostName: 'android-1a2b3c',
+          interface_: 'Device.WiFi.Radio.1',
+          linksysManufacturer: '',
+          linksysModelName: '',
+          linksysOperatingSystem: '',
+          linksysDeviceType: '',
+          linksysFriendlyName: '',
+          linksysUserDeviceType: '',
+        ));
+
+        expect(client.manufacturer, isNull);
+        expect(client.modelName, isNull);
+        expect(client.operatingSystem, isNull);
+        expect(client.deviceType, isNull);
+        expect(client.userDeviceType, isNull);
+        expect(client.friendlyName, isNull);
+        expect(client.displayName, 'android-1a2b3c');
+      });
+
+      test('the unprefixed 1.0 leaves are not read', () {
+        final client = buildOne(buildConnectedDevice(
+          macAddress: '11:22:33:44:55:01',
+          hostName: 'host',
+          interface_: 'Device.WiFi.Radio.1',
+          friendlyName: 'Old Name',
+          manufacturer: 'Old Maker',
+          modelName: 'Old Model',
+          operatingSystem: 'Old OS',
+        ));
+
+        expect(client.friendlyName, isNull);
+        expect(client.manufacturer, isNull);
+        expect(client.modelName, isNull);
+        expect(client.operatingSystem, isNull);
+        expect(client.displayName, 'host');
       });
     });
   });

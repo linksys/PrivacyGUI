@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 
 /// Device category for UI display and filtering.
 enum DeviceCategory {
@@ -23,15 +24,64 @@ enum DeviceCategory {
   final String iconName;
 }
 
-/// Classifies network devices based on hostname and MAC address.
+/// Classifies network devices.
 ///
-/// Uses a combination of hostname pattern matching and OUI vendor lookup
-/// to infer device category. Hostname patterns take priority as they are
-/// more specific than vendor-only inference.
+/// A client's category comes from the firmware's device type when it has one
+/// ([classifyClient]); otherwise from name pattern matching and OUI vendor
+/// lookup. Name patterns take priority as they are more specific than
+/// vendor-only inference.
 class DeviceClassifier {
   DeviceClassifier._();
 
-  /// Classify a device based on hostname and MAC address.
+  /// Category of a client.
+  ///
+  /// The type the user set, then the type the firmware detected, and the
+  /// heuristics only when neither maps (#1693). The name patterns try the
+  /// firmware's FriendlyName before the HostName.
+  static DeviceCategory classifyClient(ClientDevice device) {
+    return _fromFirmwareType(device.userDeviceType) ??
+        _fromFirmwareType(device.deviceType) ??
+        _matchHostnamePattern(device.friendlyName ?? '') ??
+        classify(hostname: device.hostName, mac: device.mac);
+  }
+
+  /// Manufacturer of a client: the firmware's, and the MAC's OUI only when the
+  /// firmware has none (#1693). Null when neither knows.
+  static String? manufacturerOf(ClientDevice device) {
+    return device.manufacturer ?? OuiLookup.getVendorOrPrivate(device.mac);
+  }
+
+  /// [DeviceCategory] for a devregex.json type string, or null when [type] is
+  /// absent or not one this app has a category for.
+  ///
+  /// The strings are LinksysWRT 1.0's, which devidentd keeps on FL-WRT 2.0 and
+  /// `icon_rules_data.dart` already matches on.
+  static DeviceCategory? _fromFirmwareType(String? type) {
+    if (type == null) return null;
+    // Every WeMo type is a smart-home appliance except the camera.
+    if (type == 'WeMoNetCam') return DeviceCategory.camera;
+    if (type.startsWith('WeMo')) return DeviceCategory.iot;
+    return switch (type) {
+      'Phone' || 'Mobile' => DeviceCategory.phone,
+      'Tablet' => DeviceCategory.tablet,
+      'Computer' => DeviceCategory.computer,
+      'MediaPlayer' => DeviceCategory.mediaPlayer,
+      'Wearable' => DeviceCategory.wearable,
+      'Camera' => DeviceCategory.camera,
+      'Infrastructure' || 'Storage' => DeviceCategory.networkDevice,
+      'GameConsole' || 'GameDevice' => DeviceCategory.gameConsole,
+      'DigitalAssistant' => DeviceCategory.smartSpeaker,
+      'Printer' => DeviceCategory.printer,
+      'DeviceHub' => DeviceCategory.iot,
+      _ => null,
+    };
+  }
+
+  /// Classify a device based on hostname and MAC address alone.
+  ///
+  /// Only [classifyClient] calls this outside tests: a call site that skipped
+  /// it would ignore the firmware's type.
+  @visibleForTesting
   static DeviceCategory classify({
     required String hostname,
     required String mac,
@@ -54,56 +104,6 @@ class DeviceClassifier {
     }
 
     return DeviceCategory.unknown;
-  }
-
-  /// Get both category and confidence level.
-  static ({DeviceCategory category, ClassificationConfidence confidence})
-      classifyWithConfidence({
-    required String hostname,
-    required String mac,
-  }) {
-    // 1. Hostname pattern (high confidence)
-    final fromHostname = _matchHostnamePattern(hostname);
-    if (fromHostname != null) {
-      return (
-        category: fromHostname,
-        confidence: ClassificationConfidence.high
-      );
-    }
-
-    // 2. Definitive vendor (high confidence)
-    final vendor = OuiLookup.getVendor(mac);
-    if (vendor != null) {
-      final definitive = _definitiveVendorCategory(vendor);
-      if (definitive != null) {
-        return (
-          category: definitive,
-          confidence: ClassificationConfidence.high
-        );
-      }
-
-      // 3. Probable vendor (medium confidence)
-      final probable = _probableVendorCategory(vendor);
-      if (probable != null) {
-        return (
-          category: probable,
-          confidence: ClassificationConfidence.medium
-        );
-      }
-    }
-
-    // 4. Randomized MAC (medium confidence - likely phone/tablet)
-    if (OuiLookup.isRandomizedMac(mac)) {
-      return (
-        category: DeviceCategory.phone,
-        confidence: ClassificationConfidence.medium
-      );
-    }
-
-    return (
-      category: DeviceCategory.unknown,
-      confidence: ClassificationConfidence.none
-    );
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -422,14 +422,6 @@ class DeviceClassifier {
 
     return null;
   }
-}
-
-/// Confidence level for device classification.
-enum ClassificationConfidence {
-  high,
-  medium,
-  low,
-  none,
 }
 
 /// Extension to get [IconData] for [DeviceCategory].

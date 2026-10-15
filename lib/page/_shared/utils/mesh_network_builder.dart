@@ -350,11 +350,15 @@ class MeshNetworkBuilder {
       );
     }
 
+    // Identity comes from devidentd's X_LINKSYS_ leaves (FWDEV#207). A leaf it
+    // has not identified reads "", never absent, so `nonEmpty` turns that into
+    // the null every consumer falls back on. The unprefixed 1.0 leaves are
+    // absent on FL-WRT 2.0 and take no part in the order (#1693).
     return ClientDevice(
       mac: mac,
       ip: device.ipAddress,
       hostName: device.hostName,
-      friendlyName: device.friendlyName,
+      friendlyName: nonEmpty(device.linksysFriendlyName),
       isActive: device.isActive,
       ipv6Addresses: device.ipv6Addresses
           .map((e) => e.address)
@@ -366,9 +370,11 @@ class MeshNetworkBuilder {
       parentNodeId: parentNodeId,
       parentNodeName: parentNodeName,
       isUnattributed: isUnattributed,
-      manufacturer: device.manufacturer,
-      modelName: device.modelName,
-      operatingSystem: device.operatingSystem,
+      manufacturer: nonEmpty(device.linksysManufacturer),
+      modelName: nonEmpty(device.linksysModelName),
+      operatingSystem: nonEmpty(device.linksysOperatingSystem),
+      deviceType: nonEmpty(device.linksysDeviceType),
+      userDeviceType: nonEmpty(device.linksysUserDeviceType),
       hostsDeviceId: device.deviceId,
     );
   }

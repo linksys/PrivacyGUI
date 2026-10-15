@@ -152,6 +152,9 @@ class DevicesTestData {
     String? parentNodeId,
     String? parentNodeName,
     List<ClientInterfaceInfo> additionalInterfaces = const [],
+    String? manufacturer,
+    String? deviceType,
+    String? userDeviceType,
   }) =>
       ClientDevice(
         mac: mac,
@@ -164,6 +167,9 @@ class DevicesTestData {
         parentNodeId: parentNodeId,
         parentNodeName: parentNodeName,
         additionalInterfaces: additionalInterfaces,
+        manufacturer: manufacturer,
+        deviceType: deviceType,
+        userDeviceType: userDeviceType,
       );
 
   /// Creates an online wired client device.

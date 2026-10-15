@@ -173,6 +173,13 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
   /// Device operating system.
   final String? operatingSystem;
 
+  /// Device type the firmware detected, one of the devregex.json type strings
+  /// (e.g. `Phone`, `Computer`).
+  final String? deviceType;
+
+  /// Device type the user chose; preferred over [deviceType] when set.
+  final String? userDeviceType;
+
   /// Hosts DeviceID (UUID, for DataElements matching).
   final String? hostsDeviceId;
 
@@ -196,6 +203,8 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
     this.manufacturer,
     this.modelName,
     this.operatingSystem,
+    this.deviceType,
+    this.userDeviceType,
     this.hostsDeviceId,
     this.additionalInterfaces = const [],
   }) : _parentNodeName = parentNodeName;
@@ -303,6 +312,8 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
     String? manufacturer,
     String? modelName,
     String? operatingSystem,
+    String? deviceType,
+    String? userDeviceType,
     String? hostsDeviceId,
     List<ClientInterfaceInfo>? additionalInterfaces,
   }) {
@@ -325,6 +336,8 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
       manufacturer: manufacturer ?? this.manufacturer,
       modelName: modelName ?? this.modelName,
       operatingSystem: operatingSystem ?? this.operatingSystem,
+      deviceType: deviceType ?? this.deviceType,
+      userDeviceType: userDeviceType ?? this.userDeviceType,
       hostsDeviceId: hostsDeviceId ?? this.hostsDeviceId,
       additionalInterfaces: additionalInterfaces ?? this.additionalInterfaces,
     );
@@ -347,6 +360,8 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
         manufacturer,
         modelName,
         operatingSystem,
+        deviceType,
+        userDeviceType,
         hostsDeviceId,
         additionalInterfaces,
       ];
@@ -371,6 +386,8 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
         'manufacturer': manufacturer,
         'modelName': modelName,
         'operatingSystem': operatingSystem,
+        'deviceType': deviceType,
+        'userDeviceType': userDeviceType,
         'hostsDeviceId': hostsDeviceId,
         'additionalInterfaces': additionalInterfaces,
       };

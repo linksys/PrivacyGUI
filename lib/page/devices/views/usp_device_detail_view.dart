@@ -5,7 +5,6 @@ import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/ipv6_address.dart';
-import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart'
     hide ConnectionType;
@@ -124,11 +123,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   // ===========================================================================
 
   Widget _buildDeviceIdentityCard(BuildContext context, ClientDevice device) {
-    final classification = DeviceClassifier.classifyWithConfidence(
-      hostname: device.hostName,
-      mac: device.mac,
-    );
-    final vendor = OuiLookup.getVendorOrPrivate(device.mac);
+    final category = DeviceClassifier.classifyClient(device);
+    final vendor = DeviceClassifier.manufacturerOf(device);
     final colorScheme = Theme.of(context).colorScheme;
 
     return AppCard(
@@ -148,7 +144,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                     borderRadius: BorderRadius.circular(AppSpacing.sm),
                   ),
                   child: Icon(
-                    classification.category.icon,
+                    category.icon,
                     size: 28,
                     color: colorScheme.onPrimaryContainer,
                   ),
@@ -161,7 +157,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                       AppText.titleLarge(device.displayName),
                       AppGap.xxs(),
                       AppText.labelMedium(
-                        classification.category.displayName,
+                        category.displayName,
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ],

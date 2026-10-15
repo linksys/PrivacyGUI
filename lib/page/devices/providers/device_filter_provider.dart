@@ -263,11 +263,9 @@ final deviceFilterOptionsProvider = Provider<DeviceFilterOptions>((ref) {
         .toSet()
         .toList()
       ..sort(),
-    deviceCategories: devices
-        .map((d) => DeviceClassifier.classify(hostname: d.hostName, mac: d.mac))
-        .toSet()
-        .toList()
-      ..sort((a, b) => a.index.compareTo(b.index)),
+    deviceCategories:
+        devices.map(DeviceClassifier.classifyClient).toSet().toList()
+          ..sort((a, b) => a.index.compareTo(b.index)),
     hasUnknownSignalDevices:
         devices.any((d) => d.isWifi && d.signalStrength == null),
   );
@@ -308,8 +306,7 @@ bool _matches(ClientDevice device, DeviceFilterConfig filter) {
 
   // Device category (multi-select OR)
   if (filter.deviceCategories.isNotEmpty) {
-    final category =
-        DeviceClassifier.classify(hostname: device.hostName, mac: device.mac);
+    final category = DeviceClassifier.classifyClient(device);
     if (!filter.deviceCategories.contains(category)) {
       return false;
     }
