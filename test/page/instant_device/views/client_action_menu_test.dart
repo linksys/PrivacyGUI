@@ -207,19 +207,13 @@ void main() {
     expect(find.textContaining('WiFi access removed'), findsNothing);
   });
 
-  testWidgets('Block is explicitly unavailable and never starts removal',
-      (tester) async {
+  testWidgets('menu offers no traffic Block action', (tester) async {
     await pump(tester);
     await tester.tap(find.byTooltip('Device actions'));
     await tester.pumpAndSettle();
-    expect(find.text('Traffic blocking · Coming soon'), findsOneWidget);
-    await tester.tap(find.text('Block'));
-    await tester.pumpAndSettle();
-    expect(find.byType(AlertDialog), findsNothing);
-    final container = ProviderScope.containerOf(
-        tester.element(find.byType(ClientActionMenu)));
-    container.read(clientRemovalProvider);
-    expect(removals.calls, isEmpty);
+    expect(find.text('Remove'), findsOneWidget);
+    expect(find.text('Block'), findsNothing);
+    expect(find.textContaining('Coming soon'), findsNothing);
   });
 
   for (final verified in [true, false]) {

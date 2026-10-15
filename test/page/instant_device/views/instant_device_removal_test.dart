@@ -134,7 +134,7 @@ void main() {
     await tester.tap(find.byTooltip('Device actions').first);
     await tester.pumpAndSettle();
     expect(find.text('Remove'), findsOneWidget);
-    expect(find.text('Block'), findsOneWidget);
+    expect(find.text('Block'), findsNothing);
   });
 
   testWidgets('cancel does not delete the client', (tester) async {

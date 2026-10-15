@@ -366,8 +366,6 @@
   "removeClientUnavailable": "This device cannot be removed right now. Refresh the device list and try again.",
   "removeClientUnverified": "The removal could not be verified. No disconnect was requested. Check the MAC access settings before retrying.",
   "clientDeviceActions": "Device actions",
-  "blockClientTraffic": "Block",
-  "blockClientTrafficUnavailable": "Traffic blocking · Coming soon",
   "blockedRemovedDevices": "Blocked / Removed devices",
   "restrictedDevicesDescription": "Devices with saved WiFi access restrictions. A device being offline does not mean its access was removed.",
   "restrictedDevicesAllowDescription": "In allow-only mode, this list shows known WiFi devices outside the allowed list. Unknown devices cannot be listed.",

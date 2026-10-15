@@ -40,21 +40,9 @@ class _ClientActionMenuState extends ConsumerState<ClientActionMenu> {
           if (widget.restricted)
             PopupMenuItem(
                 value: 'restore', child: Text(loc(context).restoreClientAccess))
-          else ...[
+          else
             PopupMenuItem(
                 value: 'remove', child: Text(loc(context).removeClient)),
-            PopupMenuItem(
-              enabled: false,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(loc(context).blockClientTraffic),
-                  Text(loc(context).blockClientTrafficUnavailable,
-                      style: Theme.of(context).textTheme.bodySmall),
-                ],
-              ),
-            ),
-          ],
         ],
         onSelected: (action) {
           if (action == 'remove') _confirm();
