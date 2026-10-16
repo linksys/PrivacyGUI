@@ -158,6 +158,51 @@ class UspDevicesDataService {
     }
   }
 
+  /// Writes the name and icon the user gave a client, in one Set (#1691).
+  ///
+  /// The name goes to `X_LINKSYS_UserDeviceLocation`, which the firmware's
+  /// `X_LINKSYS_FriendlyName` reads back; the icon is the app's own code
+  /// (`DeviceCategory.userTypeCode`) in `X_LINKSYS_UserDeviceType`. `''`
+  /// clears either, so the client falls back to what the firmware detected.
+  Future<void> updateIdentity({
+    required String hostInstancePath,
+    required String name,
+    required String userTypeCode,
+  }) async {
+    try {
+      final result = await ConnectedDevices.update(_usp, [
+        ConnectedDeviceUpdate(
+          instancePath: hostInstancePath,
+          linksysUserDeviceLocation: name,
+          linksysUserDeviceType: userTypeCode,
+        ),
+      ]);
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(
+            :final errorSummary,
+            :final successes,
+            :final failures
+          ):
+          throw UspPartialFailureError(
+            summary: 'Device identity partial failure: $errorSummary',
+            successPaths: successes.map((s) => s.requestedPath).toList(),
+            failures: failures,
+          );
+        case UspFailure(:final errorSummary, :final errors):
+          throw UspCompleteFailureError(
+            summary: 'Device identity update failed: $errorSummary',
+            failures: errors,
+          );
+      }
+    } catch (e) {
+      if (e is ServiceError) rethrow;
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
   MeshTopologyInfo _buildTopologyInfo(
     DataElementsNetwork network,
     Map<String, String> bssidToBandMap,

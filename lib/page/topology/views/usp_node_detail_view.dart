@@ -13,7 +13,11 @@ import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart'
     show ruleIdentifierKey;
+import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
+import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_list_tile.dart';
+import 'package:privacy_gui/page/devices/views/dialogs/device_identity_edit_dialog.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
@@ -78,7 +82,7 @@ class UspNodeDetailView extends ConsumerWidget {
       NodeEntity node, UspNodeDetailState detail) {
     return Column(
       children: [
-        _buildNodeInfoCard(context, node),
+        _buildNodeInfoCard(context, ref, node),
         AppGap.lg(),
         _buildNetworkCard(context, ref, node),
         if (node is SlaveNode) ...[
@@ -100,7 +104,7 @@ class UspNodeDetailView extends ConsumerWidget {
           width: context.colWidth(4),
           child: Column(
             children: [
-              _buildNodeInfoCard(context, node),
+              _buildNodeInfoCard(context, ref, node),
               AppGap.lg(),
               _buildNetworkCard(context, ref, node),
               if (node is SlaveNode) ...[
@@ -120,10 +124,69 @@ class UspNodeDetailView extends ConsumerWidget {
   }
 
   // ===========================================================================
+  // Node Name
+  // ===========================================================================
+
+  /// The node name, with an edit pen right after it for the router (#1691),
+  /// styled like the device detail page's. An extender is not editable yet:
+  /// FL-WRT 2.0's Hosts rows cannot tell a node from a client, which waits for
+  /// the mesh work.
+  Widget _buildNodeName(BuildContext context, WidgetRef ref, NodeEntity node) {
+    final name = AppText.titleLarge(node.displayName);
+    if (node is! MasterNode) return name;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(child: name),
+        AppGap.xs(),
+        Semantics(
+          button: true,
+          label: loc(context).editDevice,
+          identifier: 'node-detail-edit-name',
+          child: InkWell(
+            onTap: () => _editRouterName(context, ref, node),
+            borderRadius: BorderRadius.circular(AppSpacing.xxs),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xxs),
+              child: Icon(
+                Icons.edit,
+                size: 16,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Names the router (#1691): only `DeviceInfo.X_LINKSYS_UserDeviceLocation`
+  /// is written, and a router is named but not typed. The dialog saves and
+  /// shows its own progress and errors; this page only confirms a finished save.
+  Future<void> _editRouterName(
+      BuildContext context, WidgetRef ref, MasterNode node) async {
+    final saved = await showAppDialog<bool>(
+      context: context,
+      builder: (_) => DeviceIdentityEditDialog(
+        initialName: node.userDeviceLocation ?? '',
+        initialCategory: DeviceCategory.unknown,
+        detectedName: node.hostName ?? node.model,
+        showIcon: false,
+        onSave: (name, _) =>
+            ref.read(devicesDataProvider.notifier).updateRouterName(name),
+      ),
+    );
+    if (saved == true && context.mounted) {
+      showSuccessSnackBar(context, loc(context).changesSaved);
+    }
+  }
+
+  // ===========================================================================
   // Node Info Card
   // ===========================================================================
 
-  Widget _buildNodeInfoCard(BuildContext context, NodeEntity node) {
+  Widget _buildNodeInfoCard(
+      BuildContext context, WidgetRef ref, NodeEntity node) {
     final colorScheme = Theme.of(context).colorScheme;
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -183,7 +246,7 @@ class UspNodeDetailView extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AppText.titleLarge(node.displayName),
+                      _buildNodeName(context, ref, node),
                       AppGap.xs(),
                       Wrap(
                         spacing: AppSpacing.sm,

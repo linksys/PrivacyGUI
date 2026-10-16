@@ -551,6 +551,38 @@ void main() {
   // ClientInterfaceInfo
   // ===========================================================================
 
+  // The fields the firmware's identity (#1693) and the user's name and icon
+  // (#1691) add. Equality has to see each one, or a rename or an icon change
+  // would not rebuild the surfaces that show the device.
+  group('ClientDevice identity fields (#1693, #1691)', () {
+    final base = DevicesTestData.createWifiClient(
+      deviceType: 'Phone',
+      userDeviceType: '2',
+    ).copyWith(
+      userDeviceName: 'Kitchen',
+      hostInstancePath: 'Device.Hosts.Host.3.',
+    );
+
+    test('copyWith keeps them', () {
+      final copy = base.copyWith();
+      expect(copy.deviceType, 'Phone');
+      expect(copy.userDeviceType, '2');
+      expect(copy.userDeviceName, 'Kitchen');
+      expect(copy.hostInstancePath, 'Device.Hosts.Host.3.');
+    });
+
+    test('each one takes part in equality', () {
+      expect(base, equals(base.copyWith()));
+      expect(base, isNot(equals(base.copyWith(deviceType: 'Computer'))));
+      expect(base, isNot(equals(base.copyWith(userDeviceType: '4'))));
+      expect(base, isNot(equals(base.copyWith(userDeviceName: 'Study'))));
+      expect(
+          base,
+          isNot(
+              equals(base.copyWith(hostInstancePath: 'Device.Hosts.Host.4.'))));
+    });
+  });
+
   group('ClientInterfaceInfo', () {
     test('isWifi returns true for WiFi connection type', () {
       final wifi = DevicesTestData.createWifiInterface();

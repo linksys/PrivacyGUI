@@ -173,8 +173,24 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
   /// Device operating system.
   final String? operatingSystem;
 
+  /// Device type the firmware detected, one of the devregex.json type strings
+  /// (e.g. `Phone`, `Computer`).
+  final String? deviceType;
+
+  /// Device type the user chose; preferred over [deviceType] when set.
+  final String? userDeviceType;
+
+  /// Name the user gave this device (`X_LINKSYS_UserDeviceLocation`, #1691),
+  /// which the detail page edits. Not [friendlyName]: that is the firmware's
+  /// pick among several names and is what is displayed.
+  final String? userDeviceName;
+
   /// Hosts DeviceID (UUID, for DataElements matching).
   final String? hostsDeviceId;
+
+  /// This client's `Device.Hosts.Host.{i}.` row, where its user name and type
+  /// are written (#1691). Null for a client not built from a Hosts row.
+  final String? hostInstancePath;
 
   // ─── Multi-interface ───
   /// Additional network interfaces for this device.
@@ -196,7 +212,11 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
     this.manufacturer,
     this.modelName,
     this.operatingSystem,
+    this.deviceType,
+    this.userDeviceType,
+    this.userDeviceName,
     this.hostsDeviceId,
+    this.hostInstancePath,
     this.additionalInterfaces = const [],
   }) : _parentNodeName = parentNodeName;
 
@@ -303,7 +323,11 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
     String? manufacturer,
     String? modelName,
     String? operatingSystem,
+    String? deviceType,
+    String? userDeviceType,
+    String? userDeviceName,
     String? hostsDeviceId,
+    String? hostInstancePath,
     List<ClientInterfaceInfo>? additionalInterfaces,
   }) {
     return ClientDevice(
@@ -325,7 +349,11 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
       manufacturer: manufacturer ?? this.manufacturer,
       modelName: modelName ?? this.modelName,
       operatingSystem: operatingSystem ?? this.operatingSystem,
+      deviceType: deviceType ?? this.deviceType,
+      userDeviceType: userDeviceType ?? this.userDeviceType,
+      userDeviceName: userDeviceName ?? this.userDeviceName,
       hostsDeviceId: hostsDeviceId ?? this.hostsDeviceId,
+      hostInstancePath: hostInstancePath ?? this.hostInstancePath,
       additionalInterfaces: additionalInterfaces ?? this.additionalInterfaces,
     );
   }
@@ -347,7 +375,11 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
         manufacturer,
         modelName,
         operatingSystem,
+        deviceType,
+        userDeviceType,
+        userDeviceName,
         hostsDeviceId,
+        hostInstancePath,
         additionalInterfaces,
       ];
 
@@ -371,7 +403,11 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
         'manufacturer': manufacturer,
         'modelName': modelName,
         'operatingSystem': operatingSystem,
+        'deviceType': deviceType,
+        'userDeviceType': userDeviceType,
+        'userDeviceName': userDeviceName,
         'hostsDeviceId': hostsDeviceId,
+        'hostInstancePath': hostInstancePath,
         'additionalInterfaces': additionalInterfaces,
       };
 }

@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
 
+import '../../../mocks/test_data/devices_test_data.dart';
+
 void main() {
   // OUI database for testing (subset needed by DeviceClassifier tests)
   const testOuiDatabase = <String, String>{
@@ -467,50 +469,212 @@ void main() {
     });
   });
 
-  group('DeviceClassifier classifyWithConfidence', () {
-    test('Hostname match returns high confidence', () {
-      final result = DeviceClassifier.classifyWithConfidence(
-        hostname: 'iPhone',
-        mac: '00:00:00:00:00:00',
+  // The order of #1693: the type the user set, then the type the firmware
+  // detected, and today's heuristics only when neither maps.
+  group('DeviceClassifier classifyClient (#1693)', () {
+    test('the firmware type wins over the host name', () {
+      final device = DevicesTestData.createWifiClient(
+        hostName: 'MacBook-Pro',
+        deviceType: 'Phone',
       );
-      expect(result.category, DeviceCategory.phone);
-      expect(result.confidence, ClassificationConfidence.high);
+      expect(DeviceClassifier.classifyClient(device), DeviceCategory.phone);
     });
 
-    test('Definitive vendor returns high confidence', () {
-      final result = DeviceClassifier.classifyWithConfidence(
-        hostname: '',
-        mac: '00:17:AB:12:34:56', // Nintendo
+    test('a type the user set wins over the firmware type', () {
+      final device = DevicesTestData.createWifiClient(
+        deviceType: 'Phone',
+        userDeviceType: 'Tablet',
       );
-      expect(result.category, DeviceCategory.gameConsole);
-      expect(result.confidence, ClassificationConfidence.high);
+      expect(DeviceClassifier.classifyClient(device), DeviceCategory.tablet);
     });
 
-    test('Probable vendor returns medium confidence', () {
-      final result = DeviceClassifier.classifyWithConfidence(
-        hostname: '',
-        mac: '00:14:22:12:34:56', // Dell
+    test('a user type with no category falls through to the firmware type', () {
+      final device = DevicesTestData.createWifiClient(
+        deviceType: 'Computer',
+        userDeviceType: 'Toaster',
       );
-      expect(result.category, DeviceCategory.computer);
-      expect(result.confidence, ClassificationConfidence.medium);
+      expect(DeviceClassifier.classifyClient(device), DeviceCategory.computer);
     });
 
-    test('Randomized MAC returns medium confidence', () {
-      final result = DeviceClassifier.classifyWithConfidence(
-        hostname: '',
+    // devregex.json types a Kindle and an iPod Touch as `Mobile`, and only the
+    // model tells them apart from a phone — as `icon_rules_data.dart` does.
+    test('a Mobile Kindle is a tablet, as its host name says today', () {
+      final device = DevicesTestData.createWifiClient(
+        hostName: 'kindle-1a2b3c',
+        deviceType: 'Mobile',
+        modelName: 'Kindle',
+      );
+      expect(DeviceClassifier.classifyClient(device), DeviceCategory.tablet);
+    });
+
+    test('a Mobile iPod Touch is a media player', () {
+      final device = DevicesTestData.createWifiClient(
+        hostName: '',
+        deviceType: 'Mobile',
+        modelName: 'iPod Touch',
+      );
+      expect(
+          DeviceClassifier.classifyClient(device), DeviceCategory.mediaPlayer);
+    });
+
+    test('name patterns match FriendlyName before HostName', () {
+      final device = DevicesTestData.createWifiClient(
+        friendlyName: "Austin's iPad",
+        hostName: 'MacBook-Pro',
+      );
+      expect(DeviceClassifier.classifyClient(device), DeviceCategory.tablet);
+    });
+
+    test('a FriendlyName no pattern matches falls through to HostName', () {
+      final device = DevicesTestData.createWifiClient(
+        friendlyName: 'Living room',
+        hostName: 'MacBook-Pro',
+      );
+      expect(DeviceClassifier.classifyClient(device), DeviceCategory.computer);
+    });
+
+    test('with neither type set, the host name decides as today', () {
+      final device = DevicesTestData.createWifiClient(hostName: 'PlayStation5');
+      expect(
+          DeviceClassifier.classifyClient(device), DeviceCategory.gameConsole);
+    });
+
+    // Every distinct "type" in devidentd's devregex.json at feed_premium
+    // 0e0cf583 (the FWDEV#207 merge), with the category it shows as.
+    const devregexTypes = <String, DeviceCategory>{
+      'Phone': DeviceCategory.phone,
+      'Mobile': DeviceCategory.phone,
+      'Tablet': DeviceCategory.tablet,
+      'Computer': DeviceCategory.computer,
+      'MediaPlayer': DeviceCategory.mediaPlayer,
+      'Wearable': DeviceCategory.wearable,
+      'Camera': DeviceCategory.camera,
+      'WeMoNetCam': DeviceCategory.camera,
+      'Infrastructure': DeviceCategory.networkDevice,
+      'Storage': DeviceCategory.networkDevice,
+      'GameConsole': DeviceCategory.gameConsole,
+      'GameDevice': DeviceCategory.gameConsole,
+      'DigitalAssistant': DeviceCategory.smartSpeaker,
+      'Printer': DeviceCategory.printer,
+      'DeviceHub': DeviceCategory.iot,
+      'WeMoAirPurifier': DeviceCategory.iot,
+      'WeMoBaby': DeviceCategory.iot,
+      'WeMoBridge': DeviceCategory.iot,
+      'WeMoCoffeeMaker': DeviceCategory.iot,
+      'WeMoCrockPot': DeviceCategory.iot,
+      'WeMoDimmer': DeviceCategory.iot,
+      'WeMoHeaterA': DeviceCategory.iot,
+      'WeMoHeaterB': DeviceCategory.iot,
+      'WeMoHumidifier': DeviceCategory.iot,
+      'WeMoHumidifierB': DeviceCategory.iot,
+      'WeMoInsight': DeviceCategory.iot,
+      'WeMoLightSwitch': DeviceCategory.iot,
+      'WeMoLink': DeviceCategory.iot,
+      'WeMoMaker': DeviceCategory.iot,
+      'WeMoPetfeeder': DeviceCategory.iot,
+      'WeMoSensor': DeviceCategory.iot,
+      'WeMoSocket': DeviceCategory.iot,
+    };
+    for (final entry in devregexTypes.entries) {
+      test('firmware type "${entry.key}" shows as ${entry.value.name}', () {
+        // No host name, and a MAC with no OUI entry that is not randomised:
+        // the heuristics alone say unknown, so the test fails if the type is
+        // ignored.
+        final device = DevicesTestData.createWifiClient(
+          hostName: '',
+          deviceType: entry.key,
+        );
+        final expected = entry.value;
+        expect(DeviceClassifier.classifyClient(device), expected);
+      });
+    }
+  });
+
+  // The icon a user picks is stored in X_LINKSYS_UserDeviceType as a number the
+  // app owns, so the app defines the categories, not the firmware (#1691).
+  group('DeviceCategory user type codes (#1691)', () {
+    // Pinned literals: a stored code must keep its meaning across releases,
+    // so reordering the enum must not change any of these.
+    const pinned = <DeviceCategory, String>{
+      DeviceCategory.phone: '1',
+      DeviceCategory.tablet: '2',
+      DeviceCategory.computer: '3',
+      DeviceCategory.tv: '4',
+      DeviceCategory.gameConsole: '5',
+      DeviceCategory.mediaPlayer: '6',
+      DeviceCategory.smartSpeaker: '7',
+      DeviceCategory.camera: '8',
+      DeviceCategory.printer: '9',
+      DeviceCategory.networkDevice: '10',
+      DeviceCategory.iot: '11',
+      DeviceCategory.wearable: '12',
+    };
+
+    test('each category has its pinned code', () {
+      for (final entry in pinned.entries) {
+        expect(entry.key.userTypeCode, entry.value, reason: entry.key.name);
+      }
+    });
+
+    test('unknown has no code: picking it clears the user type', () {
+      expect(DeviceCategory.unknown.userTypeCode, '');
+    });
+
+    test('a code reads back as its category', () {
+      for (final entry in pinned.entries) {
+        expect(DeviceCategory.fromUserTypeCode(entry.value), entry.key);
+      }
+    });
+
+    test('a value that is not a code reads as no category', () {
+      for (final value in [null, '', '0', '13', 'phone', ' 4', '4.0']) {
+        expect(DeviceCategory.fromUserTypeCode(value), isNull, reason: value);
+      }
+    });
+
+    test('a user type code wins over the firmware type', () {
+      final device = DevicesTestData.createWifiClient(
+        deviceType: 'Phone',
+        userDeviceType: '4',
+      );
+      expect(DeviceClassifier.classifyClient(device), DeviceCategory.tv);
+    });
+  });
+
+  // The firmware's manufacturer first, the OUI only when it has none (#1693).
+  group('DeviceClassifier manufacturerOf (#1693)', () {
+    test('the firmware manufacturer wins over the OUI', () {
+      final device = DevicesTestData.createWifiClient(
+        mac: '00:14:22:12:34:56', // Dell by OUI
+        manufacturer: 'Apple',
+      );
+      expect(DeviceClassifier.manufacturerOf(device), 'Apple');
+    });
+
+    test('an iPhone with a randomised MAC shows Apple, not Private/Random', () {
+      final device = DevicesTestData.createWifiClient(
         mac: 'BA:16:44:9F:EB:8B',
+        manufacturer: 'Apple',
       );
-      expect(result.category, DeviceCategory.phone);
-      expect(result.confidence, ClassificationConfidence.medium);
+      expect(DeviceClassifier.manufacturerOf(device), 'Apple');
     });
 
-    test('Unknown returns no confidence', () {
-      final result = DeviceClassifier.classifyWithConfidence(
-        hostname: '',
-        mac: '00:03:93:12:34:56', // Apple - ambiguous
+    test('with no firmware manufacturer, the OUI decides as today', () {
+      expect(
+        DeviceClassifier.manufacturerOf(
+            DevicesTestData.createWifiClient(mac: '00:14:22:12:34:56')),
+        'Dell Inc.',
       );
-      expect(result.category, DeviceCategory.unknown);
-      expect(result.confidence, ClassificationConfidence.none);
+      expect(
+        DeviceClassifier.manufacturerOf(
+            DevicesTestData.createWifiClient(mac: 'BA:16:44:9F:EB:8B')),
+        'Private/Random',
+      );
+      expect(
+        DeviceClassifier.manufacturerOf(
+            DevicesTestData.createWifiClient(mac: '11:22:33:44:55:01')),
+        isNull,
+      );
     });
   });
 }

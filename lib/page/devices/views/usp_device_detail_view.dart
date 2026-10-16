@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/ipv6_address.dart';
-import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart'
     hide ConnectionType;
@@ -14,6 +14,8 @@ import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/page/devices/providers/device_detail_provider.dart';
+import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
+import 'package:privacy_gui/page/devices/views/dialogs/device_identity_edit_dialog.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/util/network_utils.dart';
@@ -124,11 +126,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   // ===========================================================================
 
   Widget _buildDeviceIdentityCard(BuildContext context, ClientDevice device) {
-    final classification = DeviceClassifier.classifyWithConfidence(
-      hostname: device.hostName,
-      mac: device.mac,
-    );
-    final vendor = OuiLookup.getVendorOrPrivate(device.mac);
+    final category = DeviceClassifier.classifyClient(device);
+    final vendor = DeviceClassifier.manufacturerOf(device);
     final colorScheme = Theme.of(context).colorScheme;
 
     return AppCard(
@@ -148,7 +147,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                     borderRadius: BorderRadius.circular(AppSpacing.sm),
                   ),
                   child: Icon(
-                    classification.category.icon,
+                    category.icon,
                     size: 28,
                     color: colorScheme.onPrimaryContainer,
                   ),
@@ -158,10 +157,10 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AppText.titleLarge(device.displayName),
+                      _buildDeviceName(context, device),
                       AppGap.xxs(),
                       AppText.labelMedium(
-                        classification.category.displayName,
+                        category.displayName,
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ],
@@ -802,6 +801,66 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         ),
       ],
     );
+  }
+
+  /// The device name, with an edit pen right after it, styled like the copy
+  /// icon of [DetailCopyableText]. Only the pen is tappable.
+  Widget _buildDeviceName(BuildContext context, ClientDevice device) {
+    final name = AppText.titleLarge(device.displayName);
+    if (device.hostInstancePath == null) return name;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(child: name),
+        AppGap.xs(),
+        Semantics(
+          button: true,
+          label: loc(context).editDevice,
+          identifier: 'device-detail-edit-identity',
+          child: InkWell(
+            onTap: () => _editIdentity(context, ref, device),
+            borderRadius: BorderRadius.circular(AppSpacing.xxs),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xxs),
+              child: Icon(
+                Icons.edit,
+                size: 16,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ===========================================================================
+  // Identity Actions
+  // ===========================================================================
+
+  /// Names the client and picks its icon (#1691). The dialog saves and shows
+  /// its own progress and errors; this page only confirms a finished save.
+  Future<void> _editIdentity(
+      BuildContext context, WidgetRef ref, ClientDevice device) async {
+    final saved = await showAppDialog<bool>(
+      context: context,
+      builder: (_) => DeviceIdentityEditDialog(
+        initialName: device.userDeviceName ?? '',
+        initialCategory:
+            DeviceCategory.fromUserTypeCode(device.userDeviceType) ??
+                DeviceCategory.unknown,
+        detectedName: device.hostName,
+        onSave: (name, category) =>
+            ref.read(devicesDataProvider.notifier).updateIdentity(
+                  hostInstancePath: device.hostInstancePath!,
+                  name: name,
+                  userTypeCode: category.userTypeCode,
+                ),
+      ),
+    );
+    if (saved == true && context.mounted) {
+      showSuccessSnackBar(context, loc(context).changesSaved);
+    }
   }
 
   // ===========================================================================

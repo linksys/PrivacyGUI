@@ -1,5 +1,7 @@
+import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/topology/views/usp_node_detail_view.dart';
 
+import '../../../golden_framework/golden_interactions.dart';
 import '../../../golden_framework/golden_runner.dart';
 import '../../../golden_framework/golden_test_config.dart';
 import '../../../../mocks/provider_overrides/mock_topology.dart';
@@ -69,6 +71,24 @@ void main() {
         'not_found': (overrides) => overrides.addAll(
               nodeDetailOverrides(nodeNotFoundState),
             ),
+        // The router after the user named it (#1691): the location is the name.
+        'master_named': (overrides) => overrides.addAll(
+              nodeDetailOverrides(masterNodeNamed),
+            ),
+      },
+      interactions: {
+        // The pen after the router's name opens the name-only dialog, prefilled
+        // and with Reset on. Found by identifier, so the same in every locale.
+        'dialog_edit_router_name': Interaction(
+          setup: (overrides) => overrides.addAll(
+            nodeDetailOverrides(masterNodeNamed),
+          ),
+          steps: (tester) async {
+            await tester
+                .tap(find.bySemanticsIdentifier('node-detail-edit-name'));
+            await pumpOverlayIn(tester);
+          },
+        ),
       },
     ),
   );
