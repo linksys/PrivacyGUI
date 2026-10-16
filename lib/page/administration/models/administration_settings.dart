@@ -15,32 +15,34 @@ class AdministrationSettings extends Equatable {
   /// `RULE_MGMT_WIFI_ACCESS` (linksys/FWDEV#216): whether a Wi-Fi client can
   /// open this GUI. Null when the read succeeded and the firmware has no such
   /// rule, which hides the switch; a failed read never lands here.
-  final bool? mgmtWifiEnabled;
+  final bool? managementWifiEnabled;
 
   const AdministrationSettings({
     required this.upnpEnabled,
     required this.sipAlgEnabled,
-    required this.mgmtWifiEnabled,
+    required this.managementWifiEnabled,
   });
 
   const AdministrationSettings.empty()
       : upnpEnabled = false,
         sipAlgEnabled = false,
-        mgmtWifiEnabled = null;
+        managementWifiEnabled = null;
 
-  /// [mgmtWifiEnabled] can only be changed, never cleared: whether the rule
-  /// exists is the firmware's, not an edit.
+  /// [managementWifiEnabled] can only be changed, never cleared: whether the
+  /// rule exists is the firmware's, not an edit.
   AdministrationSettings copyWith({
     bool? upnpEnabled,
     bool? sipAlgEnabled,
-    bool? mgmtWifiEnabled,
+    bool? managementWifiEnabled,
   }) =>
       AdministrationSettings(
         upnpEnabled: upnpEnabled ?? this.upnpEnabled,
         sipAlgEnabled: sipAlgEnabled ?? this.sipAlgEnabled,
-        mgmtWifiEnabled: mgmtWifiEnabled ?? this.mgmtWifiEnabled,
+        managementWifiEnabled:
+            managementWifiEnabled ?? this.managementWifiEnabled,
       );
 
   @override
-  List<Object?> get props => [upnpEnabled, sipAlgEnabled, mgmtWifiEnabled];
+  List<Object?> get props =>
+      [upnpEnabled, sipAlgEnabled, managementWifiEnabled];
 }

@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/administration/models/administration_settings.dart';
 import 'package:privacy_gui/page/administration/providers/usp_administration_notifier.dart';
 import 'package:privacy_gui/page/administration/services/usp_administration_service.dart';
+import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
 
 class MockUspAdministrationService extends Mock
     implements UspAdministrationService {}
@@ -15,10 +16,12 @@ class MockUspAdministrationService extends Mock
 AdministrationSettings _settings({
   bool upnp = true,
   bool sip = false,
-  bool? mgmt = true,
+  bool? management = true,
 }) =>
     AdministrationSettings(
-        upnpEnabled: upnp, sipAlgEnabled: sip, mgmtWifiEnabled: mgmt);
+        upnpEnabled: upnp,
+        sipAlgEnabled: sip,
+        managementWifiEnabled: management);
 
 void main() {
   late MockUspAdministrationService svc;
@@ -131,18 +134,18 @@ void main() {
     });
   });
 
-  group('UspAdministrationNotifier - setMgmtWifiEnabled', () {
+  group('UspAdministrationNotifier - setManagementWifiEnabled', () {
     test('buffers the change and writes nothing', () async {
       final container = await load([true]);
 
       container
           .read(uspAdministrationProvider.notifier)
-          .setMgmtWifiEnabled(false);
+          .setManagementWifiEnabled(false);
 
       final state = container.read(uspAdministrationProvider);
-      expect(state.settings.current.mgmtWifiEnabled, isFalse);
+      expect(state.settings.current.managementWifiEnabled, isFalse);
       expect(state.isDirty, isTrue);
-      verifyNever(() => svc.setMgmtWifiEnabled(any()));
+      verifyNever(() => svc.setManagementWifiEnabled(any()));
     });
   });
 
@@ -274,20 +277,54 @@ void main() {
     });
 
     test('a management change is written alone', () async {
-      when(() => svc.setMgmtWifiEnabled(any())).thenAnswer((_) async {});
+      when(() => svc.setManagementWifiEnabled(any())).thenAnswer((_) async {});
       final container = await loadSettings([
-        _settings(mgmt: true),
-        _settings(mgmt: false),
+        _settings(management: true),
+        _settings(management: false),
       ]);
       final notifier = container.read(uspAdministrationProvider.notifier);
 
-      notifier.setMgmtWifiEnabled(false);
+      notifier.setManagementWifiEnabled(false);
       await notifier.save();
 
-      verify(() => svc.setMgmtWifiEnabled(false)).called(1);
+      verify(() => svc.setManagementWifiEnabled(false)).called(1);
       verifyNever(() => svc.setUpnpEnabled(any()));
       verifyNever(() => svc.setSipAlgEnabled(any()));
       expect(container.read(uspAdministrationProvider).isDirty, isFalse);
+    });
+
+    test('a management change refreshes the shared firewall rule data',
+        () async {
+      // The rule is one of Device.Firewall.Chain.1's: the Statistics rule
+      // counts and the Firewall card read them through firewallDataProvider,
+      // which would otherwise show the pre-save Enable until something pushed.
+      when(() => svc.setManagementWifiEnabled(any())).thenAnswer((_) async {});
+      when(() => svc.setUpnpEnabled(any())).thenAnswer((_) async {});
+      var firewallBuilds = 0;
+      when(() => svc.fetch()).thenAnswer((_) async => _settings());
+      final container = ProviderContainer(overrides: [
+        uspAdministrationServiceProvider.overrideWithValue(svc),
+        uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+        firewallDataProvider.overrideWith(() => _CountingFirewallData(() {
+              firewallBuilds++;
+            })),
+      ]);
+      addTearDown(container.dispose);
+      container.listen(uspAdministrationProvider, (_, __) {});
+      container.listen(firewallDataProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspAdministrationProvider.notifier);
+      expect(firewallBuilds, 1);
+
+      notifier.setUpnpEnabled(false);
+      await notifier.save();
+      await Future.delayed(Duration.zero);
+      expect(firewallBuilds, 1, reason: 'UPnP is not a chain rule');
+
+      notifier.setManagementWifiEnabled(false);
+      await notifier.save();
+      await Future.delayed(Duration.zero);
+      expect(firewallBuilds, 2);
     });
 
     test('a firmware without the rule never writes it', () async {
@@ -295,8 +332,8 @@ void main() {
       // other switches must not reach for a rule that is not on the router.
       when(() => svc.setUpnpEnabled(any())).thenAnswer((_) async {});
       final container = await loadSettings([
-        _settings(upnp: true, mgmt: null),
-        _settings(upnp: false, mgmt: null),
+        _settings(upnp: true, management: null),
+        _settings(upnp: false, management: null),
       ]);
       final notifier = container.read(uspAdministrationProvider.notifier);
 
@@ -304,7 +341,7 @@ void main() {
       await notifier.save();
 
       verify(() => svc.setUpnpEnabled(false)).called(1);
-      verifyNever(() => svc.setMgmtWifiEnabled(any()));
+      verifyNever(() => svc.setManagementWifiEnabled(any()));
     });
 
     test('a Set that outlasts the lock is a TimeoutError and is re-read',
@@ -390,5 +427,18 @@ class _CountingLock extends UspMutationLock {
       {Duration timeout = UspMutationLock.defaultTimeout}) {
     entries++;
     return super.withLock(action, timeout: timeout);
+  }
+}
+
+/// A `firewallDataProvider` that counts its builds and reads nothing.
+class _CountingFirewallData extends FirewallDataNotifier {
+  final void Function() _onBuild;
+
+  _CountingFirewallData(this._onBuild);
+
+  @override
+  Future<FirewallData> build() async {
+    _onBuild();
+    return const FirewallData.empty();
   }
 }

@@ -22,7 +22,7 @@ Map<String, dynamic> _chainRules(List<(String, String)> rules) => {
     };
 
 /// 26101472's table, shortened: no `RULE_MGMT_WIFI_ACCESS` (31 rules there).
-final _rulesWithoutMgmt = _chainRules([
+final _rulesWithoutManagement = _chainRules([
   ('RULE_SPI_IPV4_INPUT', '0'),
   ('RULE_PING_IPV4', '1'),
   ('RULE_NAT_REDIRECTION', '0'),
@@ -30,7 +30,7 @@ final _rulesWithoutMgmt = _chainRules([
 
 /// feed_usp#52's table: the rule is appended, enabled by default. Not at a
 /// fixed instance number, so it is looked up by Description.
-Map<String, dynamic> _rulesWithMgmt(String enable) => _chainRules([
+Map<String, dynamic> _rulesWithManagement(String enable) => _chainRules([
       ('RULE_SPI_IPV4_INPUT', '0'),
       ('RULE_PING_IPV4', '1'),
       ('RULE_MGMT_WIFI_ACCESS', enable),
@@ -74,7 +74,7 @@ void main() {
     String? sip = '0',
     Map<String, dynamic>? rules,
   }) {
-    final chain = rules ?? _rulesWithMgmt('1');
+    final chain = rules ?? _rulesWithManagement('1');
     when(() => mockUsp.get(any())).thenAnswer((inv) async {
       final paths = inv.positionalArguments.first as List<String>;
       if (paths.contains(_upnpEnable)) {
@@ -144,11 +144,11 @@ void main() {
     test(
         'reads RULE_MGMT_WIFI_ACCESS\'s Enable as the management-over-Wi-Fi '
         'switch', () async {
-      answerGets(rules: _rulesWithMgmt('0'));
+      answerGets(rules: _rulesWithManagement('0'));
 
       final settings = await svc.fetch();
 
-      expect(settings.mgmtWifiEnabled, isFalse);
+      expect(settings.managementWifiEnabled, isFalse);
       verify(() => mockUsp.get([
             'Device.Firewall.Chain.1.Rule.*.Enable',
             'Device.Firewall.Chain.1.Rule.*.Description',
@@ -157,19 +157,19 @@ void main() {
     });
 
     test('the rule enabled reads on, its default', () async {
-      answerGets(rules: _rulesWithMgmt('1'));
+      answerGets(rules: _rulesWithManagement('1'));
 
-      expect((await svc.fetch()).mgmtWifiEnabled, isTrue);
+      expect((await svc.fetch()).managementWifiEnabled, isTrue);
     });
 
     test('a firmware without the rule reads null: hide the switch only',
         () async {
       // 2.0.3.26101472, measured 2026-10-16: 31 rules, none of them this one.
-      answerGets(rules: _rulesWithoutMgmt, upnp: '0', sip: '1');
+      answerGets(rules: _rulesWithoutManagement, upnp: '0', sip: '1');
 
       final settings = await svc.fetch();
 
-      expect(settings.mgmtWifiEnabled, isNull);
+      expect(settings.managementWifiEnabled, isNull);
       expect(settings.upnpEnabled, isFalse,
           reason: 'the rest of the page still reads');
       expect(settings.sipAlgEnabled, isTrue);
@@ -282,13 +282,13 @@ void main() {
     });
   });
 
-  group('UspAdministrationService - setMgmtWifiEnabled', () {
+  group('UspAdministrationService - setManagementWifiEnabled', () {
     test('writes the Enable of the rule found by Description, alone', () async {
-      answerGets(rules: _rulesWithMgmt('1'));
+      answerGets(rules: _rulesWithManagement('1'));
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => _setSuccess());
 
-      await svc.setMgmtWifiEnabled(false);
+      await svc.setManagementWifiEnabled(false);
 
       // Instance 3 in this table: wherever the rule is, not a fixed number.
       verify(() => mockUsp.set(
@@ -298,21 +298,21 @@ void main() {
     });
 
     test('a firmware without the rule writes nothing and says so', () async {
-      answerGets(rules: _rulesWithoutMgmt);
+      answerGets(rules: _rulesWithoutManagement);
 
-      await expectLater(
-          svc.setMgmtWifiEnabled(true), throwsA(isA<ResourceNotFoundError>()));
+      await expectLater(svc.setManagementWifiEnabled(true),
+          throwsA(isA<ResourceNotFoundError>()));
       verifyNever(
           () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
     });
 
     test('a refused Set throws UspCompleteFailureError', () {
-      answerGets(rules: _rulesWithMgmt('1'));
+      answerGets(rules: _rulesWithManagement('1'));
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async =>
               _setFailure(path: 'Device.Firewall.Chain.1.Rule.3.Enable'));
 
-      expect(() => svc.setMgmtWifiEnabled(false),
+      expect(() => svc.setManagementWifiEnabled(false),
           throwsA(isA<UspCompleteFailureError>()));
     });
   });

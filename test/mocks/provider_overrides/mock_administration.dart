@@ -40,7 +40,7 @@ class FixedAdministrationNotifier extends UspAdministrationNotifier {
   void setSipAlgEnabled(bool enabled) {}
 
   @override
-  void setMgmtWifiEnabled(bool enabled) {}
+  void setManagementWifiEnabled(bool enabled) {}
 }
 
 /// Overrides for `usp_administration_view`, defaulting to [upnpOnState], the

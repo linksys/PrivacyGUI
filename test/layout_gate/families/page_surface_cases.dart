@@ -1988,7 +1988,7 @@ final kDmzPageCase = PageSurfaceCase(
 /// `lib/` change that created it, straight to `swept`, as `firmware_ota` and
 /// `notification_history` did.
 ///
-/// [UspUpnpCard], [UspSipAlgCard] and [UspMgmtWifiCard] are the premise: the page
+/// [UspUpnpCard], [UspSipAlgCard] and [UspManagementWifiCard] are the premise: the page
 /// has a loader arm and a [ServiceErrorView] arm, both in `forbids`, and the cards
 /// are all the data arm renders. The fixture is the clean `upnpOnState`, on a
 /// firmware with the management rule, so all three render; without the rule the
@@ -2003,7 +2003,7 @@ final kAdministrationPageCase = PageSurfaceCase(
     UspTopBar,
     UspUpnpCard,
     UspSipAlgCard,
-    UspMgmtWifiCard,
+    UspManagementWifiCard,
     AppSwitch,
   ],
   forbids: const [AppLoader, ServiceErrorView],

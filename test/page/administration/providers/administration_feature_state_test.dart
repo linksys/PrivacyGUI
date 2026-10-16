@@ -24,11 +24,11 @@ void main() {
               original: AdministrationSettings(
                   upnpEnabled: original,
                   sipAlgEnabled: false,
-                  mgmtWifiEnabled: true),
+                  managementWifiEnabled: true),
               current: AdministrationSettings(
                   upnpEnabled: current,
                   sipAlgEnabled: false,
-                  mgmtWifiEnabled: true),
+                  managementWifiEnabled: true),
             ),
             status: const AdministrationStatus(),
           );
@@ -39,7 +39,7 @@ void main() {
 
     test('isDirty follows the SIP ALG switch', () {
       const off = AdministrationSettings(
-          upnpEnabled: true, sipAlgEnabled: false, mgmtWifiEnabled: true);
+          upnpEnabled: true, sipAlgEnabled: false, managementWifiEnabled: true);
       final state = AdministrationFeatureState(
         settings: Preservable(
             original: off, current: off.copyWith(sipAlgEnabled: true)),
@@ -51,10 +51,10 @@ void main() {
 
     test('isDirty follows the management-over-Wi-Fi switch', () {
       const on = AdministrationSettings(
-          upnpEnabled: true, sipAlgEnabled: false, mgmtWifiEnabled: true);
+          upnpEnabled: true, sipAlgEnabled: false, managementWifiEnabled: true);
       final state = AdministrationFeatureState(
         settings: Preservable(
-            original: on, current: on.copyWith(mgmtWifiEnabled: false)),
+            original: on, current: on.copyWith(managementWifiEnabled: false)),
         status: const AdministrationStatus(),
       );
 
@@ -77,7 +77,7 @@ void main() {
       expect(map, {
         'upnpEnabled': false,
         'sipAlgEnabled': false,
-        'mgmtWifiEnabled': null,
+        'managementWifiEnabled': null,
         'isDirty': false,
         'isLoading': true,
       });
@@ -87,32 +87,40 @@ void main() {
   group('AdministrationSettings - value semantics', () {
     test('copyWith and equality', () {
       const on = AdministrationSettings(
-          upnpEnabled: true, sipAlgEnabled: true, mgmtWifiEnabled: true);
+          upnpEnabled: true, sipAlgEnabled: true, managementWifiEnabled: true);
 
       expect(
           on.copyWith(upnpEnabled: false),
           const AdministrationSettings(
-              upnpEnabled: false, sipAlgEnabled: true, mgmtWifiEnabled: true));
+              upnpEnabled: false,
+              sipAlgEnabled: true,
+              managementWifiEnabled: true));
       expect(
           on.copyWith(sipAlgEnabled: false),
           const AdministrationSettings(
-              upnpEnabled: true, sipAlgEnabled: false, mgmtWifiEnabled: true));
+              upnpEnabled: true,
+              sipAlgEnabled: false,
+              managementWifiEnabled: true));
       expect(
-          on.copyWith(mgmtWifiEnabled: false),
+          on.copyWith(managementWifiEnabled: false),
           const AdministrationSettings(
-              upnpEnabled: true, sipAlgEnabled: true, mgmtWifiEnabled: false));
+              upnpEnabled: true,
+              sipAlgEnabled: true,
+              managementWifiEnabled: false));
       expect(on.copyWith(), on);
       expect(
           const AdministrationSettings.empty(),
           const AdministrationSettings(
-              upnpEnabled: false, sipAlgEnabled: false, mgmtWifiEnabled: null));
+              upnpEnabled: false,
+              sipAlgEnabled: false,
+              managementWifiEnabled: null));
     });
 
     test('a firmware without the rule stays without it through an edit', () {
       const noRule = AdministrationSettings(
-          upnpEnabled: true, sipAlgEnabled: false, mgmtWifiEnabled: null);
+          upnpEnabled: true, sipAlgEnabled: false, managementWifiEnabled: null);
 
-      expect(noRule.copyWith(upnpEnabled: false).mgmtWifiEnabled, isNull);
+      expect(noRule.copyWith(upnpEnabled: false).managementWifiEnabled, isNull);
     });
   });
 

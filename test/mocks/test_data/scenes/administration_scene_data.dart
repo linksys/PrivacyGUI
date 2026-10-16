@@ -14,9 +14,9 @@ import 'package:privacy_gui/page/administration/models/administration_status.dar
 final upnpOnState = AdministrationFeatureState(
   settings: Preservable(
     original: const AdministrationSettings(
-        upnpEnabled: true, sipAlgEnabled: false, mgmtWifiEnabled: true),
+        upnpEnabled: true, sipAlgEnabled: false, managementWifiEnabled: true),
     current: const AdministrationSettings(
-        upnpEnabled: true, sipAlgEnabled: false, mgmtWifiEnabled: true),
+        upnpEnabled: true, sipAlgEnabled: false, managementWifiEnabled: true),
   ),
   status: const AdministrationStatus(),
 );

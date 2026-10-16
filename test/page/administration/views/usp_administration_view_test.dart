@@ -28,7 +28,7 @@ void main() {
   late MockUspAdministrationService svc;
   late bool deviceValue;
   late bool deviceSip;
-  late bool? deviceMgmt;
+  late bool? deviceManagement;
 
   setUpAll(() async {
     await loadAppFonts();
@@ -38,19 +38,19 @@ void main() {
     svc = MockUspAdministrationService();
     deviceValue = true;
     deviceSip = false;
-    deviceMgmt = true;
+    deviceManagement = true;
     when(() => svc.fetch()).thenAnswer((_) async => AdministrationSettings(
         upnpEnabled: deviceValue,
         sipAlgEnabled: deviceSip,
-        mgmtWifiEnabled: deviceMgmt));
+        managementWifiEnabled: deviceManagement));
   });
 
   final upnpSwitch = find.byWidgetPredicate(
       (w) => w is AppSwitch && w.identifier == 'administration-upnp');
   final sipSwitch = find.byWidgetPredicate(
       (w) => w is AppSwitch && w.identifier == 'administration-sip-alg');
-  final mgmtSwitch = find.byWidgetPredicate(
-      (w) => w is AppSwitch && w.identifier == 'administration-mgmt-wifi');
+  final managementSwitch = find.byWidgetPredicate((w) =>
+      w is AppSwitch && w.identifier == 'administration-management-wifi');
   const confirmTitle = 'Turn off management over Wi-Fi?';
   final turnOff = find.widgetWithText(AppButton, 'Turn Off');
   final cancel = find.widgetWithText(AppButton, 'Cancel');
@@ -229,7 +229,7 @@ void main() {
 
   group('UspAdministrationView - management over Wi-Fi switch', () {
     Future<void> turnOffAndSave(WidgetTester tester) async {
-      await tester.tap(mgmtSwitch);
+      await tester.tap(managementSwitch);
       await settle(tester);
       await tester.tap(find.widgetWithText(AppButton, 'Save'));
       await settle(tester);
@@ -240,25 +240,26 @@ void main() {
       await pumpPage(tester);
 
       expect(find.text('Allow local management wirelessly'), findsOneWidget);
-      expect(switchValue(tester, mgmtSwitch), isTrue, reason: 'its default');
+      expect(switchValue(tester, managementSwitch), isTrue,
+          reason: 'its default');
     });
 
     testWidgets('saving it off asks first, and Turn Off writes it',
         (tester) async {
-      when(() => svc.setMgmtWifiEnabled(any())).thenAnswer((_) async {
-        deviceMgmt = false;
+      when(() => svc.setManagementWifiEnabled(any())).thenAnswer((_) async {
+        deviceManagement = false;
       });
       await pumpPage(tester);
 
       await turnOffAndSave(tester);
       expect(find.text(confirmTitle), findsOneWidget);
-      verifyNever(() => svc.setMgmtWifiEnabled(any()));
+      verifyNever(() => svc.setManagementWifiEnabled(any()));
 
       await tester.tap(turnOff);
       await settle(tester);
 
-      verify(() => svc.setMgmtWifiEnabled(false)).called(1);
-      expect(switchValue(tester, mgmtSwitch), isFalse);
+      verify(() => svc.setManagementWifiEnabled(false)).called(1);
+      expect(switchValue(tester, managementSwitch), isFalse);
       expect(find.text('Changes saved'), findsOneWidget);
     });
 
@@ -269,27 +270,27 @@ void main() {
       await tester.tap(cancel);
       await settle(tester);
 
-      verifyNever(() => svc.setMgmtWifiEnabled(any()));
+      verifyNever(() => svc.setManagementWifiEnabled(any()));
       expect(find.text(confirmTitle), findsNothing);
-      expect(switchValue(tester, mgmtSwitch), isFalse,
+      expect(switchValue(tester, managementSwitch), isFalse,
           reason: 'the user can still save it, or flip it back');
       expect(find.widgetWithText(AppButton, 'Save'), findsOneWidget);
     });
 
     testWidgets('saving it on does not ask', (tester) async {
-      deviceMgmt = false;
-      when(() => svc.setMgmtWifiEnabled(any())).thenAnswer((_) async {
-        deviceMgmt = true;
+      deviceManagement = false;
+      when(() => svc.setManagementWifiEnabled(any())).thenAnswer((_) async {
+        deviceManagement = true;
       });
       await pumpPage(tester);
 
-      await tester.tap(mgmtSwitch);
+      await tester.tap(managementSwitch);
       await settle(tester);
       await tester.tap(find.widgetWithText(AppButton, 'Save'));
       await settle(tester);
 
       expect(find.text(confirmTitle), findsNothing);
-      verify(() => svc.setMgmtWifiEnabled(true)).called(1);
+      verify(() => svc.setManagementWifiEnabled(true)).called(1);
     });
 
     testWidgets('saving another switch with management left on does not ask',
@@ -310,10 +311,10 @@ void main() {
 
     testWidgets('a firmware without the rule hides this switch only',
         (tester) async {
-      deviceMgmt = null;
+      deviceManagement = null;
       await pumpPage(tester);
 
-      expect(mgmtSwitch, findsNothing);
+      expect(managementSwitch, findsNothing);
       expect(find.text('Allow local management wirelessly'), findsNothing);
       expect(upnpSwitch, findsOneWidget);
       expect(sipSwitch, findsOneWidget);

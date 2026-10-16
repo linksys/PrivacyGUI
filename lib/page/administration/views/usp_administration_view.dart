@@ -78,14 +78,15 @@ class UspAdministrationView extends ConsumerWidget {
             ),
             // Null: the firmware has no RULE_MGMT_WIFI_ACCESS (#1696). The rest
             // of the page still works.
-            if (state.settings.current.mgmtWifiEnabled case final mgmt?) ...[
+            if (state.settings.current.managementWifiEnabled
+                case final management?) ...[
               AppGap.md(),
-              UspMgmtWifiCard(
-                enabled: mgmt,
+              UspManagementWifiCard(
+                enabled: management,
                 isSaving: status.isSaving,
                 onChanged: ref
                     .read(uspAdministrationProvider.notifier)
-                    .setMgmtWifiEnabled,
+                    .setManagementWifiEnabled,
               ),
             ],
           ],
@@ -114,12 +115,12 @@ class UspAdministrationView extends ConsumerWidget {
     // included if it is on Wi-Fi — and the app cannot tell reliably whether it
     // is, so it asks every time (#1696).
     final settings = ref.read(uspAdministrationProvider).settings;
-    if (settings.current.mgmtWifiEnabled == false &&
-        settings.original.mgmtWifiEnabled == true) {
+    if (settings.current.managementWifiEnabled == false &&
+        settings.original.managementWifiEnabled == true) {
       final confirmed = await showConfirmActionDialog(
         context,
-        title: loc(context).administrationMgmtWifiOffTitle,
-        message: loc(context).administrationMgmtWifiOffDesc,
+        title: loc(context).administrationManagementWifiOffTitle,
+        message: loc(context).administrationManagementWifiOffDesc,
         confirmLabel: loc(context).turnOff,
       );
       if (confirmed != true || !context.mounted) return;
@@ -197,12 +198,12 @@ class UspSipAlgCard extends StatelessWidget {
 ///
 /// Public only so the layout gate can name it in `requires:`; it reads no
 /// provider.
-class UspMgmtWifiCard extends StatelessWidget {
+class UspManagementWifiCard extends StatelessWidget {
   final bool enabled;
   final bool isSaving;
   final ValueChanged<bool> onChanged;
 
-  const UspMgmtWifiCard({
+  const UspManagementWifiCard({
     super.key,
     required this.enabled,
     required this.isSaving,
@@ -212,7 +213,7 @@ class UspMgmtWifiCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => _SwitchCard(
         label: loc(context).administrationAllowLocalManagementWirelessly,
-        identifier: 'administration-mgmt-wifi',
+        identifier: 'administration-management-wifi',
         enabled: enabled,
         isSaving: isSaving,
         onChanged: onChanged,

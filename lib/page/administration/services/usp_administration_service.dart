@@ -33,18 +33,18 @@ class UspAdministrationService {
   /// Every leaf is required by its definition, so a firmware without
   /// `Device.UPnP.` or the SIP leaf fails this fetch rather than reading as off.
   /// The management rule is the one thing that may be absent: a firmware
-  /// without it reads [AdministrationSettings.mgmtWifiEnabled] as null.
+  /// without it reads [AdministrationSettings.managementWifiEnabled] as null.
   Future<AdministrationSettings> fetch() async {
     try {
       final results = await Future.wait<Object?>([
         UpnpDevice.fetch(_usp),
         SipAlg.fetch(_usp),
-        _mgmtWifiRule(),
+        _managementWifiRule(),
       ]);
       return AdministrationSettings(
         upnpEnabled: (results[0] as UpnpDevice).enable,
         sipAlgEnabled: (results[1] as SipAlg).enable,
-        mgmtWifiEnabled: (results[2] as FirewallChainRule?)?.enable,
+        managementWifiEnabled: (results[2] as FirewallChainRule?)?.enable,
       );
     } catch (e) {
       if (e is ServiceError) rethrow;
@@ -59,7 +59,7 @@ class UspAdministrationService {
   /// a firmware without the rule: the WASM client resolves a failed GET with an
   /// empty data map, and the router's firewall always carries rules of its own.
   /// So only a table that read back and lacks the rule hides the switch.
-  Future<FirewallChainRule?> _mgmtWifiRule() async {
+  Future<FirewallChainRule?> _managementWifiRule() async {
     final rules = await FirewallChainRules.fetch(_usp);
     if (rules.items.isEmpty) {
       throw const ResourceNotFoundError(
@@ -67,11 +67,11 @@ class UspAdministrationService {
       );
     }
     return rules.items
-        .where((r) => r.description == _mgmtWifiRuleName)
+        .where((r) => r.description == _managementWifiRuleName)
         .firstOrNull;
   }
 
-  static const _mgmtWifiRuleName = 'RULE_MGMT_WIFI_ACCESS';
+  static const _managementWifiRuleName = 'RULE_MGMT_WIFI_ACCESS';
 
   /// Writes `Device.UPnP.Device.Enable` — and only that leaf: `UPnPIGD` is
   /// read-only and follows it.
@@ -91,10 +91,10 @@ class UspAdministrationService {
   ///
   /// The rule is looked up again rather than taken from the page's read, so
   /// the write goes to wherever the rule is now.
-  Future<void> setMgmtWifiEnabled(bool enabled) async {
+  Future<void> setManagementWifiEnabled(bool enabled) async {
     final FirewallChainRule? found;
     try {
-      found = await _mgmtWifiRule();
+      found = await _managementWifiRule();
     } catch (e) {
       if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
@@ -102,7 +102,7 @@ class UspAdministrationService {
     final rule = found;
     if (rule == null) {
       throw const ResourceNotFoundError(
-        detail: 'No $_mgmtWifiRuleName rule on the router',
+        detail: 'No $_managementWifiRuleName rule on the router',
       );
     }
     await _write(
@@ -116,7 +116,7 @@ class UspAdministrationService {
 
   /// Sends one Set and turns anything but a full success into a [ServiceError].
   Future<void> _write(
-    String what,
+    String settingLabel,
     Future<Map<String, dynamic>> Function() set,
   ) async {
     try {
@@ -126,13 +126,14 @@ class UspAdministrationService {
           break;
         case UspPartialSuccess(failures: final f):
           throw UspPartialFailureError(
-            summary: '$what update partial failure: ${f.first.errorMessage}',
+            summary:
+                '$settingLabel update partial failure: ${f.first.errorMessage}',
             successPaths: const [],
             failures: f,
           );
         case UspFailure(errors: final e):
           throw UspCompleteFailureError(
-            summary: '$what update failed: ${e.first.errorMessage}',
+            summary: '$settingLabel update failed: ${e.first.errorMessage}',
             failures: e,
           );
       }
