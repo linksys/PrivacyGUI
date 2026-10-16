@@ -24,9 +24,9 @@ final uspAdministrationProvider = AutoDisposeNotifierProvider<
 // Notifier
 // ---------------------------------------------------------------------------
 
-/// L2 working copy for Advanced Settings → Administration (#1660).
+/// L2 working copy for Advanced Settings → Administration (#1660, #1694).
 ///
-/// Type A form: the UPnP switch is buffered and written by Save; the route
+/// Type A form: the switches are buffered and written by Save; the route
 /// passes this notifier as its `preservableProvider`, which is the dirty guard.
 class UspAdministrationNotifier
     extends AutoDisposeNotifier<AdministrationFeatureState>
@@ -51,7 +51,8 @@ class UspAdministrationNotifier
     try {
       final settings = await _svc.fetch();
       logger.d('[USP][Administration]: Fetched — '
-          'upnpEnabled=${settings.upnpEnabled}');
+          'upnpEnabled=${settings.upnpEnabled}, '
+          'sipAlgEnabled=${settings.sipAlgEnabled}');
       return (settings, const AdministrationStatus());
     } on ServiceError catch (e) {
       logger.e('[USP][Administration]: Fetch failed', error: e);
@@ -73,12 +74,25 @@ class UspAdministrationNotifier
     }
   }
 
+  /// Writes each switch that differs from what was read, and only those.
+  ///
+  /// UPnP and SIP ALG are owned by different USP services, so they are two
+  /// Sets, not one combined Set; and SIP ALG's alone takes ~9 s, which a UPnP
+  /// save should not wait for. They run in order under one lock, whose 30 s
+  /// window fits both. A failure stops the rest, and `save()` re-reads the
+  /// device so the page shows what landed.
   @override
   Future<void> performSave() async {
-    final enabled = state.settings.current.upnpEnabled;
+    final original = state.settings.original;
+    final current = state.settings.current;
     try {
       await ref.read(uspMutationLockProvider).withLock(() async {
-        await _svc.setUpnpEnabled(enabled);
+        if (current.upnpEnabled != original.upnpEnabled) {
+          await _svc.setUpnpEnabled(current.upnpEnabled);
+        }
+        if (current.sipAlgEnabled != original.sipAlgEnabled) {
+          await _svc.setSipAlgEnabled(current.sipAlgEnabled);
+        }
       });
     } on TimeoutException catch (e) {
       // The lock's own window, not a USP error, so the service never maps it.
@@ -86,10 +100,13 @@ class UspAdministrationNotifier
       // timeout; left bare it skipped both. Same fold as
       // `firmware_auto_update_data_provider.dart`.
       throw TimeoutError(
-        detail: 'the UPnP write was not answered (${e.message ?? '30s'})',
+        detail: 'the Administration write was not answered '
+            '(${e.message ?? '30s'})',
       );
     }
-    logger.d('[USP][Administration]: UPnP saved — enabled=$enabled');
+    logger.d('[USP][Administration]: Saved — '
+        'upnpEnabled=${current.upnpEnabled}, '
+        'sipAlgEnabled=${current.sipAlgEnabled}');
   }
 
   /// After a refused or unanswered Set, show what the device holds rather than
@@ -121,6 +138,14 @@ class UspAdministrationNotifier
     state = state.copyWith(
       settings: state.settings
           .update(state.settings.current.copyWith(upnpEnabled: enabled)),
+    );
+  }
+
+  /// Toggle SIP ALG. Updates [settings.current] only; save() writes it.
+  void setSipAlgEnabled(bool enabled) {
+    state = state.copyWith(
+      settings: state.settings
+          .update(state.settings.current.copyWith(sipAlgEnabled: enabled)),
     );
   }
 }

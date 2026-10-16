@@ -13,11 +13,12 @@ import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-/// Advanced Settings → Administration (#1660).
+/// Advanced Settings → Administration (#1660, #1694).
 ///
-/// 1.x's page of the same name, carrying the one part FLWRT 2.0 has a data model
-/// for: the UPnP switch (`Device.UPnP.Device.Enable`). Management access, ALG and
-/// Express Forwarding stay in #875 until their firmware exists.
+/// 1.x's page of the same name, carrying the parts FLWRT 2.0 has a data model
+/// for: the UPnP switch (`Device.UPnP.Device.Enable`) and the SIP ALG switch
+/// (`Device.Firewall.ConnectionTracking.SIP.Enable`). Management access and
+/// Express Forwarding stay in #875.
 ///
 /// Not the menu's "Administration" (`UspAdminView`: password, time zone,
 /// reboot) — 1.x called that one Instant-Admin.
@@ -65,6 +66,13 @@ class UspAdministrationView extends ConsumerWidget {
               isSaving: status.isSaving,
               onChanged:
                   ref.read(uspAdministrationProvider.notifier).setUpnpEnabled,
+            ),
+            AppGap.md(),
+            UspSipAlgCard(
+              enabled: state.settings.current.sipAlgEnabled,
+              isSaving: status.isSaving,
+              onChanged:
+                  ref.read(uspAdministrationProvider.notifier).setSipAlgEnabled,
             ),
           ],
         );
@@ -121,6 +129,59 @@ class UspUpnpCard extends StatelessWidget {
   });
 
   @override
+  Widget build(BuildContext context) => _SwitchCard(
+        label: loc(context).upnp,
+        identifier: 'administration-upnp',
+        enabled: enabled,
+        isSaving: isSaving,
+        onChanged: onChanged,
+      );
+}
+
+/// The SIP ALG switch (#1694): `Device.Firewall.ConnectionTracking.SIP.Enable`.
+///
+/// Public only so the layout gate can name it in `requires:`; it reads no
+/// provider.
+class UspSipAlgCard extends StatelessWidget {
+  final bool enabled;
+  final bool isSaving;
+  final ValueChanged<bool> onChanged;
+
+  const UspSipAlgCard({
+    super.key,
+    required this.enabled,
+    required this.isSaving,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) => _SwitchCard(
+        label: loc(context).administrationApplicationLayerGateway,
+        identifier: 'administration-sip-alg',
+        enabled: enabled,
+        isSaving: isSaving,
+        onChanged: onChanged,
+      );
+}
+
+/// One label beside one switch, in a card. While a save is in flight every
+/// switch on the page is busy: one Save writes them all.
+class _SwitchCard extends StatelessWidget {
+  final String label;
+  final String identifier;
+  final bool enabled;
+  final bool isSaving;
+  final ValueChanged<bool> onChanged;
+
+  const _SwitchCard({
+    required this.label,
+    required this.identifier,
+    required this.enabled,
+    required this.isSaving,
+    required this.onChanged,
+  });
+
+  @override
   Widget build(BuildContext context) {
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -128,9 +189,9 @@ class UspUpnpCard extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           children: [
-            Expanded(child: AppText.labelLarge(loc(context).upnp)),
+            Expanded(child: AppText.labelLarge(label)),
             AppSwitch(
-              identifier: 'administration-upnp',
+              identifier: identifier,
               value: enabled,
               // Same busy treatment the rule rows carry — see
               // `usp_single_port_tab.dart` for why a null `onChanged` was not

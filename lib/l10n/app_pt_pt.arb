@@ -6,6 +6,7 @@
   "addStaticRoute": "Adicionar percurso estático",
   "administration": "Administração",
   "upnp": "UPnP",
+  "administrationApplicationLayerGateway": "Gateway da camada de aplicativos (SIP)",
   "advanced": "Avançada",
   "advancedSettings": "Definições avançadas",
   "appTitle": "Linksys Now",

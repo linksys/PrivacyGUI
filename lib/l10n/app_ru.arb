@@ -6,6 +6,7 @@
   "addStaticRoute": "Добавить статический маршрут",
   "administration": "Администрирование",
   "upnp": "UPnP",
+  "administrationApplicationLayerGateway": "Шлюз прикладного уровня (SIP)",
   "advanced": "Расширенные настройки",
   "advancedSettings": "Расширенные настройки",
   "appTitle": "Linksys Now",

@@ -6,6 +6,7 @@
   "addStaticRoute": "Lisää staattinen reitti",
   "administration": "Valvonta",
   "upnp": "UPnP",
+  "administrationApplicationLayerGateway": "Sovelluskerroksen yhdyskäytävä (SIP)",
   "advanced": "Lisäasetukset",
   "advancedSettings": "Lisäasetukset",
   "appTitle": "Linksys Now",

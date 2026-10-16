@@ -8,11 +8,14 @@ import 'package:privacy_gui/page/administration/models/administration_feature_st
 import 'package:privacy_gui/page/administration/models/administration_settings.dart';
 import 'package:privacy_gui/page/administration/models/administration_status.dart';
 
-/// UPnP on, nothing edited: the shipping default, and what the gate sweeps.
+/// UPnP on, SIP ALG off, nothing edited: the shipping defaults, and what the
+/// gate sweeps.
 final upnpOnState = AdministrationFeatureState(
   settings: Preservable(
-    original: const AdministrationSettings(upnpEnabled: true),
-    current: const AdministrationSettings(upnpEnabled: true),
+    original:
+        const AdministrationSettings(upnpEnabled: true, sipAlgEnabled: false),
+    current:
+        const AdministrationSettings(upnpEnabled: true, sipAlgEnabled: false),
   ),
   status: const AdministrationStatus(),
 );

@@ -21,14 +21,28 @@ void main() {
       AdministrationFeatureState of(bool original, bool current) =>
           AdministrationFeatureState(
             settings: Preservable(
-              original: AdministrationSettings(upnpEnabled: original),
-              current: AdministrationSettings(upnpEnabled: current),
+              original: AdministrationSettings(
+                  upnpEnabled: original, sipAlgEnabled: false),
+              current: AdministrationSettings(
+                  upnpEnabled: current, sipAlgEnabled: false),
             ),
             status: const AdministrationStatus(),
           );
 
       expect(of(true, false).isDirty, isTrue);
       expect(of(true, true).isDirty, isFalse);
+    });
+
+    test('isDirty follows the SIP ALG switch', () {
+      const off =
+          AdministrationSettings(upnpEnabled: true, sipAlgEnabled: false);
+      final state = AdministrationFeatureState(
+        settings: Preservable(
+            original: off, current: off.copyWith(sipAlgEnabled: true)),
+        status: const AdministrationStatus(),
+      );
+
+      expect(state.isDirty, isTrue);
     });
 
     test('copyWith replaces only what it is given', () {
@@ -44,18 +58,32 @@ void main() {
     test('toMap reports the switch and the flags', () {
       final map = AdministrationFeatureState.initial().toMap();
 
-      expect(map, {'upnpEnabled': false, 'isDirty': false, 'isLoading': true});
+      expect(map, {
+        'upnpEnabled': false,
+        'sipAlgEnabled': false,
+        'isDirty': false,
+        'isLoading': true,
+      });
     });
   });
 
   group('AdministrationSettings - value semantics', () {
     test('copyWith and equality', () {
-      const on = AdministrationSettings(upnpEnabled: true);
+      const on = AdministrationSettings(upnpEnabled: true, sipAlgEnabled: true);
 
-      expect(on.copyWith(upnpEnabled: false),
-          const AdministrationSettings(upnpEnabled: false));
+      expect(
+          on.copyWith(upnpEnabled: false),
+          const AdministrationSettings(
+              upnpEnabled: false, sipAlgEnabled: true));
+      expect(
+          on.copyWith(sipAlgEnabled: false),
+          const AdministrationSettings(
+              upnpEnabled: true, sipAlgEnabled: false));
       expect(on.copyWith(), on);
-      expect(const AdministrationSettings.empty().upnpEnabled, isFalse);
+      expect(
+          const AdministrationSettings.empty(),
+          const AdministrationSettings(
+              upnpEnabled: false, sipAlgEnabled: false));
     });
   });
 

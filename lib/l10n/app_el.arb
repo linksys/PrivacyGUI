@@ -6,6 +6,7 @@
   "addStaticRoute": "Προσθήκη στατικής διαδρομής",
   "administration": "Διαχείριση",
   "upnp": "UPnP",
+  "administrationApplicationLayerGateway": "Πύλη επιπέδου εφαρμογής (SIP)",
   "advanced": "Για προχωρημένους",
   "advancedSettings": "Ρυθμίσεις για προχωρημένους",
   "appTitle": "Linksys Now",

@@ -6,6 +6,7 @@
   "addStaticRoute": "Thêm tuyến tĩnh",
   "administration": "Quản trị",
   "upnp": "UPnP",
+  "administrationApplicationLayerGateway": "Cổng lớp ứng dụng (SIP)",
   "advanced": "Nâng cao",
   "advancedSettings": "Cài đặt nâng cao",
   "appTitle": "Linksys Now",

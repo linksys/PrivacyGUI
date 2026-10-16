@@ -6,6 +6,7 @@
   "addStaticRoute": "Tambah rute statis",
   "administration": "Administrasi",
   "upnp": "UPnP",
+  "administrationApplicationLayerGateway": "Gateway Lapisan Aplikasi (SIP)",
   "advanced": "Tingkat Lanjut",
   "advancedSettings": "Setelan lanjutan",
   "appTitle": "Linksys Now",

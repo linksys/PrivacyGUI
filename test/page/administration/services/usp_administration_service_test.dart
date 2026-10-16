@@ -6,6 +6,9 @@ import 'package:privacy_gui/page/administration/services/usp_administration_serv
 
 class MockUspClient extends Mock implements UspClient {}
 
+const _upnpEnable = 'Device.UPnP.Device.Enable';
+const _sipEnable = 'Device.Firewall.ConnectionTracking.SIP.Enable';
+
 Map<String, dynamic> _setSuccess() => {
       'success': true,
       'result': {'data': <String, dynamic>{}},
@@ -35,12 +38,25 @@ void main() {
     svc = UspAdministrationService(mockUsp);
   });
 
+  /// Each definition's Get, answered by its own leaves: the service reads UPnP
+  /// and SIP ALG with separate Gets, so a stub keyed on the whole path list
+  /// would pin the order of two calls the service is free to run in parallel.
+  void answerGets({String upnp = '1', String? sip = '0'}) {
+    when(() => mockUsp.get(any())).thenAnswer((inv) async {
+      final paths = inv.positionalArguments.first as List<String>;
+      if (paths.contains(_upnpEnable)) {
+        return {_upnpEnable: upnp, 'Device.UPnP.Device.UPnPIGD': upnp};
+      }
+      if (paths.contains(_sipEnable)) {
+        return {if (sip != null) _sipEnable: sip};
+      }
+      return {};
+    });
+  }
+
   group('UspAdministrationService - fetch', () {
     test('reads Device.UPnP.Device.Enable as the UPnP switch', () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async => {
-            'Device.UPnP.Device.Enable': '1',
-            'Device.UPnP.Device.UPnPIGD': '1',
-          });
+      answerGets(upnp: '1');
 
       final settings = await svc.fetch();
 
@@ -52,10 +68,7 @@ void main() {
     });
 
     test('reads off as off', () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async => {
-            'Device.UPnP.Device.Enable': '0',
-            'Device.UPnP.Device.UPnPIGD': '0',
-          });
+      answerGets(upnp: '0');
 
       expect((await svc.fetch()).upnpEnabled, isFalse);
     });
@@ -63,6 +76,33 @@ void main() {
     test('a firmware without Device.UPnP fails the fetch, not a silent off',
         () {
       when(() => mockUsp.get(any())).thenAnswer((_) async => {});
+
+      expect(() => svc.fetch(), throwsA(isA<ServiceError>()));
+    });
+
+    test(
+        'reads Device.Firewall.ConnectionTracking.SIP.Enable as the SIP ALG '
+        'switch', () async {
+      answerGets(sip: '1');
+
+      final settings = await svc.fetch();
+
+      expect(settings.sipAlgEnabled, isTrue);
+      verify(() => mockUsp.get([_sipEnable])).called(1);
+    });
+
+    test('SIP ALG reads off on a factory-default router', () async {
+      // FWDEV#217: default 0, as on 1.0. Measured `Enable => 0` on 26101472.
+      answerGets(sip: '0');
+
+      expect((await svc.fetch()).sipAlgEnabled, isFalse);
+    });
+
+    test('a firmware without the SIP leaf fails the fetch, not a silent off',
+        () {
+      // The leaf is required: it ships on FLWRT 2.0, and an absent one read as
+      // "off" would hide a firmware that cannot honour the switch.
+      answerGets(sip: null);
 
       expect(() => svc.fetch(), throwsA(isA<ServiceError>()));
     });
@@ -123,6 +163,35 @@ void main() {
           .thenThrow('Set failed: Transport error: Connection refused');
 
       expect(() => svc.setUpnpEnabled(true), throwsA(isA<ConnectivityError>()));
+    });
+  });
+
+  group('UspAdministrationService - setSipAlgEnabled', () {
+    test('writes ConnectionTracking.SIP.Enable alone, in one Set', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => _setSuccess());
+
+      await svc.setSipAlgEnabled(true);
+
+      // Not Device.NAT.ALG.*: that path is invalid on FLWRT (FW, #875).
+      verify(() => mockUsp.set({_sipEnable: true}, allowPartial: false))
+          .called(1);
+    });
+
+    test('a refused Set throws UspCompleteFailureError', () {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => _setFailure(path: _sipEnable));
+
+      expect(() => svc.setSipAlgEnabled(true),
+          throwsA(isA<UspCompleteFailureError>()));
+    });
+
+    test('a transport error maps to ServiceError', () {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenThrow('Set failed: Transport error: Connection refused');
+
+      expect(
+          () => svc.setSipAlgEnabled(false), throwsA(isA<ConnectivityError>()));
     });
   });
 }

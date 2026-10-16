@@ -6,6 +6,7 @@
   "addStaticRoute": "Statik yol ekle",
   "administration": "Yönetim",
   "upnp": "UPnP",
+  "administrationApplicationLayerGateway": "Uygulama Katmanı Ağ Geçidi (SIP)",
   "advanced": "İleri Düzey",
   "advancedSettings": "Gelişmiş Ayarlar",
   "appTitle": "Linksys Now",

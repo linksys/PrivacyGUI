@@ -6,6 +6,7 @@
   "addStaticRoute": "إضافة مسار ثابت",
   "administration": "الإدارة",
   "upnp": "UPnP",
+  "administrationApplicationLayerGateway": "بوابة طبقة التطبيق (SIP)",
   "advanced": "متقدم",
   "advancedSettings": "الإعدادات المتقدّمة",
   "appTitle": "Linksys Now",

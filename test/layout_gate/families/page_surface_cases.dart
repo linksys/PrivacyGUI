@@ -1975,24 +1975,28 @@ final kDmzPageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView],
 );
 
-/// `usp_administration_view` — Advanced Settings → Administration (#1660). Not
-/// [kAdminPageCase], the menu's page of the same title.
+/// `usp_administration_view` — Advanced Settings → Administration (#1660, #1694).
+/// Not [kAdminPageCase], the menu's page of the same title.
 ///
-/// One card, one row: the `upnp` label `Expanded` beside an [AppSwitch]. The label is
-/// `UPnP` in 25 locales and `UPnPi` in `pt`, so this is the least text the family lays
-/// out, and it is swept for the reason [kWifiSettingsAdvancedPageCase] gives — "it
-/// looks safe" is the claim the gate exists to replace. It arrives with the `lib/` change that creates it,
-/// straight to `swept`, as `firmware_ota` and `notification_history` did.
+/// Two cards, one row each: a label `Expanded` beside an [AppSwitch]. `upnp` is
+/// `UPnP` in 25 locales and `UPnPi` in `pt`, the least text the family lays out;
+/// `administrationApplicationLayerGateway` ("Application Layer Gateway (SIP)") is
+/// 1.x's string, carried over in all 26 locales, and the longer of the two. The
+/// page is swept for the reason [kWifiSettingsAdvancedPageCase] gives — "it looks
+/// safe" is the claim the gate exists to replace. It arrived with the `lib/` change
+/// that created it, straight to `swept`, as `firmware_ota` and
+/// `notification_history` did.
 ///
-/// [UspUpnpCard] is the premise: the page has a loader arm and a [ServiceErrorView] arm,
-/// both in `forbids`, and the card is the only thing the data arm renders. The fixture
-/// is the clean `upnpOnState` — the dirty one adds only ui_kit's Save bar, out of scope
-/// as it is for [kDmzPageCase]; see `mock_administration.dart`.
+/// [UspUpnpCard] and [UspSipAlgCard] are the premise: the page has a loader arm and
+/// a [ServiceErrorView] arm, both in `forbids`, and the cards are all the data arm
+/// renders. The fixture is the clean `upnpOnState` — the dirty one adds only
+/// ui_kit's Save bar, out of scope as it is for [kDmzPageCase]; see
+/// `mock_administration.dart`.
 final kAdministrationPageCase = PageSurfaceCase(
   id: 'administration',
   view: () => const UspAdministrationView(),
   overrides: () => administrationOverrides(),
-  requires: const [UspTopBar, UspUpnpCard, AppSwitch],
+  requires: const [UspTopBar, UspUpnpCard, UspSipAlgCard, AppSwitch],
   forbids: const [AppLoader, ServiceErrorView],
 );
 

@@ -2,19 +2,30 @@ import 'package:equatable/equatable.dart';
 
 /// User-editable settings on the Advanced Settings → Administration page.
 ///
-/// UPnP only, for now (#1660). 1.x's page also held management access, ALG and
-/// Express Forwarding; those have no FLWRT data model yet and stay in #875.
+/// UPnP (#1660) and SIP ALG (#1694). 1.x's page also held management access and
+/// Express Forwarding; those stay in #875.
 class AdministrationSettings extends Equatable {
   /// `Device.UPnP.Device.Enable`.
   final bool upnpEnabled;
 
-  const AdministrationSettings({required this.upnpEnabled});
+  /// `Device.Firewall.ConnectionTracking.SIP.Enable` (linksys/FWDEV#217).
+  final bool sipAlgEnabled;
 
-  const AdministrationSettings.empty() : upnpEnabled = false;
+  const AdministrationSettings({
+    required this.upnpEnabled,
+    required this.sipAlgEnabled,
+  });
 
-  AdministrationSettings copyWith({bool? upnpEnabled}) =>
-      AdministrationSettings(upnpEnabled: upnpEnabled ?? this.upnpEnabled);
+  const AdministrationSettings.empty()
+      : upnpEnabled = false,
+        sipAlgEnabled = false;
+
+  AdministrationSettings copyWith({bool? upnpEnabled, bool? sipAlgEnabled}) =>
+      AdministrationSettings(
+        upnpEnabled: upnpEnabled ?? this.upnpEnabled,
+        sipAlgEnabled: sipAlgEnabled ?? this.sipAlgEnabled,
+      );
 
   @override
-  List<Object?> get props => [upnpEnabled];
+  List<Object?> get props => [upnpEnabled, sipAlgEnabled];
 }

@@ -6,6 +6,7 @@
   "addStaticRoute": "添加静态路由",
   "administration": "管理",
   "upnp": "UPnP",
+  "administrationApplicationLayerGateway": "应用层网关（SIP）",
   "advanced": "高级设置",
   "advancedSettings": "高级设置",
   "appTitle": "Linksys Now",

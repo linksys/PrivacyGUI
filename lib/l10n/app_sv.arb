@@ -6,6 +6,7 @@
   "addStaticRoute": "Lägg till statisk rutt",
   "administration": "Administration",
   "upnp": "UPnP",
+  "administrationApplicationLayerGateway": "Application Layer Gateway (SIP)",
   "advanced": "Avancerat",
   "advancedSettings": "Avancerade inställningar",
   "appTitle": "Linksys Now",
