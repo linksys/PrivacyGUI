@@ -178,6 +178,8 @@
   "menuRestartNetworkMessage": "Hvis du har mere end én node, genstartes de alle. Når mesh-WiFi-systemet genstartes, afbrydes internetforbindelsen til det kortvarigt. Alle noder og tilsluttede enheder mister også forbindelsen kortvarigt, men forbindelsen genoprettes, når mesh-systemet er klar igen.",
   "mexico": "Mexico",
   "mlo": "Multi-link drift",
+  "mloDesc": "Gør det muligt for enheder at bruge flere bånd og frekvenskanaler samtidigt. Det øger hastigheden, reducerer ventetiden og sikrer en mere pålidelig forbindelse.",
+  "mloInactiveHint": "Brug samme Wi-Fi-navn, adgangskode og WPA3-sikkerhed på 2,4 GHz og 5 GHz.",
   "mloCapableModalDesc1": "Multi-Link Operation (MLO) lader enheder bruge flere bånd og frekvenskanaler samtidigt.",
   "mloCapableModalDesc2": "Dette øger hastigheden, reducerer latens og giver en mere pålidelig forbindelse.",
   "model": "Model",

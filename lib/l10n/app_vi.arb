@@ -176,6 +176,8 @@
   "menuRestartNetworkMessage": "Khởi động lại nút cha và tất cả các nút con. Khởi động lại hệ thống WiFi lưới sẽ tạm thời ngắt kết nối khỏi Internet. Nếu bạn có nhiều nút, tất cả sẽ được khởi động lại. Các thiết bị được kết nối cũng sẽ bị ngắt kết nối tạm thời nhưng sẽ tự động kết nối lại khi hệ thống trực tuyến trở lại.",
   "mexico": "Mexico",
   "mlo": "Hoạt động đa liên kết",
+  "mloDesc": "Cho phép các thiết bị sử dụng đồng thời nhiều băng tần và kênh tần số. Điều này làm tăng tốc độ, giảm độ trễ và tạo ra kết nối đáng tin cậy hơn.",
+  "mloInactiveHint": "Dùng cùng tên Wi-Fi, mật khẩu và bảo mật WPA3 trên băng tần 2,4 GHz và 5 GHz.",
   "mloCapableModalDesc1": "Vận hành Đa kết nối (MLO) cho phép các thiết bị sử dụng đồng thời nhiều băng tần và kênh tần số.",
   "mloCapableModalDesc2": "Điều này làm tăng tốc độ, giảm độ trễ và tạo ra kết nối đáng tin cậy hơn.",
   "model": "Mã sản phẩm",

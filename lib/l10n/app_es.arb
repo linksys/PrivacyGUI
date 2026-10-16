@@ -178,6 +178,8 @@
   "menuRestartNetworkMessage": "Reinicio del nodo principal y todos los nodos secundarios. Al reiniciar el sistema WiFi mesh se desconectará temporalmente de Internet. Si tiene varios nodos, todos se reiniciarán. Los dispositivos conectados también experimentarán una desconexión temporal pero se volverán a conectar automáticamente cuando el sistema vuelva a estar en línea.",
   "mexico": "México",
   "mlo": "Funcionamiento Multi-Link",
+  "mloDesc": "Permite a los dispositivos utilizar varias bandas y canales de frecuencia simultáneamente. Esto aumenta la velocidad, reduce la latencia y hace que la conexión sea más fiable.",
+  "mloInactiveHint": "Usa el mismo nombre de Wi-Fi, la misma contraseña y seguridad WPA3 en 2,4 GHz y 5 GHz.",
   "mloCapableModalDesc1": "Multi-Link Operation (MLO) permite que los dispositivos usen varias bandas y canales de frecuencia a la vez.",
   "mloCapableModalDesc2": "Así, se aumenta la velocidad, se reduce la latencia y se consigue una conexión más fiable.",
   "model": "Modelo",

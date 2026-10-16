@@ -53,10 +53,15 @@ final wifiSaveHardLimitProvider = Provider<Duration>(
 
 /// Sends [plan] under the mutation lock and settles its outcome; returns the
 /// plan's [WifiWritePlan.count] once the write is confirmed.
+///
+/// `readBackAfter` makes the read-back the only proof: the router's answer no
+/// longer ends the save, and nothing is read before that much time has passed
+/// since the write. See [wifiWriteConfirmProvider].
 typedef WifiWriteConfirm = Future<WifiConfirmResult> Function(
   WifiWritePlan plan, {
   required Future<bool> Function(Map<String, dynamic> written) isApplied,
   bool allowRouterAway,
+  Duration? readBackAfter,
 });
 
 /// How a WiFi write settled.
@@ -111,8 +116,18 @@ final class WifiRouterAway extends WifiConfirmResult {
 ///
 /// The lock is released when its window ends even if the request is still in
 /// flight, as it is for any hung call, so a read-back can take it.
+///
+/// **With `readBackAfter`, an answer is not a confirmation** (#1692). The WiFi
+/// Advanced tab sends steering, MLO and DFS in one Set with `allowPartial`, so
+/// one part can be refused while the Set is accepted; and the MLO switch is
+/// answered in 166 ms with its Wi-Fi restart still to come (bench 2026-10-15),
+/// so a read taken on the answer would read the router before it restarts.
+/// The write is read back even when answered, the first read waits until
+/// `readBackAfter` has passed since the write, and the deadline counts from
+/// there. A refusal still propagates at once.
 final wifiWriteConfirmProvider = Provider<WifiWriteConfirm>((ref) {
-  return (plan, {required isApplied, allowRouterAway = false}) async {
+  return (plan,
+      {required isApplied, allowRouterAway = false, readBackAfter}) async {
     if (plan.params.isEmpty) return WifiConfirmed(plan.count);
     // `clock`, not `Stopwatch()`: fakeAsync moves the former only, and the
     // shipped 30 s / 60 s are what the tests have to be able to run.
@@ -145,7 +160,11 @@ final wifiWriteConfirmProvider = Provider<WifiWriteConfirm>((ref) {
       logger.i('[USP][WiFi]: write not answered within ${window.inSeconds}s '
           '— reading the router back');
     }
-    if (outcome == WifiWriteOutcome.confirmed) return WifiConfirmed(plan.count);
+    final answerIsEnough = readBackAfter == null;
+    if (outcome == WifiWriteOutcome.confirmed &&
+        (answerIsEnough || plan.proof.isEmpty)) {
+      return WifiConfirmed(plan.count);
+    }
 
     // Nothing this save changed can be read back — a password-only change is
     // the case. Reading back would compare only values that were already
@@ -158,8 +177,15 @@ final wifiWriteConfirmProvider = Provider<WifiWriteConfirm>((ref) {
     }
 
     final interval = ref.read(wifiReadBackIntervalProvider);
-    final deadline = ref.read(wifiSaveDeadlineProvider);
+    final floor = readBackAfter ?? Duration.zero;
+    final deadline = floor + ref.read(wifiSaveDeadlineProvider);
     final hardLimit = ref.read(wifiSaveHardLimitProvider);
+    final wait = floor - sinceWrite.elapsed;
+    if (wait > Duration.zero) {
+      logger.i('[USP][WiFi]: reading the router back in ${wait.inSeconds}s, '
+          'once the Wi-Fi restart is over');
+      await Future<void>.delayed(wait);
+    }
     // When the request ended, if it has: a ruling waits one interval past it,
     // so the first read after the answer gets its say.
     Duration? endedAt;
@@ -170,7 +196,7 @@ final wifiWriteConfirmProvider = Provider<WifiWriteConfirm>((ref) {
       if (request.isCompleted) {
         endedAt ??= sinceWrite.elapsed;
         // A late answer is as good as an early one: the router said yes.
-        if (answer == WifiWriteOutcome.confirmed) {
+        if (answerIsEnough && answer == WifiWriteOutcome.confirmed) {
           logger.i('[USP][WiFi]: write answered after '
               '${sinceWrite.elapsed.inSeconds}s');
           return WifiConfirmed(plan.count);

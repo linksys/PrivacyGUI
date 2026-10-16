@@ -176,6 +176,8 @@
   "menuRestartNetworkMessage": "Jeśli masz więcej niż jeden węzeł, wszystkie węzły zostaną uruchomione ponownie. Ponowne uruchomienie systemu mesh WiFi spowoduje chwilowy brak dostępu do Internetu. Wszystkie węzły oraz podłączone urządzenia również zostaną chwilowo rozłączone, lecz zostaną podłączone ponownie, gdy system mesh będzie gotowy.",
   "mexico": "Meksyk",
   "mlo": "Multi-Link Operation",
+  "mloDesc": "Zezwól urządzeniom na jednoczesne korzystanie z wielu pasm i kanałów częstotliwości. Pozwala to zwiększyć prędkość, zredukować opóźnienie oraz zapewnić stabilniejsze połączenie.",
+  "mloInactiveHint": "Użyj tej samej nazwy Wi-Fi, hasła i zabezpieczeń WPA3 w pasmach 2,4 GHz i 5 GHz.",
   "mloCapableModalDesc1": "Technologia Multi-Link Operation (MLO) pozwala urządzeniom jednocześnie korzystać z wielu pasm i kanałów częstotliwości.",
   "mloCapableModalDesc2": "Pozwala to zwiększyć prędkość, zredukować opóźnienie oraz zapewnić stabilniejsze połączenie.",
   "model": "Model",

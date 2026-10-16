@@ -178,6 +178,8 @@
   "menuRestartNetworkMessage": "Se tiver mais de um nó, todos serão reiniciados. Reiniciar o sistema mesh WiFi desliga-o temporariamente da Internet. Todos os nós e dispositivos ligados vão também ser temporariamente desligados, mas irão ligar-se de novo quando o sistema mesh estiver pronto a ser utilizado.",
   "mexico": "México",
   "mlo": "Operação multi-link",
+  "mloDesc": "Permite que os dispositivos usem várias bandas de frequência e canais simultaneamente. Isso aumenta a velocidade, reduz a latência e torna a conexão mais confiável.",
+  "mloInactiveHint": "Utilize o mesmo nome de Wi-Fi, a mesma palavra-passe e segurança WPA3 em 2,4 GHz e 5 GHz.",
   "mloCapableModalDesc1": "A funcionalidade Multi-Link Operation (MLO) permite que os dispositivos utilizem várias bandas e canais de frequência em simultâneo.",
   "mloCapableModalDesc2": "Isto aumenta a velocidade, reduz a latência e torna a ligação mais fiável.",
   "model": "Modelo",

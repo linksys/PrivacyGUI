@@ -178,6 +178,8 @@
   "menuRestartNetworkMessage": "Als u meer dan één node heeft, zullen alle nodes opnieuw opstarten. Bij het opnieuw opstarten van het Mesh WiFi-systeem wordt de verbinding met het internet tijdelijk verbroken. Alle nodes en verbonden apparaten zijn tijdelijk niet meer verbonden, maar maken automatisch opnieuw verbinding zodra het Mesh-systeem weer gereed is.",
   "mexico": "Mexico",
   "mlo": "Multi-Link-bewerking",
+  "mloDesc": "Sta apparaten toe om meerdere banden en frequentiekanalen tegelijkertijd te gebruiken. Dit verhoogt de snelheid, vermindert de latentie en zorgt voor een betrouwbaardere verbinding.",
+  "mloInactiveHint": "Gebruik dezelfde wifi-naam, hetzelfde wachtwoord en WPA3-beveiliging op 2,4 GHz en 5 GHz.",
   "mloCapableModalDesc1": "Met Multi-Link Operation (MLO) kunnen apparaten meerdere banden en frequentiekanalen tegelijk gebruiken.",
   "mloCapableModalDesc2": "Dit verhoogt de snelheid, vermindert vertraging en maakt de verbinding betrouwbaarder.",
   "model": "Artikelnummer",

@@ -178,6 +178,8 @@
   "menuRestartNetworkMessage": "Neustart des Hauptknotens und aller untergeordneten Knoten. Durch einen Neustart Ihres Mesh-WLAN-Systems wird die Internetverbindung vorübergehend getrennt. Bei mehreren Knoten werden alle neu gestartet. Verbundene Geräte werden ebenfalls vorübergehend getrennt, stellen aber automatisch wieder eine Verbindung her, sobald das System wieder online ist.",
   "mexico": "Mexiko",
   "mlo": "Multi-Link Betrieb",
+  "mloDesc": "Ermöglicht es Geräten, mehrere Bänder und Frequenzkanäle gleichzeitig zu nutzen. Dies erhöht die Geschwindigkeit, verringert die Latenzzeit und sorgt für eine zuverlässigere Verbindung.",
+  "mloInactiveHint": "Verwenden Sie auf 2,4 GHz und 5 GHz denselben WLAN-Namen, dasselbe Passwort und WPA3-Sicherheit.",
   "mloCapableModalDesc1": "Multi-Link Operation (MLO) ermöglicht es, dass Geräte mehrere Bänder und Frequenzkanäle gleichzeitig nutzen können.",
   "mloCapableModalDesc2": "Dadurch wird die Geschwindigkeit erhöht, die Latenzzeit reduziert und eine zuverlässigere Verbindung ermöglicht.",
   "model": "Modell",

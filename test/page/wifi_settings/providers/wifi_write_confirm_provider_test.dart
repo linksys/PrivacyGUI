@@ -455,6 +455,121 @@ void main() {
     });
   });
 
+  group('readBackAfter — an answer is not enough (#1692)', () {
+    // The WiFi Advanced tab sends its parts in one Set with allowPartial, so a
+    // part can be refused on its own; and an MLO Set is answered in 166 ms
+    // while the Wi-Fi restart it starts comes after (bench 2026-10-15, FW
+    // 2.0.3.26101472). Either way the answer cannot be the end of the save.
+
+    test('an answered write is still read back, and a "no" fails the save',
+        () async {
+      var reads = 0;
+      await expectLater(
+        container.read(wifiWriteConfirmProvider)(
+          plan(() async => WifiWriteOutcome.confirmed),
+          isApplied: (_) async {
+            reads++;
+            return false;
+          },
+          readBackAfter: Duration.zero,
+        ),
+        throwsA(isA<ServiceError>()),
+        reason: 'one part refused inside an accepted Set is a failed save',
+      );
+      expect(reads, greaterThan(0));
+    });
+
+    test('an answered write that reads back is confirmed', () async {
+      final seen = <Map<String, dynamic>>[];
+      final result = await container.read(wifiWriteConfirmProvider)(
+        plan(() async => WifiWriteOutcome.confirmed, count: 3),
+        isApplied: (w) async {
+          seen.add(w);
+          return true;
+        },
+        readBackAfter: Duration.zero,
+      );
+
+      expect(result, isA<WifiConfirmed>());
+      expect((result as WifiConfirmed).count, 3);
+      expect(seen.single, params);
+    });
+
+    late ProviderContainer real;
+    setUp(() => real = ProviderContainer(overrides: [
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+        ]));
+    tearDown(() => real.dispose());
+
+    test('nothing is read, and nothing settles, before the floor', () {
+      fakeAsync((async) {
+        var reads = 0;
+        var confirmed = false;
+        real
+            .read(wifiWriteConfirmProvider)(
+          // Answered at once, the way the MLO Set was.
+          plan(() async => WifiWriteOutcome.confirmed),
+          isApplied: (_) async {
+            reads++;
+            return true;
+          },
+          readBackAfter: const Duration(seconds: 60),
+        )
+            .then((_) {
+          confirmed = true;
+        });
+
+        async.elapse(const Duration(seconds: 59));
+        expect((reads, confirmed), (0, false),
+            reason: 'the restart is not over yet; a read now proves nothing');
+        async.elapse(const Duration(seconds: 2));
+        expect((reads, confirmed), (1, true));
+      });
+    });
+
+    test('the deadline counts from the floor, not from the write', () {
+      fakeAsync((async) {
+        Object? error;
+        var confirmed = false;
+        real
+            .read(wifiWriteConfirmProvider)(
+          plan(() async => WifiWriteOutcome.confirmed),
+          // The router still away for 40 s past the floor.
+          isApplied: (_) async {
+            if (clock
+                .now()
+                .isBefore(_start.add(const Duration(seconds: 100)))) {
+              throw const NetworkError(detail: 'Failed to fetch');
+            }
+            return true;
+          },
+          readBackAfter: const Duration(seconds: 60),
+        )
+            .then((_) {
+          confirmed = true;
+        }, onError: (Object e) {
+          error = e;
+        });
+
+        async.elapse(const Duration(seconds: 105));
+        expect(error, isNull,
+            reason: 'a 60 s deadline from the write would leave one read');
+        expect(confirmed, isTrue);
+      }, initialTime: _start);
+    });
+
+    test('a refusal still propagates unchanged', () async {
+      await expectLater(
+        container.read(wifiWriteConfirmProvider)(
+          plan(() async => throw const InvalidInputError(detail: 'rejected')),
+          isApplied: (_) async => true,
+          readBackAfter: Duration.zero,
+        ),
+        throwsA(isA<InvalidInputError>()),
+      );
+    });
+  });
+
   test('nothing to write sends nothing and reads nothing', () async {
     var sends = 0;
     var reads = 0;
@@ -472,3 +587,5 @@ void main() {
     expect((count, sends, reads), (0, 0, 0));
   });
 }
+
+final _start = DateTime(2026, 10, 15, 12);

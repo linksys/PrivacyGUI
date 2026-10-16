@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_settings.dart';
+import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_status.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_advanced_service.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
@@ -119,213 +121,210 @@ void main() {
     });
   });
 
-  group('UspWifiAdvancedService - setIeee80211hEnabled', () {
-    test('sets IEEE80211hEnabled on all provided radio paths', () async {
-      when(() => mockUsp.set(any())).thenAnswer((_) async => _setSuccess());
+  // -------------------------------------------------------------------------
+  // The tab's one Set (#1692)
+  // -------------------------------------------------------------------------
 
-      await svc.setIeee80211hEnabled(
-        radioPaths: ['Device.WiFi.Radio.1.', 'Device.WiFi.Radio.2.'],
-        enabled: true,
+  group('UspWifiAdvancedService - planSave', () {
+    const off = WifiAdvancedSettings(ieee80211hByRadio: {
+      'Device.WiFi.Radio.1.': false,
+      'Device.WiFi.Radio.2.': false,
+    });
+
+    test('steering, MLO and DFS go out in one Set, only what changed', () {
+      final plan = svc.planSave(
+        original: off,
+        current: off.copyWith(
+          clientSteering: true,
+          mloEnabled: true,
+          ieee80211hByRadio: {
+            'Device.WiFi.Radio.1.': true,
+            'Device.WiFi.Radio.2.': true,
+          },
+        ),
       );
 
-      verify(() => mockUsp.set({
-            'Device.WiFi.Radio.1.IEEE80211hEnabled': true,
-            'Device.WiFi.Radio.2.IEEE80211hEnabled': true,
-          })).called(1);
+      // The bench's one Set (2026-10-15) plus a steering leaf.
+      expect(plan.params, {
+        'Device.X_LINKSYS_Mesh.ClientSteeringEnabled': true,
+        'Device.X_LINKSYS_Mesh.MLOEnabled': true,
+        'Device.WiFi.Radio.1.IEEE80211hEnabled': true,
+        'Device.WiFi.Radio.2.IEEE80211hEnabled': true,
+      });
+      expect(plan.proof, plan.params,
+          reason: 'every value here is a change the router reads back');
     });
 
-    test('does nothing when radioPaths is empty', () async {
-      await svc.setIeee80211hEnabled(radioPaths: [], enabled: true);
-
-      verifyNever(() => mockUsp.set(any()));
+    test('an unchanged tab plans nothing', () {
+      expect(svc.planSave(original: off, current: off).params, isEmpty);
     });
 
-    test('sends false for all radios when disabling', () async {
-      when(() => mockUsp.set(any())).thenAnswer((_) async => _setSuccess());
+    test('a steering-only save writes the steering leaf alone', () {
+      final plan = svc.planSave(
+          original: off, current: off.copyWith(nodeSteering: true));
 
-      await svc.setIeee80211hEnabled(
-        radioPaths: ['Device.WiFi.Radio.1.'],
-        enabled: false,
+      expect(plan.params, {'Device.X_LINKSYS_Mesh.NodeSteeringEnabled': true});
+    });
+
+    test('DFS: every radio written, only the changed ones are proof', () {
+      const mixed = WifiAdvancedSettings(ieee80211hByRadio: {
+        'Device.WiFi.Radio.1.': true,
+        'Device.WiFi.Radio.2.': false,
+      });
+      final plan = svc.planSave(
+        original: mixed,
+        current: mixed.copyWith(ieee80211hByRadio: {
+          'Device.WiFi.Radio.1.': false,
+          'Device.WiFi.Radio.2.': false,
+        }),
+        forceAutoChannelPaths: ['Device.WiFi.Radio.1.'],
       );
 
-      verify(() => mockUsp.set({
-            'Device.WiFi.Radio.1.IEEE80211hEnabled': false,
-          })).called(1);
+      expect(plan.params, {
+        'Device.WiFi.Radio.1.IEEE80211hEnabled': false,
+        'Device.WiFi.Radio.2.IEEE80211hEnabled': false,
+        'Device.WiFi.Radio.1.AutoChannelEnable': true,
+      });
+      // Radio.2 was already off, and the forced AutoChannelEnable rides along
+      // in the same Set: neither tells a landed write from the old state.
+      expect(plan.proof, {'Device.WiFi.Radio.1.IEEE80211hEnabled': false});
     });
 
-    test('throws NetworkError when USP set throws transport error', () async {
-      when(() => mockUsp.set(any()))
-          .thenThrow('Set failed: Transport error: Request timeout');
+    test('the plan sends its params once, with allowPartial', () async {
+      // One Set across dm-reflector and wifidmd: an atomic one is refused
+      // with 7005; allowPartial was accepted and applied all of it (bench).
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => _setSuccess());
+      final plan =
+          svc.planSave(original: off, current: off.copyWith(mloEnabled: true));
+
+      expect(await plan.send(), WifiWriteOutcome.confirmed);
+
+      verify(() => mockUsp.set(
+            {'Device.X_LINKSYS_Mesh.MLOEnabled': true},
+            allowPartial: true,
+          )).called(1);
+    });
+
+    test('a lost reply is "unanswered", for the caller to read back', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => _setUnanswered());
+      final plan = svc.planSave(
+          original: off,
+          current: off.copyWith(ieee80211hByRadio: {
+            'Device.WiFi.Radio.1.': true,
+            'Device.WiFi.Radio.2.': true,
+          }));
+
+      expect(await plan.send(), WifiWriteOutcome.unanswered);
+    });
+
+    test('a part refused inside the Set throws, not "saved"', () {
+      // MLOEnabled on a child node: fault 9001 (dm-reflector's setter).
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => _setPartial(
+                path: 'Device.X_LINKSYS_Mesh.MLOEnabled',
+                errorCode: 9001,
+                errorMessage: 'Request denied',
+              ));
+      final plan = svc.planSave(
+          original: off,
+          current: off.copyWith(
+            mloEnabled: true,
+            ieee80211hByRadio: {
+              'Device.WiFi.Radio.1.': true,
+              'Device.WiFi.Radio.2.': true,
+            },
+          ));
+
+      expect(plan.send, throwsA(isA<UspPartialFailureError>()));
+    });
+
+    test('a refused Set throws UspCompleteFailureError', () {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => _setFailure(
+                path: 'Device.X_LINKSYS_Mesh.NodeSteeringEnabled',
+                errorCode: 9007,
+                errorMessage: 'Invalid parameter value',
+              ));
+      final plan = svc.planSave(
+          original: off, current: off.copyWith(nodeSteering: true));
+
+      expect(plan.send, throwsA(isA<UspCompleteFailureError>()));
+    });
+
+    test('a transport error maps to ServiceError', () {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenThrow('Set failed: Transport error: Connection refused');
+      final plan = svc.planSave(
+          original: off, current: off.copyWith(clientSteering: true));
+
+      expect(plan.send, throwsA(isA<ConnectivityError>()));
+    });
+  });
+
+  group('UspWifiAdvancedService - isApplied', () {
+    test('fails closed on an empty proof, and reads nothing', () async {
+      expect(await svc.isApplied(const {}), isFalse);
+      verifyNever(() => mockUsp.get(any()));
+    });
+
+    test('reads every proved leaf in one Get and compares it', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            'Device.X_LINKSYS_Mesh.MLOEnabled': '1',
+            'Device.X_LINKSYS_Mesh.ClientSteeringEnabled': '0',
+            'Device.WiFi.Radio.1.IEEE80211hEnabled': '1',
+          });
+      const proof = {
+        'Device.X_LINKSYS_Mesh.MLOEnabled': true,
+        'Device.X_LINKSYS_Mesh.ClientSteeringEnabled': false,
+        'Device.WiFi.Radio.1.IEEE80211hEnabled': true,
+      };
+
+      expect(await svc.isApplied(proof), isTrue);
+      verify(() => mockUsp.get(proof.keys.toList())).called(1);
+    });
+
+    test('one part reading the old value is "not applied"', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            'Device.X_LINKSYS_Mesh.MLOEnabled': '0',
+            'Device.WiFi.Radio.1.IEEE80211hEnabled': '1',
+          });
 
       expect(
-        () => svc.setIeee80211hEnabled(
-          radioPaths: ['Device.WiFi.Radio.1.'],
-          enabled: true,
-        ),
-        throwsA(isA<NetworkError>()),
+        await svc.isApplied({
+          'Device.X_LINKSYS_Mesh.MLOEnabled': true,
+          'Device.WiFi.Radio.1.IEEE80211hEnabled': true,
+        }),
+        isFalse,
       );
-    });
-
-    test('forces AutoChannelEnable in the same set for given paths', () async {
-      when(() => mockUsp.set(any())).thenAnswer((_) async => _setSuccess());
-
-      await svc.setIeee80211hEnabled(
-        radioPaths: ['Device.WiFi.Radio.1.', 'Device.WiFi.Radio.2.'],
-        enabled: false,
-        forceAutoChannelPaths: ['Device.WiFi.Radio.2.'],
-      );
-
-      // Radio.2 (parked on a DFS channel) also gets AutoChannelEnable=true;
-      // Radio.1 keeps its channel settings.
-      verify(() => mockUsp.set({
-            'Device.WiFi.Radio.1.IEEE80211hEnabled': false,
-            'Device.WiFi.Radio.2.IEEE80211hEnabled': false,
-            'Device.WiFi.Radio.2.AutoChannelEnable': true,
-          })).called(1);
     });
 
     test(
-        'a lost reply is "unanswered", not a failure — #1460: the DFS SET '
-        'took 35.4 s and had applied', () async {
-      when(() => mockUsp.set(any())).thenAnswer((_) async => _setUnanswered());
-
-      final outcome = await svc.setIeee80211hEnabled(
-        radioPaths: ['Device.WiFi.Radio.1.'],
-        enabled: false,
-      );
-
-      expect(outcome, WifiWriteOutcome.unanswered);
-    });
-
-    test('an answered SET is confirmed', () async {
-      when(() => mockUsp.set(any())).thenAnswer((_) async => _setSuccess());
-
-      expect(
-        await svc.setIeee80211hEnabled(
-          radioPaths: ['Device.WiFi.Radio.1.'],
-          enabled: true,
-        ),
-        WifiWriteOutcome.confirmed,
-      );
-    });
-
-    group('planIeee80211h', () {
-      test(
-          'proof is only the radios whose DFS value changes — an unchanged '
-          'one would read back "matching" either way', () {
-        final plan = svc.planIeee80211h(
-          current: {
-            'Device.WiFi.Radio.1.': true,
-            'Device.WiFi.Radio.2.': false
-          },
-          radioPaths: ['Device.WiFi.Radio.1.', 'Device.WiFi.Radio.2.'],
-          enabled: false,
-          forceAutoChannelPaths: ['Device.WiFi.Radio.1.'],
-        );
-
-        expect(plan.params, {
-          'Device.WiFi.Radio.1.IEEE80211hEnabled': false,
-          'Device.WiFi.Radio.2.IEEE80211hEnabled': false,
-          'Device.WiFi.Radio.1.AutoChannelEnable': true,
-        });
-        // Radio.2 was already off; the forced AutoChannelEnable rides along.
-        expect(plan.proof, {'Device.WiFi.Radio.1.IEEE80211hEnabled': false});
-      });
-
-      test("the plan's send issues exactly the planned params, once", () async {
-        when(() => mockUsp.set(any())).thenAnswer((_) async => _setSuccess());
-        final plan = svc.planIeee80211h(
-          current: {'Device.WiFi.Radio.1.': true},
-          radioPaths: ['Device.WiFi.Radio.1.'],
-          enabled: false,
-          forceAutoChannelPaths: ['Device.WiFi.Radio.1.'],
-        );
-
-        expect(await plan.send(), WifiWriteOutcome.confirmed);
-
-        verify(() => mockUsp.set(plan.params)).called(1);
-      });
-
-      test('read-back fails closed on an empty proof, and reads nothing',
-          () async {
-        expect(await svc.isIeee80211hApplied(const {}), isFalse);
-        verifyNever(() => mockUsp.get(any()));
-      });
-
-      test('read-back is true only when every proved radio reads back',
-          () async {
-        when(() => mockUsp.get(any())).thenAnswer((_) async => {
-              'Device.WiFi.Radio.1.IEEE80211hEnabled': false,
-              'Device.WiFi.Radio.2.IEEE80211hEnabled': true,
-            });
-
-        expect(
-          await svc.isIeee80211hApplied(
-              {'Device.WiFi.Radio.1.IEEE80211hEnabled': false}),
-          isTrue,
-        );
-        expect(
-          await svc.isIeee80211hApplied({
-            'Device.WiFi.Radio.1.IEEE80211hEnabled': false,
-            'Device.WiFi.Radio.2.IEEE80211hEnabled': false,
-          }),
-          isFalse,
-        );
-      });
-
-      test(
-          'a radio missing from the read-back is a failed read, not "not '
-          'applied" — the router answers with no rows while it reloads',
-          () async {
-        // Bench round 3, 2026-10-07: WiFi GETs came back `{}` mid-reload.
-        when(() => mockUsp.get(any())).thenAnswer((_) async => {});
-
-        expect(
-          svc.isIeee80211hApplied(
-              {'Device.WiFi.Radio.1.IEEE80211hEnabled': false}),
-          throwsA(isA<ServiceError>()),
-        );
-      });
-    });
-
-    test('empty forceAutoChannelPaths writes no AutoChannelEnable', () async {
-      when(() => mockUsp.set(any())).thenAnswer((_) async => _setSuccess());
-
-      await svc.setIeee80211hEnabled(
-        radioPaths: ['Device.WiFi.Radio.1.'],
-        enabled: false,
-      );
-
-      verify(() => mockUsp.set({
-            'Device.WiFi.Radio.1.IEEE80211hEnabled': false,
-          })).called(1);
-    });
-
-    test('throws UspPartialFailureError on firmware partial rejection',
+        'a leaf missing from the read-back is a failed read, not "not '
+        'applied" — the router answers with no rows while it reloads',
         () async {
-      // Firmware accepts IEEE80211hEnabled but rejects the forced
-      // AutoChannelEnable write — must not be silently swallowed.
-      when(() => mockUsp.set(any())).thenAnswer((_) async => _setPartial());
+      // Bench round 3, 2026-10-07: WiFi GETs came back `{}` mid-reload.
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            'Device.X_LINKSYS_Mesh.MLOEnabled': '1',
+          });
 
       expect(
-        () => svc.setIeee80211hEnabled(
-          radioPaths: ['Device.WiFi.Radio.1.', 'Device.WiFi.Radio.2.'],
-          enabled: false,
-          forceAutoChannelPaths: ['Device.WiFi.Radio.2.'],
-        ),
-        throwsA(isA<UspPartialFailureError>()),
+        svc.isApplied({
+          'Device.X_LINKSYS_Mesh.MLOEnabled': true,
+          'Device.WiFi.Radio.1.IEEE80211hEnabled': true,
+        }),
+        throwsA(isA<ServiceError>()),
       );
     });
 
-    test('throws UspCompleteFailureError on complete failure', () async {
-      when(() => mockUsp.set(any())).thenAnswer((_) async => _setFailure());
+    test('a failed Get maps to ServiceError', () {
+      when(() => mockUsp.get(any()))
+          .thenThrow('Get failed: Transport error: Failed to fetch');
 
       expect(
-        () => svc.setIeee80211hEnabled(
-          radioPaths: ['Device.WiFi.Radio.1.'],
-          enabled: false,
-        ),
-        throwsA(isA<UspCompleteFailureError>()),
+        svc.isApplied({'Device.X_LINKSYS_Mesh.MLOEnabled': true}),
+        throwsA(isA<ServiceError>()),
       );
     });
   });
@@ -363,19 +362,6 @@ void main() {
       expect(
         () => svc.fetchIeee80211h(),
         throwsA(isA<UnexpectedError>()),
-      );
-    });
-
-    test('setIeee80211hEnabled maps USP transport error to ServiceError', () {
-      when(() => mockUsp.set(any()))
-          .thenThrow('Set failed: Transport error: Connection refused');
-
-      expect(
-        () => svc.setIeee80211hEnabled(
-          radioPaths: ['Device.WiFi.Radio.1.'],
-          enabled: true,
-        ),
-        throwsA(isA<ConnectivityError>()),
       );
     });
   });
@@ -419,77 +405,55 @@ void main() {
     });
   });
 
-  group('UspWifiAdvancedService - setSteering', () {
-    test('writes only the leaves it is given, in one Set', () async {
-      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => _setSuccess());
+  group('UspWifiAdvancedService - fetchMlo (#1692)', () {
+    test('reads the switch and its status in one Get', () async {
+      // FW 2.0.3.26101472 after the MLO + DFS Set on WPA2 bands (bench).
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            'Device.X_LINKSYS_Mesh.MLOEnabled': '1',
+            'Device.X_LINKSYS_Mesh.MLOStatus': 'Inactive',
+          });
 
-      await svc.setSteering(clientSteering: true);
+      final result = await svc.fetchMlo();
 
-      verify(() => mockUsp.set(
-            {'Device.X_LINKSYS_Mesh.ClientSteeringEnabled': true},
-            allowPartial: false,
-          )).called(1);
+      expect(result.enabled, isTrue);
+      expect(result.status, MloStatus.inactive);
+      verify(() => mockUsp.get([
+            'Device.X_LINKSYS_Mesh.MLOEnabled',
+            'Device.X_LINKSYS_Mesh.MLOStatus',
+          ])).called(1);
     });
 
-    test('both leaves go out in the same Set', () async {
-      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => _setSuccess());
+    for (final (raw, status) in [
+      ('Disabled', MloStatus.disabled),
+      ('Active', MloStatus.active),
+      ('Inactive', MloStatus.inactive),
+    ]) {
+      test('$raw reads as ${status.name}', () async {
+        when(() => mockUsp.get(any())).thenAnswer((_) async => {
+              'Device.X_LINKSYS_Mesh.MLOEnabled': '0',
+              'Device.X_LINKSYS_Mesh.MLOStatus': raw,
+            });
 
-      await svc.setSteering(clientSteering: false, nodeSteering: true);
+        expect((await svc.fetchMlo()).status, status);
+      });
+    }
 
-      verify(() => mockUsp.set(
-            {
-              'Device.X_LINKSYS_Mesh.ClientSteeringEnabled': false,
-              'Device.X_LINKSYS_Mesh.NodeSteeringEnabled': true,
-            },
-            allowPartial: false,
-          )).called(1);
+    test('a status outside the contract is not drawn as one of its three',
+        () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            'Device.X_LINKSYS_Mesh.MLOEnabled': '1',
+            'Device.X_LINKSYS_Mesh.MLOStatus': 'Pending',
+          });
+
+      expect((await svc.fetchMlo()).status, MloStatus.unknown);
     });
 
-    test('nothing to write sends nothing', () async {
-      await svc.setSteering();
+    test('a missing leaf maps to a ServiceError, not a silent off', () {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            'Device.X_LINKSYS_Mesh.MLOEnabled': '0',
+          });
 
-      verifyNever(
-          () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
-    });
-
-    test('a refused value throws UspCompleteFailureError', () {
-      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => _setFailure(
-                path: 'Device.X_LINKSYS_Mesh.NodeSteeringEnabled',
-                errorCode: 9007,
-                errorMessage: 'Invalid parameter value',
-              ));
-
-      expect(
-        () => svc.setSteering(nodeSteering: true),
-        throwsA(isA<UspCompleteFailureError>()),
-      );
-    });
-
-    test('one switch refused while the other lands is a partial failure', () {
-      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => _setPartial(
-                path: 'Device.X_LINKSYS_Mesh.NodeSteeringEnabled',
-                errorCode: 9007,
-                errorMessage: 'Invalid parameter value',
-              ));
-
-      expect(
-        () => svc.setSteering(clientSteering: true, nodeSteering: true),
-        throwsA(isA<UspPartialFailureError>()),
-      );
-    });
-
-    test('a transport error maps to ServiceError', () {
-      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenThrow('Set failed: Transport error: Connection refused');
-
-      expect(
-        () => svc.setSteering(clientSteering: true),
-        throwsA(isA<ConnectivityError>()),
-      );
+      expect(() => svc.fetchMlo(), throwsA(isA<ServiceError>()));
     });
   });
 }

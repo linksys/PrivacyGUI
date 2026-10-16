@@ -253,19 +253,30 @@ final editDirtyState = UspWifiSettingsState(
 // Advanced Tab States
 // ---------------------------------------------------------------------------
 
-/// DFS enabled on all radios
+/// DFS enabled on all radios, and MLO switched on but `Inactive` (#1692).
+///
+/// `Inactive` is the MLO card's widest state: the status badge beside the
+/// switch and FW's hint under the description. It is what the bench read with
+/// MLO on over WPA2 bands (FW 2.0.3.26101472, 2026-10-15), so the gate sweeps
+/// the card at its longest.
 final advancedDfsOnState = WifiAdvancedFeatureState(
   settings: Preservable(
-    original: WifiAdvancedSettings(ieee80211hByRadio: {
-      'Device.WiFi.Radio.1.': true,
-      'Device.WiFi.Radio.2.': true,
-    }),
-    current: WifiAdvancedSettings(ieee80211hByRadio: {
-      'Device.WiFi.Radio.1.': true,
-      'Device.WiFi.Radio.2.': true,
-    }),
+    original: WifiAdvancedSettings(
+      ieee80211hByRadio: {
+        'Device.WiFi.Radio.1.': true,
+        'Device.WiFi.Radio.2.': true,
+      },
+      mloEnabled: true,
+    ),
+    current: WifiAdvancedSettings(
+      ieee80211hByRadio: {
+        'Device.WiFi.Radio.1.': true,
+        'Device.WiFi.Radio.2.': true,
+      },
+      mloEnabled: true,
+    ),
   ),
-  status: const WifiAdvancedStatus(),
+  status: const WifiAdvancedStatus(mloStatus: MloStatus.inactive),
 );
 
 /// DFS disabled on all radios
