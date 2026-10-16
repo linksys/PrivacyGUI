@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/ipv6_address.dart';
@@ -807,7 +808,6 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   Widget _buildDeviceName(BuildContext context, ClientDevice device) {
     final name = AppText.titleLarge(device.displayName);
     if (device.hostInstancePath == null) return name;
-    final busy = ref.watch(uspMutationLoadingProvider) == 'identity';
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -818,7 +818,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
           label: loc(context).editDevice,
           identifier: 'device-detail-edit-identity',
           child: InkWell(
-            onTap: busy ? null : () => _editIdentity(context, ref, device),
+            onTap: () => _editIdentity(context, ref, device),
             borderRadius: BorderRadius.circular(AppSpacing.xxs),
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.xxs),
@@ -838,12 +838,11 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   // Identity Actions
   // ===========================================================================
 
-  /// Names the client and picks its icon (#1691). Saved at once, like the DHCP
-  /// actions below: the dialog is the confirmation.
+  /// Names the client and picks its icon (#1691). The dialog saves and shows
+  /// its own progress and errors; this page only confirms a finished save.
   Future<void> _editIdentity(
       BuildContext context, WidgetRef ref, ClientDevice device) async {
-    final result =
-        await showAppDialog<({String name, DeviceCategory category})>(
+    final saved = await showAppDialog<bool>(
       context: context,
       builder: (_) => DeviceIdentityEditDialog(
         initialName: device.userDeviceName ?? '',
@@ -851,20 +850,17 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             DeviceCategory.fromUserTypeCode(device.userDeviceType) ??
                 DeviceCategory.unknown,
         detectedName: device.hostName,
+        onSave: (name, category) =>
+            ref.read(devicesDataProvider.notifier).updateIdentity(
+                  hostInstancePath: device.hostInstancePath!,
+                  name: name,
+                  userTypeCode: category.userTypeCode,
+                ),
       ),
     );
-    if (result == null || !context.mounted) return;
-    await performUspMutation(
-      context,
-      ref,
-      loadingKey: 'identity',
-      mutation: () => ref.read(devicesDataProvider.notifier).updateIdentity(
-            hostInstancePath: device.hostInstancePath!,
-            name: result.name,
-            userTypeCode: result.category.userTypeCode,
-          ),
-      successMessage: loc(context).changesSaved,
-    );
+    if (saved == true && context.mounted) {
+      showSuccessSnackBar(context, loc(context).changesSaved);
+    }
   }
 
   // ===========================================================================

@@ -408,9 +408,11 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     try {
       await ref.read(systemInfoDataProvider.future);
     } catch (e, st) {
-      logger.w('[USP][DevicesData]: system info read-back after a router '
+      logger.w(
+          '[USP][DevicesData]: system info read-back after a router '
           'rename failed, keeping previous value',
-          error: e, stackTrace: st);
+          error: e,
+          stackTrace: st);
     }
     await _refetchPreservingMesh();
   }

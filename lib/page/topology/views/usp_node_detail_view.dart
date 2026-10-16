@@ -13,7 +13,7 @@ import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart'
     show ruleIdentifierKey;
-import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
+import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_list_tile.dart';
@@ -134,7 +134,6 @@ class UspNodeDetailView extends ConsumerWidget {
   Widget _buildNodeName(BuildContext context, WidgetRef ref, NodeEntity node) {
     final name = AppText.titleLarge(node.displayName);
     if (node is! MasterNode) return name;
-    final busy = ref.watch(uspMutationLoadingProvider) == 'routerName';
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -145,7 +144,7 @@ class UspNodeDetailView extends ConsumerWidget {
           label: loc(context).editDevice,
           identifier: 'node-detail-edit-name',
           child: InkWell(
-            onTap: busy ? null : () => _editRouterName(context, ref, node),
+            onTap: () => _editRouterName(context, ref, node),
             borderRadius: BorderRadius.circular(AppSpacing.xxs),
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.xxs),
@@ -162,28 +161,24 @@ class UspNodeDetailView extends ConsumerWidget {
   }
 
   /// Names the router (#1691): only `DeviceInfo.X_LINKSYS_UserDeviceLocation`
-  /// is written, and a router is named but not typed.
+  /// is written, and a router is named but not typed. The dialog saves and
+  /// shows its own progress and errors; this page only confirms a finished save.
   Future<void> _editRouterName(
       BuildContext context, WidgetRef ref, MasterNode node) async {
-    final result =
-        await showAppDialog<({String name, DeviceCategory category})>(
+    final saved = await showAppDialog<bool>(
       context: context,
       builder: (_) => DeviceIdentityEditDialog(
         initialName: node.userDeviceLocation ?? '',
         initialCategory: DeviceCategory.unknown,
         detectedName: node.hostName ?? node.model,
         showIcon: false,
+        onSave: (name, _) =>
+            ref.read(devicesDataProvider.notifier).updateRouterName(name),
       ),
     );
-    if (result == null || !context.mounted) return;
-    await performUspMutation(
-      context,
-      ref,
-      loadingKey: 'routerName',
-      mutation: () =>
-          ref.read(devicesDataProvider.notifier).updateRouterName(result.name),
-      successMessage: loc(context).changesSaved,
-    );
+    if (saved == true && context.mounted) {
+      showSuccessSnackBar(context, loc(context).changesSaved);
+    }
   }
 
   // ===========================================================================

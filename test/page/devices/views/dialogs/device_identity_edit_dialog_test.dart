@@ -1,4 +1,6 @@
 @Tags(['ui'])
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -18,14 +20,18 @@ final _testTheme = AppTheme.create(
 typedef _Result = ({String name, DeviceCategory category});
 
 /// Pumps the dialog inside a GoRouter (the dialog calls context.pop) and opens
-/// it. [onPopped] receives what the dialog popped with.
+/// it. [onPopped] receives what the dialog saved, once the dialog has closed
+/// after saving; it is never called on cancel. [onSave] replaces the default
+/// save, which completes at once.
 Future<void> _pumpAndOpen(
   WidgetTester tester, {
   String initialName = '',
   DeviceCategory initialCategory = DeviceCategory.unknown,
   bool showIcon = true,
   required void Function(_Result?) onPopped,
+  Future<void> Function(String name, DeviceCategory category)? onSave,
 }) async {
+  _Result? saved;
   final router = GoRouter(
     routes: [
       GoRoute(
@@ -35,15 +41,20 @@ Future<void> _pumpAndOpen(
             builder: (context) => Center(
               child: ElevatedButton(
                 onPressed: () async {
-                  onPopped(await showAppDialog<_Result>(
+                  final closedAfterSave = await showAppDialog<bool>(
                     context: context,
                     builder: (_) => DeviceIdentityEditDialog(
                       initialName: initialName,
                       initialCategory: initialCategory,
                       detectedName: 'android-1a2b',
                       showIcon: showIcon,
+                      onSave: (name, category) async {
+                        saved = (name: name, category: category);
+                        await onSave?.call(name, category);
+                      },
                     ),
-                  ));
+                  );
+                  if (closedAfterSave == true) onPopped(saved);
                 },
                 child: const Text('open'),
               ),
@@ -179,5 +190,50 @@ void main() {
     await tester.tap(save());
     await tester.pumpAndSettle();
     expect(popped?.name, 'Study');
+  });
+
+  // Saving takes a Set and two reads. The dialog stays up with a busy Save
+  // until it finishes, so the user sees it working (#1691).
+  testWidgets('while saving, the dialog stays open and Save is busy',
+      (tester) async {
+    final gate = Completer<void>();
+    _Result? popped;
+    await _pumpAndOpen(
+      tester,
+      onPopped: (r) => popped = r,
+      onSave: (_, __) => gate.future,
+    );
+
+    await tester.enterText(find.byType(TextField), 'Office');
+    await tester.tap(save());
+    await tester.pump();
+
+    expect(find.byType(DeviceIdentityEditDialog), findsOneWidget);
+    expect(tester.widget<AppButton>(save()).isLoading, isTrue);
+    expect(popped, isNull);
+
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(find.byType(DeviceIdentityEditDialog), findsNothing);
+    expect(popped?.name, 'Office');
+  });
+
+  testWidgets('a failed save keeps the dialog open and shows why',
+      (tester) async {
+    var poppedCalled = false;
+    await _pumpAndOpen(
+      tester,
+      onPopped: (_) => poppedCalled = true,
+      onSave: (_, __) async => throw Exception('refused'),
+    );
+
+    await tester.enterText(find.byType(TextField), 'Office');
+    await tester.tap(save());
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DeviceIdentityEditDialog), findsOneWidget);
+    expect(find.text(l.errorUnexpected), findsOneWidget);
+    expect(tester.widget<AppButton>(save()).isLoading, isFalse);
+    expect(poppedCalled, isFalse);
   });
 }
