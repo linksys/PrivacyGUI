@@ -1201,5 +1201,14 @@
   "raPreparingPartial": "Non è stato possibile configurare alcuni aggiornamenti in tempo reale. La dashboard potrebbe non aggiornarsi da sola; trascina per aggiornare.",
   "raLiveUpdates": "Aggiornamenti in tempo reale",
   "raLiveUpdatesConnecting": "Connessione tramite cloud",
-  "raLiveUpdatesDropped": "Connessione al cloud interrotta — riconnessione"
+  "raLiveUpdatesDropped": "Connessione al cloud interrotta — riconnessione",
+  "semanticRoleBottomSheet": "Riquadro inferiore",
+  "semanticRoleCheckbox": "Casella di controllo",
+  "semanticRoleDropdown": "Menu a discesa",
+  "semanticRoleIconButton": "Pulsante icona",
+  "semanticRoleListTile": "Elemento elenco",
+  "semanticRoleMascot": "Mascotte",
+  "semanticRolePinInput": "Inserimento PIN",
+  "semanticRoleRadio": "Pulsante di opzione",
+  "semanticRoleSwitch": "Interruttore"
 }

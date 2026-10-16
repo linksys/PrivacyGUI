@@ -1201,5 +1201,14 @@
   "raPreparingPartial": "No se pudieron configurar algunas actualizaciones en vivo. Es posible que el panel no se actualice solo; deslizá para actualizar.",
   "raLiveUpdates": "Actualizaciones en vivo",
   "raLiveUpdatesConnecting": "Conectando a través de la nube",
-  "raLiveUpdatesDropped": "Se perdió la conexión con la nube — reconectando"
+  "raLiveUpdatesDropped": "Se perdió la conexión con la nube — reconectando",
+  "semanticRoleBottomSheet": "Hoja inferior",
+  "semanticRoleCheckbox": "Casilla de verificación",
+  "semanticRoleDropdown": "Menú desplegable",
+  "semanticRoleIconButton": "Botón de ícono",
+  "semanticRoleListTile": "Elemento de lista",
+  "semanticRoleMascot": "Mascota",
+  "semanticRolePinInput": "Entrada de PIN",
+  "semanticRoleRadio": "Botón de opción",
+  "semanticRoleSwitch": "Interruptor"
 }
