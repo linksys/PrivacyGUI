@@ -177,7 +177,10 @@ void main() {
 
   setUp(() {
     mockUsp = MockUspClient();
-    service = UspInternetSettingsService(mockUsp);
+    // No settle wait: these tests are about what is sent. The wait itself is
+    // covered by the 'entering bridge settle' group below.
+    service =
+        UspInternetSettingsService(mockUsp, bridgeSettleDelay: Duration.zero);
   });
 
   group('fetchSettings', () {
@@ -1453,6 +1456,99 @@ void main() {
 
       expect(result.form.connectionType, equals(UspWanConnectionType.pptp));
       expect(result.form.serverAddress, isEmpty);
+    });
+  });
+
+  group('entering bridge settle', () {
+    setUp(() {
+      // The production delay, not the zero the other tests use.
+      service = UspInternetSettingsService(mockUsp);
+      final handler = createFetchMockHandler();
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async =>
+          handler(invocation.positionalArguments[0] as List<String>));
+    });
+
+    final original = UspInternetSettingsForm(
+      connectionType: UspWanConnectionType.dhcp,
+    );
+    final edited = original.copyWith(
+      connectionType: UspWanConnectionType.bridge,
+    );
+
+    test('waits 20s by default', () {
+      // #762 comment 5987286082: reachable at T+20–25s after the bridge SET.
+      expect(UspInternetSettingsService.defaultBridgeSettleDelay,
+          const Duration(seconds: 20));
+    });
+
+    test('saveAll completes only 20s after the bridge SET', () {
+      fakeAsync((async) {
+        when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+            .thenAnswer((_) async => {
+                  'success': true,
+                  'result': {'data': <String, dynamic>{}}
+                });
+
+        var done = false;
+        service.saveAll(original, edited).then<void>((_) => done = true);
+
+        async.flushMicrotasks();
+        verify(() => mockUsp.set({'Device.IP.Interface.2.Enable': false},
+            allowPartial: any(named: 'allowPartial'))).called(1);
+
+        async.elapse(const Duration(seconds: 19));
+        expect(done, isFalse, reason: 'the router is not reachable yet');
+
+        async.elapse(const Duration(seconds: 1));
+        expect(done, isTrue);
+      });
+    });
+
+    test('a rejected bridge SET fails at once, without waiting', () {
+      fakeAsync((async) {
+        when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+            .thenAnswer((_) async => {
+                  'success': false,
+                  'result': {
+                    'data': <String, dynamic>{},
+                    'error': {
+                      'Device.IP.Interface.2.Enable': {
+                        'errorCode': 7006,
+                        'errorMessage': 'Invalid value',
+                      },
+                    },
+                  },
+                });
+
+        Object? error;
+        service
+            .saveAll(original, edited)
+            .then<void>((_) {}, onError: (Object e) => error = e);
+
+        async.flushMicrotasks();
+        expect(error, isA<ServiceError>());
+      });
+    });
+
+    test('leaving bridge does not wait', () {
+      fakeAsync((async) {
+        when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+            .thenAnswer((_) async => {
+                  'success': true,
+                  'result': {'data': <String, dynamic>{}}
+                });
+
+        var done = false;
+        service
+            .saveAll(
+              edited,
+              edited.copyWith(connectionType: UspWanConnectionType.dhcp),
+            )
+            .then<void>((_) => done = true);
+
+        async.flushMicrotasks();
+        expect(done, isTrue);
+      });
     });
   });
 
