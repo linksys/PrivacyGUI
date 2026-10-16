@@ -1201,5 +1201,14 @@
   "raPreparingPartial": "Nogle liveopdateringer kunne ikke konfigureres. Dashboardet opdaterer måske ikke sig selv; træk for at opdatere.",
   "raLiveUpdates": "Liveopdateringer",
   "raLiveUpdatesConnecting": "Opretter forbindelse via skyen",
-  "raLiveUpdatesDropped": "Forbindelsen til skyen blev afbrudt — opretter forbindelse igen"
+  "raLiveUpdatesDropped": "Forbindelsen til skyen blev afbrudt — opretter forbindelse igen",
+  "semanticRoleBottomSheet": "Felt i bunden",
+  "semanticRoleCheckbox": "Afkrydsningsfelt",
+  "semanticRoleDropdown": "Rullemenu",
+  "semanticRoleIconButton": "Ikonknap",
+  "semanticRoleListTile": "Listeelement",
+  "semanticRoleMascot": "Maskot",
+  "semanticRolePinInput": "PIN-indtastning",
+  "semanticRoleRadio": "Alternativknap",
+  "semanticRoleSwitch": "Kontakt"
 }

@@ -1201,5 +1201,14 @@
   "raPreparingPartial": "Beberapa pembaruan langsung tidak dapat disiapkan. Dasbor mungkin tidak memperbarui sendiri; tarik untuk menyegarkan.",
   "raLiveUpdates": "Pembaruan langsung",
   "raLiveUpdatesConnecting": "Menghubungkan melalui cloud",
-  "raLiveUpdatesDropped": "Koneksi cloud terputus — menghubungkan ulang"
+  "raLiveUpdatesDropped": "Koneksi cloud terputus — menghubungkan ulang",
+  "semanticRoleBottomSheet": "Lembar bawah",
+  "semanticRoleCheckbox": "Kotak centang",
+  "semanticRoleDropdown": "Menu tarik-turun",
+  "semanticRoleIconButton": "Tombol ikon",
+  "semanticRoleListTile": "Item daftar",
+  "semanticRoleMascot": "Maskot",
+  "semanticRolePinInput": "Input PIN",
+  "semanticRoleRadio": "Tombol radio",
+  "semanticRoleSwitch": "Sakelar"
 }

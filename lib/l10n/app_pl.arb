@@ -1201,5 +1201,14 @@
   "raPreparingPartial": "Nie udało się skonfigurować niektórych aktualizacji na żywo. Pulpit może nie odświeżać się sam; przeciągnij, aby odświeżyć.",
   "raLiveUpdates": "Aktualizacje na żywo",
   "raLiveUpdatesConnecting": "Łączenie przez chmurę",
-  "raLiveUpdatesDropped": "Połączenie z chmurą zostało przerwane — ponowne łączenie"
+  "raLiveUpdatesDropped": "Połączenie z chmurą zostało przerwane — ponowne łączenie",
+  "semanticRoleBottomSheet": "Panel dolny",
+  "semanticRoleCheckbox": "Pole wyboru",
+  "semanticRoleDropdown": "Lista rozwijana",
+  "semanticRoleIconButton": "Przycisk ikony",
+  "semanticRoleListTile": "Element listy",
+  "semanticRoleMascot": "Maskotka",
+  "semanticRolePinInput": "Wprowadzanie PIN",
+  "semanticRoleRadio": "Przycisk opcji",
+  "semanticRoleSwitch": "Przełącznik"
 }

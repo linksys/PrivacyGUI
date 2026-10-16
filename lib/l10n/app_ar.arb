@@ -1201,5 +1201,14 @@
   "raPreparingPartial": "تعذّر إعداد بعض التحديثات المباشرة. قد لا تتحدّث لوحة المعلومات تلقائيًا؛ اسحب للتحديث.",
   "raLiveUpdates": "التحديثات المباشرة",
   "raLiveUpdatesConnecting": "جارٍ الاتصال عبر السحابة",
-  "raLiveUpdatesDropped": "انقطع الاتصال بالسحابة — جارٍ إعادة الاتصال"
+  "raLiveUpdatesDropped": "انقطع الاتصال بالسحابة — جارٍ إعادة الاتصال",
+  "semanticRoleBottomSheet": "بطاقة سفلية",
+  "semanticRoleCheckbox": "خانة اختيار",
+  "semanticRoleDropdown": "قائمة منسدلة",
+  "semanticRoleIconButton": "زر أيقونة",
+  "semanticRoleListTile": "عنصر قائمة",
+  "semanticRoleMascot": "التميمة",
+  "semanticRolePinInput": "إدخال رمز PIN",
+  "semanticRoleRadio": "زر اختيار",
+  "semanticRoleSwitch": "مفتاح تبديل"
 }

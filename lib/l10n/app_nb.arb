@@ -1201,5 +1201,14 @@
   "raPreparingPartial": "Noen direkteoppdateringer kunne ikke konfigureres. Dashbordet oppdaterer seg kanskje ikke selv; dra for å oppdatere.",
   "raLiveUpdates": "Direkteoppdateringer",
   "raLiveUpdatesConnecting": "Kobler til via skyen",
-  "raLiveUpdatesDropped": "Skytilkoblingen ble brutt — kobler til på nytt"
+  "raLiveUpdatesDropped": "Skytilkoblingen ble brutt — kobler til på nytt",
+  "semanticRoleBottomSheet": "Felt nederst",
+  "semanticRoleCheckbox": "Avmerkingsboks",
+  "semanticRoleDropdown": "Rullegardinmeny",
+  "semanticRoleIconButton": "Ikonknapp",
+  "semanticRoleListTile": "Listeelement",
+  "semanticRoleMascot": "Maskot",
+  "semanticRolePinInput": "PIN-inntasting",
+  "semanticRoleRadio": "Alternativknapp",
+  "semanticRoleSwitch": "Bryter"
 }
