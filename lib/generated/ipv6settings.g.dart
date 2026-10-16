@@ -6,9 +6,11 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 /// WAN IPv6 connection configuration (6rd is Ipv6rdSettings)
 class Ipv6Settings {
+  final String instancePath;
   final bool ipv6Enabled;
 
   const Ipv6Settings({
+    required this.instancePath,
     required this.ipv6Enabled,
   });
 
@@ -49,10 +51,23 @@ class Ipv6Settings {
       throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
     return Ipv6Settings(
+      instancePath: instancePath,
       ipv6Enabled: response['${instancePath}IPv6Enable'] == true ||
           response['${instancePath}IPv6Enable'] == 'true' ||
           response['${instancePath}IPv6Enable'] == '1',
     );
+  }
+
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams(
+    String instancePath, {
+    bool? ipv6Enabled,
+  }) {
+    final params = <String, dynamic>{};
+    if (ipv6Enabled != null) {
+      params['${instancePath}IPv6Enable'] = ipv6Enabled;
+    }
+    return params;
   }
 
   /// Update writable parameters via USP Set message
@@ -61,11 +76,8 @@ class Ipv6Settings {
     bool? ipv6Enabled,
     bool allowPartial = false,
   }) async {
-    final params = <String, dynamic>{};
     final instancePath = await _resolveInstance(client);
-    if (ipv6Enabled != null) {
-      params['${instancePath}IPv6Enable'] = ipv6Enabled;
-    }
+    final params = updateParams(instancePath, ipv6Enabled: ipv6Enabled);
     if (params.isEmpty) {
       return {
         'success': true,
@@ -78,6 +90,7 @@ class Ipv6Settings {
   @override
   String toString() {
     return 'Ipv6Settings('
+        'instancePath: $instancePath, '
         'ipv6Enabled: $ipv6Enabled'
         ')';
   }

@@ -213,15 +213,15 @@ void main() {
       // - PppInterface.fetch() = 1 call
       // - VlanTermination.fetch() = 1 call
       // - _fetchHostName() (Device.DeviceInfo.HostName) = 1 call
-      // - Dhcpv6Clients.fetch() + WAN alias lookup to match it = 2 calls
+      // - Dhcpv6Clients.fetch() = 1 call (matched on WanSettings.instancePath)
       // - Ipv6rdSettings.fetch() = 1 call
       // No GRE/L2TP fetch: tunnels are fetched only for the pptp/l2tp
       // connection types, not for Static IP.
       // saveAll:
       // - WAN IPv4 row re-read (_resolveInstance() + fetch()) = 2 calls
-      // - Ipv6Settings.update() → _resolveInstance() = 1 call
-      // Total = 13 get calls
-      verify(() => mockUsp.get(any())).called(13);
+      // - No IPv6 field changed, so the IPv6 save sends nothing
+      // Total = 11 get calls
+      verify(() => mockUsp.get(any())).called(11);
 
       // Verify setOrdered was called for Static IP mode switch
       final capturedOrdered = verify(() => mockUsp.setOrdered(captureAny(),
@@ -258,15 +258,15 @@ void main() {
       await service.saveIspSettings(config);
 
       // Verify fetchSettings + saveAll get calls:
-      // fetchSettings: 10 calls (WanSettings x2, Ipv6 x2, PPP, VLAN,
-      //   _fetchHostName = Device.DeviceInfo.HostName, Dhcpv6Clients + WAN
-      //   alias lookup, Ipv6rdSettings). No GRE/L2TP fetch: tunnels are
-      //   fetched only for the pptp/l2tp connection types.
+      // fetchSettings: 9 calls (WanSettings x2, Ipv6 x2, PPP, VLAN,
+      //   _fetchHostName = Device.DeviceInfo.HostName, Dhcpv6Clients,
+      //   Ipv6rdSettings). No GRE/L2TP fetch: tunnels are fetched only for
+      //   the pptp/l2tp connection types.
       // saveAll:
       // - WAN IPv4 row re-read (_resolveInstance() + fetch()) = 2 calls
-      // - Ipv6Settings.update() → _resolveInstance() = 1 call
-      // Total = 13 get calls
-      verify(() => mockUsp.get(any())).called(13);
+      // - No IPv6 field changed, so the IPv6 save sends nothing
+      // Total = 11 get calls
+      verify(() => mockUsp.get(any())).called(11);
 
       // Verify PppInterface.add was called (new PPP instance created)
       final addCaptures = verify(() => mockUsp.add(captureAny())).captured;

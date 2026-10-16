@@ -463,6 +463,62 @@ void main() {
       expect(dns['value'], equals('1.1.1.1,9.9.9.9'));
     });
 
+    test('IPv6, DHCPv6 and 6rd changes go out as one SET', () async {
+      // Three generated models, one SET built from their write builders.
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        ipv6Enabled: true,
+        dhcpv6Enabled: true,
+      );
+      final edited = original.copyWith(
+        ipv6Enabled: false,
+        dhcpv6Enabled: false,
+        ipv6rdEnabled: true,
+      );
+
+      await service.saveAll(original, edited);
+
+      final captured = verify(
+        () =>
+            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
+      ).captured;
+      final ipv6Sets = captured.whereType<Map<String, dynamic>>().where((m) =>
+          m.keys.any((k) =>
+              k.endsWith('IPv6Enable') ||
+              k.startsWith('Device.DHCPv6.Client.') ||
+              k.startsWith('Device.IPv6rd.')));
+      expect(ipv6Sets, [
+        {
+          'Device.IP.Interface.2.IPv6Enable': false,
+          'Device.DHCPv6.Client.1.Enable': false,
+          'Device.IPv6rd.InterfaceSetting.1.Enable': true,
+        }
+      ]);
+    });
+
+    test('an unchanged IPv6 section sends no IPv6 SET', () async {
+      final form = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        ipv6Enabled: true,
+        dhcpv6Enabled: true,
+      );
+
+      await service.saveAll(form, form.copyWith(mtu: form.mtu + 1));
+
+      final captured = verify(
+        () =>
+            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
+      ).captured;
+      for (final params in captured.whereType<Map<String, dynamic>>()) {
+        expect(
+            params.keys.any((k) =>
+                k.endsWith('IPv6Enable') ||
+                k.startsWith('Device.DHCPv6.') ||
+                k.startsWith('Device.IPv6rd.')),
+            isFalse);
+      }
+    });
+
     test('IPv6 save uses allowPartial (cross-USP-service SET cannot be atomic)',
         () async {
       // IPv6 settings span IP.Interface, DHCPv6.Client and IPv6rd.Interface-

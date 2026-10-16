@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
-import 'package:privacy_gui/core/usp/providers/wan_interface_path_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/dhcpv6clients.g.dart';
 import 'package:privacy_gui/generated/gre_tunnels.g.dart';
@@ -116,7 +115,7 @@ class UspInternetSettingsService {
           wan: wan,
           ipv4: ipv4,
           ipv6: ipv6,
-          dhcpv6: _wanDhcpv6Client(dhcpv6, await _wanInterfacePath(dhcpv6)),
+          dhcpv6: _wanDhcpv6Client(dhcpv6, wan.instancePath),
           ipv6rd: _rowAt(ipv6rd.items, _ipv6rdPath, (r) => r.instancePath),
           ppp: pppInstance,
           vlan: vlanInstance,
@@ -152,9 +151,7 @@ class UspInternetSettingsService {
   ///
   /// `Device.DHCPv6.Client.{i}.Interface` names the IP.Interface the client
   /// runs on, with or without the trailing dot.
-  static Dhcpv6Client? _wanDhcpv6Client(
-      Dhcpv6Clients clients, String? wanPath) {
-    if (wanPath == null) return null;
+  static Dhcpv6Client? _wanDhcpv6Client(Dhcpv6Clients clients, String wanPath) {
     final wan = wanPath.endsWith('.')
         ? wanPath.substring(0, wanPath.length - 1)
         : wanPath;
@@ -165,13 +162,6 @@ class UspInternetSettingsService {
       if (iface == wan) return client;
     }
     return null;
-  }
-
-  /// The WAN `Device.IP.Interface.{i}.` path, read only when a DHCPv6 client
-  /// exists to match against it.
-  Future<String?> _wanInterfacePath(Dhcpv6Clients clients) async {
-    if (clients.items.isEmpty) return null;
-    return resolveWanInterfacePath(_usp);
   }
 
   /// Targeted GET of the router hostname. Returns '' on any missing value so a
@@ -703,36 +693,8 @@ class UspInternetSettingsService {
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited,
   ) async {
-    // IPv6 settings span three USP services (IP.Interface, DHCPv6.Client,
-    // IPv6rd.InterfaceSetting), one generated model each. The OBUSPA broker
-    // rejects an atomic SET (allow_partial=false) that touches more than one
-    // service with 7005 "Allow partial=false not supported across more than one
-    // USP Service", and which object a service owns is the firmware's business,
-    // so every IPv6 SET allows partial application; _handleSetResult still
-    // surfaces any per-parameter failure as a UspPartialFailureError.
-    _handleSetResult(await Ipv6Settings.update(
-      _usp,
-      ipv6Enabled: _diff(original.ipv6Enabled, edited.ipv6Enabled),
-      allowPartial: true,
-    ));
-
+    final ipv6Enabled = _diff(original.ipv6Enabled, edited.ipv6Enabled);
     final dhcpv6Enabled = _diff(original.dhcpv6Enabled, edited.dhcpv6Enabled);
-    if (dhcpv6Enabled != null) {
-      final clients = await Dhcpv6Clients.fetch(_usp);
-      final client =
-          _wanDhcpv6Client(clients, await _wanInterfacePath(clients));
-      if (client != null) {
-        _handleSetResult(await Dhcpv6Clients.update(
-          _usp,
-          [
-            Dhcpv6ClientUpdate(
-                instancePath: client.instancePath, enable: dhcpv6Enabled),
-          ],
-          allowPartial: true,
-        ));
-      }
-    }
-
     final ipv6rd = Ipv6rdSettingUpdate(
       instancePath: _ipv6rdPath,
       enabled: _diff(original.ipv6rdEnabled, edited.ipv6rdEnabled),
@@ -741,8 +703,37 @@ class UspInternetSettingsService {
           _diff(original.ipv6rdIpv4MaskLength, edited.ipv6rdIpv4MaskLength),
       borderRelay: _diff(original.ipv6rdBorderRelay, edited.ipv6rdBorderRelay),
     );
-    _handleSetResult(
-        await Ipv6rdSettings.update(_usp, [ipv6rd], allowPartial: true));
+    if (ipv6Enabled == null &&
+        dhcpv6Enabled == null &&
+        Ipv6rdSettings.updateParams([ipv6rd]).isEmpty) {
+      return;
+    }
+
+    // The WAN interface path both IPv6Enable and the DHCPv6 client match on.
+    final wanPath = (await Ipv6Settings.fetch(_usp)).instancePath;
+    Dhcpv6Client? client;
+    if (dhcpv6Enabled != null) {
+      client = _wanDhcpv6Client(await Dhcpv6Clients.fetch(_usp), wanPath);
+    }
+
+    // IPv6 settings span three USP services (IP.Interface, DHCPv6.Client,
+    // IPv6rd.InterfaceSetting). They go out as one SET built from each
+    // model's write builder; the OBUSPA broker rejects an atomic SET
+    // (allow_partial=false) that touches more than one service with 7005
+    // "Allow partial=false not supported across more than one USP Service",
+    // so it allows partial application. _handleSetResult still surfaces any
+    // per-parameter failure as a UspPartialFailureError.
+    final params = {
+      ...Ipv6Settings.updateParams(wanPath, ipv6Enabled: ipv6Enabled),
+      if (client != null)
+        ...Dhcpv6Clients.updateParams([
+          Dhcpv6ClientUpdate(
+              instancePath: client.instancePath, enable: dhcpv6Enabled),
+        ]),
+      ...Ipv6rdSettings.updateParams([ipv6rd]),
+    };
+    if (params.isEmpty) return;
+    _handleSetResult(await _usp.set(params, allowPartial: true));
   }
 
   // ---------------------------------------------------------------------------
