@@ -7,7 +7,6 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/mesh_mlo.g.dart';
 import 'package:privacy_gui/generated/mesh_steering.g.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_settings.dart';
-import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_status.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
 final uspWifiAdvancedServiceProvider = Provider<UspWifiAdvancedService>(
@@ -72,18 +71,15 @@ class UspWifiAdvancedService {
     }
   }
 
-  /// Fetches the network-wide MLO switch and what the router reports for it.
+  /// Fetches the network-wide MLO switch, the tab's editable value.
   ///
   /// Both leaves are required by the definition, so a router that offers MLO
   /// but answers without them fails the fetch rather than reading as "off".
-  /// Called only when the router offers MLO (`DeviceCapability.wifiMlo`).
-  Future<({bool enabled, MloStatus status})> fetchMlo() async {
+  /// Called only when the router offers MLO (`DeviceCapability.wifiMlo`). What
+  /// the router reports for it, `MLOStatus`, is L1's (`mloStatusProvider`).
+  Future<bool> fetchMloEnabled() async {
     try {
-      final mlo = await MeshMlo.fetch(_usp);
-      return (
-        enabled: mlo.mloEnabled,
-        status: MloStatus.fromTr181(mlo.mloStatus),
-      );
+      return (await MeshMlo.fetch(_usp)).mloEnabled;
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
@@ -92,10 +88,11 @@ class UspWifiAdvancedService {
   /// The tab's save, as **one** Set: every switch that changed between
   /// [original] and [current] — steering, MLO and IEEE 802.11h together.
   ///
-  /// **One Set.** An MLO or DFS change restarts Wi-Fi; two Sets restart it
-  /// twice, or send the second into the first one's restart. One Set with MLO
-  /// and DFS together reloaded Wi-Fi once on the bench (FW 2.0.3.26101472,
-  /// 2026-10-15).
+  /// **One Set.** An MLO or DFS change restarts Wi-Fi, so the tab's changes go
+  /// out together rather than one Set landing in another's restart. On the
+  /// bench (FW 2.0.3.26101472, 2026-10-15) one Set of MLO and DFS reloaded
+  /// Wi-Fi once; so did the same leaves in two Sets, so one Set is chosen for
+  /// one answer and one read-back, not for fewer reloads.
   ///
   /// **`allowPartial: true`, and it has to be.** The mesh leaves are served by
   /// dm-reflector and the radios by wifidmd, and an atomic Set across two USP

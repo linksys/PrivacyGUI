@@ -12,7 +12,6 @@ import 'package:privacy_gui/page/mac_filter/providers/mac_filter_notifier.dart';
 import 'package:privacy_gui/page/mac_filter/views/mac_filter_tab.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/mlo_status_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/tabs/wifi_advanced_tab.dart';
@@ -215,10 +214,7 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
           .read(uspWifiSettingsProvider.notifier)
           .fetch(forceRemote: true)
           .then((_) {}),
-      1 => ref
-          .read(uspWifiAdvancedProvider.notifier)
-          .fetch(forceRemote: true)
-          .then((_) {}),
+      1 => ref.read(uspWifiAdvancedProvider.notifier).refresh().then((_) {}),
       UspWifiSettingsView.macFilterTab => ref
           .read(uspMacFilterProvider.notifier)
           .fetch(forceRemote: true)
@@ -261,11 +257,6 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
       return;
     }
 
-    // Whatever the outcome, MLO's status is read again once the write has
-    // settled: a WiFi-tab save can change what MLO needs (the bands' SSID,
-    // password and security) and an MLO save changes the switch itself, so the
-    // badge on the Advanced tab must not keep the value from before (#1692).
-    // Settled means after the recovery, when the router answers again.
     await runWifiWriteWithRecovery(
       context,
       ref,
@@ -284,6 +275,5 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
             : const WifiWriteConfirmed();
       },
     );
-    if (mounted) ref.invalidate(mloStatusProvider);
   }
 }

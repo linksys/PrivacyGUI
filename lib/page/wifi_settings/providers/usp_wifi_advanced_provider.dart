@@ -12,6 +12,7 @@ import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_feature_state.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_status.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/mlo_status_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_write_confirm_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_advanced_service.dart';
@@ -28,10 +29,14 @@ final uspWifiAdvancedProvider = AutoDisposeNotifierProvider<
 /// How long after the Set an MLO save waits before it reads the router back.
 ///
 /// FWDEV#201's contract: an MLO change restarts Wi-Fi, clients reconnect
-/// within about 60 s, and `MLOStatus` is read again after that. The router
-/// answers the Set before the restart (166 ms on the bench, FW 2.0.3.26101472,
-/// 2026-10-15) and nothing it serves says when the restart is over — the radios
-/// have no `LastChange` — so the save waits the contract's 60 s instead.
+/// within about 60 s, and `MLOStatus` is read again after that.
+///
+/// The answer is no sign the restart is over. The setter only schedules the
+/// switch's script and returns (`dmcmd_no_wait`, linksys/feed_premium#55), and
+/// on the bench an MLO Set was answered in 166 ms (FW 2.0.3.26101472,
+/// 2026-10-15). Nothing the router serves says when the restart is over — the
+/// radios have no `LastChange` — so the save waits the contract's 60 s. That is
+/// FW's figure, not one measured here.
 final mloRestartSettleProvider = Provider<Duration>(
   (ref) => const Duration(seconds: 60),
 );
@@ -71,19 +76,19 @@ class UspWifiAdvancedNotifier
       final steering = await _svc.fetchSteering();
       // Only where the router offers it: firmware without FWDEV#201 has no
       // such leaves, and the tab must still read steering and DFS there.
-      final mlo = _offersMlo ? await _svc.fetchMlo() : null;
+      final mloEnabled = _offersMlo ? await _svc.fetchMloEnabled() : null;
 
       logger.d('[USP][WiFi][Advanced]: Fetched — radios=${ieee80211h.length}, '
           'clientSteering=${steering.clientSteering}, '
           'nodeSteering=${steering.nodeSteering}, '
-          'mlo=${mlo?.enabled}');
+          'mlo=$mloEnabled');
 
       return (
         WifiAdvancedSettings(
           ieee80211hByRadio: ieee80211h,
           clientSteering: steering.clientSteering,
           nodeSteering: steering.nodeSteering,
-          mloEnabled: mlo?.enabled,
+          mloEnabled: mloEnabled,
         ),
         const WifiAdvancedStatus(),
       );
@@ -132,9 +137,9 @@ class UspWifiAdvancedNotifier
     final current = state.settings.current;
 
     // One Set for the whole tab (#1692): steering, MLO and DFS together, so an
-    // MLO and DFS change restarts Wi-Fi once. Then the router is read back,
+    // MLO and DFS change goes out in one write. Then the router is read back,
     // even when it answered: with `allowPartial` one part can be refused on its
-    // own, and an MLO restart comes after the answer. See
+    // own, and the MLO setter answers before its restart. See
     // [wifiWriteConfirmProvider].
     //
     // The remediation read is outside the `try`: when it fails nothing has
@@ -158,11 +163,23 @@ class UspWifiAdvancedNotifier
     } on ServiceError {
       await _rereadAfterFailure();
       rethrow;
+    } finally {
+      // What the router reports for MLO can move with any write here, a
+      // refused one included, and nothing pushes it — so it is read again.
+      ref.invalidate(mloStatusProvider);
     }
 
     logger.d('[USP][WiFi][Advanced]: Save confirmed — '
         'dfs=${state.changesDfs}, mlo=${state.changesMlo}');
     if (state.restartsWifi) await _refreshL1AfterWrite();
+  }
+
+  /// The tab's refresh: reads the switches again, and the MLO status with
+  /// them. The status is L1's and nothing pushes it, so a pull-to-refresh or
+  /// a retry is also how a failed status read gets another try.
+  Future<WifiAdvancedFeatureState> refresh() {
+    ref.invalidate(mloStatusProvider);
+    return fetch(forceRemote: true);
   }
 
   /// The radios to force onto auto-channel in the save's Set: those DFS turns

@@ -43,8 +43,10 @@ class WifiAdvancedFeatureState
   bool get changesMlo =>
       settings.current.mloEnabled != settings.original.mloEnabled;
 
-  /// Whether saving now restarts Wi-Fi and drops a client connected over it:
-  /// an MLO or DFS change (#1692).
+  /// Whether saving now restarts Wi-Fi, which can drop a client connected over
+  /// it: an MLO or DFS change (#1692). An MLO change always reloads Wi-Fi; the
+  /// radios go down too only when the bands' grouping changes, so a toggle that
+  /// ends `Inactive` may drop nobody — the save still waits as if it would.
   ///
   /// The view reads it to decide whether to wait for the router to come back
   /// and the notifier to decide how long the save waits, so the two cannot

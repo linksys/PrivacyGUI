@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/core/capability/capability_provider.dart';
 import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/wifi_settings/models/mlo_status.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_settings.dart';
-import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_status.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_write_confirm_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/services/usp_mesh_mlo_data_service.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_advanced_service.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
@@ -23,11 +24,7 @@ import '../../../mocks/provider_overrides/mock_wifi_settings.dart';
 import '../../../mocks/test_data/scenes/wifi_settings_scene_data.dart';
 import '../../../util/app_test_fonts.dart';
 
-class MockUspWifiAdvancedService extends Mock
-    implements UspWifiAdvancedService {}
-
-/// The plan builder never touches the client; this only satisfies its type.
-class _NoUsp extends Mock implements UspClient {}
+class MockUspMeshMloDataService extends Mock implements UspMeshMloDataService {}
 
 const _mlo = 'Device.X_LINKSYS_Mesh.MLOEnabled';
 const _node = 'Device.X_LINKSYS_Mesh.NodeSteeringEnabled';
@@ -45,6 +42,7 @@ const _dfs2 = 'Device.WiFi.Radio.2.IEEE80211hEnabled';
 /// **Untagged on purpose** so `run_tests.sh` runs it.
 void main() {
   late MockUspWifiAdvancedService svc;
+  late MockUspMeshMloDataService mloData;
   late List<RecoveryContext> recoveries;
   late List<Map<String, dynamic>> sets;
   late MloStatus mloStatus;
@@ -57,6 +55,7 @@ void main() {
 
   setUp(() {
     svc = MockUspWifiAdvancedService();
+    mloData = MockUspMeshMloDataService();
     recoveries = [];
     sets = [];
     mloStatus = MloStatus.disabled;
@@ -64,27 +63,11 @@ void main() {
         .thenAnswer((_) async => {'Device.WiFi.Radio.2.': false});
     when(() => svc.fetchSteering())
         .thenAnswer((_) async => (clientSteering: false, nodeSteering: true));
-    when(() => svc.fetchMlo())
-        .thenAnswer((_) async => (enabled: false, status: mloStatus));
-    when(() => svc.planSave(
-          original: any(named: 'original'),
-          current: any(named: 'current'),
-          forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
-        )).thenAnswer((inv) {
-      final real = UspWifiAdvancedService(_NoUsp()).planSave(
-        original: inv.namedArguments[#original] as WifiAdvancedSettings,
-        current: inv.namedArguments[#current] as WifiAdvancedSettings,
-        forceAutoChannelPaths:
-            inv.namedArguments[#forceAutoChannelPaths] as List<String>,
-      );
-      return WifiWritePlan(
-        params: real.params,
-        proof: real.proof,
-        send: () async {
-          sets.add(real.params);
-          return WifiWriteOutcome.confirmed;
-        },
-      );
+    when(() => svc.fetchMloEnabled()).thenAnswer((_) async => false);
+    when(() => mloData.fetchStatus()).thenAnswer((_) async => mloStatus);
+    stubRealPlanSave(svc, send: (params) async {
+      sets.add(params);
+      return WifiWriteOutcome.confirmed;
     });
     when(() => svc.isApplied(any())).thenAnswer((_) async => true);
   });
@@ -115,6 +98,7 @@ void main() {
             .overrideWith(() => FixedWifiSettingsNotifier(editDirtyState)),
         uspWifiAdvancedProvider.overrideWith(UspWifiAdvancedNotifier.new),
         uspWifiAdvancedServiceProvider.overrideWithValue(svc),
+        uspMeshMloDataServiceProvider.overrideWithValue(mloData),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
         deviceCapabilitiesProvider.overrideWithValue(
             DeviceCapabilities({if (mloOffered) DeviceCapability.wifiMlo})),
@@ -160,7 +144,8 @@ void main() {
       expect(find.text('Multi-Link Operation'), findsNothing);
       expect(switchWith('wifi-advanced-client-steering'), findsOneWidget);
       expect(switchWith('wifi-advanced-dfs'), findsOneWidget);
-      verifyNever(() => svc.fetchMlo());
+      verifyNever(() => svc.fetchMloEnabled());
+      verifyNever(() => mloData.fetchStatus());
     });
 
     testWidgets('the status the router reports is shown on the card',
@@ -184,16 +169,17 @@ void main() {
           findsOneWidget);
     });
 
-    testWidgets(
-        'a WiFi-tab save reads the status again, so Advanced is not stale',
-        (tester) async {
-      // Inactive on WPA2; the user fixes it on the WiFi tab, as the hint says.
+    testWidgets('a refresh reads the status again', (tester) async {
+      // Inactive on WPA2; the user fixes it on another device, then refreshes.
       mloStatus = MloStatus.inactive;
-      await pumpPage(tester, tab: 0);
-      mloStatus = MloStatus.active;
-      await save(tester);
+      await pumpPage(tester);
+      expect(find.text('Inactive'), findsOneWidget);
 
-      await tester.tap(find.text('Advanced'));
+      mloStatus = MloStatus.active;
+      // The page's pull-to-refresh, called the way the page view calls it.
+      await tester
+          .widget<UiKitPageView>(find.byType(UiKitPageView))
+          .onRefresh!();
       await settle(tester);
 
       expect(find.text('Active'), findsOneWidget);

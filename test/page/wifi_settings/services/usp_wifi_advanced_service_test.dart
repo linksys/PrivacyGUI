@@ -3,7 +3,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_settings.dart';
-import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_status.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_advanced_service.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
@@ -405,47 +404,18 @@ void main() {
     });
   });
 
-  group('UspWifiAdvancedService - fetchMlo (#1692)', () {
-    test('reads the switch and its status in one Get', () async {
-      // FW 2.0.3.26101472 after the MLO + DFS Set on WPA2 bands (bench).
+  group('UspWifiAdvancedService - fetchMloEnabled (#1692)', () {
+    test('reads the switch in the definition\'s one Get', () async {
       when(() => mockUsp.get(any())).thenAnswer((_) async => {
             'Device.X_LINKSYS_Mesh.MLOEnabled': '1',
             'Device.X_LINKSYS_Mesh.MLOStatus': 'Inactive',
           });
 
-      final result = await svc.fetchMlo();
-
-      expect(result.enabled, isTrue);
-      expect(result.status, MloStatus.inactive);
+      expect(await svc.fetchMloEnabled(), isTrue);
       verify(() => mockUsp.get([
             'Device.X_LINKSYS_Mesh.MLOEnabled',
             'Device.X_LINKSYS_Mesh.MLOStatus',
           ])).called(1);
-    });
-
-    for (final (raw, status) in [
-      ('Disabled', MloStatus.disabled),
-      ('Active', MloStatus.active),
-      ('Inactive', MloStatus.inactive),
-    ]) {
-      test('$raw reads as ${status.name}', () async {
-        when(() => mockUsp.get(any())).thenAnswer((_) async => {
-              'Device.X_LINKSYS_Mesh.MLOEnabled': '0',
-              'Device.X_LINKSYS_Mesh.MLOStatus': raw,
-            });
-
-        expect((await svc.fetchMlo()).status, status);
-      });
-    }
-
-    test('a status outside the contract is not drawn as one of its three',
-        () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async => {
-            'Device.X_LINKSYS_Mesh.MLOEnabled': '1',
-            'Device.X_LINKSYS_Mesh.MLOStatus': 'Pending',
-          });
-
-      expect((await svc.fetchMlo()).status, MloStatus.unknown);
     });
 
     test('a missing leaf maps to a ServiceError, not a silent off', () {
@@ -453,7 +423,7 @@ void main() {
             'Device.X_LINKSYS_Mesh.MLOEnabled': '0',
           });
 
-      expect(() => svc.fetchMlo(), throwsA(isA<ServiceError>()));
+      expect(() => svc.fetchMloEnabled(), throwsA(isA<ServiceError>()));
     });
   });
 }

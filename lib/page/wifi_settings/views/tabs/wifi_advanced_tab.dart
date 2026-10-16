@@ -4,7 +4,7 @@ import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_feature_state.dart';
-import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_status.dart';
+import 'package:privacy_gui/page/wifi_settings/models/mlo_status.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/mlo_status_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -42,8 +42,7 @@ class UspWifiAdvancedTab extends ConsumerWidget {
       return ServiceErrorView(
         error: status.error,
         title: loc(context).failedToLoadSettings,
-        onRetry: () =>
-            ref.read(uspWifiAdvancedProvider.notifier).fetch(forceRemote: true),
+        onRetry: () => ref.read(uspWifiAdvancedProvider.notifier).refresh(),
       );
     }
 
@@ -118,7 +117,11 @@ class UspWifiAdvancedTab extends ConsumerWidget {
                       label: mloBadge.label,
                       color: mloBadge.color,
                     ),
-              hint: mloBadge?.hint,
+              hint: switch (mloBadge) {
+                _MloBadge(:final hint?, :final color) =>
+                  AppText.bodyMedium(hint, color: color),
+                _ => null,
+              },
             ),
           ],
         ],
@@ -156,7 +159,8 @@ _MloBadge? _mloBadge(BuildContext context, MloStatus? status) {
   };
 }
 
-/// The MLO status badge's label and colour, and the hint that goes with it.
+/// The MLO status badge's label and colour, and the hint that goes with it,
+/// drawn in the same colour.
 class _MloBadge {
   final String label;
   final Color color;
@@ -180,7 +184,7 @@ class _AdvancedSwitchCard extends StatelessWidget {
   final bool busy;
   final ValueChanged<bool> onChanged;
   final Widget? badge;
-  final String? hint;
+  final Widget? hint;
 
   const _AdvancedSwitchCard({
     required this.identifier,
@@ -226,13 +230,7 @@ class _AdvancedSwitchCard extends StatelessWidget {
               description,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-            if (hint case final hint?) ...[
-              AppGap.sm(),
-              AppText.bodyMedium(
-                hint,
-                color: Theme.of(context).colorScheme.error,
-              ),
-            ],
+            if (hint case final hint?) ...[AppGap.sm(), hint],
           ],
         ),
       ),

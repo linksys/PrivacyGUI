@@ -120,9 +120,10 @@ final class WifiRouterAway extends WifiConfirmResult {
 ///
 /// **With `readBackAfter`, an answer is not a confirmation** (#1692). The WiFi
 /// Advanced tab sends steering, MLO and DFS in one Set with `allowPartial`, so
-/// one part can be refused while the Set is accepted; and the MLO switch is
-/// answered in 166 ms with its Wi-Fi restart still to come (bench 2026-10-15),
-/// so a read taken on the answer would read the router before it restarts.
+/// one part can be refused while the Set is accepted; and the MLO setter
+/// answers before its Wi-Fi restart (it only schedules the restart, and the
+/// bench answered in 166 ms), so a read taken on the answer could read the
+/// router before it restarts.
 /// The write is read back even when answered, the first read waits until
 /// `readBackAfter` has passed since the write, and the deadline counts from
 /// there. A refusal still propagates at once.
@@ -184,7 +185,7 @@ final wifiWriteConfirmProvider = Provider<WifiWriteConfirm>((ref) {
     final wait = floor - sinceWrite.elapsed;
     if (wait > Duration.zero) {
       logger.i('[USP][WiFi]: reading the router back in ${wait.inSeconds}s, '
-          'once the Wi-Fi restart is over');
+          'when the Wi-Fi restart should be over');
       await Future<void>.delayed(wait);
     }
     // When the request ended, if it has: a ruling waits one interval past it,

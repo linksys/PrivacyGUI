@@ -457,9 +457,10 @@ void main() {
 
   group('readBackAfter — an answer is not enough (#1692)', () {
     // The WiFi Advanced tab sends its parts in one Set with allowPartial, so a
-    // part can be refused on its own; and an MLO Set is answered in 166 ms
-    // while the Wi-Fi restart it starts comes after (bench 2026-10-15, FW
-    // 2.0.3.26101472). Either way the answer cannot be the end of the save.
+    // part can be refused on its own; and the MLO setter only schedules its
+    // Wi-Fi restart (an MLO Set was answered in 166 ms on the bench,
+    // 2026-10-15, FW 2.0.3.26101472). Either way the answer cannot be the end
+    // of the save.
 
     test('an answered write is still read back, and a "no" fails the save',
         () async {

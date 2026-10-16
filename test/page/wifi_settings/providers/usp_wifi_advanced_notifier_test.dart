@@ -7,21 +7,17 @@ import 'package:privacy_gui/core/capability/capability_provider.dart';
 import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_settings.dart';
-import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_status.dart';
+import 'package:privacy_gui/page/wifi_settings/models/mlo_status.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/mlo_status_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_write_confirm_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_advanced_service.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
-class MockUspWifiAdvancedService extends Mock
-    implements UspWifiAdvancedService {}
-
-/// The plan builder never touches the client; this only satisfies its type.
-class _NoUsp extends Mock implements UspClient {}
+import '../../../mocks/provider_overrides/mock_wifi_settings.dart';
 
 const _mlo = 'Device.X_LINKSYS_Mesh.MLOEnabled';
 const _client = 'Device.X_LINKSYS_Mesh.ClientSteeringEnabled';
@@ -59,7 +55,7 @@ class _Device {
     }
   }
 
-  void stub(MockUspWifiAdvancedService svc, {MloStatus? mloStatus}) {
+  void stub(MockUspWifiAdvancedService svc) {
     when(() => svc.fetchIeee80211h()).thenAnswer((_) async {
       _read();
       return {
@@ -73,27 +69,11 @@ class _Device {
       _read();
       return (clientSteering: values[_client]!, nodeSteering: values[_node]!);
     });
-    when(() => svc.fetchMlo()).thenAnswer((_) async {
+    when(() => svc.fetchMloEnabled()).thenAnswer((_) async {
       _read();
-      return (enabled: values[_mlo]!, status: mloStatus ?? MloStatus.disabled);
+      return values[_mlo]!;
     });
-    when(() => svc.planSave(
-          original: any(named: 'original'),
-          current: any(named: 'current'),
-          forceAutoChannelPaths: any(named: 'forceAutoChannelPaths'),
-        )).thenAnswer((inv) {
-      final real = UspWifiAdvancedService(_NoUsp()).planSave(
-        original: inv.namedArguments[#original] as WifiAdvancedSettings,
-        current: inv.namedArguments[#current] as WifiAdvancedSettings,
-        forceAutoChannelPaths:
-            inv.namedArguments[#forceAutoChannelPaths] as List<String>,
-      );
-      return WifiWritePlan(
-        params: real.params,
-        proof: real.proof,
-        send: () => _send(real.params),
-      );
-    });
+    stubRealPlanSave(svc, send: _send);
     when(() => svc.isApplied(any())).thenAnswer((inv) async {
       _read();
       final proof = inv.positionalArguments.first as Map<String, dynamic>;
@@ -158,6 +138,10 @@ WifiRadioUIModel _radioModel({
 void main() {
   late MockUspWifiAdvancedService svc;
 
+  /// How many times the L1 MLO status was built: once when first read, and
+  /// once more after each invalidation that is read again.
+  var statusReads = 0;
+
   setUpAll(() {
     registerFallbackValue(<String, dynamic>{});
     registerFallbackValue(const WifiAdvancedSettings.empty());
@@ -168,13 +152,13 @@ void main() {
   ProviderContainer createContainer(
     _Device device, {
     bool mloOffered = true,
-    MloStatus? mloStatus,
     List<WifiRadioUIModel> radios = const [],
     WifiDataNotifier Function()? wifiNotifier,
     Duration settle = const Duration(milliseconds: 30),
   }) {
     svc = MockUspWifiAdvancedService();
-    device.stub(svc, mloStatus: mloStatus);
+    device.stub(svc);
+    statusReads = 0;
     final container = ProviderContainer(
       overrides: [
         uspWifiAdvancedServiceProvider.overrideWithValue(svc),
@@ -193,6 +177,11 @@ void main() {
         wifiSaveHardLimitProvider
             .overrideWithValue(const Duration(milliseconds: 400)),
         mloRestartSettleProvider.overrideWithValue(settle),
+        // Counts reads of the L1 status, so a test can tell it was invalidated.
+        mloStatusProvider.overrideWith((ref) async {
+          statusReads++;
+          return MloStatus.disabled;
+        }),
       ],
     );
     addTearDown(container.dispose);
@@ -205,7 +194,7 @@ void main() {
     return c.read(uspWifiAdvancedProvider.notifier);
   }
 
-  group('fetch', () {
+  group('UspWifiAdvancedNotifier - performFetch', () {
     test('reads DFS, steering and MLO from the device', () async {
       final device = _Device({
         ..._bench(client: true, mlo: true),
@@ -234,7 +223,7 @@ void main() {
           reason: 'steering and DFS must still read (AC 5)');
       expect(state.settings.current.nodeSteering, isTrue);
       expect(state.settings.current.mloEnabled, isNull);
-      verifyNever(() => svc.fetchMlo());
+      verifyNever(() => svc.fetchMloEnabled());
     });
 
     test('a failed read fails the tab', () async {
@@ -248,7 +237,7 @@ void main() {
     });
   });
 
-  group('editing', () {
+  group('UspWifiAdvancedNotifier - editing', () {
     test('each switch edits only itself and marks the tab dirty', () async {
       final c = createContainer(_Device(_bench()));
       final notifier = await loaded(c);
@@ -312,7 +301,7 @@ void main() {
     });
   });
 
-  group('restartsWifi', () {
+  group('UspWifiAdvancedNotifier - restartsWifi', () {
     test('true for an MLO or DFS change, false for steering alone', () async {
       final c = createContainer(_Device(_bench()));
       final notifier = await loaded(c);
@@ -329,7 +318,7 @@ void main() {
     });
   });
 
-  group('save — one Set for the tab (#1692)', () {
+  group('UspWifiAdvancedNotifier - one Set for the tab (#1692)', () {
     test('MLO, DFS and steering changed together go out in ONE Set', () async {
       final device = _Device(_bench());
       final c = createContainer(device);
@@ -455,10 +444,10 @@ void main() {
     });
   });
 
-  group('save — a restart is waited out', () {
+  group('UspWifiAdvancedNotifier - a restart is waited out', () {
     test('an MLO save is not over before the restart settle time', () async {
-      // Bench 2026-10-15: the MLO Set was answered in 166 ms. FW: Wi-Fi
-      // restarts for about 60 s after a change; read MLOStatus after that.
+      // Bench 2026-10-15: the MLO Set was answered in 166 ms. FW's contract:
+      // Wi-Fi restarts for about 60 s after a change; read MLOStatus after.
       final device = _Device(_bench());
       final c =
           createContainer(device, settle: const Duration(milliseconds: 300));
@@ -537,7 +526,58 @@ void main() {
     });
   });
 
-  group('DFS remediation', () {
+  group('UspWifiAdvancedNotifier - the MLO status is read again (#1692)', () {
+    // The badge's status is L1's. Nothing pushes it, so every write on this
+    // tab invalidates it once settled, as the repo's L2 notifiers do for
+    // wifiDataProvider — on success and on failure alike.
+    Future<void> watchStatus(ProviderContainer c) async {
+      c.listen(mloStatusProvider, (_, __) {});
+      await c.read(mloStatusProvider.future);
+    }
+
+    test('after a save', () async {
+      final device = _Device(_bench());
+      final c = createContainer(device);
+      final notifier = await loaded(c);
+      await watchStatus(c);
+      expect(statusReads, 1);
+
+      notifier.setMloEnabled(true);
+      await notifier.save();
+      await c.read(mloStatusProvider.future);
+
+      expect(statusReads, 2);
+    });
+
+    test('after a failed save', () async {
+      final device = _Device(_bench())..refuse = {_mlo};
+      final c = createContainer(device);
+      final notifier = await loaded(c);
+      await watchStatus(c);
+
+      notifier.setMloEnabled(true);
+      await expectLater(notifier.save(), throwsA(isA<ServiceError>()));
+      await c.read(mloStatusProvider.future);
+
+      expect(statusReads, 2,
+          reason: 'a refused part may still have changed what the router '
+              'reports');
+    });
+
+    test('after a refresh, which also clears a failed read', () async {
+      final device = _Device(_bench());
+      final c = createContainer(device);
+      final notifier = await loaded(c);
+      await watchStatus(c);
+
+      await notifier.refresh();
+      await c.read(mloStatusProvider.future);
+
+      expect(statusReads, 2);
+    });
+  });
+
+  group('UspWifiAdvancedNotifier - DFS remediation', () {
     test(
         'disabling DFS forces AutoChannelEnable on a radio parked on a DFS '
         'channel, in the same Set', () async {
@@ -619,7 +659,7 @@ void main() {
   // Phase 1 removed `onSseInvalidation()` and, with it, the `ref.listen` that
   // this notifier's DFS remediation had been relying on WITHOUT SAYING SO.
   // -------------------------------------------------------------------------
-  group('#1587 Phase 1 contracts', () {
+  group('UspWifiAdvancedNotifier - #1587 Phase 1 contracts', () {
     final parked = [
       _radioModel(
           instancePath: _r1,
