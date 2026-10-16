@@ -27,6 +27,21 @@ class PppInterfaceInstance {
     required this.lcpEcho,
     required this.connectionStatus,
   });
+
+  @override
+  String toString() {
+    return 'PppInterfaceInstance('
+        'instancePath: $instancePath, '
+        'username: $username, '
+        'password: $password, '
+        'pppoeServiceName: $pppoeServiceName, '
+        'connectionTrigger: $connectionTrigger, '
+        'idleDisconnectTime: $idleDisconnectTime, '
+        'lowerLayers: $lowerLayers, '
+        'lcpEcho: $lcpEcho, '
+        'connectionStatus: $connectionStatus'
+        ')';
+  }
 }
 
 /// Update descriptor for PppInterfaceInstance instances
@@ -55,6 +70,9 @@ class PppInterface {
   final List<PppInterfaceInstance> items;
 
   const PppInterface({required this.items});
+
+  @override
+  String toString() => 'PppInterface(items: $items)';
 
   static const _paths = [
     'Device.PPP.Interface.*.Username',
@@ -88,24 +106,6 @@ class PppInterface {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}Username'],
-        response['${p}Password'],
-        response['${p}PPPoE.ServiceName'],
-        response['${p}ConnectionTrigger'],
-        response['${p}IdleDisconnectTime'],
-        response['${p}LowerLayers'],
-        response['${p}LCPEcho'],
-        response['${p}ConnectionStatus']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final missing = <String>[];
       if (!response.containsKey('${p}Username')) {
         missing.add('${p}Username');
