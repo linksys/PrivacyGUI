@@ -558,8 +558,9 @@ void main() {
   );
 
   // `administration` — #1660, the 48th page view file: Advanced Settings →
-  // Administration, holding the UPnP switch. Not `admin`, the menu's page with the
-  // same title. One card; see `kAdministrationPageCase`.
+  // Administration, holding the UPnP, SIP ALG (#1694) and management-over-Wi-Fi
+  // (#1696) switches. Not `admin`, the menu's page with the same title. Three
+  // cards; see `kAdministrationPageCase`.
   runOverflowSweep(
     family: PageSurfaceFamily(kAdministrationPageCase),
     expectedCellCount: 234,
