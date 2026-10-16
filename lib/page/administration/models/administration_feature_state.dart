@@ -37,6 +37,7 @@ class AdministrationFeatureState
   Map<String, dynamic> toMap() => {
         'upnpEnabled': settings.current.upnpEnabled,
         'sipAlgEnabled': settings.current.sipAlgEnabled,
+        'mgmtWifiEnabled': settings.current.mgmtWifiEnabled,
         'isDirty': isDirty,
         'isLoading': status.isLoading,
       };

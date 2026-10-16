@@ -7,18 +7,20 @@ import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/page/admin/views/dialogs/confirm_action_dialog.dart';
 import 'package:privacy_gui/page/administration/models/administration_feature_state.dart';
 import 'package:privacy_gui/page/administration/providers/usp_administration_notifier.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-/// Advanced Settings → Administration (#1660, #1694).
+/// Advanced Settings → Administration (#1660, #1694, #1696).
 ///
 /// 1.x's page of the same name, carrying the parts FLWRT 2.0 has a data model
-/// for: the UPnP switch (`Device.UPnP.Device.Enable`) and the SIP ALG switch
-/// (`Device.Firewall.ConnectionTracking.SIP.Enable`). Management access and
-/// Express Forwarding stay in #875.
+/// for: the UPnP switch (`Device.UPnP.Device.Enable`), the SIP ALG switch
+/// (`Device.Firewall.ConnectionTracking.SIP.Enable`) and management over Wi-Fi
+/// (the `RULE_MGMT_WIFI_ACCESS` firewall rule). Express Forwarding stays in
+/// #875.
 ///
 /// Not the menu's "Administration" (`UspAdminView`: password, time zone,
 /// reboot) — 1.x called that one Instant-Admin.
@@ -74,6 +76,18 @@ class UspAdministrationView extends ConsumerWidget {
               onChanged:
                   ref.read(uspAdministrationProvider.notifier).setSipAlgEnabled,
             ),
+            // Null: the firmware has no RULE_MGMT_WIFI_ACCESS (#1696). The rest
+            // of the page still works.
+            if (state.settings.current.mgmtWifiEnabled case final mgmt?) ...[
+              AppGap.md(),
+              UspMgmtWifiCard(
+                enabled: mgmt,
+                isSaving: status.isSaving,
+                onChanged: ref
+                    .read(uspAdministrationProvider.notifier)
+                    .setMgmtWifiEnabled,
+              ),
+            ],
           ],
         );
       },
@@ -96,6 +110,20 @@ class UspAdministrationView extends ConsumerWidget {
   }
 
   Future<void> _onSave(BuildContext context, WidgetRef ref) async {
+    // Saving management over Wi-Fi off cuts off every Wi-Fi client, this one
+    // included if it is on Wi-Fi — and the app cannot tell reliably whether it
+    // is, so it asks every time (#1696).
+    final settings = ref.read(uspAdministrationProvider).settings;
+    if (settings.current.mgmtWifiEnabled == false &&
+        settings.original.mgmtWifiEnabled == true) {
+      final confirmed = await showConfirmActionDialog(
+        context,
+        title: loc(context).administrationMgmtWifiOffTitle,
+        message: loc(context).administrationMgmtWifiOffDesc,
+        confirmLabel: loc(context).turnOff,
+      );
+      if (confirmed != true || !context.mounted) return;
+    }
     try {
       await doSomethingWithSpinner(
         context,
@@ -158,6 +186,33 @@ class UspSipAlgCard extends StatelessWidget {
   Widget build(BuildContext context) => _SwitchCard(
         label: loc(context).administrationApplicationLayerGateway,
         identifier: 'administration-sip-alg',
+        enabled: enabled,
+        isSaving: isSaving,
+        onChanged: onChanged,
+      );
+}
+
+/// The management-over-Wi-Fi switch (#1696): the `RULE_MGMT_WIFI_ACCESS`
+/// firewall rule's `Enable`. Shown only when the firmware has the rule.
+///
+/// Public only so the layout gate can name it in `requires:`; it reads no
+/// provider.
+class UspMgmtWifiCard extends StatelessWidget {
+  final bool enabled;
+  final bool isSaving;
+  final ValueChanged<bool> onChanged;
+
+  const UspMgmtWifiCard({
+    super.key,
+    required this.enabled,
+    required this.isSaving,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) => _SwitchCard(
+        label: loc(context).administrationAllowLocalManagementWirelessly,
+        identifier: 'administration-mgmt-wifi',
         enabled: enabled,
         isSaving: isSaving,
         onChanged: onChanged,

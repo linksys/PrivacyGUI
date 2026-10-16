@@ -8,6 +8,34 @@ class MockUspClient extends Mock implements UspClient {}
 
 const _upnpEnable = 'Device.UPnP.Device.Enable';
 const _sipEnable = 'Device.Firewall.ConnectionTracking.SIP.Enable';
+const _rulesEnable = 'Device.Firewall.Chain.1.Rule.*.Enable';
+
+/// A `Device.Firewall.Chain.1.Rule.` table as the router answers it: one
+/// entry per rule, `(Description, Enable)`, numbered from 1. Target is ACCEPT
+/// throughout; the service reads only Description and Enable.
+Map<String, dynamic> _chainRules(List<(String, String)> rules) => {
+      for (final (i, (desc, enable)) in rules.indexed) ...{
+        'Device.Firewall.Chain.1.Rule.${i + 1}.Enable': enable,
+        'Device.Firewall.Chain.1.Rule.${i + 1}.Description': desc,
+        'Device.Firewall.Chain.1.Rule.${i + 1}.Target': 'Accept',
+      },
+    };
+
+/// 26101472's table, shortened: no `RULE_MGMT_WIFI_ACCESS` (31 rules there).
+final _rulesWithoutMgmt = _chainRules([
+  ('RULE_SPI_IPV4_INPUT', '0'),
+  ('RULE_PING_IPV4', '1'),
+  ('RULE_NAT_REDIRECTION', '0'),
+]);
+
+/// feed_usp#52's table: the rule is appended, enabled by default. Not at a
+/// fixed instance number, so it is looked up by Description.
+Map<String, dynamic> _rulesWithMgmt(String enable) => _chainRules([
+      ('RULE_SPI_IPV4_INPUT', '0'),
+      ('RULE_PING_IPV4', '1'),
+      ('RULE_MGMT_WIFI_ACCESS', enable),
+      ('RULE_NAT_REDIRECTION', '0'),
+    ]);
 
 Map<String, dynamic> _setSuccess() => {
       'success': true,
@@ -41,7 +69,12 @@ void main() {
   /// Each definition's Get, answered by its own leaves: the service reads UPnP
   /// and SIP ALG with separate Gets, so a stub keyed on the whole path list
   /// would pin the order of two calls the service is free to run in parallel.
-  void answerGets({String upnp = '1', String? sip = '0'}) {
+  void answerGets({
+    String upnp = '1',
+    String? sip = '0',
+    Map<String, dynamic>? rules,
+  }) {
+    final chain = rules ?? _rulesWithMgmt('1');
     when(() => mockUsp.get(any())).thenAnswer((inv) async {
       final paths = inv.positionalArguments.first as List<String>;
       if (paths.contains(_upnpEnable)) {
@@ -50,6 +83,7 @@ void main() {
       if (paths.contains(_sipEnable)) {
         return {if (sip != null) _sipEnable: sip};
       }
+      if (paths.contains(_rulesEnable)) return chain;
       return {};
     });
   }
@@ -105,6 +139,59 @@ void main() {
       answerGets(sip: null);
 
       expect(() => svc.fetch(), throwsA(isA<ServiceError>()));
+    });
+
+    test(
+        'reads RULE_MGMT_WIFI_ACCESS\'s Enable as the management-over-Wi-Fi '
+        'switch', () async {
+      answerGets(rules: _rulesWithMgmt('0'));
+
+      final settings = await svc.fetch();
+
+      expect(settings.mgmtWifiEnabled, isFalse);
+      verify(() => mockUsp.get([
+            'Device.Firewall.Chain.1.Rule.*.Enable',
+            'Device.Firewall.Chain.1.Rule.*.Description',
+            'Device.Firewall.Chain.1.Rule.*.Target',
+          ])).called(1);
+    });
+
+    test('the rule enabled reads on, its default', () async {
+      answerGets(rules: _rulesWithMgmt('1'));
+
+      expect((await svc.fetch()).mgmtWifiEnabled, isTrue);
+    });
+
+    test('a firmware without the rule reads null: hide the switch only',
+        () async {
+      // 2.0.3.26101472, measured 2026-10-16: 31 rules, none of them this one.
+      answerGets(rules: _rulesWithoutMgmt, upnp: '0', sip: '1');
+
+      final settings = await svc.fetch();
+
+      expect(settings.mgmtWifiEnabled, isNull);
+      expect(settings.upnpEnabled, isFalse,
+          reason: 'the rest of the page still reads');
+      expect(settings.sipAlgEnabled, isTrue);
+    });
+
+    test('a rule table that reads empty is a failed read, not a missing rule',
+        () {
+      // The WASM client resolves a failed GET with an empty data map, so a
+      // Chain.1 with no rules at all is a read that did not land: the router's
+      // firewall always carries its own rules. Read as "no rule" it would hide
+      // the switch without a word (FW's reference patch's `catch -> null`).
+      answerGets(rules: const {});
+
+      expect(() => svc.fetch(), throwsA(isA<ServiceError>()));
+    });
+
+    test('a thrown rule-table read is a ServiceError, not a hidden switch', () {
+      answerGets();
+      when(() => mockUsp.get(any(that: contains(_rulesEnable))))
+          .thenThrow('Get failed: Transport error: Connection refused');
+
+      expect(() => svc.fetch(), throwsA(isA<ConnectivityError>()));
     });
 
     test('maps a USP error to ServiceError', () {
@@ -192,6 +279,41 @@ void main() {
 
       expect(
           () => svc.setSipAlgEnabled(false), throwsA(isA<ConnectivityError>()));
+    });
+  });
+
+  group('UspAdministrationService - setMgmtWifiEnabled', () {
+    test('writes the Enable of the rule found by Description, alone', () async {
+      answerGets(rules: _rulesWithMgmt('1'));
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => _setSuccess());
+
+      await svc.setMgmtWifiEnabled(false);
+
+      // Instance 3 in this table: wherever the rule is, not a fixed number.
+      verify(() => mockUsp.set(
+            {'Device.Firewall.Chain.1.Rule.3.Enable': false},
+            allowPartial: false,
+          )).called(1);
+    });
+
+    test('a firmware without the rule writes nothing and says so', () async {
+      answerGets(rules: _rulesWithoutMgmt);
+
+      await expectLater(
+          svc.setMgmtWifiEnabled(true), throwsA(isA<ResourceNotFoundError>()));
+      verifyNever(
+          () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
+    });
+
+    test('a refused Set throws UspCompleteFailureError', () {
+      answerGets(rules: _rulesWithMgmt('1'));
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async =>
+              _setFailure(path: 'Device.Firewall.Chain.1.Rule.3.Enable'));
+
+      expect(() => svc.setMgmtWifiEnabled(false),
+          throwsA(isA<UspCompleteFailureError>()));
     });
   });
 }

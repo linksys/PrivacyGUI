@@ -12,8 +12,13 @@ import 'package:privacy_gui/page/administration/services/usp_administration_serv
 class MockUspAdministrationService extends Mock
     implements UspAdministrationService {}
 
-AdministrationSettings _settings({bool upnp = true, bool sip = false}) =>
-    AdministrationSettings(upnpEnabled: upnp, sipAlgEnabled: sip);
+AdministrationSettings _settings({
+  bool upnp = true,
+  bool sip = false,
+  bool? mgmt = true,
+}) =>
+    AdministrationSettings(
+        upnpEnabled: upnp, sipAlgEnabled: sip, mgmtWifiEnabled: mgmt);
 
 void main() {
   late MockUspAdministrationService svc;
@@ -123,6 +128,21 @@ void main() {
       expect(state.settings.current.sipAlgEnabled, isTrue);
       expect(state.isDirty, isTrue);
       verifyNever(() => svc.setSipAlgEnabled(any()));
+    });
+  });
+
+  group('UspAdministrationNotifier - setMgmtWifiEnabled', () {
+    test('buffers the change and writes nothing', () async {
+      final container = await load([true]);
+
+      container
+          .read(uspAdministrationProvider.notifier)
+          .setMgmtWifiEnabled(false);
+
+      final state = container.read(uspAdministrationProvider);
+      expect(state.settings.current.mgmtWifiEnabled, isFalse);
+      expect(state.isDirty, isTrue);
+      verifyNever(() => svc.setMgmtWifiEnabled(any()));
     });
   });
 
@@ -251,6 +271,40 @@ void main() {
       final state = container.read(uspAdministrationProvider);
       expect(state.settings.current, _settings(upnp: false, sip: false));
       expect(state.isDirty, isFalse);
+    });
+
+    test('a management change is written alone', () async {
+      when(() => svc.setMgmtWifiEnabled(any())).thenAnswer((_) async {});
+      final container = await loadSettings([
+        _settings(mgmt: true),
+        _settings(mgmt: false),
+      ]);
+      final notifier = container.read(uspAdministrationProvider.notifier);
+
+      notifier.setMgmtWifiEnabled(false);
+      await notifier.save();
+
+      verify(() => svc.setMgmtWifiEnabled(false)).called(1);
+      verifyNever(() => svc.setUpnpEnabled(any()));
+      verifyNever(() => svc.setSipAlgEnabled(any()));
+      expect(container.read(uspAdministrationProvider).isDirty, isFalse);
+    });
+
+    test('a firmware without the rule never writes it', () async {
+      // The switch is hidden there, so nothing can change it; editing the
+      // other switches must not reach for a rule that is not on the router.
+      when(() => svc.setUpnpEnabled(any())).thenAnswer((_) async {});
+      final container = await loadSettings([
+        _settings(upnp: true, mgmt: null),
+        _settings(upnp: false, mgmt: null),
+      ]);
+      final notifier = container.read(uspAdministrationProvider.notifier);
+
+      notifier.setUpnpEnabled(false);
+      await notifier.save();
+
+      verify(() => svc.setUpnpEnabled(false)).called(1);
+      verifyNever(() => svc.setMgmtWifiEnabled(any()));
     });
 
     test('a Set that outlasts the lock is a TimeoutError and is re-read',

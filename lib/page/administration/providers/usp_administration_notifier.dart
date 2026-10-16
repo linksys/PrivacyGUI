@@ -24,7 +24,7 @@ final uspAdministrationProvider = AutoDisposeNotifierProvider<
 // Notifier
 // ---------------------------------------------------------------------------
 
-/// L2 working copy for Advanced Settings → Administration (#1660, #1694).
+/// L2 working copy for Advanced Settings → Administration (#1660, #1694, #1696).
 ///
 /// Type A form: the switches are buffered and written by Save; the route
 /// passes this notifier as its `preservableProvider`, which is the dirty guard.
@@ -52,7 +52,8 @@ class UspAdministrationNotifier
       final settings = await _svc.fetch();
       logger.d('[USP][Administration]: Fetched — '
           'upnpEnabled=${settings.upnpEnabled}, '
-          'sipAlgEnabled=${settings.sipAlgEnabled}');
+          'sipAlgEnabled=${settings.sipAlgEnabled}, '
+          'mgmtWifiEnabled=${settings.mgmtWifiEnabled}');
       return (settings, const AdministrationStatus());
     } on ServiceError catch (e) {
       logger.e('[USP][Administration]: Fetch failed', error: e);
@@ -76,10 +77,10 @@ class UspAdministrationNotifier
 
   /// Writes each switch that differs from what was read, and only those.
   ///
-  /// UPnP and SIP ALG are owned by different USP services, so they are two
-  /// Sets, not one combined Set; and SIP ALG's alone takes ~9 s, which a UPnP
-  /// save should not wait for. They run in order under one lock, whose 30 s
-  /// window fits both. A failure stops the rest, and `save()` re-reads the
+  /// UPnP, SIP ALG and the management rule are owned by different USP
+  /// services, so they are separate Sets, not one combined Set; and SIP ALG's
+  /// alone takes ~9 s, which a UPnP save should not wait for. They run in order
+  /// under one lock, whose 30 s window fits all three. A failure stops the rest, and `save()` re-reads the
   /// device so the page shows what landed.
   @override
   Future<void> performSave() async {
@@ -92,6 +93,10 @@ class UspAdministrationNotifier
         }
         if (current.sipAlgEnabled != original.sipAlgEnabled) {
           await _svc.setSipAlgEnabled(current.sipAlgEnabled);
+        }
+        final mgmtWifi = current.mgmtWifiEnabled;
+        if (mgmtWifi != null && mgmtWifi != original.mgmtWifiEnabled) {
+          await _svc.setMgmtWifiEnabled(mgmtWifi);
         }
       });
     } on TimeoutException catch (e) {
@@ -106,7 +111,8 @@ class UspAdministrationNotifier
     }
     logger.d('[USP][Administration]: Saved — '
         'upnpEnabled=${current.upnpEnabled}, '
-        'sipAlgEnabled=${current.sipAlgEnabled}');
+        'sipAlgEnabled=${current.sipAlgEnabled}, '
+        'mgmtWifiEnabled=${current.mgmtWifiEnabled}');
   }
 
   /// After a refused or unanswered Set, show what the device holds rather than
@@ -146,6 +152,15 @@ class UspAdministrationNotifier
     state = state.copyWith(
       settings: state.settings
           .update(state.settings.current.copyWith(sipAlgEnabled: enabled)),
+    );
+  }
+
+  /// Toggle management over Wi-Fi. Updates [settings.current] only; save()
+  /// writes it. The view asks before a save that turns it off.
+  void setMgmtWifiEnabled(bool enabled) {
+    state = state.copyWith(
+      settings: state.settings
+          .update(state.settings.current.copyWith(mgmtWifiEnabled: enabled)),
     );
   }
 }
