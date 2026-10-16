@@ -2,18 +2,17 @@ import 'dart:async';
 
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
+import 'package:privacy_gui/core/usp/providers/wan_interface_path_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/generated/gre_tunnel.g.dart';
+import 'package:privacy_gui/generated/dhcpv6clients.g.dart';
+import 'package:privacy_gui/generated/gre_tunnels.g.dart';
+import 'package:privacy_gui/generated/ipv6rd_settings.g.dart';
 import 'package:privacy_gui/generated/ipv6settings.g.dart';
-import 'package:privacy_gui/generated/l2tp_tunnel.g.dart';
+import 'package:privacy_gui/generated/l2tp_tunnels.g.dart';
 import 'package:privacy_gui/generated/ppp_interface.g.dart';
 import 'package:privacy_gui/generated/vlan_termination.g.dart';
-import 'package:privacy_gui/generated/wan_bridge.g.dart';
-import 'package:privacy_gui/generated/wan_dhcp.g.dart';
 import 'package:privacy_gui/generated/wan_operations.g.dart';
-import 'package:privacy_gui/generated/wan_pppoe.g.dart';
 import 'package:privacy_gui/generated/wan_settings.g.dart';
-import 'package:privacy_gui/generated/wan_static_ip.g.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_read_only_info.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
@@ -29,18 +28,33 @@ class UspInternetSettingsService {
 
   UspInternetSettingsService(this._usp);
 
-  /// Timeout for the terminal bridge-mode SET.
+  /// Timeout for the terminal bridge-mode SETs (both directions).
   ///
-  /// Entering bridge is terminal-by-design: on receiving the
-  /// `AddressingType=""` SET the firmware applies bridge mode and bounces the
-  /// LAN link (fw >= 1.2.2.26070203) / reloads the network within ~2s, which
-  /// tears down the very connection carrying this request's response. Verified
-  /// on-device: obuspa applies the SET and returns a SET_RESP over its local
-  /// UDS (rc=0), but the app never receives the HTTP response because the
-  /// transport is already gone. 4s leaves headroom over the observed ~2s
-  /// disconnect without making the user wait the full 15s throttler timeout on
-  /// a SET that has already succeeded. See [_applyBridgeMode].
+  /// Crossing the bridge boundary is terminal-by-design. The firmware's set
+  /// handler for `Device.IP.Interface.{wan}.Enable` moves the WAN device in or
+  /// out of `br-lan`, commits, and then runs `/usr/sbin/bridge-mode-apply.sh
+  /// enter|exit`, which stops or restarts firewall and dnsmasq, bounces the
+  /// physical switch ports, deauths the wireless clients and restarts lighttpd.
+  /// Any one of those tears down the very connection carrying this request's
+  /// response. Verified on-device: obuspa applies the SET and returns a
+  /// SET_RESP over its local UDS (rc=0), but the app never receives the HTTP
+  /// response because the transport is already gone. 4s leaves headroom over
+  /// the observed ~2s disconnect without making the user wait the full 15s
+  /// throttler timeout on a SET that has already succeeded. See
+  /// [_enterBridgeMode] and [_exitBridgeMode].
   static const _bridgeSetTimeout = Duration(seconds: 4);
+
+  /// The WAN tunnel and 6rd rows.
+  ///
+  /// GRE, L2TPv2 and IPv6rd are tables, so the generated models return every
+  /// row. The firmware drives the WAN through row 1 of each — the PPP
+  /// `LowerLayers` values in [UspWanConnectionType.pppLowerLayers] name
+  /// `Tunnel.1`, and linksys/PrivacyGUI#762 (comment 5987286082) keeps
+  /// instance `.1` for both tunnels. Which 6rd row is the WAN one is still
+  /// unconfirmed upstream (usp_framework#73), so it stays on row 1 as before.
+  static const _greTunnelPath = 'Device.GRE.Tunnel.1.';
+  static const _l2tpTunnelPath = 'Device.L2TPv2.Tunnel.1.';
+  static const _ipv6rdPath = 'Device.IPv6rd.InterfaceSetting.1.';
 
   // ---------------------------------------------------------------------------
   // Fetch
@@ -48,6 +62,10 @@ class UspInternetSettingsService {
 
   /// Fetch WAN, IPv6, PPP, and VLAN settings in parallel, then the tunnel that
   /// the resolved connection type actually uses.
+  ///
+  /// Tables are read as lists, so a row the current WAN state does not have is
+  /// an empty list rather than a failed fetch: bridge mode drops the WAN
+  /// `IPv4Address` row (#1597).
   Future<InternetSettingsFetchResult> fetchSettings() async {
     try {
       // Phase 1 — always needed, fetched in parallel.
@@ -57,52 +75,103 @@ class UspInternetSettingsService {
         PppInterface.fetch(_usp),
         VlanTermination.fetch(_usp),
         _fetchHostName(),
+        Dhcpv6Clients.fetch(_usp),
+        Ipv6rdSettings.fetch(_usp),
       ]);
       final wan = results[0] as WanSettings;
       final ipv6 = results[1] as Ipv6Settings;
       final ppp = results[2] as PppInterface;
       final vlan = results[3] as VlanTermination;
       final hostName = results[4] as String;
+      final dhcpv6 = results[5] as Dhcpv6Clients;
+      final ipv6rd = results[6] as Ipv6rdSettings;
 
       final pppInstance = ppp.items.isNotEmpty ? ppp.items.first : null;
       final vlanInstance = vlan.items.isNotEmpty ? vlan.items.first : null;
+      final ipv4 = wan.ipv4Addresses.firstOrNull;
+      final addressingType = ipv4?.addressingType ?? '';
 
-      // Phase 2 — tunnel is connection-type-specific. A DHCP/PPPoE/Static WAN
-      // has zero GRE/L2TP tunnel instances, so fetching them would trip the
-      // generated required-leaf check (code 9998) on an absent Tunnel.1. Only
-      // fetch the tunnel the current connection type actually uses.
+      // Phase 2 — tunnel is connection-type-specific. Only fetch the tunnel
+      // the current connection type actually uses.
       final connectionType = UspWanConnectionType.fromRawFields(
-        addressingType: wan.addressingType,
+        addressingType: addressingType,
+        interfaceEnabled: wan.enable,
         lowerLayers: pppInstance?.lowerLayers ?? '',
       );
       GreTunnel? gre;
       L2tpTunnel? l2tp;
       switch (connectionType) {
         case UspWanConnectionType.pptp:
-          gre = await GreTunnel.fetch(_usp);
+          gre = _rowAt((await GreTunnels.fetch(_usp)).items, _greTunnelPath,
+              (r) => r.instancePath);
         case UspWanConnectionType.l2tp:
-          l2tp = await L2tpTunnel.fetch(_usp);
+          l2tp = _rowAt((await L2tpTunnels.fetch(_usp)).items, _l2tpTunnelPath,
+              (r) => r.instancePath);
         default:
           break;
       }
 
       return InternetSettingsFetchResult(
         form: _buildForm(
-            wan, ipv6, pppInstance, vlanInstance, gre, l2tp, connectionType),
-        readOnlyInfo: _buildReadOnlyInfo(wan, pppInstance, hostName),
+          wan: wan,
+          ipv4: ipv4,
+          ipv6: ipv6,
+          dhcpv6: _wanDhcpv6Client(dhcpv6, await _wanInterfacePath(dhcpv6)),
+          ipv6rd: _rowAt(ipv6rd.items, _ipv6rdPath, (r) => r.instancePath),
+          ppp: pppInstance,
+          vlan: vlanInstance,
+          gre: gre,
+          l2tp: l2tp,
+          connectionType: connectionType,
+        ),
+        readOnlyInfo: _buildReadOnlyInfo(pppInstance, hostName),
         pppInstancePath: pppInstance?.instancePath,
         vlanInstancePath: vlanInstance?.instancePath,
         // Absent key means firmware predating feed_bbf#128 — the UI hides the
         // Auto MTU toggle rather than offering a mode it cannot write.
         mtuModeSupported: wan.mtuMode != null,
-        debugAddressingType: wan.addressingType,
-        debugBridgeEnabled: wan.bridgeEnabled,
+        debugAddressingType: addressingType,
+        debugInterfaceEnabled: wan.enable,
         debugMtu: wan.mtu,
         debugIpv6Enabled: ipv6.ipv6Enabled,
       );
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
+  }
+
+  /// The row of [rows] at [path], or null when the table has no such row.
+  static T? _rowAt<T>(List<T> rows, String path, String Function(T) pathOf) {
+    for (final row in rows) {
+      if (pathOf(row) == path) return row;
+    }
+    return null;
+  }
+
+  /// The DHCPv6 client bound to the WAN interface.
+  ///
+  /// `Device.DHCPv6.Client.{i}.Interface` names the IP.Interface the client
+  /// runs on, with or without the trailing dot.
+  static Dhcpv6Client? _wanDhcpv6Client(
+      Dhcpv6Clients clients, String? wanPath) {
+    if (wanPath == null) return null;
+    final wan = wanPath.endsWith('.')
+        ? wanPath.substring(0, wanPath.length - 1)
+        : wanPath;
+    for (final client in clients.items) {
+      final iface = client.interface_.endsWith('.')
+          ? client.interface_.substring(0, client.interface_.length - 1)
+          : client.interface_;
+      if (iface == wan) return client;
+    }
+    return null;
+  }
+
+  /// The WAN `Device.IP.Interface.{i}.` path, read only when a DHCPv6 client
+  /// exists to match against it.
+  Future<String?> _wanInterfacePath(Dhcpv6Clients clients) async {
+    if (clients.items.isEmpty) return null;
+    return resolveWanInterfacePath(_usp);
   }
 
   /// Targeted GET of the router hostname. Returns '' on any missing value so a
@@ -117,40 +186,32 @@ class UspInternetSettingsService {
   // Build form — DNS comma-separated split happens here
   // ---------------------------------------------------------------------------
 
-  UspInternetSettingsForm _buildForm(
-    WanSettings wan,
-    Ipv6Settings ipv6,
-    PppInterfaceInstance? ppp,
-    VlanTerminationInstance? vlan,
-    GreTunnel? gre,
-    L2tpTunnel? l2tp,
-    UspWanConnectionType connectionType,
-  ) {
+  /// [ipv4], [dhcpv6], [ipv6rd], [gre] and [l2tp] are rows of tables that may
+  /// be empty: no WAN `IPv4Address` row in bridge mode, no DHCPv6 client bound
+  /// to the WAN, no tunnel row. An absent row reads as that row's defaults.
+  UspInternetSettingsForm _buildForm({
+    required WanSettings wan,
+    required WanSettingsIpv4Address? ipv4,
+    required Ipv6Settings ipv6,
+    required Dhcpv6Client? dhcpv6,
+    required Ipv6rdSetting? ipv6rd,
+    required PppInterfaceInstance? ppp,
+    required VlanTerminationInstance? vlan,
+    required GreTunnel? gre,
+    required L2tpTunnel? l2tp,
+    required UspWanConnectionType connectionType,
+  }) {
     // Split comma-separated DNS into 3 fields
-    final dnsParts = wan.dnsServers
+    final dnsParts = (ipv4?.dnsServers ?? '')
         .split(',')
         .map((s) => s.trim())
         .where((s) => s.isNotEmpty)
         .toList();
 
-    // Resolve server address from the tunnel that fetchSettings' phase 2 loaded
-    // for this connection type. gre/l2tp are nullable because DHCP/Static/PPPoE
-    // WANs pass null — but on the pptp/l2tp branches the tunnel is non-null by
-    // contract: phase 2 fetched the matching tunnel, and GreTunnel/L2tpTunnel
-    // .fetch throws 9998 upstream (caught in fetchSettings → ServiceErrorView)
-    // if the concrete Tunnel.1 row is absent, so _buildForm is never reached
-    // with a null tunnel on the matching branch. The asserts document that
-    // invariant in dev; the `?? ''` keeps the (release-only, contract-violating)
-    // fallback graceful — an empty serverAddress fails form validation, which
-    // prompts the user to re-enter rather than surfacing a bare NPE.
-    assert(
-      connectionType != UspWanConnectionType.pptp || gre != null,
-      'PPTP WAN but GRE tunnel absent — fetchSettings phase-2 contract violated',
-    );
-    assert(
-      connectionType != UspWanConnectionType.l2tp || l2tp != null,
-      'L2TP WAN but L2TPv2 tunnel absent — fetchSettings phase-2 contract violated',
-    );
+    // Server address from the tunnel fetchSettings' phase 2 loaded for this
+    // connection type. A PPTP/L2TP WAN whose Tunnel.1 row is absent reads as
+    // an empty server address, which fails form validation and prompts the
+    // user to re-enter it.
     final serverAddress = switch (connectionType) {
       UspWanConnectionType.pptp => gre?.remoteEndpoints ?? '',
       UspWanConnectionType.l2tp => l2tp?.remoteEndpoints ?? '',
@@ -159,9 +220,9 @@ class UspInternetSettingsService {
 
     return UspInternetSettingsForm(
       connectionType: connectionType,
-      staticIpAddress: wan.staticIpAddress,
-      subnetMask: wan.subnetMask,
-      defaultGateway: wan.defaultGateway,
+      staticIpAddress: ipv4?.ipAddress ?? '',
+      subnetMask: ipv4?.subnetMask ?? '',
+      defaultGateway: ipv4?.defaultGateway ?? '',
       dnsServer1: dnsParts.isNotEmpty ? dnsParts[0] : '',
       dnsServer2: dnsParts.length > 1 ? dnsParts[1] : '',
       dnsServer3: dnsParts.length > 2 ? dnsParts[2] : '',
@@ -180,16 +241,15 @@ class UspInternetSettingsService {
       mtuAuto: wan.mtuMode == 'Auto',
       wanMacAddress: '',
       ipv6Enabled: ipv6.ipv6Enabled,
-      dhcpv6Enabled: ipv6.dhcpv6Enabled,
-      ipv6rdEnabled: ipv6.ipv6rdEnabled,
-      ipv6rdPrefix: ipv6.ipv6rdPrefix,
-      ipv6rdIpv4MaskLength: ipv6.ipv6rdIpv4MaskLength,
-      ipv6rdBorderRelay: ipv6.ipv6rdBorderRelay,
+      dhcpv6Enabled: dhcpv6?.enable ?? false,
+      ipv6rdEnabled: ipv6rd?.enabled ?? false,
+      ipv6rdPrefix: ipv6rd?.prefix ?? '',
+      ipv6rdIpv4MaskLength: ipv6rd?.ipv4MaskLength ?? 0,
+      ipv6rdBorderRelay: ipv6rd?.borderRelay ?? '',
     );
   }
 
   InternetSettingsReadOnlyInfo _buildReadOnlyInfo(
-    WanSettings wan,
     PppInterfaceInstance? ppp,
     String hostName,
   ) {
@@ -207,16 +267,23 @@ class UspInternetSettingsService {
   ///
   /// Orchestration order:
   /// 1. Handle PPP instance lifecycle (Add if needed)
-  /// 2. Save singleton WAN fields (mode switch or field edit) — must precede
+  /// 2. Save the WAN IPv4 row (mode switch or field edit) — must precede
   ///    tunnel writes so the firmware syncs `proto` and the GRE/L2TPv2 tunnel
   ///    instance becomes valid (per Architecture issue #119)
-  /// 3. Set PPP LowerLayers (tunnel type selection)
+  /// 3. Save PPP LowerLayers + credentials (one batch on a mode switch)
   /// 4. Set tunnel RemoteEndpoints (server address)
-  /// 5. Save PPP instance fields (credentials, connection mode)
+  /// 5. Save PPP instance fields (connection mode)
   /// 6. Save VLAN instance fields (if instance exists)
   /// 7. Save IPv6 fields
-  /// 8. Apply terminal bridge SET last (drops the connection; see
-  ///    [_applyBridgeMode]) so every other SET lands on a live connection
+  /// 8. Cross the bridge boundary last (drops the connection; see
+  ///    [_enterBridgeMode] / [_exitBridgeMode]) so every other SET lands on a
+  ///    live connection
+  ///
+  /// Leaving bridge writes no target-mode parameter at all. The WAN
+  /// `IPv4Address` row does not exist while bridged, so a target AddressingType
+  /// SET faults 9005, and it reappears only after `Enable=true` has run
+  /// `bridge-mode-apply.sh exit` (#762 comment 5987286082): the target mode is
+  /// set once the user has reconnected.
   Future<void> saveAll(
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited, {
@@ -228,39 +295,37 @@ class UspInternetSettingsService {
           detail: 'IPoE requires the Auto-IPoE workflow');
     }
     try {
-      // Step 1: PPP lifecycle
-      final pppPath = await _handlePppLifecycle(
-        edited,
-        currentInstancePath: pppInstancePath,
-      );
-
-      // Step 2: WAN mode switch or field edit (per-mode dispatch). Setting
-      // AddressingType=IPCP first lets the firmware sync proto=pptp/l2tp so the
-      // tunnel instance becomes valid before its RemoteEndpoints is written.
-      //
-      // Entering bridge is terminal: the bridge SET drops this connection (see
-      // _applyBridgeMode). Defer it so the FW-spec VLAN/IPv6 SETs below still
-      // land on a live connection; it is sent last, in Step 6.
       final typeChanged = original.connectionType != edited.connectionType;
-      final switchingToPppBased =
-          typeChanged && edited.connectionType.isPppBased;
       final enteringBridge =
           typeChanged && edited.connectionType == UspWanConnectionType.bridge;
-      await _saveWanSettings(original, edited, deferBridge: enteringBridge);
+      final leavingBridge =
+          typeChanged && original.connectionType == UspWanConnectionType.bridge;
 
-      // Step 3: Set LowerLayers on PPP instance (tunnel type selection)
-      if (pppPath != null && edited.connectionType.isPppBased) {
-        await _savePppLowerLayers(original, edited, pppPath);
-      }
+      if (!leavingBridge) {
+        // Step 1: PPP lifecycle
+        final pppPath = await _handlePppLifecycle(
+          edited,
+          currentInstancePath: pppInstancePath,
+        );
 
-      // Step 4: Set tunnel RemoteEndpoints (server address)
-      await _saveTunnelRemoteEndpoints(original, edited);
+        // Step 2: WAN mode switch or field edit (per-mode dispatch). Setting
+        // AddressingType=IPCP first lets the firmware sync proto=pptp/l2tp so
+        // the tunnel instance becomes valid before its RemoteEndpoints is
+        // written.
+        await _saveWanSettings(original, edited);
 
-      // Step 5: PPP instance fields (skip username/password if already sent
-      // in the ordered Set above)
-      if (pppPath != null && edited.connectionType.isPppBased) {
-        await _savePppSettings(original, edited, pppPath,
-            skipCredentials: switchingToPppBased);
+        // Step 3: PPP LowerLayers + credentials
+        if (pppPath != null && edited.connectionType.isPppBased) {
+          await _savePppLink(original, edited, pppPath);
+        }
+
+        // Step 4: Set tunnel RemoteEndpoints (server address)
+        await _saveTunnelRemoteEndpoints(original, edited);
+
+        // Step 5: PPP instance fields
+        if (pppPath != null && edited.connectionType.isPppBased) {
+          await _savePppSettings(original, edited, pppPath);
+        }
       }
 
       // Step 6: VLAN settings (always use SET on existing instance)
@@ -271,9 +336,13 @@ class UspInternetSettingsService {
       // Step 7: IPv6 fields
       await _saveIpv6Settings(original, edited);
 
-      // Step 8: terminal bridge SET — last, once every other SET has landed.
+      // Step 8: terminal bridge-boundary SET — last, once every other SET has
+      // landed. The two are mutually exclusive: one tests the edited type, the
+      // other the original.
       if (enteringBridge) {
-        await _applyBridgeMode();
+        await _enterBridgeMode();
+      } else if (leavingBridge) {
+        await _exitBridgeMode();
       }
     } catch (e) {
       if (e is ServiceError) rethrow;
@@ -317,16 +386,15 @@ class UspInternetSettingsService {
   // WAN singleton save — DNS merge happens here
   // ---------------------------------------------------------------------------
 
-  /// Saves the WAN singleton fields for the target mode.
+  /// Saves the WAN IPv4 row and MTU for the target mode.
   ///
-  /// When [deferBridge] is true and the edit is an entering-bridge transition,
-  /// the terminal bridge SET is skipped here so [saveAll] can send it last,
-  /// after the FW-spec VLAN/IPv6 SETs have landed on a still-live connection.
+  /// The bridge boundary is deliberately not crossed here: both directions are
+  /// a single terminal SET that [saveAll] sends last, once the FW-spec
+  /// VLAN/IPv6 SETs have landed on a still-live connection.
   Future<void> _saveWanSettings(
     UspInternetSettingsForm original,
-    UspInternetSettingsForm edited, {
-    bool deferBridge = false,
-  }) async {
+    UspInternetSettingsForm edited,
+  ) async {
     final typeChanged = original.connectionType != edited.connectionType;
 
     if (typeChanged) {
@@ -334,45 +402,33 @@ class UspInternetSettingsService {
         case UspWanConnectionType.ipoe:
           throw const InvalidInputError();
         case UspWanConnectionType.dhcp:
-          _handleSetResult(await WanDhcp.update(_usp, addressingType: 'DHCP'));
+          await _updateWanIpv4((path) => WanSettingsIpv4AddressUpdate(
+              instancePath: path, addressingType: 'DHCP'));
 
         case UspWanConnectionType.staticIp:
           final dns = _mergeDns(
               edited.dnsServer1, edited.dnsServer2, edited.dnsServer3);
-          _handleSetResult(await WanStaticIp.updateOrdered(
-            _usp,
-            WanStaticIp(
-              addressingType: 'Static',
-              staticIpAddress: edited.staticIpAddress,
-              subnetMask: edited.subnetMask,
-              defaultGateway: edited.defaultGateway,
-              dnsServers: dns,
-            ),
-          ));
+          await _updateWanIpv4((path) => WanSettingsIpv4AddressUpdate(
+                instancePath: path,
+                addressingType: 'Static',
+                ipAddress: edited.staticIpAddress,
+                subnetMask: edited.subnetMask,
+                defaultGateway: edited.defaultGateway,
+                dnsServers: dns,
+              ));
 
         case UspWanConnectionType.pppoe:
-          _handleSetResult(await WanPppoe.update(
-            _usp,
-            pppUsername: edited.pppUsername,
-            pppPassword: edited.pppPassword,
-            addressingType: 'IPCP',
-            allowPartial: true,
-          ));
-
         case UspWanConnectionType.pptp:
         case UspWanConnectionType.l2tp:
-          _handleSetResult(await WanPppoe.update(
-            _usp,
-            pppUsername: edited.pppUsername,
-            pppPassword: edited.pppPassword,
-            addressingType: 'IPCP',
-            allowPartial: true,
-          ));
+          // AddressingType alone; LowerLayers and the credentials follow as one
+          // PPP batch in _savePppLink (#762 comment 5987286082, SET 1 / SET 2).
+          await _updateWanIpv4((path) => WanSettingsIpv4AddressUpdate(
+              instancePath: path, addressingType: 'IPCP'));
 
         case UspWanConnectionType.bridge:
-          // When deferred, saveAll sends the terminal bridge SET last (after
-          // VLAN/IPv6) via _applyBridgeMode(); otherwise apply it here.
-          if (!deferBridge) await _applyBridgeMode();
+          // Nothing to write for the target mode: entering bridge is the single
+          // Enable=false SET that saveAll sends last (Step 8).
+          break;
       }
     } else {
       switch (edited.connectionType) {
@@ -383,15 +439,24 @@ class UspInternetSettingsService {
               original.dnsServer1, original.dnsServer2, original.dnsServer3);
           final editedDns = _mergeDns(
               edited.dnsServer1, edited.dnsServer2, edited.dnsServer3);
-          _handleSetResult(await WanStaticIp.update(
-            _usp,
-            staticIpAddress:
-                _diff(original.staticIpAddress, edited.staticIpAddress),
-            subnetMask: _diff(original.subnetMask, edited.subnetMask),
-            defaultGateway:
-                _diff(original.defaultGateway, edited.defaultGateway),
-            dnsServers: _diff(originalDns, editedDns),
-          ));
+          final ipAddress =
+              _diff(original.staticIpAddress, edited.staticIpAddress);
+          final subnetMask = _diff(original.subnetMask, edited.subnetMask);
+          final defaultGateway =
+              _diff(original.defaultGateway, edited.defaultGateway);
+          final dnsServers = _diff(originalDns, editedDns);
+          if (ipAddress != null ||
+              subnetMask != null ||
+              defaultGateway != null ||
+              dnsServers != null) {
+            await _updateWanIpv4((path) => WanSettingsIpv4AddressUpdate(
+                  instancePath: path,
+                  ipAddress: ipAddress,
+                  subnetMask: subnetMask,
+                  defaultGateway: defaultGateway,
+                  dnsServers: dnsServers,
+                ));
+          }
 
         case UspWanConnectionType.dhcp:
         case UspWanConnectionType.bridge:
@@ -432,14 +497,50 @@ class UspInternetSettingsService {
     }
   }
 
+  /// Writes the WAN `IPv4Address` row through its own instance path, with
+  /// AddressingType ahead of the address fields (one ordered SET).
+  ///
+  /// The row is created by the firmware and never added, so it is read here
+  /// rather than assumed. A WAN with no row (bridge mode, #1597) has nothing to
+  /// write, which is reported as such instead of faulting 9005 on a fixed
+  /// `IPv4Address.1` path.
+  Future<void> _updateWanIpv4(
+    WanSettingsIpv4AddressUpdate Function(String instancePath) build,
+  ) async {
+    final row = (await WanSettings.fetch(_usp)).ipv4Addresses.firstOrNull;
+    if (row == null) {
+      throw const ResourceNotFoundError(
+          detail: 'WAN IPv4Address row is absent; nothing to write');
+    }
+    _handleSetResult(await WanSettings.updateOrderedIpv4Addresses(
+        _usp, [build(row.instancePath)]));
+  }
+
   // ---------------------------------------------------------------------------
-  // Bridge mode apply — terminal, fire-and-forget by design
+  // Bridge mode boundary — terminal, fire-and-forget by design
   // ---------------------------------------------------------------------------
 
-  /// Applies bridge mode via the WAN `AddressingType=""` SET.
+  /// Enters bridge mode: `Device.IP.Interface.{wan}.Enable = false`.
+  ///
+  /// That one parameter is what actually bridges the WAN. Its firmware set
+  /// handler adds the WAN device to `br-lan`'s `ports`, commits network+dhcp and
+  /// runs `bridge-mode-apply.sh enter`. Writing `AddressingType=""` — what this
+  /// used to send — does none of that: on this firmware that set handler only
+  /// writes a uci option and never invokes the script, so the router was left
+  /// with a dead WAN rather than a bridge.
+  Future<void> _enterBridgeMode() => _setBridgeBoundary(enable: false);
+
+  /// Leaves bridge mode: `Device.IP.Interface.{wan}.Enable = true`.
+  ///
+  /// Sent alone: `bridge-mode-apply.sh exit` ends with `ifup wan`, and only
+  /// then does the WAN `IPv4Address` row exist again to take a target mode.
+  Future<void> _exitBridgeMode() => _setBridgeBoundary(enable: true);
+
+  /// Sends the terminal bridge-boundary SET, treating the disconnect it causes
+  /// as success.
   ///
   /// This SET is terminal-by-design (see [_bridgeSetTimeout]): the firmware
-  /// applies bridge mode and drops the connection carrying the response, so a
+  /// applies the change and drops the connection carrying the response, so a
   /// transport-level timeout/network error on THIS SET is the expected
   /// signature of success — the SET was received and applied on-device before
   /// the disconnect. Those two cases are swallowed.
@@ -448,20 +549,22 @@ class UspInternetSettingsService {
   /// mapped to a validation / resource / partial / auth / unexpected
   /// [ServiceError] — means the SET was rejected. Those propagate so the user
   /// still sees the failure; a real config failure is never hidden.
-  Future<void> _applyBridgeMode() async {
+  Future<void> _setBridgeBoundary({required bool enable}) async {
+    // enable=false enters bridge, enable=true leaves it.
+    final direction = enable ? 'exit' : 'enter';
     try {
       _handleSetResult(
-        await WanBridge.update(_usp, addressingType: '')
+        await WanSettings.update(_usp, enable: enable)
             .timeout(_bridgeSetTimeout),
       );
     } on TimeoutException {
-      // No response within the budget: the firmware applied bridge mode and
+      // No response within the budget: the firmware applied the change and
       // dropped the connection, so the SET_RESP can never arrive. Expected
       // success. (Future.timeout keeps an error listener on the underlying
       // request, so its eventual late error is consumed, not left unhandled.)
       logger.i(
-          '[USP][WAN]: bridge SET timed out after ${_bridgeSetTimeout.inSeconds}s '
-          '— treating as success (firmware dropped the connection applying bridge mode)');
+          '[USP][WAN]: bridge $direction SET timed out after ${_bridgeSetTimeout.inSeconds}s '
+          '— treating as success (firmware dropped the connection applying it)');
     } catch (e) {
       // Reached when the request fails BEFORE the timeout. A transport /
       // connectivity error is the same disconnect signature → success. But
@@ -472,8 +575,8 @@ class UspInternetSettingsService {
       if (e is ServiceError) rethrow;
       final mapped = mapUspErrorToServiceError(e);
       if (mapped is NetworkError || mapped is ConnectivityError) {
-        logger.i('[USP][WAN]: bridge SET hit a transport error '
-            '— treating as success (firmware dropped the connection applying bridge mode)');
+        logger.i('[USP][WAN]: bridge $direction SET hit a transport error '
+            '— treating as success (firmware dropped the connection applying it)');
         return;
       }
       throw mapped;
@@ -487,20 +590,13 @@ class UspInternetSettingsService {
   Future<void> _savePppSettings(
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited,
-    String instancePath, {
-    bool skipCredentials = false,
-  }) async {
+    String instancePath,
+  ) async {
     _handleSetResult(await PppInterface.update(
       _usp,
       [
         PppInterfaceInstanceUpdate(
           instancePath: instancePath,
-          username: skipCredentials
-              ? null
-              : _diff(original.pppUsername, edited.pppUsername),
-          password: skipCredentials
-              ? null
-              : _diff(original.pppPassword, edited.pppPassword),
           pppoeServiceName:
               _diff(original.pppoeServiceName, edited.pppoeServiceName),
           connectionTrigger:
@@ -513,27 +609,37 @@ class UspInternetSettingsService {
   }
 
   // ---------------------------------------------------------------------------
-  // PPP LowerLayers — sets the tunnel type reference
+  // PPP link — LowerLayers (tunnel type) and credentials
   // ---------------------------------------------------------------------------
 
-  Future<void> _savePppLowerLayers(
+  /// Writes `LowerLayers` and the credentials as one PPP batch.
+  ///
+  /// On a switch into or between PPP modes all three are sent, so the firmware
+  /// gets the whole link in the SET that follows `AddressingType=IPCP` (#762
+  /// comment 5987286082, SET 2). Otherwise only changed credentials are sent.
+  Future<void> _savePppLink(
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited,
     String instancePath,
   ) async {
-    final targetLowerLayers = edited.connectionType.pppLowerLayers;
-    if (targetLowerLayers == null) return;
-
-    final originalLowerLayers = original.connectionType.pppLowerLayers ?? '';
-    if (originalLowerLayers == targetLowerLayers) return;
-
-    logger.d('[USP][WAN]: Setting LowerLayers to $targetLowerLayers');
+    final typeChanged = original.connectionType != edited.connectionType;
+    final lowerLayers =
+        typeChanged ? edited.connectionType.pppLowerLayers : null;
+    if (lowerLayers != null) {
+      logger.d('[USP][WAN]: Setting LowerLayers to "$lowerLayers"');
+    }
     _handleSetResult(await PppInterface.update(
       _usp,
       [
         PppInterfaceInstanceUpdate(
           instancePath: instancePath,
-          lowerLayers: targetLowerLayers,
+          lowerLayers: lowerLayers,
+          username: typeChanged
+              ? edited.pppUsername
+              : _diff(original.pppUsername, edited.pppUsername),
+          password: typeChanged
+              ? edited.pppPassword
+              : _diff(original.pppPassword, edited.pppPassword),
         )
       ],
     ));
@@ -553,12 +659,16 @@ class UspInternetSettingsService {
     switch (edited.connectionType) {
       case UspWanConnectionType.pptp:
         logger.d('[USP][WAN]: Setting GRE RemoteEndpoints to $serverDiff');
-        _handleSetResult(
-            await GreTunnel.update(_usp, remoteEndpoints: serverDiff));
+        _handleSetResult(await GreTunnels.update(_usp, [
+          GreTunnelUpdate(
+              instancePath: _greTunnelPath, remoteEndpoints: serverDiff),
+        ]));
       case UspWanConnectionType.l2tp:
         logger.d('[USP][WAN]: Setting L2TP RemoteEndpoints to $serverDiff');
-        _handleSetResult(
-            await L2tpTunnel.update(_usp, remoteEndpoints: serverDiff));
+        _handleSetResult(await L2tpTunnels.update(_usp, [
+          L2tpTunnelUpdate(
+              instancePath: _l2tpTunnelPath, remoteEndpoints: serverDiff),
+        ]));
       default:
         break;
     }
@@ -594,24 +704,45 @@ class UspInternetSettingsService {
     UspInternetSettingsForm edited,
   ) async {
     // IPv6 settings span three USP services (IP.Interface, DHCPv6.Client,
-    // IPv6rd.InterfaceSetting). The OBUSPA broker rejects an atomic SET
-    // (allow_partial=false) that touches more than one service — it returns
-    // 7005 "Allow partial=false not supported across more than one USP
-    // Service", failing the whole save. A cross-service SET cannot be atomic on
-    // this router, so allow partial application; _handleSetResult still surfaces
-    // any per-parameter failure as a UspPartialFailureError.
+    // IPv6rd.InterfaceSetting), one generated model each. The OBUSPA broker
+    // rejects an atomic SET (allow_partial=false) that touches more than one
+    // service with 7005 "Allow partial=false not supported across more than one
+    // USP Service", and which object a service owns is the firmware's business,
+    // so every IPv6 SET allows partial application; _handleSetResult still
+    // surfaces any per-parameter failure as a UspPartialFailureError.
     _handleSetResult(await Ipv6Settings.update(
       _usp,
       ipv6Enabled: _diff(original.ipv6Enabled, edited.ipv6Enabled),
-      dhcpv6Enabled: _diff(original.dhcpv6Enabled, edited.dhcpv6Enabled),
-      ipv6rdEnabled: _diff(original.ipv6rdEnabled, edited.ipv6rdEnabled),
-      ipv6rdPrefix: _diff(original.ipv6rdPrefix, edited.ipv6rdPrefix),
-      ipv6rdIpv4MaskLength:
-          _diff(original.ipv6rdIpv4MaskLength, edited.ipv6rdIpv4MaskLength),
-      ipv6rdBorderRelay:
-          _diff(original.ipv6rdBorderRelay, edited.ipv6rdBorderRelay),
       allowPartial: true,
     ));
+
+    final dhcpv6Enabled = _diff(original.dhcpv6Enabled, edited.dhcpv6Enabled);
+    if (dhcpv6Enabled != null) {
+      final clients = await Dhcpv6Clients.fetch(_usp);
+      final client =
+          _wanDhcpv6Client(clients, await _wanInterfacePath(clients));
+      if (client != null) {
+        _handleSetResult(await Dhcpv6Clients.update(
+          _usp,
+          [
+            Dhcpv6ClientUpdate(
+                instancePath: client.instancePath, enable: dhcpv6Enabled),
+          ],
+          allowPartial: true,
+        ));
+      }
+    }
+
+    final ipv6rd = Ipv6rdSettingUpdate(
+      instancePath: _ipv6rdPath,
+      enabled: _diff(original.ipv6rdEnabled, edited.ipv6rdEnabled),
+      prefix: _diff(original.ipv6rdPrefix, edited.ipv6rdPrefix),
+      ipv4MaskLength:
+          _diff(original.ipv6rdIpv4MaskLength, edited.ipv6rdIpv4MaskLength),
+      borderRelay: _diff(original.ipv6rdBorderRelay, edited.ipv6rdBorderRelay),
+    );
+    _handleSetResult(
+        await Ipv6rdSettings.update(_usp, [ipv6rd], allowPartial: true));
   }
 
   // ---------------------------------------------------------------------------
@@ -693,7 +824,7 @@ class InternetSettingsFetchResult {
 
   /// Debug fields for logging — not exposed to UI.
   final String debugAddressingType;
-  final bool debugBridgeEnabled;
+  final bool debugInterfaceEnabled;
   final int debugMtu;
   final bool debugIpv6Enabled;
 
@@ -704,7 +835,7 @@ class InternetSettingsFetchResult {
     this.vlanInstancePath,
     this.mtuModeSupported = false,
     this.debugAddressingType = '',
-    this.debugBridgeEnabled = false,
+    this.debugInterfaceEnabled = true,
     this.debugMtu = 0,
     this.debugIpv6Enabled = false,
   });
