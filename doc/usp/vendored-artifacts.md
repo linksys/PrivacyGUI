@@ -11,7 +11,7 @@ Files in this repo that are built or generated from `linksys/usp_framework` and 
 
 ## Manifest
 
-**Last updated**: 2026-09-30 (usp-codegen 0.16.0 → 0.17.0: `json-list` operate-input type, linksys/usp_framework#67)
+**Last updated**: 2026-10-16 (usp-codegen 0.17.0 → 0.18.1: multi-instance tables as lists, write builders, linksys/usp_framework#76 / #79; Internet Settings only, see below)
 
 The web package records reviewed `usp_framework` commit
 `d135f4df652684bc176bc02d83ec4a1c7b84c65c` (merged `main`, PR #59 — the
@@ -31,7 +31,7 @@ without review.
 
 | # | Artifact | Version | Checked-in path | Upstream source |
 |---|----------|---------|-----------------|-----------------|
-| 1 | `usp-codegen` (Mach-O arm64) | **0.17.0** | `tools/usp-codegen` | `usp-codegen/bin/usp-codegen` (built from `src/` via `Makefile.standalone`) |
+| 1 | `usp-codegen` (Mach-O arm64) | **0.18.1** | `tools/usp-codegen` | `usp-codegen/bin/usp-codegen` (built from `src/` via `Makefile.standalone`) |
 | 2 | `usp_client.js` | **0.13.0** | `web/usp_client.js` | `usp-client/pkg/usp_client.js` |
 | 3 | `usp_client_bg.wasm` | **0.13.0** | `web/usp_client_bg.wasm` | `usp-client/pkg/usp_client_bg.wasm` |
 | 4 | `usp_client.d.ts` | **0.13.0** | `web/usp_client.d.ts` | `usp-client/pkg/usp_client.d.ts` |
@@ -43,6 +43,8 @@ without review.
 - the YAML snapshot in `usp_framework/usp-definitions/` at generation time.
 
 The YAML definitions are **not vendored** into this repo and individual definitions commits are **not pinned** here. `lib/generated` is regenerated from the fork clone's latest `main`, so re-run the codegen (Update procedure step 2) when you need the output to be current rather than assuming what is checked in already is.
+
+**`lib/generated` is only partly on 0.18.1 (#1597).** 0.18.x reads every multi-instance table as a list and removes fixed-row models, which breaks most services that consume them. The re-vendor is therefore split by feature, and only the definitions Internet Settings consumes were regenerated with 0.18.1: `wan_settings`, `ppp_interface`, `vlan_termination`, `ipv6settings`, `gre_tunnels`, `l2tp_tunnels`, `dhcpv6clients`, `ipv6rd_settings`. `wan_static_ip`, `wan_dhcp`, `wan_bridge`, `wan_pppoe`, `gre_tunnel` and `l2tp_tunnel` were removed and `index.dart` was edited by hand to match. Every other generated file, including `subscriptions.g.dart`, is still 0.17.0 output; the remaining features move with #1654. Until then, **do not regenerate the whole directory**: copy only the files of the feature being migrated. `wan_settings.yaml` 4.1.0 (`Enable` writable) is linksys/usp_framework#87.
 
 Make sure that clone's `main` is up to date with `upstream` (`github.com/linksys/usp_framework`), not just with `origin`. Generating from a stale fork `main` silently reproduces the bug #1555 fixed: the fork's `data_elements_network.yaml` was the 2026-08-05 revision and had no `data_elements_network_info.yaml`.
 

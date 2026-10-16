@@ -83,10 +83,8 @@ class L2tpTunnels {
     return L2tpTunnels(items: items);
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-      UspClient client, List<L2tpTunnelUpdate> updates,
-      {bool allowPartial = false}) async {
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams(List<L2tpTunnelUpdate> updates) {
     final params = <String, dynamic>{};
     for (final update in updates) {
       if (update.remoteEndpoints != null) {
@@ -94,6 +92,14 @@ class L2tpTunnels {
             update.remoteEndpoints;
       }
     }
+    return params;
+  }
+
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+      UspClient client, List<L2tpTunnelUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateParams(updates);
     if (params.isEmpty) {
       return {
         'success': true,

@@ -56,12 +56,14 @@ class WanSettingsIpv4AddressUpdate {
 
 /// WAN settings — interface state, MTU, and the IPv4 address table (read and write)
 class WanSettings {
+  final String instancePath;
   final bool enable;
   final int mtu;
   final String? mtuMode;
   final List<WanSettingsIpv4Address> ipv4Addresses;
 
   const WanSettings({
+    required this.instancePath,
     required this.enable,
     required this.mtu,
     this.mtuMode,
@@ -139,6 +141,7 @@ class WanSettings {
       ));
     }
     return WanSettings(
+      instancePath: instancePath,
       enable: response['${instancePath}Enable'] == true ||
           response['${instancePath}Enable'] == 'true' ||
           response['${instancePath}Enable'] == '1',
@@ -152,16 +155,14 @@ class WanSettings {
     );
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-    UspClient client, {
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams(
+    String instancePath, {
     bool? enable,
     int? mtu,
     String? mtuMode,
-    bool allowPartial = false,
-  }) async {
+  }) {
     final params = <String, dynamic>{};
-    final instancePath = await _resolveInstance(client);
     if (enable != null) {
       params['${instancePath}Enable'] = enable;
     }
@@ -171,6 +172,20 @@ class WanSettings {
     if (mtuMode != null) {
       params['${instancePath}X_LINKSYS_MTUMode'] = mtuMode;
     }
+    return params;
+  }
+
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+    UspClient client, {
+    bool? enable,
+    int? mtu,
+    String? mtuMode,
+    bool allowPartial = false,
+  }) async {
+    final instancePath = await _resolveInstance(client);
+    final params =
+        updateParams(instancePath, enable: enable, mtu: mtu, mtuMode: mtuMode);
     if (params.isEmpty) {
       return {
         'success': true,
@@ -180,10 +195,9 @@ class WanSettings {
     return await client.set(params, allowPartial: allowPartial);
   }
 
-  /// Update WanSettingsIpv4Address rows, each through its own instancePath
-  static Future<Map<String, dynamic>> updateIpv4Addresses(
-      UspClient client, List<WanSettingsIpv4AddressUpdate> updates,
-      {bool allowPartial = false}) async {
+  /// Build the Set params of updateIpv4Addresses() without sending them
+  static Map<String, dynamic> updateIpv4AddressesParams(
+      List<WanSettingsIpv4AddressUpdate> updates) {
     final params = <String, dynamic>{};
     for (final update in updates) {
       if (update.addressingType != null) {
@@ -204,6 +218,14 @@ class WanSettings {
             update.dnsServers;
       }
     }
+    return params;
+  }
+
+  /// Update WanSettingsIpv4Address rows, each through its own instancePath
+  static Future<Map<String, dynamic>> updateIpv4Addresses(
+      UspClient client, List<WanSettingsIpv4AddressUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateIpv4AddressesParams(updates);
     if (params.isEmpty) {
       return {
         'success': true,
@@ -213,10 +235,9 @@ class WanSettings {
     return await client.set(params, allowPartial: allowPartial);
   }
 
-  /// Update WanSettingsIpv4Address rows in priority order (lower priority is set first)
-  static Future<Map<String, dynamic>> updateOrderedIpv4Addresses(
-      UspClient client, List<WanSettingsIpv4AddressUpdate> updates,
-      {bool allowPartial = false}) async {
+  /// Build the setOrdered() groups of updateOrderedIpv4Addresses() without sending them
+  static List<List<Map<String, String>>> updateOrderedIpv4AddressesGroups(
+      List<WanSettingsIpv4AddressUpdate> updates) {
     final orderedParams = <List<Map<String, String>>>[];
     for (final update in updates) {
       final group1 = <Map<String, String>>[];
@@ -254,6 +275,14 @@ class WanSettings {
       }
       if (group2.isNotEmpty) orderedParams.add(group2);
     }
+    return orderedParams;
+  }
+
+  /// Update WanSettingsIpv4Address rows in priority order (lower priority is set first)
+  static Future<Map<String, dynamic>> updateOrderedIpv4Addresses(
+      UspClient client, List<WanSettingsIpv4AddressUpdate> updates,
+      {bool allowPartial = false}) async {
+    final orderedParams = updateOrderedIpv4AddressesGroups(updates);
     if (orderedParams.isEmpty) {
       return {
         'success': true,
@@ -266,6 +295,7 @@ class WanSettings {
   @override
   String toString() {
     return 'WanSettings('
+        'instancePath: $instancePath, '
         'enable: $enable, '
         'mtu: $mtu, '
         'mtuMode: $mtuMode, '

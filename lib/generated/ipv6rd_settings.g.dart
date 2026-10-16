@@ -116,10 +116,8 @@ class Ipv6rdSettings {
     return Ipv6rdSettings(items: items);
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-      UspClient client, List<Ipv6rdSettingUpdate> updates,
-      {bool allowPartial = false}) async {
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams(List<Ipv6rdSettingUpdate> updates) {
     final params = <String, dynamic>{};
     for (final update in updates) {
       if (update.enabled != null) {
@@ -136,6 +134,14 @@ class Ipv6rdSettings {
             update.borderRelay;
       }
     }
+    return params;
+  }
+
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+      UspClient client, List<Ipv6rdSettingUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateParams(updates);
     if (params.isEmpty) {
       return {
         'success': true,
