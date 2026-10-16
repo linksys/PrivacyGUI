@@ -539,7 +539,8 @@ void main() {
     test('a refused write is thrown and nothing is read back', () async {
       final container = createWithSysSvc();
       when(() => mockSysSvc.updateRouterName(any())).thenAnswer((_) async =>
-          throw const UspCompleteFailureError(summary: 'refused', failures: []));
+          throw const UspCompleteFailureError(
+              summary: 'refused', failures: []));
       await container.read(devicesDataProvider.future);
       fetchCount();
 

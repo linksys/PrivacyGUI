@@ -1716,7 +1716,8 @@ void main() {
       });
 
       test('with no location, DeviceInfo.FriendlyName is the name', () {
-        final master = buildMaster(buildSystemInfo(friendlyName: 'Main router'));
+        final master =
+            buildMaster(buildSystemInfo(friendlyName: 'Main router'));
         expect(master.userDeviceLocation, isNull);
         expect(master.displayName, 'Main router');
       });
