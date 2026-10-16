@@ -5,6 +5,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_feature_state.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_status.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/mlo_status_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -63,6 +64,11 @@ class UspWifiAdvancedTab extends ConsumerWidget {
     // those two rows. A firmware whose radios report no IEEE 802.11h drops the
     // DFS card only, and one that does not offer MLO drops the MLO card only.
     final mloEnabled = settings.mloEnabled;
+    // Read-only and moved by the WiFi tab's edits, so it comes from L1, not
+    // from this tab's page-entry snapshot (constitution Article IV §4.2). A
+    // status still loading or failed to read shows no badge.
+    final mloBadge =
+        _mloBadge(context, ref.watch(mloStatusProvider).valueOrNull);
     final content = SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
       child: Column(
@@ -105,7 +111,14 @@ class UspWifiAdvancedTab extends ConsumerWidget {
               value: mloEnabled,
               busy: busy,
               onChanged: notifier.setMloEnabled,
-              status: _mloStatus(context, state.status.mloStatus),
+              badge: mloBadge == null
+                  ? null
+                  : AppBadge(
+                      identifier: 'wifi-advanced-mlo-status',
+                      label: mloBadge.label,
+                      color: mloBadge.color,
+                    ),
+              hint: mloBadge?.hint,
             ),
           ],
         ],
@@ -126,35 +139,36 @@ class UspWifiAdvancedTab extends ConsumerWidget {
 /// status outside the contract: no badge beats a wrong one.
 ///
 /// It is what the router last said, not what the unsaved switch says: the
-/// status is read again after a save's Wi-Fi restart.
-_MloStatusView? _mloStatus(BuildContext context, MloStatus? status) {
+/// status is read again once a save settles.
+_MloBadge? _mloBadge(BuildContext context, MloStatus? status) {
   final colors = Theme.of(context).colorScheme;
   return switch (status) {
     MloStatus.active =>
-      _MloStatusView(label: loc(context).active, color: colors.primary),
-    MloStatus.inactive => _MloStatusView(
+      _MloBadge(label: loc(context).active, color: colors.primary),
+    MloStatus.inactive => _MloBadge(
         label: loc(context).inactive,
         color: colors.error,
         hint: loc(context).mloInactiveHint,
       ),
     MloStatus.disabled =>
-      _MloStatusView(label: loc(context).disabled, color: colors.outline),
+      _MloBadge(label: loc(context).disabled, color: colors.outline),
     MloStatus.unknown || null => null,
   };
 }
 
-class _MloStatusView {
+/// The MLO status badge's label and colour, and the hint that goes with it.
+class _MloBadge {
   final String label;
   final Color color;
   final String? hint;
 
-  const _MloStatusView({required this.label, required this.color, this.hint});
+  const _MloBadge({required this.label, required this.color, this.hint});
 }
 
 /// One card per switch: the title beside the switch, the description under
-/// both. The DFS card's shape, shared by the steering and MLO cards; MLO adds
-/// its [status], which only the MLO card passes — hence the badge's literal
-/// identifier, which E2E's generator harvests from the source text.
+/// both. The DFS card's shape, shared by the steering and MLO cards. A card may
+/// add a [badge] between the title and the switch, and a [hint] under the
+/// description; only MLO does.
 ///
 /// Not `SwitchBlock`: it has no busy state, and every switch on this tab shows
 /// the save in flight (#1542).
@@ -165,7 +179,8 @@ class _AdvancedSwitchCard extends StatelessWidget {
   final bool value;
   final bool busy;
   final ValueChanged<bool> onChanged;
-  final _MloStatusView? status;
+  final Widget? badge;
+  final String? hint;
 
   const _AdvancedSwitchCard({
     required this.identifier,
@@ -174,7 +189,8 @@ class _AdvancedSwitchCard extends StatelessWidget {
     required this.value,
     required this.busy,
     required this.onChanged,
-    this.status,
+    this.badge,
+    this.hint,
   });
 
   @override
@@ -192,14 +208,7 @@ class _AdvancedSwitchCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(child: AppText.labelLarge(title)),
-                if (status case final status?) ...[
-                  AppBadge(
-                    identifier: 'wifi-advanced-mlo-status',
-                    label: status.label,
-                    color: status.color,
-                  ),
-                  AppGap.sm(),
-                ],
+                if (badge case final badge?) ...[badge, AppGap.sm()],
                 AppSwitch(
                   identifier: identifier,
                   value: value,
@@ -217,7 +226,7 @@ class _AdvancedSwitchCard extends StatelessWidget {
               description,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-            if (status?.hint case final hint?) ...[
+            if (hint case final hint?) ...[
               AppGap.sm(),
               AppText.bodyMedium(
                 hint,

@@ -4,6 +4,7 @@ import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_settings.dar
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_status.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/mlo_status_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_state.dart';
@@ -49,13 +50,17 @@ class FixedWifiAdvancedNotifier extends UspWifiAdvancedNotifier {
   void setDfsEnabled(bool enabled) {}
 }
 
+/// [mloStatus] is the MLO card's badge, read from L1 (`mloStatusProvider`);
+/// it shows only when [advancedState] carries an MLO value.
 List<Override> wifiSettingsOverrides({
   required UspWifiSettingsState wifiState,
   required WifiAdvancedFeatureState advancedState,
+  MloStatus? mloStatus = MloStatus.inactive,
 }) =>
     [
       uspWifiSettingsProvider
           .overrideWith(() => FixedWifiSettingsNotifier(wifiState)),
       uspWifiAdvancedProvider
           .overrideWith(() => FixedWifiAdvancedNotifier(advancedState)),
+      mloStatusProvider.overrideWith((ref) async => mloStatus),
     ];

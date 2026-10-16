@@ -46,7 +46,7 @@ class UspWifiAdvancedService {
           final radioPath =
               key.substring(0, key.length - 'IEEE80211hEnabled'.length);
           final val = response[key];
-          result[radioPath] = val == true || val == 'true' || val == '1';
+          result[radioPath] = _asBool(val);
         }
       }
       return result;
@@ -236,7 +236,9 @@ class UspWifiAdvancedService {
       throw NetworkError(
           detail: 'WiFi Advanced read-back had no value for ${missing.first}');
     }
-    bool asBool(Object? v) => v == true || v == 'true' || v == '1';
-    return proof.entries.every((e) => asBool(now[e.key]) == e.value);
+    return proof.entries.every((e) => _asBool(now[e.key]) == e.value);
   }
+
+  /// A TR-181 boolean as the firmware sends it: `true`, `"true"` or `"1"`.
+  static bool _asBool(Object? v) => v == true || v == 'true' || v == '1';
 }

@@ -33,38 +33,30 @@ class WifiAdvancedStatus extends Equatable {
   /// `localizeServiceError`; null means no error.
   final ServiceError? error;
 
-  /// What the router reports for MLO, read with the switch (#1692). Null when
-  /// the router does not offer MLO.
-  final MloStatus? mloStatus;
-
   const WifiAdvancedStatus({
     this.isLoading = false,
     this.isSaving = false,
     this.error,
-    this.mloStatus,
   });
 
   const WifiAdvancedStatus.loading()
       : isLoading = true,
         isSaving = false,
-        error = null,
-        mloStatus = null;
+        error = null;
 
   WifiAdvancedStatus copyWith({
     bool? isLoading,
     bool? isSaving,
     ServiceError? error,
     bool clearError = false,
-    MloStatus? mloStatus,
   }) {
     return WifiAdvancedStatus(
       isLoading: isLoading ?? this.isLoading,
       isSaving: isSaving ?? this.isSaving,
       error: clearError ? null : (error ?? this.error),
-      mloStatus: mloStatus ?? this.mloStatus,
     );
   }
 
   @override
-  List<Object?> get props => [isLoading, isSaving, error, mloStatus];
+  List<Object?> get props => [isLoading, isSaving, error];
 }

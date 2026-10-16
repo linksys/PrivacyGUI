@@ -76,7 +76,7 @@ class UspWifiAdvancedNotifier
       logger.d('[USP][WiFi][Advanced]: Fetched — radios=${ieee80211h.length}, '
           'clientSteering=${steering.clientSteering}, '
           'nodeSteering=${steering.nodeSteering}, '
-          'mlo=${mlo?.enabled} (${mlo?.status.name})');
+          'mlo=${mlo?.enabled}');
 
       return (
         WifiAdvancedSettings(
@@ -85,7 +85,7 @@ class UspWifiAdvancedNotifier
           nodeSteering: steering.nodeSteering,
           mloEnabled: mlo?.enabled,
         ),
-        WifiAdvancedStatus(mloStatus: mlo?.status),
+        const WifiAdvancedStatus(),
       );
     } on ServiceError catch (e) {
       logger.e('[USP][WiFi][Advanced]: Fetch failed', error: e);
@@ -149,6 +149,8 @@ class UspWifiAdvancedNotifier
       await ref.read(wifiWriteConfirmProvider)(
         plan,
         isApplied: _svc.isApplied,
+        // Never null here: every save on this tab is read back, a steering-only
+        // one included, because allowPartial lets any part fail on its own.
         readBackAfter: state.changesMlo
             ? ref.read(mloRestartSettleProvider)
             : Duration.zero,
@@ -227,7 +229,7 @@ class UspWifiAdvancedNotifier
   /// at its old value. If the re-read fails too, the edit stays pending and the
   /// caller's error stands.
   Future<void> _rereadAfterFailure() async {
-    final (settings, status) = await performFetch(forceRemote: true);
+    final (settings, _) = await performFetch(forceRemote: true);
     if (settings == null) {
       logger.w('[USP][WiFi][Advanced]: re-read after a failed save also '
           'failed — the edit stays pending');
@@ -235,7 +237,6 @@ class UspWifiAdvancedNotifier
     }
     state = state.copyWith(
       settings: Preservable(original: settings, current: settings),
-      status: state.status.copyWith(mloStatus: status?.mloStatus),
     );
   }
 

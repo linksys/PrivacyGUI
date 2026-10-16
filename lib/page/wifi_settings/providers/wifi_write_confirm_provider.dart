@@ -54,9 +54,10 @@ final wifiSaveHardLimitProvider = Provider<Duration>(
 /// Sends [plan] under the mutation lock and settles its outcome; returns the
 /// plan's [WifiWritePlan.count] once the write is confirmed.
 ///
-/// `readBackAfter` makes the read-back the only proof: the router's answer no
-/// longer ends the save, and nothing is read before that much time has passed
-/// since the write. See [wifiWriteConfirmProvider].
+/// Passing `readBackAfter` at all — `Duration.zero` included — makes the
+/// read-back the only proof: the router's answer no longer ends the save. The
+/// duration is how long after the write the first read waits. Left null, an
+/// answer confirms the write as before. See [wifiWriteConfirmProvider].
 typedef WifiWriteConfirm = Future<WifiConfirmResult> Function(
   WifiWritePlan plan, {
   required Future<bool> Function(Map<String, dynamic> written) isApplied,

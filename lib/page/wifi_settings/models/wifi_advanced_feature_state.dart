@@ -58,7 +58,6 @@ class WifiAdvancedFeatureState
         'clientSteering': settings.current.clientSteering,
         'nodeSteering': settings.current.nodeSteering,
         'mloEnabled': settings.current.mloEnabled,
-        'mloStatus': status.mloStatus?.name,
         'isDirty': isDirty,
         'isLoading': status.isLoading,
       };
