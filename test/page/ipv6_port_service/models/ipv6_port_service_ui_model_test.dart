@@ -255,4 +255,20 @@ void main() {
       );
     });
   });
+
+  // The dialog's counter and the limit read one count, so they cannot
+  // disagree on where 64 is.
+  group('descriptionBytes', () {
+    test('counts a Latin character as one byte', () {
+      expect(Ipv6PortServiceRuleUIModel.descriptionBytes('Game'), 4);
+    });
+
+    test('counts a CJK character as three bytes', () {
+      expect(Ipv6PortServiceRuleUIModel.descriptionBytes('遊戲'), 6);
+    });
+
+    test('an empty description is zero bytes', () {
+      expect(Ipv6PortServiceRuleUIModel.descriptionBytes(''), 0);
+    });
+  });
 }

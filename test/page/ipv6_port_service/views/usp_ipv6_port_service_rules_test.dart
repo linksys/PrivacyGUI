@@ -174,6 +174,39 @@ void main() {
     }, variant: onDesktop);
   });
 
+  // FW counts bytes, so the dialog shows what the name uses out of 64 as it
+  // is typed: a CJK user sees each character take three.
+  group('the name counter', () {
+    /// The one rendered string of the form `N/64`.
+    String counter(WidgetTester tester) =>
+        tester.widget<Text>(find.textContaining(RegExp(r'^\d+/64$'))).data!;
+
+    testWidgets('starts at 0/64 and counts bytes as the name is typed',
+        (tester) async {
+      await pumpPage(tester, dataState());
+      await openAdd(tester);
+      expect(counter(tester), '0/64');
+
+      await tester.enterText(field('ipv6-rule-description'), 'Game');
+      await tester.pump();
+      expect(counter(tester), '4/64');
+
+      await tester.enterText(field('ipv6-rule-description'), '遊戲');
+      await tester.pump();
+      expect(counter(tester), '6/64');
+    });
+
+    testWidgets('shows a stored name\'s count when editing', (tester) async {
+      await pumpPage(tester, dataState());
+      await tester.tap(find.byWidgetPredicate((w) =>
+          w is AppIconButton && w.identifier == 'ipv6-rule-edit-web-server'));
+      await settle(tester);
+
+      // "Web Server"
+      expect(counter(tester), '10/64');
+    });
+  });
+
   group('the edit dialog', () {
     // A rule saved before FW checked descriptions can already break a check:
     // the page used to allow 32 characters, so 22 CJK ones (66 bytes) were

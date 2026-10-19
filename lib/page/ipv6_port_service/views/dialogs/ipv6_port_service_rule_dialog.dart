@@ -151,6 +151,30 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
     };
   }
 
+  /// What the name uses of FW's 64 bytes, under the field. Counted as FW
+  /// counts, so a CJK character visibly takes three and no copy has to say so.
+  /// Follows every keystroke: [_onInputChanged] already rebuilds for the
+  /// submit gate. Over the limit it takes the error colour, ahead of the
+  /// focus-loss error that names the limit.
+  Widget _descriptionCounter(BuildContext context) {
+    final bytes = Ipv6PortServiceRuleUIModel.descriptionBytes(
+        _descriptionController.text.trim());
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.xs),
+      child: SizedBox(
+        width: double.infinity,
+        child: AppText.bodySmall(
+          '$bytes/$kMaxIpv6RuleDescriptionBytes',
+          textAlign: TextAlign.end,
+          color: bytes > kMaxIpv6RuleDescriptionBytes
+              ? scheme.error
+              : scheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+
   /// Lightweight rebuild to re-evaluate the submit-enable state (_isFormValid)
   /// WITHOUT surfacing errors mid-edit — so no error text appears while typing
   /// and focus is preserved.
@@ -180,6 +204,7 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
             errorText: _localizeError(_errors['description']),
             onChanged: (_) => _onInputChanged(),
           ),
+          _descriptionCounter(context),
           AppGap.lg(),
           AppSelectAutoComplete(
             options: widget.deviceOptions,

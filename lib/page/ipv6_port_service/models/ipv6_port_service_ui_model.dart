@@ -107,6 +107,12 @@ class Ipv6PortServiceRuleUIModel extends Equatable {
   /// The protocol choices the rule dialog offers, as display names.
   static const protocolOptions = ['TCP', 'UDP', 'Both'];
 
+  /// The bytes [description] takes as FW stores it: UTF-8, so a CJK
+  /// character counts three. The dialog's counter shows this, and
+  /// [validateRule] limits it, so the two cannot disagree on where 64 is.
+  static int descriptionBytes(String description) =>
+      utf8.encode(description).length;
+
   /// Validate rule fields. Returns a map of field key ->
   /// [Ipv6PortServiceErrorKeys] key.
   ///
@@ -129,7 +135,7 @@ class Ipv6PortServiceRuleUIModel extends Equatable {
     } else if (!NoSurroundWhitespaceRule().validate(description)) {
       errors['description'] =
           Ipv6PortServiceErrorKeys.descriptionSurroundingSpaces;
-    } else if (utf8.encode(description).length > kMaxIpv6RuleDescriptionBytes) {
+    } else if (descriptionBytes(description) > kMaxIpv6RuleDescriptionBytes) {
       errors['description'] = Ipv6PortServiceErrorKeys.descriptionTooLong;
     } else if (hiddenRuleDescriptions.contains(description) ||
         otherRules.any((r) => r.description == description)) {
