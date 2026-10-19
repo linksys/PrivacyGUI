@@ -35,12 +35,18 @@ class FixedAdministrationNotifier extends UspAdministrationNotifier {
 
   @override
   void setUpnpEnabled(bool enabled) {}
+
+  @override
+  void setSipAlgEnabled(bool enabled) {}
+
+  @override
+  void setManagementWifiEnabled(bool enabled) {}
 }
 
 /// Overrides for `usp_administration_view`, defaulting to [upnpOnState], the
 /// router's own default and what the gate sweeps.
 ///
-/// Not the dirty state: the page's content is the same one card either way, and
+/// Not the dirty state: the page's content is the same cards either way, and
 /// what dirty adds is the Save bar, which is ui_kit's `UiKitBottomBarConfig` and
 /// out of the gate's scope — `gateDmzState` makes the same call for the same
 /// reason.
