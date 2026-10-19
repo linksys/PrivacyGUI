@@ -76,8 +76,8 @@ class UspInternetSettingsService {
   /// the resolved connection type actually uses.
   ///
   /// Tables are read as lists, so a row the current WAN state does not have is
-  /// an empty list rather than a failed fetch: bridge mode drops the WAN
-  /// `IPv4Address` row (#1597).
+  /// an empty list rather than a failed fetch (#1597): no tunnel row on a
+  /// non-PPTP/L2TP WAN, and on FW 2.0.2 no WAN `IPv4Address` row in bridge mode.
   Future<InternetSettingsFetchResult> fetchSettings() async {
     try {
       // Phase 1 — always needed, fetched in parallel.
@@ -190,8 +190,9 @@ class UspInternetSettingsService {
   // ---------------------------------------------------------------------------
 
   /// [ipv4], [dhcpv6], [ipv6rd], [gre] and [l2tp] are rows of tables that may
-  /// be empty: no WAN `IPv4Address` row in bridge mode, no DHCPv6 client bound
-  /// to the WAN, no tunnel row. An absent row reads as that row's defaults.
+  /// be empty: no WAN `IPv4Address` row (bridge mode on FW 2.0.2), no DHCPv6
+  /// client bound to the WAN, no tunnel row. An absent row reads as that row's
+  /// defaults.
   UspInternetSettingsForm _buildForm({
     required WanSettings wan,
     required WanSettingsIpv4Address? ipv4,
@@ -502,9 +503,9 @@ class UspInternetSettingsService {
   /// AddressingType ahead of the address fields (one ordered SET).
   ///
   /// The row is created by the firmware and never added, so it is read here
-  /// rather than assumed. A WAN with no row (bridge mode, #1597) has nothing to
-  /// write, which is reported as such instead of faulting 9005 on a fixed
-  /// `IPv4Address.1` path.
+  /// rather than assumed. A WAN with no row (bridge mode on FW 2.0.2, #1597) has
+  /// nothing to write, which is reported as such instead of faulting 9005 on a
+  /// fixed `IPv4Address.1` path.
   Future<void> _updateWanIpv4(
     WanSettingsIpv4AddressUpdate Function(String instancePath) build,
   ) async {
@@ -731,6 +732,12 @@ class UspInternetSettingsService {
     Dhcpv6Client? client;
     if (dhcpv6Enabled != null) {
       client = _wanDhcpv6Client(await Dhcpv6Clients.fetch(_usp), wanPath);
+      // Refused before anything is sent, so a DHCPv6 change with no client
+      // to write it to is never reported as saved.
+      if (client == null) {
+        throw const ResourceNotFoundError(
+            detail: 'No DHCPv6 client is bound to the WAN interface');
+      }
     }
 
     // IPv6 settings span three USP services (IP.Interface, DHCPv6.Client,

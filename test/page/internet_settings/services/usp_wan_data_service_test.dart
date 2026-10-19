@@ -707,6 +707,37 @@ void main() {
       expect(result.gateway, '10.92.12.1');
     });
 
+    test('Enable reported as the integer 0 reads as bridge, as on Settings',
+        () async {
+      // The Internet Settings page treats any Enable that is not true as
+      // bridge; the dashboard must agree.
+      stubBridged(enable: 0);
+
+      final result = await svc.fetch();
+
+      expect(result.addressingType, UspWanDataService.bridgeAddressingType);
+    });
+
+    test('an absent Enable is not a bridge reading', () async {
+      // Without an Enable value there is no bridge reading, so the WAN row is
+      // read as usual.
+      stubWanStatus(addressingType: 'DHCP', ipAddress: '203.0.113.5');
+      when(() => mockUsp.get(['Device.IP.Interface.*.Alias']))
+          .thenAnswer((_) async => {'Device.IP.Interface.2.Alias': 'wan'});
+      when(() => mockUsp.get([
+                'Device.IP.Interface.2.Enable',
+                'Device.IP.Interface.2.MaxMTUSize',
+                'Device.IP.Interface.2.IPv6Enable',
+              ]))
+          .thenAnswer(
+              (_) async => {'Device.IP.Interface.2.MaxMTUSize': '1500'});
+
+      final result = await svc.fetch();
+
+      expect(result.addressingType, 'DHCP');
+      expect(result.ipAddress, '203.0.113.5');
+    });
+
     test('Enable reported as the string "0" still reads as bridge', () async {
       stubBridged(enable: '0');
 

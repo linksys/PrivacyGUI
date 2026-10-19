@@ -75,9 +75,9 @@ class UspWanDataService {
 
       // Bridge next (#1597), on firmware without the native connection object:
       // `Device.IP.Interface.{wan}.Enable == false` is the only bridge signal.
-      // The WAN IPv4Address row is gone in that state and its last reading was
-      // the pre-bridge DHCP one, so the WAN-side fields below would describe a
-      // mode the router has left.
+      // The WAN IPv4Address row describes the WAN the router has stepped out
+      // of — kept on FW 2.0.3, gone on FW 2.0.2 — so the WAN-side fields below
+      // would report a mode the router is not in.
       final bridged = await _fetchBridgedStatus();
       if (bridged != null) return bridged;
 
@@ -247,7 +247,14 @@ class UspWanDataService {
       '${wanPath}MaxMTUSize',
       '${wanPath}IPv6Enable',
     ]);
-    if (!_isFalse(wanState['${wanPath}Enable'])) return null;
+    // Same rule as the Internet Settings page (`WanSettings.enable` feeding
+    // `UspWanConnectionType.fromRawFields`): bridge is any present `Enable`
+    // that is not true. An absent `Enable` is not a bridge reading, so the
+    // normal path below reads the WAN and reports what it finds.
+    if (!wanState.containsKey('${wanPath}Enable') ||
+        _isTrue(wanState['${wanPath}Enable'])) {
+      return null;
+    }
 
     final lanPath = _interfacePathFor(aliases, 'lan');
     var ipAddress = '';
@@ -300,8 +307,8 @@ class UspWanDataService {
     return '$base${(ids.toList()..sort()).first}.';
   }
 
+  /// The generated models' boolean parse, so both screens read `Enable` alike.
   static bool _isTrue(Object? v) => v == true || v == 'true' || v == '1';
-  static bool _isFalse(Object? v) => v == false || v == 'false' || v == '0';
 
   // ---------------------------------------------------------------------------
   // Helpers

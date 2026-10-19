@@ -264,7 +264,9 @@ void main() {
       expect(result.form.mtu, equals(1500));
     });
 
-    test('bridge mode loads with no WAN IPv4Address row (#1597)', () async {
+    test(
+        'loads with no WAN IPv4Address row, as bridge mode on FW 2.0.2 (#1597)',
+        () async {
       // Bridge mode runs `ifdown wan`, so the firmware drops the whole
       // IPv4Address row. The table is a list, so that is an empty list — not
       // the 9998 that used to blank the page — and Enable=false decides bridge.
@@ -464,6 +466,38 @@ void main() {
           p['path'] ==
           'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers');
       expect(dns['value'], equals('1.1.1.1,9.9.9.9'));
+    });
+
+    test('a DHCPv6 change with no client on the WAN is refused, nothing sent',
+        () async {
+      // The only DHCPv6 client is bound to the LAN, so the change has nowhere
+      // to go. It must not be dropped and reported as saved.
+      final handler = createFetchMockHandler();
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        if (paths.any((p) => p.contains('DHCPv6.Client'))) {
+          return {
+            'Device.DHCPv6.Client.1.Enable': true,
+            'Device.DHCPv6.Client.1.Interface': 'Device.IP.Interface.1',
+            'Device.DHCPv6.Client.1.DUID': '',
+          };
+        }
+        return handler(paths);
+      });
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        dhcpv6Enabled: true,
+        ipv6Enabled: true,
+      );
+      final edited =
+          original.copyWith(dhcpv6Enabled: false, ipv6Enabled: false);
+
+      await expectLater(
+        service.saveAll(original, edited),
+        throwsA(isA<ResourceNotFoundError>()),
+      );
+      verifyNever(
+          () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
     });
 
     test('IPv6, DHCPv6 and 6rd changes go out as one SET', () async {
