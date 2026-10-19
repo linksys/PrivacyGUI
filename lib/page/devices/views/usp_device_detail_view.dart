@@ -2,18 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/ipv6_address.dart';
-import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart'
     hide ConnectionType;
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/_shared/components/device_category_ui.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/page/devices/providers/device_detail_provider.dart';
+import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
+import 'package:privacy_gui/page/devices/views/dialogs/device_identity_edit_dialog.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/util/network_utils.dart';
@@ -124,11 +127,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   // ===========================================================================
 
   Widget _buildDeviceIdentityCard(BuildContext context, ClientDevice device) {
-    final classification = DeviceClassifier.classifyWithConfidence(
-      hostname: device.hostName,
-      mac: device.mac,
-    );
-    final vendor = OuiLookup.getVendorOrPrivate(device.mac);
+    final category = DeviceClassifier.classifyClient(device);
+    final vendor = DeviceClassifier.manufacturerOf(device);
     final colorScheme = Theme.of(context).colorScheme;
 
     return AppCard(
@@ -148,7 +148,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                     borderRadius: BorderRadius.circular(AppSpacing.sm),
                   ),
                   child: Icon(
-                    classification.category.icon,
+                    category.icon,
                     size: 28,
                     color: colorScheme.onPrimaryContainer,
                   ),
@@ -158,10 +158,17 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AppText.titleLarge(device.displayName),
+                      DetailEditableName(
+                        name: device.displayName,
+                        editLabel: loc(context).editDevice,
+                        identifier: 'device-detail-edit-identity',
+                        onEdit: device.hostInstancePath == null
+                            ? null
+                            : () => _editIdentity(context, ref, device),
+                      ),
                       AppGap.xxs(),
                       AppText.labelMedium(
-                        classification.category.displayName,
+                        category.resolveLabel(context),
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ],
@@ -802,6 +809,40 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         ),
       ],
     );
+  }
+
+  // ===========================================================================
+  // Identity Actions
+  // ===========================================================================
+
+  /// Names the client and picks its icon (#1691). The dialog saves and shows
+  /// its own progress and errors; this page only confirms a finished save.
+  Future<void> _editIdentity(
+      BuildContext context, WidgetRef ref, ClientDevice device) async {
+    final saved = await showAppDialog<bool>(
+      context: context,
+      builder: (_) => DeviceIdentityEditDialog(
+        initialName: device.userDeviceName ?? '',
+        initialCategory:
+            DeviceCategory.fromUserTypeCode(device.userDeviceType) ??
+                DeviceCategory.unknown,
+        hasUserType: device.userDeviceType != null,
+        // A best guess at what an empty name shows. Cleared, devidentd's
+        // FriendlyName is its own detected name, else the host name; the
+        // detected name is not exposed while the user's name hides it, so the
+        // host name is the closest the app can say.
+        detectedName: device.hostName,
+        onSave: (name, category) =>
+            ref.read(devicesDataProvider.notifier).updateIdentity(
+                  hostInstancePath: device.hostInstancePath!,
+                  name: name,
+                  userTypeCode: category?.userTypeCode,
+                ),
+      ),
+    );
+    if (saved == true && context.mounted) {
+      showSuccessSnackBar(context, loc(context).changesSaved);
+    }
   }
 
   // ===========================================================================

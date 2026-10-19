@@ -318,11 +318,13 @@ final kWifiSettingsPageCase = PageSurfaceCase(
 /// link does — `initialTab: 1` — for which see [kStatisticsDevicesPageCase]; the two
 /// pages now share one mechanism rather than one excuse.
 ///
-/// ## Coverage: the whole tab, three cards
+/// ## Coverage: the whole tab, four cards
 ///
-/// `UspWifiAdvancedTab` renders three `AppCard`s — client steering, node steering
-/// (#1661) and DFS — each one `Expanded` title + [AppSwitch] row over a description.
-/// Until #1661 it was the DFS card alone. The green still means *the tab* and not a
+/// `UspWifiAdvancedTab` renders four `AppCard`s — client steering, node steering
+/// (#1661), DFS and MLO (#1692) — each one `Expanded` title + [AppSwitch] row over a
+/// description. Until #1661 it was the DFS card alone. The MLO card is the only one
+/// whose row holds a third widget, a status badge, and the only one with a second
+/// paragraph, the `Inactive` hint; the fixture is `Inactive` so both are in the sweep. The green still means *the tab* and not a
 /// prefix of it, for a reason that does not depend on [kPageSweepHeight]: the cards
 /// sit in a `SingleChildScrollView`'s `Column`, which lays out every child whether
 /// or not it is in the viewport — only a lazy sliver skips what is off screen.
@@ -1976,24 +1978,37 @@ final kDmzPageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView],
 );
 
-/// `usp_administration_view` — Advanced Settings → Administration (#1660). Not
-/// [kAdminPageCase], the menu's page of the same title.
+/// `usp_administration_view` — Advanced Settings → Administration (#1660, #1694,
+/// #1696). Not [kAdminPageCase], the menu's page of the same title.
 ///
-/// One card, one row: the `upnp` label `Expanded` beside an [AppSwitch]. The label is
-/// `UPnP` in 25 locales and `UPnPi` in `pt`, so this is the least text the family lays
-/// out, and it is swept for the reason [kWifiSettingsAdvancedPageCase] gives — "it
-/// looks safe" is the claim the gate exists to replace. It arrives with the `lib/` change that creates it,
-/// straight to `swept`, as `firmware_ota` and `notification_history` did.
+/// Three cards, one row each: a label `Expanded` beside an [AppSwitch]. `upnp` is
+/// `UPnP` in 25 locales and `UPnPi` in `pt`, the least text the family lays out;
+/// `administrationApplicationLayerGateway` ("Application Layer Gateway (SIP)") and
+/// `administrationAllowLocalManagementWirelessly` ("Allow local management
+/// wirelessly") are 1.x's strings, carried over in all 26 locales, and the longer
+/// ones. The page is swept for the reason [kWifiSettingsAdvancedPageCase] gives —
+/// "it looks safe" is the claim the gate exists to replace. It arrived with the
+/// `lib/` change that created it, straight to `swept`, as `firmware_ota` and
+/// `notification_history` did.
 ///
-/// [UspUpnpCard] is the premise: the page has a loader arm and a [ServiceErrorView] arm,
-/// both in `forbids`, and the card is the only thing the data arm renders. The fixture
-/// is the clean `upnpOnState` — the dirty one adds only ui_kit's Save bar, out of scope
-/// as it is for [kDmzPageCase]; see `mock_administration.dart`.
+/// [UspUpnpCard], [UspSipAlgCard] and [UspManagementWifiCard] are the premise: the page
+/// has a loader arm and a [ServiceErrorView] arm, both in `forbids`, and the cards
+/// are all the data arm renders. The fixture is the clean `upnpOnState`, on a
+/// firmware with the management rule, so all three render; without the rule the
+/// page shows two of the same rows, a subset. The dirty state adds only ui_kit's
+/// Save bar, out of scope as it is for [kDmzPageCase]; see
+/// `mock_administration.dart`.
 final kAdministrationPageCase = PageSurfaceCase(
   id: 'administration',
   view: () => const UspAdministrationView(),
   overrides: () => administrationOverrides(),
-  requires: const [UspTopBar, UspUpnpCard, AppSwitch],
+  requires: const [
+    UspTopBar,
+    UspUpnpCard,
+    UspSipAlgCard,
+    UspManagementWifiCard,
+    AppSwitch,
+  ],
   forbids: const [AppLoader, ServiceErrorView],
 );
 

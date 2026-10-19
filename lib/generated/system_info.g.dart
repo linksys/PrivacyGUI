@@ -10,6 +10,8 @@ class SystemInfo {
   final String modelName;
   final String serialNumber;
   final String? baseMacAddress;
+  final String? friendlyName;
+  final String? userDeviceLocation;
   final String hardwareVersion;
   final String softwareVersion;
   final int uptime;
@@ -25,6 +27,8 @@ class SystemInfo {
     required this.modelName,
     required this.serialNumber,
     this.baseMacAddress,
+    this.friendlyName,
+    this.userDeviceLocation,
     required this.hardwareVersion,
     required this.softwareVersion,
     required this.uptime,
@@ -41,6 +45,8 @@ class SystemInfo {
     'Device.DeviceInfo.ModelName',
     'Device.DeviceInfo.SerialNumber',
     'Device.DeviceInfo.X_LINKSYS_BaseMACAddress',
+    'Device.DeviceInfo.FriendlyName',
+    'Device.DeviceInfo.X_LINKSYS_UserDeviceLocation',
     'Device.DeviceInfo.HardwareVersion',
     'Device.DeviceInfo.SoftwareVersion',
     'Device.DeviceInfo.UpTime',
@@ -106,6 +112,13 @@ class SystemInfo {
           response.containsKey('Device.DeviceInfo.X_LINKSYS_BaseMACAddress')
               ? response['Device.DeviceInfo.X_LINKSYS_BaseMACAddress'] as String
               : null,
+      friendlyName: response.containsKey('Device.DeviceInfo.FriendlyName')
+          ? response['Device.DeviceInfo.FriendlyName'] as String
+          : null,
+      userDeviceLocation: response
+              .containsKey('Device.DeviceInfo.X_LINKSYS_UserDeviceLocation')
+          ? response['Device.DeviceInfo.X_LINKSYS_UserDeviceLocation'] as String
+          : null,
       hardwareVersion:
           (response['Device.DeviceInfo.HardwareVersion'] ?? '') as String,
       softwareVersion:
@@ -140,6 +153,30 @@ class SystemInfo {
     );
   }
 
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+    UspClient client, {
+    String? friendlyName,
+    String? userDeviceLocation,
+    bool allowPartial = false,
+  }) async {
+    final params = <String, dynamic>{};
+    if (friendlyName != null) {
+      params['Device.DeviceInfo.FriendlyName'] = friendlyName;
+    }
+    if (userDeviceLocation != null) {
+      params['Device.DeviceInfo.X_LINKSYS_UserDeviceLocation'] =
+          userDeviceLocation;
+    }
+    if (params.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    return await client.set(params, allowPartial: allowPartial);
+  }
+
   @override
   String toString() {
     return 'SystemInfo('
@@ -147,6 +184,8 @@ class SystemInfo {
         'modelName: $modelName, '
         'serialNumber: $serialNumber, '
         'baseMacAddress: $baseMacAddress, '
+        'friendlyName: $friendlyName, '
+        'userDeviceLocation: $userDeviceLocation, '
         'hardwareVersion: $hardwareVersion, '
         'softwareVersion: $softwareVersion, '
         'uptime: $uptime, '

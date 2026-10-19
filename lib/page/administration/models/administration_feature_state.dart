@@ -36,6 +36,8 @@ class AdministrationFeatureState
   @override
   Map<String, dynamic> toMap() => {
         'upnpEnabled': settings.current.upnpEnabled,
+        'sipAlgEnabled': settings.current.sipAlgEnabled,
+        'managementWifiEnabled': settings.current.managementWifiEnabled,
         'isDirty': isDirty,
         'isLoading': status.isLoading,
       };

@@ -8,9 +8,20 @@ import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/administration/models/administration_settings.dart';
 import 'package:privacy_gui/page/administration/providers/usp_administration_notifier.dart';
 import 'package:privacy_gui/page/administration/services/usp_administration_service.dart';
+import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
 
 class MockUspAdministrationService extends Mock
     implements UspAdministrationService {}
+
+AdministrationSettings _settings({
+  bool upnp = true,
+  bool sip = false,
+  bool? management = true,
+}) =>
+    AdministrationSettings(
+        upnpEnabled: upnp,
+        sipAlgEnabled: sip,
+        managementWifiEnabled: management);
 
 void main() {
   late MockUspAdministrationService svc;
@@ -19,12 +30,12 @@ void main() {
     svc = MockUspAdministrationService();
   });
 
-  /// [reads] are the successive values each `fetch()` returns: the page-entry
-  /// read first, then whatever a save re-reads.
-  Future<ProviderContainer> load(List<bool> reads) async {
+  /// [load] over whole settings, for the cases that edit more than UPnP.
+  Future<ProviderContainer> loadSettings(
+      List<AdministrationSettings> reads) async {
     final queue = [...reads];
-    when(() => svc.fetch()).thenAnswer((_) async => AdministrationSettings(
-        upnpEnabled: queue.length > 1 ? queue.removeAt(0) : queue.first));
+    when(() => svc.fetch()).thenAnswer(
+        (_) async => queue.length > 1 ? queue.removeAt(0) : queue.first);
     final container = ProviderContainer(overrides: [
       uspAdministrationServiceProvider.overrideWithValue(svc),
       uspMutationLockProvider.overrideWithValue(UspMutationLock()),
@@ -35,10 +46,14 @@ void main() {
     return container;
   }
 
+  /// [reads] are the successive UPnP values each `fetch()` returns: the
+  /// page-entry read first, then whatever a save re-reads. SIP ALG reads off.
+  Future<ProviderContainer> load(List<bool> reads) =>
+      loadSettings([for (final upnp in reads) _settings(upnp: upnp)]);
+
   group('UspAdministrationNotifier - fetch', () {
     test('starts loading, then shows the device value', () async {
-      when(() => svc.fetch()).thenAnswer(
-          (_) async => const AdministrationSettings(upnpEnabled: true));
+      when(() => svc.fetch()).thenAnswer((_) async => _settings(upnp: true));
       final container = ProviderContainer(overrides: [
         uspAdministrationServiceProvider.overrideWithValue(svc),
       ]);
@@ -106,6 +121,34 @@ void main() {
     });
   });
 
+  group('UspAdministrationNotifier - setSipAlgEnabled', () {
+    test('buffers the change and writes nothing', () async {
+      final container = await load([true]);
+
+      container.read(uspAdministrationProvider.notifier).setSipAlgEnabled(true);
+
+      final state = container.read(uspAdministrationProvider);
+      expect(state.settings.current.sipAlgEnabled, isTrue);
+      expect(state.isDirty, isTrue);
+      verifyNever(() => svc.setSipAlgEnabled(any()));
+    });
+  });
+
+  group('UspAdministrationNotifier - setManagementWifiEnabled', () {
+    test('buffers the change and writes nothing', () async {
+      final container = await load([true]);
+
+      container
+          .read(uspAdministrationProvider.notifier)
+          .setManagementWifiEnabled(false);
+
+      final state = container.read(uspAdministrationProvider);
+      expect(state.settings.current.managementWifiEnabled, isFalse);
+      expect(state.isDirty, isTrue);
+      verifyNever(() => svc.setManagementWifiEnabled(any()));
+    });
+  });
+
   group('UspAdministrationNotifier - save', () {
     test('sends one Set of the new value, then re-reads the device', () async {
       when(() => svc.setUpnpEnabled(any())).thenAnswer((_) async {});
@@ -160,6 +203,147 @@ void main() {
       verify(() => svc.fetch()).called(2);
     });
 
+    test('an unchanged switch is not written', () async {
+      // UPnP and SIP ALG are owned by different USP services, and SIP ALG's
+      // Set alone takes ~9 s. Rewriting the one the user did not touch would
+      // add that wait to every UPnP save.
+      when(() => svc.setSipAlgEnabled(any())).thenAnswer((_) async {});
+      final container = await loadSettings([
+        _settings(upnp: true, sip: false),
+        _settings(upnp: true, sip: true),
+      ]);
+      final notifier = container.read(uspAdministrationProvider.notifier);
+
+      notifier.setSipAlgEnabled(true);
+      await notifier.save();
+
+      verify(() => svc.setSipAlgEnabled(true)).called(1);
+      verifyNever(() => svc.setUpnpEnabled(any()));
+      expect(container.read(uspAdministrationProvider).settings.current,
+          _settings(upnp: true, sip: true));
+    });
+
+    test('with both switches changed, one Save writes both, under one lock',
+        () async {
+      final calls = <String>[];
+      when(() => svc.setUpnpEnabled(any())).thenAnswer((_) async {
+        calls.add('upnp');
+      });
+      when(() => svc.setSipAlgEnabled(any())).thenAnswer((_) async {
+        calls.add('sip');
+      });
+      final lock = _CountingLock();
+      when(() => svc.fetch()).thenAnswer((_) async => _settings());
+      final container = ProviderContainer(overrides: [
+        uspAdministrationServiceProvider.overrideWithValue(svc),
+        uspMutationLockProvider.overrideWithValue(lock),
+      ]);
+      addTearDown(container.dispose);
+      container.listen(uspAdministrationProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspAdministrationProvider.notifier);
+
+      notifier.setUpnpEnabled(false);
+      notifier.setSipAlgEnabled(true);
+      await notifier.save();
+
+      verify(() => svc.setUpnpEnabled(false)).called(1);
+      verify(() => svc.setSipAlgEnabled(true)).called(1);
+      expect(calls, hasLength(2));
+      expect(lock.entries, 1,
+          reason: 'one window for the page, so no other write slips between');
+    });
+
+    test('a refused SIP ALG Set reports its error after UPnP was written',
+        () async {
+      // Both are sent; the device's values are re-read so the page shows what
+      // landed (UPnP) and what did not (SIP ALG).
+      when(() => svc.setUpnpEnabled(any())).thenAnswer((_) async {});
+      when(() => svc.setSipAlgEnabled(any()))
+          .thenThrow(const UnexpectedError(detail: 'refused (9007)'));
+      final container = await loadSettings([
+        _settings(upnp: true, sip: false),
+        _settings(upnp: false, sip: false),
+      ]);
+      final notifier = container.read(uspAdministrationProvider.notifier);
+
+      notifier.setUpnpEnabled(false);
+      notifier.setSipAlgEnabled(true);
+      await expectLater(notifier.save(), throwsA(isA<UnexpectedError>()));
+
+      final state = container.read(uspAdministrationProvider);
+      expect(state.settings.current, _settings(upnp: false, sip: false));
+      expect(state.isDirty, isFalse);
+    });
+
+    test('a management change is written alone', () async {
+      when(() => svc.setManagementWifiEnabled(any())).thenAnswer((_) async {});
+      final container = await loadSettings([
+        _settings(management: true),
+        _settings(management: false),
+      ]);
+      final notifier = container.read(uspAdministrationProvider.notifier);
+
+      notifier.setManagementWifiEnabled(false);
+      await notifier.save();
+
+      verify(() => svc.setManagementWifiEnabled(false)).called(1);
+      verifyNever(() => svc.setUpnpEnabled(any()));
+      verifyNever(() => svc.setSipAlgEnabled(any()));
+      expect(container.read(uspAdministrationProvider).isDirty, isFalse);
+    });
+
+    test('a management change refreshes the shared firewall rule data',
+        () async {
+      // The rule is one of Device.Firewall.Chain.1's: the Statistics rule
+      // counts and the Firewall card read them through firewallDataProvider,
+      // which would otherwise show the pre-save Enable until something pushed.
+      when(() => svc.setManagementWifiEnabled(any())).thenAnswer((_) async {});
+      when(() => svc.setUpnpEnabled(any())).thenAnswer((_) async {});
+      var firewallBuilds = 0;
+      when(() => svc.fetch()).thenAnswer((_) async => _settings());
+      final container = ProviderContainer(overrides: [
+        uspAdministrationServiceProvider.overrideWithValue(svc),
+        uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+        firewallDataProvider.overrideWith(() => _CountingFirewallData(() {
+              firewallBuilds++;
+            })),
+      ]);
+      addTearDown(container.dispose);
+      container.listen(uspAdministrationProvider, (_, __) {});
+      container.listen(firewallDataProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspAdministrationProvider.notifier);
+      expect(firewallBuilds, 1);
+
+      notifier.setUpnpEnabled(false);
+      await notifier.save();
+      await Future.delayed(Duration.zero);
+      expect(firewallBuilds, 1, reason: 'UPnP is not a chain rule');
+
+      notifier.setManagementWifiEnabled(false);
+      await notifier.save();
+      await Future.delayed(Duration.zero);
+      expect(firewallBuilds, 2);
+    });
+
+    test('a firmware without the rule never writes it', () async {
+      // The switch is hidden there, so nothing can change it; editing the
+      // other switches must not reach for a rule that is not on the router.
+      when(() => svc.setUpnpEnabled(any())).thenAnswer((_) async {});
+      final container = await loadSettings([
+        _settings(upnp: true, management: null),
+        _settings(upnp: false, management: null),
+      ]);
+      final notifier = container.read(uspAdministrationProvider.notifier);
+
+      notifier.setUpnpEnabled(false);
+      await notifier.save();
+
+      verify(() => svc.setUpnpEnabled(false)).called(1);
+      verifyNever(() => svc.setManagementWifiEnabled(any()));
+    });
+
     test('a Set that outlasts the lock is a TimeoutError and is re-read',
         () async {
       // The lock throws a bare TimeoutException at its window. Left as one it
@@ -171,7 +355,7 @@ void main() {
       var reads = 0;
       when(() => svc.fetch()).thenAnswer((_) async {
         reads++;
-        return const AdministrationSettings(upnpEnabled: true);
+        return _settings(upnp: true);
       });
       final container = ProviderContainer(overrides: [
         uspAdministrationServiceProvider.overrideWithValue(svc),
@@ -198,7 +382,7 @@ void main() {
       var reads = 0;
       when(() => svc.fetch()).thenAnswer((_) async {
         if (reads++ == 0) {
-          return const AdministrationSettings(upnpEnabled: true);
+          return _settings(upnp: true);
         }
         throw const NetworkError(detail: 'unreachable');
       });
@@ -232,4 +416,29 @@ class _TimingOutLock extends UspMutationLock {
           {Duration timeout = UspMutationLock.defaultTimeout}) =>
       Future.error(TimeoutException(
           'USP mutation timed out after ${timeout.inSeconds}s', timeout));
+}
+
+/// A real lock that counts how many times it is entered.
+class _CountingLock extends UspMutationLock {
+  int entries = 0;
+
+  @override
+  Future<T> withLock<T>(Future<T> Function() action,
+      {Duration timeout = UspMutationLock.defaultTimeout}) {
+    entries++;
+    return super.withLock(action, timeout: timeout);
+  }
+}
+
+/// A `firewallDataProvider` that counts its builds and reads nothing.
+class _CountingFirewallData extends FirewallDataNotifier {
+  final void Function() _onBuild;
+
+  _CountingFirewallData(this._onBuild);
+
+  @override
+  Future<FirewallData> build() async {
+    _onBuild();
+    return const FirewallData.empty();
+  }
 }

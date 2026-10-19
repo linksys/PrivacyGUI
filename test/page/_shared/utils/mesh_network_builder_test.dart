@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
@@ -7,6 +8,7 @@ import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
+import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_network_builder.dart';
 
 void main() {
@@ -16,6 +18,7 @@ void main() {
 
   ConnectedDevice buildConnectedDevice({
     required String macAddress,
+    String instancePath = 'Device.Hosts.Host.1.',
     String deviceRole = 'client',
     String hostName = '',
     String? friendlyName,
@@ -27,9 +30,19 @@ void main() {
     int? lastDataDownlinkRate,
     int? lastDataUplinkRate,
     String? deviceId,
+    String manufacturer = '',
+    String modelName = '',
+    String operatingSystem = '',
+    String? linksysManufacturer,
+    String? linksysModelName,
+    String? linksysOperatingSystem,
+    String? linksysDeviceType,
+    String? linksysFriendlyName,
+    String? linksysUserDeviceType,
+    String? linksysUserDeviceLocation,
   }) {
     return ConnectedDevice(
-      instancePath: 'Device.Hosts.Host.1.',
+      instancePath: instancePath,
       macAddress: macAddress,
       deviceRole: deviceRole,
       hostName: hostName,
@@ -44,9 +57,16 @@ void main() {
       deviceId: deviceId,
       ipv4Addresses: const [],
       ipv6Addresses: const [],
-      manufacturer: '',
-      modelName: '',
-      operatingSystem: '',
+      manufacturer: manufacturer,
+      modelName: modelName,
+      operatingSystem: operatingSystem,
+      linksysManufacturer: linksysManufacturer,
+      linksysModelName: linksysModelName,
+      linksysOperatingSystem: linksysOperatingSystem,
+      linksysDeviceType: linksysDeviceType,
+      linksysFriendlyName: linksysFriendlyName,
+      linksysUserDeviceType: linksysUserDeviceType,
+      linksysUserDeviceLocation: linksysUserDeviceLocation,
     );
   }
 
@@ -71,6 +91,8 @@ void main() {
     String manufacturer = 'Linksys',
     String serialNumber = 'SN-REAL-12345',
     String softwareVersion = '2.0.1.216125',
+    String? userDeviceLocation,
+    String? friendlyName,
   }) {
     return SystemInfoUIModel(
       manufacturer: manufacturer,
@@ -82,6 +104,8 @@ void main() {
       totalMemory: 0,
       freeMemory: 0,
       cpuUsage: 0,
+      userDeviceLocation: userDeviceLocation,
+      friendlyName: friendlyName,
     );
   }
 
@@ -522,6 +546,78 @@ void main() {
       expect(result.allClients.first.hostName, 'Laptop');
       expect(result.allClients.first.hasMultipleInterfaces, isTrue);
       expect(result.allClients.first.additionalInterfaces.length, 1);
+    });
+
+    // A laptop with Wi-Fi and a cable is two Hosts rows merged into one device.
+    // The primary is the active Wi-Fi row, but the user may have named it while
+    // it was on the cable. The merged device shows the name and icon the user
+    // set on whichever row has them, and an edit writes back to that row, so a
+    // name does not vanish when the primary interface changes (#1691).
+    test('a merged device keeps the user name and icon from any of its rows',
+        () {
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:01',
+            instancePath: 'Device.Hosts.Host.5.',
+            hostName: 'Laptop',
+            interface_: 'Device.WiFi.Radio.1',
+            interfaceType: 'Wi-Fi',
+            linksysFriendlyName: 'Laptop',
+          ),
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:02',
+            instancePath: 'Device.Hosts.Host.6.',
+            hostName: 'Laptop',
+            interface_: 'Device.Ethernet.Interface.1',
+            interfaceType: 'Ethernet',
+            linksysFriendlyName: 'Work laptop',
+            linksysUserDeviceLocation: 'Work laptop',
+            linksysUserDeviceType: '3',
+          ),
+        ]),
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        meshTopology: MeshTopologyInfo.empty,
+        gatewayName: 'Router',
+      );
+
+      final laptop = result.allClients.single;
+      expect(laptop.mac, '11:22:33:44:55:01', reason: 'Wi-Fi stays primary');
+      expect(laptop.userDeviceName, 'Work laptop');
+      expect(laptop.userDeviceType, '3');
+      expect(laptop.friendlyName, 'Work laptop');
+      expect(laptop.hostInstancePath, 'Device.Hosts.Host.6.',
+          reason: 'an edit goes to the row that holds the user values');
+    });
+
+    test('a merged device with no user values keeps the primary row', () {
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:01',
+            instancePath: 'Device.Hosts.Host.5.',
+            hostName: 'Laptop',
+            interface_: 'Device.WiFi.Radio.1',
+            interfaceType: 'Wi-Fi',
+          ),
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:02',
+            instancePath: 'Device.Hosts.Host.6.',
+            hostName: 'Laptop',
+            interface_: 'Device.Ethernet.Interface.1',
+            interfaceType: 'Ethernet',
+          ),
+        ]),
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        meshTopology: MeshTopologyInfo.empty,
+        gatewayName: 'Router',
+      );
+
+      final laptop = result.allClients.single;
+      expect(laptop.userDeviceName, isNull);
+      expect(laptop.hostInstancePath, 'Device.Hosts.Host.5.');
     });
 
     test('patches parentNodeName on clients', () {
@@ -1550,6 +1646,158 @@ void main() {
 
         expect(result.slaves.single.model, 'MX5500');
         expect(result.master.model, 'MR7500');
+      });
+    });
+
+    // FL-WRT 2.0 serves a client's identity from devidentd under the
+    // X_LINKSYS_ prefix (FWDEV#207). A leaf it has not identified reads "",
+    // never absent, so "" is what has to fall back.
+    group('client identity from X_LINKSYS_ leaves (#1693)', () {
+      ClientDevice buildOne(ConnectedDevice host) => MeshNetworkBuilder.build(
+            connectedDevices: ConnectedDevices(items: [host]),
+            wifiClientMap: {},
+            connectionDetailMap: {},
+            meshTopology: MeshTopologyInfo.empty,
+            gatewayName: 'Router',
+          ).allClients.single;
+
+      test('carries the firmware values onto the client', () {
+        final client = buildOne(buildConnectedDevice(
+          macAddress: '11:22:33:44:55:01',
+          hostName: 'iPhone',
+          interface_: 'Device.WiFi.Radio.1',
+          linksysManufacturer: 'Apple',
+          linksysModelName: 'iPhone',
+          linksysOperatingSystem: 'iOS',
+          linksysDeviceType: 'Phone',
+          linksysFriendlyName: "Austin's iPhone",
+          linksysUserDeviceType: 'Tablet',
+        ));
+
+        expect(client.manufacturer, 'Apple');
+        expect(client.modelName, 'iPhone');
+        expect(client.operatingSystem, 'iOS');
+        expect(client.deviceType, 'Phone');
+        expect(client.userDeviceType, 'Tablet');
+        expect(client.friendlyName, "Austin's iPhone");
+        expect(client.displayName, "Austin's iPhone");
+      });
+
+      test('a leaf reading "" leaves the field null, so the name is HostName',
+          () {
+        final client = buildOne(buildConnectedDevice(
+          macAddress: '11:22:33:44:55:01',
+          hostName: 'android-1a2b3c',
+          interface_: 'Device.WiFi.Radio.1',
+          linksysManufacturer: '',
+          linksysModelName: '',
+          linksysOperatingSystem: '',
+          linksysDeviceType: '',
+          linksysFriendlyName: '',
+          linksysUserDeviceType: '',
+        ));
+
+        expect(client.manufacturer, isNull);
+        expect(client.modelName, isNull);
+        expect(client.operatingSystem, isNull);
+        expect(client.deviceType, isNull);
+        expect(client.userDeviceType, isNull);
+        expect(client.friendlyName, isNull);
+        expect(client.displayName, 'android-1a2b3c');
+      });
+
+      test('a host the firmware has not identified classifies as today', () {
+        OuiLookup.initializeForTesting(const {'001422': 'Dell Inc.'});
+        addTearDown(OuiLookup.reset);
+
+        final client = buildOne(buildConnectedDevice(
+          macAddress: '00:14:22:12:34:56',
+          hostName: 'PlayStation5',
+          interface_: 'Device.WiFi.Radio.1',
+          linksysManufacturer: '',
+          linksysDeviceType: '',
+          linksysFriendlyName: '',
+          linksysUserDeviceType: '',
+        ));
+
+        expect(DeviceClassifier.classifyClient(client),
+            DeviceCategory.gameConsole);
+        expect(DeviceClassifier.manufacturerOf(client), 'Dell Inc.');
+      });
+
+      // The detail page edits the name the user gave (#1691), which is not
+      // FriendlyName: that is the firmware's pick of several names.
+      test('carries the name the user gave, apart from FriendlyName', () {
+        final client = buildOne(buildConnectedDevice(
+          macAddress: '11:22:33:44:55:01',
+          interface_: 'Device.WiFi.Radio.1',
+          linksysFriendlyName: 'Living room TV',
+          linksysUserDeviceLocation: 'Living room TV',
+        ));
+        expect(client.userDeviceName, 'Living room TV');
+
+        final unnamed = buildOne(buildConnectedDevice(
+          macAddress: '11:22:33:44:55:01',
+          interface_: 'Device.WiFi.Radio.1',
+          linksysFriendlyName: 'android-1a2b',
+          linksysUserDeviceLocation: '',
+        ));
+        expect(unnamed.userDeviceName, isNull);
+      });
+
+      test('the unprefixed 1.0 leaves are not read', () {
+        final client = buildOne(buildConnectedDevice(
+          macAddress: '11:22:33:44:55:01',
+          hostName: 'host',
+          interface_: 'Device.WiFi.Radio.1',
+          friendlyName: 'Old Name',
+          manufacturer: 'Old Maker',
+          modelName: 'Old Model',
+          operatingSystem: 'Old OS',
+        ));
+
+        expect(client.friendlyName, isNull);
+        expect(client.manufacturer, isNull);
+        expect(client.modelName, isNull);
+        expect(client.operatingSystem, isNull);
+        expect(client.displayName, 'host');
+      });
+    });
+
+    // The router's own name (#1691). The controller has no Hosts row, so its
+    // name is on DeviceInfo, and only X_LINKSYS_UserDeviceLocation is written.
+    // Measured on 2.0.3.26101472: writing the location leaves FriendlyName
+    // "", so the app, not the firmware, puts the location first.
+    group('master name from DeviceInfo (#1691)', () {
+      MasterNode buildMaster(SystemInfoUIModel systemInfo) =>
+          MeshNetworkBuilder.build(
+            connectedDevices: const ConnectedDevices(items: []),
+            wifiClientMap: {},
+            connectionDetailMap: {},
+            meshTopology: MeshTopologyInfo.empty,
+            gatewayName: 'M60',
+            systemInfo: systemInfo,
+          ).master;
+
+      test('the location the user gave is the name', () {
+        final master = buildMaster(buildSystemInfo(
+          userDeviceLocation: 'Office',
+          friendlyName: 'Main router',
+        ));
+        expect(master.userDeviceLocation, 'Office');
+        expect(master.displayName, 'Office');
+      });
+
+      test('with no location, DeviceInfo.FriendlyName is the name', () {
+        final master =
+            buildMaster(buildSystemInfo(friendlyName: 'Main router'));
+        expect(master.userDeviceLocation, isNull);
+        expect(master.displayName, 'Main router');
+      });
+
+      test('with neither, the name is what it is today', () {
+        final master = buildMaster(buildSystemInfo(modelName: 'M60'));
+        expect(master.displayName, 'M60');
       });
     });
   });

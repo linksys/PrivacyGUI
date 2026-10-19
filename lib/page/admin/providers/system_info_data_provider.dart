@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/admin/services/usp_system_info_data_service.dart';
@@ -60,6 +62,28 @@ class SystemInfoDataNotifier extends AsyncNotifier<SystemInfoData> {
       }
     });
     return _fetch();
+  }
+
+  /// Writes the name the user gave the router (#1691) and reads system info
+  /// back. Only the write takes the USP mutation lock (constitution Art. IV
+  /// Rule 3).
+  ///
+  /// A refused write is thrown for the caller to report. A read-back that fails
+  /// after a successful write is not: the save happened, so it is logged and
+  /// the next read corrects it. The master node takes its name from system
+  /// info through `devicesDataProvider`, which the caller refetches after this.
+  Future<void> updateRouterName(String name) async {
+    await ref.read(uspMutationLockProvider).withLock(
+          () =>
+              ref.read(uspSystemInfoDataServiceProvider).updateRouterName(name),
+        );
+    ref.invalidateSelf();
+    try {
+      await future;
+    } catch (e, st) {
+      logger.w('[USP][SystemInfo]: read-back after a router rename failed',
+          error: e, stackTrace: st);
+    }
   }
 
   Future<SystemInfoData> _fetch() async {

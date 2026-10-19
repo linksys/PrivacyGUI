@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/administration/models/administration_feature_st
 import 'package:privacy_gui/page/administration/models/administration_settings.dart';
 import 'package:privacy_gui/page/administration/models/administration_status.dart';
 import 'package:privacy_gui/page/administration/services/usp_administration_service.dart';
+import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
 
 // ---------------------------------------------------------------------------
 // Providers
@@ -24,9 +25,9 @@ final uspAdministrationProvider = AutoDisposeNotifierProvider<
 // Notifier
 // ---------------------------------------------------------------------------
 
-/// L2 working copy for Advanced Settings → Administration (#1660).
+/// L2 working copy for Advanced Settings → Administration (#1660, #1694, #1696).
 ///
-/// Type A form: the UPnP switch is buffered and written by Save; the route
+/// Type A form: the switches are buffered and written by Save; the route
 /// passes this notifier as its `preservableProvider`, which is the dirty guard.
 class UspAdministrationNotifier
     extends AutoDisposeNotifier<AdministrationFeatureState>
@@ -51,7 +52,9 @@ class UspAdministrationNotifier
     try {
       final settings = await _svc.fetch();
       logger.d('[USP][Administration]: Fetched — '
-          'upnpEnabled=${settings.upnpEnabled}');
+          'upnpEnabled=${settings.upnpEnabled}, '
+          'sipAlgEnabled=${settings.sipAlgEnabled}, '
+          'managementWifiEnabled=${settings.managementWifiEnabled}');
       return (settings, const AdministrationStatus());
     } on ServiceError catch (e) {
       logger.e('[USP][Administration]: Fetch failed', error: e);
@@ -73,12 +76,33 @@ class UspAdministrationNotifier
     }
   }
 
+  /// Writes each switch that differs from what was read, and only those.
+  ///
+  /// UPnP, SIP ALG and the management rule are owned by different USP
+  /// services, so they are separate Sets, not one combined Set; and SIP ALG's
+  /// alone takes ~9 s, which a UPnP save should not wait for. They run in order
+  /// under one lock, whose 30 s window fits all three. A failure stops the
+  /// rest, and `save()` re-reads the device so the page shows what landed.
   @override
   Future<void> performSave() async {
-    final enabled = state.settings.current.upnpEnabled;
+    final original = state.settings.original;
+    final current = state.settings.current;
     try {
       await ref.read(uspMutationLockProvider).withLock(() async {
-        await _svc.setUpnpEnabled(enabled);
+        if (current.upnpEnabled != original.upnpEnabled) {
+          await _svc.setUpnpEnabled(current.upnpEnabled);
+        }
+        if (current.sipAlgEnabled != original.sipAlgEnabled) {
+          await _svc.setSipAlgEnabled(current.sipAlgEnabled);
+        }
+        final managementWifi = current.managementWifiEnabled;
+        if (managementWifi != null &&
+            managementWifi != original.managementWifiEnabled) {
+          await _svc.setManagementWifiEnabled(managementWifi);
+          // The rule is one of Device.Firewall.Chain.1's, which the Firewall
+          // card and the Statistics rule counts read through this provider.
+          ref.invalidate(firewallDataProvider);
+        }
       });
     } on TimeoutException catch (e) {
       // The lock's own window, not a USP error, so the service never maps it.
@@ -86,10 +110,14 @@ class UspAdministrationNotifier
       // timeout; left bare it skipped both. Same fold as
       // `firmware_auto_update_data_provider.dart`.
       throw TimeoutError(
-        detail: 'the UPnP write was not answered (${e.message ?? '30s'})',
+        detail: 'the Administration write was not answered '
+            '(${e.message ?? '30s'})',
       );
     }
-    logger.d('[USP][Administration]: UPnP saved — enabled=$enabled');
+    logger.d('[USP][Administration]: Saved — '
+        'upnpEnabled=${current.upnpEnabled}, '
+        'sipAlgEnabled=${current.sipAlgEnabled}, '
+        'managementWifiEnabled=${current.managementWifiEnabled}');
   }
 
   /// After a refused or unanswered Set, show what the device holds rather than
@@ -121,6 +149,23 @@ class UspAdministrationNotifier
     state = state.copyWith(
       settings: state.settings
           .update(state.settings.current.copyWith(upnpEnabled: enabled)),
+    );
+  }
+
+  /// Toggle SIP ALG. Updates [settings.current] only; save() writes it.
+  void setSipAlgEnabled(bool enabled) {
+    state = state.copyWith(
+      settings: state.settings
+          .update(state.settings.current.copyWith(sipAlgEnabled: enabled)),
+    );
+  }
+
+  /// Toggle management over Wi-Fi. Updates [settings.current] only; save()
+  /// writes it. The view asks before a save that turns it off.
+  void setManagementWifiEnabled(bool enabled) {
+    state = state.copyWith(
+      settings: state.settings.update(
+          state.settings.current.copyWith(managementWifiEnabled: enabled)),
     );
   }
 }
