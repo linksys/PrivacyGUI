@@ -282,11 +282,11 @@ class UspInternetSettingsService {
   ///    [_enterBridgeMode] / [_exitBridgeMode]) so every other SET lands on a
   ///    live connection
   ///
-  /// Leaving bridge writes no target-mode parameter at all. The WAN
-  /// `IPv4Address` row does not exist while bridged, so a target AddressingType
-  /// SET faults 9005, and it reappears only after `Enable=true` has run
-  /// `bridge-mode-apply.sh exit` (#762 comment 5987286082): the target mode is
-  /// set once the user has reconnected.
+  /// Leaving bridge writes the target mode like any other switch, before the
+  /// `Enable=true` that leaves. The WAN `IPv4Address` row stays while bridged
+  /// (FW 2.0.3), and `bridge-mode-apply.sh exit` never touches `network.wan`,
+  /// so the WAN comes back in whatever mode it holds when Enable flips; sent
+  /// alone, it came back in the mode it had before entering bridge.
   Future<void> saveAll(
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited, {
@@ -304,31 +304,29 @@ class UspInternetSettingsService {
       final leavingBridge =
           typeChanged && original.connectionType == UspWanConnectionType.bridge;
 
-      if (!leavingBridge) {
-        // Step 1: PPP lifecycle
-        final pppPath = await _handlePppLifecycle(
-          edited,
-          currentInstancePath: pppInstancePath,
-        );
+      // Step 1: PPP lifecycle
+      final pppPath = await _handlePppLifecycle(
+        edited,
+        currentInstancePath: pppInstancePath,
+      );
 
-        // Step 2: WAN mode switch or field edit (per-mode dispatch). Setting
-        // AddressingType=IPCP first lets the firmware sync proto=pptp/l2tp so
-        // the tunnel instance becomes valid before its RemoteEndpoints is
-        // written.
-        await _saveWanSettings(original, edited);
+      // Step 2: WAN mode switch or field edit (per-mode dispatch). Setting
+      // AddressingType=IPCP first lets the firmware sync proto=pptp/l2tp so
+      // the tunnel instance becomes valid before its RemoteEndpoints is
+      // written.
+      await _saveWanSettings(original, edited);
 
-        // Step 3: PPP LowerLayers + credentials
-        if (pppPath != null && edited.connectionType.isPppBased) {
-          await _savePppLink(original, edited, pppPath);
-        }
+      // Step 3: PPP LowerLayers + credentials
+      if (pppPath != null && edited.connectionType.isPppBased) {
+        await _savePppLink(original, edited, pppPath);
+      }
 
-        // Step 4: Set tunnel RemoteEndpoints (server address)
-        await _saveTunnelRemoteEndpoints(original, edited);
+      // Step 4: Set tunnel RemoteEndpoints (server address)
+      await _saveTunnelRemoteEndpoints(original, edited);
 
-        // Step 5: PPP instance fields
-        if (pppPath != null && edited.connectionType.isPppBased) {
-          await _savePppSettings(original, edited, pppPath);
-        }
+      // Step 5: PPP instance fields
+      if (pppPath != null && edited.connectionType.isPppBased) {
+        await _savePppSettings(original, edited, pppPath);
       }
 
       // Step 6: VLAN settings (always use SET on existing instance)
@@ -541,8 +539,8 @@ class UspInternetSettingsService {
 
   /// Leaves bridge mode: `Device.IP.Interface.{wan}.Enable = true`.
   ///
-  /// Sent alone: `bridge-mode-apply.sh exit` ends with `ifup wan`, and only
-  /// then does the WAN `IPv4Address` row exist again to take a target mode.
+  /// Sent after the target mode's own SETs: `bridge-mode-apply.sh exit` ends
+  /// with `ifup wan`, which brings the WAN up in the mode `network.wan` holds.
   Future<void> _exitBridgeMode() => _setBridgeBoundary(enable: true);
 
   /// Sends the terminal bridge-boundary SET, treating the disconnect it causes

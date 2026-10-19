@@ -985,11 +985,38 @@ void main() {
           reason: 'bridge SET must be sent after the IPv6 SET');
     });
 
-    test('leaving bridge sends Enable=true alone, writing no target mode',
+    /// Every write saveAll sends, in order: a `set` map, or the flat
+    /// `{path: value}` of a `setOrdered`'s groups.
+    List<Map<String, dynamic>> recordWrites() {
+      final writes = <Map<String, dynamic>>[];
+      Map<String, dynamic> ok() => {
+            'success': true,
+            'result': {'data': <String, dynamic>{}}
+          };
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((invocation) async {
+        writes.add(invocation.positionalArguments[0] as Map<String, dynamic>);
+        return ok();
+      });
+      when(() => mockUsp.setOrdered(any(),
+              allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((invocation) async {
+        final groups = invocation.positionalArguments[0]
+            as List<List<Map<String, String>>>;
+        writes.add({
+          for (final p in groups.expand((g) => g)) p['path']!: p['value'],
+        });
+        return ok();
+      });
+      return writes;
+    }
+
+    test('leaving bridge into Static writes the target mode, then Enable=true',
         () async {
-      // The WAN IPv4Address row does not exist while bridged, so a target
-      // AddressingType SET faults 9005; it reappears only once Enable=true has
-      // run bridge-mode-apply.sh exit (#762 comment 5987286082).
+      // The WAN IPv4Address row stays while bridged (FW 2.0.3) and the exit
+      // script never touches network.wan, so the mode written here is the one
+      // the WAN comes back in.
+      final writes = recordWrites();
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.bridge,
       );
@@ -998,23 +1025,25 @@ void main() {
         staticIpAddress: '10.0.0.1',
         subnetMask: '255.255.255.0',
         defaultGateway: '10.0.0.254',
+        dnsServer1: '8.8.8.8',
       );
 
       await service.saveAll(original, edited);
 
-      final captured = verify(
-        () =>
-            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
-      ).captured;
-      expect(captured.whereType<Map<String, dynamic>>(), [
-        {'Device.IP.Interface.2.Enable': true},
-      ]);
-      verifyNever(() =>
-          mockUsp.setOrdered(any(), allowPartial: any(named: 'allowPartial')));
+      expect(writes.first, {
+        'Device.IP.Interface.2.IPv4Address.1.AddressingType': 'Static',
+        'Device.IP.Interface.2.IPv4Address.1.IPAddress': '10.0.0.1',
+        'Device.IP.Interface.2.IPv4Address.1.SubnetMask': '255.255.255.0',
+        'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway':
+            '10.0.0.254',
+        'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers': '8.8.8.8',
+      });
+      expect(writes.last, {'Device.IP.Interface.2.Enable': true});
     });
 
-    test('leaving bridge into PPPoE neither adds nor writes a PPP instance',
+    test('leaving bridge into PPPoE writes the PPP link before Enable=true',
         () async {
+      final writes = recordWrites();
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.bridge,
       );
@@ -1024,16 +1053,91 @@ void main() {
         pppPassword: 'pass',
       );
 
-      await service.saveAll(original, edited);
+      await service.saveAll(
+        original,
+        edited,
+        pppInstancePath: 'Device.PPP.Interface.1.',
+      );
 
-      verifyNever(() => mockUsp.add(any()));
-      final captured = verify(
-        () =>
-            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
-      ).captured;
-      for (final params in captured.whereType<Map<String, dynamic>>()) {
-        expect(params.keys.any((k) => k.startsWith('Device.PPP.')), isFalse);
-      }
+      expect(writes, [
+        {'Device.IP.Interface.2.IPv4Address.1.AddressingType': 'IPCP'},
+        {
+          'Device.PPP.Interface.1.LowerLayers': '',
+          'Device.PPP.Interface.1.Username': 'user',
+          'Device.PPP.Interface.1.Password': 'pass',
+        },
+        {'Device.IP.Interface.2.Enable': true},
+      ]);
+    });
+
+    for (final (type, lowerLayers, tunnel) in [
+      (
+        UspWanConnectionType.pptp,
+        'Device.GRE.Tunnel.1.Interface.1',
+        'Device.GRE.Tunnel.1.RemoteEndpoints',
+      ),
+      (
+        UspWanConnectionType.l2tp,
+        'Device.L2TPv2.Tunnel.1.Interface.1',
+        'Device.L2TPv2.Tunnel.1.RemoteEndpoints',
+      ),
+    ]) {
+      test(
+          'leaving bridge into ${type.name} writes the tunnel before Enable=true',
+          () async {
+        final writes = recordWrites();
+        final original = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.bridge,
+        );
+        final edited = original.copyWith(
+          connectionType: type,
+          pppUsername: 'user',
+          pppPassword: 'pass',
+          serverAddress: 'vpn.example.com',
+        );
+
+        await service.saveAll(
+          original,
+          edited,
+          pppInstancePath: 'Device.PPP.Interface.1.',
+        );
+
+        final tunnelAt = writes.indexWhere((m) => m.containsKey(tunnel));
+        final linkAt = writes.indexWhere(
+            (m) => m['Device.PPP.Interface.1.LowerLayers'] == lowerLayers);
+        expect(linkAt, greaterThanOrEqualTo(0));
+        expect(writes[tunnelAt][tunnel], 'vpn.example.com');
+        expect(writes.last, {'Device.IP.Interface.2.Enable': true});
+        expect(writes.length - 1, greaterThan(tunnelAt),
+            reason: 'Enable=true must follow the tunnel write');
+      });
+    }
+
+    test('leaving bridge sends Enable=true as the very last write', () async {
+      // Whatever the target mode and whatever else changed, the boundary SET
+      // drops the connection, so nothing may be sent after it.
+      final writes = recordWrites();
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.bridge,
+        ipv6Enabled: true,
+        vlanEnabled: false,
+      );
+      final edited = original.copyWith(
+        connectionType: UspWanConnectionType.dhcp,
+        ipv6Enabled: false,
+        vlanEnabled: true,
+        vlanId: 10,
+      );
+
+      await service.saveAll(
+        original,
+        edited,
+        vlanInstancePath: 'Device.Ethernet.VLANTermination.1.',
+      );
+
+      expect(writes.where((m) => m.containsKey('Device.IP.Interface.2.Enable')),
+          hasLength(1));
+      expect(writes.last, {'Device.IP.Interface.2.Enable': true});
     });
 
     test('leaving bridge sends Enable=true after the IPv6 SET', () async {
@@ -1533,6 +1637,13 @@ void main() {
     test('leaving bridge does not wait', () {
       fakeAsync((async) {
         when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+            .thenAnswer((_) async => {
+                  'success': true,
+                  'result': {'data': <String, dynamic>{}}
+                });
+        // Leaving into DHCP writes the WAN row before Enable=true.
+        when(() => mockUsp
+                .setOrdered(any(), allowPartial: any(named: 'allowPartial')))
             .thenAnswer((_) async => {
                   'success': true,
                   'result': {'data': <String, dynamic>{}}
