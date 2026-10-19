@@ -10,10 +10,17 @@ class Ipv6PortServiceStatus extends Equatable {
   /// `localizeServiceError`; null means no error.
   final ServiceError? error;
 
+  /// Descriptions of the firewall rules the page does not list. FW refuses a
+  /// rule whose description one of them already has (ErrorDescriptionInUse,
+  /// FWDEV#204), so the rule dialog checks against them. Read with the rules;
+  /// not editable.
+  final Set<String> hiddenRuleDescriptions;
+
   const Ipv6PortServiceStatus({
     this.isLoading = false,
     this.isSaving = false,
     this.error,
+    this.hiddenRuleDescriptions = const {},
   });
 
   Ipv6PortServiceStatus copyWith({
@@ -21,14 +28,18 @@ class Ipv6PortServiceStatus extends Equatable {
     bool? isSaving,
     ServiceError? error,
     bool clearError = false,
+    Set<String>? hiddenRuleDescriptions,
   }) {
     return Ipv6PortServiceStatus(
       isLoading: isLoading ?? this.isLoading,
       isSaving: isSaving ?? this.isSaving,
       error: clearError ? null : (error ?? this.error),
+      hiddenRuleDescriptions:
+          hiddenRuleDescriptions ?? this.hiddenRuleDescriptions,
     );
   }
 
   @override
-  List<Object?> get props => [isLoading, isSaving, error];
+  List<Object?> get props =>
+      [isLoading, isSaving, error, hiddenRuleDescriptions];
 }

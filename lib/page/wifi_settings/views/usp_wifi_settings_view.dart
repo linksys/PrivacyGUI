@@ -214,10 +214,7 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
           .read(uspWifiSettingsProvider.notifier)
           .fetch(forceRemote: true)
           .then((_) {}),
-      1 => ref
-          .read(uspWifiAdvancedProvider.notifier)
-          .fetch(forceRemote: true)
-          .then((_) {}),
+      1 => ref.read(uspWifiAdvancedProvider.notifier).refresh().then((_) {}),
       UspWifiSettingsView.macFilterTab => ref
           .read(uspMacFilterProvider.notifier)
           .fetch(forceRemote: true)
@@ -239,11 +236,12 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
     if (activeTab != 0 && activeTab != 1) return;
 
     // Read before the save: once it lands the tab is clean and would say no.
-    // Every WiFi-tab write restarts the radios; on Advanced only the DFS one
-    // does, and a steering-only save is applied without dropping the browser,
-    // so there is no reconnect to wait for and no recovery to enter (#1661).
+    // Every WiFi-tab write restarts the radios; on Advanced an MLO or DFS
+    // change does (#1692), and a steering-only save is applied without dropping
+    // the browser, so there is no reconnect to wait for and no recovery to
+    // enter (#1661).
     final restartsRadios =
-        activeTab == 0 || ref.read(uspWifiAdvancedProvider).changesDfs;
+        activeTab == 0 || ref.read(uspWifiAdvancedProvider).restartsWifi;
     if (!restartsRadios) {
       try {
         await doSomethingWithSpinner(
