@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ui_kit_library/ui_kit.dart' show AppIconButton;
 
 /// Shared interaction helpers for golden `Interaction.steps`.
 ///
@@ -76,3 +77,47 @@ Future<void> switchToTab(
   // queries the tree for the target tab's content.
   await settleWithTimeout(tester);
 }
+
+// --- Rule dialogs, moved from the port forwarding golden for IPv6 (#1687) ---
+
+/// Taps the Add button carrying [identifier] and waits for its dialog.
+Future<void> tapAdd(WidgetTester tester, String identifier) async {
+  await tester.tap(find.byWidgetPredicate(
+      (w) => w is AppIconButton && w.identifier == identifier));
+  await settleWithTimeout(tester);
+  // One more frame so the dialog's fields reach the semantics tree.
+  await tester.pump();
+}
+
+/// Types [text] into the field carrying [identifier], focusing it first so the
+/// next field's focus-loss validates it, as a user moving through the form does.
+///
+/// A field's identifier lives only in the semantics tree, so call this inside
+/// [withSemantics].
+Future<void> typeInto(
+    WidgetTester tester, String identifier, String text) async {
+  final field = find.descendant(
+    of: find.bySemanticsIdentifier(identifier),
+    matching: find.byType(EditableText),
+  );
+  await tester.ensureVisible(field);
+  await tester.tap(field);
+  await tester.pump();
+  tester.testTextInput.enterText(text);
+  await tester.pump();
+}
+
+/// Runs [steps] with a semantics tree, which the runner does not build, so the
+/// fields can be found by identifier. The handle is released before the case
+/// ends, as `flutter_test` requires.
+Future<void> Function(WidgetTester) withSemantics(
+        Future<void> Function(WidgetTester) steps) =>
+    (tester) async {
+      final handle = tester.ensureSemantics();
+      try {
+        await tester.pump();
+        await steps(tester);
+      } finally {
+        handle.dispose();
+      }
+    };

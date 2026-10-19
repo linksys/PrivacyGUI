@@ -235,6 +235,9 @@ void main() {
           'instant_safety',
           'internet_settings',
           'ipv6_port_service',
+          // #1687: the same page with its list at FWDEV#204's 15-rule limit,
+          // beside its sibling for the reason #1611's three are.
+          'ipv6_port_service_full',
           'local_network',
           'static_routing',
           'statistics',
@@ -430,6 +433,12 @@ void main() {
         // an `initialTab` with another case; `sharesTabWith` says so, and the
         // per-tab test below is what holds that claim to the tab both open. 66
         // cases, still 45 swept pages of 47 page-view files.
+        //
+        // **#1687's one, a fixture state of a page with no tabs.** IPv6 port
+        // services with its list at FWDEV#204's 15-rule limit, where the same
+        // `RuleLimitNote` row appears under the Rules header. No `sharesTabWith`,
+        // as `firmware_failed` has none. 67 cases, still 45 swept pages of 47
+        // page-view files.
         reason: 'a wave adds pages to this list on purpose, so a mismatch is '
             'either a wave that has not updated its own checkpoint or a page '
             'that left the gate without one. Read the comment above before '
