@@ -320,6 +320,17 @@ final class SlaveNode extends NodeEntity {
   /// verdict with no analyzer signal. Making it `required` is #1466.
   final bool livenessKnown;
 
+  /// This agent's `Device.Hosts.Host.{i}.` row — the one whose `PhysAddress`
+  /// is its DataElements ID — where a rename writes
+  /// `X_LINKSYS_UserDeviceLocation` (#1688 item 4). Null when no row matched:
+  /// there is nothing to write to, so the agent cannot be renamed.
+  final String? hostInstancePath;
+
+  /// The name the user gave this agent: its Hosts row's
+  /// `X_LINKSYS_UserDeviceLocation`, which `X_LINKSYS_FriendlyName` reads back
+  /// (#1688 item 4). Null when unset, which is what the rename dialog clears to.
+  final String? userDeviceName;
+
   SlaveNode({
     required this.deviceId,
     this.dataElementsId,
@@ -335,6 +346,8 @@ final class SlaveNode extends NodeEntity {
     this.connectedClients = const [],
     required this.backhaul,
     this.livenessKnown = true,
+    this.hostInstancePath,
+    this.userDeviceName,
   });
 
   @override
@@ -386,6 +399,8 @@ final class SlaveNode extends NodeEntity {
     List<ClientDevice>? connectedClients,
     BackhaulInfo? backhaul,
     bool? livenessKnown,
+    String? hostInstancePath,
+    String? userDeviceName,
   }) {
     return SlaveNode(
       deviceId: deviceId ?? this.deviceId,
@@ -402,6 +417,8 @@ final class SlaveNode extends NodeEntity {
       connectedClients: connectedClients ?? this.connectedClients,
       backhaul: backhaul ?? this.backhaul,
       livenessKnown: livenessKnown ?? this.livenessKnown,
+      hostInstancePath: hostInstancePath ?? this.hostInstancePath,
+      userDeviceName: userDeviceName ?? this.userDeviceName,
     );
   }
 
@@ -421,6 +438,8 @@ final class SlaveNode extends NodeEntity {
         connectedClients,
         backhaul,
         livenessKnown,
+        hostInstancePath,
+        userDeviceName,
       ];
 
   @override
@@ -442,6 +461,8 @@ final class SlaveNode extends NodeEntity {
         'connectedClients': connectedClients,
         'backhaul': backhaul,
         'livenessKnown': livenessKnown,
+        'hostInstancePath': hostInstancePath,
+        'userDeviceName': userDeviceName,
       };
 }
 

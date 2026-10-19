@@ -856,6 +856,7 @@
   "deviceCategorySmartHome": "スマートホーム",
   "deviceCategoryWearable": "ウェアラブル",
   "renameRouter": "ルーター名を変更",
+  "renameNode": "ノード名を変更",
   "noSsid": "(SSID なし)",
   "noTargetBankAvailable": "利用可能なターゲットバンクがありません",
   "noTimezonesFound": "タイムゾーンが見つかりません",

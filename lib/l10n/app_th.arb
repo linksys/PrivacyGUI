@@ -856,6 +856,7 @@
   "deviceCategorySmartHome": "บ้านอัจฉริยะ",
   "deviceCategoryWearable": "อุปกรณ์สวมใส่",
   "renameRouter": "เปลี่ยนชื่อเราเตอร์",
+  "renameNode": "เปลี่ยนชื่อโหนด",
   "noSsid": "(ไม่มี SSID)",
   "noTargetBankAvailable": "ไม่มีแบงก์เป้าหมายที่พร้อมใช้งาน",
   "noTimezonesFound": "ไม่พบเขตเวลา",

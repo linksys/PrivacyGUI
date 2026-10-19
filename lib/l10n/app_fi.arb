@@ -856,6 +856,7 @@
   "deviceCategorySmartHome": "Älykoti",
   "deviceCategoryWearable": "Puettava laite",
   "renameRouter": "Nimeä reititin uudelleen",
+  "renameNode": "Nimeä solmu uudelleen",
   "noSsid": "(Ei SSID:tä)",
   "noTargetBankAvailable": "Kohdepankkia ei ole saatavilla",
   "noTimezonesFound": "Aikavyöhykkeitä ei löytynyt",

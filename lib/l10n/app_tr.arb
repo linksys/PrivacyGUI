@@ -856,6 +856,7 @@
   "deviceCategorySmartHome": "Akıllı ev",
   "deviceCategoryWearable": "Giyilebilir cihaz",
   "renameRouter": "Yönlendiriciyi yeniden adlandır",
+  "renameNode": "Düğümü yeniden adlandır",
   "noSsid": "(SSID Yok)",
   "noTargetBankAvailable": "Kullanılabilir hedef banka yok",
   "noTimezonesFound": "Saat dilimi bulunamadı",

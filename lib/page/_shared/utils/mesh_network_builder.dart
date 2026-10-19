@@ -600,6 +600,10 @@ class MeshNetworkBuilder {
       connectedClients: connectedClients,
       backhaul: slaveMeshInfo.backhaul,
       livenessKnown: livenessKnown,
+      // The row a rename writes to, and the name it wrote (#1688 item 4). The
+      // same leaf a client's name is, since an agent is a Hosts row too.
+      hostInstancePath: slaveDevice?.instancePath,
+      userDeviceName: nonEmpty(slaveDevice?.linksysUserDeviceLocation),
     );
   }
 }

@@ -304,6 +304,56 @@ void main() {
       expect(slave.connectedClients.single.parentNodeName, 'Upstairs');
     });
 
+    // #1688 item 4. A rename writes the agent's own Hosts row, so the slave
+    // has to carry that row's path and the name already on it.
+    test(
+        'carries the agent Hosts row path and the user name onto the slave '
+        '(#1688 item 4)', () {
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:02',
+            instancePath: 'Device.Hosts.Host.3.',
+            hostName: 'mx5300-host',
+            linksysUserDeviceLocation: 'Upstairs',
+          ),
+        ]),
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        meshTopology: MeshTopologyInfo(
+          nodes: [
+            buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
+            buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:02'),
+          ],
+          clientToNodeMap: const {},
+        ),
+        gatewayName: 'Router',
+      );
+
+      final slave = result.slaves.single;
+      expect(slave.hostInstancePath, 'Device.Hosts.Host.3.');
+      expect(slave.userDeviceName, 'Upstairs');
+    });
+
+    test('an agent with no Hosts row has no rename path (#1688 item 4)', () {
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: const ConnectedDevices(items: []),
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        meshTopology: MeshTopologyInfo(
+          nodes: [
+            buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
+            buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:02'),
+          ],
+          clientToNodeMap: const {},
+        ),
+        gatewayName: 'Router',
+      );
+
+      expect(result.slaves.single.hostInstancePath, isNull);
+      expect(result.slaves.single.userDeviceName, isNull);
+    });
+
     test('nothing is a node when DataElements reported no node', () {
       // On 2.0 an empty topology carries no node information at all, and no
       // Hosts row can say otherwise: every row is a client.

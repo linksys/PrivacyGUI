@@ -5,11 +5,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/topology/views/usp_node_detail_view.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
 import '../../mocks/provider_overrides/mock_common.dart';
 import '../../mocks/provider_overrides/mock_topology.dart';
+import '../../mocks/test_data/devices_test_data.dart';
 import '../../mocks/test_data/scenes/topology_scene_data.dart';
 
 /// Verifies the E2E identifier hooks added to uspNodeDetail for
@@ -51,7 +57,7 @@ void main() {
     );
   });
 
-  Widget wrap() {
+  Widget wrap([UspNodeDetailState? state, List<Override> extra = const []]) {
     final themeConfig = ThemeJsonConfig.defaultConfig();
     final router = GoRouter(
       initialLocation: '/',
@@ -67,7 +73,8 @@ void main() {
     return ProviderScope(
       overrides: [
         ...commonOverrides(),
-        ...nodeDetailOverrides(masterNodeWithDevices),
+        ...nodeDetailOverrides(state ?? masterNodeWithDevices),
+        ...extra,
       ],
       child: MaterialApp.router(
         locale: const Locale('en'),
@@ -161,4 +168,121 @@ void main() {
       handle.dispose();
     });
   });
+
+  // #1688 item 4. The pen is on the node card's name for the router and for
+  // an agent that has a Hosts row to write to. An agent with no row gets no
+  // pen, as a client with no row gets none: there is nowhere to write a name.
+  group('uspNodeDetail rename pen (#1688 item 4)', () {
+    const penHook = 'node-detail-edit-name';
+
+    Future<void> pump(WidgetTester tester, UspNodeDetailState state) async {
+      tester.view.physicalSize = const Size(1280, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(wrap(state));
+      // The node card's image keeps loading, so pumpAndSettle never settles.
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    String? penLabel(WidgetTester tester) => tester
+        .widget<AppIconButton>(find.ancestor(
+            of: find.bySemanticsIdentifier(penHook),
+            matching: find.byType(AppIconButton)))
+        .semanticLabel;
+
+    testWidgets('an agent with a Hosts row has a pen labelled Rename node',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(
+        tester,
+        UspNodeDetailState(
+          node: DevicesTestData.createWifiSlave(
+              hostInstancePath: 'Device.Hosts.Host.3.'),
+        ),
+      );
+
+      expect(find.bySemanticsIdentifier(penHook), findsOneWidget);
+      expect(penLabel(tester), 'Rename node');
+      handle.dispose();
+    });
+
+    testWidgets('an agent with no Hosts row has no pen', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(
+        tester,
+        UspNodeDetailState(node: DevicesTestData.createWifiSlave()),
+      );
+
+      expect(find.bySemanticsIdentifier(penHook), findsNothing);
+      handle.dispose();
+    });
+
+    // The pen's save writes the agent's own Hosts row, through the same
+    // updateIdentity a client's rename uses, with no icon (#1688 item 4).
+    testWidgets('saving an agent name writes its Hosts row, with no icon',
+        (tester) async {
+      final notifier = _RecordingDevicesDataNotifier();
+      tester.view.physicalSize = const Size(1280, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(wrap(
+        UspNodeDetailState(
+          node: DevicesTestData.createWifiSlave(
+              hostInstancePath: 'Device.Hosts.Host.3.'),
+        ),
+        [devicesDataProvider.overrideWith(() => notifier)],
+      ));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.bySemanticsIdentifier('node-detail-edit-name'));
+      await tester.pump(const Duration(milliseconds: 300));
+      // The dialog has one text field, as its own test finds it.
+      await tester.enterText(find.byType(TextField), 'Upstairs');
+      // As the dialog's own test taps it: by its localized label.
+      final save = lookupAppLocalizations(const Locale('en')).save;
+      await tester.tap(find.widgetWithText(AppButton, save));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(notifier.calls, [
+        (
+          hostInstancePath: 'Device.Hosts.Host.3.',
+          name: 'Upstairs',
+          type: null
+        ),
+      ]);
+    }, semanticsEnabled: true);
+
+    testWidgets('the router keeps its Rename router pen', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(tester, masterNodeWithDevices);
+
+      expect(find.bySemanticsIdentifier(penHook), findsOneWidget);
+      expect(penLabel(tester), 'Rename router');
+      handle.dispose();
+    });
+  });
+}
+
+/// Records the renames a test triggers, without writing anything.
+class _RecordingDevicesDataNotifier extends DevicesDataNotifier {
+  final calls = <({String hostInstancePath, String name, String? type})>[];
+
+  @override
+  Future<DevicesData> build() async => DevicesData(
+        meshNetwork: MeshNetwork(
+          master: MasterNode(deviceId: 'GATEWAY', model: 'Test Router'),
+        ),
+      );
+
+  @override
+  Future<void> updateIdentity({
+    required String hostInstancePath,
+    required String name,
+    String? userTypeCode,
+  }) async {
+    calls.add(
+        (hostInstancePath: hostInstancePath, name: name, type: userTypeCode));
+  }
 }

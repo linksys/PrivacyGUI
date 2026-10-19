@@ -856,6 +856,7 @@
   "deviceCategorySmartHome": "منزل ذكي",
   "deviceCategoryWearable": "جهاز قابل للارتداء",
   "renameRouter": "إعادة تسمية الموجّه",
+  "renameNode": "إعادة تسمية العقدة",
   "noSsid": "(لا يوجد SSID)",
   "noTargetBankAvailable": "لا يوجد بنك مستهدف متاح",
   "noTimezonesFound": "لم يتم العثور على مناطق زمنية",
