@@ -380,6 +380,21 @@ void main() {
       container.dispose();
     });
 
+    test('"no internet" followed by failed reads ends on AdminReadFailure', () {
+      // The router answered, then stopped answering. The last attempt is what
+      // the user is left with, so an earlier "no internet" does not stand.
+      var calls = 0;
+      when(() => mockPnpService.checkInternetConnected()).thenAnswer((_) async {
+        calls++;
+        if (calls <= 20) return false;
+        throw const InvalidInputError(code: 9998, detail: 'missing');
+      });
+      final container = createContainer();
+
+      expect(runModemRestart(container), isA<AdminReadFailure>());
+      container.dispose();
+    });
+
     test('failed reads followed by "no internet" end on NoInternet', () {
       // The router is unreadable while it reboots, then answers.
       var calls = 0;

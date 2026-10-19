@@ -69,7 +69,7 @@ class UspWanDataService {
         );
       }
       final results = await Future.wait([
-        _fetchWanStatusTolerantOfNoAddress(),
+        fetchWanStatusTolerantOfNoAddress(_usp),
         _fetchGatewayAndIpv6Addresses(),
       ]);
 
@@ -108,9 +108,6 @@ class UspWanDataService {
       throw mapUspErrorToServiceError(e);
     }
   }
-
-  Future<WanStatus?> _fetchWanStatusTolerantOfNoAddress() =>
-      fetchWanStatusTolerantOfNoAddress(_usp);
 
   // ---------------------------------------------------------------------------
   // Helpers

@@ -194,6 +194,16 @@ void main() {
               'no-internet page is for, not a router that cannot be read');
     });
 
+    test('still throws when every GET comes back empty', () async {
+      // #1098's original log: the router answered every GET with no data. The
+      // address count is then unreadable too, so this is not a confirmed
+      // no-address WAN and must stay a read failure (#1132).
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {});
+
+      await expectLater(
+          service.checkInternetConnected(), throwsA(isA<ServiceError>()));
+    });
+
     test('still throws when the router says it HAS an address', () async {
       // Same missing fields, but the router contradicts them, so this is a
       // broken read and must stay a read failure.
