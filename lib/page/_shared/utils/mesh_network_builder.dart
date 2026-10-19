@@ -298,9 +298,22 @@ class MeshNetworkBuilder {
       // Non-mesh: all active devices are on the gateway
       if (device.isActive) parentNodeName = gatewayName;
     } else {
-      parentNodeId = meshTopology.clientToNodeMap[mac];
+      // A Wi-Fi station entry first, then the wired neighbor table (#1688 item
+      // 2). The station entry wins for a MAC in both: a Wi-Fi STA is a
+      // bridge-FDB entry too (MeshTopologyBuilder.wiredClientAttribution).
+      parentNodeId = meshTopology.clientToNodeMap[mac] ??
+          meshTopology.wiredClientToNodeMap[mac];
       if (parentNodeId == null) {
-        isUnattributed = topologyHasMesh && isWifi && device.isActive;
+        // An online wired client that two or more nodes list is evidence of a
+        // node the app cannot pick, so it is unattributed (FWDEV#208 rule 2).
+        // A wired client that no node lists is still no evidence, and stays on
+        // the master as above. Liveness comes from Hosts, not from the
+        // listing: the forwarding table keeps an unplugged client ~300 s.
+        final ambiguousWired = !isWifi &&
+            device.isActive &&
+            meshTopology.ambiguousWiredClients.contains(mac);
+        isUnattributed =
+            (topologyHasMesh && isWifi && device.isActive) || ambiguousWired;
       } else {
         // Try display name map first (friendlyName or hostName from Hosts)
         parentNodeName = nodeDisplayNameMap[parentNodeId];

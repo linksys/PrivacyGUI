@@ -13,6 +13,7 @@ import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_topology_builder.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_network_builder.dart';
+import 'package:privacy_gui/generated/data_elements_interfaces.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
 
 // ---------------------------------------------------------------------------
@@ -137,13 +138,18 @@ class UspDevicesDataService {
     Map<String, String> bssidToBandMap = const {},
   }) async {
     try {
-      final network = await DataElementsNetwork.fetch(_usp);
+      final results = await Future.wait([
+        DataElementsNetwork.fetch(_usp),
+        _fetchInterfaces(),
+      ]);
+      final network = results[0] as DataElementsNetwork;
+      final interfaces = results[1] as DataElementsInterfaces?;
       if (network.items.isEmpty) {
         logger.d(
             '[USP][Dashboard]: DataElements empty — not a mesh or unsupported');
         return MeshTopologyInfo.empty;
       }
-      return _buildTopologyInfo(network, bssidToBandMap);
+      return _buildTopologyInfo(network, bssidToBandMap, interfaces);
     } catch (e) {
       // `w`, not `d`. An empty subtree (above) is an expected single-router
       // result; a *fault* means the request did not answer the question, and the
@@ -205,17 +211,39 @@ class UspDevicesDataService {
     }
   }
 
+  /// Reads `Interface.{j}.Neighbor.{k}`, the source of wired-client
+  /// attribution (#1688 item 2).
+  ///
+  /// A separate definition and a separate read on purpose: a controller
+  /// without this object must lose only wired attribution, never the topology
+  /// (`data_elements_interfaces.yaml`). So a fault returns null, which
+  /// [MeshTopologyBuilder.build] reads as "wired clients stay on the master",
+  /// and is logged rather than rethrown.
+  Future<DataElementsInterfaces?> _fetchInterfaces() async {
+    try {
+      return await DataElementsInterfaces.fetch(_usp);
+    } catch (e) {
+      logger.w('[USP][Dashboard]: DataElements interfaces unavailable, wired '
+          'clients stay on the master: $e');
+      return null;
+    }
+  }
+
   MeshTopologyInfo _buildTopologyInfo(
     DataElementsNetwork network,
     Map<String, String> bssidToBandMap,
+    DataElementsInterfaces? interfaces,
   ) {
     final result = MeshTopologyBuilder.build(
       network,
       bssidToBandMap: bssidToBandMap,
+      interfaces: interfaces,
     );
     logger.t('[USP][Dashboard]: Mesh nodes: ${result.nodes.length}, '
         'client→node mappings: ${result.clientToNodeMap.length}, '
-        'band/SSID mappings: ${result.clientBandSsidMap.length}');
+        'band/SSID mappings: ${result.clientBandSsidMap.length}, '
+        'wired client→node: ${result.wiredClientToNodeMap.length}, '
+        'ambiguous wired: ${result.ambiguousWiredClients.length}');
     return result;
   }
 

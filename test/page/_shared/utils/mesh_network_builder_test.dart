@@ -4,6 +4,7 @@ import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
@@ -1237,6 +1238,109 @@ void main() {
           result.master.connectedClients.every((c) => !c.isUnattributed),
           isTrue,
         );
+      });
+    });
+
+    // #1688 item 2 — a wired client goes under the node whose neighbor table
+    // lists it. The three cases, and what changed for each:
+    //
+    //   listed by exactly one node   → under that node (was: on the master)
+    //   listed by two or more nodes  → unattributed   (was: on the master)
+    //   listed by no node            → on the master  (unchanged)
+    //
+    // MeshTopologyBuilder.wiredClientAttribution decides which case a MAC is;
+    // these tests pin what the builder does with each.
+    group('wired clients under their node (#1688 item 2)', () {
+      MeshTopologyInfo topology({
+        Map<String, String> wired = const {},
+        Set<String> ambiguous = const {},
+        Map<String, String> wifi = const {},
+      }) =>
+          MeshTopologyInfo(
+            nodes: [
+              buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
+              buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:02'),
+            ],
+            clientToNodeMap: wifi,
+            wiredClientToNodeMap: wired,
+            ambiguousWiredClients: ambiguous,
+          );
+
+      ConnectedDevice desktop({bool isActive = true}) => buildConnectedDevice(
+            macAddress: '00:E0:4C:68:08:2D',
+            hostName: 'Desktop',
+            interface_: 'Device.Ethernet.Interface.1',
+            interfaceType: 'Ethernet',
+            isActive: isActive,
+          );
+
+      MeshNetwork buildWith(MeshTopologyInfo meshTopology, ConnectedDevice d) =>
+          MeshNetworkBuilder.build(
+            connectedDevices: ConnectedDevices(items: [d]),
+            wifiClientMap: {},
+            connectionDetailMap: {},
+            meshTopology: meshTopology,
+            gatewayName: 'Router',
+          );
+
+      test('a wired client one node lists is under that node', () {
+        final result = buildWith(
+          topology(wired: {'00:E0:4C:68:08:2D': 'AA:BB:CC:DD:EE:02'}),
+          desktop(),
+        );
+
+        final slaveClients = result.slaves.single.connectedClients;
+        expect(slaveClients.map((c) => c.mac), ['00:E0:4C:68:08:2D']);
+        expect(slaveClients.single.isUnattributed, isFalse);
+        expect(result.master.connectedClients, isEmpty);
+      });
+
+      test('a wired client two nodes list is unattributed', () {
+        final result = buildWith(
+          topology(ambiguous: {'00:E0:4C:68:08:2D'}),
+          desktop(),
+        );
+
+        expect(
+            result.unassignedClients.map((c) => c.mac), ['00:E0:4C:68:08:2D']);
+        expect(result.unassignedClients.single.isUnattributed, isTrue);
+        expect(result.master.connectedClients, isEmpty);
+      });
+
+      // The forwarding table keeps an unplugged client ~300 s, so the listing
+      // is not liveness. An offline client two nodes still list is not
+      // claimed to be anywhere.
+      test('an offline wired client two nodes list stays on the master', () {
+        final result = buildWith(
+          topology(ambiguous: {'00:E0:4C:68:08:2D'}),
+          desktop(isActive: false),
+        );
+
+        expect(result.unassignedClients, isEmpty);
+        expect(result.master.connectedClients.map((c) => c.mac),
+            ['00:E0:4C:68:08:2D']);
+      });
+
+      test('a wired client no node lists stays on the master', () {
+        final result = buildWith(topology(), desktop());
+
+        expect(result.master.connectedClients.map((c) => c.mac),
+            ['00:E0:4C:68:08:2D']);
+        expect(result.unassignedClients, isEmpty);
+      });
+
+      test('a Wi-Fi station entry wins over a wired listing', () {
+        final result = buildWith(
+          topology(
+            wifi: {'00:E0:4C:68:08:2D': 'AA:BB:CC:DD:EE:01'},
+            wired: {'00:E0:4C:68:08:2D': 'AA:BB:CC:DD:EE:02'},
+          ),
+          desktop(),
+        );
+
+        expect(result.master.connectedClients.map((c) => c.mac),
+            ['00:E0:4C:68:08:2D']);
+        expect(result.slaves.single.connectedClients, isEmpty);
       });
     });
 

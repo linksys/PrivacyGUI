@@ -1,3 +1,4 @@
+import 'package:privacy_gui/generated/data_elements_interfaces.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
@@ -23,10 +24,16 @@ class MeshTopologyBuilder {
   ///
   /// Set [includeBackhaulStats] to true to include backhaul signal strength
   /// and uplink rate (requires DataElements backhaul stats to be available).
+  ///
+  /// [interfaces] is the separately fetched `Interface.{j}.Neighbor.{k}`
+  /// subtree. Null when it was not read or the read failed; then no wired
+  /// client is attributed and every wired client stays on the master, as
+  /// before #1688.
   static MeshTopologyInfo build(
     DataElementsNetwork network, {
     Map<String, String> bssidToBandMap = const {},
     bool includeBackhaulStats = true,
+    DataElementsInterfaces? interfaces,
   }) {
     final nodes = <NodeEntity>[];
     final clientToNodeMap = <String, String>{};
@@ -149,12 +156,111 @@ class MeshTopologyBuilder {
       }
     }
 
+    final wired = interfaces == null
+        ? null
+        : wiredClientAttribution(
+            network: network,
+            interfaces: interfaces,
+            wifiStations: clientToNodeMap.keys.toSet(),
+          );
+
     return MeshTopologyInfo(
       nodes: nodes,
       clientToNodeMap: clientToNodeMap,
       clientSignalMap: clientSignalMap,
       clientBandSsidMap: clientBandSsidMap,
+      wiredClientToNodeMap: wired?.byNode ?? const {},
+      ambiguousWiredClients: wired?.ambiguous ?? const {},
     );
+  }
+
+  /// Which node each wired client is behind, from DataElements
+  /// `Interface.{j}.Neighbor.{k}` (#1688 item 2).
+  ///
+  /// A non-1905 neighbor is a MAC in the node's bridge forwarding table — "seen
+  /// through this port", not "plugged into this node". So most of them are not
+  /// clients, and the rules are the ones `data_elements_interfaces.yaml`
+  /// (linksys/usp_framework) and linksys/FWDEV#208 rule 2 set out:
+  ///
+  /// 1. Only `IsIEEE1905 == false`. `true` is another mesh node; `null` is
+  ///    unknown, and an unknown row attributes nothing.
+  /// 2. Drop every MAC that belongs to a mesh node. prplMesh removes only the
+  ///    AL MAC, and on the bench 4 of 5 non-1905 neighbors were nodes' guest
+  ///    bridges, backhaul STAs and backhaul BSSes. A node's MACs are its ID, its
+  ///    `Interface.{j}.MACAddress`, `Backhaul.MACAddress`,
+  ///    `Backhaul.BackhaulMACAddress`, its radios' `BackhaulSta.MACAddress` and
+  ///    its BSSIDs.
+  /// 3. A MAC in [wifiStations] (a `BSS.STA` entry) is a Wi-Fi client, not a
+  ///    wired one: a Wi-Fi STA is a bridge-FDB entry too, and the station entry
+  ///    wins.
+  /// 4. A MAC exactly one node lists goes to `byNode`. A MAC two or more nodes
+  ///    list goes to `ambiguous`: each node sees it through its own uplink.
+  ///
+  /// Presence here is not liveness — the forwarding table ages an unplugged
+  /// client out only after ~300 s — so consumers keep reading `Hosts.Active`.
+  /// All MACs are trimmed and upper-cased, the same form as [clientToNodeMap].
+  static ({Map<String, String> byNode, Set<String> ambiguous})
+      wiredClientAttribution({
+    required DataElementsNetwork network,
+    required DataElementsInterfaces interfaces,
+    required Set<String> wifiStations,
+  }) {
+    String key(String mac) => mac.trim().toUpperCase();
+
+    // Rule 2: every MAC any node owns.
+    final nodeMacs = <String>{};
+    void addNodeMac(String? mac) {
+      final value = nonUnsetMac(mac);
+      if (value != null) nodeMacs.add(key(value));
+    }
+
+    for (final node in network.items) {
+      addNodeMac(node.id);
+      addNodeMac(node.backhaulBackhaulMacAddress);
+      addNodeMac(node.backhaulMacAddressMultiAp);
+      for (final radio in node.radios) {
+        addNodeMac(radio.backhaulStaMacAddress);
+        for (final bss in radio.bssList) {
+          addNodeMac(bss.bssid);
+        }
+      }
+    }
+    for (final node in interfaces.items) {
+      addNodeMac(node.id);
+      for (final interface in node.interfaces) {
+        addNodeMac(interface.macAddress);
+      }
+    }
+
+    // Rules 1, 3: which nodes list each remaining non-1905 MAC.
+    final listedBy = <String, Set<String>>{};
+    for (final node in interfaces.items) {
+      final nodeId = key(node.id);
+      if (nodeId.isEmpty) continue;
+      for (final interface in node.interfaces) {
+        for (final neighbor in interface.neighbors) {
+          if (neighbor.isIeee1905 != false) continue;
+          final mac = nonUnsetMac(neighbor.id);
+          if (mac == null) continue;
+          final clientMac = key(mac);
+          if (nodeMacs.contains(clientMac)) continue;
+          if (wifiStations.contains(clientMac)) continue;
+          (listedBy[clientMac] ??= <String>{}).add(nodeId);
+        }
+      }
+    }
+
+    // Rule 4.
+    final byNode = <String, String>{};
+    final ambiguous = <String>{};
+    listedBy.forEach((mac, nodeIds) {
+      if (nodeIds.length == 1) {
+        byNode[mac] = nodeIds.single;
+      } else {
+        ambiguous.add(mac);
+      }
+    });
+    return (byNode: byNode, ambiguous: ambiguous);
   }
 
   /// A trimmed identity string, empty when firmware reported nothing.

@@ -139,6 +139,62 @@ void main() {
     });
   });
 
+  // fetchMeshTopology reads DataElementsNetwork and, separately,
+  // DataElementsInterfaces (#1688 item 2). The second read is separate so that
+  // a controller without the Interface object loses wired attribution only,
+  // never the topology (usp_framework data_elements_interfaces.yaml).
+  group('UspDevicesDataService — fetchMeshTopology', () {
+    const node = 'Device.WiFi.DataElements.Network.Device.1.';
+
+    // The controller as measured on 2.0.3.26101482: no backhaul, and a wired
+    // Mac seen on its Ethernet interface as a non-1905 neighbor.
+    final networkResponse = <String, dynamic>{
+      '${node}ID': '74:12:13:21:56:3a',
+      '${node}MultiAPDevice.Backhaul.LinkType': 'None',
+    };
+    final interfacesResponse = <String, dynamic>{
+      '${node}ID': '74:12:13:21:56:3a',
+      '${node}Interface.4.MACAddress': '74:12:13:21:56:3a',
+      '${node}Interface.4.MediaType': 'IEEE_802_3AB_GIGABIT_ETHERNET',
+      '${node}Interface.4.Neighbor.1.ID': '00:e0:4c:68:08:2d',
+      '${node}Interface.4.Neighbor.1.IsIEEE1905': false,
+    };
+
+    void stubDataElements({bool interfacesFail = false}) {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((inv) async {
+        final paths = inv.positionalArguments[0] as List;
+        if (paths.any((p) => p.toString().contains('.Interface.'))) {
+          if (interfacesFail) throw 'USP get failed: 7026 Invalid path';
+          return interfacesResponse;
+        }
+        if (paths.any((p) => p.toString().contains('DataElements'))) {
+          return networkResponse;
+        }
+        return <String, dynamic>{};
+      });
+    }
+
+    test('attributes a wired client to the node that lists it', () async {
+      stubDataElements();
+
+      final topology = await svc.fetchMeshTopology();
+
+      expect(topology.nodes, hasLength(1));
+      expect(topology.wiredClientToNodeMap,
+          {'00:E0:4C:68:08:2D': '74:12:13:21:56:3A'});
+    });
+
+    test('an Interface read that fails leaves the topology intact', () async {
+      stubDataElements(interfacesFail: true);
+
+      final topology = await svc.fetchMeshTopology();
+
+      expect(topology.nodes, hasLength(1));
+      expect(topology.wiredClientToNodeMap, isEmpty);
+    });
+  });
+
   group('UspDevicesDataService — rebuildWithWifiData', () {
     test('enriches devices with WiFi signal data', () async {
       final fetchResult = await svc.fetch(
