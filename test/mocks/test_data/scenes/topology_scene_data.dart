@@ -210,6 +210,23 @@ final masterNodeWithDevices = UspNodeDetailState(
   connectedClients: _meshMasterClients,
 );
 
+/// The router after the user named it (#1691): the name is
+/// `DeviceInfo.X_LINKSYS_UserDeviceLocation`, carried as both the displayed
+/// name and the value the edit dialog prefills.
+final masterNodeNamed = UspNodeDetailState(
+  node: MasterNode(
+    deviceId: '11:22:33:44:55:66',
+    friendlyName: 'Living room router',
+    userDeviceLocation: 'Living room router',
+    model: 'MR7500',
+    manufacturer: 'Linksys',
+    serialNumber: 'ABC123456',
+    softwareVersion: '1.0.16.215118',
+    connectedClients: _meshMasterClients,
+  ),
+  connectedClients: _meshMasterClients,
+);
+
 /// A slave carrying **no** DataElements match, which since #1430 makes it
 /// `isOnline` false — see [slaveNodeOnlineWithDevices] for the same node with the
 /// match, and `SlaveNode.isOnline` for why one field decides it.

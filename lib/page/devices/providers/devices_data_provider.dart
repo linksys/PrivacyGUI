@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
@@ -376,6 +377,36 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       _refetchPreservingMesh();
     });
   }
+
+  /// Writes the name and icon the user gave a client (#1691), then reads the
+  /// devices back so every surface shows what the router now holds.
+  ///
+  /// A refused write is thrown for the caller to report. A read-back that
+  /// fails after a successful write is not: the save happened, so the failure
+  /// is logged by the refetch, the list keeps its previous value, and the next
+  /// push corrects it.
+  Future<void> updateIdentity({
+    required String hostInstancePath,
+    required String name,
+    String? userTypeCode,
+  }) async {
+    // Only the write takes the lock (constitution Art. IV Rule 3); the
+    // read-back stays outside it, as the DHCP mutations do.
+    await ref.read(uspMutationLockProvider).withLock(
+          () => ref.read(uspDevicesDataServiceProvider).updateIdentity(
+                hostInstancePath: hostInstancePath,
+                name: name,
+                userTypeCode: userTypeCode,
+              ),
+        );
+    await _refetchPreservingMesh();
+  }
+
+  /// Reads the devices again, keeping the mesh topology already known.
+  ///
+  /// For a write made elsewhere that changes what this provider shows, such as
+  /// the router's name (#1691), which lives on system info.
+  Future<void> refetch() => _refetchPreservingMesh();
 
   /// Refetch device data while preserving the existing mesh topology.
   /// This prevents the slave node from flickering during SSE-triggered refreshes.

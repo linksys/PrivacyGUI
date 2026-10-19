@@ -13,7 +13,12 @@ import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart'
     show ruleIdentifierKey;
+import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
+import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_list_tile.dart';
+import 'package:privacy_gui/page/devices/views/dialogs/device_identity_edit_dialog.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
@@ -78,7 +83,7 @@ class UspNodeDetailView extends ConsumerWidget {
       NodeEntity node, UspNodeDetailState detail) {
     return Column(
       children: [
-        _buildNodeInfoCard(context, node),
+        _buildNodeInfoCard(context, ref, node),
         AppGap.lg(),
         _buildNetworkCard(context, ref, node),
         if (node is SlaveNode) ...[
@@ -100,7 +105,7 @@ class UspNodeDetailView extends ConsumerWidget {
           width: context.colWidth(4),
           child: Column(
             children: [
-              _buildNodeInfoCard(context, node),
+              _buildNodeInfoCard(context, ref, node),
               AppGap.lg(),
               _buildNetworkCard(context, ref, node),
               if (node is SlaveNode) ...[
@@ -120,10 +125,42 @@ class UspNodeDetailView extends ConsumerWidget {
   }
 
   // ===========================================================================
+  // Node Name
+  // ===========================================================================
+
+  /// Names the router (#1691): only `DeviceInfo.X_LINKSYS_UserDeviceLocation`
+  /// is written, and a router is named but not typed. The dialog saves and
+  /// shows its own progress and errors; this page only confirms a finished save.
+  Future<void> _editRouterName(
+      BuildContext context, WidgetRef ref, MasterNode node) async {
+    final saved = await showAppDialog<bool>(
+      context: context,
+      builder: (_) => DeviceIdentityEditDialog(
+        initialName: node.userDeviceLocation ?? '',
+        initialCategory: DeviceCategory.unknown,
+        detectedName: node.hostName ?? node.model,
+        showIcon: false,
+        // The name is written on system info; the node shown here comes from
+        // the devices, which read system info only when they fetch.
+        onSave: (name, _) async {
+          await ref
+              .read(systemInfoDataProvider.notifier)
+              .updateRouterName(name);
+          await ref.read(devicesDataProvider.notifier).refetch();
+        },
+      ),
+    );
+    if (saved == true && context.mounted) {
+      showSuccessSnackBar(context, loc(context).changesSaved);
+    }
+  }
+
+  // ===========================================================================
   // Node Info Card
   // ===========================================================================
 
-  Widget _buildNodeInfoCard(BuildContext context, NodeEntity node) {
+  Widget _buildNodeInfoCard(
+      BuildContext context, WidgetRef ref, NodeEntity node) {
     final colorScheme = Theme.of(context).colorScheme;
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -183,7 +220,17 @@ class UspNodeDetailView extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AppText.titleLarge(node.displayName),
+                      // The router only: an extender is named with the mesh
+                      // work (#1688), as FL-WRT 2.0's Hosts rows cannot yet
+                      // tell a node from a client.
+                      DetailEditableName(
+                        name: node.displayName,
+                        editLabel: loc(context).renameRouter,
+                        identifier: 'node-detail-edit-name',
+                        onEdit: node is MasterNode
+                            ? () => _editRouterName(context, ref, node)
+                            : null,
+                      ),
                       AppGap.xs(),
                       Wrap(
                         spacing: AppSpacing.sm,

@@ -169,4 +169,104 @@ void main() {
       expect(model.baseMacAddress, isNull);
     });
   });
+
+  // The router's own name (#1691). The detail page writes only
+  // X_LINKSYS_UserDeviceLocation; DeviceInfo.FriendlyName is read as a
+  // fallback in case something else set it. Both read "" when unset.
+  group('UspSystemInfoDataService — router name (#1691)', () {
+    void stubName({Object? location, Object? friendlyName}) {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async {
+        final paths = _.positionalArguments[0] as List;
+        if (paths.any((p) => p.toString().contains('Manufacturer'))) {
+          return {
+            ...systemInfoResponse,
+            if (location != null)
+              'Device.DeviceInfo.X_LINKSYS_UserDeviceLocation': location,
+            if (friendlyName != null)
+              'Device.DeviceInfo.FriendlyName': friendlyName,
+          };
+        }
+        return firmwareImagesResponse;
+      });
+    }
+
+    test('carries the location and FriendlyName into the UI model', () async {
+      stubName(location: 'Office', friendlyName: 'Main router');
+
+      final model = await svc.fetch();
+
+      expect(model.userDeviceLocation, 'Office');
+      expect(model.friendlyName, 'Main router');
+    });
+
+    test('"" is no name', () async {
+      stubName(location: '', friendlyName: '');
+
+      final model = await svc.fetch();
+
+      expect(model.userDeviceLocation, isNull);
+      expect(model.friendlyName, isNull);
+    });
+
+    test('writes the name to X_LINKSYS_UserDeviceLocation only, in one Set',
+        () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': true,
+                'result': {'data': <String, dynamic>{}},
+              });
+
+      await svc.updateRouterName('Office');
+
+      // Never FriendlyName: the detail page writes the location alone.
+      verify(() => mockUsp.set(
+            {'Device.DeviceInfo.X_LINKSYS_UserDeviceLocation': 'Office'},
+            allowPartial: false,
+          )).called(1);
+    });
+
+    test('an empty name is written, which clears it', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': true,
+                'result': {'data': <String, dynamic>{}},
+              });
+
+      await svc.updateRouterName('');
+
+      verify(() => mockUsp.set(
+            {'Device.DeviceInfo.X_LINKSYS_UserDeviceLocation': ''},
+            allowPartial: false,
+          )).called(1);
+    });
+
+    test('a refused Set throws UspCompleteFailureError', () {
+      // What the firmware does for 65 bytes: the whole Set is refused.
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': false,
+                'result': {
+                  'data': <String, dynamic>{},
+                  'error': {
+                    'Device.DeviceInfo.X_LINKSYS_UserDeviceLocation': {
+                      'errorCode': 9007,
+                      'errorMessage': 'Invalid parameter value',
+                    },
+                  },
+                },
+              });
+
+      expect(() => svc.updateRouterName('x'),
+          throwsA(isA<UspCompleteFailureError>()));
+    });
+
+    test('a transport error maps to ServiceError', () {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenThrow('Set failed: Transport error: Connection refused');
+
+      expect(
+          () => svc.updateRouterName('x'), throwsA(isA<ConnectivityError>()));
+    });
+  });
 }

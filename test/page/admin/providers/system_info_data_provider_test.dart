@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 
@@ -236,6 +237,70 @@ void main() {
       final data = await container.read(systemInfoDataProvider.future);
 
       expect(data.model.gatewayName, 'Router');
+      container.dispose();
+    });
+  });
+
+  // The router's name (#1691): the write takes the shared USP mutation lock
+  // (constitution Art. IV Rule 3) and system info is read back after it.
+  group('SystemInfoDataNotifier.updateRouterName', () {
+    Map<String, dynamic> setSuccess() => {
+          'success': true,
+          'result': {'data': <String, dynamic>{}},
+        };
+
+    test('writes inside the USP mutation lock, then reads system info back',
+        () async {
+      final container = createContainer();
+      await container.read(systemInfoDataProvider.future);
+      final lock = container.read(uspMutationLockProvider);
+      bool? lockedDuringWrite;
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async {
+        lockedDuringWrite = lock.isLocked;
+        return setSuccess();
+      });
+      clearInteractions(mockUsp);
+
+      await container
+          .read(systemInfoDataProvider.notifier)
+          .updateRouterName('Office');
+
+      expect(lockedDuringWrite, isTrue);
+      expect(lock.isLocked, isFalse);
+      verify(() => mockUsp.set(
+            {'Device.DeviceInfo.X_LINKSYS_UserDeviceLocation': 'Office'},
+            allowPartial: false,
+          )).called(1);
+      // Read back: SystemInfo.fetch ran again after the write.
+      verify(() => mockUsp.get(any())).called(greaterThanOrEqualTo(1));
+      container.dispose();
+    });
+
+    test('a refused write is thrown and system info is not read back',
+        () async {
+      final container = createContainer();
+      await container.read(systemInfoDataProvider.future);
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': false,
+                'result': {
+                  'data': <String, dynamic>{},
+                  'error': {
+                    'Device.DeviceInfo.X_LINKSYS_UserDeviceLocation': {
+                      'errorCode': 9007,
+                      'errorMessage': 'Invalid parameter value',
+                    },
+                  },
+                },
+              });
+      clearInteractions(mockUsp);
+
+      await expectLater(
+        container.read(systemInfoDataProvider.notifier).updateRouterName('x'),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+      verifyNever(() => mockUsp.get(any()));
       container.dispose();
     });
   });

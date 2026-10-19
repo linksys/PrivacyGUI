@@ -55,6 +55,7 @@ export 'ipv6port_service.g.dart';
 export 'dmz.g.dart';
 export 'firewall_chain_rules.g.dart';
 export 'upnp_device.g.dart';
+export 'sip_alg.g.dart';
 export 'wifi_clients.g.dart';
 export 'connected_devices.g.dart';
 export 'transforms.g.dart';
