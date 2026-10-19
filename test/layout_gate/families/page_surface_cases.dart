@@ -238,6 +238,7 @@ import '../../mocks/test_data/scenes/dhcp_scene_data.dart' as dhcp;
 import '../../mocks/test_data/scenes/login_scene_data.dart';
 import '../../mocks/test_data/scenes/pnp_scene_data.dart';
 import '../../mocks/test_data/scenes/port_forwarding_scene_data.dart' as pf;
+import '../../mocks/test_data/scenes/ipv6_port_service_scene_data.dart' as ipv6;
 import '../../mocks/test_data/scenes/topology_scene_data.dart';
 import '../../mocks/test_data/scenes/unified_diagnostics_scene_data.dart';
 import '../../mocks/test_data/scenes/wifi_settings_scene_data.dart';
@@ -2468,6 +2469,23 @@ final kIpv6PortServicePageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
 );
 
+/// [kIpv6PortServicePageCase] with the list at FWDEV#204's limit of 15 rules
+/// (#1687). A full list adds the one row the default fixture never renders: the
+/// [RuleLimitNote] under the Rules header, saying why Add is disabled — the row
+/// #1611 added to the port forwarding tabs. [RuleLimitNote] is the premise: the
+/// default fixture holds two rules, so a fixture that drifted below the limit
+/// would fail here rather than sweep its sibling's tree a second time.
+///
+/// Not a tab case, so no `sharesTabWith`: this page has no tabs, and like
+/// `firmware_failed` this is a second fixture state of one view file.
+final kIpv6PortServiceFullPageCase = PageSurfaceCase(
+  id: 'ipv6_port_service_full',
+  view: () => const UspIpv6PortServiceView(),
+  overrides: () => ipv6PortServiceOverrides(ipv6.fullState),
+  requires: const [UspTopBar, LayoutBlock, RuleLimitNote],
+  forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
+);
+
 /// `usp_local_network_view` — hostname, router IP and the whole DHCP server, which is
 /// nine form fields in five [LayoutBlock]s once the server is on.
 ///
@@ -2893,6 +2911,7 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kInstantSafetyPageCase,
   kInternetSettingsPageCase,
   kIpv6PortServicePageCase,
+  kIpv6PortServiceFullPageCase,
   kLocalNetworkPageCase,
   kStaticRoutingPageCase,
   kStatisticsPageCase,

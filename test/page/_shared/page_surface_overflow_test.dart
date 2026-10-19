@@ -498,6 +498,12 @@ void main() {
     family: PageSurfaceFamily(kIpv6PortServicePageCase),
     expectedCellCount: 234,
   );
+  // The same page with its list at the 15-rule limit (#1687), so the
+  // `RuleLimitNote` row under the Rules header is measured.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kIpv6PortServiceFullPageCase),
+    expectedCellCount: 234,
+  );
 
   // `local_network` — nine form fields plus the family's one unconditional bottom bar;
   // `kLocalNetworkPageCase` says why both field types are premises.
