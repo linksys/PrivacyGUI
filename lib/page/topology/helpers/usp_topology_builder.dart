@@ -276,10 +276,7 @@ class UspTopologyBuilder {
             'parentNodeId=${client.parentNodeId} → gateway');
       }
 
-      final category = DeviceClassifier.classify(
-        hostname: client.displayName,
-        mac: client.mac,
-      );
+      final category = DeviceClassifier.classifyClient(client);
 
       nodes.add(GraphNode(
         id: clientId,

@@ -59,6 +59,15 @@ class SystemInfoUIModel extends Equatable with DiagnosticLoggable {
   /// master node reads the literal `'GATEWAY'` (#1665).
   final String? baseMacAddress;
 
+  /// The name the user gave the router (`DeviceInfo.X_LINKSYS_UserDeviceLocation`,
+  /// #1691), which the node detail page edits. Null when unset.
+  final String? userDeviceLocation;
+
+  /// `DeviceInfo.FriendlyName`, read as a fallback name: the app does not write
+  /// it, and unlike a client's, the firmware does not fill it from the
+  /// location. Null when unset.
+  final String? friendlyName;
+
   const SystemInfoUIModel({
     required this.manufacturer,
     required this.modelName,
@@ -71,6 +80,8 @@ class SystemInfoUIModel extends Equatable with DiagnosticLoggable {
     required this.cpuUsage,
     this.firmwareImages = const [],
     this.baseMacAddress,
+    this.userDeviceLocation,
+    this.friendlyName,
   });
 
   /// Display name for the gateway (router model or fallback).
@@ -124,5 +135,7 @@ class SystemInfoUIModel extends Equatable with DiagnosticLoggable {
         'cpuUsage': cpuUsage,
         'firmwareImages': firmwareImages,
         'baseMacAddress': baseMacAddress,
+        'userDeviceLocation': userDeviceLocation,
+        'friendlyName': friendlyName,
       };
 }

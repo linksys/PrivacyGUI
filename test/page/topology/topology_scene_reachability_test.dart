@@ -105,6 +105,7 @@ void main() {
 
   final detailScenes = <String, UspNodeDetailState>{
     'masterNodeWithDevices': masterNodeWithDevices,
+    'masterNodeNamed': masterNodeNamed,
     'masterNodeEmptyDevices': masterNodeEmptyDevices,
     'slaveNodeOffline': slaveNodeOffline,
     'slaveNodeOnlineWithDevices': slaveNodeOnlineWithDevices,

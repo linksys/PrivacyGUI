@@ -284,6 +284,49 @@ class DetailCompactInfoTile extends StatelessWidget {
 // =============================================================================
 
 /// Text that can be tapped to copy to clipboard.
+/// A detail page's title name with an edit pen right after it (#1691), as
+/// [DetailCopyableText] puts its copy icon after the value. The pen is a UI Kit
+/// [AppIconButton], so its touch target meets the 44×44 floor while the glyph
+/// stays small. Without [onEdit] the name is shown alone.
+class DetailEditableName extends StatelessWidget {
+  final String name;
+
+  /// What a screen reader announces for the pen.
+  final String editLabel;
+
+  /// The pen's E2E hook.
+  final String identifier;
+
+  final VoidCallback? onEdit;
+
+  const DetailEditableName({
+    super.key,
+    required this.name,
+    required this.editLabel,
+    required this.identifier,
+    this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final title = AppText.titleLarge(name);
+    if (onEdit == null) return title;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(child: title),
+        AppIconButton.small(
+          icon: AppIcon.font(Icons.edit, size: 16),
+          styleVariant: ButtonStyleVariant.text,
+          semanticLabel: editLabel,
+          identifier: identifier,
+          onTap: onEdit,
+        ),
+      ],
+    );
+  }
+}
+
 class DetailCopyableText extends StatelessWidget {
   final String text;
 

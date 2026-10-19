@@ -130,6 +130,10 @@ final class MasterNode extends NodeEntity {
   /// Hosts DeviceID (UUID) — used by Remote Assistance / Guardian API calls.
   final String? hostsDeviceId;
 
+  /// The name the user gave the router (`DeviceInfo.X_LINKSYS_UserDeviceLocation`,
+  /// #1691), which the node detail page edits. Null when unset.
+  final String? userDeviceLocation;
+
   MasterNode({
     required this.deviceId,
     this.dataElementsId,
@@ -146,6 +150,7 @@ final class MasterNode extends NodeEntity {
     this.wanIpAddress,
     this.wanIpv6Address,
     this.hostsDeviceId,
+    this.userDeviceLocation,
   });
 
   @override
@@ -183,6 +188,7 @@ final class MasterNode extends NodeEntity {
     String? wanIpAddress,
     String? wanIpv6Address,
     String? hostsDeviceId,
+    String? userDeviceLocation,
   }) {
     return MasterNode(
       deviceId: deviceId ?? this.deviceId,
@@ -200,6 +206,7 @@ final class MasterNode extends NodeEntity {
       wanIpAddress: wanIpAddress ?? this.wanIpAddress,
       wanIpv6Address: wanIpv6Address ?? this.wanIpv6Address,
       hostsDeviceId: hostsDeviceId ?? this.hostsDeviceId,
+      userDeviceLocation: userDeviceLocation ?? this.userDeviceLocation,
     );
   }
 
@@ -220,6 +227,7 @@ final class MasterNode extends NodeEntity {
         wanIpAddress,
         wanIpv6Address,
         hostsDeviceId,
+        userDeviceLocation,
       ];
 
   @override
@@ -242,6 +250,7 @@ final class MasterNode extends NodeEntity {
         'wanIpAddress': wanIpAddress,
         'wanIpv6Address': wanIpv6Address,
         'hostsDeviceId': hostsDeviceId,
+        'userDeviceLocation': userDeviceLocation,
       };
 }
 
