@@ -141,7 +141,7 @@ import 'package:privacy_gui/page/login/views/local_router_recovery_view.dart';
 import 'package:privacy_gui/page/login/views/login_local_view.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
 import 'package:privacy_gui/page/menu/views/usp_menu_view.dart';
-import 'package:privacy_gui/page/port_forwarding/views/components/rule_limit_note.dart';
+import 'package:privacy_gui/page/_shared/components/rule_limit_note.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_port_range_tab.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_port_triggering_tab.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_single_port_tab.dart';
