@@ -1218,5 +1218,14 @@
   "raPreparingPartial": "Sommige live-updates konden niet worden ingesteld. Het dashboard ververst zichzelf mogelijk niet; trek omlaag om te vernieuwen.",
   "raLiveUpdates": "Live-updates",
   "raLiveUpdatesConnecting": "Verbinden via de cloud",
-  "raLiveUpdatesDropped": "Cloudverbinding verbroken — opnieuw verbinden"
+  "raLiveUpdatesDropped": "Cloudverbinding verbroken — opnieuw verbinden",
+  "semanticRoleBottomSheet": "Blad onderaan",
+  "semanticRoleCheckbox": "Selectievakje",
+  "semanticRoleDropdown": "Vervolgkeuzelijst",
+  "semanticRoleIconButton": "Pictogramknop",
+  "semanticRoleListTile": "Lijstitem",
+  "semanticRoleMascot": "Mascotte",
+  "semanticRolePinInput": "PIN-invoer",
+  "semanticRoleRadio": "Keuzerondje",
+  "semanticRoleSwitch": "Schakelaar"
 }

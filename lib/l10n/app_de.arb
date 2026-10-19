@@ -1218,5 +1218,14 @@
   "raPreparingPartial": "Einige Live-Aktualisierungen konnten nicht eingerichtet werden. Das Dashboard aktualisiert sich möglicherweise nicht selbst; zum Aktualisieren nach unten ziehen.",
   "raLiveUpdates": "Live-Aktualisierungen",
   "raLiveUpdatesConnecting": "Verbindung über die Cloud",
-  "raLiveUpdatesDropped": "Cloud-Verbindung unterbrochen – Verbindung wird wiederhergestellt"
+  "raLiveUpdatesDropped": "Cloud-Verbindung unterbrochen – Verbindung wird wiederhergestellt",
+  "semanticRoleBottomSheet": "Ansicht am unteren Rand",
+  "semanticRoleCheckbox": "Kontrollkästchen",
+  "semanticRoleDropdown": "Dropdown-Menü",
+  "semanticRoleIconButton": "Symbolschaltfläche",
+  "semanticRoleListTile": "Listeneintrag",
+  "semanticRoleMascot": "Maskottchen",
+  "semanticRolePinInput": "PIN-Eingabe",
+  "semanticRoleRadio": "Optionsfeld",
+  "semanticRoleSwitch": "Schalter"
 }

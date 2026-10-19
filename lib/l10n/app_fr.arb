@@ -1218,5 +1218,14 @@
   "raPreparingPartial": "Certaines mises à jour en direct n'ont pas pu être configurées. Le tableau de bord risque de ne pas s'actualiser seul ; tirez pour actualiser.",
   "raLiveUpdates": "Mises à jour en direct",
   "raLiveUpdatesConnecting": "Connexion via le cloud",
-  "raLiveUpdatesDropped": "Connexion au cloud interrompue — reconnexion"
+  "raLiveUpdatesDropped": "Connexion au cloud interrompue — reconnexion",
+  "semanticRoleBottomSheet": "Panneau inférieur",
+  "semanticRoleCheckbox": "Case à cocher",
+  "semanticRoleDropdown": "Liste déroulante",
+  "semanticRoleIconButton": "Bouton icône",
+  "semanticRoleListTile": "Élément de liste",
+  "semanticRoleMascot": "Mascotte",
+  "semanticRolePinInput": "Saisie du code PIN",
+  "semanticRoleRadio": "Bouton radio",
+  "semanticRoleSwitch": "Interrupteur"
 }

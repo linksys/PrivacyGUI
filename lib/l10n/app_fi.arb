@@ -1218,5 +1218,14 @@
   "raPreparingPartial": "Joitakin reaaliaikaisia päivityksiä ei voitu määrittää. Koontinäyttö ei ehkä päivity itsestään; päivitä vetämällä.",
   "raLiveUpdates": "Reaaliaikaiset päivitykset",
   "raLiveUpdatesConnecting": "Yhdistetään pilven kautta",
-  "raLiveUpdatesDropped": "Pilviyhteys katkesi — yhdistetään uudelleen"
+  "raLiveUpdatesDropped": "Pilviyhteys katkesi — yhdistetään uudelleen",
+  "semanticRoleBottomSheet": "Alapaneeli",
+  "semanticRoleCheckbox": "Valintaruutu",
+  "semanticRoleDropdown": "Pudotusvalikko",
+  "semanticRoleIconButton": "Kuvakepainike",
+  "semanticRoleListTile": "Luettelon kohde",
+  "semanticRoleMascot": "Maskotti",
+  "semanticRolePinInput": "PIN-koodin syöttö",
+  "semanticRoleRadio": "Valintanappi",
+  "semanticRoleSwitch": "Kytkin"
 }

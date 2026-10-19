@@ -1218,5 +1218,14 @@
   "raPreparingPartial": "Không thể thiết lập một số cập nhật trực tiếp. Bảng điều khiển có thể không tự làm mới; kéo để làm mới.",
   "raLiveUpdates": "Cập nhật trực tiếp",
   "raLiveUpdatesConnecting": "Đang kết nối qua đám mây",
-  "raLiveUpdatesDropped": "Mất kết nối đám mây — đang kết nối lại"
+  "raLiveUpdatesDropped": "Mất kết nối đám mây — đang kết nối lại",
+  "semanticRoleBottomSheet": "Bảng dưới cùng",
+  "semanticRoleCheckbox": "Hộp kiểm",
+  "semanticRoleDropdown": "Danh sách thả xuống",
+  "semanticRoleIconButton": "Nút biểu tượng",
+  "semanticRoleListTile": "Mục danh sách",
+  "semanticRoleMascot": "Linh vật",
+  "semanticRolePinInput": "Nhập mã PIN",
+  "semanticRoleRadio": "Nút radio",
+  "semanticRoleSwitch": "Công tắc"
 }

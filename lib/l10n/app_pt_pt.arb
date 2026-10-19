@@ -1218,5 +1218,14 @@
   "raPreparingPartial": "Não foi possível configurar algumas atualizações em tempo real. O painel pode não se atualizar sozinho; arraste para atualizar.",
   "raLiveUpdates": "Atualizações em tempo real",
   "raLiveUpdatesConnecting": "A ligar através da nuvem",
-  "raLiveUpdatesDropped": "Ligação à nuvem perdida — a voltar a ligar"
+  "raLiveUpdatesDropped": "Ligação à nuvem perdida — a voltar a ligar",
+  "semanticRoleBottomSheet": "Painel inferior",
+  "semanticRoleCheckbox": "Caixa de verificação",
+  "semanticRoleDropdown": "Menu pendente",
+  "semanticRoleIconButton": "Botão de ícone",
+  "semanticRoleListTile": "Item da lista",
+  "semanticRoleMascot": "Mascote",
+  "semanticRolePinInput": "Introdução do PIN",
+  "semanticRoleRadio": "Botão de opção",
+  "semanticRoleSwitch": "Interruptor"
 }
