@@ -118,7 +118,7 @@ class Ipv6PortServiceRuleUIModel extends Equatable {
     required String ipv6Address,
     required String startPort,
     required String endPort,
-    String protocol = 'Both',
+    required String protocol,
     List<Ipv6PortServiceRuleUIModel> otherRules = const [],
     Set<String> hiddenRuleDescriptions = const {},
   }) {
