@@ -556,6 +556,35 @@ void main() {
       expect(result.byNode, isEmpty);
     });
 
+    // The Interface subtree is a separate Get. An agent that left between the
+    // two reads is not built, so a client only it lists has no node to go to:
+    // it is no evidence, and stays on the master rather than becoming an
+    // orphan pointing at a missing node.
+    test('a client listed only by a node the network read lacks is dropped',
+        () {
+      final result = MeshTopologyBuilder.wiredClientAttribution(
+        network: DataElementsTestData.network([
+          DataElementsTestData.node(instance: '1', id: controller),
+        ]),
+        interfaces: DataElementsTestData.interfaces([
+          DataElementsTestData.nodeInterfaces(
+            instance: '2',
+            id: agent,
+            interfaces: [
+              DataElementsTestData.interface(p2,
+                  index: 1,
+                  macAddress: 'aa:bb:cc:dd:ee:52',
+                  neighbors: [(id: wiredMac, isIeee1905: false)]),
+            ],
+          ),
+        ]),
+        wifiStations: const {},
+      );
+
+      expect(result.byNode, isEmpty);
+      expect(result.ambiguous, isEmpty);
+    });
+
     test('build() carries the attribution onto MeshTopologyInfo', () {
       final info = MeshTopologyBuilder.build(
         network,
@@ -585,6 +614,63 @@ void main() {
       expect(info.wiredClientToNodeMap, isEmpty);
       expect(info.ambiguousWiredClients, isEmpty);
       expect(info.nodes, hasLength(2));
+    });
+  });
+
+  // #1688 review (W2). The master is the node with no backhaul link unless
+  // ControllerID says otherwise. An agent whose backhaul is not filled in yet
+  // also has no link, so without ControllerID it was a second master and,
+  // since #1688, dropped from the topology.
+  group('MeshTopologyBuilder.build — the controller (ControllerID)', () {
+    const controller = '74:12:13:21:56:3a';
+    const agent = 'aa:bb:cc:dd:ee:02';
+
+    // The agent has no BackhaulDeviceID and no LinkType: the shape an agent
+    // has while it is still joining.
+    final network = DataElementsTestData.network([
+      DataElementsTestData.node(instance: '1', id: controller),
+      DataElementsTestData.node(instance: '2', id: agent),
+    ]);
+
+    test('without ControllerID an agent with no backhaul is a second master',
+        () {
+      final info = MeshTopologyBuilder.build(network);
+
+      expect(info.nodes.whereType<MasterNode>(), hasLength(2));
+      expect(info.nodes.slaves, isEmpty);
+    });
+
+    test('with ControllerID every other node is a slave', () {
+      final info = MeshTopologyBuilder.build(network, controllerId: controller);
+
+      expect(info.nodes.whereType<MasterNode>().single.deviceId,
+          controller.toUpperCase());
+      expect(info.nodes.slaves.map((s) => s.deviceId), [agent.toUpperCase()]);
+    });
+
+    // ControllerID and Device.{i}.ID are separate leaves.
+    test('ControllerID matches regardless of MAC spelling', () {
+      final info =
+          MeshTopologyBuilder.build(network, controllerId: '74-12-13-21-56-3A');
+
+      expect(info.nodes.slaves, hasLength(1));
+    });
+
+    // A ControllerID that names no node in this read must not demote the real
+    // controller: the backhaul rule decides instead.
+    test('a ControllerID naming no listed node is ignored', () {
+      final info =
+          MeshTopologyBuilder.build(network, controllerId: '11:22:33:44:55:66');
+
+      expect(info.nodes.whereType<MasterNode>(), hasLength(2));
+    });
+
+    test('a blank or all-zero ControllerID is ignored', () {
+      for (final id in ['', '  ', '00:00:00:00:00:00']) {
+        final info = MeshTopologyBuilder.build(network, controllerId: id);
+        expect(info.nodes.whereType<MasterNode>(), hasLength(2),
+            reason: '"$id" is not a controller');
+      }
     });
   });
 }

@@ -160,7 +160,12 @@ void main() {
       '${node}Interface.4.Neighbor.1.IsIEEE1905': false,
     };
 
-    void stubDataElements({bool interfacesFail = false}) {
+    void stubDataElements({
+      bool interfacesFail = false,
+      Map<String, dynamic>? network,
+      Map<String, dynamic> networkInfo = const {},
+      bool networkInfoFails = false,
+    }) {
       when(() => mockUsp.get(any(), priority: any(named: 'priority')))
           .thenAnswer((inv) async {
         final paths = inv.positionalArguments[0] as List;
@@ -168,8 +173,12 @@ void main() {
           if (interfacesFail) throw 'USP get failed: 7026 Invalid path';
           return interfacesResponse;
         }
+        if (paths.any((p) => p.toString().endsWith('Network.ControllerID'))) {
+          if (networkInfoFails) throw 'USP get failed: 7026 Invalid path';
+          return networkInfo;
+        }
         if (paths.any((p) => p.toString().contains('DataElements'))) {
-          return networkResponse;
+          return network ?? networkResponse;
         }
         return <String, dynamic>{};
       });
@@ -192,6 +201,32 @@ void main() {
 
       expect(topology.nodes, hasLength(1));
       expect(topology.wiredClientToNodeMap, isEmpty);
+    });
+
+    // #1688 review (W2): an agent still joining has no backhaul yet. The
+    // ControllerID read is what keeps it a slave instead of a second master.
+    test('reads ControllerID so a joining agent is a slave', () async {
+      stubDataElements(network: {
+        ...networkResponse,
+        'Device.WiFi.DataElements.Network.Device.2.ID': 'aa:bb:cc:dd:ee:02',
+      }, networkInfo: {
+        'Device.WiFi.DataElements.Network.ControllerID': '74:12:13:21:56:3a',
+      });
+
+      final topology = await svc.fetchMeshTopology();
+
+      expect(
+          topology.nodes.slaves.map((s) => s.deviceId), ['AA:BB:CC:DD:EE:02']);
+    });
+
+    test('a ControllerID read that fails leaves the topology intact', () async {
+      stubDataElements(networkInfoFails: true);
+
+      final topology = await svc.fetchMeshTopology();
+
+      expect(topology.nodes, hasLength(1));
+      expect(topology.wiredClientToNodeMap,
+          {'00:E0:4C:68:08:2D': '74:12:13:21:56:3A'});
     });
   });
 

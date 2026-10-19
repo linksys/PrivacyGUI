@@ -5,6 +5,7 @@ import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
+import 'package:privacy_gui/page/_shared/utils/mesh_node_identity.dart';
 
 /// Builds [MeshTopologyInfo] from DataElements network data.
 ///
@@ -29,12 +30,28 @@ class MeshTopologyBuilder {
   /// subtree. Null when it was not read or the read failed; then no wired
   /// client is attributed and every wired client stays on the master, as
   /// before #1688.
+  ///
+  /// [controllerId] is `Device.WiFi.DataElements.Network.ControllerID`. When
+  /// given, the node with that ID is the master and **every other node is a
+  /// slave**, backhaul evidence or not. Without it the master is the node with
+  /// no backhaul link ([hasMeshBackhaulLink]), which builds an agent whose
+  /// backhaul has not been filled in yet — just joined, or re-associating — as
+  /// a second master. Since #1688 the nodes come only from here, and a second
+  /// master is not a slave, so that agent vanished from the topology. Null
+  /// when the read failed or the firmware did not answer: the backhaul rule
+  /// then decides, as before.
   static MeshTopologyInfo build(
     DataElementsNetwork network, {
     Map<String, String> bssidToBandMap = const {},
     bool includeBackhaulStats = true,
     DataElementsInterfaces? interfaces,
+    String? controllerId,
   }) {
+    final controllerKey = _nodeKey(controllerId);
+    // Only trust ControllerID when it names a node actually in this read; a
+    // stale or foreign value must not turn the real controller into a slave.
+    final controllerListed = controllerKey != null &&
+        network.items.any((n) => _nodeKey(n.id) == controllerKey);
     final nodes = <NodeEntity>[];
     final clientToNodeMap = <String, String>{};
     final clientSignalMap = <String, int>{};
@@ -98,7 +115,9 @@ class MeshTopologyBuilder {
       }
 
       // Master node = the controller, the one node with no backhaul of its own.
-      final isMaster = !hasMeshBackhaulLink(node);
+      final isMaster = controllerListed
+          ? _nodeKey(node.id) == controllerKey
+          : !hasMeshBackhaulLink(node);
 
       // These nodes are built from DataElements, so `deviceId` *is* the
       // DataElements identifier; carry it in `dataElementsId` too so a
@@ -232,11 +251,20 @@ class MeshTopologyBuilder {
       }
     }
 
+    // The two subtrees are separate Gets, so an agent can join or leave
+    // between them. A client listed only by a node the network read did not
+    // return would point at a node that is never built; count only nodes both
+    // reads agree on, so such a client is "no evidence" and stays on the master.
+    final builtNodeIds = {
+      for (final node in network.items)
+        if (key(node.id).isNotEmpty) key(node.id),
+    };
+
     // Rules 1, 3: which nodes list each remaining non-1905 MAC.
     final listedBy = <String, Set<String>>{};
     for (final node in interfaces.items) {
       final nodeId = key(node.id);
-      if (nodeId.isEmpty) continue;
+      if (nodeId.isEmpty || !builtNodeIds.contains(nodeId)) continue;
       for (final interface in node.interfaces) {
         for (final neighbor in interface.neighbors) {
           if (neighbor.isIeee1905 != false) continue;
@@ -274,6 +302,17 @@ class MeshTopologyBuilder {
   /// Defined in terms of [nonEmpty] so the two cannot drift on what "reported
   /// nothing" means — the `?? ''` is the whole difference.
   static String _identity(String? value) => nonEmpty(value) ?? '';
+
+  /// A node or controller ID as the master test compares it: separators
+  /// stripped and upper-cased, or null when absent, blank, or the all-zero
+  /// sentinel. `ControllerID` and `Device.{i}.ID` are separate leaves, so the
+  /// comparison must not depend on them sharing a spelling.
+  static String? _nodeKey(String? id) {
+    final mac = nonUnsetMac(id);
+    if (mac == null) return null;
+    final key = meshNodeMacKey(mac);
+    return key.isEmpty ? null : key;
+  }
 
   /// The node's own station-side backhaul MAC.
   ///

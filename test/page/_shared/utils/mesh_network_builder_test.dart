@@ -177,6 +177,40 @@ void main() {
       expect(result.allClients.map((c) => c.mac), ['11:22:33:44:55:01']);
     });
 
+    // The controller has no Hosts row on 2.0.3.26101482, but a build that
+    // gives it one must still treat that row as the controller's: its IP and
+    // host name, and not a client. The row's MAC case differs from the node
+    // ID's on purpose — Hosts and DataElements are separate producers.
+    test(
+        'a controller with its own Hosts row takes its IP from it and does '
+        'not list it as a client (#1688)', () {
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: 'aa:bb:cc:dd:ee:01',
+            hostName: 'Router',
+            ipAddress: '192.168.1.1',
+          ),
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:01',
+            hostName: 'Phone',
+            interface_: 'Device.WiFi.Radio.1',
+          ),
+        ]),
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        meshTopology: MeshTopologyInfo(
+          nodes: [buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01')],
+          clientToNodeMap: const {},
+        ),
+        gatewayName: 'Router',
+      );
+
+      expect(result.master.ipAddress, '192.168.1.1');
+      expect(result.master.hostName, 'Router');
+      expect(result.allClients.map((c) => c.mac), ['11:22:33:44:55:01']);
+    });
+
     // The FWDEV#208 rule matches on the MAC, and Hosts and DataElements are
     // separate producers. A spelling difference between the two must not turn
     // the agent back into a client.
