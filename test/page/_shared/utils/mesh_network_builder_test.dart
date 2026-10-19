@@ -19,7 +19,6 @@ void main() {
   ConnectedDevice buildConnectedDevice({
     required String macAddress,
     String instancePath = 'Device.Hosts.Host.1.',
-    String deviceRole = 'client',
     String hostName = '',
     String? friendlyName,
     String ipAddress = '',
@@ -44,7 +43,6 @@ void main() {
     return ConnectedDevice(
       instancePath: instancePath,
       macAddress: macAddress,
-      deviceRole: deviceRole,
       hostName: hostName,
       friendlyName: friendlyName,
       ipAddress: ipAddress,
@@ -129,21 +127,23 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('MeshNetworkBuilder.build', () {
-    test('separates master and slave nodes from clients', () {
+    // #1688 item 1. FL-WRT 2.0 has no `DeviceRole` on Hosts, so the nodes come
+    // from DataElements and a Hosts row is a node's when its PhysAddress is the
+    // node's `Device.{i}.ID` (linksys/FWDEV#208). The shape is the one measured
+    // on 2.0.3.26101482: the controller has no Hosts row of its own, and an
+    // agent's row carries nothing that marks it as a node.
+    test(
+        'builds nodes from DataElements and keeps their Hosts rows out of '
+        'the clients (#1688)', () {
       final connectedDevices = ConnectedDevices(items: [
-        buildConnectedDevice(
-          macAddress: 'AA:BB:CC:DD:EE:01',
-          deviceRole: 'master',
-          hostName: 'Router',
-        ),
+        // The agent's own row: no role leaf, only a MAC equal to its ID.
         buildConnectedDevice(
           macAddress: 'AA:BB:CC:DD:EE:02',
-          deviceRole: 'slave',
           hostName: 'Extender',
+          ipAddress: '192.168.1.120',
         ),
         buildConnectedDevice(
           macAddress: '11:22:33:44:55:01',
-          deviceRole: 'client',
           hostName: 'Phone',
           interface_: 'Device.WiFi.Radio.1',
           isActive: true,
@@ -154,27 +154,146 @@ void main() {
         connectedDevices: connectedDevices,
         wifiClientMap: {},
         connectionDetailMap: {},
+        meshTopology: MeshTopologyInfo(
+          nodes: [
+            buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
+            buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:02'),
+          ],
+          clientToNodeMap: const {},
+        ),
+        gatewayName: 'Router',
+      );
+
+      // The controller, with no Hosts row, is still the master.
+      expect(result.master.deviceId, 'AA:BB:CC:DD:EE:01');
+      expect(result.slaves, hasLength(1));
+      final slave = result.slaves.single;
+      expect(slave.deviceId, 'AA:BB:CC:DD:EE:02');
+      // The agent's Hosts row supplies what DataElements does not carry.
+      expect(slave.hostName, 'Extender');
+      expect(slave.ipAddress, '192.168.1.120');
+      // ...and is not also listed as a client.
+      expect(result.allClients.map((c) => c.mac), ['11:22:33:44:55:01']);
+    });
+
+    // The FWDEV#208 rule matches on the MAC, and Hosts and DataElements are
+    // separate producers. A spelling difference between the two must not turn
+    // the agent back into a client.
+    test('matches a node to its Hosts row regardless of MAC spelling (#1688)',
+        () {
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: 'aa:bb:cc:dd:ee:02',
+            hostName: 'Extender',
+          ),
+        ]),
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        meshTopology: MeshTopologyInfo(
+          nodes: [
+            buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
+            buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:02'),
+          ],
+          clientToNodeMap: const {},
+        ),
+        gatewayName: 'Router',
+      );
+
+      expect(result.slaves.single.hostName, 'Extender');
+      expect(result.allClients, isEmpty);
+    });
+
+    // FWDEV#208 measured every agent with a matching Hosts row, but our own
+    // bench has not confirmed it. An agent with no row must still be built.
+    test(
+        'builds an agent that has no Hosts row, with no IP or host name '
+        '(#1688)', () {
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: const ConnectedDevices(items: []),
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        meshTopology: MeshTopologyInfo(
+          nodes: [
+            buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
+            buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:02', model: 'MX5300'),
+          ],
+          clientToNodeMap: const {},
+        ),
+        gatewayName: 'Router',
+      );
+
+      final slave = result.slaves.single;
+      expect(slave.deviceId, 'AA:BB:CC:DD:EE:02');
+      expect(slave.dataElementsId, 'AA:BB:CC:DD:EE:02');
+      expect(slave.model, 'MX5300');
+      expect(slave.ipAddress, isNull);
+      expect(slave.hostName, isNull);
+      expect(slave.isOnline, isTrue);
+    });
+
+    // The Hosts names on a node row are the 2.0 `X_LINKSYS_` leaves, as for
+    // clients (#1693). The unprefixed 1.0 FriendlyName is absent on 2.0 and
+    // must not be what names an agent.
+    test('names an agent from its X_LINKSYS_FriendlyName (#1688)', () {
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:02',
+            hostName: 'mx5300-host',
+            friendlyName: 'stale 1.0 leaf',
+            linksysFriendlyName: 'Upstairs',
+          ),
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:01',
+            hostName: 'Phone',
+            interface_: 'Device.WiFi.Radio.1',
+          ),
+        ]),
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        meshTopology: MeshTopologyInfo(
+          nodes: [
+            buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
+            buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:02'),
+          ],
+          clientToNodeMap: const {'11:22:33:44:55:01': 'AA:BB:CC:DD:EE:02'},
+        ),
+        gatewayName: 'Router',
+      );
+
+      final slave = result.slaves.single;
+      expect(slave.friendlyName, 'Upstairs');
+      expect(slave.displayName, 'Upstairs');
+      // A client on that agent is labelled with the same name.
+      expect(slave.connectedClients.single.parentNodeName, 'Upstairs');
+    });
+
+    test('nothing is a node when DataElements reported no node', () {
+      // On 2.0 an empty topology carries no node information at all, and no
+      // Hosts row can say otherwise: every row is a client.
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:02',
+            hostName: 'Extender',
+          ),
+        ]),
+        wifiClientMap: {},
+        connectionDetailMap: {},
         meshTopology: MeshTopologyInfo.empty,
         gatewayName: 'Router',
       );
 
-      expect(result.master.deviceId, 'AA:BB:CC:DD:EE:01');
-      expect(result.slaves.length, 1);
-      expect(result.slaves.first.deviceId, 'AA:BB:CC:DD:EE:02');
-      expect(result.allClients.length, 1);
-      expect(result.allClients.first.mac, '11:22:33:44:55:01');
+      expect(result.slaves, isEmpty);
+      expect(result.master.deviceId, 'GATEWAY');
+      expect(result.allClients.map((c) => c.mac), ['AA:BB:CC:DD:EE:02']);
     });
 
     test('assigns clients to master when no mesh topology', () {
       final connectedDevices = ConnectedDevices(items: [
         buildConnectedDevice(
-          macAddress: 'AA:BB:CC:DD:EE:01',
-          deviceRole: 'master',
-          hostName: 'Router',
-        ),
-        buildConnectedDevice(
           macAddress: '11:22:33:44:55:01',
-          deviceRole: 'client',
           hostName: 'Phone',
           interface_: 'Device.WiFi.Radio.1',
           isActive: true,
@@ -197,24 +316,20 @@ void main() {
       final connectedDevices = ConnectedDevices(items: [
         buildConnectedDevice(
           macAddress: 'AA:BB:CC:DD:EE:01',
-          deviceRole: 'master',
           hostName: 'Router',
         ),
         buildConnectedDevice(
           macAddress: 'AA:BB:CC:DD:EE:02',
-          deviceRole: 'slave',
           hostName: 'Extender',
         ),
         buildConnectedDevice(
           macAddress: '11:22:33:44:55:01',
-          deviceRole: 'client',
           hostName: 'MasterClient',
           interface_: 'Device.WiFi.Radio.1',
           isActive: true,
         ),
         buildConnectedDevice(
           macAddress: '11:22:33:44:55:02',
-          deviceRole: 'client',
           hostName: 'SlaveClient',
           interface_: 'Device.WiFi.Radio.1',
           isActive: true,
@@ -251,15 +366,12 @@ void main() {
       final connectedDevices = ConnectedDevices(items: [
         buildConnectedDevice(
           macAddress: 'AA:BB:CC:DD:EE:01',
-          deviceRole: 'master',
         ),
         buildConnectedDevice(
           macAddress: 'AA:BB:CC:DD:EE:02',
-          deviceRole: 'slave',
         ),
         buildConnectedDevice(
           macAddress: '11:22:33:44:55:01',
-          deviceRole: 'client',
           hostName: 'SlaveClient',
           interface_: 'Device.WiFi.Radio.1',
           interfaceType: 'Wi-Fi',
@@ -297,15 +409,12 @@ void main() {
       final connectedDevices = ConnectedDevices(items: [
         buildConnectedDevice(
           macAddress: 'AA:BB:CC:DD:EE:01',
-          deviceRole: 'master',
         ),
         buildConnectedDevice(
           macAddress: 'AA:BB:CC:DD:EE:02',
-          deviceRole: 'slave',
         ),
         buildConnectedDevice(
           macAddress: '11:22:33:44:55:01',
-          deviceRole: 'client',
           hostName: 'SlaveClient',
           interface_: 'Device.WiFi.Radio.1',
           interfaceType: 'Wi-Fi',
@@ -343,11 +452,9 @@ void main() {
       final connectedDevices = ConnectedDevices(items: [
         buildConnectedDevice(
           macAddress: 'AA:BB:CC:DD:EE:01',
-          deviceRole: 'master',
         ),
         buildConnectedDevice(
           macAddress: '11:22:33:44:55:01',
-          deviceRole: 'client',
           hostName: 'MasterClient',
           interface_: 'Device.WiFi.Radio.1',
           interfaceType: 'Wi-Fi',
@@ -390,11 +497,9 @@ void main() {
       final connectedDevices = ConnectedDevices(items: [
         buildConnectedDevice(
           macAddress: 'AA:BB:CC:DD:EE:01',
-          deviceRole: 'master',
         ),
         buildConnectedDevice(
           macAddress: '11:22:33:44:55:01',
-          deviceRole: 'client',
           hostName: 'MasterClient',
           interface_: 'Device.WiFi.Radio.1',
           interfaceType: 'Wi-Fi',
@@ -436,11 +541,9 @@ void main() {
       final connectedDevices = ConnectedDevices(items: [
         buildConnectedDevice(
           macAddress: 'AA:BB:CC:DD:EE:01',
-          deviceRole: 'master',
         ),
         buildConnectedDevice(
           macAddress: '11:22:33:44:55:01',
-          deviceRole: 'client',
           hostName: 'MasterClient',
           interface_: 'Device.WiFi.Radio.1',
           interfaceType: 'Wi-Fi',
@@ -477,11 +580,9 @@ void main() {
       final connectedDevices = ConnectedDevices(items: [
         buildConnectedDevice(
           macAddress: 'AA:BB:CC:DD:EE:01',
-          deviceRole: 'master',
         ),
         buildConnectedDevice(
           macAddress: '11:22:33:44:55:01',
-          deviceRole: 'client',
           hostName: 'MasterClient',
           interface_: 'Device.WiFi.Radio.1',
           interfaceType: 'Wi-Fi',
@@ -512,12 +613,7 @@ void main() {
     test('merges multi-interface devices by hostname', () {
       final connectedDevices = ConnectedDevices(items: [
         buildConnectedDevice(
-          macAddress: 'AA:BB:CC:DD:EE:01',
-          deviceRole: 'master',
-        ),
-        buildConnectedDevice(
           macAddress: '11:22:33:44:55:01',
-          deviceRole: 'client',
           hostName: 'Laptop',
           interface_: 'Device.WiFi.Radio.1',
           interfaceType: 'Wi-Fi',
@@ -525,7 +621,6 @@ void main() {
         ),
         buildConnectedDevice(
           macAddress: '11:22:33:44:55:02',
-          deviceRole: 'client',
           hostName: 'Laptop', // Same hostname
           interface_: 'Device.Ethernet.Interface.1',
           interfaceType: 'Ethernet',
@@ -620,16 +715,13 @@ void main() {
       expect(laptop.hostInstancePath, 'Device.Hosts.Host.5.');
     });
 
+    // A client is labelled with the name of the node it is on. On 2.0 the
+    // router has no Hosts row and names itself on DeviceInfo (#1691), so that
+    // is where the name comes from here.
     test('patches parentNodeName on clients', () {
       final connectedDevices = ConnectedDevices(items: [
         buildConnectedDevice(
-          macAddress: 'AA:BB:CC:DD:EE:01',
-          deviceRole: 'master',
-          friendlyName: 'Living Room Router',
-        ),
-        buildConnectedDevice(
           macAddress: '11:22:33:44:55:01',
-          deviceRole: 'client',
           hostName: 'Phone',
           interface_: 'Device.WiFi.Radio.1',
           isActive: true,
@@ -642,6 +734,7 @@ void main() {
         connectionDetailMap: {},
         meshTopology: MeshTopologyInfo.empty,
         gatewayName: 'Router',
+        systemInfo: buildSystemInfo(userDeviceLocation: 'Living Room Router'),
       );
 
       expect(
@@ -653,12 +746,7 @@ void main() {
     test('uses wifiClientMap for signal enrichment on master clients', () {
       final connectedDevices = ConnectedDevices(items: [
         buildConnectedDevice(
-          macAddress: 'AA:BB:CC:DD:EE:01',
-          deviceRole: 'master',
-        ),
-        buildConnectedDevice(
           macAddress: '11:22:33:44:55:01',
-          deviceRole: 'client',
           hostName: 'Phone',
           interface_: 'Device.WiFi.Radio.1',
           interfaceType: 'Wi-Fi',
@@ -699,12 +787,7 @@ void main() {
         () {
       final connectedDevices = ConnectedDevices(items: [
         buildConnectedDevice(
-          macAddress: 'AA:BB:CC:DD:EE:01',
-          deviceRole: 'master',
-        ),
-        buildConnectedDevice(
           macAddress: '11:22:33:44:55:01',
-          deviceRole: 'client',
           hostName: 'Phone',
           interface_: 'Device.WiFi.Radio.1',
           interfaceType: 'Wi-Fi',
@@ -744,12 +827,7 @@ void main() {
         () {
       final connectedDevices = ConnectedDevices(items: [
         buildConnectedDevice(
-          macAddress: 'AA:BB:CC:DD:EE:01',
-          deviceRole: 'master',
-        ),
-        buildConnectedDevice(
           macAddress: '11:22:33:44:55:01',
-          deviceRole: 'client',
           hostName: 'Phone',
           interface_: 'Device.WiFi.Radio.1',
           interfaceType: 'Wi-Fi',
@@ -776,12 +854,7 @@ void main() {
     test('detects WiFi client via interfaceType containing wi-fi', () {
       final connectedDevices = ConnectedDevices(items: [
         buildConnectedDevice(
-          macAddress: 'AA:BB:CC:DD:EE:01',
-          deviceRole: 'master',
-        ),
-        buildConnectedDevice(
           macAddress: '11:22:33:44:55:01',
-          deviceRole: 'client',
           hostName: 'Phone',
           interface_: '', // Empty interface
           interfaceType: 'Wi-Fi', // But interfaceType indicates WiFi
@@ -803,12 +876,7 @@ void main() {
     test('detects wired client correctly', () {
       final connectedDevices = ConnectedDevices(items: [
         buildConnectedDevice(
-          macAddress: 'AA:BB:CC:DD:EE:01',
-          deviceRole: 'master',
-        ),
-        buildConnectedDevice(
           macAddress: '11:22:33:44:55:01',
-          deviceRole: 'client',
           hostName: 'Desktop',
           interface_: 'Device.Ethernet.Interface.1',
           interfaceType: 'Ethernet',
@@ -857,15 +925,12 @@ void main() {
       expect(result.master.hostName, 'MyRouter');
     });
 
-    test('normalizes MAC addresses to uppercase', () {
+    // Node IDs are normalized by MeshTopologyBuilder and matched by
+    // `matches a node to its Hosts row regardless of MAC spelling` above.
+    test('normalizes client MAC addresses to uppercase', () {
       final connectedDevices = ConnectedDevices(items: [
         buildConnectedDevice(
-          macAddress: 'aa:bb:cc:dd:ee:01', // lowercase
-          deviceRole: 'master',
-        ),
-        buildConnectedDevice(
-          macAddress: '11:22:33:44:55:01', // lowercase
-          deviceRole: 'client',
+          macAddress: 'dc:52:85:5d:d0:7c', // lowercase, as Hosts writes it
           hostName: 'Phone',
           interface_: 'Device.WiFi.Radio.1',
           isActive: true,
@@ -880,8 +945,7 @@ void main() {
         gatewayName: 'Router',
       );
 
-      expect(result.master.deviceId, 'AA:BB:CC:DD:EE:01');
-      expect(result.allClients.first.mac, '11:22:33:44:55:01');
+      expect(result.allClients.single.mac, 'DC:52:85:5D:D0:7C');
     });
 
     // Issue #1439: a device whose parent node cannot be resolved must not be
@@ -892,31 +956,26 @@ void main() {
       ConnectedDevices meshWithOrphans() => ConnectedDevices(items: [
             buildConnectedDevice(
               macAddress: 'AA:BB:CC:DD:EE:01',
-              deviceRole: 'master',
               hostName: 'Router',
             ),
             buildConnectedDevice(
               macAddress: 'AA:BB:CC:DD:EE:02',
-              deviceRole: 'slave',
               hostName: 'Extender',
             ),
             buildConnectedDevice(
               macAddress: '11:22:33:44:55:01',
-              deviceRole: 'client',
               hostName: 'AttributedPhone',
               interface_: 'Device.WiFi.Radio.1',
               isActive: true,
             ),
             buildConnectedDevice(
               macAddress: '11:22:33:44:55:02',
-              deviceRole: 'client',
               hostName: 'NullParentPhone',
               interface_: 'Device.WiFi.Radio.1',
               isActive: true,
             ),
             buildConnectedDevice(
               macAddress: '11:22:33:44:55:03',
-              deviceRole: 'client',
               hostName: 'UnknownParentPhone',
               interface_: 'Device.WiFi.Radio.1',
               isActive: true,
@@ -996,18 +1055,15 @@ void main() {
         final connectedDevices = ConnectedDevices(items: [
           buildConnectedDevice(
             macAddress: 'AA:BB:CC:DD:EE:01',
-            deviceRole: 'master',
             hostName: 'Router',
           ),
           buildConnectedDevice(
             macAddress: 'AA:BB:CC:DD:EE:02',
-            deviceRole: 'slave',
             hostName: 'Extender',
           ),
           // Wi-Fi client with a station row → resolves to the master.
           buildConnectedDevice(
             macAddress: '11:22:33:44:55:01',
-            deviceRole: 'client',
             hostName: 'WifiPhone',
             interface_: 'Device.WiFi.Radio.1',
             interfaceType: 'Wi-Fi',
@@ -1016,7 +1072,6 @@ void main() {
           // Wired desktop on the master: never a Wi-Fi station key.
           buildConnectedDevice(
             macAddress: '11:22:33:44:55:02',
-            deviceRole: 'client',
             hostName: 'DesktopPC',
             interface_: 'Device.Ethernet.Interface.1',
             interfaceType: 'Ethernet',
@@ -1025,7 +1080,6 @@ void main() {
           // Offline tablet: never a Wi-Fi station key.
           buildConnectedDevice(
             macAddress: '11:22:33:44:55:03',
-            deviceRole: 'client',
             hostName: 'OldTablet',
             interface_: 'Device.WiFi.Radio.1',
             interfaceType: 'Wi-Fi',
@@ -1034,7 +1088,6 @@ void main() {
           // Online Wi-Fi client absent from the station map → the real orphan.
           buildConnectedDevice(
             macAddress: '11:22:33:44:55:04',
-            deviceRole: 'client',
             hostName: 'OrphanWifiPhone',
             interface_: 'Device.WiFi.Radio.1',
             interfaceType: 'Wi-Fi',
@@ -1085,13 +1138,7 @@ void main() {
       test('non-mesh null-parent clients stay on the master (not orphans)', () {
         final connectedDevices = ConnectedDevices(items: [
           buildConnectedDevice(
-            macAddress: 'AA:BB:CC:DD:EE:01',
-            deviceRole: 'master',
-            hostName: 'Router',
-          ),
-          buildConnectedDevice(
             macAddress: '11:22:33:44:55:01',
-            deviceRole: 'client',
             hostName: 'Phone',
             interface_: 'Device.WiFi.Radio.1',
             isActive: true,
@@ -1128,13 +1175,11 @@ void main() {
         final connectedDevices = ConnectedDevices(items: [
           buildConnectedDevice(
             macAddress: 'AA:BB:CC:DD:EE:01',
-            deviceRole: 'master',
             hostName: 'Router',
           ),
           // Wi-Fi client with an STA row → resolves to the master.
           buildConnectedDevice(
             macAddress: '11:22:33:44:55:01',
-            deviceRole: 'client',
             hostName: 'WifiPhone',
             interface_: 'Device.WiFi.Radio.1',
             interfaceType: 'Wi-Fi',
@@ -1143,7 +1188,6 @@ void main() {
           // Wired desktop: never a Wi-Fi STA key → null parentNodeId.
           buildConnectedDevice(
             macAddress: '11:22:33:44:55:02',
-            deviceRole: 'client',
             hostName: 'DesktopPC',
             interface_: 'Device.Ethernet.Interface.1',
             interfaceType: 'Ethernet',
@@ -1152,7 +1196,6 @@ void main() {
           // Offline tablet: never a Wi-Fi STA key → null parentNodeId.
           buildConnectedDevice(
             macAddress: '11:22:33:44:55:03',
-            deviceRole: 'client',
             hostName: 'OldTablet',
             interface_: 'Device.WiFi.Radio.1',
             interfaceType: 'Wi-Fi',
@@ -1197,233 +1240,103 @@ void main() {
       });
     });
 
-    // #1430 — node liveness comes from whether the Hosts node row matched a
-    // DataElements agent (dataElementsId != null), NOT from the Hosts row's
-    // `Active` field. Measured on the live bench: a node row's `Active` is `0`
-    // whether the node is up or powered off (it keys on a STA-side MAC the
-    // backfill never matches), so `isActive` carries no liveness information for
-    // nodes. The truthful signal is DataElements membership: a powered-off node
-    // leaves `DataElements.Network.Device.` within ~20-50s while its Hosts row
-    // persists, so an unmatched node row is the offline shape.
-    group('node liveness (#1430)', () {
-      test(
-          'a slave Hosts row that matches NO DataElements agent in a working '
-          'DataElements set is offline (AC5)', () {
-        final connectedDevices = ConnectedDevices(items: [
-          buildConnectedDevice(
-            macAddress: 'AA:BB:CC:DD:EE:01',
-            deviceRole: 'master',
-            hostName: 'Router',
-            isActive: true,
-          ),
-          buildConnectedDevice(
-            macAddress: 'AA:BB:CC:DD:EE:02',
-            deviceRole: 'slave',
-            hostName: 'Extender',
-            deviceId: 'AABBCCDDEE02', // DeviceID with no DataElements match
-            isActive: false, // node rows read 0 regardless — irrelevant here
-          ),
-        ]);
-
-        // A DataElements set that IS working — the master plus one *other*
-        // agent — so the absent match for AA:BB:CC:DD:EE:02 is a verdict about
-        // that node, not about the subtree. Do NOT use MeshTopologyInfo.empty
-        // here: that shape says nothing about any node and is asserted to stay
-        // online by the `DataElements unavailable` test below.
-        final meshTopology = MeshTopologyInfo(
-          nodes: [
-            buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
-            buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:09'),
-          ],
-          clientToNodeMap: {},
-        );
-
+    // #1430 — node liveness, under #1688's rule that the nodes come from
+    // DataElements.
+    //
+    // Before #1688 the slaves were the Hosts rows tagged `DeviceRole=slave`, so
+    // a powered-off extender was an *offline* node: its Hosts row lingered
+    // while it had already left `DataElements.Network.Device.`, and an
+    // unmatched row was the offline shape. FL-WRT 2.0 has no `DeviceRole`, so
+    // that lingering row is indistinguishable from a client and the offline
+    // shape cannot be built from this input. The decision recorded on #1688 is
+    // to build every node from DataElements now and add offline recovery (the
+    // app remembering which MACs were nodes) once a multi-node bench has
+    // measured how long an agent's row lingers on 2.0. These tests pin what
+    // holds today; the offline case is the next one to add, not a regression.
+    group('node liveness (#1430, under #1688)', () {
+      test('every agent DataElements reports is built online', () {
         final result = MeshNetworkBuilder.build(
-          connectedDevices: connectedDevices,
+          connectedDevices: ConnectedDevices(items: [
+            buildConnectedDevice(
+              macAddress: 'AA:BB:CC:DD:EE:02',
+              hostName: 'Extender',
+            ),
+          ]),
           wifiClientMap: {},
           connectionDetailMap: {},
-          meshTopology: meshTopology,
+          meshTopology: MeshTopologyInfo(
+            nodes: [
+              buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
+              buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:02'),
+            ],
+            clientToNodeMap: const {},
+          ),
           gatewayName: 'Router',
         );
 
-        expect(result.slaves.length, 1);
-        final slave = result.slaves.first;
-        // No DataElements match ⇒ liveness is derived as offline.
-        expect(slave.livenessKnown, isTrue);
-        expect(slave.dataElementsId, isNull);
-        expect(slave.isOnline, isFalse);
-        // And an absent backhaul must NOT be reported as a real (wireless)
-        // backhaul with a signal.
-        expect(slave.backhaul.hasInfo, isFalse);
-        expect(slave.backhaul.isWifi, isFalse,
-            reason: 'an absent backhaul is neither Ethernet nor WiFi');
-        expect(slave.backhaul.signalStrength, isNull);
-      });
-
-      test(
-          'a slave stays online when DataElements is unavailable for the whole '
-          'network', () {
-        // The regression the DataElements-match rule opens up. This shape is
-        // produced by every one of:
-        //   - UspDevicesDataService.fetch's first build pass, which always
-        //     passes MeshTopologyInfo.empty (the background fetch updates it
-        //     later);
-        //   - fetchMeshTopology returning MeshTopologyInfo.empty because the
-        //     router does not implement Device.WiFi.DataElements;
-        //   - fetchMeshTopology's `catch (e)` turning ANY transport failure,
-        //     timeout or non-OK result into the same empty value.
-        // The last two are terminal for the session: _fetchMeshAndUpdate bails
-        // on `if (meshTopology.isEmpty) return;` and never updates state. If an
-        // unmatched row were read as offline here, a healthy extender would be
-        // painted offline, its tap would be swallowed by
-        // usp_topology_view.dart's offline guard and its Details button hidden
-        // — with no error surfaced anywhere.
-        final connectedDevices = ConnectedDevices(items: [
-          buildConnectedDevice(
-            macAddress: 'AA:BB:CC:DD:EE:01',
-            deviceRole: 'master',
-            hostName: 'Router',
-            isActive: true,
-          ),
-          buildConnectedDevice(
-            macAddress: 'AA:BB:CC:DD:EE:02',
-            deviceRole: 'slave',
-            hostName: 'Extender',
-            deviceId: 'AABBCCDDEE02',
-            isActive: false, // node rows read 0 even when up
-          ),
-        ]);
-
-        final result = MeshNetworkBuilder.build(
-          connectedDevices: connectedDevices,
-          wifiClientMap: {},
-          connectionDetailMap: {},
-          meshTopology: MeshTopologyInfo.empty,
-          gatewayName: 'Router',
-        );
-
-        expect(result.slaves.length, 1);
         final slave = result.slaves.single;
-        expect(slave.livenessKnown, isFalse,
-            reason: 'an empty topology carries no liveness information');
-        expect(slave.dataElementsId, isNull);
-        expect(slave.isOnline, isTrue,
-            reason: 'liveness is unknown, not offline — the node must stay '
-                'navigable');
-        // Still no fabricated backhaul: unknown liveness does not invent data.
-        expect(slave.backhaul.hasInfo, isFalse);
-        expect(slave.backhaul.isWifi, isFalse);
-        expect(slave.backhaul.signalStrength, isNull);
-      });
-
-      test(
-          'a slave Hosts row with isActive:false that DOES match a '
-          'DataElements agent is online (AC5b)', () {
-        // The measured online shape: the node reports Active=0 (isActive:false)
-        // yet its DeviceID matches a live DataElements agent. This is exactly
-        // the case the retracted `isOnline => isActive` remedy would have
-        // rendered offline; isActive:false is the point of the test.
-        final connectedDevices = ConnectedDevices(items: [
-          buildConnectedDevice(
-            macAddress: 'AA:BB:CC:DD:EE:01',
-            deviceRole: 'master',
-            hostName: 'Router',
-            isActive: true,
-          ),
-          buildConnectedDevice(
-            macAddress: 'AA:BB:CC:DD:EE:02',
-            deviceRole: 'slave',
-            hostName: 'Extender',
-            deviceId: 'AABBCCDDEE02', // last 12 hex == the agent's deviceId
-            isActive: false, // node rows read 0 even when up — the point
-          ),
-        ]);
-
-        final meshTopology = MeshTopologyInfo(
-          nodes: [
-            buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
-            buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:02'), // live agent
-          ],
-          clientToNodeMap: {},
-        );
-
-        final result = MeshNetworkBuilder.build(
-          connectedDevices: connectedDevices,
-          wifiClientMap: {},
-          connectionDetailMap: {},
-          meshTopology: meshTopology,
-          gatewayName: 'Router',
-        );
-
-        expect(result.slaves.length, 1);
-        final slave = result.slaves.single;
-        // Matched a DataElements agent ⇒ online, even though the Hosts row that
-        // produced it carries Active=0. The node no longer carries that field at
-        // all (it was write-only and fed Equatable), so the fixture above is
-        // what pins the behaviour: flipping `isActive:false` there must not
-        // change any assertion here.
         expect(slave.livenessKnown, isTrue);
-        expect(slave.dataElementsId, isNotNull);
-        expect(slave.isOnline, isTrue,
-            reason: 'a DataElements-matched node is online even when the '
-                'Hosts Active field reads 0');
-        // The master is the data source itself and stays online unconditionally.
+        expect(slave.dataElementsId, 'AA:BB:CC:DD:EE:02');
+        expect(slave.isOnline, isTrue);
         expect(result.master.isOnline, isTrue);
       });
 
-      test(
-          'a DataElements set holding only the master still counts as liveness '
-          'information', () {
-        // The boundary between the two tests above, and the shape both reviewers
-        // of #1449 asked to be handed `livenessKnown: false` instead — either by
-        // requiring "some slave agent answered" (`meshTopology.nodes.hasMesh`)
-        // or by counting only non-master nodes.
-        //
-        // It must stay `true`, because this is what a single-extender house
-        // looks like while its one extender is powered off: DataElements
-        // enumerates only the router's own agent (MeshTopologyBuilder adds the
-        // master unconditionally) while the extender's Hosts row persists for
-        // another ~20-50s. Reading that as "no liveness information" renders a
-        // powered-off extender online, i.e. reverts #1430 for the commonest
-        // topology. The `livenessKnown: false` escape hatch is for the subtree
-        // answering *nothing at all* — asserted in the empty-topology test
-        // above — not for it answering with one node.
-        final connectedDevices = ConnectedDevices(items: [
-          buildConnectedDevice(
-            macAddress: 'AA:BB:CC:DD:EE:01',
-            deviceRole: 'master',
-            hostName: 'Router',
-            isActive: true,
-          ),
-          buildConnectedDevice(
-            macAddress: 'AA:BB:CC:DD:EE:02',
-            deviceRole: 'slave',
-            hostName: 'Extender',
-            deviceId: 'AABBCCDDEE02',
-            isActive: false,
-          ),
-        ]);
-
+      // AC5b, still true: liveness is DataElements membership, never the Hosts
+      // row's `Active`. A node row reads `Active=0` whether the node is up or
+      // not (#1430's bench measurement), so isActive:false is the point here.
+      test('a node whose Hosts row reads Active=0 is still online (AC5b)', () {
         final result = MeshNetworkBuilder.build(
-          connectedDevices: connectedDevices,
+          connectedDevices: ConnectedDevices(items: [
+            buildConnectedDevice(
+              macAddress: 'AA:BB:CC:DD:EE:02',
+              hostName: 'Extender',
+              isActive: false,
+            ),
+          ]),
           wifiClientMap: {},
           connectionDetailMap: {},
-          // The master is the only agent — no slave agent to match against.
           meshTopology: MeshTopologyInfo(
-            nodes: [buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01')],
-            clientToNodeMap: {},
+            nodes: [
+              buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
+              buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:02'),
+            ],
+            clientToNodeMap: const {},
           ),
           gatewayName: 'Router',
         );
 
-        expect(result.slaves.length, 1);
-        final slave = result.slaves.single;
-        expect(slave.livenessKnown, isTrue,
-            reason: 'a non-empty topology carries liveness information even '
-                'when every agent in it is the master');
-        expect(slave.dataElementsId, isNull);
-        expect(slave.isOnline, isFalse,
-            reason: 'the powered-off extender #1430 exists to catch');
+        expect(result.slaves.single.isOnline, isTrue);
+        // An Active=0 node row is still the node's, not a client.
+        expect(result.allClients, isEmpty);
+      });
+
+      // The single-extender house with its extender powered off: DataElements
+      // lists only the controller, and the extender's lingering Hosts row has
+      // nothing to mark it as a node. Today it is not built as a node at all —
+      // the gap the class doc of MeshNetworkBuilder names. The assertion is on
+      // the slaves only: the lingering row is not active, so it is not listed
+      // as a client either.
+      test(
+          'an agent DataElements no longer reports is not built (offline '
+          'recovery deferred, #1688)', () {
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: ConnectedDevices(items: [
+            buildConnectedDevice(
+              macAddress: 'AA:BB:CC:DD:EE:02',
+              hostName: 'Extender',
+              isActive: false,
+            ),
+          ]),
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: MeshTopologyInfo(
+            nodes: [buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01')],
+            clientToNodeMap: const {},
+          ),
+          gatewayName: 'Router',
+        );
+
+        expect(result.slaves, isEmpty);
       });
     });
 
@@ -1454,7 +1367,6 @@ void main() {
       ConnectedDevices masterOnly() => ConnectedDevices(items: [
             buildConnectedDevice(
               macAddress: 'AA:BB:CC:DD:EE:01',
-              deviceRole: 'master',
               hostName: 'Router',
             ),
           ]);
@@ -1613,14 +1525,11 @@ void main() {
         final connectedDevices = ConnectedDevices(items: [
           buildConnectedDevice(
             macAddress: 'AA:BB:CC:DD:EE:01',
-            deviceRole: 'master',
             hostName: 'Router',
           ),
           buildConnectedDevice(
             macAddress: 'AA:BB:CC:DD:EE:02',
-            deviceRole: 'slave',
             hostName: 'Extender',
-            deviceId: 'AABBCCDDEE02',
           ),
         ]);
 
