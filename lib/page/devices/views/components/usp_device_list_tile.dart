@@ -65,10 +65,7 @@ class UspDeviceListTile extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final subtitle = _buildSubtitle(context);
 
-    final deviceCategory = DeviceClassifier.classify(
-      hostname: device.hostName,
-      mac: device.mac,
-    );
+    final deviceCategory = DeviceClassifier.classifyClient(device);
 
     final effectiveOnTap = device.isInteractive ? onTap : null;
 

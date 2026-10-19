@@ -153,6 +153,23 @@ void main() {
         expect(withUuid, isNot(equals(otherUuid)));
       });
 
+      // The router's name the node detail page edits (#1691). Equality has to
+      // see it, or a rename would not rebuild the page that shows it.
+      test('carries userDeviceLocation through copyWith and equality', () {
+        final named =
+            DevicesTestData.createMaster(userDeviceLocation: 'Office');
+        expect(named.copyWith().userDeviceLocation, 'Office');
+        expect(named.copyWith(userDeviceLocation: 'Study').userDeviceLocation,
+            'Study');
+
+        expect(named,
+            equals(DevicesTestData.createMaster(userDeviceLocation: 'Office')));
+        expect(
+            named,
+            isNot(equals(
+                DevicesTestData.createMaster(userDeviceLocation: 'Study'))));
+      });
+
       test('cannot clear a nullable field (merges with `?? this`)', () {
         // Pins the documented limitation: because every parameter is applied
         // as `param ?? this.param`, passing null keeps the old value, so

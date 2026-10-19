@@ -997,7 +997,8 @@ void main() {
   // ---------------------------------------------------------------------------
   // Device Category filter
   //
-  // Classification is driven by DeviceClassifier.classify(hostname, mac).
+  // Classification is driven by DeviceClassifier.classifyClient(device). These
+  // fixtures carry no firmware type, so it falls through to the host name.
   // To keep these tests independent of OUI-database state and MAC-fallback
   // heuristics, every fixture below pins its category via an explicit HOSTNAME
   // pattern and uses an OUI-registered (non-randomized) MAC so the outcome is

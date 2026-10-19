@@ -7,6 +7,8 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/firmware_images.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
+import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart'
+    show nonEmpty;
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart'
     as fw_model;
 
@@ -82,7 +84,43 @@ class UspSystemInfoDataService {
       cpuUsage: systemInfo.cpuUsage,
       firmwareImages: fwModels,
       baseMacAddress: _nonEmptyUpper(systemInfo.baseMacAddress),
+      userDeviceLocation: nonEmpty(systemInfo.userDeviceLocation),
+      friendlyName: nonEmpty(systemInfo.friendlyName),
     );
+  }
+
+  /// Writes the name the user gave the router (#1691).
+  ///
+  /// Only `DeviceInfo.X_LINKSYS_UserDeviceLocation`, as for a client; the
+  /// app does not write `FriendlyName`. `''` clears it. The firmware refuses
+  /// more than 64 bytes and keeps the old value.
+  Future<void> updateRouterName(String name) async {
+    try {
+      final result = await SystemInfo.update(_usp, userDeviceLocation: name);
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(
+            :final errorSummary,
+            :final successes,
+            :final failures
+          ):
+          throw UspPartialFailureError(
+            summary: 'Router name partial failure: $errorSummary',
+            successPaths: successes.map((s) => s.requestedPath).toList(),
+            failures: failures,
+          );
+        case UspFailure(:final errorSummary, :final errors):
+          throw UspCompleteFailureError(
+            summary: 'Router name update failed: $errorSummary',
+            failures: errors,
+          );
+      }
+    } catch (e) {
+      if (e is ServiceError) rethrow;
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   /// Same normalisation `SessionService` gives this leaf for Remote Assistance,

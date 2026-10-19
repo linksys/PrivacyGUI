@@ -350,11 +350,15 @@ class MeshNetworkBuilder {
       );
     }
 
+    // Identity comes from devidentd's X_LINKSYS_ leaves (FWDEV#207). A leaf it
+    // has not identified reads "", never absent, so `nonEmpty` turns that into
+    // the null every consumer falls back on. The unprefixed 1.0 leaves are
+    // absent on FL-WRT 2.0 and take no part in the order (#1693).
     return ClientDevice(
       mac: mac,
       ip: device.ipAddress,
       hostName: device.hostName,
-      friendlyName: device.friendlyName,
+      friendlyName: nonEmpty(device.linksysFriendlyName),
       isActive: device.isActive,
       ipv6Addresses: device.ipv6Addresses
           .map((e) => e.address)
@@ -366,10 +370,14 @@ class MeshNetworkBuilder {
       parentNodeId: parentNodeId,
       parentNodeName: parentNodeName,
       isUnattributed: isUnattributed,
-      manufacturer: device.manufacturer,
-      modelName: device.modelName,
-      operatingSystem: device.operatingSystem,
+      manufacturer: nonEmpty(device.linksysManufacturer),
+      modelName: nonEmpty(device.linksysModelName),
+      operatingSystem: nonEmpty(device.linksysOperatingSystem),
+      deviceType: nonEmpty(device.linksysDeviceType),
+      userDeviceType: nonEmpty(device.linksysUserDeviceType),
+      userDeviceName: nonEmpty(device.linksysUserDeviceLocation),
       hostsDeviceId: device.deviceId,
+      hostInstancePath: device.instancePath,
     );
   }
 
@@ -448,7 +456,22 @@ class MeshNetworkBuilder {
     logger.d('[MeshNetworkBuilder]: Merged ${devices.length} interfaces for '
         'hostname="${primary.hostName}" — primary=${primary.mac}');
 
-    return primary.copyWith(additionalInterfaces: additional);
+    // The name and icon the user gave are kept per MAC, so they may sit on a
+    // row that is not the primary: a laptop named on its cable, now on Wi-Fi.
+    // Take them, and the row an edit writes back to, from the first row that
+    // has either, so the name does not vanish when the primary changes (#1691).
+    final named = sorted.firstWhere(
+      (d) => d.userDeviceName != null || d.userDeviceType != null,
+      orElse: () => primary,
+    );
+
+    return primary.copyWith(
+      additionalInterfaces: additional,
+      friendlyName: named.friendlyName,
+      userDeviceName: named.userDeviceName,
+      userDeviceType: named.userDeviceType,
+      hostInstancePath: named.hostInstancePath,
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -466,10 +489,20 @@ class MeshNetworkBuilder {
         masterMeshInfo?.deviceId ??
         'GATEWAY';
 
+    // The router names itself on DeviceInfo, not on a Hosts row (#1691). The
+    // location the user gave comes first, then FriendlyName, which the app does
+    // not write: unlike a client's, the firmware does not fill it from the
+    // location (measured on 2.0.3.26101472). Neither set, `displayName` falls
+    // to the host name and the model as before.
+    final userDeviceLocation = nonEmpty(systemInfo?.userDeviceLocation);
+
     return MasterNode(
       deviceId: deviceId,
       dataElementsId: masterMeshInfo?.deviceId,
-      friendlyName: masterDevice?.friendlyName,
+      friendlyName: userDeviceLocation ??
+          nonEmpty(systemInfo?.friendlyName) ??
+          masterDevice?.friendlyName,
+      userDeviceLocation: userDeviceLocation,
       hostName: masterDevice?.hostName ?? gatewayName,
       // `system_info` first, DataElements second — and the order is the fix,
       // not a preference. The controller row's identity fields are prplMesh

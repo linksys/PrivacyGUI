@@ -152,6 +152,10 @@ class DevicesTestData {
     String? parentNodeId,
     String? parentNodeName,
     List<ClientInterfaceInfo> additionalInterfaces = const [],
+    String? manufacturer,
+    String? modelName,
+    String? deviceType,
+    String? userDeviceType,
   }) =>
       ClientDevice(
         mac: mac,
@@ -164,6 +168,10 @@ class DevicesTestData {
         parentNodeId: parentNodeId,
         parentNodeName: parentNodeName,
         additionalInterfaces: additionalInterfaces,
+        manufacturer: manufacturer,
+        modelName: modelName,
+        deviceType: deviceType,
+        userDeviceType: userDeviceType,
       );
 
   /// Creates an online wired client device.
@@ -267,6 +275,7 @@ class DevicesTestData {
     List<ClientDevice> connectedClients = const [],
     String? wanIpAddress = '100.64.1.100',
     String? hostsDeviceId,
+    String? userDeviceLocation,
   }) =>
       MasterNode(
         deviceId: deviceId,
@@ -281,6 +290,7 @@ class DevicesTestData {
         connectedClients: connectedClients,
         wanIpAddress: wanIpAddress,
         hostsDeviceId: hostsDeviceId,
+        userDeviceLocation: userDeviceLocation,
       );
 
   /// Creates a slave (extender) node with WiFi backhaul.
