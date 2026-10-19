@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/_shared/models/client_device.dart'
     hide ConnectionType;
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/_shared/components/device_category_ui.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/page/devices/providers/device_detail_provider.dart';
@@ -157,10 +158,17 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildDeviceName(context, device),
+                      DetailEditableName(
+                        name: device.displayName,
+                        editLabel: loc(context).editDevice,
+                        identifier: 'device-detail-edit-identity',
+                        onEdit: device.hostInstancePath == null
+                            ? null
+                            : () => _editIdentity(context, ref, device),
+                      ),
                       AppGap.xxs(),
                       AppText.labelMedium(
-                        category.displayName,
+                        category.resolveLabel(context),
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ],
@@ -803,37 +811,6 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
     );
   }
 
-  /// The device name, with an edit pen right after it, styled like the copy
-  /// icon of [DetailCopyableText]. Only the pen is tappable.
-  Widget _buildDeviceName(BuildContext context, ClientDevice device) {
-    final name = AppText.titleLarge(device.displayName);
-    if (device.hostInstancePath == null) return name;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Flexible(child: name),
-        AppGap.xs(),
-        Semantics(
-          button: true,
-          label: loc(context).editDevice,
-          identifier: 'device-detail-edit-identity',
-          child: InkWell(
-            onTap: () => _editIdentity(context, ref, device),
-            borderRadius: BorderRadius.circular(AppSpacing.xxs),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.xxs),
-              child: Icon(
-                Icons.edit,
-                size: 16,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   // ===========================================================================
   // Identity Actions
   // ===========================================================================
@@ -849,12 +826,17 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         initialCategory:
             DeviceCategory.fromUserTypeCode(device.userDeviceType) ??
                 DeviceCategory.unknown,
+        hasUserType: device.userDeviceType != null,
+        // A best guess at what an empty name shows. Cleared, devidentd's
+        // FriendlyName is its own detected name, else the host name; the
+        // detected name is not exposed while the user's name hides it, so the
+        // host name is the closest the app can say.
         detectedName: device.hostName,
         onSave: (name, category) =>
             ref.read(devicesDataProvider.notifier).updateIdentity(
                   hostInstancePath: device.hostInstancePath!,
                   name: name,
-                  userTypeCode: category.userTypeCode,
+                  userTypeCode: category?.userTypeCode,
                 ),
       ),
     );

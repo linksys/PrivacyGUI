@@ -164,10 +164,12 @@ class UspDevicesDataService {
   /// `X_LINKSYS_FriendlyName` reads back; the icon is the app's own code
   /// (`DeviceCategory.userTypeCode`) in `X_LINKSYS_UserDeviceType`. `''`
   /// clears either, so the client falls back to what the firmware detected.
+  /// A null [userTypeCode] leaves the stored type alone: a name-only edit must
+  /// not erase a type another client wrote.
   Future<void> updateIdentity({
     required String hostInstancePath,
     required String name,
-    required String userTypeCode,
+    String? userTypeCode,
   }) async {
     try {
       final result = await ConnectedDevices.update(_usp, [

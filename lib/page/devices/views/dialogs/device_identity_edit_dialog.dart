@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/components/device_category_ui.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -23,26 +24,34 @@ bool isDeviceNameTooLong(String name) => !_nameRule.validate(name);
 /// happened if the dialog closed at once. It then pops `true`. A failed save
 /// keeps the dialog open and says why. Cancel pops null.
 ///
-/// [DeviceCategory.unknown] is the "Auto" choice: it clears the user's icon, so
-/// the detected type shows. Reset saves `('', unknown)` the same way, which
-/// clears both and returns the device to what the firmware detected; it is off
-/// when nothing is set.
+/// The saved category is null when the user did not touch the icon, so a type
+/// another client wrote is left alone. [DeviceCategory.unknown] is the "Auto"
+/// choice: it clears the user's icon, so the detected type shows. Reset saves
+/// `('', unknown)` the same way, which clears both and returns the device to
+/// what the firmware detected; it is off when nothing is set. The dialog cannot
+/// be dismissed while saving.
 class DeviceIdentityEditDialog extends StatefulWidget {
   /// The name the user gave, or empty when there is none.
   final String initialName;
 
-  /// The icon the user picked, or [DeviceCategory.unknown] when there is none.
+  /// The icon the user picked, or [DeviceCategory.unknown] when there is none
+  /// or it is not one of the app's codes.
   final DeviceCategory initialCategory;
+
+  /// Whether a user type is stored at all, including one [initialCategory]
+  /// cannot show (a devregex string another client wrote). Turns Reset on.
+  final bool hasUserType;
 
   /// What an empty name falls back to, shown as the field's hint.
   final String detectedName;
 
   /// Whether the icon choice is offered. Off for the router, which is named
-  /// but not typed; the saved category is then always [initialCategory].
+  /// but not typed; the saved category is then always null.
   final bool showIcon;
 
-  /// Writes the trimmed name and the category. Throws to report a failure.
-  final Future<void> Function(String name, DeviceCategory category) onSave;
+  /// Writes the trimmed name, and the category when the user changed it (null
+  /// otherwise). Throws to report a failure.
+  final Future<void> Function(String name, DeviceCategory? category) onSave;
 
   const DeviceIdentityEditDialog({
     super.key,
@@ -50,6 +59,7 @@ class DeviceIdentityEditDialog extends StatefulWidget {
     required this.initialCategory,
     required this.detectedName,
     required this.onSave,
+    this.hasUserType = false,
     this.showIcon = true,
   });
 
@@ -75,8 +85,12 @@ class _DeviceIdentityEditDialogState extends State<DeviceIdentityEditDialog> {
 
   /// Whether the user has set anything that Reset would clear.
   bool get _hasUserValues =>
-      widget.initialName.isNotEmpty ||
-      widget.initialCategory != DeviceCategory.unknown;
+      widget.initialName.isNotEmpty || widget.hasUserType;
+
+  /// The category to save: null unless the user changed it, so a stored type
+  /// the chips cannot show is not overwritten by "Auto".
+  DeviceCategory? get _changedCategory =>
+      _category == widget.initialCategory ? null : _category;
 
   @override
   void dispose() {
@@ -84,7 +98,7 @@ class _DeviceIdentityEditDialogState extends State<DeviceIdentityEditDialog> {
     super.dispose();
   }
 
-  Future<void> _save(String name, DeviceCategory category) async {
+  Future<void> _save(String name, DeviceCategory? category) async {
     setState(() {
       _saving = true;
       _saveError = null;
@@ -103,6 +117,15 @@ class _DeviceIdentityEditDialogState extends State<DeviceIdentityEditDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // Not dismissible mid-save: closing it would drop the save's result and
+    // any error. The barrier and Esc both go through this pop.
+    return PopScope(
+      canPop: !_saving,
+      child: _buildDialog(context),
+    );
+  }
+
+  Widget _buildDialog(BuildContext context) {
     return AppDialog(
       // Thirteen icon chips outgrow a short window; scrolling the content keeps
       // Save on screen.
@@ -139,7 +162,7 @@ class _DeviceIdentityEditDialogState extends State<DeviceIdentityEditDialog> {
                   ChipItem(
                     label: c == DeviceCategory.unknown
                         ? loc(context).auto
-                        : c.displayName,
+                        : c.resolveLabel(context),
                     icon: c.icon,
                     identifier: 'device-identity-icon-${c.name}',
                   ),
@@ -179,7 +202,7 @@ class _DeviceIdentityEditDialogState extends State<DeviceIdentityEditDialog> {
           isLoading: _saving,
           onTap: _tooLong || _saving
               ? null
-              : () => _save(_nameController.text.trim(), _category),
+              : () => _save(_nameController.text.trim(), _changedCategory),
         ),
       ],
     );

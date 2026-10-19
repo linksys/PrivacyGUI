@@ -7,6 +7,8 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/firmware_images.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
+import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart'
+    show nonEmpty;
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart'
     as fw_model;
 
@@ -82,8 +84,8 @@ class UspSystemInfoDataService {
       cpuUsage: systemInfo.cpuUsage,
       firmwareImages: fwModels,
       baseMacAddress: _nonEmptyUpper(systemInfo.baseMacAddress),
-      userDeviceLocation: _nonEmpty(systemInfo.userDeviceLocation),
-      friendlyName: _nonEmpty(systemInfo.friendlyName),
+      userDeviceLocation: nonEmpty(systemInfo.userDeviceLocation),
+      friendlyName: nonEmpty(systemInfo.friendlyName),
     );
   }
 
@@ -119,12 +121,6 @@ class UspSystemInfoDataService {
       if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
-  }
-
-  /// [value] trimmed, or null when the router reports `""` (unset).
-  static String? _nonEmpty(String? value) {
-    final text = value?.trim();
-    return (text == null || text.isEmpty) ? null : text;
   }
 
   /// Same normalisation `SessionService` gives this leaf for Remote Assistance,

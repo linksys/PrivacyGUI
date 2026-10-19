@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/topology/views/usp_node_detail_view.dart';
 
-import '../../../golden_framework/golden_interactions.dart';
 import '../../../golden_framework/golden_runner.dart';
 import '../../../golden_framework/golden_test_config.dart';
 import '../../../../mocks/provider_overrides/mock_topology.dart';

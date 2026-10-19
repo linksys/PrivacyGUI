@@ -560,6 +560,23 @@ void main() {
           )).called(1);
     });
 
+    // A name-only edit leaves the stored type alone, so a type another client
+    // wrote (a devregex string the app has no code for) is not erased.
+    test('with no icon change, only the name is written', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => setSuccess());
+
+      await svc.updateIdentity(
+        hostInstancePath: 'Device.Hosts.Host.3.',
+        name: 'Kitchen',
+      );
+
+      verify(() => mockUsp.set(
+            {'Device.Hosts.Host.3.X_LINKSYS_UserDeviceLocation': 'Kitchen'},
+            allowPartial: false,
+          )).called(1);
+    });
+
     test('a refused Set throws UspCompleteFailureError', () {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => {

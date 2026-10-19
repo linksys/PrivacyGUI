@@ -616,6 +616,17 @@ void main() {
       }
     });
 
+    // The guard for a category added later: it must take a new number, never
+    // one already stored on a router.
+    test('every category but unknown has its own code', () {
+      final codes = DeviceCategory.values
+          .where((c) => c != DeviceCategory.unknown)
+          .map((c) => c.userTypeCode)
+          .toList();
+      expect(codes, everyElement(isNotEmpty));
+      expect(codes.toSet().length, codes.length, reason: 'a code is reused');
+    });
+
     test('unknown has no code: picking it clears the user type', () {
       expect(DeviceCategory.unknown.userTypeCode, '');
     });

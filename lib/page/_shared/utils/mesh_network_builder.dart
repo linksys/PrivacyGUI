@@ -456,7 +456,22 @@ class MeshNetworkBuilder {
     logger.d('[MeshNetworkBuilder]: Merged ${devices.length} interfaces for '
         'hostname="${primary.hostName}" — primary=${primary.mac}');
 
-    return primary.copyWith(additionalInterfaces: additional);
+    // The name and icon the user gave are kept per MAC, so they may sit on a
+    // row that is not the primary: a laptop named on its cable, now on Wi-Fi.
+    // Take them, and the row an edit writes back to, from the first row that
+    // has either, so the name does not vanish when the primary changes (#1691).
+    final named = sorted.firstWhere(
+      (d) => d.userDeviceName != null || d.userDeviceType != null,
+      orElse: () => primary,
+    );
+
+    return primary.copyWith(
+      additionalInterfaces: additional,
+      friendlyName: named.friendlyName,
+      userDeviceName: named.userDeviceName,
+      userDeviceType: named.userDeviceType,
+      hostInstancePath: named.hostInstancePath,
+    );
   }
 
   // ---------------------------------------------------------------------------

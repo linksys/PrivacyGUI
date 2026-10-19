@@ -18,6 +18,7 @@ void main() {
 
   ConnectedDevice buildConnectedDevice({
     required String macAddress,
+    String instancePath = 'Device.Hosts.Host.1.',
     String deviceRole = 'client',
     String hostName = '',
     String? friendlyName,
@@ -41,7 +42,7 @@ void main() {
     String? linksysUserDeviceLocation,
   }) {
     return ConnectedDevice(
-      instancePath: 'Device.Hosts.Host.1.',
+      instancePath: instancePath,
       macAddress: macAddress,
       deviceRole: deviceRole,
       hostName: hostName,
@@ -545,6 +546,78 @@ void main() {
       expect(result.allClients.first.hostName, 'Laptop');
       expect(result.allClients.first.hasMultipleInterfaces, isTrue);
       expect(result.allClients.first.additionalInterfaces.length, 1);
+    });
+
+    // A laptop with Wi-Fi and a cable is two Hosts rows merged into one device.
+    // The primary is the active Wi-Fi row, but the user may have named it while
+    // it was on the cable. The merged device shows the name and icon the user
+    // set on whichever row has them, and an edit writes back to that row, so a
+    // name does not vanish when the primary interface changes (#1691).
+    test('a merged device keeps the user name and icon from any of its rows',
+        () {
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:01',
+            instancePath: 'Device.Hosts.Host.5.',
+            hostName: 'Laptop',
+            interface_: 'Device.WiFi.Radio.1',
+            interfaceType: 'Wi-Fi',
+            linksysFriendlyName: 'Laptop',
+          ),
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:02',
+            instancePath: 'Device.Hosts.Host.6.',
+            hostName: 'Laptop',
+            interface_: 'Device.Ethernet.Interface.1',
+            interfaceType: 'Ethernet',
+            linksysFriendlyName: 'Work laptop',
+            linksysUserDeviceLocation: 'Work laptop',
+            linksysUserDeviceType: '3',
+          ),
+        ]),
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        meshTopology: MeshTopologyInfo.empty,
+        gatewayName: 'Router',
+      );
+
+      final laptop = result.allClients.single;
+      expect(laptop.mac, '11:22:33:44:55:01', reason: 'Wi-Fi stays primary');
+      expect(laptop.userDeviceName, 'Work laptop');
+      expect(laptop.userDeviceType, '3');
+      expect(laptop.friendlyName, 'Work laptop');
+      expect(laptop.hostInstancePath, 'Device.Hosts.Host.6.',
+          reason: 'an edit goes to the row that holds the user values');
+    });
+
+    test('a merged device with no user values keeps the primary row', () {
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: ConnectedDevices(items: [
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:01',
+            instancePath: 'Device.Hosts.Host.5.',
+            hostName: 'Laptop',
+            interface_: 'Device.WiFi.Radio.1',
+            interfaceType: 'Wi-Fi',
+          ),
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:02',
+            instancePath: 'Device.Hosts.Host.6.',
+            hostName: 'Laptop',
+            interface_: 'Device.Ethernet.Interface.1',
+            interfaceType: 'Ethernet',
+          ),
+        ]),
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        meshTopology: MeshTopologyInfo.empty,
+        gatewayName: 'Router',
+      );
+
+      final laptop = result.allClients.single;
+      expect(laptop.userDeviceName, isNull);
+      expect(laptop.hostInstancePath, 'Device.Hosts.Host.5.');
     });
 
     test('patches parentNodeName on clients', () {
