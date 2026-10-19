@@ -29,6 +29,15 @@ final uspInternetSettingsProvider = AutoDisposeNotifierProvider<
   UspInternetSettingsNotifier.new,
 );
 
+/// How long [UspInternetSettingsNotifier.save] holds after entering bridge.
+///
+/// The router is reachable again at `<hostName>.local` only T+20–25s after
+/// entering bridge, T being the SET returning (#762 comment 5987286082), so the
+/// save — and the spinner the view shows for it — lasts until the redirect can
+/// land. A provider so tests can shorten it.
+final bridgeSettleDelayProvider =
+    Provider<Duration>((ref) => const Duration(seconds: 20));
+
 /// Service provider — stateless, created from the current UspClient.
 final uspInternetSettingsServiceProvider =
     Provider.autoDispose<UspInternetSettingsService>((ref) {
@@ -378,7 +387,12 @@ class UspInternetSettingsNotifier
       //    time out (~15s per GET) and surface a spurious "something went
       //    wrong" error for an operation that actually succeeded. The redirect
       //    dialog is the only valid next step from here.
+      // 3. Hold for [bridgeSettleDelayProvider], after the disconnect: waiting
+      //    with SSE still up would let its reconnect failures reach the
+      //    recovery threshold (~3-5s) before the redirect dialog.
+      final settle = ref.read(bridgeSettleDelayProvider);
       await ref.read(sseManagerProvider)?.disconnect();
+      await Future<void>.delayed(settle);
       return state;
     }
 

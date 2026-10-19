@@ -25,13 +25,7 @@ import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_typ
 class UspInternetSettingsService {
   final UspClient _usp;
 
-  /// How long entering bridge waits after its SET before [saveAll] returns.
-  final Duration _bridgeSettleDelay;
-
-  UspInternetSettingsService(
-    this._usp, {
-    Duration bridgeSettleDelay = defaultBridgeSettleDelay,
-  }) : _bridgeSettleDelay = bridgeSettleDelay;
+  UspInternetSettingsService(this._usp);
 
   /// Timeout for the terminal bridge-mode SETs (both directions).
   ///
@@ -48,13 +42,6 @@ class UspInternetSettingsService {
   /// throttler timeout on a SET that has already succeeded. See
   /// [_enterBridgeMode] and [_exitBridgeMode].
   static const _bridgeSetTimeout = Duration(seconds: 4);
-
-  /// Default for [_bridgeSettleDelay].
-  ///
-  /// The router is reachable again at `<hostName>.local` only T+20–25s after
-  /// entering bridge, T being the SET returning (#762 comment 5987286082), so
-  /// the caller's next step — redirecting there — waits for it here.
-  static const defaultBridgeSettleDelay = Duration(seconds: 20);
 
   /// The WAN tunnel and 6rd rows.
   ///
@@ -530,13 +517,7 @@ class UspInternetSettingsService {
   /// used to send — does none of that: on this firmware that set handler only
   /// writes a uci option and never invokes the script, so the router was left
   /// with a dead WAN rather than a bridge.
-  ///
-  /// Then waits [_bridgeSettleDelay] for the router to come up at
-  /// `<hostName>.local`. A rejected SET throws before the wait.
-  Future<void> _enterBridgeMode() async {
-    await _setBridgeBoundary(enable: false);
-    await Future<void>.delayed(_bridgeSettleDelay);
-  }
+  Future<void> _enterBridgeMode() => _setBridgeBoundary(enable: false);
 
   /// Leaves bridge mode: `Device.IP.Interface.{wan}.Enable = true`.
   ///

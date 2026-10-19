@@ -1,3 +1,4 @@
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -53,9 +54,11 @@ void main() {
     when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
   });
 
-  ProviderContainer createContainer() {
+  ProviderContainer createContainer({Duration? bridgeSettleDelay}) {
     final container = ProviderContainer(
       overrides: [
+        if (bridgeSettleDelay != null)
+          bridgeSettleDelayProvider.overrideWithValue(bridgeSettleDelay),
         uspClientProvider.overrideWithValue(mockUsp),
         uspInternetSettingsServiceProvider.overrideWithValue(mockService),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
@@ -361,6 +364,72 @@ void main() {
           UspWanConnectionType.bridge);
       expect(state.status.isEditing, isFalse);
       expect(notifier.isDirty(), isFalse);
+      container.dispose();
+    });
+
+    test('entering bridge disconnects SSE before the settle wait', () {
+      // SSE left up during the wait would reach its 2-failure recovery
+      // threshold (~3-5s) and raise the recovery dialog over the redirect.
+      fakeAsync((async) {
+        when(() => mockService.fetchSettings())
+            .thenAnswer((_) async => testFetchResult);
+        when(() => mockService.saveAll(any(), any(),
+                pppInstancePath: any(named: 'pppInstancePath'),
+                vlanInstancePath: any(named: 'vlanInstancePath')))
+            .thenAnswer((_) async {});
+
+        final container = createContainer();
+        async.flushMicrotasks();
+        final notifier = container.read(uspInternetSettingsProvider.notifier);
+        notifier.enterEditMode();
+        notifier.updateConnectionType(UspWanConnectionType.bridge);
+
+        var done = false;
+        notifier.save().then<void>((_) => done = true);
+        async.elapse(const Duration(seconds: 1));
+
+        expect(done, isFalse, reason: 'still inside the settle wait');
+        verify(() => mockSseManager.disconnect()).called(1);
+
+        async.elapse(const Duration(seconds: 19));
+        expect(done, isTrue);
+        // Only the build() fetch: no post-save re-fetch against a gone origin.
+        verify(() => mockService.fetchSettings()).called(1);
+        container.dispose();
+      });
+    });
+
+    test('entering bridge holds the save for the settle delay', () {
+      fakeAsync((async) {
+        when(() => mockService.fetchSettings())
+            .thenAnswer((_) async => testFetchResult);
+        when(() => mockService.saveAll(any(), any(),
+                pppInstancePath: any(named: 'pppInstancePath'),
+                vlanInstancePath: any(named: 'vlanInstancePath')))
+            .thenAnswer((_) async {});
+
+        final container =
+            createContainer(bridgeSettleDelay: const Duration(seconds: 5));
+        async.flushMicrotasks();
+        final notifier = container.read(uspInternetSettingsProvider.notifier);
+        notifier.enterEditMode();
+        notifier.updateConnectionType(UspWanConnectionType.bridge);
+
+        var done = false;
+        notifier.save().then<void>((_) => done = true);
+        async.elapse(const Duration(milliseconds: 4900));
+        expect(done, isFalse);
+        async.elapse(const Duration(milliseconds: 200));
+        expect(done, isTrue);
+        container.dispose();
+      });
+    });
+
+    test('the bridge settle delay is 20s by default', () {
+      // #762 comment 5987286082: reachable at T+20-25s after the bridge SET.
+      final container = ProviderContainer();
+      expect(container.read(bridgeSettleDelayProvider),
+          const Duration(seconds: 20));
       container.dispose();
     });
 

@@ -177,10 +177,7 @@ void main() {
 
   setUp(() {
     mockUsp = MockUspClient();
-    // No settle wait: these tests are about what is sent. The wait itself is
-    // covered by the 'entering bridge settle' group below.
-    service =
-        UspInternetSettingsService(mockUsp, bridgeSettleDelay: Duration.zero);
+    service = UspInternetSettingsService(mockUsp);
   });
 
   group('fetchSettings', () {
@@ -1597,10 +1594,8 @@ void main() {
     });
   });
 
-  group('entering bridge settle', () {
+  group('bridge boundary timing', () {
     setUp(() {
-      // The production delay, not the zero the other tests use.
-      service = UspInternetSettingsService(mockUsp);
       final handler = createFetchMockHandler();
       when(() => mockUsp.get(any())).thenAnswer((invocation) async =>
           handler(invocation.positionalArguments[0] as List<String>));
@@ -1612,35 +1607,6 @@ void main() {
     final edited = original.copyWith(
       connectionType: UspWanConnectionType.bridge,
     );
-
-    test('waits 20s by default', () {
-      // #762 comment 5987286082: reachable at T+20–25s after the bridge SET.
-      expect(UspInternetSettingsService.defaultBridgeSettleDelay,
-          const Duration(seconds: 20));
-    });
-
-    test('saveAll completes only 20s after the bridge SET', () {
-      fakeAsync((async) {
-        when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-            .thenAnswer((_) async => {
-                  'success': true,
-                  'result': {'data': <String, dynamic>{}}
-                });
-
-        var done = false;
-        service.saveAll(original, edited).then<void>((_) => done = true);
-
-        async.flushMicrotasks();
-        verify(() => mockUsp.set({'Device.IP.Interface.2.Enable': false},
-            allowPartial: any(named: 'allowPartial'))).called(1);
-
-        async.elapse(const Duration(seconds: 19));
-        expect(done, isFalse, reason: 'the router is not reachable yet');
-
-        async.elapse(const Duration(seconds: 1));
-        expect(done, isTrue);
-      });
-    });
 
     test('a rejected bridge SET fails at once, without waiting', () {
       fakeAsync((async) {
