@@ -1205,5 +1205,14 @@
   "raPreparingPartial": "Δεν ήταν δυνατή η ρύθμιση ορισμένων ζωντανών ενημερώσεων. Ο πίνακας ελέγχου ίσως δεν ανανεώνεται μόνος του· σύρετε για ανανέωση.",
   "raLiveUpdates": "Ζωντανές ενημερώσεις",
   "raLiveUpdatesConnecting": "Σύνδεση μέσω cloud",
-  "raLiveUpdatesDropped": "Η σύνδεση με το cloud διακόπηκε — επανασύνδεση"
+  "raLiveUpdatesDropped": "Η σύνδεση με το cloud διακόπηκε — επανασύνδεση",
+  "semanticRoleBottomSheet": "Φύλλο κάτω μέρους",
+  "semanticRoleCheckbox": "Πλαίσιο ελέγχου",
+  "semanticRoleDropdown": "Αναπτυσσόμενο μενού",
+  "semanticRoleIconButton": "Κουμπί εικονιδίου",
+  "semanticRoleListTile": "Στοιχείο λίστας",
+  "semanticRoleMascot": "Μασκότ",
+  "semanticRolePinInput": "Εισαγωγή PIN",
+  "semanticRoleRadio": "Κουμπί επιλογής",
+  "semanticRoleSwitch": "Διακόπτης"
 }

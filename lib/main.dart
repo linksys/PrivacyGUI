@@ -10,6 +10,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/app.dart';
+import 'package:privacy_gui/localization/app_semantic_role_labels.dart';
 import 'package:privacy_gui/localization/fallback_font_resolver.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/providers/logger_observer.dart';
@@ -85,6 +86,9 @@ void main() async {
   // Inject the app's locale→fallback-font mapping into ui_kit so AppText
   // applies the bundled CJK/non-Latin subsets per locale.
   FallbackFontResolver.install();
+  // Inject the app's role words so ui_kit's unnamed controls are announced in
+  // the user's locale rather than English.
+  AppSemanticRoleLabels.install();
 
   runApp(app());
 }

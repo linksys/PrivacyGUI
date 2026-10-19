@@ -1290,5 +1290,14 @@
   "connectionTypeIpoe": "IPoE",
   "autoIpoeMapeForwardingNotice": "MAP-Eでは、ISPから割り当てられたポートのみIPv4の着信に利用できます。",
   "autoIpoeDsliteForwardingNotice": "DS-LiteのIPv4着信はISP側のNATに依存します。ルーターのポート設定だけでは開放できません。",
-  "autoIpoeIpipForwardingNotice": "IPIPのIPv4着信は、ISPが提供するアドレスとサービスの条件に依存します。"
+  "autoIpoeIpipForwardingNotice": "IPIPのIPv4着信は、ISPが提供するアドレスとサービスの条件に依存します。",
+  "semanticRoleBottomSheet": "ボトムシート",
+  "semanticRoleCheckbox": "チェックボックス",
+  "semanticRoleDropdown": "ドロップダウン",
+  "semanticRoleIconButton": "アイコンボタン",
+  "semanticRoleListTile": "リスト項目",
+  "semanticRoleMascot": "マスコット",
+  "semanticRolePinInput": "PIN 入力",
+  "semanticRoleRadio": "ラジオボタン",
+  "semanticRoleSwitch": "スイッチ"
 }

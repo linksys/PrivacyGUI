@@ -1205,5 +1205,14 @@
   "raPreparingPartial": "Не удалось настроить некоторые обновления в реальном времени. Панель может не обновляться сама; потяните, чтобы обновить.",
   "raLiveUpdates": "Обновления в реальном времени",
   "raLiveUpdatesConnecting": "Подключение через облако",
-  "raLiveUpdatesDropped": "Соединение с облаком потеряно — переподключение"
+  "raLiveUpdatesDropped": "Соединение с облаком потеряно — переподключение",
+  "semanticRoleBottomSheet": "Нижняя панель",
+  "semanticRoleCheckbox": "Флажок",
+  "semanticRoleDropdown": "Раскрывающийся список",
+  "semanticRoleIconButton": "Кнопка-значок",
+  "semanticRoleListTile": "Элемент списка",
+  "semanticRoleMascot": "Талисман",
+  "semanticRolePinInput": "Ввод PIN-кода",
+  "semanticRoleRadio": "Радиокнопка",
+  "semanticRoleSwitch": "Переключатель"
 }

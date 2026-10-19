@@ -1205,5 +1205,14 @@
   "raPreparingPartial": "部分实时更新无法设置。仪表板可能不会自动刷新，请下拉刷新。",
   "raLiveUpdates": "实时更新",
   "raLiveUpdatesConnecting": "正在通过云端连接",
-  "raLiveUpdatesDropped": "云端连接中断 — 正在重新连接"
+  "raLiveUpdatesDropped": "云端连接中断 — 正在重新连接",
+  "semanticRoleBottomSheet": "底部面板",
+  "semanticRoleCheckbox": "复选框",
+  "semanticRoleDropdown": "下拉菜单",
+  "semanticRoleIconButton": "图标按钮",
+  "semanticRoleListTile": "列表项",
+  "semanticRoleMascot": "吉祥物",
+  "semanticRolePinInput": "PIN 输入",
+  "semanticRoleRadio": "单选按钮",
+  "semanticRoleSwitch": "开关"
 }

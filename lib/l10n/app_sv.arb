@@ -176,7 +176,7 @@
   "macAddressClone": "MAC-adresskloning",
   "manufacturer": "Tillverkare",
   "maxIdleTime": "Maximal väntetid",
-  "menu": "meny",
+  "menu": "Meny",
   "menuRestartNetworkChildMessage": "Starta om noden och alla underordnade noder. Omstart av mesh Wi-Fi-systemet kommer tillfälligt att koppla bort det från Internet. Om du har flera noder kommer alla att starta om. Anslutna enheter kommer också att uppleva en tillfällig frånkoppling men kommer automatiskt att återansluta när systemet är online igen.",
   "menuRestartNetworkLastMessage": "Om du har fler än en nod kommer alla att starta om. Om du startar om mesh WiFi-systemet kopplas det tillfälligt från Internet. Alla noder och anslutna enheter kommer också att kopplas bort tillfälligt, men de kommer att återansluta när mesh-systemet är redo igen.",
   "menuRestartNetworkMessage": "Om du har fler än en nod, kommer samtliga att återstartas. Om du startar om mesh WiFi systemet kopplas det tillfälligt från Internet. Alla noder och anslutna enheter kommer även att kopplas bort tillfälligt, men de kommer att anslutas igen när mesh systemet är redo igen.",
@@ -1205,5 +1205,14 @@
   "raPreparingPartial": "Vissa liveuppdateringar kunde inte konfigureras. Instrumentpanelen kanske inte uppdateras av sig själv; dra för att uppdatera.",
   "raLiveUpdates": "Liveuppdateringar",
   "raLiveUpdatesConnecting": "Ansluter via molnet",
-  "raLiveUpdatesDropped": "Molnanslutningen bröts — ansluter igen"
+  "raLiveUpdatesDropped": "Molnanslutningen bröts — ansluter igen",
+  "semanticRoleBottomSheet": "Ark längst ned",
+  "semanticRoleCheckbox": "Kryssruta",
+  "semanticRoleDropdown": "Listruta",
+  "semanticRoleIconButton": "Ikonknapp",
+  "semanticRoleListTile": "Listobjekt",
+  "semanticRoleMascot": "Maskot",
+  "semanticRolePinInput": "PIN-inmatning",
+  "semanticRoleRadio": "Alternativknapp",
+  "semanticRoleSwitch": "Reglage"
 }

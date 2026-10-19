@@ -1205,5 +1205,14 @@
   "raPreparingPartial": "Bazı canlı güncellemeler ayarlanamadı. Pano kendini yenilemeyebilir; yenilemek için çekin.",
   "raLiveUpdates": "Canlı güncellemeler",
   "raLiveUpdatesConnecting": "Bulut üzerinden bağlanılıyor",
-  "raLiveUpdatesDropped": "Bulut bağlantısı koptu — yeniden bağlanılıyor"
+  "raLiveUpdatesDropped": "Bulut bağlantısı koptu — yeniden bağlanılıyor",
+  "semanticRoleBottomSheet": "Alt sayfa",
+  "semanticRoleCheckbox": "Onay kutusu",
+  "semanticRoleDropdown": "Açılır liste",
+  "semanticRoleIconButton": "Simge düğmesi",
+  "semanticRoleListTile": "Liste öğesi",
+  "semanticRoleMascot": "Maskot",
+  "semanticRolePinInput": "PIN girişi",
+  "semanticRoleRadio": "Radyo düğmesi",
+  "semanticRoleSwitch": "Anahtar"
 }
