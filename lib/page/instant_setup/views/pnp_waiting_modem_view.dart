@@ -29,6 +29,11 @@ class PnpWaitingModemView extends ConsumerWidget {
         context.go(RoutePath.pnp);
       } else if (next.phase is NoInternet && prev?.phase is! NoInternet) {
         context.go(RoutePath.pnpNoInternetConnection);
+      } else if (next.phase is AdminReadFailure) {
+        // The poll ended on a read failure rather than a confirmed no-internet.
+        // Same as the no-internet page: the entry view renders the read-failure
+        // card and its retry.
+        context.go(RoutePath.pnp);
       }
     });
 
