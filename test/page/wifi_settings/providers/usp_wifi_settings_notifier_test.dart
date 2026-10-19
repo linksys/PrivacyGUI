@@ -13,6 +13,8 @@ import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart';
+import 'package:privacy_gui/page/wifi_settings/models/mlo_status.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/mlo_status_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_write_confirm_provider.dart';
@@ -57,6 +59,10 @@ void main() {
     when(() => mockUsp.isAuthenticated).thenReturn(true);
   });
 
+  /// How many times the L1 MLO status was built.
+  var mloStatusReads = 0;
+  setUp(() => mloStatusReads = 0);
+
   ProviderContainer createContainer({
     WifiData? wifiData,
     WifiDataNotifier Function()? wifiNotifier,
@@ -77,9 +83,16 @@ void main() {
             .overrideWithValue(const Duration(milliseconds: 10)),
         wifiSaveDeadlineProvider
             .overrideWithValue(const Duration(milliseconds: 200)),
+        // Counts reads of the L1 MLO status, so a test can tell it was
+        // invalidated (#1692).
+        mloStatusProvider.overrideWith((ref) async {
+          mloStatusReads++;
+          return MloStatus.inactive;
+        }),
       ],
     );
     container.listen(uspWifiSettingsProvider, (_, __) {});
+    container.listen(mloStatusProvider, (_, __) {});
     return container;
   }
 
@@ -873,6 +886,89 @@ void main() {
           throwsA(isA<ServiceError>()),
         );
         container.dispose();
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // MLO status (#1692): what MLO needs is what these writes change — the
+    // bands' SSID, password, security, and whether both are on — so each
+    // write reads it again once settled, as it does wifiDataProvider.
+    // -----------------------------------------------------------------------
+
+    group('the MLO status is read again', () {
+      setUp(() {
+        when(() => mockService.buildWifiNetworks(
+              ssids: any(named: 'ssids'),
+              accessPoints: any(named: 'accessPoints'),
+              radios: any(named: 'radios'),
+            )).thenReturn(WifiSettingsTestData.createNetworks());
+        when(() => mockService.buildQuickSetupNetworks(any())).thenReturn((
+          main: null,
+          guest: null,
+          isQuickSetup: false,
+        ));
+      });
+
+      Future<ProviderContainer> ready() async {
+        final container = createContainer();
+        addTearDown(container.dispose);
+        await container.read(mloStatusProvider.future);
+        await Future.delayed(Duration.zero);
+        expect(mloStatusReads, 1);
+        return container;
+      }
+
+      test('after a page save', () async {
+        when(() => mockService.saveAdvanced(
+              original: any(named: 'original'),
+              current: any(named: 'current'),
+            )).thenReturn(confirmedPlan());
+        final container = await ready();
+        final notifier = container.read(uspWifiSettingsProvider.notifier);
+
+        notifier.updateNetworkField('Device.WiFi.SSID.1.', ssid: 'Changed');
+        await notifier.save();
+        await container.read(mloStatusProvider.future);
+
+        expect(mloStatusReads, 2);
+      });
+
+      test('after a network toggle, even a failed one', () async {
+        when(() => mockService.toggleSsidsByName(any(), any(), any(), any()))
+            .thenReturn(WifiWritePlan(
+          params: const {'Device.WiFi.SSID.1.Enable': false},
+          proof: const {'Device.WiFi.SSID.1.Enable': false},
+          send: () async => throw const InvalidInputError(detail: 'refused'),
+        ));
+        final container = await ready();
+
+        await expectLater(
+          container
+              .read(uspWifiSettingsProvider.notifier)
+              .toggleSsidsByName('Home', false),
+          throwsA(isA<ServiceError>()),
+        );
+        await container.read(mloStatusProvider.future);
+
+        expect(mloStatusReads, 2,
+            reason: 'MLO needs both bands on; a toggle can change that');
+      });
+
+      test('after a channel change', () async {
+        when(() => mockService.updateRadioChannel(
+              any(),
+              channel: any(named: 'channel'),
+              autoChannel: any(named: 'autoChannel'),
+            )).thenReturn(confirmedPlan());
+        final container = await ready();
+
+        await container
+            .read(uspWifiSettingsProvider.notifier)
+            .updateRadioChannel('Device.WiFi.Radio.1.',
+                channel: 40, autoChannel: false);
+        await container.read(mloStatusProvider.future);
+
+        expect(mloStatusReads, 2);
       });
     });
 

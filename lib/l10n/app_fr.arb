@@ -182,6 +182,8 @@
   "menuRestartNetworkMessage": "Redémarrage du nœud parent et de tous les nœuds enfants. Le redémarrage du système WiFi maillé le déconnectera temporairement d'Internet. Si vous avez plusieurs nœuds, ils seront tous redémarrés. Les appareils connectés subiront également une déconnexion temporaire mais se reconnecteront automatiquement une fois le système de nouveau en ligne.",
   "mexico": "Mexique",
   "mlo": "Fonctionnement Multi-Link",
+  "mloDesc": "Permet aux appareils d'utiliser simultanément plusieurs bandes et canaux de fréquence. Cela permet d'augmenter la vitesse, de réduire la latence et d'obtenir une connexion plus fiable.",
+  "mloInactiveHint": "Utilisez le même nom de Wi-Fi, le même mot de passe et la sécurité WPA3 sur 2,4 GHz et 5 GHz.",
   "mloCapableModalDesc1": "Multi-Link Operation (MLO) permet aux appareils d'utiliser simultanément plusieurs bandes et canaux de fréquence.",
   "mloCapableModalDesc2": "Cela permet d'augmenter le débit, de réduire le temps de latence et de rendre la connexion plus fiable.",
   "model": "Modèle",

@@ -22,5 +22,7 @@ String capabilityProbePath(DeviceCapability capability) {
     DeviceCapability.autoIPoE => 'Device.X_LINKSYS_AutoIPoE.APIVersion',
     DeviceCapability.wifiMacFilter =>
       'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode',
+    // Read-only and never empty where it exists: Disabled / Active / Inactive.
+    DeviceCapability.wifiMlo => 'Device.X_LINKSYS_Mesh.MLOStatus',
   };
 }

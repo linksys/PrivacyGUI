@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart
 import 'package:privacy_gui/page/wifi_settings/models/wifi_quick_setup_network.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/mlo_status_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
@@ -279,7 +280,11 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   /// confirmed answer or a read-back), so a failed refresh is logged, not
   /// thrown; the post-save `fetch()` reports a stale read on `status.error`,
   /// as the mixin documents.
+  ///
+  /// It also has MLO's status read again (#1692): MLO needs the main bands'
+  /// SSID, password and security to match, which is what this page edits.
   Future<void> _refreshL1AfterWrite() async {
+    ref.invalidate(mloStatusProvider);
     try {
       final _ = await ref.refresh(wifiDataProvider.future);
     } on ServiceError catch (e) {
@@ -447,6 +452,8 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       rethrow;
     } finally {
       ref.invalidate(wifiDataProvider);
+      // MLO needs both main bands on with matching settings (#1692).
+      ref.invalidate(mloStatusProvider);
     }
   }
 
@@ -488,6 +495,8 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       rethrow;
     } finally {
       ref.invalidate(wifiDataProvider);
+      // MLO needs both main bands on with matching settings (#1692).
+      ref.invalidate(mloStatusProvider);
     }
   }
 

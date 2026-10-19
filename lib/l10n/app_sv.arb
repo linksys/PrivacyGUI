@@ -182,6 +182,8 @@
   "menuRestartNetworkMessage": "Om du har fler än en nod, kommer samtliga att återstartas. Om du startar om mesh WiFi systemet kopplas det tillfälligt från Internet. Alla noder och anslutna enheter kommer även att kopplas bort tillfälligt, men de kommer att anslutas igen när mesh systemet är redo igen.",
   "mexico": "Mexiko",
   "mlo": "Funktion för multilänk",
+  "mloDesc": "Gör det möjligt för enheter att använda flera band och frekvenskanaler samtidigt. Detta ökar hastigheten, minskar fördröjningen och ger en mer tillförlitlig anslutning.",
+  "mloInactiveHint": "Använd samma Wi-Fi-namn, lösenord och WPA3-säkerhet på 2,4 GHz och 5 GHz.",
   "mloCapableModalDesc1": "Multi-Link Operation (MLO) tillåter enheter att använda flera band och frekvenskanaler samtidigt.",
   "mloCapableModalDesc2": "Detta ökar hastigheten, minskar latensen och ger en mer tillförlitlig anslutning.",
   "model": "Modell",

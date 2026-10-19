@@ -311,6 +311,8 @@
   "menuRestartNetworkMessage": "Reboot Parent and All Child Nodes Restarting the mesh WiFi system will temporarily disconnect it from the Internet. If you have multiple nodes, all will restart. Connected devices will also experience a temporary disconnection but will automatically reconnect once the system is back online.",
   "mexico": "Mexico",
   "mlo": "Multi-Link Operation",
+  "mloDesc": "Allow devices to use multiple bands and frequency channels simultaneously. This increases speed, reduces latency, and makes for a more reliable connection.",
+  "mloInactiveHint": "Use the same Wi-Fi name, password and WPA3 security on 2.4 GHz and 5 GHz.",
   "monitor": "Monitor",
   "mloCapableModalDesc1": "Multi-Link Operation (MLO) allows devices to use multiple bands and frequency channels simultaneously.",
   "mloCapableModalDesc2": "This increases speed, reduces latency, and makes for a more reliable connection.",

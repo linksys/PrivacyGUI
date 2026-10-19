@@ -317,11 +317,13 @@ final kWifiSettingsPageCase = PageSurfaceCase(
 /// link does — `initialTab: 1` — for which see [kStatisticsDevicesPageCase]; the two
 /// pages now share one mechanism rather than one excuse.
 ///
-/// ## Coverage: the whole tab, three cards
+/// ## Coverage: the whole tab, four cards
 ///
-/// `UspWifiAdvancedTab` renders three `AppCard`s — client steering, node steering
-/// (#1661) and DFS — each one `Expanded` title + [AppSwitch] row over a description.
-/// Until #1661 it was the DFS card alone. The green still means *the tab* and not a
+/// `UspWifiAdvancedTab` renders four `AppCard`s — client steering, node steering
+/// (#1661), DFS and MLO (#1692) — each one `Expanded` title + [AppSwitch] row over a
+/// description. Until #1661 it was the DFS card alone. The MLO card is the only one
+/// whose row holds a third widget, a status badge, and the only one with a second
+/// paragraph, the `Inactive` hint; the fixture is `Inactive` so both are in the sweep. The green still means *the tab* and not a
 /// prefix of it, for a reason that does not depend on [kPageSweepHeight]: the cards
 /// sit in a `SingleChildScrollView`'s `Column`, which lays out every child whether
 /// or not it is in the viewport — only a lazy sliver skips what is off screen.
