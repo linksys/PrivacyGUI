@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -335,6 +336,78 @@ void main() {
       final state = container.read(pnpProvider);
       expect(state.phase, isA<AdminReadFailure>());
       expect((state.phase as AdminReadFailure).code, 9998);
+      container.dispose();
+    });
+  });
+
+  // #1098, the same split on the modem-restart path. The poll used to swallow
+  // every failed read and end on NoInternet, so a router that could not be read
+  // for all 30 attempts was shown as "no internet". Only the LAST attempt
+  // decides: earlier failures are expected while the router comes back.
+  group('PnpNotifier — modem restart poll (#1098)', () {
+    /// Runs the 150 s countdown and the 30 × 5 s poll to the end.
+    PnpPhase runModemRestart(ProviderContainer container) {
+      late PnpPhase phase;
+      fakeAsync((async) {
+        container.read(pnpProvider.notifier).startModemRestartCountdown();
+        async.elapse(const Duration(seconds: 150 + 30 * 5 + 1));
+        phase = container.read(pnpProvider).phase;
+      });
+      return phase;
+    }
+
+    test('every attempt failing to read ends on AdminReadFailure', () {
+      when(() => mockPnpService.checkInternetConnected())
+          .thenThrow(const InvalidInputError(code: 9998, detail: 'missing'));
+      final container = createContainer();
+
+      final phase = runModemRestart(container);
+
+      expect(phase, isA<AdminReadFailure>(),
+          reason:
+              'a router that never answered is not a confirmed no-internet');
+      expect((phase as AdminReadFailure).code, 9998);
+      verify(() => mockPnpService.checkInternetConnected()).called(30);
+      container.dispose();
+    });
+
+    test('a router that answers "no internet" ends on NoInternet', () {
+      when(() => mockPnpService.checkInternetConnected())
+          .thenAnswer((_) async => false);
+      final container = createContainer();
+
+      expect(runModemRestart(container), isA<NoInternet>());
+      container.dispose();
+    });
+
+    test('"no internet" followed by failed reads ends on AdminReadFailure', () {
+      // The router answered, then stopped answering. The last attempt is what
+      // the user is left with, so an earlier "no internet" does not stand.
+      var calls = 0;
+      when(() => mockPnpService.checkInternetConnected()).thenAnswer((_) async {
+        calls++;
+        if (calls <= 20) return false;
+        throw const InvalidInputError(code: 9998, detail: 'missing');
+      });
+      final container = createContainer();
+
+      expect(runModemRestart(container), isA<AdminReadFailure>());
+      container.dispose();
+    });
+
+    test('failed reads followed by "no internet" end on NoInternet', () {
+      // The router is unreadable while it reboots, then answers.
+      var calls = 0;
+      when(() => mockPnpService.checkInternetConnected()).thenAnswer((_) async {
+        calls++;
+        if (calls <= 10) {
+          throw const InvalidInputError(code: 9998, detail: 'missing');
+        }
+        return false;
+      });
+      final container = createContainer();
+
+      expect(runModemRestart(container), isA<NoInternet>());
       container.dispose();
     });
   });

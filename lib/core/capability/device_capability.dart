@@ -21,6 +21,12 @@ enum DeviceCapability {
 
   /// Auto-IPoE settings and operations exposed by the connected router.
   autoIPoE,
+
+  /// The mesh-wide MLO switch, `Device.X_LINKSYS_Mesh.MLOEnabled` /
+  /// `MLOStatus` (linksys/FWDEV#201). Gates the MLO card on the WiFi Advanced
+  /// tab, so firmware without it still reads and writes steering and DFS
+  /// (#1692).
+  wifiMlo,
 }
 
 /// The resolved set of capabilities the connected device supports.

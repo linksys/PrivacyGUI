@@ -83,6 +83,21 @@ Ipv6PortServiceFeatureState emptyState() {
   );
 }
 
+/// FWDEV#204's limit of 15 rules, one port each to one host, so no two
+/// overlap. The page disables Add here.
+final fullState = dataState(rules: [
+  for (var i = 0; i < kMaxIpv6PortServiceRules; i++)
+    Ipv6PortServiceRuleUIModel(
+      instancePath: 'Device.Firewall.Chain.1.Rule.${30 + i}.',
+      enabled: true,
+      description: 'Service ${i + 1}',
+      ipv6Address: '2001:db8::1',
+      protocol: 'TCP',
+      startPort: 10000 + i,
+      endPort: 10000 + i,
+    ),
+]);
+
 // ---------------------------------------------------------------------------
 // The gate scene
 // ---------------------------------------------------------------------------

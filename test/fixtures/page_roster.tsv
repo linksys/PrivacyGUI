@@ -452,6 +452,21 @@
 # second-state PREFIX CONSEQUENCE, the third time: page.port_forwarding is a prefix of
 # second-state page.port_forwarding_full, so --plain-name 'page.port_forwarding' runs both. Use
 # second-state 'page.port_forwarding screen_px' for the tab case alone.
+# second-state A SECOND CASE ON A PAGE WITH NO TABS, FOR THE SAME ROW (#1687, 2026-10-19).
+# second-state usp_ipv6_port_service_view.dart now carries two cases: kIpv6PortServicePageCase and
+# second-state kIpv6PortServiceFullPageCase, the list at FWDEV#204's limit of 15 rules, where the same
+# second-state RuleLimitNote row appears under the Rules header and Add is disabled. No sharesTabWith,
+# second-state since there is no tab; it pairs the way firmware_failed does. Figures on this column's
+# second-state basis (--plain-name 'page.ipv6_port_service', --reporter json, nine coordinate tests
+# second-state summed / 234, three runs, median), the default case measured in the same runs as control:
+# second-state
+# second-state   usp_ipv6_port_service_view...  row 19.6   full  27.4 (27.2 / 27.5 / 27.4)  ctl 15.4
+# second-state
+# second-state 1.8x its control, under #1611's 3.0x to 3.8x because the fixture grows less: two rules to
+# second-state fifteen here, against two to four to 25 or 50 there. The row still under-projects it, the
+# second-state same direction as #1611. Cost to the gate: about 234 x 27ms, ~6s on one lane.
+# second-state PREFIX CONSEQUENCE, the fourth time: 'page.ipv6_port_service' runs both groups; use
+# second-state 'page.ipv6_port_service screen_px' for the default case alone.
 # added PnpIPoEView (#1664): supported-ready settings fixture, 234 cells, 2026-10-08.
 # Auto-IPoE moved to PnP; capability-backed ready state is exercised by page.pnp_ipoe:
 # added ms/cell 35.3 / 35.6 / 35.0; median 35.3. The PnP ready fixture has no log widget.

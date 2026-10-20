@@ -820,8 +820,15 @@ class PnpNotifier extends Notifier<PnpState> {
   }
 
   /// Poll internet after modem restart (up to 30 attempts, 5s apart).
+  ///
+  /// A failed read during the poll is expected (the router may be rebooting with
+  /// the modem), so it only moves on to the next attempt. What decides the final
+  /// page is the LAST attempt, the same split [_checkInternet] makes: a router
+  /// that answered "no internet" lands on [NoInternet], a router that could not
+  /// be read lands on [AdminReadFailure] (#1098).
   Future<void> _modemRestartCheckInternet() async {
     const maxAttempts = 30;
+    Object? lastReadFailure;
     for (int i = 1; i <= maxAttempts; i++) {
       state = state.copyWith(
         phase: ModemRestartCheckingInternet(
@@ -832,12 +839,26 @@ class PnpNotifier extends Notifier<PnpState> {
       await Future.delayed(const Duration(seconds: 5));
       try {
         final hasInternet = await _svc.checkInternetConnected();
+        lastReadFailure = null;
         if (hasInternet) {
           state = state.copyWith(phase: const AdminInternetConnected());
           await _initWizard();
           return;
         }
-      } catch (_) {}
+      } catch (e) {
+        lastReadFailure = e;
+      }
+    }
+    final failure = lastReadFailure;
+    if (failure != null) {
+      logger.e('[PnP] Modem restart check read failure: $failure');
+      state = state.copyWith(
+        phase: AdminReadFailure(
+          code: failure is ServiceError ? failure.code : null,
+          detail: '$failure',
+        ),
+      );
+      return;
     }
     state = state.copyWith(phase: const NoInternet());
   }

@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/generated/port_triggering.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/_shared/services/batch_tally.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/services/port_forwarding_transforms.dart';
@@ -191,7 +191,7 @@ class UspPortForwardingService {
     required List<PortForwardingRuleUIModel> current,
   }) async {
     try {
-      final tally = _BatchTally('[PortForwarding]');
+      final tally = BatchTally('[PortForwarding]');
 
       // 1. Delete (sequential, reverse order to avoid firmware renumbering)
       final currentPaths = <String>{
@@ -283,7 +283,7 @@ class UspPortForwardingService {
     required List<PortTriggeringRuleUIModel> current,
   }) async {
     try {
-      final tally = _BatchTally('[PortTriggering]');
+      final tally = BatchTally('[PortTriggering]');
 
       // 1. Delete (sequential, reverse order to avoid firmware renumbering)
       final currentPaths = <String>{
@@ -431,7 +431,7 @@ class UspPortForwardingService {
   /// (null instancePath) are added. Every result goes into [tally], so a
   /// refused forward rule fails the whole save.
   Future<void> _reconcileForwardRules(
-    _BatchTally tally, {
+    BatchTally tally, {
     required String parentPath,
     required List<PortTriggerForwardRuleUIModel> original,
     required List<PortTriggerForwardRuleUIModel> current,
@@ -483,64 +483,5 @@ class UspPortForwardingService {
       );
       tally.record('Add forward', UspResultParser.parseAddResult(result));
     }
-  }
-}
-
-/// The outcome of every step in one batch save.
-///
-/// Any step that failed, partly or fully, fails the save: the batch used to
-/// throw only when *every* step failed, so a save that left a rule behind on
-/// the router still reported "saved". The router's own error for the first
-/// failure is what the user is shown.
-class _BatchTally {
-  /// [_tag] is the grep-friendly log prefix, `[PortForwarding]` or
-  /// `[PortTriggering]`.
-  _BatchTally(this._tag);
-
-  final String _tag;
-  final List<UspErrorDetail> _failures = [];
-  int _steps = 0;
-  int _failedSteps = 0;
-
-  void record(String step, UspOperationResult<dynamic> result) {
-    _steps++;
-    final List<UspErrorDetail> failures;
-    switch (result) {
-      case UspSuccess():
-        return;
-      case UspPartialSuccess(failures: final f):
-        failures = f;
-      case UspFailure(errors: final e):
-        _failedSteps++;
-        failures = e;
-    }
-    _failures.addAll(failures);
-    logger.w('$_tag: $step failed: '
-        '${failures.map((f) => f.errorMessage).join('; ')}');
-  }
-
-  /// A step whose result said success but left the save unable to go on.
-  void recordMissing(String step, String why) {
-    _steps++;
-    _failedSteps++;
-    _failures.add(UspErrorDetail(
-      requestedPath: '',
-      errorCode: 0,
-      errorMessage: why,
-    ));
-    logger.w('$_tag: $step failed: $why');
-  }
-
-  void throwIfAnyFailed() {
-    if (_failures.isEmpty) return;
-    final summary = '$_tag batch: ${_failures.first.errorMessage}';
-    if (_failedSteps == _steps) {
-      throw UspCompleteFailureError(summary: summary, failures: _failures);
-    }
-    throw UspPartialFailureError(
-      summary: summary,
-      successPaths: const [],
-      failures: _failures,
-    );
   }
 }

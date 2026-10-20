@@ -11,7 +11,7 @@ import 'package:privacy_gui/page/port_forwarding/providers/usp_port_forwarding_p
 import 'package:privacy_gui/page/dashboard/views/dialogs/port_forwarding_dialog.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_rule_limits.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/lan_for_rule_dialog.dart';
-import 'package:privacy_gui/page/port_forwarding/views/components/rule_limit_note.dart';
+import 'package:privacy_gui/page/_shared/components/rule_limit_note.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Tab 1: Single Port Forwarding — shows rules where isSinglePort == true.

@@ -48,13 +48,17 @@ class UspIpv6PortServiceNotifier
     bool updateStatusOnly = false,
   }) async {
     try {
-      final rules = await _svc.fetch();
+      final page = await _svc.fetchPage();
 
-      logger.d('[USP][Firewall][IPv6Port]: Fetched — ipv6: ${rules.length}');
+      logger.d('[USP][Firewall][IPv6Port]: Fetched — '
+          'ipv6: ${page.rules.length}, '
+          'hidden: ${page.hiddenRuleDescriptions.length}');
 
       return (
-        Ipv6PortServiceRuleList(rules: rules),
-        const Ipv6PortServiceStatus(),
+        Ipv6PortServiceRuleList(rules: page.rules),
+        Ipv6PortServiceStatus(
+          hiddenRuleDescriptions: page.hiddenRuleDescriptions,
+        ),
       );
     } on ServiceError catch (e) {
       logger.e('[USP][Firewall][IPv6Port]: Fetch failed', error: e);
@@ -62,6 +66,27 @@ class UspIpv6PortServiceNotifier
         null,
         Ipv6PortServiceStatus(error: e),
       );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // save — re-read the router after a save that wrote some rules
+  // ---------------------------------------------------------------------------
+
+  /// A failed save that has already written some rules re-reads the router, so
+  /// those rules carry their instance paths: otherwise a second Save would Add
+  /// them again. The error still reaches the page. A save that wrote nothing
+  /// keeps the user's edits for a retry.
+  ///
+  /// `saveBatch` reports "wrote some" as a [UspPartialFailureError], so the
+  /// error type alone tells the two apart.
+  @override
+  Future<Ipv6PortServiceFeatureState> save() async {
+    try {
+      return await super.save();
+    } on UspPartialFailureError {
+      await fetch(forceRemote: true);
+      rethrow;
     }
   }
 
