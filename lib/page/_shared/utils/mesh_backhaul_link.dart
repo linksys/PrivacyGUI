@@ -1,4 +1,5 @@
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
+import 'package:privacy_gui/page/_shared/utils/mesh_node_identity.dart';
 
 /// The `MultiAPDevice.Backhaul.LinkType` value that means "this node has no
 /// backhaul" — i.e. it is the controller.
@@ -91,6 +92,53 @@ bool hasMeshBackhaulLink(MeshNode node) {
   final linkType = node.backhaulLinkType?.trim() ?? '';
   if (linkType.isEmpty) return false;
   return linkType.toLowerCase() != meshBackhaulLinkTypeNone;
+}
+
+/// The key [isMeshController] compares node IDs by, taken from
+/// `Device.WiFi.DataElements.Network.ControllerID` ([controllerId]) — or null
+/// when that ID cannot decide anything for [network].
+///
+/// Null when the read failed or returned nothing, when it holds the all-zero
+/// sentinel, and when it names no node in [network]: a stale or foreign value
+/// must not turn the real controller into an agent. With a null key
+/// [isMeshController] falls back to [hasMeshBackhaulLink].
+///
+/// Computed once per read and handed to [isMeshController] for each node, so
+/// the "is it listed" scan is not repeated per node.
+String? meshControllerKey(String? controllerId, DataElementsNetwork network) {
+  final key = _meshNodeKey(controllerId);
+  if (key == null) return null;
+  return network.items.any((n) => _meshNodeKey(n.id) == key) ? key : null;
+}
+
+/// Whether [node] is the controller (the gateway).
+///
+/// **The single controller test.** `MeshTopologyBuilder` (which the topology
+/// and the PnP wizard both build from) and the diagnostics backhaul check ask
+/// it, and they must agree: the two disagreeing is how a node ends up an
+/// extender on the topology and the controller in diagnostics, which then
+/// skips its backhaul as "the router".
+///
+/// With [controllerKey] (from [meshControllerKey]) the node with that ID is
+/// the controller and every other node is an agent, backhaul evidence or not.
+/// Without it the controller is the node with no backhaul link
+/// ([hasMeshBackhaulLink]). That fallback builds an agent whose backhaul is not
+/// filled in yet — just joined, or re-associating — as a second controller,
+/// which is why `ControllerID` decides whenever it can (#1688 review).
+bool isMeshController(MeshNode node, String? controllerKey) =>
+    controllerKey != null
+        ? _meshNodeKey(node.id) == controllerKey
+        : !hasMeshBackhaulLink(node);
+
+/// A node or controller ID as [isMeshController] compares it: separators
+/// stripped and upper-cased, or null when absent, blank, or the all-zero
+/// sentinel. `ControllerID` and `Device.{i}.ID` are separate leaves, so the
+/// comparison must not depend on them sharing a spelling.
+String? _meshNodeKey(String? id) {
+  final mac = nonUnsetMac(id);
+  if (mac == null) return null;
+  final key = meshNodeMacKey(mac);
+  return key.isEmpty ? null : key;
 }
 
 /// The node's parent device ID — the controller or upstream agent it is

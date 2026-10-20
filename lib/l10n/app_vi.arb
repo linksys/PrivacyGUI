@@ -856,6 +856,7 @@
   "deviceCategorySmartHome": "Nhà thông minh",
   "deviceCategoryWearable": "Thiết bị đeo",
   "renameRouter": "Đổi tên bộ định tuyến",
+  "renameNode": "Đổi tên điểm nút",
   "noSsid": "(Không có SSID)",
   "noTargetBankAvailable": "Không có phân vùng đích khả dụng",
   "noTimezonesFound": "Không tìm thấy múi giờ nào",

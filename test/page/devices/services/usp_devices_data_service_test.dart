@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
@@ -135,6 +136,97 @@ void main() {
         ),
         throwsA(isA<NetworkError>()),
       );
+    });
+  });
+
+  // fetchMeshTopology reads DataElementsNetwork and, separately,
+  // DataElementsInterfaces (#1688 item 2). The second read is separate so that
+  // a controller without the Interface object loses wired attribution only,
+  // never the topology (usp_framework data_elements_interfaces.yaml).
+  group('UspDevicesDataService — fetchMeshTopology', () {
+    const node = 'Device.WiFi.DataElements.Network.Device.1.';
+
+    // The controller as measured on 2.0.3.26101482: no backhaul, and a wired
+    // Mac seen on its Ethernet interface as a non-1905 neighbor.
+    final networkResponse = <String, dynamic>{
+      '${node}ID': '74:12:13:21:56:3a',
+      '${node}MultiAPDevice.Backhaul.LinkType': 'None',
+    };
+    final interfacesResponse = <String, dynamic>{
+      '${node}ID': '74:12:13:21:56:3a',
+      '${node}Interface.4.MACAddress': '74:12:13:21:56:3a',
+      '${node}Interface.4.MediaType': 'IEEE_802_3AB_GIGABIT_ETHERNET',
+      '${node}Interface.4.Neighbor.1.ID': '00:e0:4c:68:08:2d',
+      '${node}Interface.4.Neighbor.1.IsIEEE1905': false,
+    };
+
+    void stubDataElements({
+      bool interfacesFail = false,
+      Map<String, dynamic>? network,
+      Map<String, dynamic> networkInfo = const {},
+      bool networkInfoFails = false,
+    }) {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((inv) async {
+        final paths = inv.positionalArguments[0] as List;
+        if (paths.any((p) => p.toString().contains('.Interface.'))) {
+          if (interfacesFail) throw 'USP get failed: 7026 Invalid path';
+          return interfacesResponse;
+        }
+        if (paths.any((p) => p.toString().endsWith('Network.ControllerID'))) {
+          if (networkInfoFails) throw 'USP get failed: 7026 Invalid path';
+          return networkInfo;
+        }
+        if (paths.any((p) => p.toString().contains('DataElements'))) {
+          return network ?? networkResponse;
+        }
+        return <String, dynamic>{};
+      });
+    }
+
+    test('attributes a wired client to the node that lists it', () async {
+      stubDataElements();
+
+      final topology = await svc.fetchMeshTopology();
+
+      expect(topology.nodes, hasLength(1));
+      expect(topology.wiredClientToNodeMap,
+          {'00:E0:4C:68:08:2D': '74:12:13:21:56:3A'});
+    });
+
+    test('an Interface read that fails leaves the topology intact', () async {
+      stubDataElements(interfacesFail: true);
+
+      final topology = await svc.fetchMeshTopology();
+
+      expect(topology.nodes, hasLength(1));
+      expect(topology.wiredClientToNodeMap, isEmpty);
+    });
+
+    // #1688 review (W2): an agent still joining has no backhaul yet. The
+    // ControllerID read is what keeps it a slave instead of a second master.
+    test('reads ControllerID so a joining agent is a slave', () async {
+      stubDataElements(network: {
+        ...networkResponse,
+        'Device.WiFi.DataElements.Network.Device.2.ID': 'aa:bb:cc:dd:ee:02',
+      }, networkInfo: {
+        'Device.WiFi.DataElements.Network.ControllerID': '74:12:13:21:56:3a',
+      });
+
+      final topology = await svc.fetchMeshTopology();
+
+      expect(
+          topology.nodes.slaves.map((s) => s.deviceId), ['AA:BB:CC:DD:EE:02']);
+    });
+
+    test('a ControllerID read that fails leaves the topology intact', () async {
+      stubDataElements(networkInfoFails: true);
+
+      final topology = await svc.fetchMeshTopology();
+
+      expect(topology.nodes, hasLength(1));
+      expect(topology.wiredClientToNodeMap,
+          {'00:E0:4C:68:08:2D': '74:12:13:21:56:3A'});
     });
   });
 
@@ -305,38 +397,68 @@ void main() {
       expect(result.meshNetwork.allClients.last.hasMultipleInterfaces, isFalse);
     });
 
-    test('mesh nodes (master/slave) are not merged', () async {
+    // Two agents of the same model share a host name. Their Hosts rows must
+    // not be merged into one client the way two interfaces of one laptop are.
+    //
+    // FL-WRT 2.0 has no `DeviceRole`, so a row is a node's only once
+    // DataElements has listed that node (#1688). `fetch()` builds before the
+    // background DataElements read returns, with an empty topology, so the
+    // exclusion is asserted where the topology arrives: `rebuildWithMesh()`.
+    // Neither row carries a role leaf, and the controller has no Hosts row of
+    // its own — the shape measured on 2.0.3.26101482.
+    test('mesh nodes are not merged as clients once DataElements lists them',
+        () async {
       when(() => mockUsp.get(any(), priority: any(named: 'priority')))
           .thenAnswer((_) async => {
-                'Device.Hosts.Host.1.PhysAddress': 'AA:BB:CC:DD:EE:01',
-                'Device.Hosts.Host.1.IPAddress': '192.168.1.1',
-                'Device.Hosts.Host.1.HostName': 'LinksysRouter',
+                'Device.Hosts.Host.1.PhysAddress': 'AA:BB:CC:DD:EE:02',
+                'Device.Hosts.Host.1.IPAddress': '192.168.1.2',
+                'Device.Hosts.Host.1.HostName': 'LinksysExtender',
                 'Device.Hosts.Host.1.Active': true,
-                'Device.Hosts.Host.1.Layer1Interface':
-                    'Device.Ethernet.Interface.1.',
-                'Device.Hosts.Host.1.DeviceRole': 'master',
-                'Device.Hosts.Host.2.PhysAddress': 'AA:BB:CC:DD:EE:02',
-                'Device.Hosts.Host.2.IPAddress': '192.168.1.2',
-                'Device.Hosts.Host.2.HostName': 'LinksysRouter',
+                'Device.Hosts.Host.1.Layer1Interface': 'Device.WiFi.SSID.1.',
+                'Device.Hosts.Host.2.PhysAddress': 'AA:BB:CC:DD:EE:03',
+                'Device.Hosts.Host.2.IPAddress': '192.168.1.3',
+                'Device.Hosts.Host.2.HostName': 'LinksysExtender',
                 'Device.Hosts.Host.2.Active': true,
-                'Device.Hosts.Host.2.Layer1Interface': 'Device.WiFi.SSID.1.',
-                'Device.Hosts.Host.2.DeviceRole': 'slave',
+                'Device.Hosts.Host.2.Layer1Interface':
+                    'Device.Ethernet.Interface.1.',
               });
 
-      final result = await svc.fetch(
+      final first = await svc.fetch(
         wifiClientMap: {},
         connectionDetailMap: {},
         gatewayName: 'Router',
         systemInfo: _sysInfo,
       );
 
-      // Mesh nodes are separate from client devices in MeshNetwork
-      // allClients contains only client devices, allNodes contains mesh nodes
-      final clientDevices = result.meshNetwork.allClients;
+      final rebuilt = svc.rebuildWithMesh(
+        context: first.codegenContext,
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        meshTopology: MeshTopologyInfo(
+          nodes: [
+            MasterNode(deviceId: 'AA:BB:CC:DD:EE:01', model: 'M60'),
+            SlaveNode(
+              deviceId: 'AA:BB:CC:DD:EE:02',
+              model: 'M60',
+              backhaul: const BackhaulInfo(linkType: 'Wi-Fi'),
+            ),
+            SlaveNode(
+              deviceId: 'AA:BB:CC:DD:EE:03',
+              model: 'M60',
+              backhaul: const BackhaulInfo(linkType: 'Ethernet'),
+            ),
+          ],
+          clientToNodeMap: const {},
+        ),
+        gatewayName: 'Router',
+        systemInfo: _sysInfo,
+      );
 
-      // Mesh nodes with DeviceRole are filtered out from clients
-      // The test data has 2 devices both with mesh roles, so no client devices
-      expect(clientDevices, isEmpty);
+      expect(rebuilt.allClients, isEmpty);
+      expect(rebuilt.slaves.map((s) => s.deviceId),
+          ['AA:BB:CC:DD:EE:02', 'AA:BB:CC:DD:EE:03']);
+      expect(rebuilt.slaves.map((s) => s.ipAddress),
+          ['192.168.1.2', '192.168.1.3']);
     });
 
     test('primary interface selection: active > WiFi > Ethernet', () async {

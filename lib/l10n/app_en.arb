@@ -1372,6 +1372,7 @@
   "deviceCategorySmartHome": "Smart home",
   "deviceCategoryWearable": "Wearable",
   "renameRouter": "Rename router",
+  "renameNode": "Rename node",
   "portRangeForwarding": "Port Range Forwarding",
   "noPortRangeRules": "No port range forwarding rules configured",
   "portTriggering": "Port Range Triggering",

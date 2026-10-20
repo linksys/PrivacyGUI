@@ -1449,6 +1449,45 @@ void main() {
     });
 
     // -----------------------------------------------------------------------
+    // #1688 review — ControllerID decides "controller" when it can
+    // -----------------------------------------------------------------------
+    //
+    // An agent that has just joined has no LinkType and no parent yet, which
+    // by backhaul alone also describes the controller. The topology keeps it
+    // an extender by ControllerID; diagnostics must too, or it skips that
+    // agent's backhaul as "the router" — the one link most worth checking.
+
+    test('with ControllerID an agent with no backhaul yet is still checked',
+        () async {
+      // MAC-shaped IDs, unlike the cases above: ControllerID is compared as a
+      // MAC, and a non-MAC ID would only match by how its hex letters happen
+      // to normalize.
+      const controller = 'AA:BB:CC:DD:EE:01';
+      const joiningAgent = 'AA:BB:CC:DD:EE:02';
+      when(() => mockUsp.get(any())).thenAnswer((inv) async {
+        final paths = inv.positionalArguments[0] as List<String>;
+        if (paths.any((p) => p.endsWith('Network.ControllerID'))) {
+          return {'Device.WiFi.DataElements.Network.ControllerID': controller};
+        }
+        return <String, dynamic>{
+          ...meshNodeFields(1,
+              id: controller,
+              linkType: 'None',
+              rateMbps: 0,
+              signalStrength: 0,
+              operationMode: 'Controller'),
+          ...meshNodeFields(2,
+              id: joiningAgent, linkType: '', rateMbps: 0, signalStrength: 0),
+        };
+      });
+
+      final result = await service.checkMeshBackhaul();
+
+      expect(result.map((n) => n.nodeId), [joiningAgent]);
+      expect(result.single.isController, isFalse);
+    });
+
+    // -----------------------------------------------------------------------
     // #1555 — which field decides "controller"
     // -----------------------------------------------------------------------
     //

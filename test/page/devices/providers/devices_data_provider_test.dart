@@ -10,6 +10,7 @@ import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
+import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
@@ -146,6 +147,59 @@ void main() {
             gatewayName: any(named: 'gatewayName'),
             systemInfo: any(named: 'systemInfo'),
           )).called(1);
+      container.dispose();
+    });
+
+    // #1688 review (W1). Since #1688 the nodes come only from DataElements,
+    // and `svc.fetch` builds with an empty topology. A refresh or a retry runs
+    // build() again with a topology already known; publishing fetch()'s network
+    // as-is would drop every agent until the background read returns — and for
+    // good if that read fails. build() must rebuild against the known topology,
+    // as `_refetchPreservingMesh` does.
+    test('a refresh keeps the agents the known topology already has', () async {
+      final agent = SlaveNode(
+        deviceId: 'AA:BB:CC:DD:EE:09',
+        model: 'M60',
+        backhaul: const BackhaulInfo(linkType: 'Wi-Fi'),
+      );
+      final knownTopology = MeshTopologyInfo(
+        nodes: [MasterNode(deviceId: 'GATEWAY', model: 'M60TB'), agent],
+        clientToNodeMap: const {},
+      );
+      final withAgent = MeshNetwork(
+        master: MasterNode(deviceId: 'GATEWAY', model: 'M60TB'),
+        slaves: [agent],
+      );
+
+      // First build: no topology yet, then the background read supplies it.
+      when(() => mockDevicesSvc.fetchMeshTopology(
+              bssidToBandMap: any(named: 'bssidToBandMap')))
+          .thenAnswer((_) async => knownTopology);
+      when(() => mockDevicesSvc.rebuildWithMesh(
+            context: any(named: 'context'),
+            wifiClientMap: any(named: 'wifiClientMap'),
+            connectionDetailMap: any(named: 'connectionDetailMap'),
+            meshTopology: knownTopology,
+            gatewayName: any(named: 'gatewayName'),
+            systemInfo: any(named: 'systemInfo'),
+          )).thenReturn(withAgent);
+
+      final container = createContainer();
+      await container.read(devicesDataProvider.future);
+      // Let the fire-and-forget DataElements read land.
+      await pumpEventQueue();
+      expect(container.read(devicesDataProvider).value!.slaves, hasLength(1));
+
+      // The refresh's own background read never returns, so what is asserted
+      // is exactly what build() published.
+      when(() => mockDevicesSvc.fetchMeshTopology(
+              bssidToBandMap: any(named: 'bssidToBandMap')))
+          .thenAnswer((_) => Completer<MeshTopologyInfo>().future);
+      container.refresh(devicesDataProvider);
+      final refreshed = await container.read(devicesDataProvider.future);
+
+      expect(refreshed.slaves.map((s) => s.deviceId), ['AA:BB:CC:DD:EE:09']);
+      expect(refreshed.meshTopology, knownTopology);
       container.dispose();
     });
 

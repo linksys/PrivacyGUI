@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
+import 'package:privacy_gui/generated/data_elements_network_info.g.dart';
 import 'package:privacy_gui/generated/device_operations.g.dart';
 import 'package:privacy_gui/generated/network_diagnostics.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
@@ -588,14 +589,24 @@ class PnpService {
   // ─── Mesh ──────────────────────────────────────────────
 
   /// Fetch mesh node list via DataElements (returns empty if non-mesh).
+  ///
+  /// Reads `ControllerID` beside the node table, as
+  /// `UspDevicesDataService.fetchMeshTopology` does, so an agent whose backhaul
+  /// is not filled in yet is listed as a slave here too rather than as a second
+  /// master (#1688 review).
   Future<MeshTopologyInfo> fetchMeshTopology() async {
     try {
-      final network = await DataElementsNetwork.fetch(_usp);
+      final results = await Future.wait([
+        DataElementsNetwork.fetch(_usp),
+        _fetchControllerId(),
+      ]);
+      final network = results[0] as DataElementsNetwork;
+      final controllerId = results[1] as String?;
       if (network.items.isEmpty) {
         logger.d('[PnP] DataElements empty — not a mesh or unsupported');
         return MeshTopologyInfo.empty;
       }
-      return _buildTopologyInfo(network);
+      return _buildTopologyInfo(network, controllerId);
     } catch (e) {
       // `w`, not `d` — see the same distinction in
       // `UspDevicesDataService.fetchMeshTopology`. An empty subtree is a
@@ -608,10 +619,25 @@ class PnpService {
     }
   }
 
-  MeshTopologyInfo _buildTopologyInfo(DataElementsNetwork network) {
+  /// `Device.WiFi.DataElements.Network.ControllerID`, or null when the read
+  /// faults. Isolated so a fault here costs only the ControllerID rule — the
+  /// builder falls back to telling the controller apart by backhaul — and
+  /// never the node list.
+  Future<String?> _fetchControllerId() async {
+    try {
+      return (await DataElementsNetworkInfo.fetch(_usp)).controllerId;
+    } catch (e) {
+      logger.w('[PnP] DataElements ControllerID unavailable, the controller is '
+          'told apart by backhaul: $e');
+      return null;
+    }
+  }
+
+  MeshTopologyInfo _buildTopologyInfo(
+      DataElementsNetwork network, String? controllerId) {
     // PnP doesn't need backhaul stats — only node discovery for mesh setup
-    final result =
-        MeshTopologyBuilder.build(network, includeBackhaulStats: false);
+    final result = MeshTopologyBuilder.build(network,
+        includeBackhaulStats: false, controllerId: controllerId);
     logger.d('[PnP] Mesh nodes: ${result.nodes.length}, '
         'client→node mappings: ${result.clientToNodeMap.length}');
     return result;

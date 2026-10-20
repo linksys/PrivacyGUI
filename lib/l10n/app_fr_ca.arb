@@ -856,6 +856,7 @@
   "deviceCategorySmartHome": "Maison intelligente",
   "deviceCategoryWearable": "Appareil portable",
   "renameRouter": "Renommer le routeur",
+  "renameNode": "Renommer le nœud",
   "noSsid": "(Aucun SSID)",
   "noTargetBankAvailable": "Aucune banque cible disponible",
   "noTimezonesFound": "Aucun fuseau horaire trouvé",

@@ -856,6 +856,7 @@
   "deviceCategorySmartHome": "Slim huis",
   "deviceCategoryWearable": "Wearable",
   "renameRouter": "Router hernoemen",
+  "renameNode": "Node hernoemen",
   "noSsid": "(Geen SSID)",
   "noTargetBankAvailable": "Geen doelbank beschikbaar",
   "noTimezonesFound": "Geen tijdzones gevonden",
