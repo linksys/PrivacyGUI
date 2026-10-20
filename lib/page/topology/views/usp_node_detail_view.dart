@@ -155,6 +155,31 @@ class UspNodeDetailView extends ConsumerWidget {
     }
   }
 
+  /// Names an agent (#1688 item 4): its own Hosts row's
+  /// `X_LINKSYS_UserDeviceLocation`, written as a client's name is, with no
+  /// icon. `X_LINKSYS_FriendlyName` reads the name back, so the read-back
+  /// `updateIdentity` runs is what shows the new name. The dialog saves and
+  /// shows its own progress and errors; this page only confirms a finished
+  /// save.
+  Future<void> _editAgentName(BuildContext context, WidgetRef ref,
+      SlaveNode node, String hostInstancePath) async {
+    final saved = await showAppDialog<bool>(
+      context: context,
+      builder: (_) => DeviceIdentityEditDialog(
+        initialName: node.userDeviceName ?? '',
+        initialCategory: DeviceCategory.unknown,
+        detectedName: node.hostName ?? node.model,
+        showIcon: false,
+        onSave: (name, _) => ref
+            .read(devicesDataProvider.notifier)
+            .updateIdentity(hostInstancePath: hostInstancePath, name: name),
+      ),
+    );
+    if (saved == true && context.mounted) {
+      showSuccessSnackBar(context, loc(context).changesSaved);
+    }
+  }
+
   // ===========================================================================
   // Node Info Card
   // ===========================================================================
@@ -220,16 +245,26 @@ class UspNodeDetailView extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // The router only: an extender is named with the mesh
-                      // work (#1688), as FL-WRT 2.0's Hosts rows cannot yet
-                      // tell a node from a client.
+                      // The router names itself on DeviceInfo (#1691); an agent
+                      // on its own Hosts row (#1688 item 4). An agent with no
+                      // matching Hosts row has nowhere to write a name, so it
+                      // gets no pen — as a client with no row gets none.
+                      // One identifier for both: a page shows one node.
                       DetailEditableName(
                         name: node.displayName,
-                        editLabel: loc(context).renameRouter,
+                        editLabel: switch (node) {
+                          MasterNode() => loc(context).renameRouter,
+                          SlaveNode() => loc(context).renameNode,
+                        },
                         identifier: 'node-detail-edit-name',
-                        onEdit: node is MasterNode
-                            ? () => _editRouterName(context, ref, node)
-                            : null,
+                        onEdit: switch (node) {
+                          MasterNode() => () =>
+                              _editRouterName(context, ref, node),
+                          SlaveNode(:final hostInstancePath?) => () =>
+                              _editAgentName(
+                                  context, ref, node, hostInstancePath),
+                          SlaveNode() => null,
+                        },
                       ),
                       AppGap.xs(),
                       Wrap(

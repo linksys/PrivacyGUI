@@ -1,6 +1,5 @@
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
-import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
@@ -10,11 +9,29 @@ import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
+import 'package:privacy_gui/page/_shared/utils/mesh_node_identity.dart';
 
 /// Builds [MeshNetwork] from raw data sources.
 ///
 /// Transforms Hosts (ConnectedDevices), WiFi enrichment, and DataElements
 /// into the unified MeshNetwork architecture.
+///
+/// **DataElements decides which nodes exist; Hosts only describes them
+/// (#1688).** The node list, each node's role and its parent come from
+/// [MeshTopologyInfo.nodes] (`MeshTopologyBuilder`, which tells the controller
+/// from an agent by its backhaul). A `Hosts` row is attached to a node when its
+/// `PhysAddress` equals that node's `Device.{i}.ID` (linksys/FWDEV#208) and
+/// supplies what DataElements does not carry — the node's IP and host name —
+/// and such a row is not also listed as a client. FL-WRT 2.0 has no mesh-role
+/// leaf on `Hosts` (see `mesh_node_identity.dart`), so there is no other way to
+/// tell a node's row from a client's.
+///
+/// **A node DataElements does not report is not built.** On 2.0 an agent that
+/// drops off the mesh leaves `DataElements.Network.Device.` and nothing marks
+/// its lingering `Hosts` row as a node, so it disappears rather than rendering
+/// offline. Showing it offline needs the app to remember which MACs were nodes;
+/// that is deliberately not built yet, because how long such a row lingers on
+/// 2.0 has not been measured on a multi-node bench (#1688, #1443).
 class MeshNetworkBuilder {
   MeshNetworkBuilder._();
 
@@ -35,21 +52,25 @@ class MeshNetworkBuilder {
     required String gatewayName,
     SystemInfoUIModel? systemInfo,
   }) {
-    // 1. Separate mesh nodes and client devices
-    final meshDevices = <ConnectedDevice>[];
+    // 1. Separate the nodes' own Hosts rows from the clients. A row is a node's
+    //    when its PhysAddress is a DataElements node ID; it is keyed by that
+    //    normalized MAC so each node can find its row below.
+    final nodeMacSet =
+        meshNodeMacSet(meshTopology.nodes.map((n) => n.deviceId));
+    final nodeHostRows = <String, ConnectedDevice>{};
     final clientHostDevices = <ConnectedDevice>[];
 
     for (final d in connectedDevices.items) {
-      if (d.deviceRole == 'master' || d.deviceRole == 'slave') {
-        meshDevices.add(d);
+      if (isMeshNodeHost(d.macAddress, nodeMacSet)) {
+        nodeHostRows[meshNodeMacKey(d.macAddress)] ??= d;
       } else if (d.interface_.isNotEmpty || d.isActive) {
         clientHostDevices.add(d);
       }
     }
 
-    // 2. Build node display name map (Hosts hostname → DataElements node ID)
+    // 2. Build node display name map (DataElements node ID → Hosts name)
     final nodeDisplayNameMap =
-        _buildNodeDisplayNameMap(connectedDevices, meshTopology);
+        _buildNodeDisplayNameMap(meshTopology, nodeHostRows);
 
     // 3. Build all ClientDevice models
     //
@@ -84,10 +105,15 @@ class MeshNetworkBuilder {
       (clientsByNodeId[nodeId] ??= []).add(client);
     }
 
-    // 6. Build MasterNode
-    final masterDevice =
-        meshDevices.where((d) => d.deviceRole == 'master').firstOrNull;
+    // 6. Build MasterNode. Its identity is the DataElements controller; its
+    //    Hosts row, if any, is looked up by MAC. On 2.0.3.26101482 the
+    //    controller has no Hosts row of its own (none of the five rows carries
+    //    a 74:12:13:21:56:xx address), so `masterDevice` is normally null and
+    //    the name and model come from system_info.
     final masterMeshInfo = meshTopology.nodes.master;
+    final masterDevice = masterMeshInfo == null
+        ? null
+        : nodeHostRows[meshNodeMacKey(masterMeshInfo.deviceId)];
     final masterNodeId = masterDevice?.macAddress.trim().toUpperCase() ??
         masterMeshInfo?.deviceId ??
         'GATEWAY';
@@ -135,43 +161,27 @@ class MeshNetworkBuilder {
     final patchedMaster =
         master.copyWith(connectedClients: patchedMasterClients);
 
-    // 7. Build SlaveNodes
-    final slaves = meshDevices.where((d) => d.deviceRole == 'slave').map((d) {
-      final slaveMeshInfo = _findMatchingMeshNode(d, meshTopology.nodes.slaves);
-      final slaveNodeId = d.macAddress.trim().toUpperCase();
+    // 7. Build SlaveNodes — one per DataElements agent, each with the Hosts row
+    //    whose PhysAddress is its ID (null when none matches).
+    final slaves = meshTopology.nodes.slaves.map((slaveMeshInfo) {
+      final slaveDevice = nodeHostRows[meshNodeMacKey(slaveMeshInfo.deviceId)];
+      final slaveNodeId = slaveMeshInfo.deviceId;
 
-      // Clients for this slave
-      final slaveClients = <ClientDevice>[];
-      if (clientsByNodeId.containsKey(slaveNodeId)) {
-        slaveClients.addAll(clientsByNodeId[slaveNodeId]!);
-      }
-      if (slaveMeshInfo != null &&
-          slaveMeshInfo.deviceId != slaveNodeId &&
-          clientsByNodeId.containsKey(slaveMeshInfo.deviceId)) {
-        slaveClients.addAll(clientsByNodeId[slaveMeshInfo.deviceId]!);
-      }
+      final slaveClients = clientsByNodeId[slaveNodeId] ?? <ClientDevice>[];
 
       final slave = _buildSlaveNode(
-        slaveDevice: d,
+        slaveDevice: slaveDevice,
         slaveMeshInfo: slaveMeshInfo,
         connectedClients: slaveClients,
-        // An empty topology carries no liveness information for any node, so an
-        // unmatched row must not be read as "offline" (#1430 review).
-        //
-        // Deliberately `isNotEmpty` and NOT the `topologyHasMesh` predicate
-        // built at the top of this method, even though both read
-        // `meshTopology.nodes` and the narrower one looks like the safer
-        // choice. `hasMesh` is "at least one *slave* agent answered", and the
-        // whole point of #1430 is the single-extender house whose extender is
-        // powered off: DataElements then enumerates only the router's own agent
-        // (`MeshTopologyBuilder` adds the master unconditionally) while the
-        // extender's `Device.Hosts.Host` row persists for another ~20-50s.
-        // `hasMesh` would be false there, this node would be handed
-        // `livenessKnown: false`, and a powered-off extender would render
-        // online — i.e. narrowing the predicate reverts the ticket for the
-        // commonest topology. The two predicates answer different questions on
-        // the same object; do not unify them.
-        livenessKnown: meshTopology.isNotEmpty,
+        // Every slave built here is one DataElements reported, so it is online
+        // and its liveness is known by construction. Before #1688 the slaves
+        // came from Hosts rows tagged `DeviceRole=slave`, and a powered-off
+        // extender showed as an *offline* row: its Hosts row lingered while it
+        // had left DataElements (#1430). On 2.0 nothing tags that lingering row
+        // as a node, so the offline shape cannot be built from this input — see
+        // the class doc. `livenessKnown` stays a parameter so that rebuilding an
+        // offline node later does not change the model.
+        livenessKnown: true,
       );
 
       // Patch slave's connected clients with parentNodeName
@@ -202,12 +212,14 @@ class MeshNetworkBuilder {
         // parent ID is no evidence at all). The rest stayed on the master above.
         unassigned.addAll(e.value.where((c) => c.isUnattributed));
       } else if (!assignedNodeIds.contains(e.key)) {
-        // Shape B — a parent ID matching no node built from Hosts. Only
-        // resolvable here, once the slaves are known, so the flag is stamped at
-        // this point. Setting it also clears parentNodeName, which the resolver
-        // had already filled in from the unmatched node's model (or the gateway
-        // name): keeping that would leave the device claiming a parent while
-        // being declared unattributed.
+        // Shape B — a parent ID matching no node that was built. Since #1688
+        // every DataElements node is built, and `clientToNodeMap` is written
+        // from the same node loop, so this needs the two to disagree; it stays
+        // as the guard for that case rather than as an expected path. Setting
+        // the flag also clears parentNodeName, which the resolver had already
+        // filled in from the unmatched node's model (or the gateway name):
+        // keeping that would leave the device claiming a parent while being
+        // declared unattributed.
         unassigned.addAll(e.value.map((c) => c.copyWith(isUnattributed: true)));
       }
     }
@@ -223,41 +235,24 @@ class MeshNetworkBuilder {
   // Private: Node display name map
   // ---------------------------------------------------------------------------
 
+  /// DataElements node ID → the name its Hosts row carries, for labelling a
+  /// client's "connected to".
+  ///
+  /// Keyed by the DataElements ID because that is what `clientToNodeMap` maps a
+  /// client to. The name is the row's `X_LINKSYS_FriendlyName` (the 2.0 leaf,
+  /// as for clients since #1693), else its host name; a node with neither, or
+  /// with no Hosts row, is left out so the caller falls back to the model.
   static Map<String, String> _buildNodeDisplayNameMap(
-    ConnectedDevices devices,
     MeshTopologyInfo meshTopology,
+    Map<String, ConnectedDevice> nodeHostRows,
   ) {
     final map = <String, String>{};
-    for (final d in devices.items) {
-      // Include both master and slave nodes
-      if (d.deviceRole != 'master' && d.deviceRole != 'slave') continue;
-
-      final displayName = (d.friendlyName?.isNotEmpty == true)
-          ? d.friendlyName!
-          : (d.hostName.isNotEmpty ? d.hostName : null);
-      if (displayName == null) continue;
-
-      // Match via embedded MAC in Hosts DeviceID
-      final hostsDeviceId = d.deviceId?.toUpperCase().replaceAll('-', '') ?? '';
-      if (hostsDeviceId.length >= 12) {
-        final embeddedMac = hostsDeviceId.substring(hostsDeviceId.length - 12);
-        for (final node in meshTopology.nodes) {
-          final nodeIdNormalized =
-              node.deviceId.toUpperCase().replaceAll(':', '');
-          if (nodeIdNormalized == embeddedMac) {
-            map[node.deviceId] = displayName;
-            break;
-          }
-        }
-      }
-
-      // For master, also try matching via MAC address directly
-      if (d.deviceRole == 'master') {
-        final masterMac = d.macAddress.trim().toUpperCase();
-        if (masterMac.isNotEmpty && !map.containsKey(masterMac)) {
-          map[masterMac] = displayName;
-        }
-      }
+    for (final node in meshTopology.nodes) {
+      final row = nodeHostRows[meshNodeMacKey(node.deviceId)];
+      if (row == null) continue;
+      final displayName =
+          nonEmpty(row.linksysFriendlyName) ?? nonEmpty(row.hostName);
+      if (displayName != null) map[node.deviceId] = displayName;
     }
     return map;
   }
@@ -303,9 +298,22 @@ class MeshNetworkBuilder {
       // Non-mesh: all active devices are on the gateway
       if (device.isActive) parentNodeName = gatewayName;
     } else {
-      parentNodeId = meshTopology.clientToNodeMap[mac];
+      // A Wi-Fi station entry first, then the wired neighbor table (#1688 item
+      // 2). The station entry wins for a MAC in both: a Wi-Fi STA is a
+      // bridge-FDB entry too (MeshTopologyBuilder.wiredClientAttribution).
+      parentNodeId = meshTopology.clientToNodeMap[mac] ??
+          meshTopology.wiredClientToNodeMap[mac];
       if (parentNodeId == null) {
-        isUnattributed = topologyHasMesh && isWifi && device.isActive;
+        // An online wired client that two or more nodes list is evidence of a
+        // node the app cannot pick, so it is unattributed (FWDEV#208 rule 2).
+        // A wired client that no node lists is still no evidence, and stays on
+        // the master as above. Liveness comes from Hosts, not from the
+        // listing: the forwarding table keeps an unplugged client ~300 s.
+        final ambiguousWired = !isWifi &&
+            device.isActive &&
+            meshTopology.ambiguousWiredClients.contains(mac);
+        isUnattributed =
+            (topologyHasMesh && isWifi && device.isActive) || ambiguousWired;
       } else {
         // Try display name map first (friendlyName or hostName from Hosts)
         parentNodeName = nodeDisplayNameMap[parentNodeId];
@@ -545,65 +553,57 @@ class MeshNetworkBuilder {
   // Private: SlaveNode builder
   // ---------------------------------------------------------------------------
 
+  /// One agent, from its DataElements record and — when one matched — the
+  /// `Hosts` row whose `PhysAddress` is its ID.
+  ///
+  /// [slaveDevice] is null when no row matched. FWDEV#208 measured every agent
+  /// with a matching row on a three-node bench, but this has not been measured
+  /// on our own bench yet, so a missing row must still build a node: it just
+  /// has no IP and no host name.
+  ///
+  /// [SlaveNode.deviceId] is the DataElements ID whether or not a row matched,
+  /// so a node keeps one identity when its row comes and goes. Before #1688 it
+  /// was the Hosts MAC; the two are the same value whenever a row matches.
   static SlaveNode _buildSlaveNode({
-    required ConnectedDevice slaveDevice,
-    required SlaveNode? slaveMeshInfo,
+    required ConnectedDevice? slaveDevice,
+    required SlaveNode slaveMeshInfo,
     required List<ClientDevice> connectedClients,
     required bool livenessKnown,
   }) {
-    final deviceId = slaveDevice.macAddress.trim().toUpperCase();
-
-    final backhaul = slaveMeshInfo?.backhaul ?? BackhaulInfo.none;
-
     return SlaveNode(
-      deviceId: deviceId,
-      dataElementsId: slaveMeshInfo?.deviceId,
-      friendlyName: slaveDevice.friendlyName,
-      hostName: slaveDevice.hostName,
+      deviceId: slaveMeshInfo.deviceId,
+      dataElementsId: slaveMeshInfo.deviceId,
+      friendlyName: nonEmpty(slaveDevice?.linksysFriendlyName),
+      hostName: nonEmpty(slaveDevice?.hostName),
       // DataElements first here, unlike the master: for a slave these fields are
       // prplMesh reporting the *agent*, and there is no `system_info` for a
       // remote node to check them against. `nonEmpty` rather than a bare `??`
       // because `MeshTopologyBuilder` reports an absent field as `''`, which
       // `??` would accept as an answer — and because it trims, so a
-      // whitespace-only field cannot win the chain either (#1555).
-      model: nonEmpty(slaveMeshInfo?.model) ??
-          nonEmpty(slaveDevice.modelName) ??
+      // whitespace-only field cannot win the chain either (#1555). The Hosts
+      // fallbacks are the 2.0 `X_LINKSYS_` leaves, as for clients (#1693).
+      model: nonEmpty(slaveMeshInfo.model) ??
+          nonEmpty(slaveDevice?.linksysModelName) ??
           '',
-      manufacturer: nonEmpty(slaveMeshInfo?.manufacturer) ??
-          nonEmpty(slaveDevice.manufacturer) ??
+      manufacturer: nonEmpty(slaveMeshInfo.manufacturer) ??
+          nonEmpty(slaveDevice?.linksysManufacturer) ??
           '',
-      serialNumber: nonEmpty(slaveMeshInfo?.serialNumber) ?? '',
-      softwareVersion: nonEmpty(slaveMeshInfo?.softwareVersion) ?? '',
-      ipAddress:
-          slaveDevice.ipAddress.isNotEmpty ? slaveDevice.ipAddress : null,
-      ipv6Addresses: slaveDevice.ipv6Addresses
-          .map((e) => e.address)
-          .where((a) => a.isNotEmpty)
-          .toList(),
-      instancePath: slaveMeshInfo?.instancePath,
+      serialNumber: nonEmpty(slaveMeshInfo.serialNumber) ?? '',
+      softwareVersion: nonEmpty(slaveMeshInfo.softwareVersion) ?? '',
+      ipAddress: nonEmpty(slaveDevice?.ipAddress),
+      ipv6Addresses: slaveDevice?.ipv6Addresses
+              .map((e) => e.address)
+              .where((a) => a.isNotEmpty)
+              .toList() ??
+          const [],
+      instancePath: slaveMeshInfo.instancePath,
       connectedClients: connectedClients,
-      backhaul: backhaul,
+      backhaul: slaveMeshInfo.backhaul,
       livenessKnown: livenessKnown,
+      // The row a rename writes to, and the name it wrote (#1688 item 4). The
+      // same leaf a client's name is, since an agent is a Hosts row too.
+      hostInstancePath: slaveDevice?.instancePath,
+      userDeviceName: nonEmpty(slaveDevice?.linksysUserDeviceLocation),
     );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Private: Mesh node matching
-  // ---------------------------------------------------------------------------
-
-  static SlaveNode? _findMatchingMeshNode(
-    ConnectedDevice device,
-    List<SlaveNode> meshSlaves,
-  ) {
-    final hostsDeviceId =
-        device.deviceId?.toUpperCase().replaceAll('-', '') ?? '';
-    if (hostsDeviceId.length < 12) return null;
-
-    final embeddedMac = hostsDeviceId.substring(hostsDeviceId.length - 12);
-
-    return meshSlaves.where((n) {
-      final nodeIdNormalized = n.deviceId.toUpperCase().replaceAll(':', '');
-      return nodeIdNormalized == embeddedMac;
-    }).firstOrNull;
   }
 }

@@ -856,6 +856,7 @@
   "deviceCategorySmartHome": "Rumah pintar",
   "deviceCategoryWearable": "Perangkat wearable",
   "renameRouter": "Ganti nama router",
+  "renameNode": "Ganti nama simpul",
   "noSsid": "(Tanpa SSID)",
   "noTargetBankAvailable": "Tidak ada bank target yang tersedia",
   "noTimezonesFound": "Tidak ada zona waktu yang ditemukan",

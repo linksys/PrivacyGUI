@@ -856,6 +856,7 @@
   "deviceCategorySmartHome": "Inteligentny dom",
   "deviceCategoryWearable": "Urządzenie do noszenia",
   "renameRouter": "Zmień nazwę routera",
+  "renameNode": "Zmień nazwę węzła",
   "noSsid": "(Brak SSID)",
   "noTargetBankAvailable": "Brak dostępnego banku docelowego",
   "noTimezonesFound": "Nie znaleziono stref czasowych",

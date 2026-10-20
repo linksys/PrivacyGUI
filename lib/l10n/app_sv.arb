@@ -856,6 +856,7 @@
   "deviceCategorySmartHome": "Smart hem",
   "deviceCategoryWearable": "Bärbar enhet",
   "renameRouter": "Byt namn på router",
+  "renameNode": "Byt namn på nod",
   "noSsid": "(Inget SSID)",
   "noTargetBankAvailable": "Ingen målbank tillgänglig",
   "noTimezonesFound": "Inga tidszoner hittades",

@@ -250,6 +250,39 @@ void main() {
     });
 
     group('copyWith', () {
+      // The agent's rename row and the name on it (#1688 item 4). Equality has
+      // to see both, or a rename would not rebuild the page that shows it.
+      test(
+          'carries hostInstancePath and userDeviceName through copyWith and '
+          'equality', () {
+        final named = DevicesTestData.createWifiSlave(
+          hostInstancePath: 'Device.Hosts.Host.3.',
+          userDeviceName: 'Upstairs',
+        );
+        expect(named.copyWith().hostInstancePath, 'Device.Hosts.Host.3.');
+        expect(named.copyWith().userDeviceName, 'Upstairs');
+        expect(
+            named.copyWith(userDeviceName: 'Garage').userDeviceName, 'Garage');
+
+        expect(
+            named,
+            equals(DevicesTestData.createWifiSlave(
+              hostInstancePath: 'Device.Hosts.Host.3.',
+              userDeviceName: 'Upstairs',
+            )));
+        expect(
+            named,
+            isNot(equals(DevicesTestData.createWifiSlave(
+              hostInstancePath: 'Device.Hosts.Host.3.',
+              userDeviceName: 'Garage',
+            ))));
+        expect(
+            named,
+            isNot(equals(DevicesTestData.createWifiSlave(
+              hostInstancePath: 'Device.Hosts.Host.4.',
+              userDeviceName: 'Upstairs',
+            ))));
+      });
       test('preserves unchanged fields', () {
         final original = DevicesTestData.createWifiSlave();
         final copied = original.copyWith();

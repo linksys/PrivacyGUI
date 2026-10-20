@@ -4,10 +4,12 @@ import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/oui_lookup.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
+import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/generated/mac_filter_network.g.dart';
 import 'package:privacy_gui/generated/mac_filter_network_operations.g.dart';
-import 'package:privacy_gui/page/_shared/utils/mesh_device_role.dart';
+import 'package:privacy_gui/page/_shared/utils/mesh_node_identity.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_device_ui_model.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_fetch_result.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
@@ -48,21 +50,29 @@ class UspMacFilterService {
   /// Wireless only because the filter only ever applies to Wi-Fi (fronthaul
   /// BSSes, linksys/FWDEV#194): a wired client is neither blocked nor admitted by
   /// it, so pre-filling one would promise protection the list does not give.
-  /// Mesh nodes are excluded by role, as they are never user-filterable clients.
+  ///
+  /// Mesh nodes are excluded, as they are never user-filterable clients: a node
+  /// offered here could be put on a Deny list, or left off an Allow list, and
+  /// locked out of its own network (PRODUCT_MANAGEMENT#124 REQ-10a). A node is
+  /// recognised by the one rule in `mesh_node_identity.dart` — its `Hosts`
+  /// PhysAddress is a DataElements node ID — because FL-WRT 2.0 has no
+  /// `DeviceRole` to exclude it by (#1688 item 3).
   Future<MacFilterFetchResult> fetchAll() async {
     try {
       final results = await Future.wait([
         MacFilterNetwork.fetch(_usp),
         ConnectedDevices.fetch(_usp),
+        _fetchNodeMacs(),
       ]);
       final network = results[0] as MacFilterNetwork;
       final devices = results[1] as ConnectedDevices;
+      final nodeMacs = results[2] as Set<String>;
 
       final macs = _parseList(network.macFilterList);
 
       final connected = devices.items
           .where((d) =>
-              !isMeshNodeRole(d.deviceRole) &&
+              !isMeshNodeHost(d.macAddress, nodeMacs) &&
               d.isActive &&
               _isWireless(d) &&
               d.macAddress.isNotEmpty)
@@ -100,6 +110,24 @@ class UspMacFilterService {
       rethrow;
     } catch (e) {
       throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  /// The node MACs DataElements reports, for excluding the nodes' own `Hosts`
+  /// rows from [fetchAll]'s device list.
+  ///
+  /// **Never fails the page.** The node list only narrows the device picker, so
+  /// a DataElements read that faults (a router without the subtree, a
+  /// transport error) yields an empty set and the page still opens — the cost
+  /// is that a node may then be offered, which is the behaviour before this
+  /// read existed. The fault is logged, not rethrown.
+  Future<Set<String>> _fetchNodeMacs() async {
+    try {
+      final network = await DataElementsNetwork.fetch(_usp);
+      return meshNodeMacSet(network.items.map((n) => n.id));
+    } catch (e) {
+      logger.w('[USP][MacFilter]: node list unavailable, no node excluded: $e');
+      return const {};
     }
   }
 

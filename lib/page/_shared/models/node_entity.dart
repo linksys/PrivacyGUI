@@ -303,9 +303,14 @@ final class SlaveNode extends NodeEntity {
   ///
   /// `true` does not claim the set is *complete*. A slave absent from a
   /// non-empty set is judged offline, and that is intended — it is the
-  /// powered-off extender #1430 exists to catch. See the producer at
-  /// `MeshNetworkBuilder.build` for why the predicate is the topology being
-  /// non-empty rather than the narrower "some slave agent answered".
+  /// powered-off extender #1430 exists to catch.
+  ///
+  /// **No producer builds that offline shape today.** Since #1688
+  /// `MeshNetworkBuilder` builds each slave from a DataElements agent, so every
+  /// slave it makes has a [dataElementsId] and is passed `livenessKnown: true`.
+  /// On FL-WRT 2.0 a powered-off agent's lingering `Hosts` row carries nothing
+  /// that marks it as a node, so it is not built at all rather than built
+  /// offline. The rule stays here for the offline recovery #1688 defers.
   ///
   /// Defaults to `true` so that every construction site keeps AC1's rule
   /// unchanged; defaulting to `false` would not be a default but a rule change,
@@ -314,6 +319,17 @@ final class SlaveNode extends NodeEntity {
   /// against, such as `MeshTopologyBuilder`, silently reproduces the offline
   /// verdict with no analyzer signal. Making it `required` is #1466.
   final bool livenessKnown;
+
+  /// This agent's `Device.Hosts.Host.{i}.` row — the one whose `PhysAddress`
+  /// is its DataElements ID — where a rename writes
+  /// `X_LINKSYS_UserDeviceLocation` (#1688 item 4). Null when no row matched:
+  /// there is nothing to write to, so the agent cannot be renamed.
+  final String? hostInstancePath;
+
+  /// The name the user gave this agent: its Hosts row's
+  /// `X_LINKSYS_UserDeviceLocation`, which `X_LINKSYS_FriendlyName` reads back
+  /// (#1688 item 4). Null when unset, which is what the rename dialog clears to.
+  final String? userDeviceName;
 
   SlaveNode({
     required this.deviceId,
@@ -330,6 +346,8 @@ final class SlaveNode extends NodeEntity {
     this.connectedClients = const [],
     required this.backhaul,
     this.livenessKnown = true,
+    this.hostInstancePath,
+    this.userDeviceName,
   });
 
   @override
@@ -338,7 +356,8 @@ final class SlaveNode extends NodeEntity {
   /// A slave is online when it matched a DataElements agent. A powered-off node
   /// leaves `DataElements.Network.Device.` within ~20-50s while its
   /// `Device.Hosts.Host` row persists, so an unmatched node row is the offline
-  /// shape (#1430, AC1).
+  /// shape (#1430, AC1). That figure is from the 1.x bench; see
+  /// [livenessKnown] for why no producer builds the shape on 2.0 yet.
   ///
   /// The match is only a verdict when there was something to match against. With
   /// [livenessKnown] false the absent match says nothing, and asserting offline
@@ -380,6 +399,8 @@ final class SlaveNode extends NodeEntity {
     List<ClientDevice>? connectedClients,
     BackhaulInfo? backhaul,
     bool? livenessKnown,
+    String? hostInstancePath,
+    String? userDeviceName,
   }) {
     return SlaveNode(
       deviceId: deviceId ?? this.deviceId,
@@ -396,6 +417,8 @@ final class SlaveNode extends NodeEntity {
       connectedClients: connectedClients ?? this.connectedClients,
       backhaul: backhaul ?? this.backhaul,
       livenessKnown: livenessKnown ?? this.livenessKnown,
+      hostInstancePath: hostInstancePath ?? this.hostInstancePath,
+      userDeviceName: userDeviceName ?? this.userDeviceName,
     );
   }
 
@@ -415,6 +438,8 @@ final class SlaveNode extends NodeEntity {
         connectedClients,
         backhaul,
         livenessKnown,
+        hostInstancePath,
+        userDeviceName,
       ];
 
   @override
@@ -436,6 +461,8 @@ final class SlaveNode extends NodeEntity {
         'connectedClients': connectedClients,
         'backhaul': backhaul,
         'livenessKnown': livenessKnown,
+        'hostInstancePath': hostInstancePath,
+        'userDeviceName': userDeviceName,
       };
 }
 

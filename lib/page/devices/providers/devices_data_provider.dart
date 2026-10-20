@@ -277,6 +277,23 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     final existingMesh =
         state.valueOrNull?.meshTopology ?? MeshTopologyInfo.empty;
 
+    // Rebuild against the topology already known, as `_refetchPreservingMesh`
+    // does. `svc.fetch` builds with an empty topology, and since #1688 the
+    // nodes come only from DataElements, so publishing its network as-is would
+    // drop every agent on each refresh or retry — its Hosts row then showing as
+    // a client — until the background read returns, and for good if that read
+    // fails. Only the very first build, with no topology yet, uses it as-is.
+    final meshNetwork = existingMesh.isEmpty
+        ? result.meshNetwork
+        : svc.rebuildWithMesh(
+            context: result.codegenContext,
+            wifiClientMap: wifiData.wifiClientMap,
+            connectionDetailMap: wifiData.connectionDetailMap,
+            meshTopology: existingMesh,
+            gatewayName: gatewayName,
+            systemInfo: sysData?.model,
+          );
+
     // Fire-and-forget: fetch mesh topology in background, then update state. Carries the
     // generation captured at the top of this method — see there for why not the current one.
     _fetchMeshAndUpdate(
@@ -286,7 +303,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       codegenContext: result.codegenContext,
       meshTopology: existingMesh,
       hostNameByMac: result.hostNameByMac,
-      meshNetwork: result.meshNetwork,
+      meshNetwork: meshNetwork,
     );
   }
 

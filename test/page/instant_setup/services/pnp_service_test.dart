@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_band.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
@@ -927,6 +928,63 @@ void main() {
       });
     });
   });
+  // The wizard's "Your Network" step lists what this returns. A node that has
+  // just joined has no backhaul data yet, which by backhaul alone also
+  // describes the controller; ControllerID is what keeps it a slave, as it
+  // does on the topology (#1688 review).
+  group('PnpService.fetchMeshTopology — the controller', () {
+    const controller = 'AA:BB:CC:DD:EE:01';
+    const joiningAgent = 'AA:BB:CC:DD:EE:02';
+    const node1 = 'Device.WiFi.DataElements.Network.Device.1.';
+    const node2 = 'Device.WiFi.DataElements.Network.Device.2.';
+    // FL-WRT 2.0 shape: the controller reports LinkType None, and the agent
+    // has no LinkType and no parent yet.
+    const networkResponse = <String, dynamic>{
+      '${node1}ID': controller,
+      '${node1}MultiAPDevice.Backhaul.LinkType': 'None',
+      '${node2}ID': joiningAgent,
+    };
+
+    void stubDataElements({
+      Map<String, dynamic> networkInfo = const {},
+      bool networkInfoFails = false,
+    }) {
+      when(() => mockUsp.get(any())).thenAnswer((inv) async {
+        final paths = inv.positionalArguments[0] as List<String>;
+        if (paths.any((p) => p.endsWith('Network.ControllerID'))) {
+          if (networkInfoFails) throw 'USP get failed: 7026 Invalid path';
+          return networkInfo;
+        }
+        return networkResponse;
+      });
+    }
+
+    test('with ControllerID an agent with no backhaul yet is a slave',
+        () async {
+      stubDataElements(networkInfo: {
+        'Device.WiFi.DataElements.Network.ControllerID': controller,
+      });
+
+      final topology = await service.fetchMeshTopology();
+
+      expect(topology.nodes.whereType<MasterNode>().map((n) => n.deviceId),
+          [controller]);
+      expect(topology.nodes.whereType<SlaveNode>().map((n) => n.deviceId),
+          [joiningAgent]);
+    });
+
+    // The fallback the fault isolation is for: the node list survives, and the
+    // controller is told apart by backhaul as before.
+    test('a ControllerID read that fails leaves the node list intact',
+        () async {
+      stubDataElements(networkInfoFails: true);
+
+      final topology = await service.fetchMeshTopology();
+
+      expect(topology.nodes.map((n) => n.deviceId), [controller, joiningAgent]);
+    });
+  });
+
   group('PnpService injected connection error handling', () {
     late MockAutoIPoEService ipoe;
 

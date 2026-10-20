@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/components/composed/app_node_list_card.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
@@ -188,6 +189,37 @@ void main() {
     expect(find.text(pnpUnifiedWifiConfig.ssid), findsOneWidget);
     expect(find.text(pnpUnifiedWifiConfig.password), findsOneWidget);
   });
+  // The "Your Network" step labels each node by its own role. It used to call
+  // the first node in the list the master, but the nodes keep DataElements
+  // order, which does not promise the controller first (#1688 review).
+  testWidgets('labels each node by its role, not by its place in the list',
+      (tester) async {
+    final next = lookupAppLocalizations(const Locale('en')).next;
+    await runWithOverflowCollection((_) async {
+      enlargeSurface(tester);
+      await tester.pumpWidget(host(WizardConfiguring(
+        wifiConfig: pnpUnifiedWifiConfig,
+        // The slave first: a list the old positional rule mislabels.
+        meshNodes: pnpMeshNodes.reversed.toList(),
+      )));
+      await settle(tester);
+      // Main Wi-Fi, then guest Wi-Fi, then "Your Network".
+      for (var step = 0; step < 2; step++) {
+        await tester.tap(find.widgetWithText(AppButton, next));
+        await settle(tester);
+      }
+    });
+
+    String descriptionOf(String model) => tester
+        .widget<AppNodeListCard>(find.ancestor(
+            of: find.text(model), matching: find.byType(AppNodeListCard)))
+        .description!;
+    expect(descriptionOf('MR7500'), 'Master',
+        reason: 'pnpMeshNodes[0], the MasterNode, now listed second');
+    expect(descriptionOf('MX2000'), 'Slave',
+        reason: 'pnpMeshNodes[1], the SlaveNode, now listed first');
+  });
+
   group('a save that returns to the form says why (#1000)', () {
     // The defect: `saveChanges()` put its error in a state field no view read,
     // so a failed save looked like the guest page "being shown twice".
