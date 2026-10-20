@@ -13,6 +13,12 @@ next one written down is #1611's, at `664397067-dirty`**: 14,976 → **15,678** 
 one `clean`, none removed and none changed — confirmed by `check page` before the re-capture). Each is
 a port forwarding tab with its list at FWDEV#204's rule limit, the first cases to share an
 `initialTab` with another case.
+**#1687's**: 15,678 → **16,146** (+468 rows, every one `clean`, none removed and none changed —
+`check page` before the re-capture compared all 15,678). 234 are `page.ipv6_port_service_full`, the
+IPv6 port services page at FWDEV#204's 15-rule limit. **The other 234 are `page.pnp_ipoe`, which
+#1664 (`4873e4559`) declared and swept without re-capturing**, so `check page` on `dev-2.7.3` had
+been red by exactly that group since; this capture records it rather than leaving the drift for the
+next PR to explain.
 
 Every port in epic #1335 is signed off by one claim: *the ported sweep measures
 the same cells and reaches the same verdicts as before*. The main card sweep

@@ -155,6 +155,84 @@ void main() {
     service = PnpService(mockUsp);
   });
 
+  // #1098: on FLWRT 2.0 a WAN with no connection has no IPv4Address row at all
+  // (measured for #1615 on FW 2.0.2.26091803: Status `Dormant`,
+  // IPv4AddressNumberOfEntries `0`, IPv4Address.1.* absent). The 0.17 WanStatus
+  // reads the fixed row IPv4Address.1, so the check used to throw 9998 exactly
+  // when there was no internet, and PnP showed the read-failure card instead of
+  // the no-internet page. TEMPORARY with the helper it exercises: #1654.
+  group('PnpService.checkInternetConnected — WAN with no address (#1098)', () {
+    /// The router as measured with the WAN down. [entries] is what it reports
+    /// for IPv4AddressNumberOfEntries.
+    void stubWanWithNoAddress({String entries = '0'}) {
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
+          return ipAliasResolutionResponse;
+        }
+        if (paths.any((p) => p.contains('IPv4AddressNumberOfEntries'))) {
+          return {'Device.IP.Interface.2.IPv4AddressNumberOfEntries': entries};
+        }
+        if (paths.any((p) => p.contains('Device.IP.Interface.2.Status'))) {
+          // IPv4Address.1.* deliberately absent: this is what the router returns.
+          return {
+            'Device.IP.Interface.2.Status': 'Dormant',
+            'Device.IP.Interface.2.MaxMTUSize': '1500',
+            'Device.IP.Interface.2.IPv6Enable': false,
+          };
+        }
+        return {};
+      });
+    }
+
+    test('returns false instead of throwing when the WAN has no address',
+        () async {
+      stubWanWithNoAddress();
+
+      expect(await service.checkInternetConnected(), isFalse,
+          reason: 'no address row is a WAN with no internet, which the '
+              'no-internet page is for, not a router that cannot be read');
+    });
+
+    test('still throws when every GET comes back empty', () async {
+      // #1098's original log: the router answered every GET with no data. The
+      // address count is then unreadable too, so this is not a confirmed
+      // no-address WAN and must stay a read failure (#1132).
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {});
+
+      await expectLater(
+          service.checkInternetConnected(), throwsA(isA<ServiceError>()));
+    });
+
+    test('still throws when the router says it HAS an address', () async {
+      // Same missing fields, but the router contradicts them, so this is a
+      // broken read and must stay a read failure.
+      stubWanWithNoAddress(entries: '1');
+
+      await expectLater(
+          service.checkInternetConnected(), throwsA(isA<ServiceError>()));
+    });
+
+    test('a WAN that is up with an address still reads as connected', () async {
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
+          return ipAliasResolutionResponse;
+        }
+        return {
+          'Device.IP.Interface.2.Status': 'Up',
+          'Device.IP.Interface.2.IPv4Address.1.IPAddress': '203.0.113.7',
+          'Device.IP.Interface.2.IPv4Address.1.SubnetMask': '255.255.255.0',
+          'Device.IP.Interface.2.IPv4Address.1.AddressingType': 'DHCP',
+          'Device.IP.Interface.2.MaxMTUSize': '1500',
+          'Device.IP.Interface.2.IPv6Enable': false,
+        };
+      });
+
+      expect(await service.checkInternetConnected(), isTrue);
+    });
+  });
+
   group(
       'PnpService.saveIspSettings — integration with UspInternetSettingsService',
       () {

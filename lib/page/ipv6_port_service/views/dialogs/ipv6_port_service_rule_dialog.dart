@@ -29,10 +29,21 @@ class Ipv6PortServiceRuleDialog extends StatefulWidget {
   final Ipv6PortServiceRuleUIModel? rule;
   final List<AppAutoCompleteOption> deviceOptions;
 
+  /// Every other rule on the page, without [rule]. The new rule may not
+  /// overlap one of them, nor take its description: FW refuses both
+  /// (FWDEV#204).
+  final List<Ipv6PortServiceRuleUIModel> otherRules;
+
+  /// Descriptions of the firewall rules the page does not list, which FW also
+  /// refuses a description of.
+  final Set<String> hiddenRuleDescriptions;
+
   const Ipv6PortServiceRuleDialog({
     super.key,
     this.rule,
     this.deviceOptions = const [],
+    this.otherRules = const [],
+    this.hiddenRuleDescriptions = const {},
   });
 
   @override
@@ -74,6 +85,12 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
     );
     _protocol = r?.protocol ?? 'Both';
     _enabled = r?.enabled ?? true;
+    // A stored rule can already break a check (the page allowed 32
+    // characters before FW counted 64 bytes, and FW refused no duplicate
+    // before feed_usp#50), and Save is then disabled from the first frame.
+    // Show the reason from the first frame too. Edit only: an empty Add form
+    // would open with every field in error.
+    if (r != null) _errors = _validateFields();
     for (final f in [
       _descriptionFocus,
       _ipv6Focus,
@@ -101,14 +118,61 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
 
   /// Full validation (shows error text) — only run on focus-loss.
   void _validate() {
-    setState(() {
-      _errors = Ipv6PortServiceRuleUIModel.validateRule(
+    setState(() => _errors = _validateFields());
+  }
+
+  Map<String, String> _validateFields() =>
+      Ipv6PortServiceRuleUIModel.validateRule(
         description: _descriptionController.text.trim(),
         ipv6Address: _ipv6Controller.text.trim(),
         startPort: _startPortController.text.trim(),
         endPort: _endPortController.text.trim(),
+        protocol: _protocol,
+        otherRules: widget.otherRules,
+        hiddenRuleDescriptions: widget.hiddenRuleDescriptions,
       );
-    });
+
+  String? _localizeError(String? key) {
+    if (key == null) return null;
+    final l = loc(context);
+    return switch (key) {
+      Ipv6PortServiceErrorKeys.descriptionRequired => l.descriptionRequired,
+      Ipv6PortServiceErrorKeys.descriptionSurroundingSpaces =>
+        l.noLeadingTrailingSpaces,
+      Ipv6PortServiceErrorKeys.descriptionTooLong => l.max64Characters,
+      Ipv6PortServiceErrorKeys.descriptionInUse => l.ruleNameInUse,
+      Ipv6PortServiceErrorKeys.ipv6AddressRequired => l.ipAddressRequired,
+      Ipv6PortServiceErrorKeys.invalidIpv6Address => l.invalidIpv6Format,
+      Ipv6PortServiceErrorKeys.reservedIpv6Address => l.reservedIpNotAllowed,
+      Ipv6PortServiceErrorKeys.invalidPort => l.portMustBe1To65535,
+      Ipv6PortServiceErrorKeys.portRangeReversed => l.portRangeError,
+      Ipv6PortServiceErrorKeys.rulesOverlap => l.rulesOverlapError,
+      _ => l.invalidInput,
+    };
+  }
+
+  /// What the name uses of FW's 64 bytes, under the field. Counted as FW
+  /// counts, so a CJK character visibly takes three and no copy has to say so.
+  /// Follows every keystroke: [_onInputChanged] already rebuilds for the
+  /// submit gate. Over the limit it takes the error colour, ahead of the
+  /// focus-loss error that names the limit.
+  Widget _descriptionCounter(BuildContext context) {
+    final bytes = Ipv6PortServiceRuleUIModel.descriptionBytes(
+        _descriptionController.text.trim());
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.xs),
+      child: SizedBox(
+        width: double.infinity,
+        child: AppText.bodySmall(
+          '$bytes/$kMaxIpv6RuleDescriptionBytes',
+          textAlign: TextAlign.end,
+          color: bytes > kMaxIpv6RuleDescriptionBytes
+              ? scheme.error
+              : scheme.onSurfaceVariant,
+        ),
+      ),
+    );
   }
 
   /// Lightweight rebuild to re-evaluate the submit-enable state (_isFormValid)
@@ -116,15 +180,7 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
   /// and focus is preserved.
   void _onInputChanged() => setState(() {});
 
-  bool get _isFormValid {
-    final errors = Ipv6PortServiceRuleUIModel.validateRule(
-      description: _descriptionController.text.trim(),
-      ipv6Address: _ipv6Controller.text.trim(),
-      startPort: _startPortController.text.trim(),
-      endPort: _endPortController.text.trim(),
-    );
-    return errors.isEmpty;
-  }
+  bool get _isFormValid => _validateFields().isEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -145,9 +201,10 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
             focusNode: _descriptionFocus,
             identifier: 'ipv6-rule-description',
             hintText: loc(context).ruleName,
-            errorText: _errors['description'],
+            errorText: _localizeError(_errors['description']),
             onChanged: (_) => _onInputChanged(),
           ),
+          _descriptionCounter(context),
           AppGap.lg(),
           AppSelectAutoComplete(
             options: widget.deviceOptions,
@@ -158,7 +215,7 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
               focusNode: _ipv6Focus,
               identifier: 'ipv6-rule-address',
               hintText: loc(context).ipv6AddressSearchHint,
-              errorText: _errors['ipv6Address'],
+              errorText: _localizeError(_errors['ipv6Address']),
               onChanged: (_) => _onInputChanged(),
             ),
           ),
@@ -194,7 +251,11 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
                         ))
                     .toList(),
                 selected: {_protocol},
-                onSelectionChanged: (v) => setState(() => _protocol = v.first),
+                // An overlap depends on the protocol, so re-check the ports.
+                onSelectionChanged: (v) {
+                  _protocol = v.first;
+                  _validate();
+                },
               ),
             ],
           ),
@@ -212,7 +273,8 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
             // the 1..65535 bounds still come from Ipv6PortServiceRuleUIModel
             // .validateRule, which owns this dialog's whole rule check (#1537).
             keyboardType: TextInputType.number,
-            errorText: _errors['startPort'] ?? _errors['endPort'],
+            errorText:
+                _localizeError(_errors['startPort'] ?? _errors['endPort']),
             onChanged: (_, __) => _onInputChanged(),
           ),
           AppGap.lg(),

@@ -141,7 +141,7 @@ import 'package:privacy_gui/page/login/views/local_router_recovery_view.dart';
 import 'package:privacy_gui/page/login/views/login_local_view.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
 import 'package:privacy_gui/page/menu/views/usp_menu_view.dart';
-import 'package:privacy_gui/page/port_forwarding/views/components/rule_limit_note.dart';
+import 'package:privacy_gui/page/_shared/components/rule_limit_note.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_port_range_tab.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_port_triggering_tab.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_single_port_tab.dart';
@@ -238,6 +238,7 @@ import '../../mocks/test_data/scenes/dhcp_scene_data.dart' as dhcp;
 import '../../mocks/test_data/scenes/login_scene_data.dart';
 import '../../mocks/test_data/scenes/pnp_scene_data.dart';
 import '../../mocks/test_data/scenes/port_forwarding_scene_data.dart' as pf;
+import '../../mocks/test_data/scenes/ipv6_port_service_scene_data.dart' as ipv6;
 import '../../mocks/test_data/scenes/topology_scene_data.dart';
 import '../../mocks/test_data/scenes/unified_diagnostics_scene_data.dart';
 import '../../mocks/test_data/scenes/wifi_settings_scene_data.dart';
@@ -317,11 +318,13 @@ final kWifiSettingsPageCase = PageSurfaceCase(
 /// link does — `initialTab: 1` — for which see [kStatisticsDevicesPageCase]; the two
 /// pages now share one mechanism rather than one excuse.
 ///
-/// ## Coverage: the whole tab, three cards
+/// ## Coverage: the whole tab, four cards
 ///
-/// `UspWifiAdvancedTab` renders three `AppCard`s — client steering, node steering
-/// (#1661) and DFS — each one `Expanded` title + [AppSwitch] row over a description.
-/// Until #1661 it was the DFS card alone. The green still means *the tab* and not a
+/// `UspWifiAdvancedTab` renders four `AppCard`s — client steering, node steering
+/// (#1661), DFS and MLO (#1692) — each one `Expanded` title + [AppSwitch] row over a
+/// description. Until #1661 it was the DFS card alone. The MLO card is the only one
+/// whose row holds a third widget, a status badge, and the only one with a second
+/// paragraph, the `Inactive` hint; the fixture is `Inactive` so both are in the sweep. The green still means *the tab* and not a
 /// prefix of it, for a reason that does not depend on [kPageSweepHeight]: the cards
 /// sit in a `SingleChildScrollView`'s `Column`, which lays out every child whether
 /// or not it is in the viewport — only a lazy sliver skips what is off screen.
@@ -2481,6 +2484,23 @@ final kIpv6PortServicePageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
 );
 
+/// [kIpv6PortServicePageCase] with the list at FWDEV#204's limit of 15 rules
+/// (#1687). A full list adds the one row the default fixture never renders: the
+/// [RuleLimitNote] under the Rules header, saying why Add is disabled — the row
+/// #1611 added to the port forwarding tabs. [RuleLimitNote] is the premise: the
+/// default fixture holds two rules, so a fixture that drifted below the limit
+/// would fail here rather than sweep its sibling's tree a second time.
+///
+/// Not a tab case, so no `sharesTabWith`: this page has no tabs, and like
+/// `firmware_failed` this is a second fixture state of one view file.
+final kIpv6PortServiceFullPageCase = PageSurfaceCase(
+  id: 'ipv6_port_service_full',
+  view: () => const UspIpv6PortServiceView(),
+  overrides: () => ipv6PortServiceOverrides(ipv6.fullState),
+  requires: const [UspTopBar, LayoutBlock, RuleLimitNote],
+  forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
+);
+
 /// `usp_local_network_view` — hostname, router IP and the whole DHCP server, which is
 /// nine form fields in five [LayoutBlock]s once the server is on.
 ///
@@ -2906,6 +2926,7 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kInstantSafetyPageCase,
   kInternetSettingsPageCase,
   kIpv6PortServicePageCase,
+  kIpv6PortServiceFullPageCase,
   kLocalNetworkPageCase,
   kStaticRoutingPageCase,
   kStatisticsPageCase,

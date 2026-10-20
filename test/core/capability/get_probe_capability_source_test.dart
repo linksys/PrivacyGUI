@@ -120,6 +120,37 @@ void main() {
     }
   });
 
+  group('GetProbeCapabilitySource — MLO (#1692)', () {
+    const mloPath = 'Device.X_LINKSYS_Mesh.MLOStatus';
+
+    test('a status read off the router means MLO is offered', () async {
+      expect(capabilityProbePath(DeviceCapability.wifiMlo), mloPath);
+      // What FW 2.0.3.26101472 reads with the switch off (bench 2026-10-15).
+      when(() => usp.get(any())).thenAnswer((_) async => {
+            mloPath: 'Disabled',
+            macFilterPath: 'Disabled',
+          });
+
+      final caps = await source.resolveAll(usp);
+
+      expect(caps.has(DeviceCapability.wifiMlo), isTrue);
+      expect(caps.has(DeviceCapability.wifiMacFilter), isTrue);
+    });
+
+    test('firmware without the leaf hides MLO and nothing else', () async {
+      // A GET naming a path missing from the schema answers the other paths
+      // and leaves that one out (bench 2026-10-13, 7026 per path).
+      when(() => usp.get(any())).thenAnswer((_) async => {
+            macFilterPath: 'Disabled',
+          });
+
+      final caps = await source.resolveAll(usp);
+
+      expect(caps.has(DeviceCapability.wifiMlo), isFalse);
+      expect(caps.has(DeviceCapability.wifiMacFilter), isTrue);
+    });
+  });
+
   group('GetProbeCapabilitySource — batching', () {
     for (final failure in <String, Object>{
       'unknown path': const ResourceNotFoundError(code: 7026),
