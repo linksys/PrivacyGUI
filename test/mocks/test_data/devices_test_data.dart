@@ -310,6 +310,8 @@ class DevicesTestData {
     List<ClientDevice> connectedClients = const [],
     BackhaulInfo? backhaul,
     bool livenessKnown = true,
+    String? hostInstancePath,
+    String? userDeviceName,
   }) =>
       SlaveNode(
         deviceId: deviceId,
@@ -322,6 +324,8 @@ class DevicesTestData {
         connectedClients: connectedClients,
         backhaul: backhaul ?? createWifiBackhaul(),
         livenessKnown: livenessKnown,
+        hostInstancePath: hostInstancePath,
+        userDeviceName: userDeviceName,
       );
 
   /// Creates a slave (extender) node with Ethernet backhaul.

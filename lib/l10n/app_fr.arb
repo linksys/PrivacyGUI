@@ -856,6 +856,7 @@
   "deviceCategorySmartHome": "Maison connectée",
   "deviceCategoryWearable": "Objet connecté portable",
   "renameRouter": "Renommer le routeur",
+  "renameNode": "Renommer la borne d'accès WiFi",
   "noSsid": "(Aucun SSID)",
   "noTargetBankAvailable": "Aucune banque cible disponible",
   "noTimezonesFound": "Aucun fuseau horaire trouvé",

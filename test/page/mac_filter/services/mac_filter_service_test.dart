@@ -113,12 +113,28 @@ void main() {
           if (type != null) 'Device.Hosts.Host.$i.InterfaceType': type,
         };
 
-    void stubHosts(Map<String, dynamic> hosts) {
+    // The DataElements node IDs `fetchAll` reads to exclude the nodes' own
+    // Hosts rows (#1688). Shaped as the bench reports them on
+    // 2.0.3.26101482: lower-case colon form.
+    Map<String, dynamic> nodes(List<String> ids) => {
+          for (var i = 0; i < ids.length; i++)
+            'Device.WiFi.DataElements.Network.Device.${i + 1}.ID': ids[i],
+        };
+
+    void stubHosts(
+      Map<String, dynamic> hosts, {
+      Map<String, dynamic> dataElements = const {},
+      bool dataElementsFails = false,
+    }) {
       when(() => usp.get(any())).thenAnswer((inv) async {
         final paths = inv.positionalArguments.first as List<String>;
-        return paths.first.startsWith('Device.Hosts.')
-            ? hosts
-            : {_modePath: 'Disabled', _listPath: ''};
+        if (paths.first.startsWith('Device.Hosts.')) return hosts;
+        if (paths.first
+            .startsWith('Device.WiFi.DataElements.Network.Device.')) {
+          if (dataElementsFails) throw 'USP get failed: 7026 Invalid path';
+          return dataElements;
+        }
+        return {_modePath: 'Disabled', _listPath: ''};
       });
     }
 
@@ -147,6 +163,44 @@ void main() {
       final result = await service.fetchAll();
 
       expect(result.connectedDevices, isEmpty);
+    });
+
+    // #1688 item 3 / PRODUCT_MANAGEMENT#124 REQ-10a. A mesh node offered here
+    // could be denied, or left off an Allow list, and locked out of its own
+    // network. FL-WRT 2.0 has no DeviceRole, so a node's Hosts row is
+    // recognised only by its PhysAddress being a DataElements node ID.
+    test('a mesh node is not offered, even as an online Wi-Fi host', () async {
+      stubHosts(
+        {
+          // The agent's own Hosts row, which on 2.0 looks like any Wi-Fi host.
+          ...host(1, 'aa:bb:cc:dd:ee:02',
+              layer1: 'Device.WiFi.Radio.1', type: 'Wi-Fi'),
+          ...host(2, 'dc:52:85:5d:d0:7c',
+              layer1: 'Device.WiFi.Radio.2', type: 'Wi-Fi'),
+        },
+        dataElements: nodes(['74:12:13:21:56:3a', 'aa:bb:cc:dd:ee:02']),
+      );
+
+      final result = await service.fetchAll();
+
+      expect(result.connectedDevices.map((d) => d.mac), ['DC:52:85:5D:D0:7C']);
+    });
+
+    // The node list only narrows the picker. A router without DataElements, or
+    // a fault reading it, must leave the MAC filter page usable.
+    test('a DataElements fault still returns the clients, excluding no node',
+        () async {
+      stubHosts(
+        {
+          ...host(1, 'dc:52:85:5d:d0:7c',
+              layer1: 'Device.WiFi.Radio.2', type: 'Wi-Fi'),
+        },
+        dataElementsFails: true,
+      );
+
+      final result = await service.fetchAll();
+
+      expect(result.connectedDevices.map((d) => d.mac), ['DC:52:85:5D:D0:7C']);
     });
   });
 

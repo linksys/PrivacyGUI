@@ -14,6 +14,7 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
+import 'package:privacy_gui/generated/data_elements_network_info.g.dart';
 import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dns_client.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
@@ -620,8 +621,14 @@ class UnifiedDiagnosticsService {
   Future<List<MeshBackhaulNodeRecord>> checkMeshBackhaul() async {
     logger.d('[Diagnostics] Inspecting mesh backhaul');
     final DataElementsNetwork network;
+    final String? controllerId;
     try {
-      network = await DataElementsNetwork.fetch(_usp);
+      final results = await Future.wait([
+        DataElementsNetwork.fetch(_usp),
+        _fetchControllerId(),
+      ]);
+      network = results[0] as DataElementsNetwork;
+      controllerId = results[1] as String?;
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
@@ -630,6 +637,7 @@ class UnifiedDiagnosticsService {
           'node(s) — skipping');
       return const [];
     }
+    final controllerKey = meshControllerKey(controllerId, network);
 
     // Build node ID → label map for parent resolution
     final nodeLabels = <String, String>{};
@@ -640,13 +648,11 @@ class UnifiedDiagnosticsService {
 
     final results = <MeshBackhaulNodeRecord>[];
     for (final node in network.items) {
-      // Controller is the node WITHOUT its own backhaul. The evidence used to be
-      // BackhaulMediaType / BackhaulALID / BackhaulPHYRate; none of those exist
-      // in the prplMesh schema (#1555), so the question is now answered by
-      // `hasMeshBackhaulLink`, which shares its definition with
-      // `MeshTopologyBuilder` — the two disagreeing is how a node ends up an
-      // extender on the topology and the controller in diagnostics.
-      final isController = !hasMeshBackhaulLink(node);
+      // The controller is the ControllerID node, else the node WITHOUT its own
+      // backhaul. `isMeshController` is the test `MeshTopologyBuilder` uses —
+      // the two disagreeing is how a node ends up an extender on the topology
+      // and the controller in diagnostics, whose backhaul then goes unchecked.
+      final isController = isMeshController(node, controllerKey);
       if (isController) {
         // Controller doesn't have its own backhaul — skip.
         continue;
@@ -727,6 +733,20 @@ class UnifiedDiagnosticsService {
     }
 
     return results;
+  }
+
+  /// `Device.WiFi.DataElements.Network.ControllerID`, or null when the read
+  /// faults. Isolated so a fault here costs only the ControllerID rule — the
+  /// controller is then told apart by backhaul, as before — and never the
+  /// backhaul check itself.
+  Future<String?> _fetchControllerId() async {
+    try {
+      return (await DataElementsNetworkInfo.fetch(_usp)).controllerId;
+    } catch (e) {
+      logger.w('[Diagnostics] DataElements ControllerID unavailable, the '
+          'controller is told apart by backhaul: $e');
+      return null;
+    }
   }
 
   /// A node's display label: model name, else its ID, else its instance path.

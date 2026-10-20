@@ -856,6 +856,7 @@
   "deviceCategorySmartHome": "Smart home",
   "deviceCategoryWearable": "Wearable",
   "renameRouter": "Omdøb router",
+  "renameNode": "Omdøb node",
   "noSsid": "(Ingen SSID)",
   "noTargetBankAvailable": "Ingen målbank tilgængelig",
   "noTimezonesFound": "Ingen tidszoner fundet",

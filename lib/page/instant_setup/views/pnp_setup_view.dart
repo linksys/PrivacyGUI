@@ -586,7 +586,10 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
           child: Column(
             children: phase.meshNodes.asMap().entries.map((entry) {
               final node = entry.value;
-              final isMaster = entry.key == 0;
+              // The node's own role, not its place in the list: the nodes keep
+              // DataElements order, which does not promise the controller
+              // first.
+              final isMaster = node.isMaster;
               final isLast = entry.key == phase.meshNodes.length - 1;
               return Column(
                 children: [

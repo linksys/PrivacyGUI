@@ -185,7 +185,8 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
   /// pick among several names and is what is displayed.
   final String? userDeviceName;
 
-  /// Hosts DeviceID (UUID, for DataElements matching).
+  /// Hosts `DeviceID` (a UUID). A LinksysWRT 1.0 leaf, absent on FL-WRT 2.0;
+  /// nothing matches on it since #1688, which pairs nodes by `PhysAddress`.
   final String? hostsDeviceId;
 
   /// This client's `Device.Hosts.Host.{i}.` row, where its user name and type

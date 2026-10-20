@@ -856,6 +856,7 @@
   "deviceCategorySmartHome": "Smarthjem",
   "deviceCategoryWearable": "Wearable",
   "renameRouter": "Gi nytt navn til ruter",
+  "renameNode": "Gi nytt navn til node",
   "noSsid": "(Ingen SSID)",
   "noTargetBankAvailable": "Ingen målbank tilgjengelig",
   "noTimezonesFound": "Ingen tidssoner funnet",

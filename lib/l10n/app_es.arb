@@ -856,6 +856,7 @@
   "deviceCategorySmartHome": "Hogar inteligente",
   "deviceCategoryWearable": "Wearable",
   "renameRouter": "Cambiar nombre del router",
+  "renameNode": "Cambiar nombre del nodo",
   "noSsid": "(Sin SSID)",
   "noTargetBankAvailable": "No hay banco de destino disponible",
   "noTimezonesFound": "No se han encontrado zonas horarias",
