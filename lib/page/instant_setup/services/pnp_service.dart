@@ -11,7 +11,6 @@ import 'package:privacy_gui/generated/device_operations.g.dart';
 import 'package:privacy_gui/generated/network_diagnostics.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/generated/wan_operations.g.dart';
-import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
@@ -27,6 +26,7 @@ import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 import 'package:privacy_gui/page/internet_settings/services/auto_ipoe_service.dart';
 import 'package:privacy_gui/page/internet_settings/services/usp_internet_settings_service.dart';
+import 'package:privacy_gui/page/internet_settings/services/usp_wan_data_service.dart';
 
 final pnpServiceProvider = Provider<PnpService>((ref) {
   final supportsAutoIPoE =
@@ -109,6 +109,14 @@ class PnpService {
   // ─── Internet Check ──────────────────────────────────────
 
   /// Returns true if WAN is up with a valid IP address.
+  ///
+  /// A WAN with no IPv4 address returns false, not a throw. On FLWRT 2.0 a WAN with
+  /// no connection has no `IPv4Address` row at all, and the 0.17 `WanStatus` reads
+  /// the fixed row `IPv4Address.1`, so a plain `WanStatus.fetch` threw 9998 exactly
+  /// when there was no internet. The notifier reads a throw as "router unreadable",
+  /// so the user got the read-failure card instead of the no-internet page (#1098).
+  /// TEMPORARY: with #1654 this becomes `status == 'Up' && ipv4Addresses.isNotEmpty`
+  /// on the 0.18 list, and [fetchWanStatusTolerantOfNoAddress] is deleted.
   Future<bool> checkInternetConnected() async {
     try {
       final fetchAutoIPoE = _fetchAutoIPoE;
@@ -124,7 +132,8 @@ class PnpService {
           }
         } on ResourceNotFoundError {/* Router without the optional adapter. */}
       }
-      final wan = await WanStatus.fetch(_usp);
+      final wan = await fetchWanStatusTolerantOfNoAddress(_usp);
+      if (wan == null) return false;
       return wan.status == 'Up' && wan.ipAddress.isNotEmpty;
     } on ServiceError {
       rethrow;
