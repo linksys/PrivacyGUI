@@ -20,7 +20,7 @@ const _wanResponse = <String, dynamic>{
   'Device.IP.Interface.2.IPv4Address.1.SubnetMask': '255.255.255.0',
   'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway': '192.168.1.1',
   'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers': '8.8.8.8,8.8.4.4',
-  'Device.Bridging.Bridge.1.Enable': false,
+  'Device.IP.Interface.2.Enable': true,
   'Device.Ethernet.Interface.1.MACAddress': '11:22:33:44:55:66',
 };
 
@@ -84,8 +84,17 @@ const _vlanEmptyResponse = <String, dynamic>{};
 
 const _ipv6Response = <String, dynamic>{
   'Device.IP.Interface.2.IPv6Enable': true,
+};
+
+// Test data — DHCPv6 client bound to the WAN interface
+const _dhcpv6Response = <String, dynamic>{
   'Device.DHCPv6.Client.1.Enable': true,
+  'Device.DHCPv6.Client.1.Interface': 'Device.IP.Interface.2',
   'Device.DHCPv6.Client.1.DUID': '00:01:00:01:2a:3b:4c:5d',
+};
+
+// Test data — 6rd table
+const _ipv6rdResponse = <String, dynamic>{
   'Device.IPv6rd.InterfaceSetting.1.Enable': false,
   'Device.IPv6rd.InterfaceSetting.1.SPIPv6Prefix': '',
   'Device.IPv6rd.InterfaceSetting.1.IPv4MaskLength': '0',
@@ -137,6 +146,12 @@ Map<String, dynamic> Function(List<String>) createFetchMockHandler({
               'fetch the tunnel matching connectionType (paths: $paths)'));
     }
     // Other fetches
+    if (paths.any((p) => p.contains('DHCPv6.Client'))) {
+      return _dhcpv6Response;
+    }
+    if (paths.any((p) => p.contains('IPv6rd.InterfaceSetting'))) {
+      return _ipv6rdResponse;
+    }
     if (paths.any((p) => p.contains('AddressingType'))) {
       return wanResponse;
     }
@@ -246,6 +261,30 @@ void main() {
       expect(result.form.mtu, equals(1500));
     });
 
+    test(
+        'loads with no WAN IPv4Address row, as bridge mode on FW 2.0.2 (#1597)',
+        () async {
+      // Bridge mode runs `ifdown wan`, so the firmware drops the whole
+      // IPv4Address row. The table is a list, so that is an empty list — not
+      // the 9998 that used to blank the page — and Enable=false decides bridge.
+      final bridged = <String, dynamic>{
+        'Device.IP.Interface.2.Enable': false,
+        'Device.IP.Interface.2.MaxMTUSize': '1500',
+        'Device.IP.Interface.2.X_LINKSYS_MTUMode': 'Auto',
+      };
+      final handler = createFetchMockHandler(wanResponse: bridged);
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        return handler(paths);
+      });
+
+      final result = await service.fetchSettings();
+
+      expect(result.form.connectionType, equals(UspWanConnectionType.bridge));
+      expect(result.form.staticIpAddress, isEmpty);
+      expect(result.form.dnsServer1, isEmpty);
+    });
+
     test('fetches and exposes router hostName', () async {
       final handler = createFetchMockHandler();
       when(() => mockUsp.get(any())).thenAnswer((invocation) async {
@@ -326,6 +365,12 @@ void main() {
         if (paths.any((p) => p.contains('L2TPv2.Tunnel'))) {
           throw StateError('Unexpected L2TPv2.Tunnel GET in DNS-split test');
         }
+        if (paths.any((p) => p.contains('DHCPv6.Client'))) {
+          return _dhcpv6Response;
+        }
+        if (paths.any((p) => p.contains('IPv6rd.InterfaceSetting'))) {
+          return _ipv6rdResponse;
+        }
         if (paths.any((p) => p.contains('AddressingType'))) return wanWith3Dns;
         if (paths.any((p) => p.contains('IPv6Enable'))) return _ipv6Response;
         if (paths.any((p) => p.contains('PPP.Interface'))) {
@@ -346,16 +391,18 @@ void main() {
   });
 
   group('saveAll', () {
-    // Mock for _resolveInstance() calls in codegen update methods
-    // UspClient.get() returns flat Map<String, dynamic>, not WASM format
-    final aliasResponse = <String, dynamic>{
-      'Device.IP.Interface.1.Alias': 'lan',
-      'Device.IP.Interface.2.Alias': 'wan',
-    };
-
     setUp(() {
-      // Default mock for _resolveInstance() get calls
-      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
+      // Default GET: alias resolution for codegen _resolveInstance(), the WAN
+      // row whose instancePath an IPv4 write targets, and the DHCPv6 client.
+      final handler = createFetchMockHandler();
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async =>
+          handler(invocation.positionalArguments[0] as List<String>));
+      when(() => mockUsp
+              .setOrdered(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': true,
+                'result': {'data': <String, dynamic>{}}
+              });
       when(() => mockUsp.set(any())).thenAnswer((_) async => {
             'success': true,
             'result': {'data': <String, dynamic>{}}
@@ -409,12 +456,101 @@ void main() {
 
       await service.saveAll(original, edited);
 
-      final captured = verify(() => mockUsp.set(captureAny())).captured;
-      final params = captured.first as Map<String, dynamic>;
-      expect(
-        params['Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers'],
-        equals('1.1.1.1,9.9.9.9'),
+      final captured = verify(() => mockUsp.setOrdered(captureAny(),
+          allowPartial: any(named: 'allowPartial'))).captured;
+      final groups = captured.single as List<List<Map<String, String>>>;
+      final dns = groups.expand((g) => g).singleWhere((p) =>
+          p['path'] ==
+          'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers');
+      expect(dns['value'], equals('1.1.1.1,9.9.9.9'));
+    });
+
+    test('a DHCPv6 change with no client on the WAN is refused, nothing sent',
+        () async {
+      // The only DHCPv6 client is bound to the LAN, so the change has nowhere
+      // to go. It must not be dropped and reported as saved.
+      final handler = createFetchMockHandler();
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        if (paths.any((p) => p.contains('DHCPv6.Client'))) {
+          return {
+            'Device.DHCPv6.Client.1.Enable': true,
+            'Device.DHCPv6.Client.1.Interface': 'Device.IP.Interface.1',
+            'Device.DHCPv6.Client.1.DUID': '',
+          };
+        }
+        return handler(paths);
+      });
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        dhcpv6Enabled: true,
+        ipv6Enabled: true,
       );
+      final edited =
+          original.copyWith(dhcpv6Enabled: false, ipv6Enabled: false);
+
+      await expectLater(
+        service.saveAll(original, edited),
+        throwsA(isA<ResourceNotFoundError>()),
+      );
+      verifyNever(
+          () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
+    });
+
+    test('IPv6, DHCPv6 and 6rd changes go out as one SET', () async {
+      // Three generated models, one SET built from their write builders.
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        ipv6Enabled: true,
+        dhcpv6Enabled: true,
+      );
+      final edited = original.copyWith(
+        ipv6Enabled: false,
+        dhcpv6Enabled: false,
+        ipv6rdEnabled: true,
+      );
+
+      await service.saveAll(original, edited);
+
+      final captured = verify(
+        () =>
+            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
+      ).captured;
+      final ipv6Sets = captured.whereType<Map<String, dynamic>>().where((m) =>
+          m.keys.any((k) =>
+              k.endsWith('IPv6Enable') ||
+              k.startsWith('Device.DHCPv6.Client.') ||
+              k.startsWith('Device.IPv6rd.')));
+      expect(ipv6Sets, [
+        {
+          'Device.IP.Interface.2.IPv6Enable': false,
+          'Device.DHCPv6.Client.1.Enable': false,
+          'Device.IPv6rd.InterfaceSetting.1.Enable': true,
+        }
+      ]);
+    });
+
+    test('an unchanged IPv6 section sends no IPv6 SET', () async {
+      final form = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        ipv6Enabled: true,
+        dhcpv6Enabled: true,
+      );
+
+      await service.saveAll(form, form.copyWith(mtu: form.mtu + 1));
+
+      final captured = verify(
+        () =>
+            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
+      ).captured;
+      for (final params in captured.whereType<Map<String, dynamic>>()) {
+        expect(
+            params.keys.any((k) =>
+                k.endsWith('IPv6Enable') ||
+                k.startsWith('Device.DHCPv6.') ||
+                k.startsWith('Device.IPv6rd.')),
+            isFalse);
+      }
     });
 
     test('IPv6 save uses allowPartial (cross-USP-service SET cannot be atomic)',
@@ -435,46 +571,47 @@ void main() {
 
       await service.saveAll(original, edited);
 
-      // Find the SET carrying IPv6/DHCPv6 params and assert it passed
-      // allowPartial: true (not the default false that triggers 7005).
+      // Every SET carrying IPv6/DHCPv6 params must pass allowPartial: true
+      // (not the default false that triggers 7005). IPv6Enable and the DHCPv6
+      // client are separate generated models, so each one is checked.
       final captured = verify(
         () => mockUsp.set(
           captureAny(),
           allowPartial: captureAny(named: 'allowPartial'),
         ),
       ).captured;
-      var found = false;
+      final seen = <String>{};
       for (var i = 0; i < captured.length; i += 2) {
         final params = captured[i] as Map<String, dynamic>;
         final allowPartial = captured[i + 1] as bool;
+        for (final key in params.keys) {
+          if (key.endsWith('IPv6Enable')) seen.add('IPv6Enable');
+          if (key.startsWith('Device.DHCPv6.Client.')) seen.add('DHCPv6');
+        }
         if (params.keys
             .any((k) => k.contains('IPv6') || k.contains('DHCPv6'))) {
-          found = true;
           expect(allowPartial, isTrue,
               reason: 'IPv6 SET must use allowPartial to avoid 7005');
         }
       }
-      expect(found, isTrue, reason: 'an IPv6 SET should have been issued');
+      expect(seen, {'IPv6Enable', 'DHCPv6'},
+          reason: 'both the IPv6Enable and the DHCPv6 SET should be issued');
+      // The DHCPv6 write targets the client bound to the WAN interface.
+      final dhcpv6 = captured
+          .whereType<Map<String, dynamic>>()
+          .firstWhere((m) => m.containsKey('Device.DHCPv6.Client.1.Enable'));
+      expect(dhcpv6['Device.DHCPv6.Client.1.Enable'], isFalse);
     });
 
     test('adds PPP instance when switching to PPPoE without existing instance',
         () async {
       when(() => mockUsp.add(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': [
-              {
-                'requestedPath': 'Device.PPP.Interface.',
-                'success': true,
-                'createdInstances': [
-                  {
-                    'affectedPath': 'Device.PPP.Interface.1.',
-                    'initialParams': {}
-                  }
-                ]
-              }
-            ]
+            'success': true,
+            'result': {
+              'data': {
+                'instances': ['Device.PPP.Interface.1.'],
+              },
+            },
           });
 
       final original = UspInternetSettingsForm(
@@ -489,6 +626,19 @@ void main() {
       await service.saveAll(original, edited);
 
       verify(() => mockUsp.add(any())).called(1);
+      // The link is written on the instance the Add created.
+      final captured = verify(
+        () =>
+            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
+      ).captured;
+      expect(
+        captured.whereType<Map<String, dynamic>>(),
+        contains(equals({
+          'Device.PPP.Interface.1.LowerLayers': '',
+          'Device.PPP.Interface.1.Username': 'user',
+          'Device.PPP.Interface.1.Password': 'pass',
+        })),
+      );
     });
 
     test('enables VLAN via SET on existing instance', () async {
@@ -580,20 +730,17 @@ void main() {
 
       await service.saveAll(original, edited);
 
-      final captured = verify(
-        () =>
-            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
-      ).captured;
-      // Exactly 1 set call for WanDhcp.update (AddressingType only)
-      // IPv6 and other calls may also use set, so find the one with AddressingType
-      final dhcpParams = captured.whereType<Map<String, dynamic>>().where((m) =>
-          m.containsKey('Device.IP.Interface.2.IPv4Address.1.AddressingType'));
-      expect(dhcpParams.length, equals(1));
-      expect(
-        dhcpParams.first['Device.IP.Interface.2.IPv4Address.1.AddressingType'],
-        equals('DHCP'),
-      );
-      expect(dhcpParams.first.length, equals(1));
+      final captured = verify(() => mockUsp.setOrdered(captureAny(),
+          allowPartial: any(named: 'allowPartial'))).captured;
+      final groups = captured.single as List<List<Map<String, String>>>;
+      expect(groups, [
+        [
+          {
+            'path': 'Device.IP.Interface.2.IPv4Address.1.AddressingType',
+            'value': 'DHCP',
+          }
+        ]
+      ]);
     });
 
     test('switching to Static IP sends 5 params in 2 ordered groups', () async {
@@ -642,26 +789,9 @@ void main() {
           ]));
     });
 
-    test('switching to PPPoE sends 3 params (PPP creds + AddressingType)',
-        () async {
-      when(() => mockUsp.add(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': [
-              {
-                'requestedPath': 'Device.PPP.Interface.',
-                'success': true,
-                'createdInstances': [
-                  {
-                    'affectedPath': 'Device.PPP.Interface.1.',
-                    'initialParams': {}
-                  }
-                ]
-              }
-            ]
-          });
-
+    test(
+        'switching to PPPoE sends IPCP alone, then LowerLayers "" with the '
+        'credentials in one PPP batch', () async {
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.dhcp,
       );
@@ -671,35 +801,41 @@ void main() {
         pppPassword: 'mypass',
       );
 
-      await service.saveAll(original, edited);
+      await service.saveAll(
+        original,
+        edited,
+        pppInstancePath: 'Device.PPP.Interface.1.',
+      );
 
+      // SET 1 (#762 comment 5987286082): AddressingType alone.
+      final ordered = verify(() => mockUsp.setOrdered(captureAny(),
+          allowPartial: any(named: 'allowPartial'))).captured;
+      expect(ordered.single, [
+        [
+          {
+            'path': 'Device.IP.Interface.2.IPv4Address.1.AddressingType',
+            'value': 'IPCP',
+          }
+        ]
+      ]);
+
+      // SET 2: LowerLayers cleared, plus the credentials, as one PPP batch.
       final captured = verify(
         () =>
             mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
       ).captured;
-      // Find the set call that contains PPP credentials + AddressingType
-      final pppoeParams = captured.whereType<Map<String, dynamic>>().where(
-          (m) =>
-              m.containsKey('Device.PPP.Interface.1.Username') ||
-              m.containsKey(
-                  'Device.IP.Interface.2.IPv4Address.1.AddressingType'));
-      // WanPppoe.update sends all 3 in one set call
-      final combinedParams = pppoeParams.firstWhere(
-        (m) => m.containsKey('Device.PPP.Interface.1.Username'),
-      );
-      expect(combinedParams.length, equals(3));
-      expect(
-          combinedParams['Device.PPP.Interface.1.Username'], equals('myuser'));
-      expect(
-          combinedParams['Device.PPP.Interface.1.Password'], equals('mypass'));
-      expect(
-        combinedParams['Device.IP.Interface.2.IPv4Address.1.AddressingType'],
-        equals('IPCP'),
-      );
+      final pppSets = captured
+          .whereType<Map<String, dynamic>>()
+          .where((m) => m.keys.any((k) => k.startsWith('Device.PPP.')))
+          .toList();
+      expect(pppSets.first, {
+        'Device.PPP.Interface.1.LowerLayers': '',
+        'Device.PPP.Interface.1.Username': 'myuser',
+        'Device.PPP.Interface.1.Password': 'mypass',
+      });
     });
 
-    test('switching to Bridge sends only AddressingType as empty string',
-        () async {
+    test('switching to Bridge sends only Enable=false', () async {
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.dhcp,
       );
@@ -713,16 +849,15 @@ void main() {
         () =>
             mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
       ).captured;
-      final bridgeParams = captured.whereType<Map<String, dynamic>>().where(
-          (m) => m.containsKey(
-              'Device.IP.Interface.2.IPv4Address.1.AddressingType'));
+      final bridgeParams = captured
+          .whereType<Map<String, dynamic>>()
+          .where((m) => m.containsKey('Device.IP.Interface.2.Enable'));
       expect(bridgeParams.length, equals(1));
-      expect(
-        bridgeParams
-            .first['Device.IP.Interface.2.IPv4Address.1.AddressingType'],
-        equals(''),
-      );
+      expect(bridgeParams.first['Device.IP.Interface.2.Enable'], isFalse);
       expect(bridgeParams.first.length, equals(1));
+      // AddressingType is no longer part of entering bridge at all.
+      verifyNever(() =>
+          mockUsp.setOrdered(any(), allowPartial: any(named: 'allowPartial')));
     });
 
     test('switching to Bridge sends neither MaxMTUSize nor X_LINKSYS_MTUMode',
@@ -821,7 +956,7 @@ void main() {
                 'result': {
                   'data': <String, dynamic>{},
                   'error': {
-                    'Device.IP.Interface.2.IPv4Address.1.AddressingType': {
+                    'Device.IP.Interface.2.Enable': {
                       'errorCode': 7006,
                       'errorMessage': 'Invalid value',
                     },
@@ -870,8 +1005,8 @@ void main() {
 
       final ipv6Index = captureOrder.indexWhere(
           (m) => m.keys.any((k) => k.contains('IPv6') || k.contains('DHCPv6')));
-      final bridgeIndex = captureOrder.indexWhere((m) =>
-          m.containsKey('Device.IP.Interface.2.IPv4Address.1.AddressingType'));
+      final bridgeIndex = captureOrder
+          .indexWhere((m) => m.containsKey('Device.IP.Interface.2.Enable'));
 
       expect(ipv6Index, greaterThanOrEqualTo(0),
           reason: 'IPv6 change should have produced a SET');
@@ -879,6 +1014,260 @@ void main() {
           reason: 'bridge switch should have produced a SET');
       expect(bridgeIndex, greaterThan(ipv6Index),
           reason: 'bridge SET must be sent after the IPv6 SET');
+    });
+
+    /// Every write saveAll sends, in order: a `set` map, or the flat
+    /// `{path: value}` of a `setOrdered`'s groups.
+    List<Map<String, dynamic>> recordWrites() {
+      final writes = <Map<String, dynamic>>[];
+      Map<String, dynamic> ok() => {
+            'success': true,
+            'result': {'data': <String, dynamic>{}}
+          };
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((invocation) async {
+        writes.add(invocation.positionalArguments[0] as Map<String, dynamic>);
+        return ok();
+      });
+      when(() => mockUsp.setOrdered(any(),
+              allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((invocation) async {
+        final groups = invocation.positionalArguments[0]
+            as List<List<Map<String, String>>>;
+        writes.add({
+          for (final p in groups.expand((g) => g)) p['path']!: p['value'],
+        });
+        return ok();
+      });
+      return writes;
+    }
+
+    test('leaving bridge into Static writes the target mode, then Enable=true',
+        () async {
+      // The WAN IPv4Address row stays while bridged (FW 2.0.3) and the exit
+      // script never touches network.wan, so the mode written here is the one
+      // the WAN comes back in.
+      final writes = recordWrites();
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.bridge,
+      );
+      final edited = original.copyWith(
+        connectionType: UspWanConnectionType.staticIp,
+        staticIpAddress: '10.0.0.1',
+        subnetMask: '255.255.255.0',
+        defaultGateway: '10.0.0.254',
+        dnsServer1: '8.8.8.8',
+      );
+
+      await service.saveAll(original, edited);
+
+      expect(writes.first, {
+        'Device.IP.Interface.2.IPv4Address.1.AddressingType': 'Static',
+        'Device.IP.Interface.2.IPv4Address.1.IPAddress': '10.0.0.1',
+        'Device.IP.Interface.2.IPv4Address.1.SubnetMask': '255.255.255.0',
+        'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway':
+            '10.0.0.254',
+        'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers': '8.8.8.8',
+      });
+      expect(writes.last, {'Device.IP.Interface.2.Enable': true});
+    });
+
+    test('leaving bridge into PPPoE writes the PPP link before Enable=true',
+        () async {
+      final writes = recordWrites();
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.bridge,
+      );
+      final edited = original.copyWith(
+        connectionType: UspWanConnectionType.pppoe,
+        pppUsername: 'user',
+        pppPassword: 'pass',
+      );
+
+      await service.saveAll(
+        original,
+        edited,
+        pppInstancePath: 'Device.PPP.Interface.1.',
+      );
+
+      expect(writes, [
+        {'Device.IP.Interface.2.IPv4Address.1.AddressingType': 'IPCP'},
+        {
+          'Device.PPP.Interface.1.LowerLayers': '',
+          'Device.PPP.Interface.1.Username': 'user',
+          'Device.PPP.Interface.1.Password': 'pass',
+        },
+        {'Device.IP.Interface.2.Enable': true},
+      ]);
+    });
+
+    for (final (type, lowerLayers, tunnel) in [
+      (
+        UspWanConnectionType.pptp,
+        'Device.GRE.Tunnel.1.Interface.1',
+        'Device.GRE.Tunnel.1.RemoteEndpoints',
+      ),
+      (
+        UspWanConnectionType.l2tp,
+        'Device.L2TPv2.Tunnel.1.Interface.1',
+        'Device.L2TPv2.Tunnel.1.RemoteEndpoints',
+      ),
+    ]) {
+      test(
+          'leaving bridge into ${type.name} writes the tunnel before Enable=true',
+          () async {
+        final writes = recordWrites();
+        final original = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.bridge,
+        );
+        final edited = original.copyWith(
+          connectionType: type,
+          pppUsername: 'user',
+          pppPassword: 'pass',
+          serverAddress: 'vpn.example.com',
+        );
+
+        await service.saveAll(
+          original,
+          edited,
+          pppInstancePath: 'Device.PPP.Interface.1.',
+        );
+
+        final tunnelAt = writes.indexWhere((m) => m.containsKey(tunnel));
+        final linkAt = writes.indexWhere(
+            (m) => m['Device.PPP.Interface.1.LowerLayers'] == lowerLayers);
+        expect(linkAt, greaterThanOrEqualTo(0));
+        expect(writes[tunnelAt][tunnel], 'vpn.example.com');
+        expect(writes.last, {'Device.IP.Interface.2.Enable': true});
+        expect(writes.length - 1, greaterThan(tunnelAt),
+            reason: 'Enable=true must follow the tunnel write');
+      });
+    }
+
+    test('leaving bridge sends Enable=true as the very last write', () async {
+      // Whatever the target mode and whatever else changed, the boundary SET
+      // drops the connection, so nothing may be sent after it.
+      final writes = recordWrites();
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.bridge,
+        ipv6Enabled: true,
+        vlanEnabled: false,
+      );
+      final edited = original.copyWith(
+        connectionType: UspWanConnectionType.dhcp,
+        ipv6Enabled: false,
+        vlanEnabled: true,
+        vlanId: 10,
+      );
+
+      await service.saveAll(
+        original,
+        edited,
+        vlanInstancePath: 'Device.Ethernet.VLANTermination.1.',
+      );
+
+      expect(writes.where((m) => m.containsKey('Device.IP.Interface.2.Enable')),
+          hasLength(1));
+      expect(writes.last, {'Device.IP.Interface.2.Enable': true});
+    });
+
+    test('leaving bridge sends Enable=true after the IPv6 SET', () async {
+      final captureOrder = <Map<String, dynamic>>[];
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((invocation) async {
+        captureOrder
+            .add(invocation.positionalArguments[0] as Map<String, dynamic>);
+        return {
+          'success': true,
+          'result': {'data': <String, dynamic>{}}
+        };
+      });
+
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.bridge,
+        ipv6Enabled: true,
+      );
+      final edited = original.copyWith(
+        connectionType: UspWanConnectionType.dhcp,
+        ipv6Enabled: false,
+      );
+
+      await service.saveAll(original, edited);
+
+      final ipv6Index =
+          captureOrder.indexWhere((m) => m.keys.any((k) => k.contains('IPv6')));
+      final exitIndex = captureOrder
+          .indexWhere((m) => m.containsKey('Device.IP.Interface.2.Enable'));
+      expect(ipv6Index, greaterThanOrEqualTo(0));
+      expect(captureOrder[exitIndex]['Device.IP.Interface.2.Enable'], isTrue);
+      expect(exitIndex, greaterThan(ipv6Index),
+          reason: 'Enable=true must be the last SET');
+    });
+
+    test('leaving bridge treats a transport error on the exit SET as success',
+        () async {
+      // Same disconnect signature as entering: the exit script bounces the
+      // ports and restarts lighttpd, so the response never arrives.
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenThrow('Set failed: Transport error: Request timeout');
+
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.bridge,
+      );
+      final edited = original.copyWith(
+        connectionType: UspWanConnectionType.dhcp,
+      );
+
+      await expectLater(service.saveAll(original, edited), completes);
+    });
+
+    test('leaving bridge rethrows a real fault on the exit SET', () async {
+      // A fault code on Enable means the router rejected the exit before any
+      // disconnect — a genuine failure the user must see.
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': false,
+                'result': {
+                  'data': <String, dynamic>{},
+                  'error': {
+                    'Device.IP.Interface.2.Enable': {
+                      'errorCode': 7006,
+                      'errorMessage': 'Invalid value',
+                    },
+                  },
+                },
+              });
+
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.bridge,
+      );
+      final edited = original.copyWith(
+        connectionType: UspWanConnectionType.dhcp,
+      );
+
+      await expectLater(
+        service.saveAll(original, edited),
+        throwsA(isA<ServiceError>()),
+      );
+    });
+
+    test('editing while staying in bridge crosses no boundary', () async {
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.bridge,
+        ipv6Enabled: true,
+      );
+      final edited = original.copyWith(ipv6Enabled: false);
+
+      await service.saveAll(original, edited);
+
+      final captured = verify(
+        () =>
+            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
+      ).captured;
+      for (final params in captured.whereType<Map<String, dynamic>>()) {
+        expect(params.containsKey('Device.IP.Interface.2.Enable'), isFalse,
+            reason: 'no type change means no boundary SET');
+      }
     });
 
     test('MTU change without type change sends only MTU param', () async {
@@ -1039,12 +1428,22 @@ void main() {
           equals('pptp.example.com'));
 
       // Verify AddressingType set to IPCP
-      final ipcpSet = allParams.where((m) =>
-          m.containsKey('Device.IP.Interface.2.IPv4Address.1.AddressingType'));
-      expect(ipcpSet, isNotEmpty);
-      expect(
-          ipcpSet.first['Device.IP.Interface.2.IPv4Address.1.AddressingType'],
-          equals('IPCP'));
+      final ordered = verify(() => mockUsp.setOrdered(captureAny(),
+          allowPartial: any(named: 'allowPartial'))).captured;
+      expect(ordered.single, [
+        [
+          {
+            'path': 'Device.IP.Interface.2.IPv4Address.1.AddressingType',
+            'value': 'IPCP',
+          }
+        ]
+      ]);
+
+      // LowerLayers and the credentials share one PPP batch.
+      expect(lowerLayersSet.first['Device.PPP.Interface.1.Username'],
+          equals('vpnuser'));
+      expect(lowerLayersSet.first['Device.PPP.Interface.1.Password'],
+          equals('vpnpass'));
     });
 
     test('switching to L2TP sets LowerLayers to L2TPv2', () async {
@@ -1170,35 +1569,97 @@ void main() {
       );
     });
 
-    test(
-        'PPTP WAN with absent GRE Tunnel.1 row surfaces a ServiceError (not a crash)',
+    test('PPTP WAN with absent GRE Tunnel.1 row reads an empty server address',
         () async {
-      // Companion to the DHCP guard: the item-1 residual-risk path. If the
-      // firmware classifies the WAN as PPTP but has not provisioned
-      // Device.GRE.Tunnel.1 (LowerLayers references it but the row is absent),
-      // Phase-2's GreTunnel.fetch hits the codegen required-leaf check (9998).
-      // That must surface as a mapped ServiceError (→ ServiceErrorView), NOT an
-      // uncaught StateError / NPE — this is the reachable-error contract #1184
-      // is about. An empty greResponse omits the required RemoteEndpoints leaf.
+      // GreTunnels is a table, so a PPTP WAN whose Tunnel.1 row is absent is
+      // an empty list rather than a 9998 that blanks the whole page. The empty
+      // server address fails form validation, prompting the user to re-enter.
       final wanIpcp = Map<String, dynamic>.from(_wanResponse);
       wanIpcp['Device.IP.Interface.2.IPv4Address.1.AddressingType'] = 'IPCP';
 
       final handler = createFetchMockHandler(
         wanResponse: wanIpcp,
         pppResponse: _pppPptpResponse,
-        greResponse: const {}, // Tunnel.1 row absent → 9998 upstream
+        greResponse: const {}, // Tunnel.1 row absent
       );
       when(() => mockUsp.get(any())).thenAnswer((invocation) async {
         final paths = invocation.positionalArguments[0] as List<String>;
         return handler(paths);
       });
 
-      await expectLater(
-        service.fetchSettings(),
-        throwsA(isA<ServiceError>()),
-        reason: 'absent Tunnel.1 must map to a ServiceError, not escape as a '
-            'StateError or NPE',
-      );
+      final result = await service.fetchSettings();
+
+      expect(result.form.connectionType, equals(UspWanConnectionType.pptp));
+      expect(result.form.serverAddress, isEmpty);
+    });
+  });
+
+  group('bridge boundary timing', () {
+    setUp(() {
+      final handler = createFetchMockHandler();
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async =>
+          handler(invocation.positionalArguments[0] as List<String>));
+    });
+
+    final original = UspInternetSettingsForm(
+      connectionType: UspWanConnectionType.dhcp,
+    );
+    final edited = original.copyWith(
+      connectionType: UspWanConnectionType.bridge,
+    );
+
+    test('a rejected bridge SET fails at once, without waiting', () {
+      fakeAsync((async) {
+        when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+            .thenAnswer((_) async => {
+                  'success': false,
+                  'result': {
+                    'data': <String, dynamic>{},
+                    'error': {
+                      'Device.IP.Interface.2.Enable': {
+                        'errorCode': 7006,
+                        'errorMessage': 'Invalid value',
+                      },
+                    },
+                  },
+                });
+
+        Object? error;
+        service
+            .saveAll(original, edited)
+            .then<void>((_) {}, onError: (Object e) => error = e);
+
+        async.flushMicrotasks();
+        expect(error, isA<ServiceError>());
+      });
+    });
+
+    test('leaving bridge does not wait', () {
+      fakeAsync((async) {
+        when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+            .thenAnswer((_) async => {
+                  'success': true,
+                  'result': {'data': <String, dynamic>{}}
+                });
+        // Leaving into DHCP writes the WAN row before Enable=true.
+        when(() => mockUsp
+                .setOrdered(any(), allowPartial: any(named: 'allowPartial')))
+            .thenAnswer((_) async => {
+                  'success': true,
+                  'result': {'data': <String, dynamic>{}}
+                });
+
+        var done = false;
+        service
+            .saveAll(
+              edited,
+              edited.copyWith(connectionType: UspWanConnectionType.dhcp),
+            )
+            .then<void>((_) => done = true);
+
+        async.flushMicrotasks();
+        expect(done, isTrue);
+      });
     });
   });
 

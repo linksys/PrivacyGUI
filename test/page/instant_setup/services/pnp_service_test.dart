@@ -25,14 +25,22 @@ void main() {
     'Device.IP.Interface.2.IPv4Address.1.SubnetMask': '',
     'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway': '',
     'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers': '',
-    'Device.Bridging.Bridge.1.Enable': false,
+    // Enable is the bridge signal — true means a normal (non-bridged) WAN.
+    'Device.IP.Interface.2.Enable': true,
     'Device.Ethernet.Interface.1.MACAddress': '11:22:33:44:55:66',
   };
 
   const ipv6Response = <String, dynamic>{
     'Device.IP.Interface.2.IPv6Enable': true,
+  };
+
+  const dhcpv6Response = <String, dynamic>{
     'Device.DHCPv6.Client.1.Enable': true,
+    'Device.DHCPv6.Client.1.Interface': 'Device.IP.Interface.2',
     'Device.DHCPv6.Client.1.DUID': '00:01:00:01:2a:3b:4c:5d',
+  };
+
+  const ipv6rdResponse = <String, dynamic>{
     'Device.IPv6rd.InterfaceSetting.1.Enable': false,
     'Device.IPv6rd.InterfaceSetting.1.SPIPv6Prefix': '',
     'Device.IPv6rd.InterfaceSetting.1.IPv4MaskLength': '0',
@@ -84,6 +92,12 @@ void main() {
       if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
         return ipAliasResolutionResponse;
       }
+      if (paths.any((p) => p.contains('DHCPv6.Client'))) {
+        return dhcpv6Response;
+      }
+      if (paths.any((p) => p.contains('IPv6rd.InterfaceSetting'))) {
+        return ipv6rdResponse;
+      }
       if (paths.any((p) => p.contains('AddressingType'))) {
         return wanResponse;
       }
@@ -128,19 +142,15 @@ void main() {
   }
 
   void setupAddMock({String createdPath = 'Device.PPP.Interface.1.'}) {
+    // The shape UspResultParser.parseAddResult reads: the created instance
+    // paths under result.data.instances.
     when(() => mockUsp.add(any())).thenAnswer((_) async => {
-          'overallSuccess': true,
-          'hasAnySuccess': true,
-          'hasErrors': false,
-          'results': [
-            {
-              'requestedPath': createdPath.replaceAll(RegExp(r'\d+\.$'), ''),
-              'success': true,
-              'createdInstances': [
-                {'affectedPath': createdPath, 'initialParams': {}}
-              ]
-            }
-          ]
+          'success': true,
+          'result': {
+            'data': {
+              'instances': [createdPath],
+            },
+          },
         });
   }
 
@@ -259,8 +269,7 @@ void main() {
       verifyNever(() => mockUsp.add(any()));
     });
 
-    test(
-        'Static IP: fetches all 4 endpoints then calls WanStaticIp.updateOrdered',
+    test('Static IP: fetches settings then writes the WAN IPv4 row in order',
         () async {
       setupFetchMocks();
       setupSetMocks();
@@ -283,13 +292,15 @@ void main() {
       // - PppInterface.fetch() = 1 call
       // - VlanTermination.fetch() = 1 call
       // - _fetchHostName() (Device.DeviceInfo.HostName) = 1 call
+      // - Dhcpv6Clients.fetch() = 1 call (matched on WanSettings.instancePath)
+      // - Ipv6rdSettings.fetch() = 1 call
       // No GRE/L2TP fetch: tunnels are fetched only for the pptp/l2tp
       // connection types, not for Static IP.
       // saveAll:
-      // - WanStaticIp.updateOrdered() → _resolveInstance() = 1 call
-      // - Ipv6Settings.update() → _resolveInstance() = 1 call
-      // Total = 9 get calls
-      verify(() => mockUsp.get(any())).called(9);
+      // - WAN IPv4 row re-read (_resolveInstance() + fetch()) = 2 calls
+      // - No IPv6 field changed, so the IPv6 save sends nothing
+      // Total = 11 get calls
+      verify(() => mockUsp.get(any())).called(11);
 
       // Verify setOrdered was called for Static IP mode switch
       final capturedOrdered = verify(() => mockUsp.setOrdered(captureAny(),
@@ -311,8 +322,8 @@ void main() {
     });
 
     test(
-        'PPPoE (no existing PPP instance): calls PppInterface.add then WanPppoe.update',
-        () async {
+        'PPPoE (no existing PPP instance): adds a PPP instance, sets IPCP, then '
+        'writes LowerLayers and the credentials', () async {
       setupFetchMocks(pppResponse: pppEmptyResponse);
       setupSetMocks();
       setupAddMock(createdPath: 'Device.PPP.Interface.1.');
@@ -326,14 +337,15 @@ void main() {
       await service.saveIspSettings(config);
 
       // Verify fetchSettings + saveAll get calls:
-      // fetchSettings: 7 calls (WanSettings x2, Ipv6 x2, PPP, VLAN,
-      //   _fetchHostName = Device.DeviceInfo.HostName). No GRE/L2TP fetch:
-      //   tunnels are fetched only for the pptp/l2tp connection types.
+      // fetchSettings: 9 calls (WanSettings x2, Ipv6 x2, PPP, VLAN,
+      //   _fetchHostName = Device.DeviceInfo.HostName, Dhcpv6Clients,
+      //   Ipv6rdSettings). No GRE/L2TP fetch: tunnels are fetched only for
+      //   the pptp/l2tp connection types.
       // saveAll:
-      // - WanPppoe.update() → _resolveInstance() = 1 call
-      // - Ipv6Settings.update() → _resolveInstance() = 1 call
-      // Total = 9 get calls
-      verify(() => mockUsp.get(any())).called(9);
+      // - WAN IPv4 row re-read (_resolveInstance() + fetch()) = 2 calls
+      // - No IPv6 field changed, so the IPv6 save sends nothing
+      // Total = 11 get calls
+      verify(() => mockUsp.get(any())).called(11);
 
       // Verify PppInterface.add was called (new PPP instance created)
       final addCaptures = verify(() => mockUsp.add(captureAny())).captured;
@@ -342,20 +354,30 @@ void main() {
       // PppInterface.add sends [{}] to 'Device.PPP.Interface.'
       expect(addPath.length, equals(1));
 
-      // Verify WanPppoe.update was called with credentials + AddressingType
+      // SET 1: AddressingType=IPCP alone, on the WAN IPv4 row.
+      final ordered = verify(() => mockUsp.setOrdered(captureAny(),
+          allowPartial: any(named: 'allowPartial'))).captured;
+      expect(ordered.single, [
+        [
+          {
+            'path': 'Device.IP.Interface.2.IPv4Address.1.AddressingType',
+            'value': 'IPCP',
+          }
+        ]
+      ]);
+
+      // SET 2: LowerLayers cleared plus the credentials, as one PPP batch.
       final setCaptures = verify(() => mockUsp.set(captureAny(),
           allowPartial: any(named: 'allowPartial'))).captured;
       final pppoeSet = setCaptures.whereType<Map<String, dynamic>>().firstWhere(
             (m) => m.containsKey('Device.PPP.Interface.1.Username'),
             orElse: () => {},
           );
-      expect(pppoeSet, isNotEmpty);
-      expect(pppoeSet['Device.PPP.Interface.1.Username'], equals('myuser'));
-      expect(pppoeSet['Device.PPP.Interface.1.Password'], equals('mypass'));
-      expect(
-        pppoeSet['Device.IP.Interface.2.IPv4Address.1.AddressingType'],
-        equals('IPCP'),
-      );
+      expect(pppoeSet, {
+        'Device.PPP.Interface.1.LowerLayers': '',
+        'Device.PPP.Interface.1.Username': 'myuser',
+        'Device.PPP.Interface.1.Password': 'mypass',
+      });
     });
 
     test(
@@ -373,6 +395,12 @@ void main() {
         }
         if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
           return ipAliasResolutionResponse;
+        }
+        if (paths.any((p) => p.contains('DHCPv6.Client'))) {
+          return dhcpv6Response;
+        }
+        if (paths.any((p) => p.contains('IPv6rd.InterfaceSetting'))) {
+          return ipv6rdResponse;
         }
         if (paths.any((p) => p.contains('AddressingType'))) {
           return wanPppoeResponse;
@@ -442,6 +470,12 @@ void main() {
         }
         if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
           return ipAliasResolutionResponse;
+        }
+        if (paths.any((p) => p.contains('DHCPv6.Client'))) {
+          return dhcpv6Response;
+        }
+        if (paths.any((p) => p.contains('IPv6rd.InterfaceSetting'))) {
+          return ipv6rdResponse;
         }
         if (paths.any((p) => p.contains('AddressingType'))) {
           return wanPppoeResponse;

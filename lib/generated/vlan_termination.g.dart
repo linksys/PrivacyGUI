@@ -15,6 +15,15 @@ class VlanTerminationInstance {
     required this.enable,
     required this.vlanId,
   });
+
+  @override
+  String toString() {
+    return 'VlanTerminationInstance('
+        'instancePath: $instancePath, '
+        'enable: $enable, '
+        'vlanId: $vlanId'
+        ')';
+  }
 }
 
 /// Update descriptor for VlanTerminationInstance instances
@@ -35,6 +44,9 @@ class VlanTermination {
   final List<VlanTerminationInstance> items;
 
   const VlanTermination({required this.items});
+
+  @override
+  String toString() => 'VlanTermination(items: $items)';
 
   static const _paths = [
     'Device.Ethernet.VLANTermination.*.Enable',
@@ -62,15 +74,6 @@ class VlanTermination {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([response['${p}Enable'], response['${p}VLANID']].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final missing = <String>[];
       if (!response.containsKey('${p}Enable')) {
         missing.add('${p}Enable');
@@ -92,10 +95,9 @@ class VlanTermination {
     return VlanTermination(items: items);
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-      UspClient client, List<VlanTerminationInstanceUpdate> updates,
-      {bool allowPartial = false}) async {
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams(
+      List<VlanTerminationInstanceUpdate> updates) {
     final params = <String, dynamic>{};
     for (final update in updates) {
       if (update.enable != null) {
@@ -105,6 +107,14 @@ class VlanTermination {
         params['${update.instancePath}VLANID'] = update.vlanId;
       }
     }
+    return params;
+  }
+
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+      UspClient client, List<VlanTerminationInstanceUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateParams(updates);
     if (params.isEmpty) {
       return {
         'success': true,
