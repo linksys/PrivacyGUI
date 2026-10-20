@@ -634,4 +634,147 @@ void main() {
       verifyNoMoreInteractions(mockUsp);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Bridge mode (#1597)
+  // ---------------------------------------------------------------------------
+
+  group('UspWanDataService — bridge mode', () {
+    // WAN and LAN deliberately on instances other than 2 and 1, so a read that
+    // assumed a fixed instance number could not pass.
+    void stubBridged({
+      Object enable = false,
+      String lanIp = '10.92.12.83',
+      String lanMask = '255.255.255.0',
+      bool lanHasRow = true,
+    }) {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        if (paths.contains('Device.IP.Interface.*.Alias')) {
+          return {
+            'Device.IP.Interface.3.Alias': 'lan',
+            'Device.IP.Interface.5.Alias': 'wan',
+            'Device.IP.Interface.6.Alias': '',
+          };
+        }
+        if (paths.contains('Device.IP.Interface.5.Enable')) {
+          return {
+            'Device.IP.Interface.5.Enable': enable,
+            'Device.IP.Interface.5.MaxMTUSize': '1500',
+            'Device.IP.Interface.5.IPv6Enable': true,
+          };
+        }
+        if (paths.contains('Device.IP.Interface.3.IPv4Address.*.IPAddress')) {
+          if (!lanHasRow) return {};
+          return {
+            'Device.IP.Interface.3.IPv4Address.1.IPAddress': lanIp,
+            'Device.IP.Interface.3.IPv4Address.1.SubnetMask': lanMask,
+          };
+        }
+        if (paths.any((p) => p.contains('Routing'))) {
+          return {
+            'Device.Routing.Router.1.IPv4Forwarding.1.Enable': true,
+            'Device.Routing.Router.1.IPv4Forwarding.1.DestIPAddress': '0.0.0.0',
+            'Device.Routing.Router.1.IPv4Forwarding.1.DestSubnetMask':
+                '0.0.0.0',
+            'Device.Routing.Router.1.IPv4Forwarding.1.GatewayIPAddress':
+                '10.92.12.1',
+            'Device.Routing.Router.1.IPv4Forwarding.1.Interface':
+                'Device.IP.Interface.5',
+            'Device.Routing.Router.1.IPv4Forwarding.1.Origin': 'Static',
+            'Device.Routing.Router.1.IPv4Forwarding.1.Alias': 'DefaultRoute',
+          };
+        }
+        if (paths.any((p) => p.contains('Device.IP.Interface.5.Status'))) {
+          throw StateError('a bridged WAN must not read the WAN IPv4 row');
+        }
+        return {};
+      });
+    }
+
+    test('reports Bridge and takes the IP from the lan interface', () async {
+      stubBridged();
+
+      final result = await svc.fetch();
+
+      expect(result.addressingType, UspWanDataService.bridgeAddressingType);
+      expect(result.ipAddress, '10.92.12.83');
+      expect(result.subnetMask, '255.255.255.0');
+      expect(result.isUp, isTrue);
+      expect(result.mtu, 1500);
+      expect(result.ipv6Enabled, isTrue);
+      expect(result.gateway, '10.92.12.1');
+    });
+
+    test('Enable reported as the integer 0 reads as bridge, as on Settings',
+        () async {
+      // The Internet Settings page treats any Enable that is not true as
+      // bridge; the dashboard must agree.
+      stubBridged(enable: 0);
+
+      final result = await svc.fetch();
+
+      expect(result.addressingType, UspWanDataService.bridgeAddressingType);
+    });
+
+    test('an absent Enable is not a bridge reading', () async {
+      // Without an Enable value there is no bridge reading, so the WAN row is
+      // read as usual.
+      stubWanStatus(addressingType: 'DHCP', ipAddress: '203.0.113.5');
+      when(() => mockUsp.get(['Device.IP.Interface.*.Alias']))
+          .thenAnswer((_) async => {'Device.IP.Interface.2.Alias': 'wan'});
+      when(() => mockUsp.get([
+                'Device.IP.Interface.2.Enable',
+                'Device.IP.Interface.2.MaxMTUSize',
+                'Device.IP.Interface.2.IPv6Enable',
+              ]))
+          .thenAnswer(
+              (_) async => {'Device.IP.Interface.2.MaxMTUSize': '1500'});
+
+      final result = await svc.fetch();
+
+      expect(result.addressingType, 'DHCP');
+      expect(result.ipAddress, '203.0.113.5');
+    });
+
+    test('Enable reported as the string "0" still reads as bridge', () async {
+      stubBridged(enable: '0');
+
+      final result = await svc.fetch();
+
+      expect(result.addressingType, UspWanDataService.bridgeAddressingType);
+    });
+
+    test('a lan interface with no address yet reads as down, not an error',
+        () async {
+      // br-lan has not taken its upstream lease yet.
+      stubBridged(lanHasRow: false);
+
+      final result = await svc.fetch();
+
+      expect(result.addressingType, UspWanDataService.bridgeAddressingType);
+      expect(result.ipAddress, isEmpty);
+      expect(result.isUp, isFalse);
+    });
+
+    test('an enabled WAN is not bridge and keeps reading the WAN', () async {
+      stubWanStatus(addressingType: 'Static', ipAddress: '203.0.113.9');
+      when(() => mockUsp.get(['Device.IP.Interface.*.Alias'],
+              priority: any(named: 'priority')))
+          .thenAnswer((_) async => {'Device.IP.Interface.2.Alias': 'wan'});
+      when(() => mockUsp.get(['Device.IP.Interface.*.Alias']))
+          .thenAnswer((_) async => {'Device.IP.Interface.2.Alias': 'wan'});
+      when(() => mockUsp.get([
+            'Device.IP.Interface.2.Enable',
+            'Device.IP.Interface.2.MaxMTUSize',
+            'Device.IP.Interface.2.IPv6Enable',
+          ])).thenAnswer((_) async => {'Device.IP.Interface.2.Enable': true});
+
+      final result = await svc.fetch();
+
+      expect(result.addressingType, 'Static');
+      expect(result.ipAddress, '203.0.113.9');
+    });
+  });
 }

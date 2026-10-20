@@ -42,6 +42,10 @@ final uspWanDataServiceProvider = Provider<UspWanDataService>(
 /// Owns codegen calls, gateway/IPv6 query, and WAN UI model building
 /// for [wanDataProvider].
 class UspWanDataService {
+  /// The `addressingType` a bridged WAN reports, in the same display style as
+  /// the other values (`DHCP`, `Static`, `PPPoE`, a tunnel type).
+  static const bridgeAddressingType = 'Bridge';
+
   final UspClient _usp;
   final bool _autoIPoESupported;
 
@@ -68,6 +72,15 @@ class UspWanDataService {
           ipv6Addresses: preferGlobalIpv6First(active.ipv6),
         );
       }
+
+      // Bridge next (#1597), on firmware without the native connection object:
+      // `Device.IP.Interface.{wan}.Enable == false` is the only bridge signal.
+      // The WAN IPv4Address row describes the WAN the router has stepped out
+      // of — kept on FW 2.0.3, gone on FW 2.0.2 — so the WAN-side fields below
+      // would report a mode the router is not in.
+      final bridged = await _fetchBridgedStatus();
+      if (bridged != null) return bridged;
+
       final results = await Future.wait([
         fetchWanStatusTolerantOfNoAddress(_usp),
         _fetchGatewayAndIpv6Addresses(),
@@ -108,6 +121,90 @@ class UspWanDataService {
       throw mapUspErrorToServiceError(e);
     }
   }
+
+  /// The WAN status of a bridged router, or null when the WAN is not bridged.
+  ///
+  /// In bridge mode the router's address is the one br-lan takes from the
+  /// upstream DHCP server, so the IP and subnet are read from the `Alias == lan`
+  /// interface. MTU, gateway and IPv6 still come from the WAN, as they do in
+  /// every other mode.
+  ///
+  /// Reads the paths directly instead of through a generated model:
+  /// `WanStatus` / `LanNetworkInfo` move to the 0.18 list API with #1654, and
+  /// neither exposes the WAN `Enable` today. Both interfaces are resolved by
+  /// Alias, never by a fixed instance number.
+  Future<WanStatusUIModel?> _fetchBridgedStatus() async {
+    final aliases = await _usp.get(['Device.IP.Interface.*.Alias']);
+    final wanPath = _interfacePathFor(aliases, 'wan');
+    if (wanPath == null) return null;
+
+    final wanState = await _usp.get([
+      '${wanPath}Enable',
+      '${wanPath}MaxMTUSize',
+      '${wanPath}IPv6Enable',
+    ]);
+    // Same rule as the Internet Settings page (`WanSettings.enable` feeding
+    // `UspWanConnectionType.fromRawFields`): bridge is any present `Enable`
+    // that is not true. An absent `Enable` is not a bridge reading, so the
+    // normal path below reads the WAN and reports what it finds.
+    if (!wanState.containsKey('${wanPath}Enable') ||
+        _isTrue(wanState['${wanPath}Enable'])) {
+      return null;
+    }
+
+    final lanPath = _interfacePathFor(aliases, 'lan');
+    var ipAddress = '';
+    var subnetMask = '';
+    if (lanPath != null) {
+      final lan = await _usp.get([
+        '${lanPath}IPv4Address.*.IPAddress',
+        '${lanPath}IPv4Address.*.SubnetMask',
+      ]);
+      final row = _firstIpv4Row(lan, '${lanPath}IPv4Address.');
+      if (row != null) {
+        ipAddress = (lan['${row}IPAddress'] ?? '').toString();
+        subnetMask = (lan['${row}SubnetMask'] ?? '').toString();
+      }
+    }
+
+    final extra = await _fetchGatewayAndIpv6Addresses();
+    return WanStatusUIModel(
+      isUp: ipAddress.isNotEmpty,
+      ipAddress: ipAddress,
+      subnetMask: subnetMask,
+      addressingType: bridgeAddressingType,
+      mtu: int.tryParse('${wanState['${wanPath}MaxMTUSize'] ?? ''}') ?? 0,
+      gateway: extra.gateway,
+      ipv6Enabled: _isTrue(wanState['${wanPath}IPv6Enable']),
+      ipv6Addresses: extra.ipv6Addresses,
+    );
+  }
+
+  /// `Device.IP.Interface.{i}.` for the interface whose Alias is [alias].
+  static String? _interfacePathFor(Map<String, dynamic> aliases, String alias) {
+    for (final entry in aliases.entries) {
+      if (entry.value != alias) continue;
+      final match = RegExp(r'^(Device\.IP\.Interface\.\d+\.)Alias$')
+          .firstMatch(entry.key);
+      if (match != null) return match.group(1);
+    }
+    return null;
+  }
+
+  /// The lowest-numbered `IPv4Address.{i}.` row under [base], or null if none.
+  static String? _firstIpv4Row(Map<String, dynamic> response, String base) {
+    final ids = <int>{};
+    for (final key in response.keys) {
+      if (!key.startsWith(base)) continue;
+      final id = int.tryParse(key.substring(base.length).split('.').first);
+      if (id != null) ids.add(id);
+    }
+    if (ids.isEmpty) return null;
+    return '$base${(ids.toList()..sort()).first}.';
+  }
+
+  /// The generated models' boolean parse, so both screens read `Enable` alike.
+  static bool _isTrue(Object? v) => v == true || v == 'true' || v == '1';
 
   // ---------------------------------------------------------------------------
   // Helpers

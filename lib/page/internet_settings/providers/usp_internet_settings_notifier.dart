@@ -29,6 +29,15 @@ final uspInternetSettingsProvider = AutoDisposeNotifierProvider<
   UspInternetSettingsNotifier.new,
 );
 
+/// How long [UspInternetSettingsNotifier.save] holds after entering bridge.
+///
+/// The router is reachable again at `<hostName>.local` only T+20–25s after
+/// entering bridge, T being the SET returning (#762 comment 5987286082), so the
+/// save — and the spinner the view shows for it — lasts until the redirect can
+/// land. A provider so tests can shorten it.
+final bridgeSettleDelayProvider =
+    Provider<Duration>((ref) => const Duration(seconds: 20));
+
 /// Service provider — stateless, created from the current UspClient.
 final uspInternetSettingsServiceProvider =
     Provider.autoDispose<UspInternetSettingsService>((ref) {
@@ -50,10 +59,12 @@ class UspInternetSettingsNotifier
             InternetSettingsStatus, InternetSettingsFeatureState> {
   /// One-shot guard for a device-timing race (#759): immediately after a save
   /// that did NOT change the connection type, the device can transiently report
-  /// an empty `addressingType`. Under the AddressingType-only detection rule
-  /// (see [UspWanConnectionType.fromRawFields]) that empty value would read as
-  /// Bridge. This guard is set in [performSave] when the type was unchanged and
-  /// consumed by the next [performFetch] to preserve the known type.
+  /// an empty `addressingType`. That no longer reads as Bridge — bridge is
+  /// detected from `Device.IP.Interface.{wan}.Enable` alone (see
+  /// [UspWanConnectionType.fromRawFields]) — but an empty value still falls back
+  /// to DHCP, which silently downgrades a Static or PPPoE WAN in the UI. This
+  /// guard is set in [performSave] when the type was unchanged and consumed by
+  /// the next [performFetch] to preserve the known type.
   ///
   /// This is independent of detection correctness and must NOT be removed:
   /// detection keys on a real device value, while this protects against a
@@ -203,7 +214,7 @@ class UspInternetSettingsNotifier
 
       logger.d('[USP][Network][WAN]: Fetched — '
           'raw addressingType: "${result.debugAddressingType}", '
-          'bridgeEnabled: ${result.debugBridgeEnabled}, '
+          'interfaceEnabled: ${result.debugInterfaceEnabled}, '
           'detected type: ${result.form.connectionType.name}, '
           'mtu: ${result.debugMtu}, ipv6: ${result.debugIpv6Enabled}');
 
@@ -376,7 +387,12 @@ class UspInternetSettingsNotifier
       //    time out (~15s per GET) and surface a spurious "something went
       //    wrong" error for an operation that actually succeeded. The redirect
       //    dialog is the only valid next step from here.
+      // 3. Hold for [bridgeSettleDelayProvider], after the disconnect: waiting
+      //    with SSE still up would let its reconnect failures reach the
+      //    recovery threshold (~3-5s) before the redirect dialog.
+      final settle = ref.read(bridgeSettleDelayProvider);
       await ref.read(sseManagerProvider)?.disconnect();
+      await Future<void>.delayed(settle);
       return state;
     }
 
