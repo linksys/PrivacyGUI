@@ -7,6 +7,7 @@ import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/services/usp_pdf_service.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 
+import '../../../mocks/test_data/devices_test_data.dart';
 import '../../../mocks/test_data/firmware_update_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
@@ -119,6 +120,52 @@ void main() {
         reason: 'the version the router could update to is not a firmware '
             'image the router holds',
       );
+    });
+  });
+
+  // #1121: a node's client list holds offline clients too. The PDF printed
+  // its length, so the Devices column over-reported against the active-only
+  // count the report used before PR #1068.
+  group('meshTopologyRows', () {
+    test('the Devices column counts online clients only', () {
+      final rows = UspPdfService.meshTopologyRows([
+        DevicesTestData.createMaster(
+          friendlyName: 'Living Room',
+          connectedClients: [
+            DevicesTestData.createWifiClient(mac: DevicesTestData.clientMac1),
+            DevicesTestData.createWiredClient(mac: DevicesTestData.clientMac2),
+            DevicesTestData.createOfflineClient(
+                mac: DevicesTestData.clientMac3),
+          ],
+        ),
+        DevicesTestData.createWifiSlave(
+          friendlyName: 'Office',
+          connectedClients: [
+            DevicesTestData.createOfflineClient(
+                mac: DevicesTestData.clientMac4),
+          ],
+        ),
+      ]);
+
+      expect(rows.map((r) => r.last).toList(), ['2', '0'],
+          reason: 'two of the master\'s three clients are online, and none of '
+              'the extender\'s one');
+    });
+
+    test('prints name, role, model and firmware beside the count', () {
+      final rows = UspPdfService.meshTopologyRows([
+        DevicesTestData.createMaster(friendlyName: 'Living Room'),
+        DevicesTestData.createWifiSlave(friendlyName: 'Office'),
+      ]);
+
+      expect(rows.first, [
+        'Living Room',
+        'Master',
+        DevicesTestData.defaultModel,
+        DevicesTestData.defaultSoftwareVersion,
+        '0',
+      ]);
+      expect(rows.last[1], 'Extender');
     });
   });
 }

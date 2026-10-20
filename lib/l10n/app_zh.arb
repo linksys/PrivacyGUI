@@ -856,6 +856,7 @@
   "deviceCategorySmartHome": "智能家居",
   "deviceCategoryWearable": "可穿戴设备",
   "renameRouter": "重命名路由器",
+  "renameNode": "重命名节点",
   "noSsid": "（无 SSID）",
   "noTargetBankAvailable": "没有可用的目标分区",
   "noTimezonesFound": "未找到时区",

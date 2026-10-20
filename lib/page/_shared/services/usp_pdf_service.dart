@@ -4,7 +4,9 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/transforms.g.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/network_health_helpers.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/pdf_report_data.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
@@ -889,18 +891,28 @@ class UspPdfService {
         cellPadding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
         headers: ['Name', 'Role', 'Model', 'Firmware', 'Devices'],
-        data: nodes
-            .map((n) => [
-                  n.displayName,
-                  n.isMaster ? 'Master' : 'Extender',
-                  n.model,
-                  n.softwareVersion,
-                  '${n.connectedClients.length}',
-                ])
-            .toList(),
+        data: meshTopologyRows(nodes),
       ),
       pw.SizedBox(height: 12),
     ];
+  }
+
+  /// One printed row per mesh node: name, role, model, firmware, devices.
+  ///
+  /// Devices counts online clients only. A node's `connectedClients` also
+  /// holds offline ones, and the report counted active clients before PR #1068
+  /// (#1121).
+  @visibleForTesting
+  static List<List<String>> meshTopologyRows(List<NodeEntity> nodes) {
+    return nodes
+        .map((n) => [
+              n.displayName,
+              n.isMaster ? 'Master' : 'Extender',
+              n.model,
+              n.softwareVersion,
+              '${n.connectedClients.online.length}',
+            ])
+        .toList();
   }
 
   static List<pw.Widget> _buildFirewallSettings(FirewallUIModel fw) {

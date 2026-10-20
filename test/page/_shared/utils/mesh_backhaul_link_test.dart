@@ -11,9 +11,14 @@ import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
 /// reason this file would *not* simply adopt a shared `MeshNode` builder if one
 /// existed: see `mesh_topology_builder_test.dart`'s `_node` for the promotion
 /// trigger, and keep this file's fixture narrow whatever happens to the others.
-MeshNode _node({String? linkType, String? parentDeviceId}) => MeshNode(
+MeshNode _node({
+  String id = 'AA:BB:CC:DD:EE:01',
+  String? linkType,
+  String? parentDeviceId,
+}) =>
+    MeshNode(
       instancePath: 'Device.WiFi.DataElements.Network.Device.1.',
-      id: 'AA:BB:CC:DD:EE:01',
+      id: id,
       backhaulLinkType: linkType,
       backhaulBackhaulDeviceId: parentDeviceId,
       radios: const [],
@@ -110,6 +115,67 @@ void main() {
           hasMeshBackhaulLink(
               _node(linkType: 'None', parentDeviceId: '00:00:00:00:00:00')),
           isFalse);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // meshControllerKey / isMeshController — the controller test (#1688 review)
+  // ---------------------------------------------------------------------------
+  //
+  // `ControllerID` decides when it names a listed node; otherwise the backhaul
+  // rule above does. `MeshTopologyBuilder`, `PnpService` and
+  // `UnifiedDiagnosticsService` all call these, and each of their test files
+  // pins an agent that has not filled in its backhaul yet through the real code
+  // path, so none of the three can drift back to the backhaul rule alone.
+
+  group('meshControllerKey / isMeshController', () {
+    const controllerMac = '74:12:13:21:56:3A';
+    final controller = _node(id: controllerMac, linkType: 'None');
+    // Just joined: no LinkType and no parent yet, so by backhaul alone it is
+    // indistinguishable from the controller.
+    final joiningAgent = _node(id: 'AA:BB:CC:DD:EE:02');
+    final network = DataElementsNetwork(items: [controller, joiningAgent]);
+
+    test('with ControllerID only that node is the controller', () {
+      final key = meshControllerKey(controllerMac, network);
+
+      expect(isMeshController(controller, key), isTrue);
+      expect(isMeshController(joiningAgent, key), isFalse,
+          reason: 'an agent with no backhaul yet is still an agent');
+    });
+
+    test('without ControllerID the backhaul rule decides', () {
+      final key = meshControllerKey(null, network);
+
+      expect(key, isNull);
+      expect(isMeshController(controller, key), isTrue);
+      expect(isMeshController(joiningAgent, key), isTrue,
+          reason: 'the fallback cannot tell a joining agent apart');
+    });
+
+    test('ControllerID matches regardless of MAC spelling', () {
+      for (final spelling in [
+        '74-12-13-21-56-3a',
+        ' 74:12:13:21:56:3a ',
+        '7412132156 3A',
+      ]) {
+        final key = meshControllerKey(spelling, network);
+        expect(isMeshController(controller, key), isTrue,
+            reason: '"$spelling" names the controller');
+        expect(isMeshController(joiningAgent, key), isFalse);
+      }
+    });
+
+    // A stale or foreign ControllerID must not demote the real controller: no
+    // node would be the controller at all.
+    test('a ControllerID naming no listed node gives no key', () {
+      expect(meshControllerKey('11:22:33:44:55:66', network), isNull);
+    });
+
+    test('a blank or all-zero ControllerID gives no key', () {
+      for (final id in ['', '  ', '00:00:00:00:00:00']) {
+        expect(meshControllerKey(id, network), isNull, reason: '"$id"');
+      }
     });
   });
 

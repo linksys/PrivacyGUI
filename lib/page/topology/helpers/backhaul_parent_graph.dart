@@ -30,10 +30,11 @@ enum BackhaulParentOutcome {
   /// The named parent is not in the tree.
   ///
   /// A lost hop: the node is attached to the gateway, so a chain silently
-  /// renders as a star. Causes seen or plausible: a slave present in
-  /// DataElements but not in `Hosts` (so it is not in `meshNetwork.slaves` at
-  /// all), a parent that dropped out between the two reads, and an identifier
-  /// written in a form the lookup does not key on.
+  /// renders as a star. Causes seen or plausible: a parent agent that has left
+  /// DataElements (since #1688 slaves are built only from DataElements, so a
+  /// departed parent is not in `meshNetwork.slaves`), a parent that dropped out
+  /// between the two reads, and an identifier written in a form the lookup
+  /// does not key on.
   miss,
 
   /// The named parent resolved, but the edge closed a cycle and was dropped.

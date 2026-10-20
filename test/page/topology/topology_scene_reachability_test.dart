@@ -32,10 +32,11 @@
 // exemption list is gone rather than empty: an empty set asserts the same thing
 // as `isEmpty` and reads as though something is still pending.
 //
-// One invariant is deliberately **not** asserted: `MeshNetworkBuilder` derives
-// `livenessKnown: meshTopology.isNotEmpty` (`mesh_network_builder.dart:186`),
-// and `meshNetworkDevicesData` pairs the default `livenessKnown: true` with the
-// default empty `meshTopology`, which the builder would never emit. It is not
+// One invariant is deliberately **not** asserted. Before #1688
+// `MeshNetworkBuilder` derived `livenessKnown: meshTopology.isNotEmpty`; it now
+// builds every slave from a DataElements agent and passes `livenessKnown:
+// true`. `meshNetworkDevicesData` pairs that with the default empty
+// `meshTopology`, which the builder would never emit alongside a slave. It is not
 // asserted because no consumer behaves differently either way: with
 // `livenessKnown` false the absent match says nothing and the slave is online,
 // with it true the slave carries a `dataElementsId` and is online. Satisfying

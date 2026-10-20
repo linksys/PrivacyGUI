@@ -1,5 +1,16 @@
 # Devices, Nodes & Topology Architecture
 
+> **Historical — out of date.** This describes the LinksysWRT 1.x design, which
+> picked mesh nodes out of `Device.Hosts.Host` by `DeviceRole` (`master` /
+> `slave`) and matched them to DataElements by the last 12 hex digits of the
+> Hosts `DeviceID`. FL-WRT 2.0 has neither leaf. Since #1688 the nodes come from
+> `Device.WiFi.DataElements.Network.Device.{i}`, a `Hosts` row is a node's when
+> its `PhysAddress` equals the node's `ID` (linksys/FWDEV#208), and wired
+> clients are attributed from `Interface.{j}.Neighbor.{k}`. It also still names
+> `DeviceUIModel` / `NodeUIModel`, since deleted. For the current design read
+> the code: `lib/page/_shared/utils/mesh_network_builder.dart`,
+> `mesh_topology_builder.dart` and `mesh_node_identity.dart`, and their tests.
+
 This document describes the data architecture for connected devices, mesh nodes, and network topology visualization in PrivacyGUI.
 
 ## Overview

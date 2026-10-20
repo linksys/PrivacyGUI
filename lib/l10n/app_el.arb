@@ -856,6 +856,7 @@
   "deviceCategorySmartHome": "Έξυπνο σπίτι",
   "deviceCategoryWearable": "Φορητή συσκευή",
   "renameRouter": "Μετονομασία δρομολογητή",
+  "renameNode": "Μετονομασία κόμβου",
   "noSsid": "(Δεν υπάρχει SSID)",
   "noTargetBankAvailable": "Δεν υπάρχει διαθέσιμη τράπεζα προορισμού",
   "noTimezonesFound": "Δεν βρέθηκαν ζώνες ώρας",

@@ -856,6 +856,7 @@
   "deviceCategorySmartHome": "Умный дом",
   "deviceCategoryWearable": "Носимое устройство",
   "renameRouter": "Переименовать маршрутизатор",
+  "renameNode": "Переименовать узел",
   "noSsid": "(Нет SSID)",
   "noTargetBankAvailable": "Нет доступного целевого банка",
   "noTimezonesFound": "Часовые пояса не найдены",

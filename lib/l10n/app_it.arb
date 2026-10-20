@@ -856,6 +856,7 @@
   "deviceCategorySmartHome": "Smart home",
   "deviceCategoryWearable": "Dispositivo indossabile",
   "renameRouter": "Rinomina router",
+  "renameNode": "Rinomina nodo",
   "noSsid": "(Nessun SSID)",
   "noTargetBankAvailable": "Nessun bank di destinazione disponibile",
   "noTimezonesFound": "Nessun fuso orario trovato",
