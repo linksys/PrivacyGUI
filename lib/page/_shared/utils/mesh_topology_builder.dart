@@ -5,7 +5,6 @@ import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
-import 'package:privacy_gui/page/_shared/utils/mesh_node_identity.dart';
 
 /// Builds [MeshTopologyInfo] from DataElements network data.
 ///
@@ -47,11 +46,9 @@ class MeshTopologyBuilder {
     DataElementsInterfaces? interfaces,
     String? controllerId,
   }) {
-    final controllerKey = _nodeKey(controllerId);
-    // Only trust ControllerID when it names a node actually in this read; a
-    // stale or foreign value must not turn the real controller into a slave.
-    final controllerListed = controllerKey != null &&
-        network.items.any((n) => _nodeKey(n.id) == controllerKey);
+    // Null unless ControllerID names a node actually in this read; a stale or
+    // foreign value must not turn the real controller into a slave.
+    final controllerKey = meshControllerKey(controllerId, network);
     final nodes = <NodeEntity>[];
     final clientToNodeMap = <String, String>{};
     final clientSignalMap = <String, int>{};
@@ -114,10 +111,9 @@ class MeshTopologyBuilder {
         }
       }
 
-      // Master node = the controller, the one node with no backhaul of its own.
-      final isMaster = controllerListed
-          ? _nodeKey(node.id) == controllerKey
-          : !hasMeshBackhaulLink(node);
+      // Master node = the controller: the ControllerID node, else the one node
+      // with no backhaul of its own. Shared with diagnostics and PnP.
+      final isMaster = isMeshController(node, controllerKey);
 
       // These nodes are built from DataElements, so `deviceId` *is* the
       // DataElements identifier; carry it in `dataElementsId` too so a
@@ -302,17 +298,6 @@ class MeshTopologyBuilder {
   /// Defined in terms of [nonEmpty] so the two cannot drift on what "reported
   /// nothing" means — the `?? ''` is the whole difference.
   static String _identity(String? value) => nonEmpty(value) ?? '';
-
-  /// A node or controller ID as the master test compares it: separators
-  /// stripped and upper-cased, or null when absent, blank, or the all-zero
-  /// sentinel. `ControllerID` and `Device.{i}.ID` are separate leaves, so the
-  /// comparison must not depend on them sharing a spelling.
-  static String? _nodeKey(String? id) {
-    final mac = nonUnsetMac(id);
-    if (mac == null) return null;
-    final key = meshNodeMacKey(mac);
-    return key.isEmpty ? null : key;
-  }
 
   /// The node's own station-side backhaul MAC.
   ///
