@@ -760,4 +760,210 @@ void main() {
       }
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // MLO clients from APMLD.STAMLD.AffiliatedSTA (#1686 item 2)
+  // ---------------------------------------------------------------------------
+  //
+  // Fixtures follow the 2026-10-20 measurement on 2.0.3.26101482 (an iPhone 17
+  // Pro on MLO, single node): one STAMLD whose MLD MAC is the client's, with a
+  // 2.4 GHz and a 5 GHz link; only the active (5 GHz) link carries values,
+  // RCPI 108 and 960000 / 864000 kbps; the client's one BSS.STA row sits under
+  // the 2.4 GHz BSS it associated on.
+  group('MeshTopologyBuilder — MLO clients (#1686)', () {
+    const nodeId = '74:12:13:21:56:3A';
+    const client = 'AA:BB:CC:DD:EE:77';
+    const bssid24 = '74:12:13:21:56:3B';
+    const bssid5 = '74:12:13:21:56:3C';
+    final path = DataElementsTestData.nodePath('1');
+
+    // The controller with its two radios as measured: DataElements Radio.1
+    // is 5 GHz (classes 125/127/128) and Radio.2 is 2.4 GHz (class 81).
+    DataElementsNetwork network({bool listsClient = true}) =>
+        DataElementsTestData.network([
+          DataElementsTestData.node(
+            instance: '1',
+            id: nodeId,
+            linkType: 'None',
+            radios: [
+              DataElementsTestData.radio(path,
+                  index: 1,
+                  operatingClasses: [125, 127, 128],
+                  bssList: [DataElementsTestData.bss(path, bssid: bssid5)]),
+              DataElementsTestData.radio(path, index: 2, operatingClasses: [
+                81
+              ], bssList: [
+                DataElementsTestData.bss(path, bssid: bssid24, stations: [
+                  if (listsClient) (mac: client, rcpi: 108),
+                ]),
+              ]),
+            ],
+          ),
+        ]);
+
+    final link24 = DataElementsTestData.affiliatedSta(
+        macAddress: 'AA:BB:CC:DD:EE:78', bssid: bssid24);
+    final link5Active = DataElementsTestData.affiliatedSta(
+        macAddress: 'AA:BB:CC:DD:EE:79',
+        bssid: bssid5,
+        rcpi: 108,
+        downlink: 960000,
+        uplink: 864000);
+    final link5Idle = DataElementsTestData.affiliatedSta(
+        macAddress: 'AA:BB:CC:DD:EE:79', bssid: bssid5);
+
+    test('a client on two links is MLO on both bands, in band order', () {
+      final result = MeshTopologyBuilder.mloClientsOf(
+        network: network(),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(instance: '1', id: nodeId, staMlds: [
+            DataElementsTestData.staMld(
+                mldMacAddress: client, links: [link5Active, link24]),
+          ]),
+        ]),
+      );
+
+      expect(result[client]?.bands, ['2.4GHz', '5GHz']);
+    });
+
+    test('signal and rates come from the link that carries values', () {
+      final info = MeshTopologyBuilder.mloClientsOf(
+        network: network(),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(instance: '1', id: nodeId, staMlds: [
+            DataElementsTestData.staMld(
+                mldMacAddress: client, links: [link24, link5Active]),
+          ]),
+        ]),
+      )[client]!;
+
+      expect(info.downlinkRate, 960000);
+      expect(info.uplinkRate, 864000);
+      expect(info.signalStrength, 108 ~/ 2 - 110);
+    });
+
+    // Both links read 0 for ~50 s after association. The client is on MLO
+    // all the same (acceptance criterion), just with no active link yet.
+    test('a client whose links all read 0 is still MLO', () {
+      final info = MeshTopologyBuilder.mloClientsOf(
+        network: network(),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(instance: '1', id: nodeId, staMlds: [
+            DataElementsTestData.staMld(
+                mldMacAddress: client, links: [link24, link5Idle]),
+          ]),
+        ]),
+      )[client];
+
+      expect(info, isNotNull);
+      expect(info!.bands, ['2.4GHz', '5GHz']);
+      expect(info.downlinkRate, isNull);
+      expect(info.uplinkRate, isNull);
+      expect(info.signalStrength, isNull);
+    });
+
+    test('a single-link STAMLD is not MLO', () {
+      final result = MeshTopologyBuilder.mloClientsOf(
+        network: network(),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(instance: '1', id: nodeId, staMlds: [
+            DataElementsTestData.staMld(
+                mldMacAddress: client, links: [link5Active]),
+          ]),
+        ]),
+      );
+
+      expect(result, isEmpty);
+    });
+
+    test('a backhaul STA MLD is not a client', () {
+      final result = MeshTopologyBuilder.mloClientsOf(
+        network: network(),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(instance: '1', id: nodeId, staMlds: [
+            DataElementsTestData.staMld(
+                mldMacAddress: client,
+                isBsta: true,
+                links: [link24, link5Active]),
+          ]),
+        ]),
+      );
+
+      expect(result, isEmpty);
+    });
+
+    // FW's rule: the STAMLD counts only under the node whose BSS.STA lists
+    // the client.
+    test('a STAMLD under a node that does not list the client is not MLO', () {
+      final noStation = MeshTopologyBuilder.mloClientsOf(
+        network: network(listsClient: false),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(instance: '1', id: nodeId, staMlds: [
+            DataElementsTestData.staMld(
+                mldMacAddress: client, links: [link24, link5Active]),
+          ]),
+        ]),
+      );
+      final otherNode = MeshTopologyBuilder.mloClientsOf(
+        network: network(),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(
+              instance: '2',
+              id: 'AA:BB:CC:DD:EE:02',
+              staMlds: [
+                DataElementsTestData.staMld(
+                    mldMacAddress: client, links: [link24, link5Active]),
+              ]),
+        ]),
+      );
+
+      expect(noStation, isEmpty);
+      expect(otherNode, isEmpty);
+    });
+
+    // A link whose BSSID names no BSS of the node has no band. The bench
+    // read AffiliatedAP.BSSID as garbage; AffiliatedSTA.BSSID was right, but
+    // an unresolvable link must cost only its own band.
+    test('a link with an unknown BSSID adds no band', () {
+      final info = MeshTopologyBuilder.mloClientsOf(
+        network: network(),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(instance: '1', id: nodeId, staMlds: [
+            DataElementsTestData.staMld(mldMacAddress: client, links: [
+              link5Active,
+              DataElementsTestData.affiliatedSta(
+                  macAddress: 'AA:BB:CC:DD:EE:78', bssid: '00:00:C0:44:E3:35'),
+            ]),
+          ]),
+        ]),
+      )[client];
+
+      expect(info?.bands, ['5GHz']);
+    });
+
+    // The three states build() hands on: not read, read and empty, entries.
+    test('build: no MLD read is null, an empty read is empty', () {
+      expect(MeshTopologyBuilder.build(network()).mloClients, isNull,
+          reason: 'not read: whether a client is on MLO is not known');
+      expect(
+          MeshTopologyBuilder.build(network(),
+              mld: DataElementsTestData.mld([
+                DataElementsTestData.mldNode(instance: '1', id: nodeId),
+              ])).mloClients,
+          isEmpty,
+          reason: 'read and empty: no client is on MLO');
+      expect(
+          MeshTopologyBuilder.build(network(),
+              mld: DataElementsTestData.mld([
+                DataElementsTestData.mldNode(
+                    instance: '1',
+                    id: nodeId,
+                    staMlds: [
+                      DataElementsTestData.staMld(
+                          mldMacAddress: client, links: [link24, link5Active]),
+                    ]),
+              ])).mloClients,
+          contains(client));
+    });
+  });
 }

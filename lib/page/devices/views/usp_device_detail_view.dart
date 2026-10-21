@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/utils/ipv6_address.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart'
     hide ConnectionType;
+import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/device_category_ui.dart';
@@ -286,7 +287,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
           isWifi: device.isWifi,
           mac: device.mac,
           ip: device.ip,
-          band: device.band,
+          band: _bandLabel(context, device.wifi),
+          mloUnknown: device.wifi?.mloUnknown ?? false,
           ssidName: device.ssidName,
           signalStrength: device.signalStrength,
         ),
@@ -300,7 +302,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             isWifi: iface.isWifi,
             mac: iface.mac,
             ip: iface.ip,
-            band: iface.band,
+            band: _bandLabel(context, iface.wifi),
+            mloUnknown: iface.wifi?.mloUnknown ?? false,
             ssidName: iface.ssidName,
             signalStrength: iface.signalStrength,
           ),
@@ -329,6 +332,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
     required String mac,
     required String ip,
     String? band,
+    bool mloUnknown = false,
     String? ssidName,
     int? signalStrength,
   }) {
@@ -406,27 +410,56 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                   ],
                 ),
               ),
-              if (isWifi && (band != null || ssidName != null))
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    if (band != null)
-                      AppText.bodySmall(
-                        band,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    if (ssidName != null)
-                      AppText.bodySmall(
-                        ssidName,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                  ],
+              if (isWifi && (band != null || ssidName != null || mloUnknown))
+                // Flexible, not a bare Column: `MLO (2.4GHz + 5GHz)` and the
+                // MLO hint are longer than a band, and an unbounded column
+                // would take its width from the IP / MAC column beside it.
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (band != null)
+                        AppText.bodySmall(
+                          band,
+                          color: colorScheme.onSurfaceVariant,
+                          textAlign: TextAlign.end,
+                        ),
+                      if (ssidName != null)
+                        AppText.bodySmall(
+                          ssidName,
+                          color: colorScheme.onSurfaceVariant,
+                          textAlign: TextAlign.end,
+                        ),
+                      // Stacked under band and SSID rather than beside them
+                      // (#1686): the row has no width to spare on a phone.
+                      if (mloUnknown)
+                        AppText.bodySmall(
+                          loc(context).mloStatusUnavailable,
+                          color: colorScheme.onSurfaceVariant,
+                          textAlign: TextAlign.end,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
                 ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  /// The band line of a Wi-Fi interface: `MLO (2.4GHz + 5GHz)` for a client
+  /// on MLO, its band otherwise (#1686 item 2). MLO is a display label only,
+  /// and never replaces [WifiConnectionInfo.band], which other surfaces group
+  /// by.
+  String? _bandLabel(BuildContext context, WifiConnectionInfo? wifi) {
+    final mloBands = wifi?.mloBands;
+    if (mloBands != null && mloBands.isNotEmpty) {
+      return loc(context).mloBands(mloBands.join(' + '));
+    }
+    return wifi?.band;
   }
 
   // ===========================================================================
@@ -437,7 +470,10 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
     final hasSignalData = device.signalStrength != null;
     final hasSpeedData =
         device.downlinkRate != null || device.uplinkRate != null;
-    final hasBandSsid = device.band != null || device.ssidName != null;
+    final bandLabel = _bandLabel(context, device.wifi);
+    final mloUnknown = device.wifi?.mloUnknown ?? false;
+    final hasBandSsid =
+        bandLabel != null || device.ssidName != null || mloUnknown;
 
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -480,7 +516,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
           if (hasBandSsid)
             Row(
               children: [
-                if (device.band != null) ...[
+                if (bandLabel != null || mloUnknown) ...[
                   Expanded(
                     child: LayoutBlock(
                       padding: const EdgeInsets.all(AppSpacing.md),
@@ -502,7 +538,18 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                             ],
                           ),
                           AppGap.xs(),
-                          AppText.bodyMedium(device.band!),
+                          if (bandLabel != null) AppText.bodyMedium(bandLabel),
+                          // Stacked under the band (#1686): the card is half
+                          // the row, with no width to put it beside.
+                          if (mloUnknown)
+                            AppText.bodySmall(
+                              loc(context).mloStatusUnavailable,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                         ],
                       ),
                     ),

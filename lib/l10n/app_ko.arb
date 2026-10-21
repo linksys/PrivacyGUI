@@ -184,6 +184,8 @@
   "mlo": "다중 링크 작동",
   "mloDesc": "장치가 여러 대역 및 주파수 채널을 동시에 사용하도록 허용합니다. 이렇게 하면 속도가 증가하고 대기 시간이 줄어들며 보다 안정적인 연결이 가능합니다.",
   "mloInactiveHint": "2.4GHz와 5GHz에서 동일한 Wi-Fi 이름, 비밀번호 및 WPA3 보안을 사용하세요.",
+  "mloBands": "MLO ({bands})",
+  "mloStatusUnavailable": "MLO 상태를 확인할 수 없음",
   "mloCapableModalDesc1": "다중 링크 작동(MLO) 기능이 장치에서 여러 대역 및 주파수 채널을 동시에 사용하도록 허용합니다.",
   "mloCapableModalDesc2": "이렇게 하면 속도가 증가하고 대기 시간이 줄어들며 보다 안정적인 연결이 가능합니다.",
   "model": "모델",

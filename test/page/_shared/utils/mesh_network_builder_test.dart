@@ -6,6 +6,7 @@ import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
+import 'package:privacy_gui/page/_shared/models/mlo_client_info.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
@@ -652,6 +653,98 @@ void main() {
 
         expect(client.downlinkRate, 300000);
         expect(client.uplinkRate, 24000);
+      });
+    });
+
+    // #1686 item 2. The MLO label lives in mloBands, never in band: band is
+    // the key the device filter, analytics and PDF group by.
+    group('MLO clients (#1686)', () {
+      const clientMac = '11:22:33:44:55:01';
+      MeshNetwork buildWith(Map<String, MloClientInfo>? mloClients,
+              {List<NodeEntity>? nodes}) =>
+          MeshNetworkBuilder.build(
+            connectedDevices: ConnectedDevices(items: [
+              buildConnectedDevice(macAddress: 'AA:BB:CC:DD:EE:01'),
+              buildConnectedDevice(
+                macAddress: clientMac,
+                hostName: 'iPhone',
+                interface_: 'Device.WiFi.Radio.1',
+                interfaceType: 'Wi-Fi',
+                isActive: true,
+              ),
+            ]),
+            wifiClientMap: const {},
+            connectionDetailMap: const {},
+            meshTopology: MeshTopologyInfo(
+              nodes: nodes ?? [buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01')],
+              clientToNodeMap: const {clientMac: 'AA:BB:CC:DD:EE:01'},
+              // The BSS.STA row: the band it associated on, the active
+              // link's rates (measured: 2.4 GHz row, 5 GHz rates).
+              clientBandSsidMap: const {
+                clientMac: (band: '2.4GHz', ssid: 'HomeNetwork'),
+              },
+              clientRateMap: const {
+                clientMac: (downlink: 900000, uplink: 800000),
+              },
+              mloClients: mloClients,
+            ),
+            gatewayName: 'Router',
+          );
+
+      ClientDevice only(MeshNetwork n) {
+        final clients = n.allClients.where((c) => c.mac == clientMac).toList();
+        expect(clients, hasLength(1), reason: 'an MLO client is listed once');
+        return clients.single;
+      }
+
+      test('an MLO client carries its bands, and keeps its band', () {
+        final client = only(buildWith(const {
+          clientMac: MloClientInfo(bands: ['2.4GHz', '5GHz']),
+        }));
+
+        expect(client.wifi?.mloBands, ['2.4GHz', '5GHz']);
+        expect(client.band, '2.4GHz',
+            reason: 'band stays the band it associated on');
+        expect(client.wifi?.mloUnknown, isFalse);
+      });
+
+      test('the active link rates and signal win over the STA row', () {
+        final client = only(buildWith(const {
+          clientMac: MloClientInfo(
+              bands: ['2.4GHz', '5GHz'],
+              signalStrength: -56,
+              downlinkRate: 960000,
+              uplinkRate: 864000),
+        }));
+
+        expect(client.downlinkRate, 960000);
+        expect(client.uplinkRate, 864000);
+        expect(client.signalStrength, -56);
+      });
+
+      // No active link yet: the STA row's values are what there is.
+      test('with no active link the STA row values remain', () {
+        final client = only(buildWith(const {
+          clientMac: MloClientInfo(bands: ['2.4GHz', '5GHz']),
+        }));
+
+        expect(client.downlinkRate, 900000);
+        expect(client.uplinkRate, 800000);
+      });
+
+      test('a client not on MLO has no MLO bands, and MLO is known', () {
+        final client = only(buildWith(const {}));
+
+        expect(client.wifi?.mloBands, isNull);
+        expect(client.wifi?.mloUnknown, isFalse);
+      });
+
+      // The read failed: whether the client is on MLO is not known.
+      test('an unread MLD marks MLO unknown', () {
+        final client = only(buildWith(null));
+
+        expect(client.wifi?.mloBands, isNull);
+        expect(client.wifi?.mloUnknown, isTrue);
       });
     });
 

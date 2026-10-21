@@ -187,6 +187,8 @@
   "mlo": "多鏈路操作",
   "mloDesc": "允許裝置同時使用多個頻段和頻道，這可以提高速度、降低延遲，並使連線更可靠。",
   "mloInactiveHint": "請在 2.4 GHz 和 5 GHz 上使用相同的 Wi-Fi 名稱、密碼和 WPA3 安全性。",
+  "mloBands": "MLO ({bands})",
+  "mloStatusUnavailable": "無法讀取 MLO 狀態",
   "mloCapableModalDesc1": "多重連接模式 (MLO) 允許裝置同時使用多個頻段與頻道。",
   "mloCapableModalDesc2": "這可以提高速度、減少延遲並讓連線更穩定可靠。",
   "model": "型號",

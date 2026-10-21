@@ -192,8 +192,15 @@ class UspDeviceListTile extends StatelessWidget {
         parts.add(loc(context).ethernet);
       }
     } else if (device.isWifi) {
+      // `MLO (2.4GHz + 5GHz)` for a client on MLO (#1686 item 2); a display
+      // label only, never written into `band`. The "MLO status unavailable"
+      // hint is the detail page's: this subtitle is a single joined line.
+      final mloBands = device.wifi?.mloBands;
+      final bandLabel = (mloBands != null && mloBands.isNotEmpty)
+          ? loc(context).mloBands(mloBands.join(' + '))
+          : device.band;
       final bandSsid = [
-        if (device.band != null && device.band!.isNotEmpty) device.band!,
+        if (bandLabel != null && bandLabel.isNotEmpty) bandLabel,
         if (device.ssidName != null && device.ssidName!.isNotEmpty)
           device.ssidName!,
       ].join(' · ');

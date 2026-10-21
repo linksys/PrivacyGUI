@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/devices/providers/device_detail_provider.dart';
 import 'package:privacy_gui/page/devices/views/usp_device_detail_view.dart';
 import 'package:privacy_gui/util/network_utils.dart';
 
 import '../../../mocks/provider_overrides/mock_devices.dart';
 import '../../../mocks/test_data/scenes/devices_scene_data.dart';
+import '../../../mocks/test_data/devices_test_data.dart';
 import '../../../util/app_test_fonts.dart';
 import '../../../util/dashboard/text_readability_probe.dart';
 import '../../../util/detail_view_probe.dart';
@@ -246,6 +248,57 @@ void main() {
           reason: 'the $kind value must not be line-capped',
         );
       });
+    }
+  });
+
+  group('the MLO band line fits, in any locale (#1686)', () {
+    // The band card is half the row. `MLO (2.4GHz + 5GHz + 6GHz)` is the
+    // longest band line a client can have, and the "MLO status unavailable"
+    // hint sits under the band in the same card. Measured when this group was
+    // written: neither overflows anywhere, and the hint fits two lines
+    // everywhere once `el` was shortened.
+    for (final kind in ['bands', 'unknown']) {
+      final mloDetail = DeviceDetailState(
+        device: DevicesTestData.createWifiClient(
+          wifi: DevicesTestData.createWifiInfo(
+            band: '5GHz',
+            mloBands: kind == 'bands' ? ['2.4GHz', '5GHz', '6GHz'] : null,
+            mloUnknown: kind == 'unknown',
+          ),
+        ),
+      );
+      for (final locale in AppLocalizations.supportedLocales) {
+        final tag = locale.countryCode == null
+            ? locale.languageCode
+            : '${locale.languageCode}_${locale.countryCode}';
+        for (final width in widths) {
+          testWidgets(
+              'the MLO $kind line fits at ${width.toStringAsFixed(0)}px in $tag',
+              (tester) async {
+            final overflows = await probeViewOverflow(
+              tester,
+              view: UspDeviceDetailView(mac: mloDetail.device!.mac),
+              overrides: deviceDetailOverrides(detail: mloDetail),
+              screenWidth: width,
+              locale: locale,
+            );
+            expect(overflows, isEmpty,
+                reason: 'overflow in $tag at ${width.toStringAsFixed(0)}px');
+
+            final l10n = lookupAppLocalizations(locale);
+            final text = kind == 'bands'
+                ? l10n.mloBands('2.4GHz + 5GHz + 6GHz')
+                : l10n.mloStatusUnavailable;
+            final finder = find.text(text);
+            expect(finder, findsWidgets, reason: '"$text" must render');
+            for (var i = 0; i < finder.evaluate().length; i++) {
+              expect(tester.isTextClipped(finder.at(i)), isFalse,
+                  reason: '"$text" is cut short in $tag at '
+                      '${width.toStringAsFixed(0)}px');
+            }
+          });
+        }
+      }
     }
   });
 }

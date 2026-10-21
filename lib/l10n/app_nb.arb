@@ -186,6 +186,8 @@
   "mlo": "Multi-link operasjon",
   "mloDesc": "Gjør det mulig for enheter å bruke flere bånd og frekvenskanaler samtidig. Dette øker hastigheten, reduserer ventetid og gir en mer pålitelig tilkobling.",
   "mloInactiveHint": "Bruk samme Wi-Fi-navn, passord og WPA3-sikkerhet på 2,4 GHz og 5 GHz.",
+  "mloBands": "MLO ({bands})",
+  "mloStatusUnavailable": "MLO-status er ikke tilgjengelig",
   "mloCapableModalDesc1": "Med Multi-Link Operation (MLO) kan enheter bruke flere bånd og frekvenskanaler samtidig.",
   "mloCapableModalDesc2": "Dette øker hastigheten, reduserer ventetid og gir en mer stabil tilkobling.",
   "model": "Modell",

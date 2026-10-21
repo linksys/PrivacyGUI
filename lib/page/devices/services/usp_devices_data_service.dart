@@ -14,6 +14,7 @@ import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_topology_builder.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_network_builder.dart';
 import 'package:privacy_gui/generated/data_elements_interfaces.g.dart';
+import 'package:privacy_gui/generated/data_elements_mld.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/generated/data_elements_network_info.g.dart';
 
@@ -143,17 +144,19 @@ class UspDevicesDataService {
         DataElementsNetwork.fetch(_usp),
         _fetchInterfaces(),
         _fetchControllerId(),
+        _fetchMld(),
       ]);
       final network = results[0] as DataElementsNetwork;
       final interfaces = results[1] as DataElementsInterfaces?;
       final controllerId = results[2] as String?;
+      final mld = results[3] as DataElementsMld?;
       if (network.items.isEmpty) {
         logger.d(
             '[USP][Dashboard]: DataElements empty — not a mesh or unsupported');
         return MeshTopologyInfo.empty;
       }
       return _buildTopologyInfo(
-          network, bssidToBandMap, interfaces, controllerId);
+          network, bssidToBandMap, interfaces, controllerId, mld);
     } catch (e) {
       // `w`, not `d`. An empty subtree (above) is an expected single-router
       // result; a *fault* means the request did not answer the question, and the
@@ -248,23 +251,41 @@ class UspDevicesDataService {
     }
   }
 
+  /// Reads `APMLD.{j}.STAMLD.{k}.AffiliatedSTA.{l}`, the client MLDs (#1686
+  /// item 2). Isolated like [_fetchInterfaces]: a fault returns null, which
+  /// the topology carries as "MLO not known" rather than "no MLO", and the
+  /// rest of the topology is unaffected. With MLO switched off the subtree
+  /// answers empty, not with a fault.
+  Future<DataElementsMld?> _fetchMld() async {
+    try {
+      return await DataElementsMld.fetch(_usp);
+    } catch (e) {
+      logger.w('[USP][Dashboard]: DataElements MLD unavailable, MLO clients '
+          'are not known: $e');
+      return null;
+    }
+  }
+
   MeshTopologyInfo _buildTopologyInfo(
     DataElementsNetwork network,
     Map<String, String> bssidToBandMap,
     DataElementsInterfaces? interfaces,
     String? controllerId,
+    DataElementsMld? mld,
   ) {
     final result = MeshTopologyBuilder.build(
       network,
       bssidToBandMap: bssidToBandMap,
       interfaces: interfaces,
       controllerId: controllerId,
+      mld: mld,
     );
     logger.t('[USP][Dashboard]: Mesh nodes: ${result.nodes.length}, '
         'client→node mappings: ${result.clientToNodeMap.length}, '
         'band/SSID mappings: ${result.clientBandSsidMap.length}, '
         'wired client→node: ${result.wiredClientToNodeMap.length}, '
-        'ambiguous wired: ${result.ambiguousWiredClients.length}');
+        'ambiguous wired: ${result.ambiguousWiredClients.length}, '
+        'MLO clients: ${result.mloClients?.length ?? 'unknown'}');
     return result;
   }
 

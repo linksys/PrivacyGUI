@@ -186,6 +186,8 @@
   "mlo": "Fonctionnement Multi-Link",
   "mloDesc": "Permet aux appareils d'utiliser simultanément plusieurs bandes et canaux de fréquence. Cela permet d'augmenter la vitesse, de réduire la latence et d'obtenir une connexion plus fiable.",
   "mloInactiveHint": "Utilisez le même nom de Wi-Fi, le même mot de passe et la sécurité WPA3 sur 2,4 GHz et 5 GHz.",
+  "mloBands": "MLO ({bands})",
+  "mloStatusUnavailable": "État MLO indisponible",
   "mloCapableModalDesc1": "La fonctionnalité Opération multi-liens (MLO) offre aux appareils la possibilité d'utiliser simultanément plusieurs bandes et canaux de fréquence.",
   "mloCapableModalDesc2": "De cette manière, la vitesse est accrue, la latence réduite et la connexion plus fiable.",
   "model": "Modèle",

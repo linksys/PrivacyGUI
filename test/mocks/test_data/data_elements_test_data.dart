@@ -1,4 +1,5 @@
 import 'package:privacy_gui/generated/data_elements_interfaces.g.dart';
+import 'package:privacy_gui/generated/data_elements_mld.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
 
 /// Builders for the DataElements codegen models (`DataElementsNetwork` and
@@ -197,4 +198,60 @@ class DataElementsTestData {
   /// A whole `DataElementsInterfaces`.
   static DataElementsInterfaces interfaces(List<MeshNodeInterfaces> nodes) =>
       DataElementsInterfaces(items: nodes);
+
+  /// One link of a client MLD (`AffiliatedSTA`). Every value defaults to 0,
+  /// the reading of a link that is not the active one, and of every link for
+  /// the first ~50 s after association (#1686, measured 2026-10-20).
+  static MeshAffiliatedSta affiliatedSta({
+    required String macAddress,
+    required String bssid,
+    int rcpi = 0,
+    int downlink = 0,
+    int uplink = 0,
+  }) =>
+      MeshAffiliatedSta(
+        instancePath: 'AffiliatedSTA.$macAddress.',
+        macAddress: macAddress,
+        bssid: bssid,
+        signalStrengthRcpi: rcpi,
+        lastDataDownlinkRate: downlink,
+        lastDataUplinkRate: uplink,
+      );
+
+  /// One client MLD (`STAMLD`) with its [links].
+  static MeshStaMld staMld({
+    required String mldMacAddress,
+    List<MeshAffiliatedSta> links = const [],
+    bool? isBsta = false,
+  }) =>
+      MeshStaMld(
+        instancePath: 'STAMLD.$mldMacAddress.',
+        mldMacAddress: mldMacAddress,
+        isBsta: isBsta,
+        affiliatedStas: links,
+      );
+
+  /// One node's MLD subtree: a single AP MLD carrying [staMlds], joined to
+  /// `DataElementsNetwork` on [id].
+  static MeshNodeMld mldNode({
+    required String instance,
+    required String id,
+    String apMldMacAddress = '02:00:00:00:00:01',
+    List<MeshStaMld> staMlds = const [],
+  }) =>
+      MeshNodeMld(
+        instancePath: nodePath(instance),
+        id: id,
+        apMlds: [
+          MeshApMld(
+            instancePath: '${nodePath(instance)}APMLD.1.',
+            mldMacAddress: apMldMacAddress,
+            staMlds: staMlds,
+          ),
+        ],
+      );
+
+  /// A whole `DataElementsMld`.
+  static DataElementsMld mld(List<MeshNodeMld> nodes) =>
+      DataElementsMld(items: nodes);
 }

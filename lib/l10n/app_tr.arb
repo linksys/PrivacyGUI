@@ -184,6 +184,8 @@
   "mlo": "Çoklu Bağlantı İşlemi",
   "mloDesc": "Cihazların eş zamanlı olarak birden fazla bant ve frekans kanalı kullanmasına imkan tanır. Bu işlem; hızı artırır, gecikmeyi azaltır ve daha güvenilir bir bağlantı oluşturur.",
   "mloInactiveHint": "2,4 GHz ve 5 GHz'de aynı Wi-Fi adını, şifreyi ve WPA3 güvenliğini kullanın.",
+  "mloBands": "MLO ({bands})",
+  "mloStatusUnavailable": "MLO durumu kullanılamıyor",
   "mloCapableModalDesc1": "Çoklu Bağlantı İşlemi (MLO), cihazların eş zamanlı olarak birden fazla bant ve frekans kanalı kullanmasına imkan tanır.",
   "mloCapableModalDesc2": "Bu işlem; hızı artırır, gecikmeyi azaltır ve daha güvenilir bir bağlantı oluşturur.",
   "model": "Model",

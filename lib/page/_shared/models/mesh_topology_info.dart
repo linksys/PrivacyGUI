@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
+import 'package:privacy_gui/page/_shared/models/mlo_client_info.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 
 /// Result of mesh topology fetch from DataElements.
@@ -59,6 +60,18 @@ class MeshTopologyInfo extends Equatable with DiagnosticLoggable {
   /// nodes is seen through both nodes' uplinks.
   final Set<String> ambiguousWiredClients;
 
+  /// Client MAC (uppercase) → its MLO links, from DataElements
+  /// `APMLD.{j}.STAMLD.{k}.AffiliatedSTA.{l}` (#1686 item 2).
+  ///
+  /// Three states, and the difference between the last two is the point:
+  /// - entries: those clients are on MLO;
+  /// - empty: the subtree was read and holds no client MLD — no client is on
+  ///   MLO (also what firmware with MLO switched off answers);
+  /// - null: the subtree was not read, or the read faulted — whether any
+  ///   client is on MLO is **not known**, and a client must not be shown as
+  ///   if it were not.
+  final Map<String, MloClientInfo>? mloClients;
+
   const MeshTopologyInfo({
     required this.nodes,
     required this.clientToNodeMap,
@@ -67,6 +80,7 @@ class MeshTopologyInfo extends Equatable with DiagnosticLoggable {
     this.clientRateMap = const {},
     this.wiredClientToNodeMap = const {},
     this.ambiguousWiredClients = const {},
+    this.mloClients,
   });
 
   /// Empty result — used as fallback when DataElements is not supported.
@@ -92,5 +106,6 @@ class MeshTopologyInfo extends Equatable with DiagnosticLoggable {
         'clientRateMap': clientRateMap,
         'wiredClientToNodeMap': wiredClientToNodeMap,
         'ambiguousWiredClients': ambiguousWiredClients,
+        'mloClients': mloClients,
       };
 }

@@ -1,7 +1,9 @@
 import 'package:privacy_gui/generated/data_elements_interfaces.g.dart';
+import 'package:privacy_gui/generated/data_elements_mld.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
+import 'package:privacy_gui/page/_shared/models/mlo_client_info.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
@@ -40,12 +42,18 @@ class MeshTopologyBuilder {
   /// master is not a slave, so that agent vanished from the topology. Null
   /// when the read failed or the firmware did not answer: the backhaul rule
   /// then decides, as before.
+  ///
+  /// [mld] is the separately fetched `APMLD.{j}.STAMLD.{k}` subtree (#1686
+  /// item 2). Null when it was not read or the read failed, and then
+  /// [MeshTopologyInfo.mloClients] is null too — "not known", which is not
+  /// the same as "no client on MLO".
   static MeshTopologyInfo build(
     DataElementsNetwork network, {
     Map<String, String> bssidToBandMap = const {},
     bool includeBackhaulStats = true,
     DataElementsInterfaces? interfaces,
     String? controllerId,
+    DataElementsMld? mld,
   }) {
     // Null unless ControllerID names a node actually in this read; a stale or
     // foreign value must not turn the real controller into a slave.
@@ -199,8 +207,102 @@ class MeshTopologyBuilder {
       clientRateMap: clientRateMap,
       wiredClientToNodeMap: wired?.byNode ?? const {},
       ambiguousWiredClients: wired?.ambiguous ?? const {},
+      mloClients: mld == null
+          ? null
+          : mloClientsOf(
+              network: network,
+              mld: mld,
+              bssidToBandMap: bssidToBandMap,
+            ),
     );
   }
+
+  /// Which clients are on MLO, and on which bands (#1686 item 2).
+  ///
+  /// A client is on MLO when a `STAMLD` with **two or more** `AffiliatedSTA`
+  /// links has its MAC as `MLDMACAddress`, under the same node whose
+  /// `BSS.STA` lists that MAC (FW's request 1 on linksys/FWDEV#201). Under
+  /// another node it is not this client's association, and a single-link
+  /// STAMLD is an ordinary association.
+  ///
+  /// - A STAMLD with `IsbSTA` true is another node's backhaul, not a client.
+  /// - Each link's band: its `BSSID` → that node's BSS → the radio's band,
+  ///   with [bssidToBandMap] (the controller's own BSSIDs) first, as for a
+  ///   station's band in [build].
+  /// - Signal and rates: those of the link that carries values. The GUI does
+  ///   not work out the active link; when no link carries values (both read
+  ///   0 for ~50 s after association) they are null, and the client is still
+  ///   on MLO.
+  static Map<String, MloClientInfo> mloClientsOf({
+    required DataElementsNetwork network,
+    required DataElementsMld mld,
+    Map<String, String> bssidToBandMap = const {},
+  }) {
+    String key(String mac) => mac.trim().toUpperCase();
+
+    // Per node: its stations and each BSSID's band, the same way build()
+    // resolves a station's band.
+    final stationsByNode = <String, Set<String>>{};
+    final bandByBssidByNode = <String, Map<String, String>>{};
+    for (final node in network.items) {
+      final nodeId = key(node.id);
+      if (nodeId.isEmpty) continue;
+      final stations = stationsByNode[nodeId] = <String>{};
+      final bands = bandByBssidByNode[nodeId] = <String, String>{};
+      for (final radio in node.radios) {
+        final radioBand = meshRadioBand(radio);
+        for (final bss in radio.bssList) {
+          final bssid = key(bss.bssid);
+          final band = bssidToBandMap[bssid] ?? radioBand;
+          if (bssid.isNotEmpty && band != null && band.isNotEmpty) {
+            bands[bssid] = band;
+          }
+          for (final sta in bss.stations) {
+            final mac = key(sta.macAddress);
+            if (mac.isNotEmpty) stations.add(mac);
+          }
+        }
+      }
+    }
+
+    final result = <String, MloClientInfo>{};
+    for (final node in mld.items) {
+      final nodeId = key(node.id);
+      final stations = stationsByNode[nodeId];
+      if (stations == null) continue; // not a node the topology read built
+      final bands = bandByBssidByNode[nodeId]!;
+      for (final apMld in node.apMlds) {
+        for (final staMld in apMld.staMlds) {
+          if (staMld.isBsta == true) continue;
+          final client = key(staMld.mldMacAddress);
+          if (client.isEmpty || !stations.contains(client)) continue;
+          final links = staMld.affiliatedStas;
+          if (links.length < 2) continue;
+
+          final linkBands = {
+            for (final link in links) bands[key(link.bssid)],
+          }..remove(null);
+          final active = links.where(_carriesValues).firstOrNull;
+          result[client] = MloClientInfo(
+            bands: _bandOrder.where(linkBands.contains).toList(),
+            signalStrength: rcpiToRssi(active?.signalStrengthRcpi),
+            downlinkRate: _positive(active?.lastDataDownlinkRate),
+            uplinkRate: _positive(active?.lastDataUplinkRate),
+          );
+        }
+      }
+    }
+    return result;
+  }
+
+  /// The order an MLO client's bands are listed in.
+  static const _bandOrder = ['2.4GHz', '5GHz', '6GHz'];
+
+  /// Whether [link] is the active link: the one with a rate or a signal.
+  static bool _carriesValues(MeshAffiliatedSta link) =>
+      _positive(link.lastDataDownlinkRate) != null ||
+      _positive(link.lastDataUplinkRate) != null ||
+      rcpiToRssi(link.signalStrengthRcpi) != null;
 
   /// Which node each wired client is behind, from DataElements
   /// `Interface.{j}.Neighbor.{k}` (#1688 item 2).

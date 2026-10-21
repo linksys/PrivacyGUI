@@ -340,7 +340,12 @@ class MeshNetworkBuilder {
       // chain can fall through. See linksys/PrivacyGUI#1438.
       final hostsSignal =
           (device.signalStrength == 0) ? null : device.signalStrength;
-      final signalStrength = hostsSignal ??
+      // An MLO client's own row carries the active link's values but names
+      // only the band it associated on; its links are the better source for
+      // signal and rates where one carries values (#1686 item 2).
+      final mlo = meshTopology.mloClients?[mac];
+      final signalStrength = mlo?.signalStrength ??
+          hostsSignal ??
           wifiClient?.signalStrength ??
           meshTopology.clientSignalMap[mac];
       // Fallback to DataElements band/SSID for slave node clients.
@@ -356,12 +361,19 @@ class MeshNetworkBuilder {
         signalStrength: signalStrength,
         band: _nonEmptyRaw(detail?.band) ?? _nonEmptyRaw(bandSsid?.band),
         ssidName: _nonEmptyRaw(detail?.ssidName) ?? bandSsid?.ssid,
-        downlinkRate: device.lastDataDownlinkRate ??
+        downlinkRate: mlo?.downlinkRate ??
+            device.lastDataDownlinkRate ??
             wifiClient?.lastDataDownlinkRate ??
             rates?.downlink,
-        uplinkRate: device.lastDataUplinkRate ??
+        uplinkRate: mlo?.uplinkRate ??
+            device.lastDataUplinkRate ??
             wifiClient?.lastDataUplinkRate ??
             rates?.uplink,
+        mloBands: mlo?.bands,
+        // Only a mesh read can say whether MLO is known. A topology that is
+        // empty (not loaded yet, or not a mesh) has nothing to be unknown
+        // about, and mloClients is null there too.
+        mloUnknown: meshTopology.isNotEmpty && meshTopology.mloClients == null,
       );
     }
 

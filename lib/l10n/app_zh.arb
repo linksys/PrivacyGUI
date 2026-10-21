@@ -187,6 +187,8 @@
   "mlo": "多链路操作",
   "mloDesc": "允许设备同时使用多个频段和频道。这可以提高速度、降低延迟，并使连接更可靠。",
   "mloInactiveHint": "请在 2.4 GHz 和 5 GHz 上使用相同的 Wi-Fi 名称、密码和 WPA3 安全设置。",
+  "mloBands": "MLO ({bands})",
+  "mloStatusUnavailable": "无法读取 MLO 状态",
   "mloCapableModalDesc1": "多链路操作（MLO）允许设备同时使用多个频段和频率信道。",
   "mloCapableModalDesc2": "这提高了速度，减少了延迟，并使连接更可靠。",
   "model": "型号",

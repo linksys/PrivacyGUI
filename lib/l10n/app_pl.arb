@@ -184,6 +184,8 @@
   "mlo": "Multi-Link Operation",
   "mloDesc": "Zezwól urządzeniom na jednoczesne korzystanie z wielu pasm i kanałów częstotliwości. Pozwala to zwiększyć prędkość, zredukować opóźnienie oraz zapewnić stabilniejsze połączenie.",
   "mloInactiveHint": "Użyj tej samej nazwy Wi-Fi, hasła i zabezpieczeń WPA3 w pasmach 2,4 GHz i 5 GHz.",
+  "mloBands": "MLO ({bands})",
+  "mloStatusUnavailable": "Stan MLO niedostępny",
   "mloCapableModalDesc1": "Technologia Multi-Link Operation (MLO) pozwala urządzeniom jednocześnie korzystać z wielu pasm i kanałów częstotliwości.",
   "mloCapableModalDesc2": "Pozwala to zwiększyć prędkość, zredukować opóźnienie oraz zapewnić stabilniejsze połączenie.",
   "model": "Model",
