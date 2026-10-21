@@ -101,12 +101,19 @@ void main() {
           )).called(1);
     });
 
-    test('traceRoute forwards Host + MaxHopCount to TraceRoute()', () async {
+    test(
+        'traceRoute forwards Host + MaxHopCount, with NumberOfTries=1 and '
+        'Timeout=2000', () async {
       await executor.traceRoute(host: 'example.com', maxHopCount: 30);
       verify(() => awaiter.execute(
             operateCommand: 'Device.IP.Diagnostics.TraceRoute()',
             referencePath: 'Device.IP.Diagnostics.',
-            args: {'Host': 'example.com', 'MaxHopCount': '30'},
+            args: {
+              'Host': 'example.com',
+              'MaxHopCount': '30',
+              'NumberOfTries': '1',
+              'Timeout': '2000',
+            },
             timeout: any(named: 'timeout'),
           )).called(1);
     });
@@ -188,6 +195,39 @@ void main() {
       verify(() => awaiter.executeInSession(
             operateCommand: 'Device.IP.Diagnostics.IPPing()',
             args: {'Host': '8.8.8.8'},
+            timeout: any(named: 'timeout'),
+          )).called(1);
+    });
+
+    test(
+        'scope.traceRoute sends MaxHopCount, NumberOfTries=1 and '
+        'Timeout=2000', () async {
+      final scope = await executor.acquireScope();
+      await scope.traceRoute(host: '8.8.8.8', maxHopCount: 30);
+      verify(() => awaiter.executeInSession(
+            operateCommand: 'Device.IP.Diagnostics.TraceRoute()',
+            args: {
+              'Host': '8.8.8.8',
+              'MaxHopCount': '30',
+              'NumberOfTries': '1',
+              'Timeout': '2000',
+            },
+            timeout: any(named: 'timeout'),
+          )).called(1);
+    });
+
+    test(
+        'scope.traceRoute without MaxHopCount still sends NumberOfTries=1 '
+        'and Timeout=2000', () async {
+      final scope = await executor.acquireScope();
+      await scope.traceRoute(host: 'google.com');
+      verify(() => awaiter.executeInSession(
+            operateCommand: 'Device.IP.Diagnostics.TraceRoute()',
+            args: {
+              'Host': 'google.com',
+              'NumberOfTries': '1',
+              'Timeout': '2000',
+            },
             timeout: any(named: 'timeout'),
           )).called(1);
     });
