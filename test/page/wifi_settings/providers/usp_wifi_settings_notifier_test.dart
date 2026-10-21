@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/bridge_request_throttler.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
@@ -560,6 +561,32 @@ void main() {
         verify(() => mockService.isApplied(_written)).called(1);
         expect(
             container.read(uspWifiSettingsProvider).status.isSaving, isFalse);
+        container.dispose();
+      });
+
+      // #1212 second review: the throttler keeps a completed GET for 5 s and
+      // the read-back attempts are 3 s apart, so a cached empty table was
+      // replayed on every other attempt instead of asking the router.
+      test('each read-back attempt drops the GET cache first', () async {
+        when(() => mockService.isApplied(any())).thenAnswer((_) async => true);
+        final throttler = BridgeRequestThrottler(staggerDelay: Duration.zero);
+        when(() => mockUsp.throttler).thenReturn(throttler);
+        final container = createContainer();
+        final settings = await quickSetupNotifier(container);
+        await settings.save();
+
+        var routerAsked = 0;
+        Future<int> ask() => throttler.enqueue(
+            cacheKey: 'usp:Device.WiFi.Radio.',
+            action: () async => ++routerAsked);
+        await ask();
+        await ask();
+        expect(routerAsked, 1, reason: 'the premise: the cache answers');
+
+        await settings.readBackAfterRecovery();
+        await ask();
+
+        expect(routerAsked, 2, reason: 'the read-back dropped the cache');
         container.dispose();
       });
 

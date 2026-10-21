@@ -142,14 +142,24 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   /// comes back with no rows (L1 throws on that). If every read fails the
   /// framework's rule applies: the form keeps what was written and this throws
   /// [SavedButUnconfirmedError].
+  /// Set when the page is gone: a read-back still running then stops
+  /// retrying (#1212 second review).
+  bool _disposed = false;
+
   Future<void> readBackAfterRecovery() => confirmSavedRetrying(
         attempts: wifiReadBackAfterRecoveryAttempts,
         interval: ref.read(wifiReadBackIntervalProvider),
-        before: _refreshL1AfterWrite,
+        before: () async {
+          dropWifiReadBackCache(ref);
+          await _refreshL1AfterWrite();
+        },
+        isActive: () => !_disposed,
       );
 
   @override
   UspWifiSettingsState build() {
+    _disposed = false;
+    ref.onDispose(() => _disposed = true);
     // Synchronous build with loading state; async fetch follows immediately.
     Future.microtask(() => fetch());
     return UspWifiSettingsState.initial();
@@ -322,11 +332,13 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   /// Re-reads L1 after a write, without letting the re-read decide the save.
   ///
   /// The write's outcome is already settled when this runs, so a failed
-  /// refresh is logged, not thrown: on the save path it now runs after the
-  /// recovery ([readBackAfterRecovery]), and #1499's failure — this read
-  /// timing out on the 15 s throttler mid-reload and turning a landed save
-  /// into "Something went wrong" — is what that ordering exists to avoid. The
-  /// form read that follows is what reports a read that still fails.
+  /// refresh is logged, not thrown. After a confirmed write it runs after the
+  /// recovery ([readBackAfterRecovery]) — #1499's failure was this read timing
+  /// out on the 15 s throttler mid-reload and turning a landed save into
+  /// "Something went wrong" — and the form read that follows reports a read
+  /// that still fails. After a write that threw, [performSave] still runs it
+  /// at once, mid-reload when the write had reached the radios; only the log
+  /// sees that one fail.
   ///
   /// It also has MLO's status read again (#1692): MLO needs the main bands'
   /// SSID, password and security to match, which is what this page edits.

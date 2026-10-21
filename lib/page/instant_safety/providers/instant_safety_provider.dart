@@ -72,8 +72,9 @@ class UspInstantSafetyNotifier
       logger.e('[USP][Safety]: Fetch failed (forceRemote: $forceRemote)',
           error: e, stackTrace: st);
       // Returning a status rather than throwing is right for the two display
-      // paths (initial load, pull-to-refresh) but wrong for the post-save
-      // re-fetch — save() below converts it back into a throw.
+      // paths (initial load, pull-to-refresh). For the post-save re-fetch the
+      // framework's confirmSaved() turns it into a SavedButUnconfirmedError
+      // and leaves the page on what was written (#1212).
       //
       // isLoading stays spelled out even though it now defaults to false: the
       // view checks it before error, so this line is what makes the error view

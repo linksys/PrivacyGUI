@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/framework/feature_state.dart';
 import 'package:privacy_gui/framework/has_service_error.dart';
+import 'package:privacy_gui/framework/has_unconfirmed_rows.dart';
 import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 
@@ -27,11 +28,17 @@ class _Status extends Equatable implements HasServiceError {
   List<Object?> get props => [isLoading, error];
 }
 
-class _Value extends Equatable {
-  const _Value(this.text);
+/// One row, DMZ-shaped: [path] is the router's instance path, null until the
+/// router has created the row.
+class _Value extends Equatable implements HasUnconfirmedRows {
+  const _Value(this.text, {this.path = 'Device.X.1.'});
+  const _Value.created(this.text) : path = null;
   final String text;
+  final String? path;
   @override
-  List<Object?> get props => [text];
+  bool get hasUnconfirmedRows => path == null;
+  @override
+  List<Object?> get props => [text, path];
 }
 
 class _State extends FeatureState<_Value, _Status> {
@@ -47,6 +54,14 @@ class _State extends FeatureState<_Value, _Status> {
 class _Router {
   _Value value = const _Value('before');
   bool readFails = false;
+
+  /// Writes the router counted: a second add of the same row is the
+  /// duplicate the save-after-unconfirmed gate exists to stop.
+  int writes = 0;
+
+  /// What a read returns, when it differs from what was written — the router
+  /// normalising a value, or assigning a path to a row it created.
+  _Value Function(_Value written)? answer;
 }
 
 final _router = Provider((_) => _Router());
@@ -71,14 +86,29 @@ class _Page extends AutoDisposeNotifier<_State>
     if (router.readFails) {
       return (null, const _Status(error: NetworkError(detail: 'read failed')));
     }
-    return (router.value, const _Status());
+    final answer = router.answer;
+    return (
+      answer == null ? router.value : answer(router.value),
+      const _Status()
+    );
   }
 
   @override
-  Future<void> performSave() async => ref.read(_router).value = state.current;
+  Future<void> performSave() async {
+    final router = ref.read(_router);
+    router.writes++;
+    final written = state.current;
+    router.value = written.path == null
+        ? _Value(written.text, path: 'Device.X.${router.writes}.')
+        : written;
+  }
 
-  void edit(String text) =>
-      state = state.copyWith(settings: state.settings.update(_Value(text)));
+  void edit(String text) => state = state.copyWith(
+      settings: state.settings.update(_Value(text, path: state.current.path)));
+
+  /// A row the router does not have yet — DMZ turned on with no entry.
+  void create(String text) => state =
+      state.copyWith(settings: state.settings.update(_Value.created(text)));
 }
 
 final _page = AutoDisposeNotifierProvider<_Page, _State>(_Page.new);
@@ -125,14 +155,97 @@ void main() {
       expect(state.isDirty, isFalse);
     });
 
-    test('a read that succeeds still replaces the page with the router',
-        () async {
+    test(
+        'a read that succeeds replaces the page with what the router holds, '
+        'not with what was written', () async {
       final notifier = container.read(_page.notifier)..edit('after');
+      router.answer = (_) => const _Value('router-normalised');
 
       final result = await notifier.save();
 
-      expect(result.current, const _Value('after'));
+      expect(result.current, const _Value('router-normalised'));
       expect(result.status.error, isNull);
+    });
+  });
+
+  // #1212 second review: after an ADD whose read-back failed, the written
+  // state lacks the path the router assigned. Saving it again adds the row a
+  // second time (DMZ, static routes, DHCP reservations, IPv6 port service).
+  group('a save after an unconfirmed add', () {
+    test('reads the router first, and does not write while it cannot',
+        () async {
+      final notifier = container.read(_page.notifier)..create('dmz-on');
+      router.readFails = true;
+      await expectLater(notifier.save(), throwsA(anything));
+      expect(router.writes, 1);
+
+      notifier.edit('dmz-on, .251');
+      await expectLater(
+          notifier.save(), throwsA(isA<SavedButUnconfirmedError>()));
+
+      expect(router.writes, 1, reason: 'a second add is a duplicate row');
+    });
+
+    test(
+        'once the router can be read: the page shows its rows, the edit made '
+        'against the pathless row is not written, and the next save updates '
+        'the row the first one created', () async {
+      final notifier = container.read(_page.notifier)..create('dmz-on');
+      router.readFails = true;
+      await expectLater(notifier.save(), throwsA(anything));
+
+      router.readFails = false;
+      notifier.edit('dmz-on, .251');
+      // The framework cannot map a pathless row onto the one the router made,
+      // so it shows the router's rows and asks for the change again.
+      await expectLater(notifier.save(), throwsA(isA<ServiceError>()));
+      expect(router.writes, 1);
+      expect(container.read(_page).current.path, 'Device.X.1.');
+
+      notifier.edit('dmz-on, .251');
+      await notifier.save();
+
+      expect(router.writes, 2);
+      expect(router.value.path, 'Device.X.1.',
+          reason: 'updated the row the first save created — not a second add');
+    });
+
+    test(
+        'an unconfirmed update (the row has its path) does not block the next '
+        'save', () async {
+      final notifier = container.read(_page.notifier)..edit('after');
+      router.readFails = true;
+      await expectLater(notifier.save(), throwsA(anything));
+
+      notifier.edit('after again');
+      await expectLater(notifier.save(), throwsA(anything));
+
+      expect(router.writes, 2);
+    });
+  });
+
+  group('confirmSavedRetrying', () {
+    test('stops retrying once the page is gone', () async {
+      final notifier = container.read(_page.notifier)..edit('after');
+      router.readFails = true;
+      await expectLater(notifier.save(), throwsA(anything));
+      var attempts = 0;
+      var active = true;
+
+      await expectLater(
+        notifier.confirmSavedRetrying(
+          attempts: 5,
+          interval: Duration.zero,
+          before: () async {
+            attempts++;
+            active = false; // the user leaves during the first attempt
+          },
+          isActive: () => active,
+        ),
+        throwsA(isA<SavedButUnconfirmedError>()),
+      );
+
+      expect(attempts, 1, reason: 'no reads for a page nobody is on');
     });
   });
 

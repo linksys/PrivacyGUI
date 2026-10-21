@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
@@ -24,6 +25,17 @@ final wifiAnswerWindowProvider = Provider<Duration>(
 /// says the router answers, not that its radios have settled, and right after
 /// the reload a Wi-Fi GET comes back with no rows (#1499 bench).
 const wifiReadBackAfterRecoveryAttempts = 5;
+
+/// Drops the throttler's completed-GET cache before a read-back attempt.
+///
+/// The cache keeps an answer for 5 s and the attempts are 3 s apart, and a
+/// mid-reload read answers *successfully* with an empty table — so without
+/// this, every other attempt replays the previous empty answer instead of
+/// asking the router again (#1212 second review). Writes already drop it
+/// (`UspClient._invalidatingReads`); a read-back that is retried because the
+/// router's data has not settled needs the same.
+void dropWifiReadBackCache(Ref ref) =>
+    ref.read(uspClientProvider)?.throttler?.clearCache();
 
 /// How often the router is read back while a write's outcome is unknown.
 final wifiReadBackIntervalProvider = Provider<Duration>(

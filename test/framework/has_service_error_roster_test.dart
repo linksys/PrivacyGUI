@@ -55,8 +55,15 @@ void main() {
       ];
       expect(hits, hasLength(1), reason: 'expected one declaration of $type');
       final (path, source) = hits.single;
-      final header = decl.firstMatch(source)!.group(0)!;
-      final hasError = source.contains(RegExp(r'ServiceError\?\s+error;'));
+      final match = decl.firstMatch(source)!;
+      final header = match.group(0)!;
+      // The class body only, not the whole file: a file can declare more than
+      // one class, and another's `error` field must not satisfy this one.
+      final next = RegExp(r'\n(?:abstract |final |sealed )*class ')
+          .firstMatch(source.substring(match.end));
+      final body = source.substring(
+          match.end, next == null ? source.length : match.end + next.start);
+      final hasError = body.contains(RegExp(r'ServiceError\?\s+error;'));
       expect(hasError, isTrue,
           reason: '$type ($path) has no `ServiceError? error` field — a page '
               'whose status cannot carry a read error needs a look, not an '

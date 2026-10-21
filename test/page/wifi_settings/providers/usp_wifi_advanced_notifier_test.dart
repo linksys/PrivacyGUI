@@ -45,6 +45,9 @@ class _Device {
   /// Read failures to answer before reading normally again.
   int failReads = 0;
 
+  /// Radio reads to answer with no rows — the router mid-reload.
+  int emptyRadioReads = 0;
+
   /// When set, the next Set waits on it — a reply lost to the Wi-Fi restart.
   Completer<void>? holdSet;
 
@@ -58,6 +61,10 @@ class _Device {
   void stub(MockUspWifiAdvancedService svc) {
     when(() => svc.fetchIeee80211h()).thenAnswer((_) async {
       _read();
+      if (emptyRadioReads > 0) {
+        emptyRadioReads--;
+        return {};
+      }
       return {
         for (final e in values.entries)
           if (e.key.endsWith('IEEE80211hEnabled'))
@@ -498,6 +505,53 @@ void main() {
 
       await notifier.readBackAfterRecovery();
       verify(() => svc.fetchSteering()).called(1);
+    });
+
+    // #1212 second review: a radio read mid-reload answers with no rows, and
+    // applying it showed DFS off after a save that turned it on.
+    test('the read-back retries an empty radio table and shows DFS on',
+        () async {
+      final device = _Device(_bench());
+      final c = createContainer(device);
+      final notifier = await loaded(c);
+      notifier.setDfsEnabled(true);
+      await notifier.save();
+
+      device.emptyRadioReads = 1;
+      await notifier.readBackAfterRecovery();
+
+      expect(c.read(uspWifiAdvancedProvider).settings.current.isDfsEnabled,
+          isTrue);
+      expect(device.emptyRadioReads, 0, reason: 'the empty read was retried');
+    });
+
+    test(
+        'a read-back that only ever sees an empty radio table keeps DFS as '
+        'written and reports saved-but-unconfirmed', () async {
+      final device = _Device(_bench());
+      final c = createContainer(device);
+      final notifier = await loaded(c);
+      notifier.setDfsEnabled(true);
+      await notifier.save();
+
+      device.emptyRadioReads = 99;
+      await expectLater(notifier.readBackAfterRecovery(),
+          throwsA(isA<SavedButUnconfirmedError>()));
+
+      final state = c.read(uspWifiAdvancedProvider);
+      expect(state.settings.current.isDfsEnabled, isTrue);
+      expect(state.status.error, isNull);
+    });
+
+    test('a display read still accepts an empty radio table, as before',
+        () async {
+      final device = _Device(_bench())..emptyRadioReads = 1;
+      final c = createContainer(device);
+      await loaded(c);
+
+      expect(c.read(uspWifiAdvancedProvider).status.error, isNull);
+      expect(c.read(uspWifiAdvancedProvider).settings.current.ieee80211hByRadio,
+          isEmpty);
     });
 
     test('a steering-only save does not wait for a restart', () async {

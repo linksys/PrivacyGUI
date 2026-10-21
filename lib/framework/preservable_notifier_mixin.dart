@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 
 import 'feature_state.dart';
 import 'has_service_error.dart';
+import 'has_unconfirmed_rows.dart';
 import 'preservable.dart';
 import 'preservable_contract.dart';
 
@@ -52,6 +53,7 @@ class _PreservableDelegate<
       forceRemote: forceRemote,
       updateStatusOnly: updateStatusOnly,
     );
+    if (newSettings != null && !updateStatusOnly) _mustReadBeforeWrite = false;
     return _apply(newSettings, newStatus, updateStatusOnly: updateStatusOnly);
   }
 
@@ -106,9 +108,51 @@ class _PreservableDelegate<
   /// from a status that implements [HasServiceError]; one that does not, or
   /// that carries none, keeps today's behaviour and is applied.
   Future<TState> save() async {
+    if (_mustReadBeforeWrite) {
+      // The last save added a row and could not read it back, so the page
+      // still calls that row new. Writing now would add it again: read first,
+      // and write only against what the router holds.
+      final cause = await _readRouterBeforeWrite();
+      if (cause != null) throw SavedButUnconfirmedError(cause);
+    }
     await _performSave();
     markAsSaved();
     return confirmSaved();
+  }
+
+  /// Set when a save's read-back failed while what it wrote had a row without
+  /// a path ([HasUnconfirmedRows]); cleared by any read that succeeds.
+  bool _mustReadBeforeWrite = false;
+
+  /// Reads the router into the page's baseline, keeping the user's pending
+  /// edit as `current`. Returns the read's error, or null when it succeeded.
+  ///
+  /// The edit is re-applied on the fresh baseline only when the read leaves
+  /// the edit's rows unchanged in identity; otherwise the router's view wins
+  /// and the user saves again from it.
+  Future<ServiceError?> _readRouterBeforeWrite() async {
+    final edit = _getState().settings.current;
+    final (fresh, status) = await _performFetch(forceRemote: true);
+    if (fresh == null) {
+      final Object? s = status;
+      return (s is HasServiceError ? s.error : null) ??
+          const UnexpectedError(detail: 'read before write returned nothing');
+    }
+    _mustReadBeforeWrite = false;
+    final s = _getState();
+    _setState(s.copyWith(
+      settings: Preservable(original: fresh, current: fresh),
+      status: status ?? s.status,
+    ) as TState);
+    // The pending edit was made against rows that had no path; the router now
+    // holds them with one. Writing that edit would still add them again, so
+    // the user's change is dropped in favour of what the router holds, and
+    // the save stops here for them to redo it — on the right rows.
+    if (edit != fresh) {
+      return const UnexpectedError(
+          detail: 'the router was re-read; repeat the change on its rows');
+    }
+    return null;
   }
 
   /// The post-save half of [save]: reads the router back after a write that
@@ -121,6 +165,7 @@ class _PreservableDelegate<
     final written = _getState();
     final (newSettings, newStatus) = await _performFetch(forceRemote: true);
     if (newSettings != null) {
+      _mustReadBeforeWrite = false;
       return _apply(newSettings, newStatus, updateStatusOnly: false);
     }
     final Object? status = newStatus;
@@ -129,6 +174,10 @@ class _PreservableDelegate<
       return _apply(newSettings, newStatus, updateStatusOnly: false);
     }
     _setState(written);
+    final Object settings = written.settings.current;
+    if (settings is HasUnconfirmedRows && settings.hasUnconfirmedRows) {
+      _mustReadBeforeWrite = true;
+    }
     throw SavedButUnconfirmedError(cause);
   }
 
@@ -138,10 +187,15 @@ class _PreservableDelegate<
   ///
   /// [before] runs ahead of each attempt — refreshing what the read depends
   /// on. Attempts are [interval] apart; the last failure is thrown.
+  ///
+  /// [isActive] is checked between attempts: a read-back can outlast the page
+  /// (an autoDispose notifier whose user left during the wait), and retrying
+  /// then only sends reads nobody will see. It stops with the last failure.
   Future<TState> confirmSavedRetrying({
     required int attempts,
     required Duration interval,
     Future<void> Function()? before,
+    bool Function()? isActive,
   }) async {
     for (var attempt = 1;; attempt++) {
       await before?.call();
@@ -150,6 +204,7 @@ class _PreservableDelegate<
       } on SavedButUnconfirmedError {
         if (attempt >= attempts) rethrow;
         await Future<void>.delayed(interval);
+        if (isActive != null && !isActive()) rethrow;
       }
     }
   }
@@ -207,9 +262,13 @@ mixin PreservableNotifierMixin<
     required int attempts,
     required Duration interval,
     Future<void> Function()? before,
+    bool Function()? isActive,
   }) =>
       _delegate.confirmSavedRetrying(
-          attempts: attempts, interval: interval, before: before);
+          attempts: attempts,
+          interval: interval,
+          before: before,
+          isActive: isActive);
 
   @override
   void revert() => _delegate.revert();
@@ -257,9 +316,13 @@ mixin PreservableAutoDisposeNotifierMixin<
     required int attempts,
     required Duration interval,
     Future<void> Function()? before,
+    bool Function()? isActive,
   }) =>
       _delegate.confirmSavedRetrying(
-          attempts: attempts, interval: interval, before: before);
+          attempts: attempts,
+          interval: interval,
+          before: before,
+          isActive: isActive);
 
   @override
   void revert() => _delegate.revert();

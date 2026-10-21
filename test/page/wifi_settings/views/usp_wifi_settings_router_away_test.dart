@@ -285,6 +285,31 @@ void main() {
       expect(connection.waitsEntered, 0);
     });
 
+    // #1212 second review: with no recovery to hold a dialog up, the read-back
+    // ran with nothing covering the page — an edit or a second Save in that
+    // window was overwritten by it.
+    testWidgets(
+        'confirmed: the spinner stays up through the read-back, and the save '
+        'is reported after it', (tester) async {
+      wifi.holdPageRead = true;
+      await pumpWifi(tester, profile: const RemoteModeProfile());
+      await tester.tap(save);
+      await frames(tester);
+      wifi.finishSave(WifiSaveEnd.confirmed);
+      await frames(tester);
+
+      expect(wifi.pageReads, 1, reason: 'the read-back has started');
+      expect(processing, findsOneWidget,
+          reason: 'the page is covered while it is read back');
+      expect(saved, findsNothing);
+
+      wifi.releasePageRead();
+      await frames(tester);
+
+      expect(processing, findsNothing);
+      expect(saved, findsOneWidget);
+    });
+
     testWidgets(
         'router away: waits for it to rejoin the cloud (natural recovery), '
         'then reads back once', (tester) async {
@@ -348,12 +373,18 @@ class _ScriptedWifiNotifier extends FixedWifiSettingsNotifier {
   var pageReads = 0;
   var pageReadFails = false;
 
+  /// Holds the page read open until [releasePageRead].
+  var holdPageRead = false;
+  Completer<void>? _pageRead;
+  void releasePageRead() => _pageRead!.complete();
+
   @override
   Future<(WifiSettingsSettings?, WifiSettingsStatus?)> performFetch({
     bool forceRemote = false,
     bool updateStatusOnly = false,
   }) async {
     pageReads++;
+    if (holdPageRead) await (_pageRead = Completer<void>()).future;
     if (pageReadFails) {
       return (
         null,

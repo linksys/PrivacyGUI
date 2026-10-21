@@ -57,6 +57,8 @@ class UspWifiAdvancedNotifier
 
   @override
   WifiAdvancedFeatureState build() {
+    _disposed = false;
+    ref.onDispose(() => _disposed = true);
     // Synchronous build with loading state; async fetch follows immediately.
     Future.microtask(() => fetch());
     return WifiAdvancedFeatureState.initial();
@@ -73,6 +75,14 @@ class UspWifiAdvancedNotifier
   }) async {
     try {
       final ieee80211h = await _svc.fetchIeee80211h();
+      // A router always has radios. Straight after a write reloads them, a
+      // radio read answers with no rows (#1499 bench), and applying that would
+      // show DFS off for a save that turned it on. On the read-back only, so
+      // a display read keeps today's shape (#1212 second review).
+      if (_readingBack && ieee80211h.isEmpty) {
+        throw const NetworkError(
+            detail: 'radio table empty while the radios reload');
+      }
       final steering = await _svc.fetchSteering();
       // Only where the router offers it: firmware without FWDEV#201 has no
       // such leaves, and the tab must still read steering and DFS there.
@@ -190,11 +200,30 @@ class UspWifiAdvancedNotifier
   /// Settings tab's read-back is, and under the framework's rule when every
   /// attempt fails: the tab keeps what was written and this throws
   /// [SavedButUnconfirmedError].
-  Future<void> readBackAfterRecovery() => confirmSavedRetrying(
+  /// Set when the page is gone: a read-back still running then stops
+  /// retrying (#1212 second review).
+  bool _disposed = false;
+
+  Future<void> readBackAfterRecovery() async {
+    _readingBack = true;
+    try {
+      await confirmSavedRetrying(
         attempts: wifiReadBackAfterRecoveryAttempts,
         interval: ref.read(wifiReadBackIntervalProvider),
-        before: _refreshL1AfterWrite,
+        before: () async {
+          dropWifiReadBackCache(ref);
+          await _refreshL1AfterWrite();
+        },
+        isActive: () => !_disposed,
       );
+    } finally {
+      _readingBack = false;
+    }
+  }
+
+  /// True while [readBackAfterRecovery] runs: [performFetch] then treats an
+  /// empty radio table as a read that has not settled yet.
+  bool _readingBack = false;
 
   /// The tab's refresh: reads the switches again, and the MLO status with
   /// them. The status is L1's and nothing pushes it, so a pull-to-refresh or

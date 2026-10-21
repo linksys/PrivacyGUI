@@ -16,10 +16,12 @@ sealed class WifiWriteDone {
 
 /// The router confirmed the write — answered, or read back.
 ///
-/// [readBack], when given, reads the page back once the router is back: the
-/// write reloads the radios, so that read is held until the recovery ends,
-/// and the outcome is reported only after it (#1212). It throws
-/// [SavedButUnconfirmedError] when the page still cannot be read.
+/// [readBack], when given, reads the page back after the write and before the
+/// outcome is reported (#1212). Where a recovery runs (local) it is held until
+/// the recovery ends, because the write reloads the radios; where none does
+/// (Remote Assistance, #1323) it runs at once under the spinner and relies on
+/// its retries. It throws [SavedButUnconfirmedError] when the page still
+/// cannot be read.
 final class WifiWriteConfirmed extends WifiWriteDone {
   final Future<void> Function()? readBack;
   const WifiWriteConfirmed({this.readBack});
@@ -119,7 +121,13 @@ Future<void> runWifiWriteWithRecovery(
       }
     } else if (readBack != null) {
       try {
-        await readBack();
+        // Under a recovery the dialog is still up (it waits on [settled]).
+        // Without one — Remote Assistance enters none for a Wi-Fi change —
+        // the spinner covers it, as it covered the write: the page must not
+        // take an edit or a second Save while the read-back is running.
+        await (recovering || !context.mounted
+            ? readBack()
+            : doSomethingWithSpinner(context, readBack()));
       } catch (e) {
         failure = e;
       }
