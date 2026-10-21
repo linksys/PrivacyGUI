@@ -140,6 +140,8 @@
   "dns3Optional": "DNS 3 (optional)",
   "done": "Done",
   "download": "Download",
+  "lastDownloadRate": "Last download rate",
+  "lastUploadRate": "Last upload rate",
   "downlink": "Downlink",
   "duid": "DUID",
   "editPortForwarding": "Edit Port Forwarding",
@@ -1610,7 +1612,7 @@
       }
     }
   },
-  "signalAndSpeed": "Signal & Speed",
+  "signalAndSpeed": "Signal & Link Rate",
   "networkDetails": "Network Details",
   "wifiWireless": "WiFi (Wireless)",
   "ethernetWired": "Ethernet (Wired)",

@@ -575,29 +575,33 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
     );
   }
 
+  /// The last rates the link used, one card per direction, stacked.
+  ///
+  /// `LastDataDownlinkRate` / `LastDataUplinkRate` are the rate most recently
+  /// used to send data (TR-181), not throughput: an idle client often reads
+  /// 6 Mbps. The captions say so (#1686 item 4), and they no longer fit side
+  /// by side: at 320px each half-width caption had 81dp, and 107 of the 208
+  /// locale × width captions ellipsized. Stacked, each gets the full width.
   Widget _buildSpeedRow(BuildContext context, ClientDevice device) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (device.downlinkRate != null)
-          Expanded(
-            child: DetailSpeedCard(
-              icon: Icons.arrow_downward,
-              label: loc(context).download,
-              speedKbps: device.downlinkRate!,
-              color: colorScheme.primary,
-            ),
+          DetailSpeedCard(
+            icon: Icons.arrow_downward,
+            label: loc(context).lastDownloadRate,
+            speedKbps: device.downlinkRate!,
+            color: colorScheme.primary,
           ),
         if (device.downlinkRate != null && device.uplinkRate != null)
           AppGap.sm(),
         if (device.uplinkRate != null)
-          Expanded(
-            child: DetailSpeedCard(
-              icon: Icons.arrow_upward,
-              label: loc(context).upload,
-              speedKbps: device.uplinkRate!,
-              color: colorScheme.tertiary,
-            ),
+          DetailSpeedCard(
+            icon: Icons.arrow_upward,
+            label: loc(context).lastUploadRate,
+            speedKbps: device.uplinkRate!,
+            color: colorScheme.tertiary,
           ),
       ],
     );
