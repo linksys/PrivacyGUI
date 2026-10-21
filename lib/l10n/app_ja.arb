@@ -1048,6 +1048,8 @@
   "staticRoutes": "静的ルート",
   "staticRoutesSaved": "静的ルートを保存しました",
   "staticRoutingPageDesc": "ネットワーク上の静的 IPv4 ルートを管理します",
+  "nat": "NAT",
+  "dynamicRouting": "ダイナミックルーティング (RIP)",
   "statistics": "統計",
   "stillWaitingLongerThanExpected": "まだ待機中 — 予想より少し時間がかかる場合があります",
   "store": "ストア",

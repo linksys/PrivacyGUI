@@ -56,8 +56,12 @@ const disabledRoute = StaticRouteUIModel(
 // State builders
 // ---------------------------------------------------------------------------
 
-StaticRoutingFeatureState dataState(List<StaticRouteUIModel> routes) {
-  final settings = StaticRouteList(routes: routes);
+/// [ripEnabled] null is a router without the NAT / Dynamic routing switch.
+StaticRoutingFeatureState dataState(
+  List<StaticRouteUIModel> routes, {
+  bool? ripEnabled,
+}) {
+  final settings = StaticRouteList(routes: routes, ripEnabled: ripEnabled);
   return StaticRoutingFeatureState(
     settings: Preservable(original: settings, current: settings),
     status: const StaticRoutingStatus(),
@@ -133,4 +137,8 @@ const _gateRoutes = [
 /// `emptyState()` renders one [DetailEmptyBlock] instead of any card, and
 /// `dirtyState()` adds the `UiKitBottomBarConfig` save bar, which is ui_kit's own
 /// chrome and out of scope for #1380.
-final gateStaticRoutingState = dataState(_gateRoutes);
+///
+/// On a router with the NAT / Dynamic routing switch (#1100), so its two rows
+/// are measured too: "Dynamic routing (RIP)" is the longer label, and the page
+/// has nothing else that wide above the route list.
+final gateStaticRoutingState = dataState(_gateRoutes, ripEnabled: false);

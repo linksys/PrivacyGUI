@@ -1048,6 +1048,8 @@
   "staticRoutes": "静态路由",
   "staticRoutesSaved": "静态路由已保存",
   "staticRoutingPageDesc": "管理网络上的静态 IPv4 路由",
+  "nat": "NAT",
+  "dynamicRouting": "动态路由（RIP）",
   "statistics": "统计",
   "stillWaitingLongerThanExpected": "仍在等待——这可能比预期花费更长时间",
   "store": "商店",

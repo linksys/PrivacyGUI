@@ -1048,6 +1048,8 @@
   "staticRoutes": "Trasy statyczne",
   "staticRoutesSaved": "Zapisano trasy statyczne",
   "staticRoutingPageDesc": "Zarządzaj statycznymi trasami IPv4 w swojej sieci",
+  "nat": "NAT",
+  "dynamicRouting": "Dynamiczny routing (RIP)",
   "statistics": "Statystyki",
   "stillWaitingLongerThanExpected": "Wciąż czekamy — może to potrwać nieco dłużej niż oczekiwano",
   "store": "Sklep",

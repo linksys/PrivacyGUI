@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/models/usp_operation_result.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
@@ -379,6 +380,50 @@ void main() {
       expect(isUnansweredTransportFailure('Something else entirely'), isFalse);
     });
   });
+  // A refused Set as FLWRT 2.0.3.26101641 answers it (bench 2026-10-21): every
+  // leaf of the Set gets the same code, and only the refused leaf's message
+  // starts with the firmware's error name.
+  group('refusalNameIn', () {
+    const names = ['ErrorInvalidIPAddress', 'ErrorDuplicateEntryName'];
+    const p = 'Device.Routing.Router.1.IPv4Forwarding.30.';
+    const groupFailed = UspErrorDetail(
+      requestedPath: '${p}Enable',
+      errorCode: 7012,
+      errorMessage:
+          "SetParameterGroup: group set failed at '${p}DestIPAddress' "
+          '(Invalid value)',
+    );
+
+    test('finds the name on the refused leaf, wherever it is in the list', () {
+      final refusal = refusalNameIn(const [
+        groupFailed,
+        UspErrorDetail(
+          requestedPath: '${p}DestIPAddress',
+          errorCode: 7012,
+          errorMessage: 'ErrorInvalidIPAddress: 127.20.0.0 is a reserved '
+              'address.',
+        ),
+      ], names);
+
+      expect(refusal?.name, 'ErrorInvalidIPAddress');
+      expect(refusal?.detail.errorCode, 7012);
+      expect(refusal?.detail.requestedPath, '${p}DestIPAddress');
+    });
+
+    test('is null when no message starts with one of the names', () {
+      expect(refusalNameIn(const [groupFailed], names), isNull);
+      expect(
+          refusalNameIn(const [
+            UspErrorDetail(
+              requestedPath: '${p}Enable',
+              errorCode: 7012,
+              errorMessage: 'Rejected: ErrorInvalidIPAddress later in text',
+            ),
+          ], names),
+          isNull);
+    });
+  });
+
   group('isUnansweredWifiWrite', () {
     test('is true for everything isUnansweredTransportFailure accepts', () {
       expect(

@@ -1048,6 +1048,8 @@
   "staticRoutes": "Statiska rutter",
   "staticRoutesSaved": "Statiska rutter sparade",
   "staticRoutingPageDesc": "Hantera statiska IPv4-rutter i ditt nätverk",
+  "nat": "NAT",
+  "dynamicRouting": "Dynamisk routing (RIP)",
   "statistics": "Statistik",
   "stillWaitingLongerThanExpected": "Väntar fortfarande – detta kan ta lite längre tid än väntat",
   "store": "Butik",

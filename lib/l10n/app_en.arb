@@ -1469,6 +1469,8 @@
   "staticRoutes": "Static Routes",
   "staticRoutesSaved": "Static routes saved",
   "staticRoutingPageDesc": "Manage static IPv4 routes on your network",
+  "nat": "NAT",
+  "dynamicRouting": "Dynamic routing (RIP)",
   "gatewayLabel": "Gateway: {gateway}  {interface}",
   "@gatewayLabel": {
     "placeholders": {
