@@ -656,7 +656,7 @@
   "errorUnauthorized": "Non disponi dei permessi per eseguire questa azione.",
   "errorUnexpected": "Si è verificato un problema. Riprova.",
   "errorCommandRefused": "Il router ha rifiutato questo comando. Riprova tra un momento.",
-  "errorSavedButUnconfirmed": "Le impostazioni sono state salvate, ma non è stato possibile rileggerle dal router. Trascina per aggiornare e visualizzarle.",
+  "errorSavedButUnconfirmed": "Le impostazioni sono state salvate, ma non è stato possibile rileggerle dal router. Prova ad aggiornare la pagina per visualizzarle.",
   "errors": "Errori",
   "estimatedTimeRemaining": "Tempo stimato rimanente: {time}",
   "ethernetPorts": "Porte Ethernet",

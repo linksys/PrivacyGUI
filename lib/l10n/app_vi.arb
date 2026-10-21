@@ -654,7 +654,7 @@
   "errorUnauthorized": "Bạn không có quyền thực hiện thao tác này.",
   "errorUnexpected": "Đã xảy ra sự cố. Vui lòng thử lại.",
   "errorCommandRefused": "Bộ định tuyến đã từ chối lệnh này. Vui lòng thử lại sau một lát.",
-  "errorSavedButUnconfirmed": "Đã lưu cài đặt của bạn, nhưng không thể đọc lại từ bộ định tuyến. Kéo để làm mới và xem cài đặt.",
+  "errorSavedButUnconfirmed": "Đã lưu cài đặt của bạn, nhưng không thể đọc lại từ bộ định tuyến. Hãy thử làm mới trang để xem cài đặt.",
   "errors": "Lỗi",
   "estimatedTimeRemaining": "Thời gian còn lại ước tính: {time}",
   "ethernetPorts": "Cổng Ethernet",

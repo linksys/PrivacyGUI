@@ -657,7 +657,7 @@
   "errorUnauthorized": "您沒有執行此動作的權限。",
   "errorUnexpected": "發生問題。請再試一次。",
   "errorCommandRefused": "路由器拒絕了此命令。請稍後再試。",
-  "errorSavedButUnconfirmed": "設定已儲存，但無法從路由器讀回。請下拉重新整理查看。",
+  "errorSavedButUnconfirmed": "設定已儲存，但無法從路由器讀回。請嘗試重新整理頁面查看。",
   "errors": "錯誤",
   "estimatedTimeRemaining": "預估剩餘時間：{time}",
   "ethernetPorts": "乙太網路連接埠",

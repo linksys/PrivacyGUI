@@ -88,7 +88,7 @@ void main() {
   final saved = find.text('WiFi settings saved');
   final failed = find.text('Something went wrong. Please try again.');
   final unconfirmed = find.text('Your settings were saved, but the router '
-      'could not be read back. Pull to refresh to see them.');
+      'could not be read back. Try refreshing the page to see them.');
 
   setUp(() {
     connection = _ControllableConnection();

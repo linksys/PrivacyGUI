@@ -654,7 +654,7 @@
   "errorUnauthorized": "Bu işlemi gerçekleştirmek için izniniz yok.",
   "errorUnexpected": "Bir şeyler ters gitti. Lütfen tekrar deneyin.",
   "errorCommandRefused": "Yönlendirici bu komutu reddetti. Lütfen birazdan yeniden deneyin.",
-  "errorSavedButUnconfirmed": "Ayarlarınız kaydedildi ancak yönlendiriciden geri okunamadı. Görmek için yenilemek üzere çekin.",
+  "errorSavedButUnconfirmed": "Ayarlarınız kaydedildi ancak yönlendiriciden geri okunamadı. Görmek için sayfayı yenilemeyi deneyin.",
   "errors": "Hatalar",
   "estimatedTimeRemaining": "Tahmini kalan süre: {time}",
   "ethernetPorts": "Ethernet Portları",

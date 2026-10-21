@@ -656,7 +656,7 @@
   "errorUnauthorized": "Du har ikke tilladelse til at udføre denne handling.",
   "errorUnexpected": "Noget gik galt. Prøv igen.",
   "errorCommandRefused": "Routeren afviste denne kommando. Prøv igen om et øjeblik.",
-  "errorSavedButUnconfirmed": "Dine indstillinger er gemt, men de kunne ikke læses tilbage fra routeren. Træk for at opdatere for at se dem.",
+  "errorSavedButUnconfirmed": "Dine indstillinger er gemt, men de kunne ikke læses tilbage fra routeren. Prøv at opdatere siden for at se dem.",
   "errors": "Fejl",
   "estimatedTimeRemaining": "Anslået resterende tid: {time}",
   "ethernetPorts": "Ethernet-porte",

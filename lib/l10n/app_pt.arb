@@ -656,7 +656,7 @@
   "errorUnauthorized": "Você não tem permissão para realizar esta ação.",
   "errorUnexpected": "Algo deu errado. Tente novamente.",
   "errorCommandRefused": "O roteador recusou este comando. Tente novamente em instantes.",
-  "errorSavedButUnconfirmed": "Suas configurações foram salvas, mas não foi possível lê-las novamente do roteador. Arraste para atualizar e vê-las.",
+  "errorSavedButUnconfirmed": "Suas configurações foram salvas, mas não foi possível lê-las novamente do roteador. Tente atualizar a página para vê-las.",
   "errors": "Erros",
   "estimatedTimeRemaining": "Tempo restante estimado: {time}",
   "ethernetPorts": "Portas Ethernet",
