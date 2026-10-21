@@ -153,6 +153,14 @@ void main() {
       expect(failed, findsNothing,
           reason: 'the write landed; Save again would rewrite it');
       expect(unconfirmed, findsOneWidget);
+      // The list tab swaps the list for an error message when status.error is
+      // set (wifi_list_tab.dart). PR #1716 review: assert it stays a list.
+      expect(
+          find.text('Network error. Please check your connection and try '
+              'again.'),
+          findsNothing);
+      expect(find.text('No WiFi networks found. Check router connection.'),
+          findsNothing);
       expect(
           ProviderScope.containerOf(
                   tester.element(find.byType(UspWifiSettingsView)))

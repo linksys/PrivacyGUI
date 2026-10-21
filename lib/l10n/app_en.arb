@@ -712,6 +712,8 @@
   "errorCommandRefused": "The router refused this command. Please try again in a moment.",
   "errorSavedButUnconfirmed": "Your settings were saved, but the router could not be read back. Try refreshing the page to see them.",
   "@errorSavedButUnconfirmed": {"description": "A save that landed, whose confirming read-back failed (SavedButUnconfirmedError, #1212). Shown in place of the saved toast. It must not read as a failed save: pressing Save again would rewrite what the router already holds. Ask for a page refresh, not a pull: pull-to-refresh needs touch and does nothing with a mouse on the web."},
+  "errorSaveDiscardedForRouterRows": "Nothing was saved. The page was reloaded from the router; please make your change again.",
+  "@errorSaveDiscardedForRouterRows": {"description": "A save that wrote nothing (SaveDiscardedForRouterRowsError, PR #1716 review). The previous save added a row whose read-back failed; to avoid adding it twice the page was re-read from the router instead of writing, and the user's change was dropped. Must say nothing was saved — never that the save landed."},
   "menuWifiSettings": "WiFi Settings",
   "menuWifiSettingsDesc": "Networks, security, MAC filtering",
   "menuTopologyDesc": "View network topology and mesh nodes",

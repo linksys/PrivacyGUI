@@ -657,6 +657,7 @@
   "errorUnexpected": "Algo ha ido mal. Inténtelo de nuevo.",
   "errorCommandRefused": "El router rechazó este comando. Vuelve a intentarlo en un momento.",
   "errorSavedButUnconfirmed": "Se ha guardado la configuración, pero no se ha podido volver a leer del router. Intente actualizar la página para verla.",
+  "errorSaveDiscardedForRouterRows": "No se ha guardado nada. La página se ha vuelto a cargar desde el router; vuelva a realizar el cambio.",
   "errors": "Errores",
   "estimatedTimeRemaining": "Tiempo restante estimado: {time}",
   "ethernetPorts": "Puertos Ethernet",

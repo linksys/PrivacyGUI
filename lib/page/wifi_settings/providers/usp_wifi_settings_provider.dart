@@ -128,6 +128,10 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
     await readBackAfterRecovery();
   }
 
+  /// Set when the page is gone: a read-back still running then stops
+  /// retrying (#1212 second review).
+  bool _disposed = false;
+
   /// Reads the page back once the router is back, after a write that landed.
   ///
   /// **When, not just how (#1212).** Every Wi-Fi write reloads all the radios,
@@ -142,10 +146,6 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   /// comes back with no rows (L1 throws on that). If every read fails the
   /// framework's rule applies: the form keeps what was written and this throws
   /// [SavedButUnconfirmedError].
-  /// Set when the page is gone: a read-back still running then stops
-  /// retrying (#1212 second review).
-  bool _disposed = false;
-
   Future<void> readBackAfterRecovery() => confirmSavedRetrying(
         attempts: wifiReadBackAfterRecoveryAttempts,
         interval: ref.read(wifiReadBackIntervalProvider),

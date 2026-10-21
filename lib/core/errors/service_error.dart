@@ -264,6 +264,18 @@ final class SavedButUnconfirmedError extends ServiceError {
   String toString() => 'Saved, but the read-back failed: $cause';
 }
 
+/// Nothing was saved: the page was reloaded from the router first.
+///
+/// Thrown by the Preservable `save()` when the previous save added a row whose
+/// read-back failed (#1212). The router holds that row under a path the page
+/// never saw, so writing the pending edit would add it again; instead the
+/// router is read, the page shows its rows, and the user's change is dropped
+/// for them to make again on the right row. Not a failure of the router, and
+/// not a save that landed — the message says neither.
+final class SaveDiscardedForRouterRowsError extends ServiceError {
+  const SaveDiscardedForRouterRowsError({super.code, super.detail});
+}
+
 /// Router connectivity error (cannot reach router)
 final class ConnectivityError extends ServiceError {
   const ConnectivityError({super.code, super.detail});

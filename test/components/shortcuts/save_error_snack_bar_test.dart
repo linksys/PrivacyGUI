@@ -48,6 +48,20 @@ void main() {
     expect(surfaceColor(tester), isNot(danger));
   });
 
+  // PR #1716 review: the reload-instead-of-write path wrote nothing, so it is
+  // a failed save to the user, not the neutral "saved" style.
+  testWidgets('a save discarded for the router\'s rows is a failure, not saved',
+      (tester) async {
+    final ctx = await pump(tester);
+    final danger = Theme.of(ctx).extension<AppColorScheme>()?.semanticDanger;
+
+    showSaveErrorSnackBar(ctx, const SaveDiscardedForRouterRowsError());
+    await tester.pump();
+
+    expect(find.text(loc(ctx).errorSaveDiscardedForRouterRows), findsOneWidget);
+    expect(surfaceColor(tester), danger);
+  });
+
   testWidgets('a failed write is still reported in the failure style',
       (tester) async {
     final ctx = await pump(tester);

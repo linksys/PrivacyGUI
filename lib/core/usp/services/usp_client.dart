@@ -1118,10 +1118,13 @@ class UspClient {
       }
     }
 
+    // No 9999, so the router answered. A lone per-path error (7026) was
+    // measured with an empty `data`; whether the client can also omit `data`
+    // there is not settled from its source (PR #1716 review), and either way
+    // it is an answer with nothing in it — so a missing `data` reads as no
+    // rows, never as a protocol failure that would make "absent" an error.
     final data = result is Map ? result['data'] : null;
-    if (data is! Map) {
-      throw 'Get failed: Protocol error: GET response carries no data';
-    }
+    if (data is! Map) return const {};
     return {
       for (final entry in data.entries)
         entry.key?.toString() ?? '': entry.value?.toString() ?? '',

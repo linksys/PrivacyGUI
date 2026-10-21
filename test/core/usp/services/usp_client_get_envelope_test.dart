@@ -171,6 +171,18 @@ void main() {
       expect(result.containsKey(missing), isFalse);
     });
 
+    test('a lone 7026 whose envelope omits `data` still reads as absent',
+        () async {
+      when(() => transport.get(any())).thenAnswer((_) async => {
+            'success': false,
+            'result': {
+              'error': {missing: notInSchema},
+            },
+          });
+
+      expect(await client.get([missing]), isEmpty);
+    });
+
     test('a genuinely empty table is still an empty answer', () async {
       when(() => transport.get(any())).thenAnswer((_) async => {
             'success': true,

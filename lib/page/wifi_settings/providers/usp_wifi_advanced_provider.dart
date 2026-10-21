@@ -195,15 +195,15 @@ class UspWifiAdvancedNotifier
         'dfs=${state.changesDfs}, mlo=${state.changesMlo}');
   }
 
+  /// Set when the page is gone: a read-back still running then stops
+  /// retrying (#1212 second review).
+  bool _disposed = false;
+
   /// Reads the tab, and L1 for the other pages, back once the router is back
   /// from a save that restarted Wi-Fi — see [save]. Retried as the WiFi
   /// Settings tab's read-back is, and under the framework's rule when every
   /// attempt fails: the tab keeps what was written and this throws
   /// [SavedButUnconfirmedError].
-  /// Set when the page is gone: a read-back still running then stops
-  /// retrying (#1212 second review).
-  bool _disposed = false;
-
   Future<void> readBackAfterRecovery() async {
     _readingBack = true;
     try {

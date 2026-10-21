@@ -658,6 +658,7 @@
   "errorUnexpected": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
   "errorCommandRefused": "رفض جهاز التوجيه هذا الأمر. يُرجى المحاولة مرة أخرى بعد لحظات.",
   "errorSavedButUnconfirmed": "تم حفظ إعداداتك، لكن تعذّرت قراءتها مرة أخرى من جهاز التوجيه. حاول تحديث الصفحة لعرضها.",
+  "errorSaveDiscardedForRouterRows": "لم يتم حفظ أي شيء. أُعيد تحميل الصفحة من جهاز التوجيه؛ يُرجى إجراء التغيير مرة أخرى.",
   "errors": "الأخطاء",
   "estimatedTimeRemaining": "الوقت المتبقي المقدّر: {time}",
   "ethernetPorts": "منافذ Ethernet",

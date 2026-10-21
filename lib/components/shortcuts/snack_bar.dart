@@ -31,7 +31,9 @@ showFailedSnackBar(BuildContext context, String message) {
 /// A [SavedButUnconfirmedError] is a write that landed and could not be read
 /// back (#1212): it is shown neutrally, because the failure style would have
 /// the user press Save again and rewrite what the router already holds. Any
-/// other error is a failed save and keeps [showFailedSnackBar].
+/// other error is a save that wrote nothing and keeps [showFailedSnackBar] —
+/// [SaveDiscardedForRouterRowsError] included: the page was reloaded instead
+/// of writing, and the user has to make the change again.
 showSaveErrorSnackBar(BuildContext context, Object error) {
   final message = localizeServiceError(context, error);
   if (error is SavedButUnconfirmedError) {

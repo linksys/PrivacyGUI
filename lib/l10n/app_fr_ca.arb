@@ -657,6 +657,7 @@
   "errorUnexpected": "Une erreur est survenue. Veuillez réessayer.",
   "errorCommandRefused": "Le routeur a refusé cette commande. Veuillez réessayer dans un instant.",
   "errorSavedButUnconfirmed": "Vos paramètres ont été enregistrés, mais ils n'ont pas pu être relus sur le routeur. Essayez d'actualiser la page pour les afficher.",
+  "errorSaveDiscardedForRouterRows": "Rien n'a été enregistré. La page a été rechargée depuis le routeur; veuillez refaire votre modification.",
   "errors": "Erreurs",
   "estimatedTimeRemaining": "Temps restant estimé : {time}",
   "ethernetPorts": "Ports Ethernet",

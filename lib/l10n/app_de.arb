@@ -657,6 +657,7 @@
   "errorUnexpected": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
   "errorCommandRefused": "Der Router hat diesen Befehl abgelehnt. Bitte versuchen Sie es in einem Moment erneut.",
   "errorSavedButUnconfirmed": "Ihre Einstellungen wurden gespeichert, konnten aber nicht vom Router zurückgelesen werden. Aktualisieren Sie die Seite, um sie anzuzeigen.",
+  "errorSaveDiscardedForRouterRows": "Es wurde nichts gespeichert. Die Seite wurde vom Router neu geladen; bitte nehmen Sie Ihre Änderung erneut vor.",
   "errors": "Fehler",
   "estimatedTimeRemaining": "Geschätzte verbleibende Zeit: {time}",
   "ethernetPorts": "Ethernet-Ports",

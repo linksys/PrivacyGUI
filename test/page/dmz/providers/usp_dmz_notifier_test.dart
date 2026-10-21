@@ -319,16 +319,16 @@ void main() {
           notifier.save(), throwsA(isA<SavedButUnconfirmedError>()));
       expect(rows, 1);
 
-      // Still unreachable: nothing is written.
+      // Still unreachable: nothing is written, and it does not say "saved".
       notifier.updateSetting((m) => m.copyWith(destIp: '192.168.1.251'));
-      await expectLater(
-          notifier.save(), throwsA(isA<SavedButUnconfirmedError>()));
+      await expectLater(notifier.save(), throwsA(isA<NetworkError>()));
       expect(rows, 1, reason: 'a second add is a second DMZ row');
 
       // Reachable again: the page is put on the router's entry, and the next
       // save updates it.
       routerReachable = true;
-      await expectLater(notifier.save(), throwsA(isA<ServiceError>()));
+      await expectLater(
+          notifier.save(), throwsA(isA<SaveDiscardedForRouterRowsError>()));
       expect(container.read(uspDmzProvider).settings.current.instancePath,
           'Device.Firewall.DMZ.1.');
       notifier.updateSetting((m) => m.copyWith(destIp: '192.168.1.251'));

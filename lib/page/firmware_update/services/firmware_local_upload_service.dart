@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/turbo_session_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/ip_getter/ip_getter.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -45,7 +46,14 @@ final firmwareLocalUploadServiceProvider = Provider<FirmwareLocalUploadService>(
 );
 
 Future<String> _fetchEndpointId(UspClient client) async {
-  final result = await client.get(['Device.LocalAgent.EndpointID']);
+  final Map<String, dynamic> result;
+  try {
+    result = await client.get(['Device.LocalAgent.EndpointID']);
+  } catch (e) {
+    // A lost read now throws the USP string (#1212); map it here, at the
+    // service boundary, as constitution Article XIII asks.
+    throw mapUspErrorToServiceError(e);
+  }
   final endpointId = result['Device.LocalAgent.EndpointID'] as String?;
   if (endpointId == null || endpointId.isEmpty) {
     throw StateError('Failed to fetch router EndpointID');

@@ -657,6 +657,7 @@
   "errorUnexpected": "Något gick fel. Försök igen.",
   "errorCommandRefused": "Routern nekade det här kommandot. Försök igen om en stund.",
   "errorSavedButUnconfirmed": "Dina inställningar har sparats, men de kunde inte läsas tillbaka från routern. Försök att uppdatera sidan för att se dem.",
+  "errorSaveDiscardedForRouterRows": "Inget sparades. Sidan lästes in på nytt från routern; gör din ändring igen.",
   "errors": "Fel",
   "estimatedTimeRemaining": "Beräknad återstående tid: {time}",
   "ethernetPorts": "Ethernet-portar",

@@ -658,6 +658,7 @@
   "errorUnexpected": "出了点问题。请重试。",
   "errorCommandRefused": "路由器拒绝了此命令。请稍后重试。",
   "errorSavedButUnconfirmed": "设置已保存，但无法从路由器读回。请尝试刷新页面查看。",
+  "errorSaveDiscardedForRouterRows": "未保存任何内容。页面已从路由器重新加载，请重新进行更改。",
   "errors": "错误",
   "estimatedTimeRemaining": "预计剩余时间：{time}",
   "ethernetPorts": "以太网端口",

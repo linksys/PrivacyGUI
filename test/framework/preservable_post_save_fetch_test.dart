@@ -180,10 +180,21 @@ void main() {
       expect(router.writes, 1);
 
       notifier.edit('dmz-on, .251');
+      // PR #1716 review C1: nothing is written on this path, so it must not
+      // report "saved" — it reports the read that stopped it.
       await expectLater(
-          notifier.save(), throwsA(isA<SavedButUnconfirmedError>()));
+        notifier.save(),
+        throwsA(allOf(
+          isA<NetworkError>(),
+          isNot(isA<SavedButUnconfirmedError>()),
+        )),
+      );
 
       expect(router.writes, 1, reason: 'a second add is a duplicate row');
+      final kept = container.read(_page).current;
+      expect(kept.text, 'dmz-on, .251',
+          reason: 'the read failed, so the edit is still the user\'s');
+      expect(kept.path, isNull, reason: 'and the row is still the unsaved one');
     });
 
     test(
@@ -197,8 +208,15 @@ void main() {
       router.readFails = false;
       notifier.edit('dmz-on, .251');
       // The framework cannot map a pathless row onto the one the router made,
-      // so it shows the router's rows and asks for the change again.
-      await expectLater(notifier.save(), throwsA(isA<ServiceError>()));
+      // so it shows the router's rows and asks for the change again. Nothing
+      // was saved, and the error must say so (PR #1716 review C1).
+      await expectLater(
+        notifier.save(),
+        throwsA(allOf(
+          isA<SaveDiscardedForRouterRowsError>(),
+          isNot(isA<SavedButUnconfirmedError>()),
+        )),
+      );
       expect(router.writes, 1);
       expect(container.read(_page).current.path, 'Device.X.1.');
 
@@ -246,6 +264,24 @@ void main() {
       );
 
       expect(attempts, 1, reason: 'no reads for a page nobody is on');
+    });
+
+    test('reads nothing when the page is already gone before it starts',
+        () async {
+      final notifier = container.read(_page.notifier);
+      var reads = 0;
+
+      await expectLater(
+        notifier.confirmSavedRetrying(
+          attempts: 5,
+          interval: Duration.zero,
+          before: () async => reads++,
+          isActive: () => false,
+        ),
+        throwsA(isA<SavedButUnconfirmedError>()),
+      );
+
+      expect(reads, 0);
     });
   });
 

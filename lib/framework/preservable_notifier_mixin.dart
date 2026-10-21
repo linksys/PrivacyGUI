@@ -94,8 +94,8 @@ class _PreservableDelegate<
   /// was written.
   ///
   /// Who asked for the read decides what its failure means, and only this
-  /// method knows (#1212; the gap #1279 described). `performFetch` turns a failed read into a
-  /// status carrying the error, and must: the initial load runs from `build()`
+  /// method knows (#1212; the gap #1279 described). `performFetch` turns a
+  /// failed read into a status carrying the error, and must: the initial load runs from `build()`
   /// with no caller to catch a throw (#1274), and pull-to-refresh's
   /// `RefreshIndicator` never catches one either. After a save that same status
   /// used to land on the page — an error page under the caller's "saved" toast,
@@ -108,13 +108,10 @@ class _PreservableDelegate<
   /// from a status that implements [HasServiceError]; one that does not, or
   /// that carries none, keeps today's behaviour and is applied.
   Future<TState> save() async {
-    if (_mustReadBeforeWrite) {
-      // The last save added a row and could not read it back, so the page
-      // still calls that row new. Writing now would add it again: read first,
-      // and write only against what the router holds.
-      final cause = await _readRouterBeforeWrite();
-      if (cause != null) throw SavedButUnconfirmedError(cause);
-    }
+    // The last save added a row and could not read it back, so the page still
+    // calls that row new; writing now would add it again. Nothing is written
+    // here, so nothing here reports "saved" (PR #1716 review C1).
+    if (_mustReadBeforeWrite) await _readRouterInsteadOfWriting();
     await _performSave();
     markAsSaved();
     return confirmSaved();
@@ -124,18 +121,22 @@ class _PreservableDelegate<
   /// a path ([HasUnconfirmedRows]); cleared by any read that succeeds.
   bool _mustReadBeforeWrite = false;
 
-  /// Reads the router into the page's baseline, keeping the user's pending
-  /// edit as `current`. Returns the read's error, or null when it succeeded.
+  /// Reads the router in place of a write that would duplicate a row, and
+  /// always ends the save without writing.
   ///
-  /// The edit is re-applied on the fresh baseline only when the read leaves
-  /// the edit's rows unchanged in identity; otherwise the router's view wins
-  /// and the user saves again from it.
-  Future<ServiceError?> _readRouterBeforeWrite() async {
-    final edit = _getState().settings.current;
+  /// Read fails → throws that read's own error: nothing was written, and the
+  /// pending edit is left as it was for another try. Read succeeds → the page
+  /// is put on the router's rows and this throws
+  /// [SaveDiscardedForRouterRowsError]: the edit was made against a row with
+  /// no path, the router holds that row under a path the page never saw, and
+  /// a generic delegate cannot map one onto the other — so the user makes the
+  /// change again on the router's row. (A pending edit always differs from the
+  /// router's rows here, because one of its rows has no path.)
+  Future<Never> _readRouterInsteadOfWriting() async {
     final (fresh, status) = await _performFetch(forceRemote: true);
     if (fresh == null) {
       final Object? s = status;
-      return (s is HasServiceError ? s.error : null) ??
+      throw (s is HasServiceError ? s.error : null) ??
           const UnexpectedError(detail: 'read before write returned nothing');
     }
     _mustReadBeforeWrite = false;
@@ -144,15 +145,7 @@ class _PreservableDelegate<
       settings: Preservable(original: fresh, current: fresh),
       status: status ?? s.status,
     ) as TState);
-    // The pending edit was made against rows that had no path; the router now
-    // holds them with one. Writing that edit would still add them again, so
-    // the user's change is dropped in favour of what the router holds, and
-    // the save stops here for them to redo it — on the right rows.
-    if (edit != fresh) {
-      return const UnexpectedError(
-          detail: 'the router was re-read; repeat the change on its rows');
-    }
-    return null;
+    throw const SaveDiscardedForRouterRowsError();
   }
 
   /// The post-save half of [save]: reads the router back after a write that
@@ -188,25 +181,31 @@ class _PreservableDelegate<
   /// [before] runs ahead of each attempt — refreshing what the read depends
   /// on. Attempts are [interval] apart; the last failure is thrown.
   ///
-  /// [isActive] is checked between attempts: a read-back can outlast the page
-  /// (an autoDispose notifier whose user left during the wait), and retrying
-  /// then only sends reads nobody will see. It stops with the last failure.
+  /// [isActive] is checked before every attempt: a read-back can outlast the
+  /// page (an autoDispose notifier whose user left during the wait), and
+  /// reading then only sends requests nobody will see. A page already gone
+  /// before the first attempt reads nothing; one that goes later stops with
+  /// the last failure.
   Future<TState> confirmSavedRetrying({
     required int attempts,
     required Duration interval,
     Future<void> Function()? before,
     bool Function()? isActive,
   }) async {
-    for (var attempt = 1;; attempt++) {
+    SavedButUnconfirmedError? last;
+    for (var attempt = 1; attempt <= attempts; attempt++) {
+      if (isActive != null && !isActive()) break;
+      if (attempt > 1) await Future<void>.delayed(interval);
       await before?.call();
       try {
         return await confirmSaved();
-      } on SavedButUnconfirmedError {
-        if (attempt >= attempts) rethrow;
-        await Future<void>.delayed(interval);
-        if (isActive != null && !isActive()) rethrow;
+      } on SavedButUnconfirmedError catch (e) {
+        last = e;
       }
     }
+    throw last ??
+        const SavedButUnconfirmedError(
+            UnexpectedError(detail: 'the page was gone before the read-back'));
   }
 
   // --- Internal Logic ---
