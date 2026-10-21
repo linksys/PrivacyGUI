@@ -193,8 +193,10 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                 label: loc(context).macAddress,
                 value: device.mac,
               ),
-              if (device.hostName.isNotEmpty &&
-                  device.hostName != device.displayName)
+              // Whenever the host name is non-empty, even when it is also the
+              // display name: with no friendly name it is, and hiding the row
+              // then hid the only name the device reported (#1686 item 3).
+              if (device.hostName.isNotEmpty)
                 DetailInfoTile(
                   icon: Icons.dns,
                   label: loc(context).hostname,
