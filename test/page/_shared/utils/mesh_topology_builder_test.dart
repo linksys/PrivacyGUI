@@ -967,6 +967,41 @@ void main() {
       expect(info?.bands, ['5GHz']);
     });
 
+    // Every leaf below Device.{i} is optional in usp_framework#93's
+    // definition. A STAMLD with no MLD MAC names no client; a link with no
+    // BSSID gives no band but still counts towards the two that make it MLO.
+    test('a STAMLD with no MLD MAC is no client', () {
+      final result = MeshTopologyBuilder.mloClientsOf(
+        network: network(),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(instance: '1', id: nodeId, staMlds: [
+            DataElementsTestData.staMld(
+                mldMacAddress: null, links: [link24, link5Active]),
+          ]),
+        ]),
+      );
+
+      expect(result, isEmpty);
+    });
+
+    test('a link with no BSSID adds no band, the client is still MLO', () {
+      final info = MeshTopologyBuilder.mloClientsOf(
+        network: network(),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(instance: '1', id: nodeId, staMlds: [
+            DataElementsTestData.staMld(mldMacAddress: client, links: [
+              link5Active,
+              DataElementsTestData.affiliatedSta(
+                  macAddress: 'AA:BB:CC:DD:EE:78', bssid: null),
+            ]),
+          ]),
+        ]),
+      )[client];
+
+      expect(info, isNotNull);
+      expect(info!.bands, ['5GHz']);
+    });
+
     // The three states build() hands on: not read, read and empty, entries.
     test('build: no MLD read is null, an empty read is empty', () {
       expect(MeshTopologyBuilder.build(network()).mloClients, isNull,

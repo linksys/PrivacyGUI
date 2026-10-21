@@ -1,5 +1,5 @@
 import 'package:privacy_gui/generated/data_elements_interfaces.g.dart';
-import 'package:privacy_gui/generated/data_elements_mld.g.dart';
+import 'package:privacy_gui/generated/data_elements_mlo_clients.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
 
 /// Builders for the DataElements codegen models (`DataElementsNetwork` and
@@ -202,14 +202,17 @@ class DataElementsTestData {
   /// One link of a client MLD (`AffiliatedSTA`). Every value defaults to 0,
   /// the reading of a link that is not the active one, and of every link for
   /// the first ~50 s after association (#1686, measured 2026-10-20).
-  static MeshAffiliatedSta affiliatedSta({
+  ///
+  /// [bssid] is nullable because every leaf below `Device.{i}` is optional in
+  /// usp_framework's `data_elements_mlo_clients.yaml` (#93).
+  static MloAffiliatedSta affiliatedSta({
     required String macAddress,
-    required String bssid,
+    required String? bssid,
     int rcpi = 0,
     int downlink = 0,
     int uplink = 0,
   }) =>
-      MeshAffiliatedSta(
+      MloAffiliatedSta(
         instancePath: 'AffiliatedSTA.$macAddress.',
         macAddress: macAddress,
         bssid: bssid,
@@ -219,12 +222,12 @@ class DataElementsTestData {
       );
 
   /// One client MLD (`STAMLD`) with its [links].
-  static MeshStaMld staMld({
-    required String mldMacAddress,
-    List<MeshAffiliatedSta> links = const [],
+  static MloStaMld staMld({
+    required String? mldMacAddress,
+    List<MloAffiliatedSta> links = const [],
     bool? isBsta = false,
   }) =>
-      MeshStaMld(
+      MloStaMld(
         instancePath: 'STAMLD.$mldMacAddress.',
         mldMacAddress: mldMacAddress,
         isBsta: isBsta,
@@ -233,17 +236,17 @@ class DataElementsTestData {
 
   /// One node's MLD subtree: a single AP MLD carrying [staMlds], joined to
   /// `DataElementsNetwork` on [id].
-  static MeshNodeMld mldNode({
+  static MloMeshNode mldNode({
     required String instance,
     required String id,
     String apMldMacAddress = '02:00:00:00:00:01',
-    List<MeshStaMld> staMlds = const [],
+    List<MloStaMld> staMlds = const [],
   }) =>
-      MeshNodeMld(
+      MloMeshNode(
         instancePath: nodePath(instance),
         id: id,
         apMlds: [
-          MeshApMld(
+          MloApMld(
             instancePath: '${nodePath(instance)}APMLD.1.',
             mldMacAddress: apMldMacAddress,
             staMlds: staMlds,
@@ -251,7 +254,7 @@ class DataElementsTestData {
         ],
       );
 
-  /// A whole `DataElementsMld`.
-  static DataElementsMld mld(List<MeshNodeMld> nodes) =>
-      DataElementsMld(items: nodes);
+  /// A whole `DataElementsMloClients`.
+  static DataElementsMloClients mld(List<MloMeshNode> nodes) =>
+      DataElementsMloClients(items: nodes);
 }

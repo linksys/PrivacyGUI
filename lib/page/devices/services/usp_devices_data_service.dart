@@ -14,7 +14,7 @@ import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_topology_builder.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_network_builder.dart';
 import 'package:privacy_gui/generated/data_elements_interfaces.g.dart';
-import 'package:privacy_gui/generated/data_elements_mld.g.dart';
+import 'package:privacy_gui/generated/data_elements_mlo_clients.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/generated/data_elements_network_info.g.dart';
 
@@ -149,7 +149,7 @@ class UspDevicesDataService {
       final network = results[0] as DataElementsNetwork;
       final interfaces = results[1] as DataElementsInterfaces?;
       final controllerId = results[2] as String?;
-      final mld = results[3] as DataElementsMld?;
+      final mld = results[3] as DataElementsMloClients?;
       if (network.items.isEmpty) {
         logger.d(
             '[USP][Dashboard]: DataElements empty — not a mesh or unsupported');
@@ -261,15 +261,15 @@ class UspDevicesDataService {
   ///   an empty subtree, not "not known" — or every client on such firmware
   ///   would carry "MLO status unavailable" for good;
   /// - any other fault: null, "not known".
-  Future<DataElementsMld?> _fetchMld() async {
+  Future<DataElementsMloClients?> _fetchMld() async {
     try {
-      return await DataElementsMld.fetch(_usp);
+      return await DataElementsMloClients.fetch(_usp);
     } catch (e) {
       final error = e is ServiceError ? e : mapUspErrorToServiceError(e);
       if (error is ResourceNotFoundError) {
         logger.d('[USP][Dashboard]: no DataElements MLD objects on this '
             'firmware, so no MLO client: $e');
-        return const DataElementsMld(items: []);
+        return const DataElementsMloClients(items: []);
       }
       logger.w('[USP][Dashboard]: DataElements MLD unavailable, MLO clients '
           'are not known: $e');
@@ -282,7 +282,7 @@ class UspDevicesDataService {
     Map<String, String> bssidToBandMap,
     DataElementsInterfaces? interfaces,
     String? controllerId,
-    DataElementsMld? mld,
+    DataElementsMloClients? mld,
   ) {
     final result = MeshTopologyBuilder.build(
       network,

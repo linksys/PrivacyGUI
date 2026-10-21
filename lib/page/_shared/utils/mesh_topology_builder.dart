@@ -1,5 +1,5 @@
 import 'package:privacy_gui/generated/data_elements_interfaces.g.dart';
-import 'package:privacy_gui/generated/data_elements_mld.g.dart';
+import 'package:privacy_gui/generated/data_elements_mlo_clients.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
@@ -53,7 +53,7 @@ class MeshTopologyBuilder {
     bool includeBackhaulStats = true,
     DataElementsInterfaces? interfaces,
     String? controllerId,
-    DataElementsMld? mld,
+    DataElementsMloClients? mld,
   }) {
     // Null unless ControllerID names a node actually in this read; a stale or
     // foreign value must not turn the real controller into a slave.
@@ -235,7 +235,7 @@ class MeshTopologyBuilder {
   ///   on MLO.
   static Map<String, MloClientInfo> mloClientsOf({
     required DataElementsNetwork network,
-    required DataElementsMld mld,
+    required DataElementsMloClients mld,
     Map<String, String> bssidToBandMap = const {},
   }) {
     String key(String mac) => mac.trim().toUpperCase();
@@ -274,13 +274,17 @@ class MeshTopologyBuilder {
       for (final apMld in node.apMlds) {
         for (final staMld in apMld.staMlds) {
           if (staMld.isBsta == true) continue;
-          final client = key(staMld.mldMacAddress);
+          // Every leaf below Device.{i} is optional in the definition: a
+          // STAMLD with no MLD MAC names no client, and is skipped.
+          final client = key(staMld.mldMacAddress ?? '');
           if (client.isEmpty || !stations.contains(client)) continue;
           final links = staMld.affiliatedStas;
           if (links.length < 2) continue;
 
           final linkBands = {
-            for (final link in links) bands[key(link.bssid)],
+            // A link with no BSSID has no band to give; the link still
+            // counts towards the two that make the client MLO.
+            for (final link in links) bands[key(link.bssid ?? '')],
           }..remove(null);
           final active = _activeLink(links);
           result[client] = MloClientInfo(
@@ -315,8 +319,8 @@ class MeshTopologyBuilder {
   /// one with the higher downlink rate is taken, and the client's signal and
   /// rates all come from that one link, never mixed across links. Null when
   /// no link carries values, as for ~50 s after association.
-  static MeshAffiliatedSta? _activeLink(List<MeshAffiliatedSta> links) {
-    MeshAffiliatedSta? best;
+  static MloAffiliatedSta? _activeLink(List<MloAffiliatedSta> links) {
+    MloAffiliatedSta? best;
     for (final link in links) {
       if (!_carriesValues(link)) continue;
       if (best == null ||
@@ -329,7 +333,7 @@ class MeshTopologyBuilder {
   }
 
   /// Whether [link] carries any value: a rate or a signal.
-  static bool _carriesValues(MeshAffiliatedSta link) =>
+  static bool _carriesValues(MloAffiliatedSta link) =>
       _positive(link.lastDataDownlinkRate) != null ||
       _positive(link.lastDataUplinkRate) != null ||
       rcpiToRssi(link.signalStrengthRcpi) != null;

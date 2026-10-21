@@ -5,76 +5,88 @@
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 /// Nested instance from parent multi-instance table
-class MeshAffiliatedSta {
+class MloAffiliatedSta {
   final String instancePath;
-  final String macAddress;
-  final String bssid;
+  final String? macAddress;
+  final String? bssid;
   final int? signalStrengthRcpi;
   final int? lastDataDownlinkRate;
   final int? lastDataUplinkRate;
+  final int? estMacDataRateDownlink;
+  final int? estMacDataRateUplink;
 
-  const MeshAffiliatedSta({
+  const MloAffiliatedSta({
     required this.instancePath,
-    required this.macAddress,
-    required this.bssid,
+    this.macAddress,
+    this.bssid,
     this.signalStrengthRcpi,
     this.lastDataDownlinkRate,
     this.lastDataUplinkRate,
+    this.estMacDataRateDownlink,
+    this.estMacDataRateUplink,
   });
 
   @override
   String toString() {
-    return 'MeshAffiliatedSta('
+    return 'MloAffiliatedSta('
         'instancePath: $instancePath, '
         'macAddress: $macAddress, '
         'bssid: $bssid, '
         'signalStrengthRcpi: $signalStrengthRcpi, '
         'lastDataDownlinkRate: $lastDataDownlinkRate, '
-        'lastDataUplinkRate: $lastDataUplinkRate'
+        'lastDataUplinkRate: $lastDataUplinkRate, '
+        'estMacDataRateDownlink: $estMacDataRateDownlink, '
+        'estMacDataRateUplink: $estMacDataRateUplink'
         ')';
   }
 }
 
 /// Nested instance from parent multi-instance table
-class MeshStaMld {
+class MloStaMld {
   final String instancePath;
-  final String mldMacAddress;
+  final String? mldMacAddress;
+  final String? hostname;
   final bool? isBsta;
-  final List<MeshAffiliatedSta> affiliatedStas;
+  final int? lastConnectTime;
+  final List<MloAffiliatedSta> affiliatedStas;
 
-  const MeshStaMld({
+  const MloStaMld({
     required this.instancePath,
-    required this.mldMacAddress,
+    this.mldMacAddress,
+    this.hostname,
     this.isBsta,
+    this.lastConnectTime,
     required this.affiliatedStas,
   });
 
   @override
   String toString() {
-    return 'MeshStaMld('
+    return 'MloStaMld('
         'instancePath: $instancePath, '
         'mldMacAddress: $mldMacAddress, '
+        'hostname: $hostname, '
         'isBsta: $isBsta, '
+        'lastConnectTime: $lastConnectTime, '
         'affiliatedStas: $affiliatedStas'
         ')';
   }
 }
 
 /// Nested instance from parent multi-instance table
-class MeshApMld {
+class MloApMld {
   final String instancePath;
-  final String mldMacAddress;
-  final List<MeshStaMld> staMlds;
+  final String? mldMacAddress;
+  final List<MloStaMld> staMlds;
 
-  const MeshApMld({
+  const MloApMld({
     required this.instancePath,
-    required this.mldMacAddress,
+    this.mldMacAddress,
     required this.staMlds,
   });
 
   @override
   String toString() {
-    return 'MeshApMld('
+    return 'MloApMld('
         'instancePath: $instancePath, '
         'mldMacAddress: $mldMacAddress, '
         'staMlds: $staMlds'
@@ -82,13 +94,13 @@ class MeshApMld {
   }
 }
 
-/// Single instance from DataElementsMld
-class MeshNodeMld {
+/// Single instance from DataElementsMloClients
+class MloMeshNode {
   final String instancePath;
   final String id;
-  final List<MeshApMld> apMlds;
+  final List<MloApMld> apMlds;
 
-  const MeshNodeMld({
+  const MloMeshNode({
     required this.instancePath,
     required this.id,
     required this.apMlds,
@@ -96,7 +108,7 @@ class MeshNodeMld {
 
   @override
   String toString() {
-    return 'MeshNodeMld('
+    return 'MloMeshNode('
         'instancePath: $instancePath, '
         'id: $id, '
         'apMlds: $apMlds'
@@ -104,35 +116,39 @@ class MeshNodeMld {
   }
 }
 
-/// EasyMesh per-node AP MLDs and the client MLDs associated to them, with each client link (TR-181 2.17+ Data Elements)
-class DataElementsMld {
-  final List<MeshNodeMld> items;
+/// EasyMesh DataElements MLO clients — AP MLDs, client STA MLDs and their per-link affiliated STAs, per mesh node
+class DataElementsMloClients {
+  final List<MloMeshNode> items;
 
-  const DataElementsMld({required this.items});
+  const DataElementsMloClients({required this.items});
 
   @override
-  String toString() => 'DataElementsMld(items: $items)';
+  String toString() => 'DataElementsMloClients(items: $items)';
 
   static const _paths = [
     'Device.WiFi.DataElements.Network.Device.*.ID',
     'Device.WiFi.DataElements.Network.Device.*.APMLD.*.MLDMACAddress',
     'Device.WiFi.DataElements.Network.Device.*.APMLD.*.STAMLD.*.MLDMACAddress',
+    'Device.WiFi.DataElements.Network.Device.*.APMLD.*.STAMLD.*.Hostname',
     'Device.WiFi.DataElements.Network.Device.*.APMLD.*.STAMLD.*.IsbSTA',
+    'Device.WiFi.DataElements.Network.Device.*.APMLD.*.STAMLD.*.LastConnectTime',
     'Device.WiFi.DataElements.Network.Device.*.APMLD.*.STAMLD.*.AffiliatedSTA.*.MACAddress',
     'Device.WiFi.DataElements.Network.Device.*.APMLD.*.STAMLD.*.AffiliatedSTA.*.BSSID',
     'Device.WiFi.DataElements.Network.Device.*.APMLD.*.STAMLD.*.AffiliatedSTA.*.SignalStrength',
     'Device.WiFi.DataElements.Network.Device.*.APMLD.*.STAMLD.*.AffiliatedSTA.*.LastDataDownlinkRate',
     'Device.WiFi.DataElements.Network.Device.*.APMLD.*.STAMLD.*.AffiliatedSTA.*.LastDataUplinkRate',
+    'Device.WiFi.DataElements.Network.Device.*.APMLD.*.STAMLD.*.AffiliatedSTA.*.EstMACDataRateDownlink',
+    'Device.WiFi.DataElements.Network.Device.*.APMLD.*.STAMLD.*.AffiliatedSTA.*.EstMACDataRateUplink',
   ];
 
   /// Fetch all instances via USP Get message
-  static Future<DataElementsMld> fetch(UspClient client) async {
+  static Future<DataElementsMloClients> fetch(UspClient client) async {
     final response = await client.get(_paths);
-    return DataElementsMld._fromResponse(response);
+    return DataElementsMloClients._fromResponse(response);
   }
 
-  factory DataElementsMld._fromResponse(Map<String, dynamic> response) {
-    final items = <MeshNodeMld>[];
+  factory DataElementsMloClients._fromResponse(Map<String, dynamic> response) {
+    final items = <MloMeshNode>[];
     const basePath = 'Device.WiFi.DataElements.Network.Device.';
     final ids = <String>{};
     for (final key in response.keys) {
@@ -158,7 +174,7 @@ class DataElementsMld {
       final childSorted_0 = childIds_0.toList()
         ..sort(
             (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
-      final apMlds = <MeshApMld>[];
+      final apMlds = <MloApMld>[];
       for (final cid_0 in childSorted_0) {
         final cp_0 = '$childBase_0$cid_0.';
         final childBase_1 = '${cp_0}STAMLD.';
@@ -173,7 +189,7 @@ class DataElementsMld {
         final childSorted_1 = childIds_1.toList()
           ..sort(
               (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
-        final staMlds = <MeshStaMld>[];
+        final staMlds = <MloStaMld>[];
         for (final cid_1 in childSorted_1) {
           final cp_1 = '$childBase_1$cid_1.';
           final childBase_2 = '${cp_1}AffiliatedSTA.';
@@ -188,13 +204,17 @@ class DataElementsMld {
           final childSorted_2 = childIds_2.toList()
             ..sort((a, b) =>
                 (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
-          final affiliatedStas = <MeshAffiliatedSta>[];
+          final affiliatedStas = <MloAffiliatedSta>[];
           for (final cid_2 in childSorted_2) {
             final cp_2 = '$childBase_2$cid_2.';
-            affiliatedStas.add(MeshAffiliatedSta(
+            affiliatedStas.add(MloAffiliatedSta(
               instancePath: cp_2,
-              macAddress: (response['${cp_2}MACAddress'] ?? '') as String,
-              bssid: (response['${cp_2}BSSID'] ?? '') as String,
+              macAddress: response.containsKey('${cp_2}MACAddress')
+                  ? response['${cp_2}MACAddress'] as String
+                  : null,
+              bssid: response.containsKey('${cp_2}BSSID')
+                  ? response['${cp_2}BSSID'] as String
+                  : null,
               signalStrengthRcpi: response.containsKey('${cp_2}SignalStrength')
                   ? int.tryParse(
                       response['${cp_2}SignalStrength']?.toString() ?? '')
@@ -209,22 +229,44 @@ class DataElementsMld {
                   ? int.tryParse(
                       response['${cp_2}LastDataUplinkRate']?.toString() ?? '')
                   : null,
+              estMacDataRateDownlink: response
+                      .containsKey('${cp_2}EstMACDataRateDownlink')
+                  ? int.tryParse(
+                      response['${cp_2}EstMACDataRateDownlink']?.toString() ??
+                          '')
+                  : null,
+              estMacDataRateUplink: response
+                      .containsKey('${cp_2}EstMACDataRateUplink')
+                  ? int.tryParse(
+                      response['${cp_2}EstMACDataRateUplink']?.toString() ?? '')
+                  : null,
             ));
           }
-          staMlds.add(MeshStaMld(
+          staMlds.add(MloStaMld(
             instancePath: cp_1,
-            mldMacAddress: (response['${cp_1}MLDMACAddress'] ?? '') as String,
+            mldMacAddress: response.containsKey('${cp_1}MLDMACAddress')
+                ? response['${cp_1}MLDMACAddress'] as String
+                : null,
+            hostname: response.containsKey('${cp_1}Hostname')
+                ? response['${cp_1}Hostname'] as String
+                : null,
             isBsta: response.containsKey('${cp_1}IsbSTA')
                 ? (response['${cp_1}IsbSTA'] == true ||
                     response['${cp_1}IsbSTA'] == 'true' ||
                     response['${cp_1}IsbSTA'] == '1')
                 : null,
+            lastConnectTime: response.containsKey('${cp_1}LastConnectTime')
+                ? int.tryParse(
+                    response['${cp_1}LastConnectTime']?.toString() ?? '')
+                : null,
             affiliatedStas: affiliatedStas,
           ));
         }
-        apMlds.add(MeshApMld(
+        apMlds.add(MloApMld(
           instancePath: cp_0,
-          mldMacAddress: (response['${cp_0}MLDMACAddress'] ?? '') as String,
+          mldMacAddress: response.containsKey('${cp_0}MLDMACAddress')
+              ? response['${cp_0}MLDMACAddress'] as String
+              : null,
           staMlds: staMlds,
         ));
       }
@@ -235,12 +277,12 @@ class DataElementsMld {
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
-      items.add(MeshNodeMld(
+      items.add(MloMeshNode(
         instancePath: p,
         id: (response['${p}ID'] ?? '') as String,
         apMlds: apMlds,
       ));
     }
-    return DataElementsMld(items: items);
+    return DataElementsMloClients(items: items);
   }
 }
