@@ -68,8 +68,8 @@ void main() {
   const saved = 'Device.X.1.';
 
   test('StaticRouteList', () {
-    expect(StaticRouteList(routes: [_route(saved)]).hasUnconfirmedRows,
-        isFalse);
+    expect(
+        StaticRouteList(routes: [_route(saved)]).hasUnconfirmedRows, isFalse);
     expect(
         StaticRouteList(routes: [_route(saved), _route(null)])
             .hasUnconfirmedRows,
@@ -83,7 +83,7 @@ void main() {
         isFalse);
     expect(
         DhcpReservationList(
-            reservations: [_reservation(saved), _reservation(null)])
+                reservations: [_reservation(saved), _reservation(null)])
             .hasUnconfirmedRows,
         isTrue);
   });
