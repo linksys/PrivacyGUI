@@ -59,6 +59,12 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   /// widget renders.
   Map<String, dynamic>? _proofAwaitingRecovery;
 
+  /// The page as last read, before the save that is awaiting recovery marked
+  /// it saved: restored if the router turns out not to have taken the write
+  /// and cannot be read either, so the edit stays pending rather than reading
+  /// as what the router holds.
+  WifiSettingsSettings? _baselineAwaitingRecovery;
+
   /// Whether the last save is waiting for the router to come back before it
   /// can be confirmed. See [confirmAfterRecovery].
   bool get awaitsRouterRecovery => _proofAwaitingRecovery != null;
@@ -76,7 +82,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
     final proof = _proofAwaitingRecovery;
     if (proof == null) return;
     _proofAwaitingRecovery = null;
-    const attempts = 5;
+    const attempts = wifiReadBackAfterRecoveryAttempts;
     final interval = ref.read(wifiReadBackIntervalProvider);
     try {
       for (var attempt = 1;; attempt++) {
@@ -96,18 +102,29 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
         logger.i('[USP][WiFi]: router back, save read back as applied');
         break;
       }
-    } catch (_) {
+    } on ServiceError {
       // Not applied, or never answered: that is the error to report. The form
       // is still re-read so it shows what the router holds, but its outcome
       // must not replace this one.
+      final baseline = _baselineAwaitingRecovery;
+      _baselineAwaitingRecovery = null;
       try {
         await readBackAfterRecovery();
       } on ServiceError catch (e) {
         logger.w('[USP][WiFi]: form read-back after a failed confirm failed',
             error: e);
+        // The read-back kept what was written, clean — the rule for a write
+        // that landed. This one did not land, so put the last-read values
+        // back as the baseline and leave the edit pending.
+        if (baseline != null) {
+          state = state.copyWith(
+            settings: state.settings.copyWith(original: baseline),
+          );
+        }
       }
       rethrow;
     }
+    _baselineAwaitingRecovery = null;
     await readBackAfterRecovery();
   }
 
@@ -126,7 +143,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   /// framework's rule applies: the form keeps what was written and this throws
   /// [SavedButUnconfirmedError].
   Future<void> readBackAfterRecovery() => confirmSavedRetrying(
-        attempts: 5,
+        attempts: wifiReadBackAfterRecoveryAttempts,
         interval: ref.read(wifiReadBackIntervalProvider),
         before: _refreshL1AfterWrite,
       );
@@ -243,7 +260,9 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       status: state.status.copyWith(isSaving: true),
     );
     try {
+      final baseline = state.settings.original;
       await performSave();
+      if (awaitsRouterRecovery) _baselineAwaitingRecovery = baseline;
       markAsSaved();
       return state;
     } on ServiceError catch (e) {

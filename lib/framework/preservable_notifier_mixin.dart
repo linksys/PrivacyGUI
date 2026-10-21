@@ -92,7 +92,7 @@ class _PreservableDelegate<
   /// was written.
   ///
   /// Who asked for the read decides what its failure means, and only this
-  /// method knows (#1212, #1279). `performFetch` turns a failed read into a
+  /// method knows (#1212; the gap #1279 described). `performFetch` turns a failed read into a
   /// status carrying the error, and must: the initial load runs from `build()`
   /// with no caller to catch a throw (#1274), and pull-to-refresh's
   /// `RefreshIndicator` never catches one either. After a save that same status

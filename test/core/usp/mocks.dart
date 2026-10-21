@@ -155,9 +155,35 @@ class UnauthenticatedTransport implements UspTransport {
   @override
   Future<void> refreshToken({String? token}) async => refreshCalls++;
 
+  /// GET reports its 401 the way the WASM client does: it resolves with a
+  /// per-path 9999 in the envelope, it does not throw (measured 2026-10-07;
+  /// #1212). The other verbs still throw — how they reach `UspClient` is
+  /// #1666's to change.
   @override
   Future<Map<String, dynamic>> get(List<String> paths) async {
-    await _request();
+    requests++;
+    final gate = requestGate;
+    if (gate != null) await gate.future;
+    final failure =
+        failWith ?? (rejections > 0 ? unauthenticatedError() : null);
+    if (failure != null) {
+      if (failWith == null) rejections--;
+      return {
+        'success': false,
+        'result': {
+          'data': <String, dynamic>{},
+          'error': {
+            for (final p in paths)
+              p: {
+                'errorCode': 9999,
+                'errorMessage': failure is Exception
+                    ? failure.toString().replaceFirst('Exception: ', '')
+                    : '$failure',
+              },
+          },
+        },
+      };
+    }
     return {
       'success': true,
       'result': {

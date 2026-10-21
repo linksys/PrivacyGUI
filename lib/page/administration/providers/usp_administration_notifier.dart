@@ -67,6 +67,11 @@ class UspAdministrationNotifier
     state = state.copyWith(status: state.status.copyWith(isSaving: true));
     try {
       return await super.save();
+    } on SavedButUnconfirmedError {
+      // The Set landed; only the read-back failed, and the mixin has already
+      // left the page on what was written. Not a failed save: nothing to
+      // re-read here, and nothing to log as one (#1212).
+      rethrow;
     } on ServiceError catch (e) {
       logger.e('[USP][Administration]: Save failed', error: e);
       await _rereadAfterFailure();

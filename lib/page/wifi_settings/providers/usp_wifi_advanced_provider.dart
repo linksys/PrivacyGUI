@@ -122,6 +122,8 @@ class UspWifiAdvancedNotifier
       markAsSaved();
       if (restartsWifi) return state;
       return await confirmSaved();
+    } on SavedButUnconfirmedError {
+      rethrow; // the write landed; only its read-back failed (#1212)
     } on ServiceError catch (e) {
       logger.e('[USP][WiFi][Advanced]: Save failed', error: e);
       rethrow;
@@ -189,7 +191,7 @@ class UspWifiAdvancedNotifier
   /// attempt fails: the tab keeps what was written and this throws
   /// [SavedButUnconfirmedError].
   Future<void> readBackAfterRecovery() => confirmSavedRetrying(
-        attempts: 5,
+        attempts: wifiReadBackAfterRecoveryAttempts,
         interval: ref.read(wifiReadBackIntervalProvider),
         before: _refreshL1AfterWrite,
       );

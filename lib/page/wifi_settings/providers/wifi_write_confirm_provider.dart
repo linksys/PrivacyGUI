@@ -19,6 +19,12 @@ final wifiAnswerWindowProvider = Provider<Duration>(
   (ref) => const Duration(seconds: 30),
 );
 
+/// How many reads, [wifiReadBackIntervalProvider] apart, a Wi-Fi page makes
+/// once the router is back from a write before it gives up: the probe passing
+/// says the router answers, not that its radios have settled, and right after
+/// the reload a Wi-Fi GET comes back with no rows (#1499 bench).
+const wifiReadBackAfterRecoveryAttempts = 5;
+
 /// How often the router is read back while a write's outcome is unknown.
 final wifiReadBackIntervalProvider = Provider<Duration>(
   (ref) => const Duration(seconds: 3),

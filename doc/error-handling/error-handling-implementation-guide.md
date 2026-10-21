@@ -283,13 +283,14 @@ Future<void> _onSave(BuildContext context, WidgetRef ref) async {
     }
   } catch (e) {
     if (context.mounted) {
-      showFailedSnackBar(context, localizeServiceError(context, e));  // ← localize
+      showSaveErrorSnackBar(context, e);  // ← localizes, and picks the style
     }
   }
 }
 ```
 
-- ✅ `showFailedSnackBar(context, localizeServiceError(context, e))`
+- ✅ `showSaveErrorSnackBar(context, e)`
+- ❌ `showFailedSnackBar(context, localizeServiceError(context, e))` for a save — it reports a `SavedButUnconfirmedError` (the write landed, the read-back after it failed; #1212) as a failed save, and the user saves again
 - ❌ `showFailedSnackBar(context, 'Failed to save: $e')` (flattening the string directly, not localized)
 
 `showFailedSnackBar` / `showSuccessSnackBar` have the signature `(BuildContext, String)` — they take an already-translated string and are not responsible for translation.
@@ -454,7 +455,7 @@ Only do this when none of the existing types can express a certain error semanti
 - [ ] state model uses `ServiceError? error`, not `String? errorMessage`; `copyWith` has `clearError`.
 - [ ] Provider has no `'$e'` / `errorMessage: '...'`; fetch stores the type, save rethrows.
 - [ ] View's full-page fetch failure renders `ServiceErrorView` with a context-appropriate `title` (state.error pages pass `status.error`; AsyncValue pages pass `error is ServiceError ? error : null` inside `.when(error:)`). Height-constrained cards / embedded widgets use a compact inline widget instead, still via `localizeServiceError`.
-- [ ] View's save failure goes through `showFailedSnackBar(context, localizeServiceError(context, e))`.
+- [ ] View's save failure goes through `showSaveErrorSnackBar(context, e)` (constitution §13.6).
 - [ ] dashboard card inline actions use `performUspMutation` (it already localizes failures automatically), with `successMessage` passing an already-`loc()`'d string.
 - [ ] No hardcoded English error strings (`'Unable to load...'`, `'Failed to save: $e'`, `'Error: $e'`).
 - [ ] If adding a ServiceError subclass: add the ARB key (including the other locales) + the `switch` case.

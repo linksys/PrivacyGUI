@@ -156,6 +156,7 @@ void main() {
           await container.read(_page.notifier).fetch(forceRemote: true);
 
       expect(state.status.error, isA<NetworkError>());
+      expect(state.status.isLoading, isFalse);
     });
   });
 }

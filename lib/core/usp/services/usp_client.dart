@@ -1082,9 +1082,6 @@ class UspClient {
     }
   }
 
-  /// Reads the usp-client unified Operate response: `{ success, result: { data,
-  /// error? } }`.
-  ///
   /// Decodes a GET's unified envelope into the flat path→value map, and
   /// **throws when the read never reached the router**.
   ///
@@ -1131,6 +1128,9 @@ class UspClient {
     };
   }
 
+  /// Reads the usp-client unified Operate response: `{ success, result: { data,
+  /// error? } }`.
+  ///
   /// Returns `commandKey`, `requestPath` and the flattened output arguments —
   /// and **throws when the agent refused the command**.
   ///

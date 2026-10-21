@@ -619,6 +619,33 @@ void main() {
           container.dispose();
         });
 
+        // #1212 review: the router did not take the rename, and the form
+        // cannot be read either. Keeping what was written as the clean
+        // baseline would show values the router does not hold.
+        test(
+            'not applied, and the form cannot be read ⇒ the edit stays '
+            'pending against the last-read values', () async {
+          final notifier = _ThrowOnRefresh();
+          final container = createContainer(wifiNotifier: () => notifier);
+          final settings = await quickSetupNotifier(container);
+          final before =
+              container.read(uspWifiSettingsProvider).settings.original;
+          await settings.save();
+          expect(settings.awaitsRouterRecovery, isTrue);
+          when(() => mockService.isApplied(any()))
+              .thenAnswer((_) async => false);
+          notifier.failNext = true;
+
+          await expectLater(
+              settings.confirmAfterRecovery(), throwsA(isA<ServiceError>()));
+
+          final state = container.read(uspWifiSettingsProvider);
+          expect(state.settings.original, before);
+          expect(state.isDirty, isTrue,
+              reason: 'the refused rename is still the user\'s edit');
+          container.dispose();
+        });
+
         test('confirmAfterRecovery: read back once, applied ⇒ done', () async {
           final container = createContainer();
           final notifier = await quickSetupNotifier(container);
