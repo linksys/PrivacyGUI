@@ -657,6 +657,7 @@
   "errorUnauthorized": "您没有权限执行此操作。",
   "errorUnexpected": "出了点问题。请重试。",
   "errorCommandRefused": "路由器拒绝了此命令。请稍后重试。",
+  "errorSavedButUnconfirmed": "设置已保存，但无法从路由器读回。请下拉刷新查看。",
   "errors": "错误",
   "estimatedTimeRemaining": "预计剩余时间：{time}",
   "ethernetPorts": "以太网端口",

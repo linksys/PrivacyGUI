@@ -656,6 +656,7 @@
   "errorUnauthorized": "Du har inte behörighet att utföra denna åtgärd.",
   "errorUnexpected": "Något gick fel. Försök igen.",
   "errorCommandRefused": "Routern nekade det här kommandot. Försök igen om en stund.",
+  "errorSavedButUnconfirmed": "Dina inställningar har sparats, men de kunde inte läsas tillbaka från routern. Dra för att uppdatera och se dem.",
   "errors": "Fel",
   "estimatedTimeRemaining": "Beräknad återstående tid: {time}",
   "ethernetPorts": "Ethernet-portar",

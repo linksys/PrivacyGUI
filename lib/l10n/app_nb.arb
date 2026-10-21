@@ -656,6 +656,7 @@
   "errorUnauthorized": "Du har ikke tillatelse til å utføre denne handlingen.",
   "errorUnexpected": "Noe gikk galt. Prøv igjen.",
   "errorCommandRefused": "Ruteren avviste denne kommandoen. Prøv igjen om et øyeblikk.",
+  "errorSavedButUnconfirmed": "Innstillingene er lagret, men de kunne ikke leses tilbake fra ruteren. Dra for å oppdatere for å se dem.",
   "errors": "Feil",
   "estimatedTimeRemaining": "Estimert gjenstående tid: {time}",
   "ethernetPorts": "Ethernet-porter",

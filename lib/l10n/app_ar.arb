@@ -657,6 +657,7 @@
   "errorUnauthorized": "ليس لديك إذن لتنفيذ هذا الإجراء.",
   "errorUnexpected": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
   "errorCommandRefused": "رفض جهاز التوجيه هذا الأمر. يُرجى المحاولة مرة أخرى بعد لحظات.",
+  "errorSavedButUnconfirmed": "تم حفظ إعداداتك، لكن تعذّرت قراءتها مرة أخرى من جهاز التوجيه. اسحب للتحديث لعرضها.",
   "errors": "الأخطاء",
   "estimatedTimeRemaining": "الوقت المتبقي المقدّر: {time}",
   "ethernetPorts": "منافذ Ethernet",

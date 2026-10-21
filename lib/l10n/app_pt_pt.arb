@@ -656,6 +656,7 @@
   "errorUnauthorized": "Não tem permissão para realizar esta ação.",
   "errorUnexpected": "Algo correu mal. Tente novamente.",
   "errorCommandRefused": "O router recusou este comando. Tente novamente dentro de instantes.",
+  "errorSavedButUnconfirmed": "As suas definições foram guardadas, mas não foi possível lê-las novamente do router. Arraste para atualizar e vê-las.",
   "errors": "Erros",
   "estimatedTimeRemaining": "Tempo restante estimado: {time}",
   "ethernetPorts": "Portas Ethernet",

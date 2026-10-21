@@ -654,6 +654,7 @@
   "errorUnauthorized": "Anda tidak memiliki izin untuk melakukan tindakan ini.",
   "errorUnexpected": "Terjadi kesalahan. Harap coba lagi.",
   "errorCommandRefused": "Router menolak perintah ini. Silakan coba lagi sebentar lagi.",
+  "errorSavedButUnconfirmed": "Setelan Anda telah disimpan, tetapi tidak dapat dibaca kembali dari router. Tarik untuk menyegarkan dan melihatnya.",
   "errors": "Kesalahan",
   "estimatedTimeRemaining": "Perkiraan waktu tersisa: {time}",
   "ethernetPorts": "Port Ethernet",

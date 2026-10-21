@@ -656,6 +656,7 @@
   "errorUnauthorized": "U heeft geen toestemming om deze actie uit te voeren.",
   "errorUnexpected": "Er is iets misgegaan. Probeer het opnieuw.",
   "errorCommandRefused": "De router heeft deze opdracht geweigerd. Probeer het over een moment opnieuw.",
+  "errorSavedButUnconfirmed": "Je instellingen zijn opgeslagen, maar konden niet opnieuw van de router worden gelezen. Trek omlaag om te vernieuwen en ze te zien.",
   "errors": "Fouten",
   "estimatedTimeRemaining": "Geschatte resterende tijd: {time}",
   "ethernetPorts": "Ethernet-poorten",

@@ -654,6 +654,7 @@
   "errorUnauthorized": "Sinulla ei ole oikeutta suorittaa tätä toimintoa.",
   "errorUnexpected": "Jokin meni pieleen. Yritä uudelleen.",
   "errorCommandRefused": "Reititin hylkäsi tämän komennon. Yritä hetken kuluttua uudelleen.",
+  "errorSavedButUnconfirmed": "Asetukset tallennettiin, mutta niitä ei voitu lukea takaisin reitittimestä. Näet ne päivittämällä vetämällä.",
   "errors": "Virheet",
   "estimatedTimeRemaining": "Arvioitu jäljellä oleva aika: {time}",
   "ethernetPorts": "Ethernet-portit",

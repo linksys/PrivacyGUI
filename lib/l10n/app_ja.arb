@@ -657,6 +657,7 @@
   "errorUnauthorized": "この操作を実行する権限がありません。",
   "errorUnexpected": "問題が発生しました。再度お試しください。",
   "errorCommandRefused": "ルーターがこのコマンドを拒否しました。しばらくしてからもう一度お試しください。",
+  "errorSavedButUnconfirmed": "設定は保存されましたが、ルーターから読み戻せませんでした。引っ張って更新すると表示されます。",
   "errors": "エラー",
   "estimatedTimeRemaining": "推定残り時間: {time}",
   "ethernetPorts": "イーサネットポート",
