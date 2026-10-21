@@ -642,6 +642,49 @@ void main() {
         expect(client.uplinkRate, 50000);
       });
 
+      // WifiClientUIModel defaults an absent rate to 0; that 0 must not hide
+      // the DataElements rate (the shape of #1438, for rates).
+      test('a 0 rate from Hosts or AssociatedDevice is no reading', () {
+        final client = buildWith(
+          hostsDownlink: 0,
+          wifiClientMap: {
+            clientMac: WifiClientUIModel(
+              macAddress: clientMac,
+              signalStrength: -50,
+              noise: -90,
+              lastDataDownlinkRate: 0,
+              lastDataUplinkRate: 0,
+              active: true,
+            ),
+          },
+          dataElements: (downlink: 6000, uplink: 24000),
+        ).slaves.first.connectedClients.first;
+
+        expect(client.downlinkRate, 6000);
+        expect(client.uplinkRate, 24000);
+      });
+
+      // A row the controller keeps after the client roamed to an agent
+      // carries the old link's rate.
+      test('an inactive AssociatedDevice row does not supply rates', () {
+        final client = buildWith(
+          wifiClientMap: {
+            clientMac: WifiClientUIModel(
+              macAddress: clientMac,
+              signalStrength: -50,
+              noise: -90,
+              lastDataDownlinkRate: 100000,
+              lastDataUplinkRate: 50000,
+              active: false,
+            ),
+          },
+          dataElements: (downlink: 6000, uplink: 24000),
+        ).slaves.first.connectedClients.first;
+
+        expect(client.downlinkRate, 6000);
+        expect(client.uplinkRate, 24000);
+      });
+
       test('a Hosts rate still wins', () {
         final client = buildWith(
                 hostsDownlink: 300000,
@@ -736,6 +779,31 @@ void main() {
         final client = only(buildWith(const {}));
 
         expect(client.wifi?.mloBands, isNull);
+        expect(client.wifi?.mloUnknown, isFalse);
+      });
+
+      // An offline client is on no link, so its MLO state is no question.
+      test('an offline client is not marked MLO unknown', () {
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: ConnectedDevices(items: [
+            buildConnectedDevice(macAddress: 'AA:BB:CC:DD:EE:01'),
+            buildConnectedDevice(
+              macAddress: clientMac,
+              interface_: 'Device.WiFi.Radio.1',
+              interfaceType: 'Wi-Fi',
+              isActive: false,
+            ),
+          ]),
+          wifiClientMap: const {},
+          connectionDetailMap: const {},
+          meshTopology: MeshTopologyInfo(
+            nodes: [buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01')],
+            clientToNodeMap: const {},
+          ),
+          gatewayName: 'Router',
+        );
+
+        final client = result.allClients.firstWhere((c) => c.mac == clientMac);
         expect(client.wifi?.mloUnknown, isFalse);
       });
 

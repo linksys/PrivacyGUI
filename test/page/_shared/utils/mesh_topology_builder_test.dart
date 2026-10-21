@@ -862,6 +862,32 @@ void main() {
       expect(info.signalStrength, isNull);
     });
 
+    // Measured with one link carrying values at a time. Should both carry
+    // them (STR), the higher downlink rate is the active link, and signal and
+    // rates come from that one link, never mixed.
+    test('two links with values: the faster one, all from that link', () {
+      final slow24 = DataElementsTestData.affiliatedSta(
+          macAddress: 'AA:BB:CC:DD:EE:78',
+          bssid: bssid24,
+          rcpi: 160,
+          downlink: 6000,
+          uplink: 6000);
+      final info = MeshTopologyBuilder.mloClientsOf(
+        network: network(),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(instance: '1', id: nodeId, staMlds: [
+            DataElementsTestData.staMld(
+                mldMacAddress: client, links: [slow24, link5Active]),
+          ]),
+        ]),
+      )[client]!;
+
+      expect(info.downlinkRate, 960000);
+      expect(info.uplinkRate, 864000);
+      expect(info.signalStrength, 108 ~/ 2 - 110,
+          reason: 'the signal is the chosen link\'s, not the first link\'s');
+    });
+
     test('a single-link STAMLD is not MLO', () {
       final result = MeshTopologyBuilder.mloClientsOf(
         network: network(),

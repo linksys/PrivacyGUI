@@ -252,14 +252,25 @@ class UspDevicesDataService {
   }
 
   /// Reads `APMLD.{j}.STAMLD.{k}.AffiliatedSTA.{l}`, the client MLDs (#1686
-  /// item 2). Isolated like [_fetchInterfaces]: a fault returns null, which
-  /// the topology carries as "MLO not known" rather than "no MLO", and the
-  /// rest of the topology is unaffected. With MLO switched off the subtree
-  /// answers empty, not with a fault.
+  /// item 2). Isolated like [_fetchInterfaces], so a fault never costs the
+  /// topology. Three outcomes, kept apart because the view shows them apart:
+  /// - read: the subtree, empty when no client is on MLO (also what firmware
+  ///   with MLO switched off answers);
+  /// - path not found (7026 and its kin → [ResourceNotFoundError]): firmware
+  ///   without the TR-181 2.17 MLD objects, which can have no MLO client, so
+  ///   an empty subtree, not "not known" — or every client on such firmware
+  ///   would carry "MLO status unavailable" for good;
+  /// - any other fault: null, "not known".
   Future<DataElementsMld?> _fetchMld() async {
     try {
       return await DataElementsMld.fetch(_usp);
     } catch (e) {
+      final error = e is ServiceError ? e : mapUspErrorToServiceError(e);
+      if (error is ResourceNotFoundError) {
+        logger.d('[USP][Dashboard]: no DataElements MLD objects on this '
+            'firmware, so no MLO client: $e');
+        return const DataElementsMld(items: []);
+      }
       logger.w('[USP][Dashboard]: DataElements MLD unavailable, MLO clients '
           'are not known: $e');
       return null;

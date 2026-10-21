@@ -25,12 +25,14 @@ void main() {
       }
     });
 
-    test('131-135 and 137 are 6 GHz', () {
-      for (final c in [131, 133, 135, 137]) {
+    // 136 is the 6 GHz 20 MHz class for channel 2. Linux's
+    // `ieee80211_operating_class_to_band` leaves it out, but its
+    // `ieee80211_operating_class_to_chandef` maps it to 6 GHz.
+    test('131-137 are 6 GHz, 136 included', () {
+      for (final c in [131, 133, 135, 136, 137]) {
         expect(meshBandOfOperatingClass(c), '6GHz', reason: '$c');
       }
-      expect(meshBandOfOperatingClass(136), isNull,
-          reason: '136 is not a 6 GHz class in Table E-4');
+      expect(meshBandOfOperatingClass(130), '5GHz');
       expect(meshBandOfOperatingClass(138), isNull);
     });
 

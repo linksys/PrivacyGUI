@@ -4,6 +4,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
+import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:privacy_gui/page/devices/views/components/device_icon_with_badge.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:privacy_gui/page/topology/helpers/node_identifier.dart';
@@ -195,10 +196,7 @@ class UspDeviceListTile extends StatelessWidget {
       // `MLO (2.4GHz + 5GHz)` for a client on MLO (#1686 item 2); a display
       // label only, never written into `band`. The "MLO status unavailable"
       // hint is the detail page's: this subtitle is a single joined line.
-      final mloBands = device.wifi?.mloBands;
-      final bandLabel = (mloBands != null && mloBands.isNotEmpty)
-          ? loc(context).mloBands(mloBands.join(' + '))
-          : device.band;
+      final bandLabel = wifiBandLabel(context, device.wifi);
       final bandSsid = [
         if (bandLabel != null && bandLabel.isNotEmpty) bandLabel,
         if (device.ssidName != null && device.ssidName!.isNotEmpty)

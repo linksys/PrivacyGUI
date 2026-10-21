@@ -9,7 +9,6 @@ import 'package:privacy_gui/core/utils/ipv6_address.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart'
     hide ConnectionType;
-import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/device_category_ui.dart';
@@ -287,7 +286,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
           isWifi: device.isWifi,
           mac: device.mac,
           ip: device.ip,
-          band: _bandLabel(context, device.wifi),
+          band: wifiBandLabel(context, device.wifi),
           mloUnknown: device.wifi?.mloUnknown ?? false,
           ssidName: device.ssidName,
           signalStrength: device.signalStrength,
@@ -302,7 +301,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             isWifi: iface.isWifi,
             mac: iface.mac,
             ip: iface.ip,
-            band: _bandLabel(context, iface.wifi),
+            band: wifiBandLabel(context, iface.wifi),
             mloUnknown: iface.wifi?.mloUnknown ?? false,
             ssidName: iface.ssidName,
             signalStrength: iface.signalStrength,
@@ -450,18 +449,6 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
     );
   }
 
-  /// The band line of a Wi-Fi interface: `MLO (2.4GHz + 5GHz)` for a client
-  /// on MLO, its band otherwise (#1686 item 2). MLO is a display label only,
-  /// and never replaces [WifiConnectionInfo.band], which other surfaces group
-  /// by.
-  String? _bandLabel(BuildContext context, WifiConnectionInfo? wifi) {
-    final mloBands = wifi?.mloBands;
-    if (mloBands != null && mloBands.isNotEmpty) {
-      return loc(context).mloBands(mloBands.join(' + '));
-    }
-    return wifi?.band;
-  }
-
   // ===========================================================================
   // WiFi Details Card
   // ===========================================================================
@@ -470,7 +457,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
     final hasSignalData = device.signalStrength != null;
     final hasSpeedData =
         device.downlinkRate != null || device.uplinkRate != null;
-    final bandLabel = _bandLabel(context, device.wifi);
+    final bandLabel = wifiBandLabel(context, device.wifi);
     final mloUnknown = device.wifi?.mloUnknown ?? false;
     final hasBandSsid =
         bandLabel != null || device.ssidName != null || mloUnknown;

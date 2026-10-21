@@ -166,6 +166,7 @@ void main() {
       Map<String, dynamic> networkInfo = const {},
       bool networkInfoFails = false,
       bool mldFails = false,
+      bool mldNotFound = false,
       Map<String, dynamic> mld = const {},
     }) {
       when(() => mockUsp.get(any(), priority: any(named: 'priority')))
@@ -176,7 +177,13 @@ void main() {
           return interfacesResponse;
         }
         if (paths.any((p) => p.toString().contains('.APMLD.'))) {
-          if (mldFails) throw 'USP get failed: 7026 Invalid path';
+          // The router's own wording for a path outside its schema.
+          if (mldNotFound) {
+            throw 'Get failed: Protocol error: CheckPathProperties: Path '
+                '(Device.WiFi.DataElements.Network.Device.1.APMLD.) does not '
+                'exist in the schema (code: 7026)';
+          }
+          if (mldFails) throw 'USP get failed: Transport error';
           return {'${node}ID': '74:12:13:21:56:3a', ...mld};
         }
         if (paths.any((p) => p.toString().endsWith('Network.ControllerID'))) {
@@ -229,6 +236,19 @@ void main() {
     // known", and must not take the topology down with it.
     test('an MLD read that answers empty means no MLO client', () async {
       stubDataElements();
+
+      final topology = await svc.fetchMeshTopology();
+
+      expect(topology.nodes, hasLength(1));
+      expect(topology.mloClients, isEmpty);
+    });
+
+    // Firmware without the TR-181 2.17 MLD objects answers 7026: it can have
+    // no MLO client, so that is "no MLO", not "not known" — or every client on
+    // such firmware would carry the unavailable hint for good.
+    test('an MLD path the firmware does not have means no MLO client',
+        () async {
+      stubDataElements(mldNotFound: true);
 
       final topology = await svc.fetchMeshTopology();
 

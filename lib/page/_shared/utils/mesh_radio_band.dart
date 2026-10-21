@@ -12,7 +12,10 @@
 /// Operating Class per 802.11 Table E-4 that this radio is currently operating
 /// on" (TR-181). Architecture#191 made FL-WRT fill it; a profile it has not
 /// filled reads `0`. The ranges below are Table E-4's global operating
-/// classes as Linux implements them (`ieee80211_operating_class_to_band`).
+/// classes as Linux's `net/wireless/util.c` lists them. Note that
+/// `ieee80211_operating_class_to_band` there omits 136 while
+/// `ieee80211_operating_class_to_chandef` in the same file maps it to 6 GHz
+/// (20 MHz, channel 2); 136 is a 6 GHz class, so it is included here.
 /// Measured on the bench: the 5 GHz radio reported 125, 127 and 128, the
 /// 2.4 GHz radio 81.
 library;
@@ -29,10 +32,7 @@ String? meshBandOfOperatingClass(int operatingClass) {
       (operatingClass >= 115 && operatingClass <= 130)) {
     return '5GHz';
   }
-  if ((operatingClass >= 131 && operatingClass <= 135) ||
-      operatingClass == 137) {
-    return '6GHz';
-  }
+  if (operatingClass >= 131 && operatingClass <= 137) return '6GHz';
   return null;
 }
 

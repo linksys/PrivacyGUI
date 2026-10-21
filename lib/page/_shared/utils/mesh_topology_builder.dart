@@ -76,7 +76,7 @@ class MeshTopologyBuilder {
         final radioBand = meshRadioBand(radio);
         for (final bss in radio.bssList) {
           final bssidUpper = bss.bssid.trim().toUpperCase();
-          final band = bssidToBandMap[bssidUpper] ?? radioBand ?? '';
+          final band = _bssBand(bssidUpper, radioBand, bssidToBandMap) ?? '';
           final ssid = bss.ssid.trim();
 
           for (final sta in bss.stations) {
@@ -253,7 +253,7 @@ class MeshTopologyBuilder {
         final radioBand = meshRadioBand(radio);
         for (final bss in radio.bssList) {
           final bssid = key(bss.bssid);
-          final band = bssidToBandMap[bssid] ?? radioBand;
+          final band = _bssBand(bssid, radioBand, bssidToBandMap);
           if (bssid.isNotEmpty && band != null && band.isNotEmpty) {
             bands[bssid] = band;
           }
@@ -282,7 +282,7 @@ class MeshTopologyBuilder {
           final linkBands = {
             for (final link in links) bands[key(link.bssid)],
           }..remove(null);
-          final active = links.where(_carriesValues).firstOrNull;
+          final active = _activeLink(links);
           result[client] = MloClientInfo(
             bands: _bandOrder.where(linkBands.contains).toList(),
             signalStrength: rcpiToRssi(active?.signalStrengthRcpi),
@@ -295,10 +295,40 @@ class MeshTopologyBuilder {
     return result;
   }
 
+  /// A BSS's band: the controller's own BSSID map first, where it answers
+  /// (#1118: it knows only the controller's BSSIDs), then the radio's band
+  /// from its operating class (#1686). The one rule for a station's band and
+  /// an MLO link's band, so the two cannot disagree.
+  static String? _bssBand(
+    String bssidUpper,
+    String? radioBand,
+    Map<String, String> bssidToBandMap,
+  ) =>
+      bssidToBandMap[bssidUpper] ?? radioBand;
+
   /// The order an MLO client's bands are listed in.
   static const _bandOrder = ['2.4GHz', '5GHz', '6GHz'];
 
-  /// Whether [link] is the active link: the one with a rate or a signal.
+  /// The active link: the one that carries values (FW's rule; the GUI does
+  /// not work it out from anything else). Measured with one link carrying
+  /// values at a time; should two carry them (STR, both links in use), the
+  /// one with the higher downlink rate is taken, and the client's signal and
+  /// rates all come from that one link, never mixed across links. Null when
+  /// no link carries values, as for ~50 s after association.
+  static MeshAffiliatedSta? _activeLink(List<MeshAffiliatedSta> links) {
+    MeshAffiliatedSta? best;
+    for (final link in links) {
+      if (!_carriesValues(link)) continue;
+      if (best == null ||
+          (_positive(link.lastDataDownlinkRate) ?? 0) >
+              (_positive(best.lastDataDownlinkRate) ?? 0)) {
+        best = link;
+      }
+    }
+    return best;
+  }
+
+  /// Whether [link] carries any value: a rate or a signal.
   static bool _carriesValues(MeshAffiliatedSta link) =>
       _positive(link.lastDataDownlinkRate) != null ||
       _positive(link.lastDataUplinkRate) != null ||

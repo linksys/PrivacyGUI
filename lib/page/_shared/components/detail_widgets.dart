@@ -398,13 +398,14 @@ class DetailSpeedCard extends StatelessWidget {
               Icon(icon, size: 16, color: color),
               AppGap.xs(),
               // The label takes the space the icon leaves instead of its
-              // natural width: this card is laid out in a half-width Expanded,
-              // so a long translation (`fr` needs 192dp for `download` while
-              // the row has 172dp) overflowed the row. The value below carries
-              // the number, so shortening the caption loses nothing — and it
-              // must stay on one line, or sibling cards in the same Row would
-              // end up different heights in locales where only one caption is
-              // long (#1302).
+              // natural width. The node-detail page lays two of these cards
+              // side by side in half-width Expandeds, where a long translation
+              // (`fr` needed 192dp for `download` in a 172dp row) overflowed
+              // (#1302); the value below carries the number, so shortening the
+              // caption loses nothing, and one line keeps sibling cards the
+              // same height. The device-detail page stacks its two cards full
+              // width instead (#1686), so its longer "last rate" captions fit;
+              // see `usp_device_detail_speed_card_overflow_test.dart`.
               Expanded(
                 child: AppText.labelSmall(
                   label,
