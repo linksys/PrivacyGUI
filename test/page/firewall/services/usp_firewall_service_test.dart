@@ -482,5 +482,38 @@ void main() {
 
       expect(count, 1);
     });
+
+    test('a save writes Enable on each changed rule, in one SET', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': true,
+                'result': {'data': <String, dynamic>{}},
+              });
+      // Every rule present, each on its own row of a chain other than 1.
+      final keys = [
+        for (final s in FirewallSwitch.values) ...debugRuleKeysOf(s),
+      ];
+      final context = FirewallRuleContext.fromMap({
+        for (var i = 0; i < keys.length; i++)
+          keys[i]: _rule('Device.Firewall.Chain.7.Rule.${i + 11}.',
+              enable: keys[i] == 'ident', description: keys[i]),
+      });
+      final pptp = context.debugRuleMap['pptp']!.instancePath;
+      final ident = context.debugRuleMap['ident']!.instancePath;
+
+      final count = await service.save(
+        original: FirewallUIModel(blockPPTP: false, blockIDENT: false),
+        pending: FirewallUIModel(blockPPTP: true, blockIDENT: true),
+        context: context,
+      );
+
+      final captured = verify(() => mockUsp.set(captureAny(),
+          allowPartial: any(named: 'allowPartial'))).captured;
+      expect(captured, hasLength(1), reason: 'one SET for every changed rule');
+      // PPTP is a Drop rule (blocking enables it); IDENT is an Accept rule
+      // (blocking disables it).
+      expect(captured.single, {'${pptp}Enable': true, '${ident}Enable': false});
+      expect(count, 2);
+    });
   });
 }

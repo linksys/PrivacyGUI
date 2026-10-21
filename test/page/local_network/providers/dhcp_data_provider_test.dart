@@ -120,6 +120,29 @@ void main() {
       container.dispose();
     });
 
+    test('every lease and reservation field reaches its UI model', () async {
+      final container = createContainer();
+      final data = await container.read(dhcpDataProvider.future);
+
+      final lease = data.clientModels[0];
+      expect(lease.mac, 'AA:BB:CC:DD:EE:01');
+      expect(lease.ip, '192.168.1.101');
+      expect(lease.leaseActive, isTrue);
+      expect(lease.leaseExpiry, DateTime.utc(2030));
+      expect(data.clientModels[1].leaseExpiry, DateTime.utc(2020));
+
+      final reservation = data.reservationModels.single;
+      // The row's own path: what a later edit or delete writes to.
+      expect(
+          reservation.instancePath,
+          matches(
+              r'^Device\.DHCPv4\.Server\.Pool\.\d+\.StaticAddress\.\d+\.$'));
+      expect(reservation.mac, 'AA:BB:CC:DD:EE:01');
+      expect(reservation.ip, '192.168.1.50');
+      expect(reservation.enable, isTrue);
+      container.dispose();
+    });
+
     test('hostname enrichment from devicesData', () async {
       final container = createContainer(
         devicesData: _emptyDevicesData(

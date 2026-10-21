@@ -9,6 +9,8 @@ import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_ui_model.dart';
 import 'package:privacy_gui/page/local_network/services/usp_local_network_service.dart';
 
+import '../../../util/usp_param_templates.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 LanNetworkInfo _lanInfo({
@@ -451,6 +453,120 @@ void main() {
       // Device.DeviceInfo). The save MUST pass allowPartial: true, otherwise
       // firmware rejects the cross-service atomic SET with error 7005 (#1039).
       verify(() => mockUsp.set(any(), allowPartial: true)).called(1);
+    });
+
+    // --- What one save writes ---------------------------------------------
+    // The params are compared as templates (instance numbers as `{i}`), so
+    // these pin the leaves and values of the SET, not where the router puts
+    // its rows.
+
+    void stubSaveSuccess() {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': true,
+                'result': {'data': <String, dynamic>{}},
+              });
+    }
+
+    Map<String, dynamic> capturedSet() {
+      final captured = verify(() => mockUsp.set(captureAny(),
+          allowPartial: any(named: 'allowPartial'))).captured;
+      expect(captured, hasLength(1), reason: 'a LAN save is one SET');
+      return paramTemplates(captured.single as Map<String, dynamic>);
+    }
+
+    test('a save that changes every field writes all of them in one SET',
+        () async {
+      stubSaveSuccess();
+
+      await service.save(
+        original: _model(),
+        pending: _model(
+          hostName: 'NewRouter',
+          ipAddress: '10.0.0.1',
+          subnetMask: '255.255.0.0',
+          dhcpEnabled: false,
+          minAddress: '10.0.0.100',
+          maxAddress: '10.0.0.150',
+          leaseTimeMinutes: 60,
+          dnsServer1: '1.1.1.1',
+          dnsServer2: '',
+          dnsServer3: '9.9.9.9',
+        ),
+      );
+
+      expect(capturedSet(), {
+        'Device.DeviceInfo.HostName': 'NewRouter',
+        'Device.IP.Interface.{i}.IPv4Address.{i}.IPAddress': '10.0.0.1',
+        'Device.IP.Interface.{i}.IPv4Address.{i}.SubnetMask': '255.255.0.0',
+        'Device.DHCPv4.Server.Pool.{i}.Enable': false,
+        'Device.DHCPv4.Server.Pool.{i}.MinAddress': '10.0.0.100',
+        'Device.DHCPv4.Server.Pool.{i}.MaxAddress': '10.0.0.150',
+        'Device.DHCPv4.Server.Pool.{i}.LeaseTime': 3600,
+        'Device.DHCPv4.Server.Pool.{i}.DNSServers': '1.1.1.1,9.9.9.9',
+      });
+    });
+
+    test('a save writes only the fields that changed', () async {
+      stubSaveSuccess();
+
+      await service.save(
+        original: _model(),
+        pending: _model(minAddress: '192.168.1.50', leaseTimeMinutes: 30),
+      );
+
+      expect(capturedSet(), {
+        'Device.DHCPv4.Server.Pool.{i}.MinAddress': '192.168.1.50',
+        'Device.DHCPv4.Server.Pool.{i}.LeaseTime': 1800,
+      });
+    });
+
+    test('a host name change alone writes only the host name', () async {
+      stubSaveSuccess();
+
+      await service.save(
+        original: _model(),
+        pending: _model(hostName: 'NewRouter'),
+      );
+
+      expect(capturedSet(), {'Device.DeviceInfo.HostName': 'NewRouter'});
+    });
+
+    test('clearing every DNS server writes an empty DNS list', () async {
+      stubSaveSuccess();
+
+      await service.save(
+        original: _model(),
+        pending: _model(dnsServer1: '', dnsServer2: '', dnsServer3: ''),
+      );
+
+      expect(capturedSet(), {'Device.DHCPv4.Server.Pool.{i}.DNSServers': ''});
+    });
+
+    test('the LAN IP and the DHCP pool are written to the LAN rows', () async {
+      // The interface whose Alias is lan is the one written, whatever its
+      // instance number; the IP never lands on the WAN interface.
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            'Device.IP.Interface.3.Alias': 'wan',
+            'Device.IP.Interface.5.Alias': 'lan',
+          });
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': true,
+                'result': {'data': <String, dynamic>{}},
+              });
+
+      await service.save(
+        original: _model(),
+        pending: _model(subnetMask: '255.255.0.0'),
+      );
+
+      final params = verify(() => mockUsp.set(captureAny(),
+              allowPartial: any(named: 'allowPartial'))).captured.single
+          as Map<String, dynamic>;
+      expect(params.keys.single,
+          matches(r'^Device\.IP\.Interface\.5\.IPv4Address\.\d+\.SubnetMask$'));
     });
 
     test('save throws UspCompleteFailureError on firmware failure', () async {

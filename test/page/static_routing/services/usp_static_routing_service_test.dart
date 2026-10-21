@@ -6,6 +6,8 @@ import 'package:privacy_gui/generated/static_routing.g.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_ui_model.dart';
 import 'package:privacy_gui/page/static_routing/services/usp_static_routing_service.dart';
 
+import '../../../util/usp_param_templates.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 StaticRoute _route({
@@ -344,6 +346,144 @@ void main() {
   // ---------------------------------------------------------------------------
   // Error handling
   // ---------------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------------
+  // What a save writes
+  // ---------------------------------------------------------------------------
+  // Paths the service builds are compared as templates (instance numbers as
+  // `{i}`); paths that come from the page's own rows are compared as given.
+  // The interfaces are the ones the bench router has today: lan on
+  // Interface.1, wan on Interface.2.
+
+  group('UspStaticRoutingService — what is written', () {
+    const okSet = {
+      'success': true,
+      'result': {'data': <String, dynamic>{}},
+    };
+    const r5 = 'Device.Routing.Router.1.IPv4Forwarding.5.';
+    const r9 = 'Device.Routing.Router.1.IPv4Forwarding.9.';
+    const r12 = 'Device.Routing.Router.1.IPv4Forwarding.12.';
+
+    StaticRouteUIModel route(String? path, String name,
+            {String dest = '10.0.0.0',
+            String iface = 'LAN',
+            bool enabled = true}) =>
+        StaticRouteUIModel(
+          instancePath: path,
+          enabled: enabled,
+          name: name,
+          destIpAddress: dest,
+          destSubnetMask: '255.255.255.0',
+          gatewayIpAddress: '192.168.1.254',
+          interfaceName: iface,
+        );
+
+    void stubInterfaces() {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            'Device.IP.Interface.1.Alias': 'lan',
+            'Device.IP.Interface.2.Alias': 'wan',
+            'Device.Routing.Router.1.Alias': 'cpe-1',
+          });
+    }
+
+    test('deletes go out one per row, highest row first', () async {
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => okSet);
+
+      await service.saveBatch(
+        original: [route(r5, 'a'), route(r9, 'b'), route(r12, 'c')],
+        current: [route(r9, 'b')],
+      );
+
+      expect(verify(() => mockUsp.delete(captureAny())).captured, [
+        [r12],
+        [r5],
+      ]);
+    });
+
+    test('adds go out in one Add on the router forwarding table', () async {
+      stubInterfaces();
+      when(() => mockUsp.add(any())).thenAnswer((_) async => {
+            'success': true,
+            'result': {
+              'data': {
+                'affectedCount': 2,
+                'instances': [r9, r12],
+              }
+            },
+          });
+
+      await service.saveBatch(original: [], current: [
+        route(null, 'ToLan', dest: '172.16.0.0'),
+        route(null, 'ToWan',
+            dest: '172.17.0.0', iface: 'Internet', enabled: false),
+      ]);
+
+      final items = verify(() => mockUsp.add(captureAny())).captured.single
+          as List<Map<String, dynamic>>;
+      expect(
+        [
+          for (final item in items)
+            {
+              'path': pathTemplate(item['path'] as String),
+              'params': item['params'],
+            }
+        ],
+        [
+          {
+            'path': 'Device.Routing.Router.{i}.IPv4Forwarding.',
+            'params': {
+              'Enable': true,
+              'DestIPAddress': '172.16.0.0',
+              'DestSubnetMask': '255.255.255.0',
+              'GatewayIPAddress': '192.168.1.254',
+              'Interface': 'Device.IP.Interface.1',
+              'Alias': 'ToLan',
+            },
+          },
+          {
+            'path': 'Device.Routing.Router.{i}.IPv4Forwarding.',
+            'params': {
+              'Enable': false,
+              'DestIPAddress': '172.17.0.0',
+              'DestSubnetMask': '255.255.255.0',
+              'GatewayIPAddress': '192.168.1.254',
+              'Interface': 'Device.IP.Interface.2',
+              'Alias': 'ToWan',
+            },
+          },
+        ],
+      );
+    });
+
+    test('updates go out in one SET on each changed row', () async {
+      stubInterfaces();
+      when(() => mockUsp.set(any())).thenAnswer((_) async => okSet);
+
+      await service.saveBatch(
+        original: [route(r5, 'a'), route(r9, 'b'), route(r12, 'c')],
+        current: [
+          route(r5, 'a', dest: '10.5.0.0'),
+          route(r9, 'b'),
+          route(r12, 'c', iface: 'Internet'),
+        ],
+      );
+
+      expect(verify(() => mockUsp.set(captureAny())).captured.single, {
+        '${r5}Enable': true,
+        '${r5}DestIPAddress': '10.5.0.0',
+        '${r5}DestSubnetMask': '255.255.255.0',
+        '${r5}GatewayIPAddress': '192.168.1.254',
+        '${r5}Interface': 'Device.IP.Interface.1',
+        '${r5}Alias': 'a',
+        '${r12}Enable': true,
+        '${r12}DestIPAddress': '10.0.0.0',
+        '${r12}DestSubnetMask': '255.255.255.0',
+        '${r12}GatewayIPAddress': '192.168.1.254',
+        '${r12}Interface': 'Device.IP.Interface.2',
+        '${r12}Alias': 'c',
+      });
+    });
+  });
 
   group('UspStaticRoutingService — error handling', () {
     test('fetch maps USP error to ServiceError', () async {
