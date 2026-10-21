@@ -40,9 +40,14 @@ class _OneLeafRouter implements UspTransport {
   }
 
   @override
-  Future<Map<String, String>> get(List<String> paths) async {
+  Future<Map<String, dynamic>> get(List<String> paths) async {
     gets++;
-    return {for (final p in paths) p: value};
+    return {
+      'success': true,
+      'result': {
+        'data': {for (final p in paths) p: value}
+      },
+    };
   }
 
   @override

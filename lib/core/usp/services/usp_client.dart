@@ -545,7 +545,10 @@ class UspClient {
     );
 
     try {
-      final rawMap = await _withAuthRetry(() => _client.get(paths));
+      // Decoded inside the retry: a 401 is in the envelope, not thrown, and
+      // [_withAuthRetry] can only see what [extractGetResult] throws (#1212).
+      final rawMap = await _withAuthRetry(
+          () async => extractGetResult(await _client.get(paths)));
       sw.stop();
 
       final label = _idLabel(id);
@@ -1082,6 +1085,52 @@ class UspClient {
   /// Reads the usp-client unified Operate response: `{ success, result: { data,
   /// error? } }`.
   ///
+  /// Decodes a GET's unified envelope into the flat path→value map, and
+  /// **throws when the read never reached the router**.
+  ///
+  /// The WASM client resolves a lost connection, a 401 and a 5xx alike as
+  /// `success: false` with a per-path `9999` (#1212, measured from Node against
+  /// the vendored client). Reading `data` alone turned each of them into an
+  /// empty answer: a required-leaf model threw 9998 ("invalid input"), a table
+  /// read as "no rows", an optional leaf as "the firmware does not have it".
+  ///
+  /// **Only `9999` throws, and `success` is not the test.** A path the router
+  /// does not have comes back as a per-path `7026`, with `success: true` when
+  /// other paths were read and `success: false` when it was the only one
+  /// (measured on FW 2.0.3, 2026-10-13). Both are an answer — that path is
+  /// absent — so the paths that were read are returned and the missing one is
+  /// left out, as before. Throwing on `success == false` would turn "this
+  /// router has no RIP" into a network error.
+  ///
+  /// It throws a string in the USP layer's own shape, as
+  /// [extractOperateResult] does, with the category the client put inside its
+  /// `Transport error: ` wrapper restored by [unwrapUspClientError] — so a 401
+  /// still reads `HTTP 401` to [_isAuthError] and the usual
+  /// `mapUspErrorToServiceError` classifies the rest.
+  @visibleForTesting
+  static Map<String, String> extractGetResult(Map<String, dynamic> raw) {
+    final result = raw['result'];
+    final errors = result is Map ? result['error'] : null;
+    if (errors is Map) {
+      for (final detail in errors.values) {
+        if (detail is! Map) continue;
+        final code = detail['errorCode'];
+        if (code != 9999 && code != '9999') continue;
+        final message = detail['errorMessage']?.toString() ?? 'Request failed';
+        throw 'Get failed: ${unwrapUspClientError(message)}';
+      }
+    }
+
+    final data = result is Map ? result['data'] : null;
+    if (data is! Map) {
+      throw 'Get failed: Protocol error: GET response carries no data';
+    }
+    return {
+      for (final entry in data.entries)
+        entry.key?.toString() ?? '': entry.value?.toString() ?? '',
+    };
+  }
+
   /// Returns `commandKey`, `requestPath` and the flattened output arguments —
   /// and **throws when the agent refused the command**.
   ///
@@ -1261,7 +1310,8 @@ class UspClient {
     const objectPath = 'Device.LocalAgent.Subscription.';
 
     // Step 1: Snapshot existing instance IDs
-    final before = await _withAuthRetry(() => _client.get([objectPath]));
+    final before = await _withAuthRetry(
+        () async => extractGetResult(await _client.get([objectPath])));
     final existingIds = before.keys
         .where((k) => k.endsWith('.Enable'))
         .map((k) {
@@ -1297,7 +1347,8 @@ class UspClient {
       instancePath = createdPath.endsWith('.') ? createdPath : '$createdPath.';
     } else {
       // Discover new instance via GET diff
-      final after = await _withAuthRetry(() => _client.get([objectPath]));
+      final after = await _withAuthRetry(
+          () async => extractGetResult(await _client.get([objectPath])));
       final afterIds = after.keys
           .where((k) => k.endsWith('.Enable'))
           .map((k) {
@@ -1326,12 +1377,12 @@ class UspClient {
 
     // Step 5: Read back to verify
     final verify = await _withAuthRetry(
-      () => _client.get([
+      () async => extractGetResult(await _client.get([
         '${instancePath}Recipient',
         '${instancePath}Enable',
         '${instancePath}NotifType',
         '${instancePath}ReferenceList',
-      ]),
+      ])),
     );
 
     sw.stop();
@@ -1393,7 +1444,8 @@ class UspClient {
     const objectPath = 'Device.LocalAgent.Subscription.';
 
     // Enumerate all subscription instances via GET
-    final allParams = await _withAuthRetry(() => _client.get([objectPath]));
+    final allParams = await _withAuthRetry(
+        () async => extractGetResult(await _client.get([objectPath])));
 
     // Extract unique instance IDs from keys like
     // "Device.LocalAgent.Subscription.3.Enable"

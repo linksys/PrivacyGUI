@@ -434,7 +434,7 @@ Only do this when none of the existing types can express a certain error semanti
 
 ### Known Limitations
 
-- **GET 9999→9998 bug (unfixed)**: a GET connection failure (9999, which should be "network error") is disguised as 9998 at the transport layer's 5th layer → ultimately localized as "input error" (`errorInvalidInput`). This is a transport layer bug, independent of localization. Until it is fixed, **a GET failure's "input error" message may actually be a connection issue**. For the root cause see [`usp-error-handling-reference.md`](usp-error-handling-reference.md) §2.5.
+- **A GET's per-path codes other than 9999 read as "absent"**: since #1212 a 9999 GET failure throws and maps to `NetworkError`, and a 7026 leaves its path absent. Any other per-path code also leaves its path absent, because codegen `_fromResponse` receives only the path→value map. See [`usp-error-handling-reference.md`](usp-error-handling-reference.md) §2.5.
 - **`_localizeFaultCode` and `_mapProtocolError` must stay in sync**: the fetch path (string → `_mapProtocolError` in `mapUspErrorToServiceError`) and the save batch path (envelope → `_localizeFaultCode` in `localizeServiceError`) must give consistent results for the same firmware code. Change one and the other must change too. `_localizeFaultCode`'s doc comment already states "Mirrors `_mapProtocolError` … MUST stay in sync"; the reverse direction (the `usp_error.dart` side) currently **has no** back-pointing reminder, so when changing `_mapProtocolError` you must remember to go back and sync `_localizeFaultCode` yourself.
 
 ### Out of This Pipeline's Scope

@@ -97,7 +97,12 @@ void _supportedDeviceTests() {
     final core = UspClient.withTransport(transport)..throttler = throttler;
     const path = 'Device.X_LINKSYS_AutoIPoE.Status';
     var value = 'before';
-    when(() => transport.get(any())).thenAnswer((_) async => {path: value});
+    when(() => transport.get(any())).thenAnswer((_) async => {
+          'success': true,
+          'result': {
+            'data': {path: value}
+          },
+        });
     expect((await core.get([path]))[path], 'before');
     value = 'after-reset';
     expect((await core.get([path]))[path], 'before');

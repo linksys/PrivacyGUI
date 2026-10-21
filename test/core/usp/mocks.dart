@@ -156,9 +156,14 @@ class UnauthenticatedTransport implements UspTransport {
   Future<void> refreshToken({String? token}) async => refreshCalls++;
 
   @override
-  Future<Map<String, String>> get(List<String> paths) async {
+  Future<Map<String, dynamic>> get(List<String> paths) async {
     await _request();
-    return {for (final p in paths) p: 'value'};
+    return {
+      'success': true,
+      'result': {
+        'data': {for (final p in paths) p: 'value'}
+      },
+    };
   }
 
   @override
