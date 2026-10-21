@@ -151,6 +151,40 @@ void main() {
     });
   });
 
+  group('GetProbeCapabilitySource — dynamic routing (#1100)', () {
+    const ripPath = 'Device.Routing.RIP.Enable';
+
+    test('a RIP switch read off the router means it is offered, NAT included',
+        () async {
+      expect(capabilityProbePath(DeviceCapability.dynamicRouting), ripPath);
+      // NAT (the default) reads "0", which the client coerces to false: a
+      // present value, not an empty one (FW 2.0.3.26101641, bench 2026-10-21).
+      when(() => usp.get(any())).thenAnswer((_) async => {
+            ripPath: false,
+            macFilterPath: 'Disabled',
+          });
+
+      final caps = await source.resolveAll(usp);
+
+      expect(caps.has(DeviceCapability.dynamicRouting), isTrue);
+      expect(caps.has(DeviceCapability.wifiMacFilter), isTrue);
+    });
+
+    test('firmware without linksys-ripd hides the switch and nothing else',
+        () async {
+      // feed_usp#56 8f260d6: no Device.Routing.RIP. without linksys-ripd, so
+      // the path answers 7026 and the Get leaves it out.
+      when(() => usp.get(any())).thenAnswer((_) async => {
+            macFilterPath: 'Disabled',
+          });
+
+      final caps = await source.resolveAll(usp);
+
+      expect(caps.has(DeviceCapability.dynamicRouting), isFalse);
+      expect(caps.has(DeviceCapability.wifiMacFilter), isTrue);
+    });
+  });
+
   group('GetProbeCapabilitySource — batching', () {
     for (final failure in <String, Object>{
       'unknown path': const ResourceNotFoundError(code: 7026),

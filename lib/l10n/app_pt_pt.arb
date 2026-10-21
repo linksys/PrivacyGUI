@@ -1048,6 +1048,8 @@
   "staticRoutes": "Percursos estáticos",
   "staticRoutesSaved": "Percursos estáticos guardados",
   "staticRoutingPageDesc": "Gerir percursos IPv4 estáticos na sua rede",
+  "nat": "NAT",
+  "dynamicRouting": "Encaminhamento dinâmico (RIP)",
   "statistics": "Estatísticas",
   "stillWaitingLongerThanExpected": "Ainda a aguardar — isto pode demorar um pouco mais do que o esperado",
   "store": "Loja",
