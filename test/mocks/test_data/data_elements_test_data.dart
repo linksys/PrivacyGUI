@@ -27,25 +27,43 @@ class DataElementsTestData {
   /// [backhaulStaMac] is where the node's own backhaul MAC lives since #1555.
   /// It used to be the node-level `BackhaulMACAddress`, which FL-WRT 2.0 does
   /// not define at all.
+  ///
+  /// [operatingClasses] become its `CurrentOperatingClassProfile` rows, which
+  /// is where a DataElements radio's band comes from (#1686). Measured on
+  /// `2.0.3.26101482`: the 5 GHz radio reported 125, 127 and 128, the 2.4 GHz
+  /// radio 81.
   static MeshRadio radio(
     String nodePath, {
     int index = 1,
     String? backhaulStaMac,
+    List<int> operatingClasses = const [],
     List<MeshBss> bssList = const [],
   }) =>
       MeshRadio(
         instancePath: '${nodePath}Radio.$index.',
         backhaulStaMacAddress: backhaulStaMac,
-        currentOperatingClassProfiles: const [],
+        currentOperatingClassProfiles: [
+          for (var i = 0; i < operatingClasses.length; i++)
+            MeshRadioOperatingClass(
+              instancePath:
+                  '${nodePath}Radio.$index.CurrentOperatingClassProfile.${i + 1}.',
+              operatingClass: operatingClasses[i],
+              channel: 0,
+            ),
+        ],
         bssList: bssList,
       );
 
   /// One fronthaul BSS with [stations] attached.
+  ///
+  /// [stationRates] gives the stations their `LastDataDownlinkRate` /
+  /// `LastDataUplinkRate` (kbps), keyed by MAC; a station not listed has none.
   static MeshBss bss(
     String nodePath, {
     required String bssid,
     String ssid = 'HomeNetwork',
     List<({String mac, int rcpi})> stations = const [],
+    Map<String, ({int downlink, int uplink})> stationRates = const {},
   }) =>
       MeshBss(
         instancePath: '${nodePath}Radio.1.BSS.1.',
@@ -57,6 +75,8 @@ class DataElementsTestData {
               instancePath: '${nodePath}Radio.1.BSS.1.STA.${i + 1}.',
               macAddress: stations[i].mac,
               signalStrengthRcpi: stations[i].rcpi,
+              lastDataDownlinkRate: stationRates[stations[i].mac]?.downlink,
+              lastDataUplinkRate: stationRates[stations[i].mac]?.uplink,
             ),
         ],
       );
@@ -65,6 +85,8 @@ class DataElementsTestData {
   ///
   /// The controller has no backhaul link: omit [linkType] and
   /// [parentDeviceId] (that is how `hasMeshBackhaulLink` recognises it).
+  /// [radios] replaces the single default radio, for a node whose bands sit
+  /// on separate radios; [bssList] and [backhaulStaMac] are then ignored.
   /// [backhaulMac] is `Backhaul.BackhaulMACAddress` and [backhaulMultiApMac]
   /// is `Backhaul.MACAddress` — both node-owned MACs that
   /// `wiredClientAttribution` must not mistake for a client.
@@ -86,6 +108,7 @@ class DataElementsTestData {
     DateTime? lastContactTime,
     DateTime? statsTimeStamp,
     List<MeshBss> bssList = const [],
+    List<MeshRadio>? radios,
   }) {
     final path = nodePath(instance);
     return MeshNode(
@@ -109,7 +132,8 @@ class DataElementsTestData {
       backhaulStatsErrorsSent: 0,
       backhaulStatsErrorsReceived: 0,
       backhaulStatsTimeStamp: statsTimeStamp,
-      radios: [radio(path, backhaulStaMac: backhaulStaMac, bssList: bssList)],
+      radios: radios ??
+          [radio(path, backhaulStaMac: backhaulStaMac, bssList: bssList)],
     );
   }
 

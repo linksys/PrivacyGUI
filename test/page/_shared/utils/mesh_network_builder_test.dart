@@ -573,6 +573,119 @@ void main() {
       expect(client.wifi?.ssidName, 'NewSSID'); // From connectionDetailMap
     });
 
+    // #1686 item 1. A client on an agent has no Hosts rate on FL-WRT 2.0 and
+    // no AssociatedDevice row on the controller, so only DataElements BSS.STA
+    // gives it a rate.
+    group('client rates (#1686)', () {
+      const clientMac = '11:22:33:44:55:01';
+      MeshNetwork buildWith({
+        int? hostsDownlink,
+        Map<String, WifiClientUIModel> wifiClientMap = const {},
+        ({int? downlink, int? uplink})? dataElements,
+      }) =>
+          MeshNetworkBuilder.build(
+            connectedDevices: ConnectedDevices(items: [
+              buildConnectedDevice(macAddress: 'AA:BB:CC:DD:EE:01'),
+              buildConnectedDevice(macAddress: 'AA:BB:CC:DD:EE:02'),
+              buildConnectedDevice(
+                macAddress: clientMac,
+                hostName: 'AgentClient',
+                interface_: 'Device.WiFi.Radio.1',
+                interfaceType: 'Wi-Fi',
+                isActive: true,
+                lastDataDownlinkRate: hostsDownlink,
+              ),
+            ]),
+            wifiClientMap: wifiClientMap,
+            connectionDetailMap: const {},
+            meshTopology: MeshTopologyInfo(
+              nodes: [
+                buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
+                buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:02'),
+              ],
+              clientToNodeMap: const {clientMac: 'AA:BB:CC:DD:EE:02'},
+              clientRateMap: {
+                if (dataElements != null) clientMac: dataElements
+              },
+            ),
+            gatewayName: 'Router',
+          );
+
+      test('an agent client takes its rates from DataElements', () {
+        final client = buildWith(dataElements: (downlink: 6000, uplink: 24000))
+            .slaves
+            .first
+            .connectedClients
+            .first;
+
+        expect(client.downlinkRate, 6000);
+        expect(client.uplinkRate, 24000);
+      });
+
+      test('the controller AssociatedDevice rate still wins', () {
+        final client = buildWith(
+          wifiClientMap: {
+            clientMac: WifiClientUIModel(
+              macAddress: clientMac,
+              signalStrength: -50,
+              noise: -90,
+              lastDataDownlinkRate: 100000,
+              lastDataUplinkRate: 50000,
+              active: true,
+            ),
+          },
+          dataElements: (downlink: 6000, uplink: 24000),
+        ).slaves.first.connectedClients.first;
+
+        expect(client.downlinkRate, 100000);
+        expect(client.uplinkRate, 50000);
+      });
+
+      test('a Hosts rate still wins', () {
+        final client = buildWith(
+                hostsDownlink: 300000,
+                dataElements: (downlink: 6000, uplink: 24000))
+            .slaves
+            .first
+            .connectedClients
+            .first;
+
+        expect(client.downlinkRate, 300000);
+        expect(client.uplinkRate, 24000);
+      });
+    });
+
+    // An unknown band is null, not ''. `''` used to come through from
+    // clientBandSsidMap (an SSID known, its band not) and became a nameless
+    // bucket in the band filter.
+    test('a client whose band is unknown has a null band, not empty', () {
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: ConnectedDevices(items: [
+          buildConnectedDevice(macAddress: 'AA:BB:CC:DD:EE:01'),
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:01',
+            interface_: 'Device.WiFi.Radio.1',
+            interfaceType: 'Wi-Fi',
+            isActive: true,
+          ),
+        ]),
+        wifiClientMap: const {},
+        connectionDetailMap: const {},
+        meshTopology: MeshTopologyInfo(
+          nodes: [buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01')],
+          clientToNodeMap: const {'11:22:33:44:55:01': 'AA:BB:CC:DD:EE:01'},
+          clientBandSsidMap: const {
+            '11:22:33:44:55:01': (band: '', ssid: 'HomeNetwork'),
+          },
+        ),
+        gatewayName: 'Router',
+      );
+
+      final client = result.master.connectedClients.first;
+      expect(client.band, isNull);
+      expect(client.wifi?.ssidName, 'HomeNetwork');
+    });
+
     test(
         'empty-string band/SSID in connectionDetailMap falls back to '
         'clientBandSsidMap', () {

@@ -30,6 +30,16 @@ class MeshTopologyInfo extends Equatable with DiagnosticLoggable {
   /// doesn't have band/SSID data (connectionDetailMap only covers master clients).
   final Map<String, ({String band, String ssid})> clientBandSsidMap;
 
+  /// Client MAC (uppercase) → its last rates in kbps, from DataElements
+  /// `BSS.STA.LastDataDownlinkRate` / `LastDataUplinkRate` (#1686 item 1).
+  ///
+  /// The rate most recently used to send data (TR-181), not throughput: an
+  /// idle client often reads 6000. Populated for clients on ALL nodes; the
+  /// fallback for a client on an agent, which has no `AssociatedDevice` row
+  /// on the controller and no rate on its Hosts row on FL-WRT 2.0. A
+  /// direction that reads `0` (not filled) is null here.
+  final Map<String, ({int? downlink, int? uplink})> clientRateMap;
+
   /// Wired client MAC (uppercase) → node device ID, from DataElements
   /// `Interface.{j}.Neighbor.{k}` with `IsIEEE1905=false` (#1688 item 2).
   ///
@@ -54,6 +64,7 @@ class MeshTopologyInfo extends Equatable with DiagnosticLoggable {
     required this.clientToNodeMap,
     this.clientSignalMap = const {},
     this.clientBandSsidMap = const {},
+    this.clientRateMap = const {},
     this.wiredClientToNodeMap = const {},
     this.ambiguousWiredClients = const {},
   });
@@ -78,6 +89,7 @@ class MeshTopologyInfo extends Equatable with DiagnosticLoggable {
         'clientToNodeMap': clientToNodeMap,
         'clientSignalMap': clientSignalMap,
         'clientBandSsidMap': clientBandSsidMap,
+        'clientRateMap': clientRateMap,
         'wiredClientToNodeMap': wiredClientToNodeMap,
         'ambiguousWiredClients': ambiguousWiredClients,
       };

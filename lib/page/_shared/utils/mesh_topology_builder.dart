@@ -5,6 +5,7 @@ import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
+import 'package:privacy_gui/page/_shared/utils/mesh_radio_band.dart';
 
 /// Builds [MeshTopologyInfo] from DataElements network data.
 ///
@@ -53,6 +54,7 @@ class MeshTopologyBuilder {
     final clientToNodeMap = <String, String>{};
     final clientSignalMap = <String, int>{};
     final clientBandSsidMap = <String, ({String band, String ssid})>{};
+    final clientRateMap = <String, ({int? downlink, int? uplink})>{};
 
     for (final node in network.items) {
       final rawId = node.id.trim().toUpperCase();
@@ -60,10 +62,13 @@ class MeshTopologyBuilder {
 
       // Build client MAC → node ID mapping, signal strength, and band/SSID
       for (final radio in node.radios) {
+        // The radio's own band, from its operating class (#1686 item 1). The
+        // passed map knows only the controller's BSSIDs (#1118), so it stays
+        // first for those — no change there — and this answers for agents.
+        final radioBand = meshRadioBand(radio);
         for (final bss in radio.bssList) {
-          // Resolve band from BSSID → band mapping
           final bssidUpper = bss.bssid.trim().toUpperCase();
-          final band = bssidToBandMap[bssidUpper] ?? '';
+          final band = bssidToBandMap[bssidUpper] ?? radioBand ?? '';
           final ssid = bss.ssid.trim();
 
           for (final sta in bss.stations) {
@@ -82,6 +87,13 @@ class MeshTopologyBuilder {
               // Store band + SSID for this client
               if (band.isNotEmpty || ssid.isNotEmpty) {
                 clientBandSsidMap[upperMac] = (band: band, ssid: ssid);
+              }
+              // Last rates, kbps. 0 is "not filled", as for the backhaul
+              // stats below; an idle client's 6000 is a real reading.
+              final downlink = _positive(sta.lastDataDownlinkRate);
+              final uplink = _positive(sta.lastDataUplinkRate);
+              if (downlink != null || uplink != null) {
+                clientRateMap[upperMac] = (downlink: downlink, uplink: uplink);
               }
             }
           }
@@ -184,6 +196,7 @@ class MeshTopologyBuilder {
       clientToNodeMap: clientToNodeMap,
       clientSignalMap: clientSignalMap,
       clientBandSsidMap: clientBandSsidMap,
+      clientRateMap: clientRateMap,
       wiredClientToNodeMap: wired?.byNode ?? const {},
       ambiguousWiredClients: wired?.ambiguous ?? const {},
     );
@@ -298,6 +311,10 @@ class MeshTopologyBuilder {
   /// Defined in terms of [nonEmpty] so the two cannot drift on what "reported
   /// nothing" means — the `?? ''` is the whole difference.
   static String _identity(String? value) => nonEmpty(value) ?? '';
+
+  /// [value] when it is a reading, null when firmware left it `0` or absent.
+  static int? _positive(int? value) =>
+      (value != null && value > 0) ? value : null;
 
   /// The node's own station-side backhaul MAC.
   ///

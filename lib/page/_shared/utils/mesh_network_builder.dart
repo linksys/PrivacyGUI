@@ -348,13 +348,20 @@ class MeshNetworkBuilder {
       // '' when AP→SSID→radio resolution fails, so treat empty as absent —
       // otherwise the empty string would mask the DataElements fallback value.
       final bandSsid = meshTopology.clientBandSsidMap[mac];
+      // DataElements last, as for signal and band: Hosts (1.x only) and the
+      // controller's own AssociatedDevice describe a controller client, and
+      // only DataElements BSS.STA describes a client on an agent (#1686).
+      final rates = meshTopology.clientRateMap[mac];
       wifi = WifiConnectionInfo(
         signalStrength: signalStrength,
-        band: _nonEmptyRaw(detail?.band) ?? bandSsid?.band,
+        band: _nonEmptyRaw(detail?.band) ?? _nonEmptyRaw(bandSsid?.band),
         ssidName: _nonEmptyRaw(detail?.ssidName) ?? bandSsid?.ssid,
-        downlinkRate:
-            device.lastDataDownlinkRate ?? wifiClient?.lastDataDownlinkRate,
-        uplinkRate: device.lastDataUplinkRate ?? wifiClient?.lastDataUplinkRate,
+        downlinkRate: device.lastDataDownlinkRate ??
+            wifiClient?.lastDataDownlinkRate ??
+            rates?.downlink,
+        uplinkRate: device.lastDataUplinkRate ??
+            wifiClient?.lastDataUplinkRate ??
+            rates?.uplink,
       );
     }
 

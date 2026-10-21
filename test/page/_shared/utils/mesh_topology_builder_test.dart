@@ -421,6 +421,93 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // A client's band and rates on any node, from DataElements (#1686 item 1)
+  // ---------------------------------------------------------------------------
+  //
+  // The passed bssidToBandMap holds only the controller's own BSSIDs (#1118),
+  // so a client on an agent had no band, and no row anywhere gave it a rate.
+  // The radios' operating classes and the STA rows describe every node.
+  group('MeshTopologyBuilder.build — client band and rates (#1686)', () {
+    const agentId = 'AA:BB:CC:DD:EE:02';
+    const agentBssid = '22:22:22:22:22:05';
+    const client = 'DC:52:85:5D:D0:7C';
+    final agentPath = DataElementsTestData.nodePath('2');
+
+    // An agent with its 5 GHz radio as measured on 2.0.3.26101482.
+    DataElementsNetwork agentNetwork({
+      List<int> operatingClasses = const [125, 127, 128],
+      Map<String, ({int downlink, int uplink})> rates = const {},
+    }) =>
+        DataElementsTestData.network([
+          DataElementsTestData.node(instance: '1', id: 'AA:BB:CC:DD:EE:01'),
+          DataElementsTestData.node(
+            instance: '2',
+            id: agentId,
+            linkType: 'Wi-Fi',
+            parentDeviceId: 'AA:BB:CC:DD:EE:01',
+            radios: [
+              DataElementsTestData.radio(agentPath,
+                  operatingClasses: operatingClasses,
+                  bssList: [
+                    DataElementsTestData.bss(agentPath,
+                        bssid: agentBssid,
+                        stations: const [(mac: client, rcpi: 142)],
+                        stationRates: rates),
+                  ]),
+            ],
+          ),
+        ]);
+
+    test('an agent client takes its band from the radio operating class', () {
+      final result = MeshTopologyBuilder.build(agentNetwork());
+
+      expect(result.clientBandSsidMap[client]?.band, '5GHz');
+    });
+
+    // The controller's own map keeps deciding where it answers, so nothing
+    // changes for a client on the controller.
+    test('the passed BSSID map still wins where it has the BSSID', () {
+      final result = MeshTopologyBuilder.build(agentNetwork(),
+          bssidToBandMap: const {agentBssid: '2.4GHz'});
+
+      expect(result.clientBandSsidMap[client]?.band, '2.4GHz');
+    });
+
+    test('a radio with no usable operating class gives no band', () {
+      final result =
+          MeshTopologyBuilder.build(agentNetwork(operatingClasses: [0]));
+
+      expect(result.clientBandSsidMap[client]?.band, isEmpty);
+    });
+
+    // Measured on the bench: an idle client reads 6000 / 24000 kbps.
+    test('records the STA row last rates in kbps', () {
+      final result = MeshTopologyBuilder.build(
+          agentNetwork(rates: const {client: (downlink: 6000, uplink: 24000)}));
+
+      expect(result.clientRateMap[client], (downlink: 6000, uplink: 24000));
+    });
+
+    // 0 is "not filled", as for the backhaul stats; it must not render as a
+    // 0 bps link.
+    test('a direction that reads 0 is no reading', () {
+      final result = MeshTopologyBuilder.build(
+          agentNetwork(rates: const {client: (downlink: 0, uplink: 24000)}));
+
+      expect(result.clientRateMap[client], (downlink: null, uplink: 24000));
+    });
+
+    test('a station with no rate at all is not in the rate map', () {
+      final both0 = MeshTopologyBuilder.build(
+          agentNetwork(rates: const {client: (downlink: 0, uplink: 0)}));
+      final absent = MeshTopologyBuilder.build(agentNetwork());
+
+      expect(both0.clientRateMap, isNot(contains(client)));
+      expect(absent.clientRateMap, isNot(contains(client)));
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // Wired-client attribution from Interface.{j}.Neighbor.{k} (#1688 item 2)
   // ---------------------------------------------------------------------------
   //
