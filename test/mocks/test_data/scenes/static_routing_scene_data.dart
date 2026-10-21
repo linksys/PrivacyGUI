@@ -87,6 +87,16 @@ StaticRoutingFeatureState dirtyState({bool isSaving = false}) {
   );
 }
 
+/// At FWDEV#213's limit of [kMaxStaticRoutes] routes, so Add is disabled and
+/// the `RuleLimitNote` row shows (#1100).
+final fullState = dataState([
+  for (var i = 1; i <= kMaxStaticRoutes; i++)
+    route2.copyWith(
+      instancePath: 'Device.Routing.Router.1.IPv4Forwarding.$i.',
+      name: 'Route $i',
+    ),
+]);
+
 StaticRoutingFeatureState get errorState => StaticRoutingFeatureState(
       settings: Preservable(
         original: const StaticRouteList(),

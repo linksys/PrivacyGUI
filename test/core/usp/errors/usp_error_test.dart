@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/usp/models/usp_operation_result.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
