@@ -18,7 +18,9 @@ class MloClientInfo extends Equatable with DiagnosticLoggable {
   /// RSSI in dBm of the active link: the link that carries values.
   ///
   /// Null when no link does, which is normal for the first ~50 s after
-  /// association (both links read 0); the client is still on MLO then.
+  /// association (both links read 0); the client is still on MLO then, and
+  /// the app shows its signal and rates empty rather than taking them from
+  /// another source (#1686).
   final int? signalStrength;
 
   /// The active link's last rates in kbps, null where no link carries one.

@@ -340,14 +340,19 @@ class MeshNetworkBuilder {
       // chain can fall through. See linksys/PrivacyGUI#1438.
       final hostsSignal =
           (device.signalStrength == 0) ? null : device.signalStrength;
-      // An MLO client's own row carries the active link's values but names
-      // only the band it associated on; its links are the better source for
-      // signal and rates where one carries values (#1686 item 2).
+      // An MLO client takes its signal and rates from its links only
+      // (#1686 item 2). Its own BSS.STA row names one band but carries the
+      // active link's values, so while a link carries values the row adds
+      // nothing; while none does (the first ~50 s after association) what
+      // the row reads is unmeasured, and a value of unknown origin next to
+      // "MLO (bands)" would read as the MLO link's. So no link with values
+      // leaves them empty rather than falling back (decided 2026-10-21).
       final mlo = meshTopology.mloClients?[mac];
-      final signalStrength = mlo?.signalStrength ??
-          hostsSignal ??
-          wifiClient?.signalStrength ??
-          meshTopology.clientSignalMap[mac];
+      final signalStrength = mlo != null
+          ? mlo.signalStrength
+          : hostsSignal ??
+              wifiClient?.signalStrength ??
+              meshTopology.clientSignalMap[mac];
       // Fallback to DataElements band/SSID for slave node clients.
       // ClientConnectionDetail.band/ssidName are non-nullable Strings that are
       // '' when AP→SSID→radio resolution fails, so treat empty as absent —
@@ -367,14 +372,16 @@ class MeshNetworkBuilder {
         signalStrength: signalStrength,
         band: _nonEmptyRaw(detail?.band) ?? _nonEmptyRaw(bandSsid?.band),
         ssidName: _nonEmptyRaw(detail?.ssidName) ?? bandSsid?.ssid,
-        downlinkRate: mlo?.downlinkRate ??
-            _rate(device.lastDataDownlinkRate) ??
-            _rate(associated?.lastDataDownlinkRate) ??
-            rates?.downlink,
-        uplinkRate: mlo?.uplinkRate ??
-            _rate(device.lastDataUplinkRate) ??
-            _rate(associated?.lastDataUplinkRate) ??
-            rates?.uplink,
+        downlinkRate: mlo != null
+            ? mlo.downlinkRate
+            : _rate(device.lastDataDownlinkRate) ??
+                _rate(associated?.lastDataDownlinkRate) ??
+                rates?.downlink,
+        uplinkRate: mlo != null
+            ? mlo.uplinkRate
+            : _rate(device.lastDataUplinkRate) ??
+                _rate(associated?.lastDataUplinkRate) ??
+                rates?.uplink,
         mloBands: mlo?.bands,
         // Only a mesh read can say whether MLO is known. A topology that is
         // empty (not loaded yet, or not a mesh) has nothing to be unknown

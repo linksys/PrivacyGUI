@@ -729,6 +729,7 @@ void main() {
               clientRateMap: const {
                 clientMac: (downlink: 900000, uplink: 800000),
               },
+              clientSignalMap: const {clientMac: -70},
               mloClients: mloClients,
             ),
             gatewayName: 'Router',
@@ -765,14 +766,27 @@ void main() {
         expect(client.signalStrength, -56);
       });
 
-      // No active link yet: the STA row's values are what there is.
-      test('with no active link the STA row values remain', () {
+      // No active link yet (the first ~50 s after association): what the
+      // STA row reads then is unmeasured, so the values stay empty instead
+      // of falling back to it (decided 2026-10-21).
+      test('with no active link the signal and rates stay empty', () {
         final client = only(buildWith(const {
           clientMac: MloClientInfo(bands: ['2.4GHz', '5GHz']),
         }));
 
+        expect(client.wifi?.mloBands, ['2.4GHz', '5GHz']);
+        expect(client.downlinkRate, isNull);
+        expect(client.uplinkRate, isNull);
+        expect(client.signalStrength, isNull);
+      });
+
+      // The STA row is still the source for a client not on MLO.
+      test('a client not on MLO keeps the STA row values', () {
+        final client = only(buildWith(const {}));
+
         expect(client.downlinkRate, 900000);
         expect(client.uplinkRate, 800000);
+        expect(client.signalStrength, -70);
       });
 
       test('a client not on MLO has no MLO bands, and MLO is known', () {
