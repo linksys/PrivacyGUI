@@ -5,7 +5,6 @@ import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_data_prov
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
@@ -273,7 +272,7 @@ class UspInternetSettingsView extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, localizeServiceError(context, e));
+        showSaveErrorSnackBar(context, e);
       }
     }
   }

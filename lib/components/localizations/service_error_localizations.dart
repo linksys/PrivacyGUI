@@ -37,6 +37,7 @@ String localizeServiceError(BuildContext context, Object error) {
     NetworkError() => l.errorNetwork,
     ConnectivityError() => l.errorConnectivity,
     TimeoutError() => l.errorTimeout,
+    SavedButUnconfirmedError() => l.errorSavedButUnconfirmed,
     ServiceNotInitializedError() => l.errorServiceNotReady,
     // Batch: show the first failure's concrete message (actionable).
     UspPartialFailureError(:final failures) =>

@@ -37,6 +37,9 @@ Applying this framework to a new Feature is straightforward. Follow these five s
     *   `performFetch()`: Write the logic to read data from your API or database. Finally, return a `Record` of `(YourSettings, YourStatus)`.
     *   `performSave()`: Write the logic to save the data from `state.settings.current` to your API or database.
 *   **You do not need to manually update the state**; the `fetch()` and `save()` template methods in the Mixin will handle this automatically.
+*   **A failed read is a status, not a throw.** In `performFetch()`, catch `ServiceError` and return `(null, YourStatus(error: e))`: the initial load runs from `build()`, where nothing can catch a throw (#1274). Give `YourStatus` an `error` field and `implements HasServiceError` (`lib/framework/has_service_error.dart`); `test/framework/has_service_error_roster_test.dart` fails if you forget.
+*   **What `save()` does with a failed read-back (#1212, #1279).** `save()` writes, marks the page clean, then reads the router back. When that read fails it does **not** apply the error status: the page stays on what was written, and `save()` throws `SavedButUnconfirmedError`. In the view, report a save's error with `showSaveErrorSnackBar(context, e)`, which shows that one neutrally rather than as a failed save.
+*   **Overriding `save()`?** If your page sequences its own save (for example to skip the read when the router is about to become unreachable), end it with `confirmSaved()`, not `fetch(forceRemote: true)`, so the read-back keeps the rule above.
 
 **Step 5: Configure the Route (`LinksysRoute`) and UI**
 *   In your route configuration file, locate the route definition for the page.

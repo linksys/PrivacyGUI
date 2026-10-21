@@ -575,10 +575,18 @@ void main() {
         notifier.failNext = true;
 
         await expectLater(settings.save(), completes);
+        expect(notifier.failures, 0,
+            reason: 'nothing is read while the radios reload (#1212): the '
+                'read-back runs after the recovery');
 
+        // After the recovery, a read that still fails is reported as a write
+        // that landed — not as a failed save.
+        await expectLater(settings.readBackAfterRecovery(),
+            throwsA(isA<SavedButUnconfirmedError>()));
         expect(notifier.failures, greaterThan(0),
             reason: 'the refresh must actually have failed, or this test '
                 'proves nothing');
+        expect(container.read(uspWifiSettingsProvider).status.error, isNull);
         container.dispose();
       });
 
@@ -928,6 +936,11 @@ void main() {
 
         notifier.updateNetworkField('Device.WiFi.SSID.1.', ssid: 'Changed');
         await notifier.save();
+        await container.read(mloStatusProvider.future);
+        expect(mloStatusReads, 1,
+            reason: 'not while the radios reload (#1212)');
+
+        await notifier.readBackAfterRecovery();
         await container.read(mloStatusProvider.future);
 
         expect(mloStatusReads, 2);

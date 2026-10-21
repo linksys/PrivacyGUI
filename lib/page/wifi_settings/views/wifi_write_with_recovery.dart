@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
@@ -16,8 +15,14 @@ sealed class WifiWriteDone {
 }
 
 /// The router confirmed the write — answered, or read back.
+///
+/// [readBack], when given, reads the page back once the router is back: the
+/// write reloads the radios, so that read is held until the recovery ends,
+/// and the outcome is reported only after it (#1212). It throws
+/// [SavedButUnconfirmedError] when the page still cannot be read.
 final class WifiWriteConfirmed extends WifiWriteDone {
-  const WifiWriteConfirmed();
+  final Future<void> Function()? readBack;
+  const WifiWriteConfirmed({this.readBack});
 }
 
 /// The write went out but the router could not be read back in time — a
@@ -94,6 +99,7 @@ Future<void> runWifiWriteWithRecovery(
   }
 
   final awaitsRouter = done is WifiWriteAwaitsRouter ? done : null;
+  final readBack = done is WifiWriteConfirmed ? done.readBack : null;
   if (recovering) {
     connection.startProbingNow();
   } else if (awaitsRouter != null) {
@@ -111,13 +117,19 @@ Future<void> runWifiWriteWithRecovery(
       } catch (e) {
         failure = e;
       }
+    } else if (readBack != null) {
+      try {
+        await readBack();
+      } catch (e) {
+        failure = e;
+      }
     }
   } finally {
     settled.complete();
   }
   if (!context.mounted) return;
   if (failure != null) {
-    showFailedSnackBar(context, localizeServiceError(context, failure));
+    showSaveErrorSnackBar(context, failure);
   } else {
     showSuccessSnackBar(context, successMessage);
   }

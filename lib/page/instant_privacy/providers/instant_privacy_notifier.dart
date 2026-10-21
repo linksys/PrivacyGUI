@@ -70,13 +70,7 @@ class UspInstantPrivacyNotifier
     if (!isDirty()) return state;
     state = state.copyWith(status: state.status.copyWith(isSaving: true));
     try {
-      final result = await super.save();
-      final refetchError = result.status.error;
-      if (refetchError != null) {
-        state = state.copyWith(status: state.status.copyWith(clearError: true));
-        throw refetchError;
-      }
-      return result;
+      return await super.save();
     } finally {
       state = state.copyWith(status: state.status.copyWith(isSaving: false));
     }

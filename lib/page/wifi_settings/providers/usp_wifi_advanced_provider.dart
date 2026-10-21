@@ -105,13 +105,23 @@ class UspWifiAdvancedNotifier
   // save — override to manage isSaving flag
   // ---------------------------------------------------------------------------
 
+  /// Writes and marks the tab saved. A save that restarts Wi-Fi (an MLO or
+  /// DFS change) **does not read it back**: the radios are reloading, so the
+  /// read belongs after the recovery the view runs around this —
+  /// [readBackAfterRecovery] (#1212). A steering-only save restarts nothing
+  /// and is read back here.
   @override
   Future<WifiAdvancedFeatureState> save() async {
     state = state.copyWith(
       status: state.status.copyWith(isSaving: true),
     );
     try {
-      return await super.save();
+      // Read before the write: once it is marked saved, nothing differs.
+      final restartsWifi = state.restartsWifi;
+      await performSave();
+      markAsSaved();
+      if (restartsWifi) return state;
+      return await confirmSaved();
     } on ServiceError catch (e) {
       logger.e('[USP][WiFi][Advanced]: Save failed', error: e);
       rethrow;
@@ -171,8 +181,18 @@ class UspWifiAdvancedNotifier
 
     logger.d('[USP][WiFi][Advanced]: Save confirmed — '
         'dfs=${state.changesDfs}, mlo=${state.changesMlo}');
-    if (state.restartsWifi) await _refreshL1AfterWrite();
   }
+
+  /// Reads the tab, and L1 for the other pages, back once the router is back
+  /// from a save that restarted Wi-Fi — see [save]. Retried as the WiFi
+  /// Settings tab's read-back is, and under the framework's rule when every
+  /// attempt fails: the tab keeps what was written and this throws
+  /// [SavedButUnconfirmedError].
+  Future<void> readBackAfterRecovery() => confirmSavedRetrying(
+        attempts: 5,
+        interval: ref.read(wifiReadBackIntervalProvider),
+        before: _refreshL1AfterWrite,
+      );
 
   /// The tab's refresh: reads the switches again, and the MLO status with
   /// them. The status is L1's and nothing pushes it, so a pull-to-refresh or
@@ -262,9 +282,11 @@ class UspWifiAdvancedNotifier
   /// only marks the provider dirty — without an active subscriber it won't
   /// rebuild, and the subsequent .future call would return stale data.
   ///
-  /// Its failure is logged, not thrown: the write is settled by now, and the
-  /// radios it reloaded can still time this read out on the 15 s throttler —
-  /// the same way #1499's confirmed save was reported as a failure.
+  /// Its failure is logged, not thrown: the write is settled by now. It runs
+  /// after the recovery ([readBackAfterRecovery]) rather than mid-reload,
+  /// where it timed out on the 15 s throttler and turned #1499's confirmed
+  /// save into a failure; the tab read that follows reports a read that still
+  /// fails.
   Future<void> _refreshL1AfterWrite() async {
     try {
       final _ = await ref.refresh(wifiDataProvider.future);

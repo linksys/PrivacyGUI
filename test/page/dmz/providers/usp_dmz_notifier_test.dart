@@ -247,6 +247,42 @@ void main() {
       container.dispose();
     });
 
+    // #1212 / #1279, the probe re-run on 2026-10-21: before, save() returned
+    // normally here and status.error was set — the "saved" toast over the
+    // full-page ServiceErrorView.
+    test(
+        'a failed post-save read throws saved-but-unconfirmed and keeps the '
+        'page on what was written', () async {
+      var reads = 0;
+      when(() => mockService.fetch()).thenAnswer((_) async {
+        if (++reads == 1) return (testSettings, testStatus);
+        throw const NetworkError(detail: 'refetch failed');
+      });
+      when(() => mockService.update(
+            instancePath: any(named: 'instancePath'),
+            model: any(named: 'model'),
+          )).thenAnswer((_) async {});
+      when(() => mockService.validateForm(any())).thenReturn({});
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspDmzProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(destIp: '192.168.1.200'));
+
+      await expectLater(
+        notifier.save(),
+        throwsA(isA<SavedButUnconfirmedError>()
+            .having((e) => e.cause, 'cause', isA<NetworkError>())),
+      );
+
+      final state = container.read(uspDmzProvider);
+      expect(state.status.error, isNull);
+      expect(state.settings.current.model.destIp, '192.168.1.200');
+      expect(state.isDirty, isFalse);
+      container.dispose();
+    });
+
     test('revert restores original settings', () async {
       when(() => mockService.fetch())
           .thenAnswer((_) async => (testSettings, testStatus));

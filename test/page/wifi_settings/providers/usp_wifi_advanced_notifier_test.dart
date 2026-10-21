@@ -478,6 +478,28 @@ void main() {
       verify(() => svc.isApplied({_mlo: true})).called(greaterThan(0));
     });
 
+    // #1212: what reloads the radios is read back after the recovery, so
+    // save() reads nothing then; a steering-only save restarts nothing, has no
+    // recovery, and is read back by save() itself.
+    test('the tab is read back by save() only when nothing restarts', () async {
+      final device = _Device(_bench());
+      final c = createContainer(device);
+      final notifier = await loaded(c);
+
+      clearInteractions(svc);
+      notifier.setClientSteering(true);
+      await notifier.save();
+      verify(() => svc.fetchSteering()).called(1);
+
+      clearInteractions(svc);
+      notifier.setDfsEnabled(true);
+      await notifier.save();
+      verifyNever(() => svc.fetchSteering());
+
+      await notifier.readBackAfterRecovery();
+      verify(() => svc.fetchSteering()).called(1);
+    });
+
     test('a steering-only save does not wait for a restart', () async {
       final device = _Device(_bench());
       final c = createContainer(device, settle: const Duration(seconds: 30));
@@ -521,6 +543,12 @@ void main() {
       l1.fail = true;
 
       await expectLater(notifier.save(), completes);
+      expect(l1.failures, 0,
+          reason: 'a DFS save restarts Wi-Fi, so nothing is read while the '
+              'radios reload (#1212): the read-back runs after the recovery');
+
+      // The tab's own read succeeds here; L1 failing is logged, not thrown.
+      await expectLater(notifier.readBackAfterRecovery(), completes);
       expect(l1.failures, greaterThan(0),
           reason: 'the refresh must actually have failed');
     });

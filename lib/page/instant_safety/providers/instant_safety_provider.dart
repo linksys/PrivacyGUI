@@ -97,41 +97,16 @@ class UspInstantSafetyNotifier
       status: state.status.copyWith(isSaving: true),
     );
     try {
-      final result = await super.save();
-
-      // Invalidate L1 LAN data to refresh applied state for menu badge.
-      //
-      // Unconditional, and before the refetchError check below: the mixin runs
-      // performSave() + markAsSaved() before its post-save re-fetch, so by the
-      // time we get here the SET has landed and L1 is stale no matter how the
-      // confirming read went. Skipping this on a failed re-fetch would leave
-      // the badge on the pre-save value with no second chance to converge —
-      // markAsSaved() has already cleaned the state, so the isDirty() guard
-      // above turns a user's retry into a no-op.
-      ref.invalidate(lanDataProvider);
-
-      // performFetch turns a failed re-fetch into status.error instead of
-      // throwing (it has to, for the initial load). super.save() therefore
-      // returns normally even when the post-save re-fetch failed, which would
-      // show the "settings saved" snackbar and a full-page ServiceErrorView at
-      // once. Restore the mixin's documented contract: the SET succeeded, but
-      // the caller must still hear about the re-fetch failure.
-      final refetchError = result.status.error;
-      if (refetchError != null) {
-        // Only the refresh failed, so the page must not turn into a full-page
-        // error: settings already hold the value that was written. Clear the
-        // status and let the caller report the failure as a snackbar.
-        //
-        // The View localizes this the same way it localizes a genuine save
-        // failure, so the toast reads "save failed" for a write that landed.
-        // Distinguishing the two needs a dedicated error type; tracked in
-        // #1279 with the rest of the save-contract work.
-        state = state.copyWith(status: state.status.copyWith(clearError: true));
-        throw refetchError;
-      }
-
-      return result;
+      return await super.save();
     } finally {
+      // Invalidate L1 LAN data to refresh applied state for menu badge — once
+      // the SET has landed, whether or not the confirming read did. The mixin
+      // marks the state saved only after the SET lands, so a clean state here
+      // is that signal; a refused SET leaves it dirty and L1 as it was.
+      // Skipping it on a failed read would leave the badge on the pre-save
+      // value with no second chance to converge: the isDirty() guard above
+      // turns a user's retry into a no-op.
+      if (!isDirty()) ref.invalidate(lanDataProvider);
       state = state.copyWith(
         status: state.status.copyWith(isSaving: false),
       );

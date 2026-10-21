@@ -1,7 +1,10 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:privacy_gui/core/errors/service_error.dart';
+
 import 'feature_state.dart';
+import 'has_service_error.dart';
 import 'preservable.dart';
 import 'preservable_contract.dart';
 
@@ -49,7 +52,14 @@ class _PreservableDelegate<
       forceRemote: forceRemote,
       updateStatusOnly: updateStatusOnly,
     );
+    return _apply(newSettings, newStatus, updateStatusOnly: updateStatusOnly);
+  }
 
+  TState _apply(
+    TSettings? newSettings,
+    TStatus? newStatus, {
+    required bool updateStatusOnly,
+  }) {
     var s = _getState();
     if (updateStatusOnly) {
       // If only updating status, only apply the new status if it's not null.
@@ -78,21 +88,70 @@ class _PreservableDelegate<
   /// from source.
   ///
   /// A failure in [performSave] propagates. A failure in the post-save
-  /// re-fetch does NOT: `performFetch` implementations have to turn a fetch
-  /// error into a status rather than throw, because the initial load runs from
-  /// `build()` with no caller to catch it. So this method returns normally even
-  /// when the confirming read failed, and the returned state carries the error
-  /// on `status.error`.
+  /// re-fetch throws [SavedButUnconfirmedError], and leaves the page on what
+  /// was written.
   ///
-  /// Callers that need to distinguish "written and confirmed" from "written but
-  /// not confirmed" must therefore inspect `result.status.error` themselves —
-  /// `instant_safety` is currently the only one that does. Overriding `save()`
-  /// with `try/catch` alone is not enough. Moving that decision in here is
-  /// tracked in #1279.
+  /// Who asked for the read decides what its failure means, and only this
+  /// method knows (#1212, #1279). `performFetch` turns a failed read into a
+  /// status carrying the error, and must: the initial load runs from `build()`
+  /// with no caller to catch a throw (#1274), and pull-to-refresh's
+  /// `RefreshIndicator` never catches one either. After a save that same status
+  /// used to land on the page — an error page under the caller's "saved" toast,
+  /// for a write that had landed (11 of 14 pages, re-run on DMZ 2026-10-21).
+  /// So here the status is not applied: the settings stay on what was written
+  /// and clean, the status stays as it was, and the read's error is thrown for
+  /// the caller to report.
+  ///
+  /// A failed read is `performFetch` returning no settings. Its error is taken
+  /// from a status that implements [HasServiceError]; one that does not, or
+  /// that carries none, keeps today's behaviour and is applied.
   Future<TState> save() async {
     await _performSave();
     markAsSaved();
-    return await fetch(forceRemote: true);
+    return confirmSaved();
+  }
+
+  /// The post-save half of [save]: reads the router back after a write that
+  /// landed and was marked saved, under the rule documented there.
+  ///
+  /// For a notifier that overrides `save()` with its own sequence (one that
+  /// skips the read when the router is about to be unreachable, say): call
+  /// this instead of `fetch(forceRemote: true)` so the read keeps that rule.
+  Future<TState> confirmSaved() async {
+    final written = _getState();
+    final (newSettings, newStatus) = await _performFetch(forceRemote: true);
+    if (newSettings != null) {
+      return _apply(newSettings, newStatus, updateStatusOnly: false);
+    }
+    final Object? status = newStatus;
+    final cause = status is HasServiceError ? status.error : null;
+    if (cause == null) {
+      return _apply(newSettings, newStatus, updateStatusOnly: false);
+    }
+    _setState(written);
+    throw SavedButUnconfirmedError(cause);
+  }
+
+  /// [confirmSaved], retried: for a write that leaves the router answering
+  /// before its data has settled (every Wi-Fi write reloads the radios, and
+  /// right after the reload a Wi-Fi GET comes back with no rows).
+  ///
+  /// [before] runs ahead of each attempt — refreshing what the read depends
+  /// on. Attempts are [interval] apart; the last failure is thrown.
+  Future<TState> confirmSavedRetrying({
+    required int attempts,
+    required Duration interval,
+    Future<void> Function()? before,
+  }) async {
+    for (var attempt = 1;; attempt++) {
+      await before?.call();
+      try {
+        return await confirmSaved();
+      } on SavedButUnconfirmedError {
+        if (attempt >= attempts) rethrow;
+        await Future<void>.delayed(interval);
+      }
+    }
   }
 
   // --- Internal Logic ---
@@ -135,10 +194,22 @@ mixin PreservableNotifierMixin<
 
   /// Saves, marks clean, then re-fetches to confirm.
   ///
-  /// A failed post-save re-fetch does not throw — it lands on
-  /// `status.error` of the returned state. Inspect it if the caller needs to
-  /// know the confirming read failed. See `_PreservableDelegate.save()`.
+  /// A failed post-save re-fetch throws [SavedButUnconfirmedError] and leaves
+  /// the page on what was written. See `_PreservableDelegate.save()`.
   Future<TState> save() => _delegate.save();
+
+  /// The read-back half of [save], for an override that sequences its own
+  /// save. See `_PreservableDelegate.confirmSaved()`.
+  Future<TState> confirmSaved() => _delegate.confirmSaved();
+
+  /// [confirmSaved], retried. See `_PreservableDelegate.confirmSavedRetrying()`.
+  Future<TState> confirmSavedRetrying({
+    required int attempts,
+    required Duration interval,
+    Future<void> Function()? before,
+  }) =>
+      _delegate.confirmSavedRetrying(
+          attempts: attempts, interval: interval, before: before);
 
   @override
   void revert() => _delegate.revert();
@@ -173,10 +244,22 @@ mixin PreservableAutoDisposeNotifierMixin<
 
   /// Saves, marks clean, then re-fetches to confirm.
   ///
-  /// A failed post-save re-fetch does not throw — it lands on
-  /// `status.error` of the returned state. Inspect it if the caller needs to
-  /// know the confirming read failed. See `_PreservableDelegate.save()`.
+  /// A failed post-save re-fetch throws [SavedButUnconfirmedError] and leaves
+  /// the page on what was written. See `_PreservableDelegate.save()`.
   Future<TState> save() => _delegate.save();
+
+  /// The read-back half of [save], for an override that sequences its own
+  /// save. See `_PreservableDelegate.confirmSaved()`.
+  Future<TState> confirmSaved() => _delegate.confirmSaved();
+
+  /// [confirmSaved], retried. See `_PreservableDelegate.confirmSavedRetrying()`.
+  Future<TState> confirmSavedRetrying({
+    required int attempts,
+    required Duration interval,
+    Future<void> Function()? before,
+  }) =>
+      _delegate.confirmSavedRetrying(
+          attempts: attempts, interval: interval, before: before);
 
   @override
   void revert() => _delegate.revert();

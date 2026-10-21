@@ -288,7 +288,7 @@ class UspStaticRoutingView extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, localizeServiceError(context, e));
+        showSaveErrorSnackBar(context, e);
       }
     }
   }
