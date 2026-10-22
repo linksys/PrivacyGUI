@@ -169,6 +169,101 @@ void main() {
       expect(result.device, isNotNull);
       expect(result.device!.mac.toUpperCase(), 'AA:BB:CC:DD:EE:01');
     });
+
+    // A save can move the page's row under another primary: rows merge by
+    // FriendlyName (#1719), so a Reset on the cable's page joins it to the
+    // Wi-Fi row, which then leads. The page opened by the cable's MAC must
+    // still find the device.
+    test('finds a merged device by the MAC of a non-primary interface',
+        () async {
+      final merged = ClientDevice(
+        mac: 'AA:C8:BF:74:39:F6',
+        ip: '192.168.1.156',
+        hostName: 'Mac',
+        isActive: true,
+        connectionType: ConnectionType.wifi,
+        additionalInterfaces: const [
+          ClientInterfaceInfo(
+            mac: '80:69:1A:13:43:FC',
+            ip: '192.168.1.189',
+            connectionType: ConnectionType.wired,
+            isActive: true,
+          ),
+        ],
+      );
+      final container = createContainer(
+        devices: DevicesData(
+          meshNetwork: MeshNetwork(
+            master: MasterNode(
+              deviceId: 'GATEWAY',
+              model: 'TestRouter',
+              connectedClients: [merged],
+            ),
+          ),
+        ),
+        dhcp: dhcpData,
+      );
+      addTearDown(container.dispose);
+      await container.read(devicesDataProvider.future);
+      await container.read(dhcpDataProvider.future);
+
+      final result =
+          container.read(uspDeviceDetailProvider('80:69:1a:13:43:fc'));
+
+      expect(result.device?.mac, 'AA:C8:BF:74:39:F6');
+    });
+
+    // The page reserves the device's primary MAC and IP, so it must read back
+    // the reservation of that MAC, not of the one it was opened by.
+    test(
+        'a merged device opened by another interface reads its primary\'s '
+        'reservation', () async {
+      final merged = ClientDevice(
+        mac: 'AA:C8:BF:74:39:F6',
+        ip: '192.168.1.156',
+        hostName: 'Mac',
+        isActive: true,
+        connectionType: ConnectionType.wifi,
+        additionalInterfaces: const [
+          ClientInterfaceInfo(
+            mac: '80:69:1A:13:43:FC',
+            ip: '192.168.1.189',
+            connectionType: ConnectionType.wired,
+            isActive: true,
+          ),
+        ],
+      );
+      final container = createContainer(
+        devices: DevicesData(
+          meshNetwork: MeshNetwork(
+            master: MasterNode(
+              deviceId: 'GATEWAY',
+              model: 'TestRouter',
+              connectedClients: [merged],
+            ),
+          ),
+        ),
+        dhcp: DhcpData(
+          clientModels: const [],
+          reservationModels: [
+            DhcpReservationUIModel(
+              instancePath: 'Device.DHCPv4.Server.Pool.1.StaticAddress.4.',
+              mac: 'aa:c8:bf:74:39:f6',
+              ip: '192.168.1.156',
+              enable: true,
+            ),
+          ],
+        ),
+      );
+      addTearDown(container.dispose);
+      await container.read(devicesDataProvider.future);
+      await container.read(dhcpDataProvider.future);
+
+      final result =
+          container.read(uspDeviceDetailProvider('80:69:1a:13:43:fc'));
+
+      expect(result.reservation?.ip, '192.168.1.156');
+    });
   });
 }
 

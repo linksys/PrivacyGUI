@@ -584,14 +584,22 @@ void main() {
   });
 
   // A merged device carries every Hosts row it was built from, so a rename
-  // reaches all of them (#1719).
+  // reaches all of them (#1719). Each interface carries its own row.
   group('ClientDevice hostInstancePaths (#1719)', () {
     final merged = DevicesTestData.createWifiClient().copyWith(
       hostInstancePath: 'Device.Hosts.Host.3.',
-      additionalHostInstancePaths: ['Device.Hosts.Host.7.'],
+      additionalInterfaces: const [
+        ClientInterfaceInfo(
+          mac: '11:22:33:44:55:FE',
+          ip: '192.168.1.151',
+          connectionType: ConnectionType.wired,
+          isActive: true,
+          hostInstancePath: 'Device.Hosts.Host.7.',
+        ),
+      ],
     );
 
-    test('lists the primary row first, then the others', () {
+    test('lists the primary row first, then each interface\'s row', () {
       expect(merged.hostInstancePaths,
           ['Device.Hosts.Host.3.', 'Device.Hosts.Host.7.']);
     });
@@ -600,14 +608,23 @@ void main() {
       expect(DevicesTestData.createWifiClient().hostInstancePaths, isEmpty);
     });
 
-    test('copyWith keeps the other rows, and equality sees them', () {
-      expect(merged.copyWith().additionalHostInstancePaths,
-          ['Device.Hosts.Host.7.']);
-      expect(merged, equals(merged.copyWith()));
+    test('an interface\'s row takes part in its equality', () {
+      const iface = ClientInterfaceInfo(
+        mac: '11:22:33:44:55:FE',
+        ip: '192.168.1.151',
+        connectionType: ConnectionType.wired,
+        isActive: true,
+        hostInstancePath: 'Device.Hosts.Host.7.',
+      );
       expect(
-          merged,
-          isNot(equals(merged.copyWith(
-              additionalHostInstancePaths: ['Device.Hosts.Host.8.']))));
+          iface,
+          isNot(equals(const ClientInterfaceInfo(
+            mac: '11:22:33:44:55:FE',
+            ip: '192.168.1.151',
+            connectionType: ConnectionType.wired,
+            isActive: true,
+            hostInstancePath: 'Device.Hosts.Host.8.',
+          ))));
     });
   });
 

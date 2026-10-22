@@ -770,6 +770,59 @@ void main() {
       );
     });
 
+    // Same rows, same interface, same FriendlyName: only the DHCP HostName
+    // differs, so nothing but the grouping key can keep them apart.
+    test('rows that differ only in HostName merge', () {
+      ConnectedDevice row(String mac, String hostName) => buildConnectedDevice(
+            macAddress: mac,
+            hostName: hostName,
+            interfaceType: 'Ethernet',
+            linksysFriendlyName: 'Desk PC',
+          );
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: ConnectedDevices(items: [
+          row('11:22:33:44:55:01', 'desk-pc'),
+          row('11:22:33:44:55:02', 'DESKTOP-7Q2L'),
+        ]),
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        meshTopology: MeshTopologyInfo.empty,
+        gatewayName: 'Router',
+      );
+
+      expect(result.allClients.single.interfaceCount, 2);
+    });
+
+    // devidentd can learn a better name later. The builder keeps no key
+    // between builds, so a row whose FriendlyName changed regroups with what
+    // it now reads.
+    test('a row regroups when its FriendlyName changes between builds', () {
+      MeshNetwork buildWith(String wifiName) => MeshNetworkBuilder.build(
+            connectedDevices: ConnectedDevices(items: [
+              buildConnectedDevice(
+                macAddress: '11:22:33:44:55:01',
+                hostName: 'Laptop',
+                interfaceType: 'Ethernet',
+                linksysFriendlyName: 'Work laptop',
+              ),
+              buildConnectedDevice(
+                macAddress: '11:22:33:44:55:02',
+                hostName: 'Mac',
+                interface_: 'Device.WiFi.Radio.1',
+                interfaceType: 'Wi-Fi',
+                linksysFriendlyName: wifiName,
+              ),
+            ]),
+            wifiClientMap: {},
+            connectionDetailMap: {},
+            meshTopology: MeshTopologyInfo.empty,
+            gatewayName: 'Router',
+          );
+
+      expect(buildWith('Mac').allClients, hasLength(2));
+      expect(buildWith('Work laptop').allClients, hasLength(1));
+    });
+
     // devidentd reads "" until it identifies a host, and the builder turns
     // that into a null friendlyName; such rows still merge on HostName.
     test('rows devidentd has not named yet merge by HostName', () {
@@ -829,10 +882,10 @@ void main() {
 
     // A laptop with Wi-Fi and a cable is two Hosts rows merged into one device.
     // The primary is the active Wi-Fi row, but the user values may sit on the
-    // cable's row only: one row holds the name as UserDeviceName, the other as
-    // UserDeviceLocation, so both read the same FriendlyName and merge (#1719).
-    // The merged device shows the name and icon the user set on whichever row
-    // has them, so a name does not vanish when the primary changes (#1691).
+    // cable's row only, while both rows read the same FriendlyName and so merge
+    // (#1719): another client named the Wi-Fi row that way, say. The merged
+    // device shows the name and icon the user set on whichever row has them,
+    // so a name does not vanish when the primary changes (#1691).
     test('a merged device keeps the user name and icon from any of its rows',
         () {
       final result = MeshNetworkBuilder.build(
@@ -867,11 +920,12 @@ void main() {
       expect(laptop.userDeviceName, 'Work laptop');
       expect(laptop.userDeviceType, '3');
       expect(laptop.friendlyName, 'Work laptop');
-      expect(laptop.hostInstancePath, 'Device.Hosts.Host.6.',
-          reason: 'an edit goes to the row that holds the user values');
+      expect(laptop.hostInstancePaths,
+          ['Device.Hosts.Host.5.', 'Device.Hosts.Host.6.'],
+          reason: 'an edit writes every row, primary first');
     });
 
-    test('a merged device with no user values keeps the primary row', () {
+    test('a merged device with no user values keeps the primary\'s values', () {
       final result = MeshNetworkBuilder.build(
         connectedDevices: ConnectedDevices(items: [
           buildConnectedDevice(

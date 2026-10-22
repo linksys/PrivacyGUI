@@ -185,6 +185,13 @@ class UspDevicesDataService {
     required String name,
     String? userTypeCode,
   }) async {
+    // The generated update answers success without a Set when it has no
+    // params, which would report a name that was never written.
+    if (hostInstancePaths.isEmpty) {
+      throw const ResourceNotFoundError(
+        detail: 'No Hosts row to write the device identity to',
+      );
+    }
     try {
       final result = await ConnectedDevices.update(_usp, [
         for (final path in hostInstancePaths)

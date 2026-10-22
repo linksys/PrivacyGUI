@@ -42,6 +42,11 @@ class ClientInterfaceInfo with EquatableMixin, DiagnosticNamed {
   /// WiFi connection details (null if wired).
   final WifiConnectionInfo? wifi;
 
+  /// This interface's `Device.Hosts.Host.{i}.` row, which a rename of the
+  /// device writes too (#1719). Null for an interface not built from a Hosts
+  /// row.
+  final String? hostInstancePath;
+
   const ClientInterfaceInfo({
     required this.mac,
     required this.ip,
@@ -49,6 +54,7 @@ class ClientInterfaceInfo with EquatableMixin, DiagnosticNamed {
     required this.isActive,
     this.layer1Interface = '',
     this.wifi,
+    this.hostInstancePath,
   });
 
   /// Whether this is a WiFi interface.
@@ -71,6 +77,7 @@ class ClientInterfaceInfo with EquatableMixin, DiagnosticNamed {
         isActive,
         layer1Interface,
         wifi,
+        hostInstancePath,
       ];
 
   @override
@@ -84,6 +91,7 @@ class ClientInterfaceInfo with EquatableMixin, DiagnosticNamed {
         'isActive': isActive,
         'layer1Interface': layer1Interface,
         'wifi': wifi,
+        'hostInstancePath': hostInstancePath,
       };
 }
 
@@ -189,24 +197,21 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
   /// nothing matches on it since #1688, which pairs nodes by `PhysAddress`.
   final String? hostsDeviceId;
 
-  /// This client's `Device.Hosts.Host.{i}.` row (#1691): for a merged client,
-  /// the row its user name and type were read from. A rename writes every row
-  /// in [hostInstancePaths]. Null for a client not built from a Hosts row.
+  /// The primary interface's `Device.Hosts.Host.{i}.` row (#1691). Null for a
+  /// client not built from a Hosts row.
   final String? hostInstancePath;
 
-  /// Every `Device.Hosts.Host.{i}.` row merged into this client (#1719): one
-  /// for a single-interface client, one per interface for a merged one.
+  /// Every `Device.Hosts.Host.{i}.` row of this client (#1719): the primary
+  /// interface's, then each of [additionalInterfaces]'.
   ///
   /// A rename writes all of them. devidentd keeps the user's name per MAC and
   /// rows merge by the FriendlyName it reads back, so naming one row only
   /// would split the device again.
   List<String> get hostInstancePaths => [
         if (hostInstancePath != null) hostInstancePath!,
-        ...additionalHostInstancePaths,
+        for (final interface in additionalInterfaces)
+          if (interface.hostInstancePath != null) interface.hostInstancePath!,
       ];
-
-  /// The rows in [hostInstancePaths] other than [hostInstancePath].
-  final List<String> additionalHostInstancePaths;
 
   // ─── Multi-interface ───
   /// Additional network interfaces for this device.
@@ -233,7 +238,6 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
     this.userDeviceName,
     this.hostsDeviceId,
     this.hostInstancePath,
-    this.additionalHostInstancePaths = const [],
     this.additionalInterfaces = const [],
   }) : _parentNodeName = parentNodeName;
 
@@ -345,7 +349,6 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
     String? userDeviceName,
     String? hostsDeviceId,
     String? hostInstancePath,
-    List<String>? additionalHostInstancePaths,
     List<ClientInterfaceInfo>? additionalInterfaces,
   }) {
     return ClientDevice(
@@ -372,8 +375,6 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
       userDeviceName: userDeviceName ?? this.userDeviceName,
       hostsDeviceId: hostsDeviceId ?? this.hostsDeviceId,
       hostInstancePath: hostInstancePath ?? this.hostInstancePath,
-      additionalHostInstancePaths:
-          additionalHostInstancePaths ?? this.additionalHostInstancePaths,
       additionalInterfaces: additionalInterfaces ?? this.additionalInterfaces,
     );
   }
@@ -400,7 +401,6 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
         userDeviceName,
         hostsDeviceId,
         hostInstancePath,
-        additionalHostInstancePaths,
         additionalInterfaces,
       ];
 
@@ -429,7 +429,6 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
         'userDeviceName': userDeviceName,
         'hostsDeviceId': hostsDeviceId,
         'hostInstancePath': hostInstancePath,
-        'additionalHostInstancePaths': additionalHostInstancePaths,
         'additionalInterfaces': additionalInterfaces,
       };
 }

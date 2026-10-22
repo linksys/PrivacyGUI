@@ -96,7 +96,7 @@ class MeshNetworkBuilder {
         .toList();
 
     // 4. Merge each multi-interface device's rows into one client
-    final groupedClients = _groupByName(allBuiltClients);
+    final groupedClients = _groupByFriendlyName(allBuiltClients);
 
     // 5. Group clients by parentNodeId
     final clientsByNodeId = <String?, List<ClientDevice>>{};
@@ -405,8 +405,8 @@ class MeshNetworkBuilder {
   static String? _nonEmptyRaw(String? s) =>
       (s != null && s.isNotEmpty) ? s : null;
 
-  static String _normalizeHostname(String hostname) {
-    var normalized = hostname.trim().toLowerCase();
+  static String _normalizeGroupingName(String name) {
+    var normalized = name.trim().toLowerCase();
     if (normalized.isEmpty) return '';
     final mdnsSuffixIndex = normalized.indexOf('._');
     if (mdnsSuffixIndex > 0) {
@@ -423,12 +423,13 @@ class MeshNetworkBuilder {
   /// MAC sends only "Mac" in DHCP, while devidentd names both of its rows
   /// from mDNS. Rows are regrouped on every build, so a name devidentd
   /// improves later regroups them; nothing stores the key.
-  static List<ClientDevice> _groupByName(List<ClientDevice> clients) {
+  static List<ClientDevice> _groupByFriendlyName(List<ClientDevice> clients) {
     final grouped = <String, List<ClientDevice>>{};
     final ungrouped = <ClientDevice>[];
 
     for (final client in clients) {
-      final name = _normalizeHostname(client.friendlyName ?? client.hostName);
+      final name =
+          _normalizeGroupingName(client.friendlyName ?? client.hostName);
       if (name.isEmpty) {
         ungrouped.add(client);
       } else {
@@ -466,6 +467,7 @@ class MeshNetworkBuilder {
               isActive: d.isActive,
               layer1Interface: d.layer1Interface,
               wifi: d.wifi,
+              hostInstancePath: d.hostInstancePath,
             ))
         .toList();
 
@@ -474,8 +476,9 @@ class MeshNetworkBuilder {
 
     // The name and icon the user gave are kept per MAC, so they may sit on a
     // row that is not the primary: a laptop named on its cable, now on Wi-Fi.
-    // Take them, and the row an edit writes back to, from the first row that
-    // has either, so the name does not vanish when the primary changes (#1691).
+    // Take them from the first row that has either, so the name does not
+    // vanish when the primary changes (#1691). An edit writes every row
+    // (#1719), so it needs no row of its own.
     final named = sorted.firstWhere(
       (d) => d.userDeviceName != null || d.userDeviceType != null,
       orElse: () => primary,
@@ -486,12 +489,6 @@ class MeshNetworkBuilder {
       friendlyName: named.friendlyName,
       userDeviceName: named.userDeviceName,
       userDeviceType: named.userDeviceType,
-      hostInstancePath: named.hostInstancePath,
-      additionalHostInstancePaths: [
-        for (final d in sorted)
-          if (d.hostInstancePath != null && !identical(d, named))
-            d.hostInstancePath!,
-      ],
     );
   }
 

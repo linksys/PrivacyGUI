@@ -7,16 +7,21 @@ import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
 
 /// Looks up a single device + its DHCP reservation by MAC address.
+///
+/// The MAC may be any of a merged device's interfaces, not only its primary:
+/// a rename or Reset can merge the page's row into another, which then leads
+/// (#1719).
 final uspDeviceDetailProvider =
     Provider.family<DeviceDetailState, String>((ref, mac) {
   final data = ref.watch(devicesDataProvider).valueOrNull;
   if (data == null) return DeviceDetailState.empty();
-  final device = data.clientDevices.firstWhereOrNull(
-    (d) => d.mac.toUpperCase() == mac.toUpperCase(),
-  );
+  final device = data.meshNetwork.findClient(mac);
+  // The page reserves the device's primary MAC, so it reads that MAC's
+  // reservation back, whichever interface it was opened by.
+  final reservedMac = (device?.mac ?? mac).toUpperCase();
   final dhcpData = ref.watch(dhcpDataProvider).valueOrNull;
   final reservation = dhcpData?.reservationModels.firstWhereOrNull(
-    (r) => r.mac.toUpperCase() == mac.toUpperCase(),
+    (r) => r.mac.toUpperCase() == reservedMac,
   );
   return DeviceDetailState(device: device, reservation: reservation);
 });

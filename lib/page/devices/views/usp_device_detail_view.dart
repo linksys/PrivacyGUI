@@ -162,7 +162,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                         name: device.displayName,
                         editLabel: loc(context).editDevice,
                         identifier: 'device-detail-edit-identity',
-                        onEdit: device.hostInstancePath == null
+                        onEdit: device.hostInstancePaths.isEmpty
                             ? null
                             : () => _editIdentity(context, ref, device),
                       ),
