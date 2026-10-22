@@ -112,6 +112,7 @@ class MeshNode {
   final String? manufacturer;
   final String? serialNumber;
   final String? softwareVersion;
+  final String? supportedOperations;
   final int? collectionInterval;
   final DateTime? multiApLastContactTime;
   final String? multiApEasyMeshAgentOperationMode;
@@ -138,6 +139,7 @@ class MeshNode {
     this.manufacturer,
     this.serialNumber,
     this.softwareVersion,
+    this.supportedOperations,
     this.collectionInterval,
     this.multiApLastContactTime,
     this.multiApEasyMeshAgentOperationMode,
@@ -171,6 +173,7 @@ class DataElementsNetwork {
     'Device.WiFi.DataElements.Network.Device.*.Manufacturer',
     'Device.WiFi.DataElements.Network.Device.*.SerialNumber',
     'Device.WiFi.DataElements.Network.Device.*.SoftwareVersion',
+    'Device.WiFi.DataElements.Network.Device.*.X_LINKSYS_SupportedOperations',
     'Device.WiFi.DataElements.Network.Device.*.CollectionInterval',
     'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.LastContactTime',
     'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.EasyMeshAgentOperationMode',
@@ -246,6 +249,7 @@ class DataElementsNetwork {
         response['${p}Manufacturer'],
         response['${p}SerialNumber'],
         response['${p}SoftwareVersion'],
+        response['${p}X_LINKSYS_SupportedOperations'],
         response['${p}CollectionInterval'],
         response['${p}MultiAPDevice.LastContactTime'],
         response['${p}MultiAPDevice.EasyMeshAgentOperationMode'],
@@ -473,6 +477,10 @@ class DataElementsNetwork {
         softwareVersion: response.containsKey('${p}SoftwareVersion')
             ? response['${p}SoftwareVersion'] as String
             : null,
+        supportedOperations:
+            response.containsKey('${p}X_LINKSYS_SupportedOperations')
+                ? response['${p}X_LINKSYS_SupportedOperations'] as String
+                : null,
         collectionInterval: response.containsKey('${p}CollectionInterval')
             ? int.tryParse(response['${p}CollectionInterval']?.toString() ?? '')
             : null,

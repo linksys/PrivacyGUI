@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 
@@ -436,6 +437,114 @@ void main() {
         expect(network.totalClientCount, 2);
         expect(network.onlineClientCount, 0);
         expect(network.offlineClientCount, 2);
+      });
+    });
+
+    // =========================================================================
+    // nodesBehind (#876)
+    // =========================================================================
+
+    group('nodesBehind', () {
+      const a = 'AA:BB:CC:DD:EE:0A';
+      const b = 'AA:BB:CC:DD:EE:0B';
+
+      SlaveNode slave(String mac, {required String? parent}) =>
+          DevicesTestData.createWifiSlave(
+            deviceId: mac,
+            dataElementsId: mac,
+            backhaul: BackhaulInfo(linkType: 'Wi-Fi', parentNodeId: parent),
+          );
+
+      test('a chain lists the far node before the near one', () {
+        final network = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            slave(a, parent: DevicesTestData.masterMac),
+            slave(b, parent: a),
+          ],
+        );
+
+        final behind = network.nodesBehind(a);
+
+        expect(behind.nodes.map((n) => n.deviceId), [b, a]);
+        expect(behind.mayMissNodes, isFalse);
+      });
+
+      // prplMesh leaves BackhaulDeviceID empty for a node cabled behind a
+      // satellite and for one still joining (FWDEV#202 review), so such a node
+      // may be behind the target without the chain saying so.
+      test('a slave with no reported parent may be behind the target', () {
+        final network = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            slave(a, parent: DevicesTestData.masterMac),
+            slave(b, parent: null),
+          ],
+        );
+
+        final behind = network.nodesBehind(a);
+
+        expect(behind.nodes.map((n) => n.deviceId), [a]);
+        expect(behind.mayMissNodes, isTrue);
+      });
+
+      // backhaul_parent_graph.dart breaks the same shape before the topology
+      // renders it; a walk here has to survive it on its own.
+      test('a parent cycle ends instead of looping', () {
+        const c = 'AA:BB:CC:DD:EE:0C';
+        final network = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            slave(a, parent: DevicesTestData.masterMac),
+            slave(b, parent: c),
+            slave(c, parent: b),
+          ],
+        );
+
+        final behind = network.nodesBehind(a);
+
+        expect(behind.nodes.map((n) => n.deviceId), [a]);
+        expect(behind.mayMissNodes, isTrue);
+      });
+
+      test('a sibling on the master is not behind the target', () {
+        final network = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            slave(a, parent: DevicesTestData.masterMac),
+            slave(b, parent: DevicesTestData.masterMac),
+          ],
+        );
+
+        final behind = network.nodesBehind(a);
+
+        expect(behind.nodes.map((n) => n.deviceId), [a]);
+        expect(behind.mayMissNodes, isFalse);
+      });
+
+      test('the parent is matched whatever its MAC case', () {
+        final network = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            slave(a, parent: DevicesTestData.masterMac.toLowerCase()),
+            slave(b, parent: a.toLowerCase()),
+          ],
+        );
+
+        final behind = network.nodesBehind(a);
+
+        expect(behind.nodes.map((n) => n.deviceId), [b, a]);
+        expect(behind.mayMissNodes, isFalse);
+      });
+
+      test('the master and an unknown id have nothing behind them', () {
+        final network = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [slave(a, parent: DevicesTestData.masterMac)],
+        );
+
+        expect(network.nodesBehind(DevicesTestData.masterMac).nodes, isEmpty);
+        expect(network.nodesBehind('AA:BB:CC:DD:EE:FF').nodes, isEmpty);
       });
     });
   });

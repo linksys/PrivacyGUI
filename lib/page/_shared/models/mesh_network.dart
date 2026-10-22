@@ -71,6 +71,59 @@ class MeshNetwork with EquatableMixin, DiagnosticNamed {
     return null;
   }
 
+  /// The slave [deviceId] names and every slave behind it, farthest first.
+  ///
+  /// "Behind" is the backhaul parent chain: a slave is behind the target when
+  /// walking `backhaul.parentNodeId` upward from it reaches the target. A node
+  /// command acts on the node that receives it and not on the nodes behind it
+  /// (FWDEV#202), and a node that restarts cuts off everything behind it, so
+  /// a caller rebooting or resetting a slave sends one call per node in this
+  /// order.
+  NodesBehind nodesBehind(String deviceId) {
+    final target = findNode(deviceId);
+    if (target is! SlaveNode) return const NodesBehind([], mayMissNodes: false);
+
+    final byId = {
+      for (final s in slaves) ...{
+        s.deviceId.toUpperCase(): s,
+        if (s.dataElementsId != null) s.dataElementsId!.toUpperCase(): s,
+      },
+    };
+    final targetId = target.deviceId.toUpperCase();
+
+    final behind = <(int, SlaveNode)>[];
+    var mayMissNodes = false;
+    for (final slave in slaves) {
+      final visited = <SlaveNode>{};
+      SlaveNode? current = slave;
+      while (true) {
+        if (current!.deviceId.toUpperCase() == targetId) {
+          behind.add((visited.length, slave));
+          break;
+        }
+        final parent = current.backhaul.parentNodeId;
+        // A chain that ends anywhere but the master says nothing about where
+        // this slave sits: no parent reported, a parent not in the list, or a
+        // cycle (firmware can report one; backhaul_parent_graph.dart breaks it
+        // for the topology, but this walk runs on the raw parents).
+        if (parent == null || !visited.add(current)) {
+          mayMissNodes = true;
+          break;
+        }
+        current = byId[parent.toUpperCase()];
+        if (current == null) {
+          if (findNode(parent) is! MasterNode) mayMissNodes = true;
+          break;
+        }
+      }
+    }
+    behind.sort((x, y) => y.$1.compareTo(x.$1));
+    return NodesBehind(
+      [for (final (_, node) in behind) node],
+      mayMissNodes: mayMissNodes,
+    );
+  }
+
   /// Find a client device by MAC address.
   ClientDevice? findClient(String mac) {
     final normalized = mac.toUpperCase();
@@ -152,4 +205,19 @@ class MeshNetwork with EquatableMixin, DiagnosticNamed {
         'slaves': slaves,
         'unassignedClients': unassignedClients,
       };
+}
+
+/// The answer to [MeshNetwork.nodesBehind].
+class NodesBehind with EquatableMixin {
+  /// The target and every slave behind it, farthest first; the target is last.
+  /// Empty when the id names no slave.
+  final List<SlaveNode> nodes;
+
+  /// Whether a slave may sit behind the target without being in [nodes].
+  final bool mayMissNodes;
+
+  const NodesBehind(this.nodes, {required this.mayMissNodes});
+
+  @override
+  List<Object?> get props => [nodes, mayMissNodes];
 }

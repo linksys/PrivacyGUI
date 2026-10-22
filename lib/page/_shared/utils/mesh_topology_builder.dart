@@ -160,6 +160,7 @@ class MeshTopologyBuilder {
           serialNumber: _identity(node.serialNumber),
           softwareVersion: _identity(node.softwareVersion),
           instancePath: node.instancePath,
+          actions: NodeAction.parse(node.supportedOperations),
           backhaul: BackhaulInfo(
             linkType: meshBackhaulLinkType(node),
             signalStrength: backhaulSignalStrength,
