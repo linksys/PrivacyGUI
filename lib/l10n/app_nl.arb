@@ -1050,6 +1050,8 @@
   "staticRoutes": "Statische routes",
   "staticRoutesSaved": "Statische routes opgeslagen",
   "staticRoutingPageDesc": "Statische IPv4-routes op uw netwerk beheren",
+  "nat": "NAT",
+  "dynamicRouting": "Dynamische routing (RIP)",
   "statistics": "Statistieken",
   "stillWaitingLongerThanExpected": "Nog steeds aan het wachten — dit kan iets langer duren dan verwacht",
   "store": "Store",

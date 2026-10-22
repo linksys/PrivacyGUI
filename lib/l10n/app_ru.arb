@@ -1050,6 +1050,8 @@
   "staticRoutes": "Статические маршруты",
   "staticRoutesSaved": "Статические маршруты сохранены",
   "staticRoutingPageDesc": "Управление статическими маршрутами IPv4 в вашей сети",
+  "nat": "NAT",
+  "dynamicRouting": "Динамическая маршрутизация (RIP)",
   "statistics": "Статистика",
   "stillWaitingLongerThanExpected": "Все еще ожидание — это может занять немного больше времени, чем ожидалось",
   "store": "Магазин",

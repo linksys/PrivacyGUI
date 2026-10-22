@@ -1050,6 +1050,8 @@
   "staticRoutes": "Tuyến tĩnh",
   "staticRoutesSaved": "Đã lưu tuyến tĩnh",
   "staticRoutingPageDesc": "Quản lý các tuyến IPv4 tĩnh trên mạng của bạn",
+  "nat": "NAT",
+  "dynamicRouting": "Định tuyến Động (RIP)",
   "statistics": "Thống kê",
   "stillWaitingLongerThanExpected": "Vẫn đang chờ — quá trình này có thể lâu hơn dự kiến một chút",
   "store": "Cửa hàng",

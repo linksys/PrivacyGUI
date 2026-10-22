@@ -1050,6 +1050,8 @@
   "staticRoutes": "고정 경로",
   "staticRoutesSaved": "고정 경로가 저장됨",
   "staticRoutingPageDesc": "네트워크의 고정 IPv4 경로 관리",
+  "nat": "NAT",
+  "dynamicRouting": "동적 라우팅(RIP)",
   "statistics": "통계",
   "stillWaitingLongerThanExpected": "아직 대기 중입니다 — 예상보다 조금 더 걸릴 수 있습니다",
   "store": "스토어",

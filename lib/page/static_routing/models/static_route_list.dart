@@ -9,7 +9,20 @@ import 'package:privacy_gui/page/static_routing/models/static_routing_ui_model.d
 class StaticRouteList extends Equatable implements HasUnconfirmedRows {
   final List<StaticRouteUIModel> routes;
 
-  const StaticRouteList({this.routes = const []});
+  /// The NAT / Dynamic routing choice, `Device.Routing.RIP.Enable`
+  /// (linksys/FWDEV#213): true is Dynamic routing, false is NAT, as on 1.0.
+  /// Null where the router does not offer it, which hides the radio.
+  final bool? ripEnabled;
+
+  const StaticRouteList({this.routes = const [], this.ripEnabled});
+
+  StaticRouteList copyWith(
+      {List<StaticRouteUIModel>? routes, bool? ripEnabled}) {
+    return StaticRouteList(
+      routes: routes ?? this.routes,
+      ripEnabled: ripEnabled ?? this.ripEnabled,
+    );
+  }
 
   /// A row added on the page has no path until the router creates it (#1212):
   /// while one is here and the read after a save failed, the next save reads
@@ -18,5 +31,5 @@ class StaticRouteList extends Equatable implements HasUnconfirmedRows {
   bool get hasUnconfirmedRows => routes.any((r) => r.instancePath == null);
 
   @override
-  List<Object?> get props => [routes];
+  List<Object?> get props => [routes, ripEnabled];
 }

@@ -24,5 +24,7 @@ String capabilityProbePath(DeviceCapability capability) {
       'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode',
     // Read-only and never empty where it exists: Disabled / Active / Inactive.
     DeviceCapability.wifiMlo => 'Device.X_LINKSYS_Mesh.MLOStatus',
+    // A boolean, so never empty where it exists.
+    DeviceCapability.dynamicRouting => 'Device.Routing.RIP.Enable',
   };
 }

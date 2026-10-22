@@ -5,9 +5,11 @@ import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/page/_shared/components/rule_limit_note.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_feature_state.dart';
@@ -83,7 +85,11 @@ class UspStaticRoutingView extends ConsumerWidget {
     StaticRoutingFeatureState state,
   ) {
     final routes = state.settings.current.routes;
+    final ripEnabled = state.settings.current.ripEnabled;
     final isSaving = state.status.isSaving;
+    // FW refuses a new route past FWDEV#213's limit; routes past it that an
+    // older build saved stay editable.
+    final isFull = routes.length >= kMaxStaticRoutes;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,6 +99,34 @@ class UspStaticRoutingView extends ConsumerWidget {
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         AppGap.xl(),
+        // 1.0's NAT / Dynamic routing choice, where the router offers it.
+        if (ripEnabled != null) ...[
+          AppRadioList<bool>(
+            selected: ripEnabled,
+            itemHeight: 56,
+            items: [
+              AppRadioListItem(
+                identifier: 'static-route-nat',
+                title: loc(context).nat,
+                value: false,
+              ),
+              AppRadioListItem(
+                identifier: 'static-route-dynamic-routing',
+                title: loc(context).dynamicRouting,
+                value: true,
+              ),
+            ],
+            onChanged: isSaving
+                ? null
+                : (_, value) {
+                    if (value == null) return;
+                    ref
+                        .read(uspStaticRoutingProvider.notifier)
+                        .setRipEnabled(value);
+                  },
+          ),
+          AppGap.xl(),
+        ],
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -100,10 +134,13 @@ class UspStaticRoutingView extends ConsumerWidget {
             AppIconButton(
               identifier: 'static-route-add',
               icon: AppIcon.font(Icons.add, size: 20),
-              onTap: isSaving ? null : () => _showAddDialog(context, ref),
+              onTap: isSaving || isFull
+                  ? null
+                  : () => _showAddDialog(context, ref),
             ),
           ],
         ),
+        if (isFull) const RuleLimitNote(),
         AppGap.lg(),
         if (routes.isEmpty)
           DetailEmptyBlock(
@@ -216,11 +253,13 @@ class UspStaticRoutingView extends ConsumerWidget {
       return;
     }
     if (!context.mounted) return;
+    final routes = ref.read(uspStaticRoutingProvider).settings.current.routes;
     final result = await showAppDialog<StaticRouteDialogResult>(
       context: context,
       builder: (_) => StaticRouteDialog(
         lanIp: lanData.model.ipAddress,
         lanSubnetMask: lanData.model.subnetMask,
+        otherNames: {for (final r in routes) r.name},
       ),
     );
     if (result == null || !context.mounted) return;
@@ -251,12 +290,18 @@ class UspStaticRoutingView extends ConsumerWidget {
       return;
     }
     if (!context.mounted) return;
+    final routes = ref.read(uspStaticRoutingProvider).settings.current.routes;
     final result = await showAppDialog<StaticRouteDialogResult>(
       context: context,
       builder: (_) => StaticRouteDialog(
         route: route,
         lanIp: lanData.model.ipAddress,
         lanSubnetMask: lanData.model.subnetMask,
+        // By position, not by name: two routes can share one.
+        otherNames: {
+          for (var i = 0; i < routes.length; i++)
+            if (i != index) routes[i].name
+        },
       ),
     );
     if (result == null || !context.mounted) return;
@@ -285,6 +330,16 @@ class UspStaticRoutingView extends ConsumerWidget {
       );
       if (context.mounted) {
         showSuccessSnackBar(context, loc(context).staticRoutesSaved);
+      }
+    } on InvalidInputError catch (e) {
+      // A list check before the save, or a refusal FW named (FWDEV#213).
+      if (context.mounted) {
+        showFailedSnackBar(
+          context,
+          e.field != null
+              ? localizeStaticRoutingError(context, e.field!)
+              : localizeServiceError(context, e),
+        );
       }
     } catch (e) {
       if (context.mounted) {

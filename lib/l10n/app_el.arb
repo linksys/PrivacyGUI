@@ -1050,6 +1050,8 @@
   "staticRoutes": "Στατικές διαδρομές",
   "staticRoutesSaved": "Οι στατικές διαδρομές αποθηκεύτηκαν",
   "staticRoutingPageDesc": "Διαχείριση στατικών διαδρομών IPv4 στο δίκτυό σας",
+  "nat": "NAT",
+  "dynamicRouting": "Δυναμική δρομολόγηση (RIP)",
   "statistics": "Στατιστικά",
   "stillWaitingLongerThanExpected": "Συνεχίζεται η αναμονή — αυτό μπορεί να διαρκέσει λίγο περισσότερο από το αναμενόμενο",
   "store": "Κατάστημα",
