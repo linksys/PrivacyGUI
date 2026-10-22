@@ -208,7 +208,7 @@ class MeshNetwork with EquatableMixin, DiagnosticNamed {
 }
 
 /// The answer to [MeshNetwork.nodesBehind].
-class NodesBehind with EquatableMixin {
+class NodesBehind extends Equatable {
   /// The target and every slave behind it, farthest first; the target is last.
   /// Empty when the id names no slave.
   final List<SlaveNode> nodes;
