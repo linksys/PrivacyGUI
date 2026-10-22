@@ -1052,6 +1052,8 @@
   "staticRoutes": "المسارات الثابتة",
   "staticRoutesSaved": "تم حفظ المسارات الثابتة",
   "staticRoutingPageDesc": "إدارة مسارات IPv4 الثابتة على شبكتك",
+  "nat": "ترجمة عنوان الشبكة",
+  "dynamicRouting": "التوجيه الحيوي (RIP)",
   "statistics": "الإحصائيات",
   "stillWaitingLongerThanExpected": "ما زال الانتظار جاريًا — قد يستغرق هذا وقتًا أطول من المتوقع",
   "store": "المتجر",

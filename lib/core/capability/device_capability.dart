@@ -27,6 +27,11 @@ enum DeviceCapability {
   /// tab, so firmware without it still reads and writes steering and DFS
   /// (#1692).
   wifiMlo,
+
+  /// The NAT / Dynamic routing (RIP) switch, `Device.Routing.RIP.Enable`
+  /// (linksys/FWDEV#213). Absent where the image has no linksys-ripd
+  /// (feed_usp#56), so it gates the radio on the Static Routing page (#1100).
+  dynamicRouting,
 }
 
 /// The resolved set of capabilities the connected device supports.

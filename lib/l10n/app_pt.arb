@@ -1052,6 +1052,8 @@
   "staticRoutes": "Rotas estáticas",
   "staticRoutesSaved": "Rotas estáticas salvas",
   "staticRoutingPageDesc": "Gerenciar rotas IPv4 estáticas na sua rede",
+  "nat": "NAT",
+  "dynamicRouting": "Roteamento dinâmico (RIP)",
   "statistics": "Estatísticas",
   "stillWaitingLongerThanExpected": "Ainda aguardando — isso pode demorar um pouco mais do que o esperado",
   "store": "Loja",

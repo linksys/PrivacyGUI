@@ -1052,6 +1052,8 @@
   "staticRoutes": "Statik Yollar",
   "staticRoutesSaved": "Statik yollar kaydedildi",
   "staticRoutingPageDesc": "Ağınızdaki statik IPv4 yollarını yönetin",
+  "nat": "NAT",
+  "dynamicRouting": "Dinamik Yönlendirme/RIP",
   "statistics": "İstatistikler",
   "stillWaitingLongerThanExpected": "Hâlâ bekleniyor — bu beklenenden biraz daha uzun sürebilir",
   "store": "Mağaza",

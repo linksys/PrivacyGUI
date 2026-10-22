@@ -2540,11 +2540,21 @@ final kLocalNetworkPageCase = PageSurfaceCase(
 /// [DetailEmptyBlock] is forbidden rather than merely absent — see
 /// `kIpv6PortServicePageCase`, and `static_routing_scene_data.dart` for what the two
 /// routes are chosen to make wide.
+///
+/// `AppRadioList<bool>` is the NAT / Dynamic routing switch (#1100), shown only on
+/// a router that offers it: a scene that lost `ripEnabled` would still render the
+/// routes and sweep green with the radio unmeasured.
 final kStaticRoutingPageCase = PageSurfaceCase(
   id: 'static_routing',
   view: () => const UspStaticRoutingView(),
   overrides: () => staticRoutingOverrides(),
-  requires: const [UspTopBar, LayoutBlock, AppSwitch, AppIconButton],
+  requires: const [
+    UspTopBar,
+    LayoutBlock,
+    AppSwitch,
+    AppIconButton,
+    AppRadioList<bool>,
+  ],
   forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
 );
 

@@ -1052,6 +1052,8 @@
   "staticRoutes": "Statiske ruter",
   "staticRoutesSaved": "Statiske ruter gemt",
   "staticRoutingPageDesc": "Administrer statiske IPv4-ruter på dit netværk",
+  "nat": "NAT",
+  "dynamicRouting": "Dynamisk routing (RIP)",
   "statistics": "Statistik",
   "stillWaitingLongerThanExpected": "Venter stadig — dette kan tage lidt længere end forventet",
   "store": "Butik",

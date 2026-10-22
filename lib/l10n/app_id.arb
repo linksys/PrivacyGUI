@@ -1052,6 +1052,8 @@
   "staticRoutes": "Rute Statis",
   "staticRoutesSaved": "Rute statis disimpan",
   "staticRoutingPageDesc": "Kelola rute IPv4 statis di jaringan Anda",
+  "nat": "NAT",
+  "dynamicRouting": "Perutean Dinamis (RIP)",
   "statistics": "Statistik",
   "stillWaitingLongerThanExpected": "Masih menunggu — ini bisa memakan waktu sedikit lebih lama dari perkiraan",
   "store": "Toko",

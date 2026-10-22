@@ -1052,6 +1052,8 @@
   "staticRoutes": "Staattiset reitit",
   "staticRoutesSaved": "Staattiset reitit tallennettu",
   "staticRoutingPageDesc": "Hallitse verkkosi staattisia IPv4-reittejä",
+  "nat": "NAT",
+  "dynamicRouting": "Dynaaminen reititys (RIP)",
   "statistics": "Tilastot",
   "stillWaitingLongerThanExpected": "Odotetaan yhä — tämä voi kestää hieman odotettua kauemmin",
   "store": "Kauppa",

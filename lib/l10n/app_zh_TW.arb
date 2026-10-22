@@ -1052,6 +1052,8 @@
   "staticRoutes": "靜態路由",
   "staticRoutesSaved": "已儲存靜態路由",
   "staticRoutingPageDesc": "管理您網路上的靜態 IPv4 路由",
+  "nat": "NAT",
+  "dynamicRouting": "動態路由 (RIP)",
   "statistics": "統計資料",
   "stillWaitingLongerThanExpected": "仍在等待 — 這可能比預期花費更久的時間",
   "store": "商店",

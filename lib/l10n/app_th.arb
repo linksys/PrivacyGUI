@@ -1052,6 +1052,8 @@
   "staticRoutes": "เส้นทางแบบสแตติก",
   "staticRoutesSaved": "บันทึกเส้นทางแบบสแตติกแล้ว",
   "staticRoutingPageDesc": "จัดการเส้นทาง IPv4 แบบสแตติกในเครือข่ายของคุณ",
+  "nat": "NAT",
+  "dynamicRouting": "การกำหนดเส้นทางแบบไดนามิก (RIP)",
   "statistics": "สถิติ",
   "stillWaitingLongerThanExpected": "ยังคงรออยู่ — อาจใช้เวลานานกว่าที่คาดไว้เล็กน้อย",
   "store": "สโตร์",
