@@ -13,16 +13,22 @@ import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart'
     show ruleIdentifierKey;
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/page/admin/views/dialogs/confirm_action_dialog.dart';
+import 'package:privacy_gui/page/admin/views/router_restart_actions.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_list_tile.dart';
 import 'package:privacy_gui/page/devices/views/dialogs/device_identity_edit_dialog.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
+import 'package:privacy_gui/page/topology/providers/node_action_notifier.dart';
 import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
 import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indicator.dart';
+import 'package:privacy_gui/page/topology/views/components/node_actions_card.dart';
 import 'package:privacy_gui/util/date_format_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -92,6 +98,7 @@ class UspNodeDetailView extends ConsumerWidget {
         ],
         AppGap.lg(),
         _buildConnectedDevicesCard(context, detail),
+        ..._buildActionsCard(context, ref, node),
       ],
     );
   }
@@ -112,6 +119,7 @@ class UspNodeDetailView extends ConsumerWidget {
                 AppGap.lg(),
                 _buildBackhaulCard(context, node, detail.parentNode),
               ],
+              ..._buildActionsCard(context, ref, node),
             ],
           ),
         ),
@@ -177,6 +185,110 @@ class UspNodeDetailView extends ConsumerWidget {
     );
     if (saved == true && context.mounted) {
       showSuccessSnackBar(context, loc(context).changesSaved);
+    }
+  }
+
+  // ===========================================================================
+  // Node Actions (#876)
+  // ===========================================================================
+
+  /// The actions card and the gap above it, or nothing when the node offers
+  /// no action. The router always offers both: they are the Administration
+  /// page's, and FWDEV#202 gives its row no node commands. An agent offers
+  /// what it reports in `X_LINKSYS_SupportedOperations`.
+  List<Widget> _buildActionsCard(
+      BuildContext context, WidgetRef ref, NodeEntity node) {
+    final actions = switch (node) {
+      MasterNode() => NodeAction.values.toSet(),
+      SlaveNode(:final actions) => actions,
+    };
+    if (actions.isEmpty) return const [];
+    return [
+      AppGap.lg(),
+      NodeActionsCard(
+        actions: actions,
+        onAction: (action) => switch ((node, action)) {
+          (MasterNode(), NodeAction.reboot) =>
+            confirmAndRebootRouter(context, ref),
+          (MasterNode(), NodeAction.factoryReset) =>
+            confirmAndFactoryResetRouter(context, ref),
+          (SlaveNode(), _) => _runNodeAction(context, ref, node, action),
+        },
+      ),
+    ];
+  }
+
+  /// Confirms, then sends [action] to [node] and every agent behind it.
+  ///
+  /// The confirmation names every node that goes down, farthest first, and
+  /// says so when a node with no reported parent may be behind this one as
+  /// well. On success the page leaves for the topology: the nodes leave
+  /// DataElements while they restart, which empties this page.
+  Future<void> _runNodeAction(BuildContext context, WidgetRef ref,
+      NodeEntity node, NodeAction action) async {
+    final network = ref.read(devicesDataProvider).valueOrNull?.meshNetwork;
+    final behind = network?.nodesBehind(node.deviceId);
+    if (behind == null || behind.nodes.isEmpty) return;
+    final l = loc(context);
+    String nameOf(String id) => network?.findNode(id)?.displayName ?? id;
+    final names = behind.nodes.map((n) => n.displayName).join(', ');
+    final single = behind.nodes.length == 1;
+
+    final message = switch ((action, single)) {
+      (NodeAction.reboot, true) => l.rebootNodeMessage(names),
+      (NodeAction.reboot, false) => l.rebootNodesMessage(names),
+      (NodeAction.factoryReset, true) => l.factoryResetNodeMessage(names),
+      (NodeAction.factoryReset, false) => l.factoryResetNodesMessage(names),
+    };
+    final confirmed = await showConfirmActionDialog(
+      context,
+      title: switch ((action, single)) {
+        (NodeAction.reboot, true) => l.rebootUnit,
+        (NodeAction.reboot, false) => l.rebootChildTitle,
+        (NodeAction.factoryReset, true) => l.resetToFactoryDefault,
+        (NodeAction.factoryReset, false) => l.factoryResetChildTitle,
+      },
+      message: behind.mayMissNodes
+          ? '$message\n\n${l.nodeActionMayMissNodes}'
+          : message,
+      confirmLabel: switch (action) {
+        NodeAction.reboot => l.restart,
+        NodeAction.factoryReset => l.reset,
+      },
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await doSomethingWithSpinner(
+        context,
+        ref.read(nodeActionProvider.notifier).run(action, node.deviceId),
+      );
+      if (!context.mounted) return;
+      showSuccessSnackBar(
+        context,
+        switch (action) {
+          NodeAction.reboot => l.nodeActionRebootSent,
+          NodeAction.factoryReset => l.nodeActionResetSent,
+        },
+      );
+      // Not awaited: the page is leaving, and the topology picks the result up.
+      ref.read(devicesDataProvider.notifier).refetch();
+      context.navigateBack(fallback: RouteNamed.uspTopology);
+    } on NodeActionError catch (e) {
+      if (!context.mounted) return;
+      final reason = localizeServiceError(context, e.cause);
+      final failed = nameOf(e.failedNodeId);
+      showFailedSnackBar(
+        context,
+        e.sentNodeIds.isEmpty
+            ? l.nodeActionFailed(failed, reason)
+            : l.nodeActionFailedAfterSent(
+                failed, reason, e.sentNodeIds.map(nameOf).join(', ')),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        showFailedSnackBar(context, localizeServiceError(context, e));
+      }
     }
   }
 

@@ -164,6 +164,7 @@ import 'package:privacy_gui/page/support/views/usp_support_view.dart';
 import 'package:privacy_gui/page/test_console/views/usp_test_console_view.dart';
 import 'package:privacy_gui/page/test_console/widgets/tr181_autocomplete_field.dart';
 import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indicator.dart';
+import 'package:privacy_gui/page/topology/views/components/node_actions_card.dart';
 import 'package:privacy_gui/page/topology/views/usp_node_detail_view.dart';
 import 'package:privacy_gui/page/topology/views/usp_topology_view.dart';
 import 'package:privacy_gui/page/unified_diagnostics/views/unified_diagnostics_view.dart';
@@ -488,15 +489,17 @@ final kTopologyPageCase = PageSurfaceCase(
 /// sweep rather than to #1442.
 ///
 /// The premise therefore takes one widget from each card the fixture *does* unlock:
-/// [BackhaulSignalIndicator] (the backhaul card's signal tile) and
-/// [UspDeviceListTile] (the connected-devices card). Two cards, two chances to
-/// notice the fixture went thin.
+/// [BackhaulSignalIndicator] (the backhaul card's signal tile),
+/// [UspDeviceListTile] (the connected-devices card) and [NodeActionsCard] (#876,
+/// which the fixture unlocks by listing both node actions; an agent that lists
+/// none gets no card). Three cards, three chances to notice the fixture went
+/// thin.
 final kNodeDetailPageCase = PageSurfaceCase(
   id: 'node_detail',
   view: () =>
       UspNodeDetailView(deviceId: slaveNodeWithBackhaulTiming.node!.deviceId),
   overrides: () => nodeDetailOverrides(slaveNodeWithBackhaulTiming),
-  requires: const [BackhaulSignalIndicator, UspDeviceListTile],
+  requires: const [BackhaulSignalIndicator, UspDeviceListTile, NodeActionsCard],
   forbids: const [AppLoader],
 );
 
