@@ -6,6 +6,7 @@ import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
+import 'package:privacy_gui/page/_shared/models/mlo_client_info.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
@@ -573,6 +574,293 @@ void main() {
       final client = result.master.connectedClients.first;
       expect(client.band, '5GHz'); // From connectionDetailMap
       expect(client.wifi?.ssidName, 'NewSSID'); // From connectionDetailMap
+    });
+
+    // #1686 item 1. A client on an agent has no Hosts rate on FL-WRT 2.0 and
+    // no AssociatedDevice row on the controller, so only DataElements BSS.STA
+    // gives it a rate.
+    group('client rates (#1686)', () {
+      const clientMac = '11:22:33:44:55:01';
+      MeshNetwork buildWith({
+        int? hostsDownlink,
+        Map<String, WifiClientUIModel> wifiClientMap = const {},
+        ({int? downlink, int? uplink})? dataElements,
+      }) =>
+          MeshNetworkBuilder.build(
+            connectedDevices: ConnectedDevices(items: [
+              buildConnectedDevice(macAddress: 'AA:BB:CC:DD:EE:01'),
+              buildConnectedDevice(macAddress: 'AA:BB:CC:DD:EE:02'),
+              buildConnectedDevice(
+                macAddress: clientMac,
+                hostName: 'AgentClient',
+                interface_: 'Device.WiFi.Radio.1',
+                interfaceType: 'Wi-Fi',
+                isActive: true,
+                lastDataDownlinkRate: hostsDownlink,
+              ),
+            ]),
+            wifiClientMap: wifiClientMap,
+            connectionDetailMap: const {},
+            meshTopology: MeshTopologyInfo(
+              nodes: [
+                buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
+                buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:02'),
+              ],
+              clientToNodeMap: const {clientMac: 'AA:BB:CC:DD:EE:02'},
+              clientRateMap: {
+                if (dataElements != null) clientMac: dataElements
+              },
+            ),
+            gatewayName: 'Router',
+          );
+
+      test('an agent client takes its rates from DataElements', () {
+        final client = buildWith(dataElements: (downlink: 6000, uplink: 24000))
+            .slaves
+            .first
+            .connectedClients
+            .first;
+
+        expect(client.downlinkRate, 6000);
+        expect(client.uplinkRate, 24000);
+      });
+
+      test('the controller AssociatedDevice rate still wins', () {
+        final client = buildWith(
+          wifiClientMap: {
+            clientMac: WifiClientUIModel(
+              macAddress: clientMac,
+              signalStrength: -50,
+              noise: -90,
+              lastDataDownlinkRate: 100000,
+              lastDataUplinkRate: 50000,
+              active: true,
+            ),
+          },
+          dataElements: (downlink: 6000, uplink: 24000),
+        ).slaves.first.connectedClients.first;
+
+        expect(client.downlinkRate, 100000);
+        expect(client.uplinkRate, 50000);
+      });
+
+      // WifiClientUIModel defaults an absent rate to 0; that 0 must not hide
+      // the DataElements rate (the shape of #1438, for rates).
+      test('a 0 rate from Hosts or AssociatedDevice is no reading', () {
+        final client = buildWith(
+          hostsDownlink: 0,
+          wifiClientMap: {
+            clientMac: WifiClientUIModel(
+              macAddress: clientMac,
+              signalStrength: -50,
+              noise: -90,
+              lastDataDownlinkRate: 0,
+              lastDataUplinkRate: 0,
+              active: true,
+            ),
+          },
+          dataElements: (downlink: 6000, uplink: 24000),
+        ).slaves.first.connectedClients.first;
+
+        expect(client.downlinkRate, 6000);
+        expect(client.uplinkRate, 24000);
+      });
+
+      // A row the controller keeps after the client roamed to an agent
+      // carries the old link's rate.
+      test('an inactive AssociatedDevice row does not supply rates', () {
+        final client = buildWith(
+          wifiClientMap: {
+            clientMac: WifiClientUIModel(
+              macAddress: clientMac,
+              signalStrength: -50,
+              noise: -90,
+              lastDataDownlinkRate: 100000,
+              lastDataUplinkRate: 50000,
+              active: false,
+            ),
+          },
+          dataElements: (downlink: 6000, uplink: 24000),
+        ).slaves.first.connectedClients.first;
+
+        expect(client.downlinkRate, 6000);
+        expect(client.uplinkRate, 24000);
+      });
+
+      test('a Hosts rate still wins', () {
+        final client = buildWith(
+                hostsDownlink: 300000,
+                dataElements: (downlink: 6000, uplink: 24000))
+            .slaves
+            .first
+            .connectedClients
+            .first;
+
+        expect(client.downlinkRate, 300000);
+        expect(client.uplinkRate, 24000);
+      });
+    });
+
+    // #1686 item 2. The MLO label lives in mloBands, never in band: band is
+    // the key the device filter, analytics and PDF group by.
+    group('MLO clients (#1686)', () {
+      const clientMac = '11:22:33:44:55:01';
+      MeshNetwork buildWith(Map<String, MloClientInfo>? mloClients,
+              {List<NodeEntity>? nodes}) =>
+          MeshNetworkBuilder.build(
+            connectedDevices: ConnectedDevices(items: [
+              buildConnectedDevice(macAddress: 'AA:BB:CC:DD:EE:01'),
+              buildConnectedDevice(
+                macAddress: clientMac,
+                hostName: 'iPhone',
+                interface_: 'Device.WiFi.Radio.1',
+                interfaceType: 'Wi-Fi',
+                isActive: true,
+              ),
+            ]),
+            wifiClientMap: const {},
+            connectionDetailMap: const {},
+            meshTopology: MeshTopologyInfo(
+              nodes: nodes ?? [buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01')],
+              clientToNodeMap: const {clientMac: 'AA:BB:CC:DD:EE:01'},
+              // The BSS.STA row: the band it associated on, the active
+              // link's rates (measured: 2.4 GHz row, 5 GHz rates).
+              clientBandSsidMap: const {
+                clientMac: (band: '2.4GHz', ssid: 'HomeNetwork'),
+              },
+              clientRateMap: const {
+                clientMac: (downlink: 900000, uplink: 800000),
+              },
+              clientSignalMap: const {clientMac: -70},
+              mloClients: mloClients,
+            ),
+            gatewayName: 'Router',
+          );
+
+      ClientDevice only(MeshNetwork n) {
+        final clients = n.allClients.where((c) => c.mac == clientMac).toList();
+        expect(clients, hasLength(1), reason: 'an MLO client is listed once');
+        return clients.single;
+      }
+
+      test('an MLO client carries its bands, and keeps its band', () {
+        final client = only(buildWith(const {
+          clientMac: MloClientInfo(bands: ['2.4GHz', '5GHz']),
+        }));
+
+        expect(client.wifi?.mloBands, ['2.4GHz', '5GHz']);
+        expect(client.band, '2.4GHz',
+            reason: 'band stays the band it associated on');
+        expect(client.wifi?.mloUnknown, isFalse);
+      });
+
+      test('the active link rates and signal win over the STA row', () {
+        final client = only(buildWith(const {
+          clientMac: MloClientInfo(
+              bands: ['2.4GHz', '5GHz'],
+              signalStrength: -56,
+              downlinkRate: 960000,
+              uplinkRate: 864000),
+        }));
+
+        expect(client.downlinkRate, 960000);
+        expect(client.uplinkRate, 864000);
+        expect(client.signalStrength, -56);
+      });
+
+      // No active link yet (the first ~50 s after association): what the
+      // STA row reads then is unmeasured, so the values stay empty instead
+      // of falling back to it (decided 2026-10-21).
+      test('with no active link the signal and rates stay empty', () {
+        final client = only(buildWith(const {
+          clientMac: MloClientInfo(bands: ['2.4GHz', '5GHz']),
+        }));
+
+        expect(client.wifi?.mloBands, ['2.4GHz', '5GHz']);
+        expect(client.downlinkRate, isNull);
+        expect(client.uplinkRate, isNull);
+        expect(client.signalStrength, isNull);
+      });
+
+      // The STA row is still the source for a client not on MLO.
+      test('a client not on MLO keeps the STA row values', () {
+        final client = only(buildWith(const {}));
+
+        expect(client.downlinkRate, 900000);
+        expect(client.uplinkRate, 800000);
+        expect(client.signalStrength, -70);
+      });
+
+      test('a client not on MLO has no MLO bands, and MLO is known', () {
+        final client = only(buildWith(const {}));
+
+        expect(client.wifi?.mloBands, isNull);
+        expect(client.wifi?.mloUnknown, isFalse);
+      });
+
+      // An offline client is on no link, so its MLO state is no question.
+      test('an offline client is not marked MLO unknown', () {
+        final result = MeshNetworkBuilder.build(
+          connectedDevices: ConnectedDevices(items: [
+            buildConnectedDevice(macAddress: 'AA:BB:CC:DD:EE:01'),
+            buildConnectedDevice(
+              macAddress: clientMac,
+              interface_: 'Device.WiFi.Radio.1',
+              interfaceType: 'Wi-Fi',
+              isActive: false,
+            ),
+          ]),
+          wifiClientMap: const {},
+          connectionDetailMap: const {},
+          meshTopology: MeshTopologyInfo(
+            nodes: [buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01')],
+            clientToNodeMap: const {},
+          ),
+          gatewayName: 'Router',
+        );
+
+        final client = result.allClients.firstWhere((c) => c.mac == clientMac);
+        expect(client.wifi?.mloUnknown, isFalse);
+      });
+
+      // The read failed: whether the client is on MLO is not known.
+      test('an unread MLD marks MLO unknown', () {
+        final client = only(buildWith(null));
+
+        expect(client.wifi?.mloBands, isNull);
+        expect(client.wifi?.mloUnknown, isTrue);
+      });
+    });
+
+    // An unknown band is null, not ''. `''` used to come through from
+    // clientBandSsidMap (an SSID known, its band not) and became a nameless
+    // bucket in the band filter.
+    test('a client whose band is unknown has a null band, not empty', () {
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: ConnectedDevices(items: [
+          buildConnectedDevice(macAddress: 'AA:BB:CC:DD:EE:01'),
+          buildConnectedDevice(
+            macAddress: '11:22:33:44:55:01',
+            interface_: 'Device.WiFi.Radio.1',
+            interfaceType: 'Wi-Fi',
+            isActive: true,
+          ),
+        ]),
+        wifiClientMap: const {},
+        connectionDetailMap: const {},
+        meshTopology: MeshTopologyInfo(
+          nodes: [buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01')],
+          clientToNodeMap: const {'11:22:33:44:55:01': 'AA:BB:CC:DD:EE:01'},
+          clientBandSsidMap: const {
+            '11:22:33:44:55:01': (band: '', ssid: 'HomeNetwork'),
+          },
+        ),
+        gatewayName: 'Router',
+      );
+
+      final client = result.master.connectedClients.first;
+      expect(client.band, isNull);
+      expect(client.wifi?.ssidName, 'HomeNetwork');
     });
 
     test(

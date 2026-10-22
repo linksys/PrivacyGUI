@@ -20,6 +20,15 @@ class _AlwaysAuthenticatedNotifier extends AppConnectionStateNotifier {
   AppConnectionState build() => AppConnectionState.authenticated;
 }
 
+/// Counts reports of a failed poll — the signal three in a row should send.
+class _CountingConnection extends AppConnectionStateNotifier {
+  var reports = 0;
+  @override
+  AppConnectionState build() => AppConnectionState.authenticated;
+  @override
+  void reportConnectivityFailure() => reports++;
+}
+
 class _LoggedOutNotifier extends AppConnectionStateNotifier {
   @override
   AppConnectionState build() => AppConnectionState.loggedOut;
@@ -197,6 +206,31 @@ void main() {
       expect(latest.totalMemoryKb, 1000000);
       expect(latest.freeMemoryKb, 400000);
       container.dispose();
+    });
+
+    // #1212: a lost read, as UspClient throws it once it decodes the
+    // envelope. It reached the poller as a raw string and was never counted.
+    test('three failed polls in a row are reported', () async {
+      final connection = _CountingConnection();
+      final container = ProviderContainer(overrides: [
+        uspClientProvider.overrideWithValue(mockUsp),
+        appConnectionStateProvider.overrideWith(() => connection),
+      ]);
+      addTearDown(container.dispose);
+      container.read(uspSystemMonitorProvider);
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspSystemMonitorProvider.notifier);
+      notifier.setRefreshInterval(null);
+
+      when(() => mockUsp.get(any()))
+          .thenThrow('Get failed: Transport error: HTTP error: HTTP 503');
+      await notifier.fetchNow();
+      await notifier.fetchNow();
+      expect(connection.reports, 0);
+      await notifier.fetchNow();
+
+      expect(connection.reports, 1);
     });
 
     test('fetchNow handles error gracefully', () async {

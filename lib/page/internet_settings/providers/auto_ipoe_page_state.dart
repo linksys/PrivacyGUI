@@ -1,11 +1,12 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/framework/has_service_error.dart';
 import 'package:privacy_gui/framework/feature_state.dart';
 import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_models.dart';
 import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_snapshot.dart';
 
-class AutoIPoEPageStatus extends Equatable {
+class AutoIPoEPageStatus extends Equatable implements HasServiceError {
   const AutoIPoEPageStatus(
       {this.snapshot = const AutoIPoESnapshot(),
       this.loading = false,
@@ -14,6 +15,7 @@ class AutoIPoEPageStatus extends Equatable {
   final AutoIPoESnapshot snapshot;
   final bool loading;
   final bool saving;
+  @override
   final ServiceError? error;
   @override
   List<Object?> get props => [snapshot, loading, saving, error];

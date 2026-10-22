@@ -59,6 +59,12 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   /// widget renders.
   Map<String, dynamic>? _proofAwaitingRecovery;
 
+  /// The page as last read, before the save that is awaiting recovery marked
+  /// it saved: restored if the router turns out not to have taken the write
+  /// and cannot be read either, so the edit stays pending rather than reading
+  /// as what the router holds.
+  WifiSettingsSettings? _baselineAwaitingRecovery;
+
   /// Whether the last save is waiting for the router to come back before it
   /// can be confirmed. See [confirmAfterRecovery].
   bool get awaitsRouterRecovery => _proofAwaitingRecovery != null;
@@ -70,14 +76,13 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   /// success. A read that fails is retried a few times, one read-back interval
   /// apart — the recovery probe passing says the router answers, not that its
   /// radios have settled, and mid-reload it answers a WiFi GET with no rows.
-  /// Either way nothing is left pending, and the form is reloaded from the
-  /// router — the save's own re-fetch ran while it was away, so it read the
-  /// cache from before the write. A no-op when nothing is pending.
+  /// Either way nothing is left pending, and the form is then read back from
+  /// the router by [readBackAfterRecovery]. A no-op when nothing is pending.
   Future<void> confirmAfterRecovery() async {
     final proof = _proofAwaitingRecovery;
     if (proof == null) return;
     _proofAwaitingRecovery = null;
-    const attempts = 5;
+    const attempts = wifiReadBackAfterRecoveryAttempts;
     final interval = ref.read(wifiReadBackIntervalProvider);
     try {
       for (var attempt = 1;; attempt++) {
@@ -95,16 +100,66 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
           throw const UnexpectedError();
         }
         logger.i('[USP][WiFi]: router back, save read back as applied');
-        return;
+        break;
       }
-    } finally {
-      await _refreshL1AfterWrite();
-      await fetch(forceRemote: true);
+    } on ServiceError {
+      // Not applied, or never answered: that is the error to report. The form
+      // is still re-read so it shows what the router holds, but its outcome
+      // must not replace this one.
+      final baseline = _baselineAwaitingRecovery;
+      _baselineAwaitingRecovery = null;
+      try {
+        await readBackAfterRecovery();
+      } on ServiceError catch (e) {
+        logger.w('[USP][WiFi]: form read-back after a failed confirm failed',
+            error: e);
+        // The read-back kept what was written, clean — the rule for a write
+        // that landed. This one did not land, so put the last-read values
+        // back as the baseline and leave the edit pending.
+        if (baseline != null) {
+          state = state.copyWith(
+            settings: state.settings.copyWith(original: baseline),
+          );
+        }
+      }
+      rethrow;
     }
+    _baselineAwaitingRecovery = null;
+    await readBackAfterRecovery();
   }
+
+  /// Set when the page is gone: a read-back still running then stops
+  /// retrying (#1212 second review).
+  bool _disposed = false;
+
+  /// Reads the page back once the router is back, after a write that landed.
+  ///
+  /// **When, not just how (#1212).** Every Wi-Fi write reloads all the radios,
+  /// so a read straight after it is #1499's 15 s throttler timeout or an empty
+  /// table. [save] therefore stops at the write; the caller runs this once its
+  /// recovery has ended — `runWifiWriteWithRecovery` does — and only then
+  /// reports the save.
+  ///
+  /// Retried a few times, one read-back interval apart, as
+  /// [confirmAfterRecovery]'s read-back is: the probe passing says the router
+  /// answers, not that its radios have settled, and mid-reload a Wi-Fi GET
+  /// comes back with no rows (L1 throws on that). If every read fails the
+  /// framework's rule applies: the form keeps what was written and this throws
+  /// [SavedButUnconfirmedError].
+  Future<void> readBackAfterRecovery() => confirmSavedRetrying(
+        attempts: wifiReadBackAfterRecoveryAttempts,
+        interval: ref.read(wifiReadBackIntervalProvider),
+        before: () async {
+          dropWifiReadBackCache(ref);
+          await _refreshL1AfterWrite();
+        },
+        isActive: () => !_disposed,
+      );
 
   @override
   UspWifiSettingsState build() {
+    _disposed = false;
+    ref.onDispose(() => _disposed = true);
     // Synchronous build with loading state; async fetch follows immediately.
     Future.microtask(() => fetch());
     return UspWifiSettingsState.initial();
@@ -203,14 +258,23 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   // save — override to manage isSaving flag
   // ---------------------------------------------------------------------------
 
+  /// Writes and marks the page saved; **does not read it back**.
+  ///
+  /// The radios are reloading once the write has landed, so the read-back
+  /// belongs after the recovery the caller runs around this — see
+  /// [readBackAfterRecovery] (#1212). The router-away case hands over to
+  /// [confirmAfterRecovery] as before.
   @override
   Future<UspWifiSettingsState> save() async {
     state = state.copyWith(
       status: state.status.copyWith(isSaving: true),
     );
     try {
-      final result = await super.save();
-      return result;
+      final baseline = state.settings.original;
+      await performSave();
+      if (awaitsRouterRecovery) _baselineAwaitingRecovery = baseline;
+      markAsSaved();
+      return state;
     } on ServiceError catch (e) {
       logger.e('[USP][WiFi]: Save failed', error: e);
       rethrow;
@@ -257,29 +321,24 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       rethrow;
     }
 
-    // Router away: refreshing L1 now could only fail, so it waits for
-    // [confirmAfterRecovery], which runs once the router is back.
+    // Router away: [confirmAfterRecovery] reads it back once it is back.
+    // Otherwise the write is confirmed and L1 is refreshed, with the form, by
+    // [readBackAfterRecovery] — not here, while the radios reload.
     if (result case WifiRouterAway(:final proof)) {
       _proofAwaitingRecovery = proof;
-      return;
     }
-
-    // Refresh Layer 1 cache so post-save fetch() reads fresh data.
-    // Using refresh() instead of invalidate() because the latter only marks
-    // the provider dirty — without an active subscriber it won't rebuild,
-    // and the subsequent .future call would return stale data.
-    await _refreshL1AfterWrite();
   }
 
   /// Re-reads L1 after a write, without letting the re-read decide the save.
   ///
-  /// The radios are still reloading when it runs, so it can time out on the
-  /// 15 s throttler — which is what #1499's user saw: both SETs had succeeded,
-  /// and `Throttler: request exceeded 15s` from THIS read turned the save into
-  /// "Something went wrong". The write's outcome is already settled by then (a
-  /// confirmed answer or a read-back), so a failed refresh is logged, not
-  /// thrown; the post-save `fetch()` reports a stale read on `status.error`,
-  /// as the mixin documents.
+  /// The write's outcome is already settled when this runs, so a failed
+  /// refresh is logged, not thrown. After a confirmed write it runs after the
+  /// recovery ([readBackAfterRecovery]) — #1499's failure was this read timing
+  /// out on the 15 s throttler mid-reload and turning a landed save into
+  /// "Something went wrong" — and the form read that follows reports a read
+  /// that still fails. After a write that threw, [performSave] still runs it
+  /// at once, mid-reload when the write had reached the radios; only the log
+  /// sees that one fail.
   ///
   /// It also has MLO's status read again (#1692): MLO needs the main bands'
   /// SSID, password and security to match, which is what this page edits.

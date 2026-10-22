@@ -29,7 +29,7 @@ class UspClientWeb implements UspTransport {
       throw UnsupportedError('USP is only available on Web');
 
   @override
-  Future<Map<String, String>> get(List<String> paths) =>
+  Future<Map<String, dynamic>> get(List<String> paths) =>
       throw UnsupportedError('USP is only available on Web');
 
   @override

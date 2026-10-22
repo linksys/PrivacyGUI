@@ -193,8 +193,10 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                 label: loc(context).macAddress,
                 value: device.mac,
               ),
-              if (device.hostName.isNotEmpty &&
-                  device.hostName != device.displayName)
+              // Whenever the host name is non-empty, even when it is also the
+              // display name: with no friendly name it is, and hiding the row
+              // then hid the only name the device reported (#1686 item 3).
+              if (device.hostName.isNotEmpty)
                 DetailInfoTile(
                   icon: Icons.dns,
                   label: loc(context).hostname,
@@ -284,7 +286,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
           isWifi: device.isWifi,
           mac: device.mac,
           ip: device.ip,
-          band: device.band,
+          band: wifiBandLabel(context, device.wifi),
+          mloUnknown: device.wifi?.mloUnknown ?? false,
           ssidName: device.ssidName,
           signalStrength: device.signalStrength,
         ),
@@ -298,7 +301,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             isWifi: iface.isWifi,
             mac: iface.mac,
             ip: iface.ip,
-            band: iface.band,
+            band: wifiBandLabel(context, iface.wifi),
+            mloUnknown: iface.wifi?.mloUnknown ?? false,
             ssidName: iface.ssidName,
             signalStrength: iface.signalStrength,
           ),
@@ -327,6 +331,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
     required String mac,
     required String ip,
     String? band,
+    bool mloUnknown = false,
     String? ssidName,
     int? signalStrength,
   }) {
@@ -404,21 +409,38 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                   ],
                 ),
               ),
-              if (isWifi && (band != null || ssidName != null))
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    if (band != null)
-                      AppText.bodySmall(
-                        band,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    if (ssidName != null)
-                      AppText.bodySmall(
-                        ssidName,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                  ],
+              if (isWifi && (band != null || ssidName != null || mloUnknown))
+                // Flexible, not a bare Column: `MLO (2.4GHz + 5GHz)` and the
+                // MLO hint are longer than a band, and an unbounded column
+                // would take its width from the IP / MAC column beside it.
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (band != null)
+                        AppText.bodySmall(
+                          band,
+                          color: colorScheme.onSurfaceVariant,
+                          textAlign: TextAlign.end,
+                        ),
+                      if (ssidName != null)
+                        AppText.bodySmall(
+                          ssidName,
+                          color: colorScheme.onSurfaceVariant,
+                          textAlign: TextAlign.end,
+                        ),
+                      // Stacked under band and SSID rather than beside them
+                      // (#1686): the row has no width to spare on a phone.
+                      if (mloUnknown)
+                        AppText.bodySmall(
+                          loc(context).mloStatusUnavailable,
+                          color: colorScheme.onSurfaceVariant,
+                          textAlign: TextAlign.end,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
                 ),
             ],
           ),
@@ -435,7 +457,10 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
     final hasSignalData = device.signalStrength != null;
     final hasSpeedData =
         device.downlinkRate != null || device.uplinkRate != null;
-    final hasBandSsid = device.band != null || device.ssidName != null;
+    final bandLabel = wifiBandLabel(context, device.wifi);
+    final mloUnknown = device.wifi?.mloUnknown ?? false;
+    final hasBandSsid =
+        bandLabel != null || device.ssidName != null || mloUnknown;
 
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -478,7 +503,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
           if (hasBandSsid)
             Row(
               children: [
-                if (device.band != null) ...[
+                if (bandLabel != null || mloUnknown) ...[
                   Expanded(
                     child: LayoutBlock(
                       padding: const EdgeInsets.all(AppSpacing.md),
@@ -500,7 +525,18 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                             ],
                           ),
                           AppGap.xs(),
-                          AppText.bodyMedium(device.band!),
+                          if (bandLabel != null) AppText.bodyMedium(bandLabel),
+                          // Stacked under the band (#1686): the card is half
+                          // the row, with no width to put it beside.
+                          if (mloUnknown)
+                            AppText.bodySmall(
+                              loc(context).mloStatusUnavailable,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                         ],
                       ),
                     ),
@@ -573,29 +609,33 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
     );
   }
 
+  /// The last rates the link used, one card per direction, stacked.
+  ///
+  /// `LastDataDownlinkRate` / `LastDataUplinkRate` are the rate most recently
+  /// used to send data (TR-181), not throughput: an idle client often reads
+  /// 6 Mbps. The captions say so (#1686 item 4), and they no longer fit side
+  /// by side: at 320px each half-width caption had 81dp, and 107 of the 208
+  /// locale × width captions ellipsized. Stacked, each gets the full width.
   Widget _buildSpeedRow(BuildContext context, ClientDevice device) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (device.downlinkRate != null)
-          Expanded(
-            child: DetailSpeedCard(
-              icon: Icons.arrow_downward,
-              label: loc(context).download,
-              speedKbps: device.downlinkRate!,
-              color: colorScheme.primary,
-            ),
+          DetailSpeedCard(
+            icon: Icons.arrow_downward,
+            label: loc(context).lastDownloadRate,
+            speedKbps: device.downlinkRate!,
+            color: colorScheme.primary,
           ),
         if (device.downlinkRate != null && device.uplinkRate != null)
           AppGap.sm(),
         if (device.uplinkRate != null)
-          Expanded(
-            child: DetailSpeedCard(
-              icon: Icons.arrow_upward,
-              label: loc(context).upload,
-              speedKbps: device.uplinkRate!,
-              color: colorScheme.tertiary,
-            ),
+          DetailSpeedCard(
+            icon: Icons.arrow_upward,
+            label: loc(context).lastUploadRate,
+            speedKbps: device.uplinkRate!,
+            color: colorScheme.tertiary,
           ),
       ],
     );

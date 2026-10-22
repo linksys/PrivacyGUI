@@ -62,7 +62,10 @@ void main() {
         client.onReauthRequired = () async => relogins++;
         client.onForceLogout = () => forcedLogouts++;
 
-        await expectLater(send(client), throwsA(isA<Exception>()),
+        // `anything`, not `isA<Exception>()`: GET's 401 now arrives in the
+        // envelope and UspClient throws it as a USP string (#1212); the other
+        // verbs still throw the transport's Exception (#1666).
+        await expectLater(send(client), throwsA(anything),
             reason: 'the caller must still see the request fail');
 
         expect(transport.refreshCalls, 0,
@@ -86,7 +89,8 @@ void main() {
       var forcedLogouts = 0;
       client.onForceLogout = () => forcedLogouts++;
 
-      await expectLater(client.get([_path]), throwsA(isA<Exception>()));
+      await expectLater(client.get([_path]),
+          throwsA(predicate((e) => '$e'.contains('HTTP 503'))));
 
       expect(forcedLogouts, 0,
           reason: 'a Guardian or agent outage is the recovery probe\'s job, '
@@ -112,7 +116,8 @@ void main() {
           baseUrl: 'https://two');
       old.requestGate!.complete();
 
-      await expectLater(inFlight, throwsA(isA<Exception>()));
+      await expectLater(
+          inFlight, throwsA(predicate((e) => '$e'.contains('HTTP 401'))));
       expect(forcedLogouts, 0);
     });
 
@@ -123,8 +128,7 @@ void main() {
 
       await expectLater(
         client.get([_path]),
-        throwsA(isA<Exception>()
-            .having((e) => e.toString(), 'message', contains('HTTP 401'))),
+        throwsA(predicate((e) => '$e'.contains('HTTP 401'))),
       );
     });
   });

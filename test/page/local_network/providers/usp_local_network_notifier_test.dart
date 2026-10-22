@@ -24,13 +24,21 @@ class MockUspClient extends Mock implements UspClient {}
 class _TestLanDataNotifier extends LanDataNotifier {
   final LanData _testData;
   final ServiceError? errorToThrow;
+
+  /// When set, every read from this build onwards fails — the first reads
+  /// succeed, so a post-save read can fail on its own.
+  final int? failFromBuild;
   int buildCount = 0;
-  _TestLanDataNotifier(this._testData, {this.errorToThrow});
+  _TestLanDataNotifier(this._testData, {this.errorToThrow, this.failFromBuild});
 
   @override
   Future<LanData> build() async {
     buildCount++;
     if (errorToThrow != null) throw errorToThrow!;
+    final from = failFromBuild;
+    if (from != null && buildCount >= from) {
+      throw const NetworkError(detail: 'read failed');
+    }
     return _testData;
   }
 }
@@ -66,14 +74,15 @@ void main() {
     when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
   });
 
-  ProviderContainer createContainer({LanData? data}) {
+  ProviderContainer createContainer({LanData? data, int? failFromBuild}) {
     final container = ProviderContainer(
       overrides: [
         uspLocalNetworkServiceProvider.overrideWithValue(mockService),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
         sseManagerProvider.overrideWithValue(mockSseManager),
-        lanDataProvider
-            .overrideWith(() => _TestLanDataNotifier(data ?? testLanData)),
+        lanDataProvider.overrideWith(() => _TestLanDataNotifier(
+            data ?? testLanData,
+            failFromBuild: failFromBuild)),
       ],
     );
     container.listen(uspLocalNetworkProvider, (_, __) {});
@@ -297,6 +306,31 @@ void main() {
       verifyNever(() => mockSseManager.disconnect());
       // lanDataProvider is invalidated → build() runs a second time.
       expect(lanNotifier.buildCount, 2);
+      container.dispose();
+    });
+
+    // #1212 / #1279: this page sequences its own save, so it must still hand
+    // the read-back to the framework's rule rather than call fetch() itself.
+    test(
+        'a failed post-save read reports saved-but-unconfirmed, not an error '
+        'page', () async {
+      when(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+          )).thenAnswer((_) async {});
+      final container = createContainer(failFromBuild: 2);
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspLocalNetworkProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(dnsServer1: '9.9.9.9'));
+
+      await expectLater(
+          notifier.save(), throwsA(isA<SavedButUnconfirmedError>()));
+
+      final state = container.read(uspLocalNetworkProvider);
+      expect(state.status.error, isNull);
+      expect(state.settings.current.model.dnsServer1, '9.9.9.9');
+      expect(state.isDirty, isFalse);
       container.dispose();
     });
   });

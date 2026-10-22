@@ -1,8 +1,9 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/framework/has_service_error.dart';
 
 /// Transient (non-editable) status for the Instant Safety feature page.
-class InstantSafetyStatus extends Equatable {
+class InstantSafetyStatus extends Equatable implements HasServiceError {
   /// Whether the page is still waiting for its first data.
   ///
   /// Defaults to `false` so that forgetting it fails safe. The View checks
@@ -16,6 +17,7 @@ class InstantSafetyStatus extends Equatable {
 
   /// Typed error from the last fetch. The View localizes it via
   /// `localizeServiceError`; null means no error.
+  @override
   final ServiceError? error;
 
   const InstantSafetyStatus({

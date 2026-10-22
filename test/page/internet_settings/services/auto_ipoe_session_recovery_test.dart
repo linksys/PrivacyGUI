@@ -35,9 +35,21 @@ void _supportedDeviceTests() {
     service = AutoIPoEService(client);
     when(() => transport.get(any())).thenAnswer((_) async {
       if (expired) {
-        // Exercise the existing rejected-request path. Fulfilled code-9999
-        // GET failures remain deferred to PrivacyGUI #1212.
-        throw 'Get failed: Transport error: HTTP error: HTTP $status';
+        // What the WASM client really does with a 401 or a 503: it resolves
+        // with a 9999 in the envelope, it does not throw (#1212).
+        return {
+          'success': false,
+          'result': {
+            'data': <String, dynamic>{},
+            'error': {
+              '${AutoIPoEService.object}APIVersion': {
+                'errorCode': 9999,
+                'errorMessage': 'Transport error: Transport error: HTTP error: '
+                    'HTTP $status',
+              },
+            },
+          },
+        };
       }
       final completed = AutoIPoETestData.snapshot(
           requestId: AutoIPoETestData.id, exitCode: 0, verified: true);
@@ -49,7 +61,10 @@ void _supportedDeviceTests() {
         'exitCode': 0,
         'accepted': true,
       });
-      return Map<String, String>.from(wire);
+      return {
+        'success': true,
+        'result': {'data': Map<String, String>.from(wire)},
+      };
     });
   });
 

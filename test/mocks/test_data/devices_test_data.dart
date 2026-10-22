@@ -45,6 +45,8 @@ class DevicesTestData {
     String? ssidName = 'HomeNetwork',
     int? downlinkRate = 866000,
     int? uplinkRate = 433000,
+    List<String>? mloBands,
+    bool mloUnknown = false,
   }) =>
       WifiConnectionInfo(
         signalStrength: signalStrength,
@@ -52,6 +54,8 @@ class DevicesTestData {
         ssidName: ssidName,
         downlinkRate: downlinkRate,
         uplinkRate: uplinkRate,
+        mloBands: mloBands,
+        mloUnknown: mloUnknown,
       );
 
   static WifiConnectionInfo createExcellentSignal() => createWifiInfo(

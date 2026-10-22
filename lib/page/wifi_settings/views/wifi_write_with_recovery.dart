@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
@@ -16,8 +15,16 @@ sealed class WifiWriteDone {
 }
 
 /// The router confirmed the write — answered, or read back.
+///
+/// [readBack], when given, reads the page back after the write and before the
+/// outcome is reported (#1212). Where a recovery runs (local) it is held until
+/// the recovery ends, because the write reloads the radios; where none does
+/// (Remote Assistance, #1323) it runs at once under the spinner and relies on
+/// its retries. It throws [SavedButUnconfirmedError] when the page still
+/// cannot be read.
 final class WifiWriteConfirmed extends WifiWriteDone {
-  const WifiWriteConfirmed();
+  final Future<void> Function()? readBack;
+  const WifiWriteConfirmed({this.readBack});
 }
 
 /// The write went out but the router could not be read back in time — a
@@ -94,6 +101,7 @@ Future<void> runWifiWriteWithRecovery(
   }
 
   final awaitsRouter = done is WifiWriteAwaitsRouter ? done : null;
+  final readBack = done is WifiWriteConfirmed ? done.readBack : null;
   if (recovering) {
     connection.startProbingNow();
   } else if (awaitsRouter != null) {
@@ -111,13 +119,25 @@ Future<void> runWifiWriteWithRecovery(
       } catch (e) {
         failure = e;
       }
+    } else if (readBack != null) {
+      try {
+        // Under a recovery the dialog is still up (it waits on [settled]).
+        // Without one — Remote Assistance enters none for a Wi-Fi change —
+        // the spinner covers it, as it covered the write: the page must not
+        // take an edit or a second Save while the read-back is running.
+        await (recovering || !context.mounted
+            ? readBack()
+            : doSomethingWithSpinner(context, readBack()));
+      } catch (e) {
+        failure = e;
+      }
     }
   } finally {
     settled.complete();
   }
   if (!context.mounted) return;
   if (failure != null) {
-    showFailedSnackBar(context, localizeServiceError(context, failure));
+    showSaveErrorSnackBar(context, failure);
   } else {
     showSuccessSnackBar(context, successMessage);
   }

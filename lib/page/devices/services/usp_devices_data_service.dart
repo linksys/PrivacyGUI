@@ -14,6 +14,7 @@ import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_topology_builder.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_network_builder.dart';
 import 'package:privacy_gui/generated/data_elements_interfaces.g.dart';
+import 'package:privacy_gui/generated/data_elements_mlo_clients.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/generated/data_elements_network_info.g.dart';
 
@@ -143,17 +144,19 @@ class UspDevicesDataService {
         DataElementsNetwork.fetch(_usp),
         _fetchInterfaces(),
         _fetchControllerId(),
+        _fetchMld(),
       ]);
       final network = results[0] as DataElementsNetwork;
       final interfaces = results[1] as DataElementsInterfaces?;
       final controllerId = results[2] as String?;
+      final mld = results[3] as DataElementsMloClients?;
       if (network.items.isEmpty) {
         logger.d(
             '[USP][Dashboard]: DataElements empty — not a mesh or unsupported');
         return MeshTopologyInfo.empty;
       }
       return _buildTopologyInfo(
-          network, bssidToBandMap, interfaces, controllerId);
+          network, bssidToBandMap, interfaces, controllerId, mld);
     } catch (e) {
       // `w`, not `d`. An empty subtree (above) is an expected single-router
       // result; a *fault* means the request did not answer the question, and the
@@ -260,23 +263,52 @@ class UspDevicesDataService {
     }
   }
 
+  /// Reads `APMLD.{j}.STAMLD.{k}.AffiliatedSTA.{l}`, the client MLDs (#1686
+  /// item 2). Isolated like [_fetchInterfaces], so a fault never costs the
+  /// topology. Three outcomes, kept apart because the view shows them apart:
+  /// - read: the subtree, empty when no client is on MLO (also what firmware
+  ///   with MLO switched off answers);
+  /// - path not found (7026 and its kin → [ResourceNotFoundError]): firmware
+  ///   without the TR-181 2.17 MLD objects, which can have no MLO client, so
+  ///   an empty subtree, not "not known" — or every client on such firmware
+  ///   would carry "MLO status unavailable" for good;
+  /// - any other fault: null, "not known".
+  Future<DataElementsMloClients?> _fetchMld() async {
+    try {
+      return await DataElementsMloClients.fetch(_usp);
+    } catch (e) {
+      final error = e is ServiceError ? e : mapUspErrorToServiceError(e);
+      if (error is ResourceNotFoundError) {
+        logger.d('[USP][Dashboard]: no DataElements MLD objects on this '
+            'firmware, so no MLO client: $e');
+        return const DataElementsMloClients(items: []);
+      }
+      logger.w('[USP][Dashboard]: DataElements MLD unavailable, MLO clients '
+          'are not known: $e');
+      return null;
+    }
+  }
+
   MeshTopologyInfo _buildTopologyInfo(
     DataElementsNetwork network,
     Map<String, String> bssidToBandMap,
     DataElementsInterfaces? interfaces,
     String? controllerId,
+    DataElementsMloClients? mld,
   ) {
     final result = MeshTopologyBuilder.build(
       network,
       bssidToBandMap: bssidToBandMap,
       interfaces: interfaces,
       controllerId: controllerId,
+      mld: mld,
     );
     logger.t('[USP][Dashboard]: Mesh nodes: ${result.nodes.length}, '
         'client→node mappings: ${result.clientToNodeMap.length}, '
         'band/SSID mappings: ${result.clientBandSsidMap.length}, '
         'wired client→node: ${result.wiredClientToNodeMap.length}, '
-        'ambiguous wired: ${result.ambiguousWiredClients.length}');
+        'ambiguous wired: ${result.ambiguousWiredClients.length}, '
+        'MLO clients: ${result.mloClients?.length ?? 'unknown'}');
     return result;
   }
 

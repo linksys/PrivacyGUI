@@ -20,6 +20,15 @@ class _AlwaysAuthenticatedNotifier extends AppConnectionStateNotifier {
   AppConnectionState build() => AppConnectionState.authenticated;
 }
 
+/// Counts reports of a failed poll — the signal three in a row should send.
+class _CountingConnection extends AppConnectionStateNotifier {
+  var reports = 0;
+  @override
+  AppConnectionState build() => AppConnectionState.authenticated;
+  @override
+  void reportConnectivityFailure() => reports++;
+}
+
 class _LoggedOutNotifier extends AppConnectionStateNotifier {
   @override
   AppConnectionState build() => AppConnectionState.loggedOut;
@@ -218,6 +227,67 @@ void main() {
 
       verifyNever(() => mockUsp.get(any()));
       container.dispose();
+    });
+
+    // #1212. What a failed poll looks like since UspClient decodes the GET
+    // envelope: the transport's 9999, thrown. Before, it was an empty map, and
+    // MultiInterfaceTrafficStats read every counter as `?? 0`.
+    const lostRead = 'Get failed: Transport error: HTTP error: HTTP 503';
+
+    test(
+        'a failed poll draws no sample, and the next one is rated against the '
+        'last good baseline — no 0, no spike', () async {
+      final container = await createAndWait();
+      final notifier = container.read(uspTrafficAnalysisProvider.notifier);
+      notifier.setRefreshInterval(null);
+      final baseline = container.read(uspTrafficAnalysisProvider).lastBaselines;
+
+      when(() => mockUsp.get(any())).thenThrow(lostRead);
+      await notifier.fetchNow();
+
+      var state = container.read(uspTrafficAnalysisProvider);
+      expect(state.history, isEmpty, reason: 'no 0 B/s point');
+      expect(state.lastBaselines, baseline,
+          reason: 'the next rate is taken from the last good sample');
+      expect(state.lastBaselines![TrafficInterface.wan]!.bytesSent, 1000);
+
+      await Future.delayed(const Duration(milliseconds: 2));
+      when(() => mockUsp.get(any())).thenAnswer((_) async =>
+          makeTrafficResponse(
+              wanSent: 2000, wanRecv: 4000, lanSent: 1000, lanRecv: 3000));
+      await notifier.fetchNow();
+
+      state = container.read(uspTrafficAnalysisProvider);
+      expect(state.history, hasLength(1));
+      final wan = state.latest!.interfaces[TrafficInterface.wan]!;
+      expect(wan.totalBytesSent, 2000);
+      expect(wan.uploadBytesPerSec, greaterThan(0));
+      container.dispose();
+    });
+
+    test('three failed polls in a row are reported', () async {
+      when(() => mockUsp.get(any()))
+          .thenAnswer((_) async => makeTrafficResponse());
+      final connection = _CountingConnection();
+      final container = ProviderContainer(overrides: [
+        uspClientProvider.overrideWithValue(mockUsp),
+        appConnectionStateProvider.overrideWith(() => connection),
+      ]);
+      addTearDown(container.dispose);
+      container.read(uspTrafficAnalysisProvider);
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspTrafficAnalysisProvider.notifier);
+      notifier.setRefreshInterval(null);
+
+      when(() => mockUsp.get(any())).thenThrow(lostRead);
+      await notifier.fetchNow();
+      await notifier.fetchNow();
+      expect(connection.reports, 0);
+      await notifier.fetchNow();
+
+      expect(connection.reports, 1,
+          reason: 'a failed read must count; it used to reset the counter');
     });
 
     test('fetch error sets isFetching false', () async {

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -22,6 +24,23 @@ showFailedSnackBar(BuildContext context, String message) {
     textColor: appColors?.onSemanticDanger,
     borderColor: appColors?.onSemanticDanger,
   );
+}
+
+/// Reports a save that threw.
+///
+/// A [SavedButUnconfirmedError] is a write that landed and could not be read
+/// back (#1212): it is shown neutrally, because the failure style would have
+/// the user press Save again and rewrite what the router already holds. Any
+/// other error is a save that wrote nothing and keeps [showFailedSnackBar] —
+/// [SaveDiscardedForRouterRowsError] included: the page was reloaded instead
+/// of writing, and the user has to make the change again.
+showSaveErrorSnackBar(BuildContext context, Object error) {
+  final message = localizeServiceError(context, error);
+  if (error is SavedButUnconfirmedError) {
+    showSimpleSnackBar(context, message);
+  } else {
+    showFailedSnackBar(context, message);
+  }
 }
 
 showSimpleSnackBar(
