@@ -3,13 +3,17 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/devices/providers/device_detail_provider.dart';
 import 'package:privacy_gui/page/devices/views/usp_device_detail_view.dart';
 import 'package:privacy_gui/util/network_utils.dart';
 
 import '../../../mocks/provider_overrides/mock_devices.dart';
 import '../../../mocks/test_data/scenes/devices_scene_data.dart';
+import '../../../mocks/test_data/devices_test_data.dart';
 import '../../../util/app_test_fonts.dart';
+import '../../../util/dashboard/text_readability_probe.dart';
 import '../../../util/detail_view_probe.dart';
 import '../../../util/overflow_probe.dart';
 
@@ -67,6 +71,7 @@ import '../../../util/overflow_probe.dart';
 ///   | caption's `Expanded` removed (the pre-fix shape) | clean rows: fr +11px@480, +20px@1280, +30px@1241, +91px@320 |
 ///   | `maxLines: 1` + ellipsis dropped, `Expanded` kept | matching heights: fr@480 [106, 90], pl@320 [90, 106] |
 ///   | value given `maxLines: 1` + ellipsis             | value stays whole (both cards) |
+///   | cards back in a `Row` of `Expanded`s (#1686)     | stacked: up.top > down.bottom; no caption cut short: 107 of 208 cells |
 void main() {
   setUpAll(() async {
     // Real fonts: text widths — and therefore overflow — are meaningless under
@@ -140,44 +145,58 @@ void main() {
     }
   });
 
-  group('sibling speed cards keep matching heights (#1302)', () {
-    // Why the caption ellipsizes on one line instead of wrapping. The two cards
-    // are independent `Expanded`s in a `Row`, so a caption that wraps makes only
-    // *its* card taller and the pair stops lining up — in `fr` at 480px the
-    // wrapped card measured 106dp against its sibling's 90dp. The row cannot fix
-    // that for them: `Row` stretches children to its own height, and its height
-    // is the tallest child's.
+  group('the two speed cards are stacked, full width (#1686)', () {
+    // #1686 item 4 made the captions say what the rate is — the last rate the
+    // link used, not throughput — and they stopped fitting side by side: two
+    // half-width `Expanded`s left 81dp per caption at 320px, and 107 of the
+    // 208 locale × width captions ellipsized ("Last download rate" itself needs
+    // 111dp). Stacked, each card takes the row's full width (216dp at 320px,
+    // against 183dp for the longest translation, `sv`).
     //
-    // These two coordinates are the ones where a wrapping caption actually
-    // diverges. `fr` at 320px is not among them: there both captions wrap, so
-    // both cards grow to 122dp and stay equal — a real property of that width,
-    // not a gap in the matrix.
-    for (final (tag, width) in [('fr', 480.0), ('pl', 320.0)]) {
-      testWidgets(
-        'both cards are the same height in $tag at ${width.toStringAsFixed(0)}px',
+    // This replaces #1302's matching-heights check, which a stacked pair would
+    // pass vacuously: the risk now is the pair going back side by side.
+    testWidgets('the download card sits above the upload card, equally wide',
         (tester) async {
+      await overflowsAt(tester: tester, screenWidth: 320.0, tag: 'en');
+
+      final cards = find.byType(DetailSpeedCard);
+      expect(cards, findsNWidgets(2),
+          reason: 'the fixture must render both cards, or there is no pair '
+              'to lay out');
+      final down = tester.getRect(cards.at(0));
+      final up = tester.getRect(cards.at(1));
+      expect(up.top, greaterThan(down.bottom),
+          reason: 'the cards must be stacked, not side by side');
+      expect(up.width, down.width,
+          reason: 'stacked cards share the full width');
+    });
+  });
+
+  group('no speed caption is cut short, in any locale (#1686)', () {
+    // An ellipsized caption raises no overflow, so the cells above stay green
+    // with an unreadable label — the reason this group exists. Every locale at
+    // the four widths of this file; each cell is one pump.
+    for (final locale in AppLocalizations.supportedLocales) {
+      final tag = locale.countryCode == null
+          ? locale.languageCode
+          : '${locale.languageCode}_${locale.countryCode}';
+      for (final width in widths) {
+        testWidgets(
+            'both captions fit at ${width.toStringAsFixed(0)}px in $tag',
+            (tester) async {
           await overflowsAt(tester: tester, screenWidth: width, tag: tag);
 
-          final cards = find.byType(DetailSpeedCard);
-          expect(
-            cards,
-            findsNWidgets(2),
-            reason: 'the fixture must render both cards — with one card there '
-                'is no sibling to line up with and this test would be vacuous',
-          );
-          final heights = cards
-              .evaluate()
-              .map((e) => tester.getSize(find.byWidget(e.widget)).height)
-              .toSet();
-          expect(
-            heights,
-            hasLength(1),
-            reason: 'the two speed cards have different heights in $tag at '
-                '${width.toStringAsFixed(0)}px ($heights) — a caption is '
-                'wrapping instead of ellipsizing on one line',
-          );
-        },
-      );
+          final l10n = lookupAppLocalizations(locale);
+          for (final caption in [l10n.lastDownloadRate, l10n.lastUploadRate]) {
+            final finder = find.descendant(
+                of: find.byType(DetailSpeedCard), matching: find.text(caption));
+            expect(finder, findsOneWidget, reason: '"$caption" must render');
+            expect(tester.isTextClipped(finder), isFalse,
+                reason: '"$caption" is ellipsized in $tag at '
+                    '${width.toStringAsFixed(0)}px');
+          }
+        });
+      }
     }
   });
 
@@ -229,6 +248,57 @@ void main() {
           reason: 'the $kind value must not be line-capped',
         );
       });
+    }
+  });
+
+  group('the MLO band line fits, in any locale (#1686)', () {
+    // The band card is half the row. `MLO (2.4GHz + 5GHz + 6GHz)` is the
+    // longest band line a client can have, and the "MLO status unavailable"
+    // hint sits under the band in the same card. Measured when this group was
+    // written: neither overflows anywhere, and the hint fits two lines
+    // everywhere once `el` was shortened.
+    for (final kind in ['bands', 'unknown']) {
+      final mloDetail = DeviceDetailState(
+        device: DevicesTestData.createWifiClient(
+          wifi: DevicesTestData.createWifiInfo(
+            band: '5GHz',
+            mloBands: kind == 'bands' ? ['2.4GHz', '5GHz', '6GHz'] : null,
+            mloUnknown: kind == 'unknown',
+          ),
+        ),
+      );
+      for (final locale in AppLocalizations.supportedLocales) {
+        final tag = locale.countryCode == null
+            ? locale.languageCode
+            : '${locale.languageCode}_${locale.countryCode}';
+        for (final width in widths) {
+          testWidgets(
+              'the MLO $kind line fits at ${width.toStringAsFixed(0)}px in $tag',
+              (tester) async {
+            final overflows = await probeViewOverflow(
+              tester,
+              view: UspDeviceDetailView(mac: mloDetail.device!.mac),
+              overrides: deviceDetailOverrides(detail: mloDetail),
+              screenWidth: width,
+              locale: locale,
+            );
+            expect(overflows, isEmpty,
+                reason: 'overflow in $tag at ${width.toStringAsFixed(0)}px');
+
+            final l10n = lookupAppLocalizations(locale);
+            final text = kind == 'bands'
+                ? l10n.mloBands('2.4GHz + 5GHz + 6GHz')
+                : l10n.mloStatusUnavailable;
+            final finder = find.text(text);
+            expect(finder, findsWidgets, reason: '"$text" must render');
+            for (var i = 0; i < finder.evaluate().length; i++) {
+              expect(tester.isTextClipped(finder.at(i)), isFalse,
+                  reason: '"$text" is cut short in $tag at '
+                      '${width.toStringAsFixed(0)}px');
+            }
+          });
+        }
+      }
     }
   });
 }

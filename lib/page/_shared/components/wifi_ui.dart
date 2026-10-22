@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 // Re-export core wifi utilities for convenience
@@ -95,6 +96,20 @@ extension SignalTierExt on SignalTier {
 /// Bar color based on RSSI value.
 Color rssiColor(int rssi, ColorScheme cs) =>
     getSignalTier(rssi).resolveColor(cs);
+
+/// The band line of a Wi-Fi client: `MLO (2.4GHz + 5GHz)` for a client on
+/// MLO, its band otherwise, null when neither is known (#1686 item 2).
+///
+/// A display label only, shared by the device list and the device detail
+/// page. It never replaces [WifiConnectionInfo.band], which the device
+/// filter, the analytics band split and the PDF group by.
+String? wifiBandLabel(BuildContext context, WifiConnectionInfo? wifi) {
+  final mloBands = wifi?.mloBands;
+  if (mloBands != null && mloBands.isNotEmpty) {
+    return loc(context).mloBands(mloBands.join(' + '));
+  }
+  return wifi?.band;
+}
 
 /// Localizes device/firmware WiFi values that are plain UI words, for DISPLAY
 /// only. The original value is still used as the stored value / map key by

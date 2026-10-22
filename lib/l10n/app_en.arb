@@ -140,6 +140,8 @@
   "dns3Optional": "DNS 3 (optional)",
   "done": "Done",
   "download": "Download",
+  "lastDownloadRate": "Last download rate",
+  "lastUploadRate": "Last upload rate",
   "downlink": "Downlink",
   "duid": "DUID",
   "editPortForwarding": "Edit Port Forwarding",
@@ -313,6 +315,15 @@
   "mlo": "Multi-Link Operation",
   "mloDesc": "Allow devices to use multiple bands and frequency channels simultaneously. This increases speed, reduces latency, and makes for a more reliable connection.",
   "mloInactiveHint": "Use the same Wi-Fi name, password and WPA3 security on 2.4 GHz and 5 GHz.",
+  "mloBands": "MLO ({bands})",
+  "@mloBands": {
+    "placeholders": {
+      "bands": {
+        "type": "String"
+      }
+    }
+  },
+  "mloStatusUnavailable": "MLO status unavailable",
   "monitor": "Monitor",
   "mloCapableModalDesc1": "Multi-Link Operation (MLO) allows devices to use multiple bands and frequency channels simultaneously.",
   "mloCapableModalDesc2": "This increases speed, reduces latency, and makes for a more reliable connection.",
@@ -1612,7 +1623,7 @@
       }
     }
   },
-  "signalAndSpeed": "Signal & Speed",
+  "signalAndSpeed": "Signal & Link Rate",
   "networkDetails": "Network Details",
   "wifiWireless": "WiFi (Wireless)",
   "ethernetWired": "Ethernet (Wired)",
