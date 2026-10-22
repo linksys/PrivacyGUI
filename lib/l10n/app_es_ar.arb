@@ -660,6 +660,8 @@
   "errorUnauthorized": "No tiene permiso para realizar esta acción.",
   "errorUnexpected": "Algo salió mal. Inténtelo de nuevo.",
   "errorCommandRefused": "El router rechazó este comando. Vuelve a intentarlo en un momento.",
+  "errorSavedButUnconfirmed": "Se guardó la configuración, pero no se pudo volver a leer del router. Probá actualizar la página para verla.",
+  "errorSaveDiscardedForRouterRows": "No se guardó nada. La página se volvió a cargar desde el router; volvé a hacer el cambio.",
   "errors": "Errores",
   "estimatedTimeRemaining": "Tiempo restante estimado: {time}",
   "ethernetPorts": "Puertos Ethernet",

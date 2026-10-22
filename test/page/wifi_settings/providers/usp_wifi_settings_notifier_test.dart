@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/bridge_request_throttler.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
@@ -563,6 +564,32 @@ void main() {
         container.dispose();
       });
 
+      // #1212 second review: the throttler keeps a completed GET for 5 s and
+      // the read-back attempts are 3 s apart, so a cached empty table was
+      // replayed on every other attempt instead of asking the router.
+      test('each read-back attempt drops the GET cache first', () async {
+        when(() => mockService.isApplied(any())).thenAnswer((_) async => true);
+        final throttler = BridgeRequestThrottler(staggerDelay: Duration.zero);
+        when(() => mockUsp.throttler).thenReturn(throttler);
+        final container = createContainer();
+        final settings = await quickSetupNotifier(container);
+        await settings.save();
+
+        var routerAsked = 0;
+        Future<int> ask() => throttler.enqueue(
+            cacheKey: 'usp:Device.WiFi.Radio.',
+            action: () async => ++routerAsked);
+        await ask();
+        await ask();
+        expect(routerAsked, 1, reason: 'the premise: the cache answers');
+
+        await settings.readBackAfterRecovery();
+        await ask();
+
+        expect(routerAsked, 2, reason: 'the read-back dropped the cache');
+        container.dispose();
+      });
+
       test(
           'a confirmed write is NOT failed by the L1 refresh timing out after '
           'it (#1499: both SETs had succeeded; the 15 s throttler on the '
@@ -575,10 +602,18 @@ void main() {
         notifier.failNext = true;
 
         await expectLater(settings.save(), completes);
+        expect(notifier.failures, 0,
+            reason: 'nothing is read while the radios reload (#1212): the '
+                'read-back runs after the recovery');
 
+        // After the recovery, a read that still fails is reported as a write
+        // that landed — not as a failed save.
+        await expectLater(settings.readBackAfterRecovery(),
+            throwsA(isA<SavedButUnconfirmedError>()));
         expect(notifier.failures, greaterThan(0),
             reason: 'the refresh must actually have failed, or this test '
                 'proves nothing');
+        expect(container.read(uspWifiSettingsProvider).status.error, isNull);
         container.dispose();
       });
 
@@ -608,6 +643,33 @@ void main() {
           await expectLater(notifier.save(), completes);
 
           expect(notifier.awaitsRouterRecovery, isTrue);
+          container.dispose();
+        });
+
+        // #1212 review: the router did not take the rename, and the form
+        // cannot be read either. Keeping what was written as the clean
+        // baseline would show values the router does not hold.
+        test(
+            'not applied, and the form cannot be read ⇒ the edit stays '
+            'pending against the last-read values', () async {
+          final notifier = _ThrowOnRefresh();
+          final container = createContainer(wifiNotifier: () => notifier);
+          final settings = await quickSetupNotifier(container);
+          final before =
+              container.read(uspWifiSettingsProvider).settings.original;
+          await settings.save();
+          expect(settings.awaitsRouterRecovery, isTrue);
+          when(() => mockService.isApplied(any()))
+              .thenAnswer((_) async => false);
+          notifier.failNext = true;
+
+          await expectLater(
+              settings.confirmAfterRecovery(), throwsA(isA<ServiceError>()));
+
+          final state = container.read(uspWifiSettingsProvider);
+          expect(state.settings.original, before);
+          expect(state.isDirty, isTrue,
+              reason: 'the refused rename is still the user\'s edit');
           container.dispose();
         });
 
@@ -928,6 +990,11 @@ void main() {
 
         notifier.updateNetworkField('Device.WiFi.SSID.1.', ssid: 'Changed');
         await notifier.save();
+        await container.read(mloStatusProvider.future);
+        expect(mloStatusReads, 1,
+            reason: 'not while the radios reload (#1212)');
+
+        await notifier.readBackAfterRecovery();
         await container.read(mloStatusProvider.future);
 
         expect(mloStatusReads, 2);

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
@@ -24,7 +25,8 @@ final uspSystemMonitorServiceProvider = Provider<UspSystemMonitorService?>(
 /// Stateless service for fetching a single system monitor snapshot.
 ///
 /// Owns the codegen call for [uspSystemMonitorProvider].
-/// No error mapping — polling providers silently catch errors.
+/// A failed read is mapped to a [ServiceError] (constitution Article XIII),
+/// so the poller can count it (#1212).
 class UspSystemMonitorService {
   final UspClient _usp;
 
@@ -32,7 +34,12 @@ class UspSystemMonitorService {
 
   /// Fetches current CPU/memory stats and returns a [SystemSnapshot].
   Future<SystemSnapshot> fetchSnapshot() async {
-    final info = await SystemInfo.fetch(_usp);
+    final SystemInfo info;
+    try {
+      info = await SystemInfo.fetch(_usp);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
     final cpuPercent = info.cpuUsage.clamp(0, 100);
     final memPercent = info.totalMemory > 0
         ? ((info.totalMemory - info.freeMemory) / info.totalMemory * 100)

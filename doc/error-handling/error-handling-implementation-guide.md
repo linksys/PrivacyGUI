@@ -283,13 +283,14 @@ Future<void> _onSave(BuildContext context, WidgetRef ref) async {
     }
   } catch (e) {
     if (context.mounted) {
-      showFailedSnackBar(context, localizeServiceError(context, e));  // ← localize
+      showSaveErrorSnackBar(context, e);  // ← localizes, and picks the style
     }
   }
 }
 ```
 
-- ✅ `showFailedSnackBar(context, localizeServiceError(context, e))`
+- ✅ `showSaveErrorSnackBar(context, e)`
+- ❌ `showFailedSnackBar(context, localizeServiceError(context, e))` for a save — it reports a `SavedButUnconfirmedError` (the write landed, the read-back after it failed; #1212) as a failed save, and the user saves again
 - ❌ `showFailedSnackBar(context, 'Failed to save: $e')` (flattening the string directly, not localized)
 
 `showFailedSnackBar` / `showSuccessSnackBar` have the signature `(BuildContext, String)` — they take an already-translated string and are not responsible for translation.
@@ -434,7 +435,7 @@ Only do this when none of the existing types can express a certain error semanti
 
 ### Known Limitations
 
-- **GET 9999→9998 bug (unfixed)**: a GET connection failure (9999, which should be "network error") is disguised as 9998 at the transport layer's 5th layer → ultimately localized as "input error" (`errorInvalidInput`). This is a transport layer bug, independent of localization. Until it is fixed, **a GET failure's "input error" message may actually be a connection issue**. For the root cause see [`usp-error-handling-reference.md`](usp-error-handling-reference.md) §2.5.
+- **A GET's per-path codes other than 9999 read as "absent"**: since #1212 a 9999 GET failure throws and maps to `NetworkError`, and a 7026 leaves its path absent. Any other per-path code also leaves its path absent, because codegen `_fromResponse` receives only the path→value map. See [`usp-error-handling-reference.md`](usp-error-handling-reference.md) §2.5.
 - **`_localizeFaultCode` and `_mapProtocolError` must stay in sync**: the fetch path (string → `_mapProtocolError` in `mapUspErrorToServiceError`) and the save batch path (envelope → `_localizeFaultCode` in `localizeServiceError`) must give consistent results for the same firmware code. Change one and the other must change too. `_localizeFaultCode`'s doc comment already states "Mirrors `_mapProtocolError` … MUST stay in sync"; the reverse direction (the `usp_error.dart` side) currently **has no** back-pointing reminder, so when changing `_mapProtocolError` you must remember to go back and sync `_localizeFaultCode` yourself.
 
 ### Out of This Pipeline's Scope
@@ -454,7 +455,7 @@ Only do this when none of the existing types can express a certain error semanti
 - [ ] state model uses `ServiceError? error`, not `String? errorMessage`; `copyWith` has `clearError`.
 - [ ] Provider has no `'$e'` / `errorMessage: '...'`; fetch stores the type, save rethrows.
 - [ ] View's full-page fetch failure renders `ServiceErrorView` with a context-appropriate `title` (state.error pages pass `status.error`; AsyncValue pages pass `error is ServiceError ? error : null` inside `.when(error:)`). Height-constrained cards / embedded widgets use a compact inline widget instead, still via `localizeServiceError`.
-- [ ] View's save failure goes through `showFailedSnackBar(context, localizeServiceError(context, e))`.
+- [ ] View's save failure goes through `showSaveErrorSnackBar(context, e)` (constitution §13.6).
 - [ ] dashboard card inline actions use `performUspMutation` (it already localizes failures automatically), with `successMessage` passing an already-`loc()`'d string.
 - [ ] No hardcoded English error strings (`'Unable to load...'`, `'Failed to save: $e'`, `'Error: $e'`).
 - [ ] If adding a ServiceError subclass: add the ARB key (including the other locales) + the `switch` case.

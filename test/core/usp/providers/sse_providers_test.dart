@@ -422,7 +422,8 @@ void main() {
         () async {
       wire(const RemoteModeProfile());
 
-      await expectLater(client.get([path]), throwsA(isA<Exception>()));
+      await expectLater(client.get([path]),
+          throwsA(predicate((e) => '$e'.contains('HTTP 401'))));
 
       verify(() => auth.logout(cause: EndCause.sessionLost)).called(1);
       expect(transport.refreshCalls, 0);
@@ -436,7 +437,8 @@ void main() {
     test('remote: the answer outlives the manager that set it', () async {
       wire(const RemoteModeProfile()).dispose();
 
-      await expectLater(client.get([path]), throwsA(isA<Exception>()));
+      await expectLater(client.get([path]),
+          throwsA(predicate((e) => '$e'.contains('HTTP 401'))));
 
       expect(transport.refreshCalls, 0,
           reason: 'a reset on dispose would put the default, local, back');

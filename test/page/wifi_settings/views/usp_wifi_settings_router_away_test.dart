@@ -12,6 +12,9 @@ import 'package:privacy_gui/core/mode/remote_mode_profile.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_state.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_write_confirm_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dart';
+import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart';
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -65,6 +68,7 @@ void main() {
         uspWifiAdvancedProvider.overrideWith(
             () => FixedWifiAdvancedNotifier(defaultAdvancedState)),
         appConnectionStateProvider.overrideWith(() => connection),
+        wifiReadBackIntervalProvider.overrideWithValue(Duration.zero),
         appModeProfileProvider.overrideWithValue(profile),
       ],
     ));
@@ -83,6 +87,8 @@ void main() {
   final applying = find.text('Router is applying changes');
   final saved = find.text('WiFi settings saved');
   final failed = find.text('Something went wrong. Please try again.');
+  final unconfirmed = find.text('Your settings were saved, but the router '
+      'could not be read back. Try refreshing the page to see them.');
 
   setUp(() {
     connection = _ControllableConnection();
@@ -112,14 +118,57 @@ void main() {
       expect(connection.probingStarted, isTrue,
           reason: 'the write has settled — now the router is worth probing');
       expect(saved, findsNothing, reason: 'not before the router is back');
+      expect(wifi.pageReads, 0,
+          reason: 'the radios are still reloading: a read now is #1499\'s '
+              '15 s timeout, or an empty table');
 
       connection.set(AppConnectionState.authenticated);
       await frames(tester);
 
+      expect(wifi.pageReads, 1, reason: 'read once the router is back');
       expect(applying, findsNothing);
       expect(saved, findsOneWidget);
       expect(connection.waitsEntered, 1,
           reason: 'one recovery for the whole save, never a second one');
+    });
+
+    testWidgets(
+        'confirmed, but the page cannot be read back after recovery ⇒ saved '
+        'but unconfirmed, and the form keeps what was written (#1212)',
+        (tester) async {
+      wifi.pageReadFails = true;
+      await pumpWifi(tester);
+      await tester.tap(save);
+      await frames(tester);
+      wifi.finishSave(WifiSaveEnd.confirmed);
+      await frames(tester);
+
+      connection.set(AppConnectionState.authenticated);
+      await frames(tester);
+
+      expect(wifi.pageReads, greaterThan(1),
+          reason: 'retried: right after recovery the radios answer with an '
+              'empty table');
+      expect(saved, findsNothing);
+      expect(failed, findsNothing,
+          reason: 'the write landed; Save again would rewrite it');
+      expect(unconfirmed, findsOneWidget);
+      // The list tab swaps the list for an error message when status.error is
+      // set (wifi_list_tab.dart). PR #1716 review: assert it stays a list.
+      expect(
+          find.text('Network error. Please check your connection and try '
+              'again.'),
+          findsNothing);
+      expect(find.text('No WiFi networks found. Check router connection.'),
+          findsNothing);
+      expect(
+          ProviderScope.containerOf(
+                  tester.element(find.byType(UspWifiSettingsView)))
+              .read(uspWifiSettingsProvider)
+              .status
+              .error,
+          isNull,
+          reason: 'not an error page under the toast');
     });
 
     testWidgets(
@@ -244,6 +293,31 @@ void main() {
       expect(connection.waitsEntered, 0);
     });
 
+    // #1212 second review: with no recovery to hold a dialog up, the read-back
+    // ran with nothing covering the page — an edit or a second Save in that
+    // window was overwritten by it.
+    testWidgets(
+        'confirmed: the spinner stays up through the read-back, and the save '
+        'is reported after it', (tester) async {
+      wifi.holdPageRead = true;
+      await pumpWifi(tester, profile: const RemoteModeProfile());
+      await tester.tap(save);
+      await frames(tester);
+      wifi.finishSave(WifiSaveEnd.confirmed);
+      await frames(tester);
+
+      expect(wifi.pageReads, 1, reason: 'the read-back has started');
+      expect(processing, findsOneWidget,
+          reason: 'the page is covered while it is read back');
+      expect(saved, findsNothing);
+
+      wifi.releasePageRead();
+      await frames(tester);
+
+      expect(processing, findsNothing);
+      expect(saved, findsOneWidget);
+    });
+
     testWidgets(
         'router away: waits for it to rejoin the cloud (natural recovery), '
         'then reads back once', (tester) async {
@@ -302,6 +376,31 @@ class _ScriptedWifiNotifier extends FixedWifiSettingsNotifier {
 
   @override
   Future<void> performSave() => (_save = Completer<void>()).future;
+
+  /// Reads of the page itself (`performFetch`), and whether they fail.
+  var pageReads = 0;
+  var pageReadFails = false;
+
+  /// Holds the page read open until [releasePageRead].
+  var holdPageRead = false;
+  Completer<void>? _pageRead;
+  void releasePageRead() => _pageRead!.complete();
+
+  @override
+  Future<(WifiSettingsSettings?, WifiSettingsStatus?)> performFetch({
+    bool forceRemote = false,
+    bool updateStatusOnly = false,
+  }) async {
+    pageReads++;
+    if (holdPageRead) await (_pageRead = Completer<void>()).future;
+    if (pageReadFails) {
+      return (
+        null,
+        const WifiSettingsStatus(error: NetworkError(detail: 'empty table')),
+      );
+    }
+    return (state.settings.current, state.status);
+  }
 
   @override
   bool get awaitsRouterRecovery => _away;

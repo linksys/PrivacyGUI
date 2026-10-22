@@ -57,6 +57,10 @@ void main() {
         const NetworkError(): l.errorNetwork,
         const ConnectivityError(): l.errorConnectivity,
         const TimeoutError(): l.errorTimeout,
+        const SavedButUnconfirmedError(NetworkError()):
+            l.errorSavedButUnconfirmed,
+        const SaveDiscardedForRouterRowsError():
+            l.errorSaveDiscardedForRouterRows,
         const ServiceNotInitializedError(): l.errorServiceNotReady,
         // Infrastructure-level types fall back to the generic message.
         const StorageError(): l.errorUnexpected,

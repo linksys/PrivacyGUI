@@ -60,13 +60,13 @@ class DemoUspTransport implements UspTransport {
   // ---------------------------------------------------------------------------
   // GET — raw wildcard/prefix resolution + dynamic simulation.
   //
-  // Returns the RAW string map exactly like the WASM client. The real
-  // UspClient applies coercion and non-wildcard back-fill on top; demo must not
-  // duplicate that (doing so previously double-implemented UspClient._coerce).
+  // Returns the RAW string map in the unified envelope, exactly like the WASM
+  // client. The real UspClient decodes and coerces it; demo must not duplicate
+  // that (doing so previously double-implemented UspClient._coerce).
   // ---------------------------------------------------------------------------
 
   @override
-  Future<Map<String, String>> get(List<String> paths) async {
+  Future<Map<String, dynamic>> get(List<String> paths) async {
     await Future.delayed(const Duration(milliseconds: 40));
 
     final raw = _loader.resolve(paths);
@@ -74,7 +74,7 @@ class DemoUspTransport implements UspTransport {
     // Inject dynamic values for statistics charts (mutates `raw` in place).
     _sim.apply(raw);
 
-    return raw;
+    return _unifiedSuccess(raw);
   }
 
   // ---------------------------------------------------------------------------

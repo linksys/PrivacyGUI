@@ -658,6 +658,8 @@
   "errorUnauthorized": "Nie masz uprawnień do wykonania tej czynności.",
   "errorUnexpected": "Coś poszło nie tak. Spróbuj ponownie.",
   "errorCommandRefused": "Router odrzucił to polecenie. Spróbuj ponownie za chwilę.",
+  "errorSavedButUnconfirmed": "Ustawienia zostały zapisane, ale nie udało się ich ponownie odczytać z routera. Spróbuj odświeżyć stronę, aby je zobaczyć.",
+  "errorSaveDiscardedForRouterRows": "Nic nie zostało zapisane. Strona została ponownie wczytana z routera; wprowadź zmianę jeszcze raz.",
   "errors": "Błędy",
   "estimatedTimeRemaining": "Szacowany pozostały czas: {time}",
   "ethernetPorts": "Porty Ethernet",

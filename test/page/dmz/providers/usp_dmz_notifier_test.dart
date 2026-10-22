@@ -247,6 +247,101 @@ void main() {
       container.dispose();
     });
 
+    // #1212 / #1279, the probe re-run on 2026-10-21: before, save() returned
+    // normally here and status.error was set — the "saved" toast over the
+    // full-page ServiceErrorView.
+    test(
+        'a failed post-save read throws saved-but-unconfirmed and keeps the '
+        'page on what was written', () async {
+      var reads = 0;
+      when(() => mockService.fetch()).thenAnswer((_) async {
+        if (++reads == 1) return (testSettings, testStatus);
+        throw const NetworkError(detail: 'refetch failed');
+      });
+      when(() => mockService.update(
+            instancePath: any(named: 'instancePath'),
+            model: any(named: 'model'),
+          )).thenAnswer((_) async {});
+      when(() => mockService.validateForm(any())).thenReturn({});
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspDmzProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(destIp: '192.168.1.200'));
+
+      await expectLater(
+        notifier.save(),
+        throwsA(isA<SavedButUnconfirmedError>()
+            .having((e) => e.cause, 'cause', isA<NetworkError>())),
+      );
+
+      final state = container.read(uspDmzProvider);
+      expect(state.status.error, isNull);
+      expect(state.settings.current.model.destIp, '192.168.1.200');
+      expect(state.isDirty, isFalse);
+      container.dispose();
+    });
+
+    // #1212 second review, the spec's own bench case: the router has no DMZ
+    // entry, the user turns it on and saves, the add lands, the read-back is
+    // lost. The page still calls the entry new, so a second Save used to add a
+    // second DMZ row.
+    test('after an unconfirmed add, the next save does not add a second entry',
+        () async {
+      const none = DmzSettings(model: DmzUIModel.disabled());
+      var routerReachable = true;
+      var rows = 0;
+      when(() => mockService.fetch()).thenAnswer((_) async {
+        if (!routerReachable) {
+          throw const NetworkError(detail: 'read-back lost');
+        }
+        return rows == 0
+            ? (none, testStatus)
+            : (testSettings, testStatus); // instancePath DMZ.1
+      });
+      when(() => mockService.add(model: any(named: 'model')))
+          .thenAnswer((_) async => rows++);
+      when(() => mockService.update(
+            instancePath: any(named: 'instancePath'),
+            model: any(named: 'model'),
+          )).thenAnswer((_) async {});
+      when(() => mockService.validateForm(any())).thenReturn({});
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspDmzProvider.notifier);
+
+      notifier.updateSetting(
+          (m) => m.copyWith(isEnabled: true, destIp: '192.168.1.250'));
+      routerReachable = false;
+      await expectLater(
+          notifier.save(), throwsA(isA<SavedButUnconfirmedError>()));
+      expect(rows, 1);
+
+      // Still unreachable: nothing is written, and it does not say "saved".
+      notifier.updateSetting((m) => m.copyWith(destIp: '192.168.1.251'));
+      await expectLater(notifier.save(), throwsA(isA<NetworkError>()));
+      expect(rows, 1, reason: 'a second add is a second DMZ row');
+
+      // Reachable again: the page is put on the router's entry, and the next
+      // save updates it.
+      routerReachable = true;
+      await expectLater(
+          notifier.save(), throwsA(isA<SaveDiscardedForRouterRowsError>()));
+      expect(container.read(uspDmzProvider).settings.current.instancePath,
+          'Device.Firewall.DMZ.1.');
+      notifier.updateSetting((m) => m.copyWith(destIp: '192.168.1.251'));
+      await notifier.save();
+
+      expect(rows, 1);
+      verify(() => mockService.update(
+            instancePath: 'Device.Firewall.DMZ.1.',
+            model: any(named: 'model'),
+          )).called(1);
+      container.dispose();
+    });
+
     test('revert restores original settings', () async {
       when(() => mockService.fetch())
           .thenAnswer((_) async => (testSettings, testStatus));

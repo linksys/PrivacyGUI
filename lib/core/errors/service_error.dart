@@ -249,6 +249,33 @@ final class OperationCancelledError extends ServiceError {
   const OperationCancelledError({super.code, super.detail});
 }
 
+/// The write landed, but reading the router back afterwards failed.
+///
+/// Thrown by the Preservable `save()` when its confirming read fails (#1212,
+/// #1279). The page keeps the values that were written, so it does not become
+/// an error page; the caller reports this in place of "saved". It is not a
+/// save failure, and must not read as one: a retry would write again what the
+/// router already holds. [cause] is the read's own error, for the log.
+final class SavedButUnconfirmedError extends ServiceError {
+  final ServiceError cause;
+  const SavedButUnconfirmedError(this.cause, {super.code, super.detail});
+
+  @override
+  String toString() => 'Saved, but the read-back failed: $cause';
+}
+
+/// Nothing was saved: the page was reloaded from the router first.
+///
+/// Thrown by the Preservable `save()` when the previous save added a row whose
+/// read-back failed (#1212). The router holds that row under a path the page
+/// never saw, so writing the pending edit would add it again; instead the
+/// router is read, the page shows its rows, and the user's change is dropped
+/// for them to make again on the right row. Not a failure of the router, and
+/// not a save that landed — the message says neither.
+final class SaveDiscardedForRouterRowsError extends ServiceError {
+  const SaveDiscardedForRouterRowsError({super.code, super.detail});
+}
+
 /// Router connectivity error (cannot reach router)
 final class ConnectivityError extends ServiceError {
   const ConnectivityError({super.code, super.detail});

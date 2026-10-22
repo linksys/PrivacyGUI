@@ -275,7 +275,6 @@ class UspDeletedInstance {
 typedef UspSetResult = UspOperationResult<void>;
 typedef UspAddResult = UspOperationResult<List<String>>;
 typedef UspDeleteResult = UspOperationResult<void>;
-typedef UspGetResult = UspOperationResult<Map<String, dynamic>>;
 typedef UspOperateResult = UspOperationResult<Map<String, dynamic>>;
 
 // =============================================================================
@@ -369,13 +368,6 @@ class UspResultParser {
   static UspDeleteResult parseDeleteResult(Map<String, dynamic> map) {
     final result = _parseGenericResult<void>(map);
     _logResult('DELETE', result);
-    return result;
-  }
-
-  /// 解析 GET 操作結果
-  static UspGetResult parseGetResult(Map<String, dynamic> map) {
-    final result = _parseGenericResult<Map<String, dynamic>>(map);
-    _logResult('GET', result);
     return result;
   }
 

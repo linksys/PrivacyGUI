@@ -660,6 +660,8 @@
   "errorUnauthorized": "Vous n'avez pas l'autorisation d'effectuer cette action.",
   "errorUnexpected": "Une erreur s'est produite. Veuillez réessayer.",
   "errorCommandRefused": "Le routeur a refusé cette commande. Veuillez réessayer dans un instant.",
+  "errorSavedButUnconfirmed": "Vos paramètres ont été enregistrés, mais ils n'ont pas pu être relus sur le routeur. Essayez d'actualiser la page pour les afficher.",
+  "errorSaveDiscardedForRouterRows": "Rien n'a été enregistré. La page a été rechargée depuis le routeur ; veuillez refaire votre modification.",
   "errors": "Erreurs",
   "estimatedTimeRemaining": "Temps restant estimé : {time}",
   "ethernetPorts": "Ports Ethernet",

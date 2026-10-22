@@ -660,6 +660,8 @@
   "errorUnauthorized": "Du har ikke tillatelse til å utføre denne handlingen.",
   "errorUnexpected": "Noe gikk galt. Prøv igjen.",
   "errorCommandRefused": "Ruteren avviste denne kommandoen. Prøv igjen om et øyeblikk.",
+  "errorSavedButUnconfirmed": "Innstillingene er lagret, men de kunne ikke leses tilbake fra ruteren. Prøv å oppdatere siden for å se dem.",
+  "errorSaveDiscardedForRouterRows": "Ingenting ble lagret. Siden ble lastet inn på nytt fra ruteren; gjør endringen din på nytt.",
   "errors": "Feil",
   "estimatedTimeRemaining": "Estimert gjenstående tid: {time}",
   "ethernetPorts": "Ethernet-porter",

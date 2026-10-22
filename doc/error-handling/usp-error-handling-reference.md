@@ -7,7 +7,7 @@
 > **Where in the codebase**
 > - **Diagnostic fields**: the `ServiceError` base class carries `code` / `detail`; the 5 subclasses use a unified `detail` (no longer their own `message` each); each `_mapXxx` in `mapUspErrorToServiceError` carries `code`+`detail`; `UspCompleteFailureError`/`UspPartialFailureError` store `List<UspErrorDetail> failures` (`failedPaths` is a derived getter). The fault code / raw message therefore never get lost on the way to ServiceError, usable for both UI and log.
 > - **localization**: the View produces a localized message based on the ServiceError type (central mapper `localizeServiceError`), implemented in PR #953. For how to write it see the [implementation guide](error-handling-implementation-guide.md).
-> - **§2.5 GET bug (known, not yet fixed)**: a 9999 GET failure is disguised as 9998.
+> - **§2.5 GET bug (fixed, #1212)**: a 9999 GET failure used to be disguised as 9998. GET now keeps the envelope, and `UspClient.extractGetResult` throws on 9999.
 
 ---
 
@@ -93,7 +93,7 @@ The return is always the WASM v0.11.0 unified format: `{ success, result: { data
   - **Asynchronous operate (the minority, only diagnostics: ping/traceroute/nslookup/download)**: HTTP only returns an **ACK** (protobuf `operate_resp = None`, containing the client-generated commandKey); the real result is obtained by the Dart `SseOperationAwaiter` (`network_diagnostics_executor`) waiting for the SSE `OperationComplete` event (Direct Data Delivery).
   - **SSE waiting applies only to this one category**; get/set/add/delete and all other operate do not apply.
 
-> ⚠ **GET and SET error handling are asymmetric**: SET preserves the envelope and goes through `UspResultParser`; GET, on the other hand, discards the envelope in `UspClientWeb.get` and keeps only the flattened `data`, so a failure only surfaces when WASM itself throws a string. This asymmetry causes a major defect (a 9999 GET failure is disguised as 9998) — **for the full causality see §2.5**.
+> **GET keeps the envelope, as SET does (#1212).** `UspTransport.get` returns the unified envelope; `UspClient.extractGetResult` decodes it inside the 401 retry and throws only on a per-path 9999. Before #1212 GET discarded the envelope in `UspClientWeb.get`, which disguised a 9999 failure as 9998 — **see §2.5**.
 
 ---
 
@@ -152,9 +152,9 @@ match client.set_with_options(params_vec, ...).await {
 |---|---|
 | `set` / `setOrdered` / `add` / `operate` | **keeps the envelope** (parsed by `UspResultParser`) |
 | `delete` | the WASM exception is synthesized into an envelope by layer 5 (still envelope) |
-| **`get`** | ⚠ **becomes a string**: layer 5 takes only `result.data` and discards the envelope's `success`/`error`; on failure the service gets the **9998 string thrown by codegen** or a string rethrown by WASM, **not an envelope** (see §2.5) |
+| **`get`** | **keeps the envelope** to `UspClient`, which decodes it (`extractGetResult`): a per-path 9999 throws `Get failed: <category>: …`; any other per-path code (e.g. 7026) leaves that path absent and returns the rest (see §2.5) |
 
-> In one sentence: **the GET failure WASM returns to Dart is an envelope, but this envelope is dismantled by layer 5, so the GET failure the service gets is a string.** The §2.0.0 table and §2.5 description both describe the format the service gets (GET=string).
+> In one sentence: **the GET failure WASM returns to Dart is an envelope, and `UspClient` turns its 9999 into the thrown string the service gets.** The §2.0.0 table describes the format the service gets (GET=string, produced by `UspClient` rather than by WASM).
 
 > For reading a structured envelope see §2.3: **`success:false` ≠ firmware processed it successfully**. Only the errorCode tells you whether the request reached firmware.
 
@@ -295,41 +295,26 @@ Behavioral characteristics and limitations:
 3. **WS / SSE `StateError`** (e.g. `'WebSocket connection timeout'`) does not match the `"{Op} failed:"` format, so by the time it reaches `mapUspErrorToServiceError` it just becomes a generic `UnexpectedError`.
 4. **The string contract is fragile** (the "Error Contract" self-comment table at the top of `usp_error.dart`): the transport/auth/protocol mappings rely on substring/regex against Rust strings; **the moment the Rust-side string changes, it silently fails**. §2.1/§2.2 are the complete client-side output contract of the current Rust, and can be turned into a contract test to pin it down (note: the passed-through 7xxx/9xxx are not in this contract; they are decided by firmware).
 
-### 2.5 ⚠⚠ Major defect: a GET-failure 9999 is disguised as 9998, a network error misjudged as an input error
+### 2.5 Fixed (#1212): a GET-failure 9999 was disguised as 9998
 
-This is the entry with **the most severe semantic misplacement** in the error model, and is an **unfixed bug**.
+**What it was.** SET/ADD/DELETE kept the envelope; GET did not. `UspClientWeb.get` took only `result.data` and dropped `success` / `error`, and the WASM client resolves a lost connection, a 401 and a 5xx alike as `{success:false, error:{<path>:{errorCode:9999}}}` — it does not reject (measured from Node against the vendored client, 2026-10-07). So a failed read reached every model as an empty map:
 
-**Symmetry break**: SET/ADD/DELETE preserve the envelope → go through `UspResultParser.parseSetResult` → semantically correct;
-but **GET dismantles the envelope already at layer 5 (`UspClientWeb.get` in `usp_client_wasm.dart`), takes only `result.data`, and discards `success`/`error`**.
-Therefore the corresponding `UspResultParser.parseGetResult` (`usp_operation_result.dart`) is **dead code, called by no one** (only a definition + a unit test exist).
-
-**Consequence — the actual flow of a 9999 GET failure**:
-```
-WASM returns {success:false, error:{path:{errorCode:9999}}}   ← network down / did not reach firmware
-   ↓ UspClientWeb.get takes only data (success/error discarded)
-data = {}                                                 ← the failure envelope has no data → empty map
-   ↓ codegen _fromResponse checks required fields (dmz.g.dart)
-all required fields missing → throw 'Get failed: Validation error: ... (code: 9998)'
-   ↓ service catch → mapUspErrorToServiceError
-→ category=validation → InvalidInputError
-```
-**A 9999 (cannot connect to router, should be `NetworkError` "please retry") is silently turned into 9998 (missing field) → `InvalidInputError` ("there's a problem with your input").** The error semantics are completely misplaced, and the user receives a misleading message.
-
-**The only case that is not affected**: if WASM's GET is a whole Promise **reject** (throws a string instead of returning an envelope), `UspClientWeb.get`'s `catch → rethrow` lets the string bubble up as-is and be mapped correctly. But §2.0 has already confirmed that a GET failure mostly goes through `build_transport_error_unified` returning an envelope → affected.
-
-**Cross-reference table**:
-
-| | Design intent | Actual code |
+| Model shape | A failed read became | What the user saw |
 |---|---|---|
-| GET failure envelope | hand it to `parseGetResult` to judge success/error | the envelope is dismantled at layer 5, only data left |
-| 9999 GET failure | → `NetworkError` (cannot connect) | disguised as 9998 → `InvalidInputError` (input wrong) |
-| `parseGetResult` | the parser for the GET path | **dead code, called by no one** |
+| required leaves | `throw … (code: 9998)` → `InvalidInputError` | "The value entered is not valid" |
+| table, instances from the response keys | zero rows | DMZ off after a save, no error (bench, 2026-10-07) |
+| `optional` leaf | `null` | "the firmware does not have this" |
+| `?? 0` counter | `0` | a traffic sample of 0, then a spike |
 
-**Fix directions** (not done, for future evaluation):
-- **Direction A (treats the symptom, small)**: when `success==false`, instead of silently returning empty data, `UspClientWeb.get` should throw a string carrying 9999 → correctly mapped to `NetworkError`. Small blast radius.
-- **Direction B (treats the root cause, large)**: have GET also preserve the envelope and go through `parseGetResult`, symmetric with SET. But this requires changing the return type of all codegen `fetch`; large blast radius.
+**What it is now.**
+- `UspTransport.get` returns the envelope (`usp_transport.dart`); `UspClientWeb`, the demo transport and every test fake return it as received.
+- `UspClient.extractGetResult` decodes it **inside** `_withAuthRetry`, so a 401 in the envelope triggers the refresh (local) or ends the session (remote).
+- **Only a per-path 9999 throws.** A path the firmware does not have answers a per-path 7026 — with `success:true` when other paths were read, `success:false` when it was the only one (measured on FW 2.0.3, 2026-10-13). Both are an answer: the missing path is left out and the rest is returned. Throwing on `success == false` would turn "this router has no RIP" into a network error.
+- The thrown string keeps the category the client put inside its `Transport error: ` wrapper (`unwrapUspClientError`, shared with Operate), so `mapUspErrorToServiceError` maps it as before.
+- A failed GET throws, so `BridgeRequestThrottler` does not cache it.
+- `UspResultParser.parseGetResult` was deleted: it read `success:false` as a failure, which cannot tell a 9999 from a lone 7026.
 
-> This echoes the last ⚠ item of §1 "GET's special transform" (GET discards the envelope, and a failure only surfaces when WASM itself throws a string) — this section is the full consequence and root cause of that note.
+**Not separated, and not this layer's to separate.** A per-path code other than 9999 (for example an internal agent error) still reads as "absent", because codegen `_fromResponse` receives only the path→value map. Telling those apart needs the codegen contract to change.
 
 ### 2.6 Convergence chart: two paths → ServiceError → View
 
@@ -392,8 +377,8 @@ All errors finally converge into a `ServiceError` in the **service's `catch (e)`
 
 | | Path 1: fetch (GET) | Path 2: write (SET/ADD/DELETE/operate) |
 |---|---|---|
-| Form the service receives | **string** (the envelope has already been dismantled by layer 5 `UspClientWeb.get`, only data left) | **envelope** `{success,result:{data,error?}}` |
-| Source of string/code on failure | codegen throws 9998 for missing fields, or a string rethrown by WASM | `errorCode` inside error: 9999 (WASM) or 7xxx/9xxx (firmware) |
+| Form the service receives | **string** (`UspClient.extractGetResult` throws one for a 9999; otherwise the service gets the data map) | **envelope** `{success,result:{data,error?}}` |
+| Source of string/code on failure | a 9999 decoded by `UspClient` (`Get failed: <category>: …`), or codegen's 9998 for a required field the router genuinely omitted | `errorCode` inside error: 9999 (WASM) or 7xxx/9xxx (firmware) |
 | Gate method | `mapUspErrorToServiceError` → `parseUspError` | `UspResultParser.parseXxxResult` → `_parseGenericResult` |
 | Intermediate type | `UspError` (temporary, purely for splitting the string) | `UspSuccess` / `UspPartialSuccess` / `UspFailure` + `UspErrorDetail` |
 | ServiceError produced | `NetworkError` / `InvalidInputError` / `ResourceNotFoundError` / `Unauthorized` / `UnexpectedError` | `UspPartialFailureError` / `UspCompleteFailureError` |
@@ -404,7 +389,7 @@ All errors finally converge into a `ServiceError` in the **service's `catch (e)`
 - `success && error!=null` → `UspPartialSuccess` → service converts to `UspPartialFailureError`
 - `success==false` → `UspFailure` → service converts to `UspCompleteFailureError`
 
-> ⚠ Note 9999's classification: it is produced by WASM and represents "did not reach firmware" (§2.3), but **in form it is an errorCode inside an envelope**, so it goes through **path 2** (parser), not path 1. "Who produces it" and "which path it goes" are two different things.
+> ⚠ Note 9999's classification: it is produced by WASM and represents "did not reach firmware" (§2.3), and **in form it is an errorCode inside an envelope** on both paths. On a write it goes through **path 2** (parser); on a GET `UspClient` turns it into a string, so it goes through **path 1**. "Who produces it" and "which path it goes" are two different things.
 
 > In one sentence: **strings go through `mapUspErrorToServiceError`, envelopes go through `UspResultParser`, and both converge into a `ServiceError` in the service `catch`**; afterward the provider passes the type through (save rethrow / fetch stores `state.error`), and the view localizes with `localizeServiceError` — for that see §3 and the [implementation guide](error-handling-implementation-guide.md).
 
@@ -469,10 +454,8 @@ PR #953 wired this line through: the Provider passes the type through (`ServiceE
 ### Things not yet done
 
 - **contract test (TODO)**: use §2.1/§2.2 to pin down the Rust client-side string contract (the transport/auth/protocol mappings rely on substring/regex against Rust strings, and the moment the Rust-side string changes it silently fails). The passed-through 7xxx/9xxx are not in this contract; they are decided by firmware, and you need to request the vendor fault-code table from the firmware team separately.
-- **§2.5 GET 9999→9998 bug (known, not yet fixed)**: see that section.
 
 > **This doc is "background knowledge / full-chain reference" (answering "why").** The actual "how to implement error handling following the existing pattern" (the Service/Provider/View three-layer way of writing, what to display, things to note, checklist) is in the [implementation guide](error-handling-implementation-guide.md).
-> The §2.5 GET 9999→9998 bug is still unfixed — this is a known limitation when implementing localization (a GET connection failure will be localized as "input error"), also noted in the implementation guide §7.
 
 ---
 
