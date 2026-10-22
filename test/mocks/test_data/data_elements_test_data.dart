@@ -1,4 +1,5 @@
 import 'package:privacy_gui/generated/data_elements_interfaces.g.dart';
+import 'package:privacy_gui/generated/data_elements_mlo_clients.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
 
 /// Builders for the DataElements codegen models (`DataElementsNetwork` and
@@ -27,25 +28,43 @@ class DataElementsTestData {
   /// [backhaulStaMac] is where the node's own backhaul MAC lives since #1555.
   /// It used to be the node-level `BackhaulMACAddress`, which FL-WRT 2.0 does
   /// not define at all.
+  ///
+  /// [operatingClasses] become its `CurrentOperatingClassProfile` rows, which
+  /// is where a DataElements radio's band comes from (#1686). Measured on
+  /// `2.0.3.26101482`: the 5 GHz radio reported 125, 127 and 128, the 2.4 GHz
+  /// radio 81.
   static MeshRadio radio(
     String nodePath, {
     int index = 1,
     String? backhaulStaMac,
+    List<int> operatingClasses = const [],
     List<MeshBss> bssList = const [],
   }) =>
       MeshRadio(
         instancePath: '${nodePath}Radio.$index.',
         backhaulStaMacAddress: backhaulStaMac,
-        currentOperatingClassProfiles: const [],
+        currentOperatingClassProfiles: [
+          for (var i = 0; i < operatingClasses.length; i++)
+            MeshRadioOperatingClass(
+              instancePath:
+                  '${nodePath}Radio.$index.CurrentOperatingClassProfile.${i + 1}.',
+              operatingClass: operatingClasses[i],
+              channel: 0,
+            ),
+        ],
         bssList: bssList,
       );
 
   /// One fronthaul BSS with [stations] attached.
+  ///
+  /// [stationRates] gives the stations their `LastDataDownlinkRate` /
+  /// `LastDataUplinkRate` (kbps), keyed by MAC; a station not listed has none.
   static MeshBss bss(
     String nodePath, {
     required String bssid,
     String ssid = 'HomeNetwork',
     List<({String mac, int rcpi})> stations = const [],
+    Map<String, ({int downlink, int uplink})> stationRates = const {},
   }) =>
       MeshBss(
         instancePath: '${nodePath}Radio.1.BSS.1.',
@@ -57,6 +76,8 @@ class DataElementsTestData {
               instancePath: '${nodePath}Radio.1.BSS.1.STA.${i + 1}.',
               macAddress: stations[i].mac,
               signalStrengthRcpi: stations[i].rcpi,
+              lastDataDownlinkRate: stationRates[stations[i].mac]?.downlink,
+              lastDataUplinkRate: stationRates[stations[i].mac]?.uplink,
             ),
         ],
       );
@@ -65,6 +86,8 @@ class DataElementsTestData {
   ///
   /// The controller has no backhaul link: omit [linkType] and
   /// [parentDeviceId] (that is how `hasMeshBackhaulLink` recognises it).
+  /// [radios] replaces the single default radio, for a node whose bands sit
+  /// on separate radios; [bssList] and [backhaulStaMac] are then ignored.
   /// [backhaulMac] is `Backhaul.BackhaulMACAddress` and [backhaulMultiApMac]
   /// is `Backhaul.MACAddress` — both node-owned MACs that
   /// `wiredClientAttribution` must not mistake for a client.
@@ -86,6 +109,7 @@ class DataElementsTestData {
     DateTime? lastContactTime,
     DateTime? statsTimeStamp,
     List<MeshBss> bssList = const [],
+    List<MeshRadio>? radios,
   }) {
     final path = nodePath(instance);
     return MeshNode(
@@ -109,7 +133,8 @@ class DataElementsTestData {
       backhaulStatsErrorsSent: 0,
       backhaulStatsErrorsReceived: 0,
       backhaulStatsTimeStamp: statsTimeStamp,
-      radios: [radio(path, backhaulStaMac: backhaulStaMac, bssList: bssList)],
+      radios: radios ??
+          [radio(path, backhaulStaMac: backhaulStaMac, bssList: bssList)],
     );
   }
 
@@ -173,4 +198,63 @@ class DataElementsTestData {
   /// A whole `DataElementsInterfaces`.
   static DataElementsInterfaces interfaces(List<MeshNodeInterfaces> nodes) =>
       DataElementsInterfaces(items: nodes);
+
+  /// One link of a client MLD (`AffiliatedSTA`). Every value defaults to 0,
+  /// the reading of a link that is not the active one, and of every link for
+  /// the first ~50 s after association (#1686, measured 2026-10-20).
+  ///
+  /// [bssid] is nullable because every leaf below `Device.{i}` is optional in
+  /// usp_framework's `data_elements_mlo_clients.yaml` (#93).
+  static MloAffiliatedSta affiliatedSta({
+    required String macAddress,
+    required String? bssid,
+    int rcpi = 0,
+    int downlink = 0,
+    int uplink = 0,
+  }) =>
+      MloAffiliatedSta(
+        instancePath: 'AffiliatedSTA.$macAddress.',
+        macAddress: macAddress,
+        bssid: bssid,
+        signalStrengthRcpi: rcpi,
+        lastDataDownlinkRate: downlink,
+        lastDataUplinkRate: uplink,
+      );
+
+  /// One client MLD (`STAMLD`) with its [links].
+  static MloStaMld staMld({
+    required String? mldMacAddress,
+    List<MloAffiliatedSta> links = const [],
+    bool? isBsta = false,
+  }) =>
+      MloStaMld(
+        instancePath: 'STAMLD.$mldMacAddress.',
+        mldMacAddress: mldMacAddress,
+        isBsta: isBsta,
+        affiliatedStas: links,
+      );
+
+  /// One node's MLD subtree: a single AP MLD carrying [staMlds], joined to
+  /// `DataElementsNetwork` on [id].
+  static MloMeshNode mldNode({
+    required String instance,
+    required String id,
+    String apMldMacAddress = '02:00:00:00:00:01',
+    List<MloStaMld> staMlds = const [],
+  }) =>
+      MloMeshNode(
+        instancePath: nodePath(instance),
+        id: id,
+        apMlds: [
+          MloApMld(
+            instancePath: '${nodePath(instance)}APMLD.1.',
+            mldMacAddress: apMldMacAddress,
+            staMlds: staMlds,
+          ),
+        ],
+      );
+
+  /// A whole `DataElementsMloClients`.
+  static DataElementsMloClients mld(List<MloMeshNode> nodes) =>
+      DataElementsMloClients(items: nodes);
 }

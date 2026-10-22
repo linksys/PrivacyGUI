@@ -340,21 +340,56 @@ class MeshNetworkBuilder {
       // chain can fall through. See linksys/PrivacyGUI#1438.
       final hostsSignal =
           (device.signalStrength == 0) ? null : device.signalStrength;
-      final signalStrength = hostsSignal ??
-          wifiClient?.signalStrength ??
-          meshTopology.clientSignalMap[mac];
+      // An MLO client takes its signal and rates from its links only
+      // (#1686 item 2). Its own BSS.STA row names one band but carries the
+      // active link's values, so while a link carries values the row adds
+      // nothing; while none does (the first ~50 s after association) what
+      // the row reads is unmeasured, and a value of unknown origin next to
+      // "MLO (bands)" would read as the MLO link's. So no link with values
+      // leaves them empty rather than falling back (decided 2026-10-21).
+      final mlo = meshTopology.mloClients?[mac];
+      final signalStrength = mlo != null
+          ? mlo.signalStrength
+          : hostsSignal ??
+              wifiClient?.signalStrength ??
+              meshTopology.clientSignalMap[mac];
       // Fallback to DataElements band/SSID for slave node clients.
       // ClientConnectionDetail.band/ssidName are non-nullable Strings that are
       // '' when AP→SSID→radio resolution fails, so treat empty as absent —
       // otherwise the empty string would mask the DataElements fallback value.
       final bandSsid = meshTopology.clientBandSsidMap[mac];
+      // DataElements last, as for signal and band: Hosts (1.x only) and the
+      // controller's own AssociatedDevice describe a controller client, and
+      // only DataElements BSS.STA describes a client on an agent (#1686).
+      final rates = meshTopology.clientRateMap[mac];
+      // Each source's 0 is "no reading", as for the Hosts signal above:
+      // WifiClientUIModel defaults an absent rate to 0, and a 0 there would
+      // otherwise hide the DataElements rate. The controller's AssociatedDevice
+      // row counts only while it is active: a row left behind after the client
+      // roamed to an agent carries the old link's rate.
+      final associated = (wifiClient?.active ?? false) ? wifiClient : null;
       wifi = WifiConnectionInfo(
         signalStrength: signalStrength,
-        band: _nonEmptyRaw(detail?.band) ?? bandSsid?.band,
+        band: _nonEmptyRaw(detail?.band) ?? _nonEmptyRaw(bandSsid?.band),
         ssidName: _nonEmptyRaw(detail?.ssidName) ?? bandSsid?.ssid,
-        downlinkRate:
-            device.lastDataDownlinkRate ?? wifiClient?.lastDataDownlinkRate,
-        uplinkRate: device.lastDataUplinkRate ?? wifiClient?.lastDataUplinkRate,
+        downlinkRate: mlo != null
+            ? mlo.downlinkRate
+            : _rate(device.lastDataDownlinkRate) ??
+                _rate(associated?.lastDataDownlinkRate) ??
+                rates?.downlink,
+        uplinkRate: mlo != null
+            ? mlo.uplinkRate
+            : _rate(device.lastDataUplinkRate) ??
+                _rate(associated?.lastDataUplinkRate) ??
+                rates?.uplink,
+        mloBands: mlo?.bands,
+        // Only a mesh read can say whether MLO is known. A topology that is
+        // empty (not loaded yet, or not a mesh) has nothing to be unknown
+        // about, and mloClients is null there too. An offline client is on
+        // no link at all, so whether it would be on MLO is no question.
+        mloUnknown: device.isActive &&
+            meshTopology.isNotEmpty &&
+            meshTopology.mloClients == null,
       );
     }
 
@@ -404,6 +439,9 @@ class MeshNetworkBuilder {
   /// chain, which is the opposite of the fallback this helper was written for.
   static String? _nonEmptyRaw(String? s) =>
       (s != null && s.isNotEmpty) ? s : null;
+
+  /// A rate reading in kbps, or null when it is absent or `0` (not filled).
+  static int? _rate(int? kbps) => (kbps != null && kbps > 0) ? kbps : null;
 
   static String _normalizeHostname(String hostname) {
     var normalized = hostname.trim().toLowerCase();
