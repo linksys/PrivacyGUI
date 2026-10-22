@@ -26,5 +26,8 @@ String capabilityProbePath(DeviceCapability capability) {
     DeviceCapability.wifiMlo => 'Device.X_LINKSYS_Mesh.MLOStatus',
     // A boolean, so never empty where it exists.
     DeviceCapability.dynamicRouting => 'Device.Routing.RIP.Enable',
+    // Never empty where it exists: the reflector maps every raw state, an
+    // unset one included, to an enum value, and the default is `Idle`.
+    DeviceCapability.bleOnboarding => 'Device.X_LINKSYS_BLEOnboarding.Status',
   };
 }

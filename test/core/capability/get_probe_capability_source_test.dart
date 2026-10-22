@@ -185,6 +185,42 @@ void main() {
     });
   });
 
+  group('GetProbeCapabilitySource — BLE onboarding (#879)', () {
+    const statusPath = 'Device.X_LINKSYS_BLEOnboarding.Status';
+
+    test(
+        'an onboarding status read off the router means adding nodes is offered',
+        () async {
+      expect(capabilityProbePath(DeviceCapability.bleOnboarding), statusPath);
+      // A router that has never run a session reads `Idle`, a present value
+      // (FW 2.0.3.26101482, bench 2026-10-22).
+      when(() => usp.get(any())).thenAnswer((_) async => {
+            statusPath: 'Idle',
+            macFilterPath: 'Disabled',
+          });
+
+      final caps = await source.resolveAll(usp);
+
+      expect(caps.has(DeviceCapability.bleOnboarding), isTrue);
+      expect(caps.has(DeviceCapability.wifiMacFilter), isTrue);
+    });
+
+    test(
+        'firmware without the onboarding API hides adding nodes and nothing else',
+        () async {
+      // Before linksys/feed_premium#53 there is no Device.X_LINKSYS_BLEOnboarding.,
+      // so the path answers 7026 and the Get leaves it out.
+      when(() => usp.get(any())).thenAnswer((_) async => {
+            macFilterPath: 'Disabled',
+          });
+
+      final caps = await source.resolveAll(usp);
+
+      expect(caps.has(DeviceCapability.bleOnboarding), isFalse);
+      expect(caps.has(DeviceCapability.wifiMacFilter), isTrue);
+    });
+  });
+
   group('GetProbeCapabilitySource — batching', () {
     for (final failure in <String, Object>{
       'unknown path': const ResourceNotFoundError(code: 7026),
