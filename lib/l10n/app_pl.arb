@@ -1246,5 +1246,17 @@
   "semanticRoleMascot": "Maskotka",
   "semanticRolePinInput": "Wprowadzanie PIN",
   "semanticRoleRadio": "Przycisk opcji",
-  "semanticRoleSwitch": "Przełącznik"
+  "semanticRoleSwitch": "Przełącznik",
+  "nodeActions": "Działania węzła",
+  "rebootMeshMessage": "Router i wszystkie węzły w Twojej sieci mesh zostaną uruchomione ponownie. Wszystkie podłączone urządzenia zostaną odłączone do czasu przywrócenia sieci.",
+  "factoryResetMeshMessage": "W routerze i wszystkich węzłach Twojej sieci mesh zostaną przywrócone ustawienia fabryczne, w tym hasło WiFi i routera podane na etykiecie routera. Następnie każdy węzeł trzeba będzie ponownie skonfigurować.",
+  "rebootNodeMessage": "Węzeł {node} zostanie uruchomiony ponownie. Urządzenia połączone przez ten węzeł zostaną odłączone do czasu jego powrotu.",
+  "rebootNodesMessage": "Te węzły zostaną uruchomione ponownie, zaczynając od najdalszego: {nodes}. Urządzenia połączone przez nie zostaną odłączone do czasu ich powrotu.",
+  "factoryResetNodeMessage": "W węźle {node} zostaną przywrócone ustawienia fabryczne i opuści on Twoją sieć. Dodaj go ponownie, aby z niego korzystać.",
+  "factoryResetNodesMessage": "W tych węzłach zostaną przywrócone ustawienia fabryczne i opuszczą one Twoją sieć, zaczynając od najdalszego: {nodes}. Dodaj je ponownie, aby z nich korzystać.",
+  "nodeActionMayMissNodes": "Niektóre węzły nie zgłosiły sposobu połączenia. Węzeł połączony przez ten węzeł może przestać działać razem z nim.",
+  "nodeActionRebootSent": "Trwa ponowne uruchamianie. Powrót może potrwać kilka minut.",
+  "nodeActionResetSent": "Trwa przywracanie ustawień fabrycznych. Dodaj węzeł ponownie, gdy będzie gotowy.",
+  "nodeActionFailed": "{node}: {reason}",
+  "nodeActionFailedAfterSent": "{node}: {reason} Już wysłano do: {sent}."
 }

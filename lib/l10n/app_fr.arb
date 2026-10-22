@@ -1246,5 +1246,17 @@
   "semanticRoleMascot": "Mascotte",
   "semanticRolePinInput": "Saisie du code PIN",
   "semanticRoleRadio": "Bouton radio",
-  "semanticRoleSwitch": "Interrupteur"
+  "semanticRoleSwitch": "Interrupteur",
+  "nodeActions": "Actions du nœud",
+  "rebootMeshMessage": "Le routeur et tous les nœuds de votre réseau mesh vont redémarrer. Tous les périphériques connectés seront déconnectés jusqu'au rétablissement du réseau.",
+  "factoryResetMeshMessage": "Le routeur et tous les nœuds de votre réseau mesh vont être réinitialisés aux paramètres d'usine, y compris le mot de passe WiFi et du routeur indiqué sur l'étiquette du routeur. Chaque nœud devra ensuite être configuré à nouveau.",
+  "rebootNodeMessage": "{node} va redémarrer. Les périphériques connectés par son intermédiaire seront déconnectés jusqu'à son retour.",
+  "rebootNodesMessage": "Ces nœuds vont redémarrer, en commençant par le plus éloigné : {nodes}. Les périphériques connectés par leur intermédiaire seront déconnectés jusqu'à leur retour.",
+  "factoryResetNodeMessage": "{node} va être réinitialisé aux paramètres d'usine et quitter votre réseau. Ajoutez-le de nouveau pour l'utiliser.",
+  "factoryResetNodesMessage": "Ces nœuds vont être réinitialisés aux paramètres d'usine et quitter votre réseau, en commençant par le plus éloigné : {nodes}. Ajoutez-les de nouveau pour les utiliser.",
+  "nodeActionMayMissNodes": "Certains nœuds n'ont pas indiqué leur mode de connexion. Un nœud connecté par l'intermédiaire de celui-ci peut se déconnecter en même temps que lui.",
+  "nodeActionRebootSent": "Redémarrage en cours. Le rétablissement peut prendre quelques minutes.",
+  "nodeActionResetSent": "Réinitialisation aux paramètres d'usine en cours. Ajoutez de nouveau le nœud lorsqu'il est prêt.",
+  "nodeActionFailed": "{node} : {reason}",
+  "nodeActionFailedAfterSent": "{node} : {reason} Déjà envoyé à : {sent}."
 }

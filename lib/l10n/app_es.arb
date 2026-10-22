@@ -1246,5 +1246,17 @@
   "semanticRoleMascot": "Mascota",
   "semanticRolePinInput": "Entrada de PIN",
   "semanticRoleRadio": "Botón de opción",
-  "semanticRoleSwitch": "Interruptor"
+  "semanticRoleSwitch": "Interruptor",
+  "nodeActions": "Acciones del nodo",
+  "rebootMeshMessage": "El router y todos los nodos de su red de malla se reiniciarán. Todos los dispositivos conectados se desconectarán hasta que la red vuelva a estar disponible.",
+  "factoryResetMeshMessage": "El router y todos los nodos de su red de malla se restablecerán a la configuración de fábrica, incluida la contraseña WiFi y del router que aparece en la etiqueta del router. Después, tendrá que volver a configurar cada nodo.",
+  "rebootNodeMessage": "{node} se reiniciará. Los dispositivos conectados a través de él se desconectarán hasta que vuelva a estar disponible.",
+  "rebootNodesMessage": "Estos nodos se reiniciarán, empezando por el más lejano: {nodes}. Los dispositivos conectados a través de ellos se desconectarán hasta que vuelvan a estar disponibles.",
+  "factoryResetNodeMessage": "{node} se restablecerá a la configuración de fábrica y saldrá de su red. Vuelva a añadirlo para usarlo.",
+  "factoryResetNodesMessage": "Estos nodos se restablecerán a la configuración de fábrica y saldrán de su red, empezando por el más lejano: {nodes}. Vuelva a añadirlos para usarlos.",
+  "nodeActionMayMissNodes": "Algunos nodos no informaron de cómo se conectan. Un nodo conectado a través de este podría dejar de funcionar junto con él.",
+  "nodeActionRebootSent": "Reiniciando. Puede tardar unos minutos en volver a estar disponible.",
+  "nodeActionResetSent": "Restableciendo la configuración de fábrica. Vuelva a añadir el nodo cuando esté listo.",
+  "nodeActionFailed": "{node}: {reason}",
+  "nodeActionFailedAfterSent": "{node}: {reason} Ya enviado a: {sent}."
 }

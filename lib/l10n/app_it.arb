@@ -1246,5 +1246,17 @@
   "semanticRoleMascot": "Mascotte",
   "semanticRolePinInput": "Inserimento PIN",
   "semanticRoleRadio": "Pulsante di opzione",
-  "semanticRoleSwitch": "Interruttore"
+  "semanticRoleSwitch": "Interruttore",
+  "nodeActions": "Azioni del nodo",
+  "rebootMeshMessage": "Il router e tutti i nodi della tua rete mesh si riavvieranno. Tutti i dispositivi connessi verranno disconnessi finché la rete non sarà di nuovo disponibile.",
+  "factoryResetMeshMessage": "Il router e tutti i nodi della tua rete mesh verranno ripristinati alle impostazioni di fabbrica, inclusa la password WiFi e del router riportata sull'etichetta del router. Successivamente, ogni nodo dovrà essere configurato di nuovo.",
+  "rebootNodeMessage": "{node} si riavvierà. I dispositivi connessi tramite questo nodo verranno disconnessi finché non sarà di nuovo disponibile.",
+  "rebootNodesMessage": "Questi nodi si riavvieranno, a partire dal più lontano: {nodes}. I dispositivi connessi tramite questi nodi verranno disconnessi finché non saranno di nuovo disponibili.",
+  "factoryResetNodeMessage": "{node} verrà ripristinato alle impostazioni di fabbrica e uscirà dalla tua rete. Aggiungilo di nuovo per utilizzarlo.",
+  "factoryResetNodesMessage": "Questi nodi verranno ripristinati alle impostazioni di fabbrica e usciranno dalla tua rete, a partire dal più lontano: {nodes}. Aggiungili di nuovo per utilizzarli.",
+  "nodeActionMayMissNodes": "Alcuni nodi non hanno indicato come sono connessi. Un nodo connesso tramite questo potrebbe andare offline insieme a esso.",
+  "nodeActionRebootSent": "Riavvio in corso. Il ritorno online può richiedere alcuni minuti.",
+  "nodeActionResetSent": "Ripristino delle impostazioni di fabbrica in corso. Aggiungi di nuovo il nodo quando è pronto.",
+  "nodeActionFailed": "{node}: {reason}",
+  "nodeActionFailedAfterSent": "{node}: {reason} Già inviato a: {sent}."
 }

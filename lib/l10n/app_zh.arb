@@ -1246,5 +1246,17 @@
   "semanticRoleMascot": "吉祥物",
   "semanticRolePinInput": "PIN 输入",
   "semanticRoleRadio": "单选按钮",
-  "semanticRoleSwitch": "开关"
+  "semanticRoleSwitch": "开关",
+  "nodeActions": "节点操作",
+  "rebootMeshMessage": "路由器及您 Mesh 网络中的所有节点都将重启。网络恢复之前，所有已连接的设备都将断开连接。",
+  "factoryResetMeshMessage": "路由器及您 Mesh 网络中的所有节点都将恢复出厂设置，WiFi 密码和路由器密码也将恢复为路由器标签上所印的默认值。之后需要重新设置每个节点。",
+  "rebootNodeMessage": "{node} 将重启。通过它连接的设备将断开连接，直到它恢复为止。",
+  "rebootNodesMessage": "以下节点将重启，从最远的开始：{nodes}。通过这些节点连接的设备将断开连接，直到它们恢复为止。",
+  "factoryResetNodeMessage": "{node} 将恢复出厂设置并离开您的网络。如需继续使用，请重新添加它。",
+  "factoryResetNodesMessage": "以下节点将恢复出厂设置并离开您的网络，从最远的开始：{nodes}。如需继续使用，请重新添加它们。",
+  "nodeActionMayMissNodes": "部分节点未报告其连接方式。通过此节点连接的其他节点可能会一同离线。",
+  "nodeActionRebootSent": "正在重启。可能需要几分钟才能恢复。",
+  "nodeActionResetSent": "正在恢复出厂设置。节点就绪后，请重新添加该节点。",
+  "nodeActionFailed": "{node}：{reason}",
+  "nodeActionFailedAfterSent": "{node}：{reason}已发送至：{sent}。"
 }

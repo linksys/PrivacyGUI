@@ -1246,5 +1246,17 @@
   "semanticRoleMascot": "Maskot",
   "semanticRolePinInput": "PIN-indtastning",
   "semanticRoleRadio": "Alternativknap",
-  "semanticRoleSwitch": "Kontakt"
+  "semanticRoleSwitch": "Kontakt",
+  "nodeActions": "Nodehandlinger",
+  "rebootMeshMessage": "Routeren og alle noder i dit mesh-netværk genstarter. Alle tilsluttede enheder afbrydes, indtil netværket er tilbage.",
+  "factoryResetMeshMessage": "Routeren og alle noder i dit mesh-netværk nulstilles til fabriksindstillingerne, herunder WiFi- og routeradgangskoden, der står på routerens etiket. Derefter skal alle noder konfigureres igen.",
+  "rebootNodeMessage": "{node} genstarter. Enheder, der er tilsluttet via den, afbrydes, indtil den er tilbage.",
+  "rebootNodesMessage": "Disse noder genstarter, den fjerneste først: {nodes}. Enheder, der er tilsluttet via dem, afbrydes, indtil de er tilbage.",
+  "factoryResetNodeMessage": "{node} nulstilles til fabriksindstillingerne og forlader dit netværk. Tilføj den igen for at bruge den.",
+  "factoryResetNodesMessage": "Disse noder nulstilles til fabriksindstillingerne og forlader dit netværk, den fjerneste først: {nodes}. Tilføj dem igen for at bruge dem.",
+  "nodeActionMayMissNodes": "Nogle noder rapporterede ikke, hvordan de er forbundet. En node, der er forbundet via denne, kan gå ned sammen med den.",
+  "nodeActionRebootSent": "Genstarter. Det kan tage et par minutter, før forbindelsen er tilbage.",
+  "nodeActionResetSent": "Nulstiller til fabriksindstillingerne. Tilføj noden igen, når den er klar.",
+  "nodeActionFailed": "{node}: {reason}",
+  "nodeActionFailedAfterSent": "{node}: {reason} Allerede sendt til: {sent}."
 }
