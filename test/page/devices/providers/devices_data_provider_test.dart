@@ -480,7 +480,7 @@ void main() {
   group('DevicesDataNotifier — updateIdentity', () {
     void stubUpdate(Future<void> Function() answer) {
       when(() => mockDevicesSvc.updateIdentity(
-            hostInstancePath: any(named: 'hostInstancePath'),
+            hostInstancePaths: any(named: 'hostInstancePaths'),
             name: any(named: 'name'),
             userTypeCode: any(named: 'userTypeCode'),
           )).thenAnswer((_) => answer());
@@ -500,13 +500,14 @@ void main() {
       fetchCount(); // resets the count: build's own fetch
 
       await container.read(devicesDataProvider.notifier).updateIdentity(
-            hostInstancePath: 'Device.Hosts.Host.3.',
-            name: 'Living room TV',
-            userTypeCode: '4',
-          );
+        hostInstancePaths: ['Device.Hosts.Host.3.', 'Device.Hosts.Host.7.'],
+        name: 'Living room TV',
+        userTypeCode: '4',
+      );
 
+      // Every row of a merged device reaches the service (#1719).
       verify(() => mockDevicesSvc.updateIdentity(
-            hostInstancePath: 'Device.Hosts.Host.3.',
+            hostInstancePaths: ['Device.Hosts.Host.3.', 'Device.Hosts.Host.7.'],
             name: 'Living room TV',
             userTypeCode: '4',
           )).called(1);
@@ -524,10 +525,10 @@ void main() {
       stubUpdate(() async => lockedDuringWrite = lock.isLocked);
 
       await container.read(devicesDataProvider.notifier).updateIdentity(
-            hostInstancePath: 'Device.Hosts.Host.3.',
-            name: 'x',
-            userTypeCode: '1',
-          );
+        hostInstancePaths: ['Device.Hosts.Host.3.'],
+        name: 'x',
+        userTypeCode: '1',
+      );
 
       expect(lockedDuringWrite, isTrue);
       expect(lock.isLocked, isFalse);
@@ -545,10 +546,10 @@ void main() {
 
       await expectLater(
         container.read(devicesDataProvider.notifier).updateIdentity(
-              hostInstancePath: 'Device.Hosts.Host.3.',
-              name: 'x',
-              userTypeCode: '1',
-            ),
+          hostInstancePaths: ['Device.Hosts.Host.3.'],
+          name: 'x',
+          userTypeCode: '1',
+        ),
         throwsA(isA<UspCompleteFailureError>()),
       );
       verifyNever(() => mockDevicesSvc.fetch(

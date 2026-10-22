@@ -834,7 +834,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         detectedName: device.hostName,
         onSave: (name, category) =>
             ref.read(devicesDataProvider.notifier).updateIdentity(
-                  hostInstancePath: device.hostInstancePath!,
+                  hostInstancePaths: device.hostInstancePaths,
                   name: name,
                   userTypeCode: category?.userTypeCode,
                 ),

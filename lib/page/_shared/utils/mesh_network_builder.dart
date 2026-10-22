@@ -95,8 +95,8 @@ class MeshNetworkBuilder {
             ))
         .toList();
 
-    // 4. Apply hostname grouping (merge multi-interface devices)
-    final groupedClients = _groupByHostname(allBuiltClients);
+    // 4. Merge each multi-interface device's rows into one client
+    final groupedClients = _groupByName(allBuiltClients);
 
     // 5. Group clients by parentNodeId
     final clientsByNodeId = <String?, List<ClientDevice>>{};
@@ -390,7 +390,7 @@ class MeshNetworkBuilder {
   }
 
   // ---------------------------------------------------------------------------
-  // Private: Hostname grouping
+  // Private: Multi-interface grouping
   // ---------------------------------------------------------------------------
 
   /// Returns [s] if it is non-null and non-empty **without trimming**, otherwise
@@ -415,16 +415,24 @@ class MeshNetworkBuilder {
     return normalized;
   }
 
-  static List<ClientDevice> _groupByHostname(List<ClientDevice> clients) {
+  /// Merges the Hosts rows of one device, keyed by the name devidentd gives
+  /// them (#1719).
+  ///
+  /// FL-WRT 2.0 serves one row per MAC and no leaf links a device's rows, so
+  /// the name is the only key. `HostName` is not it: a Mac on a randomized
+  /// MAC sends only "Mac" in DHCP, while devidentd names both of its rows
+  /// from mDNS. Rows are regrouped on every build, so a name devidentd
+  /// improves later regroups them; nothing stores the key.
+  static List<ClientDevice> _groupByName(List<ClientDevice> clients) {
     final grouped = <String, List<ClientDevice>>{};
     final ungrouped = <ClientDevice>[];
 
     for (final client in clients) {
-      final hostname = _normalizeHostname(client.hostName);
-      if (hostname.isEmpty) {
+      final name = _normalizeHostname(client.friendlyName ?? client.hostName);
+      if (name.isEmpty) {
         ungrouped.add(client);
       } else {
-        grouped.putIfAbsent(hostname, () => []).add(client);
+        grouped.putIfAbsent(name, () => []).add(client);
       }
     }
 
@@ -433,14 +441,14 @@ class MeshNetworkBuilder {
       if (devices.length == 1) {
         result.add(devices.first);
       } else {
-        result.add(_mergeClientsByHostname(devices));
+        result.add(_mergeClients(devices));
       }
     }
     result.addAll(ungrouped);
     return result;
   }
 
-  static ClientDevice _mergeClientsByHostname(List<ClientDevice> devices) {
+  static ClientDevice _mergeClients(List<ClientDevice> devices) {
     final sorted = List<ClientDevice>.from(devices)
       ..sort((a, b) {
         if (a.isActive != b.isActive) return a.isActive ? -1 : 1;
@@ -462,7 +470,7 @@ class MeshNetworkBuilder {
         .toList();
 
     logger.d('[MeshNetworkBuilder]: Merged ${devices.length} interfaces for '
-        'hostname="${primary.hostName}" — primary=${primary.mac}');
+        '"${primary.displayName}" — primary=${primary.mac}');
 
     // The name and icon the user gave are kept per MAC, so they may sit on a
     // row that is not the primary: a laptop named on its cable, now on Wi-Fi.
@@ -479,6 +487,11 @@ class MeshNetworkBuilder {
       userDeviceName: named.userDeviceName,
       userDeviceType: named.userDeviceType,
       hostInstancePath: named.hostInstancePath,
+      additionalHostInstancePaths: [
+        for (final d in sorted)
+          if (d.hostInstancePath != null && !identical(d, named))
+            d.hostInstancePath!,
+      ],
     );
   }
 

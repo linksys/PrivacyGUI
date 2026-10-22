@@ -583,6 +583,34 @@ void main() {
     });
   });
 
+  // A merged device carries every Hosts row it was built from, so a rename
+  // reaches all of them (#1719).
+  group('ClientDevice hostInstancePaths (#1719)', () {
+    final merged = DevicesTestData.createWifiClient().copyWith(
+      hostInstancePath: 'Device.Hosts.Host.3.',
+      additionalHostInstancePaths: ['Device.Hosts.Host.7.'],
+    );
+
+    test('lists the primary row first, then the others', () {
+      expect(merged.hostInstancePaths,
+          ['Device.Hosts.Host.3.', 'Device.Hosts.Host.7.']);
+    });
+
+    test('is empty for a client not built from a Hosts row', () {
+      expect(DevicesTestData.createWifiClient().hostInstancePaths, isEmpty);
+    });
+
+    test('copyWith keeps the other rows, and equality sees them', () {
+      expect(merged.copyWith().additionalHostInstancePaths,
+          ['Device.Hosts.Host.7.']);
+      expect(merged, equals(merged.copyWith()));
+      expect(
+          merged,
+          isNot(equals(merged.copyWith(
+              additionalHostInstancePaths: ['Device.Hosts.Host.8.']))));
+    });
+  });
+
   group('ClientInterfaceInfo', () {
     test('isWifi returns true for WiFi connection type', () {
       final wifi = DevicesTestData.createWifiInterface();

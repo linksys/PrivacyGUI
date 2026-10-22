@@ -176,18 +176,23 @@ class UspDevicesDataService {
   /// clears either, so the client falls back to what the firmware detected.
   /// A null [userTypeCode] leaves the stored type alone: a name-only edit must
   /// not erase a type another client wrote.
+  ///
+  /// [hostInstancePaths] is every row of the device, all written in the one
+  /// Set: devidentd keeps the name per MAC, and a device's rows merge by the
+  /// FriendlyName it reads back, so naming one row would split them (#1719).
   Future<void> updateIdentity({
-    required String hostInstancePath,
+    required List<String> hostInstancePaths,
     required String name,
     String? userTypeCode,
   }) async {
     try {
       final result = await ConnectedDevices.update(_usp, [
-        ConnectedDeviceUpdate(
-          instancePath: hostInstancePath,
-          linksysUserDeviceLocation: name,
-          linksysUserDeviceType: userTypeCode,
-        ),
+        for (final path in hostInstancePaths)
+          ConnectedDeviceUpdate(
+            instancePath: path,
+            linksysUserDeviceLocation: name,
+            linksysUserDeviceType: userTypeCode,
+          ),
       ]);
       final parsed = UspResultParser.parseSetResult(result);
       switch (parsed) {

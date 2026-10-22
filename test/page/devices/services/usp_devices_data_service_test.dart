@@ -642,12 +642,35 @@ void main() {
       expect(laptop.hostInstancePath, 'Device.Hosts.Host.1.');
     });
 
+    // A device merged from two rows is named on both, in one Set: devidentd
+    // keeps the name per MAC, so naming one row would split the device (#1719).
+    test('writes every row of a merged device in one Set', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => setSuccess());
+
+      await svc.updateIdentity(
+        hostInstancePaths: ['Device.Hosts.Host.1.', 'Device.Hosts.Host.2.'],
+        name: 'Work laptop',
+        userTypeCode: '3',
+      );
+
+      verify(() => mockUsp.set(
+            {
+              'Device.Hosts.Host.1.X_LINKSYS_UserDeviceLocation': 'Work laptop',
+              'Device.Hosts.Host.1.X_LINKSYS_UserDeviceType': '3',
+              'Device.Hosts.Host.2.X_LINKSYS_UserDeviceLocation': 'Work laptop',
+              'Device.Hosts.Host.2.X_LINKSYS_UserDeviceType': '3',
+            },
+            allowPartial: false,
+          )).called(1);
+    });
+
     test('writes the name and the icon code in one Set', () async {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => setSuccess());
 
       await svc.updateIdentity(
-        hostInstancePath: 'Device.Hosts.Host.3.',
+        hostInstancePaths: ['Device.Hosts.Host.3.'],
         name: 'Living room TV',
         userTypeCode: '4',
       );
@@ -668,7 +691,7 @@ void main() {
           .thenAnswer((_) async => setSuccess());
 
       await svc.updateIdentity(
-        hostInstancePath: 'Device.Hosts.Host.3.',
+        hostInstancePaths: ['Device.Hosts.Host.3.'],
         name: '',
         userTypeCode: '',
       );
@@ -689,7 +712,7 @@ void main() {
           .thenAnswer((_) async => setSuccess());
 
       await svc.updateIdentity(
-        hostInstancePath: 'Device.Hosts.Host.3.',
+        hostInstancePaths: ['Device.Hosts.Host.3.'],
         name: 'Kitchen',
       );
 
@@ -716,7 +739,7 @@ void main() {
 
       expect(
         () => svc.updateIdentity(
-          hostInstancePath: 'Device.Hosts.Host.3.',
+          hostInstancePaths: ['Device.Hosts.Host.3.'],
           name: 'x',
           userTypeCode: '1',
         ),
@@ -730,7 +753,7 @@ void main() {
 
       expect(
         () => svc.updateIdentity(
-          hostInstancePath: 'Device.Hosts.Host.3.',
+          hostInstancePaths: ['Device.Hosts.Host.3.'],
           name: 'x',
           userTypeCode: '1',
         ),
