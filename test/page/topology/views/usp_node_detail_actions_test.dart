@@ -32,21 +32,43 @@ void main() {
 
   late MockUspNodeActionService mockService;
 
-  SlaveNode agent(String mac, String? parent, String name) =>
+  SlaveNode agent(String mac, String? parent, String name,
+          {Set<NodeAction> actions = const {
+            NodeAction.reboot,
+            NodeAction.factoryReset,
+          }}) =>
       DevicesTestData.createWifiSlave(
         deviceId: mac,
         dataElementsId: mac,
         friendlyName: name,
         backhaul: BackhaulInfo(linkType: 'Wi-Fi', parentNodeId: parent),
-      ).copyWith(actions: NodeAction.values.toSet());
+      ).copyWith(actions: actions);
 
-  MeshNetwork chain({String? farParent = near}) => MeshNetwork(
+  MeshNetwork chain({
+    String? farParent = near,
+    Set<NodeAction> farActions = const {
+      NodeAction.reboot,
+      NodeAction.factoryReset,
+    },
+  }) =>
+      MeshNetwork(
         master: DevicesTestData.createMaster(),
         slaves: [
           agent(near, DevicesTestData.masterMac, 'Hallway'),
-          agent(far, farParent, 'Garage'),
+          agent(far, farParent, 'Garage', actions: farActions),
         ],
       );
+
+  /// Fails after a beat, as a real Operate does: `doSomethingWithSpinner`
+  /// listens to the task ~100 ms in, so a stub that fails at once is reported
+  /// as unhandled — a property of the stub, not of the page (same note in
+  /// usp_administration_view_test.dart).
+  void failsLater(String deviceId, ServiceError error) {
+    when(() => mockService.run(any(), deviceId)).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      throw error;
+    });
+  }
 
   setUpAll(() {
     registerFallbackValue(NodeAction.reboot);
@@ -111,8 +133,15 @@ void main() {
   // in, and the identifiers' reach into semantics is the identifier suite's
   // to assert.
   Future<void> tapAction(WidgetTester tester, String hook) async {
-    await tester.tap(find.byWidgetPredicate(
-        (w) => w is AppButton && w.identifier == hook));
+    await tester.tap(
+        find.byWidgetPredicate((w) => w is AppButton && w.identifier == hook));
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+
+  Future<void> confirmReboot(WidgetTester tester) async {
+    await tapAction(tester, 'node-detail-reboot');
+    await tapAction(tester, 'admin-confirm-action-confirm');
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.pump(const Duration(milliseconds: 300));
   }
 
@@ -129,8 +158,8 @@ void main() {
         find.textContaining('the farthest first: Garage, Hallway.'),
         findsOneWidget,
       );
-      expect(find.textContaining('did not report how they connect'),
-          findsNothing);
+      expect(
+          find.textContaining('did not report how they connect'), findsNothing);
       verifyNever(() => mockService.run(any(), any()));
       handle.dispose();
     });
@@ -178,32 +207,131 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('a refusal names the node and the nodes already sent',
+    // A node behind the target that does not run the command goes down
+    // with it but is not sent it: sent first, it would refuse and stop the
+    // run before the target got the command (FWDEV#202, third-party agents).
+    testWidgets('a node behind that cannot run it is named and not sent',
         (tester) async {
       final handle = tester.ensureSemantics();
-      // Fails after a beat, as a real Operate does: `doSomethingWithSpinner`
-      // listens to the task ~100 ms in, so a stub that fails at once is
-      // reported as unhandled — a property of the stub, not of the page (same
-      // note in usp_administration_view_test.dart).
-      when(() => mockService.run(any(), near)).thenAnswer((_) async {
-        await Future<void>.delayed(const Duration(milliseconds: 200));
-        throw const ResourceNotFoundError(code: 7016);
+      final order = <String>[];
+      when(() => mockService.run(any(), any())).thenAnswer((inv) async {
+        order.add(inv.positionalArguments[1] as String);
       });
-      await open(tester, chain(), deviceId: near);
+      await open(tester, chain(farActions: const {}), deviceId: near);
 
       await tapAction(tester, 'node-detail-reboot');
+      expect(find.text('Reboot Unit'), findsOneWidget);
+      expect(
+        find.textContaining('are not sent it, but they lose their '
+            'connection while the nodes they connect through are down: '
+            'Garage.'),
+        findsOneWidget,
+      );
       await tapAction(tester, 'admin-confirm-action-confirm');
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(order, [near]);
+      handle.dispose();
+    });
+
+    // FWDEV#202: a 7022 timeout is not final, because linksys-mesh-sync
+    // resends once after the call returned. So the message may not say the
+    // node is unchanged, and may not invite an immediate second command.
+    testWidgets('an unconfirmed command says the node may still act',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      failsLater(
+        far,
+        const UspCompleteFailureError(
+            summary: 'refused', failures: [], code: 7022),
+      );
+      await open(tester, chain(), deviceId: far);
+
+      await confirmReboot(tester);
 
       expect(
-        find.textContaining('Hallway: ', findRichText: true),
+        find.textContaining(
+            'Garage did not confirm the command. It may '
+            'still act on it',
+            findRichText: true),
+        findsOneWidget,
+      );
+      expect(find.textContaining('try again in a moment', findRichText: true),
+          findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('a node that left says so and names the nodes already sent',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      failsLater(near, const ResourceNotFoundError(code: 7016));
+      await open(tester, chain(), deviceId: near);
+
+      await confirmReboot(tester);
+
+      expect(
+        find.textContaining('Hallway is no longer in your network.',
+            findRichText: true),
         findsOneWidget,
       );
       expect(
         find.textContaining('Already sent to: Garage.', findRichText: true),
         findsOneWidget,
       );
+      handle.dispose();
+    });
+  });
+
+  // The router's page runs the Administration page's own flow (decided
+  // 2026-10-22), so these read the confirmation it shows. With nodes
+  // attached Device.Reboot() takes them down first (FWDEV#202), and the copy
+  // says so; on a single router it is the copy the flow always had.
+  group('UspNodeDetailView - router actions (#876)', () {
+    Future<void> openRouter(WidgetTester tester, MeshNetwork network) =>
+        open(tester, network, deviceId: DevicesTestData.masterMac);
+
+    final singleRouter = MeshNetwork(master: DevicesTestData.createMaster());
+
+    testWidgets('a single router keeps the single-router reboot copy',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await openRouter(tester, singleRouter);
+
+      await tapAction(tester, 'node-detail-reboot');
+
+      expect(find.text('Reboot Router'), findsOneWidget);
+      expect(find.textContaining('The router will restart.'), findsOneWidget);
+      await tapAction(tester, 'admin-confirm-action-cancel');
+      verifyNever(() => mockService.run(any(), any()));
+      handle.dispose();
+    });
+
+    testWidgets('a router with nodes says the whole mesh restarts',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await openRouter(tester, chain());
+
+      await tapAction(tester, 'node-detail-reboot');
+
+      expect(find.text('Reboot Parent and all its child/s'), findsOneWidget);
+      expect(find.textContaining('every node in your mesh restart'),
+          findsOneWidget);
+      await tapAction(tester, 'admin-confirm-action-cancel');
+      handle.dispose();
+    });
+
+    testWidgets('a router with nodes says the whole mesh is reset',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await openRouter(tester, chain());
+
+      await tapAction(tester, 'node-detail-factory-reset');
+
+      expect(find.text('Reset Parent and all its child/s to Factory Default'),
+          findsOneWidget);
+      expect(find.textContaining('every node in your mesh return to factory'),
+          findsOneWidget);
+      await tapAction(tester, 'admin-confirm-action-cancel');
       handle.dispose();
     });
   });

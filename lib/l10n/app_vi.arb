@@ -1258,5 +1258,8 @@
   "nodeActionRebootSent": "Đang khởi động lại. Có thể mất vài phút để hoạt động trở lại.",
   "nodeActionResetSent": "Đang khôi phục cài đặt gốc. Hãy thêm lại nút khi nút đã sẵn sàng.",
   "nodeActionFailed": "{node}: {reason}",
-  "nodeActionFailedAfterSent": "{node}: {reason} Đã gửi tới: {sent}."
+  "nodeActionFailedAfterSent": "{failure} Đã gửi tới: {sent}.",
+  "nodeActionSkippedNodes": "Các nút sau không hỗ trợ lệnh này nên sẽ không được gửi lệnh, nhưng sẽ bị ngắt kết nối trong khi các nút mà chúng kết nối qua ngừng hoạt động: {nodes}.",
+  "nodeActionNotConfirmed": "{node} chưa xác nhận lệnh. Nút này vẫn có thể thực hiện lệnh, vì vậy hãy kiểm tra cấu trúc mạng trước khi thử lại.",
+  "nodeActionNodeGone": "{node} không còn trong mạng của bạn."
 }

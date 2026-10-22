@@ -1258,5 +1258,8 @@
   "nodeActionRebootSent": "正在重启。可能需要几分钟才能恢复。",
   "nodeActionResetSent": "正在恢复出厂设置。节点就绪后，请重新添加该节点。",
   "nodeActionFailed": "{node}：{reason}",
-  "nodeActionFailedAfterSent": "{node}：{reason}已发送至：{sent}。"
+  "nodeActionFailedAfterSent": "{failure}已发送至：{sent}。",
+  "nodeActionSkippedNodes": "以下节点不支持此命令，因此不会收到该命令，但在其连接所经过的节点离线期间，这些节点也会断开连接：{nodes}。",
+  "nodeActionNotConfirmed": "{node} 未确认此命令。该节点仍可能执行此命令，因此请先查看拓扑再重试。",
+  "nodeActionNodeGone": "{node} 已不在您的网络中。"
 }

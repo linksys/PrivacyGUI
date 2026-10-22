@@ -1258,5 +1258,8 @@
   "nodeActionRebootSent": "Reiniciando. Pode levar alguns minutos para voltar.",
   "nodeActionResetSent": "Redefinindo para as configurações de fábrica. Adicione o nó novamente quando ele estiver pronto.",
   "nodeActionFailed": "{node}: {reason}",
-  "nodeActionFailedAfterSent": "{node}: {reason} Já enviado para: {sent}."
+  "nodeActionFailedAfterSent": "{failure} Já enviado para: {sent}.",
+  "nodeActionSkippedNodes": "Estes nós não são compatíveis com este comando e não o receberão, mas perderão a conexão enquanto os nós por meio dos quais se conectam estiverem fora do ar: {nodes}.",
+  "nodeActionNotConfirmed": "{node} não confirmou o comando. Ele ainda pode executá-lo, então verifique a topologia antes de tentar novamente.",
+  "nodeActionNodeGone": "{node} não está mais na sua rede."
 }

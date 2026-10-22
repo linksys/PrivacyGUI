@@ -1258,5 +1258,8 @@
   "nodeActionRebootSent": "Käynnistetään uudelleen. Palautuminen voi kestää muutaman minuutin.",
   "nodeActionResetSent": "Palautetaan tehdasasetuksiin. Lisää solmu uudelleen, kun se on valmis.",
   "nodeActionFailed": "{node}: {reason}",
-  "nodeActionFailedAfterSent": "{node}: {reason} Lähetetty jo: {sent}."
+  "nodeActionFailedAfterSent": "{failure} Lähetetty jo: {sent}.",
+  "nodeActionSkippedNodes": "Nämä solmut eivät voi vastaanottaa tätä komentoa, eikä sitä lähetetä niille, mutta niiden yhteys katkeaa siksi aikaa, kun solmut, joiden kautta ne on yhdistetty, eivät ole käytettävissä: {nodes}.",
+  "nodeActionNotConfirmed": "{node} ei vahvistanut komentoa. Se voi silti suorittaa sen, joten tarkista topologia ennen kuin yrität uudelleen.",
+  "nodeActionNodeGone": "{node} ei ole enää verkossasi."
 }

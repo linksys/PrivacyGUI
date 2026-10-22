@@ -1258,5 +1258,8 @@
   "nodeActionRebootSent": "Sedang memulai ulang. Mungkin perlu beberapa menit untuk kembali.",
   "nodeActionResetSent": "Sedang mengembalikan ke pengaturan pabrik. Tambahkan node lagi setelah siap.",
   "nodeActionFailed": "{node}: {reason}",
-  "nodeActionFailedAfterSent": "{node}: {reason} Sudah dikirim ke: {sent}."
+  "nodeActionFailedAfterSent": "{failure} Sudah dikirim ke: {sent}.",
+  "nodeActionSkippedNodes": "Node berikut tidak mendukung perintah ini sehingga tidak akan dikirimi perintah tersebut, tetapi akan terputus selama node yang menjadi jalur sambungannya tidak aktif: {nodes}.",
+  "nodeActionNotConfirmed": "{node} tidak mengonfirmasi perintah. Node tersebut mungkin masih menjalankannya, jadi periksa topologi sebelum mencoba lagi.",
+  "nodeActionNodeGone": "{node} tidak lagi berada di jaringan Anda."
 }

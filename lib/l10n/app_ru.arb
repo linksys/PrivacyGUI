@@ -1258,5 +1258,8 @@
   "nodeActionRebootSent": "Выполняется перезагрузка. Восстановление может занять несколько минут.",
   "nodeActionResetSent": "Выполняется сброс к заводским настройкам. Добавьте узел снова, когда он будет готов.",
   "nodeActionFailed": "{node}: {reason}",
-  "nodeActionFailedAfterSent": "{node}: {reason} Уже отправлено: {sent}."
+  "nodeActionFailedAfterSent": "{failure} Уже отправлено: {sent}.",
+  "nodeActionSkippedNodes": "Эти узлы не поддерживают данную команду и не получат ее, но будут отключены, пока не работают узлы, через которые они подключены: {nodes}.",
+  "nodeActionNotConfirmed": "Узел {node} не подтвердил команду. Он все еще может ее выполнить, поэтому проверьте топологию, прежде чем повторить попытку.",
+  "nodeActionNodeGone": "Узла {node} больше нет в вашей сети."
 }

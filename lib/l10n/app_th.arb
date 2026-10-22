@@ -1258,5 +1258,8 @@
   "nodeActionRebootSent": "กำลังรีบูต อาจใช้เวลาสองสามนาทีกว่าจะกลับมาใช้งานได้",
   "nodeActionResetSent": "กำลังรีเซ็ตเป็นค่าจากโรงงาน เพิ่มโหนดอีกครั้งเมื่อพร้อม",
   "nodeActionFailed": "{node}: {reason}",
-  "nodeActionFailedAfterSent": "{node}: {reason} ส่งไปยังโหนดต่อไปนี้แล้ว: {sent}"
+  "nodeActionFailedAfterSent": "{failure} ส่งไปยังโหนดต่อไปนี้แล้ว: {sent}",
+  "nodeActionSkippedNodes": "โหนดต่อไปนี้ไม่รองรับคำสั่งนี้และจะไม่ได้รับคำสั่ง แต่จะถูกยกเลิกการเชื่อมต่อในระหว่างที่โหนดที่โหนดเหล่านี้เชื่อมต่อผ่านหยุดทำงาน: {nodes}",
+  "nodeActionNotConfirmed": "{node} ไม่ได้ยืนยันคำสั่ง โหนดอาจยังคงดำเนินการตามคำสั่ง ดังนั้นโปรดตรวจสอบโทโพโลยีก่อนลองอีกครั้ง",
+  "nodeActionNodeGone": "{node} ไม่ได้อยู่ในเครือข่ายของคุณแล้ว"
 }

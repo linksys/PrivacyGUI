@@ -34,10 +34,16 @@ import 'package:privacy_gui/framework/mode/proximity_strategy.dart';
 /// | `FirmwareUpdateNotifier.runUpload` | `transportLoss` | ok | **refused** |
 /// | `FirmwareUpdateNotifier.triggerInstall` | `transientRestart` | ok | ok |
 /// | `FirmwareUpdateNotifier.triggerRouterOtaInstall` | `transientRestart` | ok | ok |
+/// | `NodeActionNotifier.run` | `transientRestart` | ok | ok |
 ///
-/// The last one is the router-side OTA install. A cloud-URL `triggerOtaInstall` was
-/// listed beside it until the cloud path was deleted (2026-09-16); there is one OTA
-/// install now, not a pair.
+/// `NodeActionNotifier.run` is a mesh agent's reboot and factory reset, both
+/// in one seam (#876). Both leave the controller's admin credential alone, so
+/// a node's factory reset is `transientRestart` while the controller's is
+/// `credentialLoss` (decided 2026-10-20).
+///
+/// `triggerRouterOtaInstall` is the router-side OTA install. A cloud-URL
+/// `triggerOtaInstall` was listed beside it until the cloud path was deleted
+/// (2026-09-16); there is one OTA install now, not a pair.
 ///
 /// The four allowed seams call [enforce] too, and they are the more important
 /// half of the roster. With only the refused ones wired, the code reads "factory
@@ -76,7 +82,7 @@ class OperationGuard {
 
   /// Runs [operation] past the guard, or throws [UnauthorizedError].
   ///
-  /// **Throws rather than returning a result**, because every one of the five
+  /// **Throws rather than returning a result**, because every one of the six
   /// seams sits directly above a USP command and a `bool` the caller may ignore
   /// is indistinguishable from success. `_onConfirmInstall` in
   /// `firmware_update_view.dart` is the concrete case: a silent refusal there

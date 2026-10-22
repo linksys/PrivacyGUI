@@ -1258,5 +1258,8 @@
   "nodeActionRebootSent": "Redémarrage en cours. Le rétablissement peut prendre quelques minutes.",
   "nodeActionResetSent": "Réinitialisation aux paramètres d'usine en cours. Ajoutez de nouveau le nœud lorsqu'il est prêt.",
   "nodeActionFailed": "{node} : {reason}",
-  "nodeActionFailedAfterSent": "{node} : {reason} Déjà envoyé à : {sent}."
+  "nodeActionFailedAfterSent": "{failure} Déjà envoyé à : {sent}.",
+  "nodeActionSkippedNodes": "Ces nœuds ne prennent pas en charge cette commande et ne la recevront pas, mais ils perdront leur connexion tant que les nœuds par l'intermédiaire desquels ils sont connectés seront indisponibles : {nodes}.",
+  "nodeActionNotConfirmed": "{node} n'a pas confirmé la commande. Le nœud peut encore l'exécuter. Vérifiez donc la topologie avant de réessayer.",
+  "nodeActionNodeGone": "{node} ne fait plus partie de votre réseau."
 }

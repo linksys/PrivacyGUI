@@ -1258,5 +1258,8 @@
   "nodeActionRebootSent": "Wird neu gestartet. Es kann einige Minuten dauern, bis wieder eine Verbindung besteht.",
   "nodeActionResetSent": "Wird auf die Werkseinstellungen zurückgesetzt. Fügen Sie den Knoten erneut hinzu, sobald er bereit ist.",
   "nodeActionFailed": "{node}: {reason}",
-  "nodeActionFailedAfterSent": "{node}: {reason} Bereits gesendet an: {sent}."
+  "nodeActionFailedAfterSent": "{failure} Bereits gesendet an: {sent}.",
+  "nodeActionSkippedNodes": "Diese Knoten können diesen Befehl nicht ausführen und erhalten ihn nicht, verlieren aber ihre Verbindung, solange die Knoten, über die sie verbunden sind, ausgefallen sind: {nodes}.",
+  "nodeActionNotConfirmed": "{node} hat den Befehl nicht bestätigt. Der Knoten kann ihn trotzdem noch ausführen. Prüfen Sie daher die Topologie, bevor Sie es erneut versuchen.",
+  "nodeActionNodeGone": "{node} ist nicht mehr in Ihrem Netzwerk."
 }

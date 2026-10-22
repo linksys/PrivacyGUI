@@ -1258,5 +1258,8 @@
   "nodeActionRebootSent": "Bezig met opnieuw opstarten. Het kan enkele minuten duren voordat alles weer beschikbaar is.",
   "nodeActionResetSent": "Bezig met resetten naar de fabrieksinstellingen. Voeg de node opnieuw toe zodra deze gereed is.",
   "nodeActionFailed": "{node}: {reason}",
-  "nodeActionFailedAfterSent": "{node}: {reason} Al verzonden naar: {sent}."
+  "nodeActionFailedAfterSent": "{failure} Al verzonden naar: {sent}.",
+  "nodeActionSkippedNodes": "Deze nodes kunnen deze opdracht niet uitvoeren en ontvangen deze niet, maar ze verliezen hun verbinding zolang de nodes waarlangs ze verbonden zijn, uitgevallen zijn: {nodes}.",
+  "nodeActionNotConfirmed": "{node} heeft de opdracht niet bevestigd. De node kan deze nog steeds uitvoeren, dus controleer de topologie voordat u het opnieuw probeert.",
+  "nodeActionNodeGone": "{node} bevindt zich niet meer in uw netwerk."
 }

@@ -1258,5 +1258,8 @@
   "nodeActionRebootSent": "Trwa ponowne uruchamianie. Powrót może potrwać kilka minut.",
   "nodeActionResetSent": "Trwa przywracanie ustawień fabrycznych. Dodaj węzeł ponownie, gdy będzie gotowy.",
   "nodeActionFailed": "{node}: {reason}",
-  "nodeActionFailedAfterSent": "{node}: {reason} Już wysłano do: {sent}."
+  "nodeActionFailedAfterSent": "{failure} Już wysłano do: {sent}.",
+  "nodeActionSkippedNodes": "Te węzły nie obsługują tego polecenia i nie otrzymają go, ale stracą połączenie na czas, gdy węzły, przez które są połączone, nie działają: {nodes}.",
+  "nodeActionNotConfirmed": "Węzeł {node} nie potwierdził polecenia. Może je nadal wykonać, więc przed ponowną próbą sprawdź topologię.",
+  "nodeActionNodeGone": "Węzła {node} nie ma już w Twojej sieci."
 }

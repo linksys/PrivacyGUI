@@ -1343,5 +1343,8 @@
   "nodeActionRebootSent": "再起動しています。復旧まで数分かかる場合があります。",
   "nodeActionResetSent": "工場出荷時設定にリセットしています。準備ができたら、ノードをもう一度追加してください。",
   "nodeActionFailed": "{node}: {reason}",
-  "nodeActionFailedAfterSent": "{node}: {reason}送信済み: {sent}。"
+  "nodeActionFailedAfterSent": "{failure}送信済み: {sent}。",
+  "nodeActionSkippedNodes": "次のノードはこのコマンドに対応していないため、コマンドは送信されませんが、接続の経由先となるノードがオフラインの間は切断されます: {nodes}。",
+  "nodeActionNotConfirmed": "{node} からコマンドの確認応答がありませんでした。このノードがまだコマンドを実行する可能性があるため、もう一度試す前にトポロジーを確認してください。",
+  "nodeActionNodeGone": "{node} はすでにネットワークから外れています。"
 }

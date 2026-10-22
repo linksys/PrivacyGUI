@@ -10,10 +10,12 @@ import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart'
     show ruleIdentifierKey;
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
@@ -220,26 +222,36 @@ class UspNodeDetailView extends ConsumerWidget {
 
   /// Confirms, then sends [action] to [node] and every agent behind it.
   ///
-  /// The confirmation names every node that goes down, farthest first, and
-  /// says so when a node with no reported parent may be behind this one as
-  /// well. On success the page leaves for the topology: the nodes leave
-  /// DataElements while they restart, which empties this page.
+  /// One [NodeActionPlan] is built here and the same plan is sent, so the
+  /// nodes the user agreed to are the nodes that get the command. The
+  /// confirmation names every node that receives it, farthest first; the
+  /// nodes behind that cannot run it, which go down without receiving it;
+  /// and, when a node with no reported parent may be behind this one, that
+  /// it may go down too. On success the page leaves for the topology: the
+  /// nodes leave DataElements while they restart, which empties this page.
   Future<void> _runNodeAction(BuildContext context, WidgetRef ref,
       NodeEntity node, NodeAction action) async {
     final network = ref.read(devicesDataProvider).valueOrNull?.meshNetwork;
-    final behind = network?.nodesBehind(node.deviceId);
-    if (behind == null || behind.nodes.isEmpty) return;
+    final plan = network?.nodeActionPlan(action, node.deviceId);
+    if (plan == null || plan.targets.isEmpty) return;
     final l = loc(context);
     String nameOf(String id) => network?.findNode(id)?.displayName ?? id;
-    final names = behind.nodes.map((n) => n.displayName).join(', ');
-    final single = behind.nodes.length == 1;
+    String namesOf(List<SlaveNode> nodes) =>
+        nodes.map((n) => n.displayName).join(', ');
+    final names = namesOf(plan.targets);
+    final single = plan.targets.length == 1;
 
-    final message = switch ((action, single)) {
-      (NodeAction.reboot, true) => l.rebootNodeMessage(names),
-      (NodeAction.reboot, false) => l.rebootNodesMessage(names),
-      (NodeAction.factoryReset, true) => l.factoryResetNodeMessage(names),
-      (NodeAction.factoryReset, false) => l.factoryResetNodesMessage(names),
-    };
+    final message = [
+      switch ((action, single)) {
+        (NodeAction.reboot, true) => l.rebootNodeMessage(names),
+        (NodeAction.reboot, false) => l.rebootNodesMessage(names),
+        (NodeAction.factoryReset, true) => l.factoryResetNodeMessage(names),
+        (NodeAction.factoryReset, false) => l.factoryResetNodesMessage(names),
+      },
+      if (plan.skipped.isNotEmpty)
+        l.nodeActionSkippedNodes(namesOf(plan.skipped)),
+      if (plan.mayMissNodes) l.nodeActionMayMissNodes,
+    ].join('\n\n');
     final confirmed = await showConfirmActionDialog(
       context,
       title: switch ((action, single)) {
@@ -248,9 +260,7 @@ class UspNodeDetailView extends ConsumerWidget {
         (NodeAction.factoryReset, true) => l.resetToFactoryDefault,
         (NodeAction.factoryReset, false) => l.factoryResetChildTitle,
       },
-      message: behind.mayMissNodes
-          ? '$message\n\n${l.nodeActionMayMissNodes}'
-          : message,
+      message: message,
       confirmLabel: switch (action) {
         NodeAction.reboot => l.restart,
         NodeAction.factoryReset => l.reset,
@@ -261,7 +271,7 @@ class UspNodeDetailView extends ConsumerWidget {
     try {
       await doSomethingWithSpinner(
         context,
-        ref.read(nodeActionProvider.notifier).run(action, node.deviceId),
+        ref.read(nodeActionProvider.notifier).run(action, plan),
       );
       if (!context.mounted) return;
       showSuccessSnackBar(
@@ -274,22 +284,42 @@ class UspNodeDetailView extends ConsumerWidget {
       // Not awaited: the page is leaving, and the topology picks the result up.
       ref.read(devicesDataProvider.notifier).refetch();
       context.navigateBack(fallback: RouteNamed.uspTopology);
-    } on NodeActionError catch (e) {
+    } on NodeActionFailure catch (e) {
       if (!context.mounted) return;
-      final reason = localizeServiceError(context, e.cause);
-      final failed = nameOf(e.failedNodeId);
+      final failure = _nodeActionFailureText(context, e, nameOf);
       showFailedSnackBar(
         context,
         e.sentNodeIds.isEmpty
-            ? l.nodeActionFailed(failed, reason)
+            ? failure
             : l.nodeActionFailedAfterSent(
-                failed, reason, e.sentNodeIds.map(nameOf).join(', ')),
+                failure, e.sentNodeIds.map(nameOf).join(', ')),
       );
     } catch (e) {
       if (context.mounted) {
         showFailedSnackBar(context, localizeServiceError(context, e));
       }
     }
+  }
+
+  /// What to say about the node a [NodeActionFailure] stopped at.
+  ///
+  /// Two causes get the node's own sentence instead of the app-wide one. A
+  /// refusal (7022: the agent did not confirm, was unreachable, or does not
+  /// run the command) is not final, because linksys-mesh-sync resends once
+  /// after the call returned (FWDEV#202), so it says the node may still act
+  /// and does not invite an immediate retry, which could reset it twice. A
+  /// node not found (7016, or no longer listed) has left the network. Any
+  /// other cause, a lost connection say, keeps its usual message.
+  String _nodeActionFailureText(BuildContext context, NodeActionFailure e,
+      String Function(String id) nameOf) {
+    final l = loc(context);
+    final node = nameOf(e.failedNodeId);
+    return switch (e.cause) {
+      UspCompleteFailureError(code: 7022) => l.nodeActionNotConfirmed(node),
+      ResourceNotFoundError() => l.nodeActionNodeGone(node),
+      final cause =>
+        l.nodeActionFailed(node, localizeServiceError(context, cause)),
+    };
   }
 
   // ===========================================================================

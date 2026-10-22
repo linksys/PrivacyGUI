@@ -1258,5 +1258,8 @@
   "nodeActionRebootSent": "Genstarter. Det kan tage et par minutter, før forbindelsen er tilbage.",
   "nodeActionResetSent": "Nulstiller til fabriksindstillingerne. Tilføj noden igen, når den er klar.",
   "nodeActionFailed": "{node}: {reason}",
-  "nodeActionFailedAfterSent": "{node}: {reason} Allerede sendt til: {sent}."
+  "nodeActionFailedAfterSent": "{failure} Allerede sendt til: {sent}.",
+  "nodeActionSkippedNodes": "Disse noder kan ikke modtage denne kommando, og den sendes ikke til dem, men de mister forbindelsen, mens de noder, de er forbundet via, er nede: {nodes}.",
+  "nodeActionNotConfirmed": "{node} bekræftede ikke kommandoen. Den kan stadig udføre den, så tjek topologien, før du prøver igen.",
+  "nodeActionNodeGone": "{node} er ikke længere i dit netværk."
 }

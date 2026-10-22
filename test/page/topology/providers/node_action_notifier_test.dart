@@ -10,11 +10,9 @@ import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
-import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/topology/providers/node_action_notifier.dart';
 import 'package:privacy_gui/page/topology/services/usp_node_action_service.dart';
 
-import '../../../mocks/provider_overrides/mock_topology.dart';
 import '../../../mocks/test_data/devices_test_data.dart';
 
 class MockUspNodeActionService extends Mock implements UspNodeActionService {}
@@ -45,7 +43,7 @@ void main() {
         deviceId: mac,
         dataElementsId: mac,
         backhaul: BackhaulInfo(linkType: 'Wi-Fi', parentNodeId: parent),
-      );
+      ).copyWith(actions: NodeAction.values.toSet());
 
   // The daisy chain #876's acceptance criteria name: controller → near → far.
   final chain = MeshNetwork(
@@ -61,60 +59,56 @@ void main() {
     when(() => mockService.run(any(), any())).thenAnswer((_) async {});
   });
 
-  Future<ProviderContainer> container({
-    MeshNetwork? network,
-    List<Override> extra = const [],
-  }) async {
+  ProviderContainer container({List<Override> extra = const []}) {
     final c = ProviderContainer(overrides: [
       uspNodeActionServiceProvider.overrideWithValue(mockService),
       uspMutationLockProvider.overrideWithValue(lock),
-      devicesDataProvider.overrideWith(() =>
-          FixedDevicesDataNotifierForTopology(
-              DevicesData(meshNetwork: network ?? chain))),
       ...extra,
     ]);
     addTearDown(c.dispose);
-    await c.read(devicesDataProvider.future);
     return c;
   }
 
+  NodeActionPlan plan(NodeAction action, String deviceId) =>
+      chain.nodeActionPlan(action, deviceId);
+
   group('NodeActionNotifier - run', () {
     test('a node with nothing behind it gets one call', () async {
-      final c = await container();
+      final c = container();
 
-      final sent = await c.read(nodeActionProvider.notifier).run(
-            NodeAction.reboot,
-            far,
-          );
+      final sent = await c
+          .read(nodeActionProvider.notifier)
+          .run(NodeAction.reboot, plan(NodeAction.reboot, far));
 
       expect(sent, [far]);
       verify(() => mockService.run(NodeAction.reboot, far)).called(1);
     });
 
     test('the nodes behind the target go first, one lock each', () async {
-      final c = await container();
+      final c = container();
       final order = <String>[];
       when(() => mockService.run(any(), any())).thenAnswer((inv) async {
         order.add(inv.positionalArguments[1] as String);
       });
 
-      await c.read(nodeActionProvider.notifier).run(
-            NodeAction.factoryReset,
-            near,
-          );
+      await c
+          .read(nodeActionProvider.notifier)
+          .run(NodeAction.factoryReset, plan(NodeAction.factoryReset, near));
 
       expect(order, [far, near]);
       expect(lock.acquisitions, 2);
     });
 
     test('stops at the first refusal and says which nodes were sent', () async {
-      final c = await container();
+      final c = container();
       const refusal = ResourceNotFoundError(code: 7016);
       when(() => mockService.run(any(), near)).thenThrow(refusal);
 
       await expectLater(
-        c.read(nodeActionProvider.notifier).run(NodeAction.reboot, near),
-        throwsA(isA<NodeActionError>()
+        c
+            .read(nodeActionProvider.notifier)
+            .run(NodeAction.reboot, plan(NodeAction.reboot, near)),
+        throwsA(isA<NodeActionFailure>()
             .having((e) => e.failedNodeId, 'failedNodeId', near)
             .having((e) => e.sentNodeIds, 'sentNodeIds', [far]).having(
                 (e) => e.cause, 'cause', refusal)),
@@ -122,12 +116,14 @@ void main() {
     });
 
     test('the first refusal stops the nodes after it', () async {
-      final c = await container();
+      final c = container();
       when(() => mockService.run(any(), far)).thenThrow(const TimeoutError());
 
       await expectLater(
-        c.read(nodeActionProvider.notifier).run(NodeAction.reboot, near),
-        throwsA(isA<NodeActionError>()
+        c
+            .read(nodeActionProvider.notifier)
+            .run(NodeAction.reboot, plan(NodeAction.reboot, near)),
+        throwsA(isA<NodeActionFailure>()
             .having((e) => e.failedNodeId, 'failedNodeId', far)
             .having((e) => e.sentNodeIds, 'sentNodeIds', isEmpty)),
       );
@@ -137,29 +133,52 @@ void main() {
     // The lock throws a Dart TimeoutException, not a ServiceError; letting it
     // through would skip the page's error handling altogether.
     test('a lock timeout is reported like any other failure', () async {
-      final c = await container();
+      final c = container();
       when(() => mockService.run(any(), far))
           .thenThrow(TimeoutException('USP mutation timed out after 30s'));
 
       await expectLater(
-        c.read(nodeActionProvider.notifier).run(NodeAction.reboot, far),
-        throwsA(isA<NodeActionError>()
+        c
+            .read(nodeActionProvider.notifier)
+            .run(NodeAction.reboot, plan(NodeAction.reboot, far)),
+        throwsA(isA<NodeActionFailure>()
             .having((e) => e.failedNodeId, 'failedNodeId', far)
             .having((e) => e.cause, 'cause', isA<TimeoutError>())),
       );
     });
 
-    test('a node no longer in the network is not found', () async {
-      final c = await container();
+    test('an empty plan is not found and sends nothing', () async {
+      final c = container();
 
       await expectLater(
         c.read(nodeActionProvider.notifier).run(
               NodeAction.reboot,
-              'AA:BB:CC:DD:EE:FF',
+              chain.nodeActionPlan(NodeAction.reboot, 'AA:BB:CC:DD:EE:FF'),
             ),
         throwsA(isA<ResourceNotFoundError>()),
       );
       verifyNever(() => mockService.run(any(), any()));
+    });
+
+    // The plan the user confirmed is the plan that is sent: a topology that
+    // refreshes between the dialog and the tap must not change the nodes.
+    test('sends exactly the nodes the plan lists', () async {
+      final c = container();
+      final order = <String>[];
+      when(() => mockService.run(any(), any())).thenAnswer((inv) async {
+        order.add(inv.positionalArguments[1] as String);
+      });
+      final confirmed = NodeActionPlan(
+        targets: [slave(far, near)],
+        skipped: const [],
+        mayMissNodes: false,
+      );
+
+      await c
+          .read(nodeActionProvider.notifier)
+          .run(NodeAction.reboot, confirmed);
+
+      expect(order, [far]);
     });
   });
 
@@ -168,24 +187,26 @@ void main() {
   // survives both. The controller's own factory reset stays refused
   // (usp_admin_notifier_test.dart).
   group('NodeActionNotifier - Remote Assistance', () {
-    Future<ProviderContainer> remote() => container(extra: [
+    ProviderContainer remote() => container(extra: [
           appModeProfileProvider.overrideWithValue(const RemoteModeProfile()),
         ]);
 
     test('a node reboot is not refused', () async {
-      final c = await remote();
+      final c = remote();
 
-      await c.read(nodeActionProvider.notifier).run(NodeAction.reboot, far);
+      await c
+          .read(nodeActionProvider.notifier)
+          .run(NodeAction.reboot, plan(NodeAction.reboot, far));
 
       verify(() => mockService.run(NodeAction.reboot, far)).called(1);
     });
 
     test('a node factory reset is not refused', () async {
-      final c = await remote();
+      final c = remote();
 
       await c
           .read(nodeActionProvider.notifier)
-          .run(NodeAction.factoryReset, far);
+          .run(NodeAction.factoryReset, plan(NodeAction.factoryReset, far));
 
       verify(() => mockService.run(NodeAction.factoryReset, far)).called(1);
     });

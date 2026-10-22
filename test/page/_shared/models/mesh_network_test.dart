@@ -547,5 +547,79 @@ void main() {
         expect(network.nodesBehind('AA:BB:CC:DD:EE:FF').nodes, isEmpty);
       });
     });
+
+    // =========================================================================
+    // nodeActionPlan (#876)
+    // =========================================================================
+
+    group('nodeActionPlan', () {
+      const a = 'AA:BB:CC:DD:EE:0A';
+      const b = 'AA:BB:CC:DD:EE:0B';
+      const c = 'AA:BB:CC:DD:EE:0C';
+
+      SlaveNode slave(String mac, String parent, Set<NodeAction> actions) =>
+          DevicesTestData.createWifiSlave(
+            deviceId: mac,
+            dataElementsId: mac,
+            backhaul: BackhaulInfo(linkType: 'Wi-Fi', parentNodeId: parent),
+          ).copyWith(actions: actions);
+
+      const both = {NodeAction.reboot, NodeAction.factoryReset};
+
+      // A node behind the target that does not run the command would be sent
+      // it first, refuse with 7022 and stop the run before the target got it.
+      // It goes down with the target anyway, so it is named and not sent.
+      test('a node behind the target that cannot run the action is skipped',
+          () {
+        final network = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            slave(a, DevicesTestData.masterMac, both),
+            slave(b, a, const {}),
+            slave(c, b, both),
+          ],
+        );
+
+        final plan = network.nodeActionPlan(NodeAction.reboot, a);
+
+        expect(plan.targets.map((n) => n.deviceId), [c, a]);
+        expect(plan.skipped.map((n) => n.deviceId), [b]);
+        expect(plan.mayMissNodes, isFalse);
+      });
+
+      test('support is per action', () {
+        final network = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            slave(a, DevicesTestData.masterMac, both),
+            slave(b, a, const {NodeAction.reboot}),
+          ],
+        );
+
+        expect(
+          network
+              .nodeActionPlan(NodeAction.factoryReset, a)
+              .targets
+              .map((n) => n.deviceId),
+          [a],
+        );
+        expect(
+          network
+              .nodeActionPlan(NodeAction.reboot, a)
+              .targets
+              .map((n) => n.deviceId),
+          [b, a],
+        );
+      });
+
+      test('a target that cannot run the action plans nothing', () {
+        final network = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [slave(a, DevicesTestData.masterMac, const {})],
+        );
+
+        expect(network.nodeActionPlan(NodeAction.reboot, a).targets, isEmpty);
+      });
+    });
   });
 }

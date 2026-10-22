@@ -1258,5 +1258,8 @@
   "nodeActionRebootSent": "正在重新啟動。可能需要幾分鐘才會恢復。",
   "nodeActionResetSent": "正在恢復原廠設定。節點就緒後，請重新將它加入網路。",
   "nodeActionFailed": "{node}：{reason}",
-  "nodeActionFailedAfterSent": "{node}：{reason}已傳送至：{sent}。"
+  "nodeActionFailedAfterSent": "{failure}已傳送至：{sent}。",
+  "nodeActionSkippedNodes": "下列節點不支援此命令，因此不會收到該命令，但在其連線所經過的節點離線期間，這些節點也會中斷連線：{nodes}。",
+  "nodeActionNotConfirmed": "{node} 未確認此命令。該節點仍可能會執行此命令，因此請先檢視拓撲再重試。",
+  "nodeActionNodeGone": "{node} 已不在您的網路中。"
 }

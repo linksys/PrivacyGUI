@@ -1258,5 +1258,8 @@
   "nodeActionRebootSent": "Yeniden başlatılıyor. Tekrar kullanılabilir olması birkaç dakika sürebilir.",
   "nodeActionResetSent": "Fabrika ayarlarına sıfırlanıyor. Hazır olduğunda düğümü yeniden ekleyin.",
   "nodeActionFailed": "{node}: {reason}",
-  "nodeActionFailedAfterSent": "{node}: {reason} Zaten gönderildi: {sent}."
+  "nodeActionFailedAfterSent": "{failure} Zaten gönderildi: {sent}.",
+  "nodeActionSkippedNodes": "Bu düğümler bu komutu desteklemedikleri için komut onlara gönderilmeyecek, ancak üzerinden bağlandıkları düğümler devre dışıyken bağlantılarını kaybedecekler: {nodes}.",
+  "nodeActionNotConfirmed": "{node} komutu onaylamadı. Komutu yine de uygulayabilir, bu nedenle yeniden denemeden önce topolojiyi kontrol edin.",
+  "nodeActionNodeGone": "{node} artık ağınızda değil."
 }

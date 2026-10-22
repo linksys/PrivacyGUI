@@ -7,7 +7,7 @@ import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/mode/disruption_class.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
-import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/topology/services/usp_node_action_service.dart';
 
 final nodeActionProvider =
@@ -23,11 +23,13 @@ class NodeActionNotifier extends Notifier<void> {
   @override
   void build() {}
 
-  /// Sends [action] to [deviceId] and to every agent behind it, farthest first,
-  /// and returns the nodes it was sent to in that order.
+  /// Sends [action] to every node [plan] targets, in its order (farthest
+  /// first), and returns the nodes it was sent to.
   ///
-  /// Farthest first because a node that restarts cuts off everything behind
-  /// it, so a command to a node behind it has to be accepted before.
+  /// The plan is the one the user confirmed ([MeshNetwork.nodeActionPlan]),
+  /// not one rebuilt here: a topology refreshed between the dialog and the
+  /// tap must not change which nodes go down. Farthest first because a node
+  /// that restarts cuts off everything behind it.
   ///
   /// Both actions are `transientRestart`, so every mode allows them, Remote
   /// Assistance included (decided 2026-10-20). A node's factory reset leaves
@@ -38,18 +40,17 @@ class NodeActionNotifier extends Notifier<void> {
   /// firmware's 25 s and the lock times out at 30 s, so one lock around the
   /// whole sequence would time out at the second node.
   ///
-  /// Stops at the first failure and throws [NodeActionError], which names the
-  /// node that failed and the nodes already sent. Throws
-  /// [ResourceNotFoundError] without sending anything when [deviceId] is not
-  /// an agent in the current topology.
-  Future<List<String>> run(NodeAction action, String deviceId) async {
+  /// Stops at the first failure and throws [NodeActionFailure], which names
+  /// the node that failed and the nodes already sent. Throws
+  /// [ResourceNotFoundError] without sending anything when the plan has no
+  /// target.
+  Future<List<String>> run(NodeAction action, NodeActionPlan plan) async {
     ref.read(operationGuardProvider).enforce(DisruptionClass.transientRestart,
         operation: 'node ${action.name}');
 
-    final network = ref.read(devicesDataProvider).valueOrNull?.meshNetwork;
-    final targets = network?.nodesBehind(deviceId).nodes ?? const [];
+    final targets = plan.targets;
     if (targets.isEmpty) {
-      throw ResourceNotFoundError(detail: '$deviceId is not a mesh agent');
+      throw const ResourceNotFoundError(detail: 'no mesh agent to send to');
     }
 
     final UspNodeActionService svc = ref.read(uspNodeActionServiceProvider);
@@ -63,7 +64,7 @@ class NodeActionNotifier extends Notifier<void> {
             '[USP][NodeAction]: ${action.name} ${node.deviceId} failed '
             'after ${sent.length} sent',
             error: e);
-        throw NodeActionError(
+        throw NodeActionFailure(
           cause: e,
           failedNodeId: node.deviceId,
           sentNodeIds: List.unmodifiable(sent),
@@ -73,7 +74,7 @@ class NodeActionNotifier extends Notifier<void> {
             '[USP][NodeAction]: ${action.name} ${node.deviceId} timed '
             'out after ${sent.length} sent',
             error: e);
-        throw NodeActionError(
+        throw NodeActionFailure(
           cause: TimeoutError(detail: e.message),
           failedNodeId: node.deviceId,
           sentNodeIds: List.unmodifiable(sent),
@@ -87,11 +88,12 @@ class NodeActionNotifier extends Notifier<void> {
 
 /// A node action that stopped partway (#876).
 ///
-/// Not a [ServiceError] subtype: it carries one, [cause], and adds which node
-/// it happened on and which nodes had already accepted, which a single error
-/// type cannot say. The page localizes [cause] as usual and names the nodes
-/// around it.
-class NodeActionError implements Exception {
+/// Not a [ServiceError] subtype, so named `…Failure` (constitution §3.3.5
+/// keeps `…Error` for those), as `FirmwareValidationFailure` is: it carries
+/// one, [cause], and adds which node it happened on and which nodes had
+/// already accepted, which a single error type cannot say. The page localizes
+/// [cause] as usual and names the nodes around it.
+class NodeActionFailure implements Exception {
   /// Why the call to [failedNodeId] failed.
   final ServiceError cause;
 
@@ -102,13 +104,13 @@ class NodeActionError implements Exception {
   /// The nodes that accepted before it, in the order they were sent.
   final List<String> sentNodeIds;
 
-  const NodeActionError({
+  const NodeActionFailure({
     required this.cause,
     required this.failedNodeId,
     required this.sentNodeIds,
   });
 
   @override
-  String toString() => 'NodeActionError($failedNodeId after $sentNodeIds: '
+  String toString() => 'NodeActionFailure($failedNodeId after $sentNodeIds: '
       '$cause)';
 }

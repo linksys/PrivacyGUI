@@ -534,7 +534,7 @@ void main() {
             '${Map.fromEntries(perFile.entries.toList()..sort((a, b) => a.key.compareTo(b.key)))}, '
             'expected ${_seams.length}. More means a destructive operation was '
             'guarded without being added to _seams, so nothing pins the class it '
-            'chose; fewer means one of the five lost its guard. Either way the '
+            'chose; fewer means one of them lost its guard. Either way the '
             'roster and the code disagree, and the roster is the thing reviewers '
             'read.',
       );

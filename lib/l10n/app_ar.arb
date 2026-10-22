@@ -1258,5 +1258,8 @@
   "nodeActionRebootSent": "جارٍ إعادة التشغيل. قد يستغرق الأمر بضع دقائق حتى تعود إلى العمل.",
   "nodeActionResetSent": "جارٍ إعادة الضبط إلى إعدادات المصنع. أضف العقدة مرة أخرى عندما تصبح جاهزة.",
   "nodeActionFailed": "{node}: {reason}",
-  "nodeActionFailedAfterSent": "{node}: {reason} تم الإرسال بالفعل إلى: {sent}."
+  "nodeActionFailedAfterSent": "{failure} تم الإرسال بالفعل إلى: {sent}.",
+  "nodeActionSkippedNodes": "لا تدعم هذه العُقد هذا الأمر ولن يُرسل إليها، لكنها ستفقد اتصالها أثناء توقف العُقد التي تتصل عبرها عن العمل: {nodes}.",
+  "nodeActionNotConfirmed": "لم تؤكد {node} الأمر. وقد تنفذه رغم ذلك، لذا تحقق من الطوبولوجيا قبل المحاولة مرة أخرى.",
+  "nodeActionNodeGone": "لم تعد {node} موجودة في شبكتك."
 }

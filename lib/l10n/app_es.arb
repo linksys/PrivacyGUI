@@ -1258,5 +1258,8 @@
   "nodeActionRebootSent": "Reiniciando. Puede tardar unos minutos en volver a estar disponible.",
   "nodeActionResetSent": "Restableciendo la configuración de fábrica. Vuelva a añadir el nodo cuando esté listo.",
   "nodeActionFailed": "{node}: {reason}",
-  "nodeActionFailedAfterSent": "{node}: {reason} Ya enviado a: {sent}."
+  "nodeActionFailedAfterSent": "{failure} Ya enviado a: {sent}.",
+  "nodeActionSkippedNodes": "Estos nodos no admiten este comando y no se les enviará, pero perderán la conexión mientras los nodos a través de los que se conectan no estén disponibles: {nodes}.",
+  "nodeActionNotConfirmed": "{node} no ha confirmado el comando. Es posible que aún lo ejecute, así que compruebe la topología antes de volver a intentarlo.",
+  "nodeActionNodeGone": "{node} ya no está en su red."
 }
