@@ -222,6 +222,49 @@ DeviceDetailState get wifiDetailIdentified => DeviceDetailState(
       device: wifiDeviceIdentified,
     );
 
+// One Mac on 5 GHz with a randomised MAC and on a cable, merged into one
+// device by the name devidentd detected for both rows (#1719, FWDEV#224):
+// the Wi-Fi row leads, the cable is an additional interface, and each
+// interface carries its own Hosts row. The rows' DHCP host names differ
+// ("Mac" and "TW-AUSTINC-MAC"), which is why they did not merge before.
+// Measured shape: M60, 2.0.3.26102124.
+final wifiDeviceMergedInterfaces = ClientDevice(
+  mac: 'AA:C8:BF:74:39:F6',
+  ip: '192.168.1.156',
+  hostName: 'Mac',
+  friendlyName: 'TW-AUSTINC-MAC',
+  detectedName: 'TW-AUSTINC-MAC',
+  isActive: true,
+  hostInstancePath: 'Device.Hosts.Host.2.',
+  connectionType: ConnectionType.wifi,
+  wifi: WifiConnectionInfo(
+    signalStrength: -34,
+    downlinkRate: 866000,
+    uplinkRate: 433000,
+    band: '5GHz',
+    ssidName: 'MyNetwork',
+  ),
+  manufacturer: 'Apple Inc.',
+  modelName: 'Mac',
+  operatingSystem: 'macOS',
+  deviceType: 'Computer',
+  parentNodeId: 'node-1',
+  parentNodeName: 'Living Room',
+  additionalInterfaces: const [
+    ClientInterfaceInfo(
+      mac: 'C0:EA:C3:69:AB:FA',
+      ip: '192.168.1.189',
+      connectionType: ConnectionType.wired,
+      isActive: true,
+      hostInstancePath: 'Device.Hosts.Host.1.',
+    ),
+  ],
+);
+
+DeviceDetailState get wifiDetailMergedInterfaces => DeviceDetailState(
+      device: wifiDeviceMergedInterfaces,
+    );
+
 DeviceDetailState get deviceNotFound => DeviceDetailState.empty();
 
 DeviceDetailState get wifiDetailGlobalIpv6 => DeviceDetailState(

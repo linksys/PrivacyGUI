@@ -42,6 +42,11 @@ class ClientInterfaceInfo with EquatableMixin, DiagnosticNamed {
   /// WiFi connection details (null if wired).
   final WifiConnectionInfo? wifi;
 
+  /// This interface's `Device.Hosts.Host.{i}.` row, which a rename of the
+  /// device writes too (#1719). Null for an interface not built from a Hosts
+  /// row.
+  final String? hostInstancePath;
+
   const ClientInterfaceInfo({
     required this.mac,
     required this.ip,
@@ -49,6 +54,7 @@ class ClientInterfaceInfo with EquatableMixin, DiagnosticNamed {
     required this.isActive,
     this.layer1Interface = '',
     this.wifi,
+    this.hostInstancePath,
   });
 
   /// Whether this is a WiFi interface.
@@ -71,6 +77,7 @@ class ClientInterfaceInfo with EquatableMixin, DiagnosticNamed {
         isActive,
         layer1Interface,
         wifi,
+        hostInstancePath,
       ];
 
   @override
@@ -84,6 +91,7 @@ class ClientInterfaceInfo with EquatableMixin, DiagnosticNamed {
         'isActive': isActive,
         'layer1Interface': layer1Interface,
         'wifi': wifi,
+        'hostInstancePath': hostInstancePath,
       };
 }
 
@@ -101,6 +109,13 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
 
   /// User-friendly name (editable).
   final String? friendlyName;
+
+  /// The name devidentd detected (`X_LINKSYS_DetectedName`, FWDEV#224),
+  /// which no user edit changes, so every row of one device reads the same
+  /// value. What a multi-interface device's rows are grouped by (#1719); not
+  /// displayed. Null until devidentd names the row, and on firmware without
+  /// the leaf.
+  final String? detectedName;
 
   // ─── Status ───
   /// Whether the device is currently online.
@@ -189,9 +204,21 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
   /// nothing matches on it since #1688, which pairs nodes by `PhysAddress`.
   final String? hostsDeviceId;
 
-  /// This client's `Device.Hosts.Host.{i}.` row, where its user name and type
-  /// are written (#1691). Null for a client not built from a Hosts row.
+  /// The primary interface's `Device.Hosts.Host.{i}.` row (#1691). Null for a
+  /// client not built from a Hosts row.
   final String? hostInstancePath;
+
+  /// Every `Device.Hosts.Host.{i}.` row of this client (#1719): the primary
+  /// interface's, then each of [additionalInterfaces]'.
+  ///
+  /// A rename writes all of them. devidentd keeps the user's name per MAC and
+  /// rows merge by the FriendlyName it reads back, so naming one row only
+  /// would split the device again.
+  List<String> get hostInstancePaths => [
+        if (hostInstancePath != null) hostInstancePath!,
+        for (final interface in additionalInterfaces)
+          if (interface.hostInstancePath != null) interface.hostInstancePath!,
+      ];
 
   // ─── Multi-interface ───
   /// Additional network interfaces for this device.
@@ -201,6 +228,7 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
     required this.mac,
     required this.hostName,
     this.friendlyName,
+    this.detectedName,
     required this.isActive,
     required this.ip,
     this.ipv6Addresses = const [],
@@ -312,6 +340,7 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
     String? mac,
     String? hostName,
     String? friendlyName,
+    String? detectedName,
     bool? isActive,
     String? ip,
     List<String>? ipv6Addresses,
@@ -335,6 +364,7 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
       mac: mac ?? this.mac,
       hostName: hostName ?? this.hostName,
       friendlyName: friendlyName ?? this.friendlyName,
+      detectedName: detectedName ?? this.detectedName,
       isActive: isActive ?? this.isActive,
       ip: ip ?? this.ip,
       ipv6Addresses: ipv6Addresses ?? this.ipv6Addresses,
@@ -364,6 +394,7 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
         mac,
         hostName,
         friendlyName,
+        detectedName,
         isActive,
         ip,
         ipv6Addresses,
@@ -392,6 +423,7 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
         'mac': mac,
         'hostName': hostName,
         'friendlyName': friendlyName,
+        'detectedName': detectedName,
         'isActive': isActive,
         'ip': ip,
         'ipv6Addresses': ipv6Addresses,
