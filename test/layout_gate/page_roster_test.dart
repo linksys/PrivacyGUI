@@ -339,7 +339,9 @@ void main() {
           33.4); // #1370: 33.7, -0.9%
       expect(
           byPath['lib/page/topology/views/usp_topology_view.dart']!.msPerCell,
-          28.0); // #1370: 28.7, -2.4%
+          // #1370: 28.7; 28.0 until #879's node menu, re-measured with it at 25.8
+          // against a same-day control of 25.1 without it (`# remeasure5`).
+          25.8);
       expect(
           byPath['lib/page/topology/views/usp_node_detail_view.dart']!
               .msPerCell,
