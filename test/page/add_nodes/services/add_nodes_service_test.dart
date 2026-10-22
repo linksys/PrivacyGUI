@@ -296,7 +296,7 @@ void main() {
   });
 
   group('AddNodesService - fetchJoinedNodes', () {
-    const controller = '74:12:13:21:56:3a';
+    const controller = 'aa:bb:cc:00:00:00';
     const joining = BleOnboardingTestData.nodeAlMac;
     const joiningKey = 'AABBCC000002';
 
