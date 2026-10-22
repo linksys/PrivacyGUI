@@ -82,11 +82,12 @@ class AddNodesState extends Equatable {
       phase == AddNodesPhase.onboarding;
 
   /// Whether the user can start a session from here: on entry, or again after a
-  /// session that ended.
+  /// session that ended without a node — found none, failed, or was stopped.
   bool get canStart =>
       phase == AddNodesPhase.ready ||
       phase == AddNodesPhase.noNodesFound ||
-      phase == AddNodesPhase.failed;
+      phase == AddNodesPhase.failed ||
+      phase == AddNodesPhase.cancelled;
 
   AddNodesState copyWith({
     AddNodesPhase? phase,

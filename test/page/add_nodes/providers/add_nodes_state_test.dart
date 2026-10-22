@@ -34,6 +34,8 @@ void main() {
         AddNodesPhase.ready,
         AddNodesPhase.noNodesFound,
         AddNodesPhase.failed,
+        // The page offers Try again after a stop, so start() must take it.
+        AddNodesPhase.cancelled,
       };
       for (final phase in AddNodesPhase.values) {
         expect(AddNodesState(phase: phase).canStart, startable.contains(phase),

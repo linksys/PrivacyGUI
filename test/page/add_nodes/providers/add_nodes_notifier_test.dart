@@ -571,6 +571,31 @@ void main() {
       verify(() => service.stop()).called(1);
     });
 
+    test('a stopped session can be started again', () async {
+      feedSessions([
+        _idle,
+        _session(
+            status: OnboardingSessionStatus.scanning,
+            result: OnboardingSessionResult.started,
+            session: 1450),
+      ]);
+      final container = createContainer();
+      await settleOn(container, AddNodesPhase.ready);
+      when(() => service.start())
+          .thenAnswer((_) async => OnboardingStartResult.started);
+      unawaited(container.read(addNodesProvider.notifier).start());
+      await settleOn(container, AddNodesPhase.searching);
+      await container.read(addNodesProvider.notifier).cancel();
+      when(() => service.start())
+          .thenAnswer((_) async => OnboardingStartResult.busy);
+
+      // The page's Try again after a stop.
+      await container.read(addNodesProvider.notifier).start();
+
+      verify(() => service.start()).called(2);
+      expect(container.read(addNodesProvider).phase, AddNodesPhase.busy);
+    });
+
     test('cancel does nothing when no session is running', () async {
       feedSessions([_idle]);
       final container = createContainer();
