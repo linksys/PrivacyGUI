@@ -1246,5 +1246,20 @@
   "semanticRoleMascot": "Maskot",
   "semanticRolePinInput": "PIN-inmatning",
   "semanticRoleRadio": "Alternativknapp",
-  "semanticRoleSwitch": "Reglage"
+  "semanticRoleSwitch": "Reglage",
+  "nodeActions": "Nodåtgärder",
+  "rebootMeshMessage": "Routern och alla noder i ditt mesh-nätverk startas om. Alla anslutna enheter kopplas bort tills nätverket är tillbaka.",
+  "factoryResetMeshMessage": "Routern och alla noder i ditt mesh-nätverk återställs till fabriksinställningarna, inklusive WiFi- och routerlösenordet som står på routerns etikett. Därefter måste alla noder konfigureras igen.",
+  "rebootNodeMessage": "{node} startas om. Enheter som är anslutna via den kopplas bort tills den är tillbaka.",
+  "rebootNodesMessage": "De här noderna startas om, den mest avlägsna först: {nodes}. Enheter som är anslutna via dem kopplas bort tills de är tillbaka.",
+  "factoryResetNodeMessage": "{node} återställs till fabriksinställningarna och lämnar ditt nätverk. Lägg till den igen för att använda den.",
+  "factoryResetNodesMessage": "De här noderna återställs till fabriksinställningarna och lämnar ditt nätverk, den mest avlägsna först: {nodes}. Lägg till dem igen för att använda dem.",
+  "nodeActionMayMissNodes": "Vissa noder rapporterade inte hur de är anslutna. En nod som är ansluten via den här kan gå ner tillsammans med den.",
+  "nodeActionRebootSent": "Startar om. Det kan ta några minuter innan anslutningen är tillbaka.",
+  "nodeActionResetSent": "Återställer till fabriksinställningarna. Lägg till noden igen när den är klar.",
+  "nodeActionFailed": "{node}: {reason}",
+  "nodeActionFailedAfterSent": "{failure} Redan skickat till: {sent}.",
+  "nodeActionSkippedNodes": "De här noderna kan inte ta emot det här kommandot, och det skickas inte till dem, men de förlorar anslutningen medan noderna som de är anslutna via är nere: {nodes}.",
+  "nodeActionNotConfirmed": "{node} bekräftade inte kommandot. Den kan fortfarande utföra det, så kontrollera topologin innan du försöker igen.",
+  "nodeActionNodeGone": "{node} finns inte längre i ditt nätverk."
 }

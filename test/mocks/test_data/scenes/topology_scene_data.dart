@@ -334,6 +334,9 @@ UspNodeDetailState get slaveNodeWithBackhaulTiming => UspNodeDetailState(
           signalStrength: -50,
           lastContactTime: DateTime.now().toUtc().toIso8601String(),
         ),
+        // Both, so the node actions card renders and the layout gate sweeps
+        // its two buttons in every locale (#876).
+        actions: const {NodeAction.reboot, NodeAction.factoryReset},
       ),
       connectedClients: _meshSlaveClients,
     );

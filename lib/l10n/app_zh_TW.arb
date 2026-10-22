@@ -1246,5 +1246,20 @@
   "semanticRoleMascot": "吉祥物",
   "semanticRolePinInput": "PIN 輸入",
   "semanticRoleRadio": "選項按鈕",
-  "semanticRoleSwitch": "開關"
+  "semanticRoleSwitch": "開關",
+  "nodeActions": "節點操作",
+  "rebootMeshMessage": "路由器及您網狀網路中的每個節點都將重新啟動。網路恢復前，所有已連線的裝置都會中斷連線。",
+  "factoryResetMeshMessage": "路由器及您網狀網路中的每個節點都將恢復原廠設定，Wi-Fi 與路由器密碼也會還原為路由器標籤上所印的預設值。之後每個節點都必須重新設定。",
+  "rebootNodeMessage": "{node} 將重新啟動。透過它連線的裝置會中斷連線，直到它恢復為止。",
+  "rebootNodesMessage": "下列節點將重新啟動，由最遠的開始：{nodes}。透過這些節點連線的裝置會中斷連線，直到它們恢復為止。",
+  "factoryResetNodeMessage": "{node} 將恢復原廠設定並離開您的網路。若要繼續使用，請重新將它加入網路。",
+  "factoryResetNodesMessage": "下列節點將恢復原廠設定並離開您的網路，由最遠的開始：{nodes}。若要繼續使用，請重新將它們加入網路。",
+  "nodeActionMayMissNodes": "部分節點未回報其連線方式。透過此節點連線的其他節點可能會一併離線。",
+  "nodeActionRebootSent": "正在重新啟動。可能需要幾分鐘才會恢復。",
+  "nodeActionResetSent": "正在恢復原廠設定。節點就緒後，請重新將它加入網路。",
+  "nodeActionFailed": "{node}：{reason}",
+  "nodeActionFailedAfterSent": "{failure}已傳送至：{sent}。",
+  "nodeActionSkippedNodes": "下列節點不支援此命令，因此不會收到該命令，但在其連線所經過的節點離線期間，這些節點也會中斷連線：{nodes}。",
+  "nodeActionNotConfirmed": "{node} 未確認此命令。該節點仍可能會執行此命令，因此請先檢視拓撲再重試。",
+  "nodeActionNodeGone": "{node} 已不在您的網路中。"
 }

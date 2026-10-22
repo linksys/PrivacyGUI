@@ -1331,5 +1331,20 @@
   "semanticRoleMascot": "マスコット",
   "semanticRolePinInput": "PIN 入力",
   "semanticRoleRadio": "ラジオボタン",
-  "semanticRoleSwitch": "スイッチ"
+  "semanticRoleSwitch": "スイッチ",
+  "nodeActions": "ノードの操作",
+  "rebootMeshMessage": "ルーターとメッシュ内のすべてのノードが再起動します。ネットワークが復旧するまで、接続中のすべてのデバイスは切断されます。",
+  "factoryResetMeshMessage": "ルーターとメッシュ内のすべてのノードが工場出荷時設定にリセットされ、WiFiパスワードとルーターパスワードもルーターのラベルに記載されている値に戻ります。その後、すべてのノードを再度セットアップする必要があります。",
+  "rebootNodeMessage": "{node} が再起動します。復旧するまで、このノード経由で接続しているデバイスは切断されます。",
+  "rebootNodesMessage": "次のノードが、最も遠いものから順に再起動します: {nodes}。復旧するまで、これらのノード経由で接続しているデバイスは切断されます。",
+  "factoryResetNodeMessage": "{node} は工場出荷時設定にリセットされ、ネットワークから外れます。引き続き使用するには、もう一度追加してください。",
+  "factoryResetNodesMessage": "次のノードが、最も遠いものから順に工場出荷時設定にリセットされ、ネットワークから外れます: {nodes}。引き続き使用するには、もう一度追加してください。",
+  "nodeActionMayMissNodes": "一部のノードが接続方法を報告していません。このノード経由で接続しているノードも一緒にオフラインになる可能性があります。",
+  "nodeActionRebootSent": "再起動しています。復旧まで数分かかる場合があります。",
+  "nodeActionResetSent": "工場出荷時設定にリセットしています。準備ができたら、ノードをもう一度追加してください。",
+  "nodeActionFailed": "{node}: {reason}",
+  "nodeActionFailedAfterSent": "{failure}送信済み: {sent}。",
+  "nodeActionSkippedNodes": "次のノードはこのコマンドに対応していないため、コマンドは送信されませんが、接続の経由先となるノードがオフラインの間は切断されます: {nodes}。",
+  "nodeActionNotConfirmed": "{node} からコマンドの確認応答がありませんでした。このノードがまだコマンドを実行する可能性があるため、もう一度試す前にトポロジーを確認してください。",
+  "nodeActionNodeGone": "{node} はすでにネットワークから外れています。"
 }

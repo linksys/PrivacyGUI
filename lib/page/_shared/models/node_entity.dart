@@ -3,6 +3,34 @@ import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/network_entity.dart';
 
+/// A command one mesh agent can run on itself (FWDEV#202).
+///
+/// The agent reports which it runs in `X_LINKSYS_SupportedOperations`; the
+/// controller's own row reports none, because `Device.Reboot()` and
+/// `Device.FactoryReset()` act on it instead.
+enum NodeAction {
+  reboot('Reboot'),
+  factoryReset('FactoryReset');
+
+  /// The value firmware lists in `X_LINKSYS_SupportedOperations`.
+  final String wireName;
+
+  const NodeAction(this.wireName);
+
+  /// Reads `X_LINKSYS_SupportedOperations`, a comma list. A value this enum
+  /// does not name is dropped rather than guessed at: an action is offered
+  /// only when firmware said it runs it.
+  static Set<NodeAction> parse(String? supportedOperations) {
+    final listed = {
+      for (final value in (supportedOperations ?? '').split(',')) value.trim(),
+    };
+    return {
+      for (final action in values)
+        if (listed.contains(action.wireName)) action,
+    };
+  }
+}
+
 /// Sealed class for mesh network nodes (master or slave).
 ///
 /// Use pattern matching to distinguish between [MasterNode] and [SlaveNode]:
@@ -331,6 +359,12 @@ final class SlaveNode extends NodeEntity {
   /// (#1688 item 4). Null when unset, which is what the rename dialog clears to.
   final String? userDeviceName;
 
+  /// The commands this agent reports it runs, from its DataElements row's
+  /// `X_LINKSYS_SupportedOperations` (#876). Empty on firmware without the
+  /// leaf and on an agent that reports none; an action is offered only when
+  /// it is listed here.
+  final Set<NodeAction> actions;
+
   SlaveNode({
     required this.deviceId,
     this.dataElementsId,
@@ -348,6 +382,7 @@ final class SlaveNode extends NodeEntity {
     this.livenessKnown = true,
     this.hostInstancePath,
     this.userDeviceName,
+    this.actions = const {},
   });
 
   @override
@@ -401,6 +436,7 @@ final class SlaveNode extends NodeEntity {
     bool? livenessKnown,
     String? hostInstancePath,
     String? userDeviceName,
+    Set<NodeAction>? actions,
   }) {
     return SlaveNode(
       deviceId: deviceId ?? this.deviceId,
@@ -419,6 +455,7 @@ final class SlaveNode extends NodeEntity {
       livenessKnown: livenessKnown ?? this.livenessKnown,
       hostInstancePath: hostInstancePath ?? this.hostInstancePath,
       userDeviceName: userDeviceName ?? this.userDeviceName,
+      actions: actions ?? this.actions,
     );
   }
 
@@ -440,6 +477,7 @@ final class SlaveNode extends NodeEntity {
         livenessKnown,
         hostInstancePath,
         userDeviceName,
+        actions,
       ];
 
   @override
@@ -463,6 +501,7 @@ final class SlaveNode extends NodeEntity {
         'livenessKnown': livenessKnown,
         'hostInstancePath': hostInstancePath,
         'userDeviceName': userDeviceName,
+        'actions': actions,
       };
 }
 

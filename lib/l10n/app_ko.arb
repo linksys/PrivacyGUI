@@ -1246,5 +1246,20 @@
   "semanticRoleMascot": "마스코트",
   "semanticRolePinInput": "PIN 입력",
   "semanticRoleRadio": "라디오 버튼",
-  "semanticRoleSwitch": "스위치"
+  "semanticRoleSwitch": "스위치",
+  "nodeActions": "노드 작업",
+  "rebootMeshMessage": "라우터와 메시 네트워크의 모든 노드가 재부팅됩니다. 네트워크가 복구될 때까지 연결된 모든 장치의 연결이 끊어집니다.",
+  "factoryResetMeshMessage": "라우터와 메시 네트워크의 모든 노드가 공장 초기화되며, WiFi 및 라우터 암호도 라우터 라벨에 표시된 기본값으로 돌아갑니다. 이후 모든 노드를 다시 설정해야 합니다.",
+  "rebootNodeMessage": "{node}이(가) 재부팅됩니다. 복구될 때까지 이 노드를 통해 연결된 장치의 연결이 끊어집니다.",
+  "rebootNodesMessage": "다음 노드가 가장 먼 노드부터 재부팅됩니다: {nodes}. 복구될 때까지 이 노드들을 통해 연결된 장치의 연결이 끊어집니다.",
+  "factoryResetNodeMessage": "{node}이(가) 공장 초기화되어 네트워크에서 제거됩니다. 계속 사용하려면 다시 추가하세요.",
+  "factoryResetNodesMessage": "다음 노드가 가장 먼 노드부터 공장 초기화되어 네트워크에서 제거됩니다: {nodes}. 계속 사용하려면 다시 추가하세요.",
+  "nodeActionMayMissNodes": "일부 노드가 연결 방식을 보고하지 않았습니다. 이 노드를 통해 연결된 노드도 함께 오프라인이 될 수 있습니다.",
+  "nodeActionRebootSent": "재부팅 중입니다. 복구되기까지 몇 분 정도 걸릴 수 있습니다.",
+  "nodeActionResetSent": "공장 초기화 중입니다. 준비되면 노드를 다시 추가하세요.",
+  "nodeActionFailed": "{node}: {reason}",
+  "nodeActionFailedAfterSent": "{failure} 이미 전송됨: {sent}.",
+  "nodeActionSkippedNodes": "다음 노드는 이 명령을 지원하지 않아 명령이 전송되지 않지만, 연결 경로상의 노드가 오프라인인 동안에는 연결이 끊어집니다: {nodes}.",
+  "nodeActionNotConfirmed": "{node}이(가) 명령을 확인하지 않았습니다. 여전히 명령을 실행할 수 있으므로 다시 시도하기 전에 토폴로지를 확인하세요.",
+  "nodeActionNodeGone": "{node}이(가) 더 이상 네트워크에 없습니다."
 }

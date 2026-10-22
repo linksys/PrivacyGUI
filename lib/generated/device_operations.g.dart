@@ -6,12 +6,12 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 /// Device lifecycle operations (reboot, factory reset)
 class DeviceOperations {
-  /// Reboot the router
+  /// Reboot the router. On a mesh controller every child node goes first, farthest first, one hop level at a time, so the router goes down some time after the reply - about a second per level that confirms, 22 to 25 s per level that does not, with no fixed maximum (FWDEV#202)
   static Future<Map<String, dynamic>> reboot(UspClient client) async {
     return await client.operate('Device.Reboot()');
   }
 
-  /// Reset router to factory defaults
+  /// Reset the router to factory defaults. On a mesh controller every child node is reset first, farthest first, one hop level at a time, so the router resets some time after the reply - about a second per level that confirms, 22 to 25 s per level that does not, with no fixed maximum (FWDEV#202)
   static Future<Map<String, dynamic>> factoryReset(UspClient client) async {
     return await client.operate('Device.FactoryReset()');
   }

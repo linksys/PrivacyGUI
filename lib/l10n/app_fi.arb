@@ -1246,5 +1246,20 @@
   "semanticRoleMascot": "Maskotti",
   "semanticRolePinInput": "PIN-koodin syöttö",
   "semanticRoleRadio": "Valintanappi",
-  "semanticRoleSwitch": "Kytkin"
+  "semanticRoleSwitch": "Kytkin",
+  "nodeActions": "Solmun toiminnot",
+  "rebootMeshMessage": "Reititin ja kaikki mesh-verkkosi solmut käynnistyvät uudelleen. Kaikkien yhdistettyjen laitteiden yhteys katkeaa, kunnes verkko on taas käytettävissä.",
+  "factoryResetMeshMessage": "Reititin ja kaikki mesh-verkkosi solmut palautetaan tehdasasetuksiin, mukaan lukien reitittimen tarrassa näkyvä WiFi- ja reititinsalasana. Sen jälkeen jokainen solmu on määritettävä uudelleen.",
+  "rebootNodeMessage": "{node} käynnistyy uudelleen. Sen kautta yhdistettyjen laitteiden yhteys katkeaa, kunnes se on taas käytettävissä.",
+  "rebootNodesMessage": "Nämä solmut käynnistyvät uudelleen kauimmaisesta alkaen: {nodes}. Niiden kautta yhdistettyjen laitteiden yhteys katkeaa, kunnes ne ovat taas käytettävissä.",
+  "factoryResetNodeMessage": "{node} palautetaan tehdasasetuksiin, ja se poistuu verkostasi. Lisää se uudelleen, jotta voit käyttää sitä.",
+  "factoryResetNodesMessage": "Nämä solmut palautetaan tehdasasetuksiin, ja ne poistuvat verkostasi kauimmaisesta alkaen: {nodes}. Lisää ne uudelleen, jotta voit käyttää niitä.",
+  "nodeActionMayMissNodes": "Jotkin solmut eivät ilmoittaneet, miten ne ovat yhteydessä. Tämän solmun kautta yhdistetty solmu voi pudota verkosta sen mukana.",
+  "nodeActionRebootSent": "Käynnistetään uudelleen. Palautuminen voi kestää muutaman minuutin.",
+  "nodeActionResetSent": "Palautetaan tehdasasetuksiin. Lisää solmu uudelleen, kun se on valmis.",
+  "nodeActionFailed": "{node}: {reason}",
+  "nodeActionFailedAfterSent": "{failure} Lähetetty jo: {sent}.",
+  "nodeActionSkippedNodes": "Nämä solmut eivät voi vastaanottaa tätä komentoa, eikä sitä lähetetä niille, mutta niiden yhteys katkeaa siksi aikaa, kun solmut, joiden kautta ne on yhdistetty, eivät ole käytettävissä: {nodes}.",
+  "nodeActionNotConfirmed": "{node} ei vahvistanut komentoa. Se voi silti suorittaa sen, joten tarkista topologia ennen kuin yrität uudelleen.",
+  "nodeActionNodeGone": "{node} ei ole enää verkossasi."
 }

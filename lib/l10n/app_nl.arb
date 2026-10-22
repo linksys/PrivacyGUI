@@ -1246,5 +1246,20 @@
   "semanticRoleMascot": "Mascotte",
   "semanticRolePinInput": "PIN-invoer",
   "semanticRoleRadio": "Keuzerondje",
-  "semanticRoleSwitch": "Schakelaar"
+  "semanticRoleSwitch": "Schakelaar",
+  "nodeActions": "Node-acties",
+  "rebootMeshMessage": "De router en alle nodes in uw mesh-netwerk worden opnieuw opgestart. Alle verbonden apparaten worden losgekoppeld totdat het netwerk weer beschikbaar is.",
+  "factoryResetMeshMessage": "De router en alle nodes in uw mesh-netwerk worden gereset naar de fabrieksinstellingen, inclusief het WiFi- en routerwachtwoord op het label van de router. Daarna moet elke node opnieuw worden ingesteld.",
+  "rebootNodeMessage": "{node} wordt opnieuw opgestart. Apparaten die via deze node verbonden zijn, worden losgekoppeld totdat de node weer beschikbaar is.",
+  "rebootNodesMessage": "Deze nodes worden opnieuw opgestart, de verste eerst: {nodes}. Apparaten die via deze nodes verbonden zijn, worden losgekoppeld totdat ze weer beschikbaar zijn.",
+  "factoryResetNodeMessage": "{node} wordt gereset naar de fabrieksinstellingen en verlaat uw netwerk. Voeg de node opnieuw toe om deze te gebruiken.",
+  "factoryResetNodesMessage": "Deze nodes worden gereset naar de fabrieksinstellingen en verlaten uw netwerk, de verste eerst: {nodes}. Voeg ze opnieuw toe om ze te gebruiken.",
+  "nodeActionMayMissNodes": "Sommige nodes hebben niet gemeld hoe ze verbonden zijn. Een node die via deze node verbonden is, kan tegelijk uitvallen.",
+  "nodeActionRebootSent": "Bezig met opnieuw opstarten. Het kan enkele minuten duren voordat alles weer beschikbaar is.",
+  "nodeActionResetSent": "Bezig met resetten naar de fabrieksinstellingen. Voeg de node opnieuw toe zodra deze gereed is.",
+  "nodeActionFailed": "{node}: {reason}",
+  "nodeActionFailedAfterSent": "{failure} Al verzonden naar: {sent}.",
+  "nodeActionSkippedNodes": "Deze nodes kunnen deze opdracht niet uitvoeren en ontvangen deze niet, maar ze verliezen hun verbinding zolang de nodes waarlangs ze verbonden zijn, uitgevallen zijn: {nodes}.",
+  "nodeActionNotConfirmed": "{node} heeft de opdracht niet bevestigd. De node kan deze nog steeds uitvoeren, dus controleer de topologie voordat u het opnieuw probeert.",
+  "nodeActionNodeGone": "{node} bevindt zich niet meer in uw netwerk."
 }

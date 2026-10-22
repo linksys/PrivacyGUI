@@ -1246,5 +1246,20 @@
   "semanticRoleMascot": "Maskot",
   "semanticRolePinInput": "Input PIN",
   "semanticRoleRadio": "Tombol radio",
-  "semanticRoleSwitch": "Sakelar"
+  "semanticRoleSwitch": "Sakelar",
+  "nodeActions": "Tindakan Node",
+  "rebootMeshMessage": "Router dan semua node di jaringan mesh Anda akan dimulai ulang. Semua perangkat yang tersambung akan terputus hingga jaringan kembali.",
+  "factoryResetMeshMessage": "Router dan semua node di jaringan mesh Anda akan dikembalikan ke pengaturan pabrik, termasuk kata sandi WiFi dan router yang tercetak pada label router. Setelah itu, setiap node harus disiapkan ulang.",
+  "rebootNodeMessage": "{node} akan dimulai ulang. Perangkat yang tersambung melaluinya akan terputus hingga node tersebut kembali.",
+  "rebootNodesMessage": "Node berikut akan dimulai ulang, mulai dari yang terjauh: {nodes}. Perangkat yang tersambung melalui node tersebut akan terputus hingga semuanya kembali.",
+  "factoryResetNodeMessage": "{node} akan dikembalikan ke pengaturan pabrik dan keluar dari jaringan Anda. Tambahkan lagi untuk menggunakannya.",
+  "factoryResetNodesMessage": "Node berikut akan dikembalikan ke pengaturan pabrik dan keluar dari jaringan Anda, mulai dari yang terjauh: {nodes}. Tambahkan lagi untuk menggunakannya.",
+  "nodeActionMayMissNodes": "Beberapa node tidak melaporkan cara tersambungnya. Node yang tersambung melalui node ini mungkin ikut terputus.",
+  "nodeActionRebootSent": "Sedang memulai ulang. Mungkin perlu beberapa menit untuk kembali.",
+  "nodeActionResetSent": "Sedang mengembalikan ke pengaturan pabrik. Tambahkan node lagi setelah siap.",
+  "nodeActionFailed": "{node}: {reason}",
+  "nodeActionFailedAfterSent": "{failure} Sudah dikirim ke: {sent}.",
+  "nodeActionSkippedNodes": "Node berikut tidak mendukung perintah ini sehingga tidak akan dikirimi perintah tersebut, tetapi akan terputus selama node yang menjadi jalur sambungannya tidak aktif: {nodes}.",
+  "nodeActionNotConfirmed": "{node} tidak mengonfirmasi perintah. Node tersebut mungkin masih menjalankannya, jadi periksa topologi sebelum mencoba lagi.",
+  "nodeActionNodeGone": "{node} tidak lagi berada di jaringan Anda."
 }

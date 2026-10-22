@@ -1246,5 +1246,20 @@
   "semanticRoleMascot": "Maskot",
   "semanticRolePinInput": "PIN-inntasting",
   "semanticRoleRadio": "Alternativknapp",
-  "semanticRoleSwitch": "Bryter"
+  "semanticRoleSwitch": "Bryter",
+  "nodeActions": "Nodehandlinger",
+  "rebootMeshMessage": "Ruteren og alle nodene i mesh-nettverket ditt starter på nytt. Alle tilkoblede enheter kobles fra til nettverket er tilbake.",
+  "factoryResetMeshMessage": "Ruteren og alle nodene i mesh-nettverket ditt tilbakestilles til fabrikkinnstillinger, inkludert WiFi- og ruterpassordet som står på ruterens etikett. Deretter må alle nodene settes opp på nytt.",
+  "rebootNodeMessage": "{node} starter på nytt. Enheter som er koblet til via den, kobles fra til den er tilbake.",
+  "rebootNodesMessage": "Disse nodene starter på nytt, den fjerneste først: {nodes}. Enheter som er koblet til via dem, kobles fra til de er tilbake.",
+  "factoryResetNodeMessage": "{node} tilbakestilles til fabrikkinnstillinger og forlater nettverket ditt. Legg den til på nytt for å bruke den.",
+  "factoryResetNodesMessage": "Disse nodene tilbakestilles til fabrikkinnstillinger og forlater nettverket ditt, den fjerneste først: {nodes}. Legg dem til på nytt for å bruke dem.",
+  "nodeActionMayMissNodes": "Noen noder rapporterte ikke hvordan de er koblet til. En node som er koblet til via denne, kan gå ned sammen med den.",
+  "nodeActionRebootSent": "Starter på nytt. Det kan ta noen minutter før tilkoblingen er tilbake.",
+  "nodeActionResetSent": "Tilbakestiller til fabrikkinnstillinger. Legg til noden på nytt når den er klar.",
+  "nodeActionFailed": "{node}: {reason}",
+  "nodeActionFailedAfterSent": "{failure} Allerede sendt til: {sent}.",
+  "nodeActionSkippedNodes": "Disse nodene kan ikke motta denne kommandoen, og den sendes ikke til dem, men de mister tilkoblingen mens nodene de er koblet til via, er nede: {nodes}.",
+  "nodeActionNotConfirmed": "{node} bekreftet ikke kommandoen. Den kan fortsatt utføre den, så sjekk topologien før du prøver igjen.",
+  "nodeActionNodeGone": "{node} er ikke lenger i nettverket ditt."
 }
