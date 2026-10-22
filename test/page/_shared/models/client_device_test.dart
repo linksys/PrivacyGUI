@@ -608,6 +608,14 @@ void main() {
       expect(DevicesTestData.createWifiClient().hostInstancePaths, isEmpty);
     });
 
+    // The grouping key (FWDEV#224): kept by copyWith, seen by equality.
+    test('detectedName survives copyWith and takes part in equality', () {
+      final named =
+          DevicesTestData.createWifiClient().copyWith(detectedName: 'Desk PC');
+      expect(named.copyWith().detectedName, 'Desk PC');
+      expect(named, isNot(equals(named.copyWith(detectedName: 'Laptop'))));
+    });
+
     test('an interface\'s row takes part in its equality', () {
       const iface = ClientInterfaceInfo(
         mac: '11:22:33:44:55:FE',

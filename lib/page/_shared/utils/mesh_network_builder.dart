@@ -96,7 +96,7 @@ class MeshNetworkBuilder {
         .toList();
 
     // 4. Merge each multi-interface device's rows into one client
-    final groupedClients = _groupByFriendlyName(allBuiltClients);
+    final groupedClients = _groupByDetectedName(allBuiltClients);
 
     // 5. Group clients by parentNodeId
     final clientsByNodeId = <String?, List<ClientDevice>>{};
@@ -367,6 +367,7 @@ class MeshNetworkBuilder {
       ip: device.ipAddress,
       hostName: device.hostName,
       friendlyName: nonEmpty(device.linksysFriendlyName),
+      detectedName: nonEmpty(device.linksysDetectedName),
       isActive: device.isActive,
       ipv6Addresses: device.ipv6Addresses
           .map((e) => e.address)
@@ -415,21 +416,24 @@ class MeshNetworkBuilder {
     return normalized;
   }
 
-  /// Merges the Hosts rows of one device, keyed by the name devidentd gives
-  /// them (#1719).
+  /// Merges the Hosts rows of one device, keyed by the name devidentd
+  /// detected for them (#1719).
   ///
   /// FL-WRT 2.0 serves one row per MAC and no leaf links a device's rows, so
-  /// the name is the only key. `HostName` is not it: a Mac on a randomized
-  /// MAC sends only "Mac" in DHCP, while devidentd names both of its rows
-  /// from mDNS. Rows are regrouped on every build, so a name devidentd
+  /// a name is the only key. `HostName` is not it: a Mac on a randomized MAC
+  /// sends only "Mac" in DHCP, while devidentd names both of its rows from
+  /// mDNS. `X_LINKSYS_FriendlyName` is not it either: it puts the user's
+  /// name first, which is kept per MAC. `X_LINKSYS_DetectedName` never holds
+  /// the user's name (FWDEV#224); until it is known, the row groups by
+  /// `HostName`. Rows are regrouped on every build, so a name devidentd
   /// improves later regroups them; nothing stores the key.
-  static List<ClientDevice> _groupByFriendlyName(List<ClientDevice> clients) {
+  static List<ClientDevice> _groupByDetectedName(List<ClientDevice> clients) {
     final grouped = <String, List<ClientDevice>>{};
     final ungrouped = <ClientDevice>[];
 
     for (final client in clients) {
       final name =
-          _normalizeGroupingName(client.friendlyName ?? client.hostName);
+          _normalizeGroupingName(client.detectedName ?? client.hostName);
       if (name.isEmpty) {
         ungrouped.add(client);
       } else {

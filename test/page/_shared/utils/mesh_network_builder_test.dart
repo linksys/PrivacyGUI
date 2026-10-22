@@ -38,6 +38,7 @@ void main() {
     String? linksysOperatingSystem,
     String? linksysDeviceType,
     String? linksysFriendlyName,
+    String? linksysDetectedName,
     String? linksysUserDeviceType,
     String? linksysUserDeviceLocation,
   }) {
@@ -64,6 +65,7 @@ void main() {
       linksysOperatingSystem: linksysOperatingSystem,
       linksysDeviceType: linksysDeviceType,
       linksysFriendlyName: linksysFriendlyName,
+      linksysDetectedName: linksysDetectedName,
       linksysUserDeviceType: linksysUserDeviceType,
       linksysUserDeviceLocation: linksysUserDeviceLocation,
     );
@@ -728,11 +730,13 @@ void main() {
       expect(result.allClients.first.additionalInterfaces.length, 1);
     });
 
-    // FL-WRT 2.0 serves one Hosts row per MAC and nothing links them, so the
-    // device's rows are merged by the name devidentd gives them (#1719).
-    // Measured on M60 2.0.3.26101641: one Mac, the Wi-Fi interface on a
-    // randomized MAC that sends only "Mac" in DHCP.
-    test('merges rows that share X_LINKSYS_FriendlyName but not HostName', () {
+    // FL-WRT 2.0 serves one Hosts row per MAC and nothing links them, so a
+    // device's rows are merged by X_LINKSYS_DetectedName, the name devidentd
+    // detected, which no user edit changes (#1719, FWDEV#224). Measured on M60
+    // 2.0.3.26101641: one Mac, the Wi-Fi interface on a randomized MAC that
+    // sends only "Mac" in DHCP, and the cable's row renamed by the user, so
+    // HostName and FriendlyName both differ between the rows.
+    test('merges rows that share X_LINKSYS_DetectedName', () {
       final result = MeshNetworkBuilder.build(
         connectedDevices: ConnectedDevices(items: [
           buildConnectedDevice(
@@ -740,7 +744,9 @@ void main() {
             instancePath: 'Device.Hosts.Host.1.',
             hostName: 'TW-AUSTINC-MAC',
             interfaceType: 'Ethernet',
-            linksysFriendlyName: 'TW-AUSTINC-MAC',
+            linksysFriendlyName: '筆電有線',
+            linksysUserDeviceLocation: '筆電有線',
+            linksysDetectedName: 'TW-AUSTINC-MAC',
           ),
           buildConnectedDevice(
             macAddress: 'aa:c8:bf:74:39:f6',
@@ -749,6 +755,7 @@ void main() {
             interface_: 'Device.WiFi.Radio.1',
             interfaceType: 'Wi-Fi',
             linksysFriendlyName: 'TW-AUSTINC-MAC',
+            linksysDetectedName: 'TW-AUSTINC-MAC',
           ),
         ]),
         wifiClientMap: {},
@@ -758,11 +765,12 @@ void main() {
       );
 
       final mac = result.allClients.single;
-      expect(mac.displayName, 'TW-AUSTINC-MAC');
+      expect(mac.displayName, '筆電有線',
+          reason: 'the name the user gave, from whichever row holds it');
       expect(mac.allMacAddresses,
           unorderedEquals(['80:69:1A:13:43:FC', 'AA:C8:BF:74:39:F6']));
       // devidentd keeps the user's name per MAC, so a rename written to one
-      // row would change only that row's FriendlyName and split the device.
+      // row would leave the other row showing the old name.
       expect(
         mac.hostInstancePaths,
         unorderedEquals(['Device.Hosts.Host.1.', 'Device.Hosts.Host.2.']),
@@ -770,14 +778,14 @@ void main() {
       );
     });
 
-    // Same rows, same interface, same FriendlyName: only the DHCP HostName
+    // Same rows, same interface, same detected name: only the DHCP HostName
     // differs, so nothing but the grouping key can keep them apart.
     test('rows that differ only in HostName merge', () {
       ConnectedDevice row(String mac, String hostName) => buildConnectedDevice(
             macAddress: mac,
             hostName: hostName,
             interfaceType: 'Ethernet',
-            linksysFriendlyName: 'Desk PC',
+            linksysDetectedName: 'Desk PC',
           );
       final result = MeshNetworkBuilder.build(
         connectedDevices: ConnectedDevices(items: [
@@ -793,24 +801,25 @@ void main() {
       expect(result.allClients.single.interfaceCount, 2);
     });
 
-    // devidentd can learn a better name later. The builder keeps no key
-    // between builds, so a row whose FriendlyName changed regroups with what
-    // it now reads.
-    test('a row regroups when its FriendlyName changes between builds', () {
+    // devidentd can learn a better name later (FWDEV#224: a host's newer
+    // mDNS name replaces its old one). The builder keeps no key between
+    // builds, so a row whose detected name changed regroups with what it now
+    // reads.
+    test('a row regroups when its detected name changes between builds', () {
       MeshNetwork buildWith(String wifiName) => MeshNetworkBuilder.build(
             connectedDevices: ConnectedDevices(items: [
               buildConnectedDevice(
                 macAddress: '11:22:33:44:55:01',
                 hostName: 'Laptop',
                 interfaceType: 'Ethernet',
-                linksysFriendlyName: 'Work laptop',
+                linksysDetectedName: 'Work laptop',
               ),
               buildConnectedDevice(
                 macAddress: '11:22:33:44:55:02',
                 hostName: 'Mac',
                 interface_: 'Device.WiFi.Radio.1',
                 interfaceType: 'Wi-Fi',
-                linksysFriendlyName: wifiName,
+                linksysDetectedName: wifiName,
               ),
             ]),
             wifiClientMap: {},
@@ -823,23 +832,23 @@ void main() {
       expect(buildWith('Work laptop').allClients, hasLength(1));
     });
 
-    // devidentd reads "" until it identifies a host, and the builder turns
-    // that into a null friendlyName; such rows still merge on HostName.
-    test('rows devidentd has not named yet merge by HostName', () {
+    // The leaf reads "" until devidentd identifies a host (under 5 s on the
+    // bench), and is absent on firmware before feed_premium#61; either way
+    // the row merges on HostName, as before.
+    test('rows with no detected name merge by HostName', () {
       final result = MeshNetworkBuilder.build(
         connectedDevices: ConnectedDevices(items: [
           buildConnectedDevice(
             macAddress: '11:22:33:44:55:01',
             hostName: 'Laptop',
             interfaceType: 'Ethernet',
-            linksysFriendlyName: '',
+            linksysDetectedName: '',
           ),
           buildConnectedDevice(
             macAddress: '11:22:33:44:55:02',
             hostName: 'Laptop',
             interface_: 'Device.WiFi.Radio.1',
             interfaceType: 'Wi-Fi',
-            linksysFriendlyName: '',
           ),
         ]),
         wifiClientMap: {},
@@ -851,23 +860,28 @@ void main() {
       expect(result.allClients.single.interfaceCount, 2);
     });
 
-    // Two devices on one DHCP host name are told apart by the names
-    // devidentd gives them.
-    test('rows with different X_LINKSYS_FriendlyName stay apart', () {
+    // Two devices that share a DHCP host name, and that the user gave one
+    // name, are still told apart by the names devidentd detected for them:
+    // the key is the detected name alone.
+    test('rows with different X_LINKSYS_DetectedName stay apart', () {
       final result = MeshNetworkBuilder.build(
         connectedDevices: ConnectedDevices(items: [
           buildConnectedDevice(
             macAddress: '11:22:33:44:55:01',
             hostName: 'android',
             interfaceType: 'Ethernet',
-            linksysFriendlyName: 'Living room TV',
+            linksysFriendlyName: 'TV',
+            linksysUserDeviceLocation: 'TV',
+            linksysDetectedName: 'Living room TV',
           ),
           buildConnectedDevice(
             macAddress: '11:22:33:44:55:02',
             hostName: 'android',
             interface_: 'Device.WiFi.Radio.1',
             interfaceType: 'Wi-Fi',
-            linksysFriendlyName: 'Bedroom TV',
+            linksysFriendlyName: 'TV',
+            linksysUserDeviceLocation: 'TV',
+            linksysDetectedName: 'Bedroom TV',
           ),
         ]),
         wifiClientMap: {},
@@ -876,8 +890,7 @@ void main() {
         gatewayName: 'Router',
       );
 
-      expect(result.allClients.map((c) => c.displayName),
-          unorderedEquals(['Living room TV', 'Bedroom TV']));
+      expect(result.allClients, hasLength(2));
     });
 
     // A laptop with Wi-Fi and a cable is two Hosts rows merged into one device.
