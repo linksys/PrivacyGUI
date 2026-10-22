@@ -13,6 +13,7 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
@@ -120,7 +121,15 @@ class WifiListNotifier extends Notifier<WiFiState> {
             wifiItems.firstWhereOrNull((e) => e.isEnabled) ?? wifiItems.first);
   }
 
-  Future<WiFiState> save() async {
+  /// Writes the page's settings, then reads them back.
+  ///
+  /// Polling is held for the whole of it: the change takes a wireless operator
+  /// off the network, and this save is what reports that - see
+  /// [PollingNotifier.holdWhile] and [refreshAfterWrite].
+  Future<WiFiState> save() =>
+      ref.read(pollingProvider.notifier).holdWhile(_writeAndReadBack);
+
+  Future<WiFiState> _writeAndReadBack() async {
     final isSupportGuestWiFi = serviceHelper.isSupportGuestNetwork();
 
     final routerRepository = ref.read(routerRepositoryProvider);
@@ -185,8 +194,10 @@ class WifiListNotifier extends Notifier<WiFiState> {
           fetchRemote: true,
           cacheLevel: CacheLevel.noCache,
         )
-        .then((_) => ref.read(pollingProvider.notifier).forcePolling())
-        .then((_) => fetch(true));
+        .then((_) => refreshAfterWrite(() => ref
+            .read(pollingProvider.notifier)
+            .forcePolling()
+            .then((_) => fetch(true))));
   }
 
   Future<void> saveToggleEnabled(

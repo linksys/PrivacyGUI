@@ -1029,6 +1029,131 @@ void main() {
     });
   });
 
+  group('holding polling through a flow that takes the router away', () {
+    // #1683; see [PollingNotifier.holdWhile]. A flow that takes the router away
+    // on purpose says so itself, so a poll running beside it must not.
+
+    testWidgets('a router that goes silent mid-flow is not reported',
+        (tester) async {
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((n) async {
+        if (n == 1) return transactionSuccess();
+        throw TimeoutException('no answer');
+      });
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      expect(transactions, hasLength(1), reason: 'polling is up and answered');
+
+      final flow = Completer<void>();
+      final held = notifier.holdWhile(() => flow.future);
+      await advanceOneTick(tester);
+      await advanceToUnreachable(tester);
+
+      expect(container.read(routerUnreachableProvider), 0);
+
+      flow.complete();
+      await held;
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('polling comes back once the flow is over', (tester) async {
+      // A hold that outlived its flow would leave the dashboard on a snapshot
+      // nothing is feeding - the very state #1419 set out to end.
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) => transactionSuccess());
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+
+      final flow = Completer<void>();
+      final held = notifier.holdWhile(() => flow.future);
+      await advanceOneTick(tester);
+      expect(transactions, hasLength(1), reason: 'nothing polls during it');
+
+      flow.complete();
+      await held;
+      await advanceToFirstPoll(tester);
+
+      expect(transactions, hasLength(2));
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('a flow that fails still gives polling back', (tester) async {
+      // The save that gives up is the case that matters: it raises its own
+      // alert, and Try again on that alert expects polling to be there to start.
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) => transactionSuccess());
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+
+      final flow = Completer<void>();
+      final held = notifier.holdWhile(() => flow.future);
+      flow.completeError(Exception('router gone'));
+      await expectLater(held, throwsException,
+          reason: 'the flow speaks for itself, failure and all');
+      await advanceToFirstPoll(tester);
+
+      expect(transactions, hasLength(2));
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('a hold inside another lasts as long as the outer one',
+        (tester) async {
+      // The Wi-Fi Advanced page holds polling around its own save and the
+      // Wi-Fi list read after it, and the save holds it again inside. The inner
+      // hold ending must not give polling back while the outer flow is still
+      // waiting on the router.
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) => transactionSuccess());
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+
+      final inner = Completer<void>();
+      final outer = Completer<void>();
+      final held = notifier.holdWhile(() async {
+        await notifier.holdWhile(() => inner.future);
+        await outer.future;
+      });
+      inner.complete();
+      await advanceToFirstPoll(tester);
+      await advanceOneTick(tester);
+
+      expect(notifier.paused, isTrue);
+      expect(transactions, hasLength(1));
+
+      outer.complete();
+      await held;
+      await advanceToFirstPoll(tester);
+      expect(transactions, hasLength(2));
+
+      await stopAndSettle(tester);
+    });
+
+    testWidgets('polling paused by something else stays paused',
+        (tester) async {
+      // PnP and a remote assistance session pause polling for reasons of their
+      // own, and a save that runs inside one has no business ending that.
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) => transactionSuccess());
+      notifier.paused = true;
+
+      final flow = Completer<void>();
+      final held = notifier.holdWhile(() => flow.future);
+      flow.complete();
+      await held;
+      await advanceToFirstPoll(tester);
+      await advanceOneTick(tester);
+
+      expect(notifier.paused, isTrue);
+      expect(transactions, isEmpty);
+
+      notifier.paused = false;
+      await advanceToFirstPoll(tester);
+      await stopAndSettle(tester);
+    });
+  });
+
   group('refreshClientSignals', () {
     // LinksysWRT#574. The master caches what each node publishes about its
     // clients, a node publishes only when a client connects or disconnects, and
