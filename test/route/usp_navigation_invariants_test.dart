@@ -334,6 +334,7 @@ const _fallbackRoutes = <String>[
   RouteNamed.uspDeviceList,
   // Nested — the URL parent is always rebuilt, so the fallback is unreachable.
   RouteNamed.uspNodeDetail,
+  RouteNamed.addNodes,
   RouteNamed.uspLocalNetwork,
   RouteNamed.uspFirewall,
   RouteNamed.uspPortForwardingDetail,
@@ -423,6 +424,7 @@ void main() {
         RouteNamed.uspDeviceDetail: '/uspDeviceList/uspDeviceDetail',
         RouteNamed.uspTopology: '/uspTopology',
         RouteNamed.uspNodeDetail: '/uspTopology/uspNodeDetail',
+        RouteNamed.addNodes: '/uspTopology/addNodes',
         RouteNamed.uspInstantSafety: '/uspInstantSafety',
         RouteNamed.uspInstantPrivacy: '/uspInstantPrivacy',
         RouteNamed.uspAdmin: '/uspAdmin',
@@ -524,6 +526,7 @@ void main() {
           dead,
           {
             RouteNamed.uspNodeDetail: RouteNamed.uspTopology,
+            RouteNamed.addNodes: RouteNamed.uspTopology,
             RouteNamed.uspLocalNetwork: RouteNamed.uspAdvancedSettings,
             RouteNamed.uspFirewall: RouteNamed.uspAdvancedSettings,
             RouteNamed.uspPortForwardingDetail: RouteNamed.uspAdvancedSettings,

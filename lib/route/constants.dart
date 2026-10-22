@@ -111,7 +111,7 @@ class RoutePath {
   static const nodeLight = 'nodeLight';
   static const changeNodeName = 'changeNodeName';
   static const nodeLightSettings = 'nodeLightSettings';
-  static const addNodes = '/addNodes';
+  static const addNodes = 'addNodes';
   static const firmwareUpdateDetail = 'firmwareUpdateDetail';
   static const manualFirmwareUpdate = 'manualFirmwareUpdate';
 

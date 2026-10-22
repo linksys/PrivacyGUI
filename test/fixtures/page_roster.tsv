@@ -474,13 +474,14 @@
 # reader test/layout_gate/page_roster.dart
 # oracle test/layout_gate/page_roster_test.dart
 # doc doc/testing/overflow_gate_architecture.md section 11.5; the onboarding queue is section 11.6
-# pages 49
-# swept 47
+# pages 50
+# swept 48
 # queued 0
-# measured 47
+# measured 48
 # needs_fixture 0
 # excluded 2
 # columns path	disposition	ms_per_cell
+lib/page/add_nodes/views/add_nodes_view.dart	swept	11.9
 lib/page/admin/views/usp_admin_view.dart	swept	21.9
 lib/page/administration/views/usp_administration_view.dart	swept	16.7
 lib/page/advanced_settings/views/usp_advanced_settings_view.dart	swept	13.6

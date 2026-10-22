@@ -566,8 +566,9 @@ void main() {
       //
       // The 46th is #1660's `usp_administration_view.dart` — Advanced Settings →
       // Administration, the UPnP switch — and it arrives the same way again.
+      // The 47th is #879's `add_nodes_view.dart`, the same way once more.
       expect(
-          roster.withDisposition(PageRosterDisposition.swept), hasLength(47));
+          roster.withDisposition(PageRosterDisposition.swept), hasLength(48));
       expect(
         roster.withDisposition(PageRosterDisposition.queued).map((r) => r.path),
         isEmpty,
@@ -700,6 +701,7 @@ void main() {
       // `known_overflows.json` is still `{"tracking": {}, "allowlist": {}}`.
       expect(roster.sweptPaths, {
         'lib/page/instant_setup/views/pnp_ipoe_view.dart',
+        'lib/page/add_nodes/views/add_nodes_view.dart',
         'lib/page/admin/views/usp_admin_view.dart',
         'lib/page/administration/views/usp_administration_view.dart',
         'lib/page/advanced_settings/views/usp_advanced_settings_view.dart',
