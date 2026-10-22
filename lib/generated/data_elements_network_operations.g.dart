@@ -4,7 +4,7 @@
 
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
-/// Standard TR-181 and Linksys commands on a DataElements mesh node
+/// Commands on a DataElements mesh node - standard WPS push-button, and Linksys reboot and factory reset of one node
 class DataElementsNetworkOperations {
   /// Standard TR-181 WPS push-button on one mesh node, no BLE step. Pass the instance whose ID equals Network.ControllerID; Status is "Success", or "Error_Other" if the arm failed. Any other instance returns "Error_Invalid_Input". The joined node then appears as a new DataElements Device.{i}.
   static Future<Map<String, dynamic>> initiateWpsPbc(
@@ -13,15 +13,15 @@ class DataElementsNetworkOperations {
         'Device.WiFi.DataElements.Network.Device.$instance.InitiateWPSPBC()');
   }
 
-  /// Reboot one mesh agent (FWDEV#202). Only when the row's X_LINKSYS_SupportedOperations lists "Reboot"; look {i} up by .ID first. Returns within 25 s once the agent confirms, and the agent then leaves Device.{i} while it restarts. 7002 on the controller's row (use Device.Reboot()), 7022 if the agent did not confirm or cannot run it, 7016 if the row is gone. Send one call per node behind it, farthest first.
-  static Future<Map<String, dynamic>> nodeReboot(
+  /// Reboot one mesh node (FWDEV#202). Offer it only where that row's supportedOperations lists "Reboot", and look the instance up by ID right before the call, since instance numbers change. The reply comes within 25 s, once the agent has accepted the command, and other USP requests wait behind it; success means accepted, not that the node is back, and the node leaves DataElements while it restarts. A failed call carries only an error code: 7002 on the controller's own row (call Device.Reboot() instead); 7003 when linksys-mesh-sync could not be called; 7016 when the row is gone, as when the node has just left DataElements; 7022 when the agent is unreachable, does not run the command, or did not confirm within 25 s, which the caller cannot tell apart. A 7022 does not mean the agent is unchanged: linksys-mesh-sync sends the command once more within 20 s, and a command that reached the agent still runs when its confirm is lost. For a node with nodes behind it, send one call per node, farthest first; the firmware does that only for the controller's Device.Reboot().
+  static Future<Map<String, dynamic>> rebootNode(
       UspClient client, int instance) async {
     return await client.operate(
         'Device.WiFi.DataElements.Network.Device.$instance.X_LINKSYS_Reboot()');
   }
 
-  /// Factory-reset one mesh agent (FWDEV#202); it returns as a new node to be onboarded again. Only when the row's X_LINKSYS_SupportedOperations lists "FactoryReset"; look {i} up by .ID first. Returns within 25 s once the agent confirms. 7002 on the controller's row (use Device.FactoryReset()), 7022 if the agent did not confirm or cannot run it, 7016 if the row is gone. Send one call per node behind it, farthest first.
-  static Future<Map<String, dynamic>> nodeFactoryReset(
+  /// Factory-reset one mesh node (FWDEV#202). Offer it only where that row's supportedOperations lists "FactoryReset", and look the instance up by ID right before the call, since instance numbers change. The reply comes within 25 s, once the agent has accepted the command, and other USP requests wait behind it; success means accepted, and the node then leaves DataElements until it is onboarded again. A failed call carries only an error code: 7002 on the controller's own row (call Device.FactoryReset() instead); 7003 when linksys-mesh-sync could not be called; 7016 when the row is gone, as when the node has just left DataElements; 7022 when the agent is unreachable, does not run the command, or did not confirm within 25 s, which the caller cannot tell apart. A 7022 does not mean the agent is unchanged: linksys-mesh-sync sends the command once more within 20 s, and a command that reached the agent still runs when its confirm is lost, so do not retry at once. For a node with nodes behind it, send one call per node, farthest first. The firmware does not check where the call came from; PrivacyGUI#876 allows both actions in Remote Assistance.
+  static Future<Map<String, dynamic>> factoryResetNode(
       UspClient client, int instance) async {
     return await client.operate(
         'Device.WiFi.DataElements.Network.Device.$instance.X_LINKSYS_FactoryReset()');

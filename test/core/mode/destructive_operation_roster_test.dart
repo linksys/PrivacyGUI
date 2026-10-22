@@ -235,8 +235,8 @@ const _commandCallSites = <String, List<String>>{
     'DeviceOperations.reboot',
   ],
   'lib/page/topology/services/usp_node_action_service.dart': [
-    'DataElementsNetworkOperations.nodeFactoryReset',
-    'DataElementsNetworkOperations.nodeReboot',
+    'DataElementsNetworkOperations.factoryResetNode',
+    'DataElementsNetworkOperations.rebootNode',
   ],
   'lib/page/firmware_update/services/firmware_http_upload_strategy.dart': [
     'FirmwareOperations.chunkedPush',

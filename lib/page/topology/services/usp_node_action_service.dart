@@ -38,9 +38,9 @@ class UspNodeActionService {
       }
       switch (action) {
         case NodeAction.reboot:
-          await DataElementsNetworkOperations.nodeReboot(_usp, instance);
+          await DataElementsNetworkOperations.rebootNode(_usp, instance);
         case NodeAction.factoryReset:
-          await DataElementsNetworkOperations.nodeFactoryReset(_usp, instance);
+          await DataElementsNetworkOperations.factoryResetNode(_usp, instance);
       }
     } on ServiceError {
       rethrow;
