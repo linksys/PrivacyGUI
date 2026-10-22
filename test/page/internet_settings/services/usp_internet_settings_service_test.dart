@@ -9,6 +9,8 @@ import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 import 'package:privacy_gui/page/internet_settings/services/usp_internet_settings_service.dart';
 
+import '../../../mocks/test_data/internet_settings_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 // Test data — WAN singleton (new vendor paths)
@@ -1664,30 +1666,85 @@ void main() {
   });
 
   group('renewDhcpLease', () {
-    test('calls WanOperations.renewDhcpLease', () async {
+    // The WAN is on Interface.5; DHCPv{4,6}.Client.3 runs on the LAN and
+    // Client.6 on the WAN, so a renew of a guessed Client.1 cannot pass.
+    void stubRenew({bool hasWanClient = true}) {
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async =>
+          InternetSettingsTestData.renewAnswer(
+              invocation.positionalArguments[0] as List<String>,
+              hasWanClient: hasWanClient));
       // WASM v0.11.0 format for OPERATE success
       when(() => mockUsp.operate(any())).thenAnswer((_) async => {
             'success': true,
             'result': {'data': <String, dynamic>{}},
           });
+    }
+
+    test('renews the DHCPv4 client bound to the WAN interface', () async {
+      stubRenew();
 
       await service.renewDhcpLease();
 
-      verify(() => mockUsp.operate('Device.DHCPv4.Client.1.Renew()')).called(1);
+      verify(() => mockUsp.operate('Device.DHCPv4.Client.6.Renew()')).called(1);
+    });
+
+    test('a client on Interface.50 is not the WAN on Interface.5', () async {
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        if (paths.any((p) => p.startsWith('Device.DHCPv4.Client.'))) {
+          return {
+            'Device.DHCPv4.Client.6.Enable': true,
+            'Device.DHCPv4.Client.6.Interface': 'Device.IP.Interface.50',
+            'Device.DHCPv4.Client.6.Status': 'Enabled',
+          };
+        }
+        return InternetSettingsTestData.renewAnswer(paths);
+      });
+      when(() => mockUsp.operate(any())).thenAnswer((_) async => {
+            'success': true,
+            'result': {'data': <String, dynamic>{}},
+          });
+
+      await expectLater(
+          service.renewDhcpLease(), throwsA(isA<ResourceNotFoundError>()));
+      verifyNever(() => mockUsp.operate(any()));
+    });
+
+    test('a WAN with no DHCPv4 client renews nothing and says so', () async {
+      stubRenew(hasWanClient: false);
+
+      await expectLater(
+          service.renewDhcpLease(), throwsA(isA<ResourceNotFoundError>()));
+      verifyNever(() => mockUsp.operate(any()));
     });
   });
 
   group('renewDhcpv6Lease', () {
-    test('calls WanOperations.renewDhcpv6Lease', () async {
-      // WASM v0.11.0 format for OPERATE success
+    void stubRenew({bool hasWanClient = true}) {
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async =>
+          InternetSettingsTestData.renewAnswer(
+              invocation.positionalArguments[0] as List<String>,
+              hasWanClient: hasWanClient));
       when(() => mockUsp.operate(any())).thenAnswer((_) async => {
             'success': true,
             'result': {'data': <String, dynamic>{}},
           });
+    }
+
+    test('renews the DHCPv6 client bound to the WAN interface', () async {
+      stubRenew();
 
       await service.renewDhcpv6Lease();
 
-      verify(() => mockUsp.operate('Device.DHCPv6.Client.1.Renew()')).called(1);
+      verify(() => mockUsp.operate('Device.DHCPv6.Client.6.Renew()')).called(1);
+    });
+
+    test('a WAN with no DHCPv6 client renews nothing and says so', () async {
+      stubRenew(hasWanClient: false);
+
+      await expectLater(
+          service.renewDhcpv6Lease(), throwsA(isA<ResourceNotFoundError>()));
+      verifyNever(() => mockUsp.operate(any()));
     });
   });
 
@@ -1723,6 +1780,9 @@ void main() {
     });
 
     test('renewDhcpLease maps USP error to ServiceError', () async {
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async =>
+          InternetSettingsTestData.renewAnswer(
+              invocation.positionalArguments[0] as List<String>));
       when(() => mockUsp.operate(any()))
           .thenThrow('Operate failed: Transport error: Connection refused');
 
@@ -1733,6 +1793,9 @@ void main() {
     });
 
     test('renewDhcpv6Lease maps USP error to ServiceError', () async {
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async =>
+          InternetSettingsTestData.renewAnswer(
+              invocation.positionalArguments[0] as List<String>));
       when(() => mockUsp.operate(any()))
           .thenThrow('Operate failed: Transport error: Connection refused');
 

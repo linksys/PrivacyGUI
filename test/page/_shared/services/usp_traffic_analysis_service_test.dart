@@ -39,37 +39,38 @@ void main() {
   }) {
     when(() => mockUsp.get(any(), priority: any(named: 'priority')))
         .thenAnswer((_) async => {
-              // WAN = Interface.2
-              'Device.IP.Interface.2.Stats.BytesSent': wanBytesSent.toString(),
-              'Device.IP.Interface.2.Stats.BytesReceived':
+              // WAN = Interface.5, LAN = Interface.3, resolved by Alias
+              'Device.IP.Interface.3.Alias': 'lan',
+              'Device.IP.Interface.5.Alias': 'wan',
+              'Device.IP.Interface.5.Stats.BytesSent': wanBytesSent.toString(),
+              'Device.IP.Interface.5.Stats.BytesReceived':
                   wanBytesReceived.toString(),
-              'Device.IP.Interface.2.Stats.PacketsSent':
+              'Device.IP.Interface.5.Stats.PacketsSent':
                   wanPacketsSent.toString(),
-              'Device.IP.Interface.2.Stats.PacketsReceived':
+              'Device.IP.Interface.5.Stats.PacketsReceived':
                   wanPacketsReceived.toString(),
-              'Device.IP.Interface.2.Stats.ErrorsSent':
+              'Device.IP.Interface.5.Stats.ErrorsSent':
                   wanErrorsSent.toString(),
-              'Device.IP.Interface.2.Stats.ErrorsReceived':
+              'Device.IP.Interface.5.Stats.ErrorsReceived':
                   wanErrorsReceived.toString(),
-              'Device.IP.Interface.2.Stats.DiscardPacketsSent':
+              'Device.IP.Interface.5.Stats.DiscardPacketsSent':
                   wanDiscardsSent.toString(),
-              'Device.IP.Interface.2.Stats.DiscardPacketsReceived':
+              'Device.IP.Interface.5.Stats.DiscardPacketsReceived':
                   wanDiscardsReceived.toString(),
-              // LAN = Interface.1
-              'Device.IP.Interface.1.Stats.BytesSent': lanBytesSent.toString(),
-              'Device.IP.Interface.1.Stats.BytesReceived':
+              'Device.IP.Interface.3.Stats.BytesSent': lanBytesSent.toString(),
+              'Device.IP.Interface.3.Stats.BytesReceived':
                   lanBytesReceived.toString(),
-              'Device.IP.Interface.1.Stats.PacketsSent':
+              'Device.IP.Interface.3.Stats.PacketsSent':
                   lanPacketsSent.toString(),
-              'Device.IP.Interface.1.Stats.PacketsReceived':
+              'Device.IP.Interface.3.Stats.PacketsReceived':
                   lanPacketsReceived.toString(),
-              'Device.IP.Interface.1.Stats.ErrorsSent':
+              'Device.IP.Interface.3.Stats.ErrorsSent':
                   lanErrorsSent.toString(),
-              'Device.IP.Interface.1.Stats.ErrorsReceived':
+              'Device.IP.Interface.3.Stats.ErrorsReceived':
                   lanErrorsReceived.toString(),
-              'Device.IP.Interface.1.Stats.DiscardPacketsSent':
+              'Device.IP.Interface.3.Stats.DiscardPacketsSent':
                   lanDiscardsSent.toString(),
-              'Device.IP.Interface.1.Stats.DiscardPacketsReceived':
+              'Device.IP.Interface.3.Stats.DiscardPacketsReceived':
                   lanDiscardsReceived.toString(),
             });
   }

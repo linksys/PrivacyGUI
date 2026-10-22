@@ -5,15 +5,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/generated/lan_dhcp_pool.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_ui_model.dart';
 import 'package:privacy_gui/page/local_network/services/usp_local_network_service.dart';
 
+import '../../../mocks/test_data/local_network_test_data.dart';
 import '../../../util/usp_param_templates.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
-LanNetworkInfo _lanInfo({
+/// [UspLocalNetworkService.buildUIModel]'s two inputs, from the builders.
+(LanNetworkInfo, LanDhcpPool) _lanInfo({
   String ipAddress = '192.168.1.1',
   String subnetMask = '255.255.255.0',
   bool dhcpEnabled = true,
@@ -22,18 +25,20 @@ LanNetworkInfo _lanInfo({
   int leaseTime = 86400,
   String dnsServers = '8.8.8.8,8.8.4.4',
   String hostName = 'MyRouter',
-  bool ipv6Enabled = false,
 }) =>
-    LanNetworkInfo(
-      ipAddress: ipAddress,
-      subnetMask: subnetMask,
-      dhcpEnabled: dhcpEnabled,
-      minAddress: minAddress,
-      maxAddress: maxAddress,
-      leaseTime: leaseTime,
-      dnsServers: dnsServers,
-      hostName: hostName,
-      ipv6Enabled: ipv6Enabled,
+    (
+      LocalNetworkTestData.createLanNetworkInfo(
+        hostName: hostName,
+        ipAddress: ipAddress,
+        subnetMask: subnetMask,
+      ),
+      LocalNetworkTestData.createLanDhcpPool(
+        dhcpEnabled: dhcpEnabled,
+        minAddress: minAddress,
+        maxAddress: maxAddress,
+        leaseTime: leaseTime,
+        dnsServers: dnsServers,
+      ),
     );
 
 LocalNetworkUIModel _model({
@@ -87,7 +92,7 @@ void main() {
         hostName: 'Router',
       );
 
-      final result = service.buildUIModel(data);
+      final result = service.buildUIModel(data.$1, data.$2);
 
       expect(result.hostName, 'Router');
       expect(result.ipAddress, '192.168.1.1');
@@ -103,7 +108,7 @@ void main() {
 
     test('splits DNS: single server', () {
       final data = _lanInfo(dnsServers: '1.1.1.1');
-      final result = service.buildUIModel(data);
+      final result = service.buildUIModel(data.$1, data.$2);
       expect(result.dnsServer1, '1.1.1.1');
       expect(result.dnsServer2, '');
       expect(result.dnsServer3, '');
@@ -111,14 +116,14 @@ void main() {
 
     test('splits DNS: empty string yields one empty field', () {
       final data = _lanInfo(dnsServers: '');
-      final result = service.buildUIModel(data);
+      final result = service.buildUIModel(data.$1, data.$2);
       expect(result.dnsServer1, '');
     });
 
     test('lease time rounds correctly', () {
       // 90 seconds → 2 minutes (rounds 1.5)
       final data = _lanInfo(leaseTime: 90);
-      expect(service.buildUIModel(data).leaseTimeMinutes, 2);
+      expect(service.buildUIModel(data.$1, data.$2).leaseTimeMinutes, 2);
     });
   });
 
@@ -429,15 +434,16 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('UspLocalNetworkService — save', () {
-    // Mock for _resolveInstance() in LanNetworkInfo.save()
-    // UspClient.get() returns flat Map<String, dynamic>, not WASM format
-    final aliasResponse = <String, dynamic>{
-      'Device.IP.Interface.1.Alias': 'lan',
-      'Device.IP.Interface.2.Alias': 'wan',
-    };
+    // The save reads the LAN interface and the LAN pool to find the rows it
+    // writes: lan on Interface.3, dhcp-lan on Pool.4 (see LocalNetworkTestData).
+    void stubLanGets() {
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async =>
+          LocalNetworkTestData.answer(
+              invocation.positionalArguments[0] as List<String>));
+    }
 
     test('save succeeds when firmware returns success', () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
+      stubLanGets();
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => {
                 'success': true,
@@ -461,7 +467,7 @@ void main() {
     // its rows.
 
     void stubSaveSuccess() {
-      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
+      stubLanGets();
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => {
                 'success': true,
@@ -545,12 +551,10 @@ void main() {
     });
 
     test('the LAN IP and the DHCP pool are written to the LAN rows', () async {
-      // The interface whose Alias is lan is the one written, whatever its
-      // instance number; the IP never lands on the WAN interface.
-      when(() => mockUsp.get(any())).thenAnswer((_) async => {
-            'Device.IP.Interface.3.Alias': 'wan',
-            'Device.IP.Interface.5.Alias': 'lan',
-          });
+      // The interface whose Alias is lan and the pool whose Alias is dhcp-lan
+      // are the ones written, whatever their instance numbers: the IP never
+      // lands on the WAN interface, the range never on the guest pool.
+      stubLanGets();
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => {
                 'success': true,
@@ -559,25 +563,74 @@ void main() {
 
       await service.save(
         original: _model(),
-        pending: _model(subnetMask: '255.255.0.0'),
+        pending: _model(subnetMask: '255.255.0.0', minAddress: '192.168.1.50'),
       );
 
       final params = verify(() => mockUsp.set(captureAny(),
               allowPartial: any(named: 'allowPartial'))).captured.single
           as Map<String, dynamic>;
-      expect(params.keys.single,
-          matches(r'^Device\.IP\.Interface\.5\.IPv4Address\.\d+\.SubnetMask$'));
+      expect(params.keys, {
+        '${LocalNetworkTestData.lanInterface}IPv4Address.3.SubnetMask',
+        '${LocalNetworkTestData.lanPool}MinAddress',
+      });
+    });
+
+    test('an address change with no LAN address row writes nothing and says so',
+        () async {
+      when(() => mockUsp.get(any()))
+          .thenAnswer((invocation) async => LocalNetworkTestData.answer(
+                invocation.positionalArguments[0] as List<String>,
+                lanInterfaceGet: LocalNetworkTestData.lanInterfaceResponse(
+                    hasAddress: false),
+              ));
+
+      await expectLater(
+        service.save(
+          original: _model(),
+          pending: _model(subnetMask: '255.255.0.0'),
+        ),
+        throwsA(isA<ResourceNotFoundError>()),
+      );
+      verifyNever(
+          () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
+    });
+
+    test('on an IP change, a failed read before the SET is a failure',
+        () async {
+      // The SET was never sent, so the router still has the old IP: this is
+      // not the disconnect an applied IP change causes.
+      when(() => mockUsp.get(any()))
+          .thenThrow('Get failed: Transport error: Connection refused');
+
+      await expectLater(
+        service.save(
+          original: _model(ipAddress: '192.168.1.1'),
+          pending: _model(ipAddress: '192.168.2.1'),
+        ),
+        throwsA(isA<ConnectivityError>()),
+      );
+      verifyNever(
+          () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
+    });
+
+    test('a save with nothing changed sends nothing', () async {
+      stubLanGets();
+
+      await service.save(original: _model(), pending: _model());
+
+      verifyNever(
+          () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
     });
 
     test('save throws UspCompleteFailureError on firmware failure', () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
+      stubLanGets();
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => {
                 'success': false,
                 'result': {
                   'data': <String, dynamic>{},
                   'error': {
-                    'Device.DHCPv4.Server.Pool.1.MinAddress': {
+                    '${LocalNetworkTestData.lanPool}MinAddress': {
                       'errorCode': 7004,
                       'errorMessage': 'Parameter not writable'
                     }
@@ -595,16 +648,16 @@ void main() {
     });
 
     test('save throws UspPartialFailureError on partial success', () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
+      stubLanGets();
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => {
                 'success': true,
                 'result': {
                   'data': {
-                    'Device.DHCPv4.Server.Pool.1.MinAddress': '192.168.1.50'
+                    '${LocalNetworkTestData.lanPool}MinAddress': '192.168.1.50'
                   },
                   'error': {
-                    'Device.DHCPv4.Server.Pool.1.MaxAddress': {
+                    '${LocalNetworkTestData.lanPool}MaxAddress': {
                       'errorCode': 7004,
                       'errorMessage': 'Parameter not writable'
                     }
@@ -623,7 +676,7 @@ void main() {
     });
 
     test('save maps transport error to ServiceError', () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
+      stubLanGets();
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenThrow('Set failed: Transport error: Connection refused');
 
@@ -645,7 +698,7 @@ void main() {
       // The SET response can never arrive (connection gone). Drive the 4s
       // budget with fake_async so the test does not actually wait.
       fakeAsync((async) {
-        when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
+        stubLanGets();
         when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
             .thenAnswer((_) => Completer<Map<String, dynamic>>().future);
 
@@ -671,7 +724,7 @@ void main() {
     });
 
     test('save on IP change treats a transport error as success', () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
+      stubLanGets();
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenThrow('Set failed: Transport error: Connection refused');
 
@@ -687,7 +740,7 @@ void main() {
     });
 
     test('save on IP change still rethrows a real firmware fault', () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
+      stubLanGets();
       // Router actively rejected the SET BEFORE any disconnect — a genuine
       // config failure that must reach the user, never swallowed.
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
@@ -696,7 +749,8 @@ void main() {
                 'result': {
                   'data': <String, dynamic>{},
                   'error': {
-                    'Device.IP.Interface.1.IPv4Address.1.IPAddress': {
+                    '${LocalNetworkTestData.lanInterface}IPv4Address.3.IPAddress':
+                        {
                       'errorCode': 7006,
                       'errorMessage': 'Invalid value',
                     },

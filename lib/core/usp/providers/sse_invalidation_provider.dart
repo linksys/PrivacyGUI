@@ -35,11 +35,13 @@ final sseInvalidationProvider = StreamProvider<InvalidationEvent>((ref) {
   var seq = 0;
 
   final removeHandler = manager.addWildcardHandler((notification) {
-    // Resolved WAN interface path (e.g. 'Device.IP.Interface.2.'), read
-    // synchronously with a fallback while resolution is still pending. See
-    // [wanInterfacePathProvider].
-    final wanPath = ref.read(wanInterfacePathProvider).valueOrNull ??
-        kWanInterfaceFallbackPath;
+    // Resolved WAN interface path (e.g. 'Device.IP.Interface.5.'), read
+    // synchronously; null while resolution is pending or when the router has
+    // no WAN, and then no path is WAN status. See [wanInterfacePathProvider].
+    final wanPath = ref.read(wanInterfacePathProvider).valueOrNull;
+    // A WAN path that did not resolve (a transient read failure at login) is
+    // re-resolved, so a later event is classified again.
+    if (wanPath == null) retryWanInterfacePathIfUnresolved(ref);
     final domain = _mapToDomain(notification, wanPath);
 
     // This is the ONLY place a notification becomes (or fails to become) a domain,
@@ -90,9 +92,10 @@ final sseInvalidationProvider = StreamProvider<InvalidationEvent>((ref) {
 /// but carry no configuration-relevant information.
 ///
 /// [wanPath] is the resolved WAN interface path (e.g.
-/// `Device.IP.Interface.2.`) used to classify WAN status changes without
-/// hardcoding the instance index.
-InvalidationDomain? _mapToDomain(SseNotification notification, String wanPath) {
+/// `Device.IP.Interface.5.`) used to classify WAN status changes without
+/// hardcoding the instance index; null matches no WAN status.
+InvalidationDomain? _mapToDomain(
+    SseNotification notification, String? wanPath) {
   final path = _extractPath(notification);
   if (path == null || path.isEmpty) return null;
 
@@ -126,9 +129,11 @@ InvalidationDomain? _mapToDomain(SseNotification notification, String wanPath) {
   if (path.startsWith('Device.Firewall.Chain.')) {
     return InvalidationDomain.firewallRules;
   }
-  // DHCP Client leases (exclude StaticAddress — that's dhcpReservations)
+  // DHCP Client leases (exclude StaticAddress — that's dhcpReservations). The
+  // dhcp-clients-02 ValueChange on the pool table reports a new lease as the
+  // pool's `ClientNumberOfEntries`, with no `Client.` in the path.
   if (path.startsWith('Device.DHCPv4.Server.Pool.') &&
-      path.contains('Client.') &&
+      (path.contains('Client.') || path.endsWith('.ClientNumberOfEntries')) &&
       !path.contains('StaticAddress')) {
     return InvalidationDomain.dhcpClients;
   }
@@ -143,7 +148,7 @@ InvalidationDomain? _mapToDomain(SseNotification notification, String wanPath) {
   if (path.startsWith('Device.Ethernet.Interface.')) {
     return InvalidationDomain.ethernetInterfaces;
   }
-  if (path.startsWith(wanPath)) {
+  if (wanPath != null && path.startsWith(wanPath)) {
     return InvalidationDomain.wanStatus;
   }
 

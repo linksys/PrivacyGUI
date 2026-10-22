@@ -10,13 +10,26 @@ import '../../../util/usp_param_templates.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
+const _lan = 'Device.IP.Interface.3';
+const _wan = 'Device.IP.Interface.5';
+
+/// lan on Interface.3, wan on Interface.5, and an interface of neither.
+const _interfaceAliases = <String, dynamic>{
+  '$_lan.Alias': 'lan',
+  '$_wan.Alias': 'wan',
+  'Device.IP.Interface.6.Alias': '',
+};
+
+/// The interface display names [UspStaticRoutingService.fetch] resolves.
+const _interfaceNames = {_lan: 'LAN', _wan: 'Internet'};
+
 StaticRoute _route({
-  String instancePath = 'Device.Routing.Router.1.IPv4Forwarding.1.',
+  String instancePath = 'Device.Routing.Router.4.IPv4Forwarding.5.',
   bool enable = true,
   String destIpAddress = '10.0.0.0',
   String destSubnetMask = '255.255.255.0',
   String gatewayIpAddress = '192.168.1.1',
-  String interface_ = 'Device.IP.Interface.2',
+  String interface_ = _wan,
   String origin = 'Static',
   String alias = 'TestRoute',
 }) =>
@@ -31,6 +44,22 @@ StaticRoute _route({
       alias: alias,
     );
 
+/// [routes] on router 4, and [onRouter7] on router 7.
+StaticRouting _routing(List<StaticRoute> routes,
+        {List<StaticRoute> onRouter7 = const []}) =>
+    StaticRouting(items: [
+      StaticRoutingRouter(
+        instancePath: 'Device.Routing.Router.4.',
+        alias: 'cpe-1',
+        forwardings: routes,
+      ),
+      StaticRoutingRouter(
+        instancePath: 'Device.Routing.Router.7.',
+        alias: 'cpe-2',
+        forwardings: onRouter7,
+      ),
+    ]);
+
 void main() {
   late MockUspClient mockUsp;
   late UspStaticRoutingService service;
@@ -38,77 +67,151 @@ void main() {
   setUp(() {
     mockUsp = MockUspClient();
     service = UspStaticRoutingService(mockUsp);
+    // A save resolves the lan/wan interfaces, and an add the router it adds
+    // under. Tests that read routes stub their own table.
+    when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+      final paths = invocation.positionalArguments[0] as List<String>;
+      if (paths.contains('Device.IP.Interface.*.Alias')) {
+        return _interfaceAliases;
+      }
+      return {
+        'Device.Routing.Router.4.Alias': 'cpe-1',
+        'Device.Routing.Router.7.Alias': 'cpe-2',
+      };
+    });
   });
 
   // ---------------------------------------------------------------------------
   // buildRouteUIModels
   // ---------------------------------------------------------------------------
 
+  group('UspStaticRoutingService — fetch', () {
+    test('names each route\'s interface from the resolved lan / wan Alias',
+        () async {
+      const r4 = 'Device.Routing.Router.4.';
+      Map<String, dynamic> forwarding(int i, String iface, String alias) => {
+            '${r4}IPv4Forwarding.$i.Enable': true,
+            '${r4}IPv4Forwarding.$i.DestIPAddress': '10.$i.0.0',
+            '${r4}IPv4Forwarding.$i.DestSubnetMask': '255.255.0.0',
+            '${r4}IPv4Forwarding.$i.GatewayIPAddress': '192.168.1.254',
+            '${r4}IPv4Forwarding.$i.Interface': iface,
+            '${r4}IPv4Forwarding.$i.Origin': 'Static',
+            '${r4}IPv4Forwarding.$i.Alias': alias,
+          };
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        if (paths.contains('Device.IP.Interface.*.Alias')) {
+          return _interfaceAliases;
+        }
+        return {
+          '${r4}Alias': 'cpe-1',
+          ...forwarding(5, _lan, 'ToLan'),
+          ...forwarding(9, _wan, 'ToWan'),
+          // Interface.1 and .2 are neither lan nor wan on this router.
+          ...forwarding(12, 'Device.IP.Interface.1', 'OnOne'),
+        };
+      });
+
+      final routes = await service.fetch();
+
+      expect({
+        for (final r in routes) r.name: r.interfaceName
+      }, {
+        'ToLan': 'LAN',
+        'ToWan': 'Internet',
+        'OnOne': 'Device.IP.Interface.1',
+      });
+    });
+  });
+
   group('UspStaticRoutingService — buildRouteUIModels', () {
     test('filters to static routes only', () {
-      final data = StaticRouting(items: [
+      final data = _routing([
         _route(origin: 'Static', alias: 'MyRoute'),
         _route(origin: 'DHCPv4', alias: 'DhcpRoute'),
       ]);
 
-      final result = service.buildRouteUIModels(data);
+      final result = service.buildRouteUIModels(data, _interfaceNames);
 
       expect(result, hasLength(1));
       expect(result[0].name, 'MyRoute');
     });
 
     test('maps interface path to display name', () {
-      final data = StaticRouting(items: [
-        _route(interface_: 'Device.IP.Interface.1', origin: 'Static'),
+      final data = _routing([
+        _route(interface_: _lan, origin: 'Static'),
         _route(
-          instancePath: 'p.2.',
-          interface_: 'Device.IP.Interface.2',
+          instancePath: 'Device.Routing.Router.4.IPv4Forwarding.9.',
+          interface_: _wan,
           origin: 'Static',
         ),
       ]);
 
-      final result = service.buildRouteUIModels(data);
+      final result = service.buildRouteUIModels(data, _interfaceNames);
 
       expect(result[0].interfaceName, 'LAN');
       expect(result[1].interfaceName, 'Internet');
     });
 
+    test('an Interface with a trailing dot still maps to its name', () {
+      final data = _routing([_route(interface_: '$_lan.')]);
+
+      final result = service.buildRouteUIModels(data, _interfaceNames);
+
+      expect(result.single.interfaceName, 'LAN');
+    });
+
     test('unknown interface falls through unchanged', () {
-      final data = StaticRouting(items: [
+      final data = _routing([
         _route(interface_: 'Device.IP.Interface.99', origin: 'Static'),
       ]);
 
-      final result = service.buildRouteUIModels(data);
+      final result = service.buildRouteUIModels(data, _interfaceNames);
 
       expect(result[0].interfaceName, 'Device.IP.Interface.99');
     });
 
     test('preserves all fields correctly', () {
-      final data = StaticRouting(items: [
+      final data = _routing([
         _route(
           instancePath: 'path.1.',
           enable: false,
           destIpAddress: '10.0.0.0',
           destSubnetMask: '255.0.0.0',
           gatewayIpAddress: '192.168.1.254',
-          interface_: 'Device.IP.Interface.2',
+          interface_: _wan,
           origin: 'Static',
           alias: 'VPN',
         ),
       ]);
 
-      final result = service.buildRouteUIModels(data);
+      final result = service.buildRouteUIModels(data, _interfaceNames);
 
       expect(result[0].instancePath, 'path.1.');
       expect(result[0].enabled, isFalse);
       expect(result[0].destIpAddress, '10.0.0.0');
       expect(result[0].destSubnetMask, '255.0.0.0');
       expect(result[0].gatewayIpAddress, '192.168.1.254');
-      expect(result[0].interfacePath, 'Device.IP.Interface.2');
+      expect(result[0].interfacePath, _wan);
+    });
+
+    test('lists the static routes of every router', () {
+      final data = _routing(
+        [_route(alias: 'OnFour')],
+        onRouter7: [
+          _route(
+              instancePath: 'Device.Routing.Router.7.IPv4Forwarding.3.',
+              alias: 'OnSeven'),
+        ],
+      );
+
+      final result = service.buildRouteUIModels(data, _interfaceNames);
+
+      expect(result.map((r) => r.name), ['OnFour', 'OnSeven']);
     });
 
     test('empty data returns empty list', () {
-      final result = service.buildRouteUIModels(StaticRouting(items: []));
+      final result = service.buildRouteUIModels(_routing([]), _interfaceNames);
       expect(result, isEmpty);
     });
   });
@@ -118,16 +221,11 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('UspStaticRoutingService — mapDisplayToInterface', () {
-    test('LAN maps to Device.IP.Interface.1', () {
-      expect(service.mapDisplayToInterface('LAN'), 'Device.IP.Interface.1');
-    });
-
-    test('Internet maps to Device.IP.Interface.2', () {
-      expect(
-          service.mapDisplayToInterface('Internet'), 'Device.IP.Interface.2');
-    });
-
-    test('unknown name passes through', () {
+    // The path a route is written to is resolved at save time; the page's
+    // copy only carries the display name.
+    test('a display name passes through, never a guessed instance', () {
+      expect(service.mapDisplayToInterface('LAN'), 'LAN');
+      expect(service.mapDisplayToInterface('Internet'), 'Internet');
       expect(service.mapDisplayToInterface('WAN2'), 'WAN2');
     });
   });
@@ -147,7 +245,7 @@ void main() {
           destSubnetMask: '255.255.255.0',
           gatewayIpAddress: '192.168.1.1',
           interfaceName: 'Internet',
-          interfacePath: 'Device.IP.Interface.2',
+          interfacePath: _wan,
         ),
       ];
 
@@ -176,7 +274,7 @@ void main() {
           destSubnetMask: '255.255.255.0',
           gatewayIpAddress: '',
           interfaceName: 'Internet',
-          interfacePath: 'Device.IP.Interface.2',
+          interfacePath: _wan,
         ),
       ];
 
@@ -195,7 +293,7 @@ void main() {
             'result': {
               'data': {
                 'affectedCount': 1,
-                'instances': ['Device.Routing.Router.1.IPv4Forwarding.1.']
+                'instances': ['Device.Routing.Router.4.IPv4Forwarding.30.']
               }
             },
           });
@@ -223,7 +321,7 @@ void main() {
       final params = items[0]['params'] as Map<String, dynamic>;
       expect(params['DestIPAddress'], '172.16.0.0');
       // LAN should be mapped back to TR-181 path
-      expect(params['Interface'], 'Device.IP.Interface.1');
+      expect(params['Interface'], _lan);
     });
 
     test('update detects changed content', () async {
@@ -242,7 +340,7 @@ void main() {
           destSubnetMask: '255.255.255.0',
           gatewayIpAddress: '192.168.1.1',
           interfaceName: 'Internet',
-          interfacePath: 'Device.IP.Interface.2',
+          interfacePath: _wan,
         ),
       ];
       final current = [
@@ -254,7 +352,7 @@ void main() {
           destSubnetMask: '255.255.0.0', // changed
           gatewayIpAddress: '192.168.1.1',
           interfaceName: 'Internet',
-          interfacePath: 'Device.IP.Interface.2',
+          interfacePath: _wan,
         ),
       ];
 
@@ -276,7 +374,7 @@ void main() {
             'result': {
               'data': {
                 'affectedCount': 1,
-                'instances': ['Device.Routing.Router.1.IPv4Forwarding.2.']
+                'instances': ['Device.Routing.Router.4.IPv4Forwarding.31.']
               }
             },
           });
@@ -295,7 +393,7 @@ void main() {
           destSubnetMask: '255.255.255.0',
           gatewayIpAddress: '',
           interfaceName: 'Internet',
-          interfacePath: 'Device.IP.Interface.2',
+          interfacePath: _wan,
         ),
         StaticRouteUIModel(
           instancePath: 'path.2.',
@@ -305,7 +403,7 @@ void main() {
           destSubnetMask: '255.255.0.0',
           gatewayIpAddress: '',
           interfaceName: 'LAN',
-          interfacePath: 'Device.IP.Interface.1',
+          interfacePath: _lan,
         ),
       ];
       final current = [
@@ -318,7 +416,7 @@ void main() {
           destSubnetMask: '255.255.0.0',
           gatewayIpAddress: '',
           interfaceName: 'LAN',
-          interfacePath: 'Device.IP.Interface.1',
+          interfacePath: _lan,
         ),
         StaticRouteUIModel(
           // new entry (add)
@@ -352,17 +450,17 @@ void main() {
   // ---------------------------------------------------------------------------
   // Paths the service builds are compared as templates (instance numbers as
   // `{i}`); paths that come from the page's own rows are compared as given.
-  // The interfaces are the ones the bench router has today: lan on
-  // Interface.1, wan on Interface.2.
+  // lan is on Interface.3 and wan on Interface.5, so a route written to a
+  // guessed Interface.1 / Interface.2 cannot pass.
 
   group('UspStaticRoutingService — what is written', () {
     const okSet = {
       'success': true,
       'result': {'data': <String, dynamic>{}},
     };
-    const r5 = 'Device.Routing.Router.1.IPv4Forwarding.5.';
-    const r9 = 'Device.Routing.Router.1.IPv4Forwarding.9.';
-    const r12 = 'Device.Routing.Router.1.IPv4Forwarding.12.';
+    const r5 = 'Device.Routing.Router.4.IPv4Forwarding.5.';
+    const r9 = 'Device.Routing.Router.4.IPv4Forwarding.9.';
+    const r12 = 'Device.Routing.Router.4.IPv4Forwarding.12.';
 
     StaticRouteUIModel route(String? path, String name,
             {String dest = '10.0.0.0',
@@ -379,11 +477,16 @@ void main() {
         );
 
     void stubInterfaces() {
-      when(() => mockUsp.get(any())).thenAnswer((_) async => {
-            'Device.IP.Interface.1.Alias': 'lan',
-            'Device.IP.Interface.2.Alias': 'wan',
-            'Device.Routing.Router.1.Alias': 'cpe-1',
-          });
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        if (paths.contains('Device.IP.Interface.*.Alias')) {
+          return _interfaceAliases;
+        }
+        return {
+          'Device.Routing.Router.4.Alias': 'cpe-1',
+          'Device.Routing.Router.7.Alias': 'cpe-2',
+        };
+      });
     }
 
     test('deletes go out one per row, highest row first', () async {
@@ -436,7 +539,7 @@ void main() {
               'DestIPAddress': '172.16.0.0',
               'DestSubnetMask': '255.255.255.0',
               'GatewayIPAddress': '192.168.1.254',
-              'Interface': 'Device.IP.Interface.1',
+              'Interface': _lan,
               'Alias': 'ToLan',
             },
           },
@@ -447,7 +550,7 @@ void main() {
               'DestIPAddress': '172.17.0.0',
               'DestSubnetMask': '255.255.255.0',
               'GatewayIPAddress': '192.168.1.254',
-              'Interface': 'Device.IP.Interface.2',
+              'Interface': _wan,
               'Alias': 'ToWan',
             },
           },
@@ -473,13 +576,13 @@ void main() {
         '${r5}DestIPAddress': '10.5.0.0',
         '${r5}DestSubnetMask': '255.255.255.0',
         '${r5}GatewayIPAddress': '192.168.1.254',
-        '${r5}Interface': 'Device.IP.Interface.1',
+        '${r5}Interface': _lan,
         '${r5}Alias': 'a',
         '${r12}Enable': true,
         '${r12}DestIPAddress': '10.0.0.0',
         '${r12}DestSubnetMask': '255.255.255.0',
         '${r12}GatewayIPAddress': '192.168.1.254',
-        '${r12}Interface': 'Device.IP.Interface.2',
+        '${r12}Interface': _wan,
         '${r12}Alias': 'c',
       });
     });
@@ -509,7 +612,7 @@ void main() {
           destSubnetMask: '255.255.255.0',
           gatewayIpAddress: '192.168.1.1',
           interfaceName: 'Internet',
-          interfacePath: 'Device.IP.Interface.2',
+          interfacePath: _wan,
         ),
       ];
 

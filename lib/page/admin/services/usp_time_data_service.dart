@@ -6,6 +6,7 @@ import 'package:privacy_gui/generated/time_zones.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/_shared/utils/empty_row.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
@@ -84,10 +85,20 @@ class UspTimeDataService {
   /// 2.0.2.26100116 during #1609 — same 39 IDs, offsets, DST flags and labels.
   Future<List<TimeZoneInfo>> fetchZones() async {
     try {
-      final catalogue = await TimeZones.fetch(_usp);
-      if (catalogue.items.isEmpty) return kTimeZoneDefinitions;
+      // A row with every value blank is no zone (usp-codegen 0.17 dropped it),
+      // and a catalogue of only those is no catalogue.
+      final rows = (await TimeZones.fetch(_usp))
+          .items
+          .where((z) => ![
+                z.timeZoneId,
+                z.utcOffsetMinutes,
+                z.observesDst,
+                z.description,
+              ].every(isBlank))
+          .toList();
+      if (rows.isEmpty) return kTimeZoneDefinitions;
       return [
-        for (final row in catalogue.items)
+        for (final row in rows)
           TimeZoneInfo(
             timeZoneID: row.timeZoneId,
             utcOffsetMinutes: row.utcOffsetMinutes,

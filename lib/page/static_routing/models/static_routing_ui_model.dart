@@ -130,6 +130,9 @@ class StaticRouteUIModel extends Equatable {
     );
   }
 
+  /// [interfacePath] is left out: the route is written with the path its
+  /// [interfaceName] resolves to at save time, so a path re-derived by an edit
+  /// is not a change to the route.
   @override
   List<Object?> get props => [
         instancePath,
@@ -139,6 +142,5 @@ class StaticRouteUIModel extends Equatable {
         destSubnetMask,
         gatewayIpAddress,
         interfaceName,
-        interfacePath,
       ];
 }

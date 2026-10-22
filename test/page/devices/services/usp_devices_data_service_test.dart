@@ -219,6 +219,47 @@ void main() {
           topology.nodes.slaves.map((s) => s.deviceId), ['AA:BB:CC:DD:EE:02']);
     });
 
+    // usp-codegen 0.18 returns every row, including one with every value
+    // blank, which 0.17 dropped (#1654).
+    test('a node row with every value blank is no node', () async {
+      stubDataElements(network: {
+        'Device.WiFi.DataElements.Network.Device.3.ID': '',
+        'Device.WiFi.DataElements.Network.Device.3.MultiAPDevice.Backhaul.LinkType':
+            '',
+        ...networkResponse,
+      });
+
+      final topology = await svc.fetchMeshTopology();
+
+      expect(topology.nodes, hasLength(1));
+    });
+
+    test('an interface row with no ID takes no wired client', () async {
+      // Its interface MAC is the wired client's; 0.17 dropped the row, so the
+      // client stayed attributed to the node that lists it.
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((inv) async {
+        final paths = inv.positionalArguments[0] as List;
+        if (paths.any((p) => p.toString().contains('.Interface.'))) {
+          return {
+            ...interfacesResponse,
+            'Device.WiFi.DataElements.Network.Device.3.ID': '',
+            'Device.WiFi.DataElements.Network.Device.3.Interface.2.MACAddress':
+                '00:e0:4c:68:08:2d',
+          };
+        }
+        if (paths.any((p) => p.toString().endsWith('Network.ControllerID'))) {
+          return <String, dynamic>{};
+        }
+        return networkResponse;
+      });
+
+      final topology = await svc.fetchMeshTopology();
+
+      expect(topology.wiredClientToNodeMap,
+          {'00:E0:4C:68:08:2D': '74:12:13:21:56:3A'});
+    });
+
     test('a ControllerID read that fails leaves the topology intact', () async {
       stubDataElements(networkInfoFails: true);
 

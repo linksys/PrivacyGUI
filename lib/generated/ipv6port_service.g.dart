@@ -4,7 +4,7 @@
 
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
-/// Single instance from Ipv6PortService
+/// Nested instance from parent multi-instance table
 class Ipv6PortServiceRule {
   final String instancePath;
   final bool enable;
@@ -29,6 +29,22 @@ class Ipv6PortServiceRule {
     required this.target,
     required this.creationDate,
   });
+
+  @override
+  String toString() {
+    return 'Ipv6PortServiceRule('
+        'instancePath: $instancePath, '
+        'enable: $enable, '
+        'description: $description, '
+        'ipVersion: $ipVersion, '
+        'destIp: $destIp, '
+        'destPort: $destPort, '
+        'destPortRangeMax: $destPortRangeMax, '
+        'protocol: $protocol, '
+        'target: $target, '
+        'creationDate: $creationDate'
+        ')';
+  }
 }
 
 /// Update descriptor for Ipv6PortServiceRule instances
@@ -56,22 +72,73 @@ class Ipv6PortServiceRuleUpdate {
   });
 }
 
-/// IPv6 port service rules (firewall chain rules with port/protocol fields)
+/// Add descriptor for Ipv6PortServiceRule rows
+class Ipv6PortServiceRuleAdd {
+  final String parentInstancePath;
+  final bool? enable;
+  final String? description;
+  final int? ipVersion;
+  final String? destIp;
+  final int? destPort;
+  final int? destPortRangeMax;
+  final int? protocol;
+  final String? target;
+
+  const Ipv6PortServiceRuleAdd({
+    required this.parentInstancePath,
+    this.enable,
+    this.description,
+    this.ipVersion,
+    this.destIp,
+    this.destPort,
+    this.destPortRangeMax,
+    this.protocol,
+    this.target,
+  });
+}
+
+/// Single instance from Ipv6PortService
+class Ipv6PortServiceChain {
+  final String instancePath;
+  final String name;
+  final List<Ipv6PortServiceRule> rules;
+
+  const Ipv6PortServiceChain({
+    required this.instancePath,
+    required this.name,
+    required this.rules,
+  });
+
+  @override
+  String toString() {
+    return 'Ipv6PortServiceChain('
+        'instancePath: $instancePath, '
+        'name: $name, '
+        'rules: $rules'
+        ')';
+  }
+}
+
+/// IPv6 port service rules, per firewall chain (with port/protocol fields)
 class Ipv6PortService {
-  final List<Ipv6PortServiceRule> items;
+  final List<Ipv6PortServiceChain> items;
 
   const Ipv6PortService({required this.items});
 
+  @override
+  String toString() => 'Ipv6PortService(items: $items)';
+
   static const _paths = [
-    'Device.Firewall.Chain.1.Rule.*.Enable',
-    'Device.Firewall.Chain.1.Rule.*.Description',
-    'Device.Firewall.Chain.1.Rule.*.IPVersion',
-    'Device.Firewall.Chain.1.Rule.*.DestIP',
-    'Device.Firewall.Chain.1.Rule.*.DestPort',
-    'Device.Firewall.Chain.1.Rule.*.DestPortRangeMax',
-    'Device.Firewall.Chain.1.Rule.*.Protocol',
-    'Device.Firewall.Chain.1.Rule.*.Target',
-    'Device.Firewall.Chain.1.Rule.*.CreationDate',
+    'Device.Firewall.Chain.*.Name',
+    'Device.Firewall.Chain.*.Rule.*.Enable',
+    'Device.Firewall.Chain.*.Rule.*.Description',
+    'Device.Firewall.Chain.*.Rule.*.IPVersion',
+    'Device.Firewall.Chain.*.Rule.*.DestIP',
+    'Device.Firewall.Chain.*.Rule.*.DestPort',
+    'Device.Firewall.Chain.*.Rule.*.DestPortRangeMax',
+    'Device.Firewall.Chain.*.Rule.*.Protocol',
+    'Device.Firewall.Chain.*.Rule.*.Target',
+    'Device.Firewall.Chain.*.Rule.*.CreationDate',
   ];
 
   /// Fetch all instances via USP Get message
@@ -81,8 +148,8 @@ class Ipv6PortService {
   }
 
   factory Ipv6PortService._fromResponse(Map<String, dynamic> response) {
-    final items = <Ipv6PortServiceRule>[];
-    const basePath = 'Device.Firewall.Chain.1.Rule.';
+    final items = <Ipv6PortServiceChain>[];
+    const basePath = 'Device.Firewall.Chain.';
     final ids = <String>{};
     for (final key in response.keys) {
       if (key.startsWith(basePath)) {
@@ -95,83 +162,154 @@ class Ipv6PortService {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}Enable'],
-        response['${p}Description'],
-        response['${p}IPVersion'],
-        response['${p}DestIP'],
-        response['${p}DestPort'],
-        response['${p}DestPortRangeMax'],
-        response['${p}Protocol'],
-        response['${p}Target'],
-        response['${p}CreationDate']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
+      final childBase_0 = '${p}Rule.';
+      final childIds_0 = <String>{};
+      for (final key in response.keys) {
+        if (key.startsWith(childBase_0)) {
+          final rest = key.substring(childBase_0.length);
+          final dot = rest.indexOf('.');
+          if (dot > 0) childIds_0.add(rest.substring(0, dot));
+        }
+      }
+      final childSorted_0 = childIds_0.toList()
+        ..sort(
+            (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+      final rules = <Ipv6PortServiceRule>[];
+      for (final cid_0 in childSorted_0) {
+        final cp_0 = '$childBase_0$cid_0.';
+        rules.add(Ipv6PortServiceRule(
+          instancePath: cp_0,
+          enable: response['${cp_0}Enable'] == true ||
+              response['${cp_0}Enable'] == 'true' ||
+              response['${cp_0}Enable'] == '1',
+          description: (response['${cp_0}Description'] ?? '') as String,
+          ipVersion:
+              int.tryParse(response['${cp_0}IPVersion']?.toString() ?? '') ?? 0,
+          destIp: (response['${cp_0}DestIP'] ?? '') as String,
+          destPort:
+              int.tryParse(response['${cp_0}DestPort']?.toString() ?? '') ?? 0,
+          destPortRangeMax: int.tryParse(
+                  response['${cp_0}DestPortRangeMax']?.toString() ?? '') ??
+              0,
+          protocol:
+              int.tryParse(response['${cp_0}Protocol']?.toString() ?? '') ?? 0,
+          target: (response['${cp_0}Target'] ?? '') as String,
+          creationDate: DateTime.tryParse(
+                  response['${cp_0}CreationDate']?.toString() ?? '') ??
+              DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+        ));
       }
       final missing = <String>[];
-      if (!response.containsKey('${p}Enable')) {
-        missing.add('${p}Enable');
-      }
-      if (!response.containsKey('${p}Description')) {
-        missing.add('${p}Description');
-      }
-      if (!response.containsKey('${p}IPVersion')) {
-        missing.add('${p}IPVersion');
-      }
-      if (!response.containsKey('${p}DestIP')) {
-        missing.add('${p}DestIP');
-      }
-      if (!response.containsKey('${p}DestPort')) {
-        missing.add('${p}DestPort');
-      }
-      if (!response.containsKey('${p}DestPortRangeMax')) {
-        missing.add('${p}DestPortRangeMax');
-      }
-      if (!response.containsKey('${p}Protocol')) {
-        missing.add('${p}Protocol');
-      }
-      if (!response.containsKey('${p}Target')) {
-        missing.add('${p}Target');
-      }
-      if (!response.containsKey('${p}CreationDate')) {
-        missing.add('${p}CreationDate');
+      if (!response.containsKey('${p}Name')) {
+        missing.add('${p}Name');
       }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
-      items.add(Ipv6PortServiceRule(
+      items.add(Ipv6PortServiceChain(
         instancePath: p,
-        enable: response['${p}Enable'] == true ||
-            response['${p}Enable'] == 'true' ||
-            response['${p}Enable'] == '1',
-        description: (response['${p}Description'] ?? '') as String,
-        ipVersion:
-            int.tryParse(response['${p}IPVersion']?.toString() ?? '') ?? 0,
-        destIp: (response['${p}DestIP'] ?? '') as String,
-        destPort: int.tryParse(response['${p}DestPort']?.toString() ?? '') ?? 0,
-        destPortRangeMax:
-            int.tryParse(response['${p}DestPortRangeMax']?.toString() ?? '') ??
-                0,
-        protocol: int.tryParse(response['${p}Protocol']?.toString() ?? '') ?? 0,
-        target: (response['${p}Target'] ?? '') as String,
-        creationDate:
-            DateTime.tryParse(response['${p}CreationDate']?.toString() ?? '') ??
-                DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+        name: (response['${p}Name'] ?? '') as String,
+        rules: rules,
       ));
     }
     return Ipv6PortService(items: items);
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-      UspClient client, List<Ipv6PortServiceRuleUpdate> updates,
+  /// Add a new Ipv6PortServiceRule instance under a parent instance
+  static Future<Map<String, dynamic>> addIpv6PortServiceRule(
+    UspClient client,
+    String parentInstancePath, {
+    bool? enable,
+    String? description,
+    int? ipVersion,
+    String? destIp,
+    int? destPort,
+    int? destPortRangeMax,
+    int? protocol,
+    String? target,
+  }) async {
+    final params = <String, dynamic>{};
+    if (enable != null) {
+      params['Enable'] = enable;
+    }
+    if (description != null) {
+      params['Description'] = description;
+    }
+    if (ipVersion != null) {
+      params['IPVersion'] = ipVersion;
+    }
+    if (destIp != null) {
+      params['DestIP'] = destIp;
+    }
+    if (destPort != null) {
+      params['DestPort'] = destPort;
+    }
+    if (destPortRangeMax != null) {
+      params['DestPortRangeMax'] = destPortRangeMax;
+    }
+    if (protocol != null) {
+      params['Protocol'] = protocol;
+    }
+    if (target != null) {
+      params['Target'] = target;
+    }
+    return await client.add([
+      {'path': '${parentInstancePath}Rule.', 'params': params}
+    ]);
+  }
+
+  /// Delete a Ipv6PortServiceRule instance via USP Delete message
+  static Future<Map<String, dynamic>> deleteIpv6PortServiceRule(
+      UspClient client, String instancePath) async {
+    return await client.delete([instancePath]);
+  }
+
+  /// Add Ipv6PortServiceRule rows, each under its own parent, in one USP Add
+  static Future<Map<String, dynamic>> addRules(
+      UspClient client, List<Ipv6PortServiceRuleAdd> rows,
       {bool allowPartial = false}) async {
+    if (rows.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    final items = [
+      for (final row in rows)
+        {
+          'path': '${row.parentInstancePath}Rule.',
+          'params': <String, dynamic>{
+            if (row.enable != null) 'Enable': row.enable,
+            if (row.description != null) 'Description': row.description,
+            if (row.ipVersion != null) 'IPVersion': row.ipVersion,
+            if (row.destIp != null) 'DestIP': row.destIp,
+            if (row.destPort != null) 'DestPort': row.destPort,
+            if (row.destPortRangeMax != null)
+              'DestPortRangeMax': row.destPortRangeMax,
+            if (row.protocol != null) 'Protocol': row.protocol,
+            if (row.target != null) 'Target': row.target,
+          },
+        },
+    ];
+    return await client.add(items, allowPartial: allowPartial);
+  }
+
+  /// Delete Ipv6PortServiceRule rows by instancePath in one USP Delete
+  static Future<Map<String, dynamic>> deleteRules(
+      UspClient client, List<String> instancePaths,
+      {bool allowPartial = false}) async {
+    if (instancePaths.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    return await client.delete(instancePaths, allowPartial: allowPartial);
+  }
+
+  /// Build the Set params of updateRules() without sending them
+  static Map<String, dynamic> updateRulesParams(
+      List<Ipv6PortServiceRuleUpdate> updates) {
     final params = <String, dynamic>{};
     for (final update in updates) {
       if (update.enable != null) {
@@ -200,6 +338,14 @@ class Ipv6PortService {
         params['${update.instancePath}Target'] = update.target;
       }
     }
+    return params;
+  }
+
+  /// Update Ipv6PortServiceRule rows, each through its own instancePath
+  static Future<Map<String, dynamic>> updateRules(
+      UspClient client, List<Ipv6PortServiceRuleUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateRulesParams(updates);
     if (params.isEmpty) {
       return {
         'success': true,
@@ -207,23 +353,5 @@ class Ipv6PortService {
       };
     }
     return await client.set(params, allowPartial: allowPartial);
-  }
-
-  /// Add Ipv6PortServiceRule instance(s) via USP Add message
-  static Future<Map<String, dynamic>> add(
-      UspClient client, List<Map<String, dynamic>> items,
-      {bool allowPartial = false}) async {
-    final itemList = items
-        .map(
-            (item) => {'path': 'Device.Firewall.Chain.1.Rule.', 'params': item})
-        .toList();
-    return await client.add(itemList, allowPartial: allowPartial);
-  }
-
-  /// Delete Ipv6PortServiceRule instance(s) via USP Delete message
-  static Future<Map<String, dynamic>> delete(
-      UspClient client, List<String> paths,
-      {bool allowPartial = false}) async {
-    return await client.delete(paths, allowPartial: allowPartial);
   }
 }

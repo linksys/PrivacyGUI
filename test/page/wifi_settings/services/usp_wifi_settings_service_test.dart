@@ -1127,6 +1127,21 @@ void main() {
       verifyNever(() => mockUsp.get(any()));
     });
 
+    test('a written row read back with every value blank is a failed read',
+        () async {
+      // usp-codegen 0.18 returns such a row where 0.17 dropped it (#1654). It
+      // is the router not there yet, not the router holding an empty SSID.
+      routerReads({
+        for (final e in router.entries)
+          if (e.key.startsWith('Device.WiFi.SSID.1.')) e.key: '',
+      });
+
+      expect(
+        writeSvc.isApplied({'Device.WiFi.SSID.1.SSID': 'NewHome'}),
+        throwsA(isA<NetworkError>()),
+      );
+    });
+
     test(
         'an EMPTY table is a failed read, not the old values — the router '
         'answers a GET with no rows while its radios reload', () async {

@@ -18,6 +18,9 @@ import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart'
     as wan;
 import 'package:privacy_gui/page/internet_settings/services/usp_wan_data_service.dart';
 
+import '../../../mocks/test_data/local_network_test_data.dart';
+import '../../../mocks/test_data/internet_settings_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 class MockUspWanDataService extends Mock implements UspWanDataService {}
@@ -170,6 +173,8 @@ void main() {
   // Test fixtures: full GET response maps satisfying codegen validation.
   // ────────────────────────────────────────────────────────────────────────
 
+  /// A WAN status read answered from one map: the interface aliases plus the
+  /// `WanStatus` leaves of the WAN on Interface.5, its address on row 3.
   Map<String, dynamic> wanStatusResponse({
     String status = 'Up',
     String ip = '203.0.113.50',
@@ -177,12 +182,14 @@ void main() {
     String addressing = 'DHCP',
   }) =>
       {
-        'Device.IP.Interface.2.Status': status,
-        'Device.IP.Interface.2.IPv4Address.1.IPAddress': ip,
-        'Device.IP.Interface.2.IPv4Address.1.SubnetMask': mask,
-        'Device.IP.Interface.2.IPv4Address.1.AddressingType': addressing,
-        'Device.IP.Interface.2.MaxMTUSize': '1500',
-        'Device.IP.Interface.2.IPv6Enable': 'true',
+        ...InternetSettingsTestData.interfaceAliases(),
+        ...InternetSettingsTestData.wanStatus(
+          status: status,
+          ipAddress: ip,
+          subnetMask: mask,
+          addressingType: addressing,
+          ipv6Enabled: 'true',
+        ),
       };
 
   Map<String, dynamic> systemInfoResponse({int uptime = 86400}) => {
@@ -217,6 +224,17 @@ void main() {
         'Device.DNS.Client.Server.2.Status': 'Enabled',
         'Device.DNS.Client.Server.2.Alias': 'cpe-cloudflare',
         'Device.DNS.Client.Server.2.Interface': 'Device.IP.Interface.2.',
+      };
+
+  /// Row [fromIdx] of [rows] (whose paths have `.$fromIdx.` after [table]),
+  /// moved to [toIdx] with every value blank: the row usp-codegen 0.18
+  /// returns where 0.17 dropped it (#1654).
+  Map<String, dynamic> blankRow(
+          Map<String, dynamic> rows, String table, int fromIdx, int toIdx) =>
+      {
+        for (final key in rows.keys)
+          if (key.startsWith('$table$fromIdx.'))
+            key.replaceFirst('$table$fromIdx.', '$table$toIdx.'): '',
       };
 
   Map<String, dynamic> wifiRadiosResponse() => {
@@ -291,32 +309,36 @@ void main() {
     };
   }
 
+  /// One lease on [pool] (the LAN pool unless given), as client row
+  /// `idx + 10` with its address on row 3.
+  Map<String, dynamic> dhcpClientFields(int idx,
+      {bool active = true, String pool = LocalNetworkTestData.lanPool}) {
+    final p = '${pool}Client.${idx + 10}.';
+    return <String, dynamic>{
+      '${p}Chaddr': 'AA:BB:CC:DD:EE:0$idx',
+      '${p}Active': active ? 'true' : 'false',
+      '${p}IPv4Address.3.IPAddress': '192.168.1.${100 + idx}',
+      '${p}IPv4Address.3.LeaseTimeRemaining': '2030-01-01T00:00:00Z',
+    };
+  }
+
+  /// The LAN pool reads: the `dhcp-lan` pool on Pool.4 with its range, and
+  /// the guest pool on Pool.2 in front of it with a range of its own and two
+  /// leases, so a read of the wrong pool shows in every count.
   Map<String, dynamic> lanResponse({
     String min = '192.168.1.100',
     String max = '192.168.1.200',
     String enable = 'true',
   }) =>
       {
-        'Device.IP.Interface.1.IPv4Address.1.IPAddress': '192.168.1.1',
-        'Device.IP.Interface.1.IPv4Address.1.SubnetMask': '255.255.255.0',
-        'Device.DHCPv4.Server.Pool.1.Enable': enable,
-        'Device.DHCPv4.Server.Pool.1.MinAddress': min,
-        'Device.DHCPv4.Server.Pool.1.MaxAddress': max,
-        'Device.DHCPv4.Server.Pool.1.LeaseTime': '86400',
-        'Device.DHCPv4.Server.Pool.1.DNSServers': '8.8.8.8',
-        'Device.DeviceInfo.HostName': 'router',
-        'Device.IP.Interface.1.IPv6Enable': 'false',
+        ...LocalNetworkTestData.poolAliases(),
+        '${LocalNetworkTestData.guestPool}Interface': 'Device.IP.Interface.6',
+        '${LocalNetworkTestData.lanPool}Interface': 'Device.IP.Interface.3',
+        ...LocalNetworkTestData.lanPoolResponse(
+            dhcpEnabled: enable, minAddress: min, maxAddress: max),
+        for (final i in [1, 2])
+          ...dhcpClientFields(i, pool: LocalNetworkTestData.guestPool),
       };
-
-  Map<String, dynamic> dhcpClientFields(int idx, {bool active = true}) {
-    final p = 'Device.DHCPv4.Server.Pool.1.Client.$idx.';
-    return <String, dynamic>{
-      '${p}Chaddr': 'AA:BB:CC:DD:EE:0$idx',
-      '${p}Active': active ? 'true' : 'false',
-      '${p}IPv4Address.1.IPAddress': '192.168.1.${100 + idx}',
-      '${p}IPv4Address.1.LeaseTimeRemaining': '2030-01-01T00:00:00Z',
-    };
-  }
 
   Map<String, dynamic> wifiAccessPointFields(int idx, String ssidRef) {
     final p = 'Device.WiFi.AccessPoint.$idx.';
@@ -598,25 +620,20 @@ void main() {
         when(() => mockUsp.get(any())).thenAnswer((invocation) async {
           final paths = invocation.positionalArguments.first as List<String>;
           requestedPaths.addAll(paths);
-          if (paths.any((path) => path.contains('IPv4Forwarding'))) {
-            const route = 'Device.Routing.Router.1.IPv4Forwarding.1';
-            return {
-              '$route.Enable': true,
-              '$route.DestIPAddress': '0.0.0.0',
-              '$route.DestSubnetMask': '0.0.0.0',
-              '$route.GatewayIPAddress': gateway,
-              '$route.Interface': 'Device.IP.Interface.2',
-              '$route.Origin': 'Static',
-              '$route.Alias': 'DefaultRoute',
-            };
+          if (paths.any((path) => path.startsWith('Device.Routing.'))) {
+            return gateway.isEmpty
+                ? InternetSettingsTestData.routing(hasDefaultRoute: false)
+                : InternetSettingsTestData.routing(gateway: gateway);
           }
           if (paths.contains('Device.IP.Interface.*.Alias')) {
-            return {
-              'Device.IP.Interface.1.Alias': 'lan',
-              'Device.IP.Interface.2.Alias': 'wan',
-            };
+            return InternetSettingsTestData.interfaceAliases();
           }
-          if (paths.contains('Device.IP.Interface.2.Status')) {
+          if (paths
+              .contains('${InternetSettingsTestData.wanInterface}Enable')) {
+            return {'${InternetSettingsTestData.wanInterface}Enable': true};
+          }
+          if (paths
+              .contains('${InternetSettingsTestData.wanInterface}Status')) {
             return wanStatusResponse();
           }
           return <String, dynamic>{}; // No IPv6 addresses in this fixture.
@@ -636,11 +653,12 @@ void main() {
 
         final result = await service.pingGateway();
 
-        expect(requestedPaths, contains('Device.IP.Interface.2.Status'));
+        expect(requestedPaths,
+            contains('${InternetSettingsTestData.wanInterface}Status'));
         expect(
             requestedPaths,
             contains(
-                'Device.Routing.Router.1.IPv4Forwarding.*.GatewayIPAddress'));
+                'Device.Routing.Router.*.IPv4Forwarding.*.GatewayIPAddress'));
         expect(requestedPaths, isNot(contains(ActiveIpv4Connection.path)));
         if (gateway.isEmpty) {
           expect(result, isNull);
@@ -864,6 +882,15 @@ void main() {
   });
 
   group('checkWifiRadios', () {
+    test('a radio row with every value blank is no radio', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            ...wifiRadiosResponse(),
+            ...blankRow(wifiRadiosResponse(), 'Device.WiFi.Radio.', 1, 9),
+          });
+
+      expect(await service.checkWifiRadios(), hasLength(2));
+    });
+
     test('returns list of WiFiRadioUIModel with band/channel fields', () async {
       when(() => mockUsp.get(any()))
           .thenAnswer((_) async => wifiRadiosResponse());
@@ -880,6 +907,15 @@ void main() {
   });
 
   group('checkConnectedDevices', () {
+    test('a host row with every value blank is no device', () async {
+      final real = connectedDeviceFields(1,
+          mac: '00:11:22:33:44:55', hostName: 'Mac', active: true);
+      when(() => mockUsp.get(any())).thenAnswer((_) async =>
+          {...real, ...blankRow(real, 'Device.Hosts.Host.', 1, 9)});
+
+      expect((await service.checkConnectedDevices()).totalDevices, 1);
+    });
+
     test('returns counts and high-bandwidth devices', () async {
       final response = <String, dynamic>{
         ...connectedDeviceFields(1,
@@ -988,6 +1024,20 @@ void main() {
   });
 
   group('checkDhcpPool', () {
+    test('a lease row with every value blank is no lease', () async {
+      final real = dhcpClientFields(1, active: true);
+      const lan = LocalNetworkTestData.lanPool;
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            ...lanResponse(),
+            ...real,
+            ...blankRow(real, '${lan}Client.', 11, 19),
+          });
+
+      final pool = await service.checkDhcpPool();
+      expect(pool.totalLeases, 1);
+      expect(pool.usedLeases, 1);
+    });
+
     test(
         'computes capacity from MinAddress/MaxAddress and counts active leases',
         () async {
@@ -1276,6 +1326,25 @@ void main() {
   }
 
   group('checkMeshBackhaul', () {
+    test('a node row with every value blank is no node', () async {
+      // A single router plus a blank row is still a single router: no mesh to
+      // inspect. Counted as a node, the blank row passes the two-node check,
+      // and, with no backhaul of its own, can take the controller's place.
+      final controller = meshNodeFields(1,
+          id: 'controller',
+          linkType: 'Ethernet',
+          rateMbps: 1000,
+          signalStrength: 0,
+          operationMode: 'Controller');
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            ...controller,
+            ...blankRow(
+                controller, 'Device.WiFi.DataElements.Network.Device.', 1, 9),
+          });
+
+      expect(await service.checkMeshBackhaul(), isEmpty);
+    });
+
     test('returns empty list for single-router (no mesh) deployment', () async {
       // Single node — backhaul concept doesn't apply.
       final response = <String, dynamic>{

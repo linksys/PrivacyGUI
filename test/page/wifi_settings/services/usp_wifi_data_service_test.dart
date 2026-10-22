@@ -209,6 +209,71 @@ void main() {
       expect(() => svc.fetch(), throwsA(isA<ServiceError>()));
     });
 
+    // usp-codegen 0.18 returns every row, including one with every value
+    // blank, which 0.17 dropped (#1654). Each table gets one here.
+    // Every leaf is present, as the router reports it, with a blank value.
+    Map<String, dynamic> blankRows() => {
+          for (final key in _buildRadiosResponse().keys)
+            if (key.startsWith('Device.WiFi.Radio.1.'))
+              key.replaceFirst('Radio.1.', 'Radio.9.'): '',
+          for (final key in _buildSsidsResponse().keys)
+            if (key.startsWith('Device.WiFi.SSID.1.'))
+              key.replaceFirst('SSID.1.', 'SSID.9.'): '',
+          for (final key in _buildAccessPointsResponse().keys)
+            if (key.startsWith('Device.WiFi.AccessPoint.1.'))
+              key.replaceFirst('AccessPoint.1.', 'AccessPoint.9.'): '',
+        };
+
+    test('a row with every value blank is no radio, SSID or access point',
+        () async {
+      final blank = blankRows();
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((invocation) async {
+        final first = (invocation.positionalArguments[0] as List<String>).first;
+        if (first.contains('AssociatedDevice')) return <String, dynamic>{};
+        Map<String, dynamic> withBlank(Map<String, dynamic> base, String t) => {
+              ...base,
+              for (final e in blank.entries)
+                if (e.key.startsWith(t)) e.key: e.value,
+            };
+        if (first.startsWith('Device.WiFi.Radio.')) {
+          return withBlank(_buildRadiosResponse(), 'Device.WiFi.Radio.');
+        }
+        if (first.startsWith('Device.WiFi.SSID.')) {
+          return withBlank(_buildSsidsResponse(), 'Device.WiFi.SSID.');
+        }
+        return withBlank(
+            _buildAccessPointsResponse(), 'Device.WiFi.AccessPoint.');
+      });
+
+      final result = await svc.fetch();
+
+      expect(result.codegenContext.raw.radios.items.length, 2);
+      expect(result.codegenContext.raw.ssids.items.length, 3);
+      expect(result.codegenContext.raw.accessPoints.items.length, 3);
+      expect(result.radioModels.length, 2);
+    });
+
+    test('a table of only blank access points is a failed read, as before',
+        () async {
+      final blank = blankRows();
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((invocation) async {
+        final first = (invocation.positionalArguments[0] as List<String>).first;
+        if (first.startsWith('Device.WiFi.Radio.')) {
+          return _buildRadiosResponse();
+        }
+        if (first.startsWith('Device.WiFi.SSID.')) return _buildSsidsResponse();
+        if (first.contains('AssociatedDevice')) return <String, dynamic>{};
+        return {
+          for (final e in blank.entries)
+            if (e.key.startsWith('Device.WiFi.AccessPoint.')) e.key: e.value,
+        };
+      });
+
+      expect(() => svc.fetch(), throwsA(isA<ServiceError>()));
+    });
+
     test('maps USP error to ServiceError on fetch failure', () async {
       when(() => mockUsp.get(any(), priority: any(named: 'priority')))
           .thenThrow(Exception('USP timeout'));

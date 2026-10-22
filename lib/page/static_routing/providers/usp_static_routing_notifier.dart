@@ -104,8 +104,9 @@ class UspStaticRoutingNotifier
 
   /// Add a new route locally.
   ///
-  /// Resolves [StaticRouteUIModel.interfacePath] from [interfaceName] via the
-  /// service layer so the view doesn't need to access the service directly.
+  /// Fills [StaticRouteUIModel.interfacePath] through the service layer so the
+  /// view doesn't need to access the service directly. It holds the display
+  /// name until a save: the path a route is written with is resolved then.
   void addRoute(StaticRouteUIModel route) {
     assert(route.interfaceName.isNotEmpty, 'interfaceName must not be empty');
     final resolved = route.copyWith(
@@ -121,8 +122,9 @@ class UspStaticRoutingNotifier
 
   /// Edit an existing route by index.
   ///
-  /// Resolves [StaticRouteUIModel.interfacePath] from [interfaceName] via the
-  /// service layer so the view doesn't need to access the service directly.
+  /// Fills [StaticRouteUIModel.interfacePath] through the service layer so the
+  /// view doesn't need to access the service directly. It holds the display
+  /// name until a save: the path a route is written with is resolved then.
   void editRoute(int index, StaticRouteUIModel route) {
     assert(route.interfaceName.isNotEmpty, 'interfaceName must not be empty');
     final resolved = route.copyWith(

@@ -21,6 +21,18 @@ class FirmwareImage {
     required this.status,
     required this.available,
   });
+
+  @override
+  String toString() {
+    return 'FirmwareImage('
+        'instancePath: $instancePath, '
+        'alias: $alias, '
+        'name: $name, '
+        'version: $version, '
+        'status: $status, '
+        'available: $available'
+        ')';
+  }
 }
 
 /// Firmware image partitions and OTA update state. Instances 1-2 (alias fw1/fw2) are physical NAND banks. Instance 3 (alias ota) is a virtual instance representing OTA server update state.
@@ -29,6 +41,9 @@ class FirmwareImages {
   final List<FirmwareImage> items;
 
   const FirmwareImages({required this.items});
+
+  @override
+  String toString() => 'FirmwareImages(items: $items)';
 
   static const _paths = [
     'Device.DeviceInfo.FirmwareImage.*.Alias',
@@ -59,21 +74,6 @@ class FirmwareImages {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}Alias'],
-        response['${p}Name'],
-        response['${p}Version'],
-        response['${p}Status'],
-        response['${p}Available']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final missing = <String>[];
       if (!response.containsKey('${p}Name')) {
         missing.add('${p}Name');

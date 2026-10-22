@@ -6,43 +6,56 @@ import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 
+import '../../../mocks/test_data/local_network_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 void main() {
   late MockUspClient mockUsp;
 
-  /// LanNetworkInfo codegen response (includes IPv6Enable since YAML v1.2.0).
-  final lanInfoResponse = <String, dynamic>{
-    'Device.IP.Interface.1.IPv4Address.1.IPAddress': '192.168.1.1',
-    'Device.IP.Interface.1.IPv4Address.1.SubnetMask': '255.255.255.0',
-    'Device.DHCPv4.Server.Pool.1.Enable': true,
-    'Device.DHCPv4.Server.Pool.1.MinAddress': '192.168.1.100',
-    'Device.DHCPv4.Server.Pool.1.MaxAddress': '192.168.1.199',
-    'Device.DHCPv4.Server.Pool.1.LeaseTime': '7200',
-    'Device.DHCPv4.Server.Pool.1.DNSServers': '8.8.8.8,8.8.4.4',
-    'Device.DeviceInfo.HostName': 'LinksysRouter',
-    'Device.IP.Interface.1.IPv6Enable': true,
-  };
+  /// The LAN data GETs: `LanNetworkInfo` on Interface.3, the `dhcp-lan` pool
+  /// on Pool.4 (behind the guest pool on Pool.2).
+  final lanInterfaceResponse = LocalNetworkTestData.lanInterfaceResponse(
+    hostName: 'LinksysRouter',
+    ipv6Enabled: true,
+  );
+  final lanPoolResponse = LocalNetworkTestData.lanPoolResponse(
+    minAddress: '192.168.1.100',
+    maxAddress: '192.168.1.199',
+    leaseTime: '7200',
+    dnsServers: '8.8.8.8,8.8.4.4',
+  );
 
-  /// IPv6 response from raw usp.get().
+  /// The LAN interface's IPv6 address table, `LanIpv6` rows from 3.
+  Map<String, dynamic> ipv6Table(List<String> addresses) => {
+        for (var i = 0; i < addresses.length; i++)
+          '${LocalNetworkTestData.lanInterface}IPv6Address.${i + 3}.IPAddress':
+              addresses[i],
+      };
+
   /// Includes a link-local (fe80::) address (kept but reordered after global,
   /// tagged by the UI) and a global address that must be preferred first (#1129).
-  final ipv6Response = <String, dynamic>{
-    'Device.IP.Interface.1.IPv6Enable': true,
-    'Device.IP.Interface.1.IPv6Address.1.IPAddress': 'fe80::1',
-    'Device.IP.Interface.1.IPv6Address.2.IPAddress': '2001:db8::1',
-  };
+  final ipv6Response = ipv6Table(['fe80::1', '2001:db8::1']);
+
+  void stubLan({Object? ipv6}) {
+    when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+      final paths = invocation.positionalArguments[0] as List<String>;
+      if (ipv6 is Exception &&
+          paths.contains('${LocalNetworkTestData.lanInterface}IPv6Address.')) {
+        throw ipv6;
+      }
+      return LocalNetworkTestData.answer(
+        paths,
+        lanInterfaceGet: lanInterfaceResponse,
+        lanPoolGet: lanPoolResponse,
+        ipv6Addresses: ipv6 is Map<String, dynamic> ? ipv6 : ipv6Response,
+      );
+    });
+  }
 
   setUp(() {
     mockUsp = MockUspClient();
-    when(() => mockUsp.get(any())).thenAnswer((_) async {
-      final paths = _.positionalArguments[0] as List;
-      // IPv6 multi-instance address query (separate from LanNetworkInfo.fetch)
-      if (paths.any((p) => p.toString().contains('IPv6Address'))) {
-        return ipv6Response;
-      }
-      return lanInfoResponse;
-    });
+    stubLan();
   });
 
   ProviderContainer createContainer() {
@@ -73,21 +86,47 @@ void main() {
       container.dispose();
     });
 
+    test('reads the dhcp-lan pool, not the guest pool in front of it',
+        () async {
+      // The guest pool (cpe-2) is on a lower row than the LAN pool.
+      final container = createContainer();
+      final data = await container.read(lanDataProvider.future);
+
+      expect(data.model.minAddress, '192.168.1.100');
+      expect(data.model.maxAddress, '192.168.1.199');
+      final requested = verify(() => mockUsp.get(captureAny()))
+          .captured
+          .cast<List<String>>()
+          .expand((paths) => paths);
+      expect(
+          requested.where((p) => p.startsWith(LocalNetworkTestData.guestPool)),
+          isEmpty,
+          reason: 'the guest pool must not be read as the LAN pool');
+      container.dispose();
+    });
+
+    test('a LAN interface with no address row reads an empty IP', () async {
+      when(() => mockUsp.get(any()))
+          .thenAnswer((invocation) async => LocalNetworkTestData.answer(
+                invocation.positionalArguments[0] as List<String>,
+                lanInterfaceGet: LocalNetworkTestData.lanInterfaceResponse(
+                    hasAddress: false),
+              ));
+
+      final container = createContainer();
+      final data = await container.read(lanDataProvider.future);
+
+      expect(data.model.ipAddress, isEmpty);
+      expect(data.model.subnetMask, isEmpty);
+      expect(data.model.minAddress, '192.168.1.100');
+      container.dispose();
+    });
+
     test('link-local-only IPv6 keeps the link-local address (#1129)', () async {
       // Reproduces the reported case: br-lan holds only a scope-link fe80::
       // address and no global/ULA prefix. It is still surfaced (tagged with a
       // scope badge by the UI), not hidden.
-      when(() => mockUsp.get(any())).thenAnswer((_) async {
-        final paths = _.positionalArguments[0] as List;
-        if (paths.any((p) => p.toString().contains('IPv6Address'))) {
-          return <String, dynamic>{
-            'Device.IP.Interface.1.IPv6Enable': true,
-            'Device.IP.Interface.1.IPv6Address.1.IPAddress':
-                'fe80::7612:13ff:fe21:5394',
-          };
-        }
-        return lanInfoResponse;
-      });
+      stubLan(ipv6: ipv6Table(['fe80::7612:13ff:fe21:5394']));
 
       final container = createContainer();
       final data = await container.read(lanDataProvider.future);
@@ -98,18 +137,7 @@ void main() {
     });
 
     test('link-local reordered after global, all kept (#1129)', () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async {
-        final paths = _.positionalArguments[0] as List;
-        if (paths.any((p) => p.toString().contains('IPv6Address'))) {
-          return <String, dynamic>{
-            'Device.IP.Interface.1.IPv6Enable': true,
-            'Device.IP.Interface.1.IPv6Address.1.IPAddress': 'fe80::1%eth0',
-            'Device.IP.Interface.1.IPv6Address.2.IPAddress': 'febf::1',
-            'Device.IP.Interface.1.IPv6Address.3.IPAddress': '2001:db8:abcd::5',
-          };
-        }
-        return lanInfoResponse;
-      });
+      stubLan(ipv6: ipv6Table(['fe80::1%eth0', 'febf::1', '2001:db8:abcd::5']));
 
       final container = createContainer();
       final data = await container.read(lanDataProvider.future);
@@ -127,16 +155,7 @@ void main() {
       // address (RFC 3513), NOT link-local:
       //   0xfec0 & 0xffc0 == 0xfec0 != 0xfe80
       // It is kept and, not being link-local, is not tagged as such by the UI.
-      when(() => mockUsp.get(any())).thenAnswer((_) async {
-        final paths = _.positionalArguments[0] as List;
-        if (paths.any((p) => p.toString().contains('IPv6Address'))) {
-          return <String, dynamic>{
-            'Device.IP.Interface.1.IPv6Enable': true,
-            'Device.IP.Interface.1.IPv6Address.1.IPAddress': 'fec0::1',
-          };
-        }
-        return lanInfoResponse;
-      });
+      stubLan(ipv6: ipv6Table(['fec0::1']));
 
       final container = createContainer();
       final data = await container.read(lanDataProvider.future);
@@ -160,13 +179,7 @@ void main() {
     });
 
     test('IPv6 fetch failure falls back to disabled', () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async {
-        final paths = _.positionalArguments[0] as List;
-        if (paths.any((p) => p.toString().contains('IPv6Address'))) {
-          throw Exception('IPv6 not supported');
-        }
-        return lanInfoResponse;
-      });
+      stubLan(ipv6: Exception('IPv6 not supported'));
 
       final container = createContainer();
       final data = await container.read(lanDataProvider.future);

@@ -5,6 +5,7 @@ import 'package:privacy_gui/generated/dmz.g.dart';
 import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/_shared/utils/empty_row.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
@@ -71,7 +72,13 @@ class UspFirewallDataService {
     }
 
     final chainRules = results[0] as FirewallChainRules;
-    final dmzRaw = results[1] as Dmz;
+    // A DMZ row with every value blank is no entry (usp-codegen 0.17 dropped
+    // it), so the empty-DMZ state stays empty.
+    final dmzRaw = Dmz(
+        items: (results[1] as Dmz)
+            .items
+            .where((d) => !isEmptyDmzEntry(d))
+            .toList());
 
     // Build firewall UIModel + opaque context via service statics.
     final ruleMap = UspFirewallService.parseFirewallRules(chainRules);
@@ -79,7 +86,7 @@ class UspFirewallDataService {
     final ruleContext = FirewallRuleContext.fromMap(ruleMap);
 
     // Build per-rule summaries for chart display.
-    final ruleSummaries = chainRules.items
+    final ruleSummaries = UspFirewallService.defaultChainRules(chainRules)
         .map((r) => FirewallRuleSummary(target: r.target, enabled: r.enable))
         .toList();
 

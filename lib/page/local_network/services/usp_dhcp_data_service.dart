@@ -4,6 +4,8 @@ import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/page/_shared/utils/empty_row.dart';
+import 'package:privacy_gui/page/_shared/utils/lan_dhcp_pool_pick.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
@@ -62,22 +64,35 @@ class UspDhcpDataService {
         DhcpReservations.fetch(_usp),
       ]);
 
-      final clients = results[0] as DhcpClients;
-      final reservations = results[1] as DhcpReservations;
+      // The LAN pool's leases and reservations; the guest pool's are not
+      // shown on these pages, nor is a row with every value blank.
+      final clients =
+          (lanDhcpPoolOf((results[0] as DhcpClients).items, (p) => p.alias)
+                      ?.clients ??
+                  const <DhcpClient>[])
+              .where((c) => !isEmptyDhcpClient(c));
+      final reservations =
+          (lanDhcpPoolOf((results[1] as DhcpReservations).items, (p) => p.alias)
+                      ?.staticAddresses ??
+                  const <DhcpReservation>[])
+              .where((r) => !isEmptyDhcpReservation(r));
 
-      final clientModels = clients.items.map((c) {
+      final clientModels = clients.map((c) {
         final normalizedMac = c.chaddr.trim().toUpperCase();
+        // A lease's first address row is the address it holds; a client with
+        // no row has no address yet.
+        final ipv4 = c.ipv4Addresses.firstOrNull;
         return DhcpClientUIModel(
           mac: c.chaddr,
-          ip: c.ipAddress,
+          ip: ipv4?.ipAddress ?? '',
           leaseActive: c.active,
           isOnline: isOnlineByMac[normalizedMac],
           hostName: hostNameByMac[normalizedMac] ?? '',
-          leaseExpiry: c.leaseTimeRemaining,
+          leaseExpiry: ipv4?.leaseTimeRemaining,
         );
       }).toList();
 
-      final reservationModels = reservations.items
+      final reservationModels = reservations
           .map((r) => DhcpReservationUIModel(
                 instancePath: r.instancePath,
                 mac: r.chaddr,

@@ -15,33 +15,40 @@ import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
 
+import '../../../mocks/test_data/local_network_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 void main() {
   late MockUspClient mockUsp;
 
-  /// DhcpClients codegen response.
+  /// DhcpClients codegen response: two leases on the LAN pool (Pool.4) and
+  /// one on the guest pool (Pool.2) in front of it, which must not show.
   final dhcpClientsResponse = <String, dynamic>{
-    'Device.DHCPv4.Server.Pool.1.Client.1.Chaddr': 'AA:BB:CC:DD:EE:01',
-    'Device.DHCPv4.Server.Pool.1.Client.1.Active': true,
-    'Device.DHCPv4.Server.Pool.1.Client.1.IPv4Address.1.IPAddress':
-        '192.168.1.101',
-    'Device.DHCPv4.Server.Pool.1.Client.1.IPv4Address.1.LeaseTimeRemaining':
+    ...LocalNetworkTestData.poolRows(),
+    '${LocalNetworkTestData.guestPool}Client.4.Chaddr': 'GG:GG:GG:GG:GG:01',
+    '${LocalNetworkTestData.guestPool}Client.4.Active': true,
+    '${LocalNetworkTestData.guestPool}Client.4.IPv4Address.3.IPAddress':
+        '192.168.3.101',
+    '${LocalNetworkTestData.guestPool}Client.4.IPv4Address.3.LeaseTimeRemaining':
         '2030-01-01T00:00:00Z',
-    'Device.DHCPv4.Server.Pool.1.Client.2.Chaddr': 'AA:BB:CC:DD:EE:02',
-    'Device.DHCPv4.Server.Pool.1.Client.2.Active': false,
-    'Device.DHCPv4.Server.Pool.1.Client.2.IPv4Address.1.IPAddress':
+    '${LocalNetworkTestData.lanPool}Client.6.Chaddr': 'AA:BB:CC:DD:EE:01',
+    '${LocalNetworkTestData.lanPool}Client.6.Active': true,
+    '${LocalNetworkTestData.lanPool}Client.6.IPv4Address.3.IPAddress':
+        '192.168.1.101',
+    '${LocalNetworkTestData.lanPool}Client.6.IPv4Address.3.LeaseTimeRemaining':
+        '2030-01-01T00:00:00Z',
+    '${LocalNetworkTestData.lanPool}Client.9.Chaddr': 'AA:BB:CC:DD:EE:02',
+    '${LocalNetworkTestData.lanPool}Client.9.Active': false,
+    '${LocalNetworkTestData.lanPool}Client.9.IPv4Address.3.IPAddress':
         '192.168.1.102',
-    'Device.DHCPv4.Server.Pool.1.Client.2.IPv4Address.1.LeaseTimeRemaining':
+    '${LocalNetworkTestData.lanPool}Client.9.IPv4Address.3.LeaseTimeRemaining':
         '2020-01-01T00:00:00Z',
   };
 
-  /// DhcpReservations codegen response.
-  final dhcpReservationsResponse = <String, dynamic>{
-    'Device.DHCPv4.Server.Pool.1.StaticAddress.1.Enable': true,
-    'Device.DHCPv4.Server.Pool.1.StaticAddress.1.Chaddr': 'AA:BB:CC:DD:EE:01',
-    'Device.DHCPv4.Server.Pool.1.StaticAddress.1.Yiaddr': '192.168.1.50',
-  };
+  /// DhcpReservations codegen response: one LAN reservation, one guest one.
+  final dhcpReservationsResponse = LocalNetworkTestData.reservationsResponse(
+      [('AA:BB:CC:DD:EE:01', '192.168.1.50', true)]);
 
   setUp(() {
     mockUsp = MockUspClient();
@@ -65,12 +72,12 @@ void main() {
           'hasErrors': false,
           'results': [
             {
-              'requestedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.',
+              'requestedPath': '${LocalNetworkTestData.lanPool}StaticAddress.',
               'success': true,
               'createdInstances': [
                 {
                   'affectedPath':
-                      'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
+                      '${LocalNetworkTestData.lanPool}StaticAddress.5.',
                   'initialParams': {}
                 }
               ]
@@ -140,6 +147,35 @@ void main() {
       expect(reservation.mac, 'AA:BB:CC:DD:EE:01');
       expect(reservation.ip, '192.168.1.50');
       expect(reservation.enable, isTrue);
+      container.dispose();
+    });
+
+    test('a lease or reservation row with every value blank is not listed',
+        () async {
+      // usp-codegen 0.18 returns such rows where 0.17 dropped them (#1654).
+      const lan = LocalNetworkTestData.lanPool;
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List;
+        if (paths.any((p) => p.toString().contains('StaticAddress'))) {
+          return {
+            ...dhcpReservationsResponse,
+            '${lan}StaticAddress.9.Enable': false,
+            '${lan}StaticAddress.9.Chaddr': '',
+            '${lan}StaticAddress.9.Yiaddr': '',
+          };
+        }
+        return {
+          ...dhcpClientsResponse,
+          '${lan}Client.12.Chaddr': '',
+          '${lan}Client.12.Active': false,
+        };
+      });
+
+      final container = createContainer();
+      final data = await container.read(dhcpDataProvider.future);
+
+      expect(data.clientModels, hasLength(2));
+      expect(data.reservationModels, hasLength(1));
       container.dispose();
     });
 

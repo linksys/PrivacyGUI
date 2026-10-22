@@ -11,9 +11,10 @@ import 'package:privacy_gui/generated/data_elements_network_info.g.dart';
 import 'package:privacy_gui/generated/device_operations.g.dart';
 import 'package:privacy_gui/generated/network_diagnostics.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
-import 'package:privacy_gui/generated/wan_operations.g.dart';
+import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
+import 'package:privacy_gui/page/_shared/utils/empty_row.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_topology_builder.dart';
 import 'package:privacy_gui/page/_shared/utils/wifi_guest_detection.dart';
@@ -27,7 +28,6 @@ import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 import 'package:privacy_gui/page/internet_settings/services/auto_ipoe_service.dart';
 import 'package:privacy_gui/page/internet_settings/services/usp_internet_settings_service.dart';
-import 'package:privacy_gui/page/internet_settings/services/usp_wan_data_service.dart';
 
 final pnpServiceProvider = Provider<PnpService>((ref) {
   final supportsAutoIPoE =
@@ -111,13 +111,9 @@ class PnpService {
 
   /// Returns true if WAN is up with a valid IP address.
   ///
-  /// A WAN with no IPv4 address returns false, not a throw. On FLWRT 2.0 a WAN with
-  /// no connection has no `IPv4Address` row at all, and the 0.17 `WanStatus` reads
-  /// the fixed row `IPv4Address.1`, so a plain `WanStatus.fetch` threw 9998 exactly
-  /// when there was no internet. The notifier reads a throw as "router unreadable",
-  /// so the user got the read-failure card instead of the no-internet page (#1098).
-  /// TEMPORARY: with #1654 this becomes `status == 'Up' && ipv4Addresses.isNotEmpty`
-  /// on the 0.18 list, and [fetchWanStatusTolerantOfNoAddress] is deleted.
+  /// A WAN with no IPv4 address returns false, not a throw: on FLWRT 2.0 a WAN
+  /// with no connection has no `IPv4Address` row at all, and the notifier reads
+  /// a throw as "router unreadable" rather than "no internet" (#1098).
   Future<bool> checkInternetConnected() async {
     try {
       final fetchAutoIPoE = _fetchAutoIPoE;
@@ -133,9 +129,9 @@ class PnpService {
           }
         } on ResourceNotFoundError {/* Router without the optional adapter. */}
       }
-      final wan = await fetchWanStatusTolerantOfNoAddress(_usp);
-      if (wan == null) return false;
-      return wan.status == 'Up' && wan.ipAddress.isNotEmpty;
+      final wan = await WanStatus.fetch(_usp);
+      final ipv4 = wan.ipv4Addresses.firstOrNull;
+      return wan.status == 'Up' && (ipv4?.ipAddress.isNotEmpty ?? false);
     } on ServiceError {
       rethrow;
     } catch (e) {
@@ -174,9 +170,23 @@ class PnpService {
       throw mapUspErrorToServiceError(e);
     }
 
-    final ssids = results[0] as WiFiSsids;
-    final aps = results[1] as WiFiAccessPoints;
-    final radios = results[2] as WiFiRadios;
+    // A row with every value blank is none of these (usp-codegen 0.17 dropped
+    // it), so it is never a band and never written to.
+    final ssids = WiFiSsids(
+        items: (results[0] as WiFiSsids)
+            .items
+            .where((s) => !isEmptyWiFiSsid(s))
+            .toList());
+    final aps = WiFiAccessPoints(
+        items: (results[1] as WiFiAccessPoints)
+            .items
+            .where((a) => !isEmptyWiFiAccessPoint(a))
+            .toList());
+    final radios = WiFiRadios(
+        items: (results[2] as WiFiRadios)
+            .items
+            .where((r) => !isEmptyWiFiRadio(r))
+            .toList());
 
     // Helper: find AP for a given SSID
     WiFiAccessPoint? apForSsid(WiFiSsid ssid) {
@@ -440,14 +450,17 @@ class PnpService {
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
+    // A blank row is one the router has not filled in (usp-codegen 0.17
+    // dropped it), so it reads as missing, never as the written value.
     final ssids = {
-      for (final s in (results[0] as WiFiSsids).items) s.instancePath: s,
+      for (final s in (results[0] as WiFiSsids).items)
+        if (!isEmptyWiFiSsid(s)) s.instancePath: s,
     };
     final aps = expectedApEnable.isEmpty
         ? const <String, WiFiAccessPoint>{}
         : {
             for (final a in (results[1] as WiFiAccessPoints).items)
-              a.instancePath: a,
+              if (!isEmptyWiFiAccessPoint(a)) a.instancePath: a,
           };
 
     return expectedSsid.entries.every((e) => ssids[e.key]?.ssid == e.value) &&
@@ -535,12 +548,12 @@ class PnpService {
   /// including PPP/VLAN instance lifecycle, result validation, and
   /// allowPartial handling.
   Future<void> saveIspSettings(PnpIspConfig config) async {
+    final internetSettingsService = UspInternetSettingsService(_usp);
     if (config.type == IspConnectionType.dhcp) {
-      await WanOperations.renewDhcpLease(_usp);
+      await internetSettingsService.renewDhcpLease();
       return;
     }
 
-    final internetSettingsService = UspInternetSettingsService(_usp);
     final fetchResult = await internetSettingsService.fetchSettings();
 
     final original = fetchResult.form;
@@ -600,7 +613,12 @@ class PnpService {
         DataElementsNetwork.fetch(_usp),
         _fetchControllerId(),
       ]);
-      final network = results[0] as DataElementsNetwork;
+      // A node with every value blank is no node (usp-codegen 0.17 dropped it).
+      final network = DataElementsNetwork(
+          items: (results[0] as DataElementsNetwork)
+              .items
+              .where((n) => !isEmptyMeshNode(n))
+              .toList());
       final controllerId = results[1] as String?;
       if (network.items.isEmpty) {
         logger.d('[PnP] DataElements empty — not a mesh or unsupported');
@@ -648,8 +666,9 @@ class PnpService {
   /// Fetch the primary WiFi SSID name (for display in no-internet view).
   Future<String?> fetchCurrentSsid() async {
     try {
-      final ssids = await WiFiSsids.fetch(_usp);
-      return ssids.items.isNotEmpty ? ssids.items.first.ssid : null;
+      final ssids =
+          (await WiFiSsids.fetch(_usp)).items.where((s) => !isEmptyWiFiSsid(s));
+      return ssids.firstOrNull?.ssid;
     } catch (_) {
       return null;
     }

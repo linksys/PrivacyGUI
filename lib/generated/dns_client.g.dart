@@ -23,6 +23,19 @@ class DnsServer {
     required this.alias,
     required this.interface_,
   });
+
+  @override
+  String toString() {
+    return 'DnsServer('
+        'instancePath: $instancePath, '
+        'address: $address, '
+        'type: $type, '
+        'enabled: $enabled, '
+        'status: $status, '
+        'alias: $alias, '
+        'interface_: $interface_'
+        ')';
+  }
 }
 
 /// DNS client configuration and server list
@@ -115,7 +128,8 @@ class DnsClient {
     return 'DnsClient('
         'enabled: $enabled, '
         'status: $status, '
-        'serverCount: $serverCount'
+        'serverCount: $serverCount, '
+        'servers: $servers'
         ')';
   }
 }

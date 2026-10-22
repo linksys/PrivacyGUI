@@ -4,19 +4,32 @@
 
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
-/// Single instance from DhcpReservations
+/// Nested instance from parent multi-instance table
 class DhcpReservation {
   final String instancePath;
   final bool enable;
   final String chaddr;
   final String yiaddr;
+  final String? name;
 
   const DhcpReservation({
     required this.instancePath,
     required this.enable,
     required this.chaddr,
     required this.yiaddr,
+    this.name,
   });
+
+  @override
+  String toString() {
+    return 'DhcpReservation('
+        'instancePath: $instancePath, '
+        'enable: $enable, '
+        'chaddr: $chaddr, '
+        'yiaddr: $yiaddr, '
+        'name: $name'
+        ')';
+  }
 }
 
 /// Update descriptor for DhcpReservation instances
@@ -25,25 +38,75 @@ class DhcpReservationUpdate {
   final bool? enable;
   final String? chaddr;
   final String? yiaddr;
+  final String? name;
 
   const DhcpReservationUpdate({
     required this.instancePath,
     this.enable,
     this.chaddr,
     this.yiaddr,
+    this.name,
   });
 }
 
-/// DHCP static address reservations
+/// Add descriptor for DhcpReservation rows
+class DhcpReservationAdd {
+  final String parentInstancePath;
+  final bool? enable;
+  final String? chaddr;
+  final String? yiaddr;
+  final String? name;
+
+  const DhcpReservationAdd({
+    required this.parentInstancePath,
+    this.enable,
+    this.chaddr,
+    this.yiaddr,
+    this.name,
+  });
+}
+
+/// Single instance from DhcpReservations
+class DhcpReservationPool {
+  final String instancePath;
+  final String alias;
+  final String interface_;
+  final List<DhcpReservation> staticAddresses;
+
+  const DhcpReservationPool({
+    required this.instancePath,
+    required this.alias,
+    required this.interface_,
+    required this.staticAddresses,
+  });
+
+  @override
+  String toString() {
+    return 'DhcpReservationPool('
+        'instancePath: $instancePath, '
+        'alias: $alias, '
+        'interface_: $interface_, '
+        'staticAddresses: $staticAddresses'
+        ')';
+  }
+}
+
+/// DHCP static address reservations, per DHCP server pool
 class DhcpReservations {
-  final List<DhcpReservation> items;
+  final List<DhcpReservationPool> items;
 
   const DhcpReservations({required this.items});
 
+  @override
+  String toString() => 'DhcpReservations(items: $items)';
+
   static const _paths = [
-    'Device.DHCPv4.Server.Pool.1.StaticAddress.*.Enable',
-    'Device.DHCPv4.Server.Pool.1.StaticAddress.*.Chaddr',
-    'Device.DHCPv4.Server.Pool.1.StaticAddress.*.Yiaddr',
+    'Device.DHCPv4.Server.Pool.*.Alias',
+    'Device.DHCPv4.Server.Pool.*.Interface',
+    'Device.DHCPv4.Server.Pool.*.StaticAddress.*.Enable',
+    'Device.DHCPv4.Server.Pool.*.StaticAddress.*.Chaddr',
+    'Device.DHCPv4.Server.Pool.*.StaticAddress.*.Yiaddr',
+    'Device.DHCPv4.Server.Pool.*.StaticAddress.*.X_LINKSYS_Name',
   ];
 
   /// Fetch all instances via USP Get message
@@ -53,8 +116,8 @@ class DhcpReservations {
   }
 
   factory DhcpReservations._fromResponse(Map<String, dynamic> response) {
-    final items = <DhcpReservation>[];
-    const basePath = 'Device.DHCPv4.Server.Pool.1.StaticAddress.';
+    final items = <DhcpReservationPool>[];
+    const basePath = 'Device.DHCPv4.Server.Pool.';
     final ids = <String>{};
     for (final key in response.keys) {
       if (key.startsWith(basePath)) {
@@ -67,48 +130,127 @@ class DhcpReservations {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}Enable'],
-        response['${p}Chaddr'],
-        response['${p}Yiaddr']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
+      final childBase_0 = '${p}StaticAddress.';
+      final childIds_0 = <String>{};
+      for (final key in response.keys) {
+        if (key.startsWith(childBase_0)) {
+          final rest = key.substring(childBase_0.length);
+          final dot = rest.indexOf('.');
+          if (dot > 0) childIds_0.add(rest.substring(0, dot));
+        }
+      }
+      final childSorted_0 = childIds_0.toList()
+        ..sort(
+            (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+      final staticAddresses = <DhcpReservation>[];
+      for (final cid_0 in childSorted_0) {
+        final cp_0 = '$childBase_0$cid_0.';
+        staticAddresses.add(DhcpReservation(
+          instancePath: cp_0,
+          enable: response['${cp_0}Enable'] == true ||
+              response['${cp_0}Enable'] == 'true' ||
+              response['${cp_0}Enable'] == '1',
+          chaddr: (response['${cp_0}Chaddr'] ?? '') as String,
+          yiaddr: (response['${cp_0}Yiaddr'] ?? '') as String,
+          name: response.containsKey('${cp_0}X_LINKSYS_Name')
+              ? response['${cp_0}X_LINKSYS_Name'] as String
+              : null,
+        ));
       }
       final missing = <String>[];
-      if (!response.containsKey('${p}Enable')) {
-        missing.add('${p}Enable');
+      if (!response.containsKey('${p}Alias')) {
+        missing.add('${p}Alias');
       }
-      if (!response.containsKey('${p}Chaddr')) {
-        missing.add('${p}Chaddr');
-      }
-      if (!response.containsKey('${p}Yiaddr')) {
-        missing.add('${p}Yiaddr');
+      if (!response.containsKey('${p}Interface')) {
+        missing.add('${p}Interface');
       }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
-      items.add(DhcpReservation(
+      items.add(DhcpReservationPool(
         instancePath: p,
-        enable: response['${p}Enable'] == true ||
-            response['${p}Enable'] == 'true' ||
-            response['${p}Enable'] == '1',
-        chaddr: (response['${p}Chaddr'] ?? '') as String,
-        yiaddr: (response['${p}Yiaddr'] ?? '') as String,
+        alias: (response['${p}Alias'] ?? '') as String,
+        interface_: (response['${p}Interface'] ?? '') as String,
+        staticAddresses: staticAddresses,
       ));
     }
     return DhcpReservations(items: items);
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-      UspClient client, List<DhcpReservationUpdate> updates,
+  /// Add a new DhcpReservation instance under a parent instance
+  static Future<Map<String, dynamic>> addDhcpReservation(
+    UspClient client,
+    String parentInstancePath, {
+    bool? enable,
+    String? chaddr,
+    String? yiaddr,
+    String? name,
+  }) async {
+    final params = <String, dynamic>{};
+    if (enable != null) {
+      params['Enable'] = enable;
+    }
+    if (chaddr != null) {
+      params['Chaddr'] = chaddr;
+    }
+    if (yiaddr != null) {
+      params['Yiaddr'] = yiaddr;
+    }
+    if (name != null) {
+      params['X_LINKSYS_Name'] = name;
+    }
+    return await client.add([
+      {'path': '${parentInstancePath}StaticAddress.', 'params': params}
+    ]);
+  }
+
+  /// Delete a DhcpReservation instance via USP Delete message
+  static Future<Map<String, dynamic>> deleteDhcpReservation(
+      UspClient client, String instancePath) async {
+    return await client.delete([instancePath]);
+  }
+
+  /// Add DhcpReservation rows, each under its own parent, in one USP Add
+  static Future<Map<String, dynamic>> addStaticAddresses(
+      UspClient client, List<DhcpReservationAdd> rows,
       {bool allowPartial = false}) async {
+    if (rows.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    final items = [
+      for (final row in rows)
+        {
+          'path': '${row.parentInstancePath}StaticAddress.',
+          'params': <String, dynamic>{
+            if (row.enable != null) 'Enable': row.enable,
+            if (row.chaddr != null) 'Chaddr': row.chaddr,
+            if (row.yiaddr != null) 'Yiaddr': row.yiaddr,
+            if (row.name != null) 'X_LINKSYS_Name': row.name,
+          },
+        },
+    ];
+    return await client.add(items, allowPartial: allowPartial);
+  }
+
+  /// Delete DhcpReservation rows by instancePath in one USP Delete
+  static Future<Map<String, dynamic>> deleteStaticAddresses(
+      UspClient client, List<String> instancePaths,
+      {bool allowPartial = false}) async {
+    if (instancePaths.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    return await client.delete(instancePaths, allowPartial: allowPartial);
+  }
+
+  /// Build the Set params of updateStaticAddresses() without sending them
+  static Map<String, dynamic> updateStaticAddressesParams(
+      List<DhcpReservationUpdate> updates) {
     final params = <String, dynamic>{};
     for (final update in updates) {
       if (update.enable != null) {
@@ -120,7 +262,18 @@ class DhcpReservations {
       if (update.yiaddr != null) {
         params['${update.instancePath}Yiaddr'] = update.yiaddr;
       }
+      if (update.name != null) {
+        params['${update.instancePath}X_LINKSYS_Name'] = update.name;
+      }
     }
+    return params;
+  }
+
+  /// Update DhcpReservation rows, each through its own instancePath
+  static Future<Map<String, dynamic>> updateStaticAddresses(
+      UspClient client, List<DhcpReservationUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateStaticAddressesParams(updates);
     if (params.isEmpty) {
       return {
         'success': true,
@@ -128,25 +281,5 @@ class DhcpReservations {
       };
     }
     return await client.set(params, allowPartial: allowPartial);
-  }
-
-  /// Add DhcpReservation instance(s) via USP Add message
-  static Future<Map<String, dynamic>> add(
-      UspClient client, List<Map<String, dynamic>> items,
-      {bool allowPartial = false}) async {
-    final itemList = items
-        .map((item) => {
-              'path': 'Device.DHCPv4.Server.Pool.1.StaticAddress.',
-              'params': item
-            })
-        .toList();
-    return await client.add(itemList, allowPartial: allowPartial);
-  }
-
-  /// Delete DhcpReservation instance(s) via USP Delete message
-  static Future<Map<String, dynamic>> delete(
-      UspClient client, List<String> paths,
-      {bool allowPartial = false}) async {
-    return await client.delete(paths, allowPartial: allowPartial);
   }
 }

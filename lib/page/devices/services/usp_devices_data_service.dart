@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/_shared/utils/empty_row.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
@@ -144,7 +145,12 @@ class UspDevicesDataService {
         _fetchInterfaces(),
         _fetchControllerId(),
       ]);
-      final network = results[0] as DataElementsNetwork;
+      // A node with every value blank is no node (usp-codegen 0.17 dropped it).
+      final network = DataElementsNetwork(
+          items: (results[0] as DataElementsNetwork)
+              .items
+              .where((n) => !isEmptyMeshNode(n))
+              .toList());
       final interfaces = results[1] as DataElementsInterfaces?;
       final controllerId = results[2] as String?;
       if (network.items.isEmpty) {
@@ -225,7 +231,11 @@ class UspDevicesDataService {
   /// and is logged rather than rethrown.
   Future<DataElementsInterfaces?> _fetchInterfaces() async {
     try {
-      return await DataElementsInterfaces.fetch(_usp);
+      // A node with no ID is no node (usp-codegen 0.17 dropped it), and its
+      // interface MACs must not be counted as the mesh's own.
+      final interfaces = await DataElementsInterfaces.fetch(_usp);
+      return DataElementsInterfaces(
+          items: interfaces.items.where((n) => !isBlank(n.id)).toList());
     } catch (e) {
       logger.w('[USP][Dashboard]: DataElements interfaces unavailable, wired '
           'clients stay on the master: $e');

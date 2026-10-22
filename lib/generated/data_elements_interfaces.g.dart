@@ -15,6 +15,15 @@ class MeshNeighbor {
     required this.id,
     this.isIeee1905,
   });
+
+  @override
+  String toString() {
+    return 'MeshNeighbor('
+        'instancePath: $instancePath, '
+        'id: $id, '
+        'isIeee1905: $isIeee1905'
+        ')';
+  }
 }
 
 /// Nested instance from parent multi-instance table
@@ -30,6 +39,16 @@ class MeshInterface {
     this.mediaType,
     required this.neighbors,
   });
+
+  @override
+  String toString() {
+    return 'MeshInterface('
+        'instancePath: $instancePath, '
+        'macAddress: $macAddress, '
+        'mediaType: $mediaType, '
+        'neighbors: $neighbors'
+        ')';
+  }
 }
 
 /// Single instance from DataElementsInterfaces
@@ -43,6 +62,15 @@ class MeshNodeInterfaces {
     required this.id,
     required this.interfaces,
   });
+
+  @override
+  String toString() {
+    return 'MeshNodeInterfaces('
+        'instancePath: $instancePath, '
+        'id: $id, '
+        'interfaces: $interfaces'
+        ')';
+  }
 }
 
 /// EasyMesh per-node interfaces and their IEEE 1905 and non-1905 neighbors (Wi-Fi Alliance Data Elements, not BBF TR-181)
@@ -50,6 +78,9 @@ class DataElementsInterfaces {
   final List<MeshNodeInterfaces> items;
 
   const DataElementsInterfaces({required this.items});
+
+  @override
+  String toString() => 'DataElementsInterfaces(items: $items)';
 
   static const _paths = [
     'Device.WiFi.DataElements.Network.Device.*.ID',
@@ -80,15 +111,6 @@ class DataElementsInterfaces {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([response['${p}ID']].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final childBase_0 = '${p}Interface.';
       final childIds_0 = <String>{};
       for (final key in response.keys) {

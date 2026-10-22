@@ -19,6 +19,17 @@ class MeshRadioOperatingClass {
     this.txPower,
     this.timeStamp,
   });
+
+  @override
+  String toString() {
+    return 'MeshRadioOperatingClass('
+        'instancePath: $instancePath, '
+        'operatingClass: $operatingClass, '
+        'channel: $channel, '
+        'txPower: $txPower, '
+        'timeStamp: $timeStamp'
+        ')';
+  }
 }
 
 /// Nested instance from parent multi-instance table
@@ -48,6 +59,23 @@ class MeshStation {
     this.utilizationTransmit,
     this.timeStamp,
   });
+
+  @override
+  String toString() {
+    return 'MeshStation('
+        'instancePath: $instancePath, '
+        'macAddress: $macAddress, '
+        'signalStrengthRcpi: $signalStrengthRcpi, '
+        'lastConnectTime: $lastConnectTime, '
+        'lastDataDownlinkRate: $lastDataDownlinkRate, '
+        'lastDataUplinkRate: $lastDataUplinkRate, '
+        'estMacDataRateDownlink: $estMacDataRateDownlink, '
+        'estMacDataRateUplink: $estMacDataRateUplink, '
+        'utilizationReceive: $utilizationReceive, '
+        'utilizationTransmit: $utilizationTransmit, '
+        'timeStamp: $timeStamp'
+        ')';
+  }
 }
 
 /// Nested instance from parent multi-instance table
@@ -73,6 +101,21 @@ class MeshBss {
     this.timeStamp,
     required this.stations,
   });
+
+  @override
+  String toString() {
+    return 'MeshBss('
+        'instancePath: $instancePath, '
+        'bssid: $bssid, '
+        'ssid: $ssid, '
+        'enabled: $enabled, '
+        'fronthaulUse: $fronthaulUse, '
+        'backhaulUse: $backhaulUse, '
+        'lastChange: $lastChange, '
+        'timeStamp: $timeStamp, '
+        'stations: $stations'
+        ')';
+  }
 }
 
 /// Nested instance from parent multi-instance table
@@ -102,6 +145,23 @@ class MeshRadio {
     required this.currentOperatingClassProfiles,
     required this.bssList,
   });
+
+  @override
+  String toString() {
+    return 'MeshRadio('
+        'instancePath: $instancePath, '
+        'id: $id, '
+        'enabled: $enabled, '
+        'backhaulStaMacAddress: $backhaulStaMacAddress, '
+        'noiseAnpi: $noiseAnpi, '
+        'utilization: $utilization, '
+        'transmitUtilization: $transmitUtilization, '
+        'receiveSelfUtilization: $receiveSelfUtilization, '
+        'receiveOtherUtilization: $receiveOtherUtilization, '
+        'currentOperatingClassProfiles: $currentOperatingClassProfiles, '
+        'bssList: $bssList'
+        ')';
+  }
 }
 
 /// Single instance from DataElementsNetwork
@@ -157,6 +217,36 @@ class MeshNode {
     this.backhaulStatsTimeStamp,
     required this.radios,
   });
+
+  @override
+  String toString() {
+    return 'MeshNode('
+        'instancePath: $instancePath, '
+        'id: $id, '
+        'manufacturerModel: $manufacturerModel, '
+        'manufacturer: $manufacturer, '
+        'serialNumber: $serialNumber, '
+        'softwareVersion: $softwareVersion, '
+        'collectionInterval: $collectionInterval, '
+        'multiApLastContactTime: $multiApLastContactTime, '
+        'multiApEasyMeshAgentOperationMode: $multiApEasyMeshAgentOperationMode, '
+        'backhaulLinkType: $backhaulLinkType, '
+        'backhaulBackhaulDeviceId: $backhaulBackhaulDeviceId, '
+        'backhaulBackhaulMacAddress: $backhaulBackhaulMacAddress, '
+        'backhaulMacAddressMultiAp: $backhaulMacAddressMultiAp, '
+        'prplServingBssid: $prplServingBssid, '
+        'prplBackhaulRadioUid: $prplBackhaulRadioUid, '
+        'backhaulStatsLastDataDownlinkRate: $backhaulStatsLastDataDownlinkRate, '
+        'backhaulStatsLastDataUplinkRate: $backhaulStatsLastDataUplinkRate, '
+        'backhaulStatsSignalStrengthRcpi: $backhaulStatsSignalStrengthRcpi, '
+        'backhaulStatsPacketsSent: $backhaulStatsPacketsSent, '
+        'backhaulStatsPacketsReceived: $backhaulStatsPacketsReceived, '
+        'backhaulStatsErrorsSent: $backhaulStatsErrorsSent, '
+        'backhaulStatsErrorsReceived: $backhaulStatsErrorsReceived, '
+        'backhaulStatsTimeStamp: $backhaulStatsTimeStamp, '
+        'radios: $radios'
+        ')';
+  }
 }
 
 /// EasyMesh DataElements network topology — mesh nodes, radios, BSSes, and client stations
@@ -164,6 +254,9 @@ class DataElementsNetwork {
   final List<MeshNode> items;
 
   const DataElementsNetwork({required this.items});
+
+  @override
+  String toString() => 'DataElementsNetwork(items: $items)';
 
   static const _paths = [
     'Device.WiFi.DataElements.Network.Device.*.ID',
@@ -240,38 +333,6 @@ class DataElementsNetwork {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}ID'],
-        response['${p}ManufacturerModel'],
-        response['${p}Manufacturer'],
-        response['${p}SerialNumber'],
-        response['${p}SoftwareVersion'],
-        response['${p}CollectionInterval'],
-        response['${p}MultiAPDevice.LastContactTime'],
-        response['${p}MultiAPDevice.EasyMeshAgentOperationMode'],
-        response['${p}MultiAPDevice.Backhaul.LinkType'],
-        response['${p}MultiAPDevice.Backhaul.BackhaulDeviceID'],
-        response['${p}MultiAPDevice.Backhaul.BackhaulMACAddress'],
-        response['${p}MultiAPDevice.Backhaul.MACAddress'],
-        response['${p}MultiAPDevice.Backhaul.ServingBSSID'],
-        response['${p}MultiAPDevice.Backhaul.BackhaulRadioUID'],
-        response['${p}MultiAPDevice.Backhaul.Stats.LastDataDownlinkRate'],
-        response['${p}MultiAPDevice.Backhaul.Stats.LastDataUplinkRate'],
-        response['${p}MultiAPDevice.Backhaul.Stats.SignalStrength'],
-        response['${p}MultiAPDevice.Backhaul.Stats.PacketsSent'],
-        response['${p}MultiAPDevice.Backhaul.Stats.PacketsReceived'],
-        response['${p}MultiAPDevice.Backhaul.Stats.ErrorsSent'],
-        response['${p}MultiAPDevice.Backhaul.Stats.ErrorsReceived'],
-        response['${p}MultiAPDevice.Backhaul.Stats.TimeStamp']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final childBase_0 = '${p}Radio.';
       final childIds_0 = <String>{};
       for (final key in response.keys) {

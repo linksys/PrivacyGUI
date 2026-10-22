@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/dmz.g.dart';
+import 'package:privacy_gui/page/_shared/utils/empty_row.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_settings.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_status.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
@@ -29,7 +30,13 @@ class UspDmzService {
   /// Fetch DMZ data from the router and transform into UI types.
   Future<(DmzSettings, DmzStatus)> fetch() async {
     try {
-      final dmzData = await Dmz.fetch(_usp);
+      // A row with every value blank is no DMZ entry (usp-codegen 0.17 dropped
+      // it): a save adds one rather than writing to it.
+      final dmzData = Dmz(
+          items: (await Dmz.fetch(_usp))
+              .items
+              .where((d) => !isEmptyDmzEntry(d))
+              .toList());
       final uiModel = buildUIModel(dmzData);
       final instancePath =
           dmzData.items.isNotEmpty ? dmzData.items.first.instancePath : null;

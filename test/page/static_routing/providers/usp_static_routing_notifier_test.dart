@@ -191,6 +191,22 @@ void main() {
       container.dispose();
     });
 
+    test('editing a route without changing it leaves the page clean',
+        () async {
+      // A fetched route holds the interface path the router reported; the
+      // dialog hands back the display name only, so the path the edit
+      // re-derives differs. That is not a change to the route.
+      when(() => mockService.fetch()).thenAnswer((_) async => [route1]);
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspStaticRoutingProvider.notifier);
+      notifier.editRoute(0, route1);
+
+      expect(notifier.isDirty(), isFalse);
+      container.dispose();
+    });
+
     test('isDirty after mutation, clean after revert', () async {
       when(() => mockService.fetch()).thenAnswer((_) async => [route1]);
       final container = createContainer();

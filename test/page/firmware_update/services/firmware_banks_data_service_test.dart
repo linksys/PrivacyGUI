@@ -39,6 +39,23 @@ void main() {
       expect(banks[1].isActive, isFalse);
     });
 
+    test('a bank row with every value blank is no bank', () async {
+      // usp-codegen 0.18 returns a row with every value blank where 0.17
+      // dropped it (#1654).
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            'Device.DeviceInfo.FirmwareImage.1.Name': 'linux',
+            'Device.DeviceInfo.FirmwareImage.1.Version': '1.0.16.0',
+            'Device.DeviceInfo.FirmwareImage.1.Status': 'Active',
+            'Device.DeviceInfo.FirmwareImage.1.Available': 'true',
+            'Device.DeviceInfo.FirmwareImage.4.Name': '',
+            'Device.DeviceInfo.FirmwareImage.4.Version': '',
+            'Device.DeviceInfo.FirmwareImage.4.Status': '',
+            'Device.DeviceInfo.FirmwareImage.4.Available': '',
+          });
+
+      expect(await service.fetch(), hasLength(1));
+    });
+
     test('fetch parses instance number from path', () async {
       when(() => mockUsp.get(any())).thenAnswer((_) async => {
             'Device.DeviceInfo.FirmwareImage.3.Name': 'linux',

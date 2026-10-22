@@ -39,6 +39,27 @@ class WiFiRadio {
     required this.ieee80211hEnabled,
     required this.supportedOperatingChannelBandwidths,
   });
+
+  @override
+  String toString() {
+    return 'WiFiRadio('
+        'instancePath: $instancePath, '
+        'alias: $alias, '
+        'enable: $enable, '
+        'status: $status, '
+        'channel: $channel, '
+        'operatingFrequencyBand: $operatingFrequencyBand, '
+        'operatingChannelBandwidth: $operatingChannelBandwidth, '
+        'possibleChannels: $possibleChannels, '
+        'operatingStandards: $operatingStandards, '
+        'supportedStandards: $supportedStandards, '
+        'transmitPower: $transmitPower, '
+        'maxBitRate: $maxBitRate, '
+        'autoChannelEnable: $autoChannelEnable, '
+        'ieee80211hEnabled: $ieee80211hEnabled, '
+        'supportedOperatingChannelBandwidths: $supportedOperatingChannelBandwidths'
+        ')';
+  }
 }
 
 /// Update descriptor for WiFiRadio instances
@@ -67,6 +88,9 @@ class WiFiRadios {
   final List<WiFiRadio> items;
 
   const WiFiRadios({required this.items});
+
+  @override
+  String toString() => 'WiFiRadios(items: $items)';
 
   static const _paths = [
     'Device.WiFi.Radio.*.Alias',
@@ -106,30 +130,6 @@ class WiFiRadios {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}Alias'],
-        response['${p}Enable'],
-        response['${p}Status'],
-        response['${p}Channel'],
-        response['${p}OperatingFrequencyBand'],
-        response['${p}OperatingChannelBandwidth'],
-        response['${p}PossibleChannels'],
-        response['${p}OperatingStandards'],
-        response['${p}SupportedStandards'],
-        response['${p}TransmitPower'],
-        response['${p}MaxBitRate'],
-        response['${p}AutoChannelEnable'],
-        response['${p}IEEE80211hEnabled'],
-        response['${p}SupportedOperatingChannelBandwidths']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final missing = <String>[];
       if (!response.containsKey('${p}Enable')) {
         missing.add('${p}Enable');
@@ -210,10 +210,8 @@ class WiFiRadios {
     return WiFiRadios(items: items);
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-      UspClient client, List<WiFiRadioUpdate> updates,
-      {bool allowPartial = false}) async {
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams(List<WiFiRadioUpdate> updates) {
     final params = <String, dynamic>{};
     for (final update in updates) {
       if (update.enable != null) {
@@ -239,6 +237,14 @@ class WiFiRadios {
             update.ieee80211hEnabled;
       }
     }
+    return params;
+  }
+
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+      UspClient client, List<WiFiRadioUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateParams(updates);
     if (params.isEmpty) {
       return {
         'success': true,

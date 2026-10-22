@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/dhcp/services/usp_dhcp_service.dart';
 
+import '../../../mocks/test_data/local_network_test_data.dart';
 import '../../../util/usp_param_templates.dart';
 
 class MockUspClient extends Mock implements UspClient {}
@@ -16,6 +17,10 @@ void main() {
   setUp(() {
     mockUsp = MockUspClient();
     service = UspDhcpService(mockUsp);
+    // An add first reads the pool table to find the LAN pool it adds under.
+    // Tests that read reservations stub their own table.
+    when(() => mockUsp.get(any()))
+        .thenAnswer((_) async => LocalNetworkTestData.poolRows());
   });
 
   // ---------------------------------------------------------------------------
@@ -24,8 +29,8 @@ void main() {
 
   group('UspDhcpService — fetchReservations', () {
     test('returns empty list when no reservations', () async {
-      when(() => mockUsp.get(any()))
-          .thenAnswer((_) async => <String, dynamic>{});
+      when(() => mockUsp.get(any())).thenAnswer(
+          (_) async => LocalNetworkTestData.reservationsResponse([]));
 
       final result = await service.fetchReservations();
 
@@ -33,13 +38,9 @@ void main() {
     });
 
     test('maps chaddr→mac and yiaddr→ip correctly', () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async => {
-            'Device.DHCPv4.Server.Pool.1.StaticAddress.1.Enable': true,
-            'Device.DHCPv4.Server.Pool.1.StaticAddress.1.Chaddr':
-                'AA:BB:CC:DD:EE:FF',
-            'Device.DHCPv4.Server.Pool.1.StaticAddress.1.Yiaddr':
-                '192.168.1.100',
-          });
+      when(() => mockUsp.get(any())).thenAnswer((_) async =>
+          LocalNetworkTestData.reservationsResponse(
+              [('AA:BB:CC:DD:EE:FF', '192.168.1.100', true)]));
 
       final result = await service.fetchReservations();
 
@@ -49,23 +50,16 @@ void main() {
       expect(result[0].enable, isTrue);
       expect(
         result[0].instancePath,
-        'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
+        '${LocalNetworkTestData.lanPool}StaticAddress.5.',
       );
     });
 
     test('maps multiple reservations in order', () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async => {
-            'Device.DHCPv4.Server.Pool.1.StaticAddress.1.Enable': true,
-            'Device.DHCPv4.Server.Pool.1.StaticAddress.1.Chaddr':
-                'AA:BB:CC:DD:EE:01',
-            'Device.DHCPv4.Server.Pool.1.StaticAddress.1.Yiaddr':
-                '192.168.1.101',
-            'Device.DHCPv4.Server.Pool.1.StaticAddress.2.Enable': false,
-            'Device.DHCPv4.Server.Pool.1.StaticAddress.2.Chaddr':
-                'AA:BB:CC:DD:EE:02',
-            'Device.DHCPv4.Server.Pool.1.StaticAddress.2.Yiaddr':
-                '192.168.1.102',
-          });
+      when(() => mockUsp.get(any()))
+          .thenAnswer((_) async => LocalNetworkTestData.reservationsResponse([
+                ('AA:BB:CC:DD:EE:01', '192.168.1.101', true),
+                ('AA:BB:CC:DD:EE:02', '192.168.1.102', false),
+              ]));
 
       final result = await service.fetchReservations();
 
@@ -73,6 +67,32 @@ void main() {
       expect(result[0].mac, 'AA:BB:CC:DD:EE:01');
       expect(result[1].mac, 'AA:BB:CC:DD:EE:02');
       expect(result[1].enable, isFalse);
+    });
+
+    test('a reservation row with every value blank is not listed', () async {
+      // usp-codegen 0.18 returns such a row where 0.17 dropped it (#1654).
+      const lan = LocalNetworkTestData.lanPool;
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            ...LocalNetworkTestData.reservationsResponse(
+                [('AA:BB:CC:DD:EE:01', '192.168.1.101', true)]),
+            '${lan}StaticAddress.9.Enable': false,
+            '${lan}StaticAddress.9.Chaddr': '',
+            '${lan}StaticAddress.9.Yiaddr': '',
+          });
+
+      final result = await service.fetchReservations();
+
+      expect(result.map((r) => r.mac), ['AA:BB:CC:DD:EE:01']);
+    });
+
+    test('a router without the LAN pool lists no reservations', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            '${LocalNetworkTestData.guestPool}Alias': 'cpe-2',
+            '${LocalNetworkTestData.guestPool}Interface':
+                'Device.IP.Interface.6',
+          });
+
+      expect(await service.fetchReservations(), isEmpty);
     });
   });
 
@@ -364,10 +384,8 @@ void main() {
 
     test('adds go out in one Add on the LAN pool StaticAddress table',
         () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async => {
-            'Device.DHCPv4.Server.Pool.2.Alias': 'cpe-2',
-            'Device.DHCPv4.Server.Pool.4.Alias': 'dhcp-lan',
-          });
+      when(() => mockUsp.get(any()))
+          .thenAnswer((_) async => LocalNetworkTestData.poolRows());
       when(() => mockUsp.add(any())).thenAnswer((_) async => okAdd(2));
 
       await service.saveBatch(original: [], current: [
@@ -448,10 +466,8 @@ void main() {
 
     test('immediateAdd adds one row on the LAN pool StaticAddress table',
         () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async => {
-            'Device.DHCPv4.Server.Pool.2.Alias': 'cpe-2',
-            'Device.DHCPv4.Server.Pool.4.Alias': 'dhcp-lan',
-          });
+      when(() => mockUsp.get(any()))
+          .thenAnswer((_) async => LocalNetworkTestData.poolRows());
       when(() => mockUsp.add(any())).thenAnswer((_) async => okAdd(1));
 
       await service.immediateAdd(mac: 'AA:BB:CC:DD:EE:FF', ip: '192.168.1.77');
@@ -466,6 +482,21 @@ void main() {
         'Chaddr': 'AA:BB:CC:DD:EE:FF',
         'Yiaddr': '192.168.1.77',
       });
+    });
+
+    test('an add on a router without the LAN pool adds nothing and says so',
+        () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            '${LocalNetworkTestData.guestPool}Alias': 'cpe-2',
+            '${LocalNetworkTestData.guestPool}Interface':
+                'Device.IP.Interface.6',
+          });
+
+      await expectLater(
+        service.immediateAdd(mac: 'AA:BB:CC:DD:EE:FF', ip: '192.168.1.77'),
+        throwsA(isA<ResourceNotFoundError>()),
+      );
+      verifyNever(() => mockUsp.add(any()));
     });
 
     test('immediateDelete deletes exactly the given row', () async {

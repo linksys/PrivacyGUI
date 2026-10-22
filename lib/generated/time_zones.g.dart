@@ -19,6 +19,17 @@ class TimeZoneEntry {
     required this.observesDst,
     required this.description,
   });
+
+  @override
+  String toString() {
+    return 'TimeZoneEntry('
+        'instancePath: $instancePath, '
+        'timeZoneId: $timeZoneId, '
+        'utcOffsetMinutes: $utcOffsetMinutes, '
+        'observesDst: $observesDst, '
+        'description: $description'
+        ')';
+  }
 }
 
 /// Selectable time zone catalogue (multi-instance, read-only)
@@ -26,6 +37,9 @@ class TimeZones {
   final List<TimeZoneEntry> items;
 
   const TimeZones({required this.items});
+
+  @override
+  String toString() => 'TimeZones(items: $items)';
 
   static const _paths = [
     'Device.Time.X_LINKSYS_TimeZones.*.TimeZoneID',
@@ -55,20 +69,6 @@ class TimeZones {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}TimeZoneID'],
-        response['${p}UTCOffsetMinutes'],
-        response['${p}ObservesDST'],
-        response['${p}Description']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final missing = <String>[];
       if (!response.containsKey('${p}TimeZoneID')) {
         missing.add('${p}TimeZoneID');

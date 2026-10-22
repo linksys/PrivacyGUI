@@ -4,6 +4,8 @@ import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/page/_shared/utils/empty_row.dart';
+import 'package:privacy_gui/page/_shared/utils/lan_dhcp_pool_pick.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 
@@ -24,8 +26,10 @@ class UspDhcpService {
   /// Fetch DHCP reservations and transform to UI models.
   Future<List<DhcpReservationUIModel>> fetchReservations() async {
     try {
-      final raw = await DhcpReservations.fetch(_usp);
-      return raw.items
+      final pool = _lanPool(await DhcpReservations.fetch(_usp));
+      // A row with every value blank is no reservation (0.17 dropped it).
+      return (pool?.staticAddresses ?? const <DhcpReservation>[])
+          .where((r) => !isEmptyDhcpReservation(r))
           .map((r) => DhcpReservationUIModel(
                 instancePath: r.instancePath,
                 mac: r.chaddr,
@@ -38,6 +42,20 @@ class UspDhcpService {
     }
   }
 
+  /// The LAN pool's reservation table, or null when the router lists none.
+  static DhcpReservationPool? _lanPool(DhcpReservations reservations) =>
+      lanDhcpPoolOf(reservations.items, (p) => p.alias);
+
+  /// The path new reservations are added under: the LAN pool's.
+  Future<String> _lanPoolPath() async {
+    final pool = _lanPool(await DhcpReservations.fetch(_usp));
+    if (pool == null) {
+      throw const ResourceNotFoundError(
+          detail: 'No DHCP pool with Alias $lanDhcpPoolAlias on the router');
+    }
+    return pool.instancePath;
+  }
+
   // ---------------------------------------------------------------------------
   // Immediate mutations (Dashboard card / Device Detail — single operations)
   // ---------------------------------------------------------------------------
@@ -45,7 +63,7 @@ class UspDhcpService {
   /// Toggle a single reservation's enable state.
   Future<void> immediateToggle(String instancePath, bool enable) async {
     try {
-      final result = await DhcpReservations.update(
+      final result = await DhcpReservations.updateStaticAddresses(
         _usp,
         [DhcpReservationUpdate(instancePath: instancePath, enable: enable)],
       );
@@ -82,8 +100,13 @@ class UspDhcpService {
     bool enable = true,
   }) async {
     try {
-      final result = await DhcpReservations.add(_usp, [
-        {'Enable': enable, 'Chaddr': mac, 'Yiaddr': ip}
+      final result = await DhcpReservations.addStaticAddresses(_usp, [
+        DhcpReservationAdd(
+          parentInstancePath: await _lanPoolPath(),
+          enable: enable,
+          chaddr: mac,
+          yiaddr: ip,
+        ),
       ]);
       final parsed = UspResultParser.parseAddResult(result);
       switch (parsed) {
@@ -114,7 +137,8 @@ class UspDhcpService {
   /// Delete a single reservation immediately.
   Future<void> immediateDelete(String instancePath) async {
     try {
-      final result = await DhcpReservations.delete(_usp, [instancePath]);
+      final result =
+          await DhcpReservations.deleteStaticAddresses(_usp, [instancePath]);
       final parsed = UspResultParser.parseDeleteResult(result);
       switch (parsed) {
         case UspSuccess():
@@ -166,7 +190,8 @@ class UspDhcpService {
 
       // Delete in reverse instance order to avoid firmware renumbering issues
       for (final r in toDelete.reversed) {
-        final result = await DhcpReservations.delete(_usp, [r.instancePath!]);
+        final result = await DhcpReservations.deleteStaticAddresses(
+            _usp, [r.instancePath!]);
         final parsed = UspResultParser.parseDeleteResult(result);
         switch (parsed) {
           case UspSuccess():
@@ -186,10 +211,16 @@ class UspDhcpService {
       // 2. Add
       final toAdd = current.where((r) => r.instancePath == null).toList();
       if (toAdd.isNotEmpty) {
-        final result = await DhcpReservations.add(
+        final poolPath = await _lanPoolPath();
+        final result = await DhcpReservations.addStaticAddresses(
           _usp,
           toAdd
-              .map((r) => {'Enable': r.enable, 'Chaddr': r.mac, 'Yiaddr': r.ip})
+              .map((r) => DhcpReservationAdd(
+                    parentInstancePath: poolPath,
+                    enable: r.enable,
+                    chaddr: r.mac,
+                    yiaddr: r.ip,
+                  ))
               .toList(),
         );
         final parsed = UspResultParser.parseAddResult(result);
@@ -230,7 +261,8 @@ class UspDhcpService {
       }
 
       if (toUpdate.isNotEmpty) {
-        final result = await DhcpReservations.update(_usp, toUpdate);
+        final result =
+            await DhcpReservations.updateStaticAddresses(_usp, toUpdate);
         final parsed = UspResultParser.parseSetResult(result);
         switch (parsed) {
           case UspSuccess():

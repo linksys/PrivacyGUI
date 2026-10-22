@@ -49,13 +49,11 @@ class MeshSteering {
     );
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-    UspClient client, {
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams({
     bool? clientSteeringEnabled,
     bool? nodeSteeringEnabled,
-    bool allowPartial = false,
-  }) async {
+  }) {
     final params = <String, dynamic>{};
     if (clientSteeringEnabled != null) {
       params['Device.X_LINKSYS_Mesh.ClientSteeringEnabled'] =
@@ -64,6 +62,19 @@ class MeshSteering {
     if (nodeSteeringEnabled != null) {
       params['Device.X_LINKSYS_Mesh.NodeSteeringEnabled'] = nodeSteeringEnabled;
     }
+    return params;
+  }
+
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+    UspClient client, {
+    bool? clientSteeringEnabled,
+    bool? nodeSteeringEnabled,
+    bool allowPartial = false,
+  }) async {
+    final params = updateParams(
+        clientSteeringEnabled: clientSteeringEnabled,
+        nodeSteeringEnabled: nodeSteeringEnabled);
     if (params.isEmpty) {
       return {
         'success': true,

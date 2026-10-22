@@ -6,6 +6,8 @@ import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 import 'package:privacy_gui/page/firewall/services/usp_firewall_service.dart';
 
+import '../../../mocks/test_data/firewall_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 // Helper to build a FirewallChainRule with the given fields.
@@ -37,7 +39,7 @@ void main() {
 
   group('UspFirewallService — parseFirewallRules', () {
     test('maps known descriptions to feature keys', () {
-      final rules = FirewallChainRules(items: [
+      final rules = FirewallTestData.createChains([
         _rule('p.10.', enable: true, description: 'RULE_SPI_IPV4_INPUT'),
         _rule('p.11.', enable: true, description: 'RULE_SPI_IPV4_FORWARD'),
         _rule('p.21.', enable: false, description: 'RULE_LAN2WAN_IPSEC'),
@@ -52,7 +54,7 @@ void main() {
     });
 
     test('skips unknown descriptions', () {
-      final rules = FirewallChainRules(items: [
+      final rules = FirewallTestData.createChains([
         _rule('p.1.', enable: true, description: 'RULE_SPI_IPV4_INPUT'),
         _rule('p.99.', enable: true, description: 'UNKNOWN_RULE'),
       ]);
@@ -139,7 +141,7 @@ void main() {
     // OFF (FWDEV#204, measured on 2.0.3.26100921).
     test('NAT redirection: an enabled rule reads as not blocked', () {
       final map = UspFirewallService.parseFirewallRules(
-        FirewallChainRules(items: [
+        FirewallTestData.createChains([
           _rule('p.31.', enable: true, description: 'RULE_NAT_REDIRECTION'),
         ]),
       );
@@ -151,7 +153,7 @@ void main() {
 
     test('NAT redirection: a disabled rule reads as blocked', () {
       final map = UspFirewallService.parseFirewallRules(
-        FirewallChainRules(items: [
+        FirewallTestData.createChains([
           _rule('p.31.', enable: false, description: 'RULE_NAT_REDIRECTION'),
         ]),
       );
@@ -320,7 +322,7 @@ void main() {
 
   group('UspFirewallService — buildFromChainRules', () {
     test('returns UI model and context from chain rules', () {
-      final rules = FirewallChainRules(items: [
+      final rules = FirewallTestData.createChains([
         _rule('p.10.', enable: false, description: 'RULE_SPI_IPV4_INPUT'),
         _rule('p.11.', enable: false, description: 'RULE_SPI_IPV4_FORWARD'),
         _rule('p.21.', enable: true, description: 'RULE_LAN2WAN_IPSEC'),
@@ -355,7 +357,7 @@ void main() {
 
     test('the 2.0.3 rule set locks no switch', () {
       final context = FirewallRuleContext.fromMap(
-        UspFirewallService.parseFirewallRules(FirewallChainRules(items: [
+        UspFirewallService.parseFirewallRules(FirewallTestData.createChains([
           for (final (i, d) in const [
             (11, 'UDP_FORWARD_FOR_IGMP'),
             (21, 'RULE_SPI_IPV4_INPUT'),

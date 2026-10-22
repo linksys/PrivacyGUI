@@ -9,6 +9,7 @@ import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/_shared/utils/empty_row.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_quick_setup_network.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dart';
@@ -656,17 +657,22 @@ class UspWifiSettingsService {
       throw mapUspErrorToServiceError(e);
     }
 
+    // A row with every value blank is a row the router has not filled in yet
+    // (usp-codegen 0.17 dropped it), so it reads as missing below.
     final readBack = <String, Object?>{
-      for (final s in ssids?.items ?? const <WiFiSsid>[]) ...{
+      for (final s in (ssids?.items ?? const <WiFiSsid>[])
+          .where((s) => !isEmptyWiFiSsid(s))) ...{
         '${s.instancePath}SSID': s.ssid,
         '${s.instancePath}Enable': s.enable,
       },
-      for (final a in aps?.items ?? const <WiFiAccessPoint>[]) ...{
+      for (final a in (aps?.items ?? const <WiFiAccessPoint>[])
+          .where((a) => !isEmptyWiFiAccessPoint(a))) ...{
         '${a.instancePath}Enable': a.enable,
         '${a.instancePath}Security.ModeEnabled': a.securityModeEnabled,
         '${a.instancePath}SSIDAdvertisementEnabled': a.ssidAdvertisementEnabled,
       },
-      for (final r in radios?.items ?? const <WiFiRadio>[]) ...{
+      for (final r in (radios?.items ?? const <WiFiRadio>[])
+          .where((r) => !isEmptyWiFiRadio(r))) ...{
         '${r.instancePath}Channel': r.channel,
         '${r.instancePath}OperatingChannelBandwidth':
             r.operatingChannelBandwidth,

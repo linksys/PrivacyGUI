@@ -5,10 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/ipv6_address.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/tr181_path.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/providers/wan_interface_path_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/generated/static_routing.g.dart';
 import 'package:privacy_gui/generated/wan_ipv6addresses.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
@@ -82,34 +84,22 @@ class UspWanDataService {
       if (bridged != null) return bridged;
 
       final results = await Future.wait([
-        fetchWanStatusTolerantOfNoAddress(_usp),
+        WanStatus.fetch(_usp),
         _fetchGatewayAndIpv6Addresses(),
       ]);
 
-      final wanStatus = results[0] as WanStatus?;
+      final wanStatus = results[0] as WanStatus;
       final extra =
           results[1] as ({String gateway, List<String> ipv6Addresses});
 
-      // A down WAN has no address instance at all, so there is no WanStatus to read
-      // fields off. That is a valid state, not a failure — see the helper below.
-      if (wanStatus == null) {
-        return WanStatusUIModel(
-          isUp: false,
-          ipAddress: '',
-          subnetMask: '',
-          addressingType: '',
-          mtu: 0,
-          gateway: extra.gateway,
-          ipv6Enabled: false,
-          ipv6Addresses: extra.ipv6Addresses,
-        );
-      }
-
+      // A WAN with no IPv4Address row (WAN down; FW 2.0.2 in bridge mode) is a
+      // down WAN with no address, not a failed read (#1615).
+      final ipv4 = wanStatus.ipv4Addresses.firstOrNull;
       return WanStatusUIModel(
-        isUp: wanStatus.status.toLowerCase() == 'up',
-        ipAddress: wanStatus.ipAddress,
-        subnetMask: wanStatus.subnetMask,
-        addressingType: wanStatus.addressingType,
+        isUp: ipv4 != null && wanStatus.status.toLowerCase() == 'up',
+        ipAddress: ipv4?.ipAddress ?? '',
+        subnetMask: ipv4?.subnetMask ?? '',
+        addressingType: ipv4?.addressingType ?? '',
         mtu: wanStatus.maxMtuSize,
         gateway: extra.gateway,
         ipv6Enabled: wanStatus.ipv6Enabled,
@@ -129,10 +119,9 @@ class UspWanDataService {
   /// interface. MTU, gateway and IPv6 still come from the WAN, as they do in
   /// every other mode.
   ///
-  /// Reads the paths directly instead of through a generated model:
-  /// `WanStatus` / `LanNetworkInfo` move to the 0.18 list API with #1654, and
-  /// neither exposes the WAN `Enable` today. Both interfaces are resolved by
-  /// Alias, never by a fixed instance number.
+  /// The WAN `Enable` is read directly rather than through `WanSettings`: that
+  /// model requires `Enable`, while here an absent `Enable` is not a bridge
+  /// reading and must fall through to the normal read.
   Future<WanStatusUIModel?> _fetchBridgedStatus() async {
     final aliases = await _usp.get(['Device.IP.Interface.*.Alias']);
     final wanPath = _interfacePathFor(aliases, 'wan');
@@ -152,26 +141,13 @@ class UspWanDataService {
       return null;
     }
 
-    final lanPath = _interfacePathFor(aliases, 'lan');
-    var ipAddress = '';
-    var subnetMask = '';
-    if (lanPath != null) {
-      final lan = await _usp.get([
-        '${lanPath}IPv4Address.*.IPAddress',
-        '${lanPath}IPv4Address.*.SubnetMask',
-      ]);
-      final row = _firstIpv4Row(lan, '${lanPath}IPv4Address.');
-      if (row != null) {
-        ipAddress = (lan['${row}IPAddress'] ?? '').toString();
-        subnetMask = (lan['${row}SubnetMask'] ?? '').toString();
-      }
-    }
-
+    final lan = (await LanNetworkInfo.fetch(_usp)).ipv4Addresses.firstOrNull;
+    final ipAddress = lan?.ipAddress ?? '';
     final extra = await _fetchGatewayAndIpv6Addresses();
     return WanStatusUIModel(
       isUp: ipAddress.isNotEmpty,
       ipAddress: ipAddress,
-      subnetMask: subnetMask,
+      subnetMask: lan?.subnetMask ?? '',
       addressingType: bridgeAddressingType,
       mtu: int.tryParse('${wanState['${wanPath}MaxMTUSize'] ?? ''}') ?? 0,
       gateway: extra.gateway,
@@ -189,18 +165,6 @@ class UspWanDataService {
       if (match != null) return match.group(1);
     }
     return null;
-  }
-
-  /// The lowest-numbered `IPv4Address.{i}.` row under [base], or null if none.
-  static String? _firstIpv4Row(Map<String, dynamic> response, String base) {
-    final ids = <int>{};
-    for (final key in response.keys) {
-      if (!key.startsWith(base)) continue;
-      final id = int.tryParse(key.substring(base.length).split('.').first);
-      if (id != null) ids.add(id);
-    }
-    if (ids.isEmpty) return null;
-    return '$base${(ids.toList()..sort()).first}.';
   }
 
   /// The generated models' boolean parse, so both screens read `Enable` alike.
@@ -222,21 +186,18 @@ class UspWanDataService {
 
       final routing = results[0] as StaticRouting;
       final ipv6 = results[1] as WanIpv6Addresses;
-      final wanPath = results[2] as String; // e.g. 'Device.IP.Interface.2.'
+      final wanPath = results[2] as String; // e.g. 'Device.IP.Interface.5.'
 
-      // Find the default route (dest 0.0.0.0) on the resolved WAN interface.
-      // The route's Interface value may or may not carry a trailing dot, so
-      // compare against the dot-less prefix to match exactly — a bare
+      // Find the default route (dest 0.0.0.0) on the resolved WAN interface,
+      // on any router. The route's Interface value may or may not carry a
+      // trailing dot, so both sides are compared dot-terminated — a bare
       // `contains('Interface.2')` would also match Interface.20 / .21.
-      final wanIfacePrefix = wanPath.endsWith('.')
-          ? wanPath.substring(0, wanPath.length - 1)
-          : wanPath;
+      final wanIface = ensureTrailingDot(wanPath);
       String gateway = '';
-      for (final route in routing.items) {
-        final iface = route.interface_.endsWith('.')
-            ? route.interface_.substring(0, route.interface_.length - 1)
-            : route.interface_;
-        if (route.destIpAddress == '0.0.0.0' && iface == wanIfacePrefix) {
+      final routes = routing.items.expand((router) => router.forwardings);
+      for (final route in routes) {
+        if (route.destIpAddress == '0.0.0.0' &&
+            ensureTrailingDot(route.interface_) == wanIface) {
           gateway = route.gatewayIpAddress;
           break;
         }
@@ -261,120 +222,5 @@ class UspWanDataService {
       logger.w('[USP][WanData]: Gateway/IPv6 fetch failed: $e');
       return (gateway: '', ipv6Addresses: const <String>[]);
     }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// WAN status read that tolerates a WAN with no address
-// ---------------------------------------------------------------------------
-
-/// `WanStatus.fetch` but returning `null` instead of throwing when the device has no
-/// IPv4 address instance.
-///
-/// **TEMPORARY — delete with linksys/PrivacyGUI#1654.** This exists only because the
-/// 0.17 codegen reads the WAN address through the fixed row `IPv4Address.1`. From
-/// usp-codegen 0.18 `WanStatus` carries `ipv4Addresses` as a list, a WAN with no address
-/// is just an empty list, and this whole function goes away. It has two callers, and
-/// #1654 must move both of them onto the list:
-/// - [UspWanDataService.fetch] — the dashboard's WAN status (#1615).
-/// - `PnpService.checkInternetConnected` — PnP's internet check (#1098).
-///
-/// WHY THIS IS THE SERVICE LAYER'S JOB — linksys/PrivacyGUI#1615.
-///
-/// **A WAN with no address is a normal device state, not an error.** Measured on
-/// FW 2.0.2.26091803 with the interface taken down:
-///
-/// ```
-/// Device.IP.Interface.2.Status                     => Dormant
-/// Device.IP.Interface.2.IPv4AddressNumberOfEntries => 0
-/// Device.IP.Interface.2.IPv4Address.1.IPAddress    => (the parameter does not exist)
-/// ```
-///
-/// The generated `WanStatus._fromResponse` treats `IPv4Address.1.IPAddress`,
-/// `.SubnetMask` and `.AddressingType` as REQUIRED and throws when they are absent. So
-/// every refresh triggered while the WAN is down fails — which is precisely the refresh
-/// a user most needs, because it is the one that would tell the UI to stop showing an
-/// address that no longer exists.
-///
-/// **Why here and not in the codegen.** The generated file comes from yaml in
-/// `linksys/usp_framework`, so relaxing the requirement there is a cross-repository
-/// change affecting every consumer of that model. And it would be the wrong place even
-/// if it were cheap: the codegen's job is to report faithfully what the device returned,
-/// and "these three parameters were absent" IS what it returned. Deciding that absence
-/// means "no address" rather than "broken response" is a **domain** judgement, and the
-/// service layer is where this project puts device-reality-to-UI-model translation
-/// (constitution Article VI).
-///
-/// **Why it is narrow.** Only the specific validation error about missing IPv4 address
-/// fields is swallowed, and only when the device also reports zero address entries —
-/// the device's own confirmation that there is nothing to read. Anything else
-/// propagates, so a genuine transport failure, an auth error or a different missing
-/// field still surfaces as a `ServiceError` rather than being rendered as "the WAN is
-/// down".
-Future<WanStatus?> fetchWanStatusTolerantOfNoAddress(UspClient usp) async {
-  try {
-    return await WanStatus.fetch(usp);
-  } catch (e) {
-    // FAULT CODE, NOT A SUBSTRING. `9998` is the codegen's required-leaf failure
-    // (`usp_error.dart`, source 3) and `parseUspError` already extracts it. An earlier
-    // version of this matched `'Required fields missing'` in the message text — a
-    // string owned by another repository's generator, which would drift silently the
-    // next time that template is reworded, and would then make this tolerance
-    // disappear without a failing test anywhere.
-    //
-    // The path is still read out of the message, because the code alone does not say
-    // WHICH field was missing and only the address fields may be absent legitimately.
-    final parsed = parseUspError(e);
-    if (parsed?.faultCode != 9998) rethrow;
-
-    // The instance is resolved from the error message rather than queried with a
-    // wildcard. A wildcard read returns every interface, and this router has two with
-    // one address each — so "any interface reports zero" would call the WAN down
-    // because the LAN happened to have no address. Only the interface the failure was
-    // actually about counts.
-    //
-    // Anchored on `Device.IP.Interface.` and requiring the `IPv4Address.1.` suffix, so
-    // a 9998 about some other leaf on the same object cannot satisfy it. `.1.` rather
-    // than `.\d+.`: the model reads address instance 1 only, so a missing `.2.` is not
-    // a state this method is about.
-    final instance = RegExp(r'(Device\.IP\.Interface\.\d+\.)IPv4Address\.1\.')
-        .firstMatch(e.toString())
-        ?.group(1);
-    if (instance == null) rethrow;
-
-    // Confirm with the device rather than trusting the error alone: if it reports
-    // address entries, the fields should have been there and something else is wrong —
-    // so the original error must stand.
-    //
-    // WRAPPED, because this confirmation can itself fail. Unguarded, a transport error
-    // here would replace the original — which is both more accurate and the one a
-    // triager needs. A failed confirmation is not a confirmation.
-    //
-    // `throw e`, NOT `rethrow`: inside this inner catch, `rethrow` rethrows
-    // `confirmFailure` — the exact substitution this block exists to prevent. Caught by
-    // a test; the first version of this guard had `rethrow` here and inverted its own
-    // stated purpose.
-    final Object? reported;
-    try {
-      final entries = await usp.get(['${instance}IPv4AddressNumberOfEntries']);
-      reported = entries['${instance}IPv4AddressNumberOfEntries'];
-    } catch (confirmFailure) {
-      logger.w(
-          '[USP][WanData]: could not confirm '
-          '${instance}IPv4AddressNumberOfEntries; surfacing the original error',
-          error: confirmFailure);
-      throw e;
-    }
-
-    // Parsed as a NUMBER, not compared as a string. The device's value arrives untyped
-    // — `int`, `'0'`, and `'0 '` are all shapes it has been seen to use across
-    // firmware — and a string comparison fails CLOSED, turning a down WAN back into a
-    // fetch error. Anything unparseable is treated as "not confirmed zero" and rethrows.
-    final count = int.tryParse(reported?.toString().trim() ?? '');
-    if (count != 0) rethrow;
-
-    logger.d('[USP][WanData]: ${instance}IPv4Address.1.* absent and '
-        'IPv4AddressNumberOfEntries=0 — treating as WAN down, not an error');
-    return null;
   }
 }
