@@ -274,7 +274,8 @@ void main() {
           return {'${wan}Enable': true};
         }
         if (paths.contains('${wan}Status')) {
-          return InternetSettingsTestData.wanStatus(wan: wan, ipAddress: '1.2.3.4');
+          return InternetSettingsTestData.wanStatus(
+              wan: wan, ipAddress: '1.2.3.4');
         }
         if (paths.any((p) => p.startsWith('Device.Routing.'))) {
           return InternetSettingsTestData.routing(
@@ -334,8 +335,27 @@ void main() {
       expect(result.gateway, '203.0.113.254');
     });
 
+    test('a route table the router answers incompletely leaves no gateway',
+        () async {
+      // usp-codegen 0.19 fails StaticRouting.fetch on a forwarding missing a
+      // required leaf; the gateway reads empty and the WAN status still loads.
+      stubWan(
+        routing: {
+          for (final e in InternetSettingsTestData.routing().entries)
+            if (!e.key.endsWith('.ForwardingMetric')) e.key: e.value,
+        },
+      );
+
+      final result = await svc.fetch();
+
+      expect(result.gateway, isEmpty);
+      expect(result.ipAddress, '203.0.113.1');
+      expect(result.isUp, isTrue);
+    });
+
     test('returns empty gateway if no default route found', () async {
-      stubWan(routing: InternetSettingsTestData.routing(hasDefaultRoute: false));
+      stubWan(
+          routing: InternetSettingsTestData.routing(hasDefaultRoute: false));
 
       final result = await svc.fetch();
 
@@ -375,8 +395,8 @@ void main() {
     test('reports the WAN as down with an empty address, rather than throwing',
         () async {
       stubWan(
-        wanStatus:
-            InternetSettingsTestData.wanStatus(status: 'Dormant', hasAddress: false),
+        wanStatus: InternetSettingsTestData.wanStatus(
+            status: 'Dormant', hasAddress: false),
       );
 
       final model = await svc.fetch();

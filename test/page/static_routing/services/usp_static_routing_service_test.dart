@@ -127,6 +127,33 @@ void main() {
     });
   });
 
+  // usp-codegen 0.19 checks the required leaves of every forwarding row: a row
+  // missing one fails the fetch, where 0.18 read the leaf as its default.
+  group('UspStaticRoutingService — fetch of an incomplete row', () {
+    test('a forwarding missing a required leaf fails, not a default', () async {
+      const r4 = 'Device.Routing.Router.4.';
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        if (paths.contains('Device.IP.Interface.*.Alias')) {
+          return _interfaceAliases;
+        }
+        return {
+          '${r4}Alias': 'cpe-1',
+          '${r4}IPv4Forwarding.5.Enable': true,
+          '${r4}IPv4Forwarding.5.DestIPAddress': '10.5.0.0',
+          '${r4}IPv4Forwarding.5.DestSubnetMask': '255.255.0.0',
+          '${r4}IPv4Forwarding.5.GatewayIPAddress': '192.168.1.254',
+          '${r4}IPv4Forwarding.5.Interface': _lan,
+          '${r4}IPv4Forwarding.5.Origin': 'Static',
+          // ForwardingMetric is missing.
+          '${r4}IPv4Forwarding.5.Alias': 'ToLan',
+        };
+      });
+
+      await expectLater(service.fetch(), throwsA(isA<InvalidInputError>()));
+    });
+  });
+
   group('UspStaticRoutingService — buildRouteUIModels', () {
     test('filters to static routes only', () {
       final data = _routing([
