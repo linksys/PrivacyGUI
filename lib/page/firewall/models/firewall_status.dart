@@ -1,14 +1,16 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/framework/has_service_error.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 
 /// Transient (non-editable) status for the firewall feature page.
-class FirewallStatus extends Equatable {
+class FirewallStatus extends Equatable implements HasServiceError {
   final bool isLoading;
   final bool isSaving;
 
   /// Typed error from the last fetch. The View localizes it via
   /// `localizeServiceError`; null means no error.
+  @override
   final ServiceError? error;
 
   /// Switches whose rule is not on the router. Each would show a value the

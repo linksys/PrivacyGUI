@@ -203,6 +203,36 @@ void main() {
       verify(() => svc.fetch()).called(2);
     });
 
+    // #1212: a Set that landed, whose read-back failed, is not a refused Set.
+    test(
+        'a landed Set whose read-back fails keeps what was written and is '
+        'not re-read as a failure', () async {
+      when(() => svc.setUpnpEnabled(any())).thenAnswer((_) async {});
+      var reads = 0;
+      when(() => svc.fetch()).thenAnswer((_) async {
+        if (++reads == 1) return _settings(upnp: true);
+        throw const NetworkError(detail: 'read-back lost');
+      });
+      final container = ProviderContainer(overrides: [
+        uspAdministrationServiceProvider.overrideWithValue(svc),
+        uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+      ]);
+      addTearDown(container.dispose);
+      container.listen(uspAdministrationProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspAdministrationProvider.notifier);
+
+      notifier.setUpnpEnabled(false);
+      await expectLater(
+          notifier.save(), throwsA(isA<SavedButUnconfirmedError>()));
+
+      final state = container.read(uspAdministrationProvider);
+      expect(state.settings.current.upnpEnabled, isFalse);
+      expect(state.isDirty, isFalse);
+      expect(state.status.error, isNull);
+      expect(reads, 2, reason: 'the post-save read only — no failure re-read');
+    });
+
     test('an unchanged switch is not written', () async {
       // UPnP and SIP ALG are owned by different USP services, and SIP ALG's
       // Set alone takes ~9 s. Rewriting the one the user did not touch would

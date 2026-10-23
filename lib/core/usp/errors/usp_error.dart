@@ -287,6 +287,29 @@ ServiceError _mapAuthError(UspError e) {
   return UnexpectedError(originalError: e.rawError, detail: msg);
 }
 
+/// Which of [names] a refused write carries, and on which entry.
+///
+/// Some firmware checks name the rule a write broke at the start of the
+/// refused leaf's `errorMessage` (1.0's error names, e.g.
+/// `ErrorInvalidIPAddress: 127.20.0.0 is a reserved address.`), under a code
+/// that says only that the value was refused. A refused Set gives every leaf
+/// it carried the same code and a "group set failed at …" message, so the
+/// name is looked for in every entry rather than in the first. Measured on
+/// FLWRT 2.0.3.26101641, 2026-10-21 (static routes, linksys/FWDEV#213).
+///
+/// Null when no entry's message starts with one of [names].
+({String name, UspErrorDetail detail})? refusalNameIn(
+  List<UspErrorDetail> failures,
+  List<String> names,
+) {
+  for (final f in failures) {
+    for (final name in names) {
+      if (f.errorMessage.startsWith(name)) return (name: name, detail: f);
+    }
+  }
+  return null;
+}
+
 /// Whether a per-path SET error means the request **never got an answer** —
 /// the browser's `fetch` itself failed — as opposed to the router answering
 /// with a refusal.

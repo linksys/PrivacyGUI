@@ -17,11 +17,22 @@ class MockUspFirewallService extends Mock implements UspFirewallService {}
 class _TestFirewallDataNotifier extends FirewallDataNotifier {
   final FirewallData _testData;
   final ServiceError? errorToThrow;
-  _TestFirewallDataNotifier(this._testData, {this.errorToThrow});
+
+  /// When set, every read from this build onwards fails, so the post-save read
+  /// can fail after a good initial load.
+  final int? failFromBuild;
+  int _builds = 0;
+  _TestFirewallDataNotifier(this._testData,
+      {this.errorToThrow, this.failFromBuild});
 
   @override
   Future<FirewallData> build() async {
+    _builds++;
     if (errorToThrow != null) throw errorToThrow!;
+    final from = failFromBuild;
+    if (from != null && _builds >= from) {
+      throw const NetworkError(detail: 'read failed');
+    }
     return _testData;
   }
 }
@@ -50,13 +61,14 @@ void main() {
     mockService = MockUspFirewallService();
   });
 
-  ProviderContainer createContainer({FirewallData? data}) {
+  ProviderContainer createContainer({FirewallData? data, int? failFromBuild}) {
     final container = ProviderContainer(
       overrides: [
         uspFirewallServiceProvider.overrideWithValue(mockService),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
-        firewallDataProvider
-            .overrideWith(() => _TestFirewallDataNotifier(data ?? testData)),
+        firewallDataProvider.overrideWith(() => _TestFirewallDataNotifier(
+            data ?? testData,
+            failFromBuild: failFromBuild)),
       ],
     );
     container.listen(uspFirewallProvider, (_, __) {});
@@ -106,6 +118,34 @@ void main() {
             pending: any(named: 'pending'),
             context: any(named: 'context'),
           )).called(1);
+      container.dispose();
+    });
+
+    // #1212 / #1279: the write invalidates firewallDataProvider and the
+    // post-save read rebuilds it; when that read fails the page must not turn
+    // into an error page under the "saved" toast.
+    test(
+        'a failed post-save read throws saved-but-unconfirmed and keeps the '
+        'page on what was written', () async {
+      when(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+            context: any(named: 'context'),
+          )).thenAnswer((_) async => 1);
+
+      final container = createContainer(failFromBuild: 2);
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspFirewallProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(isIPv6FirewallEnabled: true));
+
+      await expectLater(
+          notifier.save(), throwsA(isA<SavedButUnconfirmedError>()));
+
+      final state = container.read(uspFirewallProvider);
+      expect(state.status.error, isNull);
+      expect(state.settings.current.model.isIPv6FirewallEnabled, isTrue);
+      expect(state.isDirty, isFalse);
       container.dispose();
     });
 

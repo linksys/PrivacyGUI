@@ -140,6 +140,8 @@
   "dns3Optional": "DNS 3 (optional)",
   "done": "Done",
   "download": "Download",
+  "lastDownloadRate": "Last download rate",
+  "lastUploadRate": "Last upload rate",
   "downlink": "Downlink",
   "duid": "DUID",
   "editPortForwarding": "Edit Port Forwarding",
@@ -313,6 +315,15 @@
   "mlo": "Multi-Link Operation",
   "mloDesc": "Allow devices to use multiple bands and frequency channels simultaneously. This increases speed, reduces latency, and makes for a more reliable connection.",
   "mloInactiveHint": "Use the same Wi-Fi name, password and WPA3 security on 2.4 GHz and 5 GHz.",
+  "mloBands": "MLO ({bands})",
+  "@mloBands": {
+    "placeholders": {
+      "bands": {
+        "type": "String"
+      }
+    }
+  },
+  "mloStatusUnavailable": "MLO status unavailable",
   "monitor": "Monitor",
   "mloCapableModalDesc1": "Multi-Link Operation (MLO) allows devices to use multiple bands and frequency channels simultaneously.",
   "mloCapableModalDesc2": "This increases speed, reduces latency, and makes for a more reliable connection.",
@@ -710,6 +721,10 @@
   "errorServiceNotReady": "The service is not ready yet. Please try again in a moment.",
   "errorUnexpected": "Something went wrong. Please try again.",
   "errorCommandRefused": "The router refused this command. Please try again in a moment.",
+  "errorSavedButUnconfirmed": "Your settings were saved, but the router could not be read back. Try refreshing the page to see them.",
+  "@errorSavedButUnconfirmed": {"description": "A save that landed, whose confirming read-back failed (SavedButUnconfirmedError, #1212). Shown in place of the saved toast. It must not read as a failed save: pressing Save again would rewrite what the router already holds. Ask for a page refresh, not a pull: pull-to-refresh needs touch and does nothing with a mouse on the web."},
+  "errorSaveDiscardedForRouterRows": "Nothing was saved. The page was reloaded from the router; please make your change again.",
+  "@errorSaveDiscardedForRouterRows": {"description": "A save that wrote nothing (SaveDiscardedForRouterRowsError, PR #1716 review). The previous save added a row whose read-back failed; to avoid adding it twice the page was re-read from the router instead of writing, and the user's change was dropped. Must say nothing was saved — never that the save landed."},
   "menuWifiSettings": "WiFi Settings",
   "menuWifiSettingsDesc": "Networks, security, MAC filtering",
   "menuTopologyDesc": "View network topology and mesh nodes",
@@ -1469,6 +1484,8 @@
   "staticRoutes": "Static Routes",
   "staticRoutesSaved": "Static routes saved",
   "staticRoutingPageDesc": "Manage static IPv4 routes on your network",
+  "nat": "NAT",
+  "dynamicRouting": "Dynamic routing (RIP)",
   "gatewayLabel": "Gateway: {gateway}  {interface}",
   "@gatewayLabel": {
     "placeholders": {
@@ -1610,7 +1627,7 @@
       }
     }
   },
-  "signalAndSpeed": "Signal & Speed",
+  "signalAndSpeed": "Signal & Link Rate",
   "networkDetails": "Network Details",
   "wifiWireless": "WiFi (Wireless)",
   "ethernetWired": "Ethernet (Wired)",

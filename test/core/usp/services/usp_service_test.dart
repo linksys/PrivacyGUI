@@ -419,25 +419,6 @@ void main() {
         expect(instance.toString(), contains('Device.NAT.PortMapping.3.'));
       });
 
-      test('UspResultParser parseGetResult should handle GET operation', () {
-        // WASM v0.11.0 format for GET
-        final mockResponse = {
-          'success': true,
-          'result': {
-            'data': {
-              'Device.WiFi.SSID.1.SSID': 'TestNetwork',
-            },
-          },
-        };
-
-        final result = UspResultParser.parseGetResult(mockResponse);
-
-        expect(result, isA<UspSuccess>());
-        final success = result as UspSuccess;
-        expect(success.details, hasLength(1));
-        expect(success.details[0].requestedPath, 'bulk_operation');
-      });
-
       test('UspResultParser parseOperateResult should handle OPERATE operation',
           () {
         // WASM v0.11.0 format for OPERATE

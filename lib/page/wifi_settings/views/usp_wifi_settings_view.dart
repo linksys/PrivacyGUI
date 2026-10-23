@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
@@ -251,7 +250,7 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
         }
       } on ServiceError catch (e) {
         if (context.mounted) {
-          showFailedSnackBar(context, localizeServiceError(context, e));
+          showSaveErrorSnackBar(context, e);
         }
       }
       return;
@@ -263,16 +262,18 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
       successMessage: loc(context).wifiSettingsSaved,
       write: () async {
         if (activeTab == 1) {
-          await ref.read(uspWifiAdvancedProvider.notifier).save();
-          return const WifiWriteConfirmed();
+          final advanced = ref.read(uspWifiAdvancedProvider.notifier);
+          await advanced.save();
+          return WifiWriteConfirmed(readBack: advanced.readBackAfterRecovery);
         }
         final wifi = ref.read(uspWifiSettingsProvider.notifier);
         await wifi.save();
         // Only this tab's save can leave the router away: a rename moves the
-        // browser off the network it is on.
+        // browser off the network it is on. Either way the form is read back
+        // only once the router is back (#1212).
         return wifi.awaitsRouterRecovery
             ? WifiWriteAwaitsRouter(wifi.confirmAfterRecovery)
-            : const WifiWriteConfirmed();
+            : WifiWriteConfirmed(readBack: wifi.readBackAfterRecovery);
       },
     );
   }

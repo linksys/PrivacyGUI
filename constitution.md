@@ -4,7 +4,7 @@
 **Status:** Active
 **Context:** Source of Truth for Architectural Discipline
 **Ratified:** 2025-12-09
-**Last Amended:** 2026-09-29
+**Last Amended:** 2026-10-21
 
 ## Preamble
 This document establishes the immutable principles governing the development process of the Linksys Flutter application. It serves as the architectural DNA of the system, ensuring consistency, simplicity, and quality across all implementations.
@@ -1263,7 +1263,13 @@ string, and it does so through one central mapper — never by stringifying the 
   switches on the sealed `ServiceError` and returns a localized message. Never show
   `'$e'`, `error.toString()`, `code`, or `detail` to the user (those are diagnostic).
 - **Fetch failure** → render the shared `ServiceErrorView` (it localizes internally).
-- **Save failure** → `showFailedSnackBar(context, localizeServiceError(context, e))`.
+- **Save failure** → `showSaveErrorSnackBar(context, e)`. It localizes through
+  `localizeServiceError` and picks the style: a `SavedButUnconfirmedError` — the
+  write landed, only the read-back after it failed — is shown neutrally, and every
+  other error as a failed save. *Amended 2026-10-21 (#1212, #1279): the rule used
+  to name `showFailedSnackBar`, which reports a landed write as a failure and so
+  invites a second Save that rewrites what the router already holds. Backwards
+  compatible: a save that throws anything else is shown exactly as before.*
 - **Adding a subtype** requires adding its localization to the mapper (the `sealed`
   switch enforces this at compile time) plus an ARB key.
 

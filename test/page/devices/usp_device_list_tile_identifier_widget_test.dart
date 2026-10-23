@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
+import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_list_tile.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
@@ -108,6 +109,40 @@ void main() {
         UspDeviceListTile(device: deviceB).identifierKey,
         '112233445566',
       );
+    });
+  });
+
+  // #1686 item 2: the subtitle names an MLO client's bands, as a display
+  // label. The "MLO status unavailable" hint is the detail page's alone: this
+  // subtitle is one joined line with no room for it.
+  group('UspDeviceListTile MLO band (#1686)', () {
+    ClientDevice wifiDevice(WifiConnectionInfo wifi) => ClientDevice(
+          mac: 'AA:BB:CC:DD:EE:77',
+          hostName: 'iPhone',
+          isActive: true,
+          ip: '192.168.1.20',
+          connectionType: ConnectionType.wifi,
+          wifi: wifi,
+        );
+
+    testWidgets('an MLO client reads MLO and its bands', (tester) async {
+      await tester.pumpWidget(wrap([
+        wifiDevice(const WifiConnectionInfo(
+            band: '2.4GHz', ssidName: 'Home', mloBands: ['2.4GHz', '5GHz'])),
+      ]));
+
+      expect(find.textContaining('MLO (2.4GHz + 5GHz)'), findsOneWidget);
+    });
+
+    testWidgets('an unread MLO state adds nothing to the subtitle',
+        (tester) async {
+      await tester.pumpWidget(wrap([
+        wifiDevice(const WifiConnectionInfo(
+            band: '5GHz', ssidName: 'Home', mloUnknown: true)),
+      ]));
+
+      expect(find.textContaining('5GHz'), findsOneWidget);
+      expect(find.textContaining('MLO'), findsNothing);
     });
   });
 }

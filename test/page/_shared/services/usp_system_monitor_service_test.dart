@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/services/usp_system_monitor_service.dart';
 
@@ -105,16 +106,16 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // error handling (no mapping — raw exceptions propagate)
+  // error handling — mapped to ServiceError (constitution Article XIII, #1212)
   // ---------------------------------------------------------------------------
 
   group('UspSystemMonitorService — error handling', () {
-    test('fetchSnapshot throws raw exception (no error mapping)', () async {
+    // The poller counts a ServiceError; a raw string it never counted.
+    test('fetchSnapshot maps a lost read to NetworkError', () async {
       when(() => mockUsp.get(any(), priority: any(named: 'priority')))
-          .thenThrow(Exception('USP timeout'));
+          .thenThrow('Get failed: Transport error: HTTP error: HTTP 503');
 
-      // Service does NOT map errors — raw exception propagates
-      expect(() => svc.fetchSnapshot(), throwsA(isA<Exception>()));
+      await expectLater(svc.fetchSnapshot(), throwsA(isA<NetworkError>()));
     });
   });
 }

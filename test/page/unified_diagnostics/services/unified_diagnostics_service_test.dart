@@ -875,6 +875,9 @@ void main() {
       expect(result.hops.length, 2);
       expect(result.hops.first.hopNumber, 1);
 
+      // What the service hands the scope. The Operate inputs on the wire,
+      // including NumberOfTries / Timeout, are pinned in
+      // network_diagnostics_executor_test.dart; FakeScope does not add them.
       final call = fakeScope.calls.single;
       expect(call.command, 'Device.IP.Diagnostics.TraceRoute()');
       expect(call.args, {'Host': '8.8.8.8', 'MaxHopCount': '20'});

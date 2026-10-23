@@ -154,7 +154,7 @@ class UspClientWeb implements UspTransport {
   // ---------------------------------------------------------------------------
 
   @override
-  Future<Map<String, String>> get(List<String> paths) async {
+  Future<Map<String, dynamic>> get(List<String> paths) async {
     final jsPaths = paths.map((p) => p.toJS).toList().toJS;
 
     JSAny? resultJs;
@@ -165,20 +165,14 @@ class UspClientWeb implements UspTransport {
       rethrow;
     }
 
-    final map = resultJs.dartify() as Map?;
-    if (map == null) return {};
-
-    // Parse unified format: {success, result: {data, error?}}
-    final resultData = map['result'] as Map? ?? {};
-    final data = resultData['data'] as Map? ?? {};
-
-    final result = <String, String>{};
-    for (final entry in data.entries) {
-      final key = entry.key?.toString() ?? '';
-      result[key] = entry.value?.toString() ?? '';
+    if (resultJs == null || resultJs.isUndefinedOrNull) {
+      throw StateError(
+          'WASM client returned null/undefined - structured response required');
     }
 
-    return result;
+    // The whole envelope, as SET returns it: a failure is in `success` /
+    // `error`, which the old body dropped (#1212).
+    return _safeConvertToStringDynamicMap(resultJs.dartify());
   }
 
   // ---------------------------------------------------------------------------

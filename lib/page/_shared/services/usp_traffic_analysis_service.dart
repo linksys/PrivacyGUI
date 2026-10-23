@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/multi_interface_traffic_stats.g.dart';
@@ -23,8 +24,9 @@ final uspTrafficAnalysisServiceProvider = Provider<UspTrafficAnalysisService?>(
 
 /// Stateless service for fetching multi-interface traffic baselines.
 ///
-/// Owns the codegen call for [uspTrafficAnalysisProvider].
-/// No error mapping — polling providers silently catch errors.
+/// Owns the codegen call for [uspTrafficAnalysisProvider]. A failed read is
+/// mapped to a [ServiceError] (constitution Article XIII), so the poller can
+/// count it (#1212) — before, it was a raw string nothing counted.
 class UspTrafficAnalysisService {
   final UspClient _usp;
 
@@ -35,7 +37,12 @@ class UspTrafficAnalysisService {
   /// The provider is responsible for computing rates by comparing
   /// consecutive baselines.
   Future<Map<TrafficInterface, InterfaceBaseline>> fetchBaselines() async {
-    final stats = await MultiInterfaceTrafficStats.fetch(_usp);
+    final MultiInterfaceTrafficStats stats;
+    try {
+      stats = await MultiInterfaceTrafficStats.fetch(_usp);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
     return {
       TrafficInterface.wan: InterfaceBaseline(
         bytesSent: stats.wanBytesSent,

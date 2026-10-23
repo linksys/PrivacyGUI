@@ -396,7 +396,7 @@ class UspInternetSettingsNotifier
       return state;
     }
 
-    return fetch(forceRemote: true);
+    return confirmSaved();
   }
 
   // ---------------------------------------------------------------------------
