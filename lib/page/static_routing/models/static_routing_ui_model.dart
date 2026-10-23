@@ -59,7 +59,6 @@ class StaticRouteUIModel extends Equatable {
   final String destSubnetMask;
   final String gatewayIpAddress;
   final String interfaceName;
-  final String interfacePath;
 
   const StaticRouteUIModel({
     this.instancePath,
@@ -69,7 +68,6 @@ class StaticRouteUIModel extends Equatable {
     required this.destSubnetMask,
     required this.gatewayIpAddress,
     required this.interfaceName,
-    this.interfacePath = '',
   });
 
   /// Stable, kebab-case key for E2E `identifier` hooks (e.g.
@@ -264,7 +262,6 @@ class StaticRouteUIModel extends Equatable {
     String? destSubnetMask,
     String? gatewayIpAddress,
     String? interfaceName,
-    String? interfacePath,
   }) {
     return StaticRouteUIModel(
       instancePath: instancePath ?? this.instancePath,
@@ -274,13 +271,9 @@ class StaticRouteUIModel extends Equatable {
       destSubnetMask: destSubnetMask ?? this.destSubnetMask,
       gatewayIpAddress: gatewayIpAddress ?? this.gatewayIpAddress,
       interfaceName: interfaceName ?? this.interfaceName,
-      interfacePath: interfacePath ?? this.interfacePath,
     );
   }
 
-  /// [interfacePath] is left out: the route is written with the path its
-  /// [interfaceName] resolves to at save time, so a path re-derived by an edit
-  /// is not a change to the route.
   @override
   List<Object?> get props => [
         instancePath,

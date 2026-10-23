@@ -4,7 +4,7 @@ import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
-import 'package:privacy_gui/page/_shared/utils/empty_row.dart';
+import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 import 'package:privacy_gui/page/_shared/utils/lan_dhcp_pool_pick.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';

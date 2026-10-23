@@ -6,7 +6,7 @@ import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
-import 'package:privacy_gui/page/_shared/utils/empty_row.dart';
+import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/ethernet_port_ui_model.dart';
 
@@ -67,13 +67,7 @@ class UspEthernetDataService {
     final ethernetInterfaces = EthernetInterfaces(
         items: (results[0] as EthernetInterfaces)
             .items
-            .where((i) => ![
-                  i.alias,
-                  i.name,
-                  i.status,
-                  i.upstream,
-                  i.currentBitRate,
-                ].every(isBlank))
+            .where((i) => !isEmptyEthernetInterface(i))
             .toList());
     final bridgePortMap = results[1] as Map<String, String>;
 

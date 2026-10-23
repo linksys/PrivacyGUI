@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/tr181_path.dart';
 
 /// Resolves the WAN `Device.IP.Interface.{i}.` path by searching for the
 /// interface whose `Alias` is `wan`.
@@ -22,15 +23,8 @@ Future<String> resolveWanInterfacePath(UspClient client) async {
     if (e is ServiceError) rethrow;
     throw mapUspErrorToServiceError(e);
   }
-  for (final entry in response.entries) {
-    if (entry.value == 'wan') {
-      final match =
-          RegExp(r'Device\.IP\.Interface\.(\d+)\.').firstMatch(entry.key);
-      if (match != null) {
-        return 'Device.IP.Interface.${match.group(1)}.';
-      }
-    }
-  }
+  final path = interfacePathsByAlias(response)[wanInterfaceAlias];
+  if (path != null) return path;
   throw const ResourceNotFoundError(
       detail: 'No Device.IP.Interface with Alias wan');
 }

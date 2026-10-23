@@ -1,7 +1,7 @@
 import 'package:privacy_gui/core/capability/capability_provider.dart';
 import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/usp/services/active_ipv4_connection.dart';
-import 'package:privacy_gui/page/_shared/utils/empty_row.dart';
+import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 import 'package:privacy_gui/page/_shared/utils/lan_dhcp_pool_pick.dart';
 import 'package:privacy_gui/page/internet_settings/services/usp_wan_data_service.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart'
@@ -832,7 +832,7 @@ class UnifiedDiagnosticsService {
   Future<ConnectedDevices> _fetchDevices() async => ConnectedDevices(
       items: (await ConnectedDevices.fetch(_usp))
           .items
-          .where((d) => !_isEmptyDevice(d))
+          .where((d) => !isEmptyConnectedDevice(d))
           .toList());
 
   Future<DataElementsNetwork> _fetchMeshNodes() async => DataElementsNetwork(
@@ -840,40 +840,6 @@ class UnifiedDiagnosticsService {
           .items
           .where((n) => !isEmptyMeshNode(n))
           .toList());
-
-  /// A `Hosts.Host` row with every value blank. Its address lists are not
-  /// read, as 0.17 did not read them.
-  static bool _isEmptyDevice(ConnectedDevice d) => [
-        d.macAddress,
-        d.ipAddress,
-        d.hostName,
-        d.isActive,
-        d.activeLastChange,
-        d.interface_,
-        d.layer3Interface,
-        d.interfaceType,
-        d.addressSource,
-        d.dhcpClient,
-        d.associatedDevice,
-        d.deviceId,
-        d.deviceRole,
-        d.friendlyName,
-        d.manufacturer,
-        d.modelName,
-        d.operatingSystem,
-        d.parentNodeId,
-        d.signalStrength,
-        d.lastDataDownlinkRate,
-        d.lastDataUplinkRate,
-        d.linksysManufacturer,
-        d.linksysModelName,
-        d.linksysOperatingSystem,
-        d.linksysDeviceType,
-        d.linksysFriendlyName,
-        d.linksysUserDeviceName,
-        d.linksysUserDeviceLocation,
-        d.linksysUserDeviceType,
-      ].every(isBlank);
 }
 
 /// Internal mutable accumulator used while joining APs/SSIDs/Radios.

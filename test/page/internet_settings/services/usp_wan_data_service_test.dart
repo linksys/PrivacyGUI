@@ -377,6 +377,18 @@ void main() {
       expect(result.ipv6Addresses, isEmpty);
       expect(result.ipAddress, '1.2.3.4');
     });
+
+    test('a gateway that cannot be read keeps the IPv6 addresses', () async {
+      stubWan(
+        routing: Exception('routing not supported'),
+        ipv6Addresses: ['2001:db8::1'],
+      );
+
+      final result = await svc.fetch();
+
+      expect(result.gateway, isEmpty);
+      expect(result.ipv6Addresses, ['2001:db8::1']);
+    });
   });
 
   // ---------------------------------------------------------------------------

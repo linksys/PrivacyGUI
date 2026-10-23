@@ -83,14 +83,14 @@ class UspWanDataService {
       final bridged = await _fetchBridgedStatus();
       if (bridged != null) return bridged;
 
-      final results = await Future.wait([
-        WanStatus.fetch(_usp),
-        _fetchGatewayAndIpv6Addresses(),
-      ]);
-
-      final wanStatus = results[0] as WanStatus;
-      final extra =
-          results[1] as ({String gateway, List<String> ipv6Addresses});
+      // Typed futures, awaited after Future.wait: a record `.wait` would wrap a
+      // failure in a ParallelWaitError, which mapUspErrorToServiceError cannot
+      // read.
+      final statusFuture = WanStatus.fetch(_usp);
+      final extraFuture = _fetchGatewayAndIpv6Addresses();
+      await Future.wait([statusFuture, extraFuture]);
+      final wanStatus = await statusFuture;
+      final extra = await extraFuture;
 
       // A WAN with no IPv4Address row (WAN down; FW 2.0.2 in bridge mode) is a
       // down WAN with no address, not a failed read (#1615).
@@ -124,7 +124,7 @@ class UspWanDataService {
   /// reading and must fall through to the normal read.
   Future<WanStatusUIModel?> _fetchBridgedStatus() async {
     final aliases = await _usp.get(['Device.IP.Interface.*.Alias']);
-    final wanPath = _interfacePathFor(aliases, 'wan');
+    final wanPath = interfacePathsByAlias(aliases)[wanInterfaceAlias];
     if (wanPath == null) return null;
 
     final wanState = await _usp.get([
@@ -156,17 +156,6 @@ class UspWanDataService {
     );
   }
 
-  /// `Device.IP.Interface.{i}.` for the interface whose Alias is [alias].
-  static String? _interfacePathFor(Map<String, dynamic> aliases, String alias) {
-    for (final entry in aliases.entries) {
-      if (entry.value != alias) continue;
-      final match = RegExp(r'^(Device\.IP\.Interface\.\d+\.)Alias$')
-          .firstMatch(entry.key);
-      if (match != null) return match.group(1);
-    }
-    return null;
-  }
-
   /// The generated models' boolean parse, so both screens read `Enable` alike.
   static bool _isTrue(Object? v) => v == true || v == 'true' || v == '1';
 
@@ -174,35 +163,50 @@ class UspWanDataService {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  /// Fetches default gateway IP and IPv6 addresses via codegen APIs.
+  /// Fetches the default gateway and the WAN IPv6 addresses.
+  ///
+  /// Each is read on its own and falls back to empty on its own, so a gateway
+  /// that cannot be resolved does not take the IPv6 addresses with it.
   Future<({String gateway, List<String> ipv6Addresses})>
       _fetchGatewayAndIpv6Addresses() async {
-    try {
-      final results = await Future.wait([
-        StaticRouting.fetch(_usp),
-        WanIpv6Addresses.fetch(_usp),
-        resolveWanInterfacePath(_usp),
-      ]);
+    final gateway = _fetchGateway();
+    final ipv6Addresses = _fetchIpv6Addresses();
+    return (gateway: await gateway, ipv6Addresses: await ipv6Addresses);
+  }
 
-      final routing = results[0] as StaticRouting;
-      final ipv6 = results[1] as WanIpv6Addresses;
-      final wanPath = results[2] as String; // e.g. 'Device.IP.Interface.5.'
+  /// The default route's gateway on the WAN interface, or '' when there is
+  /// none or it cannot be read.
+  Future<String> _fetchGateway() async {
+    try {
+      final routingFuture = StaticRouting.fetch(_usp);
+      final wanPathFuture = resolveWanInterfacePath(_usp);
+      await Future.wait([routingFuture, wanPathFuture]);
+      final routing = await routingFuture;
+      final wanPath = await wanPathFuture;
 
       // Find the default route (dest 0.0.0.0) on the resolved WAN interface,
       // on any router. The route's Interface value may or may not carry a
       // trailing dot, so both sides are compared dot-terminated — a bare
       // `contains('Interface.2')` would also match Interface.20 / .21.
       final wanIface = ensureTrailingDot(wanPath);
-      String gateway = '';
       final routes = routing.items.expand((router) => router.forwardings);
       for (final route in routes) {
         if (route.destIpAddress == '0.0.0.0' &&
             ensureTrailingDot(route.interface_) == wanIface) {
-          gateway = route.gatewayIpAddress;
-          break;
+          return route.gatewayIpAddress;
         }
       }
+      return '';
+    } catch (e) {
+      logger.w('[USP][WanData]: Gateway fetch failed: $e');
+      return '';
+    }
+  }
 
+  /// The WAN IPv6 addresses, global first, or empty when they cannot be read.
+  Future<List<String>> _fetchIpv6Addresses() async {
+    try {
+      final ipv6 = await WanIpv6Addresses.fetch(_usp);
       // TR-181 returns IPv6 addresses in instance order, which frequently puts
       // the link-local (fe80::/10) address first. The WAN widget shows a single
       // representative address (ipv6Addresses.first), which must prefer the
@@ -211,16 +215,13 @@ class UspWanDataService {
       // with a scope badge rather than hiding it, so a WAN with no global/ULA
       // prefix still shows its link-local address instead of nothing.
       // See linksys/PrivacyGUI#1128.
-      final ipv6Addresses = ipv6.items
+      return preferGlobalIpv6First(ipv6.items
           .map((addr) => addr.ipAddress)
           .where((ip) => ip.isNotEmpty)
-          .toList();
-      final orderedIpv6Addresses = preferGlobalIpv6First(ipv6Addresses);
-
-      return (gateway: gateway, ipv6Addresses: orderedIpv6Addresses);
+          .toList());
     } catch (e) {
-      logger.w('[USP][WanData]: Gateway/IPv6 fetch failed: $e');
-      return (gateway: '', ipv6Addresses: const <String>[]);
+      logger.w('[USP][WanData]: IPv6 address fetch failed: $e');
+      return const <String>[];
     }
   }
 }

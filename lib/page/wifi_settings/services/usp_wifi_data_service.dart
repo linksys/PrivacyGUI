@@ -11,7 +11,7 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/tr181_path.dart';
 import 'package:privacy_gui/core/utils/wifi_channel.dart';
-import 'package:privacy_gui/page/_shared/utils/empty_row.dart';
+import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/_shared/utils/wifi_guest_detection.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
@@ -269,16 +269,7 @@ class UspWifiDataService {
     final result = await WifiClients.fetch(_usp);
     // A row with every value blank is no client (usp-codegen 0.17 dropped it),
     // so a table of only those still takes the fallback below.
-    final clients = result.items
-        .where((c) => ![
-              c.macAddress,
-              c.signalStrength,
-              c.noise,
-              c.lastDataDownlinkRate,
-              c.lastDataUplinkRate,
-              c.active,
-            ].every(isBlank))
-        .toList();
+    final clients = result.items.where((c) => !isEmptyWifiClient(c)).toList();
 
     if (clients.isNotEmpty) {
       return {

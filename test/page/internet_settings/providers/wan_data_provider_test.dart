@@ -32,9 +32,9 @@ void main() {
   /// Answers each GET of a WAN status read by its paths: the WAN on
   /// Interface.5 with its address on row 3, two routers, and two IPv6
   /// addresses. [routing] replaces the routing answer, or is thrown when it is
-  /// an [Exception].
+  /// an [Exception]; [ipv6] is thrown in place of the IPv6 answer.
   Future<Map<String, dynamic>> answer(Invocation invocation,
-      {Object? routing}) async {
+      {Object? routing, Exception? ipv6}) async {
     final paths = invocation.positionalArguments[0] as List<String>;
     if (paths.contains('Device.IP.Interface.*.Alias')) {
       return InternetSettingsTestData.interfaceAliases();
@@ -50,6 +50,7 @@ void main() {
           InternetSettingsTestData.routing(gateway: '100.64.0.1');
     }
     if (paths.contains('${wan}IPv6Address.*.IPAddress')) {
+      if (ipv6 != null) throw ipv6;
       return InternetSettingsTestData.wanIpv6Addresses(
           ['2001:db8::1', 'fe80::1']);
     }
@@ -167,19 +168,20 @@ void main() {
     // -----------------------------------------------------------------------
 
     test('IPv6 gracefully handles fetch failure', () async {
-      // The combined gateway+IPv6 call fails entirely — both gateway and
-      // IPv6 fall back to empty.
-      when(() => mockUsp.get(any())).thenAnswer((invocation) =>
-          answer(invocation, routing: Exception('not supported')));
+      // The IPv6 read fails: the addresses fall back to empty, and the gateway,
+      // read on its own, still loads.
+      when(() => mockUsp.get(any())).thenAnswer(
+          (invocation) => answer(invocation, ipv6: Exception('not supported')));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
 
       final data = container.read(wanDataProvider).requireValue;
       // ipv6Enabled comes from WanStatus.fetch (succeeds), addresses from
-      // the combined call (fails) — graceful degradation.
+      // the IPv6 read (fails) — graceful degradation.
       expect(data.model.ipv6Enabled, isTrue);
       expect(data.model.ipv6Addresses, isEmpty);
+      expect(data.model.gateway, '100.64.0.1');
       // Core WAN data still loads
       expect(data.model.ipAddress, '100.64.0.10');
       container.dispose();

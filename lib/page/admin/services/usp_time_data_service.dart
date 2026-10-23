@@ -6,7 +6,7 @@ import 'package:privacy_gui/generated/time_zones.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/page/_shared/utils/empty_row.dart';
+import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
@@ -89,12 +89,7 @@ class UspTimeDataService {
       // and a catalogue of only those is no catalogue.
       final rows = (await TimeZones.fetch(_usp))
           .items
-          .where((z) => ![
-                z.timeZoneId,
-                z.utcOffsetMinutes,
-                z.observesDst,
-                z.description,
-              ].every(isBlank))
+          .where((z) => !isEmptyTimeZone(z))
           .toList();
       if (rows.isEmpty) return kTimeZoneDefinitions;
       return [

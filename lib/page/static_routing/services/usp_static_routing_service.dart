@@ -6,6 +6,7 @@ import 'package:privacy_gui/generated/dynamic_routing.g.dart';
 import 'package:privacy_gui/generated/static_routing.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/services/batch_tally.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_ui_model.dart';
 
@@ -16,7 +17,10 @@ final uspStaticRoutingServiceProvider = Provider<UspStaticRoutingService>(
 /// Service layer for Static Routing — encapsulates codegen CRUD + transform.
 class UspStaticRoutingService {
   /// The display name of each interface a route can use, by `Alias`.
-  static const _displayByAlias = {'lan': 'LAN', 'wan': 'Internet'};
+  static const _displayByAlias = {
+    lanInterfaceAlias: 'LAN',
+    wanInterfaceAlias: 'Internet',
+  };
 
   final UspClient _usp;
 
@@ -27,39 +31,48 @@ class UspStaticRoutingService {
   // ---------------------------------------------------------------------------
 
   /// Fetch static routes and transform to UI models.
+  ///
+  /// The interface names only label the routes, so a failed Alias read shows
+  /// each route's interface path instead of failing the list.
   Future<List<StaticRouteUIModel>> fetch() async {
     try {
-      final results = await Future.wait([
-        StaticRouting.fetch(_usp),
-        _interfaceNames(),
-      ]);
-      return buildRouteUIModels(
-          results[0] as StaticRouting, results[1] as Map<String, String>);
+      final namesFuture = _interfaceNames().catchError((Object e) {
+        logger.w('[StaticRouting]: Interface names unavailable: $e');
+        return const <String, String>{};
+      });
+      final routing = await StaticRouting.fetch(_usp);
+      return buildRouteUIModels(routing, await namesFuture);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
   }
 
   /// `Device.IP.Interface.{i}` → display name, for the lan and wan interfaces
-  /// as the router names them by `Alias`.
+  /// as the router names them by `Alias`. The path has no trailing dot: it is
+  /// written as a route's `Interface` as it is.
   Future<Map<String, String>> _interfaceNames() async {
-    final aliases = await _usp.get(['Device.IP.Interface.*.Alias']);
+    final paths =
+        interfacePathsByAlias(await _usp.get(['Device.IP.Interface.*.Alias']));
     return {
-      for (final entry in aliases.entries)
-        if (_displayByAlias[entry.value] case final name?)
-          if (RegExp(r'^(Device\.IP\.Interface\.\d+)\.Alias$')
-                  .firstMatch(entry.key)
-              case final match?)
-            match.group(1)!: name,
+      for (final MapEntry(key: alias, value: name) in _displayByAlias.entries)
+        if (paths[alias] case final path?)
+          path.substring(0, path.length - 1): name,
     };
   }
 
-  /// The interface path a route with [displayName] is written with, or
-  /// [displayName] itself when it is not one this page names.
+  /// The interface path a route with [displayName] is written with.
+  ///
+  /// A name this page offers (LAN, Internet) must resolve: writing the name
+  /// itself as `Interface` would hand the router a value that is not a path.
+  /// Any other value is a path the route already had, and is written back.
   static String _interfacePathOf(
       String displayName, Map<String, String> interfaceNames) {
     for (final entry in interfaceNames.entries) {
       if (entry.value == displayName) return entry.key;
+    }
+    if (_displayByAlias.containsValue(displayName)) {
+      throw ResourceNotFoundError(
+          detail: 'No Device.IP.Interface for $displayName');
     }
     return displayName;
   }
@@ -266,7 +279,6 @@ class UspStaticRoutingService {
               destSubnetMask: r.destSubnetMask,
               gatewayIpAddress: r.gatewayIpAddress,
               interfaceName: _interfaceNameOf(r.interface_, interfaceNames),
-              interfacePath: r.interface_,
             ))
         .toList();
   }
@@ -283,8 +295,4 @@ class UspStaticRoutingService {
     }
     return path;
   }
-
-  /// The page's copy of a route keeps only the display name; the path it is
-  /// written with is resolved at save time.
-  String mapDisplayToInterface(String displayName) => displayName;
 }

@@ -26,7 +26,6 @@ void main() {
     destSubnetMask: '255.255.255.0',
     gatewayIpAddress: '192.168.1.1',
     interfaceName: 'eth0',
-    interfacePath: 'Device.Ethernet.Interface.2.',
   );
   final route2 = StaticRouteUIModel(
     instancePath: 'Device.Routing.Router.1.IPv4Forwarding.2.',
@@ -36,7 +35,6 @@ void main() {
     destSubnetMask: '255.255.0.0',
     gatewayIpAddress: '192.168.1.254',
     interfaceName: 'eth0',
-    interfacePath: 'Device.Ethernet.Interface.2.',
   );
 
   setUpAll(() {
@@ -45,8 +43,6 @@ void main() {
 
   setUp(() {
     mockService = MockUspStaticRoutingService();
-    when(() => mockService.mapDisplayToInterface(any()))
-        .thenAnswer((inv) => inv.positionalArguments[0] as String);
   });
 
   ProviderContainer createContainer({
@@ -200,9 +196,8 @@ void main() {
     });
 
     test('editing a route without changing it leaves the page clean', () async {
-      // A fetched route holds the interface path the router reported; the
-      // dialog hands back the display name only, so the path the edit
-      // re-derives differs. That is not a change to the route.
+      // The dialog hands back the route it was opened with; saving it unchanged
+      // is not a change to the route.
       when(() => mockService.fetch()).thenAnswer((_) async => [route1]);
       final container = createContainer();
       await Future.delayed(Duration.zero);

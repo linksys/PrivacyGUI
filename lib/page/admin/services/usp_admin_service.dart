@@ -7,7 +7,7 @@ import 'package:privacy_gui/generated/admin_users.g.dart';
 import 'package:privacy_gui/generated/device_operations.g.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/generated/time_settings_operations.g.dart';
-import 'package:privacy_gui/page/_shared/utils/empty_row.dart';
+import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
 import 'package:privacy_gui/page/admin/models/admin_ui_models.dart';
 
@@ -222,9 +222,7 @@ class UspAdminService {
 
   AdminUserUIModel _buildAdminUserUIModel(AdminUsers users) {
     // A row with every value blank is no user (usp-codegen 0.17 dropped it).
-    final rows = users.items
-        .where((u) => ![u.username, u.password, u.enable].every(isBlank))
-        .toList();
+    final rows = users.items.where((u) => !isEmptyAdminUser(u)).toList();
     final admin = rows.firstWhere(
       (u) => u.username == 'admin',
       orElse: () => rows.first,

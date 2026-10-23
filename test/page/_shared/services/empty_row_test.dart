@@ -1,12 +1,21 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/generated/admin_users.g.dart';
+import 'package:privacy_gui/generated/connected_devices.g.dart';
+import 'package:privacy_gui/generated/data_elements_interfaces.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
 import 'package:privacy_gui/generated/dmz.g.dart';
+import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
 import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
+import 'package:privacy_gui/generated/port_forwarding.g.dart';
+import 'package:privacy_gui/generated/port_triggering.g.dart';
+import 'package:privacy_gui/generated/time_zones.g.dart';
+import 'package:privacy_gui/generated/vendor_log_files.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
-import 'package:privacy_gui/page/_shared/utils/empty_row.dart';
+import 'package:privacy_gui/generated/wifi_clients.g.dart';
+import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 
 import '../../../mocks/test_data/data_elements_test_data.dart';
 import '../../../mocks/test_data/wifi_settings_test_data.dart';
@@ -180,6 +189,175 @@ void main() {
               enable: false,
               description: '',
               target: 'Drop')),
+          isFalse);
+    });
+  });
+
+  group('isEmptyConnectedDevice', () {
+    ConnectedDevice device({String mac = '', bool active = false}) =>
+        ConnectedDevice(
+          instancePath: 'Device.Hosts.Host.4.',
+          macAddress: mac,
+          ipAddress: '',
+          hostName: '',
+          isActive: active,
+          interface_: '',
+          ipv4Addresses: const [],
+          ipv6Addresses: const [],
+        );
+
+    test('blank is empty; a MAC or Active keeps it', () {
+      expect(isEmptyConnectedDevice(device()), isTrue);
+      expect(isEmptyConnectedDevice(device(mac: 'AA:BB:CC:DD:EE:01')), isFalse);
+      expect(isEmptyConnectedDevice(device(active: true)), isFalse);
+    });
+  });
+
+  group('isEmptyMeshInterfaceNode', () {
+    test('a node with no ID is empty, whatever its interfaces', () {
+      expect(
+          isEmptyMeshInterfaceNode(const MeshNodeInterfaces(
+              instancePath: 'p.', id: '', interfaces: [])),
+          isTrue);
+      expect(
+          isEmptyMeshInterfaceNode(const MeshNodeInterfaces(
+              instancePath: 'p.', id: '74:12:13:21:55:50', interfaces: [])),
+          isFalse);
+    });
+  });
+
+  group('isEmptyWifiClient', () {
+    WifiClient client({String mac = '', int signal = 0}) => WifiClient(
+          instancePath: 'Device.WiFi.AccessPoint.1.AssociatedDevice.4.',
+          parentPath: 'Device.WiFi.AccessPoint.1.',
+          macAddress: mac,
+          signalStrength: signal,
+          noise: 0,
+          lastDataDownlinkRate: 0,
+          lastDataUplinkRate: 0,
+          active: false,
+        );
+
+    test('blank is empty; a MAC or a signal keeps it', () {
+      expect(isEmptyWifiClient(client()), isTrue);
+      expect(isEmptyWifiClient(client(mac: 'AA:BB:CC:DD:EE:01')), isFalse);
+      expect(isEmptyWifiClient(client(signal: -60)), isFalse);
+    });
+  });
+
+  group('isEmptyEthernetInterface', () {
+    EthernetInterface port({String name = '', int bitRate = 0}) =>
+        EthernetInterface(
+          instancePath: 'Device.Ethernet.Interface.4.',
+          name: name,
+          status: '',
+          upstream: false,
+          currentBitRate: bitRate,
+        );
+
+    test('blank is empty; a name or a bit rate keeps it', () {
+      expect(isEmptyEthernetInterface(port()), isTrue);
+      expect(isEmptyEthernetInterface(port(name: 'lan1')), isFalse);
+      expect(isEmptyEthernetInterface(port(bitRate: 1000)), isFalse);
+    });
+  });
+
+  group('isEmptyPortForwardingRule', () {
+    PortForwardingRule rule({int externalPort = 0, String client = ''}) =>
+        PortForwardingRule(
+          instancePath: 'Device.NAT.PortMapping.4.',
+          enabled: false,
+          externalPort: externalPort,
+          externalPortEndRange: 0,
+          internalPort: 0,
+          internalClient: client,
+          protocol: '',
+          description: '',
+        );
+
+    test('blank is empty; a port or a client keeps it', () {
+      expect(isEmptyPortForwardingRule(rule()), isTrue);
+      expect(isEmptyPortForwardingRule(rule(externalPort: 8080)), isFalse);
+      expect(isEmptyPortForwardingRule(rule(client: '192.168.1.5')), isFalse);
+    });
+  });
+
+  group('isEmptyPortTrigger', () {
+    PortTrigger trigger({int port = 0, List<PortTriggerForwardRule>? rules}) =>
+        PortTrigger(
+          instancePath: 'Device.NAT.PortTrigger.4.',
+          enabled: false,
+          description: '',
+          triggerPort: port,
+          triggerPortEndRange: 0,
+          triggerProtocol: '',
+          rules: rules ?? const [],
+        );
+
+    test('blank is empty; its forward rules do not count, as before', () {
+      expect(isEmptyPortTrigger(trigger()), isTrue);
+      expect(
+          isEmptyPortTrigger(trigger(rules: const [
+            PortTriggerForwardRule(
+                instancePath: 'r.',
+                forwardPort: 80,
+                forwardPortEndRange: 80,
+                forwardProtocol: 'TCP'),
+          ])),
+          isTrue);
+      expect(isEmptyPortTrigger(trigger(port: 6112)), isFalse);
+    });
+  });
+
+  group('isEmptyVendorLogFile', () {
+    test('blank is empty; a name keeps it', () {
+      expect(
+          isEmptyVendorLogFile(const VendorLogFile(
+              instancePath: 'p.', name: '', maximumSize: 0, persistent: false)),
+          isTrue);
+      expect(
+          isEmptyVendorLogFile(const VendorLogFile(
+              instancePath: 'p.',
+              name: 'messages',
+              maximumSize: 0,
+              persistent: false)),
+          isFalse);
+    });
+  });
+
+  group('isEmptyTimeZone', () {
+    test('blank is empty; an ID keeps it', () {
+      expect(
+          isEmptyTimeZone(const TimeZoneEntry(
+              instancePath: 'p.',
+              timeZoneId: '',
+              utcOffsetMinutes: 0,
+              observesDst: false,
+              description: '')),
+          isTrue);
+      expect(
+          isEmptyTimeZone(const TimeZoneEntry(
+              instancePath: 'p.',
+              timeZoneId: 'UTC',
+              utcOffsetMinutes: 0,
+              observesDst: false,
+              description: '')),
+          isFalse);
+    });
+  });
+
+  group('isEmptyAdminUser', () {
+    test('blank is empty; a username keeps it', () {
+      expect(
+          isEmptyAdminUser(const AdminUser(
+              instancePath: 'p.', username: '', password: '', enable: false)),
+          isTrue);
+      expect(
+          isEmptyAdminUser(const AdminUser(
+              instancePath: 'p.',
+              username: 'admin',
+              password: '',
+              enable: false)),
           isFalse);
     });
   });

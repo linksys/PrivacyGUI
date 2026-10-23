@@ -1,16 +1,28 @@
+import 'package:privacy_gui/generated/admin_users.g.dart';
+import 'package:privacy_gui/generated/connected_devices.g.dart';
+import 'package:privacy_gui/generated/data_elements_interfaces.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
 import 'package:privacy_gui/generated/dmz.g.dart';
+import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
 import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
 import 'package:privacy_gui/generated/firmware_images.g.dart';
+import 'package:privacy_gui/generated/port_forwarding.g.dart';
+import 'package:privacy_gui/generated/port_triggering.g.dart';
+import 'package:privacy_gui/generated/time_zones.g.dart';
+import 'package:privacy_gui/generated/vendor_log_files.g.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
+import 'package:privacy_gui/generated/wifi_clients.g.dart';
 
 // Rows whose every value is blank, which usp-codegen 0.17 dropped as phantoms
 // and 0.18 returns like any other row (#1654). Each check reads the same
 // fields the 0.17 skip read, so filtering on it shows what 0.17 showed.
+//
+// Every such check lives here, so a table's check is found by its row type.
+// It lives under services/ because only services filter generated rows.
 
 /// Whether [value] is what a blank TR-181 leaf parses to: null, '', '0',
 /// 'false', 0, false, or the epoch a missing dateTime parses to.
@@ -120,3 +132,97 @@ bool isEmptyMeshNode(MeshNode n) => [
       n.backhaulStatsErrorsReceived,
       n.backhaulStatsTimeStamp,
     ].every(isBlank);
+
+/// A mesh node row from the interfaces read with no ID. Its interface MACs are
+/// not the mesh's own.
+bool isEmptyMeshInterfaceNode(MeshNodeInterfaces n) => isBlank(n.id);
+
+/// A `Hosts.Host` row with every value blank. Its address lists are not read,
+/// as 0.17 did not read them.
+bool isEmptyConnectedDevice(ConnectedDevice d) => [
+      d.macAddress,
+      d.ipAddress,
+      d.hostName,
+      d.isActive,
+      d.activeLastChange,
+      d.interface_,
+      d.layer3Interface,
+      d.interfaceType,
+      d.addressSource,
+      d.dhcpClient,
+      d.associatedDevice,
+      d.deviceId,
+      d.deviceRole,
+      d.friendlyName,
+      d.manufacturer,
+      d.modelName,
+      d.operatingSystem,
+      d.parentNodeId,
+      d.signalStrength,
+      d.lastDataDownlinkRate,
+      d.lastDataUplinkRate,
+      d.linksysManufacturer,
+      d.linksysModelName,
+      d.linksysOperatingSystem,
+      d.linksysDeviceType,
+      d.linksysFriendlyName,
+      d.linksysUserDeviceName,
+      d.linksysUserDeviceLocation,
+      d.linksysUserDeviceType,
+    ].every(isBlank);
+
+/// A Wi-Fi client row with no MAC, signal, rate or state.
+bool isEmptyWifiClient(WifiClient c) => [
+      c.macAddress,
+      c.signalStrength,
+      c.noise,
+      c.lastDataDownlinkRate,
+      c.lastDataUplinkRate,
+      c.active,
+    ].every(isBlank);
+
+/// An Ethernet port row with no name, state or speed.
+bool isEmptyEthernetInterface(EthernetInterface i) => [
+      i.alias,
+      i.name,
+      i.status,
+      i.upstream,
+      i.currentBitRate,
+    ].every(isBlank);
+
+/// A port forwarding rule row with no ports, client, protocol or state.
+bool isEmptyPortForwardingRule(PortForwardingRule r) => [
+      r.enabled,
+      r.externalPort,
+      r.externalPortEndRange,
+      r.internalPort,
+      r.internalClient,
+      r.protocol,
+      r.description,
+    ].every(isBlank);
+
+/// A port trigger row with no trigger port, protocol or state. Its forward
+/// rules are not read, as 0.17 did not read them.
+bool isEmptyPortTrigger(PortTrigger t) => [
+      t.enabled,
+      t.description,
+      t.triggerPort,
+      t.triggerPortEndRange,
+      t.triggerProtocol,
+    ].every(isBlank);
+
+/// A vendor log file row with no name, size or persistence.
+bool isEmptyVendorLogFile(VendorLogFile f) =>
+    [f.name, f.maximumSize, f.persistent].every(isBlank);
+
+/// A time zone row with no ID, offset, DST flag or label.
+bool isEmptyTimeZone(TimeZoneEntry z) => [
+      z.timeZoneId,
+      z.utcOffsetMinutes,
+      z.observesDst,
+      z.description,
+    ].every(isBlank);
+
+/// An admin user row with no name, password or state.
+bool isEmptyAdminUser(AdminUser u) =>
+    [u.username, u.password, u.enable].every(isBlank);

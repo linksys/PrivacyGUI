@@ -125,6 +125,33 @@ void main() {
         'OnOne': 'Device.IP.Interface.1',
       });
     });
+
+    test('the routes still load, by interface path, when the Alias read fails',
+        () async {
+      const r4 = 'Device.Routing.Router.4.';
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        if (paths.contains('Device.IP.Interface.*.Alias')) {
+          throw 'Get failed: Transport error: HTTP error: HTTP 504';
+        }
+        return {
+          '${r4}Alias': 'cpe-1',
+          '${r4}IPv4Forwarding.5.Enable': true,
+          '${r4}IPv4Forwarding.5.DestIPAddress': '10.5.0.0',
+          '${r4}IPv4Forwarding.5.DestSubnetMask': '255.255.0.0',
+          '${r4}IPv4Forwarding.5.GatewayIPAddress': '192.168.1.254',
+          '${r4}IPv4Forwarding.5.Interface': _lan,
+          '${r4}IPv4Forwarding.5.Origin': 'Static',
+          '${r4}IPv4Forwarding.5.ForwardingMetric': '0',
+          '${r4}IPv4Forwarding.5.Alias': 'ToLan',
+        };
+      });
+
+      final routes = await service.fetch();
+
+      expect(routes.single.name, 'ToLan');
+      expect(routes.single.interfaceName, _lan);
+    });
   });
 
   // usp-codegen 0.19 checks the required leaves of every forwarding row: a row
@@ -222,7 +249,7 @@ void main() {
       expect(result[0].destIpAddress, '10.0.0.0');
       expect(result[0].destSubnetMask, '255.0.0.0');
       expect(result[0].gatewayIpAddress, '192.168.1.254');
-      expect(result[0].interfacePath, _wan);
+      expect(result[0].interfaceName, 'Internet');
     });
 
     test('lists the static routes of every router', () {
@@ -247,20 +274,6 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // mapDisplayToInterface
-  // ---------------------------------------------------------------------------
-
-  group('UspStaticRoutingService — mapDisplayToInterface', () {
-    // The path a route is written to is resolved at save time; the page's
-    // copy only carries the display name.
-    test('a display name passes through, never a guessed instance', () {
-      expect(service.mapDisplayToInterface('LAN'), 'LAN');
-      expect(service.mapDisplayToInterface('Internet'), 'Internet');
-      expect(service.mapDisplayToInterface('WAN2'), 'WAN2');
-    });
-  });
-
-  // ---------------------------------------------------------------------------
   // saveBatch
   // ---------------------------------------------------------------------------
 
@@ -275,7 +288,6 @@ void main() {
           destSubnetMask: '255.255.255.0',
           gatewayIpAddress: '192.168.1.1',
           interfaceName: 'Internet',
-          interfacePath: _wan,
         ),
       ];
 
@@ -304,7 +316,6 @@ void main() {
           destSubnetMask: '255.255.255.0',
           gatewayIpAddress: '',
           interfaceName: 'Internet',
-          interfacePath: _wan,
         ),
       ];
 
@@ -336,7 +347,6 @@ void main() {
           destSubnetMask: '255.255.0.0',
           gatewayIpAddress: '192.168.1.1',
           interfaceName: 'LAN',
-          interfacePath: '',
         ),
       ];
 
@@ -370,7 +380,6 @@ void main() {
           destSubnetMask: '255.255.255.0',
           gatewayIpAddress: '192.168.1.1',
           interfaceName: 'Internet',
-          interfacePath: _wan,
         ),
       ];
       final current = [
@@ -382,7 +391,6 @@ void main() {
           destSubnetMask: '255.255.0.0', // changed
           gatewayIpAddress: '192.168.1.1',
           interfaceName: 'Internet',
-          interfacePath: _wan,
         ),
       ];
 
@@ -423,7 +431,6 @@ void main() {
           destSubnetMask: '255.255.255.0',
           gatewayIpAddress: '',
           interfaceName: 'Internet',
-          interfacePath: _wan,
         ),
         StaticRouteUIModel(
           instancePath: 'path.2.',
@@ -433,7 +440,6 @@ void main() {
           destSubnetMask: '255.255.0.0',
           gatewayIpAddress: '',
           interfaceName: 'LAN',
-          interfacePath: _lan,
         ),
       ];
       final current = [
@@ -446,7 +452,6 @@ void main() {
           destSubnetMask: '255.255.0.0',
           gatewayIpAddress: '',
           interfaceName: 'LAN',
-          interfacePath: _lan,
         ),
         StaticRouteUIModel(
           // new entry (add)
@@ -456,7 +461,6 @@ void main() {
           destSubnetMask: '255.255.255.0',
           gatewayIpAddress: '',
           interfaceName: 'Internet',
-          interfacePath: '',
         ),
       ];
 
@@ -484,7 +488,6 @@ void main() {
       destSubnetMask: '255.255.0.0',
       gatewayIpAddress: '192.168.1.50',
       interfaceName: 'LAN',
-      interfacePath: 'Device.IP.Interface.1',
     );
 
     // A refused Edit as the router answers it (FW 2.0.3.26101641, bench
@@ -955,6 +958,27 @@ void main() {
         '${r12}Alias': 'c',
       });
     });
+
+    test('an interface the router has no Alias for is not written as its name',
+        () async {
+      // No interface has Alias wan: an Internet route has no path to write,
+      // and "Internet" itself is not one.
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        if (paths.contains('Device.IP.Interface.*.Alias')) {
+          return {'$_lan.Alias': 'lan'};
+        }
+        return {'Device.Routing.Router.4.Alias': 'cpe-1'};
+      });
+
+      await expectLater(
+        service.saveBatch(original: [], current: [
+          route(null, 'ToWan', dest: '172.17.0.0', iface: 'Internet'),
+        ]),
+        throwsA(isA<ResourceNotFoundError>()),
+      );
+      verifyNever(() => mockUsp.add(any()));
+    });
   });
 
   group('UspStaticRoutingService — error handling', () {
@@ -981,7 +1005,6 @@ void main() {
           destSubnetMask: '255.255.255.0',
           gatewayIpAddress: '192.168.1.1',
           interfaceName: 'Internet',
-          interfacePath: _wan,
         ),
       ];
 
