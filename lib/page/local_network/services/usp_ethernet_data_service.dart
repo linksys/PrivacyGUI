@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/ethernet_port_ui_model.dart';
 
@@ -62,7 +63,12 @@ class UspEthernetDataService {
       throw mapUspErrorToServiceError(e);
     }
 
-    final ethernetInterfaces = results[0] as EthernetInterfaces;
+    // A port with every value blank is no port (usp-codegen 0.17 dropped it).
+    final ethernetInterfaces = EthernetInterfaces(
+        items: (results[0] as EthernetInterfaces)
+            .items
+            .where((i) => !isEmptyEthernetInterface(i))
+            .toList());
     final bridgePortMap = results[1] as Map<String, String>;
 
     final portModels = _buildEthernetPortUIModels(

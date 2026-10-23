@@ -9,11 +9,13 @@ class VlanTerminationInstance {
   final String instancePath;
   final bool enable;
   final int vlanId;
+  final int? linksysVlanPriority;
 
   const VlanTerminationInstance({
     required this.instancePath,
     required this.enable,
     required this.vlanId,
+    this.linksysVlanPriority,
   });
 
   @override
@@ -21,7 +23,8 @@ class VlanTerminationInstance {
     return 'VlanTerminationInstance('
         'instancePath: $instancePath, '
         'enable: $enable, '
-        'vlanId: $vlanId'
+        'vlanId: $vlanId, '
+        'linksysVlanPriority: $linksysVlanPriority'
         ')';
   }
 }
@@ -31,11 +34,13 @@ class VlanTerminationInstanceUpdate {
   final String instancePath;
   final bool? enable;
   final int? vlanId;
+  final int? linksysVlanPriority;
 
   const VlanTerminationInstanceUpdate({
     required this.instancePath,
     this.enable,
     this.vlanId,
+    this.linksysVlanPriority,
   });
 }
 
@@ -51,6 +56,7 @@ class VlanTermination {
   static const _paths = [
     'Device.Ethernet.VLANTermination.*.Enable',
     'Device.Ethernet.VLANTermination.*.VLANID',
+    'Device.Ethernet.VLANTermination.*.X_LINKSYS_VLANPriority',
   ];
 
   /// Fetch all instances via USP Get message
@@ -90,6 +96,10 @@ class VlanTermination {
             response['${p}Enable'] == 'true' ||
             response['${p}Enable'] == '1',
         vlanId: int.tryParse(response['${p}VLANID']?.toString() ?? '') ?? 0,
+        linksysVlanPriority: response.containsKey('${p}X_LINKSYS_VLANPriority')
+            ? int.tryParse(
+                response['${p}X_LINKSYS_VLANPriority']?.toString() ?? '')
+            : null,
       ));
     }
     return VlanTermination(items: items);
@@ -105,6 +115,10 @@ class VlanTermination {
       }
       if (update.vlanId != null) {
         params['${update.instancePath}VLANID'] = update.vlanId;
+      }
+      if (update.linksysVlanPriority != null) {
+        params['${update.instancePath}X_LINKSYS_VLANPriority'] =
+            update.linksysVlanPriority;
       }
     }
     return params;

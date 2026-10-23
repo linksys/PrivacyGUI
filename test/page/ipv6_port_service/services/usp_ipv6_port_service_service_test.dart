@@ -25,7 +25,7 @@ Map<String, dynamic> _added(String instance) => {
 
 /// A refusal as the WASM client resolves it: it never throws on one.
 Map<String, dynamic> _refused(String errorMessage,
-        {String path = 'Device.Firewall.Chain.1.Rule.'}) =>
+        {String path = 'Device.Firewall.Chain.3.Rule.'}) =>
     {
       'success': false,
       'result': {
@@ -40,7 +40,7 @@ Map<String, dynamic> _refused(String errorMessage,
 Map<String, dynamic> _partlyRefused(String path, String errorMessage) => {
       'success': true,
       'result': {
-        'data': {'Device.Firewall.Chain.1.Rule.26.Enable': 'true'},
+        'data': {'Device.Firewall.Chain.3.Rule.26.Enable': 'true'},
         'error': {
           path: {'errorCode': 9007, 'errorMessage': errorMessage},
         },
@@ -48,7 +48,7 @@ Map<String, dynamic> _partlyRefused(String path, String errorMessage) => {
     };
 
 Ipv6PortServiceRuleUIModel _ui({
-  String? instancePath = 'Device.Firewall.Chain.1.Rule.26.',
+  String? instancePath = 'Device.Firewall.Chain.3.Rule.26.',
   bool enabled = true,
   String description = 'Game',
   String ipv6Address = '2001:db8::1',
@@ -67,7 +67,7 @@ Ipv6PortServiceRuleUIModel _ui({
     );
 
 Ipv6PortServiceRule _rule({
-  String instancePath = 'Device.Firewall.Chain.1.Rule.26.',
+  String instancePath = 'Device.Firewall.Chain.3.Rule.26.',
   bool enable = true,
   String description = 'WebServer',
   int ipVersion = 6,
@@ -91,6 +91,27 @@ Ipv6PortServiceRule _rule({
       creationDate: creationDate ?? DateTime.parse('2026-01-15T12:00:00Z'),
     );
 
+/// The firewall chain table as the router lists it: the UPnP chain on
+/// Chain.2 with a listed-looking rule of its own, then [rules] on the
+/// `Defaults Configuration` chain on Chain.3.
+Ipv6PortService _chains(List<Ipv6PortServiceRule> rules) =>
+    Ipv6PortService(items: [
+      Ipv6PortServiceChain(
+        instancePath: 'Device.Firewall.Chain.2.',
+        name: 'UPnP Port Mapping (dynamic rules)',
+        rules: [
+          _rule(
+              instancePath: 'Device.Firewall.Chain.2.Rule.4.',
+              description: 'upnp-mapping'),
+        ],
+      ),
+      Ipv6PortServiceChain(
+        instancePath: 'Device.Firewall.Chain.3.',
+        name: 'Defaults Configuration',
+        rules: rules,
+      ),
+    ]);
+
 void main() {
   late MockUspClient mockUsp;
   late UspIpv6PortServiceService service;
@@ -98,6 +119,12 @@ void main() {
   setUp(() {
     mockUsp = MockUspClient();
     service = UspIpv6PortServiceService(mockUsp);
+    // An add first reads the chain table to find the chain it adds under.
+    // Tests that read rules stub their own table.
+    when(() => mockUsp.get(any())).thenAnswer((_) async => {
+          'Device.Firewall.Chain.2.Name': 'UPnP Port Mapping (dynamic rules)',
+          'Device.Firewall.Chain.3.Name': 'Defaults Configuration',
+        });
   });
 
   // ---------------------------------------------------------------------------
@@ -132,7 +159,7 @@ void main() {
 
   group('UspIpv6PortServiceService — buildRuleUIModels', () {
     test('filters to IPv6 Accept user rules only', () {
-      final data = Ipv6PortService(items: [
+      final data = _chains([
         _rule(ipVersion: 6, target: 'Accept'),
         _rule(
           instancePath: 'p.27.',
@@ -158,7 +185,7 @@ void main() {
     });
 
     test('maps all fields correctly', () {
-      final data = Ipv6PortService(items: [
+      final data = _chains([
         _rule(
           instancePath: 'path.26.',
           enable: true,
@@ -182,7 +209,7 @@ void main() {
     });
 
     test('maps protocol 17 to UDP display', () {
-      final data = Ipv6PortService(items: [
+      final data = _chains([
         _rule(protocol: 17),
       ]);
 
@@ -192,7 +219,7 @@ void main() {
     });
 
     test('empty items returns empty list', () {
-      final result = service.buildRuleUIModels(Ipv6PortService(items: []));
+      final result = service.buildRuleUIModels(_chains([]));
       expect(result, isEmpty);
     });
   });
@@ -204,7 +231,9 @@ void main() {
   group('UspIpv6PortServiceService — fetchPage', () {
     /// A GET answer for [rules], keyed the way the router reports them.
     Map<String, dynamic> getAnswer(List<Ipv6PortServiceRule> rules) => {
-          for (final r in rules) ...{
+          for (final chain in _chains(rules).items)
+            '${chain.instancePath}Name': chain.name,
+          for (final r in _chains(rules).items.expand((c) => c.rules)) ...{
             '${r.instancePath}Enable': r.enable,
             '${r.instancePath}Description': r.description,
             '${r.instancePath}IPVersion': r.ipVersion,
@@ -224,16 +253,16 @@ void main() {
         () async {
       when(() => mockUsp.get(any())).thenAnswer((_) async => getAnswer([
             _rule(
-                instancePath: 'Device.Firewall.Chain.1.Rule.1.',
+                instancePath: 'Device.Firewall.Chain.3.Rule.1.',
                 description: 'RULE_IDENT',
                 ipVersion: 4,
                 target: 'Drop'),
             _rule(
-                instancePath: 'Device.Firewall.Chain.1.Rule.2.',
+                instancePath: 'Device.Firewall.Chain.3.Rule.2.',
                 description: 'Allow-DHCPv6',
                 creationDate: DateTime.parse('0001-01-01T00:00:00Z')),
             _rule(
-                instancePath: 'Device.Firewall.Chain.1.Rule.26.',
+                instancePath: 'Device.Firewall.Chain.3.Rule.26.',
                 description: 'Game'),
           ]));
 
@@ -246,7 +275,7 @@ void main() {
     test('a hidden rule with no description adds none', () async {
       when(() => mockUsp.get(any())).thenAnswer((_) async => getAnswer([
             _rule(
-                instancePath: 'Device.Firewall.Chain.1.Rule.1.',
+                instancePath: 'Device.Firewall.Chain.3.Rule.1.',
                 description: '',
                 ipVersion: 4),
           ]));
@@ -318,7 +347,7 @@ void main() {
             'result': {
               'data': {
                 'affectedCount': 1,
-                'instances': ['Device.Firewall.Chain.1.Rule.26.']
+                'instances': ['Device.Firewall.Chain.3.Rule.26.']
               }
             },
           });
@@ -347,6 +376,21 @@ void main() {
       expect(params['Protocol'], 6); // TCP → IANA 6
       expect(params['IPVersion'], 6);
       expect(params['Target'], 'Accept');
+      // Added under the Defaults Configuration chain, never the UPnP chain in
+      // front of it.
+      expect(items[0]['path'], 'Device.Firewall.Chain.3.Rule.');
+    });
+
+    test('an add on a router without the default chain adds nothing', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            'Device.Firewall.Chain.2.Name': 'UPnP Port Mapping (dynamic rules)',
+          });
+
+      await expectLater(
+        service.saveBatch(original: [], current: [_ui(instancePath: null)]),
+        throwsA(isA<ResourceNotFoundError>()),
+      );
+      verifyNever(() => mockUsp.add(any()));
     });
 
     test('update detects changed content', () async {
@@ -397,7 +441,7 @@ void main() {
             'result': {
               'data': {
                 'affectedCount': 1,
-                'instances': ['Device.Firewall.Chain.1.Rule.27.']
+                'instances': ['Device.Firewall.Chain.3.Rule.27.']
               }
             },
           });
@@ -468,7 +512,7 @@ void main() {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => _ok());
       when(() => mockUsp.add(any()))
-          .thenAnswer((_) async => _added('Device.Firewall.Chain.1.Rule.30.'));
+          .thenAnswer((_) async => _added('Device.Firewall.Chain.3.Rule.30.'));
     });
 
     test('a refused Add fails the save with the router\'s message', () async {
@@ -491,7 +535,7 @@ void main() {
       when(() => mockUsp.set(any(),
           allowPartial: any(
               named: 'allowPartial'))).thenAnswer((_) async => _partlyRefused(
-          'Device.Firewall.Chain.1.Rule.26.Target',
+          'Device.Firewall.Chain.3.Rule.26.Target',
           'ErrorRulesOverlap: ports 3074-3075 already open to 2001:db8::1.'));
 
       await expectLater(
@@ -513,12 +557,12 @@ void main() {
 
       await expectLater(
         service.saveBatch(
-          original: [_ui(instancePath: 'Device.Firewall.Chain.1.Rule.27.')],
+          original: [_ui(instancePath: 'Device.Firewall.Chain.3.Rule.27.')],
           current: [_ui(instancePath: null, description: 'New')],
         ),
         throwsA(isA<UspPartialFailureError>()),
       );
-      verify(() => mockUsp.delete(['Device.Firewall.Chain.1.Rule.27.']))
+      verify(() => mockUsp.delete(['Device.Firewall.Chain.3.Rule.27.']))
           .called(1);
     });
 
@@ -581,7 +625,7 @@ void main() {
       final setParams = verify(() => mockUsp.set(captureAny(),
               allowPartial: any(named: 'allowPartial'))).captured.single
           as Map<String, dynamic>;
-      expect(setParams.keys.last, 'Device.Firewall.Chain.1.Rule.26.Target');
+      expect(setParams.keys.last, 'Device.Firewall.Chain.3.Rule.26.Target');
 
       final addItems =
           verify(() => mockUsp.add(captureAny())).captured.single as List;

@@ -16,6 +16,8 @@ import 'package:privacy_gui/page/firewall/models/firewall_status.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 import 'package:privacy_gui/page/firewall/services/usp_firewall_service.dart';
 
+import '../firewall_test_data.dart';
+
 const allOnModel = FirewallUIModel(
   isIPv4FirewallEnabled: true,
   isIPv6FirewallEnabled: true,
@@ -54,7 +56,7 @@ const dirtyCurrentModel = FirewallUIModel(
 /// The 12 named rules FLWRT 2.0.3 ships (FWDEV#204), so every switch can be
 /// used. [without] drops rules by `Description`, for a router missing some.
 FirewallChainRules namedChainRules({Set<String> without = const {}}) =>
-    FirewallChainRules(items: [
+    FirewallTestData.createChains([
       for (final d in const [
         'UDP_FORWARD_FOR_IGMP',
         'RULE_SPI_IPV4_INPUT',
@@ -71,7 +73,7 @@ FirewallChainRules namedChainRules({Set<String> without = const {}}) =>
       ])
         if (!without.contains(d))
           FirewallChainRule(
-            instancePath: 'Device.Firewall.Chain.1.Rule.$d.',
+            instancePath: '${FirewallTestData.defaultChain}Rule.$d.',
             enable: false,
             description: d,
             target: 'Accept',

@@ -9,6 +9,7 @@ class DmzEntry {
   final String instancePath;
   final bool enable;
   final String destIp;
+  final String? destMacAddress;
   final String sourcePrefix;
   final String interface_;
   final String description;
@@ -18,11 +19,26 @@ class DmzEntry {
     required this.instancePath,
     required this.enable,
     required this.destIp,
+    this.destMacAddress,
     required this.sourcePrefix,
     required this.interface_,
     required this.description,
     required this.status,
   });
+
+  @override
+  String toString() {
+    return 'DmzEntry('
+        'instancePath: $instancePath, '
+        'enable: $enable, '
+        'destIp: $destIp, '
+        'destMacAddress: $destMacAddress, '
+        'sourcePrefix: $sourcePrefix, '
+        'interface_: $interface_, '
+        'description: $description, '
+        'status: $status'
+        ')';
+  }
 }
 
 /// Update descriptor for DmzEntry instances
@@ -30,6 +46,7 @@ class DmzEntryUpdate {
   final String instancePath;
   final bool? enable;
   final String? destIp;
+  final String? destMacAddress;
   final String? sourcePrefix;
   final String? interface_;
   final String? description;
@@ -38,6 +55,7 @@ class DmzEntryUpdate {
     required this.instancePath,
     this.enable,
     this.destIp,
+    this.destMacAddress,
     this.sourcePrefix,
     this.interface_,
     this.description,
@@ -50,9 +68,13 @@ class Dmz {
 
   const Dmz({required this.items});
 
+  @override
+  String toString() => 'Dmz(items: $items)';
+
   static const _paths = [
     'Device.Firewall.DMZ.*.Enable',
     'Device.Firewall.DMZ.*.DestIP',
+    'Device.Firewall.DMZ.*.X_LINKSYS_DestMACAddress',
     'Device.Firewall.DMZ.*.SourcePrefix',
     'Device.Firewall.DMZ.*.Interface',
     'Device.Firewall.DMZ.*.Description',
@@ -80,22 +102,6 @@ class Dmz {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}Enable'],
-        response['${p}DestIP'],
-        response['${p}SourcePrefix'],
-        response['${p}Interface'],
-        response['${p}Description'],
-        response['${p}Status']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final missing = <String>[];
       if (!response.containsKey('${p}Enable')) {
         missing.add('${p}Enable');
@@ -124,6 +130,9 @@ class Dmz {
             response['${p}Enable'] == 'true' ||
             response['${p}Enable'] == '1',
         destIp: (response['${p}DestIP'] ?? '') as String,
+        destMacAddress: response.containsKey('${p}X_LINKSYS_DestMACAddress')
+            ? response['${p}X_LINKSYS_DestMACAddress'] as String
+            : null,
         sourcePrefix: (response['${p}SourcePrefix'] ?? '') as String,
         interface_: (response['${p}Interface'] ?? '') as String,
         description: (response['${p}Description'] ?? '') as String,
@@ -133,10 +142,8 @@ class Dmz {
     return Dmz(items: items);
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-      UspClient client, List<DmzEntryUpdate> updates,
-      {bool allowPartial = false}) async {
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams(List<DmzEntryUpdate> updates) {
     final params = <String, dynamic>{};
     for (final update in updates) {
       if (update.enable != null) {
@@ -144,6 +151,10 @@ class Dmz {
       }
       if (update.destIp != null) {
         params['${update.instancePath}DestIP'] = update.destIp;
+      }
+      if (update.destMacAddress != null) {
+        params['${update.instancePath}X_LINKSYS_DestMACAddress'] =
+            update.destMacAddress;
       }
       if (update.sourcePrefix != null) {
         params['${update.instancePath}SourcePrefix'] = update.sourcePrefix;
@@ -155,6 +166,14 @@ class Dmz {
         params['${update.instancePath}Description'] = update.description;
       }
     }
+    return params;
+  }
+
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+      UspClient client, List<DmzEntryUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateParams(updates);
     if (params.isEmpty) {
       return {
         'success': true,

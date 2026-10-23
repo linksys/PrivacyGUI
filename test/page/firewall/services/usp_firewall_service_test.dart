@@ -6,6 +6,8 @@ import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 import 'package:privacy_gui/page/firewall/services/usp_firewall_service.dart';
 
+import '../../../mocks/test_data/firewall_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 // Helper to build a FirewallChainRule with the given fields.
@@ -37,7 +39,7 @@ void main() {
 
   group('UspFirewallService — parseFirewallRules', () {
     test('maps known descriptions to feature keys', () {
-      final rules = FirewallChainRules(items: [
+      final rules = FirewallTestData.createChains([
         _rule('p.10.', enable: true, description: 'RULE_SPI_IPV4_INPUT'),
         _rule('p.11.', enable: true, description: 'RULE_SPI_IPV4_FORWARD'),
         _rule('p.21.', enable: false, description: 'RULE_LAN2WAN_IPSEC'),
@@ -52,7 +54,7 @@ void main() {
     });
 
     test('skips unknown descriptions', () {
-      final rules = FirewallChainRules(items: [
+      final rules = FirewallTestData.createChains([
         _rule('p.1.', enable: true, description: 'RULE_SPI_IPV4_INPUT'),
         _rule('p.99.', enable: true, description: 'UNKNOWN_RULE'),
       ]);
@@ -139,7 +141,7 @@ void main() {
     // OFF (FWDEV#204, measured on 2.0.3.26100921).
     test('NAT redirection: an enabled rule reads as not blocked', () {
       final map = UspFirewallService.parseFirewallRules(
-        FirewallChainRules(items: [
+        FirewallTestData.createChains([
           _rule('p.31.', enable: true, description: 'RULE_NAT_REDIRECTION'),
         ]),
       );
@@ -151,7 +153,7 @@ void main() {
 
     test('NAT redirection: a disabled rule reads as blocked', () {
       final map = UspFirewallService.parseFirewallRules(
-        FirewallChainRules(items: [
+        FirewallTestData.createChains([
           _rule('p.31.', enable: false, description: 'RULE_NAT_REDIRECTION'),
         ]),
       );
@@ -320,7 +322,7 @@ void main() {
 
   group('UspFirewallService — buildFromChainRules', () {
     test('returns UI model and context from chain rules', () {
-      final rules = FirewallChainRules(items: [
+      final rules = FirewallTestData.createChains([
         _rule('p.10.', enable: false, description: 'RULE_SPI_IPV4_INPUT'),
         _rule('p.11.', enable: false, description: 'RULE_SPI_IPV4_FORWARD'),
         _rule('p.21.', enable: true, description: 'RULE_LAN2WAN_IPSEC'),
@@ -355,7 +357,7 @@ void main() {
 
     test('the 2.0.3 rule set locks no switch', () {
       final context = FirewallRuleContext.fromMap(
-        UspFirewallService.parseFirewallRules(FirewallChainRules(items: [
+        UspFirewallService.parseFirewallRules(FirewallTestData.createChains([
           for (final (i, d) in const [
             (11, 'UDP_FORWARD_FOR_IGMP'),
             (21, 'RULE_SPI_IPV4_INPUT'),
@@ -481,6 +483,39 @@ void main() {
       );
 
       expect(count, 1);
+    });
+
+    test('a save writes Enable on each changed rule, in one SET', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': true,
+                'result': {'data': <String, dynamic>{}},
+              });
+      // Every rule present, each on its own row of a chain other than 1.
+      final keys = [
+        for (final s in FirewallSwitch.values) ...debugRuleKeysOf(s),
+      ];
+      final context = FirewallRuleContext.fromMap({
+        for (var i = 0; i < keys.length; i++)
+          keys[i]: _rule('Device.Firewall.Chain.7.Rule.${i + 11}.',
+              enable: keys[i] == 'ident', description: keys[i]),
+      });
+      final pptp = context.debugRuleMap['pptp']!.instancePath;
+      final ident = context.debugRuleMap['ident']!.instancePath;
+
+      final count = await service.save(
+        original: FirewallUIModel(blockPPTP: false, blockIDENT: false),
+        pending: FirewallUIModel(blockPPTP: true, blockIDENT: true),
+        context: context,
+      );
+
+      final captured = verify(() => mockUsp.set(captureAny(),
+          allowPartial: any(named: 'allowPartial'))).captured;
+      expect(captured, hasLength(1), reason: 'one SET for every changed rule');
+      // PPTP is a Drop rule (blocking enables it); IDENT is an Accept rule
+      // (blocking disables it).
+      expect(captured.single, {'${pptp}Enable': true, '${ident}Enable': false});
+      expect(count, 2);
     });
   });
 }

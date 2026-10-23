@@ -47,6 +47,36 @@ void main() {
     });
   });
 
+  // usp-codegen 0.18 returns every Users.User row, including one with every
+  // value blank, which 0.17 dropped (#1654).
+  group('UspAdminService — fetchAdmin with a blank user row', () {
+    test('the fallback skips a blank row in front of the real user', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            'Device.Users.User.3.Username': '',
+            'Device.Users.User.3.Password': '',
+            'Device.Users.User.3.Enable': false,
+            'Device.Users.User.5.Username': 'operator',
+            'Device.Users.User.5.Password': 'pass',
+            'Device.Users.User.5.Enable': true,
+          });
+
+      final result = await service.fetchAdmin();
+
+      expect(result.instancePath, 'Device.Users.User.5.',
+          reason: 'a password change must never land on the blank row');
+    });
+
+    test('a table of only blank rows has no user, as before', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            'Device.Users.User.3.Username': '',
+            'Device.Users.User.3.Password': '',
+            'Device.Users.User.3.Enable': false,
+          });
+
+      await expectLater(service.fetchAdmin(), throwsA(isA<ServiceError>()));
+    });
+  });
+
   group('UspAdminService — updatePassword', () {
     test('calls AdminUsers.update with correct params', () async {
       when(() => mockUsp.set(any())).thenAnswer((_) async => {

@@ -88,15 +88,13 @@ class TimeSettings {
     );
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-    UspClient client, {
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams({
     bool? enable,
     String? ntpServer1,
     String? ntpServer2,
     String? localTimeZone,
-    bool allowPartial = false,
-  }) async {
+  }) {
     final params = <String, dynamic>{};
     if (enable != null) {
       params['Device.Time.Enable'] = enable;
@@ -110,6 +108,23 @@ class TimeSettings {
     if (localTimeZone != null) {
       params['Device.Time.LocalTimeZone'] = localTimeZone;
     }
+    return params;
+  }
+
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+    UspClient client, {
+    bool? enable,
+    String? ntpServer1,
+    String? ntpServer2,
+    String? localTimeZone,
+    bool allowPartial = false,
+  }) async {
+    final params = updateParams(
+        enable: enable,
+        ntpServer1: ntpServer1,
+        ntpServer2: ntpServer2,
+        localTimeZone: localTimeZone);
     if (params.isEmpty) {
       return {
         'success': true,

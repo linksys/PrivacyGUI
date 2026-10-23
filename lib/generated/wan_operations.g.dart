@@ -6,13 +6,15 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 /// WAN DHCP lease renewal operations
 class WanOperations {
-  /// Renew DHCPv4 WAN lease
-  static Future<Map<String, dynamic>> renewDhcpLease(UspClient client) async {
-    return await client.operate('Device.DHCPv4.Client.1.Renew()');
+  /// Renew the lease of the given DHCPv4 client
+  static Future<Map<String, dynamic>> renewDhcpLease(
+      UspClient client, int instance) async {
+    return await client.operate('Device.DHCPv4.Client.$instance.Renew()');
   }
 
-  /// Renew DHCPv6 WAN lease
-  static Future<Map<String, dynamic>> renewDhcpv6Lease(UspClient client) async {
-    return await client.operate('Device.DHCPv6.Client.1.Renew()');
+  /// Renew the lease of the given DHCPv6 client
+  static Future<Map<String, dynamic>> renewDhcpv6Lease(
+      UspClient client, int instance) async {
+    return await client.operate('Device.DHCPv6.Client.$instance.Renew()');
   }
 }

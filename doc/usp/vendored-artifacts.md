@@ -11,7 +11,7 @@ Files in this repo that are built or generated from `linksys/usp_framework` and 
 
 ## Manifest
 
-**Last updated**: 2026-10-16 (usp-codegen 0.17.0 → 0.18.1: multi-instance tables as lists, write builders, linksys/usp_framework#76 / #79; Internet Settings only, see below)
+**Last updated**: 2026-10-23 (all of `lib/generated` on usp-codegen 0.19.0, from `usp_framework` `main` @ `62fff77`, #1654; see below)
 
 The web package records reviewed `usp_framework` commit
 `d135f4df652684bc176bc02d83ec4a1c7b84c65c` (merged `main`, PR #59 — the
@@ -31,7 +31,7 @@ without review.
 
 | # | Artifact | Version | Checked-in path | Upstream source |
 |---|----------|---------|-----------------|-----------------|
-| 1 | `usp-codegen` (Mach-O arm64) | **0.18.1** | `tools/usp-codegen` | `usp-codegen/bin/usp-codegen` (built from `src/` via `Makefile.standalone`) |
+| 1 | `usp-codegen` (Mach-O arm64) | **0.19.0** | `tools/usp-codegen` | `usp-codegen/bin/usp-codegen` (built from `src/` via `Makefile.standalone`) |
 | 2 | `usp_client.js` | **0.13.0** | `web/usp_client.js` | `usp-client/pkg/usp_client.js` |
 | 3 | `usp_client_bg.wasm` | **0.13.0** | `web/usp_client_bg.wasm` | `usp-client/pkg/usp_client_bg.wasm` |
 | 4 | `usp_client.d.ts` | **0.13.0** | `web/usp_client.d.ts` | `usp-client/pkg/usp_client.d.ts` |
@@ -44,9 +44,7 @@ without review.
 
 The YAML definitions are **not vendored** into this repo and individual definitions commits are **not pinned** here. `lib/generated` is regenerated from the fork clone's latest `main`, so re-run the codegen (Update procedure step 2) when you need the output to be current rather than assuming what is checked in already is.
 
-**`lib/generated` is only partly on 0.18.1 (#1597).** 0.18.x reads every multi-instance table as a list and removes fixed-row models, which breaks most services that consume them. The re-vendor is therefore split by feature, and only the definitions Internet Settings consumes were regenerated with 0.18.1: `wan_settings`, `ppp_interface`, `vlan_termination`, `ipv6settings`, `gre_tunnels`, `l2tp_tunnels`, `dhcpv6clients`, `ipv6rd_settings`. `wan_static_ip`, `wan_dhcp`, `wan_bridge`, `wan_pppoe`, `gre_tunnel` and `l2tp_tunnel` were removed and `index.dart` was edited by hand to match. Every other generated file, including `subscriptions.g.dart`, is still 0.17.0 output; the remaining features move with #1654. Until then, **do not regenerate the whole directory**: copy only the files of the feature being migrated. `wan_settings.yaml` 4.1.0 (`Enable` writable) is linksys/usp_framework#87. `data_elements_mlo_clients` (#1686, linksys/usp_framework#93) is new and was generated with 0.18.1 from that one definition alone; the other DataElements files (`data_elements_network`, `data_elements_network_info`, `data_elements_interfaces`) are still 0.17.0 output.
-
-**`dynamic_routing.g.dart` is 0.18.1 output too (#1100).** It is a new file for the NAT / Dynamic routing switch (`dynamic_routing.yaml` 1.0.0, linksys/usp_framework#89, generated from upstream `main` at `ebfcbd0`), one object with one leaf, so 0.18.x's list change does not touch it. Only it was copied, and `index.dart` got its export by hand. `static_routing.g.dart` was **not** regenerated: upstream's `static_routing.yaml` is now 2.0.0, which nests the forwarding rules under `Device.Routing.Router.{i}` and so changes what the Static Routing service reads; it moves with #1654.
+**All of `lib/generated` is on 0.19.0 (#1654).** It was generated from `usp_framework` `main` @ `62fff77`. 0.18.x reads every multi-instance table as a list, so a service picks the row it uses itself: the LAN DHCP pool by `Alias == dhcp-lan`, the firewall chain by `Name == Defaults Configuration`, the DHCP client of the WAN by its `Interface`, the routing table as the first router. 0.19.0 also checks the required leaves of every child, flattened and `interfaces:` row, so a row missing one fails the whole `fetch()` with 9998 instead of reading defaults; a test fixture must give each row every required leaf. `dynamic_routing` (#1100) and `data_elements_mlo_clients` (#1686) first came in on 0.18.1, and their 0.19.0 output is the same. Definitions no service consumes are not generated (`ble_onboarding`, `ble_onboarding_operations`, `data_elements_network_operations`), so a full regeneration has to delete those three files and leave them out of `index.dart`. `tr181_paths.g.dart` is not codegen output and is never regenerated.
 
 Make sure that clone's `main` is up to date with `upstream` (`github.com/linksys/usp_framework`), not just with `origin`. Generating from a stale fork `main` silently reproduces the bug #1555 fixed: the fork's `data_elements_network.yaml` was the 2026-08-05 revision and had no `data_elements_network_info.yaml`.
 

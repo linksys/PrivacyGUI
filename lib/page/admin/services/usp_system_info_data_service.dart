@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/firmware_images.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
+import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart'
     show nonEmpty;
@@ -155,8 +156,11 @@ class UspSystemInfoDataService {
   }) {
     final normalizedActive = _stripTrailingDot(activeRef);
     final normalizedBoot = _stripTrailingDot(bootRef);
+    // A bank with every value blank is no bank (usp-codegen 0.17 dropped it).
     return data.items
-        .where((img) => img.alias != fw_model.kOtaFirmwareAlias)
+        .where((img) =>
+            img.alias != fw_model.kOtaFirmwareAlias &&
+            !isEmptyFirmwareImage(img))
         .map((img) {
       final normalizedPath = _stripTrailingDot(img.instancePath);
       return FirmwareImageUIModel(

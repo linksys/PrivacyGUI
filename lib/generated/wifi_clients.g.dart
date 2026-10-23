@@ -25,6 +25,20 @@ class WifiClient {
     required this.lastDataUplinkRate,
     required this.active,
   });
+
+  @override
+  String toString() {
+    return 'WifiClient('
+        'instancePath: $instancePath, '
+        'parentPath: $parentPath, '
+        'macAddress: $macAddress, '
+        'signalStrength: $signalStrength, '
+        'noise: $noise, '
+        'lastDataDownlinkRate: $lastDataDownlinkRate, '
+        'lastDataUplinkRate: $lastDataUplinkRate, '
+        'active: $active'
+        ')';
+  }
 }
 
 /// WiFi clients across all access points (flattened view)
@@ -32,6 +46,9 @@ class WifiClients {
   final List<WifiClient> items;
 
   const WifiClients({required this.items});
+
+  @override
+  String toString() => 'WifiClients(items: $items)';
 
   static const _paths = [
     'Device.WiFi.AccessPoint.*.AssociatedDevice.*.MACAddress',
@@ -77,21 +94,27 @@ class WifiClients {
             (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
       for (final cid in sortedChildren) {
         final cp = '$childBase$cid.';
-        if ([
-          response['${cp}MACAddress'],
-          response['${cp}SignalStrength'],
-          response['${cp}Noise'],
-          response['${cp}LastDataDownlinkRate'],
-          response['${cp}LastDataUplinkRate'],
-          response['${cp}Active']
-        ].every((v) =>
-            v == null ||
-            v == '' ||
-            v == '0' ||
-            v == 0 ||
-            v == false ||
-            v == 'false')) {
-          continue;
+        final missing = <String>[];
+        if (!response.containsKey('${cp}MACAddress')) {
+          missing.add('${cp}MACAddress');
+        }
+        if (!response.containsKey('${cp}SignalStrength')) {
+          missing.add('${cp}SignalStrength');
+        }
+        if (!response.containsKey('${cp}Noise')) {
+          missing.add('${cp}Noise');
+        }
+        if (!response.containsKey('${cp}LastDataDownlinkRate')) {
+          missing.add('${cp}LastDataDownlinkRate');
+        }
+        if (!response.containsKey('${cp}LastDataUplinkRate')) {
+          missing.add('${cp}LastDataUplinkRate');
+        }
+        if (!response.containsKey('${cp}Active')) {
+          missing.add('${cp}Active');
+        }
+        if (missing.isNotEmpty) {
+          throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
         }
         items.add(WifiClient(
           instancePath: cp,

@@ -1,6 +1,8 @@
 import 'package:privacy_gui/core/capability/capability_provider.dart';
 import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/usp/services/active_ipv4_connection.dart';
+import 'package:privacy_gui/page/_shared/services/empty_row.dart';
+import 'package:privacy_gui/page/_shared/utils/lan_dhcp_pool_pick.dart';
 import 'package:privacy_gui/page/internet_settings/services/usp_wan_data_service.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart'
     as wan;
@@ -17,7 +19,7 @@ import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/generated/data_elements_network_info.g.dart';
 import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dns_client.g.dart';
-import 'package:privacy_gui/generated/lan_network_info.g.dart';
+import 'package:privacy_gui/generated/lan_dhcp_pool.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
@@ -260,7 +262,7 @@ class UnifiedDiagnosticsService {
     logger.d('[Diagnostics] Checking WiFi radios');
     final WiFiRadios radios;
     try {
-      radios = await WiFiRadios.fetch(_usp);
+      radios = await _fetchRadios();
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
@@ -282,7 +284,7 @@ class UnifiedDiagnosticsService {
     logger.d('[Diagnostics] Checking connected devices');
     final ConnectedDevices devices;
     try {
-      devices = await ConnectedDevices.fetch(_usp);
+      devices = await _fetchDevices();
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
@@ -311,7 +313,7 @@ class UnifiedDiagnosticsService {
     logger.d('[Diagnostics] Getting device scores');
     final ConnectedDevices devices;
     try {
-      devices = await ConnectedDevices.fetch(_usp);
+      devices = await _fetchDevices();
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
@@ -343,31 +345,36 @@ class UnifiedDiagnosticsService {
   /// Check DHCP pool capacity and current usage.
   ///
   /// Capacity = MaxAddress - MinAddress + 1.
-  /// Used = number of active DHCP leases in `Device.DHCPv4.Server.Pool.1.Client.*`.
+  /// Used = number of active DHCP leases in the LAN pool (`Alias == dhcp-lan`).
   Future<DhcpPoolUsageUIModel> checkDhcpPool() async {
     logger.d('[Diagnostics] Checking DHCP pool usage');
     final List<Object> results;
     try {
       results = await Future.wait([
-        LanNetworkInfo.fetch(_usp),
+        LanDhcpPool.fetch(_usp),
         DhcpClients.fetch(_usp),
       ]);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
-    final lan = results[0] as LanNetworkInfo;
-    final clients = results[1] as DhcpClients;
+    final pool = results[0] as LanDhcpPool;
+    final clients =
+        (lanDhcpPoolOf((results[1] as DhcpClients).items, (p) => p.alias)
+                    ?.clients ??
+                const <DhcpClient>[])
+            .where((c) => !isEmptyDhcpClient(c))
+            .toList();
 
-    final capacity = _ipRangeSize(lan.minAddress, lan.maxAddress);
-    final activeLeases = clients.items.where((c) => c.active).length;
+    final capacity = _ipRangeSize(pool.minAddress, pool.maxAddress);
+    final activeLeases = clients.where((c) => c.active).length;
 
     return DhcpPoolUsageUIModel(
-      enabled: lan.dhcpEnabled,
-      minAddress: lan.minAddress,
-      maxAddress: lan.maxAddress,
+      enabled: pool.dhcpEnabled,
+      minAddress: pool.minAddress,
+      maxAddress: pool.maxAddress,
       capacity: capacity,
       usedLeases: activeLeases,
-      totalLeases: clients.items.length,
+      totalLeases: clients.length,
     );
   }
 
@@ -400,8 +407,8 @@ class UnifiedDiagnosticsService {
     final List<Object> results;
     try {
       results = await Future.wait([
-        ConnectedDevices.fetch(_usp),
-        WiFiRadios.fetch(_usp),
+        _fetchDevices(),
+        _fetchRadios(),
       ]);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
@@ -460,7 +467,7 @@ class UnifiedDiagnosticsService {
     final List<Object> results;
     try {
       results = await Future.wait([
-        WiFiRadios.fetch(_usp),
+        _fetchRadios(),
         WiFiAccessPoints.fetch(_usp),
         WiFiSsids.fetch(_usp),
         WifiClients.fetch(_usp),
@@ -624,7 +631,7 @@ class UnifiedDiagnosticsService {
     final String? controllerId;
     try {
       final results = await Future.wait([
-        DataElementsNetwork.fetch(_usp),
+        _fetchMeshNodes(),
         _fetchControllerId(),
       ]);
       network = results[0] as DataElementsNetwork;
@@ -811,6 +818,28 @@ class UnifiedDiagnosticsService {
   }
 
   // ─── Helpers ─────────────────────────────────────────────
+
+  // Each reads its table without the rows whose every value is blank, which
+  // usp-codegen 0.17 dropped and 0.18 returns (#1654), so no count, record or
+  // controller pick sees them.
+
+  Future<WiFiRadios> _fetchRadios() async => WiFiRadios(
+      items: (await WiFiRadios.fetch(_usp))
+          .items
+          .where((r) => !isEmptyWiFiRadio(r))
+          .toList());
+
+  Future<ConnectedDevices> _fetchDevices() async => ConnectedDevices(
+      items: (await ConnectedDevices.fetch(_usp))
+          .items
+          .where((d) => !isEmptyConnectedDevice(d))
+          .toList());
+
+  Future<DataElementsNetwork> _fetchMeshNodes() async => DataElementsNetwork(
+      items: (await DataElementsNetwork.fetch(_usp))
+          .items
+          .where((n) => !isEmptyMeshNode(n))
+          .toList());
 }
 
 /// Internal mutable accumulator used while joining APs/SSIDs/Radios.

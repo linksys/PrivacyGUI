@@ -269,7 +269,6 @@ const _commandCallSites = <String, List<String>>{
   'lib/page/instant_setup/services/pnp_service.dart': [
     'DeviceOperations.reboot',
     'NetworkDiagnostics.ping',
-    'WanOperations.renewDhcpLease',
   ],
   'lib/page/instant_setup/services/pnp_status_service.dart': [
     'SetupOperations.setUserAcknowledgedAutoConfig',
@@ -296,7 +295,7 @@ const _commandCallSites = <String, List<String>>{
 ///
 /// Keyed on `(file, command)` and not on the file. A per-file exemption is an
 /// exemption for everything that file ever comes to do: `pnp_service.dart` also
-/// holds the PnP `WanOperations` and `NetworkDiagnostics` calls and is where a
+/// holds the PnP `NetworkDiagnostics` call and is where a
 /// factory reset would most plausibly be added next, and a file-shaped waiver
 /// would have covered it silently. This shape makes an added command in an
 /// exempt file fall out of the exemption and into the reachability test.
@@ -336,10 +335,6 @@ const _notDestructive = <({String file, String command})>{
   (
     file: 'lib/page/instant_setup/services/pnp_service.dart',
     command: 'NetworkDiagnostics.ping',
-  ),
-  (
-    file: 'lib/page/instant_setup/services/pnp_service.dart',
-    command: 'WanOperations.renewDhcpLease',
   ),
   (
     file: 'lib/page/instant_setup/services/pnp_status_service.dart',

@@ -21,6 +21,18 @@ class EthernetLink {
     this.status,
     this.lowerLayers,
   });
+
+  @override
+  String toString() {
+    return 'EthernetLink('
+        'instancePath: $instancePath, '
+        'alias: $alias, '
+        'macAddress: $macAddress, '
+        'name: $name, '
+        'status: $status, '
+        'lowerLayers: $lowerLayers'
+        ')';
+  }
 }
 
 /// Update descriptor for EthernetLink instances
@@ -39,6 +51,9 @@ class EthernetLinks {
   final List<EthernetLink> items;
 
   const EthernetLinks({required this.items});
+
+  @override
+  String toString() => 'EthernetLinks(items: $items)';
 
   static const _paths = [
     'Device.Ethernet.Link.*.Alias',
@@ -69,21 +84,6 @@ class EthernetLinks {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}Alias'],
-        response['${p}MACAddress'],
-        response['${p}Name'],
-        response['${p}Status'],
-        response['${p}LowerLayers']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final missing = <String>[];
       if (!response.containsKey('${p}MACAddress')) {
         missing.add('${p}MACAddress');
@@ -111,16 +111,22 @@ class EthernetLinks {
     return EthernetLinks(items: items);
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-      UspClient client, List<EthernetLinkUpdate> updates,
-      {bool allowPartial = false}) async {
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams(List<EthernetLinkUpdate> updates) {
     final params = <String, dynamic>{};
     for (final update in updates) {
       if (update.macAddress != null) {
         params['${update.instancePath}MACAddress'] = update.macAddress;
       }
     }
+    return params;
+  }
+
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+      UspClient client, List<EthernetLinkUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateParams(updates);
     if (params.isEmpty) {
       return {
         'success': true,

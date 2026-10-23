@@ -215,10 +215,17 @@ String unwrapUspClientError(String message) {
 ///
 /// ### Source 3 — Dart codegen (`lib/generated/*.g.dart`), NOT from Rust
 ///
-/// | Dart match  | emitted by                                          | → ServiceError    |
-/// |-------------|-----------------------------------------------------|-------------------|
-/// | code `9998` | codegen "Required fields missing from response"     | InvalidInputError |
-/// |             | (category=validation → handled by the validation arm)|                  |
+/// | Dart match  | emitted by                                          | → ServiceError        |
+/// |-------------|-----------------------------------------------------|-----------------------|
+/// | code `9998` | codegen "Required fields missing from response"     | InvalidInputError     |
+/// |             | (category=validation → handled by the validation arm)|                      |
+/// | code `9996` | codegen `_resolveInstance` "Could not resolve …":   | ResourceNotFoundError |
+/// |             | no row has the Alias it resolves by, so this        |                       |
+/// |             | firmware has no such instance (usp-codegen 0.18).   |                       |
+/// |             | Parsed with no category word, so the protocol arm.  |                       |
+/// |             | The number is set by `dart_emit_resolve_failure()`  |                       |
+/// |             | in usp_framework `usp-codegen/src/dart_generator.c`;|                       |
+/// |             | a codegen that renumbers it breaks this arm.        |                       |
 ///
 /// ### Source 4 — synthesised in Dart by `UspClient._operateRefusal` (#1533)
 ///
@@ -382,6 +389,9 @@ ServiceError _mapProtocolError(UspError e) {
         ResourceNotFoundError(code: code, detail: e.message), // unimplemented
       9007 => ResourceNotFoundError(code: code, detail: e.message),
       9008 => InvalidInputError(code: code, detail: e.message), // non-writable
+      // Codegen: no instance has the Alias `resolveBy` names (emitted by
+      // usp-codegen's dart_emit_resolve_failure(); see the table above).
+      9996 => ResourceNotFoundError(code: code, detail: e.message),
       _ => UnexpectedError(originalError: e.rawError, detail: e.message),
     };
   }

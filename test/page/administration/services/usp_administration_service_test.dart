@@ -8,18 +8,34 @@ class MockUspClient extends Mock implements UspClient {}
 
 const _upnpEnable = 'Device.UPnP.Device.Enable';
 const _sipEnable = 'Device.Firewall.ConnectionTracking.SIP.Enable';
-const _rulesEnable = 'Device.Firewall.Chain.1.Rule.*.Enable';
+const _rulesEnable = 'Device.Firewall.Chain.*.Rule.*.Enable';
 
-/// A `Device.Firewall.Chain.1.Rule.` table as the router answers it: one
-/// entry per rule, `(Description, Enable)`, numbered from 1. Target is ACCEPT
-/// throughout; the service reads only Description and Enable.
-Map<String, dynamic> _chainRules(List<(String, String)> rules) => {
-      for (final (i, (desc, enable)) in rules.indexed) ...{
-        'Device.Firewall.Chain.1.Rule.${i + 1}.Enable': enable,
-        'Device.Firewall.Chain.1.Rule.${i + 1}.Description': desc,
-        'Device.Firewall.Chain.1.Rule.${i + 1}.Target': 'Accept',
-      },
-    };
+/// A `Device.Firewall.Chain.` table as the router answers it: [rules] on the
+/// `Defaults Configuration` chain (Chain.3), one entry per rule,
+/// `(Description, Enable)`, numbered from 11. Target is ACCEPT throughout; the
+/// service reads only Description and Enable.
+///
+/// The UPnP chain (Chain.2) comes first and carries a `RULE_MGMT_WIFI_ACCESS`
+/// of its own, enabled the other way round, so a read of the wrong chain
+/// shows.
+Map<String, dynamic> _chainRules(List<(String, String)> rules) {
+  final defaultEnable = rules
+      .where((r) => r.$1 == 'RULE_MGMT_WIFI_ACCESS')
+      .map((r) => r.$2)
+      .firstOrNull;
+  return {
+    'Device.Firewall.Chain.2.Name': 'UPnP Port Mapping (dynamic rules)',
+    'Device.Firewall.Chain.2.Rule.4.Enable': defaultEnable == '1' ? '0' : '1',
+    'Device.Firewall.Chain.2.Rule.4.Description': 'RULE_MGMT_WIFI_ACCESS',
+    'Device.Firewall.Chain.2.Rule.4.Target': 'Accept',
+    'Device.Firewall.Chain.3.Name': 'Defaults Configuration',
+    for (final (i, (desc, enable)) in rules.indexed) ...{
+      'Device.Firewall.Chain.3.Rule.${i + 11}.Enable': enable,
+      'Device.Firewall.Chain.3.Rule.${i + 11}.Description': desc,
+      'Device.Firewall.Chain.3.Rule.${i + 11}.Target': 'Accept',
+    },
+  };
+}
 
 /// 26101472's table, shortened: no `RULE_MGMT_WIFI_ACCESS` (31 rules there).
 final _rulesWithoutManagement = _chainRules([
@@ -150,9 +166,10 @@ void main() {
 
       expect(settings.managementWifiEnabled, isFalse);
       verify(() => mockUsp.get([
-            'Device.Firewall.Chain.1.Rule.*.Enable',
-            'Device.Firewall.Chain.1.Rule.*.Description',
-            'Device.Firewall.Chain.1.Rule.*.Target',
+            'Device.Firewall.Chain.*.Name',
+            'Device.Firewall.Chain.*.Rule.*.Enable',
+            'Device.Firewall.Chain.*.Rule.*.Description',
+            'Device.Firewall.Chain.*.Rule.*.Target',
           ])).called(1);
     });
 
@@ -178,10 +195,23 @@ void main() {
     test('a rule table that reads empty is a failed read, not a missing rule',
         () {
       // The WASM client resolves a failed GET with an empty data map, so a
-      // Chain.1 with no rules at all is a read that did not land: the router's
+      // chain table with no rules at all is a read that did not land: the router's
       // firewall always carries its own rules. Read as "no rule" it would hide
       // the switch without a word (FW's reference patch's `catch -> null`).
       answerGets(rules: const {});
+
+      expect(() => svc.fetch(), throwsA(isA<ServiceError>()));
+    });
+
+    test('a chain of only blank rules is a failed read, as before', () {
+      // usp-codegen 0.18 returns rows with every value blank where 0.17 dropped
+      // them (#1654); a chain holding only those read back nothing.
+      answerGets(rules: {
+        'Device.Firewall.Chain.3.Name': 'Defaults Configuration',
+        'Device.Firewall.Chain.3.Rule.11.Enable': '',
+        'Device.Firewall.Chain.3.Rule.11.Description': '',
+        'Device.Firewall.Chain.3.Rule.11.Target': '',
+      });
 
       expect(() => svc.fetch(), throwsA(isA<ServiceError>()));
     });
@@ -290,9 +320,10 @@ void main() {
 
       await svc.setManagementWifiEnabled(false);
 
-      // Instance 3 in this table: wherever the rule is, not a fixed number.
+      // Row 13 of the default chain: wherever the rule is, not a fixed number,
+      // and never the UPnP chain's rule of the same name.
       verify(() => mockUsp.set(
-            {'Device.Firewall.Chain.1.Rule.3.Enable': false},
+            {'Device.Firewall.Chain.3.Rule.13.Enable': false},
             allowPartial: false,
           )).called(1);
     });
@@ -310,7 +341,7 @@ void main() {
       answerGets(rules: _rulesWithManagement('1'));
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async =>
-              _setFailure(path: 'Device.Firewall.Chain.1.Rule.3.Enable'));
+              _setFailure(path: 'Device.Firewall.Chain.3.Rule.13.Enable'));
 
       expect(() => svc.setManagementWifiEnabled(false),
           throwsA(isA<UspCompleteFailureError>()));

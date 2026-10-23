@@ -13,13 +13,27 @@ class WanIpv6Address {
     required this.instancePath,
     required this.ipAddress,
   });
+
+  @override
+  String toString() {
+    return 'WanIpv6Address('
+        'instancePath: $instancePath, '
+        'ipAddress: $ipAddress'
+        ')';
+  }
 }
 
 /// WAN interface IPv6 addresses (multi-instance, read-only)
 class WanIpv6Addresses {
+  final String parentInstancePath;
   final List<WanIpv6Address> items;
 
-  const WanIpv6Addresses({required this.items});
+  const WanIpv6Addresses(
+      {required this.parentInstancePath, required this.items});
+
+  @override
+  String toString() =>
+      'WanIpv6Addresses(parentInstancePath: $parentInstancePath, items: $items)';
 
   /// Resolve the instance index by searching for Alias='wan'
   static Future<String> _resolveInstance(UspClient client) async {
@@ -33,8 +47,7 @@ class WanIpv6Addresses {
         }
       }
     }
-    // Fallback to hardcoded instance 2
-    return 'Device.IP.Interface.2.';
+    throw 'Get failed: Could not resolve Device.IP.Interface instance with Alias=wan (code: 9996)';
   }
 
   /// Build parameter paths using resolved base path
@@ -47,11 +60,11 @@ class WanIpv6Addresses {
     final instancePath = await _resolveInstance(client);
     final basePath = '${instancePath}IPv6Address.';
     final response = await client.get(_buildPaths(basePath));
-    return WanIpv6Addresses._fromResponse(response, basePath);
+    return WanIpv6Addresses._fromResponse(response, instancePath, basePath);
   }
 
-  factory WanIpv6Addresses._fromResponse(
-      Map<String, dynamic> response, String basePath) {
+  factory WanIpv6Addresses._fromResponse(Map<String, dynamic> response,
+      String parentInstancePath, String basePath) {
     final items = <WanIpv6Address>[];
     final ids = <String>{};
     for (final key in response.keys) {
@@ -65,15 +78,6 @@ class WanIpv6Addresses {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([response['${p}IPAddress']].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final missing = <String>[];
       if (!response.containsKey('${p}IPAddress')) {
         missing.add('${p}IPAddress');
@@ -86,6 +90,7 @@ class WanIpv6Addresses {
         ipAddress: (response['${p}IPAddress'] ?? '') as String,
       ));
     }
-    return WanIpv6Addresses(items: items);
+    return WanIpv6Addresses(
+        parentInstancePath: parentInstancePath, items: items);
   }
 }

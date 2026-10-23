@@ -17,6 +17,7 @@ class SystemInfo {
   final int uptime;
   final int totalMemory;
   final int freeMemory;
+  final int? memoryUtilization;
   final int cpuUsage;
   final int? firmwareImageNumberOfEntries;
   final String activeFirmwareImage;
@@ -34,6 +35,7 @@ class SystemInfo {
     required this.uptime,
     required this.totalMemory,
     required this.freeMemory,
+    this.memoryUtilization,
     required this.cpuUsage,
     this.firmwareImageNumberOfEntries,
     required this.activeFirmwareImage,
@@ -52,6 +54,7 @@ class SystemInfo {
     'Device.DeviceInfo.UpTime',
     'Device.DeviceInfo.MemoryStatus.Total',
     'Device.DeviceInfo.MemoryStatus.Free',
+    'Device.DeviceInfo.MemoryStatus.MemoryMonitor.MemUtilization',
     'Device.DeviceInfo.ProcessStatus.CPUUsage',
     'Device.DeviceInfo.FirmwareImageNumberOfEntries',
     'Device.DeviceInfo.ActiveFirmwareImage',
@@ -134,6 +137,13 @@ class SystemInfo {
               response['Device.DeviceInfo.MemoryStatus.Free']?.toString() ??
                   '') ??
           0,
+      memoryUtilization: response.containsKey(
+              'Device.DeviceInfo.MemoryStatus.MemoryMonitor.MemUtilization')
+          ? int.tryParse(response[
+                      'Device.DeviceInfo.MemoryStatus.MemoryMonitor.MemUtilization']
+                  ?.toString() ??
+              '')
+          : null,
       cpuUsage: int.tryParse(
               response['Device.DeviceInfo.ProcessStatus.CPUUsage']
                       ?.toString() ??
@@ -153,13 +163,11 @@ class SystemInfo {
     );
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-    UspClient client, {
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams({
     String? friendlyName,
     String? userDeviceLocation,
-    bool allowPartial = false,
-  }) async {
+  }) {
     final params = <String, dynamic>{};
     if (friendlyName != null) {
       params['Device.DeviceInfo.FriendlyName'] = friendlyName;
@@ -168,6 +176,18 @@ class SystemInfo {
       params['Device.DeviceInfo.X_LINKSYS_UserDeviceLocation'] =
           userDeviceLocation;
     }
+    return params;
+  }
+
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+    UspClient client, {
+    String? friendlyName,
+    String? userDeviceLocation,
+    bool allowPartial = false,
+  }) async {
+    final params = updateParams(
+        friendlyName: friendlyName, userDeviceLocation: userDeviceLocation);
     if (params.isEmpty) {
       return {
         'success': true,
@@ -191,6 +211,7 @@ class SystemInfo {
         'uptime: $uptime, '
         'totalMemory: $totalMemory, '
         'freeMemory: $freeMemory, '
+        'memoryUtilization: $memoryUtilization, '
         'cpuUsage: $cpuUsage, '
         'firmwareImageNumberOfEntries: $firmwareImageNumberOfEntries, '
         'activeFirmwareImage: $activeFirmwareImage, '

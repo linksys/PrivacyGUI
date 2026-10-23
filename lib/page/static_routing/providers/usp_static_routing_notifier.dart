@@ -172,32 +172,25 @@ class UspStaticRoutingNotifier
 
   /// Add a new route locally.
   ///
-  /// Resolves [StaticRouteUIModel.interfacePath] from [interfaceName] via the
-  /// service layer so the view doesn't need to access the service directly.
+  /// The route keeps only its interface's display name; the path it is
+  /// written with is resolved by Alias when it is saved.
   void addRoute(StaticRouteUIModel route) {
     assert(route.interfaceName.isNotEmpty, 'interfaceName must not be empty');
-    final resolved = route.copyWith(
-      interfacePath: _svc.mapDisplayToInterface(route.interfaceName),
-    );
     final current = state.settings.current;
     state = state.copyWith(
       settings: state.settings.update(
-        current.copyWith(routes: [...current.routes, resolved]),
+        current.copyWith(routes: [...current.routes, route]),
       ),
     );
   }
 
   /// Edit an existing route by index.
   ///
-  /// Resolves [StaticRouteUIModel.interfacePath] from [interfaceName] via the
-  /// service layer so the view doesn't need to access the service directly.
+  /// As [addRoute], the interface is resolved by Alias when it is saved.
   void editRoute(int index, StaticRouteUIModel route) {
     assert(route.interfaceName.isNotEmpty, 'interfaceName must not be empty');
-    final resolved = route.copyWith(
-      interfacePath: _svc.mapDisplayToInterface(route.interfaceName),
-    );
     final routes = List<StaticRouteUIModel>.from(state.settings.current.routes);
-    routes[index] = resolved;
+    routes[index] = route;
     state = state.copyWith(
       settings: state.settings
           .update(state.settings.current.copyWith(routes: routes)),

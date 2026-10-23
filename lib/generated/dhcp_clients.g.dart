@@ -4,34 +4,94 @@
 
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
-/// Single instance from DhcpClients
+/// Nested instance from parent multi-instance table
+class DhcpClientIpv4Address {
+  final String instancePath;
+  final String ipAddress;
+  final DateTime leaseTimeRemaining;
+
+  const DhcpClientIpv4Address({
+    required this.instancePath,
+    required this.ipAddress,
+    required this.leaseTimeRemaining,
+  });
+
+  @override
+  String toString() {
+    return 'DhcpClientIpv4Address('
+        'instancePath: $instancePath, '
+        'ipAddress: $ipAddress, '
+        'leaseTimeRemaining: $leaseTimeRemaining'
+        ')';
+  }
+}
+
+/// Nested instance from parent multi-instance table
 class DhcpClient {
   final String instancePath;
   final String chaddr;
   final bool active;
-  final String ipAddress;
-  final DateTime leaseTimeRemaining;
+  final List<DhcpClientIpv4Address> ipv4Addresses;
 
   const DhcpClient({
     required this.instancePath,
     required this.chaddr,
     required this.active,
-    required this.ipAddress,
-    required this.leaseTimeRemaining,
+    required this.ipv4Addresses,
   });
+
+  @override
+  String toString() {
+    return 'DhcpClient('
+        'instancePath: $instancePath, '
+        'chaddr: $chaddr, '
+        'active: $active, '
+        'ipv4Addresses: $ipv4Addresses'
+        ')';
+  }
 }
 
-/// Active DHCP client leases
+/// Single instance from DhcpClients
+class DhcpClientPool {
+  final String instancePath;
+  final String alias;
+  final String interface_;
+  final List<DhcpClient> clients;
+
+  const DhcpClientPool({
+    required this.instancePath,
+    required this.alias,
+    required this.interface_,
+    required this.clients,
+  });
+
+  @override
+  String toString() {
+    return 'DhcpClientPool('
+        'instancePath: $instancePath, '
+        'alias: $alias, '
+        'interface_: $interface_, '
+        'clients: $clients'
+        ')';
+  }
+}
+
+/// Active DHCP client leases, per DHCP server pool
 class DhcpClients {
-  final List<DhcpClient> items;
+  final List<DhcpClientPool> items;
 
   const DhcpClients({required this.items});
 
+  @override
+  String toString() => 'DhcpClients(items: $items)';
+
   static const _paths = [
-    'Device.DHCPv4.Server.Pool.1.Client.*.Chaddr',
-    'Device.DHCPv4.Server.Pool.1.Client.*.Active',
-    'Device.DHCPv4.Server.Pool.1.Client.*.IPv4Address.1.IPAddress',
-    'Device.DHCPv4.Server.Pool.1.Client.*.IPv4Address.1.LeaseTimeRemaining',
+    'Device.DHCPv4.Server.Pool.*.Alias',
+    'Device.DHCPv4.Server.Pool.*.Interface',
+    'Device.DHCPv4.Server.Pool.*.Client.*.Chaddr',
+    'Device.DHCPv4.Server.Pool.*.Client.*.Active',
+    'Device.DHCPv4.Server.Pool.*.Client.*.IPv4Address.*.IPAddress',
+    'Device.DHCPv4.Server.Pool.*.Client.*.IPv4Address.*.LeaseTimeRemaining',
   ];
 
   /// Fetch all instances via USP Get message
@@ -41,8 +101,8 @@ class DhcpClients {
   }
 
   factory DhcpClients._fromResponse(Map<String, dynamic> response) {
-    final items = <DhcpClient>[];
-    const basePath = 'Device.DHCPv4.Server.Pool.1.Client.';
+    final items = <DhcpClientPool>[];
+    const basePath = 'Device.DHCPv4.Server.Pool.';
     final ids = <String>{};
     for (final key in response.keys) {
       if (key.startsWith(basePath)) {
@@ -55,47 +115,88 @@ class DhcpClients {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}Chaddr'],
-        response['${p}Active'],
-        response['${p}IPv4Address.1.IPAddress'],
-        response['${p}IPv4Address.1.LeaseTimeRemaining']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
+      final childBase_0 = '${p}Client.';
+      final childIds_0 = <String>{};
+      for (final key in response.keys) {
+        if (key.startsWith(childBase_0)) {
+          final rest = key.substring(childBase_0.length);
+          final dot = rest.indexOf('.');
+          if (dot > 0) childIds_0.add(rest.substring(0, dot));
+        }
+      }
+      final childSorted_0 = childIds_0.toList()
+        ..sort(
+            (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+      final clients = <DhcpClient>[];
+      for (final cid_0 in childSorted_0) {
+        final cp_0 = '$childBase_0$cid_0.';
+        final childBase_1 = '${cp_0}IPv4Address.';
+        final childIds_1 = <String>{};
+        for (final key in response.keys) {
+          if (key.startsWith(childBase_1)) {
+            final rest = key.substring(childBase_1.length);
+            final dot = rest.indexOf('.');
+            if (dot > 0) childIds_1.add(rest.substring(0, dot));
+          }
+        }
+        final childSorted_1 = childIds_1.toList()
+          ..sort(
+              (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+        final ipv4Addresses = <DhcpClientIpv4Address>[];
+        for (final cid_1 in childSorted_1) {
+          final cp_1 = '$childBase_1$cid_1.';
+          final missing = <String>[];
+          if (!response.containsKey('${cp_1}IPAddress')) {
+            missing.add('${cp_1}IPAddress');
+          }
+          if (!response.containsKey('${cp_1}LeaseTimeRemaining')) {
+            missing.add('${cp_1}LeaseTimeRemaining');
+          }
+          if (missing.isNotEmpty) {
+            throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+          }
+          ipv4Addresses.add(DhcpClientIpv4Address(
+            instancePath: cp_1,
+            ipAddress: (response['${cp_1}IPAddress'] ?? '') as String,
+            leaseTimeRemaining: DateTime.tryParse(
+                    response['${cp_1}LeaseTimeRemaining']?.toString() ?? '') ??
+                DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+          ));
+        }
+        final missing = <String>[];
+        if (!response.containsKey('${cp_0}Chaddr')) {
+          missing.add('${cp_0}Chaddr');
+        }
+        if (!response.containsKey('${cp_0}Active')) {
+          missing.add('${cp_0}Active');
+        }
+        if (missing.isNotEmpty) {
+          throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+        }
+        clients.add(DhcpClient(
+          instancePath: cp_0,
+          chaddr: (response['${cp_0}Chaddr'] ?? '') as String,
+          active: response['${cp_0}Active'] == true ||
+              response['${cp_0}Active'] == 'true' ||
+              response['${cp_0}Active'] == '1',
+          ipv4Addresses: ipv4Addresses,
+        ));
       }
       final missing = <String>[];
-      if (!response.containsKey('${p}Chaddr')) {
-        missing.add('${p}Chaddr');
+      if (!response.containsKey('${p}Alias')) {
+        missing.add('${p}Alias');
       }
-      if (!response.containsKey('${p}Active')) {
-        missing.add('${p}Active');
-      }
-      if (!response.containsKey('${p}IPv4Address.1.IPAddress')) {
-        missing.add('${p}IPv4Address.1.IPAddress');
-      }
-      if (!response.containsKey('${p}IPv4Address.1.LeaseTimeRemaining')) {
-        missing.add('${p}IPv4Address.1.LeaseTimeRemaining');
+      if (!response.containsKey('${p}Interface')) {
+        missing.add('${p}Interface');
       }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
-      items.add(DhcpClient(
+      items.add(DhcpClientPool(
         instancePath: p,
-        chaddr: (response['${p}Chaddr'] ?? '') as String,
-        active: response['${p}Active'] == true ||
-            response['${p}Active'] == 'true' ||
-            response['${p}Active'] == '1',
-        ipAddress: (response['${p}IPv4Address.1.IPAddress'] ?? '') as String,
-        leaseTimeRemaining: DateTime.tryParse(
-                response['${p}IPv4Address.1.LeaseTimeRemaining']?.toString() ??
-                    '') ??
-            DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+        alias: (response['${p}Alias'] ?? '') as String,
+        interface_: (response['${p}Interface'] ?? '') as String,
+        clients: clients,
       ));
     }
     return DhcpClients(items: items);
@@ -103,9 +204,9 @@ class DhcpClients {
 
   static Future<Subscription<DhcpClients>> subscribe(UspClient client) async {
     return client.subscribe<DhcpClients>(
-      id: 'dhcp-clients-01',
-      notifType: NotifType.objectCreation,
-      paths: ['Device.DHCPv4.Server.Pool.1.Client.'],
+      id: 'dhcp-clients-02',
+      notifType: NotifType.valueChange,
+      paths: ['Device.DHCPv4.Server.Pool.'],
       parser: DhcpClients._fromResponse,
     );
   }
