@@ -11,11 +11,17 @@ export 'package:privacy_gui/core/usp/models/invalidation_domain.dart';
 
 /// Emits [InvalidationEvent]s when SSE notifications arrive.
 ///
-/// Providers can `ref.listen` to this and selectively re-fetch or
-/// `ref.invalidateSelf()` when their domain is signaled — reading
-/// `next.valueOrNull?.domain` and ignoring the `seq` tag, whose only job is to
-/// keep two consecutive events for the same domain unequal. See
-/// [InvalidationEvent] for why that matters.
+/// L1 data providers `ref.listen` to this and re-fetch when their domain is
+/// signaled — reading `next.valueOrNull?.domain` and ignoring the `seq` tag,
+/// whose only job is to keep two consecutive events for the same domain
+/// unequal. See [InvalidationEvent] for why that matters.
+///
+/// Re-fetch by assigning `state` from a generation-guarded `_refreshFromPush()`
+/// (e.g. `wan_data_provider.dart`), NOT with `ref.invalidateSelf()`: that only
+/// rebuilds when something reads the provider, and because the listener lives
+/// in `build()`, the first notification with no reader switches the mechanism
+/// off (linksys/PrivacyGUI#1615). L2 page notifiers do not listen at all
+/// (constitution Article IV Rule 2).
 ///
 /// Uses a wildcard handler on [SseEventRouter] to capture ALL notifications
 /// and map them to domains based on the TR-181 `param_path` / `obj_path`

@@ -293,9 +293,9 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.UI_KIT_DEPLOY_KEY }}
 
-      # `--tags layout-gate`, NOT `--tags overflow`. The gate is 49 suites; only
+      # `--tags layout-gate`, NOT `--tags overflow`. The gate is 50 suites; only
       # five of them are overflow sweeps. Selecting `overflow` here would leave
-      # 44 suites — the density and readability suites, six framework oracles and
+      # 45 suites — the density and readability suites, six framework oracles and
       # the two page registers — running in neither job, with both jobs green.
       #
       # The base exclusion is repeated so this job and job 2 are an exact

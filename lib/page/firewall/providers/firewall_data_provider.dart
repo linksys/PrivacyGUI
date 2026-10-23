@@ -167,10 +167,10 @@ class FirewallDataNotifier extends AsyncNotifier<FirewallData> {
   /// WAS THIS REACHABLE? **No — and the earlier claim here that it was, on the
   /// `essential` preset, was wrong.** Both domains this listener watches are produced
   /// only from `Device.Firewall.DMZ.` and `Device.Firewall.Chain.`
-  /// (`sse_invalidation_provider.dart`), and NEITHER path is in the five the app
-  /// subscribes to (`lib/generated/subscriptions.g.dart`). So no `firewallRules` or `dmz`
-  /// notification can arrive at all, and "does anyone hold a subscription when it does"
-  /// never gets asked.
+  /// (`sse_invalidation_provider.dart`), and NEITHER path is in the five subtrees the
+  /// app's seven subscriptions cover (`lib/generated/subscriptions.g.dart`). So no
+  /// `firewallRules` or `dmz` notification can arrive at all, and "does anyone hold a
+  /// subscription when it does" never gets asked.
   ///
   /// The measurement that suggested otherwise injected the event by hand in a test. That
   /// proves the code path is defective; it does not prove the path is reachable — a
