@@ -8,17 +8,32 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 class GreTunnel {
   final String instancePath;
   final String remoteEndpoints;
+  final String? underlayAddressingType;
+  final String? underlayIpAddress;
+  final String? underlaySubnetMask;
+  final String? underlayDefaultGateway;
+  final String? underlayDnsServers;
 
   const GreTunnel({
     required this.instancePath,
     required this.remoteEndpoints,
+    this.underlayAddressingType,
+    this.underlayIpAddress,
+    this.underlaySubnetMask,
+    this.underlayDefaultGateway,
+    this.underlayDnsServers,
   });
 
   @override
   String toString() {
     return 'GreTunnel('
         'instancePath: $instancePath, '
-        'remoteEndpoints: $remoteEndpoints'
+        'remoteEndpoints: $remoteEndpoints, '
+        'underlayAddressingType: $underlayAddressingType, '
+        'underlayIpAddress: $underlayIpAddress, '
+        'underlaySubnetMask: $underlaySubnetMask, '
+        'underlayDefaultGateway: $underlayDefaultGateway, '
+        'underlayDnsServers: $underlayDnsServers'
         ')';
   }
 }
@@ -27,10 +42,20 @@ class GreTunnel {
 class GreTunnelUpdate {
   final String instancePath;
   final String? remoteEndpoints;
+  final String? underlayAddressingType;
+  final String? underlayIpAddress;
+  final String? underlaySubnetMask;
+  final String? underlayDefaultGateway;
+  final String? underlayDnsServers;
 
   const GreTunnelUpdate({
     required this.instancePath,
     this.remoteEndpoints,
+    this.underlayAddressingType,
+    this.underlayIpAddress,
+    this.underlaySubnetMask,
+    this.underlayDefaultGateway,
+    this.underlayDnsServers,
   });
 }
 
@@ -45,6 +70,11 @@ class GreTunnels {
 
   static const _paths = [
     'Device.GRE.Tunnel.*.RemoteEndpoints',
+    'Device.GRE.Tunnel.*.X_LINKSYS_UnderlayAddressingType',
+    'Device.GRE.Tunnel.*.X_LINKSYS_UnderlayIPAddress',
+    'Device.GRE.Tunnel.*.X_LINKSYS_UnderlaySubnetMask',
+    'Device.GRE.Tunnel.*.X_LINKSYS_UnderlayDefaultGateway',
+    'Device.GRE.Tunnel.*.X_LINKSYS_UnderlayDNSServers',
   ];
 
   /// Fetch all instances via USP Get message
@@ -78,6 +108,26 @@ class GreTunnels {
       items.add(GreTunnel(
         instancePath: p,
         remoteEndpoints: (response['${p}RemoteEndpoints'] ?? '') as String,
+        underlayAddressingType:
+            response.containsKey('${p}X_LINKSYS_UnderlayAddressingType')
+                ? response['${p}X_LINKSYS_UnderlayAddressingType'] as String
+                : null,
+        underlayIpAddress:
+            response.containsKey('${p}X_LINKSYS_UnderlayIPAddress')
+                ? response['${p}X_LINKSYS_UnderlayIPAddress'] as String
+                : null,
+        underlaySubnetMask:
+            response.containsKey('${p}X_LINKSYS_UnderlaySubnetMask')
+                ? response['${p}X_LINKSYS_UnderlaySubnetMask'] as String
+                : null,
+        underlayDefaultGateway:
+            response.containsKey('${p}X_LINKSYS_UnderlayDefaultGateway')
+                ? response['${p}X_LINKSYS_UnderlayDefaultGateway'] as String
+                : null,
+        underlayDnsServers:
+            response.containsKey('${p}X_LINKSYS_UnderlayDNSServers')
+                ? response['${p}X_LINKSYS_UnderlayDNSServers'] as String
+                : null,
       ));
     }
     return GreTunnels(items: items);
@@ -90,6 +140,26 @@ class GreTunnels {
       if (update.remoteEndpoints != null) {
         params['${update.instancePath}RemoteEndpoints'] =
             update.remoteEndpoints;
+      }
+      if (update.underlayAddressingType != null) {
+        params['${update.instancePath}X_LINKSYS_UnderlayAddressingType'] =
+            update.underlayAddressingType;
+      }
+      if (update.underlayIpAddress != null) {
+        params['${update.instancePath}X_LINKSYS_UnderlayIPAddress'] =
+            update.underlayIpAddress;
+      }
+      if (update.underlaySubnetMask != null) {
+        params['${update.instancePath}X_LINKSYS_UnderlaySubnetMask'] =
+            update.underlaySubnetMask;
+      }
+      if (update.underlayDefaultGateway != null) {
+        params['${update.instancePath}X_LINKSYS_UnderlayDefaultGateway'] =
+            update.underlayDefaultGateway;
+      }
+      if (update.underlayDnsServers != null) {
+        params['${update.instancePath}X_LINKSYS_UnderlayDNSServers'] =
+            update.underlayDnsServers;
       }
     }
     return params;
@@ -107,5 +177,88 @@ class GreTunnels {
       };
     }
     return await client.set(params, allowPartial: allowPartial);
+  }
+
+  /// Build the setOrdered() groups of updateOrdered() without sending them
+  static List<List<Map<String, String>>> updateOrderedGroups(
+      List<GreTunnelUpdate> updates) {
+    final orderedParams = <List<Map<String, String>>>[];
+    for (final update in updates) {
+      // Priority 1: Parameters with priority 1
+      final group1Params = <Map<String, String>>[];
+      if (update.remoteEndpoints != null) {
+        group1Params.add({
+          'path': '${update.instancePath}RemoteEndpoints',
+          'value': update.remoteEndpoints.toString()
+        });
+      }
+      if (update.underlayAddressingType != null) {
+        group1Params.add({
+          'path': '${update.instancePath}X_LINKSYS_UnderlayAddressingType',
+          'value': update.underlayAddressingType.toString()
+        });
+      }
+      if (group1Params.isNotEmpty) {
+        orderedParams.add(group1Params);
+      }
+      // Priority 2: Parameters with priority 2
+      final group2Params = <Map<String, String>>[];
+      if (update.underlayIpAddress != null) {
+        group2Params.add({
+          'path': '${update.instancePath}X_LINKSYS_UnderlayIPAddress',
+          'value': update.underlayIpAddress.toString()
+        });
+      }
+      if (group2Params.isNotEmpty) {
+        orderedParams.add(group2Params);
+      }
+      // Priority 3: Parameters with priority 3
+      final group3Params = <Map<String, String>>[];
+      if (update.underlaySubnetMask != null) {
+        group3Params.add({
+          'path': '${update.instancePath}X_LINKSYS_UnderlaySubnetMask',
+          'value': update.underlaySubnetMask.toString()
+        });
+      }
+      if (group3Params.isNotEmpty) {
+        orderedParams.add(group3Params);
+      }
+      // Priority 4: Parameters with priority 4
+      final group4Params = <Map<String, String>>[];
+      if (update.underlayDefaultGateway != null) {
+        group4Params.add({
+          'path': '${update.instancePath}X_LINKSYS_UnderlayDefaultGateway',
+          'value': update.underlayDefaultGateway.toString()
+        });
+      }
+      if (update.underlayDnsServers != null) {
+        group4Params.add({
+          'path': '${update.instancePath}X_LINKSYS_UnderlayDNSServers',
+          'value': update.underlayDnsServers.toString()
+        });
+      }
+      if (group4Params.isNotEmpty) {
+        orderedParams.add(group4Params);
+      }
+    }
+    return orderedParams;
+  }
+
+  /// Update parameters in specified priority order using ordered groups
+  ///
+  /// This method preserves parameter execution order for operations where
+  /// sequence affects performance or correctness.
+  static Future<Map<String, dynamic>> updateOrdered(
+      UspClient client, List<GreTunnelUpdate> updates,
+      {bool allowPartial = false}) async {
+    final orderedParams = updateOrderedGroups(updates);
+    if (orderedParams.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': {}, 'updatedCount': 0}
+      };
+    }
+
+    return await client.setOrdered(orderedParams, allowPartial: true);
   }
 }

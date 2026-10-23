@@ -14,6 +14,8 @@ class PppInterfaceInstance {
   final int idleDisconnectTime;
   final String lowerLayers;
   final int lcpEcho;
+  final int lcpEchoRetry;
+  final bool? lcpEchoAdaptive;
   final String connectionStatus;
 
   const PppInterfaceInstance({
@@ -25,6 +27,8 @@ class PppInterfaceInstance {
     required this.idleDisconnectTime,
     required this.lowerLayers,
     required this.lcpEcho,
+    required this.lcpEchoRetry,
+    this.lcpEchoAdaptive,
     required this.connectionStatus,
   });
 
@@ -39,6 +43,8 @@ class PppInterfaceInstance {
         'idleDisconnectTime: $idleDisconnectTime, '
         'lowerLayers: $lowerLayers, '
         'lcpEcho: $lcpEcho, '
+        'lcpEchoRetry: $lcpEchoRetry, '
+        'lcpEchoAdaptive: $lcpEchoAdaptive, '
         'connectionStatus: $connectionStatus'
         ')';
   }
@@ -53,6 +59,9 @@ class PppInterfaceInstanceUpdate {
   final String? connectionTrigger;
   final int? idleDisconnectTime;
   final String? lowerLayers;
+  final int? lcpEcho;
+  final int? lcpEchoRetry;
+  final bool? lcpEchoAdaptive;
 
   const PppInterfaceInstanceUpdate({
     required this.instancePath,
@@ -62,6 +71,9 @@ class PppInterfaceInstanceUpdate {
     this.connectionTrigger,
     this.idleDisconnectTime,
     this.lowerLayers,
+    this.lcpEcho,
+    this.lcpEchoRetry,
+    this.lcpEchoAdaptive,
   });
 }
 
@@ -82,6 +94,8 @@ class PppInterface {
     'Device.PPP.Interface.*.IdleDisconnectTime',
     'Device.PPP.Interface.*.LowerLayers',
     'Device.PPP.Interface.*.LCPEcho',
+    'Device.PPP.Interface.*.LCPEchoRetry',
+    'Device.PPP.Interface.*.LCPEchoAdaptive',
     'Device.PPP.Interface.*.ConnectionStatus',
   ];
 
@@ -128,6 +142,9 @@ class PppInterface {
       if (!response.containsKey('${p}LCPEcho')) {
         missing.add('${p}LCPEcho');
       }
+      if (!response.containsKey('${p}LCPEchoRetry')) {
+        missing.add('${p}LCPEchoRetry');
+      }
       if (!response.containsKey('${p}ConnectionStatus')) {
         missing.add('${p}ConnectionStatus');
       }
@@ -145,6 +162,13 @@ class PppInterface {
             0,
         lowerLayers: (response['${p}LowerLayers'] ?? '') as String,
         lcpEcho: int.tryParse(response['${p}LCPEcho']?.toString() ?? '') ?? 0,
+        lcpEchoRetry:
+            int.tryParse(response['${p}LCPEchoRetry']?.toString() ?? '') ?? 0,
+        lcpEchoAdaptive: response.containsKey('${p}LCPEchoAdaptive')
+            ? (response['${p}LCPEchoAdaptive'] == true ||
+                response['${p}LCPEchoAdaptive'] == 'true' ||
+                response['${p}LCPEchoAdaptive'] == '1')
+            : null,
         connectionStatus: (response['${p}ConnectionStatus'] ?? '') as String,
       ));
     }
@@ -176,6 +200,16 @@ class PppInterface {
       }
       if (update.lowerLayers != null) {
         params['${update.instancePath}LowerLayers'] = update.lowerLayers;
+      }
+      if (update.lcpEcho != null) {
+        params['${update.instancePath}LCPEcho'] = update.lcpEcho;
+      }
+      if (update.lcpEchoRetry != null) {
+        params['${update.instancePath}LCPEchoRetry'] = update.lcpEchoRetry;
+      }
+      if (update.lcpEchoAdaptive != null) {
+        params['${update.instancePath}LCPEchoAdaptive'] =
+            update.lcpEchoAdaptive;
       }
     }
     return params;

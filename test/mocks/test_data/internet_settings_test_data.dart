@@ -64,6 +64,7 @@ class InternetSettingsTestData {
           '${base}IPv4Forwarding.$i.GatewayIPAddress': gw,
           '${base}IPv4Forwarding.$i.Interface': iface,
           '${base}IPv4Forwarding.$i.Origin': 'Static',
+          '${base}IPv4Forwarding.$i.ForwardingMetric': '0',
           '${base}IPv4Forwarding.$i.Alias': 'route-$i',
         };
     return {

@@ -168,6 +168,19 @@ class PortTriggering {
       final rules = <PortTriggerForwardRule>[];
       for (final cid_0 in childSorted_0) {
         final cp_0 = '$childBase_0$cid_0.';
+        final missing = <String>[];
+        if (!response.containsKey('${cp_0}Port')) {
+          missing.add('${cp_0}Port');
+        }
+        if (!response.containsKey('${cp_0}PortEndRange')) {
+          missing.add('${cp_0}PortEndRange');
+        }
+        if (!response.containsKey('${cp_0}Protocol')) {
+          missing.add('${cp_0}Protocol');
+        }
+        if (missing.isNotEmpty) {
+          throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+        }
         rules.add(PortTriggerForwardRule(
           instancePath: cp_0,
           forwardPort:

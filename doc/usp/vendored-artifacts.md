@@ -11,7 +11,7 @@ Files in this repo that are built or generated from `linksys/usp_framework` and 
 
 ## Manifest
 
-**Last updated**: 2026-10-21 (all of `lib/generated` on usp-codegen 0.18.1, from `usp_framework` `main` @ `ebfcbd0`, #1654; see below)
+**Last updated**: 2026-10-23 (all of `lib/generated` on usp-codegen 0.19.0, from `usp_framework` `main` @ `62fff77`, #1654; see below)
 
 The web package records reviewed `usp_framework` commit
 `d135f4df652684bc176bc02d83ec4a1c7b84c65c` (merged `main`, PR #59 — the
@@ -31,7 +31,7 @@ without review.
 
 | # | Artifact | Version | Checked-in path | Upstream source |
 |---|----------|---------|-----------------|-----------------|
-| 1 | `usp-codegen` (Mach-O arm64) | **0.18.1** | `tools/usp-codegen` | `usp-codegen/bin/usp-codegen` (built from `src/` via `Makefile.standalone`) |
+| 1 | `usp-codegen` (Mach-O arm64) | **0.19.0** | `tools/usp-codegen` | `usp-codegen/bin/usp-codegen` (built from `src/` via `Makefile.standalone`) |
 | 2 | `usp_client.js` | **0.13.0** | `web/usp_client.js` | `usp-client/pkg/usp_client.js` |
 | 3 | `usp_client_bg.wasm` | **0.13.0** | `web/usp_client_bg.wasm` | `usp-client/pkg/usp_client_bg.wasm` |
 | 4 | `usp_client.d.ts` | **0.13.0** | `web/usp_client.d.ts` | `usp-client/pkg/usp_client.d.ts` |
@@ -44,7 +44,7 @@ without review.
 
 The YAML definitions are **not vendored** into this repo and individual definitions commits are **not pinned** here. `lib/generated` is regenerated from the fork clone's latest `main`, so re-run the codegen (Update procedure step 2) when you need the output to be current rather than assuming what is checked in already is.
 
-**All of `lib/generated` is on 0.18.1 (#1654).** It was generated from `usp_framework` `main` @ `ebfcbd0`. 0.18.x reads every multi-instance table as a list, so a service picks the row it uses itself: the LAN DHCP pool by `Alias == dhcp-lan`, the firewall chain by `Name == Defaults Configuration`, the DHCP client of the WAN by its `Interface`, the routing table as the first router. Definitions no service consumes are not generated (`ble_onboarding`, `ble_onboarding_operations`, `data_elements_network_operations`, `dynamic_routing`), so a full regeneration has to delete those four files and leave them out of `index.dart`. `tr181_paths.g.dart` is not codegen output and is never regenerated.
+**All of `lib/generated` is on 0.19.0 (#1654).** It was generated from `usp_framework` `main` @ `62fff77`. 0.18.x reads every multi-instance table as a list, so a service picks the row it uses itself: the LAN DHCP pool by `Alias == dhcp-lan`, the firewall chain by `Name == Defaults Configuration`, the DHCP client of the WAN by its `Interface`, the routing table as the first router. 0.19.0 also checks the required leaves of every child, flattened and `interfaces:` row, so a row missing one fails the whole `fetch()` with 9998 instead of reading defaults; a test fixture must give each row every required leaf. Definitions no service consumes are not generated (`ble_onboarding`, `ble_onboarding_operations`, `data_elements_mlo_clients`, `data_elements_network_operations`, `dynamic_routing`), so a full regeneration has to delete those five files and leave them out of `index.dart`. `tr181_paths.g.dart` is not codegen output and is never regenerated.
 
 Make sure that clone's `main` is up to date with `upstream` (`github.com/linksys/usp_framework`), not just with `origin`. Generating from a stale fork `main` silently reproduces the bug #1555 fixed: the fork's `data_elements_network.yaml` was the 2026-08-05 revision and had no `data_elements_network_info.yaml`.
 

@@ -363,6 +363,16 @@ class DataElementsNetwork {
         final currentOperatingClassProfiles = <MeshRadioOperatingClass>[];
         for (final cid_1 in childSorted_1) {
           final cp_1 = '$childBase_1$cid_1.';
+          final missing = <String>[];
+          if (!response.containsKey('${cp_1}Class')) {
+            missing.add('${cp_1}Class');
+          }
+          if (!response.containsKey('${cp_1}Channel')) {
+            missing.add('${cp_1}Channel');
+          }
+          if (missing.isNotEmpty) {
+            throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+          }
           currentOperatingClassProfiles.add(MeshRadioOperatingClass(
             instancePath: cp_1,
             operatingClass:
@@ -406,6 +416,13 @@ class DataElementsNetwork {
           final stations = <MeshStation>[];
           for (final cid_3 in childSorted_3) {
             final cp_3 = '$childBase_3$cid_3.';
+            final missing = <String>[];
+            if (!response.containsKey('${cp_3}MACAddress')) {
+              missing.add('${cp_3}MACAddress');
+            }
+            if (missing.isNotEmpty) {
+              throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+            }
             stations.add(MeshStation(
               instancePath: cp_3,
               macAddress: (response['${cp_3}MACAddress'] ?? '') as String,
@@ -451,6 +468,16 @@ class DataElementsNetwork {
               timeStamp: DateTime.tryParse(
                   response['${cp_3}TimeStamp']?.toString() ?? ''),
             ));
+          }
+          final missing = <String>[];
+          if (!response.containsKey('${cp_2}BSSID')) {
+            missing.add('${cp_2}BSSID');
+          }
+          if (!response.containsKey('${cp_2}SSID')) {
+            missing.add('${cp_2}SSID');
+          }
+          if (missing.isNotEmpty) {
+            throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
           }
           bssList.add(MeshBss(
             instancePath: cp_2,

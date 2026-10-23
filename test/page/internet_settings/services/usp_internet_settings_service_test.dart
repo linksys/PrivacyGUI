@@ -34,6 +34,7 @@ const _pppResponse = <String, dynamic>{
   'Device.PPP.Interface.1.ConnectionTrigger': 'AlwaysOn',
   'Device.PPP.Interface.1.IdleDisconnectTime': '0',
   'Device.PPP.Interface.1.LCPEcho': '30',
+  'Device.PPP.Interface.1.LCPEchoRetry': '5',
   'Device.PPP.Interface.1.ConnectionStatus': 'Connected',
   'Device.PPP.Interface.1.LowerLayers': '',
 };
@@ -46,6 +47,7 @@ const _pppPptpResponse = <String, dynamic>{
   'Device.PPP.Interface.1.ConnectionTrigger': 'AlwaysOn',
   'Device.PPP.Interface.1.IdleDisconnectTime': '0',
   'Device.PPP.Interface.1.LCPEcho': '0',
+  'Device.PPP.Interface.1.LCPEchoRetry': '5',
   'Device.PPP.Interface.1.ConnectionStatus': 'Connected',
   'Device.PPP.Interface.1.LowerLayers': 'Device.GRE.Tunnel.1.Interface.1',
 };
@@ -58,6 +60,7 @@ const _pppL2tpResponse = <String, dynamic>{
   'Device.PPP.Interface.1.ConnectionTrigger': 'AlwaysOn',
   'Device.PPP.Interface.1.IdleDisconnectTime': '0',
   'Device.PPP.Interface.1.LCPEcho': '0',
+  'Device.PPP.Interface.1.LCPEchoRetry': '5',
   'Device.PPP.Interface.1.ConnectionStatus': 'Connected',
   'Device.PPP.Interface.1.LowerLayers': 'Device.L2TPv2.Tunnel.1.Interface.1',
 };

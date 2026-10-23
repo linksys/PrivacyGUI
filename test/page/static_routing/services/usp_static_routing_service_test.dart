@@ -32,6 +32,7 @@ StaticRoute _route({
   String interface_ = _wan,
   String origin = 'Static',
   String alias = 'TestRoute',
+  int forwardingMetric = 0,
 }) =>
     StaticRoute(
       instancePath: instancePath,
@@ -42,6 +43,7 @@ StaticRoute _route({
       interface_: interface_,
       origin: origin,
       alias: alias,
+      forwardingMetric: forwardingMetric,
     );
 
 /// [routes] on router 4, and [onRouter7] on router 7.
@@ -96,6 +98,7 @@ void main() {
             '${r4}IPv4Forwarding.$i.GatewayIPAddress': '192.168.1.254',
             '${r4}IPv4Forwarding.$i.Interface': iface,
             '${r4}IPv4Forwarding.$i.Origin': 'Static',
+            '${r4}IPv4Forwarding.$i.ForwardingMetric': '0',
             '${r4}IPv4Forwarding.$i.Alias': alias,
           };
       when(() => mockUsp.get(any())).thenAnswer((invocation) async {

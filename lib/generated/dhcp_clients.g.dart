@@ -145,6 +145,16 @@ class DhcpClients {
         final ipv4Addresses = <DhcpClientIpv4Address>[];
         for (final cid_1 in childSorted_1) {
           final cp_1 = '$childBase_1$cid_1.';
+          final missing = <String>[];
+          if (!response.containsKey('${cp_1}IPAddress')) {
+            missing.add('${cp_1}IPAddress');
+          }
+          if (!response.containsKey('${cp_1}LeaseTimeRemaining')) {
+            missing.add('${cp_1}LeaseTimeRemaining');
+          }
+          if (missing.isNotEmpty) {
+            throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+          }
           ipv4Addresses.add(DhcpClientIpv4Address(
             instancePath: cp_1,
             ipAddress: (response['${cp_1}IPAddress'] ?? '') as String,
@@ -152,6 +162,16 @@ class DhcpClients {
                     response['${cp_1}LeaseTimeRemaining']?.toString() ?? '') ??
                 DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
           ));
+        }
+        final missing = <String>[];
+        if (!response.containsKey('${cp_0}Chaddr')) {
+          missing.add('${cp_0}Chaddr');
+        }
+        if (!response.containsKey('${cp_0}Active')) {
+          missing.add('${cp_0}Active');
+        }
+        if (missing.isNotEmpty) {
+          throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
         }
         clients.add(DhcpClient(
           instancePath: cp_0,

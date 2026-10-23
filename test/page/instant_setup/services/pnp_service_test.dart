@@ -59,6 +59,7 @@ void main() {
     'Device.PPP.Interface.1.ConnectionTrigger': 'AlwaysOn',
     'Device.PPP.Interface.1.IdleDisconnectTime': '0',
     'Device.PPP.Interface.1.LCPEcho': '30',
+    'Device.PPP.Interface.1.LCPEchoRetry': '5',
     'Device.PPP.Interface.1.ConnectionStatus': 'Connected',
     'Device.PPP.Interface.1.LowerLayers': 'Device.Ethernet.Link.2',
   };

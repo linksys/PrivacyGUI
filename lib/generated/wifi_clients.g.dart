@@ -94,6 +94,28 @@ class WifiClients {
             (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
       for (final cid in sortedChildren) {
         final cp = '$childBase$cid.';
+        final missing = <String>[];
+        if (!response.containsKey('${cp}MACAddress')) {
+          missing.add('${cp}MACAddress');
+        }
+        if (!response.containsKey('${cp}SignalStrength')) {
+          missing.add('${cp}SignalStrength');
+        }
+        if (!response.containsKey('${cp}Noise')) {
+          missing.add('${cp}Noise');
+        }
+        if (!response.containsKey('${cp}LastDataDownlinkRate')) {
+          missing.add('${cp}LastDataDownlinkRate');
+        }
+        if (!response.containsKey('${cp}LastDataUplinkRate')) {
+          missing.add('${cp}LastDataUplinkRate');
+        }
+        if (!response.containsKey('${cp}Active')) {
+          missing.add('${cp}Active');
+        }
+        if (missing.isNotEmpty) {
+          throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+        }
         items.add(WifiClient(
           instancePath: cp,
           parentPath: parentPath,

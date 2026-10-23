@@ -13,6 +13,7 @@ class StaticRoute {
   final String gatewayIpAddress;
   final String interface_;
   final String origin;
+  final int forwardingMetric;
   final String alias;
 
   const StaticRoute({
@@ -23,6 +24,7 @@ class StaticRoute {
     required this.gatewayIpAddress,
     required this.interface_,
     required this.origin,
+    required this.forwardingMetric,
     required this.alias,
   });
 
@@ -36,6 +38,7 @@ class StaticRoute {
         'gatewayIpAddress: $gatewayIpAddress, '
         'interface_: $interface_, '
         'origin: $origin, '
+        'forwardingMetric: $forwardingMetric, '
         'alias: $alias'
         ')';
   }
@@ -122,6 +125,7 @@ class StaticRouting {
     'Device.Routing.Router.*.IPv4Forwarding.*.GatewayIPAddress',
     'Device.Routing.Router.*.IPv4Forwarding.*.Interface',
     'Device.Routing.Router.*.IPv4Forwarding.*.Origin',
+    'Device.Routing.Router.*.IPv4Forwarding.*.ForwardingMetric',
     'Device.Routing.Router.*.IPv4Forwarding.*.Alias',
   ];
 
@@ -161,6 +165,34 @@ class StaticRouting {
       final forwardings = <StaticRoute>[];
       for (final cid_0 in childSorted_0) {
         final cp_0 = '$childBase_0$cid_0.';
+        final missing = <String>[];
+        if (!response.containsKey('${cp_0}Enable')) {
+          missing.add('${cp_0}Enable');
+        }
+        if (!response.containsKey('${cp_0}DestIPAddress')) {
+          missing.add('${cp_0}DestIPAddress');
+        }
+        if (!response.containsKey('${cp_0}DestSubnetMask')) {
+          missing.add('${cp_0}DestSubnetMask');
+        }
+        if (!response.containsKey('${cp_0}GatewayIPAddress')) {
+          missing.add('${cp_0}GatewayIPAddress');
+        }
+        if (!response.containsKey('${cp_0}Interface')) {
+          missing.add('${cp_0}Interface');
+        }
+        if (!response.containsKey('${cp_0}Origin')) {
+          missing.add('${cp_0}Origin');
+        }
+        if (!response.containsKey('${cp_0}ForwardingMetric')) {
+          missing.add('${cp_0}ForwardingMetric');
+        }
+        if (!response.containsKey('${cp_0}Alias')) {
+          missing.add('${cp_0}Alias');
+        }
+        if (missing.isNotEmpty) {
+          throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+        }
         forwardings.add(StaticRoute(
           instancePath: cp_0,
           enable: response['${cp_0}Enable'] == true ||
@@ -172,6 +204,9 @@ class StaticRouting {
               (response['${cp_0}GatewayIPAddress'] ?? '') as String,
           interface_: (response['${cp_0}Interface'] ?? '') as String,
           origin: (response['${cp_0}Origin'] ?? '') as String,
+          forwardingMetric: int.tryParse(
+                  response['${cp_0}ForwardingMetric']?.toString() ?? '') ??
+              0,
           alias: (response['${cp_0}Alias'] ?? '') as String,
         ));
       }

@@ -114,6 +114,19 @@ class FirewallChainRules {
       final rules = <FirewallChainRule>[];
       for (final cid_0 in childSorted_0) {
         final cp_0 = '$childBase_0$cid_0.';
+        final missing = <String>[];
+        if (!response.containsKey('${cp_0}Enable')) {
+          missing.add('${cp_0}Enable');
+        }
+        if (!response.containsKey('${cp_0}Description')) {
+          missing.add('${cp_0}Description');
+        }
+        if (!response.containsKey('${cp_0}Target')) {
+          missing.add('${cp_0}Target');
+        }
+        if (missing.isNotEmpty) {
+          throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+        }
         rules.add(FirewallChainRule(
           instancePath: cp_0,
           enable: response['${cp_0}Enable'] == true ||

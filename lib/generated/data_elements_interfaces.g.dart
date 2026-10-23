@@ -141,6 +141,13 @@ class DataElementsInterfaces {
         final neighbors = <MeshNeighbor>[];
         for (final cid_1 in childSorted_1) {
           final cp_1 = '$childBase_1$cid_1.';
+          final missing = <String>[];
+          if (!response.containsKey('${cp_1}ID')) {
+            missing.add('${cp_1}ID');
+          }
+          if (missing.isNotEmpty) {
+            throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+          }
           neighbors.add(MeshNeighbor(
             instancePath: cp_1,
             id: (response['${cp_1}ID'] ?? '') as String,
@@ -150,6 +157,13 @@ class DataElementsInterfaces {
                     response['${cp_1}IsIEEE1905'] == '1')
                 : null,
           ));
+        }
+        final missing = <String>[];
+        if (!response.containsKey('${cp_0}MACAddress')) {
+          missing.add('${cp_0}MACAddress');
+        }
+        if (missing.isNotEmpty) {
+          throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
         }
         interfaces.add(MeshInterface(
           instancePath: cp_0,

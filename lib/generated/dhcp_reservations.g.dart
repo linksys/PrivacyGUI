@@ -145,6 +145,19 @@ class DhcpReservations {
       final staticAddresses = <DhcpReservation>[];
       for (final cid_0 in childSorted_0) {
         final cp_0 = '$childBase_0$cid_0.';
+        final missing = <String>[];
+        if (!response.containsKey('${cp_0}Enable')) {
+          missing.add('${cp_0}Enable');
+        }
+        if (!response.containsKey('${cp_0}Chaddr')) {
+          missing.add('${cp_0}Chaddr');
+        }
+        if (!response.containsKey('${cp_0}Yiaddr')) {
+          missing.add('${cp_0}Yiaddr');
+        }
+        if (missing.isNotEmpty) {
+          throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+        }
         staticAddresses.add(DhcpReservation(
           instancePath: cp_0,
           enable: response['${cp_0}Enable'] == true ||
