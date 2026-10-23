@@ -50,7 +50,8 @@ void main() {
           InternetSettingsTestData.routing(gateway: '100.64.0.1');
     }
     if (paths.contains('${wan}IPv6Address.*.IPAddress')) {
-      return InternetSettingsTestData.wanIpv6Addresses(['2001:db8::1', 'fe80::1']);
+      return InternetSettingsTestData.wanIpv6Addresses(
+          ['2001:db8::1', 'fe80::1']);
     }
     return {};
   }

@@ -199,8 +199,7 @@ void main() {
       container.dispose();
     });
 
-    test('editing a route without changing it leaves the page clean',
-        () async {
+    test('editing a route without changing it leaves the page clean', () async {
       // A fetched route holds the interface path the router reported; the
       // dialog hands back the display name only, so the path the edit
       // re-derives differs. That is not a change to the route.
