@@ -74,11 +74,14 @@ library;
 import 'package:flutter/material.dart'
     show GridView, LinearProgressIndicator, SelectionArea;
 import 'package:flutter_svg/flutter_svg.dart' show SvgPicture;
+import 'package:privacy_gui/components/composed/app_node_list_card.dart';
 import 'package:privacy_gui/components/customs/circular_countdown_widget.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/app_menu_card.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/page/add_nodes/views/add_nodes_view.dart';
+import 'package:privacy_gui/page/add_nodes/views/components/add_nodes_phase_content.dart';
 import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_models.dart';
 import 'package:privacy_gui/page/internet_settings/views/sections/auto_ipoe_section.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_ipoe_view.dart';
@@ -200,6 +203,7 @@ import 'package:ui_kit_library/ui_kit.dart'
         AppTextFormField,
         AppTopology;
 
+import '../../mocks/provider_overrides/mock_add_nodes.dart';
 import '../../mocks/provider_overrides/mock_admin.dart';
 import '../../mocks/provider_overrides/mock_administration.dart';
 import '../../mocks/provider_overrides/mock_apps.dart';
@@ -229,6 +233,7 @@ import '../../mocks/provider_overrides/mock_router_assistant.dart';
 import '../../mocks/provider_overrides/mock_topology.dart';
 import '../../mocks/provider_overrides/mock_unified_diagnostics.dart';
 import '../../mocks/provider_overrides/mock_wifi_settings.dart';
+import '../../mocks/test_data/scenes/add_nodes_scene_data.dart';
 import '../../mocks/test_data/scenes/devices_scene_data.dart';
 // Both scene files export a top-level `dataState`, so both are prefixed rather
 // than one — a bare `dataState()` beside a `pf.dataState()` reads as the same
@@ -2841,6 +2846,24 @@ final kAutoIPoEPageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView],
 );
 
+/// `page.add_nodes` (#879).
+///
+/// [addNodesJoinedState], the widest state the page has: one node that joined
+/// and one still on its way, so the node list carries both kinds of row — the
+/// joined one with its check mark, the other with "not online yet" under its
+/// model — above the move-them-into-place note and the Done button. The waiting
+/// phases are a spinner and two centred lines, narrower than this by
+/// construction; the guidance and the failure phases are a title, prose and one
+/// or two buttons, which this state also has. Requiring [AppNodeListCard] is
+/// what makes a fixture that lost its nodes fail rather than sweep an empty list.
+final kAddNodesPageCase = PageSurfaceCase(
+  id: 'add_nodes',
+  view: () => const AddNodesView(),
+  overrides: () => addNodesOverrides(addNodesJoinedState),
+  requires: const [AddNodesPhaseContent, AppNodeListCard],
+  forbids: const [AppLoader],
+);
+
 final kPageSurfaceCases = <PageSurfaceCase>[
   kDhcpPageCase,
   kWifiSettingsPageCase,
@@ -2952,4 +2975,5 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kNotificationHistoryPageCase,
   kAdministrationPageCase,
   kAutoIPoEPageCase,
+  kAddNodesPageCase,
 ];

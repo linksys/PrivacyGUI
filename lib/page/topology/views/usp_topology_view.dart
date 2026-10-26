@@ -5,16 +5,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_subtitle.dart';
 import 'package:privacy_gui/page/topology/helpers/node_identifier.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_nav_target.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_node_order.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_node_menu.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_search.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_node_content_builder.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_tree_labels.dart';
@@ -245,6 +249,17 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
   Widget _buildTopologyCard(BuildContext context, GraphData topology) {
     final router = GoRouter.of(context);
     final colorScheme = Theme.of(context).colorScheme;
+    // Two answers, read apart because they change apart: whether this firmware
+    // has the onboarding API (resolved at login), and whether this mode offers a
+    // way in at all (Remote Assistance does not). The menu renders the item iff
+    // both say yes; which node it goes on is `topologyNodeMenu`'s.
+    final openAddNodes = ref.watch(deviceCapabilitiesProvider).has(
+              DeviceCapability.bleOnboarding,
+            )
+        ? ref
+            .watch(surfaceStrategyProvider)
+            .addNodesEntry(() => context.pushNamed(RouteNamed.addNodes))
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -411,6 +426,16 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
                 // became tappable in 3.4.0.
                 nodeTapFilter: (node) => !node.isExternal,
                 nodeComparator: TopologyNodeOrder.compare,
+                // A button on the controller node in both views, plus long press
+                // and right click in the graph. Nothing elsewhere has a menu.
+                nodeMenuBuilder: (context, node) => topologyNodeMenu(
+                  node,
+                  canAddNodes: openAddNodes != null,
+                  addNodesLabel: loc(context).addNodes,
+                ),
+                onNodeMenuSelected: (nodeId, value) {
+                  if (value == kTopologyMenuAddNodes) openAddNodes?.call();
+                },
               ),
             );
           }),

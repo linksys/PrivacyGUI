@@ -132,6 +132,14 @@ class RemoteSurface implements SurfaceStrategy {
   Widget firmwareManualEntry({required Widget Function() picker}) =>
       const SizedBox.shrink();
 
+  /// No way in to adding a node. The agent is not in the building: they cannot
+  /// put the new node within the controller's Bluetooth range or read its light,
+  /// and the flow is a guide for someone who can. LinksysWRT 1.0 disabled the
+  /// same item in a remote session. `null` is how the topology learns not to
+  /// offer "Add nodes" at all.
+  @override
+  VoidCallback? addNodesEntry(VoidCallback openAddNodes) => null;
+
   @override
   Widget sessionExitAction() => const EndSessionAction();
 

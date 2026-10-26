@@ -47,6 +47,7 @@ import 'package:privacy_gui/page/devices/views/usp_device_list_view.dart';
 import 'package:privacy_gui/page/devices/views/usp_device_detail_view.dart';
 import 'package:privacy_gui/page/topology/views/usp_topology_view.dart';
 import 'package:privacy_gui/page/topology/views/usp_node_detail_view.dart';
+import 'package:privacy_gui/page/add_nodes/views/add_nodes_view.dart';
 import 'package:privacy_gui/page/instant_safety/views/instant_safety_view.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
