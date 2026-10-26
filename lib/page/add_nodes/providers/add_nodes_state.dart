@@ -74,8 +74,14 @@ class AddNodesState extends Equatable {
     this.error,
   });
 
-  /// Whether a session this flow started is in progress, so leaving the page
-  /// has to stop it.
+  /// Whether the page is showing a session in progress: `Start()` sent and not
+  /// answered, or the session searching or onboarding. What the page offers
+  /// Cancel on.
+  ///
+  /// Not whether the running session is this flow's to stop. During
+  /// [AddNodesPhase.starting] that is not known yet — `Start()` can answer
+  /// `Busy` — so the notifier decides every `Stop()` by what `Start()` answered,
+  /// not by this.
   bool get isRunning =>
       phase == AddNodesPhase.starting ||
       phase == AddNodesPhase.searching ||

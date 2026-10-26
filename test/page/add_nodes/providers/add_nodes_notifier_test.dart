@@ -471,6 +471,127 @@ void main() {
           container.read(addNodesProvider).phase, AddNodesPhase.noNodesFound);
     });
 
+    test('a session that partly succeeded waits for its onboarded node',
+        () async {
+      final container = await readyContainer();
+      when(() => service.start())
+          .thenAnswer((_) async => OnboardingStartResult.started);
+      feedSessions([
+        _session(
+            status: OnboardingSessionStatus.complete,
+            result: OnboardingSessionResult.partial,
+            session: 1450,
+            nodes: [
+              _node(),
+              _node(status: OnboardingNodeStatus.failedConnect, alMac: null),
+            ]),
+      ]);
+      when(() => service.fetchJoinedNodes(any()))
+          .thenAnswer((_) async => {_alMacKey});
+
+      await container.read(addNodesProvider.notifier).start();
+
+      final state = container.read(addNodesProvider);
+      expect(state.phase, AddNodesPhase.joined);
+      expect(state.sessionResult, OnboardingSessionResult.partial);
+      // Only the node that reached the backhaul is waited for; the one the
+      // controller never connected to has no AL MAC to look for.
+      verify(() => service.fetchJoinedNodes([_alMac])).called(1);
+    });
+
+    test('a session that partly succeeded with no AL MAC takes its word',
+        () async {
+      final container = await readyContainer();
+      when(() => service.start())
+          .thenAnswer((_) async => OnboardingStartResult.started);
+      feedSessions([
+        _session(
+            status: OnboardingSessionStatus.complete,
+            result: OnboardingSessionResult.partial,
+            session: 1450,
+            nodes: [
+              _node(alMac: null),
+              _node(status: OnboardingNodeStatus.failedConnect, alMac: null),
+            ]),
+      ]);
+
+      await container.read(addNodesProvider.notifier).start();
+
+      expect(container.read(addNodesProvider).phase, AddNodesPhase.joined);
+      verifyNever(() => service.fetchJoinedNodes(any()));
+      expect(devices.refetches, 1);
+    });
+
+    test('each node that joins refreshes the topology, not the last one only',
+        () async {
+      final container = await readyContainer();
+      when(() => service.start())
+          .thenAnswer((_) async => OnboardingStartResult.started);
+      const second = 'aa:bb:cc:00:00:04';
+      feedSessions([
+        _session(
+            status: OnboardingSessionStatus.complete,
+            result: OnboardingSessionResult.success,
+            session: 1450,
+            nodes: [
+              _node(),
+              const AddNodesNodeUIModel(
+                bleMacAddress: 'AA:BB:CC:00:00:03',
+                status: OnboardingNodeStatus.onboarded,
+                alMacAddress: second,
+              ),
+            ]),
+      ]);
+      // The first node is listed straight away, the second never within the
+      // wait — the page shows Done from the first.
+      when(() => service.fetchJoinedNodes(any()))
+          .thenAnswer((_) async => {_alMacKey});
+
+      unawaited(container.read(addNodesProvider.notifier).start());
+      await settleOn(container, AddNodesPhase.joined);
+
+      expect(devices.refetches, 1,
+          reason: 'the user can press Done now, which disposes the flow '
+              'before the second node arrives');
+    });
+
+    test('a second node that joins later refreshes the topology again',
+        () async {
+      final container = await readyContainer();
+      when(() => service.start())
+          .thenAnswer((_) async => OnboardingStartResult.started);
+      const second = 'aa:bb:cc:00:00:04';
+      feedSessions([
+        _session(
+            status: OnboardingSessionStatus.complete,
+            result: OnboardingSessionResult.success,
+            session: 1450,
+            nodes: [
+              _node(),
+              const AddNodesNodeUIModel(
+                bleMacAddress: 'AA:BB:CC:00:00:03',
+                status: OnboardingNodeStatus.onboarded,
+                alMacAddress: second,
+              ),
+            ]),
+      ]);
+      final reads = <Set<String>>[
+        {_alMacKey},
+        {_alMacKey},
+        {_alMacKey, 'AABBCC000004'},
+      ];
+      var i = 0;
+      when(() => service.fetchJoinedNodes(any()))
+          .thenAnswer((_) async => reads[i < reads.length ? i++ : 2]);
+
+      await container.read(addNodesProvider.notifier).start();
+
+      expect(container.read(addNodesProvider).joinedNodeKeys,
+          {_alMacKey, 'AABBCC000004'});
+      expect(devices.refetches, 2,
+          reason: 'one per join; a read that adds nobody refreshes nothing');
+    });
+
     test('a session counter that moves means someone else took over', () async {
       final container = await readyContainer();
       when(() => service.start())
@@ -547,6 +668,33 @@ void main() {
       verify(() => service.start()).called(1);
       gate.complete(OnboardingStartResult.busy);
     });
+
+    test('no service to start with is failed, not thrown', () async {
+      feedSessions([_idle]);
+      // Defensive, to match the entry read: in the app this does not happen.
+      // The service provider reads the USP client once and keeps it, and the
+      // entry read has already built it by the time Start can be pressed. The
+      // override below rebuilds it on demand, which only a test can do.
+      final available = StateProvider<bool>((ref) => true);
+      final container = ProviderContainer(overrides: [
+        addNodesServiceProvider.overrideWith((ref) {
+          if (!ref.watch(available)) throw const ServiceNotInitializedError();
+          return service;
+        }),
+        uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+      ]);
+      addTearDown(container.dispose);
+      container.listen(addNodesProvider, (_, __) {});
+      await settleOn(container, AddNodesPhase.ready);
+      container.read(available.notifier).state = false;
+
+      await container.read(addNodesProvider.notifier).start();
+
+      final state = container.read(addNodesProvider);
+      expect(state.phase, AddNodesPhase.failed);
+      expect(state.error, isA<ServiceNotInitializedError>());
+      verifyNever(() => service.start());
+    });
   });
 
   group('AddNodesNotifier - stop', () {
@@ -594,6 +742,259 @@ void main() {
 
       verify(() => service.start()).called(2);
       expect(container.read(addNodesProvider).phase, AddNodesPhase.busy);
+    });
+
+    group('before Start() has answered', () {
+      /// A flow in [AddNodesPhase.starting], its `Start()` held until [answer].
+      Future<(ProviderContainer, Completer<OnboardingStartResult>)>
+          startingContainer() async {
+        feedSessions([
+          _idle,
+          _session(
+              status: OnboardingSessionStatus.scanning,
+              result: OnboardingSessionResult.started,
+              session: 1450),
+        ]);
+        final container = createContainer();
+        await settleOn(container, AddNodesPhase.ready);
+        final answer = Completer<OnboardingStartResult>();
+        when(() => service.start()).thenAnswer((_) => answer.future);
+        unawaited(container.read(addNodesProvider.notifier).start());
+        await settleOn(container, AddNodesPhase.starting);
+        return (container, answer);
+      }
+
+      test('a cancel then Busy stops nothing: the session is not ours',
+          () async {
+        final (container, answer) = await startingContainer();
+
+        await container.read(addNodesProvider.notifier).cancel();
+        answer.complete(OnboardingStartResult.busy);
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+
+        expect(container.read(addNodesProvider).phase, AddNodesPhase.cancelled);
+        verifyNever(() => service.stop());
+      });
+
+      test('a cancel then Started stops the session once, and follows nothing',
+          () async {
+        final (container, answer) = await startingContainer();
+
+        await container.read(addNodesProvider.notifier).cancel();
+        verifyNever(() => service.stop());
+        answer.complete(OnboardingStartResult.started);
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+
+        expect(container.read(addNodesProvider).phase, AddNodesPhase.cancelled);
+        verify(() => service.stop()).called(1);
+        // Entry read only: the cancelled run never polled its session.
+        verify(() => service.fetchSession()).called(1);
+      });
+
+      test('leaving then Busy stops nothing', () async {
+        final (container, answer) = await startingContainer();
+
+        container.dispose();
+        answer.complete(OnboardingStartResult.busy);
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+
+        verifyNever(() => service.stop());
+      });
+
+      test('leaving then Started stops the session', () async {
+        final (container, answer) = await startingContainer();
+
+        container.dispose();
+        answer.complete(OnboardingStartResult.started);
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+
+        verify(() => service.stop()).called(1);
+      });
+
+      test('Try again after a cancel leaves the first answer its own cancel',
+          () async {
+        final (container, first) = await startingContainer();
+        await container.read(addNodesProvider.notifier).cancel();
+        final second = Completer<OnboardingStartResult>();
+        when(() => service.start()).thenAnswer((_) => second.future);
+
+        // Try again before the first Start() has answered. The page offers it
+        // from cancelled.
+        unawaited(container.read(addNodesProvider.notifier).start());
+        await settleOn(container, AddNodesPhase.starting);
+        first.complete(OnboardingStartResult.started);
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+
+        verify(() => service.stop()).called(1);
+        expect(container.read(addNodesProvider).phase, AddNodesPhase.starting,
+            reason: 'the first answer stopped its own session and published '
+                'nothing over the run that replaced it');
+
+        second.complete(OnboardingStartResult.busy);
+        await settleOn(container, AddNodesPhase.busy);
+        verifyNever(() => service.stop());
+      });
+
+      test('Try again that starts a session is followed, not stopped',
+          () async {
+        // The case the router produces: the first session is stopped by the
+        // time the second Start() runs, so the second answers Started.
+        final (container, first) = await startingContainer();
+        await container.read(addNodesProvider.notifier).cancel();
+        final second = Completer<OnboardingStartResult>();
+        final sent = <String>[];
+        when(() => service.start()).thenAnswer((_) {
+          sent.add('start');
+          return second.future;
+        });
+        when(() => service.stop()).thenAnswer((_) async => sent.add('stop'));
+        unawaited(container.read(addNodesProvider.notifier).start());
+        await settleOn(container, AddNodesPhase.starting);
+        first.complete(OnboardingStartResult.started);
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+
+        second.complete(OnboardingStartResult.started);
+        await settleOn(container, AddNodesPhase.searching);
+
+        // The first run's held stop goes out before the second Start(), both
+        // waiting on the one lock in the order they queued. Reversed, the second
+        // Start() would answer Busy against a session about to be stopped, and
+        // that stop would then end the second run's session.
+        expect(sent, ['stop', 'start']);
+        // And the session is the second run's to stop now.
+        await container.read(addNodesProvider.notifier).cancel();
+        expect(sent, ['stop', 'start', 'stop']);
+      });
+
+      test('a cancel while Start() waits for the lock sends nothing', () async {
+        feedSessions([_idle]);
+        final lock = UspMutationLock();
+        final container = ProviderContainer(overrides: [
+          addNodesServiceProvider.overrideWithValue(service),
+          uspMutationLockProvider.overrideWithValue(lock),
+          addNodesTimingsProvider.overrideWithValue(
+              const AddNodesTimings(pollInterval: Duration(milliseconds: 1))),
+          devicesDataProvider.overrideWith(() => devices),
+        ]);
+        addTearDown(container.dispose);
+        container.listen(addNodesProvider, (_, __) {});
+        await settleOn(container, AddNodesPhase.ready);
+        when(() => service.start())
+            .thenAnswer((_) async => OnboardingStartResult.started);
+        // Another write holds the lock, so Start() queues behind it.
+        final otherWrite = Completer<void>();
+        unawaited(lock.withLock(() => otherWrite.future));
+
+        unawaited(container.read(addNodesProvider.notifier).start());
+        await settleOn(container, AddNodesPhase.starting);
+        await container.read(addNodesProvider.notifier).cancel();
+        otherWrite.complete();
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+
+        verifyNever(() => service.start());
+        verifyNever(() => service.stop());
+        expect(container.read(addNodesProvider).phase, AddNodesPhase.cancelled);
+      });
+    });
+
+    test('leaving while the new node joins sends no stop', () async {
+      feedSessions([
+        _idle,
+        _session(
+            status: OnboardingSessionStatus.complete,
+            result: OnboardingSessionResult.success,
+            session: 1450,
+            nodes: [_node()]),
+      ]);
+      final container = createContainer(joinLimit: const Duration(seconds: 2));
+      await settleOn(container, AddNodesPhase.ready);
+      when(() => service.start())
+          .thenAnswer((_) async => OnboardingStartResult.started);
+      when(() => service.fetchJoinedNodes(any()))
+          .thenAnswer((_) async => <String>{});
+      unawaited(container.read(addNodesProvider.notifier).start());
+      await settleOn(container, AddNodesPhase.joining);
+
+      container.dispose();
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+
+      verifyNever(() => service.stop());
+    });
+
+    test('leaving after another session took over ours sends no stop',
+        () async {
+      // The one that matters: the running session is the other one.
+      feedSessions([
+        _idle,
+        _session(
+            status: OnboardingSessionStatus.scanning,
+            result: OnboardingSessionResult.started,
+            session: 1450),
+        _session(
+            status: OnboardingSessionStatus.scanning,
+            result: OnboardingSessionResult.started,
+            session: 1600),
+      ]);
+      final container = createContainer();
+      await settleOn(container, AddNodesPhase.ready);
+      when(() => service.start())
+          .thenAnswer((_) async => OnboardingStartResult.started);
+      await container.read(addNodesProvider.notifier).start();
+      expect(container.read(addNodesProvider).phase, AddNodesPhase.failed);
+
+      container.dispose();
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+
+      verifyNever(() => service.stop());
+    });
+
+    test('leaving after a session stopped elsewhere sends no stop', () async {
+      feedSessions([
+        _idle,
+        _session(
+            status: OnboardingSessionStatus.scanning,
+            result: OnboardingSessionResult.started,
+            session: 1450),
+        _session(
+            status: OnboardingSessionStatus.idle,
+            result: OnboardingSessionResult.cancelled,
+            session: 1450),
+      ]);
+      final container = createContainer();
+      await settleOn(container, AddNodesPhase.ready);
+      when(() => service.start())
+          .thenAnswer((_) async => OnboardingStartResult.started);
+      await container.read(addNodesProvider.notifier).start();
+      expect(container.read(addNodesProvider).phase, AddNodesPhase.cancelled);
+
+      container.dispose();
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+
+      verifyNever(() => service.stop());
+    });
+
+    test('leaving right after a cancel sends the one stop, not a second',
+        () async {
+      feedSessions([
+        _idle,
+        _session(
+            status: OnboardingSessionStatus.scanning,
+            result: OnboardingSessionResult.started,
+            session: 1450),
+      ]);
+      final container = createContainer();
+      await settleOn(container, AddNodesPhase.ready);
+      when(() => service.start())
+          .thenAnswer((_) async => OnboardingStartResult.started);
+      unawaited(container.read(addNodesProvider.notifier).start());
+      await settleOn(container, AddNodesPhase.searching);
+
+      // The page's Cancel, then the back button before Stop() has answered.
+      unawaited(container.read(addNodesProvider.notifier).cancel());
+      container.dispose();
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+
+      verify(() => service.stop()).called(1);
     });
 
     test('cancel does nothing when no session is running', () async {

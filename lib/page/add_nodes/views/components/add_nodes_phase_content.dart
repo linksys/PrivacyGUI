@@ -249,7 +249,8 @@ class AddNodesPhaseContent extends StatelessWidget {
   // ---------------------------------------------------------------------------
 
   /// A phase the router is working through: a spinner, what it is doing, and a
-  /// cancel while there is a session of this flow's to stop.
+  /// cancel while a session is in progress. The notifier decides whether that
+  /// cancel sends a `Stop()`.
   Widget _status(
     BuildContext context, {
     required String title,

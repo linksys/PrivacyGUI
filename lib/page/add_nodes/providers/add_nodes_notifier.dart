@@ -97,20 +97,24 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
 
   bool _disposed = false;
 
-  /// The service and lock captured when a run starts.
-  ///
-  /// Captured rather than read on use because `onDispose` must send `Stop()`,
-  /// and reading a provider through `ref` once the container is disposed throws.
-  AddNodesService? _service;
-  UspMutationLock? _lock;
+  /// The last `Start()` this flow sent, or null before the first.
+  _StartRun? _run;
 
   @override
   AddNodesState build() {
     ref.onDispose(() {
       _disposed = true;
-      final wasRunning = state.isRunning;
       _generation++;
-      if (wasRunning) _stopOnLeave();
+      final run = _run;
+      if (run == null) return;
+      // By ownership, not by phase: a session that has ended, or that another
+      // one replaced, is not this flow's to stop whatever the page last showed.
+      if (run.owns) {
+        _stopOnLeave(run);
+      } else if (state.phase == AddNodesPhase.starting) {
+        // Left while Start() was on its way.
+        run.stopWhenStarted = true;
+      }
     });
     // After build returns: the read publishes into `state`, which does not exist
     // until it has.
@@ -167,27 +171,44 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
   Future<void> start() async {
     if (!state.canStart) return;
     final generation = ++_generation;
-    final service = ref.read(addNodesServiceProvider);
-    final lock = ref.read(uspMutationLockProvider);
-    _service = service;
-    _lock = lock;
+
+    final AddNodesService service;
+    try {
+      service = ref.read(addNodesServiceProvider);
+    } on ServiceError catch (e) {
+      logger.w('$_tag no service to start a session with', error: e);
+      _publish(
+          generation, AddNodesState(phase: AddNodesPhase.failed, error: e));
+      return;
+    }
+    final run = _StartRun(service, ref.read(uspMutationLockProvider));
+    _run = run;
 
     _publish(generation, const AddNodesState(phase: AddNodesPhase.starting));
 
-    final OnboardingStartResult started;
+    final OnboardingStartResult? started;
     try {
       // The lock is around the command only. A session runs for minutes, past
       // the lock's 30 s timeout, and holding it would block every other write in
       // the app; the reads below need no lock.
-      started = await lock.withLock(service.start);
+      //
+      // Another write can hold the lock, so this can wait before Start() goes
+      // out; a cancel in that wait sends nothing at all. Null: not sent.
+      started = await run.lock
+          .withLock(() async => run.stopWhenStarted ? null : service.start());
     } on ServiceError catch (e) {
       logger.w('$_tag Start() failed', error: e);
       _publish(
           generation, AddNodesState(phase: AddNodesPhase.failed, error: e));
       return;
     } on TimeoutException catch (e) {
-      // Waiting for another write to release the lock, not Start() itself.
-      logger.w('$_tag Start() waited too long for the mutation lock: $e');
+      // Start() itself did not answer: the lock's timeout covers the command it
+      // holds, and a wait for the lock that runs out force-releases it rather
+      // than throwing. So the router may have started a session. No Stop() for
+      // it: with no answer it cannot be told from a session the pairing button
+      // started. One of ours that nobody follows is left to end on its own —
+      // how long that takes on the firmware has not been measured.
+      logger.w('$_tag Start() did not answer in time: $e');
       _publish(
           generation,
           const AddNodesState(
@@ -195,9 +216,23 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
       return;
     }
 
+    if (started == OnboardingStartResult.started) {
+      run.owns = true;
+      if (run.stopWhenStarted) {
+        // Cancelled or left while Start() was on its way. The session is ours
+        // and nobody is following it.
+        logger.i('$_tag Start() answered after a cancel; stopping the session');
+        await _stop(run);
+        return;
+      }
+    }
+
     switch (started) {
+      case null:
+        // Cancelled before it went out; cancel() has published already.
+        logger.i('$_tag cancelled before Start() was sent; sent nothing');
       case OnboardingStartResult.started:
-        await _follow(generation, service);
+        await _follow(generation, run);
       case OnboardingStartResult.busy:
         _publish(generation, const AddNodesState(phase: AddNodesPhase.busy));
       case OnboardingStartResult.unsupportedRole:
@@ -209,7 +244,8 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
 
   /// Polls this flow's session until it ends, then follows its nodes into
   /// DataElements.
-  Future<void> _follow(int generation, AddNodesService service) async {
+  Future<void> _follow(int generation, _StartRun run) async {
+    final service = run.service;
     final timings = ref.read(addNodesTimingsProvider);
     final giveUpAt = clock.now().add(timings.sessionLimit);
     int? ownSession;
@@ -224,7 +260,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
               generation,
               state.copyWith(
                   phase: AddNodesPhase.failed, error: const TimeoutError()));
-          await _stop(service);
+          await _stop(run);
           return;
         }
         await Future<void>.delayed(timings.pollInterval);
@@ -249,6 +285,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
       if (session.session != ownSession) {
         logger.w('$_tag session ${session.session} replaced ours '
             '($ownSession); stopping following it');
+        run.owns = false;
         _publish(
             generation,
             state.copyWith(
@@ -260,6 +297,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
         case OnboardingSessionStatus.idle:
           // Only a cancel elsewhere — another client's Stop() — puts a running
           // session back to idle.
+          run.owns = false;
           _publish(
               generation,
               state.copyWith(
@@ -276,6 +314,8 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
               state.copyWith(
                   phase: AddNodesPhase.onboarding, nodes: session.nodes));
         case OnboardingSessionStatus.complete:
+          // Over on the router; what is left is waiting on DataElements.
+          run.owns = false;
           await _finish(generation, service, session);
           return;
       }
@@ -333,7 +373,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
   }
 
   /// Waits for [awaited] to appear in DataElements, publishing each one as it
-  /// does, and refreshes the topology once any has.
+  /// does, and refreshes the topology each time one has.
   Future<void> _awaitJoin(
     int generation,
     AddNodesService service,
@@ -377,6 +417,13 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
                 // A node is a mesh node now, so the page can say so while it
                 // waits for the rest.
                 phase: AddNodesPhase.joined));
+        // Here, per join, and not once the wait is over: the page offers Done
+        // from the first join, and leaving disposes this before the rest
+        // arrive. The devices provider keeps the topology it has across a
+        // device refresh and re-reads DataElements behind it — but only on a
+        // Hosts push, which can come before the node is in DataElements and so
+        // leave it drawn as a client.
+        unawaited(ref.read(devicesDataProvider.notifier).refetch());
       }
       if (joined.containsAll(wanted)) break;
     }
@@ -386,12 +433,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
       logger.w('$_tag no node of the session appeared in DataElements within '
           '${timings.joinLimit}');
       _publish(generation, state.copyWith(phase: AddNodesPhase.failed));
-      return;
     }
-    // The devices provider keeps the topology it has across a device refresh and
-    // re-reads DataElements behind it — but only on a Hosts push, which can come
-    // before the node is in DataElements and so leave it drawn as a client.
-    unawaited(ref.read(devicesDataProvider.notifier).refetch());
   }
 
   // ---------------------------------------------------------------------------
@@ -399,38 +441,44 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
   // ---------------------------------------------------------------------------
 
   /// Stops the session this flow started. Safe to call when nothing runs.
+  ///
+  /// While `Start()` has not answered, nothing is sent yet. If it is still
+  /// waiting for the mutation lock it is never sent at all. If it is on its way,
+  /// the session is stopped once it answers `Started`, and left alone if it
+  /// answers anything else, because then the running session — if any — is not
+  /// this flow's.
   Future<void> cancel() async {
-    if (!state.isRunning) return;
+    final run = _run;
+    if (!state.isRunning || run == null) return;
     final generation = ++_generation;
-    final AddNodesService service =
-        _service ?? ref.read(addNodesServiceProvider);
     _publish(generation, state.copyWith(phase: AddNodesPhase.cancelled));
-    await _stop(service);
+    if (run.owns) {
+      await _stop(run);
+    } else {
+      run.stopWhenStarted = true;
+    }
   }
 
   /// `Stop()` under the lock, logged rather than thrown: the user asked to stop
   /// following the session, and a failed stop leaves it to end on its own.
-  Future<void> _stop(AddNodesService service) async {
-    final UspMutationLock lock = _lock ?? ref.read(uspMutationLockProvider);
+  ///
+  /// Uses what [run] captured, never `ref`: it also runs after the page has
+  /// gone, for a `Start()` that answered after a cancel.
+  Future<void> _stop(_StartRun run) async {
+    run.owns = false;
     try {
-      await lock.withLock(service.stop);
+      await run.lock.withLock(run.service.stop);
     } on ServiceError catch (e) {
       logger.w('$_tag Stop() failed', error: e);
     } on TimeoutException catch (e) {
-      logger.w('$_tag Stop() waited too long for the mutation lock: $e');
+      logger.w('$_tag Stop() did not answer in time: $e');
     }
   }
 
-  /// The page went away with a session running. Uses what the run captured:
-  /// `ref` cannot be read once the provider is disposed.
-  void _stopOnLeave() {
-    final service = _service;
-    final lock = _lock;
-    if (service == null || lock == null) return;
+  /// The page went away with this flow's session running.
+  void _stopOnLeave(_StartRun run) {
     logger.i('$_tag the page closed with a session running; stopping it');
-    unawaited(lock.withLock(service.stop).catchError((Object e) {
-      logger.w('$_tag Stop() on leave failed: $e');
-    }));
+    unawaited(_stop(run));
   }
 
   // ---------------------------------------------------------------------------
@@ -447,4 +495,36 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
     }
     state = next;
   }
+}
+
+/// One `Start()` and what it leaves this flow responsible for.
+///
+/// Per call, not on the notifier: a Try again straight after a cancel sends a
+/// second `Start()` while the first may not have answered, and each answer has to
+/// find its own pending cancel.
+///
+/// Holds the service and lock as well, captured when the call is made, because a
+/// `Stop()` can be sent after the page is gone — on leave, or for a `Start()`
+/// that answered after a cancel — and reading a provider through `ref` once the
+/// container is disposed throws.
+class _StartRun {
+  _StartRun(this.service, this.lock);
+
+  final AddNodesService service;
+  final UspMutationLock lock;
+
+  /// Whether the router's running session is this run's: set when `Start()`
+  /// answers `Started`, cleared once the session ends, another session replaces
+  /// it, or this flow stops it.
+  ///
+  /// What gates every `Stop()`, rather than [AddNodesState.isRunning]. That
+  /// counts [AddNodesPhase.starting] too, before `Start()` has answered — and if
+  /// it answers `Busy`, the running session is someone else's, the pairing
+  /// button's or another client's, which this flow must not stop.
+  bool owns = false;
+
+  /// The user cancelled, or left, before `Start()` answered. Read twice: in the
+  /// lock, where a `Start()` not yet sent is not sent, and on the answer, where a
+  /// `Started` is stopped at once. Any other answer started nothing.
+  bool stopWhenStarted = false;
 }
