@@ -391,10 +391,12 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // Hostname-based multi-interface grouping
+  // Multi-interface grouping. These rows carry no X_LINKSYS_FriendlyName, so
+  // they group by HostName, the fallback (#1719); MeshNetworkBuilder's tests
+  // cover grouping by FriendlyName.
   // ---------------------------------------------------------------------------
 
-  group('UspDevicesDataService — hostname grouping', () {
+  group('UspDevicesDataService — multi-interface grouping by HostName', () {
     test('merges devices with same hostname into single entry', () async {
       // Setup: two devices with same hostname but different MACs/interfaces
       when(() => mockUsp.get(any(), priority: any(named: 'priority')))
@@ -731,12 +733,57 @@ void main() {
       expect(laptop.hostInstancePath, 'Device.Hosts.Host.1.');
     });
 
+    // A device merged from two rows is named on both, in one Set: devidentd
+    // keeps the name per MAC, so naming one row would split the device (#1719).
+    test('writes every row of a merged device in one Set', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => setSuccess());
+
+      await svc.updateIdentity(
+        hostInstancePaths: ['Device.Hosts.Host.1.', 'Device.Hosts.Host.2.'],
+        name: 'Work laptop',
+        userTypeCode: '3',
+      );
+
+      verify(() => mockUsp.set(
+            {
+              'Device.Hosts.Host.1.X_LINKSYS_UserDeviceLocation': 'Work laptop',
+              'Device.Hosts.Host.1.X_LINKSYS_UserDeviceType': '3',
+              'Device.Hosts.Host.2.X_LINKSYS_UserDeviceLocation': 'Work laptop',
+              'Device.Hosts.Host.2.X_LINKSYS_UserDeviceType': '3',
+            },
+            allowPartial: false,
+          )).called(1);
+    });
+
+    // Reset clears the name and the icon (both ''), on every row.
+    test('Reset clears the name and the icon on every row', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => setSuccess());
+
+      await svc.updateIdentity(
+        hostInstancePaths: ['Device.Hosts.Host.1.', 'Device.Hosts.Host.2.'],
+        name: '',
+        userTypeCode: '',
+      );
+
+      verify(() => mockUsp.set(
+            {
+              'Device.Hosts.Host.1.X_LINKSYS_UserDeviceLocation': '',
+              'Device.Hosts.Host.1.X_LINKSYS_UserDeviceType': '',
+              'Device.Hosts.Host.2.X_LINKSYS_UserDeviceLocation': '',
+              'Device.Hosts.Host.2.X_LINKSYS_UserDeviceType': '',
+            },
+            allowPartial: false,
+          )).called(1);
+    });
+
     test('writes the name and the icon code in one Set', () async {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => setSuccess());
 
       await svc.updateIdentity(
-        hostInstancePath: 'Device.Hosts.Host.3.',
+        hostInstancePaths: ['Device.Hosts.Host.3.'],
         name: 'Living room TV',
         userTypeCode: '4',
       );
@@ -757,7 +804,7 @@ void main() {
           .thenAnswer((_) async => setSuccess());
 
       await svc.updateIdentity(
-        hostInstancePath: 'Device.Hosts.Host.3.',
+        hostInstancePaths: ['Device.Hosts.Host.3.'],
         name: '',
         userTypeCode: '',
       );
@@ -778,7 +825,7 @@ void main() {
           .thenAnswer((_) async => setSuccess());
 
       await svc.updateIdentity(
-        hostInstancePath: 'Device.Hosts.Host.3.',
+        hostInstancePaths: ['Device.Hosts.Host.3.'],
         name: 'Kitchen',
       );
 
@@ -786,6 +833,17 @@ void main() {
             {'Device.Hosts.Host.3.X_LINKSYS_UserDeviceLocation': 'Kitchen'},
             allowPartial: false,
           )).called(1);
+    });
+
+    // The generated update answers success without sending a Set when it has
+    // no params, so a save of no row would report a name it never wrote.
+    test('no row to write is refused, and nothing is sent', () {
+      expect(
+        () => svc.updateIdentity(hostInstancePaths: [], name: 'x'),
+        throwsA(isA<ResourceNotFoundError>()),
+      );
+      verifyNever(
+          () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
     });
 
     test('a refused Set throws UspCompleteFailureError', () {
@@ -805,7 +863,7 @@ void main() {
 
       expect(
         () => svc.updateIdentity(
-          hostInstancePath: 'Device.Hosts.Host.3.',
+          hostInstancePaths: ['Device.Hosts.Host.3.'],
           name: 'x',
           userTypeCode: '1',
         ),
@@ -819,7 +877,7 @@ void main() {
 
       expect(
         () => svc.updateIdentity(
-          hostInstancePath: 'Device.Hosts.Host.3.',
+          hostInstancePaths: ['Device.Hosts.Host.3.'],
           name: 'x',
           userTypeCode: '1',
         ),

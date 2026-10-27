@@ -162,7 +162,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                         name: device.displayName,
                         editLabel: loc(context).editDevice,
                         identifier: 'device-detail-edit-identity',
-                        onEdit: device.hostInstancePath == null
+                        onEdit: device.hostInstancePaths.isEmpty
                             ? null
                             : () => _editIdentity(context, ref, device),
                       ),
@@ -867,14 +867,13 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             DeviceCategory.fromUserTypeCode(device.userDeviceType) ??
                 DeviceCategory.unknown,
         hasUserType: device.userDeviceType != null,
-        // A best guess at what an empty name shows. Cleared, devidentd's
-        // FriendlyName is its own detected name, else the host name; the
-        // detected name is not exposed while the user's name hides it, so the
-        // host name is the closest the app can say.
-        detectedName: device.hostName,
+        // What an empty name shows: cleared, FriendlyName falls back to
+        // devidentd's detected name, else the host name. The detected name is
+        // read on firmware with X_LINKSYS_DetectedName (FWDEV#224).
+        detectedName: device.detectedName ?? device.hostName,
         onSave: (name, category) =>
             ref.read(devicesDataProvider.notifier).updateIdentity(
-                  hostInstancePath: device.hostInstancePath!,
+                  hostInstancePaths: device.hostInstancePaths,
                   name: name,
                   userTypeCode: category?.userTypeCode,
                 ),

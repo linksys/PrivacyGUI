@@ -167,6 +167,7 @@ import 'package:privacy_gui/page/support/views/usp_support_view.dart';
 import 'package:privacy_gui/page/test_console/views/usp_test_console_view.dart';
 import 'package:privacy_gui/page/test_console/widgets/tr181_autocomplete_field.dart';
 import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indicator.dart';
+import 'package:privacy_gui/page/topology/views/components/node_actions_card.dart';
 import 'package:privacy_gui/page/topology/views/usp_node_detail_view.dart';
 import 'package:privacy_gui/page/topology/views/usp_topology_view.dart';
 import 'package:privacy_gui/page/unified_diagnostics/views/unified_diagnostics_view.dart';
@@ -434,9 +435,11 @@ final kDeviceDetailPageCase = PageSurfaceCase(
 
 /// `page.topology` — 28.7ms/cell (#1370).
 ///
-/// `meshNetworkDevicesData`, not `singleNodeDevicesData`: the mesh state renders a
-/// gateway plus extenders plus their clients, so the tree the ui_kit [AppTopology]
-/// lays out is the wider of the two the golden suite covers.
+/// `meshNetworkWithNodeActionsDevicesData`, which is `meshNetworkDevicesData`
+/// with the agent listing both node actions (#876), not `singleNodeDevicesData`:
+/// the mesh state renders a gateway plus extenders plus their clients, so the
+/// tree the ui_kit [AppTopology] lays out is the wider of the two the golden
+/// suite covers, and every mesh row carries its menu button.
 ///
 /// [AppTopology] is the premise, and this is the page where a premise earns its
 /// keep most visibly. `usp_topology_view.dart:57` returns `SizedBox.shrink()` when
@@ -447,7 +450,9 @@ final kTopologyPageCase = PageSurfaceCase(
   id: 'topology',
   view: () => const UspTopologyView(),
   overrides: () => topologyViewOverrides(
-    devicesData: meshNetworkDevicesData,
+    // The agent lists both node actions, so its row carries a menu button too
+    // (#876), and the button is measured beside an agent's name.
+    devicesData: meshNetworkWithNodeActionsDevicesData,
     systemInfoData: testSystemInfoData,
   ),
   requires: const [AppTopology],
@@ -493,15 +498,17 @@ final kTopologyPageCase = PageSurfaceCase(
 /// sweep rather than to #1442.
 ///
 /// The premise therefore takes one widget from each card the fixture *does* unlock:
-/// [BackhaulSignalIndicator] (the backhaul card's signal tile) and
-/// [UspDeviceListTile] (the connected-devices card). Two cards, two chances to
-/// notice the fixture went thin.
+/// [BackhaulSignalIndicator] (the backhaul card's signal tile),
+/// [UspDeviceListTile] (the connected-devices card) and [NodeActionsCard] (#876,
+/// which the fixture unlocks by listing both node actions; an agent that lists
+/// none gets no card). Three cards, three chances to notice the fixture went
+/// thin.
 final kNodeDetailPageCase = PageSurfaceCase(
   id: 'node_detail',
   view: () =>
       UspNodeDetailView(deviceId: slaveNodeWithBackhaulTiming.node!.deviceId),
   overrides: () => nodeDetailOverrides(slaveNodeWithBackhaulTiming),
-  requires: const [BackhaulSignalIndicator, UspDeviceListTile],
+  requires: const [BackhaulSignalIndicator, UspDeviceListTile, NodeActionsCard],
   forbids: const [AppLoader],
 );
 

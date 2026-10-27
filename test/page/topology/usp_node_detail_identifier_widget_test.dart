@@ -245,13 +245,11 @@ void main() {
       await tester.tap(find.widgetWithText(AppButton, save));
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(notifier.calls, [
-        (
-          hostInstancePath: 'Device.Hosts.Host.3.',
-          name: 'Upstairs',
-          type: null
-        ),
-      ]);
+      // Field by field: a record compares its List by identity.
+      final call = notifier.calls.single;
+      expect(call.hostInstancePaths, ['Device.Hosts.Host.3.']);
+      expect(call.name, 'Upstairs');
+      expect(call.type, isNull);
     }, semanticsEnabled: true);
 
     testWidgets('the router keeps its Rename router pen', (tester) async {
@@ -263,11 +261,66 @@ void main() {
       handle.dispose();
     });
   });
+
+  // #876. Reboot and Factory Reset on the node's page. The router always has
+  // both (they are the Administration page's); an agent has what its
+  // X_LINKSYS_SupportedOperations lists, and no card at all when it lists
+  // nothing — the controller's own row, third-party agents, older firmware.
+  group('uspNodeDetail node actions (#876)', () {
+    const rebootHook = 'node-detail-reboot';
+    const resetHook = 'node-detail-factory-reset';
+
+    Future<void> pump(WidgetTester tester, UspNodeDetailState state) async {
+      tester.view.physicalSize = const Size(1280, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(wrap(state));
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    UspNodeDetailState agent(Set<NodeAction> actions) => UspNodeDetailState(
+          node: DevicesTestData.createWifiSlave(
+            deviceId: '11:22:33:44:55:66',
+            dataElementsId: '11:22:33:44:55:66',
+          ).copyWith(actions: actions),
+        );
+
+    testWidgets('the router offers both', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(tester, masterNodeWithDevices);
+
+      expect(find.bySemanticsIdentifier(rebootHook), findsOneWidget);
+      expect(find.bySemanticsIdentifier(resetHook), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets('an agent offers only what it reports', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(tester, agent({NodeAction.reboot}));
+
+      expect(find.bySemanticsIdentifier(rebootHook), findsOneWidget);
+      expect(find.bySemanticsIdentifier(resetHook), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('an agent that reports nothing has no actions card',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(tester, agent(const {}));
+
+      expect(find.bySemanticsIdentifier(rebootHook), findsNothing);
+      expect(find.bySemanticsIdentifier(resetHook), findsNothing);
+      expect(find.text('Node Actions'), findsNothing);
+      handle.dispose();
+    });
+  });
 }
 
 /// Records the renames a test triggers, without writing anything.
 class _RecordingDevicesDataNotifier extends DevicesDataNotifier {
-  final calls = <({String hostInstancePath, String name, String? type})>[];
+  final calls =
+      <({List<String> hostInstancePaths, String name, String? type})>[];
 
   @override
   Future<DevicesData> build() async => DevicesData(
@@ -278,11 +331,11 @@ class _RecordingDevicesDataNotifier extends DevicesDataNotifier {
 
   @override
   Future<void> updateIdentity({
-    required String hostInstancePath,
+    required List<String> hostInstancePaths,
     required String name,
     String? userTypeCode,
   }) async {
     calls.add(
-        (hostInstancePath: hostInstancePath, name: name, type: userTypeCode));
+        (hostInstancePaths: hostInstancePaths, name: name, type: userTypeCode));
   }
 }

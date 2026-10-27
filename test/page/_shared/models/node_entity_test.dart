@@ -283,6 +283,21 @@ void main() {
               userDeviceName: 'Upstairs',
             ))));
       });
+      // The node actions the page offers (#876). Equality has to see them, or
+      // an agent that starts reporting support would not rebuild its page.
+      test('carries actions through copyWith and equality', () {
+        final agent = DevicesTestData.createWifiSlave()
+            .copyWith(actions: {NodeAction.reboot});
+
+        expect(agent.copyWith().actions, {NodeAction.reboot});
+        expect(agent, isNot(equals(DevicesTestData.createWifiSlave())));
+        expect(
+          agent,
+          equals(DevicesTestData.createWifiSlave()
+              .copyWith(actions: {NodeAction.reboot})),
+        );
+      });
+
       test('preserves unchanged fields', () {
         final original = DevicesTestData.createWifiSlave();
         final copied = original.copyWith();

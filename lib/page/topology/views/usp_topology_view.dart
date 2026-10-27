@@ -19,6 +19,10 @@ import 'package:privacy_gui/page/topology/helpers/node_identifier.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_nav_target.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_node_order.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_node_menu.dart';
+import 'package:privacy_gui/page/topology/helpers/topology_slots.dart';
+import 'package:privacy_gui/page/topology/views/node_action_flow.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_search.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_node_content_builder.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_tree_labels.dart';
@@ -237,7 +241,7 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
                 // and must scan the graph as it is then, not as it was.
                 _topology = topology;
 
-                return _buildTopologyCard(context, topology);
+                return _buildTopologyCard(context, topology, data.meshNetwork);
               },
             );
           },
@@ -246,7 +250,8 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
     );
   }
 
-  Widget _buildTopologyCard(BuildContext context, GraphData topology) {
+  Widget _buildTopologyCard(
+      BuildContext context, GraphData topology, MeshNetwork meshNetwork) {
     final router = GoRouter.of(context);
     final colorScheme = Theme.of(context).colorScheme;
     // Two answers, read apart because they change apart: whether this firmware
@@ -426,15 +431,35 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
                 // became tappable in 3.4.0.
                 nodeTapFilter: (node) => !node.isExternal,
                 nodeComparator: TopologyNodeOrder.compare,
-                // A button on the controller node in both views, plus long press
-                // and right click in the graph. Nothing elsewhere has a menu.
+                // A button on each mesh node that has an item, in both views,
+                // plus long press and right click in the graph: Add nodes on
+                // the controller, and each node's Reboot / Factory Reset (#876).
                 nodeMenuBuilder: (context, node) => topologyNodeMenu(
                   node,
                   canAddNodes: openAddNodes != null,
                   addNodesLabel: loc(context).addNodes,
+                  nodeActions: switch (_meshNodeOf(node, meshNetwork)) {
+                    final mesh? => nodeActionsOf(mesh),
+                    null => const {},
+                  },
+                  rebootLabel: loc(context).reboot,
+                  factoryResetLabel: loc(context).factoryReset,
                 ),
                 onNodeMenuSelected: (nodeId, value) {
-                  if (value == kTopologyMenuAddNodes) openAddNodes?.call();
+                  if (value == kTopologyMenuAddNodes) {
+                    openAddNodes?.call();
+                    return;
+                  }
+                  final action = topologyMenuNodeAction(value);
+                  final graphNode =
+                      topology.nodes.where((n) => n.id == nodeId).firstOrNull;
+                  final mesh = graphNode == null
+                      ? null
+                      : _meshNodeOf(graphNode, meshNetwork);
+                  if (action == null || mesh == null) return;
+                  // The topology stays where it is once a command is sent: the
+                  // nodes drop off it as they leave DataElements.
+                  confirmAndRunNodeAction(context, ref, mesh, action);
                 },
               ),
             );
@@ -442,6 +467,15 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
         ),
       ],
     );
+  }
+
+  /// The mesh node a topology [node] draws, in the [meshNetwork] this page
+  /// built the graph from: its `deviceId` is the node's own
+  /// (`UspTopologyBuilder`).
+  NodeEntity? _meshNodeOf(GraphNode node, MeshNetwork meshNetwork) {
+    final deviceId = node.metadata?['deviceId'] as String?;
+    if (deviceId == null || !TopologySlots.isMeshNode(node)) return null;
+    return meshNetwork.findNode(deviceId);
   }
 
   /// Navigate by node id — used by the tree view's `onNodeTap`.

@@ -112,7 +112,7 @@ void main() {
     testWidgets('not-found codes → errorResourceNotFound', (tester) async {
       final ctx = await pumpContext(tester);
       final l = loc(ctx);
-      for (final code in [7026, 7027, 9005, 9007]) {
+      for (final code in [7016, 7026, 7027, 9005, 9007]) {
         expect(localizeServiceError(ctx, _completeWith(code)),
             l.errorResourceNotFound,
             reason: 'code $code should map to errorResourceNotFound');

@@ -1268,5 +1268,20 @@
   "semanticRoleMascot": "Maskottchen",
   "semanticRolePinInput": "PIN-Eingabe",
   "semanticRoleRadio": "Optionsfeld",
-  "semanticRoleSwitch": "Schalter"
+  "semanticRoleSwitch": "Schalter",
+  "nodeActions": "Knotenaktionen",
+  "rebootMeshMessage": "Der Router und alle Knoten in Ihrem Mesh werden neu gestartet. Alle verbundenen Geräte werden getrennt, bis das Netzwerk wieder verfügbar ist.",
+  "factoryResetMeshMessage": "Der Router und alle Knoten in Ihrem Mesh werden auf die Werkseinstellungen zurückgesetzt, einschließlich des WLAN- und Router-Passworts auf dem Etikett des Routers. Anschließend muss jeder Knoten neu eingerichtet werden.",
+  "rebootNodeMessage": "{node} wird neu gestartet. Über diesen Knoten verbundene Geräte werden getrennt, bis er wieder verfügbar ist.",
+  "rebootNodesMessage": "Diese Knoten werden neu gestartet, der am weitesten entfernte zuerst: {nodes}. Über sie verbundene Geräte werden getrennt, bis sie wieder verfügbar sind.",
+  "factoryResetNodeMessage": "{node} wird auf die Werkseinstellungen zurückgesetzt und verlässt Ihr Netzwerk. Fügen Sie den Knoten erneut hinzu, um ihn zu verwenden.",
+  "factoryResetNodesMessage": "Diese Knoten werden auf die Werkseinstellungen zurückgesetzt und verlassen Ihr Netzwerk, der am weitesten entfernte zuerst: {nodes}. Fügen Sie sie erneut hinzu, um sie zu verwenden.",
+  "nodeActionMayMissNodes": "Einige Knoten haben nicht gemeldet, wie sie verbunden sind. Ein über diesen Knoten verbundener Knoten kann zusammen mit ihm ausfallen.",
+  "nodeActionRebootSent": "Wird neu gestartet. Es kann einige Minuten dauern, bis wieder eine Verbindung besteht.",
+  "nodeActionResetSent": "Wird auf die Werkseinstellungen zurückgesetzt. Fügen Sie den Knoten erneut hinzu, sobald er bereit ist.",
+  "nodeActionFailed": "{node}: {reason}",
+  "nodeActionFailedAfterSent": "{failure} Bereits gesendet an: {sent}.",
+  "nodeActionSkippedNodes": "Diese Knoten können diesen Befehl nicht ausführen und erhalten ihn nicht, verlieren aber ihre Verbindung, solange die Knoten, über die sie verbunden sind, ausgefallen sind: {nodes}.",
+  "nodeActionNotConfirmed": "{node} hat den Befehl nicht bestätigt. Der Knoten kann ihn trotzdem noch ausführen. Prüfen Sie daher die Topologie, bevor Sie es erneut versuchen.",
+  "nodeActionNodeGone": "{node} ist nicht mehr in Ihrem Netzwerk."
 }

@@ -910,24 +910,45 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('firmware without the onboarding API offers no node menu',
+    // The controller's menu still opens: it carries the router's own Reboot
+    // and Factory Reset (#876), which need no onboarding API. What these two
+    // pin is that Add nodes is not in it.
+    Future<void> openControllerMenu(WidgetTester tester) async {
+      expect(find.byIcon(Icons.more_vert), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await settleIgnoringAnimations(tester);
+      expect(find.bySemanticsIdentifier(kTopologyNodeRebootIdentifier),
+          findsOneWidget,
+          reason: 'the menu opened, so the absence below is the item and not '
+              'the menu');
+    }
+
+    testWidgets('firmware without the onboarding API offers no Add nodes',
         (tester) async {
+      final handle = tester.ensureSemantics();
       // Local, so the surface would offer it: the capability is what is missing.
       await pumpTopology(tester, const LocalModeProfile(), extra: [
         deviceCapabilitiesProvider.overrideWithValue(DeviceCapabilities.empty),
       ]);
 
       expect(find.byType(UspTopologyView), findsOneWidget);
-      expect(find.byIcon(Icons.more_vert), findsNothing);
+      await openControllerMenu(tester);
+      expect(find.bySemanticsIdentifier(kTopologyNodeAddNodesIdentifier),
+          findsNothing);
+      handle.dispose();
     });
 
-    testWidgets('remote assistance offers no node menu', (tester) async {
+    testWidgets('remote assistance offers no Add nodes', (tester) async {
+      final handle = tester.ensureSemantics();
       await pumpTopology(tester, const RemoteModeProfile());
 
       expect(find.byType(UspTopologyView), findsOneWidget,
-          reason: 'the page rendered, so the absence below is the menu and '
+          reason: 'the page rendered, so the absence below is the item and '
               'not the page');
-      expect(find.byIcon(Icons.more_vert), findsNothing);
+      await openControllerMenu(tester);
+      expect(find.bySemanticsIdentifier(kTopologyNodeAddNodesIdentifier),
+          findsNothing);
+      handle.dispose();
     });
   });
 }

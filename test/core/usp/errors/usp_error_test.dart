@@ -254,6 +254,21 @@ void main() {
       expect(mapUspErrorToServiceError(raw), isA<ResourceNotFoundError>());
     });
 
+    // obuspa refuses an Operate on a row that is gone before the command runs,
+    // so the code arrives inside the WASM client's 9999 envelope. The string
+    // is the one UspClient.extractOperateResult throws for the envelope
+    // measured on FW 2.0.3.26102008 (#876).
+    test('maps Protocol fault 7016 to ResourceNotFoundError', () {
+      const raw = 'Operate failed: Protocol error: Decoding error: Received '
+          'error response: CheckPathProperties: Object exists in schema, but '
+          'instances are invalid: '
+          'Device.WiFi.DataElements.Network.Device.9.X_LINKSYS_Reboot() '
+          '(code: 7016)';
+      final error = mapUspErrorToServiceError(raw);
+      expect(error, isA<ResourceNotFoundError>());
+      expect(error.code, 7016);
+    });
+
     test('maps Protocol fault 9001 to UnauthorizedError', () {
       const raw =
           'Set failed: Protocol error: Decoding error: Received error response: '

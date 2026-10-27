@@ -65,18 +65,10 @@ class FirmwareOperations {
         args: inputs);
   }
 
-  /// Activate a previously-downloaded firmware image — targets a specific FirmwareImage row; TimeWindow allows scheduled activation, omit for immediate
+  /// Activate a previously-downloaded firmware image at once — targets a specific FirmwareImage row; no input, so no scheduled activation yet
   static Future<Map<String, dynamic>> activate(
-    UspClient client,
-    int instance, {
-    String? timeWindow,
-  }) async {
-    final inputs = <String, String>{};
-    if (timeWindow != null) {
-      inputs['TimeWindow'] = timeWindow;
-    }
-    return await client.operate(
-        'Device.DeviceInfo.FirmwareImage.$instance.Activate()',
-        args: inputs);
+      UspClient client, int instance) async {
+    return await client
+        .operate('Device.DeviceInfo.FirmwareImage.$instance.Activate()');
   }
 }

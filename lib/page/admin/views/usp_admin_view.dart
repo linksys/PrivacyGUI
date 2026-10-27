@@ -7,8 +7,6 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/_shared/helpers/recovery_dialog_helper.dart';
-import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
@@ -18,7 +16,7 @@ import 'package:privacy_gui/page/admin/views/components/usp_password_card.dart';
 import 'package:privacy_gui/page/admin/views/components/usp_system_actions_card.dart';
 import 'package:privacy_gui/page/admin/views/components/usp_timezone_card.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/change_password_dialog.dart';
-import 'package:privacy_gui/page/admin/views/dialogs/confirm_action_dialog.dart';
+import 'package:privacy_gui/page/admin/views/router_restart_actions.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/timezone_edit_dialog.dart';
 import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_ota_card.dart';
@@ -100,8 +98,8 @@ class UspAdminView extends ConsumerWidget {
         _manualUpdateEntry(ref),
         AppGap.xl(),
         UspSystemActionsCard(
-          onReboot: () => _reboot(context, ref),
-          onFactoryReset: () => _factoryReset(context, ref),
+          onReboot: () => confirmAndRebootRouter(context, ref),
+          onFactoryReset: () => confirmAndFactoryResetRouter(context, ref),
         ),
       ],
     );
@@ -151,8 +149,9 @@ class UspAdminView extends ConsumerWidget {
               _timezoneCard(context, ref, state),
               AppGap.xl(),
               UspSystemActionsCard(
-                onReboot: () => _reboot(context, ref),
-                onFactoryReset: () => _factoryReset(context, ref),
+                onReboot: () => confirmAndRebootRouter(context, ref),
+                onFactoryReset: () =>
+                    confirmAndFactoryResetRouter(context, ref),
               ),
             ],
           ),
@@ -245,68 +244,6 @@ class UspAdminView extends ConsumerWidget {
       if (result == true && context.mounted) {
         showSuccessSnackBar(context, loc(context).passwwordUpdated);
       }
-    } catch (e) {
-      if (context.mounted) {
-        showFailedSnackBar(context, localizeServiceError(context, e));
-      }
-    }
-  }
-
-  Future<void> _reboot(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showConfirmActionDialog(
-      context,
-      title: loc(context).rebootRouter,
-      message: loc(context).rebootRouterMessage,
-      confirmLabel: loc(context).restart,
-    );
-    if (confirmed != true || !context.mounted) return;
-    try {
-      await doSomethingWithSpinner(
-        context,
-        ref.read(uspAdminProvider.notifier).reboot(),
-      );
-      if (!context.mounted) return;
-
-      await showRecoveryDialog(
-        context,
-        ref,
-        trigger: RecoveryTrigger.operationalReboot,
-        cooldown: const Duration(seconds: 60),
-        title: loc(context).routerIsRebooting,
-        message: loc(context).rebootWaitMessage,
-        successMessage: loc(context).routerRebootComplete,
-      );
-    } catch (e) {
-      if (context.mounted) {
-        showFailedSnackBar(context, localizeServiceError(context, e));
-      }
-    }
-  }
-
-  Future<void> _factoryReset(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showConfirmActionDialog(
-      context,
-      title: loc(context).resetToFactoryDefault,
-      message: loc(context).factoryResetDesc,
-      confirmLabel: loc(context).reset,
-    );
-    if (confirmed != true || !context.mounted) return;
-    try {
-      await doSomethingWithSpinner(
-        context,
-        ref.read(uspAdminProvider.notifier).factoryReset(),
-      );
-      if (!context.mounted) return;
-
-      await showRecoveryDialog(
-        context,
-        ref,
-        trigger: RecoveryTrigger.operationalFactoryReset,
-        cooldown: const Duration(seconds: 90),
-        healthOnly: true,
-        title: loc(context).factoryResetInProgress,
-        message: loc(context).factoryResetWaitMessage,
-      );
     } catch (e) {
       if (context.mounted) {
         showFailedSnackBar(context, localizeServiceError(context, e));

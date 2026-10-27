@@ -26,6 +26,25 @@ class LanIpv4Address {
   }
 }
 
+/// Nested instance from parent multi-instance table
+class LanIpv6Address {
+  final String instancePath;
+  final String ipAddress;
+
+  const LanIpv6Address({
+    required this.instancePath,
+    required this.ipAddress,
+  });
+
+  @override
+  String toString() {
+    return 'LanIpv6Address('
+        'instancePath: $instancePath, '
+        'ipAddress: $ipAddress'
+        ')';
+  }
+}
+
 /// Update descriptor for LanIpv4Address instances
 class LanIpv4AddressUpdate {
   final String instancePath;
@@ -39,18 +58,20 @@ class LanIpv4AddressUpdate {
   });
 }
 
-/// LAN interface IPv4 address table, hostname, and IPv6 enable flag
+/// LAN interface IPv4 and IPv6 address tables, hostname, and IPv6 enable flag
 class LanNetworkInfo {
   final String instancePath;
   final String hostName;
   final bool ipv6Enabled;
   final List<LanIpv4Address> ipv4Addresses;
+  final List<LanIpv6Address> ipv6Addresses;
 
   const LanNetworkInfo({
     required this.instancePath,
     required this.hostName,
     required this.ipv6Enabled,
     required this.ipv4Addresses,
+    required this.ipv6Addresses,
   });
 
   /// Resolve the instance index by searching for Alias='lan'
@@ -74,6 +95,7 @@ class LanNetworkInfo {
         '${instancePath}IPv6Enable',
         '${instancePath}IPv4Address.*.IPAddress',
         '${instancePath}IPv4Address.*.SubnetMask',
+        '${instancePath}IPv6Address.*.IPAddress',
       ];
 
   /// Fetch all parameters via USP Get message
@@ -125,6 +147,32 @@ class LanNetworkInfo {
         subnetMask: (response['${cp_0}SubnetMask'] ?? '') as String,
       ));
     }
+    final childBase_1 = '${instancePath}IPv6Address.';
+    final childIds_1 = <String>{};
+    for (final key in response.keys) {
+      if (key.startsWith(childBase_1)) {
+        final rest = key.substring(childBase_1.length);
+        final dot = rest.indexOf('.');
+        if (dot > 0) childIds_1.add(rest.substring(0, dot));
+      }
+    }
+    final childSorted_1 = childIds_1.toList()
+      ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+    final ipv6Addresses = <LanIpv6Address>[];
+    for (final cid_1 in childSorted_1) {
+      final cp_1 = '$childBase_1$cid_1.';
+      final missing = <String>[];
+      if (!response.containsKey('${cp_1}IPAddress')) {
+        missing.add('${cp_1}IPAddress');
+      }
+      if (missing.isNotEmpty) {
+        throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+      }
+      ipv6Addresses.add(LanIpv6Address(
+        instancePath: cp_1,
+        ipAddress: (response['${cp_1}IPAddress'] ?? '') as String,
+      ));
+    }
     return LanNetworkInfo(
       instancePath: instancePath,
       hostName: (response['Device.DeviceInfo.HostName'] ?? '') as String,
@@ -132,6 +180,7 @@ class LanNetworkInfo {
           response['${instancePath}IPv6Enable'] == 'true' ||
           response['${instancePath}IPv6Enable'] == '1',
       ipv4Addresses: ipv4Addresses,
+      ipv6Addresses: ipv6Addresses,
     );
   }
 
@@ -197,7 +246,8 @@ class LanNetworkInfo {
         'instancePath: $instancePath, '
         'hostName: $hostName, '
         'ipv6Enabled: $ipv6Enabled, '
-        'ipv4Addresses: $ipv4Addresses'
+        'ipv4Addresses: $ipv4Addresses, '
+        'ipv6Addresses: $ipv6Addresses'
         ')';
   }
 }

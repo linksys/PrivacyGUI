@@ -34,6 +34,7 @@ class LocalNetworkTestData {
             subnetMask: subnetMask,
           ),
         ],
+        ipv6Addresses: const [],
       );
 
   static LanDhcpPool createLanDhcpPool({

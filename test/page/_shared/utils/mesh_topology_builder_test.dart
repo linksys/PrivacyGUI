@@ -76,6 +76,37 @@ void main() {
       expect(result.nodes[1].isMaster, isFalse);
     });
 
+    group('node actions from X_LINKSYS_SupportedOperations (#876)', () {
+      SlaveNode slaveWith(String? supportedOperations) {
+        final agent = DataElementsTestData.node(
+          instance: '2',
+          id: 'AA:BB:CC:DD:EE:02',
+          linkType: 'Wi-Fi',
+          parentDeviceId: 'AA:BB:CC:DD:EE:01',
+          supportedOperations: supportedOperations,
+        );
+        final result =
+            MeshTopologyBuilder.build(DataElementsNetwork(items: [agent]));
+        return result.nodes.single as SlaveNode;
+      }
+
+      test('lists both actions the agent reports', () {
+        expect(slaveWith('Reboot,FactoryReset').actions,
+            {NodeAction.reboot, NodeAction.factoryReset});
+      });
+
+      // The shape on the controller's row and on an agent without
+      // linksys-mesh-sync (third-party, older firmware).
+      test('an empty list and an absent leaf offer nothing', () {
+        expect(slaveWith('').actions, isEmpty);
+        expect(slaveWith(null).actions, isEmpty);
+      });
+
+      test('ignores values it does not know and the space around them', () {
+        expect(slaveWith(' Reboot , Blink ').actions, {NodeAction.reboot});
+      });
+    });
+
     test('builds client to node mapping from stations', () {
       final network = DataElementsNetwork(items: [masterNode, slaveNode]);
 

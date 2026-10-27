@@ -138,7 +138,6 @@ class NetworkDiagnostics {
     UspClient client, {
     required String hostList,
     String? protocol,
-    String? port,
     String? numberOfRepetitions,
     String? timeout,
   }) async {
@@ -146,9 +145,6 @@ class NetworkDiagnostics {
     inputs['HostList'] = hostList;
     if (protocol != null) {
       inputs['Protocol'] = protocol;
-    }
-    if (port != null) {
-      inputs['Port'] = port;
     }
     if (numberOfRepetitions != null) {
       inputs['NumberOfRepetitions'] = numberOfRepetitions;

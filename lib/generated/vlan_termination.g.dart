@@ -9,13 +9,13 @@ class VlanTerminationInstance {
   final String instancePath;
   final bool enable;
   final int vlanId;
-  final int? linksysVlanPriority;
+  final int? vlanPriority;
 
   const VlanTerminationInstance({
     required this.instancePath,
     required this.enable,
     required this.vlanId,
-    this.linksysVlanPriority,
+    this.vlanPriority,
   });
 
   @override
@@ -24,7 +24,7 @@ class VlanTerminationInstance {
         'instancePath: $instancePath, '
         'enable: $enable, '
         'vlanId: $vlanId, '
-        'linksysVlanPriority: $linksysVlanPriority'
+        'vlanPriority: $vlanPriority'
         ')';
   }
 }
@@ -34,13 +34,13 @@ class VlanTerminationInstanceUpdate {
   final String instancePath;
   final bool? enable;
   final int? vlanId;
-  final int? linksysVlanPriority;
+  final int? vlanPriority;
 
   const VlanTerminationInstanceUpdate({
     required this.instancePath,
     this.enable,
     this.vlanId,
-    this.linksysVlanPriority,
+    this.vlanPriority,
   });
 }
 
@@ -56,7 +56,7 @@ class VlanTermination {
   static const _paths = [
     'Device.Ethernet.VLANTermination.*.Enable',
     'Device.Ethernet.VLANTermination.*.VLANID',
-    'Device.Ethernet.VLANTermination.*.X_LINKSYS_VLANPriority',
+    'Device.Ethernet.VLANTermination.*.VLANPriority',
   ];
 
   /// Fetch all instances via USP Get message
@@ -96,9 +96,8 @@ class VlanTermination {
             response['${p}Enable'] == 'true' ||
             response['${p}Enable'] == '1',
         vlanId: int.tryParse(response['${p}VLANID']?.toString() ?? '') ?? 0,
-        linksysVlanPriority: response.containsKey('${p}X_LINKSYS_VLANPriority')
-            ? int.tryParse(
-                response['${p}X_LINKSYS_VLANPriority']?.toString() ?? '')
+        vlanPriority: response.containsKey('${p}VLANPriority')
+            ? int.tryParse(response['${p}VLANPriority']?.toString() ?? '')
             : null,
       ));
     }
@@ -116,9 +115,8 @@ class VlanTermination {
       if (update.vlanId != null) {
         params['${update.instancePath}VLANID'] = update.vlanId;
       }
-      if (update.linksysVlanPriority != null) {
-        params['${update.instancePath}X_LINKSYS_VLANPriority'] =
-            update.linksysVlanPriority;
+      if (update.vlanPriority != null) {
+        params['${update.instancePath}VLANPriority'] = update.vlanPriority;
       }
     }
     return params;

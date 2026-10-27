@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 
@@ -436,6 +437,188 @@ void main() {
         expect(network.totalClientCount, 2);
         expect(network.onlineClientCount, 0);
         expect(network.offlineClientCount, 2);
+      });
+    });
+
+    // =========================================================================
+    // nodesBehind (#876)
+    // =========================================================================
+
+    group('nodesBehind', () {
+      const a = 'AA:BB:CC:DD:EE:0A';
+      const b = 'AA:BB:CC:DD:EE:0B';
+
+      SlaveNode slave(String mac, {required String? parent}) =>
+          DevicesTestData.createWifiSlave(
+            deviceId: mac,
+            dataElementsId: mac,
+            backhaul: BackhaulInfo(linkType: 'Wi-Fi', parentNodeId: parent),
+          );
+
+      test('a chain lists the far node before the near one', () {
+        final network = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            slave(a, parent: DevicesTestData.masterMac),
+            slave(b, parent: a),
+          ],
+        );
+
+        final behind = network.nodesBehind(a);
+
+        expect(behind.nodes.map((n) => n.deviceId), [b, a]);
+        expect(behind.mayMissNodes, isFalse);
+      });
+
+      // prplMesh leaves BackhaulDeviceID empty for a node cabled behind a
+      // satellite and for one still joining (FWDEV#202 review), so such a node
+      // may be behind the target without the chain saying so.
+      test('a slave with no reported parent may be behind the target', () {
+        final network = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            slave(a, parent: DevicesTestData.masterMac),
+            slave(b, parent: null),
+          ],
+        );
+
+        final behind = network.nodesBehind(a);
+
+        expect(behind.nodes.map((n) => n.deviceId), [a]);
+        expect(behind.mayMissNodes, isTrue);
+      });
+
+      // backhaul_parent_graph.dart breaks the same shape before the topology
+      // renders it; a walk here has to survive it on its own.
+      test('a parent cycle ends instead of looping', () {
+        const c = 'AA:BB:CC:DD:EE:0C';
+        final network = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            slave(a, parent: DevicesTestData.masterMac),
+            slave(b, parent: c),
+            slave(c, parent: b),
+          ],
+        );
+
+        final behind = network.nodesBehind(a);
+
+        expect(behind.nodes.map((n) => n.deviceId), [a]);
+        expect(behind.mayMissNodes, isTrue);
+      });
+
+      test('a sibling on the master is not behind the target', () {
+        final network = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            slave(a, parent: DevicesTestData.masterMac),
+            slave(b, parent: DevicesTestData.masterMac),
+          ],
+        );
+
+        final behind = network.nodesBehind(a);
+
+        expect(behind.nodes.map((n) => n.deviceId), [a]);
+        expect(behind.mayMissNodes, isFalse);
+      });
+
+      test('the parent is matched whatever its MAC case', () {
+        final network = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            slave(a, parent: DevicesTestData.masterMac.toLowerCase()),
+            slave(b, parent: a.toLowerCase()),
+          ],
+        );
+
+        final behind = network.nodesBehind(a);
+
+        expect(behind.nodes.map((n) => n.deviceId), [b, a]);
+        expect(behind.mayMissNodes, isFalse);
+      });
+
+      test('the master and an unknown id have nothing behind them', () {
+        final network = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [slave(a, parent: DevicesTestData.masterMac)],
+        );
+
+        expect(network.nodesBehind(DevicesTestData.masterMac).nodes, isEmpty);
+        expect(network.nodesBehind('AA:BB:CC:DD:EE:FF').nodes, isEmpty);
+      });
+    });
+
+    // =========================================================================
+    // nodeActionPlan (#876)
+    // =========================================================================
+
+    group('nodeActionPlan', () {
+      const a = 'AA:BB:CC:DD:EE:0A';
+      const b = 'AA:BB:CC:DD:EE:0B';
+      const c = 'AA:BB:CC:DD:EE:0C';
+
+      SlaveNode slave(String mac, String parent, Set<NodeAction> actions) =>
+          DevicesTestData.createWifiSlave(
+            deviceId: mac,
+            dataElementsId: mac,
+            backhaul: BackhaulInfo(linkType: 'Wi-Fi', parentNodeId: parent),
+          ).copyWith(actions: actions);
+
+      const both = {NodeAction.reboot, NodeAction.factoryReset};
+
+      // A node behind the target that does not run the command would be sent
+      // it first, refuse with 7022 and stop the run before the target got it.
+      // It goes down with the target anyway, so it is named and not sent.
+      test('a node behind the target that cannot run the action is skipped',
+          () {
+        final network = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            slave(a, DevicesTestData.masterMac, both),
+            slave(b, a, const {}),
+            slave(c, b, both),
+          ],
+        );
+
+        final plan = network.nodeActionPlan(NodeAction.reboot, a);
+
+        expect(plan.targets.map((n) => n.deviceId), [c, a]);
+        expect(plan.skipped.map((n) => n.deviceId), [b]);
+        expect(plan.mayMissNodes, isFalse);
+      });
+
+      test('support is per action', () {
+        final network = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            slave(a, DevicesTestData.masterMac, both),
+            slave(b, a, const {NodeAction.reboot}),
+          ],
+        );
+
+        expect(
+          network
+              .nodeActionPlan(NodeAction.factoryReset, a)
+              .targets
+              .map((n) => n.deviceId),
+          [a],
+        );
+        expect(
+          network
+              .nodeActionPlan(NodeAction.reboot, a)
+              .targets
+              .map((n) => n.deviceId),
+          [b, a],
+        );
+      });
+
+      test('a target that cannot run the action plans nothing', () {
+        final network = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [slave(a, DevicesTestData.masterMac, const {})],
+        );
+
+        expect(network.nodeActionPlan(NodeAction.reboot, a).targets, isEmpty);
       });
     });
   });

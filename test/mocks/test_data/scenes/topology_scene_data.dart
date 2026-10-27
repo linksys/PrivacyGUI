@@ -128,8 +128,10 @@ final singleNodeDevicesData = DevicesData(
 /// A **healthy** two-level mesh: gateway, one extender, clients on both. The
 /// widest tree the golden suite draws, which is why the layout gate picks this
 /// state over [singleNodeDevicesData] (`kTopologyPageCase`,
-/// `test/layout_gate/families/page_surface_cases.dart`). Neither consumer is
-/// about liveness — both want the tree at its full width and depth.
+/// `test/layout_gate/families/page_surface_cases.dart`, through
+/// [meshNetworkWithNodeActionsDevicesData], this tree with the agent's node
+/// actions). Neither consumer is about liveness — both want the tree at its
+/// full width and depth.
 ///
 /// `dataElementsId` is what says "healthy" out loud, and it has to be said here
 /// because a slave's liveness is now data: `isOnline => !livenessKnown ||
@@ -190,6 +192,21 @@ final meshNetworkDevicesData = DevicesData(
         connectedClients: _meshSlaveClients,
         backhaul: BackhaulInfo(linkType: 'Wi-Fi', signalStrength: -50),
       ),
+    ],
+  ),
+);
+
+/// [meshNetworkDevicesData] with the agent listing both node actions (#876),
+/// so every mesh row in the topology carries a menu button: the controller's
+/// (#1725's Add nodes, and the router's own Reboot / Factory Reset) and the
+/// agent's. What the layout gate's topology case pumps, so the button is
+/// measured on an agent's row in every locale. The other topology tests keep
+/// [meshNetworkDevicesData], whose agent offers nothing.
+final meshNetworkWithNodeActionsDevicesData = DevicesData(
+  meshNetwork: meshNetworkDevicesData.meshNetwork.copyWith(
+    slaves: [
+      for (final slave in meshNetworkDevicesData.meshNetwork.slaves)
+        slave.copyWith(actions: NodeAction.values.toSet()),
     ],
   ),
 );
@@ -334,6 +351,9 @@ UspNodeDetailState get slaveNodeWithBackhaulTiming => UspNodeDetailState(
           signalStrength: -50,
           lastContactTime: DateTime.now().toUtc().toIso8601String(),
         ),
+        // Both, so the node actions card renders and the layout gate sweeps
+        // its two buttons in every locale (#876).
+        actions: const {NodeAction.reboot, NodeAction.factoryReset},
       ),
       connectedClients: _meshSlaveClients,
     );
