@@ -53,6 +53,12 @@ void main() {
         'firmware_identity': (overrides) => overrides.addAll(
               deviceDetailOverrides(detail: wifiDetailIdentified),
             ),
+        // One device on two interfaces (#1719): the Wi-Fi row leads and the
+        // cable shows in the interfaces section, merged by the name devidentd
+        // detected for both rows although their DHCP host names differ.
+        'merged_interfaces': (overrides) => overrides.addAll(
+              deviceDetailOverrides(detail: wifiDetailMergedInterfaces),
+            ),
       },
       interactions: {
         // A device with nothing set: empty name, Auto selected, Reset off.
@@ -67,6 +73,15 @@ void main() {
         'dialog_edit_identity_named': Interaction(
           setup: (overrides) => overrides.addAll(
             deviceDetailOverrides(detail: wifiDetailIdentified),
+          ),
+          steps: _openEditDialog,
+        ),
+        // The merged device's dialog: what an empty name shows is the name
+        // devidentd detected, the name FriendlyName falls back to once the
+        // user's is cleared (#1719), not the leading row's DHCP host name.
+        'dialog_edit_identity_merged': Interaction(
+          setup: (overrides) => overrides.addAll(
+            deviceDetailOverrides(detail: wifiDetailMergedInterfaces),
           ),
           steps: _openEditDialog,
         ),
