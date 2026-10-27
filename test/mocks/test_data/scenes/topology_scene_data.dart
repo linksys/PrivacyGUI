@@ -194,6 +194,21 @@ final meshNetworkDevicesData = DevicesData(
   ),
 );
 
+/// [meshNetworkDevicesData] with the agent listing both node actions (#876),
+/// so every mesh row in the topology carries a menu button: the controller's
+/// (#1725's Add nodes, and the router's own Reboot / Factory Reset) and the
+/// agent's. What the layout gate's topology case pumps, so the button is
+/// measured on an agent's row in every locale. The other topology tests keep
+/// [meshNetworkDevicesData], whose agent offers nothing.
+final meshNetworkWithNodeActionsDevicesData = DevicesData(
+  meshNetwork: meshNetworkDevicesData.meshNetwork.copyWith(
+    slaves: [
+      for (final slave in meshNetworkDevicesData.meshNetwork.slaves)
+        slave.copyWith(actions: NodeAction.values.toSet()),
+    ],
+  ),
+);
+
 // ---------------------------------------------------------------------------
 // Node Detail States
 // ---------------------------------------------------------------------------

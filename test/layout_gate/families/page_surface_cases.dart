@@ -448,7 +448,9 @@ final kTopologyPageCase = PageSurfaceCase(
   id: 'topology',
   view: () => const UspTopologyView(),
   overrides: () => topologyViewOverrides(
-    devicesData: meshNetworkDevicesData,
+    // The agent lists both node actions, so its row carries a menu button too
+    // (#876), and the button is measured beside an agent's name.
+    devicesData: meshNetworkWithNodeActionsDevicesData,
     systemInfoData: testSystemInfoData,
   ),
   requires: const [AppTopology],
