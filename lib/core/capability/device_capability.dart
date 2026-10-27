@@ -32,6 +32,12 @@ enum DeviceCapability {
   /// (linksys/FWDEV#213). Absent where the image has no linksys-ripd
   /// (feed_usp#56), so it gates the radio on the Static Routing page (#1100).
   dynamicRouting,
+
+  /// Adding a node to the mesh over BLE, `Device.X_LINKSYS_BLEOnboarding.`
+  /// (linksys/FWDEV#164). Answers only whether this firmware has the API, so it
+  /// gates the topology's "Add nodes" item (#879); whether a session can start
+  /// right now is the onboarding status, read when the page opens.
+  bleOnboarding,
 }
 
 /// The resolved set of capabilities the connected device supports.

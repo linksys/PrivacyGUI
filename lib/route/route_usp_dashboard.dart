@@ -139,6 +139,13 @@ final uspDashboardRoute = ShellRoute(
             return UspNodeDetailView(deviceId: deviceId);
           },
         ),
+        // Named addNodes, which idleCheckWhiteList already exempts: a session can
+        // outlast the idle window.
+        LinksysRoute(
+          name: RouteNamed.addNodes,
+          path: RoutePath.addNodes,
+          builder: (context, state) => const AddNodesView(),
+        ),
       ],
     ),
     LinksysRoute(

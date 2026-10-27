@@ -5,6 +5,30 @@
   "activityHeatmapSubtitle": "24-hour per-device activity matrix",
   "add": "Add",
   "additionalFiltersOnlineOnly": "Additional filters are only available for online devices.",
+  "addNodes": "Add nodes",
+  "addNodesDesc": "<b>Plug Mesh Nodes into power within a few feet of your Mesh Router.</b> The closer the better for this step.",
+  "addNodesSolidBlueDesc": "Wait for nodes to finish starting up, indicated by a <b>solid blue light.</b>",
+  "addNodesSearchingNodes": "Searching for nodes...",
+  "addNodesSearchingNodesDesc": "Watch for node lights to change",
+  "addNodesOnboardingNodes": "Onboarding nodes",
+  "addNodesOnboardingNodesDesc": "Bringing your nodes online",
+  "addNodesNoNodesFoundTitle": "No nodes found",
+  "addNodesBusy": "A node is already being added",
+  "addNodesBusyDesc": "Your router is already adding a node, possibly started from its pairing button. Wait for it to finish, then check again.",
+  "addNodesUnavailable": "Adding nodes isn't available right now",
+  "addNodesUnavailableDesc": "Your router can't add nodes at the moment. Restart it, then check again.",
+  "addNodesJoining": "Bringing your new node online",
+  "addNodesAdded": "{count, plural, =1{Node added} other{Nodes added}}",
+  "@addNodesAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addNodesNotOnlineYet": "Not online yet. This can take a few minutes.",
+  "addNodesFailedTitle": "Couldn't add a node",
+  "addNodesCheckAgain": "Check again",
   "all": "All",
   "addPortForwarding": "Add Port Forwarding",
   "addRule": "Add rule",
@@ -324,6 +348,11 @@
     }
   },
   "mloStatusUnavailable": "MLO status unavailable",
+  "modalMoveChildNodesTitle": "Go ahead and move child nodes",
+  "modalMoveChildNodesDesc": "Keep the Router and Mesh Nodes 1-2 rooms apart and out in the open to receive good WiFi signals.",
+  "modalTroubleshootNoNodesFound": "Let's check a few things",
+  "modalTroubleshootNoNodesFoundDesc1": "Make sure the Nodes you're adding are fully powered on, indicated by a solid blue light",
+  "modalTroubleshootNoNodesFoundDesc2": "Nodes are within range. Try moving them closer to the Router. Once added to your network, you can move them further away.",
   "monitor": "Monitor",
   "mloCapableModalDesc1": "Multi-Link Operation (MLO) allows devices to use multiple bands and frequency channels simultaneously.",
   "mloCapableModalDesc2": "This increases speed, reduces latency, and makes for a more reliable connection.",

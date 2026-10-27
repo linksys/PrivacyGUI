@@ -277,6 +277,23 @@ abstract class SurfaceStrategy {
   /// register `firmwareUpdateProvider` dependencies for a card it is not showing.
   Widget firmwareManualEntry({required Widget Function() picker});
 
+  /// This surface's way into adding a node to the mesh, wired to
+  /// [openAddNodes], or `null` where the flow is not offered (#879).
+  ///
+  /// The cause is proximity (cause 4), surfaced here because what a mode lacks
+  /// is the *way in*: every step of the flow assumes the operator is next to the
+  /// controller. The new node has to be powered on within the controller's
+  /// Bluetooth range, and the guidance asks the operator to read the node's
+  /// light. A Remote Assistance agent can do neither. Nothing is refused
+  /// underneath — adding a node destroys no credential and no path, so it is not
+  /// an `OperationGuard` seam — the topology simply offers no "Add nodes" item.
+  ///
+  /// The measured difference is LinksysWRT 1.0's: its topology menu built the
+  /// pairing item with `enabled: !isRemoteReadOnly`. Returned as a callback for
+  /// the same reason as [layoutEditor]: the menu renders the item iff it was
+  /// handed something to run, so there is no second check to forget.
+  VoidCallback? addNodesEntry(VoidCallback openAddNodes);
+
   // ══════════════════════════════════════════════════════════════════════════
   // Recovery dialogs
   // ══════════════════════════════════════════════════════════════════════════

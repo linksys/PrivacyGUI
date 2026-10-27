@@ -577,6 +577,12 @@ void main() {
     expectedCellCount: 234,
   );
 
+  // #879: adding a node, from the topology's controller node menu.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kAddNodesPageCase),
+    expectedCellCount: 234,
+  );
+
   // The premise `requires` cannot state. Each row's inline summary is read from a
   // provider the fixture overrides, and every way that override can go wrong
   // renders **text**: a read still pending is "Loading…", a failed one is the

@@ -256,6 +256,13 @@
 # remeasure4 - if anything 27.4 was already inflated, which would make the shape effect smaller than
 # remeasure4 -19.9% rather than larger. What is claimed: 21.9 is a fresh reading on a page whose shape
 # remeasure4 changed twice. What is not: that -19.9% is all shape.
+# remeasure5 usp_topology_view.dart 28.0 -> 25.8 (25.8 / 25.6 / 25.8, -7.9%), three runs on the
+# remeasure5 documented basis, 2026-10-22, after #879 gave the controller node an "Add nodes" menu
+# remeasure5 button: topologyViewOverrides now carries the bleOnboarding capability, so the page is
+# remeasure5 swept as a 2.0.3 router shows it. The drop is NOT the menu. The fixture without the
+# remeasure5 capability, measured the same day on the same box as a control, read 25.1 (25.1 / 25.0 /
+# remeasure5 26.7): the menu costs +0.7 ms/cell (+2.8%), inside #1377's +/-7% floor, and the rest of
+# remeasure5 the move is the two-month gap since 28.0 was taken, the drift remeasure3 describes.
 # second-state THE FIRST SECOND CASE FOR ONE PAGE THAT IS NOT A TAB (#1554 section 4, 2026-09-16).
 # second-state pnp_setup_view.dart is now swept twice: kPnpSetupPageCase on WizardConfiguring (the
 # second-state three-step form) and kPnpSetupFirmwarePageCase on WizardUpdatingFirmware (the locked
@@ -474,13 +481,14 @@
 # reader test/layout_gate/page_roster.dart
 # oracle test/layout_gate/page_roster_test.dart
 # doc doc/testing/overflow_gate_architecture.md section 11.5; the onboarding queue is section 11.6
-# pages 49
-# swept 47
+# pages 50
+# swept 48
 # queued 0
-# measured 47
+# measured 48
 # needs_fixture 0
 # excluded 2
 # columns path	disposition	ms_per_cell
+lib/page/add_nodes/views/add_nodes_view.dart	swept	11.9
 lib/page/admin/views/usp_admin_view.dart	swept	21.9
 lib/page/administration/views/usp_administration_view.dart	swept	16.7
 lib/page/advanced_settings/views/usp_advanced_settings_view.dart	swept	13.6
@@ -526,7 +534,7 @@ lib/page/support/views/usp_support_view.dart	swept	15.1
 lib/page/system_log/views/usp_system_log_view.dart	swept	16.2
 lib/page/test_console/views/usp_test_console_view.dart	swept	54.2
 lib/page/topology/views/usp_node_detail_view.dart	swept	31.6
-lib/page/topology/views/usp_topology_view.dart	swept	28.0
+lib/page/topology/views/usp_topology_view.dart	swept	25.8
 lib/page/unified_diagnostics/views/speed_test_view.dart	excluded:not reachable; its only route is commented out at lib/route/route_usp_dashboard.dart:223 (#1370)	-
 lib/page/unified_diagnostics/views/unified_diagnostics_view.dart	swept	15.2
 lib/page/wifi_settings/views/usp_wifi_settings_view.dart	swept	29.2

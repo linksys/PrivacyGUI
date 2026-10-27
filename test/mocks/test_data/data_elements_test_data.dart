@@ -144,6 +144,28 @@ class DataElementsTestData {
   static DataElementsNetwork network(List<MeshNode> nodes) =>
       DataElementsNetwork(items: nodes);
 
+  /// The raw Get rows of one `Device.{instance}` node, for a test that stubs
+  /// `UspClient.get` and lets the generated `DataElementsNetwork.fetch` parse
+  /// them. Only the identity and the backhaul a test names are present; the
+  /// parser keeps a row once any of its leaves is.
+  ///
+  /// A just-joined agent reads `LinkType` `None` with an empty parent for its
+  /// first seconds (2.0.3.26100921), which is [linkType] and [parentDeviceId]
+  /// left at their defaults.
+  static Map<String, dynamic> nodeRows({
+    required String instance,
+    required String id,
+    String linkType = 'None',
+    String parentDeviceId = '',
+  }) {
+    final path = nodePath(instance);
+    return {
+      '${path}ID': id,
+      '${path}MultiAPDevice.Backhaul.LinkType': linkType,
+      '${path}MultiAPDevice.Backhaul.BackhaulDeviceID': parentDeviceId,
+    };
+  }
+
   /// One non-1905 or 1905 neighbor row.
   static MeshNeighbor neighbor(
     String interfacePath, {

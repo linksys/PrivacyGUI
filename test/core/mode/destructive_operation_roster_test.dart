@@ -21,8 +21,8 @@
 //      resetting router. This is the lesson `session_teardown_call_sites_test.dart`
 //      records from phase 5, where `contains(gate)` was measured to be vacuous.
 //
-//   2. **The command inventory.** Every call in `lib/` to *any* of the five
-//      codegen classes that can issue a TR-181 Operate, pinned per file **with
+//   2. **The command inventory.** Every call in `lib/` to *any* of the
+//      codegen classes in `_operationClasses`, pinned per file **with
 //      repeats**. This is the census that can see a *new* operation, because a
 //      new one has to reach the router through one of these calls. It found
 //      something the ticket's own five-row table had missed on its first run —
@@ -179,13 +179,21 @@ const _seams = <({String file, String method, String disruption})>[
 /// The guard's own file, which must contain no per-class branching.
 const _guard = 'lib/core/mode/operation_guard.dart';
 
-/// Every codegen class in `lib/generated/` that can issue a TR-181 **Operate**.
+/// The codegen classes in `lib/generated/` that can issue a TR-181 **Operate**
+/// and are censused here.
 ///
-/// All five, not the two that hold today's destructive commands. Review of the
-/// epic asked why acceptance 6's compile-time clause was unmet; it cannot be met
-/// (see the header), but the census standing in for it was answering a narrower
-/// question than the acceptance asked — it saw a new destructive command only if
-/// that command happened to live in `DeviceOperations` or `FirmwareOperations`.
+/// **Not all of them.** `MacFilterNetworkOperations` and `TimeSettingsOperations`
+/// came in with the dev-2.7.2 merge (#1658) after this list was last widened and
+/// are not on it, so their call sites are invisible below. Adding one is the same
+/// edit `BleOnboardingOperations` got (#879): the class here, its live call sites
+/// in [_commandCallSites], and each either a seam or a waiver with its reason.
+///
+/// Wider than the two classes that hold today's destructive commands, on purpose.
+/// Review of the epic asked why acceptance 6's compile-time clause was unmet; it
+/// cannot be met (see the header), but the census standing in for it was
+/// answering a narrower question than the acceptance asked — it saw a new
+/// destructive command only if that command happened to live in
+/// `DeviceOperations` or `FirmwareOperations`.
 /// A speed test calling `NetworkDiagnostics.downloadDiagnostic` saturates the
 /// very WAN uplink an RA session rides and would have been invisible here.
 ///
@@ -202,6 +210,7 @@ const _guard = 'lib/core/mode/operation_guard.dart';
 /// residual is stated on #1496 rather than papered over with a pattern that would
 /// match the whole app.
 const _operationClasses = <String>[
+  'BleOnboardingOperations',
   'DataElementsNetworkOperations',
   'DeviceOperations',
   'FirmwareOperations',
@@ -230,6 +239,10 @@ const _operationClasses = <String>[
 /// three are flashes with a seam each; the remaining one is a look with none, and
 /// the difference is argued at the call site below rather than waived.
 const _commandCallSites = <String, List<String>>{
+  'lib/page/add_nodes/services/add_nodes_service.dart': [
+    'BleOnboardingOperations.start',
+    'BleOnboardingOperations.stop',
+  ],
   'lib/page/admin/services/usp_admin_service.dart': [
     'DeviceOperations.factoryReset',
     'DeviceOperations.reboot',
@@ -328,7 +341,7 @@ const _unguardedByDesign = <({String file, String command})>{
 /// Operate call sites that are live and need no seam, because the command itself
 /// costs the session nothing. Measured 2026-09-09.
 ///
-/// A separate set from [_unguardedByDesign] rather than five more entries in it,
+/// A separate set from [_unguardedByDesign] rather than more entries in it,
 /// because the two waivers expire on opposite events. Those are waived for having
 /// **no caller** and need a seam the day they acquire one; these are waived for
 /// **what they do** and would need one only if that changed. Collapsing them
@@ -350,7 +363,28 @@ const _unguardedByDesign = <({String file, String command})>{
 /// * `SetupOperations.setUserAcknowledgedAutoConfig` — records an
 ///   acknowledgement. (`setConfigured` is uncalled and deliberately out of PnP's
 ///   TR-181 scope.)
+/// * `BleOnboardingOperations.start` / `.stop` (#879) — a session over the
+///   controller's own Bluetooth that hands the mesh backhaul credential to an
+///   unconfigured node. Nothing on the session's path is touched: measured
+///   2026-10-23 on two M60s on FW 2.0.3.26102124, a whole run from `Start()` to
+///   the node listed in DataElements with a Wi-Fi backhaul, the page polling over
+///   a wired client of the controller — every USP request 200, no 401, and one
+///   SSE stream open from before `Start()` until the app was closed. Not measured:
+///   whether the controller's own Wi-Fi clients blink while the new node joins
+///   the backhaul — and that is not a cost this guard could weigh, because both
+///   proximity strategies answer `transientRestart` alike. Remote assistance does
+///   not reach these calls in any case: `SurfaceStrategy.addNodesEntry` offers the
+///   flow on the local surface only. `scan` is declared by codegen and called
+///   from nowhere; it lists the nodes in range and onboards none.
 const _notDestructive = <({String file, String command})>{
+  (
+    file: 'lib/page/add_nodes/services/add_nodes_service.dart',
+    command: 'BleOnboardingOperations.start',
+  ),
+  (
+    file: 'lib/page/add_nodes/services/add_nodes_service.dart',
+    command: 'BleOnboardingOperations.stop',
+  ),
   (
     file: 'lib/page/instant_setup/services/pnp_service.dart',
     command: 'NetworkDiagnostics.ping',
