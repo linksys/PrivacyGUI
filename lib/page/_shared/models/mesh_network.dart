@@ -71,6 +71,92 @@ class MeshNetwork with EquatableMixin, DiagnosticNamed {
     return null;
   }
 
+  /// The slave [deviceId] names and every slave behind it, farthest first.
+  ///
+  /// "Behind" is the backhaul parent chain: a slave is behind the target when
+  /// walking `backhaul.parentNodeId` upward from it reaches the target. A node
+  /// command acts on the node that receives it and not on the nodes behind it
+  /// (FWDEV#202), and a node that restarts cuts off everything behind it, so
+  /// a caller rebooting or resetting a slave sends one call per node in this
+  /// order.
+  NodesBehind nodesBehind(String deviceId) {
+    final target = findNode(deviceId);
+    if (target is! SlaveNode) return const NodesBehind([], mayMissNodes: false);
+
+    final byId = {
+      for (final s in slaves) ...{
+        s.deviceId.toUpperCase(): s,
+        if (s.dataElementsId != null) s.dataElementsId!.toUpperCase(): s,
+      },
+    };
+    final targetId = target.deviceId.toUpperCase();
+
+    final behind = <(int, SlaveNode)>[];
+    var mayMissNodes = false;
+    for (final slave in slaves) {
+      final visited = <SlaveNode>{};
+      SlaveNode? current = slave;
+      while (true) {
+        if (current!.deviceId.toUpperCase() == targetId) {
+          behind.add((visited.length, slave));
+          break;
+        }
+        final parent = current.backhaul.parentNodeId;
+        // A chain that ends anywhere but the master says nothing about where
+        // this slave sits: no parent reported, a parent not in the list, or a
+        // cycle (firmware can report one; backhaul_parent_graph.dart breaks it
+        // for the topology, but this walk runs on the raw parents).
+        if (parent == null || !visited.add(current)) {
+          mayMissNodes = true;
+          break;
+        }
+        current = byId[parent.toUpperCase()];
+        if (current == null) {
+          if (findNode(parent) is! MasterNode) mayMissNodes = true;
+          break;
+        }
+      }
+    }
+    behind.sort((x, y) => y.$1.compareTo(x.$1));
+    return NodesBehind(
+      [for (final (_, node) in behind) node],
+      mayMissNodes: mayMissNodes,
+    );
+  }
+
+  /// What sending [action] to the slave [deviceId] does: which nodes receive
+  /// it, farthest first, and which go down with them without receiving it.
+  ///
+  /// A node behind the target that does not list [action] in its
+  /// `X_LINKSYS_SupportedOperations` (third-party, older firmware) is not
+  /// sent it. Sent first, as farthest-first would, it refuses with 7022 and
+  /// the run stops before the target gets the command; it loses its uplink
+  /// with the target either way. Empty when the target itself cannot run
+  /// [action].
+  ///
+  /// One plan is built for the confirmation and the same plan is sent, so
+  /// the nodes a user agreed to are the nodes that receive the command even
+  /// if the topology refreshes in between.
+  NodeActionPlan nodeActionPlan(NodeAction action, String deviceId) {
+    final behind = nodesBehind(deviceId);
+    final target = findNode(deviceId);
+    if (target is! SlaveNode || !target.actions.contains(action)) {
+      return NodeActionPlan(
+          targets: const [], skipped: const [], mayMissNodes: false);
+    }
+    return NodeActionPlan(
+      targets: [
+        for (final n in behind.nodes)
+          if (n.actions.contains(action)) n,
+      ],
+      skipped: [
+        for (final n in behind.nodes)
+          if (!n.actions.contains(action)) n,
+      ],
+      mayMissNodes: behind.mayMissNodes,
+    );
+  }
+
   /// Find a client device by MAC address.
   ClientDevice? findClient(String mac) {
     final normalized = mac.toUpperCase();
@@ -152,4 +238,43 @@ class MeshNetwork with EquatableMixin, DiagnosticNamed {
         'slaves': slaves,
         'unassignedClients': unassignedClients,
       };
+}
+
+/// The answer to [MeshNetwork.nodesBehind].
+class NodesBehind extends Equatable {
+  /// The target and every slave behind it, farthest first; the target is last.
+  /// Empty when the id names no slave.
+  final List<SlaveNode> nodes;
+
+  /// Whether a slave may sit behind the target without being in [nodes].
+  final bool mayMissNodes;
+
+  const NodesBehind(this.nodes, {required this.mayMissNodes});
+
+  @override
+  List<Object?> get props => [nodes, mayMissNodes];
+}
+
+/// The answer to [MeshNetwork.nodeActionPlan].
+class NodeActionPlan extends Equatable {
+  /// The nodes that receive the command, farthest first; the target is last.
+  /// Empty when the target cannot run it.
+  final List<SlaveNode> targets;
+
+  /// Nodes behind the target that do not run the command. They are not sent
+  /// it, and they lose their uplink while the target restarts.
+  final List<SlaveNode> skipped;
+
+  /// Whether a node may sit behind the target without being listed: a node
+  /// with no reported parent, a departed parent or a parent cycle.
+  final bool mayMissNodes;
+
+  const NodeActionPlan({
+    required this.targets,
+    required this.skipped,
+    required this.mayMissNodes,
+  });
+
+  @override
+  List<Object?> get props => [targets, skipped, mayMissNodes];
 }

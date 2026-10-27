@@ -102,6 +102,8 @@ void main() {
   final viewScenes = <String, DevicesData>{
     'singleNodeDevicesData': singleNodeDevicesData,
     'meshNetworkDevicesData': meshNetworkDevicesData,
+    'meshNetworkWithNodeActionsDevicesData':
+        meshNetworkWithNodeActionsDevicesData,
   };
 
   final detailScenes = <String, UspNodeDetailState>{
@@ -136,14 +138,33 @@ void main() {
       });
     }
 
+    // The layout gate's topology cell (`kTopologyPageCase`). It must be
+    // `meshNetworkDevicesData` with nothing changed but the agents' node
+    // actions (#876): the healthy tree that scene documents, plus a menu
+    // button on every mesh row.
+    test('meshNetworkWithNodeActionsDevicesData differs only in node actions',
+        () {
+      final base = meshNetworkDevicesData.meshNetwork;
+      final withActions = meshNetworkWithNodeActionsDevicesData.meshNetwork;
+
+      expect(withActions.master, base.master);
+      expect(withActions.slaves, hasLength(base.slaves.length));
+      for (var i = 0; i < base.slaves.length; i++) {
+        expect(withActions.slaves[i].actions, NodeAction.values.toSet());
+        expect(
+            withActions.slaves[i].copyWith(actions: const {}), base.slaves[i]);
+      }
+    });
+
     test('meshNetworkDevicesData draws the healthy mesh it documents', () {
       final mesh = meshNetworkDevicesData.meshNetwork;
       expect(
         mesh.slaves,
         isNotEmpty,
         reason: 'The scene exists to draw the widest tree in the suite, and is '
-            'the layout gate\'s topology cell (`kTopologyPageCase`). Without a '
-            'slave it is `singleNodeDevicesData` twice.',
+            'what the layout gate\'s topology cell pumps, through '
+            '`meshNetworkWithNodeActionsDevicesData`. Without a slave it is '
+            '`singleNodeDevicesData` twice.',
       );
       for (final NodeEntity node in mesh.allNodes) {
         expect(

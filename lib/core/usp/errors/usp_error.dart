@@ -188,6 +188,7 @@ String unwrapUspClientError(String message) {
 /// | 7004 | parameter not writable           | InvalidInputError       |
 /// | 7005 | invalid parameter name¹          | InvalidInputError       |
 /// | 7006 | invalid parameter value          | InvalidInputError       |
+/// | 7016 | object does not exist³           | ResourceNotFoundError   |
 /// | 7022 | command refused by the agent²    | UspCompleteFailureError |
 /// | 7026 | parameter (path) not found       | ResourceNotFoundError   |
 /// | 7027 | object not found                 | ResourceNotFoundError   |
@@ -203,6 +204,13 @@ String unwrapUspClientError(String message) {
 /// and a refusal is the router answering. The 7022 seen on FL-WRT 2.0 has its own
 /// cause — `rpcd` missing from the image, so `bbf.diag` never reaches ubus — but
 /// this mapping is about reporting a refusal correctly whatever its reason.
+///
+/// ³ 7016 is obuspa refusing an Operate on an instance that no longer exists,
+/// before the command runs, so it arrives inside the WASM client's 9999
+/// envelope and is unwrapped to this protocol arm. Measured on FW
+/// 2.0.3.26102008 with `Device.WiFi.DataElements.Network.Device.9.X_LINKSYS_Reboot()`
+/// on a one-node mesh (#876): the shape of a node command sent to a node that
+/// has just left DataElements.
 ///
 /// ¹ 7005 has a second, broker-level meaning on OBUSPA: an atomic SET
 /// (`allow_partial=false`) that spans more than one USP micro-service is
@@ -374,6 +382,9 @@ ServiceError _mapProtocolError(UspError e) {
       7005 =>
         InvalidInputError(code: code, detail: e.message), // bad param name
       7006 => InvalidInputError(code: code, detail: e.message), // bad value
+      // Object does not exist: obuspa's answer to an Operate on a row that has
+      // gone, e.g. a mesh node that left DataElements (#876).
+      7016 => ResourceNotFoundError(code: code, detail: e.message),
       7026 => ResourceNotFoundError(code: code, detail: e.message), // path 404
       7027 =>
         ResourceNotFoundError(code: code, detail: e.message), // object 404

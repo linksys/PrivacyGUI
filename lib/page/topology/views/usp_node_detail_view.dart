@@ -23,6 +23,8 @@ import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.d
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
 import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indicator.dart';
+import 'package:privacy_gui/page/topology/views/components/node_actions_card.dart';
+import 'package:privacy_gui/page/topology/views/node_action_flow.dart';
 import 'package:privacy_gui/util/date_format_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -92,6 +94,7 @@ class UspNodeDetailView extends ConsumerWidget {
         ],
         AppGap.lg(),
         _buildConnectedDevicesCard(context, detail),
+        ..._buildActionsCard(context, ref, node),
       ],
     );
   }
@@ -112,6 +115,7 @@ class UspNodeDetailView extends ConsumerWidget {
                 AppGap.lg(),
                 _buildBackhaulCard(context, node, detail.parentNode),
               ],
+              ..._buildActionsCard(context, ref, node),
             ],
           ),
         ),
@@ -178,6 +182,33 @@ class UspNodeDetailView extends ConsumerWidget {
     if (saved == true && context.mounted) {
       showSuccessSnackBar(context, loc(context).changesSaved);
     }
+  }
+
+  // ===========================================================================
+  // Node Actions (#876)
+  // ===========================================================================
+
+  /// The actions card and the gap above it, or nothing when the node offers
+  /// no action ([nodeActionsOf]).
+  List<Widget> _buildActionsCard(
+      BuildContext context, WidgetRef ref, NodeEntity node) {
+    final actions = nodeActionsOf(node);
+    if (actions.isEmpty) return const [];
+    return [
+      AppGap.lg(),
+      NodeActionsCard(
+        actions: actions,
+        // The agent leaves DataElements while it restarts, which empties this
+        // page, so a sent command returns to the topology.
+        onAction: (action) => confirmAndRunNodeAction(
+          context,
+          ref,
+          node,
+          action,
+          onSent: () => context.navigateBack(fallback: RouteNamed.uspTopology),
+        ),
+      ),
+    ];
   }
 
   // ===========================================================================

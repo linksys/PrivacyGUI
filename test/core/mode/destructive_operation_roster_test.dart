@@ -161,6 +161,19 @@ const _seams = <({String file, String method, String disruption})>[
     method: 'triggerRouterOtaInstall',
     disruption: 'transientRestart',
   ),
+  // #876. One seam for both node commands, because they are one class: a mesh
+  // agent's reboot and its factory reset leave the controller's admin
+  // credential and the RA path alone, so the session survives either. That
+  // differs from the controller's own factory reset (`credentialLoss`, above)
+  // on purpose (decided 2026-10-20), and from 1.0's `ErrorDisallowedRemoteCall`.
+  // If the agent that gives the session its path is one of the targets, the
+  // browser loses the router as it would on a link drop, which is
+  // transientRestart's own description.
+  (
+    file: 'lib/page/topology/providers/node_action_notifier.dart',
+    method: 'run',
+    disruption: 'transientRestart',
+  ),
 ];
 
 /// The guard's own file, which must contain no per-class branching.
@@ -198,6 +211,7 @@ const _guard = 'lib/core/mode/operation_guard.dart';
 /// match the whole app.
 const _operationClasses = <String>[
   'BleOnboardingOperations',
+  'DataElementsNetworkOperations',
   'DeviceOperations',
   'FirmwareOperations',
   'NetworkDiagnostics',
@@ -232,6 +246,10 @@ const _commandCallSites = <String, List<String>>{
   'lib/page/admin/services/usp_admin_service.dart': [
     'DeviceOperations.factoryReset',
     'DeviceOperations.reboot',
+  ],
+  'lib/page/topology/services/usp_node_action_service.dart': [
+    'DataElementsNetworkOperations.factoryResetNode',
+    'DataElementsNetworkOperations.rebootNode',
   ],
   'lib/page/firmware_update/services/firmware_http_upload_strategy.dart': [
     'FirmwareOperations.chunkedPush',
@@ -550,7 +568,7 @@ void main() {
             '${Map.fromEntries(perFile.entries.toList()..sort((a, b) => a.key.compareTo(b.key)))}, '
             'expected ${_seams.length}. More means a destructive operation was '
             'guarded without being added to _seams, so nothing pins the class it '
-            'chose; fewer means one of the five lost its guard. Either way the '
+            'chose; fewer means one of them lost its guard. Either way the '
             'roster and the code disagree, and the roster is the thing reviewers '
             'read.',
       );

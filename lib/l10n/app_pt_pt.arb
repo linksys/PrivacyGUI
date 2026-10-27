@@ -1268,5 +1268,20 @@
   "semanticRoleMascot": "Mascote",
   "semanticRolePinInput": "Introdução do PIN",
   "semanticRoleRadio": "Botão de opção",
-  "semanticRoleSwitch": "Interruptor"
+  "semanticRoleSwitch": "Interruptor",
+  "nodeActions": "Ações do nó",
+  "rebootMeshMessage": "O router e todos os nós da sua rede mesh irão reiniciar. Todos os dispositivos ligados ficarão desligados até a rede voltar a estar disponível.",
+  "factoryResetMeshMessage": "O router e todos os nós da sua rede mesh serão repostos para as definições de fábrica, incluindo a palavra-passe do WiFi e do router indicada na etiqueta do router. Depois, cada nó terá de ser configurado novamente.",
+  "rebootNodeMessage": "{node} irá reiniciar. Os dispositivos ligados através dele ficarão desligados até voltar a estar disponível.",
+  "rebootNodesMessage": "Estes nós irão reiniciar, começando pelo mais distante: {nodes}. Os dispositivos ligados através deles ficarão desligados até voltarem a estar disponíveis.",
+  "factoryResetNodeMessage": "{node} será reposto para as definições de fábrica e sairá da sua rede. Adicione-o novamente para o utilizar.",
+  "factoryResetNodesMessage": "Estes nós serão repostos para as definições de fábrica e sairão da sua rede, começando pelo mais distante: {nodes}. Adicione-os novamente para os utilizar.",
+  "nodeActionMayMissNodes": "Alguns nós não indicaram como estão ligados. Um nó ligado através deste pode ficar indisponível juntamente com ele.",
+  "nodeActionRebootSent": "A reiniciar. Pode demorar alguns minutos a voltar a estar disponível.",
+  "nodeActionResetSent": "A repor as definições de fábrica. Adicione o nó novamente quando estiver pronto.",
+  "nodeActionFailed": "{node}: {reason}",
+  "nodeActionFailedAfterSent": "{failure} Já enviado para: {sent}.",
+  "nodeActionSkippedNodes": "Estes nós não suportam este comando e não o irão receber, mas perderão a ligação enquanto os nós através dos quais estão ligados estiverem indisponíveis: {nodes}.",
+  "nodeActionNotConfirmed": "{node} não confirmou o comando. Pode ainda executá-lo, por isso verifique a topologia antes de tentar novamente.",
+  "nodeActionNodeGone": "{node} já não está na sua rede."
 }

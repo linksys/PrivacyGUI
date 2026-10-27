@@ -115,6 +115,7 @@ void main() {
     required String deviceId,
     String model = 'TestExtender',
     BackhaulInfo? backhaul,
+    Set<NodeAction> actions = const {},
   }) {
     return SlaveNode(
       deviceId: deviceId,
@@ -123,6 +124,7 @@ void main() {
       serialNumber: 'SN456',
       softwareVersion: '1.0.0',
       backhaul: backhaul ?? const BackhaulInfo(linkType: 'Wi-Fi'),
+      actions: actions,
     );
   }
 
@@ -336,6 +338,29 @@ void main() {
       final slave = result.slaves.single;
       expect(slave.hostInstancePath, 'Device.Hosts.Host.3.');
       expect(slave.userDeviceName, 'Upstairs');
+    });
+
+    // #876. The slave is rebuilt here from the topology's, so a field not
+    // copied across is lost before the node detail page can read it.
+    test('carries the agent node actions onto the slave (#876)', () {
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: const ConnectedDevices(items: []),
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        meshTopology: MeshTopologyInfo(
+          nodes: [
+            buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
+            buildSlaveNode(
+              deviceId: 'AA:BB:CC:DD:EE:02',
+              actions: {NodeAction.reboot},
+            ),
+          ],
+          clientToNodeMap: const {},
+        ),
+        gatewayName: 'Router',
+      );
+
+      expect(result.slaves.single.actions, {NodeAction.reboot});
     });
 
     test('an agent with no Hosts row has no rename path (#1688 item 4)', () {

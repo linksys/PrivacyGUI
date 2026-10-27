@@ -1268,5 +1268,20 @@
   "semanticRoleMascot": "Maskot",
   "semanticRolePinInput": "PIN girişi",
   "semanticRoleRadio": "Radyo düğmesi",
-  "semanticRoleSwitch": "Anahtar"
+  "semanticRoleSwitch": "Anahtar",
+  "nodeActions": "Düğüm İşlemleri",
+  "rebootMeshMessage": "Yönlendirici ve mesh ağınızdaki tüm düğümler yeniden başlatılacak. Ağ yeniden kullanılabilir olana kadar bağlı tüm cihazların bağlantısı kesilecek.",
+  "factoryResetMeshMessage": "Yönlendirici ve mesh ağınızdaki tüm düğümler, yönlendiricinin etiketinde yazan WiFi ve yönlendirici parolası dahil olmak üzere fabrika ayarlarına sıfırlanacak. Ardından her düğümün yeniden kurulması gerekecek.",
+  "rebootNodeMessage": "{node} yeniden başlatılacak. Bu düğüm üzerinden bağlanan cihazların bağlantısı, düğüm geri gelene kadar kesilecek.",
+  "rebootNodesMessage": "Bu düğümler en uzaktakinden başlayarak yeniden başlatılacak: {nodes}. Bu düğümler üzerinden bağlanan cihazların bağlantısı, düğümler geri gelene kadar kesilecek.",
+  "factoryResetNodeMessage": "{node} fabrika ayarlarına sıfırlanacak ve ağınızdan ayrılacak. Kullanmak için yeniden ekleyin.",
+  "factoryResetNodesMessage": "Bu düğümler en uzaktakinden başlayarak fabrika ayarlarına sıfırlanacak ve ağınızdan ayrılacak: {nodes}. Kullanmak için bunları yeniden ekleyin.",
+  "nodeActionMayMissNodes": "Bazı düğümler nasıl bağlandıklarını bildirmedi. Bu düğüm üzerinden bağlanan bir düğüm de onunla birlikte devre dışı kalabilir.",
+  "nodeActionRebootSent": "Yeniden başlatılıyor. Tekrar kullanılabilir olması birkaç dakika sürebilir.",
+  "nodeActionResetSent": "Fabrika ayarlarına sıfırlanıyor. Hazır olduğunda düğümü yeniden ekleyin.",
+  "nodeActionFailed": "{node}: {reason}",
+  "nodeActionFailedAfterSent": "{failure} Zaten gönderildi: {sent}.",
+  "nodeActionSkippedNodes": "Bu düğümler bu komutu desteklemedikleri için komut onlara gönderilmeyecek, ancak üzerinden bağlandıkları düğümler devre dışıyken bağlantılarını kaybedecekler: {nodes}.",
+  "nodeActionNotConfirmed": "{node} komutu onaylamadı. Komutu yine de uygulayabilir, bu nedenle yeniden denemeden önce topolojiyi kontrol edin.",
+  "nodeActionNodeGone": "{node} artık ağınızda değil."
 }

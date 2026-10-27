@@ -656,6 +656,8 @@ class MeshNetworkBuilder {
       // same leaf a client's name is, since an agent is a Hosts row too.
       hostInstancePath: slaveDevice?.instancePath,
       userDeviceName: nonEmpty(slaveDevice?.linksysUserDeviceLocation),
+      // What the node detail page offers (#876); DataElements is its only source.
+      actions: slaveMeshInfo.actions,
     );
   }
 }
