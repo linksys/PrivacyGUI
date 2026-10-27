@@ -112,7 +112,6 @@ class UspStaticRoutingService {
   }) async {
     final tally = BatchTally('[StaticRouting]');
     try {
-      // 1. Delete (in original, not in current)
       final currentPaths = <String>{
         for (final r in current)
           if (r.instancePath != null) r.instancePath!,
@@ -121,18 +120,6 @@ class UspStaticRoutingService {
           .where((r) =>
               r.instancePath != null && !currentPaths.contains(r.instancePath))
           .toList();
-
-      // Delete in reverse instance order to avoid firmware renumbering issues
-      for (final r in toDelete.reversed) {
-        final result =
-            await StaticRouting.deleteForwardings(_usp, [r.instancePath!]);
-        tally.record('Delete', UspResultParser.parseDeleteResult(result));
-        tally.throwIfAnyFailed();
-      }
-
-      // A route is written with the path of the interface its display name
-      // names now, resolved by Alias.
-      final toAdd = current.where((r) => r.instancePath == null).toList();
       final originalByPath = <String, StaticRouteUIModel>{
         for (final r in original)
           if (r.instancePath != null) r.instancePath!: r,
@@ -144,11 +131,14 @@ class UspStaticRoutingService {
               cur != originalByPath[cur.instancePath!])
             cur,
       ];
+      final toAdd = current.where((r) => r.instancePath == null).toList();
+
+      // Everything a step reads is read, and every row it writes is built,
+      // before the first step is sent: an interface or router that does not
+      // resolve stops the save with nothing written, not after a Delete.
       final interfaceNames = toAdd.isEmpty && toChange.isEmpty
           ? const <String, String>{}
           : await _interfaceNames();
-
-      // 2. Update (same path, different content)
       final toUpdate = [
         for (final cur in toChange)
           StaticRouteUpdate(
@@ -161,7 +151,30 @@ class UspStaticRoutingService {
             alias: cur.name,
           ),
       ];
+      final routerPath = toAdd.isEmpty ? null : await _routerPath();
+      final adds = [
+        for (final r in toAdd)
+          StaticRouteAdd(
+            parentInstancePath: routerPath!,
+            enable: r.enabled,
+            destIpAddress: r.destIpAddress,
+            destSubnetMask: r.destSubnetMask,
+            gatewayIpAddress: r.gatewayIpAddress,
+            interface_: _interfacePathOf(r.interfaceName, interfaceNames),
+            alias: r.name,
+          ),
+      ];
 
+      // 1. Delete (in original, not in current), in reverse instance order to
+      // avoid firmware renumbering issues
+      for (final r in toDelete.reversed) {
+        final result =
+            await StaticRouting.deleteForwardings(_usp, [r.instancePath!]);
+        tally.record('Delete', UspResultParser.parseDeleteResult(result));
+        tally.throwIfAnyFailed();
+      }
+
+      // 2. Update (same path, different content)
       if (toUpdate.isNotEmpty) {
         final result = await StaticRouting.updateForwardings(_usp, toUpdate);
         tally.record('Update', UspResultParser.parseSetResult(result));
@@ -169,23 +182,8 @@ class UspStaticRoutingService {
       }
 
       // 3. Add (instancePath == null → new)
-      if (toAdd.isNotEmpty) {
-        final routerPath = await _routerPath();
-        final result = await StaticRouting.addForwardings(
-          _usp,
-          toAdd
-              .map((r) => StaticRouteAdd(
-                    parentInstancePath: routerPath,
-                    enable: r.enabled,
-                    destIpAddress: r.destIpAddress,
-                    destSubnetMask: r.destSubnetMask,
-                    gatewayIpAddress: r.gatewayIpAddress,
-                    interface_:
-                        _interfacePathOf(r.interfaceName, interfaceNames),
-                    alias: r.name,
-                  ))
-              .toList(),
-        );
+      if (adds.isNotEmpty) {
+        final result = await StaticRouting.addForwardings(_usp, adds);
         tally.record('Add', UspResultParser.parseAddResult(result));
         tally.throwIfAnyFailed();
       }

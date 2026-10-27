@@ -979,6 +979,36 @@ void main() {
       );
       verifyNever(() => mockUsp.add(any()));
     });
+
+    test('a save with an interface it cannot resolve sends none of its steps',
+        () async {
+      // No interface has Alias wan, and the save also deletes one route and
+      // edits another: the unresolvable Add must stop the save before the
+      // Delete and the Set reach the router.
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List<String>;
+        if (paths.contains('Device.IP.Interface.*.Alias')) {
+          return {'$_lan.Alias': 'lan'};
+        }
+        return {'Device.Routing.Router.4.Alias': 'cpe-1'};
+      });
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => okSet);
+      when(() => mockUsp.set(any())).thenAnswer((_) async => okSet);
+
+      await expectLater(
+        service.saveBatch(
+          original: [route(r5, 'a'), route(r9, 'b')],
+          current: [
+            route(r9, 'b', dest: '10.9.0.0'),
+            route(null, 'ToWan', dest: '172.17.0.0', iface: 'Internet'),
+          ],
+        ),
+        throwsA(isA<ResourceNotFoundError>()),
+      );
+      verifyNever(() => mockUsp.delete(any()));
+      verifyNever(() => mockUsp.set(any()));
+      verifyNever(() => mockUsp.add(any()));
+    });
   });
 
   group('UspStaticRoutingService — error handling', () {
