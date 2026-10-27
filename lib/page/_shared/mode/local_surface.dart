@@ -90,6 +90,12 @@ class LocalSurface implements SurfaceStrategy {
   @override
   Widget firmwareManualEntry({required Widget Function() picker}) => picker();
 
+  /// The operator is next to the controller, so they can place the new node in
+  /// its Bluetooth range and read the node's light: the topology runs the
+  /// callback it handed over.
+  @override
+  VoidCallback? addNodesEntry(VoidCallback openAddNodes) => openAddNodes;
+
   @override
   Widget sessionExitAction() => const ReturnToLoginAction();
 
