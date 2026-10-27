@@ -3,6 +3,8 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/_shared/services/empty_row.dart';
+import 'package:privacy_gui/page/_shared/utils/firewall_chain_pick.dart';
 import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
 import 'package:privacy_gui/generated/sip_alg.g.dart';
 import 'package:privacy_gui/generated/upnp_device.g.dart';
@@ -60,13 +62,18 @@ class UspAdministrationService {
   /// empty data map, and the router's firewall always carries rules of its own.
   /// So only a table that read back and lacks the rule hides the switch.
   Future<FirewallChainRule?> _managementWifiRule() async {
-    final rules = await FirewallChainRules.fetch(_usp);
-    if (rules.items.isEmpty) {
+    final chain = defaultFirewallChainOf(
+        (await FirewallChainRules.fetch(_usp)).items, (c) => c.name);
+    // A rule with every value blank is no rule (usp-codegen 0.17 dropped it).
+    final rules =
+        chain?.rules.where((r) => !isEmptyFirewallChainRule(r)).toList() ??
+            const <FirewallChainRule>[];
+    if (rules.isEmpty) {
       throw const ResourceNotFoundError(
-        detail: 'Device.Firewall.Chain.1 read back no rules',
+        detail: 'The $defaultFirewallChainName chain read back no rules',
       );
     }
-    return rules.items
+    return rules
         .where((r) => r.description == _managementWifiRuleName)
         .firstOrNull;
   }
@@ -107,7 +114,7 @@ class UspAdministrationService {
     }
     await _write(
       'Management over Wi-Fi',
-      () => FirewallChainRules.update(_usp, [
+      () => FirewallChainRules.updateRules(_usp, [
         FirewallChainRuleUpdate(
             instancePath: rule.instancePath, enable: enabled),
       ]),

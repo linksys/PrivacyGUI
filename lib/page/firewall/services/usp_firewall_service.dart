@@ -5,6 +5,8 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/_shared/services/empty_row.dart';
+import 'package:privacy_gui/page/_shared/utils/firewall_chain_pick.dart';
 import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 
@@ -110,7 +112,7 @@ class UspFirewallService {
       }
       // Update all firewall rules in batch
       if (updates.isNotEmpty) {
-        final result = await FirewallChainRules.update(_usp, updates);
+        final result = await FirewallChainRules.updateRules(_usp, updates);
         final parsed = UspResultParser.parseSetResult(result);
         switch (parsed) {
           case UspSuccess():
@@ -166,18 +168,28 @@ class UspFirewallService {
 
   /// Parse [FirewallChainRules] into a map of feature key → [FirewallChainRule].
   ///
-  /// Matches each rule's Description against [_descToFeature].
+  /// Reads the `Defaults Configuration` chain only, and matches each rule's
+  /// Description against [_descToFeature].
   static Map<String, FirewallChainRule> parseFirewallRules(
     FirewallChainRules rules,
   ) {
     final map = <String, FirewallChainRule>{};
-    for (final rule in rules.items) {
+    for (final rule in defaultChainRules(rules)) {
       final featureKey = _descToFeature[rule.description];
       if (featureKey == null) continue;
       map[featureKey] = rule;
     }
     return map;
   }
+
+  /// The rules of the `Defaults Configuration` chain; none when the router
+  /// lists no such chain. A rule with every value blank is no rule
+  /// (usp-codegen 0.17 dropped it), so it is never counted.
+  static List<FirewallChainRule> defaultChainRules(FirewallChainRules rules) =>
+      (defaultFirewallChainOf(rules.items, (c) => c.name)?.rules ??
+              const <FirewallChainRule>[])
+          .where((r) => !isEmptyFirewallChainRule(r))
+          .toList();
 
   // -------------------------------------------------------------------------
   // Build UI model

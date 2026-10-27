@@ -113,6 +113,22 @@ class BleOnboarding {
     final devices = <BleOnboardingDevice>[];
     for (final cid_0 in childSorted_0) {
       final cp_0 = '$childBase_0$cid_0.';
+      final missing = <String>[];
+      if (!response.containsKey('${cp_0}BLEMACAddress')) {
+        missing.add('${cp_0}BLEMACAddress');
+      }
+      if (!response.containsKey('${cp_0}ModelNumber')) {
+        missing.add('${cp_0}ModelNumber');
+      }
+      if (!response.containsKey('${cp_0}Status')) {
+        missing.add('${cp_0}Status');
+      }
+      if (!response.containsKey('${cp_0}ALMACAddress')) {
+        missing.add('${cp_0}ALMACAddress');
+      }
+      if (missing.isNotEmpty) {
+        throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+      }
       devices.add(BleOnboardingDevice(
         instancePath: cp_0,
         bleMacAddress: (response['${cp_0}BLEMACAddress'] ?? '') as String,

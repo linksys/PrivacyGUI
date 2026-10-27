@@ -99,14 +99,12 @@ class FirmwareAutoUpdate {
     );
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-    UspClient client, {
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams({
     String? autoupdateFlags,
     String? updateFirmwareNow,
     String? fwupPeriodicCheck,
-    bool allowPartial = false,
-  }) async {
+  }) {
     final params = <String, dynamic>{};
     if (autoupdateFlags != null) {
       params['Device.X_LINKSYS_UCI.linksys.fwup.autoupdate_flags'] =
@@ -120,6 +118,21 @@ class FirmwareAutoUpdate {
       params['Device.X_LINKSYS_Sysevent.fwup_periodic_check'] =
           fwupPeriodicCheck;
     }
+    return params;
+  }
+
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+    UspClient client, {
+    String? autoupdateFlags,
+    String? updateFirmwareNow,
+    String? fwupPeriodicCheck,
+    bool allowPartial = false,
+  }) async {
+    final params = updateParams(
+        autoupdateFlags: autoupdateFlags,
+        updateFirmwareNow: updateFirmwareNow,
+        fwupPeriodicCheck: fwupPeriodicCheck);
     if (params.isEmpty) {
       return {
         'success': true,

@@ -26,7 +26,6 @@ void main() {
     destSubnetMask: '255.255.255.0',
     gatewayIpAddress: '192.168.1.1',
     interfaceName: 'eth0',
-    interfacePath: 'Device.Ethernet.Interface.2.',
   );
   final route2 = StaticRouteUIModel(
     instancePath: 'Device.Routing.Router.1.IPv4Forwarding.2.',
@@ -36,7 +35,6 @@ void main() {
     destSubnetMask: '255.255.0.0',
     gatewayIpAddress: '192.168.1.254',
     interfaceName: 'eth0',
-    interfacePath: 'Device.Ethernet.Interface.2.',
   );
 
   setUpAll(() {
@@ -45,8 +43,6 @@ void main() {
 
   setUp(() {
     mockService = MockUspStaticRoutingService();
-    when(() => mockService.mapDisplayToInterface(any()))
-        .thenAnswer((inv) => inv.positionalArguments[0] as String);
   });
 
   ProviderContainer createContainer({
@@ -196,6 +192,20 @@ void main() {
       await expectLater(notifier.save(), throwsA(isA<ServiceError>()));
 
       expect(container.read(uspStaticRoutingProvider).status.isSaving, isFalse);
+      container.dispose();
+    });
+
+    test('editing a route without changing it leaves the page clean', () async {
+      // The dialog hands back the route it was opened with; saving it unchanged
+      // is not a change to the route.
+      when(() => mockService.fetch()).thenAnswer((_) async => [route1]);
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspStaticRoutingProvider.notifier);
+      notifier.editRoute(0, route1);
+
+      expect(notifier.isDirty(), isFalse);
       container.dispose();
     });
 

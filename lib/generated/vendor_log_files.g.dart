@@ -17,6 +17,16 @@ class VendorLogFile {
     required this.maximumSize,
     required this.persistent,
   });
+
+  @override
+  String toString() {
+    return 'VendorLogFile('
+        'instancePath: $instancePath, '
+        'name: $name, '
+        'maximumSize: $maximumSize, '
+        'persistent: $persistent'
+        ')';
+  }
 }
 
 /// Router vendor log files (multi-instance, read-only metadata)
@@ -24,6 +34,9 @@ class VendorLogFiles {
   final List<VendorLogFile> items;
 
   const VendorLogFiles({required this.items});
+
+  @override
+  String toString() => 'VendorLogFiles(items: $items)';
 
   static const _paths = [
     'Device.DeviceInfo.VendorLogFile.*.Name',
@@ -52,19 +65,6 @@ class VendorLogFiles {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}Name'],
-        response['${p}MaximumSize'],
-        response['${p}Persistent']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final missing = <String>[];
       if (!response.containsKey('${p}Name')) {
         missing.add('${p}Name');

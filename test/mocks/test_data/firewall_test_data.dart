@@ -10,6 +10,9 @@ import 'package:privacy_gui/page/firewall/services/usp_firewall_service.dart';
 /// Provides factory methods for the UI models, the fetch result returned by
 /// [UspFirewallDataService], and the composed [FirewallData] L1 state.
 class FirewallTestData {
+  /// The `Defaults Configuration` chain's path in [createChains].
+  static const defaultChain = 'Device.Firewall.Chain.3.';
+
   // ---------------------------------------------------------------------------
   // UI models
   // ---------------------------------------------------------------------------
@@ -84,37 +87,62 @@ class FirewallTestData {
   // Chain rules / rule context
   // ---------------------------------------------------------------------------
 
-  /// The 12 named rules FLWRT 2.0.3 adds to `Device.Firewall.Chain.1`, at the
-  /// instance numbers and default `Enable` values read off M60
+  /// The `Device.Firewall.Chain.` table as the router lists it: the UPnP
+  /// chain first, then [defaultRules] on the `Defaults Configuration` chain.
+  ///
+  /// The UPnP chain carries a rule named like a FWDEV#204 rule, so a page
+  /// that read every chain, or the first one, would show the wrong value.
+  static FirewallChainRules createChains(
+          List<FirewallChainRule> defaultRules) =>
+      FirewallChainRules(items: [
+        const FirewallChain(
+          instancePath: 'Device.Firewall.Chain.2.',
+          name: 'UPnP Port Mapping (dynamic rules)',
+          rules: [
+            FirewallChainRule(
+              instancePath: 'Device.Firewall.Chain.2.Rule.4.',
+              enable: true,
+              description: 'RULE_LAN2WAN_PPTP',
+              target: 'Accept',
+            ),
+          ],
+        ),
+        FirewallChain(
+          instancePath: defaultChain,
+          name: 'Defaults Configuration',
+          rules: defaultRules,
+        ),
+      ]);
+
+  /// The 12 named rules FLWRT 2.0.3 adds to the `Defaults Configuration`
+  /// chain, at the instance numbers and default `Enable` values read off M60
   /// `2.0.3.26100921` (FWDEV#204).
   static FirewallChainRules createNamedChainRules({
     Set<String> without = const {},
   }) =>
-      FirewallChainRules(
-        items: [
-          for (final (i, desc, enable, target) in const [
-            (11, 'UDP_FORWARD_FOR_IGMP', true, 'Accept'),
-            (21, 'RULE_SPI_IPV4_INPUT', false, 'Accept'),
-            (22, 'RULE_SPI_IPV4_FORWARD', false, 'Accept'),
-            (23, 'RULE_SPI_IPV6_INPUT', false, 'Accept'),
-            (24, 'RULE_SPI_IPV6_FORWARD', false, 'Accept'),
-            (25, 'RULE_PING_IPV4', false, 'Accept'),
-            (26, 'RULE_IDENT_WAN', false, 'Accept'),
-            (27, 'RULE_LAN2WAN_IPSEC', false, 'Drop'),
-            (28, 'RULE_IPSEC_ESP', false, 'Drop'),
-            (29, 'RULE_LAN2WAN_PPTP', false, 'Drop'),
-            (30, 'RULE_LAN2WAN_L2TP', false, 'Drop'),
-            (31, 'RULE_NAT_REDIRECTION', true, 'Accept'),
-          ])
-            if (!without.contains(desc))
-              FirewallChainRule(
-                instancePath: 'Device.Firewall.Chain.1.Rule.$i.',
-                enable: enable,
-                description: desc,
-                target: target,
-              ),
-        ],
-      );
+      createChains([
+        for (final (i, desc, enable, target) in const [
+          (11, 'UDP_FORWARD_FOR_IGMP', true, 'Accept'),
+          (21, 'RULE_SPI_IPV4_INPUT', false, 'Accept'),
+          (22, 'RULE_SPI_IPV4_FORWARD', false, 'Accept'),
+          (23, 'RULE_SPI_IPV6_INPUT', false, 'Accept'),
+          (24, 'RULE_SPI_IPV6_FORWARD', false, 'Accept'),
+          (25, 'RULE_PING_IPV4', false, 'Accept'),
+          (26, 'RULE_IDENT_WAN', false, 'Accept'),
+          (27, 'RULE_LAN2WAN_IPSEC', false, 'Drop'),
+          (28, 'RULE_IPSEC_ESP', false, 'Drop'),
+          (29, 'RULE_LAN2WAN_PPTP', false, 'Drop'),
+          (30, 'RULE_LAN2WAN_L2TP', false, 'Drop'),
+          (31, 'RULE_NAT_REDIRECTION', true, 'Accept'),
+        ])
+          if (!without.contains(desc))
+            FirewallChainRule(
+              instancePath: '${defaultChain}Rule.$i.',
+              enable: enable,
+              description: desc,
+              target: target,
+            ),
+      ]);
 
   /// A context holding every named rule, the way the firewall page sees a
   /// router it can read.

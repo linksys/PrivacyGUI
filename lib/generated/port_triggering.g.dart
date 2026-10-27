@@ -17,6 +17,46 @@ class PortTriggerForwardRule {
     required this.forwardPortEndRange,
     required this.forwardProtocol,
   });
+
+  @override
+  String toString() {
+    return 'PortTriggerForwardRule('
+        'instancePath: $instancePath, '
+        'forwardPort: $forwardPort, '
+        'forwardPortEndRange: $forwardPortEndRange, '
+        'forwardProtocol: $forwardProtocol'
+        ')';
+  }
+}
+
+/// Update descriptor for PortTriggerForwardRule instances
+class PortTriggerForwardRuleUpdate {
+  final String instancePath;
+  final int? forwardPort;
+  final int? forwardPortEndRange;
+  final String? forwardProtocol;
+
+  const PortTriggerForwardRuleUpdate({
+    required this.instancePath,
+    this.forwardPort,
+    this.forwardPortEndRange,
+    this.forwardProtocol,
+  });
+}
+
+/// Add descriptor for PortTriggerForwardRule rows
+class PortTriggerForwardRuleAdd {
+  final String parentInstancePath;
+  final int? forwardPort;
+  final int? forwardPortEndRange;
+  final String? forwardProtocol;
+
+  const PortTriggerForwardRuleAdd({
+    required this.parentInstancePath,
+    this.forwardPort,
+    this.forwardPortEndRange,
+    this.forwardProtocol,
+  });
 }
 
 /// Single instance from PortTriggering
@@ -38,6 +78,19 @@ class PortTrigger {
     required this.triggerProtocol,
     required this.rules,
   });
+
+  @override
+  String toString() {
+    return 'PortTrigger('
+        'instancePath: $instancePath, '
+        'enabled: $enabled, '
+        'description: $description, '
+        'triggerPort: $triggerPort, '
+        'triggerPortEndRange: $triggerPortEndRange, '
+        'triggerProtocol: $triggerProtocol, '
+        'rules: $rules'
+        ')';
+  }
 }
 
 /// Update descriptor for PortTrigger instances
@@ -64,6 +117,9 @@ class PortTriggering {
   final List<PortTrigger> items;
 
   const PortTriggering({required this.items});
+
+  @override
+  String toString() => 'PortTriggering(items: $items)';
 
   static const _paths = [
     'Device.NAT.PortTrigger.*.Enable',
@@ -97,21 +153,6 @@ class PortTriggering {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}Enable'],
-        response['${p}Description'],
-        response['${p}Port'],
-        response['${p}PortEndRange'],
-        response['${p}Protocol']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final childBase_0 = '${p}Rule.';
       final childIds_0 = <String>{};
       for (final key in response.keys) {
@@ -127,6 +168,19 @@ class PortTriggering {
       final rules = <PortTriggerForwardRule>[];
       for (final cid_0 in childSorted_0) {
         final cp_0 = '$childBase_0$cid_0.';
+        final missing = <String>[];
+        if (!response.containsKey('${cp_0}Port')) {
+          missing.add('${cp_0}Port');
+        }
+        if (!response.containsKey('${cp_0}PortEndRange')) {
+          missing.add('${cp_0}PortEndRange');
+        }
+        if (!response.containsKey('${cp_0}Protocol')) {
+          missing.add('${cp_0}Protocol');
+        }
+        if (missing.isNotEmpty) {
+          throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+        }
         rules.add(PortTriggerForwardRule(
           instancePath: cp_0,
           forwardPort:
@@ -172,10 +226,8 @@ class PortTriggering {
     return PortTriggering(items: items);
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-      UspClient client, List<PortTriggerUpdate> updates,
-      {bool allowPartial = false}) async {
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams(List<PortTriggerUpdate> updates) {
     final params = <String, dynamic>{};
     for (final update in updates) {
       if (update.enabled != null) {
@@ -195,6 +247,14 @@ class PortTriggering {
         params['${update.instancePath}Protocol'] = update.triggerProtocol;
       }
     }
+    return params;
+  }
+
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+      UspClient client, List<PortTriggerUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateParams(updates);
     if (params.isEmpty) {
       return {
         'success': true,
@@ -248,5 +308,76 @@ class PortTriggering {
   static Future<Map<String, dynamic>> deletePortTriggerForwardRule(
       UspClient client, String instancePath) async {
     return await client.delete([instancePath]);
+  }
+
+  /// Add PortTriggerForwardRule rows, each under its own parent, in one USP Add
+  static Future<Map<String, dynamic>> addRules(
+      UspClient client, List<PortTriggerForwardRuleAdd> rows,
+      {bool allowPartial = false}) async {
+    if (rows.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    final items = [
+      for (final row in rows)
+        {
+          'path': '${row.parentInstancePath}Rule.',
+          'params': <String, dynamic>{
+            if (row.forwardPort != null) 'Port': row.forwardPort,
+            if (row.forwardPortEndRange != null)
+              'PortEndRange': row.forwardPortEndRange,
+            if (row.forwardProtocol != null) 'Protocol': row.forwardProtocol,
+          },
+        },
+    ];
+    return await client.add(items, allowPartial: allowPartial);
+  }
+
+  /// Delete PortTriggerForwardRule rows by instancePath in one USP Delete
+  static Future<Map<String, dynamic>> deleteRules(
+      UspClient client, List<String> instancePaths,
+      {bool allowPartial = false}) async {
+    if (instancePaths.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    return await client.delete(instancePaths, allowPartial: allowPartial);
+  }
+
+  /// Build the Set params of updateRules() without sending them
+  static Map<String, dynamic> updateRulesParams(
+      List<PortTriggerForwardRuleUpdate> updates) {
+    final params = <String, dynamic>{};
+    for (final update in updates) {
+      if (update.forwardPort != null) {
+        params['${update.instancePath}Port'] = update.forwardPort;
+      }
+      if (update.forwardPortEndRange != null) {
+        params['${update.instancePath}PortEndRange'] =
+            update.forwardPortEndRange;
+      }
+      if (update.forwardProtocol != null) {
+        params['${update.instancePath}Protocol'] = update.forwardProtocol;
+      }
+    }
+    return params;
+  }
+
+  /// Update PortTriggerForwardRule rows, each through its own instancePath
+  static Future<Map<String, dynamic>> updateRules(
+      UspClient client, List<PortTriggerForwardRuleUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateRulesParams(updates);
+    if (params.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    return await client.set(params, allowPartial: allowPartial);
   }
 }

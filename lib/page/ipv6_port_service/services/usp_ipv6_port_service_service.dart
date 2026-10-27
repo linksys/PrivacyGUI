@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/ipv6port_service.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/_shared/utils/firewall_chain_pick.dart';
 import 'package:privacy_gui/page/_shared/services/batch_tally.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_page_data.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
@@ -34,7 +35,7 @@ class UspIpv6PortServiceService {
       return Ipv6PortServicePageData(
         rules: buildRuleUIModels(data),
         hiddenRuleDescriptions: {
-          for (final r in data.items)
+          for (final r in _defaultChainRules(data))
             if (!_isListed(r) && r.description.isNotEmpty) r.description,
         },
       );
@@ -70,7 +71,8 @@ class UspIpv6PortServiceService {
 
       // Delete in reverse instance order to avoid firmware renumbering issues
       for (final r in toDelete.reversed) {
-        final result = await Ipv6PortService.delete(_usp, [r.instancePath!]);
+        final result =
+            await Ipv6PortService.deleteRules(_usp, [r.instancePath!]);
         tally.record('Delete', UspResultParser.parseDeleteResult(result));
       }
 
@@ -103,28 +105,30 @@ class UspIpv6PortServiceService {
       }
 
       if (toUpdate.isNotEmpty) {
-        final result = await Ipv6PortService.update(_usp, toUpdate);
+        final result = await Ipv6PortService.updateRules(_usp, toUpdate);
         tally.record('Update', UspResultParser.parseSetResult(result));
       }
 
       // 3. Add (instancePath == null → new)
       final toAdd = current.where((r) => r.instancePath == null).toList();
       if (toAdd.isNotEmpty) {
-        final result = await Ipv6PortService.add(
+        final chainPath = await _defaultChainPath();
+        final result = await Ipv6PortService.addRules(
           _usp,
           toAdd
-              .map((r) => {
-                    'Enable': r.enabled,
-                    'Description': r.description,
-                    'IPVersion': 6,
-                    'DestIP': r.ipv6Address,
-                    'DestPort': r.startPort,
-                    'DestPortRangeMax': r.endPort,
-                    'Protocol': mapDisplayToIana(r.protocol),
+              .map((r) => Ipv6PortServiceRuleAdd(
+                    parentInstancePath: chainPath,
+                    enable: r.enabled,
+                    description: r.description,
+                    ipVersion: 6,
+                    destIp: r.ipv6Address,
+                    destPort: r.startPort,
+                    destPortRangeMax: r.endPort,
+                    protocol: mapDisplayToIana(r.protocol),
                     // FW runs its checks when Target is written, so it goes
                     // last.
-                    'Target': 'Accept',
-                  })
+                    target: 'Accept',
+                  ))
               .toList(),
         );
         tally.record('Add', UspResultParser.parseAddResult(result));
@@ -180,7 +184,7 @@ class UspIpv6PortServiceService {
   /// Filter to IPv6 user rules (IPVersion == 6, Target == Accept,
   /// not a system rule by CreationDate) and transform to UI models.
   List<Ipv6PortServiceRuleUIModel> buildRuleUIModels(Ipv6PortService data) {
-    return data.items
+    return _defaultChainRules(data)
         .where(_isListed)
         .map((r) => Ipv6PortServiceRuleUIModel(
               instancePath: r.instancePath,
@@ -192,6 +196,23 @@ class UspIpv6PortServiceService {
               endPort: r.destPortRangeMax,
             ))
         .toList();
+  }
+
+  /// The rules of the `Defaults Configuration` chain, where the router keeps
+  /// these rules; none when the router lists no such chain.
+  static List<Ipv6PortServiceRule> _defaultChainRules(Ipv6PortService data) =>
+      defaultFirewallChainOf(data.items, (c) => c.name)?.rules ??
+      const <Ipv6PortServiceRule>[];
+
+  /// The path new rules are added under: the default chain's.
+  Future<String> _defaultChainPath() async {
+    final chain = defaultFirewallChainOf(
+        (await Ipv6PortService.fetch(_usp)).items, (c) => c.name);
+    if (chain == null) {
+      throw const ResourceNotFoundError(
+          detail: 'No $defaultFirewallChainName chain on the router');
+    }
+    return chain.instancePath;
   }
 
   static bool _isListed(Ipv6PortServiceRule r) =>

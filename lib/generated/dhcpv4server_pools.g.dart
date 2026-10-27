@@ -23,6 +23,19 @@ class Dhcpv4ServerPool {
     required this.leaseTime,
     this.interface_,
   });
+
+  @override
+  String toString() {
+    return 'Dhcpv4ServerPool('
+        'instancePath: $instancePath, '
+        'alias: $alias, '
+        'enable: $enable, '
+        'minAddress: $minAddress, '
+        'maxAddress: $maxAddress, '
+        'leaseTime: $leaseTime, '
+        'interface_: $interface_'
+        ')';
+  }
 }
 
 /// Update descriptor for Dhcpv4ServerPool instances
@@ -47,6 +60,9 @@ class Dhcpv4ServerPools {
   final List<Dhcpv4ServerPool> items;
 
   const Dhcpv4ServerPools({required this.items});
+
+  @override
+  String toString() => 'Dhcpv4ServerPools(items: $items)';
 
   static const _paths = [
     'Device.DHCPv4.Server.Pool.*.Alias',
@@ -78,22 +94,6 @@ class Dhcpv4ServerPools {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}Alias'],
-        response['${p}Enable'],
-        response['${p}MinAddress'],
-        response['${p}MaxAddress'],
-        response['${p}LeaseTime'],
-        response['${p}Interface']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final missing = <String>[];
       if (!response.containsKey('${p}Enable')) {
         missing.add('${p}Enable');
@@ -130,10 +130,9 @@ class Dhcpv4ServerPools {
     return Dhcpv4ServerPools(items: items);
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-      UspClient client, List<Dhcpv4ServerPoolUpdate> updates,
-      {bool allowPartial = false}) async {
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams(
+      List<Dhcpv4ServerPoolUpdate> updates) {
     final params = <String, dynamic>{};
     for (final update in updates) {
       if (update.enable != null) {
@@ -149,6 +148,14 @@ class Dhcpv4ServerPools {
         params['${update.instancePath}LeaseTime'] = update.leaseTime;
       }
     }
+    return params;
+  }
+
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+      UspClient client, List<Dhcpv4ServerPoolUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateParams(updates);
     if (params.isEmpty) {
       return {
         'success': true,

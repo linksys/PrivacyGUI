@@ -283,6 +283,18 @@ void main() {
       expect(mapUspErrorToServiceError(raw), isA<ResourceNotFoundError>());
     });
 
+    test(
+        'maps codegen 9996 (no instance matches resolveBy) to '
+        'ResourceNotFoundError', () {
+      // Thrown by the generated `_resolveInstance` when no row has the Alias it
+      // resolves by: this firmware has no such instance.
+      const raw = 'Get failed: Could not resolve Device.IP.Interface instance '
+          'with Alias=wan (code: 9996)';
+      final error = mapUspErrorToServiceError(raw);
+      expect(error, isA<ResourceNotFoundError>());
+      expect(error.code, 9996);
+    });
+
     test('maps Protocol fault 9008 to InvalidInputError', () {
       const raw =
           'Set failed: Protocol error: Decoding error: Received error response: '

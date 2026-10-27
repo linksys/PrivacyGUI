@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/tr181_path.dart';
+import 'package:privacy_gui/generated/dhcpv4clients.g.dart';
 import 'package:privacy_gui/generated/dhcpv6clients.g.dart';
 import 'package:privacy_gui/generated/gre_tunnels.g.dart';
 import 'package:privacy_gui/generated/ipv6rd_settings.g.dart';
@@ -12,6 +14,7 @@ import 'package:privacy_gui/generated/ppp_interface.g.dart';
 import 'package:privacy_gui/generated/vlan_termination.g.dart';
 import 'package:privacy_gui/generated/wan_operations.g.dart';
 import 'package:privacy_gui/generated/wan_settings.g.dart';
+import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_read_only_info.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
@@ -148,18 +151,22 @@ class UspInternetSettingsService {
   }
 
   /// The DHCPv6 client bound to the WAN interface.
+  static Dhcpv6Client? _wanDhcpv6Client(
+          Dhcpv6Clients clients, String wanPath) =>
+      _wanDhcpClientOf(clients.items, wanPath, (c) => c.interface_);
+
+  /// The row of [clients] whose `Interface` is [wanPath], or null when none is.
   ///
-  /// `Device.DHCPv6.Client.{i}.Interface` names the IP.Interface the client
+  /// `Device.DHCPv{4,6}.Client.{i}.Interface` names the IP.Interface the client
   /// runs on, with or without the trailing dot.
-  static Dhcpv6Client? _wanDhcpv6Client(Dhcpv6Clients clients, String wanPath) {
-    final wan = wanPath.endsWith('.')
-        ? wanPath.substring(0, wanPath.length - 1)
-        : wanPath;
-    for (final client in clients.items) {
-      final iface = client.interface_.endsWith('.')
-          ? client.interface_.substring(0, client.interface_.length - 1)
-          : client.interface_;
-      if (iface == wan) return client;
+  static T? _wanDhcpClientOf<T>(
+    Iterable<T> clients,
+    String wanPath,
+    String Function(T client) interfaceOf,
+  ) {
+    final wan = ensureTrailingDot(wanPath);
+    for (final client in clients) {
+      if (ensureTrailingDot(interfaceOf(client)) == wan) return client;
     }
     return null;
   }
@@ -745,22 +752,54 @@ class UspInternetSettingsService {
   // DHCP Renewal
   // ---------------------------------------------------------------------------
 
+  /// Renews the DHCPv4 lease of the client bound to the WAN interface.
+  ///
+  /// Throws [ResourceNotFoundError] when no client is bound to the WAN, so a
+  /// renew never lands on a guessed `Client.1`.
   Future<void> renewDhcpLease() async {
     try {
-      await WanOperations.renewDhcpLease(_usp);
+      final results = await Future.wait([
+        WanStatus.fetch(_usp),
+        Dhcpv4Clients.fetch(_usp),
+      ]);
+      final client = _wanDhcpClientOf((results[1] as Dhcpv4Clients).items,
+          (results[0] as WanStatus).instancePath, (c) => c.interface_);
+      await WanOperations.renewDhcpLease(
+          _usp, _clientInstance(client?.instancePath, 'DHCPv4'));
     } catch (e) {
       if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
 
+  /// Renews the DHCPv6 lease of the client bound to the WAN interface.
+  /// Throws like [renewDhcpLease].
   Future<void> renewDhcpv6Lease() async {
     try {
-      await WanOperations.renewDhcpv6Lease(_usp);
+      final results = await Future.wait([
+        WanStatus.fetch(_usp),
+        Dhcpv6Clients.fetch(_usp),
+      ]);
+      final client = _wanDhcpv6Client(
+          results[1] as Dhcpv6Clients, (results[0] as WanStatus).instancePath);
+      await WanOperations.renewDhcpv6Lease(
+          _usp, _clientInstance(client?.instancePath, 'DHCPv6'));
     } catch (e) {
       if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
+  }
+
+  /// The instance number in a DHCP client's [instancePath].
+  static int _clientInstance(String? instancePath, String protocol) {
+    final match = instancePath == null
+        ? null
+        : RegExp(r'\.(\d+)\.$').firstMatch(instancePath);
+    if (match == null) {
+      throw ResourceNotFoundError(
+          detail: 'No $protocol client is bound to the WAN interface');
+    }
+    return int.parse(match.group(1)!);
   }
 
   // ---------------------------------------------------------------------------

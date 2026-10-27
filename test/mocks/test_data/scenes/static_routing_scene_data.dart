@@ -27,7 +27,6 @@ const route1 = StaticRouteUIModel(
   destSubnetMask: '255.0.0.0',
   gatewayIpAddress: '192.168.1.1',
   interfaceName: 'WAN',
-  interfacePath: 'Device.IP.Interface.1.',
 );
 
 const route2 = StaticRouteUIModel(
@@ -38,7 +37,6 @@ const route2 = StaticRouteUIModel(
   destSubnetMask: '255.240.0.0',
   gatewayIpAddress: '192.168.1.254',
   interfaceName: 'LAN',
-  interfacePath: 'Device.IP.Interface.2.',
 );
 
 const disabledRoute = StaticRouteUIModel(
@@ -49,7 +47,6 @@ const disabledRoute = StaticRouteUIModel(
   destSubnetMask: '255.255.255.0',
   gatewayIpAddress: '192.168.1.100',
   interfaceName: 'WAN',
-  interfacePath: 'Device.IP.Interface.1.',
 );
 
 // ---------------------------------------------------------------------------
@@ -137,7 +134,6 @@ const _gateRoutes = [
     destSubnetMask: '255.255.255.255',
     gatewayIpAddress: '192.168.1.254',
     interfaceName: 'WAN',
-    interfacePath: 'Device.IP.Interface.1.',
   ),
 ];
 

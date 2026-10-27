@@ -230,6 +230,28 @@ void main() {
       expect(status.isLoading, isFalse);
     });
 
+    test('a DMZ row with every value blank is no entry: a save adds', () async {
+      // usp-codegen 0.18 returns such a row where 0.17 dropped it (#1654).
+      // Taken as the entry, a save would update it instead of adding one.
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            for (final leaf in [
+              'Enable',
+              'DestIP',
+              'SourcePrefix',
+              'Interface',
+              'Description',
+              'Status',
+            ])
+              'Device.Firewall.DMZ.4.$leaf': '',
+          });
+
+      final (settings, _) = await service.fetch();
+
+      expect(settings.instancePath, isNull);
+      expect(settings.isNewEntry, isTrue);
+      expect(settings.model.isEnabled, isFalse);
+    });
+
     test('returns settings with null instancePath when empty', () async {
       when(() => mockUsp.get(any()))
           .thenAnswer((_) async => <String, dynamic>{});

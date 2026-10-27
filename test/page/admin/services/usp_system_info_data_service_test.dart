@@ -55,6 +55,27 @@ void main() {
   });
 
   group('UspSystemInfoDataService — fetch', () {
+    test('a firmware image row with every value blank is no image', () async {
+      // usp-codegen 0.18 returns a row with every value blank where 0.17
+      // dropped it (#1654).
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List;
+        if (paths.any((p) => p.toString().contains('Manufacturer'))) {
+          return systemInfoResponse;
+        }
+        return {
+          ...firmwareImagesResponse,
+          'Device.DeviceInfo.FirmwareImage.4.Name': '',
+          'Device.DeviceInfo.FirmwareImage.4.Version': '',
+          'Device.DeviceInfo.FirmwareImage.4.Status': '',
+          'Device.DeviceInfo.FirmwareImage.4.Available': false,
+        };
+      });
+
+      expect((await svc.fetch()).firmwareImages, hasLength(2));
+    });
+
     test('maps all system info fields', () async {
       stubAllFetches();
 

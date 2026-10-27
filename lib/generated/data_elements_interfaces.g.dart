@@ -15,6 +15,15 @@ class MeshNeighbor {
     required this.id,
     this.isIeee1905,
   });
+
+  @override
+  String toString() {
+    return 'MeshNeighbor('
+        'instancePath: $instancePath, '
+        'id: $id, '
+        'isIeee1905: $isIeee1905'
+        ')';
+  }
 }
 
 /// Nested instance from parent multi-instance table
@@ -30,6 +39,16 @@ class MeshInterface {
     this.mediaType,
     required this.neighbors,
   });
+
+  @override
+  String toString() {
+    return 'MeshInterface('
+        'instancePath: $instancePath, '
+        'macAddress: $macAddress, '
+        'mediaType: $mediaType, '
+        'neighbors: $neighbors'
+        ')';
+  }
 }
 
 /// Single instance from DataElementsInterfaces
@@ -43,6 +62,15 @@ class MeshNodeInterfaces {
     required this.id,
     required this.interfaces,
   });
+
+  @override
+  String toString() {
+    return 'MeshNodeInterfaces('
+        'instancePath: $instancePath, '
+        'id: $id, '
+        'interfaces: $interfaces'
+        ')';
+  }
 }
 
 /// EasyMesh per-node interfaces and their IEEE 1905 and non-1905 neighbors (Wi-Fi Alliance Data Elements, not BBF TR-181)
@@ -50,6 +78,9 @@ class DataElementsInterfaces {
   final List<MeshNodeInterfaces> items;
 
   const DataElementsInterfaces({required this.items});
+
+  @override
+  String toString() => 'DataElementsInterfaces(items: $items)';
 
   static const _paths = [
     'Device.WiFi.DataElements.Network.Device.*.ID',
@@ -80,15 +111,6 @@ class DataElementsInterfaces {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([response['${p}ID']].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final childBase_0 = '${p}Interface.';
       final childIds_0 = <String>{};
       for (final key in response.keys) {
@@ -119,6 +141,13 @@ class DataElementsInterfaces {
         final neighbors = <MeshNeighbor>[];
         for (final cid_1 in childSorted_1) {
           final cp_1 = '$childBase_1$cid_1.';
+          final missing = <String>[];
+          if (!response.containsKey('${cp_1}ID')) {
+            missing.add('${cp_1}ID');
+          }
+          if (missing.isNotEmpty) {
+            throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+          }
           neighbors.add(MeshNeighbor(
             instancePath: cp_1,
             id: (response['${cp_1}ID'] ?? '') as String,
@@ -128,6 +157,13 @@ class DataElementsInterfaces {
                     response['${cp_1}IsIEEE1905'] == '1')
                 : null,
           ));
+        }
+        final missing = <String>[];
+        if (!response.containsKey('${cp_0}MACAddress')) {
+          missing.add('${cp_0}MACAddress');
+        }
+        if (missing.isNotEmpty) {
+          throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
         }
         interfaces.add(MeshInterface(
           instancePath: cp_0,

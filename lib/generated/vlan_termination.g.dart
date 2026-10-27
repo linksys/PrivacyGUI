@@ -9,11 +9,13 @@ class VlanTerminationInstance {
   final String instancePath;
   final bool enable;
   final int vlanId;
+  final int? vlanPriority;
 
   const VlanTerminationInstance({
     required this.instancePath,
     required this.enable,
     required this.vlanId,
+    this.vlanPriority,
   });
 
   @override
@@ -21,7 +23,8 @@ class VlanTerminationInstance {
     return 'VlanTerminationInstance('
         'instancePath: $instancePath, '
         'enable: $enable, '
-        'vlanId: $vlanId'
+        'vlanId: $vlanId, '
+        'vlanPriority: $vlanPriority'
         ')';
   }
 }
@@ -31,11 +34,13 @@ class VlanTerminationInstanceUpdate {
   final String instancePath;
   final bool? enable;
   final int? vlanId;
+  final int? vlanPriority;
 
   const VlanTerminationInstanceUpdate({
     required this.instancePath,
     this.enable,
     this.vlanId,
+    this.vlanPriority,
   });
 }
 
@@ -51,6 +56,7 @@ class VlanTermination {
   static const _paths = [
     'Device.Ethernet.VLANTermination.*.Enable',
     'Device.Ethernet.VLANTermination.*.VLANID',
+    'Device.Ethernet.VLANTermination.*.VLANPriority',
   ];
 
   /// Fetch all instances via USP Get message
@@ -90,6 +96,9 @@ class VlanTermination {
             response['${p}Enable'] == 'true' ||
             response['${p}Enable'] == '1',
         vlanId: int.tryParse(response['${p}VLANID']?.toString() ?? '') ?? 0,
+        vlanPriority: response.containsKey('${p}VLANPriority')
+            ? int.tryParse(response['${p}VLANPriority']?.toString() ?? '')
+            : null,
       ));
     }
     return VlanTermination(items: items);
@@ -105,6 +114,9 @@ class VlanTermination {
       }
       if (update.vlanId != null) {
         params['${update.instancePath}VLANID'] = update.vlanId;
+      }
+      if (update.vlanPriority != null) {
+        params['${update.instancePath}VLANPriority'] = update.vlanPriority;
       }
     }
     return params;

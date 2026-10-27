@@ -17,6 +17,16 @@ class MacFilterAccessPoint {
     required this.macAddressControlEnabled,
     required this.allowedMACAddress,
   });
+
+  @override
+  String toString() {
+    return 'MacFilterAccessPoint('
+        'instancePath: $instancePath, '
+        'ssidReference: $ssidReference, '
+        'macAddressControlEnabled: $macAddressControlEnabled, '
+        'allowedMACAddress: $allowedMACAddress'
+        ')';
+  }
 }
 
 /// Update descriptor for MacFilterAccessPoint instances
@@ -37,6 +47,9 @@ class MacFilterAccessPoints {
   final List<MacFilterAccessPoint> items;
 
   const MacFilterAccessPoints({required this.items});
+
+  @override
+  String toString() => 'MacFilterAccessPoints(items: $items)';
 
   static const _paths = [
     'Device.WiFi.AccessPoint.*.SSIDReference',
@@ -65,19 +78,6 @@ class MacFilterAccessPoints {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}SSIDReference'],
-        response['${p}MACAddressControlEnabled'],
-        response['${p}AllowedMACAddress']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final missing = <String>[];
       if (!response.containsKey('${p}SSIDReference')) {
         missing.add('${p}SSIDReference');
@@ -104,10 +104,9 @@ class MacFilterAccessPoints {
     return MacFilterAccessPoints(items: items);
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-      UspClient client, List<MacFilterAccessPointUpdate> updates,
-      {bool allowPartial = false}) async {
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams(
+      List<MacFilterAccessPointUpdate> updates) {
     final params = <String, dynamic>{};
     for (final update in updates) {
       if (update.macAddressControlEnabled != null) {
@@ -119,6 +118,14 @@ class MacFilterAccessPoints {
             update.allowedMACAddress;
       }
     }
+    return params;
+  }
+
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+      UspClient client, List<MacFilterAccessPointUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateParams(updates);
     if (params.isEmpty) {
       return {
         'success': true,

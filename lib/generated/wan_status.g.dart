@@ -4,22 +4,45 @@
 
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
-/// WAN interface status, IPv4 configuration, and IPv6 enable flag
-class WanStatus {
-  final String status;
+/// Nested instance from parent multi-instance table
+class WanStatusIpv4Address {
+  final String instancePath;
   final String ipAddress;
   final String subnetMask;
   final String addressingType;
-  final int maxMtuSize;
-  final bool ipv6Enabled;
 
-  const WanStatus({
-    required this.status,
+  const WanStatusIpv4Address({
+    required this.instancePath,
     required this.ipAddress,
     required this.subnetMask,
     required this.addressingType,
+  });
+
+  @override
+  String toString() {
+    return 'WanStatusIpv4Address('
+        'instancePath: $instancePath, '
+        'ipAddress: $ipAddress, '
+        'subnetMask: $subnetMask, '
+        'addressingType: $addressingType'
+        ')';
+  }
+}
+
+/// WAN interface status, IPv4 address table, and IPv6 enable flag
+class WanStatus {
+  final String instancePath;
+  final String status;
+  final int maxMtuSize;
+  final bool ipv6Enabled;
+  final List<WanStatusIpv4Address> ipv4Addresses;
+
+  const WanStatus({
+    required this.instancePath,
+    required this.status,
     required this.maxMtuSize,
     required this.ipv6Enabled,
+    required this.ipv4Addresses,
   });
 
   /// Resolve the instance index by searching for Alias='wan'
@@ -34,18 +57,17 @@ class WanStatus {
         }
       }
     }
-    // Fallback to hardcoded instance 2
-    return 'Device.IP.Interface.2.';
+    throw 'Get failed: Could not resolve Device.IP.Interface instance with Alias=wan (code: 9996)';
   }
 
   /// Build parameter paths using the resolved instance path
   static List<String> _buildPaths(String instancePath) => [
         '${instancePath}Status',
-        '${instancePath}IPv4Address.1.IPAddress',
-        '${instancePath}IPv4Address.1.SubnetMask',
-        '${instancePath}IPv4Address.1.AddressingType',
         '${instancePath}MaxMTUSize',
         '${instancePath}IPv6Enable',
+        '${instancePath}IPv4Address.*.IPAddress',
+        '${instancePath}IPv4Address.*.SubnetMask',
+        '${instancePath}IPv4Address.*.AddressingType',
       ];
 
   /// Fetch all parameters via USP Get message
@@ -61,15 +83,6 @@ class WanStatus {
     if (!response.containsKey('${instancePath}Status')) {
       missing.add('${instancePath}Status');
     }
-    if (!response.containsKey('${instancePath}IPv4Address.1.IPAddress')) {
-      missing.add('${instancePath}IPv4Address.1.IPAddress');
-    }
-    if (!response.containsKey('${instancePath}IPv4Address.1.SubnetMask')) {
-      missing.add('${instancePath}IPv4Address.1.SubnetMask');
-    }
-    if (!response.containsKey('${instancePath}IPv4Address.1.AddressingType')) {
-      missing.add('${instancePath}IPv4Address.1.AddressingType');
-    }
     if (!response.containsKey('${instancePath}MaxMTUSize')) {
       missing.add('${instancePath}MaxMTUSize');
     }
@@ -79,21 +92,50 @@ class WanStatus {
     if (missing.isNotEmpty) {
       throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
+    final childBase_0 = '${instancePath}IPv4Address.';
+    final childIds_0 = <String>{};
+    for (final key in response.keys) {
+      if (key.startsWith(childBase_0)) {
+        final rest = key.substring(childBase_0.length);
+        final dot = rest.indexOf('.');
+        if (dot > 0) childIds_0.add(rest.substring(0, dot));
+      }
+    }
+    final childSorted_0 = childIds_0.toList()
+      ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+    final ipv4Addresses = <WanStatusIpv4Address>[];
+    for (final cid_0 in childSorted_0) {
+      final cp_0 = '$childBase_0$cid_0.';
+      final missing = <String>[];
+      if (!response.containsKey('${cp_0}IPAddress')) {
+        missing.add('${cp_0}IPAddress');
+      }
+      if (!response.containsKey('${cp_0}SubnetMask')) {
+        missing.add('${cp_0}SubnetMask');
+      }
+      if (!response.containsKey('${cp_0}AddressingType')) {
+        missing.add('${cp_0}AddressingType');
+      }
+      if (missing.isNotEmpty) {
+        throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+      }
+      ipv4Addresses.add(WanStatusIpv4Address(
+        instancePath: cp_0,
+        ipAddress: (response['${cp_0}IPAddress'] ?? '') as String,
+        subnetMask: (response['${cp_0}SubnetMask'] ?? '') as String,
+        addressingType: (response['${cp_0}AddressingType'] ?? '') as String,
+      ));
+    }
     return WanStatus(
+      instancePath: instancePath,
       status: (response['${instancePath}Status'] ?? '') as String,
-      ipAddress:
-          (response['${instancePath}IPv4Address.1.IPAddress'] ?? '') as String,
-      subnetMask:
-          (response['${instancePath}IPv4Address.1.SubnetMask'] ?? '') as String,
-      addressingType:
-          (response['${instancePath}IPv4Address.1.AddressingType'] ?? '')
-              as String,
       maxMtuSize: int.tryParse(
               response['${instancePath}MaxMTUSize']?.toString() ?? '') ??
           0,
       ipv6Enabled: response['${instancePath}IPv6Enable'] == true ||
           response['${instancePath}IPv6Enable'] == 'true' ||
           response['${instancePath}IPv6Enable'] == '1',
+      ipv4Addresses: ipv4Addresses,
     );
   }
 
@@ -110,12 +152,11 @@ class WanStatus {
   @override
   String toString() {
     return 'WanStatus('
+        'instancePath: $instancePath, '
         'status: $status, '
-        'ipAddress: $ipAddress, '
-        'subnetMask: $subnetMask, '
-        'addressingType: $addressingType, '
         'maxMtuSize: $maxMtuSize, '
-        'ipv6Enabled: $ipv6Enabled'
+        'ipv6Enabled: $ipv6Enabled, '
+        'ipv4Addresses: $ipv4Addresses'
         ')';
   }
 }

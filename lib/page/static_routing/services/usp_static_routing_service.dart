@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
+import 'package:privacy_gui/core/utils/tr181_path.dart';
 import 'package:privacy_gui/generated/dynamic_routing.g.dart';
 import 'package:privacy_gui/generated/static_routing.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/services/batch_tally.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_ui_model.dart';
 
@@ -14,32 +16,76 @@ final uspStaticRoutingServiceProvider = Provider<UspStaticRoutingService>(
 
 /// Service layer for Static Routing — encapsulates codegen CRUD + transform.
 class UspStaticRoutingService {
+  /// The display name of each interface a route can use, by `Alias`.
+  static const _displayByAlias = {
+    lanInterfaceAlias: 'LAN',
+    wanInterfaceAlias: 'Internet',
+  };
+
   final UspClient _usp;
 
   UspStaticRoutingService(this._usp);
-
-  static const _interfaceMap = {
-    'Device.IP.Interface.1': 'LAN',
-    'Device.IP.Interface.2': 'Internet',
-  };
-
-  static const _reverseInterfaceMap = {
-    'LAN': 'Device.IP.Interface.1',
-    'Internet': 'Device.IP.Interface.2',
-  };
 
   // ---------------------------------------------------------------------------
   // CRUD
   // ---------------------------------------------------------------------------
 
   /// Fetch static routes and transform to UI models.
+  ///
+  /// The interface names only label the routes, so a failed Alias read shows
+  /// each route's interface path instead of failing the list.
   Future<List<StaticRouteUIModel>> fetch() async {
     try {
-      final data = await StaticRouting.fetch(_usp);
-      return buildRouteUIModels(data);
+      final namesFuture = _interfaceNames().catchError((Object e) {
+        logger.w('[StaticRouting]: Interface names unavailable: $e');
+        return const <String, String>{};
+      });
+      final routing = await StaticRouting.fetch(_usp);
+      return buildRouteUIModels(routing, await namesFuture);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
+  }
+
+  /// `Device.IP.Interface.{i}` → display name, for the lan and wan interfaces
+  /// as the router names them by `Alias`. The path has no trailing dot: it is
+  /// written as a route's `Interface` as it is.
+  Future<Map<String, String>> _interfaceNames() async {
+    final paths =
+        interfacePathsByAlias(await _usp.get(['Device.IP.Interface.*.Alias']));
+    return {
+      for (final MapEntry(key: alias, value: name) in _displayByAlias.entries)
+        if (paths[alias] case final path?)
+          path.substring(0, path.length - 1): name,
+    };
+  }
+
+  /// The interface path a route with [displayName] is written with.
+  ///
+  /// A name this page offers (LAN, Internet) must resolve: writing the name
+  /// itself as `Interface` would hand the router a value that is not a path.
+  /// Any other value is a path the route already had, and is written back.
+  static String _interfacePathOf(
+      String displayName, Map<String, String> interfaceNames) {
+    for (final entry in interfaceNames.entries) {
+      if (entry.value == displayName) return entry.key;
+    }
+    if (_displayByAlias.containsValue(displayName)) {
+      throw ResourceNotFoundError(
+          detail: 'No Device.IP.Interface for $displayName');
+    }
+    return displayName;
+  }
+
+  /// The router new routes are added under: the first one the router lists
+  /// (one on the bench).
+  Future<String> _routerPath() async {
+    final router = (await StaticRouting.fetch(_usp)).items.firstOrNull;
+    if (router == null) {
+      throw const ResourceNotFoundError(
+          detail: 'No Device.Routing.Router on the router');
+    }
+    return router.instancePath;
   }
 
   /// Batch save: diff original vs current, then Delete, Set and Add.
@@ -66,7 +112,6 @@ class UspStaticRoutingService {
   }) async {
     final tally = BatchTally('[StaticRouting]');
     try {
-      // 1. Delete (in original, not in current)
       final currentPaths = <String>{
         for (final r in current)
           if (r.instancePath != null) r.instancePath!,
@@ -75,60 +120,70 @@ class UspStaticRoutingService {
           .where((r) =>
               r.instancePath != null && !currentPaths.contains(r.instancePath))
           .toList();
-
-      // Delete in reverse instance order to avoid firmware renumbering issues
-      for (final r in toDelete.reversed) {
-        final result = await StaticRouting.delete(_usp, [r.instancePath!]);
-        tally.record('Delete', UspResultParser.parseDeleteResult(result));
-        tally.throwIfAnyFailed();
-      }
-
-      // 2. Update (same path, different content)
       final originalByPath = <String, StaticRouteUIModel>{
         for (final r in original)
           if (r.instancePath != null) r.instancePath!: r,
       };
+      final toChange = [
+        for (final cur in current)
+          if (cur.instancePath != null &&
+              originalByPath[cur.instancePath!] != null &&
+              cur != originalByPath[cur.instancePath!])
+            cur,
+      ];
+      final toAdd = current.where((r) => r.instancePath == null).toList();
 
-      final toUpdate = <StaticRouteUpdate>[];
-      for (final cur in current) {
-        if (cur.instancePath == null) continue;
-        final orig = originalByPath[cur.instancePath!];
-        if (orig == null) continue;
-        if (cur != orig) {
-          toUpdate.add(StaticRouteUpdate(
+      // Everything a step reads is read, and every row it writes is built,
+      // before the first step is sent: an interface or router that does not
+      // resolve stops the save with nothing written, not after a Delete.
+      final interfaceNames = toAdd.isEmpty && toChange.isEmpty
+          ? const <String, String>{}
+          : await _interfaceNames();
+      final toUpdate = [
+        for (final cur in toChange)
+          StaticRouteUpdate(
             instancePath: cur.instancePath!,
             enable: cur.enabled,
             destIpAddress: cur.destIpAddress,
             destSubnetMask: cur.destSubnetMask,
             gatewayIpAddress: cur.gatewayIpAddress,
-            interface_: mapDisplayToInterface(cur.interfaceName),
+            interface_: _interfacePathOf(cur.interfaceName, interfaceNames),
             alias: cur.name,
-          ));
-        }
+          ),
+      ];
+      final routerPath = toAdd.isEmpty ? null : await _routerPath();
+      final adds = [
+        for (final r in toAdd)
+          StaticRouteAdd(
+            parentInstancePath: routerPath!,
+            enable: r.enabled,
+            destIpAddress: r.destIpAddress,
+            destSubnetMask: r.destSubnetMask,
+            gatewayIpAddress: r.gatewayIpAddress,
+            interface_: _interfacePathOf(r.interfaceName, interfaceNames),
+            alias: r.name,
+          ),
+      ];
+
+      // 1. Delete (in original, not in current), in reverse instance order to
+      // avoid firmware renumbering issues
+      for (final r in toDelete.reversed) {
+        final result =
+            await StaticRouting.deleteForwardings(_usp, [r.instancePath!]);
+        tally.record('Delete', UspResultParser.parseDeleteResult(result));
+        tally.throwIfAnyFailed();
       }
 
+      // 2. Update (same path, different content)
       if (toUpdate.isNotEmpty) {
-        final result = await StaticRouting.update(_usp, toUpdate);
+        final result = await StaticRouting.updateForwardings(_usp, toUpdate);
         tally.record('Update', UspResultParser.parseSetResult(result));
         tally.throwIfAnyFailed();
       }
 
       // 3. Add (instancePath == null → new)
-      final toAdd = current.where((r) => r.instancePath == null).toList();
-      if (toAdd.isNotEmpty) {
-        final result = await StaticRouting.add(
-          _usp,
-          toAdd
-              .map((r) => {
-                    'Enable': r.enabled,
-                    'DestIPAddress': r.destIpAddress,
-                    'DestSubnetMask': r.destSubnetMask,
-                    'GatewayIPAddress': r.gatewayIpAddress,
-                    'Interface': mapDisplayToInterface(r.interfaceName),
-                    'Alias': r.name,
-                  })
-              .toList(),
-        );
+      if (adds.isNotEmpty) {
+        final result = await StaticRouting.addForwardings(_usp, adds);
         tally.record('Add', UspResultParser.parseAddResult(result));
         tally.throwIfAnyFailed();
       }
@@ -204,8 +259,15 @@ class UspStaticRoutingService {
   // ---------------------------------------------------------------------------
 
   /// Build UI models from codegen data, filtering to static routes only.
-  List<StaticRouteUIModel> buildRouteUIModels(StaticRouting data) {
+  ///
+  /// [interfaceNames] maps an interface path to its display name; a route on
+  /// any other interface shows its path.
+  List<StaticRouteUIModel> buildRouteUIModels(
+    StaticRouting data,
+    Map<String, String> interfaceNames,
+  ) {
     return data.items
+        .expand((router) => router.forwardings)
         .where((r) => r.origin == 'Static')
         .map((r) => StaticRouteUIModel(
               instancePath: r.instancePath,
@@ -214,14 +276,21 @@ class UspStaticRoutingService {
               destIpAddress: r.destIpAddress,
               destSubnetMask: r.destSubnetMask,
               gatewayIpAddress: r.gatewayIpAddress,
-              interfaceName: _interfaceMap[r.interface_] ?? r.interface_,
-              interfacePath: r.interface_,
+              interfaceName: _interfaceNameOf(r.interface_, interfaceNames),
             ))
         .toList();
   }
 
-  /// Convert display name back to TR-181 interface path.
-  String mapDisplayToInterface(String displayName) {
-    return _reverseInterfaceMap[displayName] ?? displayName;
+  /// The display name of the interface at [path], or [path] itself when it
+  /// is not one this page names. A route's `Interface` may or may not carry
+  /// a trailing dot.
+  static String _interfaceNameOf(
+      String path, Map<String, String> interfaceNames) {
+    for (final entry in interfaceNames.entries) {
+      if (ensureTrailingDot(entry.key) == ensureTrailingDot(path)) {
+        return entry.value;
+      }
+    }
+    return path;
   }
 }

@@ -2,9 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
-import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/page/instant_safety/models/safe_browsing_ui_model.dart';
 import 'package:privacy_gui/page/instant_safety/services/instant_safety_service.dart';
+
+import '../../../mocks/test_data/local_network_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -19,17 +20,8 @@ void main() {
 
   group('UspInstantSafetyService — buildUIModel', () {
     test('detects OpenDNS from matching first DNS entry', () {
-      final data = LanNetworkInfo(
-        ipAddress: '192.168.1.1',
-        subnetMask: '255.255.255.0',
-        dhcpEnabled: true,
-        minAddress: '192.168.1.100',
-        maxAddress: '192.168.1.200',
-        leaseTime: 86400,
-        dnsServers: '208.67.222.222,208.67.220.220',
-        hostName: 'router',
-        ipv6Enabled: false,
-      );
+      final data = LocalNetworkTestData.createLanDhcpPool(
+          dnsServers: '208.67.222.222,208.67.220.220');
 
       final model = service.buildUIModel(data);
 
@@ -39,17 +31,8 @@ void main() {
     });
 
     test('detects off when DNS is different', () {
-      final data = LanNetworkInfo(
-        ipAddress: '192.168.1.1',
-        subnetMask: '255.255.255.0',
-        dhcpEnabled: true,
-        minAddress: '192.168.1.100',
-        maxAddress: '192.168.1.200',
-        leaseTime: 86400,
-        dnsServers: '8.8.8.8,8.8.4.4',
-        hostName: 'router',
-        ipv6Enabled: false,
-      );
+      final data =
+          LocalNetworkTestData.createLanDhcpPool(dnsServers: '8.8.8.8,8.8.4.4');
 
       final model = service.buildUIModel(data);
 
@@ -58,17 +41,7 @@ void main() {
     });
 
     test('detects off when DNS is empty', () {
-      final data = LanNetworkInfo(
-        ipAddress: '192.168.1.1',
-        subnetMask: '255.255.255.0',
-        dhcpEnabled: true,
-        minAddress: '192.168.1.100',
-        maxAddress: '192.168.1.200',
-        leaseTime: 86400,
-        dnsServers: '',
-        hostName: 'router',
-        ipv6Enabled: false,
-      );
+      final data = LocalNetworkTestData.createLanDhcpPool(dnsServers: '');
 
       final model = service.buildUIModel(data);
 
@@ -91,18 +64,12 @@ void main() {
 
   group('UspInstantSafetyService — fetch', () {
     test('fetch returns SafeBrowsingUIModel from router data', () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async => {
-            'Device.IP.Interface.1.IPv4Address.1.IPAddress': '192.168.1.1',
-            'Device.IP.Interface.1.IPv4Address.1.SubnetMask': '255.255.255.0',
-            'Device.IP.Interface.1.IPv6Enable': false,
-            'Device.DHCPv4.Server.Pool.1.Enable': true,
-            'Device.DHCPv4.Server.Pool.1.MinAddress': '192.168.1.100',
-            'Device.DHCPv4.Server.Pool.1.MaxAddress': '192.168.1.200',
-            'Device.DHCPv4.Server.Pool.1.LeaseTime': '86400',
-            'Device.DHCPv4.Server.Pool.1.DNSServers':
-                '208.67.222.222,208.67.220.220',
-            'Device.DeviceInfo.HostName': 'router',
-          });
+      when(() => mockUsp.get(any()))
+          .thenAnswer((invocation) async => LocalNetworkTestData.answer(
+                invocation.positionalArguments[0] as List<String>,
+                lanPoolGet: LocalNetworkTestData.lanPoolResponse(
+                    dnsServers: '208.67.222.222,208.67.220.220'),
+              ));
 
       final model = await service.fetch();
 
@@ -112,12 +79,9 @@ void main() {
   });
 
   group('UspInstantSafetyService — save', () {
-    // Mock for _resolveInstance() in LanNetworkInfo.update()
-    // UspClient.get() returns flat Map<String, dynamic>, not WASM format
-    final aliasResponse = <String, dynamic>{
-      'Device.IP.Interface.1.Alias': 'lan',
-      'Device.IP.Interface.2.Alias': 'wan',
-    };
+    // LanDhcpPool.update resolves the pool by Alias: the guest pool on
+    // Pool.2, dhcp-lan on Pool.4.
+    final aliasResponse = LocalNetworkTestData.poolAliases();
 
     test('save(openDNS) writes OpenDNS values', () async {
       when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
@@ -131,10 +95,10 @@ void main() {
       final captured = verify(() => mockUsp.set(captureAny())).captured;
       expect(captured, hasLength(1));
       final params = captured.first as Map<String, dynamic>;
-      expect(
-        params['Device.DHCPv4.Server.Pool.1.DNSServers'],
-        '208.67.222.222,208.67.220.220',
-      );
+      expect(params, {
+        '${LocalNetworkTestData.lanPool}DNSServers':
+            '208.67.222.222,208.67.220.220',
+      });
     });
 
     test('save(off) writes empty string', () async {
@@ -148,17 +112,14 @@ void main() {
 
       final captured = verify(() => mockUsp.set(captureAny())).captured;
       final params = captured.first as Map<String, dynamic>;
-      expect(params['Device.DHCPv4.Server.Pool.1.DNSServers'], '');
+      expect(params, {'${LocalNetworkTestData.lanPool}DNSServers': ''});
     });
   });
 
   group('UspInstantSafetyService — error handling', () {
-    // Mock for _resolveInstance() in LanNetworkInfo.update()
-    // UspClient.get() returns flat Map<String, dynamic>, not WASM format
-    final aliasResponse = <String, dynamic>{
-      'Device.IP.Interface.1.Alias': 'lan',
-      'Device.IP.Interface.2.Alias': 'wan',
-    };
+    // LanDhcpPool.update resolves the pool by Alias: the guest pool on
+    // Pool.2, dhcp-lan on Pool.4.
+    final aliasResponse = LocalNetworkTestData.poolAliases();
 
     test('fetch maps USP error to ServiceError', () {
       when(() => mockUsp.get(any()))

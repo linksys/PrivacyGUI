@@ -28,8 +28,6 @@ void main() {
     routing = _MockStaticRoutingService();
     ipv6 = _MockIpv6PortServiceService();
     when(() => routing.fetch()).thenAnswer((_) async => const [route1]);
-    when(() => routing.mapDisplayToInterface(any()))
-        .thenAnswer((i) => i.positionalArguments.single as String);
     when(() => ipv6.fetch()).thenAnswer((_) async => testRules);
   });
 

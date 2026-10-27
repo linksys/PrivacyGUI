@@ -14,6 +14,8 @@ import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/internet_settings/services/usp_wan_data_service.dart';
 
+import '../../../mocks/test_data/internet_settings_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 /// A service-level mock, used only by the ordering group at the bottom of this file: those
@@ -25,73 +27,39 @@ class MockWanSvc extends Mock implements UspWanDataService {}
 void main() {
   late MockUspClient mockUsp;
 
-  /// Simulated WAN status response (Device.IP.Interface.2.*).
-  /// Includes IPv6Enable since WanStatus codegen v1.1.0 fetches it.
-  final wanStatusResponse = <String, dynamic>{
-    'Device.IP.Interface.2.Status': 'Up',
-    'Device.IP.Interface.2.IPv4Address.1.IPAddress': '100.64.0.10',
-    'Device.IP.Interface.2.IPv4Address.1.SubnetMask': '255.255.255.0',
-    'Device.IP.Interface.2.IPv4Address.1.AddressingType': 'DHCP',
-    'Device.IP.Interface.2.MaxMTUSize': '1500',
-    'Device.IP.Interface.2.IPv6Enable': true,
-  };
+  const wan = InternetSettingsTestData.wanInterface;
 
-  /// Simulated routing table response for gateway lookup.
-  /// StaticRouting validation requires all fields for each route instance.
-  final routingResponse = <String, dynamic>{
-    // Default route (0.0.0.0) on WAN interface
-    'Device.Routing.Router.1.IPv4Forwarding.1.Enable': true,
-    'Device.Routing.Router.1.IPv4Forwarding.1.DestIPAddress': '0.0.0.0',
-    'Device.Routing.Router.1.IPv4Forwarding.1.DestSubnetMask': '0.0.0.0',
-    'Device.Routing.Router.1.IPv4Forwarding.1.GatewayIPAddress': '100.64.0.1',
-    'Device.Routing.Router.1.IPv4Forwarding.1.Interface':
-        'Device.IP.Interface.2.',
-    'Device.Routing.Router.1.IPv4Forwarding.1.Origin': 'Static',
-    'Device.Routing.Router.1.IPv4Forwarding.1.Alias': 'DefaultRoute',
-    // LAN route
-    'Device.Routing.Router.1.IPv4Forwarding.2.Enable': true,
-    'Device.Routing.Router.1.IPv4Forwarding.2.DestIPAddress': '192.168.1.0',
-    'Device.Routing.Router.1.IPv4Forwarding.2.DestSubnetMask': '255.255.255.0',
-    'Device.Routing.Router.1.IPv4Forwarding.2.GatewayIPAddress': '0.0.0.0',
-    'Device.Routing.Router.1.IPv4Forwarding.2.Interface':
-        'Device.IP.Interface.1.',
-    'Device.Routing.Router.1.IPv4Forwarding.2.Origin': 'Static',
-    'Device.Routing.Router.1.IPv4Forwarding.2.Alias': 'LanRoute',
-  };
-
-  /// Simulated IPv6 response.
-  final ipv6Response = <String, dynamic>{
-    'Device.IP.Interface.2.IPv6Enable': true,
-    'Device.IP.Interface.2.IPv6Address.1.IPAddress': '2001:db8::1',
-    'Device.IP.Interface.2.IPv6Address.2.IPAddress': 'fe80::1',
-  };
+  /// Answers each GET of a WAN status read by its paths: the WAN on
+  /// Interface.5 with its address on row 3, two routers, and two IPv6
+  /// addresses. [routing] replaces the routing answer, or is thrown when it is
+  /// an [Exception]; [ipv6] is thrown in place of the IPv6 answer.
+  Future<Map<String, dynamic>> answer(Invocation invocation,
+      {Object? routing, Exception? ipv6}) async {
+    final paths = invocation.positionalArguments[0] as List<String>;
+    if (paths.contains('Device.IP.Interface.*.Alias')) {
+      return InternetSettingsTestData.interfaceAliases();
+    }
+    if (paths.contains('${wan}Enable')) return {'${wan}Enable': true};
+    if (paths.contains('${wan}Status')) {
+      return InternetSettingsTestData.wanStatus(
+          ipAddress: '100.64.0.10', ipv6Enabled: true);
+    }
+    if (paths.any((p) => p.startsWith('Device.Routing.'))) {
+      if (routing is Exception) throw routing;
+      return (routing as Map<String, dynamic>?) ??
+          InternetSettingsTestData.routing(gateway: '100.64.0.1');
+    }
+    if (paths.contains('${wan}IPv6Address.*.IPAddress')) {
+      if (ipv6 != null) throw ipv6;
+      return InternetSettingsTestData.wanIpv6Addresses(
+          ['2001:db8::1', 'fe80::1']);
+    }
+    return {};
+  }
 
   setUp(() {
     mockUsp = MockUspClient();
-
-    // Route usp.get() calls by path content.
-    //
-    // Service issues requests in parallel:
-    //   1. WanStatus.fetch  → Device.IP.Interface.2.Status, IPv6Enable, etc.
-    //   2. StaticRouting.fetch → Device.Routing.Router.1.IPv4Forwarding.*
-    //   3. WanIpv6Addresses.fetch → Device.IP.Interface.2.IPv6Address.*
-    //
-    // Distinguish by path patterns.
-    when(() => mockUsp.get(any())).thenAnswer((invocation) async {
-      final paths = invocation.positionalArguments[0] as List;
-      final joined = paths.join(',');
-
-      if (joined.contains('IPv4Forwarding')) {
-        // StaticRouting.fetch
-        return routingResponse;
-      }
-      if (joined.contains('IPv6Address')) {
-        // WanIpv6Addresses.fetch
-        return ipv6Response;
-      }
-      // WanStatus.fetch (includes IPv6Enable in its paths)
-      return wanStatusResponse;
-    });
+    when(() => mockUsp.get(any())).thenAnswer(answer);
   });
 
   ProviderContainer createContainer({Stream<InvalidationEvent>? sse}) {
@@ -159,9 +127,7 @@ void main() {
     // Gateway lookup
     // -----------------------------------------------------------------------
 
-    test(
-        'gateway found from default route (DestIPAddress 0.0.0.0 on Interface.2)',
-        () async {
+    test('gateway found from the default route on the WAN interface', () async {
       final container = createContainer();
       await Future.delayed(Duration.zero);
 
@@ -171,29 +137,9 @@ void main() {
     });
 
     test('gateway empty when no default route matches', () async {
-      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
-        final paths = invocation.positionalArguments[0] as List;
-        final joined = paths.join(',');
-
-        if (joined.contains('IPv4Forwarding')) {
-          // No route with DestIP 0.0.0.0 on Interface.2
-          return <String, dynamic>{
-            'Device.Routing.Router.1.IPv4Forwarding.1.Enable': true,
-            'Device.Routing.Router.1.IPv4Forwarding.1.DestIPAddress':
-                '192.168.1.0',
-            'Device.Routing.Router.1.IPv4Forwarding.1.DestSubnetMask':
-                '255.255.255.0',
-            'Device.Routing.Router.1.IPv4Forwarding.1.GatewayIPAddress':
-                '0.0.0.0',
-            'Device.Routing.Router.1.IPv4Forwarding.1.Interface':
-                'Device.IP.Interface.1.',
-            'Device.Routing.Router.1.IPv4Forwarding.1.Origin': 'Static',
-            'Device.Routing.Router.1.IPv4Forwarding.1.Alias': 'LanRoute',
-            ...ipv6Response,
-          };
-        }
-        return wanStatusResponse;
-      });
+      when(() => mockUsp.get(any())).thenAnswer((invocation) => answer(
+          invocation,
+          routing: InternetSettingsTestData.routing(hasDefaultRoute: false)));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -204,15 +150,8 @@ void main() {
     });
 
     test('gateway gracefully handles fetch failure', () async {
-      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
-        final paths = invocation.positionalArguments[0] as List;
-        final joined = paths.join(',');
-
-        if (joined.contains('IPv4Forwarding')) {
-          throw Exception('timeout');
-        }
-        return wanStatusResponse;
-      });
+      when(() => mockUsp.get(any())).thenAnswer(
+          (invocation) => answer(invocation, routing: Exception('timeout')));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -229,26 +168,20 @@ void main() {
     // -----------------------------------------------------------------------
 
     test('IPv6 gracefully handles fetch failure', () async {
-      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
-        final paths = invocation.positionalArguments[0] as List;
-        final joined = paths.join(',');
-
-        // The combined gateway+IPv6 call fails entirely — both gateway and
-        // IPv6 fall back to empty.
-        if (joined.contains('IPv4Forwarding')) {
-          throw Exception('not supported');
-        }
-        return wanStatusResponse;
-      });
+      // The IPv6 read fails: the addresses fall back to empty, and the gateway,
+      // read on its own, still loads.
+      when(() => mockUsp.get(any())).thenAnswer(
+          (invocation) => answer(invocation, ipv6: Exception('not supported')));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
 
       final data = container.read(wanDataProvider).requireValue;
       // ipv6Enabled comes from WanStatus.fetch (succeeds), addresses from
-      // the combined call (fails) — graceful degradation.
+      // the IPv6 read (fails) — graceful degradation.
       expect(data.model.ipv6Enabled, isTrue);
       expect(data.model.ipv6Addresses, isEmpty);
+      expect(data.model.gateway, '100.64.0.1');
       // Core WAN data still loads
       expect(data.model.ipAddress, '100.64.0.10');
       container.dispose();
@@ -322,8 +255,7 @@ void main() {
     int fetchRounds() => verify(() => mockUsp.get(captureAny()))
         .captured
         .cast<List>()
-        .where(
-            (paths) => paths.join(',').contains('Device.IP.Interface.2.Status'))
+        .where((paths) => paths.join(',').contains('${wan}Status'))
         .length;
 
     test('wanStatus domain re-fetches, and a repeat re-fetches again',

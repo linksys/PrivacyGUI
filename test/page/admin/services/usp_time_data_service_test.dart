@@ -124,6 +124,36 @@ void main() {
       expect(zones.first.timeZoneID, 'MHT12-NO-DST');
     });
 
+    test('a zone row with every value blank is no zone', () async {
+      // usp-codegen 0.18 returns a row with every value blank where 0.17
+      // dropped it (#1654).
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => {
+                ...TimeSettingsTestData.catalogueResponse(),
+                'Device.Time.X_LINKSYS_TimeZones.9.TimeZoneID': '',
+                'Device.Time.X_LINKSYS_TimeZones.9.UTCOffsetMinutes': '',
+                'Device.Time.X_LINKSYS_TimeZones.9.ObservesDST': '',
+                'Device.Time.X_LINKSYS_TimeZones.9.Description': '',
+              });
+
+      final zones = await svc.fetchZones();
+
+      expect(zones.map((z) => z.timeZoneID), ['PST8', 'JST-9-NO-DST']);
+    });
+
+    test('a catalogue of only blank zones falls back to the built-in list',
+        () async {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async => {
+                'Device.Time.X_LINKSYS_TimeZones.9.TimeZoneID': '',
+                'Device.Time.X_LINKSYS_TimeZones.9.UTCOffsetMinutes': '',
+                'Device.Time.X_LINKSYS_TimeZones.9.ObservesDST': '',
+                'Device.Time.X_LINKSYS_TimeZones.9.Description': '',
+              });
+
+      expect(await svc.fetchZones(), hasLength(39));
+    });
+
     test('a fault reading the catalogue falls back, it does not throw',
         () async {
       when(() => mockUsp.get(any(), priority: any(named: 'priority')))

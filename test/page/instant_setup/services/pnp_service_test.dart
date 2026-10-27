@@ -9,6 +9,8 @@ import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
 import 'package:privacy_gui/page/internet_settings/services/auto_ipoe_service.dart';
 
+import '../../../mocks/test_data/internet_settings_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 class MockAutoIPoEService extends Mock implements AutoIPoEService {}
@@ -57,6 +59,7 @@ void main() {
     'Device.PPP.Interface.1.ConnectionTrigger': 'AlwaysOn',
     'Device.PPP.Interface.1.IdleDisconnectTime': '0',
     'Device.PPP.Interface.1.LCPEcho': '30',
+    'Device.PPP.Interface.1.LCPEchoRetry': '5',
     'Device.PPP.Interface.1.ConnectionStatus': 'Connected',
     'Device.PPP.Interface.1.LowerLayers': 'Device.Ethernet.Link.2',
   };
@@ -168,79 +171,56 @@ void main() {
 
   // #1098: on FLWRT 2.0 a WAN with no connection has no IPv4Address row at all
   // (measured for #1615 on FW 2.0.2.26091803: Status `Dormant`,
-  // IPv4AddressNumberOfEntries `0`, IPv4Address.1.* absent). The 0.17 WanStatus
-  // reads the fixed row IPv4Address.1, so the check used to throw 9998 exactly
-  // when there was no internet, and PnP showed the read-failure card instead of
-  // the no-internet page. TEMPORARY with the helper it exercises: #1654.
+  // IPv4AddressNumberOfEntries `0`, no IPv4Address.{i} row). That is a WAN
+  // with no internet, which the no-internet page is for, not a router that
+  // cannot be read.
   group('PnpService.checkInternetConnected — WAN with no address (#1098)', () {
-    /// The router as measured with the WAN down. [entries] is what it reports
-    /// for IPv4AddressNumberOfEntries.
-    void stubWanWithNoAddress({String entries = '0'}) {
+    /// The WAN status read: the WAN on Interface.5, its address on row 3.
+    void stubWan({String status = 'Up', bool hasAddress = true}) {
       when(() => mockUsp.get(any())).thenAnswer((invocation) async {
         final paths = invocation.positionalArguments[0] as List<String>;
-        if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
-          return ipAliasResolutionResponse;
+        if (paths.contains('Device.IP.Interface.*.Alias')) {
+          return InternetSettingsTestData.interfaceAliases();
         }
-        if (paths.any((p) => p.contains('IPv4AddressNumberOfEntries'))) {
-          return {'Device.IP.Interface.2.IPv4AddressNumberOfEntries': entries};
-        }
-        if (paths.any((p) => p.contains('Device.IP.Interface.2.Status'))) {
-          // IPv4Address.1.* deliberately absent: this is what the router returns.
-          return {
-            'Device.IP.Interface.2.Status': 'Dormant',
-            'Device.IP.Interface.2.MaxMTUSize': '1500',
-            'Device.IP.Interface.2.IPv6Enable': false,
-          };
-        }
-        return {};
+        return InternetSettingsTestData.wanStatus(
+            status: status, ipAddress: '203.0.113.7', hasAddress: hasAddress);
       });
     }
 
     test('returns false instead of throwing when the WAN has no address',
         () async {
-      stubWanWithNoAddress();
+      stubWan(status: 'Dormant', hasAddress: false);
 
       expect(await service.checkInternetConnected(), isFalse,
           reason: 'no address row is a WAN with no internet, which the '
               'no-internet page is for, not a router that cannot be read');
     });
 
+    test('an Up WAN with no address is not connected', () async {
+      stubWan(hasAddress: false);
+
+      expect(await service.checkInternetConnected(), isFalse);
+    });
+
     test('still throws when every GET comes back empty', () async {
-      // #1098's original log: the router answered every GET with no data. The
-      // address count is then unreadable too, so this is not a confirmed
-      // no-address WAN and must stay a read failure (#1132).
+      // #1098's original log: the router answered every GET with no data. No
+      // WAN interface resolves, so this stays a read failure (#1132).
       when(() => mockUsp.get(any())).thenAnswer((_) async => {});
 
       await expectLater(
           service.checkInternetConnected(), throwsA(isA<ServiceError>()));
     });
 
-    test('still throws when the router says it HAS an address', () async {
-      // Same missing fields, but the router contradicts them, so this is a
-      // broken read and must stay a read failure.
-      stubWanWithNoAddress(entries: '1');
-
-      await expectLater(
-          service.checkInternetConnected(), throwsA(isA<ServiceError>()));
-    });
-
     test('a WAN that is up with an address still reads as connected', () async {
-      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
-        final paths = invocation.positionalArguments[0] as List<String>;
-        if (paths.any((p) => p.contains('IP.Interface.*.Alias'))) {
-          return ipAliasResolutionResponse;
-        }
-        return {
-          'Device.IP.Interface.2.Status': 'Up',
-          'Device.IP.Interface.2.IPv4Address.1.IPAddress': '203.0.113.7',
-          'Device.IP.Interface.2.IPv4Address.1.SubnetMask': '255.255.255.0',
-          'Device.IP.Interface.2.IPv4Address.1.AddressingType': 'DHCP',
-          'Device.IP.Interface.2.MaxMTUSize': '1500',
-          'Device.IP.Interface.2.IPv6Enable': false,
-        };
-      });
+      stubWan();
 
       expect(await service.checkInternetConnected(), isTrue);
+    });
+
+    test('a WAN with an address that is not Up is not connected', () async {
+      stubWan(status: 'Down');
+
+      expect(await service.checkInternetConnected(), isFalse);
     });
   });
 
@@ -250,16 +230,25 @@ void main() {
     test('DHCP: calls renewDhcpLease only, does not call fetchSettings/saveAll',
         () async {
       setupOperateMock();
+      // The renew reads the client table to find the client on the WAN:
+      // Client.6 (Client.3 runs on the LAN).
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async =>
+          InternetSettingsTestData.renewAnswer(
+              invocation.positionalArguments[0] as List<String>));
 
       const config = PnpIspConfig(type: IspConnectionType.dhcp);
 
       await service.saveIspSettings(config);
 
-      // Verify DHCP renew was called
-      verify(() => mockUsp.operate('Device.DHCPv4.Client.1.Renew()')).called(1);
+      // Verify DHCP renew was called on the WAN's client
+      verify(() => mockUsp.operate('Device.DHCPv4.Client.6.Renew()')).called(1);
 
-      // Verify NO fetch calls were made (fetchSettings not called)
-      verifyNever(() => mockUsp.get(any()));
+      // fetchSettings not called: nothing of WanSettings was read.
+      final requested = verify(() => mockUsp.get(captureAny()))
+          .captured
+          .cast<List<String>>()
+          .expand((paths) => paths);
+      expect(requested.where((p) => p.endsWith('X_LINKSYS_MTUMode')), isEmpty);
       // Verify NO set/add calls (saveAll not called)
       verifyNever(() => mockUsp.set(any()));
       verifyNever(
@@ -267,6 +256,33 @@ void main() {
       verifyNever(() =>
           mockUsp.setOrdered(any(), allowPartial: any(named: 'allowPartial')));
       verifyNever(() => mockUsp.add(any()));
+    });
+
+    test('DHCP: a failed read before the renew is a ServiceError', () async {
+      when(() => mockUsp.get(any()))
+          .thenThrow('Get failed: Transport error: Connection refused');
+
+      await expectLater(
+        service
+            .saveIspSettings(const PnpIspConfig(type: IspConnectionType.dhcp)),
+        throwsA(isA<ConnectivityError>()),
+      );
+      verifyNever(() => mockUsp.operate(any()));
+    });
+
+    test('DHCP: a WAN with no DHCPv4 client renews nothing and says so',
+        () async {
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async =>
+          InternetSettingsTestData.renewAnswer(
+              invocation.positionalArguments[0] as List<String>,
+              hasWanClient: false));
+
+      await expectLater(
+        service
+            .saveIspSettings(const PnpIspConfig(type: IspConnectionType.dhcp)),
+        throwsA(isA<ResourceNotFoundError>()),
+      );
+      verifyNever(() => mockUsp.operate(any()));
     });
 
     test('Static IP: fetches settings then writes the WAN IPv4 row in order',
@@ -647,6 +663,105 @@ void main() {
       // Guest AP paths must not leak into the main path list.
       expect(config.accessPointInstancePaths,
           isNot(contains('Device.WiFi.AccessPoint.3.')));
+    });
+  });
+
+  // usp-codegen 0.18 returns every row, including one with every value
+  // blank, which 0.17 dropped (#1654).
+  group('PnpService — rows with every value blank', () {
+    // Every SSID leaf present, every value blank, on a row before the real
+    // ones so a first-row pick would take it.
+    const blankSsid = <String, dynamic>{
+      'Device.WiFi.SSID.1.SSID': '',
+      'Device.WiFi.SSID.1.Enable': false,
+      'Device.WiFi.SSID.1.Status': '',
+      'Device.WiFi.SSID.1.BSSID': '',
+      'Device.WiFi.SSID.1.LowerLayers': '',
+      'Device.WiFi.SSID.1.Alias': '',
+    };
+    Map<String, dynamic> ssid(int i, String name, String radio, String alias) =>
+        {
+          'Device.WiFi.SSID.$i.SSID': name,
+          'Device.WiFi.SSID.$i.Enable': true,
+          'Device.WiFi.SSID.$i.Status': 'Up',
+          'Device.WiFi.SSID.$i.BSSID': 'AA:BB:CC:DD:EE:0$i',
+          'Device.WiFi.SSID.$i.LowerLayers': radio,
+          'Device.WiFi.SSID.$i.Alias': alias,
+        };
+
+    test('fetchCurrentSsid skips a blank first row', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            ...blankSsid,
+            ...ssid(3, 'MyHome', 'Device.WiFi.Radio.1.', 'wifi-2g'),
+          });
+
+      expect(await service.fetchCurrentSsid(), 'MyHome');
+    });
+
+    test('a blank SSID is no main band, so the wizard stays unified', () async {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((invocation) async {
+        final first = (invocation.positionalArguments[0] as List<String>).first;
+        if (first.startsWith('Device.WiFi.SSID.')) {
+          return {
+            ...blankSsid,
+            ...ssid(3, 'MyHome', 'Device.WiFi.Radio.1.', 'wifi-2g'),
+            ...ssid(4, 'MyHome', 'Device.WiFi.Radio.2.', 'wifi-5g'),
+          };
+        }
+        if (first.startsWith('Device.WiFi.Radio.')) {
+          return {
+            for (final i in [1, 2]) ...{
+              'Device.WiFi.Radio.$i.Enable': true,
+              'Device.WiFi.Radio.$i.Status': 'Up',
+              'Device.WiFi.Radio.$i.Channel': i == 1 ? 6 : 36,
+              'Device.WiFi.Radio.$i.OperatingFrequencyBand':
+                  i == 1 ? '2.4GHz' : '5GHz',
+              'Device.WiFi.Radio.$i.OperatingChannelBandwidth': '20MHz',
+              'Device.WiFi.Radio.$i.PossibleChannels': '1,6,11',
+              'Device.WiFi.Radio.$i.OperatingStandards': 'n',
+              'Device.WiFi.Radio.$i.SupportedStandards': 'b,g,n',
+              'Device.WiFi.Radio.$i.TransmitPower': 100,
+              'Device.WiFi.Radio.$i.MaxBitRate': 300,
+              'Device.WiFi.Radio.$i.AutoChannelEnable': true,
+              'Device.WiFi.Radio.$i.IEEE80211hEnabled': false,
+              'Device.WiFi.Radio.$i.SupportedOperatingChannelBandwidths':
+                  'Auto,20MHz',
+            },
+          };
+        }
+        return <String, dynamic>{};
+      });
+
+      final config = (await service.fetchWizardData()).wifiConfig;
+
+      expect(config.isSplitMode, isFalse);
+      expect(config.ssid, 'MyHome');
+      expect(config.ssidInstancePaths, isNot(contains('Device.WiFi.SSID.1.')),
+          reason: 'a save must never write to the blank row');
+    });
+
+    test('a blank mesh node row is no node', () async {
+      const node = 'Device.WiFi.DataElements.Network.Device.';
+      when(() => mockUsp.get(any())).thenAnswer((inv) async {
+        final paths = inv.positionalArguments[0] as List<String>;
+        if (paths.any((p) => p.endsWith('Network.ControllerID'))) {
+          return {
+            'Device.WiFi.DataElements.Network.ControllerID':
+                'AA:BB:CC:DD:EE:01',
+          };
+        }
+        return {
+          '${node}2.ID': '',
+          '${node}2.MultiAPDevice.Backhaul.LinkType': '',
+          '${node}5.ID': 'AA:BB:CC:DD:EE:01',
+          '${node}5.MultiAPDevice.Backhaul.LinkType': 'None',
+        };
+      });
+
+      final topology = await service.fetchMeshTopology();
+
+      expect(topology.nodes.map((n) => n.deviceId), ['AA:BB:CC:DD:EE:01']);
     });
   });
 

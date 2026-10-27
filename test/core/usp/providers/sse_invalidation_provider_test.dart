@@ -16,10 +16,10 @@ void main() {
   /// [mockManager] and captures the wildcard handler callback.
   ///
   /// [wanPath] overrides the resolved WAN interface path so tests can exercise
-  /// WAN-status classification without a live `Alias` lookup. Defaults to
-  /// [kWanInterfaceFallbackPath] (`Device.IP.Interface.2.`).
+  /// WAN-status classification without a live `Alias` lookup; null is a WAN
+  /// that has not resolved. Defaults to `Device.IP.Interface.5.`.
   ProviderContainer createContainer({
-    String wanPath = kWanInterfaceFallbackPath,
+    String? wanPath = 'Device.IP.Interface.5.',
   }) {
     when(() => mockManager.addWildcardHandler(any())).thenAnswer((invocation) {
       capturedHandler =
@@ -241,6 +241,27 @@ void main() {
       );
     });
 
+    test('a new lease (Pool.{i}.ClientNumberOfEntries) → dhcpClients',
+        () async {
+      // dhcp-clients-02 is a ValueChange on the pool table; a new lease fires
+      // as the pool's client count, with no `Client.` in the path.
+      await sendAndExpect(
+        'Device.DHCPv4.Server.Pool.4.ClientNumberOfEntries',
+        InvalidationDomain.dhcpClients,
+      );
+    });
+
+    test('Pool.{i}.StaticAddressNumberOfEntries → dhcpReservations', () async {
+      await sendAndExpect(
+        'Device.DHCPv4.Server.Pool.4.StaticAddressNumberOfEntries',
+        InvalidationDomain.dhcpReservations,
+      );
+    });
+
+    test('other Pool.{i} values map to nothing', () async {
+      await sendAndExpectEmpty('Device.DHCPv4.Server.Pool.4.LeaseTime');
+    });
+
     test('Device.DHCPv4.*.StaticAddress.* → dhcpReservations', () async {
       await sendAndExpect(
         'Device.DHCPv4.Server.Pool.1.StaticAddress.1.Chaddr',
@@ -292,11 +313,10 @@ void main() {
     /// interface path is [wanPath], and returns the domains produced.
     ///
     /// Awaits [wanInterfacePathProvider] first so the classifier reads the
-    /// overridden path synchronously (otherwise it would fall back to
-    /// [kWanInterfaceFallbackPath]).
+    /// overridden path synchronously.
     Future<List<InvalidationDomain>> classify(
       String path, {
-      required String wanPath,
+      required String? wanPath,
     }) async {
       final container = createContainer(wanPath: wanPath);
       addTearDown(container.dispose);
@@ -329,6 +349,50 @@ void main() {
             wanPath: 'Device.IP.Interface.4.'),
         [InvalidationDomain.wanStatus],
       );
+    });
+
+    test('before the WAN resolves, no IP.Interface path is wanStatus',
+        () async {
+      // No guessed Interface.2 while the WAN is unknown.
+      expect(
+        await classify('Device.IP.Interface.2.Status', wanPath: null),
+        isEmpty,
+      );
+    });
+
+    test('an unresolved WAN path is re-resolved, and a later event matches',
+        () async {
+      when(() => mockManager.addWildcardHandler(any()))
+          .thenAnswer((invocation) {
+        capturedHandler =
+            invocation.positionalArguments[0] as SseNotificationHandler;
+        return () {};
+      });
+      var resolved = false;
+      final container = ProviderContainer(overrides: [
+        sseManagerProvider.overrideWithValue(mockManager),
+        wanInterfacePathProvider.overrideWith(
+            (ref) async => resolved ? 'Device.IP.Interface.5.' : null),
+        wanInterfacePathRetryIntervalProvider.overrideWithValue(Duration.zero),
+      ]);
+      addTearDown(container.dispose);
+      final domains = <InvalidationDomain>[];
+      container.listen(sseInvalidationProvider, (_, next) {
+        if (next.hasValue) domains.add(next.value!.domain);
+      });
+      await container.read(wanInterfacePathProvider.future);
+
+      // The router is reachable again; this event finds no WAN path yet and
+      // starts a new resolve itself — nothing else reads the provider.
+      resolved = true;
+      capturedHandler(notification(
+          type: 'ValueChange', paramPath: 'Device.IP.Interface.5.Status'));
+      await Future.delayed(Duration.zero);
+      capturedHandler(notification(
+          type: 'ValueChange', paramPath: 'Device.IP.Interface.5.Status'));
+      await Future.delayed(Duration.zero);
+
+      expect(domains, [InvalidationDomain.wanStatus]);
     });
 
     test('non-WAN IP.Interface instance does NOT classify as wanStatus',

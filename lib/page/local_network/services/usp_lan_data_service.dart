@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/utils/ipv6_address.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/generated/lan_dhcp_pool.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
@@ -35,41 +36,46 @@ class UspLanDataService {
 
   UspLanDataService(this._usp);
 
-  /// Fetches LAN info + IPv6 addresses and returns a [LanInfoUIModel].
+  /// Fetches LAN info, the LAN DHCP pool and the LAN IPv6 addresses, and
+  /// returns a [LanInfoUIModel].
   Future<LanInfoUIModel> fetch() async {
-    final List<Object> results;
+    final LanNetworkInfo lan;
+    final LanDhcpPool pool;
+    final List<String> ipv6Addresses;
     try {
-      results = await Future.wait([
+      final results = await Future.wait([
         LanNetworkInfo.fetch(_usp),
-        _fetchLanIpv6Addresses(),
+        LanDhcpPool.fetch(_usp),
       ]);
+      lan = results[0] as LanNetworkInfo;
+      pool = results[1] as LanDhcpPool;
+      ipv6Addresses = await _fetchLanIpv6Addresses(lan.instancePath);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
 
-    final lanInfo = results[0] as LanNetworkInfo;
-    final ipv6Addresses = results[1] as List<String>;
-
+    // The interface's first address row is the router's LAN address; a LAN
+    // with no row reads as no address.
+    final ipv4 = lan.ipv4Addresses.firstOrNull;
     return LanInfoUIModel(
-      hostName: lanInfo.hostName,
-      ipAddress: lanInfo.ipAddress,
-      subnetMask: lanInfo.subnetMask,
-      dhcpEnabled: lanInfo.dhcpEnabled,
-      minAddress: lanInfo.minAddress,
-      maxAddress: lanInfo.maxAddress,
-      leaseTimeMinutes: (lanInfo.leaseTime / 60).round(),
-      dnsServers: lanInfo.dnsServers,
-      ipv6Enabled: lanInfo.ipv6Enabled,
+      hostName: lan.hostName,
+      ipAddress: ipv4?.ipAddress ?? '',
+      subnetMask: ipv4?.subnetMask ?? '',
+      dhcpEnabled: pool.dhcpEnabled,
+      minAddress: pool.minAddress,
+      maxAddress: pool.maxAddress,
+      leaseTimeMinutes: (pool.leaseTime / 60).round(),
+      dnsServers: pool.dnsServers,
+      ipv6Enabled: lan.ipv6Enabled,
       ipv6Addresses: ipv6Addresses,
     );
   }
 
-  /// Fetches IPv6 addresses for LAN (Interface.1) via multi-instance query.
-  Future<List<String>> _fetchLanIpv6Addresses() async {
+  /// Fetches the IPv6 addresses of the LAN interface at [lanPath].
+  Future<List<String>> _fetchLanIpv6Addresses(String lanPath) async {
+    final table = '${lanPath}IPv6Address.';
     try {
-      final resp = await _usp.get([
-        'Device.IP.Interface.1.IPv6Address.',
-      ]).timeout(const Duration(seconds: 20));
+      final resp = await _usp.get([table]).timeout(const Duration(seconds: 20));
 
       // Issue #1129: keep every LAN IPv6 address (including link-local) and let
       // the UI mark a link-local (fe80::/10) address with a scope badge rather
@@ -77,8 +83,8 @@ class UspLanDataService {
       // the representative value; when the interface holds only a link-local
       // address it is still shown, tagged as link-local. Ordering is shared with
       // the WAN path via `preferGlobalIpv6First`.
-      final instances = resp.getInstances('Device.IP.Interface.1.IPv6Address.');
-      final addresses = instances
+      final addresses = resp
+          .getInstances(table)
           .map((i) => i.getString('IPAddress'))
           .where((ip) => ip.isNotEmpty)
           .toList();

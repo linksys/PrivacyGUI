@@ -4,7 +4,7 @@
 
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
-/// Single instance from FirewallChainRules
+/// Nested instance from parent multi-instance table
 class FirewallChainRule {
   final String instancePath;
   final bool enable;
@@ -17,6 +17,16 @@ class FirewallChainRule {
     required this.description,
     required this.target,
   });
+
+  @override
+  String toString() {
+    return 'FirewallChainRule('
+        'instancePath: $instancePath, '
+        'enable: $enable, '
+        'description: $description, '
+        'target: $target'
+        ')';
+  }
 }
 
 /// Update descriptor for FirewallChainRule instances
@@ -30,16 +40,42 @@ class FirewallChainRuleUpdate {
   });
 }
 
-/// Firewall chain rules (multi-instance, writable Enable toggle)
+/// Single instance from FirewallChainRules
+class FirewallChain {
+  final String instancePath;
+  final String name;
+  final List<FirewallChainRule> rules;
+
+  const FirewallChain({
+    required this.instancePath,
+    required this.name,
+    required this.rules,
+  });
+
+  @override
+  String toString() {
+    return 'FirewallChain('
+        'instancePath: $instancePath, '
+        'name: $name, '
+        'rules: $rules'
+        ')';
+  }
+}
+
+/// Firewall chains with their rules (writable Enable toggle)
 class FirewallChainRules {
-  final List<FirewallChainRule> items;
+  final List<FirewallChain> items;
 
   const FirewallChainRules({required this.items});
 
+  @override
+  String toString() => 'FirewallChainRules(items: $items)';
+
   static const _paths = [
-    'Device.Firewall.Chain.1.Rule.*.Enable',
-    'Device.Firewall.Chain.1.Rule.*.Description',
-    'Device.Firewall.Chain.1.Rule.*.Target',
+    'Device.Firewall.Chain.*.Name',
+    'Device.Firewall.Chain.*.Rule.*.Enable',
+    'Device.Firewall.Chain.*.Rule.*.Description',
+    'Device.Firewall.Chain.*.Rule.*.Target',
   ];
 
   /// Fetch all instances via USP Get message
@@ -49,8 +85,8 @@ class FirewallChainRules {
   }
 
   factory FirewallChainRules._fromResponse(Map<String, dynamic> response) {
-    final items = <FirewallChainRule>[];
-    const basePath = 'Device.Firewall.Chain.1.Rule.';
+    final items = <FirewallChain>[];
+    const basePath = 'Device.Firewall.Chain.';
     final ids = <String>{};
     for (final key in response.keys) {
       if (key.startsWith(basePath)) {
@@ -63,54 +99,76 @@ class FirewallChainRules {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}Enable'],
-        response['${p}Description'],
-        response['${p}Target']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
+      final childBase_0 = '${p}Rule.';
+      final childIds_0 = <String>{};
+      for (final key in response.keys) {
+        if (key.startsWith(childBase_0)) {
+          final rest = key.substring(childBase_0.length);
+          final dot = rest.indexOf('.');
+          if (dot > 0) childIds_0.add(rest.substring(0, dot));
+        }
+      }
+      final childSorted_0 = childIds_0.toList()
+        ..sort(
+            (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+      final rules = <FirewallChainRule>[];
+      for (final cid_0 in childSorted_0) {
+        final cp_0 = '$childBase_0$cid_0.';
+        final missing = <String>[];
+        if (!response.containsKey('${cp_0}Enable')) {
+          missing.add('${cp_0}Enable');
+        }
+        if (!response.containsKey('${cp_0}Description')) {
+          missing.add('${cp_0}Description');
+        }
+        if (!response.containsKey('${cp_0}Target')) {
+          missing.add('${cp_0}Target');
+        }
+        if (missing.isNotEmpty) {
+          throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+        }
+        rules.add(FirewallChainRule(
+          instancePath: cp_0,
+          enable: response['${cp_0}Enable'] == true ||
+              response['${cp_0}Enable'] == 'true' ||
+              response['${cp_0}Enable'] == '1',
+          description: (response['${cp_0}Description'] ?? '') as String,
+          target: (response['${cp_0}Target'] ?? '') as String,
+        ));
       }
       final missing = <String>[];
-      if (!response.containsKey('${p}Enable')) {
-        missing.add('${p}Enable');
-      }
-      if (!response.containsKey('${p}Description')) {
-        missing.add('${p}Description');
-      }
-      if (!response.containsKey('${p}Target')) {
-        missing.add('${p}Target');
+      if (!response.containsKey('${p}Name')) {
+        missing.add('${p}Name');
       }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
-      items.add(FirewallChainRule(
+      items.add(FirewallChain(
         instancePath: p,
-        enable: response['${p}Enable'] == true ||
-            response['${p}Enable'] == 'true' ||
-            response['${p}Enable'] == '1',
-        description: (response['${p}Description'] ?? '') as String,
-        target: (response['${p}Target'] ?? '') as String,
+        name: (response['${p}Name'] ?? '') as String,
+        rules: rules,
       ));
     }
     return FirewallChainRules(items: items);
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-      UspClient client, List<FirewallChainRuleUpdate> updates,
-      {bool allowPartial = false}) async {
+  /// Build the Set params of updateRules() without sending them
+  static Map<String, dynamic> updateRulesParams(
+      List<FirewallChainRuleUpdate> updates) {
     final params = <String, dynamic>{};
     for (final update in updates) {
       if (update.enable != null) {
         params['${update.instancePath}Enable'] = update.enable;
       }
     }
+    return params;
+  }
+
+  /// Update FirewallChainRule rows, each through its own instancePath
+  static Future<Map<String, dynamic>> updateRules(
+      UspClient client, List<FirewallChainRuleUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateRulesParams(updates);
     if (params.isEmpty) {
       return {
         'success': true,

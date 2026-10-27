@@ -13,6 +13,14 @@ class ConnectedDeviceIpv4 {
     required this.instancePath,
     required this.address,
   });
+
+  @override
+  String toString() {
+    return 'ConnectedDeviceIpv4('
+        'instancePath: $instancePath, '
+        'address: $address'
+        ')';
+  }
 }
 
 /// Nested instance from parent multi-instance table
@@ -24,6 +32,14 @@ class ConnectedDeviceIpv6 {
     required this.instancePath,
     required this.address,
   });
+
+  @override
+  String toString() {
+    return 'ConnectedDeviceIpv6('
+        'instancePath: $instancePath, '
+        'address: $address'
+        ')';
+  }
 }
 
 /// Single instance from ConnectedDevices
@@ -97,6 +113,45 @@ class ConnectedDevice {
     required this.ipv4Addresses,
     required this.ipv6Addresses,
   });
+
+  @override
+  String toString() {
+    return 'ConnectedDevice('
+        'instancePath: $instancePath, '
+        'macAddress: $macAddress, '
+        'ipAddress: $ipAddress, '
+        'hostName: $hostName, '
+        'isActive: $isActive, '
+        'activeLastChange: $activeLastChange, '
+        'interface_: $interface_, '
+        'layer3Interface: $layer3Interface, '
+        'interfaceType: $interfaceType, '
+        'addressSource: $addressSource, '
+        'dhcpClient: $dhcpClient, '
+        'associatedDevice: $associatedDevice, '
+        'deviceId: $deviceId, '
+        'deviceRole: $deviceRole, '
+        'friendlyName: $friendlyName, '
+        'manufacturer: $manufacturer, '
+        'modelName: $modelName, '
+        'operatingSystem: $operatingSystem, '
+        'parentNodeId: $parentNodeId, '
+        'signalStrength: $signalStrength, '
+        'lastDataDownlinkRate: $lastDataDownlinkRate, '
+        'lastDataUplinkRate: $lastDataUplinkRate, '
+        'linksysManufacturer: $linksysManufacturer, '
+        'linksysModelName: $linksysModelName, '
+        'linksysOperatingSystem: $linksysOperatingSystem, '
+        'linksysDeviceType: $linksysDeviceType, '
+        'linksysFriendlyName: $linksysFriendlyName, '
+        'linksysDetectedName: $linksysDetectedName, '
+        'linksysUserDeviceName: $linksysUserDeviceName, '
+        'linksysUserDeviceLocation: $linksysUserDeviceLocation, '
+        'linksysUserDeviceType: $linksysUserDeviceType, '
+        'ipv4Addresses: $ipv4Addresses, '
+        'ipv6Addresses: $ipv6Addresses'
+        ')';
+  }
 }
 
 /// Update descriptor for ConnectedDevice instances
@@ -119,6 +174,9 @@ class ConnectedDevices {
   final List<ConnectedDevice> items;
 
   const ConnectedDevices({required this.items});
+
+  @override
+  String toString() => 'ConnectedDevices(items: $items)';
 
   static const _paths = [
     'Device.Hosts.Host.*.PhysAddress',
@@ -176,46 +234,6 @@ class ConnectedDevices {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}PhysAddress'],
-        response['${p}IPAddress'],
-        response['${p}HostName'],
-        response['${p}Active'],
-        response['${p}ActiveLastChange'],
-        response['${p}Layer1Interface'],
-        response['${p}Layer3Interface'],
-        response['${p}InterfaceType'],
-        response['${p}AddressSource'],
-        response['${p}DHCPClient'],
-        response['${p}AssociatedDevice'],
-        response['${p}DeviceID'],
-        response['${p}DeviceRole'],
-        response['${p}FriendlyName'],
-        response['${p}Manufacturer'],
-        response['${p}ModelName'],
-        response['${p}OperatingSystem'],
-        response['${p}ParentNodeID'],
-        response['${p}SignalStrength'],
-        response['${p}LastDataDownlinkRate'],
-        response['${p}LastDataUplinkRate'],
-        response['${p}X_LINKSYS_Manufacturer'],
-        response['${p}X_LINKSYS_ModelName'],
-        response['${p}X_LINKSYS_OperatingSystem'],
-        response['${p}X_LINKSYS_DeviceType'],
-        response['${p}X_LINKSYS_FriendlyName'],
-        response['${p}X_LINKSYS_DetectedName'],
-        response['${p}X_LINKSYS_UserDeviceName'],
-        response['${p}X_LINKSYS_UserDeviceLocation'],
-        response['${p}X_LINKSYS_UserDeviceType']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final childBase_0 = '${p}IPv4Address.';
       final childIds_0 = <String>{};
       for (final key in response.keys) {
@@ -231,6 +249,13 @@ class ConnectedDevices {
       final ipv4Addresses = <ConnectedDeviceIpv4>[];
       for (final cid_0 in childSorted_0) {
         final cp_0 = '$childBase_0$cid_0.';
+        final missing = <String>[];
+        if (!response.containsKey('${cp_0}IPAddress')) {
+          missing.add('${cp_0}IPAddress');
+        }
+        if (missing.isNotEmpty) {
+          throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+        }
         ipv4Addresses.add(ConnectedDeviceIpv4(
           instancePath: cp_0,
           address: (response['${cp_0}IPAddress'] ?? '') as String,
@@ -251,6 +276,13 @@ class ConnectedDevices {
       final ipv6Addresses = <ConnectedDeviceIpv6>[];
       for (final cid_1 in childSorted_1) {
         final cp_1 = '$childBase_1$cid_1.';
+        final missing = <String>[];
+        if (!response.containsKey('${cp_1}IPAddress')) {
+          missing.add('${cp_1}IPAddress');
+        }
+        if (missing.isNotEmpty) {
+          throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+        }
         ipv6Addresses.add(ConnectedDeviceIpv6(
           instancePath: cp_1,
           address: (response['${cp_1}IPAddress'] ?? '') as String,
@@ -370,10 +402,9 @@ class ConnectedDevices {
     return ConnectedDevices(items: items);
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-      UspClient client, List<ConnectedDeviceUpdate> updates,
-      {bool allowPartial = false}) async {
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams(
+      List<ConnectedDeviceUpdate> updates) {
     final params = <String, dynamic>{};
     for (final update in updates) {
       if (update.linksysUserDeviceName != null) {
@@ -389,6 +420,14 @@ class ConnectedDevices {
             update.linksysUserDeviceType;
       }
     }
+    return params;
+  }
+
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+      UspClient client, List<ConnectedDeviceUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateParams(updates);
     if (params.isEmpty) {
       return {
         'success': true,

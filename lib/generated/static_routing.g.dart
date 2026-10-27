@@ -4,7 +4,7 @@
 
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
-/// Single instance from StaticRouting
+/// Nested instance from parent multi-instance table
 class StaticRoute {
   final String instancePath;
   final bool enable;
@@ -13,6 +13,7 @@ class StaticRoute {
   final String gatewayIpAddress;
   final String interface_;
   final String origin;
+  final int forwardingMetric;
   final String alias;
 
   const StaticRoute({
@@ -23,8 +24,24 @@ class StaticRoute {
     required this.gatewayIpAddress,
     required this.interface_,
     required this.origin,
+    required this.forwardingMetric,
     required this.alias,
   });
+
+  @override
+  String toString() {
+    return 'StaticRoute('
+        'instancePath: $instancePath, '
+        'enable: $enable, '
+        'destIpAddress: $destIpAddress, '
+        'destSubnetMask: $destSubnetMask, '
+        'gatewayIpAddress: $gatewayIpAddress, '
+        'interface_: $interface_, '
+        'origin: $origin, '
+        'forwardingMetric: $forwardingMetric, '
+        'alias: $alias'
+        ')';
+  }
 }
 
 /// Update descriptor for StaticRoute instances
@@ -48,20 +65,68 @@ class StaticRouteUpdate {
   });
 }
 
-/// IPv4 static routing table (multi-instance)
+/// Add descriptor for StaticRoute rows
+class StaticRouteAdd {
+  final String parentInstancePath;
+  final bool? enable;
+  final String? destIpAddress;
+  final String? destSubnetMask;
+  final String? gatewayIpAddress;
+  final String? interface_;
+  final String? alias;
+
+  const StaticRouteAdd({
+    required this.parentInstancePath,
+    this.enable,
+    this.destIpAddress,
+    this.destSubnetMask,
+    this.gatewayIpAddress,
+    this.interface_,
+    this.alias,
+  });
+}
+
+/// Single instance from StaticRouting
+class StaticRoutingRouter {
+  final String instancePath;
+  final String alias;
+  final List<StaticRoute> forwardings;
+
+  const StaticRoutingRouter({
+    required this.instancePath,
+    required this.alias,
+    required this.forwardings,
+  });
+
+  @override
+  String toString() {
+    return 'StaticRoutingRouter('
+        'instancePath: $instancePath, '
+        'alias: $alias, '
+        'forwardings: $forwardings'
+        ')';
+  }
+}
+
+/// IPv4 routing tables with their forwarding rules
 class StaticRouting {
-  final List<StaticRoute> items;
+  final List<StaticRoutingRouter> items;
 
   const StaticRouting({required this.items});
 
+  @override
+  String toString() => 'StaticRouting(items: $items)';
+
   static const _paths = [
-    'Device.Routing.Router.1.IPv4Forwarding.*.Enable',
-    'Device.Routing.Router.1.IPv4Forwarding.*.DestIPAddress',
-    'Device.Routing.Router.1.IPv4Forwarding.*.DestSubnetMask',
-    'Device.Routing.Router.1.IPv4Forwarding.*.GatewayIPAddress',
-    'Device.Routing.Router.1.IPv4Forwarding.*.Interface',
-    'Device.Routing.Router.1.IPv4Forwarding.*.Origin',
-    'Device.Routing.Router.1.IPv4Forwarding.*.Alias',
+    'Device.Routing.Router.*.Alias',
+    'Device.Routing.Router.*.IPv4Forwarding.*.Enable',
+    'Device.Routing.Router.*.IPv4Forwarding.*.DestIPAddress',
+    'Device.Routing.Router.*.IPv4Forwarding.*.DestSubnetMask',
+    'Device.Routing.Router.*.IPv4Forwarding.*.GatewayIPAddress',
+    'Device.Routing.Router.*.IPv4Forwarding.*.Interface',
+    'Device.Routing.Router.*.IPv4Forwarding.*.Origin',
+    'Device.Routing.Router.*.IPv4Forwarding.*.ForwardingMetric',
+    'Device.Routing.Router.*.IPv4Forwarding.*.Alias',
   ];
 
   /// Fetch all instances via USP Get message
@@ -71,8 +136,8 @@ class StaticRouting {
   }
 
   factory StaticRouting._fromResponse(Map<String, dynamic> response) {
-    final items = <StaticRoute>[];
-    const basePath = 'Device.Routing.Router.1.IPv4Forwarding.';
+    final items = <StaticRoutingRouter>[];
+    const basePath = 'Device.Routing.Router.';
     final ids = <String>{};
     for (final key in response.keys) {
       if (key.startsWith(basePath)) {
@@ -85,68 +150,168 @@ class StaticRouting {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}Enable'],
-        response['${p}DestIPAddress'],
-        response['${p}DestSubnetMask'],
-        response['${p}GatewayIPAddress'],
-        response['${p}Interface'],
-        response['${p}Origin'],
-        response['${p}Alias']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
+      final childBase_0 = '${p}IPv4Forwarding.';
+      final childIds_0 = <String>{};
+      for (final key in response.keys) {
+        if (key.startsWith(childBase_0)) {
+          final rest = key.substring(childBase_0.length);
+          final dot = rest.indexOf('.');
+          if (dot > 0) childIds_0.add(rest.substring(0, dot));
+        }
+      }
+      final childSorted_0 = childIds_0.toList()
+        ..sort(
+            (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+      final forwardings = <StaticRoute>[];
+      for (final cid_0 in childSorted_0) {
+        final cp_0 = '$childBase_0$cid_0.';
+        final missing = <String>[];
+        if (!response.containsKey('${cp_0}Enable')) {
+          missing.add('${cp_0}Enable');
+        }
+        if (!response.containsKey('${cp_0}DestIPAddress')) {
+          missing.add('${cp_0}DestIPAddress');
+        }
+        if (!response.containsKey('${cp_0}DestSubnetMask')) {
+          missing.add('${cp_0}DestSubnetMask');
+        }
+        if (!response.containsKey('${cp_0}GatewayIPAddress')) {
+          missing.add('${cp_0}GatewayIPAddress');
+        }
+        if (!response.containsKey('${cp_0}Interface')) {
+          missing.add('${cp_0}Interface');
+        }
+        if (!response.containsKey('${cp_0}Origin')) {
+          missing.add('${cp_0}Origin');
+        }
+        if (!response.containsKey('${cp_0}ForwardingMetric')) {
+          missing.add('${cp_0}ForwardingMetric');
+        }
+        if (!response.containsKey('${cp_0}Alias')) {
+          missing.add('${cp_0}Alias');
+        }
+        if (missing.isNotEmpty) {
+          throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+        }
+        forwardings.add(StaticRoute(
+          instancePath: cp_0,
+          enable: response['${cp_0}Enable'] == true ||
+              response['${cp_0}Enable'] == 'true' ||
+              response['${cp_0}Enable'] == '1',
+          destIpAddress: (response['${cp_0}DestIPAddress'] ?? '') as String,
+          destSubnetMask: (response['${cp_0}DestSubnetMask'] ?? '') as String,
+          gatewayIpAddress:
+              (response['${cp_0}GatewayIPAddress'] ?? '') as String,
+          interface_: (response['${cp_0}Interface'] ?? '') as String,
+          origin: (response['${cp_0}Origin'] ?? '') as String,
+          forwardingMetric: int.tryParse(
+                  response['${cp_0}ForwardingMetric']?.toString() ?? '') ??
+              0,
+          alias: (response['${cp_0}Alias'] ?? '') as String,
+        ));
       }
       final missing = <String>[];
-      if (!response.containsKey('${p}Enable')) {
-        missing.add('${p}Enable');
-      }
-      if (!response.containsKey('${p}DestIPAddress')) {
-        missing.add('${p}DestIPAddress');
-      }
-      if (!response.containsKey('${p}DestSubnetMask')) {
-        missing.add('${p}DestSubnetMask');
-      }
-      if (!response.containsKey('${p}GatewayIPAddress')) {
-        missing.add('${p}GatewayIPAddress');
-      }
-      if (!response.containsKey('${p}Interface')) {
-        missing.add('${p}Interface');
-      }
-      if (!response.containsKey('${p}Origin')) {
-        missing.add('${p}Origin');
-      }
       if (!response.containsKey('${p}Alias')) {
         missing.add('${p}Alias');
       }
       if (missing.isNotEmpty) {
         throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
-      items.add(StaticRoute(
+      items.add(StaticRoutingRouter(
         instancePath: p,
-        enable: response['${p}Enable'] == true ||
-            response['${p}Enable'] == 'true' ||
-            response['${p}Enable'] == '1',
-        destIpAddress: (response['${p}DestIPAddress'] ?? '') as String,
-        destSubnetMask: (response['${p}DestSubnetMask'] ?? '') as String,
-        gatewayIpAddress: (response['${p}GatewayIPAddress'] ?? '') as String,
-        interface_: (response['${p}Interface'] ?? '') as String,
-        origin: (response['${p}Origin'] ?? '') as String,
         alias: (response['${p}Alias'] ?? '') as String,
+        forwardings: forwardings,
       ));
     }
     return StaticRouting(items: items);
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-      UspClient client, List<StaticRouteUpdate> updates,
+  /// Add a new StaticRoute instance under a parent instance
+  static Future<Map<String, dynamic>> addStaticRoute(
+    UspClient client,
+    String parentInstancePath, {
+    bool? enable,
+    String? destIpAddress,
+    String? destSubnetMask,
+    String? gatewayIpAddress,
+    String? interface_,
+    String? alias,
+  }) async {
+    final params = <String, dynamic>{};
+    if (enable != null) {
+      params['Enable'] = enable;
+    }
+    if (destIpAddress != null) {
+      params['DestIPAddress'] = destIpAddress;
+    }
+    if (destSubnetMask != null) {
+      params['DestSubnetMask'] = destSubnetMask;
+    }
+    if (gatewayIpAddress != null) {
+      params['GatewayIPAddress'] = gatewayIpAddress;
+    }
+    if (interface_ != null) {
+      params['Interface'] = interface_;
+    }
+    if (alias != null) {
+      params['Alias'] = alias;
+    }
+    return await client.add([
+      {'path': '${parentInstancePath}IPv4Forwarding.', 'params': params}
+    ]);
+  }
+
+  /// Delete a StaticRoute instance via USP Delete message
+  static Future<Map<String, dynamic>> deleteStaticRoute(
+      UspClient client, String instancePath) async {
+    return await client.delete([instancePath]);
+  }
+
+  /// Add StaticRoute rows, each under its own parent, in one USP Add
+  static Future<Map<String, dynamic>> addForwardings(
+      UspClient client, List<StaticRouteAdd> rows,
       {bool allowPartial = false}) async {
+    if (rows.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    final items = [
+      for (final row in rows)
+        {
+          'path': '${row.parentInstancePath}IPv4Forwarding.',
+          'params': <String, dynamic>{
+            if (row.enable != null) 'Enable': row.enable,
+            if (row.destIpAddress != null) 'DestIPAddress': row.destIpAddress,
+            if (row.destSubnetMask != null)
+              'DestSubnetMask': row.destSubnetMask,
+            if (row.gatewayIpAddress != null)
+              'GatewayIPAddress': row.gatewayIpAddress,
+            if (row.interface_ != null) 'Interface': row.interface_,
+            if (row.alias != null) 'Alias': row.alias,
+          },
+        },
+    ];
+    return await client.add(items, allowPartial: allowPartial);
+  }
+
+  /// Delete StaticRoute rows by instancePath in one USP Delete
+  static Future<Map<String, dynamic>> deleteForwardings(
+      UspClient client, List<String> instancePaths,
+      {bool allowPartial = false}) async {
+    if (instancePaths.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    return await client.delete(instancePaths, allowPartial: allowPartial);
+  }
+
+  /// Build the Set params of updateForwardings() without sending them
+  static Map<String, dynamic> updateForwardingsParams(
+      List<StaticRouteUpdate> updates) {
     final params = <String, dynamic>{};
     for (final update in updates) {
       if (update.enable != null) {
@@ -169,6 +334,14 @@ class StaticRouting {
         params['${update.instancePath}Alias'] = update.alias;
       }
     }
+    return params;
+  }
+
+  /// Update StaticRoute rows, each through its own instancePath
+  static Future<Map<String, dynamic>> updateForwardings(
+      UspClient client, List<StaticRouteUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateForwardingsParams(updates);
     if (params.isEmpty) {
       return {
         'success': true,
@@ -176,23 +349,5 @@ class StaticRouting {
       };
     }
     return await client.set(params, allowPartial: allowPartial);
-  }
-
-  /// Add StaticRoute instance(s) via USP Add message
-  static Future<Map<String, dynamic>> add(
-      UspClient client, List<Map<String, dynamic>> items,
-      {bool allowPartial = false}) async {
-    final itemList = items
-        .map((item) =>
-            {'path': 'Device.Routing.Router.1.IPv4Forwarding.', 'params': item})
-        .toList();
-    return await client.add(itemList, allowPartial: allowPartial);
-  }
-
-  /// Delete StaticRoute instance(s) via USP Delete message
-  static Future<Map<String, dynamic>> delete(
-      UspClient client, List<String> paths,
-      {bool allowPartial = false}) async {
-    return await client.delete(paths, allowPartial: allowPartial);
   }
 }

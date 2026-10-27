@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/generated/lan_dhcp_pool.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
@@ -47,33 +48,23 @@ class UspLocalNetworkService {
     required LocalNetworkUIModel pending,
   }) async {
     final ipAddressChanged = original.ipAddress != pending.ipAddress;
+    // Read the rows to write before the SET, outside its handling below: a
+    // read that fails sent nothing, so it is a failure even on an IP change.
+    final Map<String, dynamic> params;
     try {
-      final updateFuture = LanNetworkInfo.update(
-        _usp,
-        ipAddress: ipAddressChanged ? pending.ipAddress : null,
-        subnetMask: original.subnetMask != pending.subnetMask
-            ? pending.subnetMask
-            : null,
-        hostName:
-            original.hostName != pending.hostName ? pending.hostName : null,
-        dhcpEnabled: original.dhcpEnabled != pending.dhcpEnabled
-            ? pending.dhcpEnabled
-            : null,
-        minAddress: original.minAddress != pending.minAddress
-            ? pending.minAddress
-            : null,
-        maxAddress: original.maxAddress != pending.maxAddress
-            ? pending.maxAddress
-            : null,
-        leaseTime: original.leaseTimeMinutes != pending.leaseTimeMinutes
-            ? pending.leaseTimeMinutes * 60
-            : null,
-        dnsServers: _dnsChanged(original, pending)
-            ? joinDnsServers(
-                pending.dnsServer1, pending.dnsServer2, pending.dnsServer3)
-            : null,
-        allowPartial: true,
-      );
+      params = await _saveParams(original, pending);
+    } catch (e) {
+      if (e is ServiceError) rethrow;
+      throw mapUspErrorToServiceError(e);
+    }
+    if (params.isEmpty) return;
+    try {
+      // One SET for the host name, the LAN address and the DHCP pool. They
+      // belong to three USP services, so allowPartial is required (an atomic
+      // cross-service SET is refused with 7005, #1039). And it must be one SET:
+      // an IP change drops the connection, so a SET sent after it never
+      // arrives.
+      final updateFuture = _usp.set(params, allowPartial: true);
 
       // On an IP change the response rides a connection the firmware is about
       // to drop; bound the wait so we don't hang on a reply that can't arrive.
@@ -108,6 +99,70 @@ class UspLocalNetworkService {
     }
   }
 
+  /// The SET params of a save: only the fields that differ, each on its row.
+  ///
+  /// The LAN interface and the LAN pool are read first to find the rows: the
+  /// interface's first `IPv4Address` row, and the pool whose Alias is
+  /// `dhcp-lan`. Only the reads a change needs are made.
+  Future<Map<String, dynamic>> _saveParams(
+    LocalNetworkUIModel original,
+    LocalNetworkUIModel pending,
+  ) async {
+    String? changed(String Function(LocalNetworkUIModel m) f) =>
+        f(original) != f(pending) ? f(pending) : null;
+    final ipAddress = changed((m) => m.ipAddress);
+    final subnetMask = changed((m) => m.subnetMask);
+    final dhcpEnabled = original.dhcpEnabled != pending.dhcpEnabled
+        ? pending.dhcpEnabled
+        : null;
+    final minAddress = changed((m) => m.minAddress);
+    final maxAddress = changed((m) => m.maxAddress);
+    final leaseTime = original.leaseTimeMinutes != pending.leaseTimeMinutes
+        ? pending.leaseTimeMinutes * 60
+        : null;
+    final dnsServers = _dnsChanged(original, pending)
+        ? joinDnsServers(
+            pending.dnsServer1, pending.dnsServer2, pending.dnsServer3)
+        : null;
+
+    final addressChanged = ipAddress != null || subnetMask != null;
+    final poolChanged = dhcpEnabled != null ||
+        minAddress != null ||
+        maxAddress != null ||
+        leaseTime != null ||
+        dnsServers != null;
+
+    final addressRow = addressChanged
+        ? (await LanNetworkInfo.fetch(_usp)).ipv4Addresses.firstOrNull
+        : null;
+    if (addressChanged && addressRow == null) {
+      throw const ResourceNotFoundError(
+          detail: 'LAN IPv4Address row is absent; nothing to write');
+    }
+    final pool = poolChanged ? await LanDhcpPool.fetch(_usp) : null;
+
+    return {
+      ...LanNetworkInfo.updateParams(hostName: changed((m) => m.hostName)),
+      if (addressRow != null)
+        ...LanNetworkInfo.updateIpv4AddressesParams([
+          LanIpv4AddressUpdate(
+            instancePath: addressRow.instancePath,
+            ipAddress: ipAddress,
+            subnetMask: subnetMask,
+          ),
+        ]),
+      if (pool != null)
+        ...LanDhcpPool.updateParams(
+          pool.instancePath,
+          dhcpEnabled: dhcpEnabled,
+          minAddress: minAddress,
+          maxAddress: maxAddress,
+          leaseTime: leaseTime,
+          dnsServers: dnsServers,
+        ),
+    };
+  }
+
   /// Parse a SET result and throw the appropriate [ServiceError] on failure.
   void _handleSetResult(Map<String, dynamic> result) {
     final parsed = UspResultParser.parseSetResult(result);
@@ -140,17 +195,18 @@ class UspLocalNetworkService {
 
   // ─── Transform ──────────────────────────────────────────────
 
-  /// Convert codegen [LanNetworkInfo] → [LocalNetworkUIModel].
-  LocalNetworkUIModel buildUIModel(LanNetworkInfo data) {
-    final dnsParts = data.dnsServers.split(',').map((s) => s.trim()).toList();
+  /// Convert codegen [LanNetworkInfo] + [LanDhcpPool] → [LocalNetworkUIModel].
+  LocalNetworkUIModel buildUIModel(LanNetworkInfo lan, LanDhcpPool pool) {
+    final ipv4 = lan.ipv4Addresses.firstOrNull;
+    final dnsParts = pool.dnsServers.split(',').map((s) => s.trim()).toList();
     return LocalNetworkUIModel(
-      hostName: data.hostName,
-      ipAddress: data.ipAddress,
-      subnetMask: data.subnetMask,
-      dhcpEnabled: data.dhcpEnabled,
-      minAddress: data.minAddress,
-      maxAddress: data.maxAddress,
-      leaseTimeMinutes: (data.leaseTime / 60).round(),
+      hostName: lan.hostName,
+      ipAddress: ipv4?.ipAddress ?? '',
+      subnetMask: ipv4?.subnetMask ?? '',
+      dhcpEnabled: pool.dhcpEnabled,
+      minAddress: pool.minAddress,
+      maxAddress: pool.maxAddress,
+      leaseTimeMinutes: (pool.leaseTime / 60).round(),
       dnsServer1: dnsParts.isNotEmpty ? dnsParts[0] : '',
       dnsServer2: dnsParts.length > 1 ? dnsParts[1] : '',
       dnsServer3: dnsParts.length > 2 ? dnsParts[2] : '',
