@@ -259,6 +259,9 @@ void main() {
           // above, the menu's page with the same title.
           'administration',
           'pnp_ipoe',
+          // #879: adding a node, a new page view file that arrives with the `lib/`
+          // change creating it — the 49th.
+          'add_nodes',
         ],
         // Updated by #1377, #1378, #1379 and #1380, and the wording is the point of
         // the test.
