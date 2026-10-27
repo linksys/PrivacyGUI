@@ -21,6 +21,7 @@ import 'package:privacy_gui/page/topology/helpers/topology_node_order.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_node_menu.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_slots.dart';
 import 'package:privacy_gui/page/topology/views/node_action_flow.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_search.dart';
 import 'package:privacy_gui/page/topology/helpers/topology_node_content_builder.dart';
@@ -240,7 +241,7 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
                 // and must scan the graph as it is then, not as it was.
                 _topology = topology;
 
-                return _buildTopologyCard(context, topology);
+                return _buildTopologyCard(context, topology, data.meshNetwork);
               },
             );
           },
@@ -249,7 +250,8 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
     );
   }
 
-  Widget _buildTopologyCard(BuildContext context, GraphData topology) {
+  Widget _buildTopologyCard(
+      BuildContext context, GraphData topology, MeshNetwork meshNetwork) {
     final router = GoRouter.of(context);
     final colorScheme = Theme.of(context).colorScheme;
     // Two answers, read apart because they change apart: whether this firmware
@@ -436,7 +438,7 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
                   node,
                   canAddNodes: openAddNodes != null,
                   addNodesLabel: loc(context).addNodes,
-                  nodeActions: switch (_meshNodeOf(node)) {
+                  nodeActions: switch (_meshNodeOf(node, meshNetwork)) {
                     final mesh? => nodeActionsOf(mesh),
                     null => const {},
                   },
@@ -451,8 +453,9 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
                   final action = topologyMenuNodeAction(value);
                   final graphNode =
                       topology.nodes.where((n) => n.id == nodeId).firstOrNull;
-                  final mesh =
-                      graphNode == null ? null : _meshNodeOf(graphNode);
+                  final mesh = graphNode == null
+                      ? null
+                      : _meshNodeOf(graphNode, meshNetwork);
                   if (action == null || mesh == null) return;
                   // The topology stays where it is once a command is sent: the
                   // nodes drop off it as they leave DataElements.
@@ -466,16 +469,13 @@ class _UspTopologyViewState extends ConsumerState<UspTopologyView> {
     );
   }
 
-  /// The mesh node a topology [node] draws, from the devices this page
-  /// renders: its `deviceId` is the node's own (`UspTopologyBuilder`).
-  NodeEntity? _meshNodeOf(GraphNode node) {
+  /// The mesh node a topology [node] draws, in the [meshNetwork] this page
+  /// built the graph from: its `deviceId` is the node's own
+  /// (`UspTopologyBuilder`).
+  NodeEntity? _meshNodeOf(GraphNode node, MeshNetwork meshNetwork) {
     final deviceId = node.metadata?['deviceId'] as String?;
     if (deviceId == null || !TopologySlots.isMeshNode(node)) return null;
-    return ref
-        .read(devicesDataProvider)
-        .valueOrNull
-        ?.meshNetwork
-        .findNode(deviceId);
+    return meshNetwork.findNode(deviceId);
   }
 
   /// Navigate by node id — used by the tree view's `onNodeTap`.

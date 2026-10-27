@@ -5,7 +5,11 @@ import 'package:privacy_gui/page/topology/helpers/topology_slots.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Where the topology offers "Add nodes" (#879): on the controller, and only
-/// when the router and the mode offer the flow.
+/// when the router and the mode offer the flow. And each mesh node's Reboot /
+/// Factory Reset (#876), from the actions the caller says it offers.
+///
+/// The "where" and "whether" groups give a node no node actions, so they read
+/// Add nodes alone.
 void main() {
   GraphNode node(String? slot) =>
       GraphNode(id: 'n', name: 'n', styleSlot: slot);
@@ -34,7 +38,7 @@ void main() {
       expect(menu.single.identifier, kTopologyNodeAddNodesIdentifier);
     });
 
-    test('an agent offers nothing', () {
+    test('an agent never offers Add nodes', () {
       // Onboarding runs from the controller's own Bluetooth, and an agent
       // refuses the request.
       expect(menuOn(TopologySlots.slave), isNull);
@@ -51,7 +55,8 @@ void main() {
   });
 
   group('topologyNodeMenu - whether', () {
-    test('nothing, even on the controller, when the flow is not offered', () {
+    test('no Add nodes, even on the controller, when the flow is not offered',
+        () {
       // No onboarding API on this firmware, or Remote Assistance.
       expect(menuOn(TopologySlots.master, can: false), isNull);
     });
@@ -65,7 +70,11 @@ void main() {
     test('the controller lists Add nodes, then Reboot, then Factory Reset', () {
       final menu = menuOn(TopologySlots.master, actions: both);
 
-      expect(menu!.map((i) => i.value), [
+      expect(menu!.last.isDestructive, isTrue,
+          reason: 'Factory Reset is drawn as the destructive item');
+      expect(menu.where((i) => i.isDestructive), hasLength(1));
+
+      expect(menu.map((i) => i.value), [
         kTopologyMenuAddNodes,
         kTopologyMenuReboot,
         kTopologyMenuFactoryReset,

@@ -79,6 +79,7 @@ List<AppPopupMenuItem<String>>? topologyNodeMenu(
         value: kTopologyMenuFactoryReset,
         label: factoryResetLabel,
         icon: Icons.settings_backup_restore,
+        isDestructive: true,
         identifier: kTopologyNodeFactoryResetIdentifier,
       ),
   ];

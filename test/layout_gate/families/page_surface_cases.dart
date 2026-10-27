@@ -435,9 +435,11 @@ final kDeviceDetailPageCase = PageSurfaceCase(
 
 /// `page.topology` — 28.7ms/cell (#1370).
 ///
-/// `meshNetworkDevicesData`, not `singleNodeDevicesData`: the mesh state renders a
-/// gateway plus extenders plus their clients, so the tree the ui_kit [AppTopology]
-/// lays out is the wider of the two the golden suite covers.
+/// `meshNetworkWithNodeActionsDevicesData`, which is `meshNetworkDevicesData`
+/// with the agent listing both node actions (#876), not `singleNodeDevicesData`:
+/// the mesh state renders a gateway plus extenders plus their clients, so the
+/// tree the ui_kit [AppTopology] lays out is the wider of the two the golden
+/// suite covers, and every mesh row carries its menu button.
 ///
 /// [AppTopology] is the premise, and this is the page where a premise earns its
 /// keep most visibly. `usp_topology_view.dart:57` returns `SizedBox.shrink()` when

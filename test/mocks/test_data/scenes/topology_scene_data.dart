@@ -128,8 +128,10 @@ final singleNodeDevicesData = DevicesData(
 /// A **healthy** two-level mesh: gateway, one extender, clients on both. The
 /// widest tree the golden suite draws, which is why the layout gate picks this
 /// state over [singleNodeDevicesData] (`kTopologyPageCase`,
-/// `test/layout_gate/families/page_surface_cases.dart`). Neither consumer is
-/// about liveness — both want the tree at its full width and depth.
+/// `test/layout_gate/families/page_surface_cases.dart`, through
+/// [meshNetworkWithNodeActionsDevicesData], this tree with the agent's node
+/// actions). Neither consumer is about liveness — both want the tree at its
+/// full width and depth.
 ///
 /// `dataElementsId` is what says "healthy" out loud, and it has to be said here
 /// because a slave's liveness is now data: `isOnline => !livenessKnown ||

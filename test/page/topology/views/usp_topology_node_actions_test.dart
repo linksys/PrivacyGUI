@@ -1,10 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
+import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/page/admin/providers/usp_admin_notifier.dart';
+import 'package:privacy_gui/page/admin/providers/usp_admin_state.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
@@ -75,7 +81,10 @@ void main() {
     when(() => mockService.run(any(), any())).thenAnswer((_) async {});
   });
 
-  Future<void> pumpTopology(WidgetTester tester) async {
+  Future<void> pumpTopology(
+    WidgetTester tester, {
+    List<Override> extra = const [],
+  }) async {
     tester.view.physicalSize = const Size(480, 1400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -89,6 +98,7 @@ void main() {
         ),
         uspNodeActionServiceProvider.overrideWithValue(mockService),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+        ...extra,
       ],
       child: MaterialApp.router(
         locale: const Locale('en'),
@@ -174,6 +184,7 @@ void main() {
       expect(find.byType(UspTopologyView), findsOneWidget,
           reason:
               'the topology is where the nodes drop off; it does not leave');
+      expect(find.text('below the topology'), findsNothing);
       handle.dispose();
     });
 
@@ -191,5 +202,137 @@ void main() {
       verifyNever(() => mockService.run(any(), any()));
       handle.dispose();
     });
+
+    // The router's Reboot runs the Administration page's flow, whose recovery
+    // dialog must still open when the topology's data reloads meanwhile, as a
+    // pull to refresh or a push does. Measured here, not assumed: a reload
+    // keeps the previous value on screen (`AsyncValue.when` skips loading on a
+    // reload), so the data branch and the context the flow holds stay mounted.
+    testWidgets(
+        'the router\'s Reboot still opens recovery when the topology reloads',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      final recoveries = <RecoveryContext>[];
+      final rebooting = Completer<void>();
+      Completer<DevicesData>? reloading;
+      await pumpTopology(tester, extra: [
+        devicesDataProvider.overrideWith(() => _ReloadableDevicesDataNotifier(
+            DevicesData(meshNetwork: chain), () => reloading?.future)),
+        uspAdminProvider.overrideWith(() => _RebootingAdminNotifier(rebooting)),
+        appConnectionStateProvider
+            .overrideWith(() => _RecordingConnectionNotifier(recoveries)),
+      ]);
+      final container = ProviderScope.containerOf(
+          tester.element(find.byType(UspTopologyView)));
+
+      await openMenuOf(tester, 'Linksys-Router');
+      await tester.tap(find.text('Reboot'));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tapButton(tester, 'admin-confirm-action-confirm');
+
+      // The reboot is in flight; the topology's data reloads and is still
+      // loading when the reboot answers.
+      reloading = Completer<DevicesData>();
+      container.invalidate(devicesDataProvider);
+      await tester.pump();
+      expect(container.read(devicesDataProvider).isLoading, isTrue,
+          reason: 'the reload is held, so the reboot answers during it');
+      expect(find.byType(AppTopology), findsOneWidget,
+          reason: 'a reload keeps the topology on screen');
+      rebooting.complete();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(recoveries.map((r) => r.trigger),
+          [RecoveryTrigger.operationalReboot]);
+      handle.dispose();
+    });
+
+    // The router's Factory Reset from the topology goes to the same seam the
+    // Administration page's does, `UspAdminNotifier.factoryReset`, whose guard
+    // refuses it in Remote Assistance (`credentialLoss`; pinned in
+    // usp_admin_notifier_test.dart and the destructive-operation roster).
+    // What this pins is the route to that seam, not the guard again.
+    testWidgets('the router\'s Factory Reset goes through the guarded seam',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      final admin = _RecordingAdminNotifier();
+      await pumpTopology(tester, extra: [
+        uspAdminProvider.overrideWith(() => admin),
+        appConnectionStateProvider
+            .overrideWith(() => _RecordingConnectionNotifier([])),
+      ]);
+
+      await openMenuOf(tester, 'Linksys-Router');
+      await tester.tap(find.text('Factory Reset'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Reset Parent and all its child/s to Factory Default'),
+          findsOneWidget,
+          reason: 'this fixture\'s mesh is the chain, so the router has nodes '
+              'and the whole-mesh title is expected');
+      await tapButton(tester, 'admin-confirm-action-confirm');
+
+      expect(admin.calls, ['factoryReset']);
+      verifyNever(() => mockService.run(any(), any()));
+      handle.dispose();
+    });
   });
+}
+
+/// Reboots once [rebooting] completes; never finishes loading, because the
+/// flow reads none of its state.
+class _RebootingAdminNotifier extends UspAdminNotifier {
+  _RebootingAdminNotifier(this.rebooting);
+
+  final Completer<void> rebooting;
+
+  @override
+  Future<UspAdminState> build() => Completer<UspAdminState>().future;
+
+  @override
+  Future<void> reboot() => rebooting.future;
+}
+
+/// Records every recovery the flow asks for and declines it, so the test can
+/// see that it was asked for without a dialog to drive.
+class _RecordingConnectionNotifier extends AppConnectionStateNotifier {
+  _RecordingConnectionNotifier(this.calls);
+
+  final List<RecoveryContext> calls;
+
+  @override
+  bool enterWaiting({required RecoveryContext context}) {
+    calls.add(context);
+    return false;
+  }
+}
+
+/// [data] on the first build; after that, whatever [next] hands back, so a
+/// test can hold a reload in its loading state.
+class _ReloadableDevicesDataNotifier extends DevicesDataNotifier {
+  _ReloadableDevicesDataNotifier(this.data, this.next);
+
+  final DevicesData data;
+  final Future<DevicesData>? Function() next;
+  var _builds = 0;
+
+  @override
+  Future<DevicesData> build() async {
+    if (_builds++ == 0) return data;
+    return await (next() ?? Future.value(data));
+  }
+}
+
+/// Records which router operation the flow asked for, and answers it.
+class _RecordingAdminNotifier extends UspAdminNotifier {
+  final calls = <String>[];
+
+  @override
+  Future<UspAdminState> build() => Completer<UspAdminState>().future;
+
+  @override
+  Future<void> reboot() async => calls.add('reboot');
+
+  @override
+  Future<void> factoryReset() async => calls.add('factoryReset');
 }
