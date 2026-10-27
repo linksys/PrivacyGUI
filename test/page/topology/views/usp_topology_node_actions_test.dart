@@ -83,6 +83,7 @@ void main() {
 
   Future<void> pumpTopology(
     WidgetTester tester, {
+    MeshNetwork? network,
     List<Override> extra = const [],
   }) async {
     tester.view.physicalSize = const Size(480, 1400);
@@ -93,7 +94,7 @@ void main() {
       overrides: [
         ...commonOverrides(),
         ...topologyViewOverrides(
-          devicesData: DevicesData(meshNetwork: chain),
+          devicesData: DevicesData(meshNetwork: network ?? chain),
           systemInfoData: topology_scene.testSystemInfoData,
         ),
         uspNodeActionServiceProvider.overrideWithValue(mockService),
@@ -158,6 +159,26 @@ void main() {
           findsNothing,
           reason: 'Add nodes is the controller\'s only');
       handle.dispose();
+    });
+
+    // Each agent's menu is its own X_LINKSYS_SupportedOperations, read off
+    // that node: an agent listing nothing (third-party, older firmware) has
+    // no menu button beside one that lists both.
+    testWidgets('an agent that lists nothing has no menu beside one that does',
+        (tester) async {
+      await pumpTopology(
+        tester,
+        network: MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            agent(near, DevicesTestData.masterMac, 'Hallway'),
+            agent(far, near, 'Garage').copyWith(actions: const {}),
+          ],
+        ),
+      );
+
+      // The controller and Hallway; not Garage.
+      expect(find.byIcon(Icons.more_vert), findsNWidgets(2));
     });
 
     testWidgets(

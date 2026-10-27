@@ -132,20 +132,35 @@ Future<void> _confirmAndRunAgentAction(
 
 /// What to say about the node a [NodeActionFailure] stopped at.
 ///
-/// Two causes get the node's own sentence instead of the app-wide one. A
-/// refusal (7022: the agent did not confirm, was unreachable, or does not run
-/// the command) is not final, because linksys-mesh-sync resends once after the
-/// call returned (FWDEV#202), so it says the node may still act and does not
-/// invite an immediate retry, which could reset it twice. A node not found
-/// (7016, or no longer listed) has left the network. Any other cause, a lost
-/// connection say, keeps its usual message.
+/// Two causes get the node's own sentence instead of the app-wide one.
+///
+/// A refusal (7022: the agent did not confirm, was unreachable, or does not
+/// run the command) or a timeout is not final. linksys-mesh-sync sends the
+/// command once more within 20 s, inside the firmware's 25 s cap, and a
+/// command that reached the agent still runs when its confirm is lost
+/// (FWDEV#202); a timeout stops the app waiting, not the command. So it says
+/// the node may still act and does not invite an immediate retry, which could
+/// reset it twice.
+///
+/// A node not found (7016, or no longer listed) has left the network.
+///
+/// The router refusing to send it (7003: the controller could not call
+/// linksys-mesh-sync; 7002: the row was the controller's own) is named as a
+/// refusal of that node's command (#876 item 6). Nothing was sent, so its
+/// "try again" is safe.
+///
+/// Any other cause, a lost connection say, keeps its usual message.
 String _nodeActionFailureText(BuildContext context, NodeActionFailure e,
     String Function(String id) nameOf) {
   final l = loc(context);
   final node = nameOf(e.failedNodeId);
   return switch (e.cause) {
-    UspCompleteFailureError(code: 7022) => l.nodeActionNotConfirmed(node),
+    UspCompleteFailureError(code: 7022) ||
+    TimeoutError() =>
+      l.nodeActionNotConfirmed(node),
     ResourceNotFoundError() => l.nodeActionNodeGone(node),
+    UspCompleteFailureError(code: 7003 || 7002) =>
+      l.nodeActionFailed(node, l.errorCommandRefused),
     final cause =>
       l.nodeActionFailed(node, localizeServiceError(context, cause)),
   };

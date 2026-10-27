@@ -97,8 +97,10 @@ class NodeActionFailure implements Exception {
   /// Why the call to [failedNodeId] failed.
   final ServiceError cause;
 
-  /// The node whose call failed. It may still act: a 7022 timeout is not
-  /// final, because linksys-mesh-sync resends once after the call returned.
+  /// The node whose call failed. It may still act: a 7022 or a timeout is
+  /// not final, because linksys-mesh-sync sends the command once more within
+  /// 20 s, and a command that reached the agent runs even if its confirm is
+  /// lost.
   final String failedNodeId;
 
   /// The nodes that accepted before it, in the order they were sent.

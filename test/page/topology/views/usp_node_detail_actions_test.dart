@@ -234,9 +234,10 @@ void main() {
       handle.dispose();
     });
 
-    // FWDEV#202: a 7022 timeout is not final, because linksys-mesh-sync
-    // resends once after the call returned. So the message may not say the
-    // node is unchanged, and may not invite an immediate second command.
+    // FWDEV#202: a 7022 is not final. linksys-mesh-sync sends the command once
+    // more within 20 s, inside the 25 s cap, and a command that reached the
+    // agent still runs when its confirm is lost. So the message may not say
+    // the node is unchanged, and may not invite an immediate second command.
     testWidgets('an unconfirmed command says the node may still act',
         (tester) async {
       final handle = tester.ensureSemantics();
@@ -260,6 +261,54 @@ void main() {
           findsNothing);
       handle.dispose();
     });
+
+    // A timeout stops the app waiting, not the command: the Operate may
+    // already be out and the agent acting on it, so it reads like a 7022 and
+    // not like the app-wide "try again".
+    testWidgets('a timeout says the node may still act', (tester) async {
+      final handle = tester.ensureSemantics();
+      failsLater(far, const TimeoutError());
+      await open(tester, chain(), deviceId: far);
+
+      await confirmReboot(tester);
+
+      expect(
+        find.textContaining(
+            'Garage did not confirm the command. It may still '
+            'act on it',
+            findRichText: true),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Please try again', findRichText: true),
+          findsNothing);
+      handle.dispose();
+    });
+
+    // 7003: the controller could not call linksys-mesh-sync, so nothing was
+    // sent and a retry is safe. 7002: the row was the controller's own. Both
+    // are the router refusing, and named so (#876 item 6), not the generic
+    // "something went wrong".
+    for (final code in [7003, 7002]) {
+      testWidgets('a $code refusal says the router refused it', (tester) async {
+        final handle = tester.ensureSemantics();
+        failsLater(
+          far,
+          UspCompleteFailureError(summary: 'refused', failures: [], code: code),
+        );
+        await open(tester, chain(), deviceId: far);
+
+        await confirmReboot(tester);
+
+        expect(
+          find.textContaining('Garage: The router refused this command.',
+              findRichText: true),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Something went wrong', findRichText: true),
+            findsNothing);
+        handle.dispose();
+      });
+    }
 
     testWidgets('a node that left says so and names the nodes already sent',
         (tester) async {

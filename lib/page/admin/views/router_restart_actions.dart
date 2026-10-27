@@ -102,9 +102,10 @@ Future<void> confirmAndFactoryResetRouter(
   }
 }
 
-/// Whether the router has mesh nodes the call takes down with it. Not known
-/// until the devices are read, and then the single-router copy is the one
-/// shown: it is the copy this flow had before FWDEV#202, and it is true of the
-/// router itself either way.
+/// Whether the call may take mesh nodes down with the router. Only a router
+/// read as having none gets the single-router copy. Until the devices are
+/// read (the Administration page offers its buttons without them) the answer
+/// is yes: on a destructive action the copy may overstate what goes down,
+/// not understate it.
 bool _hasMesh(WidgetRef ref) =>
-    ref.read(devicesDataProvider).valueOrNull?.meshNetwork.hasMesh ?? false;
+    ref.read(devicesDataProvider).valueOrNull?.meshNetwork.hasMesh ?? true;
