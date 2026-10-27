@@ -471,16 +471,19 @@ void main() {
           container.read(addNodesProvider).phase, AddNodesPhase.noNodesFound);
     });
 
-    // usp-codegen 0.19.0: a node row missing a required leaf fails the whole
-    // read with 9998, which the service maps to InvalidInputError. Firmware that
+    // usp-codegen 0.19.0: a row missing a required leaf fails the whole read
+    // with 9998, which the service maps to InvalidInputError. Firmware that
     // drops a leaf drops it on every read, so these pin what a *persistent* one
-    // does to each of the three reads.
+    // does to each of the three reads. The notifier never looks inside the
+    // error, so one value stands for either model's: BleOnboarding's node rows
+    // or DataElementsNetwork's child rows.
     const missingLeaf = InvalidInputError(
-        code: 9998,
-        detail: 'Required fields missing from response: '
-            'Device.X_LINKSYS_BLEOnboarding.Device.1.Status');
+        code: 9998, detail: 'Required fields missing from response');
 
     test('a missing leaf on entry shows the read as failed', () async {
+      // The same path as any failed entry read (see "a failed read on entry
+      // keeps the error to show"): the entry read handles every ServiceError
+      // alike. Kept to record that a 9998 lands there too, with its code.
       when(() => service.fetchSession()).thenThrow(missingLeaf);
       final container = createContainer();
 
@@ -496,6 +499,8 @@ void main() {
       when(() => service.start())
           .thenAnswer((_) async => OnboardingStartResult.started);
       when(() => service.fetchSession()).thenThrow(missingLeaf);
+      // Count only the reads that follow the session, not the one on entry.
+      clearInteractions(service);
 
       await container.read(addNodesProvider.notifier).start();
 
@@ -504,6 +509,8 @@ void main() {
       expect(state.error, isA<TimeoutError>(),
           reason: 'the read error is retried as transient and the page ends on '
               'the session limit, not on the read');
+      expect(verify(() => service.fetchSession()).callCount, greaterThan(1),
+          reason: 'it read again rather than failing on the first error');
       verify(() => service.stop()).called(1);
     });
 
@@ -529,6 +536,11 @@ void main() {
       expect(state.phase, AddNodesPhase.failed);
       expect(state.error, isNull,
           reason: 'the page shows troubleshooting steps, not the read error');
+      // Without this the test cannot tell "read again until the limit" from
+      // "gave up on the first error": both end failed, with no error.
+      expect(verify(() => service.fetchJoinedNodes(any())).callCount,
+          greaterThan(1),
+          reason: 'it read again rather than failing on the first error');
     });
 
     test('a session that partly succeeded waits for its onboarded node',
