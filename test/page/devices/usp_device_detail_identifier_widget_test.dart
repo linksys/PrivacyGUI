@@ -4,10 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/page/_shared/models/client_device.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/devices/providers/device_detail_provider.dart';
+import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/devices/views/usp_device_detail_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../mocks/provider_overrides/mock_common.dart';
 import '../../mocks/provider_overrides/mock_devices.dart';
@@ -40,7 +45,7 @@ void main() {
     );
   });
 
-  Widget wrap(DeviceDetailState detail) {
+  Widget wrap(DeviceDetailState detail, [List<Override> extra = const []]) {
     final themeConfig = ThemeJsonConfig.defaultConfig();
     final router = GoRouter(
       initialLocation: '/',
@@ -57,6 +62,7 @@ void main() {
       overrides: [
         ...commonOverrides(),
         ...deviceDetailOverrides(detail: detail),
+        ...extra,
       ],
       child: MaterialApp.router(
         locale: const Locale('en'),
@@ -111,5 +117,68 @@ void main() {
 
       handle.dispose();
     });
+
+    // A device merged from two Hosts rows is renamed on both (#1719):
+    // devidentd keeps the name per MAC, so naming one row would split the
+    // device on the read-back.
+    testWidgets('saving a merged device\'s name writes every row',
+        (tester) async {
+      final notifier = _RecordingDevicesDataNotifier();
+      tester.view.physicalSize = const Size(1280, 2000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final merged = wifiDetailNoReservation.device!.copyWith(
+        hostInstancePath: 'Device.Hosts.Host.2.',
+        additionalInterfaces: const [
+          ClientInterfaceInfo(
+            mac: '80:69:1A:13:43:FC',
+            ip: '192.168.1.189',
+            connectionType: ConnectionType.wired,
+            isActive: true,
+            hostInstancePath: 'Device.Hosts.Host.1.',
+          ),
+        ],
+      );
+      await tester.pumpWidget(wrap(
+        DeviceDetailState(device: merged),
+        [devicesDataProvider.overrideWith(() => notifier)],
+      ));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester
+          .tap(find.bySemanticsIdentifier('device-detail-edit-identity'));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.enterText(find.byType(TextField), 'Work laptop');
+      final save = lookupAppLocalizations(const Locale('en')).save;
+      await tester.tap(find.widgetWithText(AppButton, save));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final call = notifier.calls.single;
+      expect(call.hostInstancePaths,
+          ['Device.Hosts.Host.2.', 'Device.Hosts.Host.1.']);
+      expect(call.name, 'Work laptop');
+    }, semanticsEnabled: true);
   });
+}
+
+/// Records the renames a test triggers, without writing anything.
+class _RecordingDevicesDataNotifier extends DevicesDataNotifier {
+  final calls = <({List<String> hostInstancePaths, String name})>[];
+
+  @override
+  Future<DevicesData> build() async => DevicesData(
+        meshNetwork: MeshNetwork(
+          master: MasterNode(deviceId: 'GATEWAY', model: 'Test Router'),
+        ),
+      );
+
+  @override
+  Future<void> updateIdentity({
+    required List<String> hostInstancePaths,
+    required String name,
+    String? userTypeCode,
+  }) async {
+    calls.add((hostInstancePaths: hostInstancePaths, name: name));
+  }
 }

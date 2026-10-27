@@ -95,8 +95,8 @@ class MeshNetworkBuilder {
             ))
         .toList();
 
-    // 4. Apply hostname grouping (merge multi-interface devices)
-    final groupedClients = _groupByHostname(allBuiltClients);
+    // 4. Merge each multi-interface device's rows into one client
+    final groupedClients = _groupByDetectedName(allBuiltClients);
 
     // 5. Group clients by parentNodeId
     final clientsByNodeId = <String?, List<ClientDevice>>{};
@@ -402,6 +402,7 @@ class MeshNetworkBuilder {
       ip: device.ipAddress,
       hostName: device.hostName,
       friendlyName: nonEmpty(device.linksysFriendlyName),
+      detectedName: nonEmpty(device.linksysDetectedName),
       isActive: device.isActive,
       ipv6Addresses: device.ipv6Addresses
           .map((e) => e.address)
@@ -425,7 +426,7 @@ class MeshNetworkBuilder {
   }
 
   // ---------------------------------------------------------------------------
-  // Private: Hostname grouping
+  // Private: Multi-interface grouping
   // ---------------------------------------------------------------------------
 
   /// Returns [s] if it is non-null and non-empty **without trimming**, otherwise
@@ -443,8 +444,8 @@ class MeshNetworkBuilder {
   /// A rate reading in kbps, or null when it is absent or `0` (not filled).
   static int? _rate(int? kbps) => (kbps != null && kbps > 0) ? kbps : null;
 
-  static String _normalizeHostname(String hostname) {
-    var normalized = hostname.trim().toLowerCase();
+  static String _normalizeGroupingName(String name) {
+    var normalized = name.trim().toLowerCase();
     if (normalized.isEmpty) return '';
     final mdnsSuffixIndex = normalized.indexOf('._');
     if (mdnsSuffixIndex > 0) {
@@ -453,16 +454,28 @@ class MeshNetworkBuilder {
     return normalized;
   }
 
-  static List<ClientDevice> _groupByHostname(List<ClientDevice> clients) {
+  /// Merges the Hosts rows of one device, keyed by the name devidentd
+  /// detected for them (#1719).
+  ///
+  /// FL-WRT 2.0 serves one row per MAC and no leaf links a device's rows, so
+  /// a name is the only key. `HostName` is not it: a Mac on a randomized MAC
+  /// sends only "Mac" in DHCP, while devidentd names both of its rows from
+  /// mDNS. `X_LINKSYS_FriendlyName` is not it either: it puts the user's
+  /// name first, which is kept per MAC. `X_LINKSYS_DetectedName` never holds
+  /// the user's name (FWDEV#224); until it is known, the row groups by
+  /// `HostName`. Rows are regrouped on every build, so a name devidentd
+  /// improves later regroups them; nothing stores the key.
+  static List<ClientDevice> _groupByDetectedName(List<ClientDevice> clients) {
     final grouped = <String, List<ClientDevice>>{};
     final ungrouped = <ClientDevice>[];
 
     for (final client in clients) {
-      final hostname = _normalizeHostname(client.hostName);
-      if (hostname.isEmpty) {
+      final name =
+          _normalizeGroupingName(client.detectedName ?? client.hostName);
+      if (name.isEmpty) {
         ungrouped.add(client);
       } else {
-        grouped.putIfAbsent(hostname, () => []).add(client);
+        grouped.putIfAbsent(name, () => []).add(client);
       }
     }
 
@@ -471,14 +484,14 @@ class MeshNetworkBuilder {
       if (devices.length == 1) {
         result.add(devices.first);
       } else {
-        result.add(_mergeClientsByHostname(devices));
+        result.add(_mergeClients(devices));
       }
     }
     result.addAll(ungrouped);
     return result;
   }
 
-  static ClientDevice _mergeClientsByHostname(List<ClientDevice> devices) {
+  static ClientDevice _mergeClients(List<ClientDevice> devices) {
     final sorted = List<ClientDevice>.from(devices)
       ..sort((a, b) {
         if (a.isActive != b.isActive) return a.isActive ? -1 : 1;
@@ -496,16 +509,18 @@ class MeshNetworkBuilder {
               isActive: d.isActive,
               layer1Interface: d.layer1Interface,
               wifi: d.wifi,
+              hostInstancePath: d.hostInstancePath,
             ))
         .toList();
 
     logger.d('[MeshNetworkBuilder]: Merged ${devices.length} interfaces for '
-        'hostname="${primary.hostName}" — primary=${primary.mac}');
+        '"${primary.displayName}" — primary=${primary.mac}');
 
     // The name and icon the user gave are kept per MAC, so they may sit on a
     // row that is not the primary: a laptop named on its cable, now on Wi-Fi.
-    // Take them, and the row an edit writes back to, from the first row that
-    // has either, so the name does not vanish when the primary changes (#1691).
+    // Take them from the first row that has either, so the name does not
+    // vanish when the primary changes (#1691). An edit writes every row
+    // (#1719), so it needs no row of its own.
     final named = sorted.firstWhere(
       (d) => d.userDeviceName != null || d.userDeviceType != null,
       orElse: () => primary,
@@ -516,7 +531,6 @@ class MeshNetworkBuilder {
       friendlyName: named.friendlyName,
       userDeviceName: named.userDeviceName,
       userDeviceType: named.userDeviceType,
-      hostInstancePath: named.hostInstancePath,
     );
   }
 

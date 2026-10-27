@@ -176,7 +176,7 @@ class UspNodeDetailView extends ConsumerWidget {
         showIcon: false,
         onSave: (name, _) => ref
             .read(devicesDataProvider.notifier)
-            .updateIdentity(hostInstancePath: hostInstancePath, name: name),
+            .updateIdentity(hostInstancePaths: [hostInstancePath], name: name),
       ),
     );
     if (saved == true && context.mounted) {

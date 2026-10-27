@@ -583,6 +583,59 @@ void main() {
     });
   });
 
+  // A merged device carries every Hosts row it was built from, so a rename
+  // reaches all of them (#1719). Each interface carries its own row.
+  group('ClientDevice hostInstancePaths (#1719)', () {
+    final merged = DevicesTestData.createWifiClient().copyWith(
+      hostInstancePath: 'Device.Hosts.Host.3.',
+      additionalInterfaces: const [
+        ClientInterfaceInfo(
+          mac: '11:22:33:44:55:FE',
+          ip: '192.168.1.151',
+          connectionType: ConnectionType.wired,
+          isActive: true,
+          hostInstancePath: 'Device.Hosts.Host.7.',
+        ),
+      ],
+    );
+
+    test('lists the primary row first, then each interface\'s row', () {
+      expect(merged.hostInstancePaths,
+          ['Device.Hosts.Host.3.', 'Device.Hosts.Host.7.']);
+    });
+
+    test('is empty for a client not built from a Hosts row', () {
+      expect(DevicesTestData.createWifiClient().hostInstancePaths, isEmpty);
+    });
+
+    // The grouping key (FWDEV#224): kept by copyWith, seen by equality.
+    test('detectedName survives copyWith and takes part in equality', () {
+      final named =
+          DevicesTestData.createWifiClient().copyWith(detectedName: 'Desk PC');
+      expect(named.copyWith().detectedName, 'Desk PC');
+      expect(named, isNot(equals(named.copyWith(detectedName: 'Laptop'))));
+    });
+
+    test('an interface\'s row takes part in its equality', () {
+      const iface = ClientInterfaceInfo(
+        mac: '11:22:33:44:55:FE',
+        ip: '192.168.1.151',
+        connectionType: ConnectionType.wired,
+        isActive: true,
+        hostInstancePath: 'Device.Hosts.Host.7.',
+      );
+      expect(
+          iface,
+          isNot(equals(const ClientInterfaceInfo(
+            mac: '11:22:33:44:55:FE',
+            ip: '192.168.1.151',
+            connectionType: ConnectionType.wired,
+            isActive: true,
+            hostInstancePath: 'Device.Hosts.Host.8.',
+          ))));
+    });
+  });
+
   group('ClientInterfaceInfo', () {
     test('isWifi returns true for WiFi connection type', () {
       final wifi = DevicesTestData.createWifiInterface();

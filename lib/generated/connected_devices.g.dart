@@ -55,6 +55,7 @@ class ConnectedDevice {
   final String? linksysOperatingSystem;
   final String? linksysDeviceType;
   final String? linksysFriendlyName;
+  final String? linksysDetectedName;
   final String? linksysUserDeviceName;
   final String? linksysUserDeviceLocation;
   final String? linksysUserDeviceType;
@@ -89,6 +90,7 @@ class ConnectedDevice {
     this.linksysOperatingSystem,
     this.linksysDeviceType,
     this.linksysFriendlyName,
+    this.linksysDetectedName,
     this.linksysUserDeviceName,
     this.linksysUserDeviceLocation,
     this.linksysUserDeviceType,
@@ -145,6 +147,7 @@ class ConnectedDevices {
     'Device.Hosts.Host.*.X_LINKSYS_OperatingSystem',
     'Device.Hosts.Host.*.X_LINKSYS_DeviceType',
     'Device.Hosts.Host.*.X_LINKSYS_FriendlyName',
+    'Device.Hosts.Host.*.X_LINKSYS_DetectedName',
     'Device.Hosts.Host.*.X_LINKSYS_UserDeviceName',
     'Device.Hosts.Host.*.X_LINKSYS_UserDeviceLocation',
     'Device.Hosts.Host.*.X_LINKSYS_UserDeviceType',
@@ -200,6 +203,7 @@ class ConnectedDevices {
         response['${p}X_LINKSYS_OperatingSystem'],
         response['${p}X_LINKSYS_DeviceType'],
         response['${p}X_LINKSYS_FriendlyName'],
+        response['${p}X_LINKSYS_DetectedName'],
         response['${p}X_LINKSYS_UserDeviceName'],
         response['${p}X_LINKSYS_UserDeviceLocation'],
         response['${p}X_LINKSYS_UserDeviceType']
@@ -343,6 +347,9 @@ class ConnectedDevices {
             : null,
         linksysFriendlyName: response.containsKey('${p}X_LINKSYS_FriendlyName')
             ? response['${p}X_LINKSYS_FriendlyName'] as String
+            : null,
+        linksysDetectedName: response.containsKey('${p}X_LINKSYS_DetectedName')
+            ? response['${p}X_LINKSYS_DetectedName'] as String
             : null,
         linksysUserDeviceName:
             response.containsKey('${p}X_LINKSYS_UserDeviceName')

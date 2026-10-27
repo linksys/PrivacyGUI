@@ -245,13 +245,11 @@ void main() {
       await tester.tap(find.widgetWithText(AppButton, save));
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(notifier.calls, [
-        (
-          hostInstancePath: 'Device.Hosts.Host.3.',
-          name: 'Upstairs',
-          type: null
-        ),
-      ]);
+      // Field by field: a record compares its List by identity.
+      final call = notifier.calls.single;
+      expect(call.hostInstancePaths, ['Device.Hosts.Host.3.']);
+      expect(call.name, 'Upstairs');
+      expect(call.type, isNull);
     }, semanticsEnabled: true);
 
     testWidgets('the router keeps its Rename router pen', (tester) async {
@@ -321,7 +319,8 @@ void main() {
 
 /// Records the renames a test triggers, without writing anything.
 class _RecordingDevicesDataNotifier extends DevicesDataNotifier {
-  final calls = <({String hostInstancePath, String name, String? type})>[];
+  final calls =
+      <({List<String> hostInstancePaths, String name, String? type})>[];
 
   @override
   Future<DevicesData> build() async => DevicesData(
@@ -332,11 +331,11 @@ class _RecordingDevicesDataNotifier extends DevicesDataNotifier {
 
   @override
   Future<void> updateIdentity({
-    required String hostInstancePath,
+    required List<String> hostInstancePaths,
     required String name,
     String? userTypeCode,
   }) async {
     calls.add(
-        (hostInstancePath: hostInstancePath, name: name, type: userTypeCode));
+        (hostInstancePaths: hostInstancePaths, name: name, type: userTypeCode));
   }
 }
