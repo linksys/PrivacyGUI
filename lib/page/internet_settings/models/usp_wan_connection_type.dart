@@ -1,3 +1,38 @@
+/// 1.0's PPP limits, which the firmware enforces (linksys/feed_usp#55 netmngr
+/// 036, 037, 050; the Keep Alive interval since feed_usp#68): idle time 1–9999
+/// minutes, Keep Alive "reconnect after" 20–180 seconds with 30 as 1.0's
+/// default, and a user name and password of at most 255 characters.
+const kPppIdleMinutesMin = 1;
+const kPppIdleMinutesMax = 9999;
+const kPppKeepAliveSecondsMin = 20;
+const kPppKeepAliveSecondsMax = 180;
+const kPppKeepAliveDefaultSeconds = 30;
+const kPppCredentialMaxLength = 255;
+
+/// The messages netmngr refuses a WAN write with (linksys/feed_usp#55, patches
+/// 036 and 039; fault 7012, nothing written). Each is the refused leaf's whole
+/// `errorMessage`, measured on 2.0.3.26102008. The service reads them off a
+/// refusal and the page shows each with its own message.
+class WanRefusalNames {
+  static const invalidServer = 'Invalid server';
+  static const invalidIpAddress = 'Invalid IP address';
+  static const invalidPrefixLength = 'Invalid network prefix length';
+  static const invalidGateway = 'Invalid gateway';
+  static const invalidPrimaryDns = 'Invalid primary DNS server';
+  static const invalidDns = 'Invalid DNS server';
+  static const invalidMtu = 'Invalid MTU';
+
+  static const all = [
+    invalidServer,
+    invalidIpAddress,
+    invalidPrefixLength,
+    invalidGateway,
+    invalidPrimaryDns,
+    invalidDns,
+    invalidMtu,
+  ];
+}
+
 /// WAN connection types supported via USP TR-181.
 enum UspWanConnectionType {
   dhcp,
@@ -95,14 +130,7 @@ enum UspWanConnectionType {
   /// Whether this type uses a PPP.Interface (credentials, LowerLayers).
   bool get isPppBased => this == pppoe || this == pptp || this == l2tp;
 
-  /// The LowerLayers value for PPP.Interface when switching to this type.
-  ///
-  /// PPPoE clears it: an empty LowerLayers is what selects plain PPPoE on this
-  /// firmware (linksys/PrivacyGUI#762 comment 5987286082).
-  String? get pppLowerLayers => switch (this) {
-        pppoe => '',
-        pptp => 'Device.GRE.Tunnel.1.Interface.1',
-        l2tp => 'Device.L2TPv2.Tunnel.1.Interface.1',
-        _ => null,
-      };
+  /// Whether this type runs PPP over a tunnel row: `GRE.Tunnel` for PPTP,
+  /// `L2TPv2.Tunnel` for L2TP.
+  bool get isTunnel => this == pptp || this == l2tp;
 }

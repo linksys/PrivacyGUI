@@ -177,7 +177,7 @@
   "macAddress": "Endereço MAC",
   "macAddressClone": "Clonar endereço MAC",
   "manufacturer": "Fabricante",
-  "maxIdleTime": "Tempo máximo de inatividade",
+  "maxIdleTime": "Tempo máximo de inatividade (minutos)",
   "menu": "Menu",
   "menuRestartNetworkChildMessage": "Reiniciar Nó e Todos os Nós Filhos. A reinicialização do sistema Wi-Fi em malha o desconectará temporariamente da Internet. Se você tiver vários nós, todos serão reiniciados. Os dispositivos conectados também experimentarão uma desconexão temporária, mas se reconectarão automaticamente assim que o sistema estiver online novamente.",
   "menuRestartNetworkLastMessage": "Reiniciar o nó secundário irá interromper temporariamente a sua ligação à Internet. Todos os dispositivos ligados também serão temporariamente desligados, mas voltarão a ligar-se quando o nó estiver pronto.",
@@ -1283,5 +1283,8 @@
   "nodeActionFailedAfterSent": "{failure} Já enviado para: {sent}.",
   "nodeActionSkippedNodes": "Estes nós não suportam este comando e não o irão receber, mas perderão a ligação enquanto os nós através dos quais estão ligados estiverem indisponíveis: {nodes}.",
   "nodeActionNotConfirmed": "{node} não confirmou o comando. Pode ainda executá-lo, por isso verifique a topologia antes de tentar novamente.",
-  "nodeActionNodeGone": "{node} já não está na sua rede."
+  "nodeActionNodeGone": "{node} já não está na sua rede.",
+  "valueOutOfRange": "Tem de estar entre {min} e {max}",
+  "maxCharacters": "No máximo {max} carateres",
+  "invalidSubnetMask": "Máscara de sub-rede inválida"
 }

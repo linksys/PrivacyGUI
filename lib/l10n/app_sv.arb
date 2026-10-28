@@ -177,7 +177,7 @@
   "macAddress": "MAC-adress",
   "macAddressClone": "MAC-adresskloning",
   "manufacturer": "Tillverkare",
-  "maxIdleTime": "Maximal väntetid",
+  "maxIdleTime": "Maximal väntetid (minuter)",
   "menu": "Meny",
   "menuRestartNetworkChildMessage": "Starta om noden och alla underordnade noder. Omstart av mesh Wi-Fi-systemet kommer tillfälligt att koppla bort det från Internet. Om du har flera noder kommer alla att starta om. Anslutna enheter kommer också att uppleva en tillfällig frånkoppling men kommer automatiskt att återansluta när systemet är online igen.",
   "menuRestartNetworkLastMessage": "Om du har fler än en nod kommer alla att starta om. Om du startar om mesh WiFi-systemet kopplas det tillfälligt från Internet. Alla noder och anslutna enheter kommer också att kopplas bort tillfälligt, men de kommer att återansluta när mesh-systemet är redo igen.",
@@ -1283,5 +1283,8 @@
   "nodeActionFailedAfterSent": "{failure} Redan skickat till: {sent}.",
   "nodeActionSkippedNodes": "De här noderna kan inte ta emot det här kommandot, och det skickas inte till dem, men de förlorar anslutningen medan noderna som de är anslutna via är nere: {nodes}.",
   "nodeActionNotConfirmed": "{node} bekräftade inte kommandot. Den kan fortfarande utföra det, så kontrollera topologin innan du försöker igen.",
-  "nodeActionNodeGone": "{node} finns inte längre i ditt nätverk."
+  "nodeActionNodeGone": "{node} finns inte längre i ditt nätverk.",
+  "valueOutOfRange": "Måste vara mellan {min} och {max}",
+  "maxCharacters": "Högst {max} tecken",
+  "invalidSubnetMask": "Ogiltig nätmask"
 }

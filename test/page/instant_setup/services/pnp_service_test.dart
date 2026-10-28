@@ -23,6 +23,7 @@ void main() {
   const wanResponse = <String, dynamic>{
     'Device.IP.Interface.2.IPv4Address.1.AddressingType': 'DHCP',
     'Device.IP.Interface.2.MaxMTUSize': '1500',
+    'Device.IP.Interface.2.LowerLayers': 'Device.Ethernet.Link.2',
     'Device.IP.Interface.2.IPv4Address.1.IPAddress': '',
     'Device.IP.Interface.2.IPv4Address.1.SubnetMask': '',
     'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway': '',

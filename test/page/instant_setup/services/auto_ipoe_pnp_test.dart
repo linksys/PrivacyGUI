@@ -23,6 +23,7 @@ void stubOrdinaryWan(MockPnpClient client) {
         'Device.IP.Interface.2.IPv4Address.1.SubnetMask': '255.255.255.0',
         'Device.IP.Interface.2.IPv4Address.1.AddressingType': 'DHCP',
         'Device.IP.Interface.2.MaxMTUSize': '1500',
+        'Device.IP.Interface.2.LowerLayers': 'Device.Ethernet.Link.2',
         'Device.IP.Interface.2.IPv6Enable': true,
       });
 }

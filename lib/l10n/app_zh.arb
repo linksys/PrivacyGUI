@@ -178,7 +178,7 @@
   "macAddressClone": "MAC地址克隆",
   "main": "主要",
   "manufacturer": "制造商",
-  "maxIdleTime": "最大空闲时间",
+  "maxIdleTime": "最大空闲时间（分钟）",
   "menu": "菜单",
   "menuRestartNetworkChildMessage": "重启节点和所有子节点。重启 Mesh WiFi 系统将暂时断开互联网连接。如果您有多个节点，所有节点都将重启。连接的设备也将暂时断开连接，但系统上线后会自动重新连接。",
   "menuRestartNetworkLastMessage": "如果您有多个节点，所有节点都将重启。重启 Mesh WiFi 系统会暂时断开其互联网连接。所有节点和已连接的设备也将暂时断开，但当 Mesh 系统再次就绪时会自动重新连接。",
@@ -1283,5 +1283,8 @@
   "nodeActionFailedAfterSent": "{failure}已发送至：{sent}。",
   "nodeActionSkippedNodes": "以下节点不支持此命令，因此不会收到该命令，但在其连接所经过的节点离线期间，这些节点也会断开连接：{nodes}。",
   "nodeActionNotConfirmed": "{node} 未确认此命令。该节点仍可能执行此命令，因此请先查看拓扑再重试。",
-  "nodeActionNodeGone": "{node} 已不在您的网络中。"
+  "nodeActionNodeGone": "{node} 已不在您的网络中。",
+  "valueOutOfRange": "必须介于 {min} 和 {max} 之间",
+  "maxCharacters": "最多 {max} 个字符",
+  "invalidSubnetMask": "子网掩码无效"
 }

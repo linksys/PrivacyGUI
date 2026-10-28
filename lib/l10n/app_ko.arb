@@ -175,7 +175,7 @@
   "macAddress": "MAC 주소",
   "macAddressClone": "MAC 주소 복제",
   "manufacturer": "제조사",
-  "maxIdleTime": "최대 유휴 시간",
+  "maxIdleTime": "최대 유휴 시간(분)",
   "menu": "메뉴",
   "menuRestartNetworkChildMessage": "노드 및 모든 하위 노드 재부팅. 메시 Wi-Fi 시스템을 다시 시작하면 일시적으로 인터넷 연결이 끊어집니다. 여러 개의 노드가 있는 경우 모두 다시 시작됩니다. 연결된 장치도 일시적으로 연결이 끊어지지만 시스템이 다시 온라인 상태가 되면 자동으로 다시 연결됩니다.",
   "menuRestartNetworkLastMessage": "여러 개의 노드가 있는 경우 모두 다시 시작됩니다. 메시 WiFi 시스템을 다시 시작하면 일시적으로 인터넷 연결이 끊깁니다. 모든 노드와 연결된 장치도 일시적으로 연결이 끊기지만 메시 시스템이 준비되면 다시 연결됩니다.",
@@ -1283,5 +1283,8 @@
   "nodeActionFailedAfterSent": "{failure} 이미 전송됨: {sent}.",
   "nodeActionSkippedNodes": "다음 노드는 이 명령을 지원하지 않아 명령이 전송되지 않지만, 연결 경로상의 노드가 오프라인인 동안에는 연결이 끊어집니다: {nodes}.",
   "nodeActionNotConfirmed": "{node}이(가) 명령을 확인하지 않았습니다. 여전히 명령을 실행할 수 있으므로 다시 시도하기 전에 토폴로지를 확인하세요.",
-  "nodeActionNodeGone": "{node}이(가) 더 이상 네트워크에 없습니다."
+  "nodeActionNodeGone": "{node}이(가) 더 이상 네트워크에 없습니다.",
+  "valueOutOfRange": "{min}에서 {max} 사이여야 합니다",
+  "maxCharacters": "최대 {max}자",
+  "invalidSubnetMask": "잘못된 서브넷 마스크"
 }

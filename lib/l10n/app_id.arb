@@ -175,7 +175,7 @@
   "macAddress": "Alamat MAC",
   "macAddressClone": "Klon Alamat MAC",
   "manufacturer": "Produsen",
-  "maxIdleTime": "Waktu idle maksimum",
+  "maxIdleTime": "Waktu idle maksimum (menit)",
   "menu": "Menu",
   "menuRestartNetworkChildMessage": "Nyalakan Ulang Node dan Semua Node Child. Menyalakan ulang sistem WiFi mesh akan memutuskan koneksi internet sementara. Jika Anda memiliki beberapa node, semua akan menyala ulang. Perangkat yang terhubung juga akan mengalami pemutusan sementara tetapi akan secara otomatis terhubung kembali setelah sistem online kembali.",
   "menuRestartNetworkLastMessage": "Jika Anda memiliki lebih dari satu simpul, semuanya akan dimulai ulang. Memulai ulang sistem WiFi mesh sementara memutuskan sambungannya dari Internet. Semua simpul dan perangkat tersambung juga akan terputus sementara, tetapi akan tersambung kembali ketika sistem mesh siap.",
@@ -1283,5 +1283,8 @@
   "nodeActionFailedAfterSent": "{failure} Sudah dikirim ke: {sent}.",
   "nodeActionSkippedNodes": "Node berikut tidak mendukung perintah ini sehingga tidak akan dikirimi perintah tersebut, tetapi akan terputus selama node yang menjadi jalur sambungannya tidak aktif: {nodes}.",
   "nodeActionNotConfirmed": "{node} tidak mengonfirmasi perintah. Node tersebut mungkin masih menjalankannya, jadi periksa topologi sebelum mencoba lagi.",
-  "nodeActionNodeGone": "{node} tidak lagi berada di jaringan Anda."
+  "nodeActionNodeGone": "{node} tidak lagi berada di jaringan Anda.",
+  "valueOutOfRange": "Harus antara {min} dan {max}",
+  "maxCharacters": "Maksimal {max} karakter",
+  "invalidSubnetMask": "Subnet mask tidak valid"
 }

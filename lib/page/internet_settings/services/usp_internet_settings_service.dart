@@ -46,17 +46,8 @@ class UspInternetSettingsService {
   /// [_enterBridgeMode] and [_exitBridgeMode].
   static const _bridgeSetTimeout = Duration(seconds: 4);
 
-  /// The WAN tunnel and 6rd rows.
-  ///
-  /// GRE, L2TPv2 and IPv6rd are tables, so the generated models return every
-  /// row. The firmware drives the WAN through row 1 of each — the PPP
-  /// `LowerLayers` values in [UspWanConnectionType.pppLowerLayers] name
-  /// `Tunnel.1`, and linksys/PrivacyGUI#762 (comment 5987286082) keeps
-  /// instance `.1` for both tunnels. Which 6rd row is the WAN one is still
-  /// unconfirmed upstream (usp_framework#73), so it stays on row 1 as before.
-  static const _greTunnelPath = 'Device.GRE.Tunnel.1.';
-  static const _l2tpTunnelPath = 'Device.L2TPv2.Tunnel.1.';
-  static const _ipv6rdPath = 'Device.IPv6rd.InterfaceSetting.1.';
+  /// 1.0's KeepAlive: missed echo replies before the link is dropped.
+  static const _keepAliveEchoRetry = 5;
 
   // ---------------------------------------------------------------------------
   // Fetch
@@ -88,8 +79,10 @@ class UspInternetSettingsService {
       final dhcpv6 = results[5] as Dhcpv6Clients;
       final ipv6rd = results[6] as Ipv6rdSettings;
 
-      final pppInstance = ppp.items.isNotEmpty ? ppp.items.first : null;
-      final vlanInstance = vlan.items.isNotEmpty ? vlan.items.first : null;
+      final pppInstance = _wanPppRow(ppp.items, wan.lowerLayers);
+      // No leaf ties the WAN to its VLAN row yet (no VLAN row on
+      // 2.0.3.26102008 to read the chain from), so the only row, never a guess.
+      final vlanInstance = vlan.items.length == 1 ? vlan.items.single : null;
       final ipv4 = wan.ipv4Addresses.firstOrNull;
       final addressingType = ipv4?.addressingType ?? '';
 
@@ -100,18 +93,7 @@ class UspInternetSettingsService {
         interfaceEnabled: wan.enable,
         lowerLayers: pppInstance?.lowerLayers ?? '',
       );
-      GreTunnel? gre;
-      L2tpTunnel? l2tp;
-      switch (connectionType) {
-        case UspWanConnectionType.pptp:
-          gre = _rowAt((await GreTunnels.fetch(_usp)).items, _greTunnelPath,
-              (r) => r.instancePath);
-        case UspWanConnectionType.l2tp:
-          l2tp = _rowAt((await L2tpTunnels.fetch(_usp)).items, _l2tpTunnelPath,
-              (r) => r.instancePath);
-        default:
-          break;
-      }
+      final tunnel = await _fetchTunnel(connectionType);
 
       return InternetSettingsFetchResult(
         form: _buildForm(
@@ -119,11 +101,10 @@ class UspInternetSettingsService {
           ipv4: ipv4,
           ipv6: ipv6,
           dhcpv6: _wanDhcpv6Client(dhcpv6, wan.instancePath),
-          ipv6rd: _rowAt(ipv6rd.items, _ipv6rdPath, (r) => r.instancePath),
+          ipv6rd: _wanIpv6rdRow(ipv6rd),
           ppp: pppInstance,
           vlan: vlanInstance,
-          gre: gre,
-          l2tp: l2tp,
+          tunnel: tunnel.row,
           connectionType: connectionType,
         ),
         readOnlyInfo: _buildReadOnlyInfo(pppInstance, hostName),
@@ -142,13 +123,50 @@ class UspInternetSettingsService {
     }
   }
 
-  /// The row of [rows] at [path], or null when the table has no such row.
-  static T? _rowAt<T>(List<T> rows, String path, String Function(T) pathOf) {
+  /// The 6rd row the WAN uses: the first the table lists, or null when it
+  /// lists none.
+  ///
+  /// No leaf names the WAN's row: with 6rd on, `TunneledInterface` stays empty
+  /// on every row (bench 2.0.3.26102008), so the first row is taken, which is
+  /// the row the firmware maps to its `wan6rd` section there.
+  static Ipv6rdSetting? _wanIpv6rdRow(Ipv6rdSettings table) =>
+      table.items.firstOrNull;
+
+  /// The PPP row the WAN runs on.
+  ///
+  /// On PPPoE, PPTP and L2TP the WAN's `LowerLayers` names it (TR-181 stacks
+  /// `IP.Interface` on `PPP.Interface`; bench 2.0.3.26102008:
+  /// `Device.PPP.Interface.1`). On DHCP and Static it names the Ethernet link
+  /// and no PPP row, so the only row is the one a switch to PPP writes. Null
+  /// when the table is empty, or has several rows the WAN names none of.
+  static PppInterfaceInstance? _wanPppRow(
+      List<PppInterfaceInstance> rows, String wanLowerLayers) {
+    final named = ensureTrailingDot(wanLowerLayers);
     for (final row in rows) {
-      if (pathOf(row) == path) return row;
+      if (row.instancePath == named) return row;
     }
-    return null;
+    return rows.length == 1 ? rows.single : null;
   }
+
+  /// The rows of the tunnel table [type] runs over: `GRE.Tunnel` for PPTP,
+  /// `L2TPv2.Tunnel` for L2TP, nothing for any other type.
+  ///
+  /// The firmware creates one row of each (linksys/PrivacyGUI#762 comment
+  /// 5987286082, bench 2026-10-27), and no leaf names the WAN's, so the WAN's
+  /// tunnel is the only row: [_TunnelTable.row] is null when the table has none
+  /// or several.
+  Future<_TunnelTable> _fetchTunnel(UspWanConnectionType type) async =>
+      switch (type) {
+        UspWanConnectionType.pptp => _TunnelTable(type, [
+            for (final r in (await GreTunnels.fetch(_usp)).items)
+              _TunnelRow.gre(r),
+          ]),
+        UspWanConnectionType.l2tp => _TunnelTable(type, [
+            for (final r in (await L2tpTunnels.fetch(_usp)).items)
+              _TunnelRow.l2tp(r),
+          ]),
+        _ => _TunnelTable(type, const []),
+      };
 
   /// The DHCPv6 client bound to the WAN interface.
   static Dhcpv6Client? _wanDhcpv6Client(
@@ -183,8 +201,8 @@ class UspInternetSettingsService {
   // Build form — DNS comma-separated split happens here
   // ---------------------------------------------------------------------------
 
-  /// [ipv4], [dhcpv6], [ipv6rd], [gre] and [l2tp] are rows of tables that may
-  /// be empty: no WAN `IPv4Address` row (bridge mode on FW 2.0.2), no DHCPv6
+  /// [ipv4], [dhcpv6], [ipv6rd] and [tunnel] are rows of tables that may be
+  /// empty: no WAN `IPv4Address` row (bridge mode on FW 2.0.2), no DHCPv6
   /// client bound to the WAN, no tunnel row. An absent row reads as that row's
   /// defaults.
   UspInternetSettingsForm _buildForm({
@@ -195,26 +213,22 @@ class UspInternetSettingsService {
     required Ipv6rdSetting? ipv6rd,
     required PppInterfaceInstance? ppp,
     required VlanTerminationInstance? vlan,
-    required GreTunnel? gre,
-    required L2tpTunnel? l2tp,
+    required _TunnelRow? tunnel,
     required UspWanConnectionType connectionType,
   }) {
     // Split comma-separated DNS into 3 fields
-    final dnsParts = (ipv4?.dnsServers ?? '')
-        .split(',')
-        .map((s) => s.trim())
-        .where((s) => s.isNotEmpty)
-        .toList();
+    final dnsParts = _splitDns(ipv4?.dnsServers ?? '');
 
     // Server address from the tunnel fetchSettings' phase 2 loaded for this
-    // connection type. A PPTP/L2TP WAN whose Tunnel.1 row is absent reads as
-    // an empty server address, which fails form validation and prompts the
-    // user to re-enter it.
-    final serverAddress = switch (connectionType) {
-      UspWanConnectionType.pptp => gre?.remoteEndpoints ?? '',
-      UspWanConnectionType.l2tp => l2tp?.remoteEndpoints ?? '',
-      _ => '',
-    };
+    // connection type. A PPTP/L2TP WAN with no single tunnel row reads as an
+    // empty server address, which fails form validation and prompts the user
+    // to re-enter it. The underlay is read on PPTP only, the one type the page
+    // offers it on.
+    final underlay = connectionType == UspWanConnectionType.pptp &&
+            tunnel?.underlayAddressingType == 'Static'
+        ? tunnel
+        : null;
+    final underlayDns = _splitDns(underlay?.underlayDnsServers ?? '');
 
     return UspInternetSettingsForm(
       connectionType: connectionType,
@@ -228,9 +242,18 @@ class UspInternetSettingsService {
       pppPassword: ppp?.password ?? '',
       pppoeServiceName: ppp?.pppoeServiceName ?? '',
       connectionTrigger: ppp?.connectionTrigger ?? 'AlwaysOn',
-      idleDisconnectTime: ppp?.idleDisconnectTime ?? 0,
-      lcpEchoInterval: ppp?.lcpEcho ?? 0,
-      serverAddress: serverAddress,
+      // TR-181 holds seconds; the form holds minutes, as 1.0. Rounded up, so
+      // an On Demand WAN under a minute never reads as 0.
+      idleDisconnectTime: ((ppp?.idleDisconnectTime ?? 0) + 59) ~/ 60,
+      lcpEchoInterval: _keepAliveInterval(ppp),
+      serverAddress: tunnel?.remoteEndpoints ?? '',
+      underlayStatic: underlay != null,
+      underlayIpAddress: underlay?.underlayIpAddress ?? '',
+      underlaySubnetMask: underlay?.underlaySubnetMask ?? '',
+      underlayGateway: underlay?.underlayDefaultGateway ?? '',
+      underlayDns1: underlayDns.elementAtOrNull(0) ?? '',
+      underlayDns2: underlayDns.elementAtOrNull(1) ?? '',
+      underlayDns3: underlayDns.elementAtOrNull(2) ?? '',
       vlanEnabled: vlan?.enable ?? false,
       vlanId: vlan?.vlanId ?? 0,
       mtu: wan.mtu,
@@ -245,6 +268,15 @@ class UspInternetSettingsService {
       ipv6rdIpv4MaskLength: ipv6rd?.ipv4MaskLength ?? 0,
       ipv6rdBorderRelay: ipv6rd?.borderRelay ?? '',
     );
+  }
+
+  /// The Keep Alive interval (`LCPEcho`) to show: a value outside 20–180 s
+  /// reads as 30, 1.0's default (FWDEV#212).
+  static int _keepAliveInterval(PppInterfaceInstance? ppp) {
+    final value = ppp?.lcpEcho ?? 0;
+    return value >= kPppKeepAliveSecondsMin && value <= kPppKeepAliveSecondsMax
+        ? value
+        : kPppKeepAliveDefaultSeconds;
   }
 
   InternetSettingsReadOnlyInfo _buildReadOnlyInfo(
@@ -269,7 +301,8 @@ class UspInternetSettingsService {
   ///    tunnel writes so the firmware syncs `proto` and the GRE/L2TPv2 tunnel
   ///    instance becomes valid (per Architecture issue #119)
   /// 3. Save PPP LowerLayers + credentials (one batch on a mode switch)
-  /// 4. Set tunnel RemoteEndpoints (server address)
+  /// 4. Set tunnel RemoteEndpoints (server address) and the PPTP static
+  ///    underlay, on the only tunnel row, read before step 1
   /// 5. Save PPP instance fields (connection mode)
   /// 6. Save VLAN instance fields (if instance exists)
   /// 7. Save IPv6 fields
@@ -299,6 +332,11 @@ class UspInternetSettingsService {
       final leavingBridge =
           typeChanged && original.connectionType == UspWanConnectionType.bridge;
 
+      // Step 0: read the tunnel row a PPTP / L2TP save writes, so a WAN with
+      // no single row, or a static underlay the firmware cannot take, is
+      // refused before anything is sent.
+      final tunnel = await _tunnelToWrite(edited);
+
       // Step 1: PPP lifecycle
       final pppPath = await _handlePppLifecycle(
         edited,
@@ -313,11 +351,11 @@ class UspInternetSettingsService {
 
       // Step 3: PPP LowerLayers + credentials
       if (pppPath != null && edited.connectionType.isPppBased) {
-        await _savePppLink(original, edited, pppPath);
+        await _savePppLink(original, edited, pppPath, tunnel: tunnel);
       }
 
-      // Step 4: Set tunnel RemoteEndpoints (server address)
-      await _saveTunnelRemoteEndpoints(original, edited);
+      // Step 4: tunnel RemoteEndpoints (server address) and static underlay
+      if (tunnel != null) await _saveTunnel(original, edited, tunnel);
 
       // Step 5: PPP instance fields
       if (pppPath != null && edited.connectionType.isPppBased) {
@@ -340,10 +378,37 @@ class UspInternetSettingsService {
       } else if (leavingBridge) {
         await _exitBridgeMode();
       }
+    } on UspCompleteFailureError catch (e) {
+      throw _refusalOf(e.failures) ?? e;
+    } on UspPartialFailureError catch (e) {
+      throw _refusalOf(e.failures) ?? e;
     } catch (e) {
       if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
+  }
+
+  /// A save refused before anything is sent, because a table the router lists
+  /// has no row to write to — or several, where no leaf names the WAN's.
+  ///
+  /// Logged here, since a [ServiceError] prints only its type: a field log
+  /// would otherwise read "Resource not found" for every one of them.
+  static ResourceNotFoundError _refuse(String why) {
+    logger.w('[USP][WAN]: $why — nothing sent');
+    return ResourceNotFoundError(detail: why);
+  }
+
+  /// A refusal that carries one of netmngr's WAN messages, as an
+  /// [InvalidInputError] whose `field` is that message, so the page can say
+  /// which check the firmware applied. Null for any other failure.
+  static InvalidInputError? _refusalOf(List<UspErrorDetail> failures) {
+    final refusal = refusalNameIn(failures, WanRefusalNames.all);
+    if (refusal == null) return null;
+    return InvalidInputError(
+      field: refusal.name,
+      code: refusal.detail.errorCode,
+      detail: refusal.detail.errorMessage,
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -503,10 +568,10 @@ class UspInternetSettingsService {
   Future<void> _updateWanIpv4(
     WanSettingsIpv4AddressUpdate Function(String instancePath) build,
   ) async {
-    final row = (await WanSettings.fetch(_usp)).ipv4Addresses.firstOrNull;
+    final wan = await WanSettings.fetch(_usp);
+    final row = wan.ipv4Addresses.firstOrNull;
     if (row == null) {
-      throw const ResourceNotFoundError(
-          detail: 'WAN IPv4Address row is absent; nothing to write');
+      throw _refuse('${wan.instancePath}IPv4Address has no row');
     }
     _handleSetResult(await WanSettings.updateOrderedIpv4Addresses(
         _usp, [build(row.instancePath)]));
@@ -583,23 +648,52 @@ class UspInternetSettingsService {
   // PPP instance save
   // ---------------------------------------------------------------------------
 
+  /// Writes the connection mode: the trigger, and the idle time (On Demand) or
+  /// the Keep Alive interval (Keep Alive).
+  ///
+  /// The idle time is held in minutes and sent in seconds. It is never sent
+  /// with Keep Alive: the firmware derives `ConnectionTrigger` from it, so a
+  /// later `IdleDisconnectTime` in the same save turns On Demand back on
+  /// (linksys/feed_usp#55 netmngr 050).
+  ///
+  /// Every Keep Alive save sends 1.0's KeepAlive as one Set: `LCPEcho` the
+  /// interval, `LCPEchoRetry` 5, `LCPEchoAdaptive` false (linksys/feed_usp#68;
+  /// "sent on every KeepAlive save", FWDEV#212). A router holding an
+  /// out-of-range `LCPEcho` reads as 30, and only this write makes it so.
+  /// Writing `LCPEcho` no longer turns adaptive echo off by itself.
   Future<void> _savePppSettings(
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited,
     String instancePath,
   ) async {
+    final onDemand = edited.connectionTrigger == 'OnDemand';
+    final idleMinutes = onDemand
+        ? _diff(original.idleDisconnectTime, edited.idleDisconnectTime) ??
+            (original.connectionTrigger != edited.connectionTrigger
+                ? edited.idleDisconnectTime
+                : null)
+        : null;
+    final update = PppInterfaceInstanceUpdate(
+      instancePath: instancePath,
+      pppoeServiceName:
+          _diff(original.pppoeServiceName, edited.pppoeServiceName),
+      connectionTrigger:
+          _diff(original.connectionTrigger, edited.connectionTrigger),
+      idleDisconnectTime: idleMinutes == null ? null : idleMinutes * 60,
+    );
     _handleSetResult(await PppInterface.update(
       _usp,
       [
-        PppInterfaceInstanceUpdate(
-          instancePath: instancePath,
-          pppoeServiceName:
-              _diff(original.pppoeServiceName, edited.pppoeServiceName),
-          connectionTrigger:
-              _diff(original.connectionTrigger, edited.connectionTrigger),
-          idleDisconnectTime:
-              _diff(original.idleDisconnectTime, edited.idleDisconnectTime),
-        )
+        !onDemand
+            ? PppInterfaceInstanceUpdate(
+                instancePath: instancePath,
+                pppoeServiceName: update.pppoeServiceName,
+                connectionTrigger: update.connectionTrigger,
+                lcpEcho: edited.lcpEchoInterval,
+                lcpEchoRetry: _keepAliveEchoRetry,
+                lcpEchoAdaptive: false,
+              )
+            : update,
       ],
     ));
   }
@@ -613,61 +707,139 @@ class UspInternetSettingsService {
   /// On a switch into or between PPP modes all three are sent, so the firmware
   /// gets the whole link in the SET that follows `AddressingType=IPCP` (#762
   /// comment 5987286082, SET 2). Otherwise only changed credentials are sent.
+  ///
+  /// `LowerLayers` is empty for PPPoE, which is what selects plain PPPoE on
+  /// this firmware (#762 comment 5987286082), and [tunnel]'s interface, without
+  /// the trailing dot, for PPTP / L2TP.
   Future<void> _savePppLink(
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited,
-    String instancePath,
-  ) async {
+    String instancePath, {
+    required _TunnelRow? tunnel,
+  }) async {
     final typeChanged = original.connectionType != edited.connectionType;
-    final lowerLayers =
-        typeChanged ? edited.connectionType.pppLowerLayers : null;
+    final lowerLayers = !typeChanged
+        ? null
+        : edited.connectionType.isTunnel
+            ? withoutTrailingDot(tunnel!.interfacePath!)
+            : '';
     if (lowerLayers != null) {
       logger.d('[USP][WAN]: Setting LowerLayers to "$lowerLayers"');
     }
-    _handleSetResult(await PppInterface.update(
-      _usp,
-      [
-        PppInterfaceInstanceUpdate(
-          instancePath: instancePath,
-          lowerLayers: lowerLayers,
-          username: typeChanged
-              ? edited.pppUsername
-              : _diff(original.pppUsername, edited.pppUsername),
-          password: typeChanged
-              ? edited.pppPassword
-              : _diff(original.pppPassword, edited.pppPassword),
-        )
-      ],
-    ));
+    final update = PppInterfaceInstanceUpdate(
+      instancePath: instancePath,
+      lowerLayers: lowerLayers,
+      username: typeChanged
+          ? edited.pppUsername
+          : _diff(original.pppUsername, edited.pppUsername),
+      password: typeChanged
+          ? edited.pppPassword
+          : _diff(original.pppPassword, edited.pppPassword),
+    );
+    _handleSetResult(await PppInterface.update(_usp, [update]));
   }
 
   // ---------------------------------------------------------------------------
-  // Tunnel RemoteEndpoints — server address for PPTP/L2TP
+  // Tunnel row — server address and static underlay for PPTP/L2TP
   // ---------------------------------------------------------------------------
 
-  Future<void> _saveTunnelRemoteEndpoints(
+  /// The tunnel row [edited] writes, read before anything is sent.
+  ///
+  /// Null when [edited] is not PPTP / L2TP. Throws [ResourceNotFoundError] when
+  /// the table has no row or several (no leaf names the WAN's), or when the
+  /// row has no interface for PPP to run on.
+  Future<_TunnelRow?> _tunnelToWrite(UspInternetSettingsForm edited) async {
+    final read = await _fetchTunnel(edited.connectionType);
+    if (!read.type.isTunnel) return null;
+    final row = read.row;
+    if (row == null) {
+      throw _refuse('${read.type.name} needs exactly one ${read.table} row, '
+          'found ${read.rows.length}');
+    }
+    if (row.interfacePath == null) {
+      throw _refuse('${row.instancePath}Interface has no row');
+    }
+    return row;
+  }
+
+  /// Writes the server address and the underlay on [row] with `updateOrdered`.
+  ///
+  /// Each value is compared with what [row] holds, not with [original]: on a
+  /// type switch the original form describes the other tunnel. The underlay
+  /// type goes in the first group, with the server, so the firmware checks the
+  /// fields that follow against it (linksys/feed_usp#55 netmngr 039); a switch
+  /// to Static sends every field, otherwise only the fields edited.
+  ///
+  /// The groups are sent in order and partially: the generated `updateOrdered`
+  /// passes `allowPartial: true`. So a refused IP or mask leaves the server and
+  /// the type written. The page checks every field the firmware refuses before
+  /// it saves, which is what keeps that from happening.
+  ///
+  /// The page offers the underlay on PPTP only, as 1.0. The firmware keeps the
+  /// GRE and L2TPv2 underlay in the same WAN section, so an L2TP save sets the
+  /// row back to DHCP rather than leave a PPTP static underlay under it.
+  Future<void> _saveTunnel(
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited,
+    _TunnelRow row,
   ) async {
-    final serverDiff = _diff(original.serverAddress, edited.serverAddress);
-    if (serverDiff == null) return;
-
-    switch (edited.connectionType) {
+    final wantStatic = edited.connectionType == UspWanConnectionType.pptp &&
+        edited.underlayStatic;
+    final underlayType =
+        _diff(row.underlayAddressingType, wantStatic ? 'Static' : 'DHCP');
+    final toStatic = wantStatic && underlayType != null;
+    String? field(String originalValue, String editedValue) => !wantStatic
+        ? null
+        : toStatic
+            ? editedValue
+            : _diff(originalValue, editedValue);
+    final update = (
+      remoteEndpoints: _diff(row.remoteEndpoints, edited.serverAddress),
+      underlayAddressingType: underlayType,
+      underlayIpAddress:
+          field(original.underlayIpAddress, edited.underlayIpAddress),
+      underlaySubnetMask:
+          field(original.underlaySubnetMask, edited.underlaySubnetMask),
+      underlayDefaultGateway:
+          field(original.underlayGateway, edited.underlayGateway),
+      underlayDnsServers: field(
+          _mergeDns(original.underlayDns1, original.underlayDns2,
+              original.underlayDns3),
+          _mergeDns(
+              edited.underlayDns1, edited.underlayDns2, edited.underlayDns3)),
+    );
+    // Nothing to write is not sent: updateOrdered() with no groups returns a
+    // result the parser cannot read (an untyped `data` map).
+    final Future<Map<String, dynamic>> Function()? send;
+    switch (row.type) {
       case UspWanConnectionType.pptp:
-        logger.d('[USP][WAN]: Setting GRE RemoteEndpoints to $serverDiff');
-        _handleSetResult(await GreTunnels.update(_usp, [
-          GreTunnelUpdate(
-              instancePath: _greTunnelPath, remoteEndpoints: serverDiff),
-        ]));
+        final gre = GreTunnelUpdate(
+          instancePath: row.instancePath,
+          remoteEndpoints: update.remoteEndpoints,
+          underlayAddressingType: update.underlayAddressingType,
+          underlayIpAddress: update.underlayIpAddress,
+          underlaySubnetMask: update.underlaySubnetMask,
+          underlayDefaultGateway: update.underlayDefaultGateway,
+          underlayDnsServers: update.underlayDnsServers,
+        );
+        send = GreTunnels.updateOrderedGroups([gre]).isEmpty
+            ? null
+            : () => GreTunnels.updateOrdered(_usp, [gre]);
       case UspWanConnectionType.l2tp:
-        logger.d('[USP][WAN]: Setting L2TP RemoteEndpoints to $serverDiff');
-        _handleSetResult(await L2tpTunnels.update(_usp, [
-          L2tpTunnelUpdate(
-              instancePath: _l2tpTunnelPath, remoteEndpoints: serverDiff),
-        ]));
+        final l2tp = L2tpTunnelUpdate(
+          instancePath: row.instancePath,
+          remoteEndpoints: update.remoteEndpoints,
+          underlayAddressingType: update.underlayAddressingType,
+        );
+        send = L2tpTunnels.updateOrderedGroups([l2tp]).isEmpty
+            ? null
+            : () => L2tpTunnels.updateOrdered(_usp, [l2tp]);
       default:
-        break;
+        throw StateError('${row.type.name} has no tunnel row');
     }
+    if (send == null) return;
+    logger.d('[USP][WAN]: Writing tunnel ${row.instancePath}: $update');
+    _handleSetResult(await send());
   }
 
   // ---------------------------------------------------------------------------
@@ -701,17 +873,17 @@ class UspInternetSettingsService {
   ) async {
     final ipv6Enabled = _diff(original.ipv6Enabled, edited.ipv6Enabled);
     final dhcpv6Enabled = _diff(original.dhcpv6Enabled, edited.dhcpv6Enabled);
-    final ipv6rd = Ipv6rdSettingUpdate(
-      instancePath: _ipv6rdPath,
-      enabled: _diff(original.ipv6rdEnabled, edited.ipv6rdEnabled),
-      prefix: _diff(original.ipv6rdPrefix, edited.ipv6rdPrefix),
-      ipv4MaskLength:
-          _diff(original.ipv6rdIpv4MaskLength, edited.ipv6rdIpv4MaskLength),
-      borderRelay: _diff(original.ipv6rdBorderRelay, edited.ipv6rdBorderRelay),
-    );
-    if (ipv6Enabled == null &&
-        dhcpv6Enabled == null &&
-        Ipv6rdSettings.updateParams([ipv6rd]).isEmpty) {
+    final ipv6rdEnabled = _diff(original.ipv6rdEnabled, edited.ipv6rdEnabled);
+    final ipv6rdPrefix = _diff(original.ipv6rdPrefix, edited.ipv6rdPrefix);
+    final ipv6rdMaskLength =
+        _diff(original.ipv6rdIpv4MaskLength, edited.ipv6rdIpv4MaskLength);
+    final ipv6rdBorderRelay =
+        _diff(original.ipv6rdBorderRelay, edited.ipv6rdBorderRelay);
+    final ipv6rdChanged = ipv6rdEnabled != null ||
+        ipv6rdPrefix != null ||
+        ipv6rdMaskLength != null ||
+        ipv6rdBorderRelay != null;
+    if (ipv6Enabled == null && dhcpv6Enabled == null && !ipv6rdChanged) {
       return;
     }
 
@@ -726,6 +898,21 @@ class UspInternetSettingsService {
         throw const ResourceNotFoundError(
             detail: 'No DHCPv6 client is bound to the WAN interface');
       }
+    }
+    // The same for a 6rd change with no 6rd row to write it to.
+    Ipv6rdSettingUpdate? ipv6rd;
+    if (ipv6rdChanged) {
+      final row = _wanIpv6rdRow(await Ipv6rdSettings.fetch(_usp));
+      if (row == null) {
+        throw _refuse('Device.IPv6rd.InterfaceSetting has no row');
+      }
+      ipv6rd = Ipv6rdSettingUpdate(
+        instancePath: row.instancePath,
+        enabled: ipv6rdEnabled,
+        prefix: ipv6rdPrefix,
+        ipv4MaskLength: ipv6rdMaskLength,
+        borderRelay: ipv6rdBorderRelay,
+      );
     }
 
     // IPv6 settings span three USP services (IP.Interface, DHCPv6.Client,
@@ -742,7 +929,7 @@ class UspInternetSettingsService {
           Dhcpv6ClientUpdate(
               instancePath: client.instancePath, enable: dhcpv6Enabled),
         ]),
-      ...Ipv6rdSettings.updateParams([ipv6rd]),
+      if (ipv6rd != null) ...Ipv6rdSettings.updateParams([ipv6rd]),
     };
     if (params.isEmpty) return;
     _handleSetResult(await _usp.set(params, allowPartial: true));
@@ -805,6 +992,10 @@ class UspInternetSettingsService {
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
+
+  /// Split a comma-separated DNS list into its non-empty entries.
+  static List<String> _splitDns(String dns) =>
+      dns.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
 
   /// Merge 3 DNS fields into comma-separated string.
   String _mergeDns(String dns1, String dns2, String dns3) {
@@ -874,4 +1065,60 @@ class InternetSettingsFetchResult {
     this.debugMtu = 0,
     this.debugIpv6Enabled = false,
   });
+}
+
+/// A PPTP (`Device.GRE.Tunnel.{i}`) or L2TP (`Device.L2TPv2.Tunnel.{i}`) row.
+/// The two generated rows carry the same leaves; [type] says which it is.
+class _TunnelRow {
+  final UspWanConnectionType type;
+  final String instancePath;
+  final String remoteEndpoints;
+  final String? underlayAddressingType;
+  final String? underlayIpAddress;
+  final String? underlaySubnetMask;
+  final String? underlayDefaultGateway;
+  final String? underlayDnsServers;
+
+  /// The tunnel's interface row, the layer PPP runs on; null when it has none.
+  final String? interfacePath;
+
+  _TunnelRow.gre(GreTunnel r)
+      : type = UspWanConnectionType.pptp,
+        instancePath = r.instancePath,
+        interfacePath = r.interface?.instancePath,
+        remoteEndpoints = r.remoteEndpoints,
+        underlayAddressingType = r.underlayAddressingType,
+        underlayIpAddress = r.underlayIpAddress,
+        underlaySubnetMask = r.underlaySubnetMask,
+        underlayDefaultGateway = r.underlayDefaultGateway,
+        underlayDnsServers = r.underlayDnsServers;
+
+  _TunnelRow.l2tp(L2tpTunnel r)
+      : type = UspWanConnectionType.l2tp,
+        instancePath = r.instancePath,
+        interfacePath = r.interface?.instancePath,
+        remoteEndpoints = r.remoteEndpoints,
+        underlayAddressingType = r.underlayAddressingType,
+        underlayIpAddress = r.underlayIpAddress,
+        underlaySubnetMask = r.underlaySubnetMask,
+        underlayDefaultGateway = r.underlayDefaultGateway,
+        underlayDnsServers = r.underlayDnsServers;
+}
+
+/// The tunnel table a connection type runs over, read as every row.
+class _TunnelTable {
+  final UspWanConnectionType type;
+  final List<_TunnelRow> rows;
+
+  const _TunnelTable(this.type, this.rows);
+
+  /// The WAN's tunnel: the only row, or null when there is none or several.
+  _TunnelRow? get row => rows.length == 1 ? rows.single : null;
+
+  /// The TR-181 table [type] runs over.
+  String get table => switch (type) {
+        UspWanConnectionType.pptp => 'Device.GRE.Tunnel',
+        UspWanConnectionType.l2tp => 'Device.L2TPv2.Tunnel',
+        _ => 'no tunnel',
+      };
 }

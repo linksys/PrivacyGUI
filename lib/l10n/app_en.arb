@@ -310,7 +310,7 @@
   "macAddress": "MAC Address",
   "macAddressClone": "MAC address clone",
   "manufacturer": "Manufacturer",
-  "maxIdleTime": "Max idle time",
+  "maxIdleTime": "Max idle time (minutes)",
   "memory": "Memory",
   "memoryPercent": "Memory: {percent}%",
   "@memoryPercent": {
@@ -2184,5 +2184,11 @@
   "nodeActionNotConfirmed": "{node} did not confirm the command. It may still act on it, so check the topology before you try again.",
   "@nodeActionNotConfirmed": {"description": "A mesh node did not confirm a reboot or factory reset (it timed out, could not be reached, or refused). The firmware may still deliver the command, so the message must not say the node is unchanged, and must not invite an immediate retry.", "placeholders": {"node": {"type": "String", "example": "Living Room"}}},
   "nodeActionNodeGone": "{node} is no longer in your network.",
-  "@nodeActionNodeGone": {"description": "A reboot or factory reset could not be sent because the mesh node has left the network (it is restarting or offline).", "placeholders": {"node": {"type": "String", "example": "Living Room"}}}
+  "@nodeActionNodeGone": {"description": "A reboot or factory reset could not be sent because the mesh node has left the network (it is restarting or offline).", "placeholders": {"node": {"type": "String", "example": "Living Room"}}},
+  "valueOutOfRange": "Must be between {min} and {max}",
+  "@valueOutOfRange": {"description": "A field holds a number outside the range the router accepts, e.g. an idle time of 1 to 9999 minutes.", "placeholders": {"min": {"type": "int", "example": "1"}, "max": {"type": "int", "example": "9999"}}},
+  "maxCharacters": "At most {max} characters",
+  "@maxCharacters": {"description": "A text field is longer than the router accepts, e.g. a PPP user name of more than 255 characters.", "placeholders": {"max": {"type": "int", "example": "255"}}},
+  "invalidSubnetMask": "Invalid subnet mask",
+  "@invalidSubnetMask": {"description": "A subnet mask is not a contiguous dotted IPv4 mask of /8 to /31, or the router refused it (Invalid network prefix length)."}
 }

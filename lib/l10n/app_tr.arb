@@ -175,7 +175,7 @@
   "macAddress": "MAC Adresi",
   "macAddressClone": "MAC Adresi Kopyalama",
   "manufacturer": "Üretici",
-  "maxIdleTime": "Maksimum boşta kalma süresi",
+  "maxIdleTime": "Maksimum boşta kalma süresi (dakika)",
   "menu": "Menü",
   "menuRestartNetworkChildMessage": "Düğümü ve Tüm Alt Düğümleri Yeniden Başlat. Mesh WiFi sistemini yeniden başlatmak, internet bağlantısını geçici olarak keser. Birden fazla düğümünüz varsa, hepsi yeniden başlar. Bağlı cihazlar da geçici bir bağlantı kesintisi yaşar ancak sistem tekrar çevrimiçi olduğunda otomatik olarak yeniden bağlanır.",
   "menuRestartNetworkLastMessage": "Birden fazla düğümünüz varsa tümü yeniden başlatılır. WiFi ağ sistemini yeniden başlatmak internet ile olan bağlantısının geçici olarak kesilmesine neden olur. Tüm düğümlerin ve bağlı cihazların da bağlantısı geçici olarak kesilir ancak ağ sistemi hazır olduğunda tekrar bağlanacaklar.",
@@ -1283,5 +1283,8 @@
   "nodeActionFailedAfterSent": "{failure} Zaten gönderildi: {sent}.",
   "nodeActionSkippedNodes": "Bu düğümler bu komutu desteklemedikleri için komut onlara gönderilmeyecek, ancak üzerinden bağlandıkları düğümler devre dışıyken bağlantılarını kaybedecekler: {nodes}.",
   "nodeActionNotConfirmed": "{node} komutu onaylamadı. Komutu yine de uygulayabilir, bu nedenle yeniden denemeden önce topolojiyi kontrol edin.",
-  "nodeActionNodeGone": "{node} artık ağınızda değil."
+  "nodeActionNodeGone": "{node} artık ağınızda değil.",
+  "valueOutOfRange": "{min} ile {max} arasında olmalıdır",
+  "maxCharacters": "En fazla {max} karakter",
+  "invalidSubnetMask": "Geçersiz alt ağ maskesi"
 }

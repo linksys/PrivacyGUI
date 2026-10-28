@@ -177,7 +177,7 @@
   "macAddress": "MAC-adresse",
   "macAddressClone": "MAC-adresseklon",
   "manufacturer": "Producent",
-  "maxIdleTime": "Maksimal ventetid",
+  "maxIdleTime": "Maksimal ventetid (minutter)",
   "menu": "Menu",
   "menuRestartNetworkChildMessage": "Genstart node og alle underordnede noder. Genstart af mesh Wi-Fi-systemet vil midlertidigt afbryde det fra internettet. Hvis du har flere noder, vil alle genstarte. Tilsluttede enheder vil også opleve en midlertidig afbrydelse, men vil automatisk genoprette forbindelse, når systemet er online igen.",
   "menuRestartNetworkLastMessage": "Genstart af undernode vil midlertidigt afbryde dens internetforbindelse. Alle tilsluttede enheder vil også midlertidigt blive afbrudt, men vil genoprette forbindelsen, når noden er klar igen.",
@@ -1283,5 +1283,8 @@
   "nodeActionFailedAfterSent": "{failure} Allerede sendt til: {sent}.",
   "nodeActionSkippedNodes": "Disse noder kan ikke modtage denne kommando, og den sendes ikke til dem, men de mister forbindelsen, mens de noder, de er forbundet via, er nede: {nodes}.",
   "nodeActionNotConfirmed": "{node} bekræftede ikke kommandoen. Den kan stadig udføre den, så tjek topologien, før du prøver igen.",
-  "nodeActionNodeGone": "{node} er ikke længere i dit netværk."
+  "nodeActionNodeGone": "{node} er ikke længere i dit netværk.",
+  "valueOutOfRange": "Skal være mellem {min} og {max}",
+  "maxCharacters": "Højst {max} tegn",
+  "invalidSubnetMask": "Ugyldig undernetmaske"
 }

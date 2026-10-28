@@ -9,6 +9,7 @@ import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_feature_state.dart';
 import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_form_validator.dart';
@@ -18,6 +19,7 @@ import 'package:privacy_gui/page/internet_settings/views/sections/usp_ipv4_secti
 import 'package:privacy_gui/page/internet_settings/views/sections/usp_ipv6_section.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 import 'package:privacy_gui/page/internet_settings/views/helpers/bridge_redirect_dialog.dart';
+import 'package:privacy_gui/page/internet_settings/views/helpers/wan_field_error_localization.dart';
 import 'package:privacy_gui/page/internet_settings/views/sections/usp_optional_section.dart';
 import 'package:privacy_gui/page/internet_settings/views/sections/usp_renew_section.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -269,6 +271,12 @@ class UspInternetSettingsView extends ConsumerWidget {
         await showBridgeRedirectDialog(context, hostName: hostName);
       } else {
         showSuccessSnackBar(context, loc(context).changesSaved);
+      }
+    } on InvalidInputError catch (e) {
+      // A check the page makes before saving, or a refusal the firmware named
+      // (linksys/FWDEV#212).
+      if (context.mounted) {
+        showFailedSnackBar(context, localizeWanSaveError(context, e));
       }
     } catch (e) {
       if (context.mounted) {

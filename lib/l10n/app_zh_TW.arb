@@ -178,7 +178,7 @@
   "macAddressClone": "MAC 位址複製",
   "main": "主要",
   "manufacturer": "製造商",
-  "maxIdleTime": "最大閒置時間",
+  "maxIdleTime": "最大閒置時間（分鐘）",
   "menu": "選單",
   "menuRestartNetworkChildMessage": "重新啟動節點和所有子節點。重新啟動 Mesh WiFi 系統會暫時中斷其網際網路連線。若您有多個節點，所有節點都將重新啟動。已連線的裝置也將暫時斷線，但系統重新上線後會自動重新連線。",
   "menuRestartNetworkLastMessage": "如果您有多個節點，所有節點都將重新啟動。重新啟動 Mesh WiFi 系統會暫時中斷其網際網路連線。所有節點與已連線的裝置也將暫時斷線，但當 Mesh 系統再次就緒時會自動重新連線。",
@@ -1283,5 +1283,8 @@
   "nodeActionFailedAfterSent": "{failure}已傳送至：{sent}。",
   "nodeActionSkippedNodes": "下列節點不支援此命令，因此不會收到該命令，但在其連線所經過的節點離線期間，這些節點也會中斷連線：{nodes}。",
   "nodeActionNotConfirmed": "{node} 未確認此命令。該節點仍可能會執行此命令，因此請先檢視拓撲再重試。",
-  "nodeActionNodeGone": "{node} 已不在您的網路中。"
+  "nodeActionNodeGone": "{node} 已不在您的網路中。",
+  "valueOutOfRange": "必須介於 {min} 和 {max} 之間",
+  "maxCharacters": "最多 {max} 個字元",
+  "invalidSubnetMask": "子網路遮罩不正確"
 }

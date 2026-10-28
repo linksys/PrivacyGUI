@@ -175,7 +175,7 @@
   "macAddress": "MAC-osoite",
   "macAddressClone": "MAC-osoitteen klooni",
   "manufacturer": "Valmistaja",
-  "maxIdleTime": "Enimmäisjoutoaika",
+  "maxIdleTime": "Enimmäisjoutoaika (minuuttia)",
   "menu": "Valikko",
   "menuRestartNetworkChildMessage": "Käynnistä solmu ja kaikki alisolmut uudelleen. Mesh-Wi-Fi-järjestelmän uudelleenkäynnistys katkaisee sen väliaikaisesti Internet-yhteydestä. Jos sinulla on useita solmuja, kaikki käynnistyvät uudelleen. Liitetyt laitteet kokevat myös väliaikaisen yhteyden katkeamisen, mutta muodostavat automaattisesti yhteyden uudelleen, kun järjestelmä on taas online.",
   "menuRestartNetworkLastMessage": "Jos sinulla on useita solmuja, ne kaikki käynnistyvät uudelleen. Mesh-WiFi-järjestelmän uudelleenkäynnistys katkaisee sen Internet-yhteyden tilapäisesti. Kaikkien solmujen ja yhdistettyjen laitteiden yhteys katkeaa myös tilapäisesti, mutta ne yhdistyvät uudelleen, kun mesh-järjestelmä on valmis.",
@@ -1283,5 +1283,8 @@
   "nodeActionFailedAfterSent": "{failure} Lähetetty jo: {sent}.",
   "nodeActionSkippedNodes": "Nämä solmut eivät voi vastaanottaa tätä komentoa, eikä sitä lähetetä niille, mutta niiden yhteys katkeaa siksi aikaa, kun solmut, joiden kautta ne on yhdistetty, eivät ole käytettävissä: {nodes}.",
   "nodeActionNotConfirmed": "{node} ei vahvistanut komentoa. Se voi silti suorittaa sen, joten tarkista topologia ennen kuin yrität uudelleen.",
-  "nodeActionNodeGone": "{node} ei ole enää verkossasi."
+  "nodeActionNodeGone": "{node} ei ole enää verkossasi.",
+  "valueOutOfRange": "Arvon on oltava välillä {min}–{max}",
+  "maxCharacters": "Enintään {max} merkkiä",
+  "invalidSubnetMask": "Virheellinen aliverkon peite"
 }

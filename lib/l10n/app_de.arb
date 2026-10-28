@@ -177,7 +177,7 @@
   "macAddress": "MAC-Adresse",
   "macAddressClone": "MAC-Adresse kopieren",
   "manufacturer": "Hersteller",
-  "maxIdleTime": "Maximale Wartezeit",
+  "maxIdleTime": "Maximale Wartezeit (Minuten)",
   "menu": "Menu",
   "menuRestartNetworkChildMessage": "Knoten und alle untergeordneten Knoten neu starten. Das Neustarten des Mesh-WLAN-Systems trennt es vorübergehend vom Internet. Wenn Sie mehrere Knoten haben, werden alle neu gestartet. Verbundene Geräte werden ebenfalls eine temporäre Trennung erfahren, verbinden sich jedoch automatisch wieder, sobald das System wieder online ist.",
   "menuRestartNetworkLastMessage": "Der Neustart des untergeordneten Knotens wird seine Internetverbindung vorübergehend unterbrechen. Alle verbundenen Geräte werden ebenfalls vorübergehend getrennt, stellen aber die Verbindung wieder her, wenn der Knoten wieder bereit ist.",
@@ -1283,5 +1283,8 @@
   "nodeActionFailedAfterSent": "{failure} Bereits gesendet an: {sent}.",
   "nodeActionSkippedNodes": "Diese Knoten können diesen Befehl nicht ausführen und erhalten ihn nicht, verlieren aber ihre Verbindung, solange die Knoten, über die sie verbunden sind, ausgefallen sind: {nodes}.",
   "nodeActionNotConfirmed": "{node} hat den Befehl nicht bestätigt. Der Knoten kann ihn trotzdem noch ausführen. Prüfen Sie daher die Topologie, bevor Sie es erneut versuchen.",
-  "nodeActionNodeGone": "{node} ist nicht mehr in Ihrem Netzwerk."
+  "nodeActionNodeGone": "{node} ist nicht mehr in Ihrem Netzwerk.",
+  "valueOutOfRange": "Muss zwischen {min} und {max} liegen",
+  "maxCharacters": "Höchstens {max} Zeichen",
+  "invalidSubnetMask": "Ungültige Subnetzmaske"
 }

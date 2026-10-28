@@ -60,6 +60,7 @@ class WanSettings {
   final bool enable;
   final int mtu;
   final String? mtuMode;
+  final String lowerLayers;
   final List<WanSettingsIpv4Address> ipv4Addresses;
 
   const WanSettings({
@@ -67,6 +68,7 @@ class WanSettings {
     required this.enable,
     required this.mtu,
     this.mtuMode,
+    required this.lowerLayers,
     required this.ipv4Addresses,
   });
 
@@ -90,6 +92,7 @@ class WanSettings {
         '${instancePath}Enable',
         '${instancePath}MaxMTUSize',
         '${instancePath}X_LINKSYS_MTUMode',
+        '${instancePath}LowerLayers',
         '${instancePath}IPv4Address.*.AddressingType',
         '${instancePath}IPv4Address.*.IPAddress',
         '${instancePath}IPv4Address.*.SubnetMask',
@@ -112,6 +115,9 @@ class WanSettings {
     }
     if (!response.containsKey('${instancePath}MaxMTUSize')) {
       missing.add('${instancePath}MaxMTUSize');
+    }
+    if (!response.containsKey('${instancePath}LowerLayers')) {
+      missing.add('${instancePath}LowerLayers');
     }
     if (missing.isNotEmpty) {
       throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
@@ -170,6 +176,7 @@ class WanSettings {
       mtuMode: response.containsKey('${instancePath}X_LINKSYS_MTUMode')
           ? response['${instancePath}X_LINKSYS_MTUMode'] as String
           : null,
+      lowerLayers: (response['${instancePath}LowerLayers'] ?? '') as String,
       ipv4Addresses: ipv4Addresses,
     );
   }
@@ -318,6 +325,7 @@ class WanSettings {
         'enable: $enable, '
         'mtu: $mtu, '
         'mtuMode: $mtuMode, '
+        'lowerLayers: $lowerLayers, '
         'ipv4Addresses: $ipv4Addresses'
         ')';
   }
