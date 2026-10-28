@@ -151,6 +151,99 @@ class AddNodesNodeUIModel extends Equatable {
       [bleMacAddress, modelNumber, status, rssi, alMacAddress];
 }
 
+/// Where the flow is, for telling a node's status from its outcome (#1738).
+enum AddNodesStage {
+  /// The session is running on the router: a node may still move on its own.
+  running,
+
+  /// The session has ended and the flow is waiting for its nodes to show in
+  /// DataElements.
+  awaiting,
+
+  /// Nothing more is waited for: the outcome is final.
+  settled,
+}
+
+/// What the page says about one node (#1738).
+///
+/// Four, because the customer's next step differs for each: wait, nothing, try
+/// again after the troubleshooting, or simply try again. "Not online yet" used
+/// to cover the first three.
+enum AddNodesNodeOutcome {
+  /// A mesh node: in DataElements with a backhaul link.
+  added,
+
+  /// Still being worked on, by the router or by the wait for DataElements.
+  joining,
+
+  /// Tried and did not join.
+  failed,
+
+  /// The session ended before reaching it.
+  notTried,
+}
+
+/// The outcome the page shows for [node] at [stage] (#1738).
+///
+/// [joinedKeys] are the AL MACs DataElements has listed with a backhaul link,
+/// normalized by `meshNodeMacKey`; [isJoined] answers for one node, so this
+/// stays free of the key format. [interrupted] are BLE MACs of nodes the flow
+/// stopped mid-onboarding at its session limit: the app sent `Stop()` for
+/// them, so they are failed whatever the router reads next.
+///
+/// The one place every status maps to an outcome, so the node list, the choice
+/// of result screen and their tests all read the same rule.
+AddNodesNodeOutcome outcomeOf(
+  AddNodesNodeUIModel node, {
+  required AddNodesStage stage,
+  required bool Function(String alMac) isJoined,
+  Set<String> interrupted = const {},
+}) {
+  final alMac = node.alMacAddress;
+  if (alMac != null && isJoined(alMac)) return AddNodesNodeOutcome.added;
+  if (interrupted.contains(node.bleMacAddress)) {
+    return AddNodesNodeOutcome.failed;
+  }
+
+  switch (node.status) {
+    case OnboardingNodeStatus.pending:
+    case OnboardingNodeStatus.cancelled:
+      // Never reached. While running, it is queued, which is the same answer.
+      return AddNodesNodeOutcome.notTried;
+    case OnboardingNodeStatus.notTargeted:
+      // Outside a MAC list; the flow sends none, so it should never be seen.
+      return AddNodesNodeOutcome.notTried;
+    case OnboardingNodeStatus.connecting:
+    case OnboardingNodeStatus.onboarding:
+      return stage == AddNodesStage.running
+          ? AddNodesNodeOutcome.joining
+          : AddNodesNodeOutcome.failed;
+    case OnboardingNodeStatus.onboarded:
+      // An onboarded node with no AL MAC cannot be looked up, so the session's
+      // word is all there is: taken, as before #1738.
+      if (alMac == null) return AddNodesNodeOutcome.added;
+      return stage == AddNodesStage.settled
+          ? AddNodesNodeOutcome.failed
+          : AddNodesNodeOutcome.joining;
+    case OnboardingNodeStatus.failedWps:
+    case OnboardingNodeStatus.lostConnection:
+      // The firmware corrects these upward when the node joins late, so they
+      // are joining until the wait is over — and after the session only one
+      // with an AL MAC can be looked for at all.
+      return switch (stage) {
+        AddNodesStage.running => AddNodesNodeOutcome.joining,
+        AddNodesStage.awaiting => alMac == null
+            ? AddNodesNodeOutcome.failed
+            : AddNodesNodeOutcome.joining,
+        AddNodesStage.settled => AddNodesNodeOutcome.failed,
+      };
+    case OnboardingNodeStatus.failedConnect:
+    case OnboardingNodeStatus.failedRegistrar:
+    case OnboardingNodeStatus.unknown:
+      return AddNodesNodeOutcome.failed;
+  }
+}
+
 /// The router's onboarding session, as one read of
 /// `Device.X_LINKSYS_BLEOnboarding.`.
 class OnboardingSessionUIModel extends Equatable {

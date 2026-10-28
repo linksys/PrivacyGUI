@@ -133,4 +133,157 @@ void main() {
       );
     });
   });
+
+  group('outcomeOf (#1738)', () {
+    const alMac = 'aa:bb:cc:00:00:02';
+    const bleMac = 'AA:BB:CC:00:00:01';
+
+    AddNodesNodeUIModel node(OnboardingNodeStatus status,
+            {String? al = alMac}) =>
+        AddNodesNodeUIModel(
+            bleMacAddress: bleMac, status: status, alMacAddress: al);
+
+    AddNodesNodeOutcome outcome(
+      OnboardingNodeStatus status,
+      AddNodesStage stage, {
+      String? al = alMac,
+      bool joined = false,
+      bool interrupted = false,
+    }) =>
+        outcomeOf(
+          node(status, al: al),
+          stage: stage,
+          isJoined: (_) => joined,
+          interrupted: interrupted ? const {bleMac} : const {},
+        );
+
+    const running = AddNodesStage.running;
+    const awaiting = AddNodesStage.awaiting;
+    const settled = AddNodesStage.settled;
+    const added = AddNodesNodeOutcome.added;
+    const joining = AddNodesNodeOutcome.joining;
+    const failed = AddNodesNodeOutcome.failed;
+    const notTried = AddNodesNodeOutcome.notTried;
+
+    // #1738's table, for a node with an AL MAC that DataElements does not list
+    // yet. Every status at every stage, so a status added to the enum fails
+    // here until it is placed.
+    const table =
+        <OnboardingNodeStatus, Map<AddNodesStage, AddNodesNodeOutcome>>{
+      OnboardingNodeStatus.pending: {
+        running: notTried,
+        awaiting: notTried,
+        settled: notTried
+      },
+      OnboardingNodeStatus.notTargeted: {
+        running: notTried,
+        awaiting: notTried,
+        settled: notTried
+      },
+      OnboardingNodeStatus.connecting: {
+        running: joining,
+        awaiting: failed,
+        settled: failed
+      },
+      OnboardingNodeStatus.onboarding: {
+        running: joining,
+        awaiting: failed,
+        settled: failed
+      },
+      OnboardingNodeStatus.onboarded: {
+        running: joining,
+        awaiting: joining,
+        settled: failed
+      },
+      OnboardingNodeStatus.failedConnect: {
+        running: failed,
+        awaiting: failed,
+        settled: failed
+      },
+      OnboardingNodeStatus.failedRegistrar: {
+        running: failed,
+        awaiting: failed,
+        settled: failed
+      },
+      OnboardingNodeStatus.failedWps: {
+        running: joining,
+        awaiting: joining,
+        settled: failed
+      },
+      OnboardingNodeStatus.lostConnection: {
+        running: joining,
+        awaiting: joining,
+        settled: failed
+      },
+      OnboardingNodeStatus.cancelled: {
+        running: notTried,
+        awaiting: notTried,
+        settled: notTried
+      },
+      OnboardingNodeStatus.unknown: {
+        running: failed,
+        awaiting: failed,
+        settled: failed
+      },
+    };
+
+    test('the table names every status', () {
+      expect(table.keys.toSet(), OnboardingNodeStatus.values.toSet());
+    });
+
+    for (final row in table.entries) {
+      for (final cell in row.value.entries) {
+        test('${row.key.name} while ${cell.key.name} is ${cell.value.name}',
+            () {
+          expect(outcome(row.key, cell.key), cell.value);
+        });
+      }
+    }
+
+    test('a node DataElements lists is added, whatever the router reads', () {
+      for (final status in OnboardingNodeStatus.values) {
+        for (final stage in AddNodesStage.values) {
+          expect(outcome(status, stage, joined: true), added,
+              reason: '${status.name} / ${stage.name}');
+        }
+      }
+    });
+
+    test('a node the flow stopped at its limit is failed, unless it joined',
+        () {
+      for (final status in OnboardingNodeStatus.values) {
+        for (final stage in AddNodesStage.values) {
+          expect(outcome(status, stage, interrupted: true), failed,
+              reason: '${status.name} / ${stage.name}');
+          expect(outcome(status, stage, interrupted: true, joined: true), added,
+              reason: 'joined anyway: ${status.name} / ${stage.name}');
+        }
+      }
+    });
+
+    group('with no AL MAC, so nothing can look it up in DataElements', () {
+      test('onboarded is taken at the session\'s word', () {
+        for (final stage in AddNodesStage.values) {
+          expect(
+              outcome(OnboardingNodeStatus.onboarded, stage, al: null), added,
+              reason: stage.name);
+        }
+      });
+
+      test('a node that may join late is joining only while the session runs',
+          () {
+        for (final status in [
+          OnboardingNodeStatus.failedWps,
+          OnboardingNodeStatus.lostConnection,
+        ]) {
+          expect(outcome(status, running, al: null), joining,
+              reason: status.name);
+          expect(outcome(status, awaiting, al: null), failed,
+              reason: '${status.name}: no AL MAC to wait for');
+          expect(outcome(status, settled, al: null), failed,
+              reason: status.name);
+        }
+      });
+    });
+  });
 }
