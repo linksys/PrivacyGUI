@@ -249,6 +249,45 @@ void main() {
       expect(node.alMacAddress, isNull);
     });
 
+    test('a required leaf missing from the response is a ServiceError',
+        () async {
+      // The mapping on its own: the 9998 the generated parser throws, handed
+      // to the service as a string. The notifier only catches ServiceError, so
+      // it has to arrive as one, with its code kept.
+      when(() => usp.get(any())).thenThrow(
+          'Get failed: Validation error: Required fields missing from response: '
+          'Device.X_LINKSYS_BLEOnboarding.Device.1.Status (code: 9998)');
+
+      await expectLater(
+          service.fetchSession(),
+          throwsA(
+              isA<InvalidInputError>().having((e) => e.code, 'code', 9998)));
+    });
+
+    test('a node row the router sent without its Status fails the read',
+        () async {
+      // The generated parser itself, on usp-codegen 0.19.0: an absent required
+      // leaf in a child row fails the fetch rather than reading ''.
+      final row = BleOnboardingTestData.nodeRow()
+        ..remove('Device.X_LINKSYS_BLEOnboarding.Device.1.Status');
+      stubGet(BleOnboardingTestData.sessionResponse(nodes: [row]));
+
+      await expectLater(
+          service.fetchSession(),
+          throwsA(
+              isA<InvalidInputError>().having((e) => e.code, 'code', 9998)));
+    });
+
+    test('an empty model and AL MAC are present, not missing', () async {
+      // What the firmware sends before it has connected to a node: the leaves
+      // are there with '' values. Only an absent key is a 9998.
+      stubGet(BleOnboardingTestData.sessionResponse(nodes: [
+        BleOnboardingTestData.nodeRow(modelNumber: '', alMacAddress: '')
+      ]));
+
+      expect((await service.fetchSession()).nodes, hasLength(1));
+    });
+
     test('an RSSI of 0 is no reading, not the strongest signal', () async {
       stubGet(BleOnboardingTestData.sessionResponse(
           nodes: [BleOnboardingTestData.nodeRow(rssi: '0')]));
@@ -362,6 +401,21 @@ void main() {
 
       await expectLater(service.fetchJoinedNodes([joining]),
           throwsA(isA<ConnectivityError>()));
+    });
+
+    test('a required leaf missing from DataElements is a ServiceError',
+        () async {
+      // usp-codegen 0.19.0 checks DataElementsNetwork's child rows too (five
+      // leaves). The mapping on its own, as for fetchSession.
+      when(() => usp.get(any())).thenThrow(
+          'Get failed: Validation error: Required fields missing from response: '
+          'Device.WiFi.DataElements.Network.Device.1.Radio.1.BSS.1.STA.1.'
+          'MACAddress (code: 9998)');
+
+      await expectLater(
+          service.fetchJoinedNodes([joining]),
+          throwsA(
+              isA<InvalidInputError>().having((e) => e.code, 'code', 9998)));
     });
   });
 }
