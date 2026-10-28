@@ -157,7 +157,7 @@ class _InternetConnectionCard extends StatelessWidget {
                     .useCurrentWanIpAsReference();
                 if (!saved) {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('The IP reference could not be saved in this browser.'),
+                    content: AppText.bodyMedium('The IP reference could not be saved in this browser.'),
                   ));
                 }
               }),

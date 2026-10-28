@@ -27,6 +27,8 @@ class WanIpHistory {
       return const WanIpComparison();
     }
     try {
+      // Corrupt stored values are treated as a first observation and replaced
+      // with the current usable address, rather than reporting a false change.
       final reference = validAddress(read(key));
       if (reference != null) {
         return WanIpComparison(
