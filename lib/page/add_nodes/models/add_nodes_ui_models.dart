@@ -135,17 +135,6 @@ class AddNodesNodeUIModel extends Equatable {
     this.alMacAddress,
   });
 
-  /// Whether this node reached the backhaul in this session.
-  bool get isOnboarded => status == OnboardingNodeStatus.onboarded;
-
-  /// Whether the session gave up waiting for this node while the node may still
-  /// join: it was told to onboard and either did not finish WPS in time or lost
-  /// its BLE link. The firmware corrects such a node to onboarded when it joins
-  /// late, and the node can appear in DataElements before that correction does.
-  bool get mayStillJoin =>
-      status == OnboardingNodeStatus.failedWps ||
-      status == OnboardingNodeStatus.lostConnection;
-
   @override
   List<Object?> get props =>
       [bleMacAddress, modelNumber, status, rssi, alMacAddress];

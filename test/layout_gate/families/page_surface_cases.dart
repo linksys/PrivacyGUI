@@ -2856,18 +2856,19 @@ final kAutoIPoEPageCase = PageSurfaceCase(
 
 /// `page.add_nodes` (#879).
 ///
-/// [addNodesJoinedState], the widest state the page has: one node that joined
-/// and one still on its way, so the node list carries both kinds of row — the
-/// joined one with its check mark, the other with "not online yet" under its
-/// model — above the move-them-into-place note and the Done button. The waiting
-/// phases are a spinner and two centred lines, narrower than this by
-/// construction; the guidance and the failure phases are a title, prose and one
-/// or two buttons, which this state also has. Requiring [AppNodeListCard] is
-/// what makes a fixture that lost its nodes fail rather than sweep an empty list.
+/// [addNodesPartialState], the widest state the page has since #1738: four
+/// nodes, one added and three not, so the node list carries a row of each
+/// result outcome — the added one with its check mark, the others with their
+/// outcome under the model or, with none reported, the BLE MAC — above the
+/// failure's three-step checklist and the Try again / Done pair. The waiting
+/// phases put the same rows under a spinner and two centred lines; the joined
+/// screen swaps the checklist for a two-line note and drops a button; the
+/// guidance is a title and prose. Requiring [AppNodeListCard] is what makes a
+/// fixture that lost its nodes fail rather than sweep an empty list.
 final kAddNodesPageCase = PageSurfaceCase(
   id: 'add_nodes',
   view: () => const AddNodesView(),
-  overrides: () => addNodesOverrides(addNodesJoinedState),
+  overrides: () => addNodesOverrides(addNodesPartialState),
   requires: const [AddNodesPhaseContent, AppNodeListCard],
   forbids: const [AppLoader],
 );
@@ -2875,7 +2876,7 @@ final kAddNodesPageCase = PageSurfaceCase(
 /// `page.pnp_add_nodes` (#1734): the same flow opened from the PnP wizard's Your
 /// Network step.
 ///
-/// The same state as [kAddNodesPageCase], [addNodesJoinedState], and on purpose:
+/// The same state as [kAddNodesPageCase], [addNodesPartialState], and on purpose:
 /// the two pages share [AddNodesPhaseContent] and differ only in their frame —
 /// the wizard's 9-column route and no app bar here, the topology's top bar
 /// there — so one state across both is what makes the frame the only variable.
@@ -2890,7 +2891,7 @@ final kAddNodesPageCase = PageSurfaceCase(
 final kPnpAddNodesPageCase = PageSurfaceCase(
   id: 'pnp_add_nodes',
   view: () => const PnpAddNodesView(),
-  overrides: () => addNodesOverrides(addNodesJoinedState),
+  overrides: () => addNodesOverrides(addNodesPartialState),
   requires: const [AddNodesPhaseContent, AppNodeListCard],
   forbids: const [AppLoader],
 );

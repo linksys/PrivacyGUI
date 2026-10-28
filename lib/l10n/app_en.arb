@@ -26,9 +26,17 @@
       }
     }
   },
-  "addNodesNotOnlineYet": "Not online yet. This can take a few minutes.",
   "addNodesFailedTitle": "Couldn't add a node",
   "addNodesCheckAgain": "Check again",
+  "addNodesStatusAdded": "Added",
+  "addNodesStatusJoining": "Joining…",
+  "addNodesStatusFailed": "Couldn't add",
+  "addNodesStatusNotTried": "Not tried yet",
+  "addNodesPartialTitle": "Some nodes were added",
+  "addNodesFailedTroubleshootTitle": "Let's try again",
+  "addNodesFailedTroubleshootDesc1": "Move the nodes that couldn't be added closer to the router.",
+  "addNodesFailedTroubleshootDesc2": "Unplug those nodes, plug them back in, and wait for the solid blue light.",
+  "addNodesFailedTroubleshootDesc3": "Then try again. Nodes already added stay in your network.",
   "all": "All",
   "addPortForwarding": "Add Port Forwarding",
   "addRule": "Add rule",

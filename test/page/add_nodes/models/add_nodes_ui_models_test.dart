@@ -3,38 +3,6 @@ import 'package:privacy_gui/page/add_nodes/models/add_nodes_ui_models.dart';
 
 void main() {
   group('AddNodesNodeUIModel', () {
-    AddNodesNodeUIModel withStatus(OnboardingNodeStatus status) =>
-        AddNodesNodeUIModel(bleMacAddress: 'AA:BB:CC:00:00:01', status: status);
-
-    test('is onboarded only once it reached the backhaul', () {
-      for (final status in OnboardingNodeStatus.values) {
-        expect(withStatus(status).isOnboarded,
-            status == OnboardingNodeStatus.onboarded,
-            reason: status.name);
-      }
-    });
-
-    test('may still join only when the session gave up waiting for it', () {
-      // Told to onboard, and either out of WPS time or off its BLE link — the
-      // two failures the firmware corrects when the node joins late.
-      const late = {
-        OnboardingNodeStatus.failedWps,
-        OnboardingNodeStatus.lostConnection,
-      };
-      for (final status in OnboardingNodeStatus.values) {
-        expect(withStatus(status).mayStillJoin, late.contains(status),
-            reason: status.name);
-      }
-    });
-
-    test('is never both onboarded and still to join', () {
-      for (final status in OnboardingNodeStatus.values) {
-        final node = withStatus(status);
-        expect(node.isOnboarded && node.mayStillJoin, isFalse,
-            reason: status.name);
-      }
-    });
-
     test('compares by value', () {
       const a = AddNodesNodeUIModel(
         bleMacAddress: 'AA:BB:CC:00:00:01',

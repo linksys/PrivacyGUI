@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/components/composed/app_node_list_card.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/add_nodes/providers/add_nodes_notifier.dart';
 import 'package:privacy_gui/page/add_nodes/providers/add_nodes_state.dart';
@@ -78,6 +79,8 @@ void main() {
       expect(byId('add-nodes-phase-searching'), findsOneWidget);
       expect(find.byType(AppLoader), findsOneWidget);
       expect(find.text('Searching for nodes...'), findsOneWidget);
+      expect(find.byType(AppNodeListCard), findsNothing,
+          reason: 'nothing found yet, so no list');
       expect(byId('add-nodes-start'), findsNothing);
 
       await tapButton(tester, 'Cancel');
@@ -85,14 +88,34 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('joining spins with nothing to cancel', (tester) async {
-      // The session is over by then; there is no Stop() to send.
+    testWidgets('onboarding lists each node found with its outcome',
+        (tester) async {
       final handle = tester.ensureSemantics();
-      await pump(tester, const AddNodesState(phase: AddNodesPhase.joining));
+      await pump(tester, addNodesOnboardingState);
+
+      expect(byId('add-nodes-phase-onboarding'), findsOneWidget);
+      expect(find.byType(AppLoader), findsOneWidget);
+      expect(find.byType(AppNodeListCard), findsNWidgets(2));
+      expect(find.text('Joining…'), findsOneWidget,
+          reason: 'the node being onboarded');
+      expect(find.text('Not tried yet'), findsOneWidget,
+          reason: 'the node queued behind it');
+      expect(byId('add-nodes-cancel'), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets('joining lists each node and offers nothing to press',
+        (tester) async {
+      // The session is over by then: no Stop() to send, and no result yet.
+      final handle = tester.ensureSemantics();
+      await pump(tester, addNodesJoiningState);
 
       expect(byId('add-nodes-phase-joining'), findsOneWidget);
       expect(find.byType(AppLoader), findsOneWidget);
-      expect(byId('add-nodes-cancel'), findsNothing);
+      expect(find.text('Bringing your new node online'), findsOneWidget);
+      expect(find.text('Added'), findsOneWidget);
+      expect(find.text('Joining…'), findsOneWidget);
+      expect(find.byType(AppButton), findsNothing);
       handle.dispose();
     });
 
@@ -157,28 +180,53 @@ void main() {
       await pump(tester, addNodesJoinedState);
 
       expect(byId('add-nodes-phase-joined'), findsOneWidget);
-      expect(find.text('Node added'), findsOneWidget,
-          reason: 'one of the two nodes joined');
-      expect(find.text('Not online yet. This can take a few minutes.'),
-          findsOneWidget,
-          reason: 'the other is still on its way');
+      expect(find.text('Node added'), findsOneWidget);
+      expect(find.text('Added'), findsOneWidget,
+          reason: 'in words, not only the check mark');
       expect(find.byIcon(Icons.check_circle), findsOneWidget);
       expect(find.text('Go ahead and move child nodes'), findsOneWidget);
+      expect(find.text("Let's try again"), findsNothing);
       expect(byId('add-nodes-done'), findsOneWidget);
       expect(byId('add-nodes-start'), findsNothing);
       handle.dispose();
     });
 
     testWidgets(
-        'a failure with a node still on its way says it may come online',
+        'partial lists every node found, the checklist and Try again, '
+        'and not where to put them', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(tester, addNodesPartialState);
+
+      expect(byId('add-nodes-phase-partial'), findsOneWidget);
+      expect(find.text('Some nodes were added'), findsOneWidget);
+      expect(find.byType(AppNodeListCard), findsNWidgets(4));
+      expect(find.text('Added'), findsOneWidget);
+      expect(find.text("Couldn't add"), findsNWidgets(2),
+          reason: 'the one out of WPS time and the one never reached over BLE');
+      expect(find.text('Not tried yet'), findsOneWidget);
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      expect(find.text("Let's try again"), findsOneWidget);
+      expect(find.text("Let's check a few things"), findsNothing,
+          reason: "No nodes found's checklist assumes none was found");
+      expect(find.text('Go ahead and move child nodes'), findsNothing);
+      expect(byId('add-nodes-done'), findsOneWidget);
+
+      await tapButton(tester, 'Try again');
+      expect(notifier.starts, 1);
+      handle.dispose();
+    });
+
+    testWidgets('failed lists the nodes found with their outcome',
         (tester) async {
       final handle = tester.ensureSemantics();
       await pump(tester, addNodesFailedWaitingState);
 
       expect(byId('add-nodes-phase-failed'), findsOneWidget);
       expect(find.text("Couldn't add a node"), findsOneWidget);
-      expect(find.text('Not online yet. This can take a few minutes.'),
-          findsOneWidget);
+      expect(find.text("Couldn't add"), findsOneWidget);
+      expect(find.byIcon(Icons.check_circle), findsNothing);
+      expect(find.text("Let's try again"), findsOneWidget);
+      expect(find.text("Let's check a few things"), findsNothing);
       expect(byId('add-nodes-start'), findsOneWidget);
       handle.dispose();
     });
@@ -192,7 +240,7 @@ void main() {
               phase: AddNodesPhase.failed, error: TimeoutError()));
 
       expect(find.textContaining('timed out'), findsOneWidget);
-      expect(find.text("Let's check a few things"), findsNothing);
+      expect(find.text("Let's try again"), findsNothing);
       handle.dispose();
     });
 
