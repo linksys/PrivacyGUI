@@ -189,7 +189,8 @@ void main() {
       expect(toggle(tester, toggleId).value, isTrue);
     });
 
-    testWidgets('no device online: the switch cannot be turned on',
+    // #1735: turning on with nothing online is allowed — the list starts empty.
+    testWidgets('no device online: the switch can be turned on',
         (tester) async {
       await pumpPage(
           tester,
@@ -198,12 +199,13 @@ void main() {
           instantPrivacyOverrides(
               privacy(MacFilterMode.disabled, [], online: const [])));
 
-      expect(toggle(tester, toggleId).onChanged, isNull,
-          reason: 'on with nothing online is an empty Allow list, which the '
-              'firmware refuses — the switch must not offer it');
+      expect(toggle(tester, toggleId).onChanged, isNotNull,
+          reason: 'Instant Privacy can be turned on with no client online '
+              '(#1735)');
     });
 
-    testWidgets('an emptied allow list cannot be saved', (tester) async {
+    // #1735: an empty Allow list is a valid state to save.
+    testWidgets('an emptied allow list can be saved', (tester) async {
       await pumpPage(tester, 'ip-emptied', view,
           instantPrivacyOverrides(privacy(MacFilterMode.allow, [allowed])));
 
@@ -213,8 +215,8 @@ void main() {
       await settle(tester);
 
       final save = tester.widget<AppButton>(saveButton());
-      expect(save.onTap, isNull,
-          reason: 'Save would send Allow with an empty list and fail');
+      expect(save.onTap, isNotNull,
+          reason: 'Save sends Allow with an empty list (#1735)');
     });
 
     // Turning on pre-fills every online device, so with more than 64 online the

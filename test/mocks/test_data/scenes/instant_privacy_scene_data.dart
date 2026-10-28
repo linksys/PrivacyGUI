@@ -38,7 +38,7 @@ UspInstantPrivacyState _scene(MacFilterSettings settings,
 final disabledWithDevicesState =
     _scene(const MacFilterSettings(mode: MacFilterMode.disabled, macs: []));
 
-/// Off, and no devices connected — the toggle cannot usefully be turned on.
+/// Off, and no devices connected — the toggle can still be turned on (#1735).
 final disabledEmptyState = _scene(
   const MacFilterSettings(mode: MacFilterMode.disabled, macs: []),
   devices: const [],
