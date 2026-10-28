@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
+import 'package:privacy_gui/page/instant_verify/models/wan_ip_comparison.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
 import 'package:privacy_gui/page/instant_verify/views/restart_helper.dart';
@@ -132,6 +133,35 @@ class _InternetConnectionCard extends StatelessWidget {
             _infoRow(context, 'Type', state.wanConnectionType!),
           if (connected && state.wanIpAddress != null)
             _infoRow(context, 'IP Address', state.wanIpAddress!),
+          if (connected && state.wanIpAddress != null &&
+              (state.wanIpComparison.status != WanIpStatus.unavailable ||
+                  state.routerMac != null)) ...[
+            _infoRow(context, 'Saved IP reference',
+                state.wanIpComparison.referenceAddress ?? 'Not available'),
+            const AppGap.small2(),
+            AppText.bodySmall(switch (state.wanIpComparison.status) {
+              WanIpStatus.firstObservation =>
+                'First address saved. Future checks can detect a change.',
+              WanIpStatus.unchanged => 'Your WAN IP matches the saved address.',
+              WanIpStatus.changed =>
+                'Your WAN IP has changed. Check static-IP assignments and approved IP lists with your provider or service administrator.',
+              WanIpStatus.unavailable =>
+                'No previous address could be compared in this browser.',
+            }),
+            const AppGap.small2(),
+            const AppText.bodySmall(
+                'The reference is saved only in this browser for this router. Clearing browser data resets it. Your WAN IP may differ from your public IP.'),
+            if (state.wanIpComparison.hasChanged)
+              AppTextButton('Use current IP as reference', onTap: () {
+                final saved = ref.read(instantVerifyPivotProvider.notifier)
+                    .useCurrentWanIpAsReference();
+                if (!saved) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('The IP reference could not be saved in this browser.'),
+                  ));
+                }
+              }),
+          ],
           if (!connected && !state.hasRestartedThisSession) ...[
             const AppGap.small3(),
             AppOutlinedButton.fillWidth('Restart Router',

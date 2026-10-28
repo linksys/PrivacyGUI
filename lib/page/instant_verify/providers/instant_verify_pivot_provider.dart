@@ -17,6 +17,7 @@ import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_serv
 import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
 import 'package:privacy_gui/page/instant_verify/models/verdict.dart';
+import 'package:privacy_gui/page/instant_verify/services/wan_ip_history.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
 
 final instantVerifyPivotProvider =
@@ -298,10 +299,17 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       // Phase 1 verdict (preliminary — no speed data yet)
       final wanConnected = _isWanConnected(wanData);
       final wanIpAddress = (wanData['wanConnection'] as Map<String, dynamic>?)?['ipAddress'] as String?;
+      final wanIpComparison = ref.read(wanIpHistoryProvider).observe(
+        routerMac: deviceInfoData['macAddress'] as String?,
+        currentAddress: wanIpAddress ?? wanData['ipAddress'] as String?,
+        connected: wanConnected,
+      );
       final phase1Verdict = VerdictEngine.compute(
         gatewayReachable: null, // browser test pending
         wanConnected: wanConnected,
         wanIpAddress: wanIpAddress,
+        wanIpComparison: wanIpComparison,
+        wanType: wanData['detectedWANType'] as String? ?? wanData['wanType'] as String?,
         dnsWorking: null, // browser test pending
         downloadMbps: null, // browser test pending
         latencyMs: null, // browser test pending
@@ -354,6 +362,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       state = state.copyWith(
         phase: PivotLoadPhase.jnapLoaded,
         wanStatus: wanData,
+        wanIpComparison: wanIpComparison,
         deviceInfo: deviceInfoData,
         routerHealth: routerHealthMap,
         cpuLoadPctStart: cpuStart,
@@ -656,6 +665,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       gatewayReachable: s.gatewayPing?.reachable,
       wanConnected: s.wanStatus != null ? s.wanConnected : null,
       wanIpAddress: s.wanIpAddress,
+      wanIpComparison: s.wanIpComparison,
       dnsWorking: s.dnsCheck?.resolved,
       downloadMbps: s.speedTest?.downloadMbps,
       latencyMs: s.speedTest?.latencyMs,
@@ -1378,6 +1388,23 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       }
     }
     state = state.copyWith(isPingRunning: false);
+  }
+
+  /// Explicitly acknowledge an address change without changing router settings.
+  bool useCurrentWanIpAsReference() {
+    final history = ref.read(wanIpHistoryProvider);
+    if (!history.saveReference(
+      routerMac: state.routerMac,
+      currentAddress: state.wanIpAddress,
+      connected: state.wanConnected,
+    )) return false;
+    state = state.copyWith(wanIpComparison: history.observe(
+      routerMac: state.routerMac,
+      currentAddress: state.wanIpAddress,
+      connected: state.wanConnected,
+    ));
+    _recomputeVerdict(preliminary: state.verdictIsPreliminary);
+    return true;
   }
 
   // ── JNAP Capability Map ───────────────────────────────────────────────
