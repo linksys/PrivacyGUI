@@ -6,6 +6,7 @@ import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_serv
 import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
 import 'package:privacy_gui/page/instant_verify/models/verdict.dart';
+import 'package:privacy_gui/page/instant_verify/models/wan_ip_comparison.dart';
 
 enum PivotLoadPhase {
   /// Initial state — tests have not been triggered yet.
@@ -28,6 +29,7 @@ class InstantVerifyPivotState extends Equatable {
   // ── JNAP data (Phase 1 — available <1s) ──────────────────────────────
   final Map<String, dynamic>? deviceInfo;
   final Map<String, dynamic>? wanStatus;
+  final WanIpComparison wanIpComparison;
   final Map<String, dynamic>? routerHealth;
   final List<DiagnosticClient> clients;
   final Map<String, dynamic>? firmwareUpdate;
@@ -118,6 +120,7 @@ class InstantVerifyPivotState extends Equatable {
     this.phase = PivotLoadPhase.idle,
     this.deviceInfo,
     this.wanStatus,
+    this.wanIpComparison = const WanIpComparison(),
     this.routerHealth,
     this.clients = const [],
     this.firmwareUpdate,
@@ -168,6 +171,7 @@ class InstantVerifyPivotState extends Equatable {
     PivotLoadPhase? phase,
     Map<String, dynamic>? deviceInfo,
     Map<String, dynamic>? wanStatus,
+    WanIpComparison? wanIpComparison,
     Map<String, dynamic>? routerHealth,
     List<DiagnosticClient>? clients,
     Map<String, dynamic>? firmwareUpdate,
@@ -217,6 +221,7 @@ class InstantVerifyPivotState extends Equatable {
       phase: phase ?? this.phase,
       deviceInfo: deviceInfo ?? this.deviceInfo,
       wanStatus: wanStatus ?? this.wanStatus,
+      wanIpComparison: wanIpComparison ?? this.wanIpComparison,
       routerHealth: routerHealth ?? this.routerHealth,
       clients: clients ?? this.clients,
       firmwareUpdate: firmwareUpdate ?? this.firmwareUpdate,
@@ -404,6 +409,7 @@ class InstantVerifyPivotState extends Equatable {
         phase,
         deviceInfo,
         wanStatus,
+        wanIpComparison,
         routerHealth,
         clients,
         firmwareUpdate,

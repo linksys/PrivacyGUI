@@ -1,6 +1,7 @@
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
 import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
+import 'package:privacy_gui/page/instant_verify/models/wan_ip_comparison.dart';
 
 enum VerdictPriority { critical, warning, info, allClear }
 
@@ -133,6 +134,7 @@ class VerdictEngine {
     required bool? gatewayReachable,
     required bool? wanConnected,
     required String? wanIpAddress,
+    WanIpComparison? wanIpComparison,
     required bool? dnsWorking,
     required double? downloadMbps,
     required int? latencyMs,
@@ -249,6 +251,38 @@ class VerdictEngine {
           ),
         ));
         return Verdict(findings: findings, checksRun: checksRun);
+      }
+    }
+
+    // Compare only when both a usable current address and a saved reference
+    // exist. First observation and unavailable storage are not passing tests.
+    if (wanConnected == true && wanIpComparison?.canCompare == true) {
+      final comparison = wanIpComparison!;
+      checksRun++;
+      checks.add(VerdictCheck(
+        VerdictArea.internet,
+        'ISP address change',
+        comparison.hasChanged ? notice : pass,
+        comparison.hasChanged ? 'Different from saved address' : 'Matches saved address',
+      ));
+      if (comparison.hasChanged) {
+        final staticService = wanType?.toLowerCase().contains('static') == true;
+        findings.add(VerdictFinding(
+          priority: staticService ? VerdictPriority.warning : VerdictPriority.info,
+          area: VerdictArea.internet,
+          headline: 'Your internet address has changed',
+          summary: 'Check static-IP assignments and approved IP lists',
+          explanation:
+              'Your router\'s WAN IP is now ${comparison.currentAddress}; '
+              'the saved address was ${comparison.referenceAddress}. '
+              'Address changes can be normal with a dynamic internet service. '
+              'If you pay for a static IP, ask your provider to confirm the assignment. '
+              'If a work VPN or other service uses an approved IP list (allowlisting), '
+              'ask its administrator to verify the permitted address. '
+              'This change alone does not confirm an outage or a blocked service. '
+              'With another router or a shared ISP address, your public IP may be different. '
+              'After checking, you can save the current address as your reference in Network details.',
+        ));
       }
     }
 

@@ -2,6 +2,14 @@
 
 This harness tests the authenticated launch UI through its **simulated prototype**, without adding CI or deploying to a router. Hardware/session acceptance is still required for launch.
 
+## WAN address reference
+
+The automatic diagnostic compares the current WAN IPv4 address with a reference saved in this browser for the router's MAC. The first valid observation establishes the reference; it is not a historical comparison. A changed address stays visible across runs until the customer chooses **Use current IP as reference** in Network details. Clearing browser data resets the reference. Missing router identity, unusable addresses, disconnection and blocked storage do not establish a passing comparison.
+
+A change is informational for dynamic service and a warning when the WAN type is Static. The finding advises checking a paid static-IP assignment and upstream approved-IP lists, without asserting that a service is blocked. The measured WAN IP can differ from the public egress IP behind another router or shared ISP addressing. This stores one address locally and sends no router configuration commands or history upload.
+
+Regression coverage is in `wan_ip_comparison_test.dart`, `wan_ip_history_test.dart`, `wan_ip_fetch_test.dart` and `wan_ip_reference_test.dart`. The fetch test executes the real automatic provider with mocked router reads and browser probes, then verifies acknowledgement without a configuration write.
+
 ## Simplified presentation branch
 
 The previous UI is preserved on `feat/instant-test-single-page-workflows` at `157cea5b45517ca29ab819255031765f02827174` (PR #1485). The presentation changes are isolated on `feat/instant-test-progressive-disclosure`, based on that commit. Its PR should target the preserved feature branch so the simplification can be reviewed or discarded independently.

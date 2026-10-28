@@ -3,8 +3,10 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 FLUTTER_BIN="${FLUTTER_BIN:-flutter}"
 "$FLUTTER_BIN" test --no-pub \
-  test/page/instant_verify/views \
-  test/page/instant_verify/providers/instant_verify_pivot_mock_scenarios_test.dart
+  test/page/instant_verify/design_system_guard_test.dart \
+  test/page/instant_verify/models \
+  test/page/instant_verify/providers \
+  test/page/instant_verify/views
 if [[ "${1:-}" == "--build" ]]; then
   "$FLUTTER_BIN" build web --no-pub --target=lib/main.dart --base-href=/ \
     --dart-define=force=local --dart-define=enable_env_picker=false \
