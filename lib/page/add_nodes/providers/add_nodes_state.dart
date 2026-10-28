@@ -47,7 +47,8 @@ enum AddNodesPhase {
   /// it. [AddNodesState.error] is set when the cause was a failed request.
   failed,
 
-  /// The user stopped the session.
+  /// The session was stopped: by this flow's Cancel, which then leaves the
+  /// page (#1738), or by another client's Stop(), which leaves the user here.
   cancelled,
 }
 
@@ -101,6 +102,20 @@ class AddNodesState extends Equatable {
         isJoined: (alMac) => joinedNodeKeys.contains(meshNodeMacKey(alMac)),
         interrupted: interruptedNodes,
       );
+
+  /// The nodes a stop would not undo: onboarded — the controller handed them
+  /// the backhaul credential — or already listed in DataElements. What the page
+  /// asks about before a cancel (#1738): the router keeps them, though one only
+  /// onboarded can take minutes to show on the network.
+  ///
+  /// Onboarded is the session's word, not DataElements', and is all there is
+  /// mid-session; the flow does not read DataElements until the session ends.
+  int get alreadyJoiningCount => nodes
+      .where((n) =>
+          n.status == OnboardingNodeStatus.onboarded ||
+          (n.alMacAddress != null &&
+              joinedNodeKeys.contains(meshNodeMacKey(n.alMacAddress!))))
+      .length;
 
   /// Whether the page is showing a session in progress: `Start()` sent and not
   /// answered, or the session searching or onboarding. What the page offers

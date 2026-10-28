@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/composed/app_node_list_card.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -25,7 +27,10 @@ import 'package:ui_kit_library/ui_kit.dart';
 class AddNodesPhaseContent extends StatelessWidget {
   final AddNodesState state;
   final VoidCallback onStart;
-  final VoidCallback onCancel;
+
+  /// Stops following the session — and stops it, when it is this flow's. The
+  /// page leaves through [onDone] once it returns (#1738).
+  final Future<void> Function() onCancel;
   final VoidCallback onRecheck;
   final VoidCallback onDone;
 
@@ -132,17 +137,7 @@ class AddNodesPhaseContent extends StatelessWidget {
         children: [
           AppText.headlineSmall(loc(context).addNodesNoNodesFoundTitle),
           AppGap.lg(),
-          AppText.titleMedium(loc(context).modalTroubleshootNoNodesFound),
-          AppGap.md(),
-          AppBulletList(
-            style: AppBulletStyle.number,
-            children: [
-              AppText.bodyMedium(
-                  loc(context).modalTroubleshootNoNodesFoundDesc1),
-              AppText.bodyMedium(
-                  loc(context).modalTroubleshootNoNodesFoundDesc2),
-            ],
-          ),
+          _noNodesTroubleshooting(context),
         ],
         actions: [
           _startButton(context, label: loc(context).tryAgain),
@@ -152,7 +147,9 @@ class AddNodesPhaseContent extends StatelessWidget {
 
   /// No node joined. A failed request says why; otherwise each node says what
   /// became of it, and the checklist is for the ones the router found but could
-  /// not add — not "No nodes found"'s, which assumes it found none.
+  /// not add. With none found — the limit ran out while scanning, or a result
+  /// outside the documented set — there is nothing to move closer, so it is "No
+  /// nodes found"'s checklist instead.
   Widget _failed(BuildContext context) {
     final error = state.error;
     return _column(
@@ -169,7 +166,9 @@ class AddNodesPhaseContent extends StatelessWidget {
         ],
         if (error == null) ...[
           AppGap.xl(),
-          _failedTroubleshooting(context),
+          state.nodes.isEmpty
+              ? _noNodesTroubleshooting(context)
+              : _failedTroubleshooting(context),
         ],
       ],
       actions: [
@@ -217,6 +216,24 @@ class AddNodesPhaseContent extends StatelessWidget {
       actions: [_doneButton(context, primary: true)],
     );
   }
+
+  /// What to check when the router found no node: its light, and its range.
+  Widget _noNodesTroubleshooting(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppText.titleMedium(loc(context).modalTroubleshootNoNodesFound),
+          AppGap.md(),
+          AppBulletList(
+            style: AppBulletStyle.number,
+            children: [
+              AppText.bodyMedium(
+                  loc(context).modalTroubleshootNoNodesFoundDesc1),
+              AppText.bodyMedium(
+                  loc(context).modalTroubleshootNoNodesFoundDesc2),
+            ],
+          ),
+        ],
+      );
 
   /// What to do about the nodes that were found and not added.
   Widget _failedTroubleshooting(BuildContext context) => Column(
@@ -281,6 +298,43 @@ class AddNodesPhaseContent extends StatelessWidget {
   // Layouts
   // ---------------------------------------------------------------------------
 
+  // ---------------------------------------------------------------------------
+  // Cancel
+  // ---------------------------------------------------------------------------
+
+  /// Cancel leaves the page (#1738): the step or the topology that opened it
+  /// reads the nodes again, and is where the user looks next. When a node is
+  /// already joining, stopping does not undo it, so the user is told and asked
+  /// first — and with none, there is nothing a stop would lose to ask about.
+  Future<void> _confirmCancel(BuildContext context) async {
+    final joining = state.alreadyJoiningCount;
+    if (joining > 0) {
+      final stop = await showSimpleAppDialog<bool>(
+        context,
+        title: loc(context).addNodesStopTitle,
+        content: AppText.bodyMedium(loc(context).addNodesStopDesc(joining)),
+        actions: [
+          AppButton.text(
+            identifier: 'add-nodes-stop-keep',
+            label: loc(context).addNodesKeepAdding,
+            onTap: () => context.pop(false),
+          ),
+          AppButton.primary(
+            identifier: 'add-nodes-stop-confirm',
+            label: loc(context).addNodesStopAdding,
+            onTap: () => context.pop(true),
+          ),
+        ],
+      );
+      if (stop != true) return;
+    }
+    // A session that ended while the dialog was open makes this a no-op; the
+    // page leaves all the same, as the user asked.
+    await onCancel();
+    if (!context.mounted) return;
+    onDone();
+  }
+
   /// A phase the router is working through: a spinner, what it is doing, the
   /// nodes found so far, and a cancel while a session is in progress. The
   /// notifier decides whether that cancel sends a `Stop()`.
@@ -314,7 +368,7 @@ class AddNodesPhaseContent extends StatelessWidget {
                 AppButton.text(
                   label: loc(context).cancel,
                   identifier: 'add-nodes-cancel',
-                  onTap: onCancel,
+                  onTap: () => _confirmCancel(context),
                 ),
               ],
             ],

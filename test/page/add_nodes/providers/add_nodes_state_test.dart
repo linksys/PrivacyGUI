@@ -98,6 +98,54 @@ void main() {
     });
   });
 
+  group('AddNodesState - alreadyJoiningCount (#1738)', () {
+    AddNodesNodeUIModel node(int i, OnboardingNodeStatus status,
+            {bool withAlMac = true}) =>
+        AddNodesNodeUIModel(
+          bleMacAddress: 'AA:BB:CC:00:01:0$i',
+          status: status,
+          alMacAddress: withAlMac ? 'aa:bb:cc:00:02:0$i' : null,
+        );
+
+    test('counts onboarded nodes, with or without an AL MAC', () {
+      final state = AddNodesState(
+        phase: AddNodesPhase.onboarding,
+        nodes: [
+          node(1, OnboardingNodeStatus.onboarded),
+          node(2, OnboardingNodeStatus.onboarded, withAlMac: false),
+        ],
+      );
+      expect(state.alreadyJoiningCount, 2);
+    });
+
+    test('counts a node DataElements lists, whatever its row says', () {
+      // The router corrects a late join upward after DataElements has it.
+      final state = AddNodesState(
+        phase: AddNodesPhase.onboarding,
+        nodes: [node(1, OnboardingNodeStatus.failedWps)],
+        joinedNodeKeys: const {'AABBCC000201'},
+      );
+      expect(state.alreadyJoiningCount, 1);
+    });
+
+    test('counts no node still on its way, failed, or not reached', () {
+      final state = AddNodesState(
+        phase: AddNodesPhase.onboarding,
+        nodes: [
+          for (final (i, status) in [
+            OnboardingNodeStatus.pending,
+            OnboardingNodeStatus.connecting,
+            OnboardingNodeStatus.onboarding,
+            OnboardingNodeStatus.failedWps,
+            OnboardingNodeStatus.failedConnect,
+          ].indexed)
+            node(i + 1, status),
+        ],
+      );
+      expect(state.alreadyJoiningCount, 0);
+    });
+  });
+
   group('AddNodesState - copyWith', () {
     const node = AddNodesNodeUIModel(
       bleMacAddress: 'AA:BB:CC:00:00:01',
