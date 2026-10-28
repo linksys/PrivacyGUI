@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/page/_shared/utils/mesh_node_identity.dart';
 import 'package:privacy_gui/page/add_nodes/models/add_nodes_ui_models.dart';
 
 /// Where the add-nodes flow is.
@@ -33,8 +34,11 @@ enum AddNodesPhase {
   /// controller to list them in DataElements.
   joining,
 
-  /// At least one node of this session is a mesh node now.
+  /// Every node of this session is a mesh node now.
   joined,
+
+  /// Some nodes of this session joined and some did not (#1738).
+  partial,
 
   /// The session found no unconfigured node in range.
   noNodesFound,
@@ -66,13 +70,37 @@ class AddNodesState extends Equatable {
   /// Why the flow failed, when the cause was a request rather than the session.
   final ServiceError? error;
 
+  /// BLE MACs of the nodes this flow stopped mid-onboarding at its session limit
+  /// (#1738). Kept apart from [nodes] because the router keeps writing those
+  /// rows after `Stop()`, and the app's verdict on these is already given.
+  final Set<String> interruptedNodes;
+
   const AddNodesState({
     this.phase = AddNodesPhase.checking,
     this.nodes = const [],
     this.joinedNodeKeys = const {},
     this.sessionResult,
     this.error,
+    this.interruptedNodes = const {},
   });
+
+  /// Where the flow is, for telling a node's outcome from its router status.
+  AddNodesStage get stage => switch (phase) {
+        AddNodesPhase.starting ||
+        AddNodesPhase.searching ||
+        AddNodesPhase.onboarding =>
+          AddNodesStage.running,
+        AddNodesPhase.joining => AddNodesStage.awaiting,
+        _ => AddNodesStage.settled,
+      };
+
+  /// What the page says about [node] now. See [outcomeOf].
+  AddNodesNodeOutcome outcomeFor(AddNodesNodeUIModel node) => outcomeOf(
+        node,
+        stage: stage,
+        isJoined: (alMac) => joinedNodeKeys.contains(meshNodeMacKey(alMac)),
+        interrupted: interruptedNodes,
+      );
 
   /// Whether the page is showing a session in progress: `Start()` sent and not
   /// answered, or the session searching or onboarding. What the page offers
@@ -88,11 +116,13 @@ class AddNodesState extends Equatable {
       phase == AddNodesPhase.onboarding;
 
   /// Whether the user can start a session from here: on entry, or again after a
-  /// session that ended without a node — found none, failed, or was stopped.
+  /// session that left a node out — found none, failed, some joined and some
+  /// did not (#1738), or was stopped.
   bool get canStart =>
       phase == AddNodesPhase.ready ||
       phase == AddNodesPhase.noNodesFound ||
       phase == AddNodesPhase.failed ||
+      phase == AddNodesPhase.partial ||
       phase == AddNodesPhase.cancelled;
 
   AddNodesState copyWith({
@@ -103,6 +133,7 @@ class AddNodesState extends Equatable {
     bool clearSessionResult = false,
     ServiceError? error,
     bool clearError = false,
+    Set<String>? interruptedNodes,
   }) =>
       AddNodesState(
         phase: phase ?? this.phase,
@@ -111,9 +142,10 @@ class AddNodesState extends Equatable {
         sessionResult:
             clearSessionResult ? null : (sessionResult ?? this.sessionResult),
         error: clearError ? null : (error ?? this.error),
+        interruptedNodes: interruptedNodes ?? this.interruptedNodes,
       );
 
   @override
   List<Object?> get props =>
-      [phase, nodes, joinedNodeKeys, sessionResult, error];
+      [phase, nodes, joinedNodeKeys, sessionResult, error, interruptedNodes];
 }

@@ -28,12 +28,13 @@ void main() {
       }
     });
 
-    test('can start on entry and after a session that ended without a node',
-        () {
+    test('can start on entry and after a session that left a node out', () {
       const startable = {
         AddNodesPhase.ready,
         AddNodesPhase.noNodesFound,
         AddNodesPhase.failed,
+        // Some joined and some did not: Try again is for the rest (#1738).
+        AddNodesPhase.partial,
         // The page offers Try again after a stop, so start() must take it.
         AddNodesPhase.cancelled,
       };
@@ -41,6 +42,59 @@ void main() {
         expect(AddNodesState(phase: phase).canStart, startable.contains(phase),
             reason: phase.name);
       }
+    });
+
+    test('is running a session, waiting on DataElements, or settled (#1738)',
+        () {
+      const stages = {
+        AddNodesPhase.starting: AddNodesStage.running,
+        AddNodesPhase.searching: AddNodesStage.running,
+        AddNodesPhase.onboarding: AddNodesStage.running,
+        AddNodesPhase.joining: AddNodesStage.awaiting,
+      };
+      for (final phase in AddNodesPhase.values) {
+        expect(AddNodesState(phase: phase).stage,
+            stages[phase] ?? AddNodesStage.settled,
+            reason: phase.name);
+      }
+    });
+  });
+
+  group('AddNodesState - outcomeFor (#1738)', () {
+    const node = AddNodesNodeUIModel(
+      bleMacAddress: 'AA:BB:CC:00:00:01',
+      status: OnboardingNodeStatus.onboarded,
+      alMacAddress: 'aa:bb:cc:00:00:02',
+    );
+
+    test('reads the node\'s join from joinedNodeKeys, normalized', () {
+      const state = AddNodesState(
+        phase: AddNodesPhase.joining,
+        joinedNodeKeys: {'AABBCC000002'},
+      );
+      expect(state.outcomeFor(node), AddNodesNodeOutcome.added);
+    });
+
+    test('reads its stage from the phase', () {
+      expect(const AddNodesState(phase: AddNodesPhase.joining).outcomeFor(node),
+          AddNodesNodeOutcome.joining);
+      expect(const AddNodesState(phase: AddNodesPhase.failed).outcomeFor(node),
+          AddNodesNodeOutcome.failed);
+    });
+
+    test('holds a node the flow stopped at its limit failed', () {
+      const state = AddNodesState(
+        phase: AddNodesPhase.joining,
+        interruptedNodes: {'AA:BB:CC:00:00:01'},
+      );
+      expect(state.outcomeFor(node), AddNodesNodeOutcome.failed);
+    });
+
+    test('compares the interrupted set by value, and copyWith keeps it', () {
+      const a = AddNodesState(interruptedNodes: {'X'});
+      expect(a, const AddNodesState(interruptedNodes: {'X'}));
+      expect(a, isNot(const AddNodesState()));
+      expect(a.copyWith(phase: AddNodesPhase.failed).interruptedNodes, {'X'});
     });
   });
 

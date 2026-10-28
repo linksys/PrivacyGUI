@@ -91,7 +91,7 @@ class AddNodesPhaseContent extends StatelessWidget {
           ),
         AddNodesPhase.noNodesFound => _noNodesFound(context),
         AddNodesPhase.failed => _failed(context),
-        AddNodesPhase.joined => _joined(context),
+        AddNodesPhase.joined || AddNodesPhase.partial => _joined(context),
         AddNodesPhase.cancelled => _message(
             context,
             title: loc(context).addNodes,
