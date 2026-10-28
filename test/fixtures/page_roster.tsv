@@ -481,10 +481,10 @@
 # reader test/layout_gate/page_roster.dart
 # oracle test/layout_gate/page_roster_test.dart
 # doc doc/testing/overflow_gate_architecture.md section 11.5; the onboarding queue is section 11.6
-# pages 50
-# swept 48
+# pages 51
+# swept 49
 # queued 0
-# measured 48
+# measured 49
 # needs_fixture 0
 # excluded 2
 # columns path	disposition	ms_per_cell
@@ -505,6 +505,7 @@ lib/page/firmware_update/views/firmware_ota_view.dart	swept	15.3
 lib/page/firmware_update/views/firmware_update_view.dart	swept	18.6
 lib/page/instant_privacy/views/instant_privacy_view.dart	swept	19.3
 lib/page/instant_safety/views/instant_safety_view.dart	swept	14.5
+lib/page/instant_setup/views/pnp_add_nodes_view.dart	swept	10.9
 lib/page/instant_setup/views/pnp_complete_view.dart	excluded:not reachable; no route builds it and nothing under lib/ constructs it (#1370)	-
 lib/page/instant_setup/views/pnp_entry_view.dart	swept	11.6
 lib/page/instant_setup/views/pnp_ipoe_view.dart	swept	35.3

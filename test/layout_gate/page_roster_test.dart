@@ -568,9 +568,10 @@ void main() {
       //
       // The 46th is #1660's `usp_administration_view.dart` — Advanced Settings →
       // Administration, the UPnP switch — and it arrives the same way again.
-      // The 47th is #879's `add_nodes_view.dart`, the same way once more.
+      // The 47th is #879's `add_nodes_view.dart`, the same way once more, and the
+      // 48th #1734's `pnp_add_nodes_view.dart`, the same flow in the wizard's frame.
       expect(
-          roster.withDisposition(PageRosterDisposition.swept), hasLength(48));
+          roster.withDisposition(PageRosterDisposition.swept), hasLength(49));
       expect(
         roster.withDisposition(PageRosterDisposition.queued).map((r) => r.path),
         isEmpty,
@@ -704,6 +705,7 @@ void main() {
       expect(roster.sweptPaths, {
         'lib/page/instant_setup/views/pnp_ipoe_view.dart',
         'lib/page/add_nodes/views/add_nodes_view.dart',
+        'lib/page/instant_setup/views/pnp_add_nodes_view.dart',
         'lib/page/admin/views/usp_admin_view.dart',
         'lib/page/administration/views/usp_administration_view.dart',
         'lib/page/advanced_settings/views/usp_advanced_settings_view.dart',
