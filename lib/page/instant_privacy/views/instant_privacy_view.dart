@@ -113,10 +113,11 @@ class InstantPrivacyView extends ConsumerWidget {
       BuildContext context, WidgetRef ref, UspInstantPrivacyState state) {
     final isEnabled = state.isEnabled;
     final isSaving = state.status.isSaving;
-    // Turning on pre-fills the list with the online devices, so with none online
-    // it would be an empty `Allow` list — refused by the firmware. Off stays
-    // reachable: this only blocks the off → on direction.
-    final cannotEnable = !isEnabled && state.connectedDevices.isEmpty;
+    // Turning on stays available with no wireless client online (#1735): the
+    // pre-fill is wireless-only, so a wired-only network reads as "no devices",
+    // and the list then starts empty and is filled through Add device. The
+    // firmware's refusal of an empty `Allow` list is enforced at Save instead,
+    // which [_buildBottomBar] keeps disabled until the list has an entry.
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: LayoutBlock(
@@ -131,9 +132,7 @@ class InstantPrivacyView extends ConsumerWidget {
                   AppGap.xs(),
                   AppText.bodySmall(isEnabled
                       ? loc(context).onlyAllowedDevicesCanConnect
-                      : cannotEnable
-                          ? loc(context).instantPrivacyCannotBeEnabled
-                          : loc(context).allDevicesCanConnectFreely),
+                      : loc(context).allDevicesCanConnectFreely),
                 ],
               ),
             ),
@@ -142,8 +141,7 @@ class InstantPrivacyView extends ConsumerWidget {
               value: isEnabled,
               isLoading: isSaving,
               busySemanticLabel: isSaving ? loc(context).processing : null,
-              onChanged:
-                  isSaving || cannotEnable ? null : (v) => _onToggle(ref, v),
+              onChanged: isSaving ? null : (v) => _onToggle(ref, v),
             ),
           ],
         ),
