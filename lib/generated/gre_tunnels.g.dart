@@ -32,7 +32,7 @@ class GreTunnel {
   final String? underlaySubnetMask;
   final String? underlayDefaultGateway;
   final String? underlayDnsServers;
-  final GreTunnelInterface? interface;
+  final GreTunnelInterface? tunnelInterface;
 
   const GreTunnel({
     required this.instancePath,
@@ -42,7 +42,7 @@ class GreTunnel {
     this.underlaySubnetMask,
     this.underlayDefaultGateway,
     this.underlayDnsServers,
-    this.interface,
+    this.tunnelInterface,
   });
 
   @override
@@ -55,7 +55,7 @@ class GreTunnel {
         'underlaySubnetMask: $underlaySubnetMask, '
         'underlayDefaultGateway: $underlayDefaultGateway, '
         'underlayDnsServers: $underlayDnsServers, '
-        'interface: $interface'
+        'tunnelInterface: $tunnelInterface'
         ')';
   }
 }
@@ -133,17 +133,18 @@ class GreTunnels {
       final childSorted_0 = childIds_0.toList()
         ..sort(
             (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
-      final interfaceRows = <GreTunnelInterface>[];
+      final tunnelInterfaceRows = <GreTunnelInterface>[];
       for (final cid_0 in childSorted_0) {
         final cp_0 = '$childBase_0$cid_0.';
-        interfaceRows.add(GreTunnelInterface(
+        tunnelInterfaceRows.add(GreTunnelInterface(
           instancePath: cp_0,
           alias: response.containsKey('${cp_0}Alias')
               ? response['${cp_0}Alias'] as String
               : null,
         ));
       }
-      final interface = interfaceRows.isEmpty ? null : interfaceRows.first;
+      final tunnelInterface =
+          tunnelInterfaceRows.isEmpty ? null : tunnelInterfaceRows.first;
       final missing = <String>[];
       if (!response.containsKey('${p}RemoteEndpoints')) {
         missing.add('${p}RemoteEndpoints');
@@ -174,7 +175,7 @@ class GreTunnels {
             response.containsKey('${p}X_LINKSYS_UnderlayDNSServers')
                 ? response['${p}X_LINKSYS_UnderlayDNSServers'] as String
                 : null,
-        interface: interface,
+        tunnelInterface: tunnelInterface,
       ));
     }
     return GreTunnels(items: items);

@@ -1085,7 +1085,7 @@ class _TunnelRow {
   _TunnelRow.gre(GreTunnel r)
       : type = UspWanConnectionType.pptp,
         instancePath = r.instancePath,
-        interfacePath = r.interface?.instancePath,
+        interfacePath = r.tunnelInterface?.instancePath,
         remoteEndpoints = r.remoteEndpoints,
         underlayAddressingType = r.underlayAddressingType,
         underlayIpAddress = r.underlayIpAddress,
@@ -1096,7 +1096,7 @@ class _TunnelRow {
   _TunnelRow.l2tp(L2tpTunnel r)
       : type = UspWanConnectionType.l2tp,
         instancePath = r.instancePath,
-        interfacePath = r.interface?.instancePath,
+        interfacePath = r.tunnelInterface?.instancePath,
         remoteEndpoints = r.remoteEndpoints,
         underlayAddressingType = r.underlayAddressingType,
         underlayIpAddress = r.underlayIpAddress,

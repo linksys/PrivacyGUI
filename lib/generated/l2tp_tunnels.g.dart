@@ -32,7 +32,7 @@ class L2tpTunnel {
   final String? underlaySubnetMask;
   final String? underlayDefaultGateway;
   final String? underlayDnsServers;
-  final L2tpTunnelInterface? interface;
+  final L2tpTunnelInterface? tunnelInterface;
 
   const L2tpTunnel({
     required this.instancePath,
@@ -42,7 +42,7 @@ class L2tpTunnel {
     this.underlaySubnetMask,
     this.underlayDefaultGateway,
     this.underlayDnsServers,
-    this.interface,
+    this.tunnelInterface,
   });
 
   @override
@@ -55,7 +55,7 @@ class L2tpTunnel {
         'underlaySubnetMask: $underlaySubnetMask, '
         'underlayDefaultGateway: $underlayDefaultGateway, '
         'underlayDnsServers: $underlayDnsServers, '
-        'interface: $interface'
+        'tunnelInterface: $tunnelInterface'
         ')';
   }
 }
@@ -133,17 +133,18 @@ class L2tpTunnels {
       final childSorted_0 = childIds_0.toList()
         ..sort(
             (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
-      final interfaceRows = <L2tpTunnelInterface>[];
+      final tunnelInterfaceRows = <L2tpTunnelInterface>[];
       for (final cid_0 in childSorted_0) {
         final cp_0 = '$childBase_0$cid_0.';
-        interfaceRows.add(L2tpTunnelInterface(
+        tunnelInterfaceRows.add(L2tpTunnelInterface(
           instancePath: cp_0,
           alias: response.containsKey('${cp_0}Alias')
               ? response['${cp_0}Alias'] as String
               : null,
         ));
       }
-      final interface = interfaceRows.isEmpty ? null : interfaceRows.first;
+      final tunnelInterface =
+          tunnelInterfaceRows.isEmpty ? null : tunnelInterfaceRows.first;
       final missing = <String>[];
       if (!response.containsKey('${p}RemoteEndpoints')) {
         missing.add('${p}RemoteEndpoints');
@@ -174,7 +175,7 @@ class L2tpTunnels {
             response.containsKey('${p}X_LINKSYS_UnderlayDNSServers')
                 ? response['${p}X_LINKSYS_UnderlayDNSServers'] as String
                 : null,
-        interface: interface,
+        tunnelInterface: tunnelInterface,
       ));
     }
     return L2tpTunnels(items: items);
