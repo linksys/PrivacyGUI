@@ -388,7 +388,8 @@ void main() {
     await _showSetup(tester, pnp, firmware);
     await _loseSave(tester, pnp);
     await _finishReconnectAttempts(tester);
-    expect(pnp.configuredChecks, pnpReconnectMaxAttempts);
+    // +1: the entry re-read of a still-unconfigured device mode (#1748).
+    expect(pnp.configuredChecks, pnpReconnectMaxAttempts + 1);
     expect(pnp.deviceFetches, 0);
     expect(firmware.checks, 0);
     expect(find.text('Try again').hitTestable(), findsOneWidget);
@@ -459,6 +460,30 @@ void main() {
     expect(pnp.checkedPasswords, ['TestAdminPassword']);
     expect(firmware.checks, 1);
     expect(tester.takeException(), isNull);
+  });
+
+  // #1748: the device mode was read before Auto Master finished, so PnP still
+  // holds `Unconfigured` after the re-login even though firmware already made
+  // the router Master. Setup must re-read it on entry, before the steps (and
+  // the save's `SetDeviceMode Master`) are decided from the stale value.
+  testWidgets('stale unconfigured device mode is re-read on entry (#1748)',
+      (tester) async {
+    final pnp = _Pnp(unconfigured: true)..configuredAfterSave = true;
+    final firmware = _Firmware();
+    await _showSetup(tester, pnp, firmware, beginSave: false);
+
+    expect(pnp.configuredChecks, 1);
+    expect(pnp.calls.first, 'configured');
+    expect(pnp.state.isRouterUnConfigured, isFalse);
+  });
+
+  testWidgets('configured device mode is not re-read on entry (#1748)',
+      (tester) async {
+    final pnp = _Pnp();
+    final firmware = _Firmware();
+    await _showSetup(tester, pnp, firmware, beginSave: false);
+
+    expect(pnp.configuredChecks, 0);
   });
 
   for (final reachable in [true, false]) {
