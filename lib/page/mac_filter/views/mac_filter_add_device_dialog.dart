@@ -115,6 +115,7 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
               focusNode: _focusNode,
               hintText: loc(context).searchByNameMacIp,
               errorText: _localizedError(context),
+              errorDisplayMode: AppErrorDisplayMode.text,
               onChanged: (_) {
                 setState(() => _errorKey = _errorFor(_controller.text));
                 _revalidate();
