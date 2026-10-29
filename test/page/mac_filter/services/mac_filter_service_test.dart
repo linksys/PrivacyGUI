@@ -287,14 +287,19 @@ void main() {
       verifyNever(() => usp.operate(any(), args: any(named: 'args')));
     });
 
-    test('Allow with an empty list is rejected before sending', () async {
+    // #1735: Instant Privacy can be turned on with no client online, so an
+    // empty Allow list is sent, as an empty JSON array (not omitted).
+    test('Allow with an empty list is sent as an empty array', () async {
       stubOperateOk();
 
-      expect(
-        () => service.setMacFilter(MacFilterMode.allow, []),
-        throwsA(isA<InvalidInputError>()),
-      );
-      verifyNever(() => usp.operate(any(), args: any(named: 'args')));
+      await service.setMacFilter(MacFilterMode.allow, []);
+
+      final captured =
+          verify(() => usp.operate(_cmdPath, args: captureAny(named: 'args')))
+              .captured
+              .single as Map;
+      expect(captured['Mode'], 'Allow');
+      expect(captured['MACAddressList'], jsonEncode(<String>[]));
     });
 
     test('de-dup counts toward the limit AFTER dedupe (65 dups of 1 → ok)',
