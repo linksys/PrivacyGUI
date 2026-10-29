@@ -2,6 +2,52 @@
 
 All notable changes to PrivacyGUI after version 2.0.0 are documented in this file.
 
+## [2.7.3] - 2026-10-30
+
+- 9e2fe3b5 - feat(internet-settings): PPTP / L2TP WAN with 1.0's fields and checks, rows picked from what the router reports (#839, #840) (#1744)
+- c047a1e7 - feat(add-nodes): add nodes from PnP's Your Network step (#1734), and several nodes in one session (#1738) (#1740)
+- 9594b494 - fix(instant-privacy): allow turning on and saving with no client online (#1735) (#1739)
+- b70b2f59 - test(add-nodes): what a row missing a required leaf does on usp-codegen 0.19.0 (#879) (#1731)
+- 02e9bf82 - refactor(usp): move lib/generated to usp-codegen 0.19.0 and read multi-instance tables as lists (#1654) (#1728)
+- 810e3c19 - feat(topology): reboot and factory-reset a mesh node from its detail page and the topology menu (#876) (#1723)
+- 0f311907 - fix(devices): one device per client on several interfaces, merged by X_LINKSYS_DetectedName (#1719) (#1724)
+- e881e44d - feat(add-nodes): add nodes over BLE from the controller's node menu (#879) (#1725)
+- 1c8030ef - fix(usp, framework): a failed GET is an error, and a failed post-save read keeps what was written (#1212, #1279) (#1716)
+- 9b197ce2 - feat(devices): band, rates and MLO for extender and MLO clients (#1686) (#1715)
+- c827f7b8 - feat(static-routing): NAT / Dynamic routing switch, 20-route limit and 1.0's route checks (#1100) (#1714)
+- 38aef12e - fix(diagnostics): TraceRoute sends NumberOfTries=1 and Timeout=2000 (#1151) (#1710)
+- abe529d3 - fix(internet-settings): switch every WAN type and cross bridge mode on usp-codegen 0.18.1 (#1597) (#1705)
+- 84797528 - fix(dashboard): the PDF report counts a node's online clients only (#1121) (#1708)
+- 354581e0 - feat(topology): build the mesh from DataElements on FL-WRT 2.0 (#1688) (#1706)
+- cc1c7b7c - fix(pnp): a WAN with no connection reaches the no-internet page (#1098) (#1707)
+- 72b58918 - fix(ipv6-port-service): FWDEV#204's rules in the dialog, and no silent saves (#1687) (#1704)
+- 080ee7cb - feat(wifi): MLO switch on the Advanced tab, and one Set for the tab (#1692) (#1703)
+- d7bf8a68 - feat(advanced): SIP ALG and management-over-Wi-Fi switches on the Administration page (#1694, #1696) (#1700)
+- 01622c66 - feat(devices): read FL-WRT 2.0 device identity, and name clients and the router (#1693, #1691) (#1697)
+- be0c3a3b - fix: remove query forwarding from USP UI loader
+- 46868e95 - fix(a11y): announce ui_kit role words in the user's locale (#1315) (#1699)
+- d2153043 - fix(firewall, port-forwarding): FWDEV#204's rules in the UI, and no silent saves (#1611, #1080) (#1680)
+- dc9da113 - Restore the standard USP client for Auto-IPoE
+- 3a9aedc9 - Align USP response tests with the shared client contract
+- 918ef105 - Address Auto-IPoE review feedback with shared services
+- 7e805b64 - Preserve underlying categories in USP GET failures
+- 4873e455 - Align Auto-IPoE with router capabilities and Internet Settings
+- 624e93d9 - Fix Auto-IPoE status refresh and error handling
+- 66208b20 - Fix Auto-IPoE setup recovery and page registration
+- d345beb9 - feat: make Auto-IPoE opt-in at build time
+- 03ce002d - fix: recover Auto-IPoE PnP after session expiry
+- 41f03b9b - fix: preserve numeric Auto-IPoE operation error codes
+- b3179f29 - feat: add Auto-IPoE setup over USP
+- eee4a75a - test(golden): shared golden coverage for transient overlays (#905) (#1678)
+- 573f1cc1 - fix(dashboard): close the card presentation before its detail button navigates (#1453) (#1677)
+- 6028b1b1 - fix(dashboard): the Device Information card shows the router's MAC, not "GATEWAY" (#1665) (#1667)
+- 8e83ced7 - fix(wifi): save in one SET, read the router back, and run each write under one recovery (#1499, #1460) (#1673)
+- 05d9d4f7 - fix(wifi): drop Enterprise modes from the guest security picker, and bump xml to fix the web build (#1046) (#1676)
+- 6b249eac - feat(advanced, wifi): UPnP switch and client/node steering switches (#1660, #1661) (#1674)
+- b637b8f6 - feat(remote-assistance): E2E hooks for driving a real RA session from both ends (#1663)
+- 5f3f6e68 - chore: bump version to 2.7.3 (#1662)
+- 50d20a05 - ci: run the four CI jobs on a push to usp (#1659)
+
 ## [2.7.2] - 2026-10-06
 
 - fa448a55 - fix(topology): a phone lists its devices with Devices on (#1630)
