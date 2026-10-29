@@ -175,7 +175,7 @@
   "macAddress": "Adres MAC",
   "macAddressClone": "Klon adresu MAC",
   "manufacturer": "Producent",
-  "maxIdleTime": "Maksymalny czas bezczynności",
+  "maxIdleTime": "Maksymalny czas bezczynności (minuty)",
   "menu": "Menu",
   "menuRestartNetworkChildMessage": "Uruchom ponownie węzeł i wszystkie węzły podrzędne. Ponowne uruchomienie systemu mesh WiFi tymczasowo rozłączy go z Internetem. Jeśli masz wiele węzłów, wszystkie zostaną ponownie uruchomione. Podłączone urządzenia również doświadczą tymczasowego rozłączenia, ale automatycznie ponownie połączą się, gdy system będzie ponownie online.",
   "menuRestartNetworkLastMessage": "Jeśli masz więcej niż jeden węzeł, wszystkie zostaną uruchomione ponownie. Ponowne uruchomienie systemu mesh WiFi spowoduje tymczasowe odłączenie go od Internetu. Wszystkie węzły i podłączone urządzenia również zostaną tymczasowo odłączone, ale połączą się ponownie, gdy system mesh będzie gotowy.",
@@ -1295,5 +1295,8 @@
   "nodeActionFailedAfterSent": "{failure} Już wysłano do: {sent}.",
   "nodeActionSkippedNodes": "Te węzły nie obsługują tego polecenia i nie otrzymają go, ale stracą połączenie na czas, gdy węzły, przez które są połączone, nie działają: {nodes}.",
   "nodeActionNotConfirmed": "Węzeł {node} nie potwierdził polecenia. Może je nadal wykonać, więc przed ponowną próbą sprawdź topologię.",
-  "nodeActionNodeGone": "Węzła {node} nie ma już w Twojej sieci."
+  "nodeActionNodeGone": "Węzła {node} nie ma już w Twojej sieci.",
+  "valueOutOfRange": "Wartość musi mieścić się w zakresie {min}–{max}",
+  "maxCharacters": "Maksymalnie {max} znaków",
+  "invalidSubnetMask": "Nieprawidłowa maska podsieci"
 }

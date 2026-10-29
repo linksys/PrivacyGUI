@@ -177,7 +177,7 @@
   "macAddress": "Dirección MAC",
   "macAddressClone": "Clon de dirección MAC",
   "manufacturer": "Fabricante",
-  "maxIdleTime": "Tiempo máximo de inactividad",
+  "maxIdleTime": "Tiempo máximo de inactividad (minutos)",
   "menu": "Menú",
   "menuRestartNetworkChildMessage": "Reiniciar el nodo y todos los nodos secundarios. Reiniciar el sistema Wi-Fi en malla lo desconectará temporalmente de Internet. Si tiene varios nodos, todos se reiniciarán. Los dispositivos conectados también experimentarán una desconexión temporal, pero se volverán a conectar automáticamente una vez que el sistema esté en línea nuevamente.",
   "menuRestartNetworkLastMessage": "Si reinicia el sistema WiFi, se desconectará temporalmente de Internet. Todos los dispositivos conectados también se desconectarán temporalmente, pero volverán a conectarse una vez que el sistema esté listo de nuevo.",
@@ -1295,5 +1295,8 @@
   "nodeActionFailedAfterSent": "{failure} Ya se envió a: {sent}.",
   "nodeActionSkippedNodes": "Estos nodos no admiten este comando y no se les enviará, pero perderán la conexión mientras los nodos a través de los cuales se conectan no estén disponibles: {nodes}.",
   "nodeActionNotConfirmed": "{node} no confirmó el comando. Es posible que aún lo ejecute, así que verifique la topología antes de volver a intentarlo.",
-  "nodeActionNodeGone": "{node} ya no está en su red."
+  "nodeActionNodeGone": "{node} ya no está en su red.",
+  "valueOutOfRange": "Debe estar entre {min} y {max}",
+  "maxCharacters": "Máximo {max} caracteres",
+  "invalidSubnetMask": "Máscara de subred no válida"
 }

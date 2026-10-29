@@ -177,7 +177,7 @@
   "macAddress": "MAC-adres",
   "macAddressClone": "MAC-adres klonen",
   "manufacturer": "Fabrikant",
-  "maxIdleTime": "Maximale inactiviteitstijd",
+  "maxIdleTime": "Maximale inactiviteitstijd (minuten)",
   "menu": "Menu",
   "menuRestartNetworkChildMessage": "Herstart node en alle kindnodes. Het herstarten van het mesh Wi-Fi-systeem zal de internetverbinding tijdelijk verbreken. Als u meerdere nodes heeft, worden ze allemaal herstart. Verbonden apparaten zullen ook een tijdelijke onderbreking ervaren, maar zullen automatisch opnieuw verbinding maken zodra het systeem weer online is.",
   "menuRestartNetworkLastMessage": "Netwerk opnieuw opstarten",
@@ -1295,5 +1295,8 @@
   "nodeActionFailedAfterSent": "{failure} Al verzonden naar: {sent}.",
   "nodeActionSkippedNodes": "Deze nodes kunnen deze opdracht niet uitvoeren en ontvangen deze niet, maar ze verliezen hun verbinding zolang de nodes waarlangs ze verbonden zijn, uitgevallen zijn: {nodes}.",
   "nodeActionNotConfirmed": "{node} heeft de opdracht niet bevestigd. De node kan deze nog steeds uitvoeren, dus controleer de topologie voordat u het opnieuw probeert.",
-  "nodeActionNodeGone": "{node} bevindt zich niet meer in uw netwerk."
+  "nodeActionNodeGone": "{node} bevindt zich niet meer in uw netwerk.",
+  "valueOutOfRange": "Moet tussen {min} en {max} liggen",
+  "maxCharacters": "Maximaal {max} tekens",
+  "invalidSubnetMask": "Ongeldig subnetmasker"
 }

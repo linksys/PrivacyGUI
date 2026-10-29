@@ -177,7 +177,7 @@
   "macAddress": "Adresse MAC",
   "macAddressClone": "Clonage d'adresse MAC",
   "manufacturer": "Fabricant",
-  "maxIdleTime": "Durée maximale d'inactivité",
+  "maxIdleTime": "Durée maximale d'inactivité (minutes)",
   "menu": "Menu",
   "menuRestartNetworkChildMessage": "Redémarrer le nœud et tous les nœuds enfants. Le redémarrage du système Wi-Fi maillé le déconnectera temporairement d'Internet. Si vous avez plusieurs nœuds, tous redémarreront. Les appareils connectés subiront également une déconnexion temporaire, mais se reconnecteront automatiquement une fois le système en ligne.",
   "menuRestartNetworkLastMessage": "Voulez-vous vraiment redémarrer le réseau ?",
@@ -1295,5 +1295,8 @@
   "nodeActionFailedAfterSent": "{failure} Déjà envoyé à : {sent}.",
   "nodeActionSkippedNodes": "Ces nœuds ne prennent pas en charge cette commande et ne la recevront pas, mais ils perdront leur connexion tant que les nœuds par l'intermédiaire desquels ils sont connectés seront indisponibles : {nodes}.",
   "nodeActionNotConfirmed": "{node} n'a pas confirmé la commande. Le nœud pourrait encore l'exécuter. Vérifiez donc la topologie avant de réessayer.",
-  "nodeActionNodeGone": "{node} ne fait plus partie de votre réseau."
+  "nodeActionNodeGone": "{node} ne fait plus partie de votre réseau.",
+  "valueOutOfRange": "Doit être compris entre {min} et {max}",
+  "maxCharacters": "{max} caractères maximum",
+  "invalidSubnetMask": "Masque de sous-réseau non valide"
 }

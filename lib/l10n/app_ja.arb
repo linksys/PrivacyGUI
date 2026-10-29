@@ -178,7 +178,7 @@
   "macAddressClone": "MAC アドレス複製",
   "main": "メイン",
   "manufacturer": "メーカー",
-  "maxIdleTime": "最大待機時間",
+  "maxIdleTime": "最大待機時間 (分)",
   "menu": "メニュー",
   "menuRestartNetworkChildMessage": "ノードとすべての子ノードを再起動します。メッシュWi-Fiシステムの再起動により、一時的にインターネットから切断されます。複数のノードがある場合、すべてが再起動します。接続されているデバイスも一時的に切断されますが、システムがオンラインに戻ると自動的に再接続されます。",
   "menuRestartNetworkLastMessage": "ネットワークを再起動",
@@ -1380,5 +1380,8 @@
   "nodeActionFailedAfterSent": "{failure}送信済み: {sent}。",
   "nodeActionSkippedNodes": "次のノードはこのコマンドに対応していないため、コマンドは送信されませんが、接続の経由先となるノードがオフラインの間は切断されます: {nodes}。",
   "nodeActionNotConfirmed": "{node} からコマンドの確認応答がありませんでした。このノードがまだコマンドを実行する可能性があるため、もう一度試す前にトポロジーを確認してください。",
-  "nodeActionNodeGone": "{node} はすでにネットワークから外れています。"
+  "nodeActionNodeGone": "{node} はすでにネットワークから外れています。",
+  "valueOutOfRange": "{min} から {max} の範囲で入力してください",
+  "maxCharacters": "{max} 文字以内",
+  "invalidSubnetMask": "無効なサブネット マスクです。"
 }

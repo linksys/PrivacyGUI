@@ -4,6 +4,25 @@
 
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
+/// Nested instance from parent multi-instance table
+class GreTunnelInterface {
+  final String instancePath;
+  final String? alias;
+
+  const GreTunnelInterface({
+    required this.instancePath,
+    this.alias,
+  });
+
+  @override
+  String toString() {
+    return 'GreTunnelInterface('
+        'instancePath: $instancePath, '
+        'alias: $alias'
+        ')';
+  }
+}
+
 /// Single instance from GreTunnels
 class GreTunnel {
   final String instancePath;
@@ -13,6 +32,7 @@ class GreTunnel {
   final String? underlaySubnetMask;
   final String? underlayDefaultGateway;
   final String? underlayDnsServers;
+  final GreTunnelInterface? tunnelInterface;
 
   const GreTunnel({
     required this.instancePath,
@@ -22,6 +42,7 @@ class GreTunnel {
     this.underlaySubnetMask,
     this.underlayDefaultGateway,
     this.underlayDnsServers,
+    this.tunnelInterface,
   });
 
   @override
@@ -33,7 +54,8 @@ class GreTunnel {
         'underlayIpAddress: $underlayIpAddress, '
         'underlaySubnetMask: $underlaySubnetMask, '
         'underlayDefaultGateway: $underlayDefaultGateway, '
-        'underlayDnsServers: $underlayDnsServers'
+        'underlayDnsServers: $underlayDnsServers, '
+        'tunnelInterface: $tunnelInterface'
         ')';
   }
 }
@@ -75,6 +97,7 @@ class GreTunnels {
     'Device.GRE.Tunnel.*.X_LINKSYS_UnderlaySubnetMask',
     'Device.GRE.Tunnel.*.X_LINKSYS_UnderlayDefaultGateway',
     'Device.GRE.Tunnel.*.X_LINKSYS_UnderlayDNSServers',
+    'Device.GRE.Tunnel.*.Interface.*.Alias',
   ];
 
   /// Fetch all instances via USP Get message
@@ -98,6 +121,30 @@ class GreTunnels {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
+      final childBase_0 = '${p}Interface.';
+      final childIds_0 = <String>{};
+      for (final key in response.keys) {
+        if (key.startsWith(childBase_0)) {
+          final rest = key.substring(childBase_0.length);
+          final dot = rest.indexOf('.');
+          if (dot > 0) childIds_0.add(rest.substring(0, dot));
+        }
+      }
+      final childSorted_0 = childIds_0.toList()
+        ..sort(
+            (a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+      final tunnelInterfaceRows = <GreTunnelInterface>[];
+      for (final cid_0 in childSorted_0) {
+        final cp_0 = '$childBase_0$cid_0.';
+        tunnelInterfaceRows.add(GreTunnelInterface(
+          instancePath: cp_0,
+          alias: response.containsKey('${cp_0}Alias')
+              ? response['${cp_0}Alias'] as String
+              : null,
+        ));
+      }
+      final tunnelInterface =
+          tunnelInterfaceRows.isEmpty ? null : tunnelInterfaceRows.first;
       final missing = <String>[];
       if (!response.containsKey('${p}RemoteEndpoints')) {
         missing.add('${p}RemoteEndpoints');
@@ -128,6 +175,7 @@ class GreTunnels {
             response.containsKey('${p}X_LINKSYS_UnderlayDNSServers')
                 ? response['${p}X_LINKSYS_UnderlayDNSServers'] as String
                 : null,
+        tunnelInterface: tunnelInterface,
       ));
     }
     return GreTunnels(items: items);

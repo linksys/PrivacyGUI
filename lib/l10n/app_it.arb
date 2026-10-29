@@ -177,7 +177,7 @@
   "macAddress": "Indirizzo MAC",
   "macAddressClone": "Clonazione indirizzo MAC",
   "manufacturer": "Produttore",
-  "maxIdleTime": "Tempo massimo di inattività",
+  "maxIdleTime": "Tempo massimo di inattività (minuti)",
   "menu": "Menu",
   "menuRestartNetworkChildMessage": "Riavvia il nodo e tutti i nodi figli. Il riavvio del sistema Wi-Fi mesh lo disconnetterà temporaneamente da Internet. Se hai più nodi, tutti si riavvieranno. Anche i dispositivi connessi subiranno una disconnessione temporanea ma si ricollegheranno automaticamente una volta che il sistema sarà di nuovo online.",
   "menuRestartNetworkLastMessage": "Riavvia la rete",
@@ -1295,5 +1295,8 @@
   "nodeActionFailedAfterSent": "{failure} Già inviato a: {sent}.",
   "nodeActionSkippedNodes": "Questi nodi non supportano questo comando e non lo riceveranno, ma perderanno la connessione mentre i nodi tramite cui sono connessi sono offline: {nodes}.",
   "nodeActionNotConfirmed": "{node} non ha confermato il comando. Potrebbe comunque eseguirlo, quindi controlla la topologia prima di riprovare.",
-  "nodeActionNodeGone": "{node} non fa più parte della tua rete."
+  "nodeActionNodeGone": "{node} non fa più parte della tua rete.",
+  "valueOutOfRange": "Deve essere compreso tra {min} e {max}",
+  "maxCharacters": "Massimo {max} caratteri",
+  "invalidSubnetMask": "Subnet mask non valida"
 }

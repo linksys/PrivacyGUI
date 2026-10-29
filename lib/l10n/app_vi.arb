@@ -175,7 +175,7 @@
   "macAddress": "Địa chỉ MAC",
   "macAddressClone": "Sao chép Địa chỉ MAC",
   "manufacturer": "Nhà sản xuất",
-  "maxIdleTime": "Thời gian chờ tối đa",
+  "maxIdleTime": "Thời gian chờ tối đa (phút)",
   "menu": "Menu",
   "menuRestartNetworkChildMessage": "Khởi động lại nút và tất cả các nút con. Khởi động lại hệ thống WiFi mesh sẽ tạm thời ngắt kết nối Internet. Nếu bạn có nhiều nút, tất cả sẽ khởi động lại. Các thiết bị đã kết nối cũng sẽ bị ngắt kết nối tạm thời nhưng sẽ tự động kết nối lại sau khi hệ thống hoạt động trở lại.",
   "menuRestartNetworkLastMessage": "Nếu bạn có nhiều hơn một điểm nút, tất cả sẽ khởi động lại. Khởi động lại hệ thống mesh WiFi sẽ tạm thời ngắt kết nối với Internet. Tất cả các điểm nút và thiết bị đã kết nối cũng sẽ bị ngắt kết nối tạm thời, nhưng chúng sẽ kết nối lại khi hệ thống mesh sẵn sàng.",
@@ -1295,5 +1295,8 @@
   "nodeActionFailedAfterSent": "{failure} Đã gửi tới: {sent}.",
   "nodeActionSkippedNodes": "Các nút sau không hỗ trợ lệnh này nên sẽ không được gửi lệnh, nhưng sẽ bị ngắt kết nối trong khi các nút mà chúng kết nối qua ngừng hoạt động: {nodes}.",
   "nodeActionNotConfirmed": "{node} chưa xác nhận lệnh. Nút này vẫn có thể thực hiện lệnh, vì vậy hãy kiểm tra cấu trúc mạng trước khi thử lại.",
-  "nodeActionNodeGone": "{node} không còn trong mạng của bạn."
+  "nodeActionNodeGone": "{node} không còn trong mạng của bạn.",
+  "valueOutOfRange": "Phải nằm trong khoảng {min} đến {max}",
+  "maxCharacters": "Tối đa {max} ký tự",
+  "invalidSubnetMask": "Mặt nạ mạng con không hợp lệ"
 }
