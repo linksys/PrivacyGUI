@@ -94,6 +94,7 @@ import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_entry_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_setup_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_add_nodes_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_no_internet_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_isp_settings_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_unplug_modem_view.dart';

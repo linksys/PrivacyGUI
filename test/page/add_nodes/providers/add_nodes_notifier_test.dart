@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -67,6 +68,19 @@ AddNodesNodeUIModel _node({
       alMacAddress: alMac,
     );
 
+/// The [i]th of several distinct nodes, for sessions with more than one.
+/// Its AL MAC's normalized key is [_keyN].
+AddNodesNodeUIModel _nodeN(int i,
+        {OnboardingNodeStatus status = OnboardingNodeStatus.onboarded}) =>
+    AddNodesNodeUIModel(
+      bleMacAddress: 'AA:BB:CC:00:01:0$i',
+      status: status,
+      modelNumber: 'M60',
+      alMacAddress: 'aa:bb:cc:00:02:0$i',
+    );
+
+String _keyN(int i) => 'AABBCC00020$i';
+
 const _idle = OnboardingSessionUIModel(
   status: OnboardingSessionStatus.idle,
   result: OnboardingSessionResult.none,
@@ -86,7 +100,7 @@ void main() {
   /// A container whose waits are a millisecond, so a test runs the real loops
   /// without sitting through them.
   ProviderContainer createContainer({
-    Duration sessionLimit = const Duration(seconds: 2),
+    Duration perNodeLimit = const Duration(seconds: 2),
     Duration joinLimit = const Duration(milliseconds: 200),
   }) {
     final container = ProviderContainer(overrides: [
@@ -94,7 +108,7 @@ void main() {
       uspMutationLockProvider.overrideWithValue(UspMutationLock()),
       addNodesTimingsProvider.overrideWithValue(AddNodesTimings(
         pollInterval: const Duration(milliseconds: 1),
-        sessionLimit: sessionLimit,
+        perNodeLimit: perNodeLimit,
         joinLimit: joinLimit,
       )),
       devicesDataProvider.overrideWith(() => devices),
@@ -208,12 +222,12 @@ void main() {
 
   group('AddNodesNotifier - start', () {
     Future<ProviderContainer> readyContainer({
-      Duration sessionLimit = const Duration(seconds: 2),
+      Duration perNodeLimit = const Duration(seconds: 2),
       Duration joinLimit = const Duration(milliseconds: 200),
     }) async {
       feedSessions([_idle]);
       final container =
-          createContainer(sessionLimit: sessionLimit, joinLimit: joinLimit);
+          createContainer(perNodeLimit: perNodeLimit, joinLimit: joinLimit);
       await settleOn(container, AddNodesPhase.ready);
       return container;
     }
@@ -292,7 +306,13 @@ void main() {
       expect(state.phase, AddNodesPhase.joined);
       expect(state.joinedNodeKeys, {_alMacKey});
       expect(state.sessionResult, OnboardingSessionResult.success);
-      expect(phases, [
+      // The phases walked, in order. A join publishes new joinedNodeKeys in the
+      // same joining phase (#1738), which the listener sees as a second entry.
+      final walked = [
+        for (var i = 0; i < phases.length; i++)
+          if (i == 0 || phases[i] != phases[i - 1]) phases[i],
+      ];
+      expect(walked, [
         AddNodesPhase.starting,
         AddNodesPhase.searching,
         AddNodesPhase.onboarding,
@@ -495,7 +515,7 @@ void main() {
     test('a missing leaf while following keeps reading until the limit',
         () async {
       final container =
-          await readyContainer(sessionLimit: const Duration(milliseconds: 30));
+          await readyContainer(perNodeLimit: const Duration(milliseconds: 30));
       when(() => service.start())
           .thenAnswer((_) async => OnboardingStartResult.started);
       when(() => service.fetchSession()).thenThrow(missingLeaf);
@@ -506,9 +526,11 @@ void main() {
 
       final state = container.read(addNodesProvider);
       expect(state.phase, AddNodesPhase.failed);
-      expect(state.error, isA<TimeoutError>(),
-          reason: 'the read error is retried as transient and the page ends on '
-              'the session limit, not on the read');
+      expect(state.error, isNull,
+          reason:
+              'the read error is retried as transient, and the page ends on '
+              'the session limit with each node\'s outcome, not on an error '
+              '(#1738)');
       expect(verify(() => service.fetchSession()).callCount, greaterThan(1),
           reason: 'it read again rather than failing on the first error');
       verify(() => service.stop()).called(1);
@@ -564,7 +586,8 @@ void main() {
       await container.read(addNodesProvider.notifier).start();
 
       final state = container.read(addNodesProvider);
-      expect(state.phase, AddNodesPhase.joined);
+      // One joined and one failed to connect: some, not all (#1738).
+      expect(state.phase, AddNodesPhase.partial);
       expect(state.sessionResult, OnboardingSessionResult.partial);
       // Only the node that reached the backhaul is waited for; the one the
       // controller never connected to has no AL MAC to look for.
@@ -589,7 +612,8 @@ void main() {
 
       await container.read(addNodesProvider.notifier).start();
 
-      expect(container.read(addNodesProvider).phase, AddNodesPhase.joined);
+      // Onboarded on the session's word, the other failed to connect.
+      expect(container.read(addNodesProvider).phase, AddNodesPhase.partial);
       verifyNever(() => service.fetchJoinedNodes(any()));
       expect(devices.refetches, 1);
     });
@@ -615,16 +639,22 @@ void main() {
             ]),
       ]);
       // The first node is listed straight away, the second never within the
-      // wait — the page shows Done from the first.
+      // wait. The phase stays joining throughout (#1738), and leaving disposes
+      // the flow before the second can arrive.
       when(() => service.fetchJoinedNodes(any()))
           .thenAnswer((_) async => {_alMacKey});
 
       unawaited(container.read(addNodesProvider.notifier).start());
-      await settleOn(container, AddNodesPhase.joined);
+      await settleOn(container, AddNodesPhase.joining);
+      final deadline = DateTime.now().add(const Duration(seconds: 3));
+      while (container.read(addNodesProvider).joinedNodeKeys.isEmpty) {
+        if (DateTime.now().isAfter(deadline)) fail('no node ever joined');
+        await Future<void>.delayed(const Duration(milliseconds: 1));
+      }
 
+      expect(container.read(addNodesProvider).phase, AddNodesPhase.joining);
       expect(devices.refetches, 1,
-          reason: 'the user can press Done now, which disposes the flow '
-              'before the second node arrives');
+          reason: 'refreshed on the first join, while the page still waits');
     });
 
     test('a second node that joins later refreshes the topology again',
@@ -710,7 +740,7 @@ void main() {
 
     test('a session that never ends is stopped at the limit', () async {
       final container =
-          await readyContainer(sessionLimit: const Duration(milliseconds: 30));
+          await readyContainer(perNodeLimit: const Duration(milliseconds: 30));
       when(() => service.start())
           .thenAnswer((_) async => OnboardingStartResult.started);
       feedSessions([
@@ -724,8 +754,190 @@ void main() {
 
       final state = container.read(addNodesProvider);
       expect(state.phase, AddNodesPhase.failed);
-      expect(state.error, isA<TimeoutError>());
+      expect(state.error, isNull,
+          reason: 'the outcomes say what happened; "timed out" no longer does '
+              '(#1738)');
       verify(() => service.stop()).called(1);
+    });
+
+    group('the session limit, per node found (#1738)', () {
+      test(
+          'grows with the nodes found, so three nodes are not cut off at one '
+          'node\'s limit', () async {
+        // 40 ms per node: three found makes 120 ms. The session ends at about
+        // 60 ms, past one node's limit and inside three's.
+        final container = await readyContainer(
+            perNodeLimit: const Duration(milliseconds: 40));
+        when(() => service.start())
+            .thenAnswer((_) async => OnboardingStartResult.started);
+        final onboarding = _session(
+            status: OnboardingSessionStatus.onboarding,
+            result: OnboardingSessionResult.started,
+            session: 1450,
+            nodes: [
+              _nodeN(1, status: OnboardingNodeStatus.onboarding),
+              _nodeN(2, status: OnboardingNodeStatus.pending),
+              _nodeN(3, status: OnboardingNodeStatus.pending),
+            ]);
+        final ended = clock.now().add(const Duration(milliseconds: 60));
+        when(() => service.fetchSession()).thenAnswer((_) async =>
+            clock.now().isBefore(ended)
+                ? onboarding
+                : _session(
+                    status: OnboardingSessionStatus.complete,
+                    result: OnboardingSessionResult.success,
+                    session: 1450,
+                    nodes: [_nodeN(1), _nodeN(2), _nodeN(3)]));
+        when(() => service.fetchJoinedNodes(any()))
+            .thenAnswer((_) async => {_keyN(1), _keyN(2), _keyN(3)});
+
+        await container.read(addNodesProvider.notifier).start();
+
+        expect(container.read(addNodesProvider).phase, AddNodesPhase.joined);
+        verifyNever(() => service.stop());
+      });
+
+      test(
+          'at the limit, stops the session and waits for the nodes that may '
+          'still join, rather than failing them all', () async {
+        final container = await readyContainer(
+            perNodeLimit: const Duration(milliseconds: 30));
+        when(() => service.start())
+            .thenAnswer((_) async => OnboardingStartResult.started);
+        // Never ends on its own: one onboarded, one still onboarding, one not
+        // reached.
+        feedSessions([
+          _session(
+              status: OnboardingSessionStatus.onboarding,
+              result: OnboardingSessionResult.started,
+              session: 1450,
+              nodes: [
+                _nodeN(1),
+                _nodeN(2, status: OnboardingNodeStatus.onboarding),
+                _nodeN(3, status: OnboardingNodeStatus.pending),
+              ]),
+        ]);
+        when(() => service.fetchJoinedNodes(any()))
+            .thenAnswer((_) async => {_keyN(1)});
+
+        await container.read(addNodesProvider.notifier).start();
+
+        final state = container.read(addNodesProvider);
+        verify(() => service.stop()).called(1);
+        expect(state.phase, AddNodesPhase.partial,
+            reason: 'the onboarded node joined, so not all of them failed');
+        expect(state.nodes.map(state.outcomeFor).toList(), [
+          AddNodesNodeOutcome.added,
+          AddNodesNodeOutcome.failed,
+          AddNodesNodeOutcome.notTried,
+        ]);
+        expect(state.interruptedNodes, {_nodeN(2).bleMacAddress});
+      });
+
+      test(
+          'a node stopped at the limit stays failed, whatever the router '
+          'writes after Stop()', () async {
+        final container = await readyContainer(
+            perNodeLimit: const Duration(milliseconds: 30));
+        when(() => service.start())
+            .thenAnswer((_) async => OnboardingStartResult.started);
+        feedSessions([
+          _session(
+              status: OnboardingSessionStatus.onboarding,
+              result: OnboardingSessionResult.started,
+              session: 1450,
+              nodes: [_nodeN(1, status: OnboardingNodeStatus.onboarding)]),
+        ]);
+        when(() => service.fetchJoinedNodes(any()))
+            .thenAnswer((_) async => <String>{});
+
+        await container.read(addNodesProvider.notifier).start();
+
+        final state = container.read(addNodesProvider);
+        expect(state.phase, AddNodesPhase.failed);
+        expect(
+            state.outcomeFor(state.nodes.single), AddNodesNodeOutcome.failed);
+        verifyNever(() => service.fetchJoinedNodes(any()));
+      });
+    });
+
+    group('the result, by every node\'s outcome (#1738)', () {
+      Future<AddNodesState> endWith(List<AddNodesNodeUIModel> nodes,
+          {Set<String> listed = const {},
+          OnboardingSessionResult result =
+              OnboardingSessionResult.partial}) async {
+        final container = await readyContainer();
+        when(() => service.start())
+            .thenAnswer((_) async => OnboardingStartResult.started);
+        feedSessions([
+          _session(
+              status: OnboardingSessionStatus.complete,
+              result: result,
+              session: 1450,
+              nodes: nodes),
+        ]);
+        when(() => service.fetchJoinedNodes(any()))
+            .thenAnswer((_) async => listed);
+        await container.read(addNodesProvider.notifier).start();
+        return container.read(addNodesProvider);
+      }
+
+      test('all added is joined', () async {
+        final state = await endWith([_nodeN(1), _nodeN(2)],
+            listed: {_keyN(1), _keyN(2)},
+            result: OnboardingSessionResult.success);
+        expect(state.phase, AddNodesPhase.joined);
+      });
+
+      test('some added and one never reached is partial: it can be tried again',
+          () async {
+        final state = await endWith(
+            [_nodeN(1), _nodeN(2, status: OnboardingNodeStatus.pending)],
+            listed: {_keyN(1)});
+        expect(state.phase, AddNodesPhase.partial);
+        expect(state.canStart, isTrue);
+      });
+
+      test('none added is failed, with each node\'s reason on it', () async {
+        final state = await endWith([
+          _nodeN(1, status: OnboardingNodeStatus.failedConnect),
+          _nodeN(2, status: OnboardingNodeStatus.failedWps),
+        ], result: OnboardingSessionResult.failed);
+        expect(state.phase, AddNodesPhase.failed);
+        expect(state.error, isNull);
+        expect(state.nodes.map(state.outcomeFor),
+            everyElement(AddNodesNodeOutcome.failed));
+      });
+
+      test('stays joining through the wait, so the result is shown once',
+          () async {
+        final container =
+            await readyContainer(joinLimit: const Duration(milliseconds: 200));
+        when(() => service.start())
+            .thenAnswer((_) async => OnboardingStartResult.started);
+        feedSessions([
+          _session(
+              status: OnboardingSessionStatus.complete,
+              result: OnboardingSessionResult.success,
+              session: 1450,
+              nodes: [_nodeN(1), _nodeN(2)]),
+        ]);
+        // The first appears at once, the second only on the fourth read.
+        var reads = 0;
+        when(() => service.fetchJoinedNodes(any())).thenAnswer(
+            (_) async => ++reads < 4 ? {_keyN(1)} : {_keyN(1), _keyN(2)});
+        final phases = <AddNodesPhase>[];
+        container.listen(addNodesProvider, (_, next) => phases.add(next.phase));
+
+        await container.read(addNodesProvider.notifier).start();
+
+        expect(phases.where((p) => p == AddNodesPhase.joined), hasLength(1),
+            reason: 'one result, published once at the end');
+        expect(phases.last, AddNodesPhase.joined);
+        expect(phases.indexOf(AddNodesPhase.joined),
+            greaterThan(phases.lastIndexOf(AddNodesPhase.joining)),
+            reason: 'never joined before the wait was over');
+      });
     });
 
     test('start does nothing while a session is running', () async {

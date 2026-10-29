@@ -125,6 +125,7 @@ import 'package:privacy_gui/page/instant_setup/views/pnp_isp_settings_view.dart'
 import 'package:privacy_gui/page/instant_setup/views/pnp_modem_lights_off_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_no_internet_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_pppoe_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_add_nodes_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_setup_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_static_ip_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_unplug_modem_view.dart';
@@ -2855,18 +2856,42 @@ final kAutoIPoEPageCase = PageSurfaceCase(
 
 /// `page.add_nodes` (#879).
 ///
-/// [addNodesJoinedState], the widest state the page has: one node that joined
-/// and one still on its way, so the node list carries both kinds of row — the
-/// joined one with its check mark, the other with "not online yet" under its
-/// model — above the move-them-into-place note and the Done button. The waiting
-/// phases are a spinner and two centred lines, narrower than this by
-/// construction; the guidance and the failure phases are a title, prose and one
-/// or two buttons, which this state also has. Requiring [AppNodeListCard] is
-/// what makes a fixture that lost its nodes fail rather than sweep an empty list.
+/// [addNodesPartialState], the widest state the page has since #1738: four
+/// nodes, one added and three not, so the node list carries a row of each
+/// result outcome — the added one with its check mark, the others with their
+/// outcome under the model or, with none reported, the BLE MAC — above the
+/// failure's three-step checklist and the Try again / Done pair. The waiting
+/// phases put the same rows under a spinner and two centred lines; the joined
+/// screen swaps the checklist for a two-line note and drops a button; the
+/// guidance is a title and prose. Requiring [AppNodeListCard] is what makes a
+/// fixture that lost its nodes fail rather than sweep an empty list.
 final kAddNodesPageCase = PageSurfaceCase(
   id: 'add_nodes',
   view: () => const AddNodesView(),
-  overrides: () => addNodesOverrides(addNodesJoinedState),
+  overrides: () => addNodesOverrides(addNodesPartialState),
+  requires: const [AddNodesPhaseContent, AppNodeListCard],
+  forbids: const [AppLoader],
+);
+
+/// `page.pnp_add_nodes` (#1734): the same flow opened from the PnP wizard's Your
+/// Network step.
+///
+/// The same state as [kAddNodesPageCase], [addNodesPartialState], and on purpose:
+/// the two pages share [AddNodesPhaseContent] and differ only in their frame —
+/// the wizard's 9-column route and no app bar here, the topology's top bar
+/// there — so one state across both is what makes the frame the only variable.
+///
+/// What this case does not reach is the step that opens it. Your Network is the
+/// wizard's last step, and `kPnpSetupPageCase` measures step 0 only, for the
+/// reason it gives: `_currentStep` is widget state, and reaching another step
+/// needs a tap per cell. Its content is a node list of [AppNodeListCard] rows,
+/// swept here and on the topology, an "Add nodes" text button, whose label is
+/// this page's own title, and Back / Save. Sweeping it would mean the wizard
+/// taking an initial step, the way #1489 gave the tabbed pages `initialTab`.
+final kPnpAddNodesPageCase = PageSurfaceCase(
+  id: 'pnp_add_nodes',
+  view: () => const PnpAddNodesView(),
+  overrides: () => addNodesOverrides(addNodesPartialState),
   requires: const [AddNodesPhaseContent, AppNodeListCard],
   forbids: const [AppLoader],
 );
@@ -2983,4 +3008,5 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kAdministrationPageCase,
   kAutoIPoEPageCase,
   kAddNodesPageCase,
+  kPnpAddNodesPageCase,
 ];

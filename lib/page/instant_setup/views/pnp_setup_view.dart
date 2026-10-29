@@ -6,11 +6,14 @@ import 'package:privacy_gui/components/composed/app_node_list_card.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_install_phase_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_update_warning_note.dart';
@@ -24,7 +27,12 @@ import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-/// PnP wizard — main WiFi + guest WiFi configuration (two-step stepper).
+/// E2E hook for the Your Network step's "Add nodes" button (#1734). Singleton:
+/// the step has one.
+const String kPnpAddNodesIdentifier = 'pnp-add-nodes';
+
+/// PnP wizard: main Wi-Fi, guest Wi-Fi when the router has one, and Your
+/// Network, then saving, the firmware stage and the Wi-Fi Ready screen.
 class PnpSetupView extends ConsumerStatefulWidget {
   const PnpSetupView({super.key});
 
@@ -236,9 +244,11 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   Widget _buildStepperForm(BuildContext context, WizardConfiguring phase) {
     _initControllers(phase);
     final hasGuestNetwork = phase.wifiConfig.guestSsidInstancePaths.isNotEmpty;
-    final hasMeshNodes = phase.meshNodes.length > 1;
-    final totalSteps = 1 + (hasGuestNetwork ? 1 : 0) + (hasMeshNodes ? 1 : 0);
 
+    // Your Network is always the last step, with one node as with several
+    // (#1734): it is where nodes are added, and a single router is the case
+    // that most needs to (REQ-16). So it holds Save, and every step before it
+    // ends with Next.
     final steps = [
       StepperStep(
         id: 'wifi',
@@ -249,43 +259,33 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
           id: 'guest',
           label: loc(context).guestWifi,
         ),
-      if (hasMeshNodes)
-        StepperStep(
-          id: 'network',
-          label: loc(context).pnpYourNetworkTitle,
-        ),
+      StepperStep(
+        id: 'network',
+        label: loc(context).pnpYourNetworkTitle,
+      ),
     ];
 
     // Map step index to content builder
     Widget buildStepContent() {
       if (_currentStep == 0) return _buildMainWifiStep(context, phase);
-      int stepIdx = 1;
-      if (hasGuestNetwork) {
-        if (_currentStep == stepIdx) return _buildGuestWifiStep(context, phase);
-        stepIdx++;
+      if (hasGuestNetwork && _currentStep == 1) {
+        return _buildGuestWifiStep(context, phase);
       }
-      if (hasMeshNodes) {
-        if (_currentStep == stepIdx) {
-          return _buildYourNetworkStep(context, phase);
-        }
-      }
-      return _buildMainWifiStep(context, phase);
+      return _buildYourNetworkStep(context, phase);
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (totalSteps > 1) ...[
-          AppStepper(
-            steps: steps,
-            currentStep: _currentStep,
-            completedSteps: {for (int i = 0; i < _currentStep; i++) i},
-            indicatorType: StepIndicatorType.bar,
-            stepSize: 4.0,
-            interactive: false,
-          ),
-          AppGap.xl(),
-        ],
+        AppStepper(
+          steps: steps,
+          currentStep: _currentStep,
+          completedSteps: {for (int i = 0; i < _currentStep; i++) i},
+          indicatorType: StepIndicatorType.bar,
+          stepSize: 4.0,
+          interactive: false,
+        ),
+        AppGap.xl(),
 
         // Step content wrapped in AppCard
         AppCard(
@@ -303,8 +303,6 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   Widget _buildMainWifiStep(BuildContext context, WizardConfiguring phase) {
     final config = phase.wifiConfig;
     final isSplitMode = config.isSplitMode;
-    final hasNextStep =
-        config.guestSsidInstancePaths.isNotEmpty || phase.meshNodes.length > 1;
 
     // Validation for button enable state
     final isValid = isSplitMode
@@ -327,18 +325,13 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
         AppGap.xxxl(),
         Align(
           alignment: Alignment.centerRight,
-          child: hasNextStep
-              ? AppButton(
-                  label: loc(context).next,
-                  onTap:
-                      isValid ? () => setState(() => _currentStep = 1) : null,
-                )
-              : AppButton(
-                  label: loc(context).save,
-                  onTap: isValid
-                      ? () => ref.read(pnpProvider.notifier).saveChanges()
-                      : null,
-                ),
+          // Never Save: Your Network always follows.
+          child: AppButton(
+            label: loc(context).next,
+            onTap: isValid
+                ? () => setState(() => _currentStep = _currentStep + 1)
+                : null,
+          ),
         ),
       ],
     );
@@ -499,7 +492,6 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   Widget _buildGuestWifiStep(BuildContext context, WizardConfiguring phase) {
     final config = phase.wifiConfig;
     final isGuestSplitMode = config.isGuestSplitMode;
-    final hasMeshStep = phase.meshNodes.length > 1;
 
     // Validation for button enable state
     final guestPasswordValid = !config.guestEnabled ||
@@ -550,19 +542,13 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
               label: loc(context).back,
               onTap: () => setState(() => _currentStep = 0),
             ),
-            hasMeshStep
-                ? AppButton(
-                    label: loc(context).next,
-                    onTap: guestPasswordValid
-                        ? () => setState(() => _currentStep = _currentStep + 1)
-                        : null,
-                  )
-                : AppButton(
-                    label: loc(context).save,
-                    onTap: guestPasswordValid
-                        ? () => ref.read(pnpProvider.notifier).saveChanges()
-                        : null,
-                  ),
+            // Never Save: Your Network always follows.
+            AppButton(
+              label: loc(context).next,
+              onTap: guestPasswordValid
+                  ? () => setState(() => _currentStep = _currentStep + 1)
+                  : null,
+            ),
           ],
         ),
       ],
@@ -572,6 +558,15 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   // ── Step: Your Network (mesh nodes) ──
 
   Widget _buildYourNetworkStep(BuildContext context, WizardConfiguring phase) {
+    // The topology's own two answers, read the same way (#1734): whether this
+    // firmware has the onboarding API, and whether this mode offers a way in.
+    // The button renders iff both say yes.
+    final openAddNodes = ref.watch(deviceCapabilitiesProvider).has(
+              DeviceCapability.bleOnboarding,
+            )
+        ? ref.watch(surfaceStrategyProvider).addNodesEntry(_openAddNodes)
+        : null;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -580,37 +575,55 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
         AppText.bodyMedium(loc(context).pnpYourNetworkDesc),
         AppGap.xl(),
 
-        // Node list block
-        LayoutBlock(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            children: phase.meshNodes.asMap().entries.map((entry) {
-              final node = entry.value;
-              // The node's own role, not its place in the list: the nodes keep
-              // DataElements order, which does not promise the controller
-              // first.
-              final isMaster = node.isMaster;
-              final isLast = entry.key == phase.meshNodes.length - 1;
-              return Column(
-                children: [
-                  AppNodeListCard(
-                    leading: DeviceImageHelper.getRouterImage(
-                      routerIconTestByModel(modelNumber: node.model),
+        // Node list block. Empty only when the mesh read failed, which the
+        // service answers with no nodes rather than an error: the step still
+        // shows, so an empty block would be a frame with nothing in it.
+        if (phase.meshNodes.isNotEmpty)
+          LayoutBlock(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              children: phase.meshNodes.asMap().entries.map((entry) {
+                final node = entry.value;
+                // The node's own role, not its place in the list: the nodes
+                // keep DataElements order, which does not promise the
+                // controller first.
+                final isMaster = node.isMaster;
+                final isLast = entry.key == phase.meshNodes.length - 1;
+                return Column(
+                  children: [
+                    AppNodeListCard(
+                      leading: DeviceImageHelper.getRouterImage(
+                        routerIconTestByModel(modelNumber: node.model),
+                      ),
+                      title: node.model.isNotEmpty ? node.model : node.deviceId,
+                      // The topology's words for the two roles.
+                      description:
+                          isMaster ? loc(context).master : loc(context).slave,
+                      trailing: AppIcon.font(
+                        Icons.check_circle,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 20,
+                      ),
                     ),
-                    title: node.model.isNotEmpty ? node.model : node.deviceId,
-                    description: isMaster ? 'Master' : 'Slave',
-                    trailing: AppIcon.font(
-                      Icons.check_circle,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 20,
-                    ),
-                  ),
-                  if (!isLast) const Divider(height: AppSpacing.md),
-                ],
-              );
-            }).toList(),
+                    if (!isLast) const Divider(height: AppSpacing.md),
+                  ],
+                );
+              }).toList(),
+            ),
           ),
-        ),
+
+        if (openAddNodes != null) ...[
+          AppGap.md(),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: AppButton.text(
+              label: loc(context).addNodes,
+              icon: AppIcon.font(Icons.add_circle_outline),
+              identifier: kPnpAddNodesIdentifier,
+              onTap: openAddNodes,
+            ),
+          ),
+        ],
 
         AppGap.xxxl(),
         Row(
@@ -628,6 +641,18 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
         ),
       ],
     );
+  }
+
+  /// Opens the add-nodes flow over the wizard, then reads the nodes again so
+  /// the step shows the ones that joined (#1734).
+  ///
+  /// Pushed, so this page stays mounted under it: the stepper keeps its step
+  /// and the form keeps what was typed. Going to `/pnp` instead would re-run
+  /// `startPostLoginFlow` and start the form over.
+  Future<void> _openAddNodes() async {
+    await context.pushNamed(RouteNamed.pnpAddNodes);
+    if (!mounted) return;
+    await ref.read(pnpProvider.notifier).refreshMeshNodes();
   }
 
   // ── Saving / Loading ──────────────────────────────────────
