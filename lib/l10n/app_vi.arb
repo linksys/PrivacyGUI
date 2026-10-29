@@ -1283,5 +1283,6 @@
   "nodeActionFailedAfterSent": "{failure} Đã gửi tới: {sent}.",
   "nodeActionSkippedNodes": "Các nút sau không hỗ trợ lệnh này nên sẽ không được gửi lệnh, nhưng sẽ bị ngắt kết nối trong khi các nút mà chúng kết nối qua ngừng hoạt động: {nodes}.",
   "nodeActionNotConfirmed": "{node} chưa xác nhận lệnh. Nút này vẫn có thể thực hiện lệnh, vì vậy hãy kiểm tra cấu trúc mạng trước khi thử lại.",
-  "nodeActionNodeGone": "{node} không còn trong mạng của bạn."
+  "nodeActionNodeGone": "{node} không còn trong mạng của bạn.",
+  "macWillBeAddedAs": "Sẽ được thêm dưới dạng {mac}"
 }

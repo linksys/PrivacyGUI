@@ -1368,5 +1368,6 @@
   "nodeActionFailedAfterSent": "{failure}送信済み: {sent}。",
   "nodeActionSkippedNodes": "次のノードはこのコマンドに対応していないため、コマンドは送信されませんが、接続の経由先となるノードがオフラインの間は切断されます: {nodes}。",
   "nodeActionNotConfirmed": "{node} からコマンドの確認応答がありませんでした。このノードがまだコマンドを実行する可能性があるため、もう一度試す前にトポロジーを確認してください。",
-  "nodeActionNodeGone": "{node} はすでにネットワークから外れています。"
+  "nodeActionNodeGone": "{node} はすでにネットワークから外れています。",
+  "macWillBeAddedAs": "{mac} として追加されます"
 }

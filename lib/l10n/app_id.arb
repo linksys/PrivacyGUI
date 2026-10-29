@@ -1283,5 +1283,6 @@
   "nodeActionFailedAfterSent": "{failure} Sudah dikirim ke: {sent}.",
   "nodeActionSkippedNodes": "Node berikut tidak mendukung perintah ini sehingga tidak akan dikirimi perintah tersebut, tetapi akan terputus selama node yang menjadi jalur sambungannya tidak aktif: {nodes}.",
   "nodeActionNotConfirmed": "{node} tidak mengonfirmasi perintah. Node tersebut mungkin masih menjalankannya, jadi periksa topologi sebelum mencoba lagi.",
-  "nodeActionNodeGone": "{node} tidak lagi berada di jaringan Anda."
+  "nodeActionNodeGone": "{node} tidak lagi berada di jaringan Anda.",
+  "macWillBeAddedAs": "Akan ditambahkan sebagai {mac}"
 }

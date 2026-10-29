@@ -1283,5 +1283,6 @@
   "nodeActionFailedAfterSent": "{failure} Już wysłano do: {sent}.",
   "nodeActionSkippedNodes": "Te węzły nie obsługują tego polecenia i nie otrzymają go, ale stracą połączenie na czas, gdy węzły, przez które są połączone, nie działają: {nodes}.",
   "nodeActionNotConfirmed": "Węzeł {node} nie potwierdził polecenia. Może je nadal wykonać, więc przed ponowną próbą sprawdź topologię.",
-  "nodeActionNodeGone": "Węzła {node} nie ma już w Twojej sieci."
+  "nodeActionNodeGone": "Węzła {node} nie ma już w Twojej sieci.",
+  "macWillBeAddedAs": "Zostanie dodany jako {mac}"
 }

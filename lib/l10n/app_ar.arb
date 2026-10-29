@@ -1283,5 +1283,6 @@
   "nodeActionFailedAfterSent": "{failure} تم الإرسال بالفعل إلى: {sent}.",
   "nodeActionSkippedNodes": "لا تدعم هذه العُقد هذا الأمر ولن يُرسل إليها، لكنها ستفقد اتصالها أثناء توقف العُقد التي تتصل عبرها عن العمل: {nodes}.",
   "nodeActionNotConfirmed": "لم تؤكد {node} الأمر. وقد تنفذه رغم ذلك، لذا تحقق من الطوبولوجيا قبل المحاولة مرة أخرى.",
-  "nodeActionNodeGone": "لم تعد {node} موجودة في شبكتك."
+  "nodeActionNodeGone": "لم تعد {node} موجودة في شبكتك.",
+  "macWillBeAddedAs": "ستتم الإضافة باسم {mac}"
 }

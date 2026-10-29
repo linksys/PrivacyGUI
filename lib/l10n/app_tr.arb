@@ -1283,5 +1283,6 @@
   "nodeActionFailedAfterSent": "{failure} Zaten gönderildi: {sent}.",
   "nodeActionSkippedNodes": "Bu düğümler bu komutu desteklemedikleri için komut onlara gönderilmeyecek, ancak üzerinden bağlandıkları düğümler devre dışıyken bağlantılarını kaybedecekler: {nodes}.",
   "nodeActionNotConfirmed": "{node} komutu onaylamadı. Komutu yine de uygulayabilir, bu nedenle yeniden denemeden önce topolojiyi kontrol edin.",
-  "nodeActionNodeGone": "{node} artık ağınızda değil."
+  "nodeActionNodeGone": "{node} artık ağınızda değil.",
+  "macWillBeAddedAs": "{mac} olarak eklenecek"
 }
