@@ -87,6 +87,7 @@ const pptpStaticUnderlayForm = UspInternetSettingsForm(
   underlayGateway: '198.51.100.1',
   underlayDns1: '8.8.8.8',
   underlayDns2: '8.8.4.4',
+  underlayDns3: '1.1.1.1',
   pppUsername: 'vpnuser',
   pppPassword: 'secret123',
   connectionTrigger: 'AlwaysOn',
@@ -107,6 +108,18 @@ const l2tpOnDemandForm = UspInternetSettingsForm(
   wanMacAddress: 'AA:BB:CC:DD:EE:FF',
 );
 
+/// Static IP with every field the page checks failing at once (netmngr 036):
+/// a reserved IP, a mask that is not contiguous, an empty gateway, an empty
+/// DNS 1, a reserved DNS 2 and a malformed DNS 3.
+final staticIpValidationErrorForm = staticIpForm.copyWith(
+  staticIpAddress: '127.0.0.1',
+  subnetMask: '255.0.255.0',
+  defaultGateway: '',
+  dnsServer1: '',
+  dnsServer2: '224.0.0.1',
+  dnsServer3: 'bad',
+);
+
 /// PPTP over DHCP, the underlay switch off.
 final pptpDhcpUnderlayForm =
     pptpStaticUnderlayForm.copyWith(underlayStatic: false);
@@ -114,6 +127,13 @@ final pptpDhcpUnderlayForm =
 /// L2TP on Keep Alive, read-only.
 final l2tpKeepAliveForm = l2tpOnDemandForm.copyWith(
     connectionTrigger: 'AlwaysOn', lcpEchoInterval: 60);
+
+/// PPTP with WAN VLAN tagging on, which the tunnel block draws as a field.
+final pptpVlanForm =
+    pptpDhcpUnderlayForm.copyWith(vlanEnabled: true, vlanId: 100);
+
+/// L2TP with WAN VLAN tagging on, drawn as a read-only row.
+final l2tpVlanForm = l2tpKeepAliveForm.copyWith(vlanEnabled: true, vlanId: 100);
 
 /// PPPoE in edit mode shows the Keep Alive interval as a field.
 final pppoeKeepAliveForm = pppoeForm.copyWith(lcpEchoInterval: 30);

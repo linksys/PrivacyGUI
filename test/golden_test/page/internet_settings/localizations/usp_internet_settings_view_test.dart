@@ -55,6 +55,24 @@ void main() {
                 dataState(staticIpForm, readOnlyInfo: defaultReadOnlyInfo),
               ),
             ),
+        'static_ip_editing': (overrides) => overrides.addAll(
+              internetSettingsOverrides(
+                dataState(
+                  staticIpForm,
+                  readOnlyInfo: defaultReadOnlyInfo,
+                  isEditing: true,
+                ),
+              ),
+            ),
+        'static_ip_validation_error': (overrides) => overrides.addAll(
+              internetSettingsOverrides(
+                dataState(
+                  staticIpValidationErrorForm,
+                  readOnlyInfo: defaultReadOnlyInfo,
+                  isEditing: true,
+                ),
+              ),
+            ),
         'pppoe': (overrides) => overrides.addAll(
               internetSettingsOverrides(
                 dataState(
@@ -98,6 +116,15 @@ void main() {
                 ),
               ),
             ),
+        'pptp_vlan_editing': (overrides) => overrides.addAll(
+              internetSettingsOverrides(
+                dataState(
+                  pptpVlanForm,
+                  readOnlyInfo: pppoeReadOnlyInfo,
+                  isEditing: true,
+                ),
+              ),
+            ),
         'pptp_validation_error': (overrides) => overrides.addAll(
               internetSettingsOverrides(
                 dataState(
@@ -110,6 +137,11 @@ void main() {
         'l2tp': (overrides) => overrides.addAll(
               internetSettingsOverrides(
                 dataState(l2tpKeepAliveForm, readOnlyInfo: pppoeReadOnlyInfo),
+              ),
+            ),
+        'l2tp_vlan': (overrides) => overrides.addAll(
+              internetSettingsOverrides(
+                dataState(l2tpVlanForm, readOnlyInfo: pppoeReadOnlyInfo),
               ),
             ),
         'l2tp_on_demand_editing': (overrides) => overrides.addAll(
@@ -172,6 +204,18 @@ void main() {
             ),
       },
       interactions: {
+        'static_ip_validation_error_tooltip': Interaction(
+          setup: (overrides) => overrides.addAll(
+            internetSettingsOverrides(
+              dataState(
+                staticIpValidationErrorForm,
+                readOnlyInfo: defaultReadOnlyInfo,
+                isEditing: true,
+              ),
+            ),
+          ),
+          steps: _tapEveryErrorIcon,
+        ),
         'pptp_validation_error_tooltip': Interaction(
           setup: (overrides) => overrides.addAll(
             internetSettingsOverrides(
