@@ -26,9 +26,28 @@
       }
     }
   },
-  "addNodesNotOnlineYet": "Not online yet. This can take a few minutes.",
   "addNodesFailedTitle": "Couldn't add a node",
   "addNodesCheckAgain": "Check again",
+  "addNodesStatusAdded": "Added",
+  "addNodesStatusJoining": "Joining…",
+  "addNodesStatusFailed": "Couldn't add",
+  "addNodesStatusNotTried": "Not tried yet",
+  "addNodesPartialTitle": "Some nodes were added",
+  "addNodesFailedTroubleshootTitle": "Let's try again",
+  "addNodesFailedTroubleshootDesc1": "Move the nodes that couldn't be added closer to the router.",
+  "addNodesFailedTroubleshootDesc2": "Unplug those nodes, plug them back in, and wait for the solid blue light.",
+  "addNodesFailedTroubleshootDesc3": "Then try again. Nodes already added stay in your network.",
+  "addNodesStopTitle": "Stop adding nodes?",
+  "addNodesStopDesc": "{count, plural, =1{1 node is already joining your network and will stay. It can take a few minutes to show up.} other{{count} nodes are already joining your network and will stay. They can take a few minutes to show up.}}",
+  "@addNodesStopDesc": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addNodesKeepAdding": "Keep adding",
+  "addNodesStopAdding": "Stop",
   "all": "All",
   "addPortForwarding": "Add Port Forwarding",
   "addRule": "Add rule",

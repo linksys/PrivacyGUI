@@ -61,6 +61,13 @@ class FixedPnpNotifier extends PnpNotifier {
   @override
   Future<void> saveChanges() async {}
 
+  /// Times the Your Network step asked for the nodes again (#1734), which it
+  /// does once the add-nodes page it pushed has popped.
+  int meshRefreshes = 0;
+
+  @override
+  Future<void> refreshMeshNodes() async => meshRefreshes++;
+
   @override
   Future<void> testReconnect() async {}
 }

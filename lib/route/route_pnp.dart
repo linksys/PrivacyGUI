@@ -59,6 +59,17 @@ final pnpRoute = LinksysRoute(
       config: _pnpRouteConfig,
       builder: (context, state) => const PnpSetupView(),
       onExit: _pnpFirmwareExitGuard,
+      routes: [
+        // A child of the wizard, so it is pushed over it and pops back to the
+        // step it was opened from (#1734). Named pnpAddNodes, which
+        // idleCheckWhiteList exempts: a session can outlast the idle window.
+        LinksysRoute(
+          name: RouteNamed.pnpAddNodes,
+          path: RoutePath.pnpAddNodes,
+          config: _pnpRouteConfig,
+          builder: (context, state) => const PnpAddNodesView(),
+        ),
+      ],
     ),
   ],
 );

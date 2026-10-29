@@ -1,11 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/composed/app_node_list_card.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/mode/app_mode_profile.dart';
+import 'package:privacy_gui/core/mode/local_mode_profile.dart';
+import 'package:privacy_gui/core/mode/remote_mode_profile.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_setup_view.dart';
+import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/route/route_model.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../layout_gate/collector.dart';
@@ -383,5 +394,196 @@ void main() {
           'every one of the 234 cells in page.pnp_setup_complete_unified:\n'
           '${offenders.join('\n')}',
     );
+  });
+
+  // ===========================================================================
+  // Your Network and Add nodes (#1734)
+  // ===========================================================================
+  //
+  // Your Network is shown with one node as with several, so Save is always on
+  // it; and under its list the step offers Add nodes on exactly the topology's
+  // two conditions — the onboarding capability, and a surface that has the way
+  // in. The add-nodes page is a stand-in here: what is under test is that the
+  // step opens it and reads the nodes again when it pops.
+  group('Your Network and Add nodes (#1734)', () {
+    final en = lookupAppLocalizations(const Locale('en'));
+
+    /// The wizard with [config] and [nodes], on a stand-in add-nodes route that
+    /// is a *child* of the wizard's, as `pnpAddNodes` is of `pnpConfig`, so a
+    /// pop lands back on the step.
+    Future<FixedPnpNotifier> pumpWizard(
+      WidgetTester tester, {
+      PnpWifiConfig config = pnpUnifiedWifiConfig,
+      List<NodeEntity>? nodes,
+      AppModeProfile profile = const LocalModeProfile(),
+      DeviceCapabilities? capabilities,
+      Locale locale = const Locale('en'),
+    }) async {
+      enlargeSurface(tester);
+      final notifier = FixedPnpNotifier(PnpState(
+        phase: WizardConfiguring(
+          wifiConfig: config,
+          meshNodes: nodes ?? [pnpMeshNodes.first],
+        ),
+        serialNumber: 'SN-TEST',
+      ));
+      await runWithOverflowCollection((_) async {
+        await tester.pumpWidget(pageSurfaceHost(
+          view: const PnpSetupView(),
+          locale: locale,
+          overrides: [
+            pnpProvider.overrideWith(() => notifier),
+            appModeProfileProvider.overrideWithValue(profile),
+            deviceCapabilitiesProvider.overrideWithValue(capabilities ??
+                DeviceCapabilities(const {DeviceCapability.bleOnboarding})),
+          ],
+          childRoutes: [
+            LinksysRoute(
+              path: RoutePath.pnpAddNodes,
+              name: RouteNamed.pnpAddNodes,
+              builder: (context, state) => Scaffold(
+                body: Center(
+                  child: TextButton(
+                    // GoRouter's pop, as PnpAddNodesView's Done is.
+                    onPressed: () => context.pop(),
+                    child: const Text('add nodes page'),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ));
+        await settle(tester);
+      });
+      return notifier;
+    }
+
+    /// Presses Next until the stepper is on its last step.
+    Future<void> toYourNetwork(WidgetTester tester) async {
+      await runWithOverflowCollection((_) async {
+        while (find.widgetWithText(AppButton, en.next).evaluate().isNotEmpty) {
+          await tester.tap(find.widgetWithText(AppButton, en.next));
+          await settle(tester);
+        }
+      });
+    }
+
+    Finder buttonLabelled(String label) =>
+        find.widgetWithText(AppButton, label);
+
+    for (final entry in {
+      'one node and no guest SSID': pnpNoGuestWifiConfig,
+      'one node and a guest SSID': pnpUnifiedWifiConfig,
+    }.entries) {
+      testWidgets(
+          '${entry.key}: every step before Your Network ends in Next, '
+          'and Your Network holds Save', (tester) async {
+        await pumpWizard(tester, config: entry.value);
+
+        expect(buttonLabelled(en.save), findsNothing,
+            reason: 'main Wi-Fi saves only when it is the last step, and Your '
+                'Network now always follows');
+        await toYourNetwork(tester);
+
+        expect(find.text(en.pnpYourNetworkTitle), findsWidgets);
+        expect(buttonLabelled(en.save), findsOneWidget);
+        expect(find.byType(AppStepper), findsOneWidget,
+            reason: 'two steps at least, so the stepper always renders');
+      });
+    }
+
+    testWidgets(
+        'Add nodes opens the add-nodes page, and the nodes are read '
+        'again once it pops', (tester) async {
+      final handle = tester.ensureSemantics();
+      final notifier = await pumpWizard(tester);
+      await toYourNetwork(tester);
+
+      expect(
+          find.bySemanticsIdentifier(kPnpAddNodesIdentifier), findsOneWidget);
+      expect(notifier.meshRefreshes, 0);
+      // A route transition, so the shared settle: the local five-frame one
+      // would pop the page while it is still animating in.
+      await runWithOverflowCollection((_) async {
+        await tester.tap(buttonLabelled(en.addNodes));
+        await settleIgnoringAnimations(tester);
+      });
+      expect(find.text('add nodes page'), findsOneWidget);
+      expect(notifier.meshRefreshes, 0,
+          reason: 'not before the page has closed');
+
+      await runWithOverflowCollection((_) async {
+        await tester.tap(find.text('add nodes page'));
+        await settleIgnoringAnimations(tester);
+      });
+
+      expect(find.text(en.pnpYourNetworkTitle), findsWidgets,
+          reason: 'back on the step it was opened from, not step 0');
+      expect(buttonLabelled(en.save), findsOneWidget);
+      expect(notifier.meshRefreshes, 1);
+      handle.dispose();
+    });
+
+    testWidgets('firmware without the onboarding API offers no Add nodes',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpWizard(tester, capabilities: DeviceCapabilities.empty);
+      await toYourNetwork(tester);
+
+      expect(buttonLabelled(en.save), findsOneWidget,
+          reason: 'on the step, so the absence below is the button and not '
+              'the step');
+      expect(find.bySemanticsIdentifier(kPnpAddNodesIdentifier), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('remote assistance offers no Add nodes', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpWizard(tester, profile: const RemoteModeProfile());
+      await toYourNetwork(tester);
+
+      expect(buttonLabelled(en.save), findsOneWidget,
+          reason: 'on the step, so the absence below is the button and not '
+              'the step');
+      expect(find.bySemanticsIdentifier(kPnpAddNodesIdentifier), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('a mesh read that found nothing shows no empty list',
+        (tester) async {
+      // PnpService.fetchMeshTopology answers a failed read with no nodes, and
+      // the step is shown regardless now.
+      await pumpWizard(tester, nodes: const []);
+      await toYourNetwork(tester);
+
+      expect(find.byType(AppNodeListCard), findsNothing);
+      expect(find.byType(LayoutBlock), findsNothing,
+          reason: 'an empty block would be a frame with nothing in it');
+      expect(buttonLabelled(en.addNodes), findsOneWidget,
+          reason: 'the way to add one does not depend on the list');
+    });
+
+    testWidgets('the node roles are the topology\'s localized words',
+        (tester) async {
+      // In English the old hard-coded 'Master' / 'Slave' and the localized
+      // words read the same, so only another locale tells them apart.
+      const zhTw = Locale.fromSubtags(languageCode: 'zh', countryCode: 'TW');
+      final words = lookupAppLocalizations(zhTw);
+      final next = words.next;
+      await pumpWizard(tester, nodes: pnpMeshNodes, locale: zhTw);
+      await runWithOverflowCollection((_) async {
+        while (find.widgetWithText(AppButton, next).evaluate().isNotEmpty) {
+          await tester.tap(find.widgetWithText(AppButton, next));
+          await settle(tester);
+        }
+      });
+
+      final descriptions = tester
+          .widgetList<AppNodeListCard>(find.byType(AppNodeListCard))
+          .map((card) => card.description)
+          .toSet();
+      expect(descriptions, {words.master, words.slave});
+      expect(descriptions, isNot(contains('Master')));
+    });
   });
 }

@@ -38,8 +38,10 @@ import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_typ
 /// which is about the four unified-mode controllers specifically.
 ///
 /// `guestSsidInstancePaths` is non-empty on purpose: it is what
-/// `_buildStepperForm` counts to decide there is a guest step, so an empty list
-/// would render a one-step wizard with no `AppStepper` at all.
+/// `_buildStepperForm` counts to decide there is a guest step, so this wizard has
+/// three steps — main Wi-Fi, guest Wi-Fi and Your Network, which is always
+/// shown since #1734. [pnpNoGuestWifiConfig] is the same router with no guest
+/// SSID, a two-step wizard.
 const pnpUnifiedWifiConfig = PnpWifiConfig(
   ssid: 'Linksys-Unified',
   password: 'unified-password',
@@ -55,6 +57,18 @@ const pnpUnifiedWifiConfig = PnpWifiConfig(
   originalGuestPassword: 'guest-password',
   guestSsidInstancePaths: ['Device.WiFi.SSID.4'],
   guestAccessPointInstancePaths: ['Device.WiFi.AccessPoint.4'],
+);
+
+/// [pnpUnifiedWifiConfig]'s router with no guest SSID (#1734): main Wi-Fi, then
+/// Your Network, so Save is on the second step. Before #1734 a single router of
+/// this shape had a one-step wizard that saved from main Wi-Fi.
+const pnpNoGuestWifiConfig = PnpWifiConfig(
+  ssid: 'Linksys-Unified',
+  password: 'unified-password',
+  originalSsid: 'Linksys-Unified',
+  originalPassword: 'unified-password',
+  ssidInstancePaths: ['Device.WiFi.SSID.1'],
+  accessPointInstancePaths: ['Device.WiFi.AccessPoint.1'],
 );
 
 /// Split mode: three bands, each with its own SSID and password.
