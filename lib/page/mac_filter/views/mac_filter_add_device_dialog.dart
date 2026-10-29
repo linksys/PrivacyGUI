@@ -56,7 +56,14 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
   String? _errorKey;
 
   @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
   void dispose() {
+    _focusNode.removeListener(_onFocusChange);
     _controller.dispose();
     _focusNode.dispose();
     _canConfirm.dispose();
@@ -86,6 +93,33 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
         _ => null,
       };
 
+  /// The canonical form the value will be added as, while the field holds one
+  /// complete, addable MAC in any accepted spelling (#1737). Null for partial
+  /// input, a name or an IP — and while an error is shown, which already says
+  /// why the value cannot be added.
+  String? get _canonicalPreview {
+    final text = _controller.text;
+    if (_errorKey != null || !MacFilterRules.validateMac(text)) return null;
+    return MacFilterRules.normalizeMac(text);
+  }
+
+  /// On blur, a complete MAC is rewritten to its canonical form (#1737). Only
+  /// here, never per keystroke: the field is also the name / IP search box, and
+  /// a partial entry cannot be told apart from a name or an IP (#1059).
+  void _onFocusChange() {
+    if (!mounted || _focusNode.hasFocus) return;
+    final text = _controller.text;
+    if (!MacFilterRules.validateMac(text)) return;
+    final canonical = MacFilterRules.normalizeMac(text);
+    if (canonical == text) return;
+    _controller.value = TextEditingValue(
+      text: canonical,
+      selection: TextSelection.collapsed(offset: canonical.length),
+    );
+    setState(() => _errorKey = _errorFor(_controller.text));
+    _revalidate();
+  }
+
   void _confirm() {
     widget.onAdd(MacFilterRules.normalizeMac(_controller.text));
     Navigator.of(context).pop();
@@ -93,6 +127,7 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final preview = _canonicalPreview;
     return AppDialog(
       titleText: loc(context).addDeviceManually,
       content: Column(
@@ -122,6 +157,12 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
               },
             ),
           ),
+          // After the field, never around it: wrapping or re-ordering the field
+          // re-parents its semantics node, which blurs the <input> on web (#1736).
+          if (preview != null) ...[
+            AppGap.xs(),
+            AppText.bodySmall(loc(context).macWillBeAddedAs(preview)),
+          ],
         ],
       ),
       actions: [

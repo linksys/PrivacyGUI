@@ -11,13 +11,34 @@ abstract final class MacFilterRules {
   /// Firmware default (linksys/FWDEV#194); not exposed as a data-model path.
   static const int maxAddresses = 64;
 
-  static final _macRegExp = RegExp(
-    r'^([0-9A-Fa-f]{2}[:\-]){5}[0-9A-Fa-f]{2}$',
-  );
+  /// The accepted spellings of one MAC, each 12 hex digits in either case:
+  /// pairs separated by `:` or `-`, bare (`AABBCCDDEEFF`, #1737), or groups of
+  /// four separated by `.` (`aabb.ccdd.eeff`, #1737).
+  static final _macForms = [
+    RegExp(r'^([0-9A-Fa-f]{2}[:\-]){5}[0-9A-Fa-f]{2}$'),
+    RegExp(r'^[0-9A-Fa-f]{12}$'),
+    RegExp(r'^[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}$'),
+  ];
 
-  static bool validateMac(String mac) => _macRegExp.hasMatch(mac.trim());
+  static final _separators = RegExp(r'[:\-.]');
 
-  /// Uppercase colon-separated canonical form. Precondition: passes [validateMac].
-  static String normalizeMac(String mac) =>
-      mac.trim().toUpperCase().replaceAll('-', ':');
+  /// Whether [mac] is one MAC in an accepted spelling. Surrounding whitespace is
+  /// ignored.
+  static bool validateMac(String mac) {
+    final value = mac.trim();
+    return _macForms.any((form) => form.hasMatch(value));
+  }
+
+  /// Uppercase colon-separated canonical form, `AA:BB:CC:DD:EE:FF`, of any
+  /// spelling [validateMac] accepts.
+  ///
+  /// Precondition: passes [validateMac]. Anything else is only trimmed,
+  /// upper-cased and has `-` turned into `:`, as it always was, so a caller that
+  /// passes a malformed value through still sees its own text.
+  static String normalizeMac(String mac) {
+    final value = mac.trim().toUpperCase();
+    if (!validateMac(value)) return value.replaceAll('-', ':');
+    final hex = value.replaceAll(_separators, '');
+    return [for (var i = 0; i < 12; i += 2) hex.substring(i, i + 2)].join(':');
+  }
 }

@@ -1283,5 +1283,6 @@
   "nodeActionFailedAfterSent": "{failure} Allerede sendt til: {sent}.",
   "nodeActionSkippedNodes": "Disse nodene kan ikke motta denne kommandoen, og den sendes ikke til dem, men de mister tilkoblingen mens nodene de er koblet til via, er nede: {nodes}.",
   "nodeActionNotConfirmed": "{node} bekreftet ikke kommandoen. Den kan fortsatt utføre den, så sjekk topologien før du prøver igjen.",
-  "nodeActionNodeGone": "{node} er ikke lenger i nettverket ditt."
+  "nodeActionNodeGone": "{node} er ikke lenger i nettverket ditt.",
+  "macWillBeAddedAs": "Legges til som {mac}"
 }

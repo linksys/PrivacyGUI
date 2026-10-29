@@ -1283,5 +1283,6 @@
   "nodeActionFailedAfterSent": "{failure} Già inviato a: {sent}.",
   "nodeActionSkippedNodes": "Questi nodi non supportano questo comando e non lo riceveranno, ma perderanno la connessione mentre i nodi tramite cui sono connessi sono offline: {nodes}.",
   "nodeActionNotConfirmed": "{node} non ha confermato il comando. Potrebbe comunque eseguirlo, quindi controlla la topologia prima di riprovare.",
-  "nodeActionNodeGone": "{node} non fa più parte della tua rete."
+  "nodeActionNodeGone": "{node} non fa più parte della tua rete.",
+  "macWillBeAddedAs": "Verrà aggiunto come {mac}"
 }

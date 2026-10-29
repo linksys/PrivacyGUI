@@ -1283,5 +1283,6 @@
   "nodeActionFailedAfterSent": "{failure} Já enviado para: {sent}.",
   "nodeActionSkippedNodes": "Estes nós não suportam este comando e não o irão receber, mas perderão a ligação enquanto os nós através dos quais estão ligados estiverem indisponíveis: {nodes}.",
   "nodeActionNotConfirmed": "{node} não confirmou o comando. Pode ainda executá-lo, por isso verifique a topologia antes de tentar novamente.",
-  "nodeActionNodeGone": "{node} já não está na sua rede."
+  "nodeActionNodeGone": "{node} já não está na sua rede.",
+  "macWillBeAddedAs": "Será adicionado como {mac}"
 }

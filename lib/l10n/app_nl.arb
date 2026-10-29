@@ -1283,5 +1283,6 @@
   "nodeActionFailedAfterSent": "{failure} Al verzonden naar: {sent}.",
   "nodeActionSkippedNodes": "Deze nodes kunnen deze opdracht niet uitvoeren en ontvangen deze niet, maar ze verliezen hun verbinding zolang de nodes waarlangs ze verbonden zijn, uitgevallen zijn: {nodes}.",
   "nodeActionNotConfirmed": "{node} heeft de opdracht niet bevestigd. De node kan deze nog steeds uitvoeren, dus controleer de topologie voordat u het opnieuw probeert.",
-  "nodeActionNodeGone": "{node} bevindt zich niet meer in uw netwerk."
+  "nodeActionNodeGone": "{node} bevindt zich niet meer in uw netwerk.",
+  "macWillBeAddedAs": "Wordt toegevoegd als {mac}"
 }

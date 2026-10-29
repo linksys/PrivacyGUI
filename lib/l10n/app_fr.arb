@@ -1283,5 +1283,6 @@
   "nodeActionFailedAfterSent": "{failure} Déjà envoyé à : {sent}.",
   "nodeActionSkippedNodes": "Ces nœuds ne prennent pas en charge cette commande et ne la recevront pas, mais ils perdront leur connexion tant que les nœuds par l'intermédiaire desquels ils sont connectés seront indisponibles : {nodes}.",
   "nodeActionNotConfirmed": "{node} n'a pas confirmé la commande. Le nœud peut encore l'exécuter. Vérifiez donc la topologie avant de réessayer.",
-  "nodeActionNodeGone": "{node} ne fait plus partie de votre réseau."
+  "nodeActionNodeGone": "{node} ne fait plus partie de votre réseau.",
+  "macWillBeAddedAs": "Sera ajouté sous la forme {mac}"
 }
