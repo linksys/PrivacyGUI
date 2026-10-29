@@ -45,6 +45,8 @@ class DevicesTestData {
     String? ssidName = 'HomeNetwork',
     int? downlinkRate = 866000,
     int? uplinkRate = 433000,
+    List<String>? mloBands,
+    bool mloUnknown = false,
   }) =>
       WifiConnectionInfo(
         signalStrength: signalStrength,
@@ -52,6 +54,8 @@ class DevicesTestData {
         ssidName: ssidName,
         downlinkRate: downlinkRate,
         uplinkRate: uplinkRate,
+        mloBands: mloBands,
+        mloUnknown: mloUnknown,
       );
 
   static WifiConnectionInfo createExcellentSignal() => createWifiInfo(
@@ -152,6 +156,10 @@ class DevicesTestData {
     String? parentNodeId,
     String? parentNodeName,
     List<ClientInterfaceInfo> additionalInterfaces = const [],
+    String? manufacturer,
+    String? modelName,
+    String? deviceType,
+    String? userDeviceType,
   }) =>
       ClientDevice(
         mac: mac,
@@ -164,6 +172,10 @@ class DevicesTestData {
         parentNodeId: parentNodeId,
         parentNodeName: parentNodeName,
         additionalInterfaces: additionalInterfaces,
+        manufacturer: manufacturer,
+        modelName: modelName,
+        deviceType: deviceType,
+        userDeviceType: userDeviceType,
       );
 
   /// Creates an online wired client device.
@@ -267,6 +279,7 @@ class DevicesTestData {
     List<ClientDevice> connectedClients = const [],
     String? wanIpAddress = '100.64.1.100',
     String? hostsDeviceId,
+    String? userDeviceLocation,
   }) =>
       MasterNode(
         deviceId: deviceId,
@@ -281,6 +294,7 @@ class DevicesTestData {
         connectedClients: connectedClients,
         wanIpAddress: wanIpAddress,
         hostsDeviceId: hostsDeviceId,
+        userDeviceLocation: userDeviceLocation,
       );
 
   /// Creates a slave (extender) node with WiFi backhaul.
@@ -300,6 +314,8 @@ class DevicesTestData {
     List<ClientDevice> connectedClients = const [],
     BackhaulInfo? backhaul,
     bool livenessKnown = true,
+    String? hostInstancePath,
+    String? userDeviceName,
   }) =>
       SlaveNode(
         deviceId: deviceId,
@@ -312,6 +328,8 @@ class DevicesTestData {
         connectedClients: connectedClients,
         backhaul: backhaul ?? createWifiBackhaul(),
         livenessKnown: livenessKnown,
+        hostInstancePath: hostInstancePath,
+        userDeviceName: userDeviceName,
       );
 
   /// Creates a slave (extender) node with Ethernet backhaul.

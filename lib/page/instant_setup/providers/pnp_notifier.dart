@@ -141,6 +141,40 @@ class PnpNotifier extends Notifier<PnpState> {
     }
   }
 
+  /// Reads the mesh nodes again, for the Your Network step after an add (#1734).
+  ///
+  /// Replaces [WizardConfiguring.meshNodes] and nothing else: the Wi-Fi the
+  /// customer has typed stays in the form. The phase stays [WizardConfiguring],
+  /// which [PnpEntryView] does not navigate on, so the stepper keeps its step.
+  ///
+  /// An empty answer keeps the list it had. The controller is always a row of
+  /// its own DataElements, so a network that had nodes and reads none has not
+  /// lost them: [PnpService.fetchMeshTopology] answers a failed read with an
+  /// empty topology rather than throwing.
+  ///
+  /// Does nothing outside [WizardConfiguring], and drops its answer if the
+  /// phase moved on while the read was out — a Save pressed in the meantime
+  /// owns the phase.
+  Future<void> refreshMeshNodes() async {
+    if (state.phase is! WizardConfiguring) return;
+    final mesh = await _svc.fetchMeshTopology();
+    final phase = state.phase;
+    if (phase is! WizardConfiguring) return;
+    if (mesh.nodes.isEmpty) {
+      logger.w('[PnP] Mesh re-read returned no nodes; keeping the '
+          '${phase.meshNodes.length} the step showed');
+      return;
+    }
+    // A new phase without saveError, like every edit: an error the customer
+    // already saw must not be shown again by the view's listener.
+    state = state.copyWith(
+      phase: WizardConfiguring(
+        wifiConfig: phase.wifiConfig,
+        meshNodes: mesh.nodes,
+      ),
+    );
+  }
+
   // ─── Form Updates ────────────────────────────────────────
 
   void updateWifiSsid(String ssid) {
@@ -820,8 +854,15 @@ class PnpNotifier extends Notifier<PnpState> {
   }
 
   /// Poll internet after modem restart (up to 30 attempts, 5s apart).
+  ///
+  /// A failed read during the poll is expected (the router may be rebooting with
+  /// the modem), so it only moves on to the next attempt. What decides the final
+  /// page is the LAST attempt, the same split [_checkInternet] makes: a router
+  /// that answered "no internet" lands on [NoInternet], a router that could not
+  /// be read lands on [AdminReadFailure] (#1098).
   Future<void> _modemRestartCheckInternet() async {
     const maxAttempts = 30;
+    Object? lastReadFailure;
     for (int i = 1; i <= maxAttempts; i++) {
       state = state.copyWith(
         phase: ModemRestartCheckingInternet(
@@ -832,12 +873,26 @@ class PnpNotifier extends Notifier<PnpState> {
       await Future.delayed(const Duration(seconds: 5));
       try {
         final hasInternet = await _svc.checkInternetConnected();
+        lastReadFailure = null;
         if (hasInternet) {
           state = state.copyWith(phase: const AdminInternetConnected());
           await _initWizard();
           return;
         }
-      } catch (_) {}
+      } catch (e) {
+        lastReadFailure = e;
+      }
+    }
+    final failure = lastReadFailure;
+    if (failure != null) {
+      logger.e('[PnP] Modem restart check read failure: $failure');
+      state = state.copyWith(
+        phase: AdminReadFailure(
+          code: failure is ServiceError ? failure.code : null,
+          detail: '$failure',
+        ),
+      );
+      return;
     }
     state = state.copyWith(phase: const NoInternet());
   }

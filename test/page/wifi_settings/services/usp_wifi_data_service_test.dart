@@ -145,6 +145,13 @@ void _stubRadioWithPossibleChannels(
             'Auto,20MHz,40MHz,80MHz',
       };
     }
+    // A router is never just a radio: with empty SSID / AccessPoint tables
+    // `fetch` reads it as one answering mid-reload and throws.
+    if (first.startsWith('Device.WiFi.SSID.')) return _buildSsidsResponse();
+    if (first.startsWith('Device.WiFi.AccessPoint.') &&
+        !first.contains('AssociatedDevice')) {
+      return _buildAccessPointsResponse();
+    }
     return <String, dynamic>{};
   });
 }
@@ -180,6 +187,91 @@ void main() {
 
       // wifiClientMap (empty since no clients stubbed)
       expect(result.wifiClientMap, isEmpty);
+    });
+
+    test(
+        'SSIDs with no access points is a failed read — the router answered '
+        'mid-reload, and a form built from it shows no security', () async {
+      // Bench round 4, 2026-10-07 (M60, 2.0.2): 3 s after a Wi-Fi save's
+      // recovery passed, the re-read returned 4 SSIDs, 0 APs, 2 radios. The
+      // page rendered it — no password, no security mode — and nothing read
+      // again to correct it.
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((invocation) async {
+        final first = (invocation.positionalArguments[0] as List<String>).first;
+        if (first.startsWith('Device.WiFi.Radio.')) {
+          return _buildRadiosResponse();
+        }
+        if (first.startsWith('Device.WiFi.SSID.')) return _buildSsidsResponse();
+        return <String, dynamic>{};
+      });
+
+      expect(() => svc.fetch(), throwsA(isA<ServiceError>()));
+    });
+
+    // usp-codegen 0.18 returns every row, including one with every value
+    // blank, which 0.17 dropped (#1654). Each table gets one here.
+    // Every leaf is present, as the router reports it, with a blank value.
+    Map<String, dynamic> blankRows() => {
+          for (final key in _buildRadiosResponse().keys)
+            if (key.startsWith('Device.WiFi.Radio.1.'))
+              key.replaceFirst('Radio.1.', 'Radio.9.'): '',
+          for (final key in _buildSsidsResponse().keys)
+            if (key.startsWith('Device.WiFi.SSID.1.'))
+              key.replaceFirst('SSID.1.', 'SSID.9.'): '',
+          for (final key in _buildAccessPointsResponse().keys)
+            if (key.startsWith('Device.WiFi.AccessPoint.1.'))
+              key.replaceFirst('AccessPoint.1.', 'AccessPoint.9.'): '',
+        };
+
+    test('a row with every value blank is no radio, SSID or access point',
+        () async {
+      final blank = blankRows();
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((invocation) async {
+        final first = (invocation.positionalArguments[0] as List<String>).first;
+        if (first.contains('AssociatedDevice')) return <String, dynamic>{};
+        Map<String, dynamic> withBlank(Map<String, dynamic> base, String t) => {
+              ...base,
+              for (final e in blank.entries)
+                if (e.key.startsWith(t)) e.key: e.value,
+            };
+        if (first.startsWith('Device.WiFi.Radio.')) {
+          return withBlank(_buildRadiosResponse(), 'Device.WiFi.Radio.');
+        }
+        if (first.startsWith('Device.WiFi.SSID.')) {
+          return withBlank(_buildSsidsResponse(), 'Device.WiFi.SSID.');
+        }
+        return withBlank(
+            _buildAccessPointsResponse(), 'Device.WiFi.AccessPoint.');
+      });
+
+      final result = await svc.fetch();
+
+      expect(result.codegenContext.raw.radios.items.length, 2);
+      expect(result.codegenContext.raw.ssids.items.length, 3);
+      expect(result.codegenContext.raw.accessPoints.items.length, 3);
+      expect(result.radioModels.length, 2);
+    });
+
+    test('a table of only blank access points is a failed read, as before',
+        () async {
+      final blank = blankRows();
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((invocation) async {
+        final first = (invocation.positionalArguments[0] as List<String>).first;
+        if (first.startsWith('Device.WiFi.Radio.')) {
+          return _buildRadiosResponse();
+        }
+        if (first.startsWith('Device.WiFi.SSID.')) return _buildSsidsResponse();
+        if (first.contains('AssociatedDevice')) return <String, dynamic>{};
+        return {
+          for (final e in blank.entries)
+            if (e.key.startsWith('Device.WiFi.AccessPoint.')) e.key: e.value,
+        };
+      });
+
+      expect(() => svc.fetch(), throwsA(isA<ServiceError>()));
     });
 
     test('maps USP error to ServiceError on fetch failure', () async {
@@ -257,15 +349,29 @@ void main() {
       expect(result.radioModels[1].possibleChannels, [36, 40, 44, 48]);
     });
 
-    test('handles empty collections', () async {
+    test(
+        'every table empty is a failed read — a router always has a radio, '
+        'and this is what it answers mid-reload', () async {
+      // Bench round 5, 2026-10-07 (M60, 2.0.2): 1 s after a Wi-Fi save's
+      // recovery passed, the Radio, SSID and AccessPoint GETs all came back
+      // with no rows. Returned as data, it was cached as "no networks", and
+      // the page opened on it 8 s later. Thrown, the orchestrator re-reads it.
       when(() => mockUsp.get(any(), priority: any(named: 'priority')))
           .thenAnswer((_) async => <String, dynamic>{});
 
-      final result = await svc.fetch();
+      expect(() => svc.fetch(), throwsA(isA<ServiceError>()));
+    });
 
-      expect(result.radioModels, isEmpty);
-      expect(result.wifiClientMap, isEmpty);
-      expect(result.connectionDetailMap, isEmpty);
+    test('radios but no SSIDs is a failed read too', () async {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((invocation) async {
+        final first = (invocation.positionalArguments[0] as List<String>).first;
+        return first.startsWith('Device.WiFi.Radio.')
+            ? _buildRadiosResponse()
+            : <String, dynamic>{};
+      });
+
+      expect(() => svc.fetch(), throwsA(isA<ServiceError>()));
     });
   });
 

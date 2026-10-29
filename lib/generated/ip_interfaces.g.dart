@@ -23,6 +23,19 @@ class IpInterface {
     required this.ipv4Enable,
     required this.ipv6Enable,
   });
+
+  @override
+  String toString() {
+    return 'IpInterface('
+        'instancePath: $instancePath, '
+        'alias: $alias, '
+        'name: $name, '
+        'status: $status, '
+        'type: $type, '
+        'ipv4Enable: $ipv4Enable, '
+        'ipv6Enable: $ipv6Enable'
+        ')';
+  }
 }
 
 /// IP interface instances with Alias for WAN/LAN discovery
@@ -30,6 +43,9 @@ class IpInterfaces {
   final List<IpInterface> items;
 
   const IpInterfaces({required this.items});
+
+  @override
+  String toString() => 'IpInterfaces(items: $items)';
 
   static const _paths = [
     'Device.IP.Interface.*.Alias',
@@ -61,22 +77,6 @@ class IpInterfaces {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}Alias'],
-        response['${p}Name'],
-        response['${p}Status'],
-        response['${p}Type'],
-        response['${p}IPv4Enable'],
-        response['${p}IPv6Enable']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final missing = <String>[];
       if (!response.containsKey('${p}Name')) {
         missing.add('${p}Name');

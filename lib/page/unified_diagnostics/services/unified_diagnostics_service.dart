@@ -1,3 +1,11 @@
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
+import 'package:privacy_gui/core/usp/services/active_ipv4_connection.dart';
+import 'package:privacy_gui/page/_shared/services/empty_row.dart';
+import 'package:privacy_gui/page/_shared/utils/lan_dhcp_pool_pick.dart';
+import 'package:privacy_gui/page/internet_settings/services/usp_wan_data_service.dart';
+import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart'
+    as wan;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
@@ -8,16 +16,17 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
+import 'package:privacy_gui/generated/data_elements_network_info.g.dart';
 import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dns_client.g.dart';
-import 'package:privacy_gui/generated/lan_network_info.g.dart';
+import 'package:privacy_gui/generated/lan_dhcp_pool.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
-import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/generated/wifi_clients.g.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/device_score.dart';
+import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_probe_ui_models.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_result.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
@@ -26,7 +35,15 @@ final unifiedDiagnosticsServiceProvider =
     Provider<UnifiedDiagnosticsService?>((ref) {
   final usp = ref.watch(uspClientProvider);
   if (usp == null) return null;
-  return UnifiedDiagnosticsService(usp);
+  var active = true;
+  ref.onDispose(() => active = false);
+  return UnifiedDiagnosticsService(
+    usp,
+    fetchWan: ref.watch(uspWanDataServiceProvider).fetch,
+    isAvailable: () => active,
+    autoIPoESupported:
+        ref.watch(deviceCapabilitiesProvider).has(DeviceCapability.autoIPoE),
+  );
 });
 
 /// Service encapsulating all USP operations for network diagnostics.
@@ -38,6 +55,9 @@ final unifiedDiagnosticsServiceProvider =
 ///   notifier — call [attachScope] before invoking any Operate-based method.
 class UnifiedDiagnosticsService {
   final UspClient _usp;
+  final Future<wan.WanStatusUIModel> Function() _fetchWan;
+  final bool _autoIPoESupported;
+  final bool Function()? _isAvailable;
   DiagnosticScope? _scope;
 
   static const _defaultInternetHost =
@@ -45,7 +65,17 @@ class UnifiedDiagnosticsService {
   static const _defaultDnsHost = '8.8.8.8'; // Google DNS — for DNS check
   static const _defaultTracerouteHost = '8.8.8.8';
 
-  UnifiedDiagnosticsService(this._usp);
+  UnifiedDiagnosticsService(this._usp,
+      {required Future<wan.WanStatusUIModel> Function() fetchWan,
+      bool autoIPoESupported = false,
+      bool Function()? isAvailable})
+      : _fetchWan = fetchWan,
+        _autoIPoESupported = autoIPoESupported,
+        _isAvailable = isAvailable;
+
+  void _checkAvailable() {
+    if (_isAvailable?.call() == false) throw const ResourceNotFoundError();
+  }
 
   /// Inject the active [DiagnosticScope]. Replaces any prior scope (the prior
   /// scope's release lifecycle is owned by its caller; this method does not
@@ -69,20 +99,19 @@ class UnifiedDiagnosticsService {
 
   // ─── WAN Status ──────────────────────────────────────────
 
-  /// Check WAN interface status using codegen WanStatus.
+  /// Check WAN interface status through the provider-supplied reader.
   Future<WanStatusUIModel> checkWanStatus() async {
+    _checkAvailable();
     logger.d('[Diagnostics] Checking WAN status');
-    final WanStatus wan;
-    try {
-      wan = await WanStatus.fetch(_usp);
-    } catch (e) {
-      throw mapUspErrorToServiceError(e);
-    }
+    final wan = await _fetchWan();
+    _checkAvailable();
     return WanStatusUIModel(
-      status: wan.status,
+      status: wan.isUp ? 'Up' : 'Down',
       ipAddress: wan.ipAddress,
       subnetMask: wan.subnetMask,
       addressingType: wan.addressingType,
+      usesTunnel:
+          const ['MAP-E', 'DS-Lite', 'IPIP'].contains(wan.addressingType),
     );
   }
 
@@ -115,15 +144,29 @@ class UnifiedDiagnosticsService {
   }
 
   /// Ping the default gateway.
-  Future<PingResult> pingGateway({int repeatCount = 3}) async {
-    final wan = await checkWanStatus();
-    if (wan.ipAddress.isEmpty) {
-      throw const InvalidInputError(
-          field: 'wanIp',
-          detail: 'No WAN IP address — cannot determine gateway');
+  Future<PingResult?> pingGateway({int repeatCount = 3}) async {
+    _checkAvailable();
+    final active = await ActiveIpv4Connection.fetch(
+      _usp,
+      autoIPoESupported: _autoIPoESupported,
+    );
+    _checkAvailable();
+    if (active != null) {
+      if (!active.isUp) {
+        throw const ConnectivityError(detail: 'No active IPv4 route');
+      }
+      // BR/AFTR reachability by ICMP is not required for a working tunnel.
+      if (active.isTunnel || active.pointToPoint && active.gateway.isEmpty) {
+        return null;
+      }
+      if (active.gateway.isEmpty) return null;
+      return ping(active.gateway, repeatCount: repeatCount);
     }
-    final gateway = _deriveGateway(wan.ipAddress, wan.subnetMask);
-    return ping(gateway, repeatCount: repeatCount);
+    final wan = await _fetchWan();
+    _checkAvailable();
+    if (!wan.isUp) throw const ConnectivityError(detail: 'WAN is down');
+    if (wan.gateway.isEmpty) return null;
+    return ping(wan.gateway, repeatCount: repeatCount);
   }
 
   /// Ping DNS server (Google 8.8.8.8).
@@ -219,7 +262,7 @@ class UnifiedDiagnosticsService {
     logger.d('[Diagnostics] Checking WiFi radios');
     final WiFiRadios radios;
     try {
-      radios = await WiFiRadios.fetch(_usp);
+      radios = await _fetchRadios();
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
@@ -241,7 +284,7 @@ class UnifiedDiagnosticsService {
     logger.d('[Diagnostics] Checking connected devices');
     final ConnectedDevices devices;
     try {
-      devices = await ConnectedDevices.fetch(_usp);
+      devices = await _fetchDevices();
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
@@ -270,7 +313,7 @@ class UnifiedDiagnosticsService {
     logger.d('[Diagnostics] Getting device scores');
     final ConnectedDevices devices;
     try {
-      devices = await ConnectedDevices.fetch(_usp);
+      devices = await _fetchDevices();
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
@@ -302,31 +345,36 @@ class UnifiedDiagnosticsService {
   /// Check DHCP pool capacity and current usage.
   ///
   /// Capacity = MaxAddress - MinAddress + 1.
-  /// Used = number of active DHCP leases in `Device.DHCPv4.Server.Pool.1.Client.*`.
+  /// Used = number of active DHCP leases in the LAN pool (`Alias == dhcp-lan`).
   Future<DhcpPoolUsageUIModel> checkDhcpPool() async {
     logger.d('[Diagnostics] Checking DHCP pool usage');
     final List<Object> results;
     try {
       results = await Future.wait([
-        LanNetworkInfo.fetch(_usp),
+        LanDhcpPool.fetch(_usp),
         DhcpClients.fetch(_usp),
       ]);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
-    final lan = results[0] as LanNetworkInfo;
-    final clients = results[1] as DhcpClients;
+    final pool = results[0] as LanDhcpPool;
+    final clients =
+        (lanDhcpPoolOf((results[1] as DhcpClients).items, (p) => p.alias)
+                    ?.clients ??
+                const <DhcpClient>[])
+            .where((c) => !isEmptyDhcpClient(c))
+            .toList();
 
-    final capacity = _ipRangeSize(lan.minAddress, lan.maxAddress);
-    final activeLeases = clients.items.where((c) => c.active).length;
+    final capacity = _ipRangeSize(pool.minAddress, pool.maxAddress);
+    final activeLeases = clients.where((c) => c.active).length;
 
     return DhcpPoolUsageUIModel(
-      enabled: lan.dhcpEnabled,
-      minAddress: lan.minAddress,
-      maxAddress: lan.maxAddress,
+      enabled: pool.dhcpEnabled,
+      minAddress: pool.minAddress,
+      maxAddress: pool.maxAddress,
       capacity: capacity,
       usedLeases: activeLeases,
-      totalLeases: clients.items.length,
+      totalLeases: clients.length,
     );
   }
 
@@ -359,8 +407,8 @@ class UnifiedDiagnosticsService {
     final List<Object> results;
     try {
       results = await Future.wait([
-        ConnectedDevices.fetch(_usp),
-        WiFiRadios.fetch(_usp),
+        _fetchDevices(),
+        _fetchRadios(),
       ]);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
@@ -419,7 +467,7 @@ class UnifiedDiagnosticsService {
     final List<Object> results;
     try {
       results = await Future.wait([
-        WiFiRadios.fetch(_usp),
+        _fetchRadios(),
         WiFiAccessPoints.fetch(_usp),
         WiFiSsids.fetch(_usp),
         WifiClients.fetch(_usp),
@@ -580,8 +628,14 @@ class UnifiedDiagnosticsService {
   Future<List<MeshBackhaulNodeRecord>> checkMeshBackhaul() async {
     logger.d('[Diagnostics] Inspecting mesh backhaul');
     final DataElementsNetwork network;
+    final String? controllerId;
     try {
-      network = await DataElementsNetwork.fetch(_usp);
+      final results = await Future.wait([
+        _fetchMeshNodes(),
+        _fetchControllerId(),
+      ]);
+      network = results[0] as DataElementsNetwork;
+      controllerId = results[1] as String?;
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
@@ -590,6 +644,7 @@ class UnifiedDiagnosticsService {
           'node(s) — skipping');
       return const [];
     }
+    final controllerKey = meshControllerKey(controllerId, network);
 
     // Build node ID → label map for parent resolution
     final nodeLabels = <String, String>{};
@@ -600,13 +655,11 @@ class UnifiedDiagnosticsService {
 
     final results = <MeshBackhaulNodeRecord>[];
     for (final node in network.items) {
-      // Controller is the node WITHOUT its own backhaul. The evidence used to be
-      // BackhaulMediaType / BackhaulALID / BackhaulPHYRate; none of those exist
-      // in the prplMesh schema (#1555), so the question is now answered by
-      // `hasMeshBackhaulLink`, which shares its definition with
-      // `MeshTopologyBuilder` — the two disagreeing is how a node ends up an
-      // extender on the topology and the controller in diagnostics.
-      final isController = !hasMeshBackhaulLink(node);
+      // The controller is the ControllerID node, else the node WITHOUT its own
+      // backhaul. `isMeshController` is the test `MeshTopologyBuilder` uses —
+      // the two disagreeing is how a node ends up an extender on the topology
+      // and the controller in diagnostics, whose backhaul then goes unchecked.
+      final isController = isMeshController(node, controllerKey);
       if (isController) {
         // Controller doesn't have its own backhaul — skip.
         continue;
@@ -689,6 +742,20 @@ class UnifiedDiagnosticsService {
     return results;
   }
 
+  /// `Device.WiFi.DataElements.Network.ControllerID`, or null when the read
+  /// faults. Isolated so a fault here costs only the ControllerID rule — the
+  /// controller is then told apart by backhaul, as before — and never the
+  /// backhaul check itself.
+  Future<String?> _fetchControllerId() async {
+    try {
+      return (await DataElementsNetworkInfo.fetch(_usp)).controllerId;
+    } catch (e) {
+      logger.w('[Diagnostics] DataElements ControllerID unavailable, the '
+          'controller is told apart by backhaul: $e');
+      return null;
+    }
+  }
+
   /// A node's display label: model name, else its ID, else its instance path.
   ///
   /// `ManufacturerModel` is nullable since #1555 and reads as a prplMesh
@@ -752,213 +819,27 @@ class UnifiedDiagnosticsService {
 
   // ─── Helpers ─────────────────────────────────────────────
 
-  /// Derive default gateway from IP and subnet mask.
-  /// Simple heuristic: assume gateway is .1 in the subnet.
-  String _deriveGateway(String ipAddress, String subnetMask) {
-    final ipParts = ipAddress.split('.').map(int.parse).toList();
-    final maskParts = subnetMask.split('.').map(int.parse).toList();
+  // Each reads its table without the rows whose every value is blank, which
+  // usp-codegen 0.17 dropped and 0.18 returns (#1654), so no count, record or
+  // controller pick sees them.
 
-    if (ipParts.length != 4 || maskParts.length != 4) {
-      return '192.168.1.1'; // fallback
-    }
+  Future<WiFiRadios> _fetchRadios() async => WiFiRadios(
+      items: (await WiFiRadios.fetch(_usp))
+          .items
+          .where((r) => !isEmptyWiFiRadio(r))
+          .toList());
 
-    // Network address + .1
-    final gateway = <int>[];
-    for (int i = 0; i < 4; i++) {
-      gateway.add(ipParts[i] & maskParts[i]);
-    }
-    gateway[3] = 1;
+  Future<ConnectedDevices> _fetchDevices() async => ConnectedDevices(
+      items: (await ConnectedDevices.fetch(_usp))
+          .items
+          .where((d) => !isEmptyConnectedDevice(d))
+          .toList());
 
-    return gateway.join('.');
-  }
-}
-
-/// WAN status information.
-class WanStatusUIModel {
-  final String status;
-  final String ipAddress;
-  final String subnetMask;
-  final String addressingType;
-
-  const WanStatusUIModel({
-    required this.status,
-    required this.ipAddress,
-    required this.subnetMask,
-    required this.addressingType,
-  });
-
-  bool get isUp => status == 'Up';
-  bool get hasIp => ipAddress.isNotEmpty;
-}
-
-/// DHCP pool usage information.
-class DhcpPoolUsageUIModel {
-  final bool enabled;
-  final String minAddress;
-  final String maxAddress;
-  final int capacity;
-  final int usedLeases;
-  final int totalLeases;
-
-  const DhcpPoolUsageUIModel({
-    required this.enabled,
-    required this.minAddress,
-    required this.maxAddress,
-    required this.capacity,
-    required this.usedLeases,
-    required this.totalLeases,
-  });
-
-  /// Fraction of pool used (0.0–1.0). Returns 0 when capacity is unknown.
-  double get usageRatio => capacity > 0 ? usedLeases / capacity : 0;
-
-  /// Pool is at or beyond capacity — new clients cannot get a lease.
-  bool get isExhausted => capacity > 0 && usedLeases >= capacity;
-
-  /// Pool is approaching capacity (>=90%).
-  bool get isNearCapacity => usageRatio >= 0.9;
-
-  /// Capacity unknown — Min/Max malformed or DHCP disabled.
-  bool get capacityUnknown => capacity == 0;
-}
-
-/// WiFi radio information.
-class WiFiRadioUIModel {
-  final String instancePath;
-  final String band;
-  final int channel;
-  final String channelBandwidth;
-  final int transmitPower;
-  final String status;
-  final bool autoChannel;
-
-  const WiFiRadioUIModel({
-    required this.instancePath,
-    required this.band,
-    required this.channel,
-    required this.channelBandwidth,
-    required this.transmitPower,
-    required this.status,
-    required this.autoChannel,
-  });
-
-  bool get is2_4GHz => band.contains('2.4');
-  bool get is5GHz => band.contains('5');
-  bool get is6GHz => band.contains('6');
-}
-
-/// Connected devices summary.
-class ConnectedDevicesUIModel {
-  final int totalDevices;
-  final int activeDevices;
-  final List<String> highBandwidthDevices;
-
-  const ConnectedDevicesUIModel({
-    required this.totalDevices,
-    required this.activeDevices,
-    required this.highBandwidthDevices,
-  });
-
-  bool get hasManyDevices => totalDevices > 20;
-  bool get hasHighBandwidthDevices => highBandwidthDevices.isNotEmpty;
-}
-
-/// Device signal information for WiFi coverage analysis.
-class DeviceSignalUIModel {
-  final String name;
-  final String macAddress;
-  final int rssiDbm;
-
-  const DeviceSignalUIModel({
-    required this.name,
-    required this.macAddress,
-    required this.rssiDbm,
-  });
-
-  String get signalLabel {
-    if (rssiDbm >= rssiExcellent) return 'Excellent';
-    if (rssiDbm >= rssiGood) return 'Good';
-    if (rssiDbm >= rssiFair) return 'Fair';
-    return 'Weak';
-  }
-}
-
-/// WiFi coverage analysis result.
-class WifiCoverageUIModel {
-  final int totalWirelessDevices;
-  final List<DeviceSignalUIModel> weakSignalDevices;
-  final int averageSignalStrength;
-  final List<WiFiRadioUIModel> radios;
-
-  const WifiCoverageUIModel({
-    required this.totalWirelessDevices,
-    required this.weakSignalDevices,
-    required this.averageSignalStrength,
-    required this.radios,
-  });
-
-  bool get hasWeakSignalDevices => weakSignalDevices.isNotEmpty;
-  bool get hasCoverageIssues =>
-      weakSignalDevices.length > totalWirelessDevices * 0.3;
-}
-
-/// Aggregated RSSI / client count for a single WiFi radio.
-class RadioSignalStatsUIModel {
-  /// Empty when this bucket holds clients whose radio could not be resolved.
-  final String instancePath;
-  final String band;
-  final int channel;
-  final String status;
-  final int clientCount;
-
-  /// Average RSSI across active clients on this radio. 0 when no clients.
-  final int averageRssi;
-
-  /// Worst RSSI seen on this radio. 0 when no clients.
-  final int minRssi;
-
-  const RadioSignalStatsUIModel({
-    required this.instancePath,
-    required this.band,
-    required this.channel,
-    required this.status,
-    required this.clientCount,
-    required this.averageRssi,
-    required this.minRssi,
-  });
-
-  bool get hasClients => clientCount > 0;
-  bool get isResolved => instancePath.isNotEmpty;
-  bool get isWeakAverage => hasClients && averageRssi < rssiGood;
-}
-
-/// Per-radio WiFi signal analysis result.
-class WifiSignalPerRadioUIModel {
-  final List<RadioSignalStatsUIModel> radios;
-
-  const WifiSignalPerRadioUIModel({required this.radios});
-
-  /// Radios with at least one active client.
-  List<RadioSignalStatsUIModel> get activeRadios =>
-      radios.where((r) => r.hasClients).toList();
-
-  /// Total active wireless clients across all radios.
-  int get totalClients => radios.fold<int>(0, (sum, r) => sum + r.clientCount);
-
-  /// Weighted average RSSI across all clients (0 when no clients).
-  int get weightedAverageRssi {
-    int total = 0;
-    int count = 0;
-    for (final r in radios) {
-      if (!r.hasClients) continue;
-      total += r.averageRssi * r.clientCount;
-      count += r.clientCount;
-    }
-    return count > 0 ? total ~/ count : 0;
-  }
-
-  /// True when any active radio shows weak average RSSI.
-  bool get hasWeakRadio => activeRadios.any((r) => r.isWeakAverage);
+  Future<DataElementsNetwork> _fetchMeshNodes() async => DataElementsNetwork(
+      items: (await DataElementsNetwork.fetch(_usp))
+          .items
+          .where((n) => !isEmptyMeshNode(n))
+          .toList());
 }
 
 /// Internal mutable accumulator used while joining APs/SSIDs/Radios.
@@ -1037,35 +918,4 @@ class MeshBackhaulNodeRecord {
     this.lastContactTime,
     this.isStale = false,
   });
-}
-
-class IntermittentUIModel {
-  final int uptimeSeconds;
-  final double pingSuccessRate;
-  final int averageLatencyMs;
-  final int jitterMs;
-  final bool hasHighJitter;
-  final bool hasPacketLoss;
-  final bool recentReboot;
-
-  const IntermittentUIModel({
-    required this.uptimeSeconds,
-    required this.pingSuccessRate,
-    required this.averageLatencyMs,
-    required this.jitterMs,
-    required this.hasHighJitter,
-    required this.hasPacketLoss,
-    required this.recentReboot,
-  });
-
-  bool get hasIssues => hasHighJitter || hasPacketLoss || recentReboot;
-
-  String get uptimeFormatted {
-    final days = uptimeSeconds ~/ 86400;
-    final hours = (uptimeSeconds % 86400) ~/ 3600;
-    final minutes = (uptimeSeconds % 3600) ~/ 60;
-    if (days > 0) return '${days}d ${hours}h';
-    if (hours > 0) return '${hours}h ${minutes}m';
-    return '${minutes}m';
-  }
 }

@@ -33,9 +33,13 @@ abstract interface class UspTransport {
   /// implementation uses its stored token.
   Future<void> refreshToken({String? token});
 
-  /// Read the given TR-181 [paths]. Returns a flat path→value map; missing
-  /// paths are simply absent from the result.
-  Future<Map<String, String>> get(List<String> paths);
+  /// Read the given TR-181 [paths]. Returns the unified USP result map
+  /// ({success, result:{data, error?}}), `data` being the flat path→value map.
+  ///
+  /// A failure is reported in that map, not thrown: the WASM client resolves a
+  /// lost connection as `success: false` with a per-path `9999` (#1212). Return
+  /// it as received — [UspClient] decides what each error means.
+  Future<Map<String, dynamic>> get(List<String> paths);
 
   /// Write the given [parameters] (path→value). Returns the unified USP result
   /// map ({success, result:{data, error?}}).

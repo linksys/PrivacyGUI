@@ -1,10 +1,11 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
-import 'package:privacy_gui/core/connection/services/recovery_probe_service.dart';
+import 'package:privacy_gui/core/connection/models/probe_result.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
@@ -71,15 +72,19 @@ class _FirmwareRecoveryDialogState
   late Duration _elapsed;
   bool _retrying = false;
 
+  // `clock.now()`, not `DateTime.now()`: in the app they are the same, but a test
+  // advances only the zone clock, so a countdown read from `DateTime.now()` would
+  // follow the machine instead of the test and render whatever the machine's
+  // speed made it (#905). Same reasoning as `TriggerCooldownState`.
   @override
   void initState() {
     super.initState();
-    _start = DateTime.now();
+    _start = clock.now();
     _elapsed = Duration.zero;
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
       setState(() {
-        _elapsed = DateTime.now().difference(_start);
+        _elapsed = clock.now().difference(_start);
       });
     });
   }

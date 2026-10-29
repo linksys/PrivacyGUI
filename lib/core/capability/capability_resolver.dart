@@ -19,7 +19,15 @@ import 'package:privacy_gui/core/capability/device_capability.dart';
 /// #1635's design note.
 String capabilityProbePath(DeviceCapability capability) {
   return switch (capability) {
+    DeviceCapability.autoIPoE => 'Device.X_LINKSYS_AutoIPoE.APIVersion',
     DeviceCapability.wifiMacFilter =>
       'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode',
+    // Read-only and never empty where it exists: Disabled / Active / Inactive.
+    DeviceCapability.wifiMlo => 'Device.X_LINKSYS_Mesh.MLOStatus',
+    // A boolean, so never empty where it exists.
+    DeviceCapability.dynamicRouting => 'Device.Routing.RIP.Enable',
+    // Never empty where it exists: the reflector maps every raw state, an
+    // unset one included, to an enum value, and the default is `Idle`.
+    DeviceCapability.bleOnboarding => 'Device.X_LINKSYS_BLEOnboarding.Status',
   };
 }

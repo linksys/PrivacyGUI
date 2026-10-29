@@ -13,6 +13,14 @@ class ConnectedDeviceIpv4 {
     required this.instancePath,
     required this.address,
   });
+
+  @override
+  String toString() {
+    return 'ConnectedDeviceIpv4('
+        'instancePath: $instancePath, '
+        'address: $address'
+        ')';
+  }
 }
 
 /// Nested instance from parent multi-instance table
@@ -24,6 +32,14 @@ class ConnectedDeviceIpv6 {
     required this.instancePath,
     required this.address,
   });
+
+  @override
+  String toString() {
+    return 'ConnectedDeviceIpv6('
+        'instancePath: $instancePath, '
+        'address: $address'
+        ')';
+  }
 }
 
 /// Single instance from ConnectedDevices
@@ -50,6 +66,15 @@ class ConnectedDevice {
   final int? signalStrength;
   final int? lastDataDownlinkRate;
   final int? lastDataUplinkRate;
+  final String? linksysManufacturer;
+  final String? linksysModelName;
+  final String? linksysOperatingSystem;
+  final String? linksysDeviceType;
+  final String? linksysFriendlyName;
+  final String? linksysDetectedName;
+  final String? linksysUserDeviceName;
+  final String? linksysUserDeviceLocation;
+  final String? linksysUserDeviceType;
   final List<ConnectedDeviceIpv4> ipv4Addresses;
   final List<ConnectedDeviceIpv6> ipv6Addresses;
 
@@ -76,8 +101,71 @@ class ConnectedDevice {
     this.signalStrength,
     this.lastDataDownlinkRate,
     this.lastDataUplinkRate,
+    this.linksysManufacturer,
+    this.linksysModelName,
+    this.linksysOperatingSystem,
+    this.linksysDeviceType,
+    this.linksysFriendlyName,
+    this.linksysDetectedName,
+    this.linksysUserDeviceName,
+    this.linksysUserDeviceLocation,
+    this.linksysUserDeviceType,
     required this.ipv4Addresses,
     required this.ipv6Addresses,
+  });
+
+  @override
+  String toString() {
+    return 'ConnectedDevice('
+        'instancePath: $instancePath, '
+        'macAddress: $macAddress, '
+        'ipAddress: $ipAddress, '
+        'hostName: $hostName, '
+        'isActive: $isActive, '
+        'activeLastChange: $activeLastChange, '
+        'interface_: $interface_, '
+        'layer3Interface: $layer3Interface, '
+        'interfaceType: $interfaceType, '
+        'addressSource: $addressSource, '
+        'dhcpClient: $dhcpClient, '
+        'associatedDevice: $associatedDevice, '
+        'deviceId: $deviceId, '
+        'deviceRole: $deviceRole, '
+        'friendlyName: $friendlyName, '
+        'manufacturer: $manufacturer, '
+        'modelName: $modelName, '
+        'operatingSystem: $operatingSystem, '
+        'parentNodeId: $parentNodeId, '
+        'signalStrength: $signalStrength, '
+        'lastDataDownlinkRate: $lastDataDownlinkRate, '
+        'lastDataUplinkRate: $lastDataUplinkRate, '
+        'linksysManufacturer: $linksysManufacturer, '
+        'linksysModelName: $linksysModelName, '
+        'linksysOperatingSystem: $linksysOperatingSystem, '
+        'linksysDeviceType: $linksysDeviceType, '
+        'linksysFriendlyName: $linksysFriendlyName, '
+        'linksysDetectedName: $linksysDetectedName, '
+        'linksysUserDeviceName: $linksysUserDeviceName, '
+        'linksysUserDeviceLocation: $linksysUserDeviceLocation, '
+        'linksysUserDeviceType: $linksysUserDeviceType, '
+        'ipv4Addresses: $ipv4Addresses, '
+        'ipv6Addresses: $ipv6Addresses'
+        ')';
+  }
+}
+
+/// Update descriptor for ConnectedDevice instances
+class ConnectedDeviceUpdate {
+  final String instancePath;
+  final String? linksysUserDeviceName;
+  final String? linksysUserDeviceLocation;
+  final String? linksysUserDeviceType;
+
+  const ConnectedDeviceUpdate({
+    required this.instancePath,
+    this.linksysUserDeviceName,
+    this.linksysUserDeviceLocation,
+    this.linksysUserDeviceType,
   });
 }
 
@@ -86,6 +174,9 @@ class ConnectedDevices {
   final List<ConnectedDevice> items;
 
   const ConnectedDevices({required this.items});
+
+  @override
+  String toString() => 'ConnectedDevices(items: $items)';
 
   static const _paths = [
     'Device.Hosts.Host.*.PhysAddress',
@@ -109,6 +200,15 @@ class ConnectedDevices {
     'Device.Hosts.Host.*.SignalStrength',
     'Device.Hosts.Host.*.LastDataDownlinkRate',
     'Device.Hosts.Host.*.LastDataUplinkRate',
+    'Device.Hosts.Host.*.X_LINKSYS_Manufacturer',
+    'Device.Hosts.Host.*.X_LINKSYS_ModelName',
+    'Device.Hosts.Host.*.X_LINKSYS_OperatingSystem',
+    'Device.Hosts.Host.*.X_LINKSYS_DeviceType',
+    'Device.Hosts.Host.*.X_LINKSYS_FriendlyName',
+    'Device.Hosts.Host.*.X_LINKSYS_DetectedName',
+    'Device.Hosts.Host.*.X_LINKSYS_UserDeviceName',
+    'Device.Hosts.Host.*.X_LINKSYS_UserDeviceLocation',
+    'Device.Hosts.Host.*.X_LINKSYS_UserDeviceType',
     'Device.Hosts.Host.*.IPv4Address.*.IPAddress',
     'Device.Hosts.Host.*.IPv6Address.*.IPAddress',
   ];
@@ -134,37 +234,6 @@ class ConnectedDevices {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}PhysAddress'],
-        response['${p}IPAddress'],
-        response['${p}HostName'],
-        response['${p}Active'],
-        response['${p}ActiveLastChange'],
-        response['${p}Layer1Interface'],
-        response['${p}Layer3Interface'],
-        response['${p}InterfaceType'],
-        response['${p}AddressSource'],
-        response['${p}DHCPClient'],
-        response['${p}AssociatedDevice'],
-        response['${p}DeviceID'],
-        response['${p}DeviceRole'],
-        response['${p}FriendlyName'],
-        response['${p}Manufacturer'],
-        response['${p}ModelName'],
-        response['${p}OperatingSystem'],
-        response['${p}ParentNodeID'],
-        response['${p}SignalStrength'],
-        response['${p}LastDataDownlinkRate'],
-        response['${p}LastDataUplinkRate']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final childBase_0 = '${p}IPv4Address.';
       final childIds_0 = <String>{};
       for (final key in response.keys) {
@@ -180,6 +249,13 @@ class ConnectedDevices {
       final ipv4Addresses = <ConnectedDeviceIpv4>[];
       for (final cid_0 in childSorted_0) {
         final cp_0 = '$childBase_0$cid_0.';
+        final missing = <String>[];
+        if (!response.containsKey('${cp_0}IPAddress')) {
+          missing.add('${cp_0}IPAddress');
+        }
+        if (missing.isNotEmpty) {
+          throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+        }
         ipv4Addresses.add(ConnectedDeviceIpv4(
           instancePath: cp_0,
           address: (response['${cp_0}IPAddress'] ?? '') as String,
@@ -200,6 +276,13 @@ class ConnectedDevices {
       final ipv6Addresses = <ConnectedDeviceIpv6>[];
       for (final cid_1 in childSorted_1) {
         final cp_1 = '$childBase_1$cid_1.';
+        final missing = <String>[];
+        if (!response.containsKey('${cp_1}IPAddress')) {
+          missing.add('${cp_1}IPAddress');
+        }
+        if (missing.isNotEmpty) {
+          throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+        }
         ipv6Addresses.add(ConnectedDeviceIpv6(
           instancePath: cp_1,
           address: (response['${cp_1}IPAddress'] ?? '') as String,
@@ -281,11 +364,77 @@ class ConnectedDevices {
         lastDataUplinkRate: response.containsKey('${p}LastDataUplinkRate')
             ? int.tryParse(response['${p}LastDataUplinkRate']?.toString() ?? '')
             : null,
+        linksysManufacturer: response.containsKey('${p}X_LINKSYS_Manufacturer')
+            ? response['${p}X_LINKSYS_Manufacturer'] as String
+            : null,
+        linksysModelName: response.containsKey('${p}X_LINKSYS_ModelName')
+            ? response['${p}X_LINKSYS_ModelName'] as String
+            : null,
+        linksysOperatingSystem:
+            response.containsKey('${p}X_LINKSYS_OperatingSystem')
+                ? response['${p}X_LINKSYS_OperatingSystem'] as String
+                : null,
+        linksysDeviceType: response.containsKey('${p}X_LINKSYS_DeviceType')
+            ? response['${p}X_LINKSYS_DeviceType'] as String
+            : null,
+        linksysFriendlyName: response.containsKey('${p}X_LINKSYS_FriendlyName')
+            ? response['${p}X_LINKSYS_FriendlyName'] as String
+            : null,
+        linksysDetectedName: response.containsKey('${p}X_LINKSYS_DetectedName')
+            ? response['${p}X_LINKSYS_DetectedName'] as String
+            : null,
+        linksysUserDeviceName:
+            response.containsKey('${p}X_LINKSYS_UserDeviceName')
+                ? response['${p}X_LINKSYS_UserDeviceName'] as String
+                : null,
+        linksysUserDeviceLocation:
+            response.containsKey('${p}X_LINKSYS_UserDeviceLocation')
+                ? response['${p}X_LINKSYS_UserDeviceLocation'] as String
+                : null,
+        linksysUserDeviceType:
+            response.containsKey('${p}X_LINKSYS_UserDeviceType')
+                ? response['${p}X_LINKSYS_UserDeviceType'] as String
+                : null,
         ipv4Addresses: ipv4Addresses,
         ipv6Addresses: ipv6Addresses,
       ));
     }
     return ConnectedDevices(items: items);
+  }
+
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams(
+      List<ConnectedDeviceUpdate> updates) {
+    final params = <String, dynamic>{};
+    for (final update in updates) {
+      if (update.linksysUserDeviceName != null) {
+        params['${update.instancePath}X_LINKSYS_UserDeviceName'] =
+            update.linksysUserDeviceName;
+      }
+      if (update.linksysUserDeviceLocation != null) {
+        params['${update.instancePath}X_LINKSYS_UserDeviceLocation'] =
+            update.linksysUserDeviceLocation;
+      }
+      if (update.linksysUserDeviceType != null) {
+        params['${update.instancePath}X_LINKSYS_UserDeviceType'] =
+            update.linksysUserDeviceType;
+      }
+    }
+    return params;
+  }
+
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+      UspClient client, List<ConnectedDeviceUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateParams(updates);
+    if (params.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    return await client.set(params, allowPartial: allowPartial);
   }
 
   static Future<Subscription<ConnectedDevices>> subscribeObjectCreation(

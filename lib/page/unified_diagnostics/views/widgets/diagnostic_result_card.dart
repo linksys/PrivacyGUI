@@ -7,7 +7,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../models/diagnostic_result.dart';
 import '../../models/diagnostic_state.dart';
-import '../../services/unified_diagnostics_service.dart';
+import '../../models/diagnostic_probe_ui_models.dart';
 
 /// A card displaying a single diagnostic result with metric-focused layout.
 ///

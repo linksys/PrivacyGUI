@@ -1,13 +1,15 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/framework/has_service_error.dart';
 
 /// Transient status for the Port Forwarding detail page.
-class PortForwardingPageStatus extends Equatable {
+class PortForwardingPageStatus extends Equatable implements HasServiceError {
   final bool isLoading;
   final bool isSaving;
 
   /// Typed error from the last fetch. The View localizes it via
   /// `localizeServiceError`; null means no error.
+  @override
   final ServiceError? error;
 
   const PortForwardingPageStatus({

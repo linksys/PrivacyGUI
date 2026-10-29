@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
+import 'package:privacy_gui/page/port_forwarding/models/port_rule_limits.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Result returned by [PortTriggeringDialog].
@@ -32,13 +33,25 @@ class PortTriggeringDialogResult {
 class PortTriggeringDialog extends StatefulWidget {
   final PortTriggeringRuleUIModel? rule;
 
-  const PortTriggeringDialog({super.key, this.rule});
+  /// Every other triggering rule, without [rule]. Neither range may overlap
+  /// the same range of one of them (FWDEV#204).
+  final List<PortTriggeringRuleUIModel> otherRules;
+
+  const PortTriggeringDialog({
+    super.key,
+    this.rule,
+    this.otherRules = const [],
+  });
 
   @override
   State<PortTriggeringDialog> createState() => _PortTriggeringDialogState();
 }
 
 class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
+  /// No protocol choice, as on 1.x: FWDEV#204 says 1.0 used TCP+UDP for both
+  /// ranges and to send Both (#1080).
+  static const _kProtocol = 'Both';
+
   late TextEditingController _descController;
   late TextEditingController _trigPortStartController;
   late TextEditingController _trigPortEndController;
@@ -54,8 +67,6 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
   final _trigPortEndFocus = FocusNode();
   final _fwdPortStartFocus = FocusNode();
   final _fwdPortEndFocus = FocusNode();
-  late String _triggerProtocol;
-  late String _forwardProtocol;
   late bool _enabled;
   Map<String, String> _errors = {};
 
@@ -88,7 +99,6 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
                 r.triggerPortEndRange != r.triggerPort
             ? '${r.triggerPortEndRange}'
             : '');
-    _triggerProtocol = r?.triggerProtocol ?? 'TCP';
 
     // Pre-fill from first forward rule if editing
     final fwd =
@@ -101,7 +111,6 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
                 fwd.forwardPortEndRange != fwd.forwardPort
             ? '${fwd.forwardPortEndRange}'
             : '');
-    _forwardProtocol = fwd?.forwardProtocol ?? 'TCP';
     _enabled = r?.enabled ?? true;
     // Same reason as port_range_forwarding_dialog.dart: a stored rule that
     // fails validation shows why on open, not after a blur (#1543).
@@ -153,7 +162,7 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
     final fwdStartText = _fwdPortStartController.text.trim();
     final fwdEndText = _fwdPortEndController.text.trim();
 
-    if (desc.isNotEmpty && desc.length > 32) {
+    if (descriptionTooLong(desc)) {
       errors['description'] = 'max32Characters';
     }
 
@@ -201,6 +210,28 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
       }
     }
 
+    // Overlap needs both ranges, so only once every port above is valid.
+    final trigStart = int.tryParse(trigStartText);
+    final fwdStart = int.tryParse(fwdStartText);
+    if (errors.keys.every((k) => k == 'description') &&
+        trigStart != null &&
+        fwdStart != null) {
+      if (triggerRangeOverlaps(
+        port: trigStart,
+        portEndRange: int.tryParse(trigEndText) ?? 0,
+        others: widget.otherRules,
+      )) {
+        errors['trigStart'] = 'rulesOverlapError';
+      }
+      if (forwardRangeOverlaps(
+        port: fwdStart,
+        portEndRange: int.tryParse(fwdEndText) ?? 0,
+        others: widget.otherRules,
+      )) {
+        errors['fwdStart'] = 'rulesOverlapError';
+      }
+    }
+
     return errors;
   }
 
@@ -210,6 +241,7 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
       'max32Characters' => loc(context).max32Characters,
       'portMustBe1To65535' => loc(context).portMustBe1To65535,
       'mustBeGreaterThanStartPort' => loc(context).mustBeGreaterThanStartPort,
+      'rulesOverlapError' => loc(context).rulesOverlapError,
       _ => key,
     };
   }
@@ -241,8 +273,8 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
           ),
           AppGap.xl(),
           // 1.x's headings for the two halves of a trigger rule. `labelLarge`
-          // because each covers a range *and* a protocol, so it is a section
-          // heading rather than a field label (those are bodyMedium below).
+          // because each is a section heading over a range control, ranked
+          // above the field labels.
           AppText.labelLarge(loc(context).triggeredRange),
           AppGap.md(),
           AppRangeInput(
@@ -263,29 +295,6 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
                 _localizeError(_errors['trigStart'] ?? _errors['trigEnd']),
             onChanged: (_, __) => _onInputChanged(),
           ),
-          AppGap.md(),
-          // Stack the protocol label above the segmented control so a long
-          // localized label (e.g. fi "Protokolla" + "Molemmat") can't squeeze
-          // the control and clip its last segment in a narrow AppDialog
-          // (#1261). A Wrap can't be used here because SegmentedButton has no
-          // dry-layout support and Wrap measures its children.
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppText.bodyMedium(loc(context).protocol),
-              AppGap.sm(),
-              SegmentedButton<String>(
-                segments: [
-                  ButtonSegment(value: 'TCP', label: Text(loc(context).tcp)),
-                  ButtonSegment(value: 'UDP', label: Text(loc(context).udp)),
-                  ButtonSegment(value: 'Both', label: Text(loc(context).both)),
-                ],
-                selected: {_triggerProtocol},
-                onSelectionChanged: (v) =>
-                    setState(() => _triggerProtocol = v.first),
-              ),
-            ],
-          ),
           AppGap.xl(),
           AppText.labelLarge(loc(context).forwardedRange),
           AppGap.md(),
@@ -302,25 +311,6 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
             keyboardType: TextInputType.number,
             errorText: _localizeError(_errors['fwdStart'] ?? _errors['fwdEnd']),
             onChanged: (_, __) => _onInputChanged(),
-          ),
-          AppGap.md(),
-          // Same stacking reason as the trigger protocol above (#1261).
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppText.bodyMedium(loc(context).protocol),
-              AppGap.sm(),
-              SegmentedButton<String>(
-                segments: [
-                  ButtonSegment(value: 'TCP', label: Text(loc(context).tcp)),
-                  ButtonSegment(value: 'UDP', label: Text(loc(context).udp)),
-                  ButtonSegment(value: 'Both', label: Text(loc(context).both)),
-                ],
-                selected: {_forwardProtocol},
-                onSelectionChanged: (v) =>
-                    setState(() => _forwardProtocol = v.first),
-              ),
-            ],
           ),
           AppGap.xl(),
           Row(
@@ -364,10 +354,10 @@ class _PortTriggeringDialogState extends State<PortTriggeringDialog> {
       description: _descController.text.trim(),
       triggerPort: trigStart,
       triggerPortEndRange: trigEnd,
-      triggerProtocol: _triggerProtocol,
+      triggerProtocol: _kProtocol,
       forwardPort: fwdStart,
       forwardPortEndRange: fwdEnd,
-      forwardProtocol: _forwardProtocol,
+      forwardProtocol: _kProtocol,
       enabled: _enabled,
     ));
   }

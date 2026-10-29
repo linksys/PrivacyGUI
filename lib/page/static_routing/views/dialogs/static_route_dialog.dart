@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_ui_model.dart';
-import 'package:privacy_gui/page/static_routing/services/usp_static_routing_service.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Result returned by [StaticRouteDialog].
@@ -27,16 +26,20 @@ class StaticRouteDialogResult {
 ///
 /// Pass [route] to pre-fill for editing; omit for adding.
 /// Pass [lanIp] and [lanSubnetMask] to enable gateway subnet validation.
+/// [otherNames] is the name of every other route on the page, unsaved ones
+/// included, which a name may not repeat (FWDEV#213).
 class StaticRouteDialog extends StatefulWidget {
   final StaticRouteUIModel? route;
   final String? lanIp;
   final String? lanSubnetMask;
+  final Set<String> otherNames;
 
   const StaticRouteDialog({
     super.key,
     this.route,
     this.lanIp,
     this.lanSubnetMask,
+    this.otherNames = const {},
   });
 
   @override
@@ -95,7 +98,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
   }
 
   Map<String, String> _computeErrors() {
-    return UspStaticRoutingService.validateRoute(
+    return StaticRouteUIModel.validateRoute(
       name: _nameController.text.trim(),
       destIp: _destIpController.text.trim(),
       subnetMask: _subnetMaskController.text.trim(),
@@ -103,6 +106,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
       interfaceName: _interfaceName,
       lanIp: widget.lanIp,
       lanSubnetMask: widget.lanSubnetMask,
+      otherNames: widget.otherNames,
     );
   }
 
@@ -126,24 +130,8 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
     if (index == null && !hasFocus && mounted) _validate();
   }
 
-  /// Convert error key to localized string.
-  String? _localizeError(String? key) {
-    if (key == null) return null;
-    final l = loc(context);
-    return switch (key) {
-      StaticRoutingErrorKeys.nameRequired => l.invalidInput,
-      StaticRoutingErrorKeys.nameTooLong => l.invalidInput,
-      StaticRoutingErrorKeys.destIpRequired => l.ipAddressRequired,
-      StaticRoutingErrorKeys.invalidIpAddress => l.invalidIpAddress,
-      StaticRoutingErrorKeys.subnetMaskRequired => l.invalidInput,
-      StaticRoutingErrorKeys.invalidSubnetMask => l.invalidInput,
-      StaticRoutingErrorKeys.gatewayMustBeWithinLanSubnet =>
-        l.gatewayMustBeWithinLanSubnet,
-      StaticRoutingErrorKeys.gatewayMustBeOutsideLanSubnet =>
-        l.gatewayMustBeOutsideLanSubnet,
-      _ => key,
-    };
-  }
+  String? _localizeError(String? key) =>
+      key == null ? null : localizeStaticRoutingError(context, key);
 
   // Compute validity from the live field values rather than the cached
   // [_errors] map. In add mode [_errors] starts empty (errors are suppressed
@@ -202,7 +190,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
               children: [
                 AppText.bodyMedium(loc(context).labelInterface),
                 SegmentedButton<String>(
-                  segments: UspStaticRoutingService.interfaceOptions
+                  segments: StaticRouteUIModel.interfaceOptions
                       .map((name) =>
                           ButtonSegment(value: name, label: Text(name)))
                       .toList(),
@@ -254,4 +242,40 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
       enabled: _enabled,
     ));
   }
+}
+
+/// A [StaticRoutingErrorKeys] key, or one of FWDEV#213's error names a refused
+/// save carries, as the message the page shows. The dialog and the page's save
+/// share it, so a check the dialog makes and the same check FW makes read the
+/// same.
+String localizeStaticRoutingError(BuildContext context, String key) {
+  final l = loc(context);
+  return switch (key) {
+    StaticRoutingErrorKeys.nameRequired => l.invalidInput,
+    StaticRoutingErrorKeys.nameTooLong => l.invalidInput,
+    StaticRoutingErrorKeys.destIpRequired => l.ipAddressRequired,
+    StaticRoutingErrorKeys.invalidIpAddress => l.invalidIpAddress,
+    StaticRoutingErrorKeys.subnetMaskRequired => l.invalidInput,
+    StaticRoutingErrorKeys.invalidSubnetMask => l.invalidInput,
+    StaticRoutingErrorKeys.gatewayMustBeWithinLanSubnet =>
+      l.gatewayMustBeWithinLanSubnet,
+    StaticRoutingErrorKeys.gatewayMustBeOutsideLanSubnet =>
+      l.gatewayMustBeOutsideLanSubnet,
+    StaticRoutingErrorKeys.gatewayRequired ||
+    StaticRoutingErrorKeys.gatewayIsRouter =>
+      l.invalidGatewayIpAddress,
+    StaticRoutingErrorKeys.reservedAddress => l.reservedIpNotAllowed,
+    StaticRoutingErrorKeys.destIpInLanSubnet => l.invalidIpAddress,
+    StaticRoutingErrorKeys.duplicateName ||
+    StaticRouteRefusalNames.duplicateEntryName =>
+      l.ruleNameInUse,
+    StaticRoutingErrorKeys.tooManyRoutes ||
+    StaticRouteRefusalNames.tooManyEntries =>
+      l.maxRulesReached,
+    // FW gives this name only for a reserved address (feed_usp#56).
+    StaticRouteRefusalNames.invalidIpAddress => l.reservedIpNotAllowed,
+    StaticRouteRefusalNames.invalidNetworkPrefixLength => l.invalidInput,
+    StaticRouteRefusalNames.invalidGateway => l.invalidGatewayIpAddress,
+    _ => l.errorInvalidInput,
+  };
 }

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/session/session_exit_actions.dart';
 import 'package:privacy_gui/components/styled/general_settings_widget/account_actions_section.dart';
-import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
+import 'package:privacy_gui/core/usp/models/sse_connection_state.dart';
 import 'package:privacy_gui/framework/mode/sse_banner_level.dart';
 import 'package:privacy_gui/framework/mode/surface_strategy.dart';
 import 'package:privacy_gui/page/dashboard/mascot/mascot_providers.dart';
@@ -89,6 +89,12 @@ class LocalSurface implements SurfaceStrategy {
 
   @override
   Widget firmwareManualEntry({required Widget Function() picker}) => picker();
+
+  /// The operator is next to the controller, so they can place the new node in
+  /// its Bluetooth range and read the node's light: the topology runs the
+  /// callback it handed over.
+  @override
+  VoidCallback? addNodesEntry(VoidCallback openAddNodes) => openAddNodes;
 
   @override
   Widget sessionExitAction() => const ReturnToLoginAction();

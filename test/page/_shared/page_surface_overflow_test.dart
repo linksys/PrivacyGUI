@@ -211,6 +211,21 @@ void main() {
     expectedCellCount: 234,
   );
 
+  // #1611: the same three tabs with each list at its rule limit, so the
+  // `RuleLimitNote` row under each header is measured.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPortForwardingFullPageCase),
+    expectedCellCount: 234,
+  );
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPortRangeFullPageCase),
+    expectedCellCount: 234,
+  );
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPortTriggeringFullPageCase),
+    expectedCellCount: 234,
+  );
+
   // Wave 2 (#1378): the instant_setup flow, in flow order — eight here and the
   // ninth (`pnp_setup`) at the end of the file, where its own comment says why it
   // is out of order. `pnp_complete_view` is the tenth view and stays excluded as
@@ -483,6 +498,12 @@ void main() {
     family: PageSurfaceFamily(kIpv6PortServicePageCase),
     expectedCellCount: 234,
   );
+  // The same page with its list at the 15-rule limit (#1687), so the
+  // `RuleLimitNote` row under the Rules header is measured.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kIpv6PortServiceFullPageCase),
+    expectedCellCount: 234,
+  );
 
   // `local_network` — nine form fields plus the family's one unconditional bottom bar;
   // `kLocalNetworkPageCase` says why both field types are premises.
@@ -539,6 +560,32 @@ void main() {
   // names five types instead of the usual two.
   runOverflowSweep(
     family: PageSurfaceFamily(kNotificationHistoryPageCase),
+    expectedCellCount: 234,
+  );
+
+  // `administration` — #1660, the 48th page view file: Advanced Settings →
+  // Administration, holding the UPnP, SIP ALG (#1694) and management-over-Wi-Fi
+  // (#1696) switches. Not `admin`, the menu's page with the same title. Three
+  // cards; see `kAdministrationPageCase`.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kAdministrationPageCase),
+    expectedCellCount: 234,
+  );
+
+  runOverflowSweep(
+    family: PageSurfaceFamily(kAutoIPoEPageCase),
+    expectedCellCount: 234,
+  );
+
+  // #879: adding a node, from the topology's controller node menu.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kAddNodesPageCase),
+    expectedCellCount: 234,
+  );
+
+  // #1734: adding a node, from the PnP wizard's Your Network step.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPnpAddNodesPageCase),
     expectedCellCount: 234,
   );
 

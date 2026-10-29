@@ -1,10 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/core/usp/transport/usp_transport.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/services/usp_traffic_analysis_service.dart';
 
 class MockUspClient extends Mock implements UspClient {}
+
+class _MockTransport extends Mock implements UspTransport {}
 
 void main() {
   late MockUspClient mockUsp;
@@ -39,37 +43,38 @@ void main() {
   }) {
     when(() => mockUsp.get(any(), priority: any(named: 'priority')))
         .thenAnswer((_) async => {
-              // WAN = Interface.2
-              'Device.IP.Interface.2.Stats.BytesSent': wanBytesSent.toString(),
-              'Device.IP.Interface.2.Stats.BytesReceived':
+              // WAN = Interface.5, LAN = Interface.3, resolved by Alias
+              'Device.IP.Interface.3.Alias': 'lan',
+              'Device.IP.Interface.5.Alias': 'wan',
+              'Device.IP.Interface.5.Stats.BytesSent': wanBytesSent.toString(),
+              'Device.IP.Interface.5.Stats.BytesReceived':
                   wanBytesReceived.toString(),
-              'Device.IP.Interface.2.Stats.PacketsSent':
+              'Device.IP.Interface.5.Stats.PacketsSent':
                   wanPacketsSent.toString(),
-              'Device.IP.Interface.2.Stats.PacketsReceived':
+              'Device.IP.Interface.5.Stats.PacketsReceived':
                   wanPacketsReceived.toString(),
-              'Device.IP.Interface.2.Stats.ErrorsSent':
+              'Device.IP.Interface.5.Stats.ErrorsSent':
                   wanErrorsSent.toString(),
-              'Device.IP.Interface.2.Stats.ErrorsReceived':
+              'Device.IP.Interface.5.Stats.ErrorsReceived':
                   wanErrorsReceived.toString(),
-              'Device.IP.Interface.2.Stats.DiscardPacketsSent':
+              'Device.IP.Interface.5.Stats.DiscardPacketsSent':
                   wanDiscardsSent.toString(),
-              'Device.IP.Interface.2.Stats.DiscardPacketsReceived':
+              'Device.IP.Interface.5.Stats.DiscardPacketsReceived':
                   wanDiscardsReceived.toString(),
-              // LAN = Interface.1
-              'Device.IP.Interface.1.Stats.BytesSent': lanBytesSent.toString(),
-              'Device.IP.Interface.1.Stats.BytesReceived':
+              'Device.IP.Interface.3.Stats.BytesSent': lanBytesSent.toString(),
+              'Device.IP.Interface.3.Stats.BytesReceived':
                   lanBytesReceived.toString(),
-              'Device.IP.Interface.1.Stats.PacketsSent':
+              'Device.IP.Interface.3.Stats.PacketsSent':
                   lanPacketsSent.toString(),
-              'Device.IP.Interface.1.Stats.PacketsReceived':
+              'Device.IP.Interface.3.Stats.PacketsReceived':
                   lanPacketsReceived.toString(),
-              'Device.IP.Interface.1.Stats.ErrorsSent':
+              'Device.IP.Interface.3.Stats.ErrorsSent':
                   lanErrorsSent.toString(),
-              'Device.IP.Interface.1.Stats.ErrorsReceived':
+              'Device.IP.Interface.3.Stats.ErrorsReceived':
                   lanErrorsReceived.toString(),
-              'Device.IP.Interface.1.Stats.DiscardPacketsSent':
+              'Device.IP.Interface.3.Stats.DiscardPacketsSent':
                   lanDiscardsSent.toString(),
-              'Device.IP.Interface.1.Stats.DiscardPacketsReceived':
+              'Device.IP.Interface.3.Stats.DiscardPacketsReceived':
                   lanDiscardsReceived.toString(),
             });
   }
@@ -163,16 +168,63 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // error handling (no mapping — raw exceptions propagate)
+  // the real read path: a lost counter read is not a sample of zeros (#1212)
+  // ---------------------------------------------------------------------------
+
+  group('UspTrafficAnalysisService — through the real UspClient', () {
+    // The Alias reads answer; the counter read is lost, as the WASM client
+    // reports it: resolved, `success: false`, a per-path 9999. Before #1212
+    // that read as an empty map, and every `?? 0` counter became a 0 sample.
+    test('a lost counter read throws NetworkError, it does not read 0',
+        () async {
+      final transport = _MockTransport();
+      when(() => transport.get(any())).thenAnswer((inv) async {
+        final paths = inv.positionalArguments.first as List<String>;
+        if (paths.length == 1 && paths.first == 'Device.IP.Interface.*.Alias') {
+          return {
+            'success': true,
+            'result': {
+              'data': {
+                'Device.IP.Interface.1.Alias': 'lan',
+                'Device.IP.Interface.2.Alias': 'wan',
+              },
+            },
+          };
+        }
+        return {
+          'success': false,
+          'result': {
+            'data': <String, dynamic>{},
+            'error': {
+              for (final p in paths)
+                p: {
+                  'errorCode': 9999,
+                  'errorMessage':
+                      'Transport error: Transport error: HTTP error: HTTP 503',
+                },
+            },
+          },
+        };
+      });
+
+      final real =
+          UspTrafficAnalysisService(UspClient.withTransport(transport));
+
+      await expectLater(real.fetchBaselines(), throwsA(isA<NetworkError>()));
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // error handling — mapped to ServiceError (constitution Article XIII, #1212)
   // ---------------------------------------------------------------------------
 
   group('UspTrafficAnalysisService — error handling', () {
-    test('fetchBaselines throws raw exception (no error mapping)', () async {
+    // The poller counts a ServiceError; a raw string it never counted.
+    test('fetchBaselines maps a lost read to NetworkError', () async {
       when(() => mockUsp.get(any(), priority: any(named: 'priority')))
-          .thenThrow(Exception('USP timeout'));
+          .thenThrow('Get failed: Transport error: HTTP error: HTTP 503');
 
-      // Service does NOT map errors — raw exception propagates
-      expect(() => svc.fetchBaselines(), throwsA(isA<Exception>()));
+      await expectLater(svc.fetchBaselines(), throwsA(isA<NetworkError>()));
     });
   });
 }

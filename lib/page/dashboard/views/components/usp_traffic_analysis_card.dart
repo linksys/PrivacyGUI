@@ -3,7 +3,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
@@ -174,9 +173,14 @@ class _UspTrafficAnalysisCardState
               context,
               label: label,
               child: InkWell(
-                onTap: () => context.pushNamed(
-                  RouteNamed.uspStatistics,
-                  queryParameters: {'tab': tabIndex.toString()},
+                // Through the shared helper, so a presented copy of this footer
+                // closes its presentation first (#1453).
+                onTap: () => navigateFromCard(
+                  context,
+                  (router) => router.pushNamed(
+                    RouteNamed.uspStatistics,
+                    queryParameters: {'tab': tabIndex.toString()},
+                  ),
                 ),
                 borderRadius: BorderRadius.circular(4),
                 child: Row(

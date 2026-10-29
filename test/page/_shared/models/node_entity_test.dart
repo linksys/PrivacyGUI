@@ -153,6 +153,23 @@ void main() {
         expect(withUuid, isNot(equals(otherUuid)));
       });
 
+      // The router's name the node detail page edits (#1691). Equality has to
+      // see it, or a rename would not rebuild the page that shows it.
+      test('carries userDeviceLocation through copyWith and equality', () {
+        final named =
+            DevicesTestData.createMaster(userDeviceLocation: 'Office');
+        expect(named.copyWith().userDeviceLocation, 'Office');
+        expect(named.copyWith(userDeviceLocation: 'Study').userDeviceLocation,
+            'Study');
+
+        expect(named,
+            equals(DevicesTestData.createMaster(userDeviceLocation: 'Office')));
+        expect(
+            named,
+            isNot(equals(
+                DevicesTestData.createMaster(userDeviceLocation: 'Study'))));
+      });
+
       test('cannot clear a nullable field (merges with `?? this`)', () {
         // Pins the documented limitation: because every parameter is applied
         // as `param ?? this.param`, passing null keeps the old value, so
@@ -233,6 +250,54 @@ void main() {
     });
 
     group('copyWith', () {
+      // The agent's rename row and the name on it (#1688 item 4). Equality has
+      // to see both, or a rename would not rebuild the page that shows it.
+      test(
+          'carries hostInstancePath and userDeviceName through copyWith and '
+          'equality', () {
+        final named = DevicesTestData.createWifiSlave(
+          hostInstancePath: 'Device.Hosts.Host.3.',
+          userDeviceName: 'Upstairs',
+        );
+        expect(named.copyWith().hostInstancePath, 'Device.Hosts.Host.3.');
+        expect(named.copyWith().userDeviceName, 'Upstairs');
+        expect(
+            named.copyWith(userDeviceName: 'Garage').userDeviceName, 'Garage');
+
+        expect(
+            named,
+            equals(DevicesTestData.createWifiSlave(
+              hostInstancePath: 'Device.Hosts.Host.3.',
+              userDeviceName: 'Upstairs',
+            )));
+        expect(
+            named,
+            isNot(equals(DevicesTestData.createWifiSlave(
+              hostInstancePath: 'Device.Hosts.Host.3.',
+              userDeviceName: 'Garage',
+            ))));
+        expect(
+            named,
+            isNot(equals(DevicesTestData.createWifiSlave(
+              hostInstancePath: 'Device.Hosts.Host.4.',
+              userDeviceName: 'Upstairs',
+            ))));
+      });
+      // The node actions the page offers (#876). Equality has to see them, or
+      // an agent that starts reporting support would not rebuild its page.
+      test('carries actions through copyWith and equality', () {
+        final agent = DevicesTestData.createWifiSlave()
+            .copyWith(actions: {NodeAction.reboot});
+
+        expect(agent.copyWith().actions, {NodeAction.reboot});
+        expect(agent, isNot(equals(DevicesTestData.createWifiSlave())));
+        expect(
+          agent,
+          equals(DevicesTestData.createWifiSlave()
+              .copyWith(actions: {NodeAction.reboot})),
+        );
+      });
+
       test('preserves unchanged fields', () {
         final original = DevicesTestData.createWifiSlave();
         final copied = original.copyWith();

@@ -76,6 +76,54 @@ Widget cardDetailLink(
   );
 }
 
+/// Runs a card's detail-entry [navigate] — closing the presentation first when
+/// the card is the one `showCardNormalForm` presented (#1453).
+///
+/// Every card's detail link goes through here, for the reason [cardDetailLink]
+/// is shared: the template's footer and the three hand-rolled ones all sit in
+/// the presented form, and a picked card has no other copy of the button.
+///
+/// ## Why the presentation has to close first
+///
+/// A push leaves the presentation where it was, and the two presentations sit on
+/// different navigators, so it failed differently on each. The dialog is on the
+/// root navigator, above the shell the detail page is pushed into: the page
+/// opened under its barrier, and the user's next tap — aimed at the page's own
+/// back arrow — only dismissed the dialog. The sheet is on the shell navigator
+/// itself, and a page-based navigator re-files a pageless route behind the page
+/// below it: the detail page looked fine, and back to the Dashboard found the
+/// sheet still open.
+///
+/// ## Why the presentation's own navigator, and not the root one
+///
+/// `Navigator.of(context)` from inside the presented card resolves to whichever
+/// navigator the presentation was pushed onto, which is the one route there is
+/// to close in both cases. `rootNavigator: true` would close the dialog and pop
+/// the shell's own page out from under the sheet.
+///
+/// ## Why the router is read before the pop, and handed to [navigate]
+///
+/// Popping unmounts the presented card, and with it [context] — so the push
+/// cannot go through `context.pushNamed` afterwards. The router outlives both.
+///
+/// [navigate] is a callback rather than a route name so the `pushNamed` call
+/// stays spelled at each card, with its literal `RouteNamed` target: that is the
+/// shape `usp_navigation_invariants_test.dart` scans for, and the verb is the
+/// half of this that test pins.
+///
+/// Not presented, nothing is popped: a card in the grid sits on the Dashboard's
+/// own route, and popping there would leave the Dashboard.
+void navigateFromCard(
+  BuildContext context,
+  void Function(GoRouter router) navigate,
+) {
+  final router = GoRouter.of(context);
+  if (CardDensityScope.isPresented(context)) {
+    Navigator.of(context).pop();
+  }
+  navigate(router);
+}
+
 /// A section within a multi-section dashboard card.
 ///
 /// Used with [DashboardCardTemplate.multiSection] for cards that have
@@ -571,7 +619,12 @@ class DashboardCardTemplate extends StatelessWidget {
                   // Swallow the second tap of a double-tap so the detail page
                   // is pushed once per gesture, not twice (#1445).
                   child: NavTapGuard(
-                    onTap: () => context.pushNamed(detailRoute!),
+                    // Closes the presentation first when this footer is the
+                    // presented copy (#1453).
+                    onTap: () => navigateFromCard(
+                      context,
+                      (router) => router.pushNamed(detailRoute!),
+                    ),
                     builder: (context, guardedTap) => InkWell(
                       onTap: guardedTap,
                       borderRadius: BorderRadius.circular(4),

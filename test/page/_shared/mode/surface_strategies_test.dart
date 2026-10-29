@@ -1,4 +1,4 @@
-// #1497 (phase 7 of epic #1474): cause 5's sixteen members, both modes side by
+// #1497 (phase 7 of epic #1474): cause 5's seventeen members, both modes side by
 // side.
 //
 // One file for both, same reason as `test/core/mode/impl/session_strategies_test
@@ -18,7 +18,7 @@
 //
 // WHY NOT `expect(local.assistanceBanner(), isNotNull)` AND STOP. Because "hidden
 // in RA" is the wrong summary of this contract and a nullability-only assertion
-// would encode it. Three of the sixteen return a widget in *both* modes with
+// would encode it. Three of the seventeen return a widget in *both* modes with
 // different content (`sessionGuard`, `sessionExitAction`,
 // `connectionBannerLevel`), and those are the members that make the contract a
 // composition and not a capability table. They get the most detailed assertions
@@ -30,7 +30,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/components/session/session_exit_actions.dart';
 import 'package:privacy_gui/components/styled/general_settings_widget/account_actions_section.dart';
-import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
+import 'package:privacy_gui/core/usp/models/sse_connection_state.dart';
 import 'package:privacy_gui/framework/mode/sse_banner_level.dart';
 import 'package:privacy_gui/framework/mode/surface_strategy.dart';
 import 'package:privacy_gui/page/_shared/components/remote_session_chip.dart';
@@ -44,7 +44,7 @@ import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_banne
 import 'package:privacy_gui/page/remote_assistance/views/remote_assistance_session_guard.dart';
 import 'package:privacy_gui/page/support/views/components/remote_assistance_card.dart';
 
-/// The sixteen members, spelled as they appear in a call site.
+/// The seventeen members, spelled as they appear in a call site.
 ///
 /// A roster rather than a count: the count is in the guide doc and drifts, while
 /// this list is what the "every member has a caller" group iterates. Adding a
@@ -64,6 +64,7 @@ const _members = <String>[
   'internetSettingsEditor',
   'firstRunPresetFlow',
   'firmwareManualEntry',
+  'addNodesEntry',
   'sessionExitAction',
   'recoveryMessages',
   'routes',
@@ -339,6 +340,19 @@ void main() {
                 'firmwareUpdateProvider and registered a dependency for a card '
                 'the page is not showing');
       });
+    });
+
+    test('add nodes entry: the callback itself, or no way in (#879)', () {
+      void openAddNodes() {}
+
+      expect(local.addNodesEntry(openAddNodes), same(openAddNodes),
+          reason: 'the operator is next to the controller, so the topology '
+              'gets back the callback it handed over, unchanged');
+      expect(remote.addNodesEntry(openAddNodes), isNull,
+          reason: 'an agent cannot put a node in the controller\'s Bluetooth '
+              'range or read its light. `null` is how the topology menu learns '
+              'not to offer "Add nodes" — LinksysWRT 1.0 disabled the same item '
+              'remotely');
     });
   });
 

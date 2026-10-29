@@ -59,9 +59,30 @@ final pnpRoute = LinksysRoute(
       config: _pnpRouteConfig,
       builder: (context, state) => const PnpSetupView(),
       onExit: _pnpFirmwareExitGuard,
+      routes: [
+        // A child of the wizard, so it is pushed over it and pops back to the
+        // step it was opened from (#1734). Named pnpAddNodes, which
+        // idleCheckWhiteList exempts: a session can outlast the idle window.
+        LinksysRoute(
+          name: RouteNamed.pnpAddNodes,
+          path: RoutePath.pnpAddNodes,
+          config: _pnpRouteConfig,
+          builder: (context, state) => const PnpAddNodesView(),
+        ),
+      ],
     ),
   ],
 );
+
+Future<bool> _pnpAutoIPoEExitGuard(
+    BuildContext context, GoRouterState state) async {
+  final container = ProviderScope.containerOf(context);
+  if (!container
+      .read(deviceCapabilitiesProvider)
+      .has(DeviceCapability.autoIPoE)) return true;
+  final guard = container.read(autoIPoEPnpExitGuardProvider);
+  return await guard.onExit?.call() ?? false;
+}
 
 final pnpNoInternetRoute = LinksysRoute(
   name: RouteNamed.pnpNoInternetConnection,
@@ -75,6 +96,21 @@ final pnpNoInternetRoute = LinksysRoute(
       config: _pnpRouteConfig,
       builder: (context, state) => const PnpIspSettingsView(),
       routes: [
+        LinksysRoute(
+          name: RouteNamed.pnpAutoIPoE,
+          path: RoutePath.pnpAutoIPoE,
+          config: _pnpRouteConfig,
+          redirect: (context, state) {
+            final capabilities = ProviderScope.containerOf(context)
+                .read(deviceCapabilitiesProvider);
+            return capabilities.has(DeviceCapability.autoIPoE)
+                ? null
+                : context.namedLocation(RouteNamed.pnpIspTypeSelection);
+          },
+          builder: (context, state) => const PnpIPoEView(),
+          onExit: _pnpAutoIPoEExitGuard,
+          preservableProvider: autoIPoEPageProvider.notifier,
+        ),
         LinksysRoute(
           name: RouteNamed.pnpPPPOE,
           path: RoutePath.pnpPPPOE,

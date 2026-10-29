@@ -139,6 +139,50 @@ PortForwardingPageFeatureState dataState({
   );
 }
 
+/// Every list at FWDEV#204's limit: 50 single-port, 25 range and 25 triggering
+/// rules, so all three Add buttons are disabled.
+PortForwardingPageFeatureState get fullDataState => dataState(
+      forwardingRules: [
+        for (var i = 0; i < 50; i++)
+          PortForwardingRuleUIModel(
+            instancePath: 'Device.NAT.PortMapping.${i + 1}.',
+            description: 'Single $i',
+            externalPort: 10000 + i,
+            internalPort: 80,
+            internalClient: '192.168.1.${100 + i}',
+            protocol: 'TCP',
+            enabled: true,
+          ),
+        for (var i = 0; i < 25; i++)
+          PortForwardingRuleUIModel(
+            instancePath: 'Device.NAT.PortMapping.${51 + i}.',
+            description: 'Range $i',
+            externalPort: 20000 + i * 10,
+            externalPortEndRange: 20000 + i * 10 + 5,
+            internalPort: 20000 + i * 10,
+            internalClient: '192.168.1.${150 + i}',
+            protocol: 'UDP',
+            enabled: true,
+          ),
+      ],
+      triggeringRules: [
+        for (var i = 0; i < 25; i++)
+          PortTriggeringRuleUIModel(
+            instancePath: 'Device.NAT.PortTrigger.${i + 1}.',
+            enabled: true,
+            description: 'Trigger $i',
+            triggerPort: 30000 + i,
+            triggerProtocol: 'Both',
+            forwardRules: [
+              PortTriggerForwardRuleUIModel(
+                forwardPort: 40000 + i,
+                forwardProtocol: 'Both',
+              ),
+            ],
+          ),
+      ],
+    );
+
 /// Data state with empty lists (no rules configured).
 PortForwardingPageFeatureState get emptyDataState {
   const settings = PortForwardingPageSettings();

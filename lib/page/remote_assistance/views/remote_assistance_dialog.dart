@@ -112,11 +112,22 @@ class _RemoteAssistanceDialogState
             // Header with icon
             _buildHeader(context, status, colorScheme),
             AppGap.xl(),
-            // Content
+            // Content. Every branch carries a `ra-client-state-*` hook, the two
+            // here as well as the four session statuses in `_buildContent`:
+            // without them a dialog that failed to start — Guardian answering 403
+            // to the device token is the likeliest way (PrivacyGUI#1582) — shows
+            // no hook at all, and a spec waiting for `initiate` can only time out
+            // instead of reporting the error this dialog is displaying.
             if (_isLoading)
-              const _LoadingContent()
+              Semantics(
+                identifier: 'ra-client-state-loading',
+                child: const _LoadingContent(),
+              )
             else if (_error != null)
-              _ErrorContent(error: _error!)
+              Semantics(
+                identifier: 'ra-client-state-error',
+                child: _ErrorContent(error: _error!),
+              )
             else
               _buildContent(state, colorScheme),
             AppGap.xl(),
@@ -158,12 +169,19 @@ class _RemoteAssistanceDialogState
   Widget _buildContent(RemoteClientState state, ColorScheme colorScheme) {
     final status = state.sessionInfo?.status ?? GRASessionStatus.initiate;
 
-    return switch (status) {
-      GRASessionStatus.initiate => const _InitiateContent(),
-      GRASessionStatus.pending => _PendingContent(state: state),
-      GRASessionStatus.active => _ActiveContent(state: state),
-      GRASessionStatus.invalid => const _InvalidContent(),
-    };
+    // One hook for the whole content area, keyed by the session status, so the
+    // real-router RA spec can wait on each transition (waiting → PIN → connected
+    // → ended) structurally instead of matching copy that is not localized yet
+    // and will be. The same shape as `firmware-phase-${phase}`.
+    return Semantics(
+      identifier: 'ra-client-state-${status.name}',
+      child: switch (status) {
+        GRASessionStatus.initiate => const _InitiateContent(),
+        GRASessionStatus.pending => _PendingContent(state: state),
+        GRASessionStatus.active => _ActiveContent(state: state),
+        GRASessionStatus.invalid => const _InvalidContent(),
+      },
+    );
   }
 
   Widget _buildActions(
@@ -175,6 +193,7 @@ class _RemoteAssistanceDialogState
         width: double.infinity,
         child: AppButton.danger(
           label: loc(context).endSession,
+          identifier: 'ra-client-end-session',
           onTap: _endSession,
         ),
       );
@@ -490,6 +509,33 @@ class _PinDisplay extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
+    // The PIN as ONE semantics node whose accessible name is exactly the PIN.
+    //
+    // Below, each digit is its own `AppText`, so without this the semantics tree
+    // holds six separate one-digit nodes: a screen reader reads them as six
+    // unrelated words, and an E2E spec could only rebuild the PIN by reading the
+    // digits in tree order — a positional read, which Article XVI rules out.
+    // `excludeSemantics` drops those six; `label` carries the whole PIN, which the
+    // web engine renders as this node's accessible name, so the real-router RA
+    // spec reads it from `ra-client-pin` in one call.
+    //
+    // `excludeSemantics` drops the InkWell's semantics too, and with it the only
+    // way a screen-reader user could trigger copy. So the copy action is restated
+    // here, on the node that now stands for the whole tile — losing it would trade
+    // an E2E hook for an accessibility regression.
+    //
+    // Announcing the PIN is intended: it exists to be read out to the agent.
+    return Semantics(
+      identifier: 'ra-client-pin',
+      label: pin,
+      button: true,
+      onTap: () => _copyPin(context),
+      excludeSemantics: true,
+      child: _buildTile(context, colorScheme),
+    );
+  }
+
+  Widget _buildTile(BuildContext context, ColorScheme colorScheme) {
     return InkWell(
       onTap: () => _copyPin(context),
       borderRadius: BorderRadius.circular(16),
@@ -754,11 +800,18 @@ class RemoteAssistanceActiveDialog extends ConsumerWidget {
             AppGap.lg(),
             AppText.titleLarge(loc(context).remoteAssistance),
             AppGap.xl(),
-            // Content
+            // Content — under the same state hooks as the live dialog, so a spec
+            // that reloads mid-session waits on the same identifiers.
             if (isInvalid)
-              const _InvalidContent()
+              Semantics(
+                identifier: 'ra-client-state-${GRASessionStatus.invalid.name}',
+                child: const _InvalidContent(),
+              )
             else
-              _ActiveContent(state: state),
+              Semantics(
+                identifier: 'ra-client-state-${GRASessionStatus.active.name}',
+                child: _ActiveContent(state: state),
+              ),
             AppGap.xl(),
             // Actions
             SizedBox(
@@ -770,6 +823,14 @@ class RemoteAssistanceActiveDialog extends ConsumerWidget {
                     )
                   : AppButton.danger(
                       label: loc(context).endSession,
+                      // The same identifier as the live dialog's button on
+                      // purpose: it is the same action. The two dialogs CAN be
+                      // open at once — `RemoteAssistanceSessionGuard` opens this
+                      // one over the live dialog when its session turns ACTIVE —
+                      // but a route covered by another is dropped from the
+                      // semantics tree, so the hook still resolves to exactly one
+                      // node: whichever dialog is on top (measured).
+                      identifier: 'ra-client-end-session',
                       onTap: () async {
                         await ref
                             .read(remoteClientProvider.notifier)

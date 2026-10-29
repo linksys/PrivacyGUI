@@ -84,8 +84,10 @@ class UspTopologyBuilder {
     // Build extender ID lookup maps.
     // Normalized set (no colons, uppercase) for matching against parentNodeId
     // which comes from DataElements clientToNodeMap (no colons).
-    // We add BOTH deviceId (from Hosts) and dataElementsId (from DataElements)
-    // since they may be different MAC addresses for the same node.
+    // Both deviceId and dataElementsId are added. Since #1688 a slave is built
+    // from its DataElements agent, so the two are the same value and the
+    // second add is a no-op; it is kept so the lookup still holds if the two
+    // ever diverge again (before #1688 deviceId was the Hosts MAC).
     logger.t('[USP][TopologyBuilder]: hasMesh=${meshNetwork.hasMesh}, '
         'slaveNodes=${meshNetwork.slaves.length}, '
         'slaveDeviceIds=${meshNetwork.slaves.map((n) => '${n.deviceId}|DE:${n.dataElementsId}').toList()}');
@@ -104,14 +106,14 @@ class UspTopologyBuilder {
       // value probed against them must be normalised the same way, which is the
       // whole reason it is one named function — and it already existed in
       // `node_identifier.dart`, which this file imports.
-      final normalizedHostsMac = normalizeMac(slave.deviceId);
-      extenderNodeIdsNormalized.add(normalizedHostsMac);
-      normalizedToOriginal[normalizedHostsMac] = slave.deviceId;
-      deviceIdToExtenderId[normalizedHostsMac] = extenderId;
+      final normalizedDeviceId = normalizeMac(slave.deviceId);
+      extenderNodeIdsNormalized.add(normalizedDeviceId);
+      normalizedToOriginal[normalizedDeviceId] = slave.deviceId;
+      deviceIdToExtenderId[normalizedDeviceId] = extenderId;
 
       if (slave.dataElementsId != null && slave.dataElementsId!.isNotEmpty) {
         final normalizedDeMac = normalizeMac(slave.dataElementsId!);
-        if (normalizedDeMac != normalizedHostsMac) {
+        if (normalizedDeMac != normalizedDeviceId) {
           extenderNodeIdsNormalized.add(normalizedDeMac);
           normalizedToOriginal[normalizedDeMac] = slave.deviceId;
           deviceIdToExtenderId[normalizedDeMac] = extenderId;
@@ -122,7 +124,7 @@ class UspTopologyBuilder {
         parentDeviceId: slave.backhaul.parentNodeId,
       ));
       logger.t('[USP][TopologyBuilder]: Slave ${slave.deviceId} '
-          '→ hostsMac: $normalizedHostsMac, '
+          '→ deviceId: $normalizedDeviceId, '
           'dataElementsId: ${slave.dataElementsId}, '
           'backhaulParentDeviceId: ${slave.backhaul.parentNodeId}');
     }
@@ -276,10 +278,7 @@ class UspTopologyBuilder {
             'parentNodeId=${client.parentNodeId} → gateway');
       }
 
-      final category = DeviceClassifier.classify(
-        hostname: client.displayName,
-        mac: client.mac,
-      );
+      final category = DeviceClassifier.classifyClient(client);
 
       nodes.add(GraphNode(
         id: clientId,

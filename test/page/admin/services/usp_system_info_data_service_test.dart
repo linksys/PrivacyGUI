@@ -55,6 +55,27 @@ void main() {
   });
 
   group('UspSystemInfoDataService — fetch', () {
+    test('a firmware image row with every value blank is no image', () async {
+      // usp-codegen 0.18 returns a row with every value blank where 0.17
+      // dropped it (#1654).
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((invocation) async {
+        final paths = invocation.positionalArguments[0] as List;
+        if (paths.any((p) => p.toString().contains('Manufacturer'))) {
+          return systemInfoResponse;
+        }
+        return {
+          ...firmwareImagesResponse,
+          'Device.DeviceInfo.FirmwareImage.4.Name': '',
+          'Device.DeviceInfo.FirmwareImage.4.Version': '',
+          'Device.DeviceInfo.FirmwareImage.4.Status': '',
+          'Device.DeviceInfo.FirmwareImage.4.Available': false,
+        };
+      });
+
+      expect((await svc.fetch()).firmwareImages, hasLength(2));
+    });
+
     test('maps all system info fields', () async {
       stubAllFetches();
 
@@ -118,6 +139,155 @@ void main() {
           .thenThrow('Get failed: Transport error: Request timeout');
 
       expect(() => svc.fetch(), throwsA(isA<NetworkError>()));
+    });
+  });
+
+  group('UspSystemInfoDataService — base MAC (#1665)', () {
+    void stubBaseMac(Object? value) {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async {
+        final paths = _.positionalArguments[0] as List;
+        if (paths.any((p) => p.toString().contains('Manufacturer'))) {
+          return {
+            ...systemInfoResponse,
+            if (value != null)
+              'Device.DeviceInfo.X_LINKSYS_BaseMACAddress': value,
+          };
+        }
+        return firmwareImagesResponse;
+      });
+    }
+
+    test('carries the router base MAC into the UI model', () async {
+      stubBaseMac('74:12:13:21:55:02');
+
+      final model = await svc.fetch();
+
+      expect(model.baseMacAddress, '74:12:13:21:55:02');
+    });
+
+    test('upper-cases a base MAC the router reports in lower case', () async {
+      stubBaseMac(' 74:12:13:21:5a:bc ');
+
+      final model = await svc.fetch();
+
+      expect(model.baseMacAddress, '74:12:13:21:5A:BC');
+    });
+
+    test('an empty base MAC is no base MAC', () async {
+      stubBaseMac('');
+
+      final model = await svc.fetch();
+
+      expect(model.baseMacAddress, isNull);
+    });
+
+    test('a router that does not report the leaf yields null', () async {
+      stubBaseMac(null);
+
+      final model = await svc.fetch();
+
+      expect(model.baseMacAddress, isNull);
+    });
+  });
+
+  // The router's own name (#1691). The detail page writes only
+  // X_LINKSYS_UserDeviceLocation; DeviceInfo.FriendlyName is read as a
+  // fallback in case something else set it. Both read "" when unset.
+  group('UspSystemInfoDataService — router name (#1691)', () {
+    void stubName({Object? location, Object? friendlyName}) {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((_) async {
+        final paths = _.positionalArguments[0] as List;
+        if (paths.any((p) => p.toString().contains('Manufacturer'))) {
+          return {
+            ...systemInfoResponse,
+            if (location != null)
+              'Device.DeviceInfo.X_LINKSYS_UserDeviceLocation': location,
+            if (friendlyName != null)
+              'Device.DeviceInfo.FriendlyName': friendlyName,
+          };
+        }
+        return firmwareImagesResponse;
+      });
+    }
+
+    test('carries the location and FriendlyName into the UI model', () async {
+      stubName(location: 'Office', friendlyName: 'Main router');
+
+      final model = await svc.fetch();
+
+      expect(model.userDeviceLocation, 'Office');
+      expect(model.friendlyName, 'Main router');
+    });
+
+    test('"" is no name', () async {
+      stubName(location: '', friendlyName: '');
+
+      final model = await svc.fetch();
+
+      expect(model.userDeviceLocation, isNull);
+      expect(model.friendlyName, isNull);
+    });
+
+    test('writes the name to X_LINKSYS_UserDeviceLocation only, in one Set',
+        () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': true,
+                'result': {'data': <String, dynamic>{}},
+              });
+
+      await svc.updateRouterName('Office');
+
+      // Never FriendlyName: the detail page writes the location alone.
+      verify(() => mockUsp.set(
+            {'Device.DeviceInfo.X_LINKSYS_UserDeviceLocation': 'Office'},
+            allowPartial: false,
+          )).called(1);
+    });
+
+    test('an empty name is written, which clears it', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': true,
+                'result': {'data': <String, dynamic>{}},
+              });
+
+      await svc.updateRouterName('');
+
+      verify(() => mockUsp.set(
+            {'Device.DeviceInfo.X_LINKSYS_UserDeviceLocation': ''},
+            allowPartial: false,
+          )).called(1);
+    });
+
+    test('a refused Set throws UspCompleteFailureError', () {
+      // What the firmware does for 65 bytes: the whole Set is refused.
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': false,
+                'result': {
+                  'data': <String, dynamic>{},
+                  'error': {
+                    'Device.DeviceInfo.X_LINKSYS_UserDeviceLocation': {
+                      'errorCode': 9007,
+                      'errorMessage': 'Invalid parameter value',
+                    },
+                  },
+                },
+              });
+
+      expect(() => svc.updateRouterName('x'),
+          throwsA(isA<UspCompleteFailureError>()));
+    });
+
+    test('a transport error maps to ServiceError', () {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenThrow('Set failed: Transport error: Connection refused');
+
+      expect(
+          () => svc.updateRouterName('x'), throwsA(isA<ConnectivityError>()));
     });
   });
 }

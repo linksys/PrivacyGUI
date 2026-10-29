@@ -6,12 +6,14 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 /// WAN interface traffic statistics for real-time monitoring
 class WanTrafficStats {
+  final String instancePath;
   final int bytesSent;
   final int bytesReceived;
   final int packetsSent;
   final int packetsReceived;
 
   const WanTrafficStats({
+    required this.instancePath,
     required this.bytesSent,
     required this.bytesReceived,
     required this.packetsSent,
@@ -30,8 +32,7 @@ class WanTrafficStats {
         }
       }
     }
-    // Fallback to hardcoded instance 2
-    return 'Device.IP.Interface.2.';
+    throw 'Get failed: Could not resolve Device.IP.Interface instance with Alias=wan (code: 9996)';
   }
 
   /// Build parameter paths using the resolved instance path
@@ -68,6 +69,7 @@ class WanTrafficStats {
       throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
     return WanTrafficStats(
+      instancePath: instancePath,
       bytesSent: int.tryParse(
               response['${instancePath}Stats.BytesSent']?.toString() ?? '') ??
           0,
@@ -88,6 +90,7 @@ class WanTrafficStats {
   @override
   String toString() {
     return 'WanTrafficStats('
+        'instancePath: $instancePath, '
         'bytesSent: $bytesSent, '
         'bytesReceived: $bytesReceived, '
         'packetsSent: $packetsSent, '

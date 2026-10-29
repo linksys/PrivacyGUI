@@ -27,7 +27,6 @@ const route1 = StaticRouteUIModel(
   destSubnetMask: '255.0.0.0',
   gatewayIpAddress: '192.168.1.1',
   interfaceName: 'WAN',
-  interfacePath: 'Device.IP.Interface.1.',
 );
 
 const route2 = StaticRouteUIModel(
@@ -38,7 +37,6 @@ const route2 = StaticRouteUIModel(
   destSubnetMask: '255.240.0.0',
   gatewayIpAddress: '192.168.1.254',
   interfaceName: 'LAN',
-  interfacePath: 'Device.IP.Interface.2.',
 );
 
 const disabledRoute = StaticRouteUIModel(
@@ -49,15 +47,18 @@ const disabledRoute = StaticRouteUIModel(
   destSubnetMask: '255.255.255.0',
   gatewayIpAddress: '192.168.1.100',
   interfaceName: 'WAN',
-  interfacePath: 'Device.IP.Interface.1.',
 );
 
 // ---------------------------------------------------------------------------
 // State builders
 // ---------------------------------------------------------------------------
 
-StaticRoutingFeatureState dataState(List<StaticRouteUIModel> routes) {
-  final settings = StaticRouteList(routes: routes);
+/// [ripEnabled] null is a router without the NAT / Dynamic routing switch.
+StaticRoutingFeatureState dataState(
+  List<StaticRouteUIModel> routes, {
+  bool? ripEnabled,
+}) {
+  final settings = StaticRouteList(routes: routes, ripEnabled: ripEnabled);
   return StaticRoutingFeatureState(
     settings: Preservable(original: settings, current: settings),
     status: const StaticRoutingStatus(),
@@ -82,6 +83,16 @@ StaticRoutingFeatureState dirtyState({bool isSaving = false}) {
     status: StaticRoutingStatus(isSaving: isSaving),
   );
 }
+
+/// At FWDEV#213's limit of [kMaxStaticRoutes] routes, so Add is disabled and
+/// the `RuleLimitNote` row shows (#1100).
+final fullState = dataState([
+  for (var i = 1; i <= kMaxStaticRoutes; i++)
+    route2.copyWith(
+      instancePath: 'Device.Routing.Router.1.IPv4Forwarding.$i.',
+      name: 'Route $i',
+    ),
+]);
 
 StaticRoutingFeatureState get errorState => StaticRoutingFeatureState(
       settings: Preservable(
@@ -123,7 +134,6 @@ const _gateRoutes = [
     destSubnetMask: '255.255.255.255',
     gatewayIpAddress: '192.168.1.254',
     interfaceName: 'WAN',
-    interfacePath: 'Device.IP.Interface.1.',
   ),
 ];
 
@@ -133,4 +143,8 @@ const _gateRoutes = [
 /// `emptyState()` renders one [DetailEmptyBlock] instead of any card, and
 /// `dirtyState()` adds the `UiKitBottomBarConfig` save bar, which is ui_kit's own
 /// chrome and out of scope for #1380.
-final gateStaticRoutingState = dataState(_gateRoutes);
+///
+/// On a router with the NAT / Dynamic routing switch (#1100), so its two rows
+/// are measured too: "Dynamic routing (RIP)" is the longer label, and the page
+/// has nothing else that wide above the route list.
+final gateStaticRoutingState = dataState(_gateRoutes, ripEnabled: false);

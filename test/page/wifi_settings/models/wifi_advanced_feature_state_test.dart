@@ -120,5 +120,65 @@ void main() {
 
       expect(a, isNot(equals(b)));
     });
+
+    test('steering defaults to off and is part of equality (#1661)', () {
+      const off = WifiAdvancedSettings(ieee80211hByRadio: {});
+      expect(off.clientSteering, isFalse);
+      expect(off.nodeSteering, isFalse);
+
+      // A steering change alone has to make the tab dirty, so the two switches
+      // are compared like the DFS map is.
+      expect(off.copyWith(clientSteering: true), isNot(equals(off)));
+      expect(off.copyWith(nodeSteering: true), isNot(equals(off)));
+      expect(
+        off.copyWith(clientSteering: true).copyWith(clientSteering: false),
+        equals(off),
+      );
+    });
+    test('MLO is absent unless read, and part of equality (#1692)', () {
+      const none = WifiAdvancedSettings(ieee80211hByRadio: {});
+      expect(none.mloEnabled, isNull,
+          reason: 'a router without MLO has no MLO value, not an OFF one');
+      expect(none.copyWith(mloEnabled: false), isNot(equals(none)));
+      expect(
+        none.copyWith(mloEnabled: true),
+        isNot(equals(none.copyWith(mloEnabled: false))),
+      );
+    });
+  });
+
+  group('WifiAdvancedFeatureState.restartsWifi (#1692)', () {
+    WifiAdvancedFeatureState edited(
+        WifiAdvancedSettings Function(WifiAdvancedSettings) edit) {
+      const saved = WifiAdvancedSettings(
+        ieee80211hByRadio: {'Device.WiFi.Radio.2.': false},
+        mloEnabled: false,
+      );
+      return WifiAdvancedFeatureState(
+        settings: Preservable(original: saved, current: edit(saved)),
+        status: const WifiAdvancedStatus(),
+      );
+    }
+
+    test('an MLO change restarts Wi-Fi', () {
+      expect(edited((s) => s.copyWith(mloEnabled: true)).restartsWifi, isTrue);
+    });
+
+    test('a DFS change restarts Wi-Fi', () {
+      expect(
+        edited((s) =>
+                s.copyWith(ieee80211hByRadio: {'Device.WiFi.Radio.2.': true}))
+            .restartsWifi,
+        isTrue,
+      );
+    });
+
+    test('a steering change alone does not', () {
+      expect(
+        edited((s) => s.copyWith(clientSteering: true, nodeSteering: true))
+            .restartsWifi,
+        isFalse,
+      );
+    });
   });
 }

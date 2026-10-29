@@ -82,7 +82,170 @@ void main() {
     });
   });
 
+  group('GetProbeCapabilitySource — Auto-IPoE', () {
+    const autoIPoEPath = 'Device.X_LINKSYS_AutoIPoE.APIVersion';
+
+    test('nonempty APIVersion enables Auto-IPoE and preserves other support',
+        () async {
+      expect(capabilityProbePath(DeviceCapability.autoIPoE), autoIPoEPath);
+      when(() => usp.get(any())).thenAnswer((_) async => {
+            autoIPoEPath: '1',
+            macFilterPath: 'Disabled',
+          });
+
+      final caps = await source.resolveAll(usp);
+
+      expect(caps.has(DeviceCapability.autoIPoE), isTrue);
+      expect(caps.has(DeviceCapability.wifiMacFilter), isTrue);
+    });
+
+    for (final response in <String, Map<String, dynamic>>{
+      'absent': {},
+      'empty': {autoIPoEPath: ''},
+      'whitespace': {autoIPoEPath: '   '},
+      'null': {autoIPoEPath: null},
+    }.entries) {
+      test('${response.key} APIVersion leaves other capabilities intact',
+          () async {
+        when(() => usp.get(any())).thenAnswer((_) async => {
+              ...response.value,
+              macFilterPath: 'Disabled',
+            });
+
+        final caps = await source.resolveAll(usp);
+
+        expect(caps.has(DeviceCapability.autoIPoE), isFalse);
+        expect(caps.has(DeviceCapability.wifiMacFilter), isTrue);
+      });
+    }
+  });
+
+  group('GetProbeCapabilitySource — MLO (#1692)', () {
+    const mloPath = 'Device.X_LINKSYS_Mesh.MLOStatus';
+
+    test('a status read off the router means MLO is offered', () async {
+      expect(capabilityProbePath(DeviceCapability.wifiMlo), mloPath);
+      // What FW 2.0.3.26101472 reads with the switch off (bench 2026-10-15).
+      when(() => usp.get(any())).thenAnswer((_) async => {
+            mloPath: 'Disabled',
+            macFilterPath: 'Disabled',
+          });
+
+      final caps = await source.resolveAll(usp);
+
+      expect(caps.has(DeviceCapability.wifiMlo), isTrue);
+      expect(caps.has(DeviceCapability.wifiMacFilter), isTrue);
+    });
+
+    test('firmware without the leaf hides MLO and nothing else', () async {
+      // A GET naming a path missing from the schema answers the other paths
+      // and leaves that one out (bench 2026-10-13, 7026 per path).
+      when(() => usp.get(any())).thenAnswer((_) async => {
+            macFilterPath: 'Disabled',
+          });
+
+      final caps = await source.resolveAll(usp);
+
+      expect(caps.has(DeviceCapability.wifiMlo), isFalse);
+      expect(caps.has(DeviceCapability.wifiMacFilter), isTrue);
+    });
+  });
+
+  group('GetProbeCapabilitySource — dynamic routing (#1100)', () {
+    const ripPath = 'Device.Routing.RIP.Enable';
+
+    test('a RIP switch read off the router means it is offered, NAT included',
+        () async {
+      expect(capabilityProbePath(DeviceCapability.dynamicRouting), ripPath);
+      // NAT (the default) reads "0", which the client coerces to false: a
+      // present value, not an empty one (FW 2.0.3.26101641, bench 2026-10-21).
+      when(() => usp.get(any())).thenAnswer((_) async => {
+            ripPath: false,
+            macFilterPath: 'Disabled',
+          });
+
+      final caps = await source.resolveAll(usp);
+
+      expect(caps.has(DeviceCapability.dynamicRouting), isTrue);
+      expect(caps.has(DeviceCapability.wifiMacFilter), isTrue);
+    });
+
+    test('firmware without linksys-ripd hides the switch and nothing else',
+        () async {
+      // feed_usp#56 8f260d6: no Device.Routing.RIP. without linksys-ripd, so
+      // the path answers 7026 and the Get leaves it out.
+      when(() => usp.get(any())).thenAnswer((_) async => {
+            macFilterPath: 'Disabled',
+          });
+
+      final caps = await source.resolveAll(usp);
+
+      expect(caps.has(DeviceCapability.dynamicRouting), isFalse);
+      expect(caps.has(DeviceCapability.wifiMacFilter), isTrue);
+    });
+  });
+
+  group('GetProbeCapabilitySource — BLE onboarding (#879)', () {
+    const statusPath = 'Device.X_LINKSYS_BLEOnboarding.Status';
+
+    test(
+        'an onboarding status read off the router means adding nodes is offered',
+        () async {
+      expect(capabilityProbePath(DeviceCapability.bleOnboarding), statusPath);
+      // A router that has never run a session reads `Idle`, a present value
+      // (FW 2.0.3.26101482, bench 2026-10-22).
+      when(() => usp.get(any())).thenAnswer((_) async => {
+            statusPath: 'Idle',
+            macFilterPath: 'Disabled',
+          });
+
+      final caps = await source.resolveAll(usp);
+
+      expect(caps.has(DeviceCapability.bleOnboarding), isTrue);
+      expect(caps.has(DeviceCapability.wifiMacFilter), isTrue);
+    });
+
+    test(
+        'firmware without the onboarding API hides adding nodes and nothing else',
+        () async {
+      // Before linksys/feed_premium#53 there is no Device.X_LINKSYS_BLEOnboarding.,
+      // so the path answers 7026 and the Get leaves it out.
+      when(() => usp.get(any())).thenAnswer((_) async => {
+            macFilterPath: 'Disabled',
+          });
+
+      final caps = await source.resolveAll(usp);
+
+      expect(caps.has(DeviceCapability.bleOnboarding), isFalse);
+      expect(caps.has(DeviceCapability.wifiMacFilter), isTrue);
+    });
+  });
+
   group('GetProbeCapabilitySource — batching', () {
+    for (final failure in <String, Object>{
+      'unknown path': const ResourceNotFoundError(code: 7026),
+      'expired session': const SessionTokenExpiredError(),
+      'network failure': const ConnectivityError(),
+      'unexpected error': Exception('unexpected'),
+    }.entries) {
+      test('${failure.key} fails closed without individual retries', () async {
+        when(() => usp.get(any())).thenThrow(failure.value);
+
+        final caps = await source.resolveAll(usp);
+
+        expect(caps, DeviceCapabilities.empty);
+        final requests =
+            verify(() => usp.get(captureAny())).captured.cast<List<String>>();
+        expect(requests, [
+          [
+            for (final capability in DeviceCapability.values)
+              capabilityProbePath(capability)
+          ],
+        ]);
+        verifyNoMoreInteractions(usp);
+      });
+    }
+
     test('probes every declared capability path in one Get', () async {
       when(() => usp.get(any())).thenAnswer((_) async => <String, dynamic>{});
 

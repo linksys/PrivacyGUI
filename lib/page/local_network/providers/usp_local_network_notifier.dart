@@ -127,7 +127,7 @@ class UspLocalNetworkNotifier
     // No IP change (e.g. only DHCP or subnet-mask fields changed): the
     // connection is still alive, so re-fetch so the dashboard card updates too.
     ref.invalidate(lanDataProvider);
-    return fetch(forceRemote: true);
+    return confirmSaved();
   }
 
   // ---------------------------------------------------------------------------

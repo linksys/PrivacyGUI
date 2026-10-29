@@ -1,34 +1,74 @@
+/// 1.0's PPP limits, which the firmware enforces (linksys/feed_usp#55 netmngr
+/// 036, 037, 050; the Keep Alive interval since feed_usp#68): idle time 1–9999
+/// minutes, Keep Alive "reconnect after" 20–180 seconds with 30 as 1.0's
+/// default, and a user name and password of at most 255 characters.
+const kPppIdleMinutesMin = 1;
+const kPppIdleMinutesMax = 9999;
+const kPppKeepAliveSecondsMin = 20;
+const kPppKeepAliveSecondsMax = 180;
+const kPppKeepAliveDefaultSeconds = 30;
+const kPppCredentialMaxLength = 255;
+
+/// The messages netmngr refuses a WAN write with (linksys/feed_usp#55, patches
+/// 036 and 039; fault 7012, nothing written). Each is the refused leaf's whole
+/// `errorMessage`, measured on 2.0.3.26102008. The service reads them off a
+/// refusal and the page shows each with its own message.
+class WanRefusalNames {
+  static const invalidServer = 'Invalid server';
+  static const invalidIpAddress = 'Invalid IP address';
+  static const invalidPrefixLength = 'Invalid network prefix length';
+  static const invalidGateway = 'Invalid gateway';
+  static const invalidPrimaryDns = 'Invalid primary DNS server';
+  static const invalidDns = 'Invalid DNS server';
+  static const invalidMtu = 'Invalid MTU';
+
+  static const all = [
+    invalidServer,
+    invalidIpAddress,
+    invalidPrefixLength,
+    invalidGateway,
+    invalidPrimaryDns,
+    invalidDns,
+    invalidMtu,
+  ];
+}
+
 /// WAN connection types supported via USP TR-181.
 enum UspWanConnectionType {
   dhcp,
   staticIp,
   pppoe,
+  ipoe,
   pptp,
   l2tp,
   bridge;
 
-  /// Derive the connection type from the WAN interface's `AddressingType`.
+  /// Derive the connection type from the WAN interface's admin state and its
+  /// `AddressingType`.
   ///
-  /// [addressingType] is the single source of truth for WAN mode:
+  /// [interfaceEnabled] is `Device.IP.Interface.{wan}.Enable` and is the single
+  /// source of truth for bridge mode: the firmware's set handler for that one
+  /// parameter is what folds the WAN device into `br-lan` and runs
+  /// `bridge-mode-apply.sh enter|exit`, so `false` means bridge and nothing
+  /// else does.
+  ///
+  /// [addressingType] then distinguishes the non-bridge modes:
   /// - `Static` → static IP
   /// - `IPCP`   → PPP-based (PPPoE / PPTP / L2TP, disambiguated by [lowerLayers])
   /// - `DHCP`   → DHCP
-  /// - empty → bridge mode (firmware sets `AddressingType=""` when the WAN
-  ///   interface is placed into a transparent L2 bridge)
-  /// - any other unrecognised value → DHCP (safe fallback; only an explicitly
-  ///   empty value means bridge, so a future/transient value is not
-  ///   misclassified as bridge).
+  /// - anything unrecognised, empty included → DHCP (safe fallback). An empty
+  ///   value does NOT mean bridge: on this firmware writing
+  ///   `AddressingType=""` never entered bridge mode — that set handler only
+  ///   writes a uci option and never invokes the bridge script.
   ///
   /// [lowerLayers] disambiguates PPP-based protocols by checking the tunnel
   /// reference in `PPP.Interface.LowerLayers` (GRE → PPTP, L2TPv2 → L2TP).
-  ///
-  /// `Device.Bridging.Bridge.{i}.Enable` is deliberately NOT consulted: it
-  /// controls the LAN-side L2 bridge and is `true` on most routers regardless
-  /// of WAN bridge mode.
   static UspWanConnectionType fromRawFields({
     required String addressingType,
+    required bool interfaceEnabled,
     String lowerLayers = '',
   }) {
+    if (!interfaceEnabled) return bridge;
     switch (addressingType) {
       case 'Static':
         return staticIp;
@@ -39,10 +79,9 @@ enum UspWanConnectionType {
       case 'DHCP':
         return dhcp;
       default:
-        // Only an explicitly empty AddressingType signals bridge mode; any
-        // other unknown value falls back to DHCP rather than misclassifying
-        // as bridge.
-        return addressingType.isEmpty ? bridge : dhcp;
+        // Unrecognised (or transiently empty) value on an enabled interface:
+        // fall back to DHCP rather than inventing a mode.
+        return dhcp;
     }
   }
 
@@ -51,6 +90,7 @@ enum UspWanConnectionType {
         dhcp => 'Automatic Configuration - DHCP',
         staticIp => 'Static IP',
         pppoe => 'PPPoE',
+        ipoe => 'IPoE',
         pptp => 'PPTP',
         l2tp => 'L2TP',
         bridge => 'Bridge Mode',
@@ -58,12 +98,15 @@ enum UspWanConnectionType {
 
   /// The TR-181 `AddressingType` value to write back.
   String get addressingTypeValue => switch (this) {
+        ipoe => throw StateError('IPoE is configured through Auto-IPoE'),
         dhcp => 'DHCP',
         staticIp => 'Static',
         pppoe => 'IPCP',
         pptp => 'IPCP',
         l2tp => 'IPCP',
-        bridge => '', // issue #14: empty string = proto=none
+        // Never sent: bridge is entered and exited through
+        // Device.IP.Interface.{wan}.Enable, not AddressingType.
+        bridge => '',
       };
 
   /// Minimum MTU accepted for this connection type (protocol-independent).
@@ -87,11 +130,7 @@ enum UspWanConnectionType {
   /// Whether this type uses a PPP.Interface (credentials, LowerLayers).
   bool get isPppBased => this == pppoe || this == pptp || this == l2tp;
 
-  /// The LowerLayers value for PPP.Interface when switching to this type.
-  String? get pppLowerLayers => switch (this) {
-        pppoe => 'Device.Ethernet.Link.2',
-        pptp => 'Device.GRE.Tunnel.1.Interface.1',
-        l2tp => 'Device.L2TPv2.Tunnel.1.Interface.1',
-        _ => null,
-      };
+  /// Whether this type runs PPP over a tunnel row: `GRE.Tunnel` for PPTP,
+  /// `L2TPv2.Tunnel` for L2TP.
+  bool get isTunnel => this == pptp || this == l2tp;
 }

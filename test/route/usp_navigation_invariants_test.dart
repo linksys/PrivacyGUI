@@ -334,12 +334,14 @@ const _fallbackRoutes = <String>[
   RouteNamed.uspDeviceList,
   // Nested — the URL parent is always rebuilt, so the fallback is unreachable.
   RouteNamed.uspNodeDetail,
+  RouteNamed.addNodes,
   RouteNamed.uspLocalNetwork,
   RouteNamed.uspFirewall,
   RouteNamed.uspPortForwardingDetail,
   RouteNamed.uspStaticRouting,
   RouteNamed.uspIpv6PortService,
   RouteNamed.uspDmz,
+  RouteNamed.uspAdministration,
   RouteNamed.uspDeviceDetail,
 ];
 
@@ -422,6 +424,7 @@ void main() {
         RouteNamed.uspDeviceDetail: '/uspDeviceList/uspDeviceDetail',
         RouteNamed.uspTopology: '/uspTopology',
         RouteNamed.uspNodeDetail: '/uspTopology/uspNodeDetail',
+        RouteNamed.addNodes: '/uspTopology/addNodes',
         RouteNamed.uspInstantSafety: '/uspInstantSafety',
         RouteNamed.uspInstantPrivacy: '/uspInstantPrivacy',
         RouteNamed.uspAdmin: '/uspAdmin',
@@ -441,6 +444,7 @@ void main() {
         RouteNamed.uspLocalNetwork: '/uspAdvancedSettings/uspLocalNetwork',
         RouteNamed.uspFirewall: '/uspAdvancedSettings/uspFirewall',
         RouteNamed.uspDmz: '/uspAdvancedSettings/uspDmz',
+        RouteNamed.uspAdministration: '/uspAdvancedSettings/uspAdministration',
         RouteNamed.uspPortForwardingDetail:
             '/uspAdvancedSettings/uspPortForwardingDetail',
         RouteNamed.uspStaticRouting: '/uspAdvancedSettings/uspStaticRouting',
@@ -522,12 +526,14 @@ void main() {
           dead,
           {
             RouteNamed.uspNodeDetail: RouteNamed.uspTopology,
+            RouteNamed.addNodes: RouteNamed.uspTopology,
             RouteNamed.uspLocalNetwork: RouteNamed.uspAdvancedSettings,
             RouteNamed.uspFirewall: RouteNamed.uspAdvancedSettings,
             RouteNamed.uspPortForwardingDetail: RouteNamed.uspAdvancedSettings,
             RouteNamed.uspStaticRouting: RouteNamed.uspAdvancedSettings,
             RouteNamed.uspIpv6PortService: RouteNamed.uspFirewall,
             RouteNamed.uspDmz: RouteNamed.uspAdvancedSettings,
+            RouteNamed.uspAdministration: RouteNamed.uspAdvancedSettings,
             RouteNamed.uspDeviceDetail: RouteNamed.uspDeviceList,
           },
           reason: 'these are nested, so the value is unreachable. Kept, not '

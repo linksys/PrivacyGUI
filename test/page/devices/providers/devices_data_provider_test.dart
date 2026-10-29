@@ -7,8 +7,10 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
+import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
@@ -145,6 +147,59 @@ void main() {
             gatewayName: any(named: 'gatewayName'),
             systemInfo: any(named: 'systemInfo'),
           )).called(1);
+      container.dispose();
+    });
+
+    // #1688 review (W1). Since #1688 the nodes come only from DataElements,
+    // and `svc.fetch` builds with an empty topology. A refresh or a retry runs
+    // build() again with a topology already known; publishing fetch()'s network
+    // as-is would drop every agent until the background read returns — and for
+    // good if that read fails. build() must rebuild against the known topology,
+    // as `_refetchPreservingMesh` does.
+    test('a refresh keeps the agents the known topology already has', () async {
+      final agent = SlaveNode(
+        deviceId: 'AA:BB:CC:DD:EE:09',
+        model: 'M60',
+        backhaul: const BackhaulInfo(linkType: 'Wi-Fi'),
+      );
+      final knownTopology = MeshTopologyInfo(
+        nodes: [MasterNode(deviceId: 'GATEWAY', model: 'M60TB'), agent],
+        clientToNodeMap: const {},
+      );
+      final withAgent = MeshNetwork(
+        master: MasterNode(deviceId: 'GATEWAY', model: 'M60TB'),
+        slaves: [agent],
+      );
+
+      // First build: no topology yet, then the background read supplies it.
+      when(() => mockDevicesSvc.fetchMeshTopology(
+              bssidToBandMap: any(named: 'bssidToBandMap')))
+          .thenAnswer((_) async => knownTopology);
+      when(() => mockDevicesSvc.rebuildWithMesh(
+            context: any(named: 'context'),
+            wifiClientMap: any(named: 'wifiClientMap'),
+            connectionDetailMap: any(named: 'connectionDetailMap'),
+            meshTopology: knownTopology,
+            gatewayName: any(named: 'gatewayName'),
+            systemInfo: any(named: 'systemInfo'),
+          )).thenReturn(withAgent);
+
+      final container = createContainer();
+      await container.read(devicesDataProvider.future);
+      // Let the fire-and-forget DataElements read land.
+      await pumpEventQueue();
+      expect(container.read(devicesDataProvider).value!.slaves, hasLength(1));
+
+      // The refresh's own background read never returns, so what is asserted
+      // is exactly what build() published.
+      when(() => mockDevicesSvc.fetchMeshTopology(
+              bssidToBandMap: any(named: 'bssidToBandMap')))
+          .thenAnswer((_) => Completer<MeshTopologyInfo>().future);
+      container.refresh(devicesDataProvider);
+      final refreshed = await container.read(devicesDataProvider.future);
+
+      expect(refreshed.slaves.map((s) => s.deviceId), ['AA:BB:CC:DD:EE:09']);
+      expect(refreshed.meshTopology, knownTopology);
       container.dispose();
     });
 
@@ -420,6 +475,93 @@ void main() {
   // provider's own downstream listeners then saw as well. See
   // doc/riverpod/listen_site_audit.md (#1502 AC-4).
   // -------------------------------------------------------------------------
+  // The detail page's save (#1691): write through the service, then read the
+  // devices back so the page shows what the router now holds.
+  group('DevicesDataNotifier — updateIdentity', () {
+    void stubUpdate(Future<void> Function() answer) {
+      when(() => mockDevicesSvc.updateIdentity(
+            hostInstancePaths: any(named: 'hostInstancePaths'),
+            name: any(named: 'name'),
+            userTypeCode: any(named: 'userTypeCode'),
+          )).thenAnswer((_) => answer());
+    }
+
+    int fetchCount() => verify(() => mockDevicesSvc.fetch(
+          wifiClientMap: any(named: 'wifiClientMap'),
+          connectionDetailMap: any(named: 'connectionDetailMap'),
+          gatewayName: any(named: 'gatewayName'),
+          systemInfo: any(named: 'systemInfo'),
+        )).callCount;
+
+    test('writes through the service, then reads the devices back', () async {
+      stubUpdate(() async {});
+      final container = createContainer();
+      await container.read(devicesDataProvider.future);
+      fetchCount(); // resets the count: build's own fetch
+
+      await container.read(devicesDataProvider.notifier).updateIdentity(
+        hostInstancePaths: ['Device.Hosts.Host.3.', 'Device.Hosts.Host.7.'],
+        name: 'Living room TV',
+        userTypeCode: '4',
+      );
+
+      // Every row of a merged device reaches the service (#1719).
+      verify(() => mockDevicesSvc.updateIdentity(
+            hostInstancePaths: ['Device.Hosts.Host.3.', 'Device.Hosts.Host.7.'],
+            name: 'Living room TV',
+            userTypeCode: '4',
+          )).called(1);
+      expect(fetchCount(), 1);
+      container.dispose();
+    });
+
+    // Constitution Art. IV Rule 3: the WASM USP client takes one mutation at a
+    // time, so the Set runs inside the shared lock; the read-back does not.
+    test('writes inside the USP mutation lock', () async {
+      final container = createContainer();
+      await container.read(devicesDataProvider.future);
+      final lock = container.read(uspMutationLockProvider);
+      bool? lockedDuringWrite;
+      stubUpdate(() async => lockedDuringWrite = lock.isLocked);
+
+      await container.read(devicesDataProvider.notifier).updateIdentity(
+        hostInstancePaths: ['Device.Hosts.Host.3.'],
+        name: 'x',
+        userTypeCode: '1',
+      );
+
+      expect(lockedDuringWrite, isTrue);
+      expect(lock.isLocked, isFalse);
+      container.dispose();
+    });
+
+    test('a refused write is thrown and nothing is read back', () async {
+      stubUpdate(() async => throw const UspCompleteFailureError(
+            summary: 'refused',
+            failures: [],
+          ));
+      final container = createContainer();
+      await container.read(devicesDataProvider.future);
+      fetchCount();
+
+      await expectLater(
+        container.read(devicesDataProvider.notifier).updateIdentity(
+          hostInstancePaths: ['Device.Hosts.Host.3.'],
+          name: 'x',
+          userTypeCode: '1',
+        ),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+      verifyNever(() => mockDevicesSvc.fetch(
+            wifiClientMap: any(named: 'wifiClientMap'),
+            connectionDetailMap: any(named: 'connectionDetailMap'),
+            gatewayName: any(named: 'gatewayName'),
+            systemInfo: any(named: 'systemInfo'),
+          ));
+      container.dispose();
+    });
+  });
+
   group('DevicesDataNotifier — wifi data re-notification', () {
     test('a wifi refetch rebuilds the mesh exactly once', () async {
       // The listener early-returns on DevicesCodegenContext.empty, so the fetch

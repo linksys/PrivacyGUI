@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
@@ -9,7 +8,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_notifier.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_state.dart';
-import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_rules.dart';
 import 'package:privacy_gui/page/mac_filter/views/mac_filter_add_device_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -106,7 +105,7 @@ class MacFilterTab extends ConsumerWidget {
   Widget _buildDeviceList(
       BuildContext context, WidgetRef ref, MacFilterState state) {
     final macs = state.blockedMacs;
-    final atLimit = macs.length >= UspMacFilterService.maxAddresses;
+    final atLimit = macs.length >= MacFilterRules.maxAddresses;
     return SizedBox(
       width: double.infinity,
       child: Column(
@@ -130,8 +129,8 @@ class MacFilterTab extends ConsumerWidget {
           ),
           AppGap.md(),
           if (atLimit) ...[
-            AppText.bodySmall(loc(context)
-                .macFilterMaxReached(UspMacFilterService.maxAddresses)),
+            AppText.bodySmall(
+                loc(context).macFilterMaxReached(MacFilterRules.maxAddresses)),
             AppGap.sm(),
           ],
           if (macs.isEmpty)
@@ -292,7 +291,7 @@ Future<void> saveMacFilter(BuildContext context, WidgetRef ref) async {
     }
   } catch (e) {
     if (context.mounted) {
-      showFailedSnackBar(context, localizeServiceError(context, e));
+      showSaveErrorSnackBar(context, e);
     }
   }
 }

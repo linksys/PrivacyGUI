@@ -1,3 +1,4 @@
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -5,6 +6,7 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/bridge_request_throttler.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
@@ -12,8 +14,11 @@ import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart';
+import 'package:privacy_gui/page/wifi_settings/models/mlo_status.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/mlo_status_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_write_confirm_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
 import '../../../../test/mocks/test_data/wifi_settings_test_data.dart';
@@ -24,6 +29,14 @@ class MockUspWifiSettingsService extends Mock
 class MockUspClient extends Mock implements UspClient {}
 
 class MockUspAuthCoordinator extends Mock implements UspAuthCoordinator {}
+
+const _written = {'Device.WiFi.SSID.1.SSID': 'Changed'};
+
+/// A plan whose one SET the router answers.
+WifiWritePlan confirmedPlan() => WifiWritePlan(
+      params: _written,
+      send: () async => WifiWriteOutcome.confirmed,
+    );
 
 void main() {
   late MockUspWifiSettingsService mockService;
@@ -37,6 +50,7 @@ void main() {
     registerFallbackValue(<WifiNetworkUIModel>[]);
     registerFallbackValue(WifiSettingsSettings.empty());
     registerFallbackValue(const WifiSettingsStatus());
+    registerFallbackValue(<String, dynamic>{});
   });
 
   setUp(() {
@@ -46,8 +60,13 @@ void main() {
     when(() => mockUsp.isAuthenticated).thenReturn(true);
   });
 
+  /// How many times the L1 MLO status was built.
+  var mloStatusReads = 0;
+  setUp(() => mloStatusReads = 0);
+
   ProviderContainer createContainer({
     WifiData? wifiData,
+    WifiDataNotifier Function()? wifiNotifier,
   }) {
     final data = wifiData ?? WifiSettingsTestData.createWifiData();
     final container = ProviderContainer(
@@ -56,10 +75,25 @@ void main() {
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
         uspClientProvider.overrideWithValue(mockUsp),
         uspAuthCoordinatorProvider.overrideWithValue(mockAuthCoordinator),
-        wifiDataProvider.overrideWith(() => _FakeWifiDataNotifier(data)),
+        wifiDataProvider
+            .overrideWith(wifiNotifier ?? () => _FakeWifiDataNotifier(data)),
+        // Short timings, so the read-back path runs without real waits.
+        wifiAnswerWindowProvider
+            .overrideWithValue(const Duration(milliseconds: 50)),
+        wifiReadBackIntervalProvider
+            .overrideWithValue(const Duration(milliseconds: 10)),
+        wifiSaveDeadlineProvider
+            .overrideWithValue(const Duration(milliseconds: 200)),
+        // Counts reads of the L1 MLO status, so a test can tell it was
+        // invalidated (#1692).
+        mloStatusProvider.overrideWith((ref) async {
+          mloStatusReads++;
+          return MloStatus.inactive;
+        }),
       ],
     );
     container.listen(uspWifiSettingsProvider, (_, __) {});
+    container.listen(mloStatusProvider, (_, __) {});
     return container;
   }
 
@@ -420,7 +454,7 @@ void main() {
       when(() => mockService.saveAdvanced(
             original: any(named: 'original'),
             current: any(named: 'current'),
-          )).thenAnswer((_) async {});
+          )).thenReturn(confirmedPlan());
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -459,7 +493,7 @@ void main() {
             original: any(named: 'original'),
             current: any(named: 'current'),
             status: any(named: 'status'),
-          )).thenAnswer((_) async {});
+          )).thenReturn(confirmedPlan());
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -478,6 +512,531 @@ void main() {
             status: any(named: 'status'),
           )).called(1);
       container.dispose();
+    });
+
+    // -----------------------------------------------------------------------
+    // performSave — a lost reply is read back, not reported (#1499, CG#215)
+    // -----------------------------------------------------------------------
+
+    group('save when the reply is lost to the WiFi reload', () {
+      Future<UspWifiSettingsNotifier> quickSetupNotifier(
+          ProviderContainer container) async {
+        await Future.delayed(Duration.zero);
+        await Future.delayed(Duration.zero);
+        final notifier = container.read(uspWifiSettingsProvider.notifier);
+        notifier.updateQuickSetupField(isGuest: false, password: 'newpass1');
+        return notifier;
+      }
+
+      setUp(() {
+        when(() => mockService.buildWifiNetworks(
+              ssids: any(named: 'ssids'),
+              accessPoints: any(named: 'accessPoints'),
+              radios: any(named: 'radios'),
+            )).thenReturn(WifiSettingsTestData.createNetworks());
+        when(() => mockService.buildQuickSetupNetworks(any())).thenReturn((
+          main: WifiSettingsTestData.createQuickSetupAggregate(),
+          guest: null,
+          isQuickSetup: true,
+        ));
+        when(() => mockService.saveQuickSetup(
+              original: any(named: 'original'),
+              current: any(named: 'current'),
+              status: any(named: 'status'),
+            )).thenReturn(WifiWritePlan(
+          params: _written,
+          // A rename: its new SSID is what a read-back can confirm.
+          proof: _written,
+          send: () async => WifiWriteOutcome.unanswered,
+        ));
+      });
+
+      test('succeeds once the router reads back what was written', () async {
+        when(() => mockService.isApplied(any())).thenAnswer((_) async => true);
+        final container = createContainer();
+        final notifier = await quickSetupNotifier(container);
+
+        await notifier.save();
+
+        verify(() => mockService.isApplied(_written)).called(1);
+        expect(
+            container.read(uspWifiSettingsProvider).status.isSaving, isFalse);
+        container.dispose();
+      });
+
+      // #1212 second review: the throttler keeps a completed GET for 5 s and
+      // the read-back attempts are 3 s apart, so a cached empty table was
+      // replayed on every other attempt instead of asking the router.
+      test('each read-back attempt drops the GET cache first', () async {
+        when(() => mockService.isApplied(any())).thenAnswer((_) async => true);
+        final throttler = BridgeRequestThrottler(staggerDelay: Duration.zero);
+        when(() => mockUsp.throttler).thenReturn(throttler);
+        final container = createContainer();
+        final settings = await quickSetupNotifier(container);
+        await settings.save();
+
+        var routerAsked = 0;
+        Future<int> ask() => throttler.enqueue(
+            cacheKey: 'usp:Device.WiFi.Radio.',
+            action: () async => ++routerAsked);
+        await ask();
+        await ask();
+        expect(routerAsked, 1, reason: 'the premise: the cache answers');
+
+        await settings.readBackAfterRecovery();
+        await ask();
+
+        expect(routerAsked, 2, reason: 'the read-back dropped the cache');
+        container.dispose();
+      });
+
+      test(
+          'a confirmed write is NOT failed by the L1 refresh timing out after '
+          'it (#1499: both SETs had succeeded; the 15 s throttler on the '
+          'post-save refresh is what the user saw)', () async {
+        when(() => mockService.isApplied(any())).thenAnswer((_) async => true);
+        final notifier = _ThrowOnRefresh();
+        final container = createContainer(wifiNotifier: () => notifier);
+        final settings = await quickSetupNotifier(container);
+        // From here on L1 fails, as it did while the radios reloaded.
+        notifier.failNext = true;
+
+        await expectLater(settings.save(), completes);
+        expect(notifier.failures, 0,
+            reason: 'nothing is read while the radios reload (#1212): the '
+                'read-back runs after the recovery');
+
+        // After the recovery, a read that still fails is reported as a write
+        // that landed — not as a failed save.
+        await expectLater(settings.readBackAfterRecovery(),
+            throwsA(isA<SavedButUnconfirmedError>()));
+        expect(notifier.failures, greaterThan(0),
+            reason: 'the refresh must actually have failed, or this test '
+                'proves nothing');
+        expect(container.read(uspWifiSettingsProvider).status.error, isNull);
+        container.dispose();
+      });
+
+      test('fails — never a false success — when it never reads back',
+          () async {
+        when(() => mockService.isApplied(any())).thenAnswer((_) async => false);
+        final container = createContainer();
+        final notifier = await quickSetupNotifier(container);
+
+        await expectLater(notifier.save(), throwsA(isA<ServiceError>()));
+        container.dispose();
+      });
+
+      group('router away — the browser rejoining a renamed network', () {
+        // Bench 2026-10-07: the rename landed, every read-back for 60 s failed
+        // because the browser was off the network, and the save reported
+        // failure. The page save now hands over instead.
+        setUp(() {
+          when(() => mockService.isApplied(any())).thenAnswer(
+              (_) async => throw const NetworkError(detail: 'Failed to fetch'));
+        });
+
+        test('save completes and leaves a pending confirmation', () async {
+          final container = createContainer();
+          final notifier = await quickSetupNotifier(container);
+
+          await expectLater(notifier.save(), completes);
+
+          expect(notifier.awaitsRouterRecovery, isTrue);
+          container.dispose();
+        });
+
+        // #1212 review: the router did not take the rename, and the form
+        // cannot be read either. Keeping what was written as the clean
+        // baseline would show values the router does not hold.
+        test(
+            'not applied, and the form cannot be read ⇒ the edit stays '
+            'pending against the last-read values', () async {
+          final notifier = _ThrowOnRefresh();
+          final container = createContainer(wifiNotifier: () => notifier);
+          final settings = await quickSetupNotifier(container);
+          final before =
+              container.read(uspWifiSettingsProvider).settings.original;
+          await settings.save();
+          expect(settings.awaitsRouterRecovery, isTrue);
+          when(() => mockService.isApplied(any()))
+              .thenAnswer((_) async => false);
+          notifier.failNext = true;
+
+          await expectLater(
+              settings.confirmAfterRecovery(), throwsA(isA<ServiceError>()));
+
+          final state = container.read(uspWifiSettingsProvider);
+          expect(state.settings.original, before);
+          expect(state.isDirty, isTrue,
+              reason: 'the refused rename is still the user\'s edit');
+          container.dispose();
+        });
+
+        test('confirmAfterRecovery: read back once, applied ⇒ done', () async {
+          final container = createContainer();
+          final notifier = await quickSetupNotifier(container);
+          await notifier.save();
+          // The save's own polling read back many times; count only what the
+          // recovery does.
+          clearInteractions(mockService);
+          when(() => mockService.isApplied(any()))
+              .thenAnswer((_) async => true);
+
+          await notifier.confirmAfterRecovery();
+
+          verify(() => mockService.isApplied(_written)).called(1);
+          expect(notifier.awaitsRouterRecovery, isFalse);
+          container.dispose();
+        });
+
+        test(
+            'confirmAfterRecovery reloads the form from the router — the save\'s '
+            'own re-fetch ran while it was away and read the old cache',
+            () async {
+          final container = createContainer();
+          final notifier = await quickSetupNotifier(container);
+          await notifier.save();
+          // What the router holds once it is back: the renamed network.
+          final renamed = WifiSettingsTestData.createNetworks()
+              .map((n) => n.copyWith(ssid: 'Changed'))
+              .toList();
+          when(() => mockService.buildWifiNetworks(
+                ssids: any(named: 'ssids'),
+                accessPoints: any(named: 'accessPoints'),
+                radios: any(named: 'radios'),
+              )).thenReturn(renamed);
+          when(() => mockService.isApplied(any()))
+              .thenAnswer((_) async => true);
+
+          await notifier.confirmAfterRecovery();
+
+          expect(
+              container
+                  .read(uspWifiSettingsProvider)
+                  .settings
+                  .original
+                  .networks
+                  .map((n) => n.ssid),
+              everyElement('Changed'));
+          container.dispose();
+        });
+
+        test(
+            'confirmAfterRecovery: a failed read right after recovery is '
+            'retried, not reported — the radios can still be settling',
+            () async {
+          final container = createContainer();
+          final notifier = await quickSetupNotifier(container);
+          await notifier.save();
+          clearInteractions(mockService);
+          var reads = 0;
+          when(() => mockService.isApplied(any())).thenAnswer((_) async {
+            // Two empty-table answers, then the renamed network.
+            if (++reads <= 2) {
+              throw const NetworkError(detail: 'no row for SSID.1');
+            }
+            return true;
+          });
+
+          await expectLater(notifier.confirmAfterRecovery(), completes);
+
+          expect(reads, 3);
+          container.dispose();
+        });
+
+        test(
+            'confirmAfterRecovery: still unreadable after the retries ⇒ a '
+            'failure', () async {
+          final container = createContainer();
+          final notifier = await quickSetupNotifier(container);
+          await notifier.save();
+          when(() => mockService.isApplied(any())).thenAnswer(
+              (_) async => throw const NetworkError(detail: 'still away'));
+
+          await expectLater(
+              notifier.confirmAfterRecovery(), throwsA(isA<ServiceError>()));
+          container.dispose();
+        });
+
+        test('confirmAfterRecovery: not applied ⇒ a failure, never a success',
+            () async {
+          final container = createContainer();
+          final notifier = await quickSetupNotifier(container);
+          await notifier.save();
+          when(() => mockService.isApplied(any()))
+              .thenAnswer((_) async => false);
+
+          await expectLater(
+              notifier.confirmAfterRecovery(), throwsA(isA<ServiceError>()));
+          expect(notifier.awaitsRouterRecovery, isFalse,
+              reason: 'answered either way — nothing is left pending');
+          container.dispose();
+        });
+
+        test(
+            'bench round 3, end to end, at the shipped timings: empty tables '
+            'mid-reload, SET answers at 60.07 s, router away, then the read '
+            'after recovery confirms — a success, not "Something went wrong"',
+            () {
+          fakeAsync((async) {
+            // Bench 2026-10-07 12:28:58 (M60, 2.0.2, local, Quick Setup rename
+            // + password). Every WiFi GET from 30 s on came back `{}`; the SET
+            // returned unanswered at 60.07 s; the browser was off the network
+            // until the user rejoined; recovery passed at ~118 s. The save
+            // reported failure, and the form stayed dirty.
+            final container = ProviderContainer(overrides: [
+              uspWifiSettingsServiceProvider.overrideWithValue(mockService),
+              uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+              uspClientProvider.overrideWithValue(mockUsp),
+              uspAuthCoordinatorProvider.overrideWithValue(mockAuthCoordinator),
+              wifiDataProvider.overrideWith(() =>
+                  _FakeWifiDataNotifier(WifiSettingsTestData.createWifiData())),
+            ]);
+            container.listen(uspWifiSettingsProvider, (_, __) {});
+            when(() => mockService.saveQuickSetup(
+                  original: any(named: 'original'),
+                  current: any(named: 'current'),
+                  status: any(named: 'status'),
+                )).thenReturn(WifiWritePlan(
+              params: _written,
+              proof: _written,
+              send: () async {
+                await Future<void>.delayed(const Duration(milliseconds: 60070));
+                return WifiWriteOutcome.unanswered;
+              },
+            ));
+            var routerBack = false;
+            when(() => mockService.isApplied(any())).thenAnswer((_) async {
+              if (!routerBack) {
+                throw const NetworkError(detail: 'no row for SSID.1');
+              }
+              return true;
+            });
+
+            async.flushMicrotasks();
+            final notifier = container.read(uspWifiSettingsProvider.notifier);
+            async.elapse(Duration.zero);
+            notifier.updateQuickSetupField(isGuest: false, ssid: 'Changed');
+
+            Object? saveError;
+            var saved = false;
+            notifier.save().then((_) {
+              saved = true;
+            }, onError: (Object e) {
+              saveError = e;
+            });
+            async.elapse(const Duration(seconds: 70));
+
+            expect(saveError, isNull,
+                reason: 'empty tables are the router not there yet, not a no');
+            expect(saved, isTrue);
+            expect(notifier.awaitsRouterRecovery, isTrue,
+                reason: 'handed to recovery, to be read once the router is '
+                    'back');
+
+            routerBack = true;
+            Object? confirmError;
+            notifier.confirmAfterRecovery().then((_) {}, onError: (Object e) {
+              confirmError = e;
+            });
+            async.elapse(const Duration(seconds: 5));
+
+            expect(confirmError, isNull);
+            expect(notifier.awaitsRouterRecovery, isFalse);
+            container.dispose();
+          });
+        });
+
+        test('confirmAfterRecovery with nothing pending does nothing',
+            () async {
+          final container = createContainer();
+          await Future.delayed(Duration.zero);
+          await Future.delayed(Duration.zero);
+
+          await container
+              .read(uspWifiSettingsProvider.notifier)
+              .confirmAfterRecovery();
+
+          verifyNever(() => mockService.isApplied(any()));
+          container.dispose();
+        });
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // Dashboard quick actions — same write-then-confirm as the page save
+    // -----------------------------------------------------------------------
+
+    group('dashboard quick actions', () {
+      setUp(() {
+        when(() => mockService.buildWifiNetworks(
+              ssids: any(named: 'ssids'),
+              accessPoints: any(named: 'accessPoints'),
+              radios: any(named: 'radios'),
+            )).thenReturn(WifiSettingsTestData.createNetworks());
+        when(() => mockService.buildQuickSetupNetworks(any())).thenReturn((
+          main: null,
+          guest: null,
+          isQuickSetup: false,
+        ));
+      });
+
+      test('toggleSsidsByName: an unanswered toggle is read back, then done',
+          () async {
+        when(() => mockService.toggleSsidsByName(any(), any(), any(), any()))
+            .thenReturn(WifiWritePlan(
+          params: const {'Device.WiFi.SSID.1.Enable': false},
+          proof: const {'Device.WiFi.SSID.1.Enable': false},
+          count: 1,
+          send: () async => WifiWriteOutcome.unanswered,
+        ));
+        when(() => mockService.isApplied(any())).thenAnswer((_) async => true);
+        final container = createContainer();
+        await Future.delayed(Duration.zero);
+
+        await container
+            .read(uspWifiSettingsProvider.notifier)
+            .toggleSsidsByName('Home', false);
+
+        verify(() => mockService
+            .isApplied(const {'Device.WiFi.SSID.1.Enable': false})).called(1);
+        container.dispose();
+      });
+
+      test('toggleSsidsByName: no matching SSID is still an InvalidInputError',
+          () async {
+        when(() => mockService.toggleSsidsByName(any(), any(), any(), any()))
+            .thenReturn(WifiWritePlan(
+          params: const {},
+          count: 0,
+          send: () async => WifiWriteOutcome.confirmed,
+        ));
+        final container = createContainer();
+        await Future.delayed(Duration.zero);
+
+        await expectLater(
+          container
+              .read(uspWifiSettingsProvider.notifier)
+              .toggleSsidsByName('Nope', false),
+          throwsA(isA<InvalidInputError>()),
+        );
+        container.dispose();
+      });
+
+      test(
+          'updateRadioChannel: an unanswered write that never reads back fails',
+          () async {
+        when(() => mockService.updateRadioChannel(
+              any(),
+              channel: any(named: 'channel'),
+              autoChannel: any(named: 'autoChannel'),
+            )).thenReturn(WifiWritePlan(
+          params: const {'Device.WiFi.Radio.1.Channel': 40},
+          proof: const {'Device.WiFi.Radio.1.Channel': 40},
+          send: () async => WifiWriteOutcome.unanswered,
+        ));
+        when(() => mockService.isApplied(any())).thenAnswer((_) async => false);
+        final container = createContainer();
+        await Future.delayed(Duration.zero);
+
+        await expectLater(
+          container.read(uspWifiSettingsProvider.notifier).updateRadioChannel(
+              'Device.WiFi.Radio.1.',
+              channel: 40,
+              autoChannel: false),
+          throwsA(isA<ServiceError>()),
+        );
+        container.dispose();
+      });
+    });
+
+    // -----------------------------------------------------------------------
+    // MLO status (#1692): what MLO needs is what these writes change — the
+    // bands' SSID, password, security, and whether both are on — so each
+    // write reads it again once settled, as it does wifiDataProvider.
+    // -----------------------------------------------------------------------
+
+    group('the MLO status is read again', () {
+      setUp(() {
+        when(() => mockService.buildWifiNetworks(
+              ssids: any(named: 'ssids'),
+              accessPoints: any(named: 'accessPoints'),
+              radios: any(named: 'radios'),
+            )).thenReturn(WifiSettingsTestData.createNetworks());
+        when(() => mockService.buildQuickSetupNetworks(any())).thenReturn((
+          main: null,
+          guest: null,
+          isQuickSetup: false,
+        ));
+      });
+
+      Future<ProviderContainer> ready() async {
+        final container = createContainer();
+        addTearDown(container.dispose);
+        await container.read(mloStatusProvider.future);
+        await Future.delayed(Duration.zero);
+        expect(mloStatusReads, 1);
+        return container;
+      }
+
+      test('after a page save', () async {
+        when(() => mockService.saveAdvanced(
+              original: any(named: 'original'),
+              current: any(named: 'current'),
+            )).thenReturn(confirmedPlan());
+        final container = await ready();
+        final notifier = container.read(uspWifiSettingsProvider.notifier);
+
+        notifier.updateNetworkField('Device.WiFi.SSID.1.', ssid: 'Changed');
+        await notifier.save();
+        await container.read(mloStatusProvider.future);
+        expect(mloStatusReads, 1,
+            reason: 'not while the radios reload (#1212)');
+
+        await notifier.readBackAfterRecovery();
+        await container.read(mloStatusProvider.future);
+
+        expect(mloStatusReads, 2);
+      });
+
+      test('after a network toggle, even a failed one', () async {
+        when(() => mockService.toggleSsidsByName(any(), any(), any(), any()))
+            .thenReturn(WifiWritePlan(
+          params: const {'Device.WiFi.SSID.1.Enable': false},
+          proof: const {'Device.WiFi.SSID.1.Enable': false},
+          send: () async => throw const InvalidInputError(detail: 'refused'),
+        ));
+        final container = await ready();
+
+        await expectLater(
+          container
+              .read(uspWifiSettingsProvider.notifier)
+              .toggleSsidsByName('Home', false),
+          throwsA(isA<ServiceError>()),
+        );
+        await container.read(mloStatusProvider.future);
+
+        expect(mloStatusReads, 2,
+            reason: 'MLO needs both bands on; a toggle can change that');
+      });
+
+      test('after a channel change', () async {
+        when(() => mockService.updateRadioChannel(
+              any(),
+              channel: any(named: 'channel'),
+              autoChannel: any(named: 'autoChannel'),
+            )).thenReturn(confirmedPlan());
+        final container = await ready();
+
+        await container
+            .read(uspWifiSettingsProvider.notifier)
+            .updateRadioChannel('Device.WiFi.Radio.1.',
+                channel: 40, autoChannel: false);
+        await container.read(mloStatusProvider.future);
+
+        expect(mloStatusReads, 2);
+      });
     });
 
     // -----------------------------------------------------------------------
@@ -614,7 +1173,10 @@ void main() {
       when(() => mockService.saveAdvanced(
             original: any(named: 'original'),
             current: any(named: 'current'),
-          )).thenThrow(const NetworkError(detail: 'HTTP 504'));
+          )).thenReturn(WifiWritePlan(
+        params: _written,
+        send: () async => throw const NetworkError(detail: 'HTTP 504'),
+      ));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -646,7 +1208,10 @@ void main() {
       when(() => mockService.saveAdvanced(
             original: any(named: 'original'),
             current: any(named: 'current'),
-          )).thenThrow(const NetworkError(detail: 'HTTP 504'));
+          )).thenReturn(WifiWritePlan(
+        params: _written,
+        send: () async => throw const NetworkError(detail: 'HTTP 504'),
+      ));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -683,6 +1248,25 @@ class _FakeWifiDataNotifier extends AsyncNotifier<WifiData>
 
   @override
   Future<WifiData> build() async => _data;
+}
+
+/// Builds normally, then throws on the next build once [failNext] is set — the
+/// post-save refresh hitting the 15 s throttler while the radios reload.
+class _ThrowOnRefresh extends AsyncNotifier<WifiData>
+    implements WifiDataNotifier {
+  bool failNext = false;
+  int failures = 0;
+
+  @override
+  Future<WifiData> build() async {
+    if (failNext) {
+      failures++;
+      throw const NetworkError(
+          detail: 'TimeoutException after 0:00:15.000000: Throttler: request '
+              'exceeded 15s');
+    }
+    return WifiSettingsTestData.createWifiData();
+  }
 }
 
 // ---------------------------------------------------------------------------

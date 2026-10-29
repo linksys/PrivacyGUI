@@ -1,3 +1,10 @@
+import 'dart:async';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
+import 'dart:convert';
+import 'package:privacy_gui/core/usp/services/active_ipv4_connection.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -7,8 +14,16 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_result.dart';
 import 'package:privacy_gui/page/unified_diagnostics/services/unified_diagnostics_service.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
+import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart'
+    as wan;
+import 'package:privacy_gui/page/internet_settings/services/usp_wan_data_service.dart';
+
+import '../../../mocks/test_data/local_network_test_data.dart';
+import '../../../mocks/test_data/internet_settings_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
+
+class MockUspWanDataService extends Mock implements UspWanDataService {}
 
 class _MockExecutor extends Mock implements NetworkDiagnosticsExecutor {}
 
@@ -149,7 +164,8 @@ void main() {
     when(() => mockExecutor.acquireScope(
           referencePaths: any(named: 'referencePaths'),
         )).thenAnswer((_) async => fakeScope);
-    service = UnifiedDiagnosticsService(mockUsp);
+    service = UnifiedDiagnosticsService(mockUsp,
+        fetchWan: UspWanDataService(mockUsp).fetch, autoIPoESupported: false);
     service.attachScope(fakeScope);
   });
 
@@ -157,6 +173,8 @@ void main() {
   // Test fixtures: full GET response maps satisfying codegen validation.
   // ────────────────────────────────────────────────────────────────────────
 
+  /// A WAN status read answered from one map: the interface aliases plus the
+  /// `WanStatus` leaves of the WAN on Interface.5, its address on row 3.
   Map<String, dynamic> wanStatusResponse({
     String status = 'Up',
     String ip = '203.0.113.50',
@@ -164,12 +182,14 @@ void main() {
     String addressing = 'DHCP',
   }) =>
       {
-        'Device.IP.Interface.2.Status': status,
-        'Device.IP.Interface.2.IPv4Address.1.IPAddress': ip,
-        'Device.IP.Interface.2.IPv4Address.1.SubnetMask': mask,
-        'Device.IP.Interface.2.IPv4Address.1.AddressingType': addressing,
-        'Device.IP.Interface.2.MaxMTUSize': '1500',
-        'Device.IP.Interface.2.IPv6Enable': 'true',
+        ...InternetSettingsTestData.interfaceAliases(),
+        ...InternetSettingsTestData.wanStatus(
+          status: status,
+          ipAddress: ip,
+          subnetMask: mask,
+          addressingType: addressing,
+          ipv6Enabled: 'true',
+        ),
       };
 
   Map<String, dynamic> systemInfoResponse({int uptime = 86400}) => {
@@ -204,6 +224,17 @@ void main() {
         'Device.DNS.Client.Server.2.Status': 'Enabled',
         'Device.DNS.Client.Server.2.Alias': 'cpe-cloudflare',
         'Device.DNS.Client.Server.2.Interface': 'Device.IP.Interface.2.',
+      };
+
+  /// Row [fromIdx] of [rows] (whose paths have `.$fromIdx.` after [table]),
+  /// moved to [toIdx] with every value blank: the row usp-codegen 0.18
+  /// returns where 0.17 dropped it (#1654).
+  Map<String, dynamic> blankRow(
+          Map<String, dynamic> rows, String table, int fromIdx, int toIdx) =>
+      {
+        for (final key in rows.keys)
+          if (key.startsWith('$table$fromIdx.'))
+            key.replaceFirst('$table$fromIdx.', '$table$toIdx.'): '',
       };
 
   Map<String, dynamic> wifiRadiosResponse() => {
@@ -278,32 +309,36 @@ void main() {
     };
   }
 
+  /// One lease on [pool] (the LAN pool unless given), as client row
+  /// `idx + 10` with its address on row 3.
+  Map<String, dynamic> dhcpClientFields(int idx,
+      {bool active = true, String pool = LocalNetworkTestData.lanPool}) {
+    final p = '${pool}Client.${idx + 10}.';
+    return <String, dynamic>{
+      '${p}Chaddr': 'AA:BB:CC:DD:EE:0$idx',
+      '${p}Active': active ? 'true' : 'false',
+      '${p}IPv4Address.3.IPAddress': '192.168.1.${100 + idx}',
+      '${p}IPv4Address.3.LeaseTimeRemaining': '2030-01-01T00:00:00Z',
+    };
+  }
+
+  /// The LAN pool reads: the `dhcp-lan` pool on Pool.4 with its range, and
+  /// the guest pool on Pool.2 in front of it with a range of its own and two
+  /// leases, so a read of the wrong pool shows in every count.
   Map<String, dynamic> lanResponse({
     String min = '192.168.1.100',
     String max = '192.168.1.200',
     String enable = 'true',
   }) =>
       {
-        'Device.IP.Interface.1.IPv4Address.1.IPAddress': '192.168.1.1',
-        'Device.IP.Interface.1.IPv4Address.1.SubnetMask': '255.255.255.0',
-        'Device.DHCPv4.Server.Pool.1.Enable': enable,
-        'Device.DHCPv4.Server.Pool.1.MinAddress': min,
-        'Device.DHCPv4.Server.Pool.1.MaxAddress': max,
-        'Device.DHCPv4.Server.Pool.1.LeaseTime': '86400',
-        'Device.DHCPv4.Server.Pool.1.DNSServers': '8.8.8.8',
-        'Device.DeviceInfo.HostName': 'router',
-        'Device.IP.Interface.1.IPv6Enable': 'false',
+        ...LocalNetworkTestData.poolAliases(),
+        '${LocalNetworkTestData.guestPool}Interface': 'Device.IP.Interface.6',
+        '${LocalNetworkTestData.lanPool}Interface': 'Device.IP.Interface.3',
+        ...LocalNetworkTestData.lanPoolResponse(
+            dhcpEnabled: enable, minAddress: min, maxAddress: max),
+        for (final i in [1, 2])
+          ...dhcpClientFields(i, pool: LocalNetworkTestData.guestPool),
       };
-
-  Map<String, dynamic> dhcpClientFields(int idx, {bool active = true}) {
-    final p = 'Device.DHCPv4.Server.Pool.1.Client.$idx.';
-    return <String, dynamic>{
-      '${p}Chaddr': 'AA:BB:CC:DD:EE:0$idx',
-      '${p}Active': active ? 'true' : 'false',
-      '${p}IPv4Address.1.IPAddress': '192.168.1.${100 + idx}',
-      '${p}IPv4Address.1.LeaseTimeRemaining': '2030-01-01T00:00:00Z',
-    };
-  }
 
   Map<String, dynamic> wifiAccessPointFields(int idx, String ssidRef) {
     final p = 'Device.WiFi.AccessPoint.$idx.';
@@ -349,6 +384,148 @@ void main() {
 
   // ────────────────────────────────────────────────────────────────────────
 
+  for (final supported in [false, true]) {
+    test('diagnostics provider injects Auto-IPoE support $supported', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            ...wanStatusResponse(),
+            ActiveIpv4Connection.path: jsonEncode({
+              'apiVersion': 1,
+              'available': true,
+              'state': 'Up',
+              'activeIPv4Route': true,
+              'tunnelType': 'DS-Lite',
+            }),
+          });
+      final container = ProviderContainer(overrides: [
+        uspClientProvider.overrideWithValue(mockUsp),
+        deviceCapabilitiesProvider.overrideWithValue(supported
+            ? DeviceCapabilities({DeviceCapability.autoIPoE})
+            : DeviceCapabilities.empty),
+      ]);
+      addTearDown(container.dispose);
+      final diagnostics = container.read(unifiedDiagnosticsServiceProvider)!;
+
+      final result = await diagnostics.checkWanStatus();
+
+      expect(result.isUp, isTrue);
+      expect(result.hasIp, isTrue);
+      expect(result.usesTunnel, supported);
+      expect(result.addressingType, supported ? 'DS-Lite' : 'DHCP');
+      final requests = verify(() => mockUsp.get(captureAny()))
+          .captured
+          .cast<List<String>>()
+          .expand((paths) => paths);
+      expect(requests.contains(ActiveIpv4Connection.path), supported);
+    });
+  }
+
+  group('WAN provider composition', () {
+    const wanStatus = wan.WanStatusUIModel(
+      isUp: true,
+      ipAddress: '198.51.100.10',
+      subnetMask: '255.255.255.0',
+      addressingType: 'DHCP',
+      mtu: 1500,
+      gateway: '198.51.100.254',
+    );
+    late MockUspWanDataService wanService;
+    late ProviderContainer container;
+
+    setUp(() {
+      wanService = MockUspWanDataService();
+      container = ProviderContainer(overrides: [
+        uspClientProvider.overrideWithValue(mockUsp),
+        deviceCapabilitiesProvider.overrideWithValue(DeviceCapabilities.empty),
+        uspWanDataServiceProvider.overrideWithValue(wanService),
+      ]);
+      addTearDown(container.dispose);
+    });
+
+    test('WAN status and gateway ping use the injected WAN reader', () async {
+      when(() => wanService.fetch()).thenAnswer((_) async => wanStatus);
+      fakeScope.pingResult = OperateResult(
+        commandName: 'IPPing()',
+        commandKey: 'k',
+        status: 'Complete',
+        outputArgs: const {},
+      );
+      final diagnostics = container.read(unifiedDiagnosticsServiceProvider)!
+        ..attachScope(fakeScope);
+
+      final status = await diagnostics.checkWanStatus();
+      final gateway = await diagnostics.pingGateway();
+
+      expect(status.ipAddress, wanStatus.ipAddress);
+      expect(status.isUp, isTrue);
+      expect(gateway?.host, wanStatus.gateway);
+      verify(() => wanService.fetch()).called(2);
+      verifyZeroInteractions(mockUsp);
+    });
+
+    test('replacing the WAN provider fences the previous reader', () async {
+      when(() => wanService.fetch()).thenAnswer((_) async => wanStatus);
+      final previous = container.read(unifiedDiagnosticsServiceProvider)!;
+      final replacement = MockUspWanDataService();
+      when(() => replacement.fetch()).thenAnswer((_) async => wanStatus);
+
+      container.updateOverrides([
+        uspClientProvider.overrideWithValue(mockUsp),
+        deviceCapabilitiesProvider.overrideWithValue(DeviceCapabilities.empty),
+        uspWanDataServiceProvider.overrideWithValue(replacement),
+      ]);
+      final current = container.read(unifiedDiagnosticsServiceProvider)!;
+
+      expect(current, isNot(same(previous)));
+      await expectLater(
+          previous.checkWanStatus(), throwsA(isA<ResourceNotFoundError>()));
+      expect((await current.checkWanStatus()).ipAddress, wanStatus.ipAddress);
+      verifyZeroInteractions(wanService);
+      verify(() => replacement.fetch()).called(1);
+      verifyZeroInteractions(mockUsp);
+    });
+
+    test('both callers preserve errors from the injected WAN reader', () async {
+      const error = NotAuthenticatedError();
+      when(() => wanService.fetch()).thenThrow(error);
+      final diagnostics = container.read(unifiedDiagnosticsServiceProvider)!;
+
+      await expectLater(diagnostics.checkWanStatus(), throwsA(same(error)));
+      await expectLater(diagnostics.pingGateway(), throwsA(same(error)));
+      verify(() => wanService.fetch()).called(2);
+      verifyZeroInteractions(mockUsp);
+    });
+  });
+
+  test(
+      'capability loss fences an old service before a fallback connection read',
+      () async {
+    var supported = true;
+    final pending = Completer<Map<String, dynamic>>();
+    when(() => mockUsp.get(any())).thenAnswer((_) => pending.future);
+    final container = ProviderContainer(overrides: [
+      uspClientProvider.overrideWithValue(mockUsp),
+      deviceCapabilitiesProvider.overrideWith((_) => supported
+          ? DeviceCapabilities({DeviceCapability.autoIPoE})
+          : DeviceCapabilities.empty),
+    ]);
+    addTearDown(container.dispose);
+    final diagnostics = container.read(unifiedDiagnosticsServiceProvider)!;
+    final gateway = diagnostics.pingGateway();
+
+    supported = false;
+    container.invalidate(deviceCapabilitiesProvider);
+    container.read(unifiedDiagnosticsServiceProvider);
+    pending.complete({});
+
+    await expectLater(gateway, throwsA(isA<ResourceNotFoundError>()));
+    await expectLater(
+        diagnostics.checkWanStatus(), throwsA(isA<ResourceNotFoundError>()));
+    await expectLater(
+        diagnostics.pingGateway(), throwsA(isA<ResourceNotFoundError>()));
+    verify(() => mockUsp.get([ActiveIpv4Connection.path])).called(1);
+    verifyNoMoreInteractions(mockUsp);
+  });
+
   group('checkWanStatus', () {
     test('parses WAN GET response into WanStatusUIModel', () async {
       when(() => mockUsp.get(any()))
@@ -385,7 +562,8 @@ void main() {
 
   group('Scope contract', () {
     test('throws when no scope is attached', () async {
-      final unsetService = UnifiedDiagnosticsService(mockUsp);
+      final unsetService = UnifiedDiagnosticsService(mockUsp,
+          fetchWan: UspWanDataService(mockUsp).fetch);
       expect(unsetService.ping('8.8.8.8'), throwsA(isA<StateError>()));
     });
 
@@ -432,9 +610,81 @@ void main() {
   });
 
   group('pingGateway', () {
-    test('derives gateway from WAN IP/mask and pings it', () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async =>
-          wanStatusResponse(ip: '203.0.113.50', mask: '255.255.255.0'));
+    for (final gateway in ['203.0.113.254', '']) {
+      test(
+          gateway.isEmpty
+              ? 'unsupported device skips a missing WAN gateway without probing'
+              : 'unsupported device uses the actual WAN gateway instead of guessing .1',
+          () async {
+        final requestedPaths = <String>[];
+        when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+          final paths = invocation.positionalArguments.first as List<String>;
+          requestedPaths.addAll(paths);
+          if (paths.any((path) => path.startsWith('Device.Routing.'))) {
+            return gateway.isEmpty
+                ? InternetSettingsTestData.routing(hasDefaultRoute: false)
+                : InternetSettingsTestData.routing(gateway: gateway);
+          }
+          if (paths.contains('Device.IP.Interface.*.Alias')) {
+            return InternetSettingsTestData.interfaceAliases();
+          }
+          if (paths
+              .contains('${InternetSettingsTestData.wanInterface}Enable')) {
+            return {'${InternetSettingsTestData.wanInterface}Enable': true};
+          }
+          if (paths
+              .contains('${InternetSettingsTestData.wanInterface}Status')) {
+            return wanStatusResponse();
+          }
+          return <String, dynamic>{}; // No IPv6 addresses in this fixture.
+        });
+        fakeScope.pingResult = OperateResult(
+          commandName: 'IPPing()',
+          commandKey: 'k',
+          status: 'Complete',
+          outputArgs: const {
+            'SuccessCount': '3',
+            'FailureCount': '0',
+            'AverageResponseTime': '5',
+            'MinimumResponseTime': '5',
+            'MaximumResponseTime': '5',
+          },
+        );
+
+        final result = await service.pingGateway();
+
+        expect(requestedPaths,
+            contains('${InternetSettingsTestData.wanInterface}Status'));
+        expect(
+            requestedPaths,
+            contains(
+                'Device.Routing.Router.*.IPv4Forwarding.*.GatewayIPAddress'));
+        expect(requestedPaths, isNot(contains(ActiveIpv4Connection.path)));
+        if (gateway.isEmpty) {
+          expect(result, isNull);
+          expect(fakeScope.calls, isEmpty);
+        } else {
+          expect(result?.host, gateway);
+          expect(fakeScope.calls.single.args['Host'], gateway);
+        }
+      });
+    }
+
+    test('uses the kernel next hop, not a guessed .1 gateway', () async {
+      service = UnifiedDiagnosticsService(mockUsp,
+          fetchWan: UspWanDataService(mockUsp, autoIPoESupported: true).fetch,
+          autoIPoESupported: true)
+        ..attachScope(fakeScope);
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            ActiveIpv4Connection.path: jsonEncode({
+              'apiVersion': 1,
+              'available': true,
+              'state': 'Up',
+              'activeIPv4Route': true,
+              'gateway': '203.0.113.254',
+              'protocol': 'dhcp'
+            })
+          });
       fakeScope.pingResult = OperateResult(
         commandName: 'IPPing()',
         commandKey: 'k',
@@ -450,31 +700,29 @@ void main() {
 
       final result = await service.pingGateway();
 
-      expect(result.host, '203.0.113.1'); // Derived gateway
-      expect(fakeScope.calls.single.args['Host'], '203.0.113.1');
+      expect(result?.host, '203.0.113.254'); // Actual next hop
+      expect(fakeScope.calls.single.args['Host'], '203.0.113.254');
     });
 
-    test('falls back to 192.168.1.1 when WAN IP/mask are malformed', () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async => wanStatusResponse(
-            ip: 'not-an-ip',
-            mask: 'not-a-mask',
-          ));
-      fakeScope.pingResult = OperateResult(
-        commandName: 'IPPing()',
-        commandKey: 'k',
-        status: 'Complete',
-        outputArgs: const {
-          'SuccessCount': '3',
-          'FailureCount': '0',
-          'AverageResponseTime': '1',
-          'MinimumResponseTime': '1',
-          'MaximumResponseTime': '1',
-        },
-      );
-
-      // Cannot parse IP — int.parse on 'not-an-ip' throws inside _deriveGateway,
-      // which means the throw escapes pingGateway. Confirm error path.
-      expect(service.pingGateway(), throwsA(isA<FormatException>()));
+    test('missing gateway is skipped without probing a made-up address',
+        () async {
+      service = UnifiedDiagnosticsService(mockUsp,
+          fetchWan: UspWanDataService(mockUsp, autoIPoESupported: true).fetch,
+          autoIPoESupported: true)
+        ..attachScope(fakeScope);
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            ActiveIpv4Connection.path: jsonEncode({
+              'apiVersion': 1,
+              'available': true,
+              'state': 'Up',
+              'activeIPv4Route': true,
+              'gateway': '',
+              'protocol': 'pppoe',
+              'pointToPoint': true
+            })
+          });
+      expect(await service.pingGateway(), isNull);
+      expect(fakeScope.calls, isEmpty);
     });
 
     test('throws when WAN has no IP', () async {
@@ -627,6 +875,9 @@ void main() {
       expect(result.hops.length, 2);
       expect(result.hops.first.hopNumber, 1);
 
+      // What the service hands the scope. The Operate inputs on the wire,
+      // including NumberOfTries / Timeout, are pinned in
+      // network_diagnostics_executor_test.dart; FakeScope does not add them.
       final call = fakeScope.calls.single;
       expect(call.command, 'Device.IP.Diagnostics.TraceRoute()');
       expect(call.args, {'Host': '8.8.8.8', 'MaxHopCount': '20'});
@@ -634,6 +885,15 @@ void main() {
   });
 
   group('checkWifiRadios', () {
+    test('a radio row with every value blank is no radio', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            ...wifiRadiosResponse(),
+            ...blankRow(wifiRadiosResponse(), 'Device.WiFi.Radio.', 1, 9),
+          });
+
+      expect(await service.checkWifiRadios(), hasLength(2));
+    });
+
     test('returns list of WiFiRadioUIModel with band/channel fields', () async {
       when(() => mockUsp.get(any()))
           .thenAnswer((_) async => wifiRadiosResponse());
@@ -650,6 +910,15 @@ void main() {
   });
 
   group('checkConnectedDevices', () {
+    test('a host row with every value blank is no device', () async {
+      final real = connectedDeviceFields(1,
+          mac: '00:11:22:33:44:55', hostName: 'Mac', active: true);
+      when(() => mockUsp.get(any())).thenAnswer((_) async =>
+          {...real, ...blankRow(real, 'Device.Hosts.Host.', 1, 9)});
+
+      expect((await service.checkConnectedDevices()).totalDevices, 1);
+    });
+
     test('returns counts and high-bandwidth devices', () async {
       final response = <String, dynamic>{
         ...connectedDeviceFields(1,
@@ -758,6 +1027,20 @@ void main() {
   });
 
   group('checkDhcpPool', () {
+    test('a lease row with every value blank is no lease', () async {
+      final real = dhcpClientFields(1, active: true);
+      const lan = LocalNetworkTestData.lanPool;
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            ...lanResponse(),
+            ...real,
+            ...blankRow(real, '${lan}Client.', 11, 19),
+          });
+
+      final pool = await service.checkDhcpPool();
+      expect(pool.totalLeases, 1);
+      expect(pool.usedLeases, 1);
+    });
+
     test(
         'computes capacity from MinAddress/MaxAddress and counts active leases',
         () async {
@@ -976,97 +1259,6 @@ void main() {
     });
   });
 
-  group('UIModel getters', () {
-    test('DeviceSignalUIModel.signalLabel covers all RSSI bands', () {
-      DeviceSignalUIModel d(int rssi) =>
-          DeviceSignalUIModel(name: 'd', macAddress: 'mac', rssiDbm: rssi);
-      // Thresholds from wifi.dart: rssiExcellent=-65, rssiGood=-71, rssiFair=-78
-      expect(d(-40).signalLabel, 'Excellent'); // >= -65
-      expect(d(-65).signalLabel, 'Excellent'); // == -65 (boundary)
-      expect(d(-66).signalLabel, 'Good'); // >= -71
-      expect(d(-71).signalLabel, 'Good'); // == -71 (boundary)
-      expect(d(-72).signalLabel, 'Fair'); // >= -78
-      expect(d(-78).signalLabel, 'Fair'); // == -78 (boundary)
-      expect(d(-79).signalLabel, 'Weak'); // < -78
-      expect(d(-90).signalLabel, 'Weak');
-    });
-
-    test('WifiSignalPerRadioUIModel aggregates totals across active radios',
-        () {
-      const radios = WifiSignalPerRadioUIModel(radios: [
-        RadioSignalStatsUIModel(
-          instancePath: 'Device.WiFi.Radio.1.',
-          band: '2.4GHz',
-          channel: 6,
-          status: 'Up',
-          clientCount: 2,
-          averageRssi: -60,
-          minRssi: -70,
-        ),
-        RadioSignalStatsUIModel(
-          instancePath: 'Device.WiFi.Radio.2.',
-          band: '5GHz',
-          channel: 36,
-          status: 'Up',
-          clientCount: 3,
-          averageRssi: -75, // weak
-          minRssi: -85,
-        ),
-        RadioSignalStatsUIModel(
-          instancePath: 'Device.WiFi.Radio.3.',
-          band: '6GHz',
-          channel: 161,
-          status: 'Up',
-          clientCount: 0,
-          averageRssi: 0,
-          minRssi: 0,
-        ),
-      ]);
-
-      expect(radios.activeRadios.length, 2);
-      expect(radios.totalClients, 5);
-      // weighted: (-60*2 + -75*3) / 5 = (-120 + -225)/5 = -69
-      expect(radios.weightedAverageRssi, -69);
-      expect(radios.hasWeakRadio, isTrue);
-      expect(radios.radios.first.hasClients, isTrue);
-      expect(radios.radios[1].isWeakAverage, isTrue);
-    });
-
-    test('WifiSignalPerRadioUIModel returns 0 weighted RSSI with no clients',
-        () {
-      const radios = WifiSignalPerRadioUIModel(radios: [
-        RadioSignalStatsUIModel(
-          instancePath: 'Device.WiFi.Radio.1.',
-          band: '2.4GHz',
-          channel: 6,
-          status: 'Up',
-          clientCount: 0,
-          averageRssi: 0,
-          minRssi: 0,
-        ),
-      ]);
-      expect(radios.weightedAverageRssi, 0);
-      expect(radios.hasWeakRadio, isFalse);
-    });
-
-    test('IntermittentUIModel.uptimeFormatted handles seconds/min/hour/day',
-        () {
-      IntermittentUIModel m(int s) => IntermittentUIModel(
-            uptimeSeconds: s,
-            pingSuccessRate: 1,
-            averageLatencyMs: 0,
-            jitterMs: 0,
-            hasHighJitter: false,
-            hasPacketLoss: false,
-            recentReboot: false,
-          );
-      expect(m(30).uptimeFormatted, '0m'); // < 1 minute
-      expect(m(60 * 5).uptimeFormatted, '5m');
-      expect(m(3600 * 2 + 60 * 30).uptimeFormatted, '2h 30m');
-      expect(m(86400 * 3 + 3600 * 4).uptimeFormatted, '3d 4h');
-    });
-  });
-
   // ────────────────────────────────────────────────────────────────────────
   // Mesh / Backhaul fixtures
   // ────────────────────────────────────────────────────────────────────────
@@ -1137,6 +1329,25 @@ void main() {
   }
 
   group('checkMeshBackhaul', () {
+    test('a node row with every value blank is no node', () async {
+      // A single router plus a blank row is still a single router: no mesh to
+      // inspect. Counted as a node, the blank row passes the two-node check,
+      // and, with no backhaul of its own, can take the controller's place.
+      final controller = meshNodeFields(1,
+          id: 'controller',
+          linkType: 'Ethernet',
+          rateMbps: 1000,
+          signalStrength: 0,
+          operationMode: 'Controller');
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            ...controller,
+            ...blankRow(
+                controller, 'Device.WiFi.DataElements.Network.Device.', 1, 9),
+          });
+
+      expect(await service.checkMeshBackhaul(), isEmpty);
+    });
+
     test('returns empty list for single-router (no mesh) deployment', () async {
       // Single node — backhaul concept doesn't apply.
       final response = <String, dynamic>{
@@ -1304,6 +1515,45 @@ void main() {
       final result = await service.checkMeshBackhaul();
       expect(result.map((n) => n.nodeId), ['agent-A', 'agent-B']);
       expect(result.every((n) => !n.isController), isTrue);
+    });
+
+    // -----------------------------------------------------------------------
+    // #1688 review — ControllerID decides "controller" when it can
+    // -----------------------------------------------------------------------
+    //
+    // An agent that has just joined has no LinkType and no parent yet, which
+    // by backhaul alone also describes the controller. The topology keeps it
+    // an extender by ControllerID; diagnostics must too, or it skips that
+    // agent's backhaul as "the router" — the one link most worth checking.
+
+    test('with ControllerID an agent with no backhaul yet is still checked',
+        () async {
+      // MAC-shaped IDs, unlike the cases above: ControllerID is compared as a
+      // MAC, and a non-MAC ID would only match by how its hex letters happen
+      // to normalize.
+      const controller = 'AA:BB:CC:DD:EE:01';
+      const joiningAgent = 'AA:BB:CC:DD:EE:02';
+      when(() => mockUsp.get(any())).thenAnswer((inv) async {
+        final paths = inv.positionalArguments[0] as List<String>;
+        if (paths.any((p) => p.endsWith('Network.ControllerID'))) {
+          return {'Device.WiFi.DataElements.Network.ControllerID': controller};
+        }
+        return <String, dynamic>{
+          ...meshNodeFields(1,
+              id: controller,
+              linkType: 'None',
+              rateMbps: 0,
+              signalStrength: 0,
+              operationMode: 'Controller'),
+          ...meshNodeFields(2,
+              id: joiningAgent, linkType: '', rateMbps: 0, signalStrength: 0),
+        };
+      });
+
+      final result = await service.checkMeshBackhaul();
+
+      expect(result.map((n) => n.nodeId), [joiningAgent]);
+      expect(result.single.isController, isFalse);
     });
 
     // -----------------------------------------------------------------------

@@ -1,0 +1,323 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/page/administration/models/administration_settings.dart';
+import 'package:privacy_gui/page/administration/providers/usp_administration_notifier.dart';
+import 'package:privacy_gui/page/administration/services/usp_administration_service.dart';
+import 'package:privacy_gui/page/administration/views/usp_administration_view.dart';
+import 'package:privacy_gui/route/route_model.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+
+import '../../../layout_gate/families/page_surface_family.dart';
+import '../../../util/app_test_fonts.dart';
+
+class MockUspAdministrationService extends Mock
+    implements UspAdministrationService {}
+
+/// Advanced Settings → Administration (#1660) on the real page, over the real
+/// notifier and a mocked service: what the switch shows, what Save sends, what a
+/// failure leaves on screen, and that leaving with an edit is caught.
+///
+/// **Untagged on purpose** so `run_tests.sh` runs it.
+void main() {
+  late MockUspAdministrationService svc;
+  late bool deviceValue;
+  late bool deviceSip;
+  late bool? deviceManagement;
+
+  setUpAll(() async {
+    await loadAppFonts();
+  });
+
+  setUp(() {
+    svc = MockUspAdministrationService();
+    deviceValue = true;
+    deviceSip = false;
+    deviceManagement = true;
+    when(() => svc.fetch()).thenAnswer((_) async => AdministrationSettings(
+        upnpEnabled: deviceValue,
+        sipAlgEnabled: deviceSip,
+        managementWifiEnabled: deviceManagement));
+  });
+
+  final upnpSwitch = find.byWidgetPredicate(
+      (w) => w is AppSwitch && w.identifier == 'administration-upnp');
+  final sipSwitch = find.byWidgetPredicate(
+      (w) => w is AppSwitch && w.identifier == 'administration-sip-alg');
+  final managementSwitch = find.byWidgetPredicate((w) =>
+      w is AppSwitch && w.identifier == 'administration-management-wifi');
+  const confirmTitle = 'Turn off management over Wi-Fi?';
+  final turnOff = find.widgetWithText(AppButton, 'Turn Off');
+  final cancel = find.widgetWithText(AppButton, 'Cancel');
+
+  Future<void> settle(WidgetTester tester) async {
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+  }
+
+  /// [extraRoutes] gives the page somewhere to leave to, through the same
+  /// `LinksysRoute` + `preservableProvider` pair `lib/route` declares.
+  Future<void> pumpPage(WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(pageSurfaceHost(
+      view: Builder(
+        builder: (context) => TextButton(
+          onPressed: () => context.push('/administration'),
+          child: const Text('open'),
+        ),
+      ),
+      locale: const Locale('en'),
+      overrides: [
+        uspAdministrationServiceProvider.overrideWithValue(svc),
+        uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+      ],
+      extraRoutes: [
+        LinksysRoute(
+          path: '/administration',
+          builder: (context, state) => const UspAdministrationView(),
+          preservableProvider: uspAdministrationProvider.notifier,
+        ),
+      ],
+    ));
+    await tester.tap(find.text('open'));
+    await settle(tester);
+    // Let the push transition finish: a pop while the route is still entering
+    // trips the navigator's lifecycle assertion.
+    await tester.pumpAndSettle();
+  }
+
+  bool switchValue(WidgetTester tester, [Finder? which]) =>
+      tester.widget<AppSwitch>(which ?? upnpSwitch).value;
+
+  group('UspAdministrationView - UPnP switch', () {
+    testWidgets('the switch shows Device.UPnP.Device.Enable', (tester) async {
+      await pumpPage(tester);
+
+      expect(find.text('UPnP'), findsOneWidget);
+      expect(switchValue(tester), isTrue);
+      expect(find.widgetWithText(AppButton, 'Save'), findsNothing,
+          reason: 'nothing edited, so no Save bar');
+    });
+
+    testWidgets('flipping writes nothing; Save sends one Set', (tester) async {
+      when(() => svc.setUpnpEnabled(any())).thenAnswer((_) async {
+        deviceValue = false;
+      });
+      await pumpPage(tester);
+
+      await tester.tap(upnpSwitch);
+      await settle(tester);
+      expect(switchValue(tester), isFalse);
+      verifyNever(() => svc.setUpnpEnabled(any()));
+
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await settle(tester);
+
+      verify(() => svc.setUpnpEnabled(false)).called(1);
+      expect(switchValue(tester), isFalse);
+      expect(find.text('Changes saved'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Save'), findsNothing);
+    });
+
+    testWidgets('a failed Set shows an error and the device value',
+        (tester) async {
+      // Fails after a beat, as a real Set does. `doSomethingWithSpinner` starts
+      // listening to the task ~100ms in, so a mock that throws synchronously
+      // fails the task before anything is listening and the test framework
+      // reports it as unhandled — a property of the stub, not of the page.
+      when(() => svc.setUpnpEnabled(any())).thenAnswer((_) async {
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        throw const NetworkError(detail: 'unreachable');
+      });
+      await pumpPage(tester);
+
+      await tester.tap(upnpSwitch);
+      await settle(tester);
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await settle(tester);
+
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.text('Changes saved'), findsNothing);
+      expect(switchValue(tester), isTrue, reason: 'the router still holds on');
+    });
+
+    testWidgets('leaving with an unsaved change asks first', (tester) async {
+      await pumpPage(tester);
+
+      await tester.tap(upnpSwitch);
+      await settle(tester);
+      GoRouter.of(tester.element(upnpSwitch)).pop();
+      await settle(tester);
+
+      expect(find.text('You have unsaved changes on this page'), findsOneWidget,
+          reason: "the route's dirty guard is this notifier");
+      expect(upnpSwitch, findsOneWidget, reason: 'still on the page');
+    });
+
+    testWidgets('leaving with nothing edited does not ask', (tester) async {
+      await pumpPage(tester);
+
+      GoRouter.of(tester.element(upnpSwitch)).pop();
+      // The exit transition, not just the async `onExit`.
+      await tester.pumpAndSettle();
+
+      expect(find.text('You have unsaved changes on this page'), findsNothing);
+      expect(upnpSwitch, findsNothing, reason: 'the page is gone');
+      expect(find.text('open'), findsOneWidget);
+    });
+  });
+
+  group('UspAdministrationView - SIP ALG switch', () {
+    testWidgets('the switch shows ConnectionTracking.SIP.Enable',
+        (tester) async {
+      await pumpPage(tester);
+
+      expect(find.text('Application Layer Gateway (SIP)'), findsOneWidget);
+      expect(switchValue(tester, sipSwitch), isFalse,
+          reason: 'factory default is off');
+    });
+
+    testWidgets('Save sends the SIP ALG Set and leaves UPnP alone',
+        (tester) async {
+      when(() => svc.setSipAlgEnabled(any())).thenAnswer((_) async {
+        deviceSip = true;
+      });
+      await pumpPage(tester);
+
+      await tester.tap(sipSwitch);
+      await settle(tester);
+      verifyNever(() => svc.setSipAlgEnabled(any()));
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await settle(tester);
+
+      verify(() => svc.setSipAlgEnabled(true)).called(1);
+      verifyNever(() => svc.setUpnpEnabled(any()));
+      expect(switchValue(tester, sipSwitch), isTrue);
+      expect(find.text('Changes saved'), findsOneWidget);
+    });
+
+    testWidgets('both switches stay busy for the whole ~9 s Set',
+        (tester) async {
+      final answer = Completer<void>();
+      when(() => svc.setSipAlgEnabled(any())).thenAnswer((_) => answer.future);
+      await pumpPage(tester);
+
+      await tester.tap(sipSwitch);
+      await settle(tester);
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await tester.pump(const Duration(seconds: 9));
+
+      expect(tester.widget<AppSwitch>(sipSwitch).isLoading, isTrue);
+      expect(tester.widget<AppSwitch>(upnpSwitch).isLoading, isTrue,
+          reason: 'one Save writes the page; no switch is editable mid-write');
+      expect(find.text('Changes saved'), findsNothing);
+
+      deviceSip = true;
+      answer.complete();
+      await settle(tester);
+      expect(find.text('Changes saved'), findsOneWidget);
+    });
+  });
+
+  group('UspAdministrationView - management over Wi-Fi switch', () {
+    Future<void> turnOffAndSave(WidgetTester tester) async {
+      await tester.tap(managementSwitch);
+      await settle(tester);
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await settle(tester);
+    }
+
+    testWidgets("the switch shows RULE_MGMT_WIFI_ACCESS's Enable",
+        (tester) async {
+      await pumpPage(tester);
+
+      expect(find.text('Allow local management wirelessly'), findsOneWidget);
+      expect(switchValue(tester, managementSwitch), isTrue,
+          reason: 'its default');
+    });
+
+    testWidgets('saving it off asks first, and Turn Off writes it',
+        (tester) async {
+      when(() => svc.setManagementWifiEnabled(any())).thenAnswer((_) async {
+        deviceManagement = false;
+      });
+      await pumpPage(tester);
+
+      await turnOffAndSave(tester);
+      expect(find.text(confirmTitle), findsOneWidget);
+      verifyNever(() => svc.setManagementWifiEnabled(any()));
+
+      await tester.tap(turnOff);
+      await settle(tester);
+
+      verify(() => svc.setManagementWifiEnabled(false)).called(1);
+      expect(switchValue(tester, managementSwitch), isFalse);
+      expect(find.text('Changes saved'), findsOneWidget);
+    });
+
+    testWidgets('Cancel writes nothing and keeps the edit', (tester) async {
+      await pumpPage(tester);
+
+      await turnOffAndSave(tester);
+      await tester.tap(cancel);
+      await settle(tester);
+
+      verifyNever(() => svc.setManagementWifiEnabled(any()));
+      expect(find.text(confirmTitle), findsNothing);
+      expect(switchValue(tester, managementSwitch), isFalse,
+          reason: 'the user can still save it, or flip it back');
+      expect(find.widgetWithText(AppButton, 'Save'), findsOneWidget);
+    });
+
+    testWidgets('saving it on does not ask', (tester) async {
+      deviceManagement = false;
+      when(() => svc.setManagementWifiEnabled(any())).thenAnswer((_) async {
+        deviceManagement = true;
+      });
+      await pumpPage(tester);
+
+      await tester.tap(managementSwitch);
+      await settle(tester);
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await settle(tester);
+
+      expect(find.text(confirmTitle), findsNothing);
+      verify(() => svc.setManagementWifiEnabled(true)).called(1);
+    });
+
+    testWidgets('saving another switch with management left on does not ask',
+        (tester) async {
+      when(() => svc.setUpnpEnabled(any())).thenAnswer((_) async {
+        deviceValue = false;
+      });
+      await pumpPage(tester);
+
+      await tester.tap(upnpSwitch);
+      await settle(tester);
+      await tester.tap(find.widgetWithText(AppButton, 'Save'));
+      await settle(tester);
+
+      expect(find.text(confirmTitle), findsNothing);
+      verify(() => svc.setUpnpEnabled(false)).called(1);
+    });
+
+    testWidgets('a firmware without the rule hides this switch only',
+        (tester) async {
+      deviceManagement = null;
+      await pumpPage(tester);
+
+      expect(managementSwitch, findsNothing);
+      expect(find.text('Allow local management wirelessly'), findsNothing);
+      expect(upnpSwitch, findsOneWidget);
+      expect(sipSwitch, findsOneWidget);
+    });
+  });
+}

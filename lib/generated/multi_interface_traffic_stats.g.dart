@@ -6,6 +6,8 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 /// Multi-interface traffic statistics for WAN vs LAN comparison
 class MultiInterfaceTrafficStats {
+  final String wanInstancePath;
+  final String lanInstancePath;
   final int wanBytesSent;
   final int wanBytesReceived;
   final int wanPacketsSent;
@@ -24,6 +26,8 @@ class MultiInterfaceTrafficStats {
   final int lanDiscardPacketsReceived;
 
   const MultiInterfaceTrafficStats({
+    required this.wanInstancePath,
+    required this.lanInstancePath,
     required this.wanBytesSent,
     required this.wanBytesReceived,
     required this.wanPacketsSent,
@@ -54,8 +58,7 @@ class MultiInterfaceTrafficStats {
         }
       }
     }
-    // Fallback to hardcoded instance 2
-    return 'Device.IP.Interface.2.';
+    throw 'Get failed: Could not resolve Device.IP.Interface instance with Alias=wan (code: 9996)';
   }
 
   /// Resolve lan interface index by searching for Alias='lan'
@@ -70,8 +73,7 @@ class MultiInterfaceTrafficStats {
         }
       }
     }
-    // Fallback to hardcoded instance 1
-    return 'Device.IP.Interface.1.';
+    throw 'Get failed: Could not resolve Device.IP.Interface instance with Alias=lan (code: 9996)';
   }
 
   /// Build parameter paths using resolved interface paths
@@ -104,7 +106,61 @@ class MultiInterfaceTrafficStats {
 
   factory MultiInterfaceTrafficStats._fromResponse(
       Map<String, dynamic> response, String wanPath, String lanPath) {
+    final missing = <String>[];
+    if (!response.containsKey('${wanPath}Stats.BytesSent')) {
+      missing.add('${wanPath}Stats.BytesSent');
+    }
+    if (!response.containsKey('${wanPath}Stats.BytesReceived')) {
+      missing.add('${wanPath}Stats.BytesReceived');
+    }
+    if (!response.containsKey('${wanPath}Stats.PacketsSent')) {
+      missing.add('${wanPath}Stats.PacketsSent');
+    }
+    if (!response.containsKey('${wanPath}Stats.PacketsReceived')) {
+      missing.add('${wanPath}Stats.PacketsReceived');
+    }
+    if (!response.containsKey('${wanPath}Stats.ErrorsSent')) {
+      missing.add('${wanPath}Stats.ErrorsSent');
+    }
+    if (!response.containsKey('${wanPath}Stats.ErrorsReceived')) {
+      missing.add('${wanPath}Stats.ErrorsReceived');
+    }
+    if (!response.containsKey('${wanPath}Stats.DiscardPacketsSent')) {
+      missing.add('${wanPath}Stats.DiscardPacketsSent');
+    }
+    if (!response.containsKey('${wanPath}Stats.DiscardPacketsReceived')) {
+      missing.add('${wanPath}Stats.DiscardPacketsReceived');
+    }
+    if (!response.containsKey('${lanPath}Stats.BytesSent')) {
+      missing.add('${lanPath}Stats.BytesSent');
+    }
+    if (!response.containsKey('${lanPath}Stats.BytesReceived')) {
+      missing.add('${lanPath}Stats.BytesReceived');
+    }
+    if (!response.containsKey('${lanPath}Stats.PacketsSent')) {
+      missing.add('${lanPath}Stats.PacketsSent');
+    }
+    if (!response.containsKey('${lanPath}Stats.PacketsReceived')) {
+      missing.add('${lanPath}Stats.PacketsReceived');
+    }
+    if (!response.containsKey('${lanPath}Stats.ErrorsSent')) {
+      missing.add('${lanPath}Stats.ErrorsSent');
+    }
+    if (!response.containsKey('${lanPath}Stats.ErrorsReceived')) {
+      missing.add('${lanPath}Stats.ErrorsReceived');
+    }
+    if (!response.containsKey('${lanPath}Stats.DiscardPacketsSent')) {
+      missing.add('${lanPath}Stats.DiscardPacketsSent');
+    }
+    if (!response.containsKey('${lanPath}Stats.DiscardPacketsReceived')) {
+      missing.add('${lanPath}Stats.DiscardPacketsReceived');
+    }
+    if (missing.isNotEmpty) {
+      throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+    }
     return MultiInterfaceTrafficStats(
+      wanInstancePath: wanPath,
+      lanInstancePath: lanPath,
       wanBytesSent: int.tryParse(
               response['${wanPath}Stats.BytesSent']?.toString() ?? '') ??
           0,
@@ -163,6 +219,8 @@ class MultiInterfaceTrafficStats {
   @override
   String toString() {
     return 'MultiInterfaceTrafficStats('
+        'wanInstancePath: $wanInstancePath, '
+        'lanInstancePath: $lanInstancePath, '
         'wanBytesSent: $wanBytesSent, '
         'wanBytesReceived: $wanBytesReceived, '
         'wanPacketsSent: $wanPacketsSent, '

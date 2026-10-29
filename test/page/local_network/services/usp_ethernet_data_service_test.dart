@@ -154,6 +154,23 @@ void main() {
   // WAN port status
   // ---------------------------------------------------------------------------
   group('WAN port status', () {
+    test('a port row with every value blank is no port', () async {
+      // usp-codegen 0.18 returns a row with every value blank where 0.17
+      // dropped it (#1654).
+      stubResponses(ethernet: {
+        ..._ethernetResponse(),
+        'Device.Ethernet.Interface.7.Name': '',
+        'Device.Ethernet.Interface.7.Status': '',
+        'Device.Ethernet.Interface.7.Upstream': false,
+        'Device.Ethernet.Interface.7.CurrentBitRate': '0',
+      }, bridge: _bridgeResponse(lowerLayers: 'Device.Ethernet.Interface.2.'));
+
+      final result = await svc.fetch(deviceModels: []);
+
+      expect(result.portModels.map((p) => p.instancePath),
+          isNot(contains('Device.Ethernet.Interface.7.')));
+    });
+
     test('isUp reflects status field', () async {
       stubResponses(
         ethernet: {

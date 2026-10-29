@@ -44,6 +44,18 @@ void main() {
       );
     });
 
+    test('a log file row with every value blank is no log file', () async {
+      // usp-codegen 0.18 returns a row with every value blank where 0.17
+      // dropped it (#1654).
+      when(() => mockUsp.get(any())).thenAnswer((_) async => {
+            'Device.DeviceInfo.VendorLogFile.4.Name': '',
+            'Device.DeviceInfo.VendorLogFile.4.MaximumSize': '',
+            'Device.DeviceInfo.VendorLogFile.4.Persistent': false,
+          });
+
+      expect(await service.fetch(), isEmpty);
+    });
+
     test('maps multiple vendor log files in order', () async {
       when(() => mockUsp.get(any())).thenAnswer((_) async => {
             'Device.DeviceInfo.VendorLogFile.1.Name': 'syslog',

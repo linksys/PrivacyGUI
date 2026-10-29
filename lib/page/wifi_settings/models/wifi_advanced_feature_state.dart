@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:privacy_gui/framework/feature_state.dart';
 import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_settings.dart';
@@ -33,9 +34,32 @@ class WifiAdvancedFeatureState
     );
   }
 
+  /// Whether saving now would write IEEE 802.11h, which reloads every radio.
+  bool get changesDfs => !const MapEquality<String, bool>().equals(
+      settings.current.ieee80211hByRadio, settings.original.ieee80211hByRadio);
+
+  /// Whether saving now would switch MLO, which restarts Wi-Fi for about 60 s
+  /// (linksys/FWDEV#201).
+  bool get changesMlo =>
+      settings.current.mloEnabled != settings.original.mloEnabled;
+
+  /// Whether saving now restarts Wi-Fi, which can drop a client connected over
+  /// it: an MLO or DFS change (#1692). An MLO change always reloads Wi-Fi; the
+  /// radios go down too only when the bands' grouping changes, so a toggle that
+  /// ends `Inactive` may drop nobody — the save still waits as if it would.
+  ///
+  /// The view reads it to decide whether to wait for the router to come back
+  /// and the notifier to decide how long the save waits, so the two cannot
+  /// disagree about a save. A steering-only save is applied at once and needs
+  /// neither (#1661).
+  bool get restartsWifi => changesDfs || changesMlo;
+
   @override
   Map<String, dynamic> toMap() => {
         'dfsEnabled': settings.current.isDfsEnabled,
+        'clientSteering': settings.current.clientSteering,
+        'nodeSteering': settings.current.nodeSteering,
+        'mloEnabled': settings.current.mloEnabled,
         'isDirty': isDirty,
         'isLoading': status.isLoading,
       };

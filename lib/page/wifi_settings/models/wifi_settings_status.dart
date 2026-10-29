@@ -1,12 +1,13 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/framework/has_service_error.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_quick_setup_network.dart';
 
 /// Read-only system state for the WiFi Settings page.
 ///
 /// Holds data that the user cannot directly modify. Separated from
 /// [WifiSettingsSettings] to prevent false-positive dirty checks.
-class WifiSettingsStatus extends Equatable {
+class WifiSettingsStatus extends Equatable implements HasServiceError {
   /// True while the initial fetch is in progress.
   final bool isLoading;
 
@@ -15,6 +16,7 @@ class WifiSettingsStatus extends Equatable {
 
   /// Typed error from the last fetch. The View localizes it via
   /// `localizeServiceError`; null means no error.
+  @override
   final ServiceError? error;
 
   /// Aggregated Quick Setup data for main (non-guest) networks.

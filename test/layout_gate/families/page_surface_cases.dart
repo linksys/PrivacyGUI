@@ -74,15 +74,22 @@ library;
 import 'package:flutter/material.dart'
     show GridView, LinearProgressIndicator, SelectionArea;
 import 'package:flutter_svg/flutter_svg.dart' show SvgPicture;
+import 'package:privacy_gui/components/composed/app_node_list_card.dart';
 import 'package:privacy_gui/components/customs/circular_countdown_widget.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/app_menu_card.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/page/add_nodes/views/add_nodes_view.dart';
+import 'package:privacy_gui/page/add_nodes/views/components/add_nodes_phase_content.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/page/internet_settings/views/sections/auto_ipoe_section.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_ipoe_view.dart';
 import 'package:privacy_gui/page/admin/views/components/usp_password_card.dart';
 import 'package:privacy_gui/page/admin/views/components/usp_system_actions_card.dart';
 import 'package:privacy_gui/page/admin/views/components/usp_timezone_card.dart';
 import 'package:privacy_gui/page/admin/views/usp_admin_view.dart';
+import 'package:privacy_gui/page/administration/views/usp_administration_view.dart';
 import 'package:privacy_gui/page/advanced_settings/views/usp_advanced_settings_view.dart';
 import 'package:privacy_gui/page/ai_assistant/views/router_assistant_view.dart';
 import 'package:privacy_gui/page/apps/views/usp_apps_view.dart';
@@ -118,6 +125,7 @@ import 'package:privacy_gui/page/instant_setup/views/pnp_isp_settings_view.dart'
 import 'package:privacy_gui/page/instant_setup/views/pnp_modem_lights_off_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_no_internet_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_pppoe_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_add_nodes_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_setup_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_static_ip_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_unplug_modem_view.dart';
@@ -135,9 +143,9 @@ import 'package:privacy_gui/page/login/auto_parent/views/auto_parent_first_login
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
 import 'package:privacy_gui/page/login/views/local_router_recovery_view.dart';
 import 'package:privacy_gui/page/login/views/login_local_view.dart';
-import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart'
-    show MacFilterMode;
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
 import 'package:privacy_gui/page/menu/views/usp_menu_view.dart';
+import 'package:privacy_gui/page/_shared/components/rule_limit_note.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_port_range_tab.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_port_triggering_tab.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_single_port_tab.dart';
@@ -160,6 +168,7 @@ import 'package:privacy_gui/page/support/views/usp_support_view.dart';
 import 'package:privacy_gui/page/test_console/views/usp_test_console_view.dart';
 import 'package:privacy_gui/page/test_console/widgets/tr181_autocomplete_field.dart';
 import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indicator.dart';
+import 'package:privacy_gui/page/topology/views/components/node_actions_card.dart';
 import 'package:privacy_gui/page/topology/views/usp_node_detail_view.dart';
 import 'package:privacy_gui/page/topology/views/usp_topology_view.dart';
 import 'package:privacy_gui/page/unified_diagnostics/views/unified_diagnostics_view.dart';
@@ -181,6 +190,7 @@ import 'package:ui_kit_library/ui_kit.dart'
         AppBadge,
         AppButton,
         AppCard,
+        AppDropdown,
         AppExpansionPanel,
         AppIconButton,
         AppIpv4TextField,
@@ -195,8 +205,11 @@ import 'package:ui_kit_library/ui_kit.dart'
         AppTextFormField,
         AppTopology;
 
+import '../../mocks/provider_overrides/mock_add_nodes.dart';
 import '../../mocks/provider_overrides/mock_admin.dart';
+import '../../mocks/provider_overrides/mock_administration.dart';
 import '../../mocks/provider_overrides/mock_apps.dart';
+import '../../mocks/provider_overrides/mock_auto_ipoe.dart';
 import '../../mocks/provider_overrides/mock_dashboard_page.dart';
 import '../../mocks/provider_overrides/mock_devices.dart';
 import '../../mocks/provider_overrides/mock_dhcp.dart';
@@ -222,6 +235,7 @@ import '../../mocks/provider_overrides/mock_router_assistant.dart';
 import '../../mocks/provider_overrides/mock_topology.dart';
 import '../../mocks/provider_overrides/mock_unified_diagnostics.dart';
 import '../../mocks/provider_overrides/mock_wifi_settings.dart';
+import '../../mocks/test_data/scenes/add_nodes_scene_data.dart';
 import '../../mocks/test_data/scenes/devices_scene_data.dart';
 // Both scene files export a top-level `dataState`, so both are prefixed rather
 // than one — a bare `dataState()` beside a `pf.dataState()` reads as the same
@@ -231,6 +245,7 @@ import '../../mocks/test_data/scenes/dhcp_scene_data.dart' as dhcp;
 import '../../mocks/test_data/scenes/login_scene_data.dart';
 import '../../mocks/test_data/scenes/pnp_scene_data.dart';
 import '../../mocks/test_data/scenes/port_forwarding_scene_data.dart' as pf;
+import '../../mocks/test_data/scenes/ipv6_port_service_scene_data.dart' as ipv6;
 import '../../mocks/test_data/scenes/topology_scene_data.dart';
 import '../../mocks/test_data/scenes/unified_diagnostics_scene_data.dart';
 import '../../mocks/test_data/scenes/wifi_settings_scene_data.dart';
@@ -310,20 +325,21 @@ final kWifiSettingsPageCase = PageSurfaceCase(
 /// link does — `initialTab: 1` — for which see [kStatisticsDevicesPageCase]; the two
 /// pages now share one mechanism rather than one excuse.
 ///
-/// ## Coverage: the whole tab, because the tab is one card
+/// ## Coverage: the whole tab, four cards
 ///
-/// No depth limit to state and none to measure. `UspWifiAdvancedTab` renders a single
-/// `AppCard` holding one DFS row, so [kPageSweepHeight] reaches the end of it at every
-/// width — this one's green means *the tab*, not a prefix of it. Four of the five tab
-/// cases are like that ([kStatisticsSystemPageCase], [kPortRangePageCase] and
-/// [kPortTriggeringPageCase] are the others); `page.statistics` and
-/// `page.statistics_devices` are the two that stop at [kPageSweepHeight].
+/// `UspWifiAdvancedTab` renders four `AppCard`s — client steering, node steering
+/// (#1661), DFS and MLO (#1692) — each one `Expanded` title + [AppSwitch] row over a
+/// description. Until #1661 it was the DFS card alone. The MLO card is the only one
+/// whose row holds a third widget, a status badge, and the only one with a second
+/// paragraph, the `Inactive` hint; the fixture is `Inactive` so both are in the sweep. The green still means *the tab* and not a
+/// prefix of it, for a reason that does not depend on [kPageSweepHeight]: the cards
+/// sit in a `SingleChildScrollView`'s `Column`, which lays out every child whether
+/// or not it is in the viewport — only a lazy sliver skips what is off screen.
 ///
-/// That also makes it the cheapest tab in the family and the one least likely to find
-/// anything: the row is already `Expanded` + [AppSwitch], which is the shape the rest
-/// of this file keeps arriving at as the *fix*. Swept anyway, and worth saying why —
-/// "it looks safe" is the claim a gate exists to stop anyone from having to make. The
-/// 234 cells are the receipt, and a future card added to this tab inherits them.
+/// It is the shape the rest of this file keeps arriving at as the *fix*, which made
+/// it the tab least likely to find anything. The two steering cards were the
+/// "future card added to this tab" this paragraph used to promise would inherit the
+/// 234 cells, and they did: they entered green.
 ///
 /// ## The premise, and the one thing it has to rule out
 ///
@@ -333,16 +349,16 @@ final kWifiSettingsPageCase = PageSurfaceCase(
 /// for the same reason: `initialTab` is an `int` behind a `clamp(0, 1)`, so every wrong
 /// value is a legal one.
 ///
-/// [AppSwitch] is the second entry because this tab has a *third* rendering that is
-/// neither loader nor error: `wifi_advanced_tab.dart:55` returns a centred
-/// `noAdvancedWifiSettings` string when `ieee80211hByRadio` is empty. That arm is inside
-/// [UspWifiAdvancedTab], so the first entry cannot see it, and it lays out one line of
-/// text where the card lays out a row — a fixture thinned to an empty map would sweep
-/// 234 cells of an empty-state message and report them as this tab's coverage.
-/// `defaultAdvancedState` — an alias for `advancedDfsOnState`, which is the name
-/// [kWifiSettingsPageCase]'s doc uses for the same object — carries two radios, and
-/// [AppSwitch] is what fails if it stops. Whichever name the alias points at is what
-/// this case actually sweeps, which is the reason to say both here.
+/// [AppSwitch] is the second entry. It used to guard a *third* rendering, a centred
+/// `noAdvancedWifiSettings` string shown when `ieee80211hByRadio` was empty; #1661
+/// removed that arm, because a successful fetch has always read both steering
+/// switches and so the tab always has rows. What an empty radio map does now is drop
+/// the DFS card only — and the DFS card is the one with the longest description, so
+/// a fixture thinned to an empty map would sweep two short cards and report them as
+/// this tab's coverage. `defaultAdvancedState` — an alias for `advancedDfsOnState`,
+/// which is the name [kWifiSettingsPageCase]'s doc uses for the same object — carries
+/// two radios, which is what keeps the DFS card in the sweep. Whichever name the alias
+/// points at is what this case actually sweeps, which is the reason to say both here.
 final kWifiSettingsAdvancedPageCase = PageSurfaceCase(
   id: 'wifi_settings_advanced',
   view: () => const UspWifiSettingsView(initialTab: 1),
@@ -420,9 +436,11 @@ final kDeviceDetailPageCase = PageSurfaceCase(
 
 /// `page.topology` — 28.7ms/cell (#1370).
 ///
-/// `meshNetworkDevicesData`, not `singleNodeDevicesData`: the mesh state renders a
-/// gateway plus extenders plus their clients, so the tree the ui_kit [AppTopology]
-/// lays out is the wider of the two the golden suite covers.
+/// `meshNetworkWithNodeActionsDevicesData`, which is `meshNetworkDevicesData`
+/// with the agent listing both node actions (#876), not `singleNodeDevicesData`:
+/// the mesh state renders a gateway plus extenders plus their clients, so the
+/// tree the ui_kit [AppTopology] lays out is the wider of the two the golden
+/// suite covers, and every mesh row carries its menu button.
 ///
 /// [AppTopology] is the premise, and this is the page where a premise earns its
 /// keep most visibly. `usp_topology_view.dart:57` returns `SizedBox.shrink()` when
@@ -433,7 +451,9 @@ final kTopologyPageCase = PageSurfaceCase(
   id: 'topology',
   view: () => const UspTopologyView(),
   overrides: () => topologyViewOverrides(
-    devicesData: meshNetworkDevicesData,
+    // The agent lists both node actions, so its row carries a menu button too
+    // (#876), and the button is measured beside an agent's name.
+    devicesData: meshNetworkWithNodeActionsDevicesData,
     systemInfoData: testSystemInfoData,
   ),
   requires: const [AppTopology],
@@ -479,15 +499,17 @@ final kTopologyPageCase = PageSurfaceCase(
 /// sweep rather than to #1442.
 ///
 /// The premise therefore takes one widget from each card the fixture *does* unlock:
-/// [BackhaulSignalIndicator] (the backhaul card's signal tile) and
-/// [UspDeviceListTile] (the connected-devices card). Two cards, two chances to
-/// notice the fixture went thin.
+/// [BackhaulSignalIndicator] (the backhaul card's signal tile),
+/// [UspDeviceListTile] (the connected-devices card) and [NodeActionsCard] (#876,
+/// which the fixture unlocks by listing both node actions; an agent that lists
+/// none gets no card). Three cards, three chances to notice the fixture went
+/// thin.
 final kNodeDetailPageCase = PageSurfaceCase(
   id: 'node_detail',
   view: () =>
       UspNodeDetailView(deviceId: slaveNodeWithBackhaulTiming.node!.deviceId),
   overrides: () => nodeDetailOverrides(slaveNodeWithBackhaulTiming),
-  requires: const [BackhaulSignalIndicator, UspDeviceListTile],
+  requires: const [BackhaulSignalIndicator, UspDeviceListTile, NodeActionsCard],
   forbids: const [AppLoader],
 );
 
@@ -605,6 +627,50 @@ final kPortTriggeringPageCase = PageSurfaceCase(
   overrides: () => portForwardingOverrides(pf.dataState()),
   requires: const [UspPortTriggeringTab],
   forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
+);
+
+/// The three port forwarding tabs again, each with its list at FWDEV#204's rule
+/// limit (#1611): 50 single-port, 25 range and 25 triggering rules.
+///
+/// A full list grows each tab by one row the default fixture never renders: the
+/// [RuleLimitNote] under the header, saying why Add is disabled. It is a row of its
+/// own rather than a neighbour of the Add button, so a long locale wraps it instead
+/// of pushing the button off the edge the way the header title once did (#1377) —
+/// and these cells are what show that it does. [RuleLimitNote] is each case's own
+/// premise: no tab case requires it, and the default fixture is far below every
+/// limit, so a fixture that drifted below one would fail rather than sweep the
+/// sibling tab case's tree twice.
+///
+/// `sharesTabWith` marks each as a fixture state of the tab case it shares a tab
+/// with, which is the one way `page_surface_family_test.dart` accepts two cases on
+/// one `initialTab`.
+final kPortForwardingFullPageCase = PageSurfaceCase(
+  id: 'port_forwarding_full',
+  view: () => const UspPortForwardingDetailView(),
+  overrides: () => portForwardingOverrides(pf.fullDataState),
+  requires: const [UspSinglePortTab, RuleLimitNote],
+  forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
+  sharesTabWith: 'port_forwarding',
+);
+
+/// [kPortForwardingFullPageCase] on the Port Range tab.
+final kPortRangeFullPageCase = PageSurfaceCase(
+  id: 'port_range_full',
+  view: () => const UspPortForwardingDetailView(initialTab: 1),
+  overrides: () => portForwardingOverrides(pf.fullDataState),
+  requires: const [UspPortRangeTab, RuleLimitNote],
+  forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
+  sharesTabWith: 'port_range',
+);
+
+/// [kPortForwardingFullPageCase] on the Port Triggering tab.
+final kPortTriggeringFullPageCase = PageSurfaceCase(
+  id: 'port_triggering_full',
+  view: () => const UspPortForwardingDetailView(initialTab: 2),
+  overrides: () => portForwardingOverrides(pf.fullDataState),
+  requires: const [UspPortTriggeringTab, RuleLimitNote],
+  forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
+  sharesTabWith: 'port_triggering',
 );
 
 // ===========================================================================
@@ -1925,21 +1991,56 @@ final kDmzPageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView],
 );
 
-/// `usp_firewall_view` — nine rows in three cards: two SPI switches, three VPN
-/// passthrough switches, three internet filters and a link out to IPv6 port service.
+/// `usp_administration_view` — Advanced Settings → Administration (#1660, #1694,
+/// #1696). Not [kAdminPageCase], the menu's page of the same title.
+///
+/// Three cards, one row each: a label `Expanded` beside an [AppSwitch]. `upnp` is
+/// `UPnP` in 25 locales and `UPnPi` in `pt`, the least text the family lays out;
+/// `administrationApplicationLayerGateway` ("Application Layer Gateway (SIP)") and
+/// `administrationAllowLocalManagementWirelessly` ("Allow local management
+/// wirelessly") are 1.x's strings, carried over in all 26 locales, and the longer
+/// ones. The page is swept for the reason [kWifiSettingsAdvancedPageCase] gives —
+/// "it looks safe" is the claim the gate exists to replace. It arrived with the
+/// `lib/` change that created it, straight to `swept`, as `firmware_ota` and
+/// `notification_history` did.
+///
+/// [UspUpnpCard], [UspSipAlgCard] and [UspManagementWifiCard] are the premise: the page
+/// has a loader arm and a [ServiceErrorView] arm, both in `forbids`, and the cards
+/// are all the data arm renders. The fixture is the clean `upnpOnState`, on a
+/// firmware with the management rule, so all three render; without the rule the
+/// page shows two of the same rows, a subset. The dirty state adds only ui_kit's
+/// Save bar, out of scope as it is for [kDmzPageCase]; see
+/// `mock_administration.dart`.
+final kAdministrationPageCase = PageSurfaceCase(
+  id: 'administration',
+  view: () => const UspAdministrationView(),
+  overrides: () => administrationOverrides(),
+  requires: const [
+    UspTopBar,
+    UspUpnpCard,
+    UspSipAlgCard,
+    UspManagementWifiCard,
+    AppSwitch,
+  ],
+  forbids: const [AppLoader, ServiceErrorView],
+);
+
+/// `usp_firewall_view` — ten rows in three cards: two SPI switches, three VPN
+/// passthrough switches, four internet filters and a link out to IPv6 port service.
 ///
 /// **The family's densest label-plus-control page, and the one with no branch at all.**
 /// Every row is a [SwitchBlock] — a label on the left, a fixed-width `AppSwitch` on the
 /// right — and the labels are the longest in the advanced-settings area
-/// (`ipv4SpiFirewall`, `ipsecPassthrough`, `filterAnonymous`). Nine of them render
-/// unconditionally, so unlike [kDmzPageCase] there is no state in which this page shows
-/// less, and unlike every card page there is no grid to absorb a long string by
-/// reflowing. What a cell measures is nine independent label/control rows at the same
-/// width, which is nine chances for one locale to be the long one.
+/// (`ipv4SpiFirewall`, `ipsecPassthrough`, `filterAnonymous`,
+/// `filterInternetNATRedirection`). Ten of them render unconditionally, so unlike
+/// [kDmzPageCase] there is no state in which this page shows less, and unlike every card
+/// page there is no grid to absorb a long string by reflowing. What a cell measures is
+/// ten independent label/control rows at the same width, which is ten chances for one
+/// locale to be the long one.
 ///
 /// The premise is [SwitchBlock] and [NavLinkBlock] — the two row types — and nothing
-/// finer. There is no count here on purpose: the page reads eight booleans out of one
-/// model and renders the same nine rows whichever way they are set, so a fixture cannot
+/// finer. There is no count here on purpose: the page reads nine booleans out of one
+/// model and renders the same ten rows whichever way they are set, so a fixture cannot
 /// silently reduce what this sweep measures the way `apps`' badge or `dmz`' switch can.
 /// The only fixture failure available is "no content at all", and that is what these two
 /// types plus the two `forbids` cover.
@@ -2396,6 +2497,23 @@ final kIpv6PortServicePageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
 );
 
+/// [kIpv6PortServicePageCase] with the list at FWDEV#204's limit of 15 rules
+/// (#1687). A full list adds the one row the default fixture never renders: the
+/// [RuleLimitNote] under the Rules header, saying why Add is disabled — the row
+/// #1611 added to the port forwarding tabs. [RuleLimitNote] is the premise: the
+/// default fixture holds two rules, so a fixture that drifted below the limit
+/// would fail here rather than sweep its sibling's tree a second time.
+///
+/// Not a tab case, so no `sharesTabWith`: this page has no tabs, and like
+/// `firmware_failed` this is a second fixture state of one view file.
+final kIpv6PortServiceFullPageCase = PageSurfaceCase(
+  id: 'ipv6_port_service_full',
+  view: () => const UspIpv6PortServiceView(),
+  overrides: () => ipv6PortServiceOverrides(ipv6.fullState),
+  requires: const [UspTopBar, LayoutBlock, RuleLimitNote],
+  forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
+);
+
 /// `usp_local_network_view` — hostname, router IP and the whole DHCP server, which is
 /// nine form fields in five [LayoutBlock]s once the server is on.
 ///
@@ -2435,11 +2553,21 @@ final kLocalNetworkPageCase = PageSurfaceCase(
 /// [DetailEmptyBlock] is forbidden rather than merely absent — see
 /// `kIpv6PortServicePageCase`, and `static_routing_scene_data.dart` for what the two
 /// routes are chosen to make wide.
+///
+/// `AppRadioList<bool>` is the NAT / Dynamic routing switch (#1100), shown only on
+/// a router that offers it: a scene that lost `ripEnabled` would still render the
+/// routes and sweep green with the radio unmeasured.
 final kStaticRoutingPageCase = PageSurfaceCase(
   id: 'static_routing',
   view: () => const UspStaticRoutingView(),
   overrides: () => staticRoutingOverrides(),
-  requires: const [UspTopBar, LayoutBlock, AppSwitch, AppIconButton],
+  requires: const [
+    UspTopBar,
+    LayoutBlock,
+    AppSwitch,
+    AppIconButton,
+    AppRadioList<bool>,
+  ],
   forbids: const [AppLoader, ServiceErrorView, DetailEmptyBlock],
 );
 
@@ -2717,6 +2845,57 @@ final kNotificationHistoryPageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView],
 );
 
+// The PnP ready state must show the supported mode controls and Execute action.
+final kAutoIPoEPageCase = PageSurfaceCase(
+  id: 'pnp_ipoe',
+  view: () => const PnpIPoEView(),
+  overrides: autoIPoEOverrides,
+  requires: const [AutoIPoESection, AppDropdown<AutoIPoEMode>, AppButton],
+  forbids: const [AppLoader, ServiceErrorView],
+);
+
+/// `page.add_nodes` (#879).
+///
+/// [addNodesPartialState], the widest state the page has since #1738: four
+/// nodes, one added and three not, so the node list carries a row of each
+/// result outcome — the added one with its check mark, the others with their
+/// outcome under the model or, with none reported, the BLE MAC — above the
+/// failure's three-step checklist and the Try again / Done pair. The waiting
+/// phases put the same rows under a spinner and two centred lines; the joined
+/// screen swaps the checklist for a two-line note and drops a button; the
+/// guidance is a title and prose. Requiring [AppNodeListCard] is what makes a
+/// fixture that lost its nodes fail rather than sweep an empty list.
+final kAddNodesPageCase = PageSurfaceCase(
+  id: 'add_nodes',
+  view: () => const AddNodesView(),
+  overrides: () => addNodesOverrides(addNodesPartialState),
+  requires: const [AddNodesPhaseContent, AppNodeListCard],
+  forbids: const [AppLoader],
+);
+
+/// `page.pnp_add_nodes` (#1734): the same flow opened from the PnP wizard's Your
+/// Network step.
+///
+/// The same state as [kAddNodesPageCase], [addNodesPartialState], and on purpose:
+/// the two pages share [AddNodesPhaseContent] and differ only in their frame —
+/// the wizard's 9-column route and no app bar here, the topology's top bar
+/// there — so one state across both is what makes the frame the only variable.
+///
+/// What this case does not reach is the step that opens it. Your Network is the
+/// wizard's last step, and `kPnpSetupPageCase` measures step 0 only, for the
+/// reason it gives: `_currentStep` is widget state, and reaching another step
+/// needs a tap per cell. Its content is a node list of [AppNodeListCard] rows,
+/// swept here and on the topology, an "Add nodes" text button, whose label is
+/// this page's own title, and Back / Save. Sweeping it would mean the wizard
+/// taking an initial step, the way #1489 gave the tabbed pages `initialTab`.
+final kPnpAddNodesPageCase = PageSurfaceCase(
+  id: 'pnp_add_nodes',
+  view: () => const PnpAddNodesView(),
+  overrides: () => addNodesOverrides(addNodesPartialState),
+  requires: const [AddNodesPhaseContent, AppNodeListCard],
+  forbids: const [AppLoader],
+);
+
 final kPageSurfaceCases = <PageSurfaceCase>[
   kDhcpPageCase,
   kWifiSettingsPageCase,
@@ -2729,6 +2908,9 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kPortForwardingPageCase,
   kPortRangePageCase,
   kPortTriggeringPageCase,
+  kPortForwardingFullPageCase,
+  kPortRangeFullPageCase,
+  kPortTriggeringFullPageCase,
   // Wave 2 (#1378), in flow order rather than cost order — the flow is what makes
   // the set legible, and every page in it costs about the same anyway.
   kPnpEntryPageCase,
@@ -2809,6 +2991,7 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kInstantSafetyPageCase,
   kInternetSettingsPageCase,
   kIpv6PortServicePageCase,
+  kIpv6PortServiceFullPageCase,
   kLocalNetworkPageCase,
   kStaticRoutingPageCase,
   kStatisticsPageCase,
@@ -2822,4 +3005,8 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kStatisticsSystemPageCase,
   kSystemLogPageCase,
   kNotificationHistoryPageCase,
+  kAdministrationPageCase,
+  kAutoIPoEPageCase,
+  kAddNodesPageCase,
+  kPnpAddNodesPageCase,
 ];

@@ -36,6 +36,8 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/styled/general_settings_widget/account_actions_section.dart';
 import 'package:privacy_gui/components/styled/general_settings_widget/general_settings_widget.dart';
 import 'package:privacy_gui/components/styled/general_settings_widget/theme_mode_tile.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/mode/app_mode_profile.dart';
@@ -57,10 +59,16 @@ import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import 'package:privacy_gui/page/topology/helpers/topology_node_menu.dart';
+import 'package:privacy_gui/page/topology/views/usp_topology_view.dart';
+import 'package:privacy_gui/route/constants.dart';
 import '../../../golden_test/golden_framework/mocks/mock_firmware_update.dart';
 import '../../../golden_test/page/firmware_update/fixtures/firmware_update_test_data.dart';
 import '../../../mocks/provider_overrides/mock_admin.dart';
 import '../../../mocks/provider_overrides/mock_common.dart';
+import '../../../mocks/provider_overrides/mock_topology.dart';
+import '../../../mocks/test_data/scenes/topology_scene_data.dart'
+    as topology_scene;
 import '../../../mocks/provider_overrides/mock_internet_settings.dart';
 import '../../../util/dashboard_page_harness.dart';
 import '../../../util/settle.dart';
@@ -816,6 +824,131 @@ void main() {
               'action to tap');
       expect(find.bySemanticsIdentifier('firmware-recovery-end-session'),
           findsOneWidget);
+    });
+  });
+
+  // ===========================================================================
+  // addNodesEntry
+  // ===========================================================================
+  //
+  // #879: the topology offers "Add nodes" on the controller node in a local
+  // session and nowhere in Remote Assistance — the agent cannot put a node in the
+  // controller's Bluetooth range or read its light. The fixture has the
+  // onboarding capability, so the mode is the only thing that differs.
+  //
+  // The tree view (480px), because there the menu is a button on the node's row
+  // and the item can be opened and chosen without long-pressing a graph disc.
+  group('SurfaceStrategy consumers - topology node menu', () {
+    Widget topologyHost(
+      AppModeProfile profile, {
+      List<Override> extra = const [],
+    }) =>
+        ProviderScope(
+          overrides: [
+            ...commonOverrides(),
+            ...topologyViewOverrides(
+              devicesData: topology_scene.meshNetworkDevicesData,
+              systemInfoData: topology_scene.testSystemInfoData,
+            ),
+            appModeProfileProvider.overrideWithValue(profile),
+            ...extra,
+          ],
+          child: MaterialApp.router(
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: ThemeJsonConfig.defaultConfig().createLightTheme(),
+            routerConfig: GoRouter(
+              initialLocation: '/',
+              routes: [
+                LinksysRoute(
+                  path: '/',
+                  name: 'surface_consumer_host',
+                  builder: (context, state) => const UspTopologyView(),
+                  routes: [
+                    LinksysRoute(
+                      path: RoutePath.addNodes,
+                      name: RouteNamed.addNodes,
+                      builder: (context, state) => const Text('add nodes page'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+
+    Future<void> pumpTopology(
+      WidgetTester tester,
+      AppModeProfile profile, {
+      List<Override> extra = const [],
+    }) async {
+      tester.view.physicalSize = const Size(480, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(topologyHost(profile, extra: extra));
+      await settleIgnoringAnimations(tester);
+    }
+
+    testWidgets(
+        'local offers Add nodes on the controller, and it opens the page',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpTopology(tester, const LocalModeProfile());
+
+      // One menu, though the mesh has a controller and an agent.
+      expect(find.byIcon(Icons.more_vert), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await settleIgnoringAnimations(tester);
+      expect(find.bySemanticsIdentifier(kTopologyNodeAddNodesIdentifier),
+          findsOneWidget);
+
+      await tester.tap(find.text('Add nodes'));
+      await settleIgnoringAnimations(tester);
+      expect(find.text('add nodes page'), findsOneWidget);
+      handle.dispose();
+    });
+
+    // The controller's menu still opens: it carries the router's own Reboot
+    // and Factory Reset (#876), which need no onboarding API. What these two
+    // pin is that Add nodes is not in it.
+    Future<void> openControllerMenu(WidgetTester tester) async {
+      expect(find.byIcon(Icons.more_vert), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await settleIgnoringAnimations(tester);
+      expect(find.bySemanticsIdentifier(kTopologyNodeRebootIdentifier),
+          findsOneWidget,
+          reason: 'the menu opened, so the absence below is the item and not '
+              'the menu');
+    }
+
+    testWidgets('firmware without the onboarding API offers no Add nodes',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      // Local, so the surface would offer it: the capability is what is missing.
+      await pumpTopology(tester, const LocalModeProfile(), extra: [
+        deviceCapabilitiesProvider.overrideWithValue(DeviceCapabilities.empty),
+      ]);
+
+      expect(find.byType(UspTopologyView), findsOneWidget);
+      await openControllerMenu(tester);
+      expect(find.bySemanticsIdentifier(kTopologyNodeAddNodesIdentifier),
+          findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('remote assistance offers no Add nodes', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpTopology(tester, const RemoteModeProfile());
+
+      expect(find.byType(UspTopologyView), findsOneWidget,
+          reason: 'the page rendered, so the absence below is the item and '
+              'not the page');
+      await openControllerMenu(tester);
+      expect(find.bySemanticsIdentifier(kTopologyNodeAddNodesIdentifier),
+          findsNothing);
+      handle.dispose();
     });
   });
 }

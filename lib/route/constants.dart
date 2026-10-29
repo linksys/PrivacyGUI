@@ -57,10 +57,12 @@ class RoutePath {
   static const uspDeviceDetail = 'uspDeviceDetail';
   static const uspNodeDetail = 'uspNodeDetail';
   static const uspUnifiedDiagnostics = 'uspUnifiedDiagnostics';
+  static const pnpAutoIPoE = 'pnpAutoIPoE';
   static const uspInternetSettings = 'uspInternetSettings';
   static const uspLocalNetwork = 'uspLocalNetwork';
   static const uspFirewall = 'uspFirewall';
   static const uspDmz = 'uspDmz';
+  static const uspAdministration = 'uspAdministration';
   static const uspPortForwardingDetail = 'uspPortForwardingDetail';
   static const uspStaticRouting = 'uspStaticRouting';
   static const uspIpv6PortService = 'uspIpv6PortService';
@@ -109,7 +111,7 @@ class RoutePath {
   static const nodeLight = 'nodeLight';
   static const changeNodeName = 'changeNodeName';
   static const nodeLightSettings = 'nodeLightSettings';
-  static const addNodes = '/addNodes';
+  static const addNodes = 'addNodes';
   static const firmwareUpdateDetail = 'firmwareUpdateDetail';
   static const manualFirmwareUpdate = 'manualFirmwareUpdate';
 
@@ -213,12 +215,16 @@ class RouteNamed {
   static const uspNotificationHistory = 'uspNotificationHistory';
   static const uspFirewall = 'uspFirewall';
   static const uspDmz = 'uspDmz';
+  // Advanced Settings → Administration (UPnP, #1660). Not [uspAdmin], the
+  // menu's password / time zone / reboot page.
+  static const uspAdministration = 'uspAdministration';
   static const uspLocalNetwork = 'uspLocalNetwork';
   static const uspStaticRouting = 'uspStaticRouting';
   static const uspAdvancedSettings = 'uspAdvancedSettings';
   static const uspIpv6PortService = 'uspIpv6PortService';
   static const uspStatistics = 'uspStatistics';
   static const uspTestConsole = 'uspTestConsole';
+  static const pnpAutoIPoE = 'pnpAutoIPoE';
   static const uspInternetSettings = 'uspInternetSettings';
   static const uspWifiSettings = 'uspWifiSettings';
   static const uspApps = 'uspApps';

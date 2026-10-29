@@ -618,6 +618,14 @@ void main() {
       expect(validator.validate("255.255.255.255"), false);
     });
 
+    // Neither end of the subnet is a host. On the VM the broadcast check never
+    // fired: ~ on a 64-bit int sets the high bits too, so the computed
+    // broadcast address was negative and matched no IP.
+    test('validate - the subnet\'s network and broadcast addresses', () {
+      expect(validator.validate("192.168.1.0"), false);
+      expect(validator.validate("192.168.1.255"), false);
+    });
+
     test('validate - same as router IP', () {
       expect(validator.validate(routerIp), false);
     });

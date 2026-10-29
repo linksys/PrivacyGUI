@@ -1,6 +1,6 @@
+import 'package:privacy_gui/page/_shared/components/tunnel_forwarding_notice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
@@ -150,6 +150,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         AppGap.xl(),
+        const TunnelForwardingNotice(),
         _buildEnableCard(context, pending, notifier, disabled),
         if (pending.isEnabled) ...[
           AppGap.md(),
@@ -320,7 +321,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
       }
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, localizeServiceError(context, e));
+        showSaveErrorSnackBar(context, e);
       }
     }
   }

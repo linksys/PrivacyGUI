@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
@@ -11,6 +13,8 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/internet_settings/services/usp_wan_data_service.dart';
+
+import '../../../mocks/test_data/internet_settings_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -23,78 +27,45 @@ class MockWanSvc extends Mock implements UspWanDataService {}
 void main() {
   late MockUspClient mockUsp;
 
-  /// Simulated WAN status response (Device.IP.Interface.2.*).
-  /// Includes IPv6Enable since WanStatus codegen v1.1.0 fetches it.
-  final wanStatusResponse = <String, dynamic>{
-    'Device.IP.Interface.2.Status': 'Up',
-    'Device.IP.Interface.2.IPv4Address.1.IPAddress': '100.64.0.10',
-    'Device.IP.Interface.2.IPv4Address.1.SubnetMask': '255.255.255.0',
-    'Device.IP.Interface.2.IPv4Address.1.AddressingType': 'DHCP',
-    'Device.IP.Interface.2.MaxMTUSize': '1500',
-    'Device.IP.Interface.2.IPv6Enable': true,
-  };
+  const wan = InternetSettingsTestData.wanInterface;
 
-  /// Simulated routing table response for gateway lookup.
-  /// StaticRouting validation requires all fields for each route instance.
-  final routingResponse = <String, dynamic>{
-    // Default route (0.0.0.0) on WAN interface
-    'Device.Routing.Router.1.IPv4Forwarding.1.Enable': true,
-    'Device.Routing.Router.1.IPv4Forwarding.1.DestIPAddress': '0.0.0.0',
-    'Device.Routing.Router.1.IPv4Forwarding.1.DestSubnetMask': '0.0.0.0',
-    'Device.Routing.Router.1.IPv4Forwarding.1.GatewayIPAddress': '100.64.0.1',
-    'Device.Routing.Router.1.IPv4Forwarding.1.Interface':
-        'Device.IP.Interface.2.',
-    'Device.Routing.Router.1.IPv4Forwarding.1.Origin': 'Static',
-    'Device.Routing.Router.1.IPv4Forwarding.1.Alias': 'DefaultRoute',
-    // LAN route
-    'Device.Routing.Router.1.IPv4Forwarding.2.Enable': true,
-    'Device.Routing.Router.1.IPv4Forwarding.2.DestIPAddress': '192.168.1.0',
-    'Device.Routing.Router.1.IPv4Forwarding.2.DestSubnetMask': '255.255.255.0',
-    'Device.Routing.Router.1.IPv4Forwarding.2.GatewayIPAddress': '0.0.0.0',
-    'Device.Routing.Router.1.IPv4Forwarding.2.Interface':
-        'Device.IP.Interface.1.',
-    'Device.Routing.Router.1.IPv4Forwarding.2.Origin': 'Static',
-    'Device.Routing.Router.1.IPv4Forwarding.2.Alias': 'LanRoute',
-  };
-
-  /// Simulated IPv6 response.
-  final ipv6Response = <String, dynamic>{
-    'Device.IP.Interface.2.IPv6Enable': true,
-    'Device.IP.Interface.2.IPv6Address.1.IPAddress': '2001:db8::1',
-    'Device.IP.Interface.2.IPv6Address.2.IPAddress': 'fe80::1',
-  };
+  /// Answers each GET of a WAN status read by its paths: the WAN on
+  /// Interface.5 with its address on row 3, two routers, and two IPv6
+  /// addresses. [routing] replaces the routing answer, or is thrown when it is
+  /// an [Exception]; [ipv6] is thrown in place of the IPv6 answer.
+  Future<Map<String, dynamic>> answer(Invocation invocation,
+      {Object? routing, Exception? ipv6}) async {
+    final paths = invocation.positionalArguments[0] as List<String>;
+    if (paths.contains('Device.IP.Interface.*.Alias')) {
+      return InternetSettingsTestData.interfaceAliases();
+    }
+    if (paths.contains('${wan}Enable')) return {'${wan}Enable': true};
+    if (paths.contains('${wan}Status')) {
+      return InternetSettingsTestData.wanStatus(
+          ipAddress: '100.64.0.10', ipv6Enabled: true);
+    }
+    if (paths.any((p) => p.startsWith('Device.Routing.'))) {
+      if (routing is Exception) throw routing;
+      return (routing as Map<String, dynamic>?) ??
+          InternetSettingsTestData.routing(gateway: '100.64.0.1');
+    }
+    if (paths.contains('${wan}IPv6Address.*.IPAddress')) {
+      if (ipv6 != null) throw ipv6;
+      return InternetSettingsTestData.wanIpv6Addresses(
+          ['2001:db8::1', 'fe80::1']);
+    }
+    return {};
+  }
 
   setUp(() {
     mockUsp = MockUspClient();
-
-    // Route usp.get() calls by path content.
-    //
-    // Service issues requests in parallel:
-    //   1. WanStatus.fetch  → Device.IP.Interface.2.Status, IPv6Enable, etc.
-    //   2. StaticRouting.fetch → Device.Routing.Router.1.IPv4Forwarding.*
-    //   3. WanIpv6Addresses.fetch → Device.IP.Interface.2.IPv6Address.*
-    //
-    // Distinguish by path patterns.
-    when(() => mockUsp.get(any())).thenAnswer((invocation) async {
-      final paths = invocation.positionalArguments[0] as List;
-      final joined = paths.join(',');
-
-      if (joined.contains('IPv4Forwarding')) {
-        // StaticRouting.fetch
-        return routingResponse;
-      }
-      if (joined.contains('IPv6Address')) {
-        // WanIpv6Addresses.fetch
-        return ipv6Response;
-      }
-      // WanStatus.fetch (includes IPv6Enable in its paths)
-      return wanStatusResponse;
-    });
+    when(() => mockUsp.get(any())).thenAnswer(answer);
   });
 
   ProviderContainer createContainer({Stream<InvalidationEvent>? sse}) {
     final container = ProviderContainer(
       overrides: [
+        deviceCapabilitiesProvider.overrideWithValue(DeviceCapabilities.empty),
         uspClientProvider.overrideWithValue(mockUsp),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
         if (sse != null) sseInvalidationProvider.overrideWith((_) => sse),
@@ -137,6 +108,8 @@ void main() {
     test('fetch sets error state when USP service unavailable', () async {
       final container = ProviderContainer(
         overrides: [
+          deviceCapabilitiesProvider
+              .overrideWithValue(DeviceCapabilities.empty),
           uspClientProvider.overrideWithValue(null),
           uspMutationLockProvider.overrideWithValue(UspMutationLock()),
         ],
@@ -154,9 +127,7 @@ void main() {
     // Gateway lookup
     // -----------------------------------------------------------------------
 
-    test(
-        'gateway found from default route (DestIPAddress 0.0.0.0 on Interface.2)',
-        () async {
+    test('gateway found from the default route on the WAN interface', () async {
       final container = createContainer();
       await Future.delayed(Duration.zero);
 
@@ -166,29 +137,9 @@ void main() {
     });
 
     test('gateway empty when no default route matches', () async {
-      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
-        final paths = invocation.positionalArguments[0] as List;
-        final joined = paths.join(',');
-
-        if (joined.contains('IPv4Forwarding')) {
-          // No route with DestIP 0.0.0.0 on Interface.2
-          return <String, dynamic>{
-            'Device.Routing.Router.1.IPv4Forwarding.1.Enable': true,
-            'Device.Routing.Router.1.IPv4Forwarding.1.DestIPAddress':
-                '192.168.1.0',
-            'Device.Routing.Router.1.IPv4Forwarding.1.DestSubnetMask':
-                '255.255.255.0',
-            'Device.Routing.Router.1.IPv4Forwarding.1.GatewayIPAddress':
-                '0.0.0.0',
-            'Device.Routing.Router.1.IPv4Forwarding.1.Interface':
-                'Device.IP.Interface.1.',
-            'Device.Routing.Router.1.IPv4Forwarding.1.Origin': 'Static',
-            'Device.Routing.Router.1.IPv4Forwarding.1.Alias': 'LanRoute',
-            ...ipv6Response,
-          };
-        }
-        return wanStatusResponse;
-      });
+      when(() => mockUsp.get(any())).thenAnswer((invocation) => answer(
+          invocation,
+          routing: InternetSettingsTestData.routing(hasDefaultRoute: false)));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -199,15 +150,8 @@ void main() {
     });
 
     test('gateway gracefully handles fetch failure', () async {
-      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
-        final paths = invocation.positionalArguments[0] as List;
-        final joined = paths.join(',');
-
-        if (joined.contains('IPv4Forwarding')) {
-          throw Exception('timeout');
-        }
-        return wanStatusResponse;
-      });
+      when(() => mockUsp.get(any())).thenAnswer(
+          (invocation) => answer(invocation, routing: Exception('timeout')));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -224,26 +168,20 @@ void main() {
     // -----------------------------------------------------------------------
 
     test('IPv6 gracefully handles fetch failure', () async {
-      when(() => mockUsp.get(any())).thenAnswer((invocation) async {
-        final paths = invocation.positionalArguments[0] as List;
-        final joined = paths.join(',');
-
-        // The combined gateway+IPv6 call fails entirely — both gateway and
-        // IPv6 fall back to empty.
-        if (joined.contains('IPv4Forwarding')) {
-          throw Exception('not supported');
-        }
-        return wanStatusResponse;
-      });
+      // The IPv6 read fails: the addresses fall back to empty, and the gateway,
+      // read on its own, still loads.
+      when(() => mockUsp.get(any())).thenAnswer(
+          (invocation) => answer(invocation, ipv6: Exception('not supported')));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
 
       final data = container.read(wanDataProvider).requireValue;
       // ipv6Enabled comes from WanStatus.fetch (succeeds), addresses from
-      // the combined call (fails) — graceful degradation.
+      // the IPv6 read (fails) — graceful degradation.
       expect(data.model.ipv6Enabled, isTrue);
       expect(data.model.ipv6Addresses, isEmpty);
+      expect(data.model.gateway, '100.64.0.1');
       // Core WAN data still loads
       expect(data.model.ipAddress, '100.64.0.10');
       container.dispose();
@@ -317,8 +255,7 @@ void main() {
     int fetchRounds() => verify(() => mockUsp.get(captureAny()))
         .captured
         .cast<List>()
-        .where(
-            (paths) => paths.join(',').contains('Device.IP.Interface.2.Status'))
+        .where((paths) => paths.join(',').contains('${wan}Status'))
         .length;
 
     test('wanStatus domain re-fetches, and a repeat re-fetches again',
@@ -371,6 +308,8 @@ void main() {
       final sse = StreamController<InvalidationEvent>();
       final container = ProviderContainer(
         overrides: [
+          deviceCapabilitiesProvider
+              .overrideWithValue(DeviceCapabilities.empty),
           uspClientProvider.overrideWithValue(mockUsp),
           uspMutationLockProvider.overrideWithValue(UspMutationLock()),
           sseInvalidationProvider.overrideWith((_) => sse.stream),
@@ -407,6 +346,93 @@ void main() {
 
       await sse.close();
       container.dispose();
+    });
+
+    for (final supported in [false, true]) {
+      testWidgets('capability $supported preserves SSE with no WAN listener',
+          (tester) async {
+        final svc = MockWanSvc();
+        var fetches = 0;
+        when(() => svc.fetch()).thenAnswer((_) async {
+          fetches++;
+          return WanStatusUIModel(
+            isUp: true,
+            ipAddress: '100.64.0.$fetches',
+            subnetMask: '255.255.255.0',
+            addressingType: 'DHCP',
+            mtu: 1500,
+          );
+        });
+        final sse = StreamController<InvalidationEvent>();
+        final container = ProviderContainer(overrides: [
+          deviceCapabilitiesProvider.overrideWithValue(supported
+              ? DeviceCapabilities({DeviceCapability.autoIPoE})
+              : DeviceCapabilities.empty),
+          uspWanDataServiceProvider.overrideWithValue(svc),
+          sseInvalidationProvider.overrideWith((_) => sse.stream),
+        ]);
+        await container.read(wanDataProvider.future);
+        sse.add((domain: InvalidationDomain.wanStatus, seq: 1));
+        await tester.pump();
+        expect(fetches, 2);
+
+        // No read or listener during the interval: polling must keep L1 alive.
+        await tester.pump(const Duration(seconds: 15));
+        final afterPoll = supported ? 3 : 2;
+        expect(fetches, afterPoll,
+            reason: 'only a supported device needs supplemental polling');
+        sse.add((domain: InvalidationDomain.wanStatus, seq: 2));
+        await tester.pump();
+        expect(fetches, afterPoll + 1);
+        expect(container.read(wanDataProvider).value!.model.ipAddress,
+            '100.64.0.${afterPoll + 1}');
+        container.dispose();
+        unawaited(sse.close());
+        await tester.pump();
+      });
+    }
+
+    testWidgets('capability loss cancels polling and preserves SSE',
+        (tester) async {
+      final svc = MockWanSvc();
+      var fetches = 0;
+      var capabilities = DeviceCapabilities({DeviceCapability.autoIPoE});
+      when(() => svc.fetch()).thenAnswer((_) async {
+        fetches++;
+        return const WanStatusUIModel(
+          isUp: true,
+          ipAddress: '100.64.0.10',
+          subnetMask: '255.255.255.0',
+          addressingType: 'DHCP',
+          mtu: 1500,
+        );
+      });
+      final sse = StreamController<InvalidationEvent>();
+      final container = ProviderContainer(overrides: [
+        deviceCapabilitiesProvider.overrideWith((_) => capabilities),
+        uspWanDataServiceProvider.overrideWithValue(svc),
+        sseInvalidationProvider.overrideWith((_) => sse.stream),
+      ]);
+      container.listen(wanDataProvider, (_, __) {});
+      await container.read(wanDataProvider.future);
+      await tester.pump(const Duration(seconds: 15));
+      expect(fetches, 2);
+
+      capabilities = DeviceCapabilities.empty;
+      container.invalidate(deviceCapabilitiesProvider);
+      await tester.pump();
+      await container.read(wanDataProvider.future);
+      final afterLoss = fetches;
+      await tester.pump(const Duration(seconds: 30));
+      expect(fetches, afterLoss,
+          reason: 'a capability change must cancel the prior periodic timer');
+
+      sse.add((domain: InvalidationDomain.wanStatus, seq: 1));
+      await tester.pump();
+      expect(fetches, afterLoss + 1);
+      container.dispose();
+      unawaited(sse.close());
+      await tester.pump();
     });
 
     test('a neighbouring domain does not re-fetch', () async {
@@ -457,6 +483,8 @@ void main() {
 
     ProviderContainer makeContainer(Stream<InvalidationEvent> sse) =>
         ProviderContainer(overrides: [
+          deviceCapabilitiesProvider
+              .overrideWithValue(DeviceCapabilities.empty),
           uspWanDataServiceProvider.overrideWithValue(svc),
           sseInvalidationProvider.overrideWith((_) => sse),
         ]);

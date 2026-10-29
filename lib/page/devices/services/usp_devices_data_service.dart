@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
@@ -13,7 +14,10 @@ import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_topology_builder.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_network_builder.dart';
+import 'package:privacy_gui/generated/data_elements_interfaces.g.dart';
+import 'package:privacy_gui/generated/data_elements_mlo_clients.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
+import 'package:privacy_gui/generated/data_elements_network_info.g.dart';
 
 // ---------------------------------------------------------------------------
 // Provider
@@ -137,13 +141,28 @@ class UspDevicesDataService {
     Map<String, String> bssidToBandMap = const {},
   }) async {
     try {
-      final network = await DataElementsNetwork.fetch(_usp);
+      final results = await Future.wait([
+        DataElementsNetwork.fetch(_usp),
+        _fetchInterfaces(),
+        _fetchControllerId(),
+        _fetchMld(),
+      ]);
+      // A node with every value blank is no node (usp-codegen 0.17 dropped it).
+      final network = DataElementsNetwork(
+          items: (results[0] as DataElementsNetwork)
+              .items
+              .where((n) => !isEmptyMeshNode(n))
+              .toList());
+      final interfaces = results[1] as DataElementsInterfaces?;
+      final controllerId = results[2] as String?;
+      final mld = results[3] as DataElementsMloClients?;
       if (network.items.isEmpty) {
         logger.d(
             '[USP][Dashboard]: DataElements empty — not a mesh or unsupported');
         return MeshTopologyInfo.empty;
       }
-      return _buildTopologyInfo(network, bssidToBandMap);
+      return _buildTopologyInfo(
+          network, bssidToBandMap, interfaces, controllerId, mld);
     } catch (e) {
       // `w`, not `d`. An empty subtree (above) is an expected single-router
       // result; a *fault* means the request did not answer the question, and the
@@ -158,17 +177,150 @@ class UspDevicesDataService {
     }
   }
 
+  /// Writes the name and icon the user gave a client, in one Set (#1691).
+  ///
+  /// The name goes to `X_LINKSYS_UserDeviceLocation`, which the firmware's
+  /// `X_LINKSYS_FriendlyName` reads back; the icon is the app's own code
+  /// (`DeviceCategory.userTypeCode`) in `X_LINKSYS_UserDeviceType`. `''`
+  /// clears either, so the client falls back to what the firmware detected.
+  /// A null [userTypeCode] leaves the stored type alone: a name-only edit must
+  /// not erase a type another client wrote.
+  ///
+  /// [hostInstancePaths] is every row of the device, all written in the one
+  /// Set: devidentd keeps the name per MAC, and a device's rows merge by the
+  /// FriendlyName it reads back, so naming one row would split them (#1719).
+  Future<void> updateIdentity({
+    required List<String> hostInstancePaths,
+    required String name,
+    String? userTypeCode,
+  }) async {
+    // The generated update answers success without a Set when it has no
+    // params, which would report a name that was never written.
+    if (hostInstancePaths.isEmpty) {
+      throw const ResourceNotFoundError(
+        detail: 'No Hosts row to write the device identity to',
+      );
+    }
+    try {
+      final result = await ConnectedDevices.update(_usp, [
+        for (final path in hostInstancePaths)
+          ConnectedDeviceUpdate(
+            instancePath: path,
+            linksysUserDeviceLocation: name,
+            linksysUserDeviceType: userTypeCode,
+          ),
+      ]);
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(
+            :final errorSummary,
+            :final successes,
+            :final failures
+          ):
+          throw UspPartialFailureError(
+            summary: 'Device identity partial failure: $errorSummary',
+            successPaths: successes.map((s) => s.requestedPath).toList(),
+            failures: failures,
+          );
+        case UspFailure(:final errorSummary, :final errors):
+          throw UspCompleteFailureError(
+            summary: 'Device identity update failed: $errorSummary',
+            failures: errors,
+          );
+      }
+    } catch (e) {
+      if (e is ServiceError) rethrow;
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  /// Reads `Interface.{j}.Neighbor.{k}`, the source of wired-client
+  /// attribution (#1688 item 2).
+  ///
+  /// A separate definition and a separate read on purpose: a controller
+  /// without this object must lose only wired attribution, never the topology
+  /// (`data_elements_interfaces.yaml`). So a fault returns null, which
+  /// [MeshTopologyBuilder.build] reads as "wired clients stay on the master",
+  /// and is logged rather than rethrown.
+  Future<DataElementsInterfaces?> _fetchInterfaces() async {
+    try {
+      // A node with no ID is no node (usp-codegen 0.17 dropped it), and its
+      // interface MACs must not be counted as the mesh's own.
+      final interfaces = await DataElementsInterfaces.fetch(_usp);
+      return DataElementsInterfaces(
+          items: interfaces.items
+              .where((n) => !isEmptyMeshInterfaceNode(n))
+              .toList());
+    } catch (e) {
+      logger.w('[USP][Dashboard]: DataElements interfaces unavailable, wired '
+          'clients stay on the master: $e');
+      return null;
+    }
+  }
+
+  /// Reads `Device.WiFi.DataElements.Network.ControllerID`, which tells the
+  /// controller apart from an agent whose backhaul is not filled in yet
+  /// (#1688 review). Without it such an agent is built as a second master and
+  /// drops out of the topology. Isolated like [_fetchInterfaces]: a fault
+  /// returns null and the backhaul rule decides, as before.
+  Future<String?> _fetchControllerId() async {
+    try {
+      return (await DataElementsNetworkInfo.fetch(_usp)).controllerId;
+    } catch (e) {
+      logger.w('[USP][Dashboard]: DataElements ControllerID unavailable, the '
+          'controller is told apart by backhaul: $e');
+      return null;
+    }
+  }
+
+  /// Reads `APMLD.{j}.STAMLD.{k}.AffiliatedSTA.{l}`, the client MLDs (#1686
+  /// item 2). Isolated like [_fetchInterfaces], so a fault never costs the
+  /// topology. Three outcomes, kept apart because the view shows them apart:
+  /// - read: the subtree, empty when no client is on MLO (also what firmware
+  ///   with MLO switched off answers);
+  /// - path not found (7026 and its kin → [ResourceNotFoundError]): firmware
+  ///   without the TR-181 2.17 MLD objects, which can have no MLO client, so
+  ///   an empty subtree, not "not known" — or every client on such firmware
+  ///   would carry "MLO status unavailable" for good;
+  /// - any other fault: null, "not known".
+  Future<DataElementsMloClients?> _fetchMld() async {
+    try {
+      return await DataElementsMloClients.fetch(_usp);
+    } catch (e) {
+      final error = e is ServiceError ? e : mapUspErrorToServiceError(e);
+      if (error is ResourceNotFoundError) {
+        logger.d('[USP][Dashboard]: no DataElements MLD objects on this '
+            'firmware, so no MLO client: $e');
+        return const DataElementsMloClients(items: []);
+      }
+      logger.w('[USP][Dashboard]: DataElements MLD unavailable, MLO clients '
+          'are not known: $e');
+      return null;
+    }
+  }
+
   MeshTopologyInfo _buildTopologyInfo(
     DataElementsNetwork network,
     Map<String, String> bssidToBandMap,
+    DataElementsInterfaces? interfaces,
+    String? controllerId,
+    DataElementsMloClients? mld,
   ) {
     final result = MeshTopologyBuilder.build(
       network,
       bssidToBandMap: bssidToBandMap,
+      interfaces: interfaces,
+      controllerId: controllerId,
+      mld: mld,
     );
     logger.t('[USP][Dashboard]: Mesh nodes: ${result.nodes.length}, '
         'client→node mappings: ${result.clientToNodeMap.length}, '
-        'band/SSID mappings: ${result.clientBandSsidMap.length}');
+        'band/SSID mappings: ${result.clientBandSsidMap.length}, '
+        'wired client→node: ${result.wiredClientToNodeMap.length}, '
+        'ambiguous wired: ${result.ambiguousWiredClients.length}, '
+        'MLO clients: ${result.mloClients?.length ?? 'unknown'}');
     return result;
   }
 

@@ -5,11 +5,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/topology/views/usp_node_detail_view.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
 import '../../mocks/provider_overrides/mock_common.dart';
 import '../../mocks/provider_overrides/mock_topology.dart';
+import '../../mocks/test_data/devices_test_data.dart';
 import '../../mocks/test_data/scenes/topology_scene_data.dart';
 
 /// Verifies the E2E identifier hooks added to uspNodeDetail for
@@ -51,7 +57,7 @@ void main() {
     );
   });
 
-  Widget wrap() {
+  Widget wrap([UspNodeDetailState? state, List<Override> extra = const []]) {
     final themeConfig = ThemeJsonConfig.defaultConfig();
     final router = GoRouter(
       initialLocation: '/',
@@ -67,7 +73,8 @@ void main() {
     return ProviderScope(
       overrides: [
         ...commonOverrides(),
-        ...nodeDetailOverrides(masterNodeWithDevices),
+        ...nodeDetailOverrides(state ?? masterNodeWithDevices),
+        ...extra,
       ],
       child: MaterialApp.router(
         locale: const Locale('en'),
@@ -161,4 +168,174 @@ void main() {
       handle.dispose();
     });
   });
+
+  // #1688 item 4. The pen is on the node card's name for the router and for
+  // an agent that has a Hosts row to write to. An agent with no row gets no
+  // pen, as a client with no row gets none: there is nowhere to write a name.
+  group('uspNodeDetail rename pen (#1688 item 4)', () {
+    const penHook = 'node-detail-edit-name';
+
+    Future<void> pump(WidgetTester tester, UspNodeDetailState state) async {
+      tester.view.physicalSize = const Size(1280, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(wrap(state));
+      // The node card's image keeps loading, so pumpAndSettle never settles.
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    String? penLabel(WidgetTester tester) => tester
+        .widget<AppIconButton>(find.ancestor(
+            of: find.bySemanticsIdentifier(penHook),
+            matching: find.byType(AppIconButton)))
+        .semanticLabel;
+
+    testWidgets('an agent with a Hosts row has a pen labelled Rename node',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(
+        tester,
+        UspNodeDetailState(
+          node: DevicesTestData.createWifiSlave(
+              hostInstancePath: 'Device.Hosts.Host.3.'),
+        ),
+      );
+
+      expect(find.bySemanticsIdentifier(penHook), findsOneWidget);
+      expect(penLabel(tester), 'Rename node');
+      handle.dispose();
+    });
+
+    testWidgets('an agent with no Hosts row has no pen', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(
+        tester,
+        UspNodeDetailState(node: DevicesTestData.createWifiSlave()),
+      );
+
+      expect(find.bySemanticsIdentifier(penHook), findsNothing);
+      handle.dispose();
+    });
+
+    // The pen's save writes the agent's own Hosts row, through the same
+    // updateIdentity a client's rename uses, with no icon (#1688 item 4).
+    testWidgets('saving an agent name writes its Hosts row, with no icon',
+        (tester) async {
+      final notifier = _RecordingDevicesDataNotifier();
+      tester.view.physicalSize = const Size(1280, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(wrap(
+        UspNodeDetailState(
+          node: DevicesTestData.createWifiSlave(
+              hostInstancePath: 'Device.Hosts.Host.3.'),
+        ),
+        [devicesDataProvider.overrideWith(() => notifier)],
+      ));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.bySemanticsIdentifier('node-detail-edit-name'));
+      await tester.pump(const Duration(milliseconds: 300));
+      // The dialog has one text field, as its own test finds it.
+      await tester.enterText(find.byType(TextField), 'Upstairs');
+      // As the dialog's own test taps it: by its localized label.
+      final save = lookupAppLocalizations(const Locale('en')).save;
+      await tester.tap(find.widgetWithText(AppButton, save));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Field by field: a record compares its List by identity.
+      final call = notifier.calls.single;
+      expect(call.hostInstancePaths, ['Device.Hosts.Host.3.']);
+      expect(call.name, 'Upstairs');
+      expect(call.type, isNull);
+    }, semanticsEnabled: true);
+
+    testWidgets('the router keeps its Rename router pen', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(tester, masterNodeWithDevices);
+
+      expect(find.bySemanticsIdentifier(penHook), findsOneWidget);
+      expect(penLabel(tester), 'Rename router');
+      handle.dispose();
+    });
+  });
+
+  // #876. Reboot and Factory Reset on the node's page. The router always has
+  // both (they are the Administration page's); an agent has what its
+  // X_LINKSYS_SupportedOperations lists, and no card at all when it lists
+  // nothing — the controller's own row, third-party agents, older firmware.
+  group('uspNodeDetail node actions (#876)', () {
+    const rebootHook = 'node-detail-reboot';
+    const resetHook = 'node-detail-factory-reset';
+
+    Future<void> pump(WidgetTester tester, UspNodeDetailState state) async {
+      tester.view.physicalSize = const Size(1280, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(wrap(state));
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    UspNodeDetailState agent(Set<NodeAction> actions) => UspNodeDetailState(
+          node: DevicesTestData.createWifiSlave(
+            deviceId: '11:22:33:44:55:66',
+            dataElementsId: '11:22:33:44:55:66',
+          ).copyWith(actions: actions),
+        );
+
+    testWidgets('the router offers both', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(tester, masterNodeWithDevices);
+
+      expect(find.bySemanticsIdentifier(rebootHook), findsOneWidget);
+      expect(find.bySemanticsIdentifier(resetHook), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets('an agent offers only what it reports', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(tester, agent({NodeAction.reboot}));
+
+      expect(find.bySemanticsIdentifier(rebootHook), findsOneWidget);
+      expect(find.bySemanticsIdentifier(resetHook), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('an agent that reports nothing has no actions card',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await pump(tester, agent(const {}));
+
+      expect(find.bySemanticsIdentifier(rebootHook), findsNothing);
+      expect(find.bySemanticsIdentifier(resetHook), findsNothing);
+      expect(find.text('Node Actions'), findsNothing);
+      handle.dispose();
+    });
+  });
+}
+
+/// Records the renames a test triggers, without writing anything.
+class _RecordingDevicesDataNotifier extends DevicesDataNotifier {
+  final calls =
+      <({List<String> hostInstancePaths, String name, String? type})>[];
+
+  @override
+  Future<DevicesData> build() async => DevicesData(
+        meshNetwork: MeshNetwork(
+          master: MasterNode(deviceId: 'GATEWAY', model: 'Test Router'),
+        ),
+      );
+
+  @override
+  Future<void> updateIdentity({
+    required List<String> hostInstancePaths,
+    required String name,
+    String? userTypeCode,
+  }) async {
+    calls.add(
+        (hostInstancePaths: hostInstancePaths, name: name, type: userTypeCode));
+  }
 }

@@ -3,6 +3,34 @@ import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/network_entity.dart';
 
+/// A command one mesh agent can run on itself (FWDEV#202).
+///
+/// The agent reports which it runs in `X_LINKSYS_SupportedOperations`; the
+/// controller's own row reports none, because `Device.Reboot()` and
+/// `Device.FactoryReset()` act on it instead.
+enum NodeAction {
+  reboot('Reboot'),
+  factoryReset('FactoryReset');
+
+  /// The value firmware lists in `X_LINKSYS_SupportedOperations`.
+  final String wireName;
+
+  const NodeAction(this.wireName);
+
+  /// Reads `X_LINKSYS_SupportedOperations`, a comma list. A value this enum
+  /// does not name is dropped rather than guessed at: an action is offered
+  /// only when firmware said it runs it.
+  static Set<NodeAction> parse(String? supportedOperations) {
+    final listed = {
+      for (final value in (supportedOperations ?? '').split(',')) value.trim(),
+    };
+    return {
+      for (final action in values)
+        if (listed.contains(action.wireName)) action,
+    };
+  }
+}
+
 /// Sealed class for mesh network nodes (master or slave).
 ///
 /// Use pattern matching to distinguish between [MasterNode] and [SlaveNode]:
@@ -130,6 +158,10 @@ final class MasterNode extends NodeEntity {
   /// Hosts DeviceID (UUID) — used by Remote Assistance / Guardian API calls.
   final String? hostsDeviceId;
 
+  /// The name the user gave the router (`DeviceInfo.X_LINKSYS_UserDeviceLocation`,
+  /// #1691), which the node detail page edits. Null when unset.
+  final String? userDeviceLocation;
+
   MasterNode({
     required this.deviceId,
     this.dataElementsId,
@@ -146,6 +178,7 @@ final class MasterNode extends NodeEntity {
     this.wanIpAddress,
     this.wanIpv6Address,
     this.hostsDeviceId,
+    this.userDeviceLocation,
   });
 
   @override
@@ -183,6 +216,7 @@ final class MasterNode extends NodeEntity {
     String? wanIpAddress,
     String? wanIpv6Address,
     String? hostsDeviceId,
+    String? userDeviceLocation,
   }) {
     return MasterNode(
       deviceId: deviceId ?? this.deviceId,
@@ -200,6 +234,7 @@ final class MasterNode extends NodeEntity {
       wanIpAddress: wanIpAddress ?? this.wanIpAddress,
       wanIpv6Address: wanIpv6Address ?? this.wanIpv6Address,
       hostsDeviceId: hostsDeviceId ?? this.hostsDeviceId,
+      userDeviceLocation: userDeviceLocation ?? this.userDeviceLocation,
     );
   }
 
@@ -220,6 +255,7 @@ final class MasterNode extends NodeEntity {
         wanIpAddress,
         wanIpv6Address,
         hostsDeviceId,
+        userDeviceLocation,
       ];
 
   @override
@@ -242,6 +278,7 @@ final class MasterNode extends NodeEntity {
         'wanIpAddress': wanIpAddress,
         'wanIpv6Address': wanIpv6Address,
         'hostsDeviceId': hostsDeviceId,
+        'userDeviceLocation': userDeviceLocation,
       };
 }
 
@@ -294,9 +331,14 @@ final class SlaveNode extends NodeEntity {
   ///
   /// `true` does not claim the set is *complete*. A slave absent from a
   /// non-empty set is judged offline, and that is intended — it is the
-  /// powered-off extender #1430 exists to catch. See the producer at
-  /// `MeshNetworkBuilder.build` for why the predicate is the topology being
-  /// non-empty rather than the narrower "some slave agent answered".
+  /// powered-off extender #1430 exists to catch.
+  ///
+  /// **No producer builds that offline shape today.** Since #1688
+  /// `MeshNetworkBuilder` builds each slave from a DataElements agent, so every
+  /// slave it makes has a [dataElementsId] and is passed `livenessKnown: true`.
+  /// On FL-WRT 2.0 a powered-off agent's lingering `Hosts` row carries nothing
+  /// that marks it as a node, so it is not built at all rather than built
+  /// offline. The rule stays here for the offline recovery #1688 defers.
   ///
   /// Defaults to `true` so that every construction site keeps AC1's rule
   /// unchanged; defaulting to `false` would not be a default but a rule change,
@@ -305,6 +347,23 @@ final class SlaveNode extends NodeEntity {
   /// against, such as `MeshTopologyBuilder`, silently reproduces the offline
   /// verdict with no analyzer signal. Making it `required` is #1466.
   final bool livenessKnown;
+
+  /// This agent's `Device.Hosts.Host.{i}.` row — the one whose `PhysAddress`
+  /// is its DataElements ID — where a rename writes
+  /// `X_LINKSYS_UserDeviceLocation` (#1688 item 4). Null when no row matched:
+  /// there is nothing to write to, so the agent cannot be renamed.
+  final String? hostInstancePath;
+
+  /// The name the user gave this agent: its Hosts row's
+  /// `X_LINKSYS_UserDeviceLocation`, which `X_LINKSYS_FriendlyName` reads back
+  /// (#1688 item 4). Null when unset, which is what the rename dialog clears to.
+  final String? userDeviceName;
+
+  /// The commands this agent reports it runs, from its DataElements row's
+  /// `X_LINKSYS_SupportedOperations` (#876). Empty on firmware without the
+  /// leaf and on an agent that reports none; an action is offered only when
+  /// it is listed here.
+  final Set<NodeAction> actions;
 
   SlaveNode({
     required this.deviceId,
@@ -321,6 +380,9 @@ final class SlaveNode extends NodeEntity {
     this.connectedClients = const [],
     required this.backhaul,
     this.livenessKnown = true,
+    this.hostInstancePath,
+    this.userDeviceName,
+    this.actions = const {},
   });
 
   @override
@@ -329,7 +391,8 @@ final class SlaveNode extends NodeEntity {
   /// A slave is online when it matched a DataElements agent. A powered-off node
   /// leaves `DataElements.Network.Device.` within ~20-50s while its
   /// `Device.Hosts.Host` row persists, so an unmatched node row is the offline
-  /// shape (#1430, AC1).
+  /// shape (#1430, AC1). That figure is from the 1.x bench; see
+  /// [livenessKnown] for why no producer builds the shape on 2.0 yet.
   ///
   /// The match is only a verdict when there was something to match against. With
   /// [livenessKnown] false the absent match says nothing, and asserting offline
@@ -371,6 +434,9 @@ final class SlaveNode extends NodeEntity {
     List<ClientDevice>? connectedClients,
     BackhaulInfo? backhaul,
     bool? livenessKnown,
+    String? hostInstancePath,
+    String? userDeviceName,
+    Set<NodeAction>? actions,
   }) {
     return SlaveNode(
       deviceId: deviceId ?? this.deviceId,
@@ -387,6 +453,9 @@ final class SlaveNode extends NodeEntity {
       connectedClients: connectedClients ?? this.connectedClients,
       backhaul: backhaul ?? this.backhaul,
       livenessKnown: livenessKnown ?? this.livenessKnown,
+      hostInstancePath: hostInstancePath ?? this.hostInstancePath,
+      userDeviceName: userDeviceName ?? this.userDeviceName,
+      actions: actions ?? this.actions,
     );
   }
 
@@ -406,6 +475,9 @@ final class SlaveNode extends NodeEntity {
         connectedClients,
         backhaul,
         livenessKnown,
+        hostInstancePath,
+        userDeviceName,
+        actions,
       ];
 
   @override
@@ -427,6 +499,9 @@ final class SlaveNode extends NodeEntity {
         'connectedClients': connectedClients,
         'backhaul': backhaul,
         'livenessKnown': livenessKnown,
+        'hostInstancePath': hostInstancePath,
+        'userDeviceName': userDeviceName,
+        'actions': actions,
       };
 }
 

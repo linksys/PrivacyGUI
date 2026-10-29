@@ -13,11 +13,18 @@ import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart'
     show ruleIdentifierKey;
+import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
+import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_list_tile.dart';
+import 'package:privacy_gui/page/devices/views/dialogs/device_identity_edit_dialog.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
 import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indicator.dart';
+import 'package:privacy_gui/page/topology/views/components/node_actions_card.dart';
+import 'package:privacy_gui/page/topology/views/node_action_flow.dart';
 import 'package:privacy_gui/util/date_format_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -78,7 +85,7 @@ class UspNodeDetailView extends ConsumerWidget {
       NodeEntity node, UspNodeDetailState detail) {
     return Column(
       children: [
-        _buildNodeInfoCard(context, node),
+        _buildNodeInfoCard(context, ref, node),
         AppGap.lg(),
         _buildNetworkCard(context, ref, node),
         if (node is SlaveNode) ...[
@@ -87,6 +94,7 @@ class UspNodeDetailView extends ConsumerWidget {
         ],
         AppGap.lg(),
         _buildConnectedDevicesCard(context, detail),
+        ..._buildActionsCard(context, ref, node),
       ],
     );
   }
@@ -100,13 +108,14 @@ class UspNodeDetailView extends ConsumerWidget {
           width: context.colWidth(4),
           child: Column(
             children: [
-              _buildNodeInfoCard(context, node),
+              _buildNodeInfoCard(context, ref, node),
               AppGap.lg(),
               _buildNetworkCard(context, ref, node),
               if (node is SlaveNode) ...[
                 AppGap.lg(),
                 _buildBackhaulCard(context, node, detail.parentNode),
               ],
+              ..._buildActionsCard(context, ref, node),
             ],
           ),
         ),
@@ -120,10 +129,94 @@ class UspNodeDetailView extends ConsumerWidget {
   }
 
   // ===========================================================================
+  // Node Name
+  // ===========================================================================
+
+  /// Names the router (#1691): only `DeviceInfo.X_LINKSYS_UserDeviceLocation`
+  /// is written, and a router is named but not typed. The dialog saves and
+  /// shows its own progress and errors; this page only confirms a finished save.
+  Future<void> _editRouterName(
+      BuildContext context, WidgetRef ref, MasterNode node) async {
+    final saved = await showAppDialog<bool>(
+      context: context,
+      builder: (_) => DeviceIdentityEditDialog(
+        initialName: node.userDeviceLocation ?? '',
+        initialCategory: DeviceCategory.unknown,
+        detectedName: node.hostName ?? node.model,
+        showIcon: false,
+        // The name is written on system info; the node shown here comes from
+        // the devices, which read system info only when they fetch.
+        onSave: (name, _) async {
+          await ref
+              .read(systemInfoDataProvider.notifier)
+              .updateRouterName(name);
+          await ref.read(devicesDataProvider.notifier).refetch();
+        },
+      ),
+    );
+    if (saved == true && context.mounted) {
+      showSuccessSnackBar(context, loc(context).changesSaved);
+    }
+  }
+
+  /// Names an agent (#1688 item 4): its own Hosts row's
+  /// `X_LINKSYS_UserDeviceLocation`, written as a client's name is, with no
+  /// icon. `X_LINKSYS_FriendlyName` reads the name back, so the read-back
+  /// `updateIdentity` runs is what shows the new name. The dialog saves and
+  /// shows its own progress and errors; this page only confirms a finished
+  /// save.
+  Future<void> _editAgentName(BuildContext context, WidgetRef ref,
+      SlaveNode node, String hostInstancePath) async {
+    final saved = await showAppDialog<bool>(
+      context: context,
+      builder: (_) => DeviceIdentityEditDialog(
+        initialName: node.userDeviceName ?? '',
+        initialCategory: DeviceCategory.unknown,
+        detectedName: node.hostName ?? node.model,
+        showIcon: false,
+        onSave: (name, _) => ref
+            .read(devicesDataProvider.notifier)
+            .updateIdentity(hostInstancePaths: [hostInstancePath], name: name),
+      ),
+    );
+    if (saved == true && context.mounted) {
+      showSuccessSnackBar(context, loc(context).changesSaved);
+    }
+  }
+
+  // ===========================================================================
+  // Node Actions (#876)
+  // ===========================================================================
+
+  /// The actions card and the gap above it, or nothing when the node offers
+  /// no action ([nodeActionsOf]).
+  List<Widget> _buildActionsCard(
+      BuildContext context, WidgetRef ref, NodeEntity node) {
+    final actions = nodeActionsOf(node);
+    if (actions.isEmpty) return const [];
+    return [
+      AppGap.lg(),
+      NodeActionsCard(
+        actions: actions,
+        // The agent leaves DataElements while it restarts, which empties this
+        // page, so a sent command returns to the topology.
+        onAction: (action) => confirmAndRunNodeAction(
+          context,
+          ref,
+          node,
+          action,
+          onSent: () => context.navigateBack(fallback: RouteNamed.uspTopology),
+        ),
+      ),
+    ];
+  }
+
+  // ===========================================================================
   // Node Info Card
   // ===========================================================================
 
-  Widget _buildNodeInfoCard(BuildContext context, NodeEntity node) {
+  Widget _buildNodeInfoCard(
+      BuildContext context, WidgetRef ref, NodeEntity node) {
     final colorScheme = Theme.of(context).colorScheme;
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -183,7 +276,27 @@ class UspNodeDetailView extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AppText.titleLarge(node.displayName),
+                      // The router names itself on DeviceInfo (#1691); an agent
+                      // on its own Hosts row (#1688 item 4). An agent with no
+                      // matching Hosts row has nowhere to write a name, so it
+                      // gets no pen — as a client with no row gets none.
+                      // One identifier for both: a page shows one node.
+                      DetailEditableName(
+                        name: node.displayName,
+                        editLabel: switch (node) {
+                          MasterNode() => loc(context).renameRouter,
+                          SlaveNode() => loc(context).renameNode,
+                        },
+                        identifier: 'node-detail-edit-name',
+                        onEdit: switch (node) {
+                          MasterNode() => () =>
+                              _editRouterName(context, ref, node),
+                          SlaveNode(:final hostInstancePath?) => () =>
+                              _editAgentName(
+                                  context, ref, node, hostInstancePath),
+                          SlaveNode() => null,
+                        },
+                      ),
                       AppGap.xs(),
                       Wrap(
                         spacing: AppSpacing.sm,

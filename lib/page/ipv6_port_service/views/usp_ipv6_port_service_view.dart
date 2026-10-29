@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/_shared/components/rule_limit_note.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_feature_state.dart';
@@ -90,6 +90,9 @@ class UspIpv6PortServiceView extends ConsumerWidget {
   ) {
     final rules = state.settings.current.rules;
     final isSaving = state.status.isSaving;
+    // FW refuses a new rule past FWDEV#204's limit; rules past it that an
+    // older build saved stay editable.
+    final isFull = rules.length >= kMaxIpv6PortServiceRules;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,10 +109,13 @@ class UspIpv6PortServiceView extends ConsumerWidget {
             AppIconButton(
               icon: AppIcon.font(Icons.add, size: 20),
               identifier: 'ipv6-rule-add',
-              onTap: isSaving ? null : () => _showAddDialog(context, ref),
+              onTap: isSaving || isFull
+                  ? null
+                  : () => _showAddDialog(context, ref, state),
             ),
           ],
         ),
+        if (isFull) const RuleLimitNote(),
         AppGap.lg(),
         if (rules.isEmpty)
           DetailEmptyBlock(
@@ -118,7 +124,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
           )
         else
           ...rules.asMap().entries.map((entry) =>
-              _buildRuleCard(context, ref, entry.key, entry.value, isSaving)),
+              _buildRuleCard(context, ref, state, entry.key, entry.value)),
       ],
     );
   }
@@ -130,10 +136,11 @@ class UspIpv6PortServiceView extends ConsumerWidget {
   Widget _buildRuleCard(
     BuildContext context,
     WidgetRef ref,
+    Ipv6PortServiceFeatureState state,
     int index,
     Ipv6PortServiceRuleUIModel rule,
-    bool isSaving,
   ) {
+    final isSaving = state.status.isSaving;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: LayoutBlock(
@@ -181,7 +188,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
               identifier: 'ipv6-rule-edit-${rule.identifierKey}',
               onTap: isSaving
                   ? null
-                  : () => _showEditDialog(context, ref, index, rule),
+                  : () => _showEditDialog(context, ref, state, index, rule),
             ),
             AppIconButton(
               icon: AppIcon.font(Icons.delete_outline, size: 18),
@@ -215,11 +222,16 @@ class UspIpv6PortServiceView extends ConsumerWidget {
         .toList();
   }
 
-  Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
+  Future<void> _showAddDialog(BuildContext context, WidgetRef ref,
+      Ipv6PortServiceFeatureState state) async {
     final deviceOptions = _buildIpv6DeviceOptions(ref);
     final result = await showAppDialog<Ipv6PortServiceRuleDialogResult>(
       context: context,
-      builder: (_) => Ipv6PortServiceRuleDialog(deviceOptions: deviceOptions),
+      builder: (_) => Ipv6PortServiceRuleDialog(
+        deviceOptions: deviceOptions,
+        otherRules: state.settings.current.rules,
+        hiddenRuleDescriptions: state.status.hiddenRuleDescriptions,
+      ),
     );
     if (result == null || !context.mounted) return;
     ref.read(uspIpv6PortServiceProvider.notifier).addRule(
@@ -234,13 +246,27 @@ class UspIpv6PortServiceView extends ConsumerWidget {
         );
   }
 
-  Future<void> _showEditDialog(BuildContext context, WidgetRef ref, int index,
-      Ipv6PortServiceRuleUIModel rule) async {
+  Future<void> _showEditDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Ipv6PortServiceFeatureState state,
+    int index,
+    Ipv6PortServiceRuleUIModel rule,
+  ) async {
     final deviceOptions = _buildIpv6DeviceOptions(ref);
+    final rules = state.settings.current.rules;
     final result = await showAppDialog<Ipv6PortServiceRuleDialogResult>(
       context: context,
-      builder: (_) =>
-          Ipv6PortServiceRuleDialog(rule: rule, deviceOptions: deviceOptions),
+      builder: (_) => Ipv6PortServiceRuleDialog(
+        rule: rule,
+        deviceOptions: deviceOptions,
+        // By position, not `==`: two rules can be equal field for field.
+        otherRules: [
+          for (var i = 0; i < rules.length; i++)
+            if (i != index) rules[i]
+        ],
+        hiddenRuleDescriptions: state.status.hiddenRuleDescriptions,
+      ),
     );
     if (result == null || !context.mounted) return;
     ref.read(uspIpv6PortServiceProvider.notifier).editRule(
@@ -271,7 +297,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, localizeServiceError(context, e));
+        showSaveErrorSnackBar(context, e);
       }
     }
   }

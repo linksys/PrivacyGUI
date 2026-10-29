@@ -139,7 +139,11 @@ class UspTrafficAnalysisNotifier extends Notifier<TrafficAnalysisState> {
         lastBaselines: () => currentBaselines,
         lastTimestamp: () => now,
       );
-    } on ConnectivityError {
+    } on ServiceError catch (e) {
+      // Any failed read counts, not only a refused connection: a lost read is
+      // a NetworkError, and it used to reach here as a raw string nothing
+      // counted (#1212). The report itself acts only while SSE is suspended.
+      logger.w('[USP][Monitor][Traffic]: Fetch failed: $e');
       _consecutiveErrors++;
       if (_consecutiveErrors >= _errorThreshold) {
         ref

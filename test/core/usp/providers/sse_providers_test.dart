@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/mode/remote_mode_profile.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
+import 'package:privacy_gui/core/usp/models/sse_connection_state.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client_errors.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/framework/mode/session_end.dart';
@@ -421,7 +422,8 @@ void main() {
         () async {
       wire(const RemoteModeProfile());
 
-      await expectLater(client.get([path]), throwsA(isA<Exception>()));
+      await expectLater(client.get([path]),
+          throwsA(predicate((e) => '$e'.contains('HTTP 401'))));
 
       verify(() => auth.logout(cause: EndCause.sessionLost)).called(1);
       expect(transport.refreshCalls, 0);
@@ -435,7 +437,8 @@ void main() {
     test('remote: the answer outlives the manager that set it', () async {
       wire(const RemoteModeProfile()).dispose();
 
-      await expectLater(client.get([path]), throwsA(isA<Exception>()));
+      await expectLater(client.get([path]),
+          throwsA(predicate((e) => '$e'.contains('HTTP 401'))));
 
       expect(transport.refreshCalls, 0,
           reason: 'a reset on dispose would put the default, local, back');

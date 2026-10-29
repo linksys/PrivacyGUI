@@ -3,6 +3,7 @@ import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/firmware_images.g.dart';
+import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart';
 
 final firmwareBanksDataServiceProvider = Provider<FirmwareBanksDataService>(
@@ -22,7 +23,11 @@ class FirmwareBanksDataService {
   Future<List<FirmwareImageUIModel>> fetch() async {
     try {
       final images = await FirmwareImages.fetch(_usp);
-      return images.items.map(_toUIModel).toList();
+      // A bank with every value blank is no bank (usp-codegen 0.17 dropped it).
+      return images.items
+          .where((img) => !isEmptyFirmwareImage(img))
+          .map(_toUIModel)
+          .toList();
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }

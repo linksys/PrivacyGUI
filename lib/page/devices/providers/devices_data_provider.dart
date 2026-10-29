@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
@@ -276,6 +277,23 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     final existingMesh =
         state.valueOrNull?.meshTopology ?? MeshTopologyInfo.empty;
 
+    // Rebuild against the topology already known, as `_refetchPreservingMesh`
+    // does. `svc.fetch` builds with an empty topology, and since #1688 the
+    // nodes come only from DataElements, so publishing its network as-is would
+    // drop every agent on each refresh or retry — its Hosts row then showing as
+    // a client — until the background read returns, and for good if that read
+    // fails. Only the very first build, with no topology yet, uses it as-is.
+    final meshNetwork = existingMesh.isEmpty
+        ? result.meshNetwork
+        : svc.rebuildWithMesh(
+            context: result.codegenContext,
+            wifiClientMap: wifiData.wifiClientMap,
+            connectionDetailMap: wifiData.connectionDetailMap,
+            meshTopology: existingMesh,
+            gatewayName: gatewayName,
+            systemInfo: sysData?.model,
+          );
+
     // Fire-and-forget: fetch mesh topology in background, then update state. Carries the
     // generation captured at the top of this method — see there for why not the current one.
     _fetchMeshAndUpdate(
@@ -285,7 +303,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       codegenContext: result.codegenContext,
       meshTopology: existingMesh,
       hostNameByMac: result.hostNameByMac,
-      meshNetwork: result.meshNetwork,
+      meshNetwork: meshNetwork,
     );
   }
 
@@ -376,6 +394,40 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       _refetchPreservingMesh();
     });
   }
+
+  /// Writes the name and icon the user gave a client (#1691), then reads the
+  /// devices back so every surface shows what the router now holds.
+  ///
+  /// [hostInstancePaths] is every Hosts row of the device
+  /// ([ClientDevice.hostInstancePaths]), so a merged device stays merged
+  /// (#1719).
+  ///
+  /// A refused write is thrown for the caller to report. A read-back that
+  /// fails after a successful write is not: the save happened, so the failure
+  /// is logged by the refetch, the list keeps its previous value, and the next
+  /// push corrects it.
+  Future<void> updateIdentity({
+    required List<String> hostInstancePaths,
+    required String name,
+    String? userTypeCode,
+  }) async {
+    // Only the write takes the lock (constitution Art. IV Rule 3); the
+    // read-back stays outside it, as the DHCP mutations do.
+    await ref.read(uspMutationLockProvider).withLock(
+          () => ref.read(uspDevicesDataServiceProvider).updateIdentity(
+                hostInstancePaths: hostInstancePaths,
+                name: name,
+                userTypeCode: userTypeCode,
+              ),
+        );
+    await _refetchPreservingMesh();
+  }
+
+  /// Reads the devices again, keeping the mesh topology already known.
+  ///
+  /// For a write made elsewhere that changes what this provider shows, such as
+  /// the router's name (#1691), which lives on system info.
+  Future<void> refetch() => _refetchPreservingMesh();
 
   /// Refetch device data while preserving the existing mesh topology.
   /// This prevents the slave node from flickering during SSE-triggered refreshes.

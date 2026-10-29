@@ -18,6 +18,26 @@ enum DeviceCapability {
   /// (linksys/FWDEV#194). The old `Device.WiFi.AccessPoint.*` path is dead on
   /// FLWRT 2.0, so this gates the shared MAC-filter feature (#1636).
   wifiMacFilter,
+
+  /// Auto-IPoE settings and operations exposed by the connected router.
+  autoIPoE,
+
+  /// The mesh-wide MLO switch, `Device.X_LINKSYS_Mesh.MLOEnabled` /
+  /// `MLOStatus` (linksys/FWDEV#201). Gates the MLO card on the WiFi Advanced
+  /// tab, so firmware without it still reads and writes steering and DFS
+  /// (#1692).
+  wifiMlo,
+
+  /// The NAT / Dynamic routing (RIP) switch, `Device.Routing.RIP.Enable`
+  /// (linksys/FWDEV#213). Absent where the image has no linksys-ripd
+  /// (feed_usp#56), so it gates the radio on the Static Routing page (#1100).
+  dynamicRouting,
+
+  /// Adding a node to the mesh over BLE, `Device.X_LINKSYS_BLEOnboarding.`
+  /// (linksys/FWDEV#164). Answers only whether this firmware has the API, so it
+  /// gates the topology's "Add nodes" item (#879); whether a session can start
+  /// right now is the onboarding status, read when the page opens.
+  bleOnboarding,
 }
 
 /// The resolved set of capabilities the connected device supports.

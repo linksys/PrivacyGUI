@@ -57,11 +57,17 @@ void main() {
         const NetworkError(): l.errorNetwork,
         const ConnectivityError(): l.errorConnectivity,
         const TimeoutError(): l.errorTimeout,
+        const SavedButUnconfirmedError(NetworkError()):
+            l.errorSavedButUnconfirmed,
+        const SaveDiscardedForRouterRowsError():
+            l.errorSaveDiscardedForRouterRows,
         const ServiceNotInitializedError(): l.errorServiceNotReady,
         // Infrastructure-level types fall back to the generic message.
         const StorageError(): l.errorUnexpected,
         const SerialNumberMismatchError(expected: 'a', actual: 'b'):
             l.errorUnexpected,
+        // The user's own cancel: callers return before localizing it.
+        const OperationCancelledError(): l.errorUnexpected,
       };
 
       cases.forEach((error, expected) {
@@ -106,7 +112,7 @@ void main() {
     testWidgets('not-found codes → errorResourceNotFound', (tester) async {
       final ctx = await pumpContext(tester);
       final l = loc(ctx);
-      for (final code in [7026, 7027, 9005, 9007]) {
+      for (final code in [7016, 7026, 7027, 9005, 9007]) {
         expect(localizeServiceError(ctx, _completeWith(code)),
             l.errorResourceNotFound,
             reason: 'code $code should map to errorResourceNotFound');

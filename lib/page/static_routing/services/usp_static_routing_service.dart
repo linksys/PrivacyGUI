@@ -1,73 +1,117 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/tr181_path.dart';
+import 'package:privacy_gui/generated/dynamic_routing.g.dart';
 import 'package:privacy_gui/generated/static_routing.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/_shared/services/batch_tally.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_ui_model.dart';
-import 'package:privacy_gui/util/network_utils.dart';
-import 'package:privacy_gui/validator_rules/rules.dart';
 
 final uspStaticRoutingServiceProvider = Provider<UspStaticRoutingService>(
   (ref) => UspStaticRoutingService(ref.read(uspClientProvider)!),
 );
 
-/// Error keys returned by [UspStaticRoutingService.validateRoute].
-/// Use these to map to l10n strings in the View layer.
-class StaticRoutingErrorKeys {
-  static const nameRequired = 'nameRequired';
-  static const nameTooLong = 'nameTooLong';
-  static const destIpRequired = 'destIpRequired';
-  static const invalidIpAddress = 'invalidIpAddress';
-  static const subnetMaskRequired = 'subnetMaskRequired';
-  static const invalidSubnetMask = 'invalidSubnetMask';
-  static const gatewayMustBeWithinLanSubnet = 'gatewayMustBeWithinLanSubnet';
-  static const gatewayMustBeOutsideLanSubnet = 'gatewayMustBeOutsideLanSubnet';
-}
-
-/// Service layer for Static Routing — encapsulates codegen CRUD + transform + validation.
+/// Service layer for Static Routing — encapsulates codegen CRUD + transform.
 class UspStaticRoutingService {
+  /// The display name of each interface a route can use, by `Alias`.
+  static const _displayByAlias = {
+    lanInterfaceAlias: 'LAN',
+    wanInterfaceAlias: 'Internet',
+  };
+
   final UspClient _usp;
 
   UspStaticRoutingService(this._usp);
-
-  static const _interfaceMap = {
-    'Device.IP.Interface.1': 'LAN',
-    'Device.IP.Interface.2': 'Internet',
-  };
-
-  static const _reverseInterfaceMap = {
-    'LAN': 'Device.IP.Interface.1',
-    'Internet': 'Device.IP.Interface.2',
-  };
-
-  static const interfaceOptions = ['LAN', 'Internet'];
 
   // ---------------------------------------------------------------------------
   // CRUD
   // ---------------------------------------------------------------------------
 
   /// Fetch static routes and transform to UI models.
+  ///
+  /// The interface names only label the routes, so a failed Alias read shows
+  /// each route's interface path instead of failing the list.
   Future<List<StaticRouteUIModel>> fetch() async {
     try {
-      final data = await StaticRouting.fetch(_usp);
-      return buildRouteUIModels(data);
+      final namesFuture = _interfaceNames().catchError((Object e) {
+        logger.w('[StaticRouting]: Interface names unavailable: $e');
+        return const <String, String>{};
+      });
+      final routing = await StaticRouting.fetch(_usp);
+      return buildRouteUIModels(routing, await namesFuture);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
   }
 
-  /// Batch save: diff original vs current, execute delete/add/update.
+  /// `Device.IP.Interface.{i}` → display name, for the lan and wan interfaces
+  /// as the router names them by `Alias`. The path has no trailing dot: it is
+  /// written as a route's `Interface` as it is.
+  Future<Map<String, String>> _interfaceNames() async {
+    final paths =
+        interfacePathsByAlias(await _usp.get(['Device.IP.Interface.*.Alias']));
+    return {
+      for (final MapEntry(key: alias, value: name) in _displayByAlias.entries)
+        if (paths[alias] case final path?)
+          path.substring(0, path.length - 1): name,
+    };
+  }
+
+  /// The interface path a route with [displayName] is written with.
   ///
-  /// Lenient mode: partial success is acceptable for batch operations,
-  /// only log warnings. Complete failure still throws.
+  /// A name this page offers (LAN, Internet) must resolve: writing the name
+  /// itself as `Interface` would hand the router a value that is not a path.
+  /// Any other value is a path the route already had, and is written back.
+  static String _interfacePathOf(
+      String displayName, Map<String, String> interfaceNames) {
+    for (final entry in interfaceNames.entries) {
+      if (entry.value == displayName) return entry.key;
+    }
+    if (_displayByAlias.containsValue(displayName)) {
+      throw ResourceNotFoundError(
+          detail: 'No Device.IP.Interface for $displayName');
+    }
+    return displayName;
+  }
+
+  /// The router new routes are added under: the first one the router lists
+  /// (one on the bench).
+  Future<String> _routerPath() async {
+    final router = (await StaticRouting.fetch(_usp)).items.firstOrNull;
+    if (router == null) {
+      throw const ResourceNotFoundError(
+          detail: 'No Device.Routing.Router on the router');
+    }
+    return router.instancePath;
+  }
+
+  /// Batch save: diff original vs current, then Delete, Set and Add.
+  ///
+  /// The order is FW's (FWDEV#213): a Delete frees its route's slot and name
+  /// before anything else is written, and a Set frees an old name before an
+  /// Add takes it. The page checks the save in this same order
+  /// ([StaticRouteUIModel.validateList]).
+  ///
+  /// A step that fails, fully or partly, stops the save: the next step was
+  /// checked against a router the failed step was meant to change, and at 20
+  /// routes an Add after a failed Delete is a 21st. It throws
+  /// [UspCompleteFailureError] when nothing was written, otherwise
+  /// [UspPartialFailureError]. A refusal that carries one of FWDEV#213's error
+  /// names becomes an [InvalidInputError] whose `field` is that name, so the
+  /// page can say which check FW applied.
+  ///
+  /// The page checks every value FW refuses before it saves: a refused Add
+  /// reaches the app as a success and leaves a row without the refused leaf
+  /// (bench 2026-10-21), so only a Set is ever seen to fail here.
   Future<({int added, int updated, int deleted})> saveBatch({
     required List<StaticRouteUIModel> original,
     required List<StaticRouteUIModel> current,
   }) async {
+    final tally = BatchTally('[StaticRouting]');
     try {
-      // 1. Delete (in original, not in current)
       final currentPaths = <String>{
         for (final r in current)
           if (r.instancePath != null) r.instancePath!,
@@ -76,98 +120,72 @@ class UspStaticRoutingService {
           .where((r) =>
               r.instancePath != null && !currentPaths.contains(r.instancePath))
           .toList();
-
-      // Delete in reverse instance order to avoid firmware renumbering issues
-      for (final r in toDelete.reversed) {
-        final result = await StaticRouting.delete(_usp, [r.instancePath!]);
-        final parsed = UspResultParser.parseDeleteResult(result);
-        switch (parsed) {
-          case UspSuccess():
-            break;
-          case UspPartialSuccess(:final successes, :final failures):
-            logger.w(
-                '[StaticRouting]: Batch delete partial: ${successes.length} ok, ${failures.length} failed');
-            break;
-          case UspFailure(:final errorSummary, :final errors):
-            throw UspCompleteFailureError(
-              summary: 'Static routing batch delete failed: $errorSummary',
-              failures: errors,
-            );
-        }
-      }
-
-      // 2. Add (instancePath == null → new)
-      final toAdd = current.where((r) => r.instancePath == null).toList();
-      if (toAdd.isNotEmpty) {
-        final result = await StaticRouting.add(
-          _usp,
-          toAdd
-              .map((r) => {
-                    'Enable': r.enabled,
-                    'DestIPAddress': r.destIpAddress,
-                    'DestSubnetMask': r.destSubnetMask,
-                    'GatewayIPAddress': r.gatewayIpAddress,
-                    'Interface': mapDisplayToInterface(r.interfaceName),
-                    'Alias': r.name,
-                  })
-              .toList(),
-        );
-        final parsed = UspResultParser.parseAddResult(result);
-        switch (parsed) {
-          case UspSuccess():
-            break;
-          case UspPartialSuccess(:final successes, :final failures):
-            logger.w(
-                '[StaticRouting]: Batch add partial: ${successes.length} ok, ${failures.length} failed');
-            break;
-          case UspFailure(:final errorSummary, :final errors):
-            throw UspCompleteFailureError(
-              summary: 'Static routing batch add failed: $errorSummary',
-              failures: errors,
-            );
-        }
-      }
-
-      // 3. Update (same path, different content)
       final originalByPath = <String, StaticRouteUIModel>{
         for (final r in original)
           if (r.instancePath != null) r.instancePath!: r,
       };
+      final toChange = [
+        for (final cur in current)
+          if (cur.instancePath != null &&
+              originalByPath[cur.instancePath!] != null &&
+              cur != originalByPath[cur.instancePath!])
+            cur,
+      ];
+      final toAdd = current.where((r) => r.instancePath == null).toList();
 
-      final toUpdate = <StaticRouteUpdate>[];
-      for (final cur in current) {
-        if (cur.instancePath == null) continue;
-        final orig = originalByPath[cur.instancePath!];
-        if (orig == null) continue;
-        if (cur != orig) {
-          toUpdate.add(StaticRouteUpdate(
+      // Everything a step reads is read, and every row it writes is built,
+      // before the first step is sent: an interface or router that does not
+      // resolve stops the save with nothing written, not after a Delete.
+      final interfaceNames = toAdd.isEmpty && toChange.isEmpty
+          ? const <String, String>{}
+          : await _interfaceNames();
+      final toUpdate = [
+        for (final cur in toChange)
+          StaticRouteUpdate(
             instancePath: cur.instancePath!,
             enable: cur.enabled,
             destIpAddress: cur.destIpAddress,
             destSubnetMask: cur.destSubnetMask,
             gatewayIpAddress: cur.gatewayIpAddress,
-            interface_: mapDisplayToInterface(cur.interfaceName),
+            interface_: _interfacePathOf(cur.interfaceName, interfaceNames),
             alias: cur.name,
-          ));
-        }
+          ),
+      ];
+      final routerPath = toAdd.isEmpty ? null : await _routerPath();
+      final adds = [
+        for (final r in toAdd)
+          StaticRouteAdd(
+            parentInstancePath: routerPath!,
+            enable: r.enabled,
+            destIpAddress: r.destIpAddress,
+            destSubnetMask: r.destSubnetMask,
+            gatewayIpAddress: r.gatewayIpAddress,
+            interface_: _interfacePathOf(r.interfaceName, interfaceNames),
+            alias: r.name,
+          ),
+      ];
+
+      // 1. Delete (in original, not in current), in reverse instance order to
+      // avoid firmware renumbering issues
+      for (final r in toDelete.reversed) {
+        final result =
+            await StaticRouting.deleteForwardings(_usp, [r.instancePath!]);
+        tally.record('Delete', UspResultParser.parseDeleteResult(result));
+        tally.throwIfAnyFailed();
       }
 
+      // 2. Update (same path, different content)
       if (toUpdate.isNotEmpty) {
-        final result = await StaticRouting.update(_usp, toUpdate);
-        final parsed = UspResultParser.parseSetResult(result);
-        switch (parsed) {
-          case UspSuccess():
-            break;
-          case UspPartialSuccess(:final successes, :final failures):
-            logger.w(
-                '[StaticRouting]: Batch update partial: ${successes.length} ok, ${failures.length} failed');
-            break;
-          case UspFailure(:final errorSummary, :final errors):
-            throw UspCompleteFailureError(
-              summary: 'Static routing batch update failed: $errorSummary',
-              failures: errors,
-            );
-        }
+        final result = await StaticRouting.updateForwardings(_usp, toUpdate);
+        tally.record('Update', UspResultParser.parseSetResult(result));
+        tally.throwIfAnyFailed();
+      }
+
+      // 3. Add (instancePath == null → new)
+      if (adds.isNotEmpty) {
+        final result = await StaticRouting.addForwardings(_usp, adds);
+        tally.record('Add', UspResultParser.parseAddResult(result));
+        tally.throwIfAnyFailed();
       }
 
       return (
@@ -175,6 +193,61 @@ class UspStaticRoutingService {
         updated: toUpdate.length,
         deleted: toDelete.length,
       );
+    } on UspCompleteFailureError catch (e) {
+      throw _named(e.failures) ?? e;
+    } on UspPartialFailureError catch (e) {
+      throw _named(e.failures) ?? e;
+    } catch (e) {
+      if (e is ServiceError) rethrow;
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  static InvalidInputError? _named(List<UspErrorDetail> failures) {
+    final refusal = refusalNameIn(failures, StaticRouteRefusalNames.all);
+    if (refusal == null) return null;
+    return InvalidInputError(
+      field: refusal.name,
+      code: refusal.detail.errorCode,
+      detail: refusal.detail.errorMessage,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // NAT / Dynamic routing (RIP)
+  // ---------------------------------------------------------------------------
+
+  /// Whether RIP runs; NAT is its opposite (linksys/FWDEV#213).
+  ///
+  /// Call only where `DeviceCapability.dynamicRouting` holds: the router has
+  /// the leaf, so a value that does not come back is a failed read. The WASM
+  /// client resolves a failed Get with empty data, and the optional codegen
+  /// field reads that as null.
+  Future<bool> fetchRipEnabled() async {
+    try {
+      final enable = (await DynamicRouting.fetch(_usp)).enable;
+      if (enable == null) {
+        throw const NetworkError(detail: 'Device.Routing.RIP.Enable not read');
+      }
+      return enable;
+    } catch (e) {
+      if (e is ServiceError) rethrow;
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  /// One Set of `Device.Routing.RIP.Enable`. FW turns NAT off with RIP on and
+  /// back on with it off; `Device.NAT.InterfaceSetting` is not written.
+  Future<void> saveRipEnabled(bool enabled) async {
+    try {
+      final result = await DynamicRouting.update(_usp, enable: enabled);
+      final parsed = UspResultParser.parseSetResult(result);
+      if (parsed case UspFailure(:final errorSummary, :final errors)) {
+        throw UspCompleteFailureError(
+          summary: 'Routing mode update failed: $errorSummary',
+          failures: errors,
+        );
+      }
     } catch (e) {
       if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
@@ -186,8 +259,15 @@ class UspStaticRoutingService {
   // ---------------------------------------------------------------------------
 
   /// Build UI models from codegen data, filtering to static routes only.
-  List<StaticRouteUIModel> buildRouteUIModels(StaticRouting data) {
+  ///
+  /// [interfaceNames] maps an interface path to its display name; a route on
+  /// any other interface shows its path.
+  List<StaticRouteUIModel> buildRouteUIModels(
+    StaticRouting data,
+    Map<String, String> interfaceNames,
+  ) {
     return data.items
+        .expand((router) => router.forwardings)
         .where((r) => r.origin == 'Static')
         .map((r) => StaticRouteUIModel(
               instancePath: r.instancePath,
@@ -196,74 +276,21 @@ class UspStaticRoutingService {
               destIpAddress: r.destIpAddress,
               destSubnetMask: r.destSubnetMask,
               gatewayIpAddress: r.gatewayIpAddress,
-              interfaceName: _interfaceMap[r.interface_] ?? r.interface_,
-              interfacePath: r.interface_,
+              interfaceName: _interfaceNameOf(r.interface_, interfaceNames),
             ))
         .toList();
   }
 
-  /// Convert display name back to TR-181 interface path.
-  String mapDisplayToInterface(String displayName) {
-    return _reverseInterfaceMap[displayName] ?? displayName;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Validation
-  // ---------------------------------------------------------------------------
-
-  /// Validate a route entry. Returns a map of field → error message.
-  ///
-  /// When [lanIp] and [lanSubnetMask] are provided, validates gateway subnet:
-  /// - LAN interface: gateway must be within LAN subnet
-  /// - Internet interface: gateway must be outside LAN subnet
-  static Map<String, String> validateRoute({
-    required String name,
-    required String destIp,
-    required String subnetMask,
-    required String gateway,
-    String? interfaceName,
-    String? lanIp,
-    String? lanSubnetMask,
-  }) {
-    final errors = <String, String>{};
-    if (name.isEmpty) {
-      errors['name'] = StaticRoutingErrorKeys.nameRequired;
-    } else if (name.length > 32) {
-      errors['name'] = StaticRoutingErrorKeys.nameTooLong;
-    }
-    if (destIp.isEmpty) {
-      errors['destIp'] = StaticRoutingErrorKeys.destIpRequired;
-    } else if (!NetworkUtils.isValidIpAddress(destIp)) {
-      errors['destIp'] = StaticRoutingErrorKeys.invalidIpAddress;
-    }
-    if (subnetMask.isEmpty) {
-      errors['subnetMask'] = StaticRoutingErrorKeys.subnetMaskRequired;
-    } else if (!NetworkUtils.isValidSubnetMask(subnetMask)) {
-      errors['subnetMask'] = StaticRoutingErrorKeys.invalidSubnetMask;
-    }
-    if (gateway.isNotEmpty && !NetworkUtils.isValidIpAddress(gateway)) {
-      errors['gateway'] = StaticRoutingErrorKeys.invalidIpAddress;
-    } else if (gateway.isNotEmpty &&
-        interfaceName != null &&
-        lanIp != null &&
-        lanIp.isNotEmpty &&
-        lanSubnetMask != null &&
-        lanSubnetMask.isNotEmpty &&
-        NetworkUtils.isValidIpAddress(lanIp) &&
-        NetworkUtils.isValidSubnetMask(lanSubnetMask)) {
-      // Validate gateway subnet based on interface selection.
-      final lanSubnetRule = HostValidForGivenRouterIPAddressAndSubnetMaskRule(
-        lanIp,
-        lanSubnetMask,
-      );
-      final isInLan = lanSubnetRule.validate(gateway);
-      if (interfaceName == 'LAN' && !isInLan) {
-        errors['gateway'] = StaticRoutingErrorKeys.gatewayMustBeWithinLanSubnet;
-      } else if (interfaceName == 'Internet' && isInLan) {
-        errors['gateway'] =
-            StaticRoutingErrorKeys.gatewayMustBeOutsideLanSubnet;
+  /// The display name of the interface at [path], or [path] itself when it
+  /// is not one this page names. A route's `Interface` may or may not carry
+  /// a trailing dot.
+  static String _interfaceNameOf(
+      String path, Map<String, String> interfaceNames) {
+    for (final entry in interfaceNames.entries) {
+      if (ensureTrailingDot(entry.key) == ensureTrailingDot(path)) {
+        return entry.value;
       }
     }
-    return errors;
+    return path;
   }
 }

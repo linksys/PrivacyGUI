@@ -2,7 +2,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_notifier.dart';
+import 'package:privacy_gui/util/network_utils.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
+
+/// Error keys returned by the `validate…` field checks below. The View maps
+/// each to a localized string.
+class WanFieldErrors {
+  static const required = 'required';
+  static const invalidIp = 'invalidIp';
+  static const reservedIp = 'reservedIp';
+  static const outOfRange = 'outOfRange';
+  static const tooLong = 'tooLong';
+  static const invalidMask = 'invalidMask';
+  static const invalidGateway = 'invalidGateway';
+}
+
+/// The fields [validateStaticIpv4] reports on.
+class StaticIpv4Field {
+  static const ipAddress = 'ipAddress';
+  static const subnetMask = 'subnetMask';
+  static const gateway = 'gateway';
+  static const dns1 = 'dns1';
+  static const dns2 = 'dns2';
+  static const dns3 = 'dns3';
+}
 
 /// Whether the current edited form is valid for saving.
 ///
@@ -17,38 +40,164 @@ final uspInternetFormValidProvider = Provider.autoDispose<bool>((ref) {
 
 /// Validate the entire form based on connection type and field values.
 bool validateForm(UspInternetSettingsForm form) {
+  // IPoE has its own mode-specific native validation and owns IPv6/MTU.
+  if (form.connectionType == UspWanConnectionType.ipoe) return true;
   if (!_validateIpv4Fields(form)) return false;
+  if (form.connectionType.isPppBased && !_validatePppFields(form)) {
+    return false;
+  }
   if (!_validateIpv6Fields(form)) return false;
   if (!_validateOptionalFields(form)) return false;
   return true;
 }
 
+bool _validatePppFields(UspInternetSettingsForm form) {
+  if (validatePppCredential(form.pppUsername) != null ||
+      validatePppCredential(form.pppPassword) != null) {
+    return false;
+  }
+  if (form.connectionTrigger == 'OnDemand') {
+    return validateIdleMinutes(form.idleDisconnectTime) == null;
+  }
+  return validateKeepAliveInterval(form.lcpEchoInterval) == null;
+}
+
+/// The PPP user name or password: required, at most 255 characters.
+String? validatePppCredential(String value) {
+  if (value.isEmpty) return WanFieldErrors.required;
+  if (value.length > kPppCredentialMaxLength) return WanFieldErrors.tooLong;
+  return null;
+}
+
+/// The On Demand idle time, in minutes.
+String? validateIdleMinutes(int minutes) =>
+    minutes < kPppIdleMinutesMin || minutes > kPppIdleMinutesMax
+        ? WanFieldErrors.outOfRange
+        : null;
+
+/// The Keep Alive "reconnect after" interval, in seconds.
+String? validateKeepAliveInterval(int seconds) =>
+    seconds < kPppKeepAliveSecondsMin || seconds > kPppKeepAliveSecondsMax
+        ? WanFieldErrors.outOfRange
+        : null;
+
 bool _validateIpv4Fields(UspInternetSettingsForm form) {
   switch (form.connectionType) {
+    case UspWanConnectionType.ipoe:
     case UspWanConnectionType.dhcp:
       return true;
     case UspWanConnectionType.staticIp:
-      return _isValidIpv4(form.staticIpAddress) &&
-          _isValidSubnetMask(form.subnetMask) &&
-          _isValidIpv4(form.defaultGateway) &&
-          _isValidIpv4(form.dnsServer1) &&
-          (form.dnsServer2.isEmpty || _isValidIpv4(form.dnsServer2)) &&
-          (form.dnsServer3.isEmpty || _isValidIpv4(form.dnsServer3));
+      return validateStaticIpv4(
+        ipAddress: form.staticIpAddress,
+        subnetMask: form.subnetMask,
+        gateway: form.defaultGateway,
+        dns1: form.dnsServer1,
+        dns2: form.dnsServer2,
+        dns3: form.dnsServer3,
+      ).isEmpty;
     case UspWanConnectionType.pppoe:
-      return form.pppUsername.isNotEmpty &&
-          form.pppPassword.isNotEmpty &&
-          (form.connectionTrigger != 'OnDemand' || form.idleDisconnectTime > 0);
+      return true;
     case UspWanConnectionType.pptp:
+      return validateTunnelServer(form.serverAddress) == null &&
+          (!form.underlayStatic || validateUnderlay(form).isEmpty);
     case UspWanConnectionType.l2tp:
-      return form.serverAddress.isNotEmpty &&
-          _isValidHostnameOrIp(form.serverAddress) &&
-          form.pppUsername.isNotEmpty &&
-          form.pppPassword.isNotEmpty &&
-          (form.connectionTrigger != 'OnDemand' || form.idleDisconnectTime > 0);
+      return validateTunnelServer(form.serverAddress) == null;
     case UspWanConnectionType.bridge:
       return true;
   }
 }
+
+/// A static IPv4 address set, checked as 1.0 and the firmware check it: the
+/// Static WAN (feed_usp#55 netmngr 036) and the PPTP static underlay (039).
+/// Returns each failing [StaticIpv4Field] with its [WanFieldErrors] key; empty
+/// when all pass.
+///
+/// The IP is not reserved and is a host in its subnet; the mask is contiguous,
+/// /8 to /31; the gateway is set, not reserved, not the IP, and a host in the
+/// IP's subnet; DNS 1 is set; no DNS server is reserved. A /31 has no network
+/// or broadcast address, so both of its addresses are hosts.
+Map<String, String> validateStaticIpv4({
+  required String ipAddress,
+  required String subnetMask,
+  required String gateway,
+  required String dns1,
+  required String dns2,
+  required String dns3,
+}) {
+  final errors = <String, String>{};
+  final ipError = _validateAddress(ipAddress, required: true);
+  if (ipError != null) errors[StaticIpv4Field.ipAddress] = ipError;
+  final prefix = _prefixLength(subnetMask);
+  if (prefix == null || prefix < 8 || prefix > 31) {
+    errors[StaticIpv4Field.subnetMask] = WanFieldErrors.invalidMask;
+  }
+  final subnetKnown = ipError == null && prefix != null;
+  if (subnetKnown && !_isHostIn(ipAddress, ipAddress, prefix)) {
+    errors[StaticIpv4Field.ipAddress] = WanFieldErrors.invalidIp;
+  }
+  final gatewayError = _validateAddress(gateway, required: true);
+  if (gatewayError != null) {
+    errors[StaticIpv4Field.gateway] = gatewayError;
+  } else if (subnetKnown &&
+      (gateway == ipAddress || !_isHostIn(gateway, ipAddress, prefix))) {
+    errors[StaticIpv4Field.gateway] = WanFieldErrors.invalidGateway;
+  }
+  for (final (field, value, required) in [
+    (StaticIpv4Field.dns1, dns1, true),
+    (StaticIpv4Field.dns2, dns2, false),
+    (StaticIpv4Field.dns3, dns3, false),
+  ]) {
+    final error = _validateAddress(value, required: required);
+    if (error != null) errors[field] = error;
+  }
+  return errors;
+}
+
+/// [validateStaticIpv4] on the PPTP static underlay fields.
+Map<String, String> validateUnderlay(UspInternetSettingsForm form) =>
+    validateStaticIpv4(
+      ipAddress: form.underlayIpAddress,
+      subnetMask: form.underlaySubnetMask,
+      gateway: form.underlayGateway,
+      dns1: form.underlayDns1,
+      dns2: form.underlayDns2,
+      dns3: form.underlayDns3,
+    );
+
+/// One IPv4 address: [required] or empty, valid, not reserved.
+String? _validateAddress(String value, {required bool required}) {
+  if (value.isEmpty) return required ? WanFieldErrors.required : null;
+  if (!_isValidIpv4(value)) return WanFieldErrors.invalidIp;
+  if (_isReservedIpv4(value)) return WanFieldErrors.reservedIp;
+  return null;
+}
+
+/// The prefix length of a dotted, contiguous mask, or null when it is not one.
+int? _prefixLength(String mask) {
+  if (!_isValidSubnetMask(mask)) return null;
+  final n = NetworkUtils.ipToNum(mask);
+  var length = 0;
+  while (length < 32 && (n & (0x80000000 >> length)) != 0) {
+    length++;
+  }
+  return length;
+}
+
+/// Whether [value] is in [ipAddress]'s /[prefix] subnet and is neither its
+/// network nor its broadcast address (netmngr `wan___is_host_in`).
+bool _isHostIn(String value, String ipAddress, int prefix) {
+  final mask = prefix == 0 ? 0 : (0xFFFFFFFF << (32 - prefix)) & 0xFFFFFFFF;
+  final network = NetworkUtils.ipToNum(ipAddress) & mask;
+  final v = NetworkUtils.ipToNum(value);
+  if ((v & mask) != network) return false;
+  return prefix >= 31 ||
+      (v != network && v != (network | (~mask & 0xFFFFFFFF)));
+}
+
+/// The PPTP / L2TP server: an IPv4 address that is not reserved, as 1.0 and
+/// the firmware check it (feed_usp#55 netmngr 036, "Invalid server").
+String? validateTunnelServer(String value) =>
+    _validateAddress(value, required: true);
 
 bool _validateIpv6Fields(UspInternetSettingsForm form) {
   if (!form.ipv6rdEnabled) return true;
@@ -112,6 +261,17 @@ bool _isValidIpv4(String value) {
   return _ipAddressRule.validate(value);
 }
 
+/// 1.0's util.isReservedAddress, which the firmware applies to every WAN
+/// address it checks: 0/8, 127/8, 169.254/16, 224/4 and 240/4. [value] must be
+/// a valid IPv4 address.
+bool _isReservedIpv4(String value) {
+  final n = NetworkUtils.ipToNum(value);
+  return (n >> 24) == 0 ||
+      (n >> 24) == 127 ||
+      (n >> 16) == 0xA9FE ||
+      (n >> 28) >= 0xE;
+}
+
 bool _isValidSubnetMask(String value) {
   if (!_isValidIpv4(value)) return false;
   // Convert to 32-bit integer and verify contiguous 1-bits
@@ -128,16 +288,6 @@ final _macPattern = RegExp(
 );
 
 bool _isValidMac(String value) => _macPattern.hasMatch(value);
-
-final _hostnamePattern = RegExp(
-  r'^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?$',
-);
-
-bool _isValidHostnameOrIp(String value) {
-  if (value.isEmpty) return false;
-  if (_ipAddressRule.validate(value)) return true;
-  return _hostnamePattern.hasMatch(value);
-}
 
 final _ipv6Rule = IPv6WithReservedRule();
 

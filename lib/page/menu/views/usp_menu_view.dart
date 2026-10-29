@@ -8,7 +8,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/app_menu_card.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
-import 'package:privacy_gui/page/instant_safety/services/instant_safety_service.dart';
+import 'package:privacy_gui/page/instant_safety/models/safe_browsing_ui_model.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 import 'package:privacy_gui/page/models/app_section_item_data.dart';
 import 'package:privacy_gui/page/models/menu_badge.dart';
@@ -67,7 +67,7 @@ class UspMenuView extends ConsumerWidget {
 
     // Instant Safety is enabled when DNS is set to OpenDNS
     final isSafetyEnabled = lanData != null &&
-        UspInstantSafetyService.isOpenDns(lanData.model.dnsServers);
+        SafeBrowsingUIModel.isOpenDns(lanData.model.dnsServers);
 
     return [
       AppSectionItemData(

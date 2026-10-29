@@ -28,6 +28,7 @@ final wifiDevice1 = ClientDevice(
   ip: '192.168.1.100',
   hostName: 'iPhone-15-Pro',
   isActive: true,
+  hostInstancePath: 'Device.Hosts.Host.1.',
   connectionType: ConnectionType.wifi,
   wifi: WifiConnectionInfo(
     signalStrength: -42,
@@ -45,6 +46,7 @@ final wifiDeviceGood = ClientDevice(
   ip: '192.168.1.101',
   hostName: 'MacBook-Air',
   isActive: true,
+  hostInstancePath: 'Device.Hosts.Host.2.',
   connectionType: ConnectionType.wifi,
   wifi: WifiConnectionInfo(
     signalStrength: -68,
@@ -62,6 +64,7 @@ final wiredDevice1 = ClientDevice(
   ip: '192.168.1.102',
   hostName: 'PlayStation-5',
   isActive: true,
+  hostInstancePath: 'Device.Hosts.Host.3.',
   connectionType: ConnectionType.wired,
   parentNodeId: 'node-1',
   parentNodeName: 'Living Room',
@@ -72,6 +75,7 @@ final offlineDevice = ClientDevice(
   ip: '192.168.1.103',
   hostName: 'iPad-Mini',
   isActive: false,
+  hostInstancePath: 'Device.Hosts.Host.4.',
   connectionType: ConnectionType.wifi,
 );
 
@@ -80,6 +84,7 @@ final wifiDeviceFair = ClientDevice(
   ip: '192.168.1.104',
   hostName: 'Samsung-TV',
   isActive: true,
+  hostInstancePath: 'Device.Hosts.Host.5.',
   connectionType: ConnectionType.wifi,
   wifi: WifiConnectionInfo(
     signalStrength: -75,
@@ -97,6 +102,7 @@ final wifiDevicePoor = ClientDevice(
   ip: '192.168.1.105',
   hostName: 'Nest-Cam-Outdoor',
   isActive: true,
+  hostInstancePath: 'Device.Hosts.Host.6.',
   connectionType: ConnectionType.wifi,
   wifi: WifiConnectionInfo(
     signalStrength: -82,
@@ -148,6 +154,7 @@ final wifiDeviceGlobalIpv6 = ClientDevice(
   ip: '192.168.1.106',
   hostName: 'Desktop-PC',
   isActive: true,
+  hostInstancePath: 'Device.Hosts.Host.7.',
   connectionType: ConnectionType.wifi,
   wifi: WifiConnectionInfo(
     signalStrength: -42,
@@ -168,6 +175,7 @@ final wifiDeviceLinkLocalIpv6 = ClientDevice(
   ip: '192.168.1.107',
   hostName: 'Laptop',
   isActive: true,
+  hostInstancePath: 'Device.Hosts.Host.8.',
   connectionType: ConnectionType.wifi,
   wifi: WifiConnectionInfo(
     signalStrength: -42,
@@ -180,6 +188,82 @@ final wifiDeviceLinkLocalIpv6 = ClientDevice(
   parentNodeId: 'node-1',
   parentNodeName: 'Living Room',
 );
+
+// A client the firmware identified (FWDEV#207, #1693) and the user named and
+// typed (#1691): the identity card shows the firmware's maker, model and OS,
+// and the name the user gave. The MAC is randomised, so without the firmware
+// the maker row would read "Private/Random".
+final wifiDeviceIdentified = ClientDevice(
+  mac: 'BA:16:44:9F:EB:8B',
+  ip: '192.168.1.108',
+  hostName: 'iPhone',
+  friendlyName: "Austin's iPhone",
+  userDeviceName: "Austin's iPhone",
+  isActive: true,
+  hostInstancePath: 'Device.Hosts.Host.9.',
+  connectionType: ConnectionType.wifi,
+  wifi: WifiConnectionInfo(
+    signalStrength: -48,
+    downlinkRate: 866000,
+    uplinkRate: 433000,
+    band: '5GHz',
+    ssidName: 'MyNetwork',
+  ),
+  manufacturer: 'Apple Inc.',
+  modelName: 'iPhone',
+  operatingSystem: 'iOS',
+  deviceType: 'Phone',
+  userDeviceType: '2', // tablet: the user's choice wins over the firmware's
+  parentNodeId: 'node-1',
+  parentNodeName: 'Living Room',
+);
+
+DeviceDetailState get wifiDetailIdentified => DeviceDetailState(
+      device: wifiDeviceIdentified,
+    );
+
+// One Mac on 5 GHz with a randomised MAC and on a cable, merged into one
+// device by the name devidentd detected for both rows (#1719, FWDEV#224):
+// the Wi-Fi row leads, the cable is an additional interface, and each
+// interface carries its own Hosts row. The rows' DHCP host names differ
+// ("Mac" and "TW-AUSTINC-MAC"), which is why they did not merge before.
+// Measured shape: M60, 2.0.3.26102124.
+final wifiDeviceMergedInterfaces = ClientDevice(
+  mac: 'AA:C8:BF:74:39:F6',
+  ip: '192.168.1.156',
+  hostName: 'Mac',
+  friendlyName: 'TW-AUSTINC-MAC',
+  detectedName: 'TW-AUSTINC-MAC',
+  isActive: true,
+  hostInstancePath: 'Device.Hosts.Host.2.',
+  connectionType: ConnectionType.wifi,
+  wifi: WifiConnectionInfo(
+    signalStrength: -34,
+    downlinkRate: 866000,
+    uplinkRate: 433000,
+    band: '5GHz',
+    ssidName: 'MyNetwork',
+  ),
+  manufacturer: 'Apple Inc.',
+  modelName: 'Mac',
+  operatingSystem: 'macOS',
+  deviceType: 'Computer',
+  parentNodeId: 'node-1',
+  parentNodeName: 'Living Room',
+  additionalInterfaces: const [
+    ClientInterfaceInfo(
+      mac: 'C0:EA:C3:69:AB:FA',
+      ip: '192.168.1.189',
+      connectionType: ConnectionType.wired,
+      isActive: true,
+      hostInstancePath: 'Device.Hosts.Host.1.',
+    ),
+  ],
+);
+
+DeviceDetailState get wifiDetailMergedInterfaces => DeviceDetailState(
+      device: wifiDeviceMergedInterfaces,
+    );
 
 DeviceDetailState get deviceNotFound => DeviceDetailState.empty();
 

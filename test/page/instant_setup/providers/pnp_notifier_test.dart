@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -28,6 +29,7 @@ import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart'
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../mocks/provider_overrides/mock_firmware_update.dart';
+import '../../../mocks/test_data/devices_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -339,6 +341,78 @@ void main() {
     });
   });
 
+  // #1098, the same split on the modem-restart path. The poll used to swallow
+  // every failed read and end on NoInternet, so a router that could not be read
+  // for all 30 attempts was shown as "no internet". Only the LAST attempt
+  // decides: earlier failures are expected while the router comes back.
+  group('PnpNotifier — modem restart poll (#1098)', () {
+    /// Runs the 150 s countdown and the 30 × 5 s poll to the end.
+    PnpPhase runModemRestart(ProviderContainer container) {
+      late PnpPhase phase;
+      fakeAsync((async) {
+        container.read(pnpProvider.notifier).startModemRestartCountdown();
+        async.elapse(const Duration(seconds: 150 + 30 * 5 + 1));
+        phase = container.read(pnpProvider).phase;
+      });
+      return phase;
+    }
+
+    test('every attempt failing to read ends on AdminReadFailure', () {
+      when(() => mockPnpService.checkInternetConnected())
+          .thenThrow(const InvalidInputError(code: 9998, detail: 'missing'));
+      final container = createContainer();
+
+      final phase = runModemRestart(container);
+
+      expect(phase, isA<AdminReadFailure>(),
+          reason:
+              'a router that never answered is not a confirmed no-internet');
+      expect((phase as AdminReadFailure).code, 9998);
+      verify(() => mockPnpService.checkInternetConnected()).called(30);
+      container.dispose();
+    });
+
+    test('a router that answers "no internet" ends on NoInternet', () {
+      when(() => mockPnpService.checkInternetConnected())
+          .thenAnswer((_) async => false);
+      final container = createContainer();
+
+      expect(runModemRestart(container), isA<NoInternet>());
+      container.dispose();
+    });
+
+    test('"no internet" followed by failed reads ends on AdminReadFailure', () {
+      // The router answered, then stopped answering. The last attempt is what
+      // the user is left with, so an earlier "no internet" does not stand.
+      var calls = 0;
+      when(() => mockPnpService.checkInternetConnected()).thenAnswer((_) async {
+        calls++;
+        if (calls <= 20) return false;
+        throw const InvalidInputError(code: 9998, detail: 'missing');
+      });
+      final container = createContainer();
+
+      expect(runModemRestart(container), isA<AdminReadFailure>());
+      container.dispose();
+    });
+
+    test('failed reads followed by "no internet" end on NoInternet', () {
+      // The router is unreadable while it reboots, then answers.
+      var calls = 0;
+      when(() => mockPnpService.checkInternetConnected()).thenAnswer((_) async {
+        calls++;
+        if (calls <= 10) {
+          throw const InvalidInputError(code: 9998, detail: 'missing');
+        }
+        return false;
+      });
+      final container = createContainer();
+
+      expect(runModemRestart(container), isA<NoInternet>());
+      container.dispose();
+    });
+  });
+
   group('PnpNotifier — WiFi form updates', () {
     test('updateWifiSsid updates ssid in WizardConfiguring', () async {
       when(() => mockPnpService.checkFactoryDefault())
@@ -384,6 +458,134 @@ void main() {
       final config = (state.phase as WizardConfiguring).wifiConfig;
       expect(config.password, 'NewPassword');
       expect(config.isPasswordChanged, isTrue);
+      container.dispose();
+    });
+  });
+
+  group('PnpNotifier — refreshMeshNodes (#1734)', () {
+    final controller = DevicesTestData.createMaster();
+    final joined = DevicesTestData.createWifiSlave();
+    final topology = MeshTopologyInfo(
+      nodes: [controller, joined],
+      clientToNodeMap: const {},
+    );
+
+    /// The wizard on the Your Network step, showing the controller only.
+    Future<PnpNotifier> onYourNetwork(
+      ProviderContainer container, {
+      PnpWifiConfig wifiConfig = testWifiConfig,
+      ServiceError? saveError,
+    }) async {
+      when(() => mockPnpService.checkFactoryDefault())
+          .thenAnswer((_) async => testFactoryResult);
+      when(() => mockPnpService.checkInternetConnected())
+          .thenAnswer((_) async => false);
+      when(() => mockPnpService.fetchCurrentSsid())
+          .thenAnswer((_) async => 'OldHome');
+      final notifier = container.read(pnpProvider.notifier);
+      await notifier.startPostLoginFlow();
+      notifier.setDemoPhase(WizardConfiguring(
+        wifiConfig: wifiConfig,
+        meshNodes: [controller],
+        saveError: saveError,
+      ));
+      return notifier;
+    }
+
+    test('replaces the nodes and keeps the Wi-Fi the customer typed', () async {
+      when(() => mockPnpService.fetchMeshTopology())
+          .thenAnswer((_) async => topology);
+      final container = createContainer();
+      final notifier = await onYourNetwork(container);
+      notifier.updateWifiSsid('Typed but not saved');
+
+      await notifier.refreshMeshNodes();
+
+      final phase = container.read(pnpProvider).phase as WizardConfiguring;
+      expect(phase.meshNodes, [controller, joined]);
+      expect(phase.wifiConfig.ssid, 'Typed but not saved');
+      expect(phase.wifiConfig.isSsidChanged, isTrue);
+      container.dispose();
+    });
+
+    test('keeps what the customer typed while the nodes were being read',
+        () async {
+      // Back to the Wi-Fi step and typing is open to them as soon as the
+      // add-nodes page pops, with the re-read still out.
+      final answer = Completer<MeshTopologyInfo>();
+      when(() => mockPnpService.fetchMeshTopology())
+          .thenAnswer((_) => answer.future);
+      final container = createContainer();
+      final notifier = await onYourNetwork(container);
+
+      final refresh = notifier.refreshMeshNodes();
+      notifier.updateWifiSsid('Typed during the read');
+      answer.complete(topology);
+      await refresh;
+
+      final phase = container.read(pnpProvider).phase as WizardConfiguring;
+      expect(phase.wifiConfig.ssid, 'Typed during the read');
+      expect(phase.meshNodes, [controller, joined]);
+      container.dispose();
+    });
+
+    test('an empty answer keeps the list the step showed', () async {
+      // fetchMeshTopology answers a failed read with an empty topology, and the
+      // controller is always one of its own nodes: none is a read that failed.
+      when(() => mockPnpService.fetchMeshTopology())
+          .thenAnswer((_) async => MeshTopologyInfo.empty);
+      final container = createContainer();
+      final notifier = await onYourNetwork(container);
+
+      await notifier.refreshMeshNodes();
+
+      final phase = container.read(pnpProvider).phase as WizardConfiguring;
+      expect(phase.meshNodes, [controller]);
+      container.dispose();
+    });
+
+    test('does nothing outside the form, and reads nothing', () async {
+      final container = createContainer();
+      final notifier = await onYourNetwork(container);
+      notifier.setDemoPhase(const WizardSaving());
+
+      await notifier.refreshMeshNodes();
+
+      expect(container.read(pnpProvider).phase, isA<WizardSaving>());
+      verifyNever(() => mockPnpService.fetchMeshTopology());
+      container.dispose();
+    });
+
+    test('drops its answer if the phase moved on while it read', () async {
+      final answer = Completer<MeshTopologyInfo>();
+      when(() => mockPnpService.fetchMeshTopology())
+          .thenAnswer((_) => answer.future);
+      final container = createContainer();
+      final notifier = await onYourNetwork(container);
+
+      final refresh = notifier.refreshMeshNodes();
+      // Save pressed while the nodes were still being read.
+      notifier.setDemoPhase(const WizardSaving());
+      answer.complete(topology);
+      await refresh;
+
+      expect(container.read(pnpProvider).phase, isA<WizardSaving>());
+      container.dispose();
+    });
+
+    test('a save error already shown is not carried over', () async {
+      // The view shows a WizardConfiguring with a saveError as a SnackBar, so a
+      // refresh that kept it would show the same failure a second time.
+      when(() => mockPnpService.fetchMeshTopology())
+          .thenAnswer((_) async => topology);
+      final container = createContainer();
+      final notifier =
+          await onYourNetwork(container, saveError: const UnexpectedError());
+
+      await notifier.refreshMeshNodes();
+
+      final phase = container.read(pnpProvider).phase as WizardConfiguring;
+      expect(phase.saveError, isNull);
       container.dispose();
     });
   });

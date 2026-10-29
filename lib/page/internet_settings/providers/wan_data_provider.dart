@@ -1,3 +1,6 @@
+import 'package:privacy_gui/core/capability/device_capability.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -104,6 +107,12 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
       }
     });
 
+    // Tunnel creation/deletion need not emit the legacy WAN object's SSE event.
+    if (ref.watch(deviceCapabilitiesProvider).has(DeviceCapability.autoIPoE)) {
+      final timer = Timer.periodic(
+          const Duration(seconds: 15), (_) => _refreshFromPush());
+      ref.onDispose(timer.cancel);
+    }
     return _fetch();
   }
 
@@ -151,8 +160,8 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
   ///   B completes        → state = up      (correct)
   ///   A completes        → state = DOWN    (the older device read wins)
   ///
-  /// And it does not self-correct: this provider is push-driven only — not autoDispose,
-  /// no polling, and this method deliberately avoids invalidation — so a settled WAN that
+  /// With Auto-IPoE disabled this provider is push-driven only — not autoDispose,
+  /// and this method deliberately avoids invalidation — so a settled WAN that
   /// sends no further notification leaves the dashboard, Statistics and health scoring
   /// reporting a dead link indefinitely. Reproduced in
   /// `wan_data_provider_test.dart` before fixing it.

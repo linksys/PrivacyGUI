@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
@@ -138,6 +139,186 @@ void main() {
     });
   });
 
+  // fetchMeshTopology reads DataElementsNetwork and, separately,
+  // DataElementsInterfaces (#1688 item 2). The second read is separate so that
+  // a controller without the Interface object loses wired attribution only,
+  // never the topology (usp_framework data_elements_interfaces.yaml).
+  group('UspDevicesDataService — fetchMeshTopology', () {
+    const node = 'Device.WiFi.DataElements.Network.Device.1.';
+
+    // The controller as measured on 2.0.3.26101482: no backhaul, and a wired
+    // Mac seen on its Ethernet interface as a non-1905 neighbor.
+    final networkResponse = <String, dynamic>{
+      '${node}ID': '74:12:13:21:56:3a',
+      '${node}MultiAPDevice.Backhaul.LinkType': 'None',
+    };
+    final interfacesResponse = <String, dynamic>{
+      '${node}ID': '74:12:13:21:56:3a',
+      '${node}Interface.4.MACAddress': '74:12:13:21:56:3a',
+      '${node}Interface.4.MediaType': 'IEEE_802_3AB_GIGABIT_ETHERNET',
+      '${node}Interface.4.Neighbor.1.ID': '00:e0:4c:68:08:2d',
+      '${node}Interface.4.Neighbor.1.IsIEEE1905': false,
+    };
+
+    void stubDataElements({
+      bool interfacesFail = false,
+      Map<String, dynamic>? network,
+      Map<String, dynamic> networkInfo = const {},
+      bool networkInfoFails = false,
+      bool mldFails = false,
+      bool mldNotFound = false,
+      Map<String, dynamic> mld = const {},
+    }) {
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((inv) async {
+        final paths = inv.positionalArguments[0] as List;
+        if (paths.any((p) => p.toString().contains('.Interface.'))) {
+          if (interfacesFail) throw 'USP get failed: 7026 Invalid path';
+          return interfacesResponse;
+        }
+        if (paths.any((p) => p.toString().contains('.APMLD.'))) {
+          // The router's own wording for a path outside its schema.
+          if (mldNotFound) {
+            throw 'Get failed: Protocol error: CheckPathProperties: Path '
+                '(Device.WiFi.DataElements.Network.Device.1.APMLD.) does not '
+                'exist in the schema (code: 7026)';
+          }
+          if (mldFails) throw 'USP get failed: Transport error';
+          return {'${node}ID': '74:12:13:21:56:3a', ...mld};
+        }
+        if (paths.any((p) => p.toString().endsWith('Network.ControllerID'))) {
+          if (networkInfoFails) throw 'USP get failed: 7026 Invalid path';
+          return networkInfo;
+        }
+        if (paths.any((p) => p.toString().contains('DataElements'))) {
+          return network ?? networkResponse;
+        }
+        return <String, dynamic>{};
+      });
+    }
+
+    test('attributes a wired client to the node that lists it', () async {
+      stubDataElements();
+
+      final topology = await svc.fetchMeshTopology();
+
+      expect(topology.nodes, hasLength(1));
+      expect(topology.wiredClientToNodeMap,
+          {'00:E0:4C:68:08:2D': '74:12:13:21:56:3A'});
+    });
+
+    test('an Interface read that fails leaves the topology intact', () async {
+      stubDataElements(interfacesFail: true);
+
+      final topology = await svc.fetchMeshTopology();
+
+      expect(topology.nodes, hasLength(1));
+      expect(topology.wiredClientToNodeMap, isEmpty);
+    });
+
+    // #1688 review (W2): an agent still joining has no backhaul yet. The
+    // ControllerID read is what keeps it a slave instead of a second master.
+    test('reads ControllerID so a joining agent is a slave', () async {
+      stubDataElements(network: {
+        ...networkResponse,
+        'Device.WiFi.DataElements.Network.Device.2.ID': 'aa:bb:cc:dd:ee:02',
+      }, networkInfo: {
+        'Device.WiFi.DataElements.Network.ControllerID': '74:12:13:21:56:3a',
+      });
+
+      final topology = await svc.fetchMeshTopology();
+
+      expect(
+          topology.nodes.slaves.map((s) => s.deviceId), ['AA:BB:CC:DD:EE:02']);
+    });
+
+    // usp-codegen 0.18 returns every row, including one with every value
+    // blank, which 0.17 dropped (#1654).
+    test('a node row with every value blank is no node', () async {
+      stubDataElements(network: {
+        'Device.WiFi.DataElements.Network.Device.3.ID': '',
+        'Device.WiFi.DataElements.Network.Device.3.MultiAPDevice.Backhaul.LinkType':
+            '',
+        ...networkResponse,
+      });
+
+      final topology = await svc.fetchMeshTopology();
+
+      expect(topology.nodes, hasLength(1));
+    });
+
+    test('an interface row with no ID takes no wired client', () async {
+      // Its interface MAC is the wired client's; 0.17 dropped the row, so the
+      // client stayed attributed to the node that lists it.
+      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
+          .thenAnswer((inv) async {
+        final paths = inv.positionalArguments[0] as List;
+        if (paths.any((p) => p.toString().contains('.Interface.'))) {
+          return {
+            ...interfacesResponse,
+            'Device.WiFi.DataElements.Network.Device.3.ID': '',
+            'Device.WiFi.DataElements.Network.Device.3.Interface.2.MACAddress':
+                '00:e0:4c:68:08:2d',
+          };
+        }
+        if (paths.any((p) => p.toString().endsWith('Network.ControllerID'))) {
+          return <String, dynamic>{};
+        }
+        return networkResponse;
+      });
+
+      final topology = await svc.fetchMeshTopology();
+
+      expect(topology.wiredClientToNodeMap,
+          {'00:E0:4C:68:08:2D': '74:12:13:21:56:3A'});
+    });
+
+    // #1686 item 2. "MLO switched off" answers empty; a fault is "not
+    // known", and must not take the topology down with it.
+    test('an MLD read that answers empty means no MLO client', () async {
+      stubDataElements();
+
+      final topology = await svc.fetchMeshTopology();
+
+      expect(topology.nodes, hasLength(1));
+      expect(topology.mloClients, isEmpty);
+    });
+
+    // Firmware without the TR-181 2.17 MLD objects answers 7026: it can have
+    // no MLO client, so that is "no MLO", not "not known" — or every client on
+    // such firmware would carry the unavailable hint for good.
+    test('an MLD path the firmware does not have means no MLO client',
+        () async {
+      stubDataElements(mldNotFound: true);
+
+      final topology = await svc.fetchMeshTopology();
+
+      expect(topology.nodes, hasLength(1));
+      expect(topology.mloClients, isEmpty);
+    });
+
+    test('an MLD read that fails leaves the topology intact, MLO unknown',
+        () async {
+      stubDataElements(mldFails: true);
+
+      final topology = await svc.fetchMeshTopology();
+
+      expect(topology.nodes, hasLength(1));
+      expect(topology.wiredClientToNodeMap, isNotEmpty);
+      expect(topology.mloClients, isNull);
+    });
+
+    test('a ControllerID read that fails leaves the topology intact', () async {
+      stubDataElements(networkInfoFails: true);
+
+      final topology = await svc.fetchMeshTopology();
+
+      expect(topology.nodes, hasLength(1));
+      expect(topology.wiredClientToNodeMap,
+          {'00:E0:4C:68:08:2D': '74:12:13:21:56:3A'});
+    });
+  });
+
   group('UspDevicesDataService — rebuildWithWifiData', () {
     test('enriches devices with WiFi signal data', () async {
       final fetchResult = await svc.fetch(
@@ -210,10 +391,12 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // Hostname-based multi-interface grouping
+  // Multi-interface grouping. These rows carry no X_LINKSYS_FriendlyName, so
+  // they group by HostName, the fallback (#1719); MeshNetworkBuilder's tests
+  // cover grouping by FriendlyName.
   // ---------------------------------------------------------------------------
 
-  group('UspDevicesDataService — hostname grouping', () {
+  group('UspDevicesDataService — multi-interface grouping by HostName', () {
     test('merges devices with same hostname into single entry', () async {
       // Setup: two devices with same hostname but different MACs/interfaces
       when(() => mockUsp.get(any(), priority: any(named: 'priority')))
@@ -305,38 +488,68 @@ void main() {
       expect(result.meshNetwork.allClients.last.hasMultipleInterfaces, isFalse);
     });
 
-    test('mesh nodes (master/slave) are not merged', () async {
+    // Two agents of the same model share a host name. Their Hosts rows must
+    // not be merged into one client the way two interfaces of one laptop are.
+    //
+    // FL-WRT 2.0 has no `DeviceRole`, so a row is a node's only once
+    // DataElements has listed that node (#1688). `fetch()` builds before the
+    // background DataElements read returns, with an empty topology, so the
+    // exclusion is asserted where the topology arrives: `rebuildWithMesh()`.
+    // Neither row carries a role leaf, and the controller has no Hosts row of
+    // its own — the shape measured on 2.0.3.26101482.
+    test('mesh nodes are not merged as clients once DataElements lists them',
+        () async {
       when(() => mockUsp.get(any(), priority: any(named: 'priority')))
           .thenAnswer((_) async => {
-                'Device.Hosts.Host.1.PhysAddress': 'AA:BB:CC:DD:EE:01',
-                'Device.Hosts.Host.1.IPAddress': '192.168.1.1',
-                'Device.Hosts.Host.1.HostName': 'LinksysRouter',
+                'Device.Hosts.Host.1.PhysAddress': 'AA:BB:CC:DD:EE:02',
+                'Device.Hosts.Host.1.IPAddress': '192.168.1.2',
+                'Device.Hosts.Host.1.HostName': 'LinksysExtender',
                 'Device.Hosts.Host.1.Active': true,
-                'Device.Hosts.Host.1.Layer1Interface':
-                    'Device.Ethernet.Interface.1.',
-                'Device.Hosts.Host.1.DeviceRole': 'master',
-                'Device.Hosts.Host.2.PhysAddress': 'AA:BB:CC:DD:EE:02',
-                'Device.Hosts.Host.2.IPAddress': '192.168.1.2',
-                'Device.Hosts.Host.2.HostName': 'LinksysRouter',
+                'Device.Hosts.Host.1.Layer1Interface': 'Device.WiFi.SSID.1.',
+                'Device.Hosts.Host.2.PhysAddress': 'AA:BB:CC:DD:EE:03',
+                'Device.Hosts.Host.2.IPAddress': '192.168.1.3',
+                'Device.Hosts.Host.2.HostName': 'LinksysExtender',
                 'Device.Hosts.Host.2.Active': true,
-                'Device.Hosts.Host.2.Layer1Interface': 'Device.WiFi.SSID.1.',
-                'Device.Hosts.Host.2.DeviceRole': 'slave',
+                'Device.Hosts.Host.2.Layer1Interface':
+                    'Device.Ethernet.Interface.1.',
               });
 
-      final result = await svc.fetch(
+      final first = await svc.fetch(
         wifiClientMap: {},
         connectionDetailMap: {},
         gatewayName: 'Router',
         systemInfo: _sysInfo,
       );
 
-      // Mesh nodes are separate from client devices in MeshNetwork
-      // allClients contains only client devices, allNodes contains mesh nodes
-      final clientDevices = result.meshNetwork.allClients;
+      final rebuilt = svc.rebuildWithMesh(
+        context: first.codegenContext,
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        meshTopology: MeshTopologyInfo(
+          nodes: [
+            MasterNode(deviceId: 'AA:BB:CC:DD:EE:01', model: 'M60'),
+            SlaveNode(
+              deviceId: 'AA:BB:CC:DD:EE:02',
+              model: 'M60',
+              backhaul: const BackhaulInfo(linkType: 'Wi-Fi'),
+            ),
+            SlaveNode(
+              deviceId: 'AA:BB:CC:DD:EE:03',
+              model: 'M60',
+              backhaul: const BackhaulInfo(linkType: 'Ethernet'),
+            ),
+          ],
+          clientToNodeMap: const {},
+        ),
+        gatewayName: 'Router',
+        systemInfo: _sysInfo,
+      );
 
-      // Mesh nodes with DeviceRole are filtered out from clients
-      // The test data has 2 devices both with mesh roles, so no client devices
-      expect(clientDevices, isEmpty);
+      expect(rebuilt.allClients, isEmpty);
+      expect(rebuilt.slaves.map((s) => s.deviceId),
+          ['AA:BB:CC:DD:EE:02', 'AA:BB:CC:DD:EE:03']);
+      expect(rebuilt.slaves.map((s) => s.ipAddress),
+          ['192.168.1.2', '192.168.1.3']);
     });
 
     test('primary interface selection: active > WiFi > Ethernet', () async {
@@ -496,6 +709,180 @@ void main() {
       expect(device.additionalInterfaces, hasLength(1));
       expect(device.additionalInterfaces.first.isWifi, isTrue);
       expect(device.additionalInterfaces.first.isActive, isFalse);
+    });
+  });
+
+  // The detail page names a client and picks its icon (#1691): the name is
+  // X_LINKSYS_UserDeviceLocation, the icon the app's own code in
+  // X_LINKSYS_UserDeviceType, both on the client's Hosts.Host row.
+  group('UspDevicesDataService — updateIdentity', () {
+    Map<String, dynamic> setSuccess() => {
+          'success': true,
+          'result': {'data': <String, dynamic>{}},
+        };
+
+    test('a fetched client carries its Hosts.Host path', () async {
+      final result = await svc.fetch(
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        gatewayName: 'Router',
+      );
+
+      final laptop = result.meshNetwork.allClients
+          .firstWhere((d) => d.mac == 'AA:BB:CC:DD:EE:01');
+      expect(laptop.hostInstancePath, 'Device.Hosts.Host.1.');
+    });
+
+    // A device merged from two rows is named on both, in one Set: devidentd
+    // keeps the name per MAC, so naming one row would split the device (#1719).
+    test('writes every row of a merged device in one Set', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => setSuccess());
+
+      await svc.updateIdentity(
+        hostInstancePaths: ['Device.Hosts.Host.1.', 'Device.Hosts.Host.2.'],
+        name: 'Work laptop',
+        userTypeCode: '3',
+      );
+
+      verify(() => mockUsp.set(
+            {
+              'Device.Hosts.Host.1.X_LINKSYS_UserDeviceLocation': 'Work laptop',
+              'Device.Hosts.Host.1.X_LINKSYS_UserDeviceType': '3',
+              'Device.Hosts.Host.2.X_LINKSYS_UserDeviceLocation': 'Work laptop',
+              'Device.Hosts.Host.2.X_LINKSYS_UserDeviceType': '3',
+            },
+            allowPartial: false,
+          )).called(1);
+    });
+
+    // Reset clears the name and the icon (both ''), on every row.
+    test('Reset clears the name and the icon on every row', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => setSuccess());
+
+      await svc.updateIdentity(
+        hostInstancePaths: ['Device.Hosts.Host.1.', 'Device.Hosts.Host.2.'],
+        name: '',
+        userTypeCode: '',
+      );
+
+      verify(() => mockUsp.set(
+            {
+              'Device.Hosts.Host.1.X_LINKSYS_UserDeviceLocation': '',
+              'Device.Hosts.Host.1.X_LINKSYS_UserDeviceType': '',
+              'Device.Hosts.Host.2.X_LINKSYS_UserDeviceLocation': '',
+              'Device.Hosts.Host.2.X_LINKSYS_UserDeviceType': '',
+            },
+            allowPartial: false,
+          )).called(1);
+    });
+
+    test('writes the name and the icon code in one Set', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => setSuccess());
+
+      await svc.updateIdentity(
+        hostInstancePaths: ['Device.Hosts.Host.3.'],
+        name: 'Living room TV',
+        userTypeCode: '4',
+      );
+
+      verify(() => mockUsp.set(
+            {
+              'Device.Hosts.Host.3.X_LINKSYS_UserDeviceLocation':
+                  'Living room TV',
+              'Device.Hosts.Host.3.X_LINKSYS_UserDeviceType': '4',
+            },
+            allowPartial: false,
+          )).called(1);
+    });
+
+    test('an empty name and an empty code are written, which clears them',
+        () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => setSuccess());
+
+      await svc.updateIdentity(
+        hostInstancePaths: ['Device.Hosts.Host.3.'],
+        name: '',
+        userTypeCode: '',
+      );
+
+      verify(() => mockUsp.set(
+            {
+              'Device.Hosts.Host.3.X_LINKSYS_UserDeviceLocation': '',
+              'Device.Hosts.Host.3.X_LINKSYS_UserDeviceType': '',
+            },
+            allowPartial: false,
+          )).called(1);
+    });
+
+    // A name-only edit leaves the stored type alone, so a type another client
+    // wrote (a devregex string the app has no code for) is not erased.
+    test('with no icon change, only the name is written', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => setSuccess());
+
+      await svc.updateIdentity(
+        hostInstancePaths: ['Device.Hosts.Host.3.'],
+        name: 'Kitchen',
+      );
+
+      verify(() => mockUsp.set(
+            {'Device.Hosts.Host.3.X_LINKSYS_UserDeviceLocation': 'Kitchen'},
+            allowPartial: false,
+          )).called(1);
+    });
+
+    // The generated update answers success without sending a Set when it has
+    // no params, so a save of no row would report a name it never wrote.
+    test('no row to write is refused, and nothing is sent', () {
+      expect(
+        () => svc.updateIdentity(hostInstancePaths: [], name: 'x'),
+        throwsA(isA<ResourceNotFoundError>()),
+      );
+      verifyNever(
+          () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
+    });
+
+    test('a refused Set throws UspCompleteFailureError', () {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': false,
+                'result': {
+                  'data': <String, dynamic>{},
+                  'error': {
+                    'Device.Hosts.Host.3.X_LINKSYS_UserDeviceLocation': {
+                      'errorCode': 9007,
+                      'errorMessage': 'Invalid parameter value',
+                    },
+                  },
+                },
+              });
+
+      expect(
+        () => svc.updateIdentity(
+          hostInstancePaths: ['Device.Hosts.Host.3.'],
+          name: 'x',
+          userTypeCode: '1',
+        ),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+
+    test('a transport error maps to ServiceError', () {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenThrow('Set failed: Transport error: Connection refused');
+
+      expect(
+        () => svc.updateIdentity(
+          hostInstancePaths: ['Device.Hosts.Host.3.'],
+          name: 'x',
+          userTypeCode: '1',
+        ),
+        throwsA(isA<ConnectivityError>()),
+      );
     });
   });
 }

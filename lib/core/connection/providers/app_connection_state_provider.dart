@@ -3,9 +3,10 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/services/recovery_probe_service.dart';
+import 'package:privacy_gui/core/connection/models/probe_result.dart';
 import 'package:privacy_gui/core/mode/app_mode_profile.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
+import 'package:privacy_gui/core/usp/models/sse_connection_state.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/mode/recovery_plan.dart';
 import 'package:privacy_gui/framework/mode/session_end.dart';
@@ -301,6 +302,22 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
     if (state != AppConnectionState.waitingForRecovery) return;
     logger.i('[Connection] retryNow() — manual probe trigger');
     await _runProbe();
+  }
+
+  /// Ends the cooldown now and starts the probe loop, for a caller that knows
+  /// better than a fixed cooldown when the router is worth probing.
+  ///
+  /// A Wi-Fi save enters recovery when it starts, so there is one waiting state
+  /// and one dialog for the whole save — but FW 2.0.2 keeps answering for the
+  /// first ~38 s of the reload, so probing then would "recover" before anything
+  /// had restarted. The save holds the probe off with a long cooldown and calls
+  /// this once its own write has settled. Recovery then ends through the probe
+  /// loop as for every other trigger. A no-op when not waiting.
+  void startProbingNow() {
+    if (state != AppConnectionState.waitingForRecovery) return;
+    _cooldownTimer?.cancel();
+    _cooldownTimer = null;
+    _startProbeLoop();
   }
 
   void _startProbeLoop() {

@@ -28,12 +28,20 @@ void main() {
         .thenAnswer((invocation) async {
       final paths = invocation.positionalArguments[0] as List<String>;
 
-      // FirewallChainRules.fetch (Device.Firewall.Chain.1.Rule.*)
+      // FirewallChainRules.fetch: the UPnP chain on Chain.2 with a rule of
+      // its own, then [firewallRules] on the Defaults Configuration chain on
+      // Chain.3, from row 11.
       if (paths.any((p) => p.contains('Firewall.Chain'))) {
-        final result = <String, dynamic>{};
+        final result = <String, dynamic>{
+          'Device.Firewall.Chain.2.Name': 'UPnP Port Mapping (dynamic rules)',
+          'Device.Firewall.Chain.2.Rule.4.Enable': true,
+          'Device.Firewall.Chain.2.Rule.4.Target': 'Accept',
+          'Device.Firewall.Chain.2.Rule.4.Description': '',
+          'Device.Firewall.Chain.3.Name': 'Defaults Configuration',
+        };
         for (var i = 0; i < firewallRules.length; i++) {
           final rule = firewallRules[i];
-          final prefix = 'Device.Firewall.Chain.1.Rule.${i + 1}.';
+          final prefix = 'Device.Firewall.Chain.3.Rule.${i + 11}.';
           result['${prefix}Enable'] = rule['enable'] ?? true;
           result['${prefix}Target'] = rule['target'] ?? 'Accept';
           result['${prefix}Description'] = rule['description'] ?? '';
@@ -164,6 +172,29 @@ void main() {
       expect(result.ruleSummaries[1].target, 'Drop');
       expect(result.ruleSummaries[1].enabled, isFalse);
       expect(result.ruleSummaries[2].target, 'Reject');
+    });
+
+    test('a rule row with every value blank is not counted', () async {
+      // usp-codegen 0.18 returns such a row where 0.17 dropped it (#1654).
+      stubResponses(firewallRules: [
+        {'enable': true, 'target': 'Accept'},
+        {'enable': false, 'target': '', 'description': ''},
+      ], dmzEntries: [
+        {
+          'enable': false,
+          'destIp': '',
+          'sourcePrefix': '',
+          'interface': '',
+          'description': '',
+          'status': '',
+        },
+      ]);
+
+      final result = await svc.fetch();
+
+      expect(result.ruleSummaries, hasLength(1));
+      expect(result.dmzSummaries, isEmpty,
+          reason: 'the empty DMZ state stays empty');
     });
 
     test('empty rules returns empty summaries and context', () async {

@@ -4,26 +4,72 @@
 
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
-/// WAN singleton settings — fetch all params + cross-mode writable fields (MTU)
-class WanSettings {
+/// Nested instance from parent multi-instance table
+class WanSettingsIpv4Address {
+  final String instancePath;
   final String addressingType;
-  final int mtu;
-  final String? mtuMode;
-  final String staticIpAddress;
+  final String ipAddress;
   final String subnetMask;
   final String defaultGateway;
   final String dnsServers;
-  final bool bridgeEnabled;
 
-  const WanSettings({
+  const WanSettingsIpv4Address({
+    required this.instancePath,
     required this.addressingType,
-    required this.mtu,
-    this.mtuMode,
-    required this.staticIpAddress,
+    required this.ipAddress,
     required this.subnetMask,
     required this.defaultGateway,
     required this.dnsServers,
-    required this.bridgeEnabled,
+  });
+
+  @override
+  String toString() {
+    return 'WanSettingsIpv4Address('
+        'instancePath: $instancePath, '
+        'addressingType: $addressingType, '
+        'ipAddress: $ipAddress, '
+        'subnetMask: $subnetMask, '
+        'defaultGateway: $defaultGateway, '
+        'dnsServers: $dnsServers'
+        ')';
+  }
+}
+
+/// Update descriptor for WanSettingsIpv4Address instances
+class WanSettingsIpv4AddressUpdate {
+  final String instancePath;
+  final String? addressingType;
+  final String? ipAddress;
+  final String? subnetMask;
+  final String? defaultGateway;
+  final String? dnsServers;
+
+  const WanSettingsIpv4AddressUpdate({
+    required this.instancePath,
+    this.addressingType,
+    this.ipAddress,
+    this.subnetMask,
+    this.defaultGateway,
+    this.dnsServers,
+  });
+}
+
+/// WAN settings — interface state, MTU, and the IPv4 address table (read and write)
+class WanSettings {
+  final String instancePath;
+  final bool enable;
+  final int mtu;
+  final String? mtuMode;
+  final String lowerLayers;
+  final List<WanSettingsIpv4Address> ipv4Addresses;
+
+  const WanSettings({
+    required this.instancePath,
+    required this.enable,
+    required this.mtu,
+    this.mtuMode,
+    required this.lowerLayers,
+    required this.ipv4Addresses,
   });
 
   /// Resolve the instance index by searching for Alias='wan'
@@ -38,20 +84,20 @@ class WanSettings {
         }
       }
     }
-    // Fallback to hardcoded instance 2
-    return 'Device.IP.Interface.2.';
+    throw 'Get failed: Could not resolve Device.IP.Interface instance with Alias=wan (code: 9996)';
   }
 
   /// Build parameter paths using the resolved instance path
   static List<String> _buildPaths(String instancePath) => [
-        '${instancePath}IPv4Address.1.AddressingType',
+        '${instancePath}Enable',
         '${instancePath}MaxMTUSize',
         '${instancePath}X_LINKSYS_MTUMode',
-        '${instancePath}IPv4Address.1.IPAddress',
-        '${instancePath}IPv4Address.1.SubnetMask',
-        '${instancePath}IPv4Address.1.X_LINKSYS_DefaultGateway',
-        '${instancePath}IPv4Address.1.X_LINKSYS_DNSServers',
-        'Device.Bridging.Bridge.1.Enable',
+        '${instancePath}LowerLayers',
+        '${instancePath}IPv4Address.*.AddressingType',
+        '${instancePath}IPv4Address.*.IPAddress',
+        '${instancePath}IPv4Address.*.SubnetMask',
+        '${instancePath}IPv4Address.*.X_LINKSYS_DefaultGateway',
+        '${instancePath}IPv4Address.*.X_LINKSYS_DNSServers',
       ];
 
   /// Fetch all parameters via USP Get message
@@ -64,73 +110,108 @@ class WanSettings {
   factory WanSettings._fromResponse(
       Map<String, dynamic> response, String instancePath) {
     final missing = <String>[];
-    if (!response.containsKey('${instancePath}IPv4Address.1.AddressingType')) {
-      missing.add('${instancePath}IPv4Address.1.AddressingType');
+    if (!response.containsKey('${instancePath}Enable')) {
+      missing.add('${instancePath}Enable');
     }
     if (!response.containsKey('${instancePath}MaxMTUSize')) {
       missing.add('${instancePath}MaxMTUSize');
     }
-    if (!response.containsKey('${instancePath}IPv4Address.1.IPAddress')) {
-      missing.add('${instancePath}IPv4Address.1.IPAddress');
-    }
-    if (!response.containsKey('${instancePath}IPv4Address.1.SubnetMask')) {
-      missing.add('${instancePath}IPv4Address.1.SubnetMask');
-    }
-    if (!response
-        .containsKey('${instancePath}IPv4Address.1.X_LINKSYS_DefaultGateway')) {
-      missing.add('${instancePath}IPv4Address.1.X_LINKSYS_DefaultGateway');
-    }
-    if (!response
-        .containsKey('${instancePath}IPv4Address.1.X_LINKSYS_DNSServers')) {
-      missing.add('${instancePath}IPv4Address.1.X_LINKSYS_DNSServers');
-    }
-    if (!response.containsKey('Device.Bridging.Bridge.1.Enable')) {
-      missing.add('Device.Bridging.Bridge.1.Enable');
+    if (!response.containsKey('${instancePath}LowerLayers')) {
+      missing.add('${instancePath}LowerLayers');
     }
     if (missing.isNotEmpty) {
       throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
+    final childBase_0 = '${instancePath}IPv4Address.';
+    final childIds_0 = <String>{};
+    for (final key in response.keys) {
+      if (key.startsWith(childBase_0)) {
+        final rest = key.substring(childBase_0.length);
+        final dot = rest.indexOf('.');
+        if (dot > 0) childIds_0.add(rest.substring(0, dot));
+      }
+    }
+    final childSorted_0 = childIds_0.toList()
+      ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+    final ipv4Addresses = <WanSettingsIpv4Address>[];
+    for (final cid_0 in childSorted_0) {
+      final cp_0 = '$childBase_0$cid_0.';
+      final missing = <String>[];
+      if (!response.containsKey('${cp_0}AddressingType')) {
+        missing.add('${cp_0}AddressingType');
+      }
+      if (!response.containsKey('${cp_0}IPAddress')) {
+        missing.add('${cp_0}IPAddress');
+      }
+      if (!response.containsKey('${cp_0}SubnetMask')) {
+        missing.add('${cp_0}SubnetMask');
+      }
+      if (!response.containsKey('${cp_0}X_LINKSYS_DefaultGateway')) {
+        missing.add('${cp_0}X_LINKSYS_DefaultGateway');
+      }
+      if (!response.containsKey('${cp_0}X_LINKSYS_DNSServers')) {
+        missing.add('${cp_0}X_LINKSYS_DNSServers');
+      }
+      if (missing.isNotEmpty) {
+        throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+      }
+      ipv4Addresses.add(WanSettingsIpv4Address(
+        instancePath: cp_0,
+        addressingType: (response['${cp_0}AddressingType'] ?? '') as String,
+        ipAddress: (response['${cp_0}IPAddress'] ?? '') as String,
+        subnetMask: (response['${cp_0}SubnetMask'] ?? '') as String,
+        defaultGateway:
+            (response['${cp_0}X_LINKSYS_DefaultGateway'] ?? '') as String,
+        dnsServers: (response['${cp_0}X_LINKSYS_DNSServers'] ?? '') as String,
+      ));
+    }
     return WanSettings(
-      addressingType:
-          (response['${instancePath}IPv4Address.1.AddressingType'] ?? '')
-              as String,
+      instancePath: instancePath,
+      enable: response['${instancePath}Enable'] == true ||
+          response['${instancePath}Enable'] == 'true' ||
+          response['${instancePath}Enable'] == '1',
       mtu: int.tryParse(
               response['${instancePath}MaxMTUSize']?.toString() ?? '') ??
           0,
       mtuMode: response.containsKey('${instancePath}X_LINKSYS_MTUMode')
           ? response['${instancePath}X_LINKSYS_MTUMode'] as String
           : null,
-      staticIpAddress:
-          (response['${instancePath}IPv4Address.1.IPAddress'] ?? '') as String,
-      subnetMask:
-          (response['${instancePath}IPv4Address.1.SubnetMask'] ?? '') as String,
-      defaultGateway:
-          (response['${instancePath}IPv4Address.1.X_LINKSYS_DefaultGateway'] ??
-              '') as String,
-      dnsServers:
-          (response['${instancePath}IPv4Address.1.X_LINKSYS_DNSServers'] ?? '')
-              as String,
-      bridgeEnabled: response['Device.Bridging.Bridge.1.Enable'] == true ||
-          response['Device.Bridging.Bridge.1.Enable'] == 'true' ||
-          response['Device.Bridging.Bridge.1.Enable'] == '1',
+      lowerLayers: (response['${instancePath}LowerLayers'] ?? '') as String,
+      ipv4Addresses: ipv4Addresses,
     );
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-    UspClient client, {
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams(
+    String instancePath, {
+    bool? enable,
     int? mtu,
     String? mtuMode,
-    bool allowPartial = false,
-  }) async {
+  }) {
     final params = <String, dynamic>{};
-    final instancePath = await _resolveInstance(client);
+    if (enable != null) {
+      params['${instancePath}Enable'] = enable;
+    }
     if (mtu != null) {
       params['${instancePath}MaxMTUSize'] = mtu;
     }
     if (mtuMode != null) {
       params['${instancePath}X_LINKSYS_MTUMode'] = mtuMode;
     }
+    return params;
+  }
+
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+    UspClient client, {
+    bool? enable,
+    int? mtu,
+    String? mtuMode,
+    bool allowPartial = false,
+  }) async {
+    final instancePath = await _resolveInstance(client);
+    final params =
+        updateParams(instancePath, enable: enable, mtu: mtu, mtuMode: mtuMode);
     if (params.isEmpty) {
       return {
         'success': true,
@@ -140,17 +221,112 @@ class WanSettings {
     return await client.set(params, allowPartial: allowPartial);
   }
 
+  /// Build the Set params of updateIpv4Addresses() without sending them
+  static Map<String, dynamic> updateIpv4AddressesParams(
+      List<WanSettingsIpv4AddressUpdate> updates) {
+    final params = <String, dynamic>{};
+    for (final update in updates) {
+      if (update.addressingType != null) {
+        params['${update.instancePath}AddressingType'] = update.addressingType;
+      }
+      if (update.ipAddress != null) {
+        params['${update.instancePath}IPAddress'] = update.ipAddress;
+      }
+      if (update.subnetMask != null) {
+        params['${update.instancePath}SubnetMask'] = update.subnetMask;
+      }
+      if (update.defaultGateway != null) {
+        params['${update.instancePath}X_LINKSYS_DefaultGateway'] =
+            update.defaultGateway;
+      }
+      if (update.dnsServers != null) {
+        params['${update.instancePath}X_LINKSYS_DNSServers'] =
+            update.dnsServers;
+      }
+    }
+    return params;
+  }
+
+  /// Update WanSettingsIpv4Address rows, each through its own instancePath
+  static Future<Map<String, dynamic>> updateIpv4Addresses(
+      UspClient client, List<WanSettingsIpv4AddressUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateIpv4AddressesParams(updates);
+    if (params.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    return await client.set(params, allowPartial: allowPartial);
+  }
+
+  /// Build the setOrdered() groups of updateOrderedIpv4Addresses() without sending them
+  static List<List<Map<String, String>>> updateOrderedIpv4AddressesGroups(
+      List<WanSettingsIpv4AddressUpdate> updates) {
+    final orderedParams = <List<Map<String, String>>>[];
+    for (final update in updates) {
+      final group1 = <Map<String, String>>[];
+      if (update.addressingType != null) {
+        group1.add({
+          'path': '${update.instancePath}AddressingType',
+          'value': update.addressingType.toString()
+        });
+      }
+      if (group1.isNotEmpty) orderedParams.add(group1);
+      final group2 = <Map<String, String>>[];
+      if (update.ipAddress != null) {
+        group2.add({
+          'path': '${update.instancePath}IPAddress',
+          'value': update.ipAddress.toString()
+        });
+      }
+      if (update.subnetMask != null) {
+        group2.add({
+          'path': '${update.instancePath}SubnetMask',
+          'value': update.subnetMask.toString()
+        });
+      }
+      if (update.defaultGateway != null) {
+        group2.add({
+          'path': '${update.instancePath}X_LINKSYS_DefaultGateway',
+          'value': update.defaultGateway.toString()
+        });
+      }
+      if (update.dnsServers != null) {
+        group2.add({
+          'path': '${update.instancePath}X_LINKSYS_DNSServers',
+          'value': update.dnsServers.toString()
+        });
+      }
+      if (group2.isNotEmpty) orderedParams.add(group2);
+    }
+    return orderedParams;
+  }
+
+  /// Update WanSettingsIpv4Address rows in priority order (lower priority is set first)
+  static Future<Map<String, dynamic>> updateOrderedIpv4Addresses(
+      UspClient client, List<WanSettingsIpv4AddressUpdate> updates,
+      {bool allowPartial = false}) async {
+    final orderedParams = updateOrderedIpv4AddressesGroups(updates);
+    if (orderedParams.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    return await client.setOrdered(orderedParams, allowPartial: allowPartial);
+  }
+
   @override
   String toString() {
     return 'WanSettings('
-        'addressingType: $addressingType, '
+        'instancePath: $instancePath, '
+        'enable: $enable, '
         'mtu: $mtu, '
         'mtuMode: $mtuMode, '
-        'staticIpAddress: $staticIpAddress, '
-        'subnetMask: $subnetMask, '
-        'defaultGateway: $defaultGateway, '
-        'dnsServers: $dnsServers, '
-        'bridgeEnabled: $bridgeEnabled'
+        'lowerLayers: $lowerLayers, '
+        'ipv4Addresses: $ipv4Addresses'
         ')';
   }
 }

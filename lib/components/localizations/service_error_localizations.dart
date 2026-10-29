@@ -37,6 +37,8 @@ String localizeServiceError(BuildContext context, Object error) {
     NetworkError() => l.errorNetwork,
     ConnectivityError() => l.errorConnectivity,
     TimeoutError() => l.errorTimeout,
+    SavedButUnconfirmedError() => l.errorSavedButUnconfirmed,
+    SaveDiscardedForRouterRowsError() => l.errorSaveDiscardedForRouterRows,
     ServiceNotInitializedError() => l.errorServiceNotReady,
     // Batch: show the first failure's concrete message (actionable).
     UspPartialFailureError(:final failures) =>
@@ -48,6 +50,8 @@ String localizeServiceError(BuildContext context, Object error) {
     // Infrastructure-level: caught at session/auth layer, never reaches UI.
     StorageError() => l.errorUnexpected,
     SerialNumberMismatchError() => l.errorUnexpected,
+    // The user's own cancel: callers return before localizing it.
+    OperationCancelledError() => l.errorUnexpected,
   };
 }
 
@@ -71,7 +75,7 @@ String _localizeBatch(BuildContext context, List<UspErrorDetail> failures) {
 ///
 /// Codes:
 /// - 7004/7005/7006 (TR-369) + 9008 (bbfdm non-writable) → invalid input
-/// - 7026/7027 (TR-369 not found) + 9005/9007 (bbfdm) → resource not found
+/// - 7016/7026/7027 (TR-369 not found) + 9005/9007 (bbfdm) → resource not found
 /// - 9001 (bbfdm request denied) → unauthorized
 /// - 7022 (TR-369 command failure — the agent refused the command) → command
 ///   refused. Reached via `_mapOperationError`, not `_mapProtocolError`, which is
@@ -83,7 +87,7 @@ String _localizeFaultCode(BuildContext context, int code) {
   final l = loc(context);
   return switch (code) {
     7004 || 7005 || 7006 || 9008 => l.errorInvalidInput,
-    7026 || 7027 || 9005 || 9007 => l.errorResourceNotFound,
+    7016 || 7026 || 7027 || 9005 || 9007 => l.errorResourceNotFound,
     7022 => l.errorCommandRefused,
     9001 => l.errorUnauthorized,
     9999 => l.errorNetwork,

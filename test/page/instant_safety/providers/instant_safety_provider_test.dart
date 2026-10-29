@@ -358,7 +358,10 @@ void main() {
       // The SET succeeded and only the re-fetch failed. The caller must hear
       // about it (snackbar) — silently returning would pair a success toast
       // with a full-page ServiceErrorView.
-      await expectLater(notifier.save(), throwsA(same(_fetchError)));
+      await expectLater(
+          notifier.save(),
+          throwsA(isA<SavedButUnconfirmedError>()
+              .having((e) => e.cause, 'cause', same(_fetchError))));
 
       // ...and status.error must stay clear, or the page turns into an error
       // view for a write that actually landed.
@@ -398,7 +401,10 @@ void main() {
 
       final notifier = container.read(uspInstantSafetyProvider.notifier);
       notifier.setEnabled(true);
-      await expectLater(notifier.save(), throwsA(same(_fetchError)));
+      await expectLater(
+          notifier.save(),
+          throwsA(isA<SavedButUnconfirmedError>()
+              .having((e) => e.cause, 'cause', same(_fetchError))));
       await pumpEventQueue();
 
       verify(() => mockLanService.fetch()).called(1);

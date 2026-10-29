@@ -25,11 +25,19 @@ class NetworkDiagnostics {
     UspClient client, {
     required String host,
     String? maxHopCount,
+    String? numberOfTries,
+    String? timeout,
   }) async {
     final inputs = <String, String>{};
     inputs['Host'] = host;
     if (maxHopCount != null) {
       inputs['MaxHopCount'] = maxHopCount;
+    }
+    if (numberOfTries != null) {
+      inputs['NumberOfTries'] = numberOfTries;
+    }
+    if (timeout != null) {
+      inputs['Timeout'] = timeout;
     }
     return await client.operate('Device.IP.Diagnostics.TraceRoute()',
         args: inputs);
@@ -130,7 +138,6 @@ class NetworkDiagnostics {
     UspClient client, {
     required String hostList,
     String? protocol,
-    String? port,
     String? numberOfRepetitions,
     String? timeout,
   }) async {
@@ -138,9 +145,6 @@ class NetworkDiagnostics {
     inputs['HostList'] = hostList;
     if (protocol != null) {
       inputs['Protocol'] = protocol;
-    }
-    if (port != null) {
-      inputs['Port'] = port;
     }
     if (numberOfRepetitions != null) {
       inputs['NumberOfRepetitions'] = numberOfRepetitions;

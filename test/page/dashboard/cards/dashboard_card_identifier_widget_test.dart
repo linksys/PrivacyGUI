@@ -11,6 +11,8 @@ import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+// `kCardsWithoutDetailEntry`, shared with the presented-navigation test (#1453).
+import '../../../util/dashboard/card_detail_entries.dart';
 import '../../../util/dashboard/dashboard_card_probe.dart';
 // The collector, `setLayoutSurface` and `settleIgnoringAnimations`, all through
 // the one library that re-exports them.
@@ -81,18 +83,6 @@ const Map<String, String> kCardDetailIdentifiers = {
   'port_forwarding': 'card-detail-port-forwarding',
   'firewall_overview': 'card-detail-firewall-overview',
   'traffic_analysis': 'card-detail-traffic-analysis',
-};
-
-/// The registered cards that enter no detail page, so publish no hook.
-///
-/// Listed rather than inferred, so that a card which *gains* an entry fails the
-/// meta-test instead of quietly rendering an unasserted button.
-const Set<String> kCardsWithoutDetailEntry = {
-  'stats_panel',
-  'ethernet_ports',
-  'device_analytics',
-  'network_health',
-  'wifi_performance',
 };
 
 /// Card id → the identifier its **popup tile** must publish.
@@ -376,14 +366,12 @@ void main() {
   /// presentation publishes *nothing*. They are in the group anyway because for
   /// them the tile is the only handle there is.
   ///
-  /// What the hook being *present* here does not mean: **#1453**. This button
-  /// pushes the detail route without closing the presentation it sits in, so the
-  /// page it opens is mounted under a modal barrier and its own controls —
-  /// including its back arrow — are not hit-testable until one tap has been spent
-  /// dismissing the presentation. Measured with a real router on both branches
-  /// (dialog and phone sheet). That is a defect of the navigation and not of the
-  /// identifier: the handle is what lets an E2E spec reach the button at all, and
-  /// a spec that clicks it will hit #1453 immediately after.
+  /// What the hook being *present* here does not cover: what pressing it does.
+  /// A presented button has to close its presentation before it navigates, or the
+  /// page it opens is left under the dialog's barrier or with the sheet still
+  /// waiting behind it (#1453). That is the navigation's subject, not the
+  /// identifier's, and `dashboard_card_presented_navigation_test.dart` measures
+  /// it on a pumped router for both branches.
   ///
   /// ## Which of the three density paths this drives
   ///

@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/views/wifi_write_with_recovery.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -147,13 +148,19 @@ class UspWifiNetworksCard extends ConsumerWidget {
       ],
     );
     if (confirmed != true || !context.mounted) return;
-    await performUspMutation(
+    // A toggle reloads every radio, like a page save, so it runs under the
+    // same one recovery: the dashboard's polling pauses instead of timing out
+    // against a reloading router (bench 2026-10-07).
+    await runWifiWriteWithRecovery(
       context,
       ref,
-      loadingKey: 'wifi_network',
-      mutation: () => ref
-          .read(uspWifiSettingsProvider.notifier)
-          .toggleSsidsByName(network.ssidName, enable),
+      successMessage: loc(context).wifiSettingsSaved,
+      write: () async {
+        await ref
+            .read(uspWifiSettingsProvider.notifier)
+            .toggleSsidsByName(network.ssidName, enable);
+        return const WifiWriteConfirmed();
+      },
     );
   }
 

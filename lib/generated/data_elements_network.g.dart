@@ -19,6 +19,17 @@ class MeshRadioOperatingClass {
     this.txPower,
     this.timeStamp,
   });
+
+  @override
+  String toString() {
+    return 'MeshRadioOperatingClass('
+        'instancePath: $instancePath, '
+        'operatingClass: $operatingClass, '
+        'channel: $channel, '
+        'txPower: $txPower, '
+        'timeStamp: $timeStamp'
+        ')';
+  }
 }
 
 /// Nested instance from parent multi-instance table
@@ -48,6 +59,23 @@ class MeshStation {
     this.utilizationTransmit,
     this.timeStamp,
   });
+
+  @override
+  String toString() {
+    return 'MeshStation('
+        'instancePath: $instancePath, '
+        'macAddress: $macAddress, '
+        'signalStrengthRcpi: $signalStrengthRcpi, '
+        'lastConnectTime: $lastConnectTime, '
+        'lastDataDownlinkRate: $lastDataDownlinkRate, '
+        'lastDataUplinkRate: $lastDataUplinkRate, '
+        'estMacDataRateDownlink: $estMacDataRateDownlink, '
+        'estMacDataRateUplink: $estMacDataRateUplink, '
+        'utilizationReceive: $utilizationReceive, '
+        'utilizationTransmit: $utilizationTransmit, '
+        'timeStamp: $timeStamp'
+        ')';
+  }
 }
 
 /// Nested instance from parent multi-instance table
@@ -73,6 +101,21 @@ class MeshBss {
     this.timeStamp,
     required this.stations,
   });
+
+  @override
+  String toString() {
+    return 'MeshBss('
+        'instancePath: $instancePath, '
+        'bssid: $bssid, '
+        'ssid: $ssid, '
+        'enabled: $enabled, '
+        'fronthaulUse: $fronthaulUse, '
+        'backhaulUse: $backhaulUse, '
+        'lastChange: $lastChange, '
+        'timeStamp: $timeStamp, '
+        'stations: $stations'
+        ')';
+  }
 }
 
 /// Nested instance from parent multi-instance table
@@ -102,6 +145,23 @@ class MeshRadio {
     required this.currentOperatingClassProfiles,
     required this.bssList,
   });
+
+  @override
+  String toString() {
+    return 'MeshRadio('
+        'instancePath: $instancePath, '
+        'id: $id, '
+        'enabled: $enabled, '
+        'backhaulStaMacAddress: $backhaulStaMacAddress, '
+        'noiseAnpi: $noiseAnpi, '
+        'utilization: $utilization, '
+        'transmitUtilization: $transmitUtilization, '
+        'receiveSelfUtilization: $receiveSelfUtilization, '
+        'receiveOtherUtilization: $receiveOtherUtilization, '
+        'currentOperatingClassProfiles: $currentOperatingClassProfiles, '
+        'bssList: $bssList'
+        ')';
+  }
 }
 
 /// Single instance from DataElementsNetwork
@@ -112,6 +172,7 @@ class MeshNode {
   final String? manufacturer;
   final String? serialNumber;
   final String? softwareVersion;
+  final String? supportedOperations;
   final int? collectionInterval;
   final DateTime? multiApLastContactTime;
   final String? multiApEasyMeshAgentOperationMode;
@@ -138,6 +199,7 @@ class MeshNode {
     this.manufacturer,
     this.serialNumber,
     this.softwareVersion,
+    this.supportedOperations,
     this.collectionInterval,
     this.multiApLastContactTime,
     this.multiApEasyMeshAgentOperationMode,
@@ -157,6 +219,37 @@ class MeshNode {
     this.backhaulStatsTimeStamp,
     required this.radios,
   });
+
+  @override
+  String toString() {
+    return 'MeshNode('
+        'instancePath: $instancePath, '
+        'id: $id, '
+        'manufacturerModel: $manufacturerModel, '
+        'manufacturer: $manufacturer, '
+        'serialNumber: $serialNumber, '
+        'softwareVersion: $softwareVersion, '
+        'supportedOperations: $supportedOperations, '
+        'collectionInterval: $collectionInterval, '
+        'multiApLastContactTime: $multiApLastContactTime, '
+        'multiApEasyMeshAgentOperationMode: $multiApEasyMeshAgentOperationMode, '
+        'backhaulLinkType: $backhaulLinkType, '
+        'backhaulBackhaulDeviceId: $backhaulBackhaulDeviceId, '
+        'backhaulBackhaulMacAddress: $backhaulBackhaulMacAddress, '
+        'backhaulMacAddressMultiAp: $backhaulMacAddressMultiAp, '
+        'prplServingBssid: $prplServingBssid, '
+        'prplBackhaulRadioUid: $prplBackhaulRadioUid, '
+        'backhaulStatsLastDataDownlinkRate: $backhaulStatsLastDataDownlinkRate, '
+        'backhaulStatsLastDataUplinkRate: $backhaulStatsLastDataUplinkRate, '
+        'backhaulStatsSignalStrengthRcpi: $backhaulStatsSignalStrengthRcpi, '
+        'backhaulStatsPacketsSent: $backhaulStatsPacketsSent, '
+        'backhaulStatsPacketsReceived: $backhaulStatsPacketsReceived, '
+        'backhaulStatsErrorsSent: $backhaulStatsErrorsSent, '
+        'backhaulStatsErrorsReceived: $backhaulStatsErrorsReceived, '
+        'backhaulStatsTimeStamp: $backhaulStatsTimeStamp, '
+        'radios: $radios'
+        ')';
+  }
 }
 
 /// EasyMesh DataElements network topology — mesh nodes, radios, BSSes, and client stations
@@ -165,12 +258,16 @@ class DataElementsNetwork {
 
   const DataElementsNetwork({required this.items});
 
+  @override
+  String toString() => 'DataElementsNetwork(items: $items)';
+
   static const _paths = [
     'Device.WiFi.DataElements.Network.Device.*.ID',
     'Device.WiFi.DataElements.Network.Device.*.ManufacturerModel',
     'Device.WiFi.DataElements.Network.Device.*.Manufacturer',
     'Device.WiFi.DataElements.Network.Device.*.SerialNumber',
     'Device.WiFi.DataElements.Network.Device.*.SoftwareVersion',
+    'Device.WiFi.DataElements.Network.Device.*.X_LINKSYS_SupportedOperations',
     'Device.WiFi.DataElements.Network.Device.*.CollectionInterval',
     'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.LastContactTime',
     'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.EasyMeshAgentOperationMode',
@@ -240,38 +337,6 @@ class DataElementsNetwork {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}ID'],
-        response['${p}ManufacturerModel'],
-        response['${p}Manufacturer'],
-        response['${p}SerialNumber'],
-        response['${p}SoftwareVersion'],
-        response['${p}CollectionInterval'],
-        response['${p}MultiAPDevice.LastContactTime'],
-        response['${p}MultiAPDevice.EasyMeshAgentOperationMode'],
-        response['${p}MultiAPDevice.Backhaul.LinkType'],
-        response['${p}MultiAPDevice.Backhaul.BackhaulDeviceID'],
-        response['${p}MultiAPDevice.Backhaul.BackhaulMACAddress'],
-        response['${p}MultiAPDevice.Backhaul.MACAddress'],
-        response['${p}MultiAPDevice.Backhaul.ServingBSSID'],
-        response['${p}MultiAPDevice.Backhaul.BackhaulRadioUID'],
-        response['${p}MultiAPDevice.Backhaul.Stats.LastDataDownlinkRate'],
-        response['${p}MultiAPDevice.Backhaul.Stats.LastDataUplinkRate'],
-        response['${p}MultiAPDevice.Backhaul.Stats.SignalStrength'],
-        response['${p}MultiAPDevice.Backhaul.Stats.PacketsSent'],
-        response['${p}MultiAPDevice.Backhaul.Stats.PacketsReceived'],
-        response['${p}MultiAPDevice.Backhaul.Stats.ErrorsSent'],
-        response['${p}MultiAPDevice.Backhaul.Stats.ErrorsReceived'],
-        response['${p}MultiAPDevice.Backhaul.Stats.TimeStamp']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final childBase_0 = '${p}Radio.';
       final childIds_0 = <String>{};
       for (final key in response.keys) {
@@ -302,6 +367,16 @@ class DataElementsNetwork {
         final currentOperatingClassProfiles = <MeshRadioOperatingClass>[];
         for (final cid_1 in childSorted_1) {
           final cp_1 = '$childBase_1$cid_1.';
+          final missing = <String>[];
+          if (!response.containsKey('${cp_1}Class')) {
+            missing.add('${cp_1}Class');
+          }
+          if (!response.containsKey('${cp_1}Channel')) {
+            missing.add('${cp_1}Channel');
+          }
+          if (missing.isNotEmpty) {
+            throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+          }
           currentOperatingClassProfiles.add(MeshRadioOperatingClass(
             instancePath: cp_1,
             operatingClass:
@@ -345,6 +420,13 @@ class DataElementsNetwork {
           final stations = <MeshStation>[];
           for (final cid_3 in childSorted_3) {
             final cp_3 = '$childBase_3$cid_3.';
+            final missing = <String>[];
+            if (!response.containsKey('${cp_3}MACAddress')) {
+              missing.add('${cp_3}MACAddress');
+            }
+            if (missing.isNotEmpty) {
+              throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+            }
             stations.add(MeshStation(
               instancePath: cp_3,
               macAddress: (response['${cp_3}MACAddress'] ?? '') as String,
@@ -390,6 +472,16 @@ class DataElementsNetwork {
               timeStamp: DateTime.tryParse(
                   response['${cp_3}TimeStamp']?.toString() ?? ''),
             ));
+          }
+          final missing = <String>[];
+          if (!response.containsKey('${cp_2}BSSID')) {
+            missing.add('${cp_2}BSSID');
+          }
+          if (!response.containsKey('${cp_2}SSID')) {
+            missing.add('${cp_2}SSID');
+          }
+          if (missing.isNotEmpty) {
+            throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
           }
           bssList.add(MeshBss(
             instancePath: cp_2,
@@ -473,6 +565,10 @@ class DataElementsNetwork {
         softwareVersion: response.containsKey('${p}SoftwareVersion')
             ? response['${p}SoftwareVersion'] as String
             : null,
+        supportedOperations:
+            response.containsKey('${p}X_LINKSYS_SupportedOperations')
+                ? response['${p}X_LINKSYS_SupportedOperations'] as String
+                : null,
         collectionInterval: response.containsKey('${p}CollectionInterval')
             ? int.tryParse(response['${p}CollectionInterval']?.toString() ?? '')
             : null,

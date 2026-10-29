@@ -103,12 +103,17 @@ class _RecordingTransport implements UspTransport {
   }
 
   @override
-  Future<Map<String, String>> get(List<String> paths) async {
+  Future<Map<String, dynamic>> get(List<String> paths) async {
     _guard();
     getCalls.add(paths);
     final gate = getGate;
     if (gate != null) await gate.future;
-    return {for (final p in paths) p: label};
+    return {
+      'success': true,
+      'result': {
+        'data': {for (final p in paths) p: label}
+      },
+    };
   }
 
   @override

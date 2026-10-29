@@ -8,6 +8,9 @@ import 'package:privacy_gui/components/customs/circular_countdown_widget.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/app_menu_card.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_snapshot.dart';
+import 'package:privacy_gui/page/internet_settings/views/sections/auto_ipoe_section.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_filter_panel.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_list_tile.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
@@ -30,6 +33,7 @@ import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart
 import 'package:sliver_dashboard/sliver_dashboard.dart' show SliverDashboard;
 import 'package:ui_kit_library/ui_kit.dart';
 
+import '../../mocks/test_data/scenes/auto_ipoe_scene_data.dart';
 import '../../mocks/test_data/scenes/login_scene_data.dart';
 import '../../util/dashboard/dashboard_card_probe.dart'
     show kMinSupportedScreenWidth;
@@ -77,11 +81,27 @@ double _contentWidth(double screen) =>
 ///    the content box narrows, computed from ui_kit rather than read from the
 ///    table in the family's header, which is prose and cannot fail.
 void main() {
-  // "Cases" and not "pages", corrected by #1489: this list is sixty-three cases over
-  // forty-five pages, because six of those pages are swept more than once. The two
+  test('Auto-IPoE fixture pins supported ready content and controls', () {
+    expect(gateAutoIPoESnapshot.capabilities.isSupported, isTrue);
+    expect(gateAutoIPoESnapshot.outcomeFor(ipoeSubmission),
+        AutoIPoEOutcome.succeeded);
+    expect(gateAutoIPoEPageState.status.loading, isFalse);
+    expect(gateAutoIPoEPageState.status.error, isNull);
+    expect(
+        kAutoIPoEPageCase.requires,
+        containsAll([
+          AutoIPoESection,
+          AppDropdown<AutoIPoEMode>,
+          AppButton,
+        ]));
+    expect(kAutoIPoEPageCase.forbids, contains(AppLoader));
+  });
+
+  // "Cases" and not "pages", corrected by #1489: this list is sixty-seven cases over
+  // forty-six pages, because six of those pages are swept more than once. The two
   // counts were equal for the whole of #1369 and the group title read "pages"
   // throughout, which is exactly the kind of coincidence a name should not be built on
-  // — `kPageViewCount` is 47, a third quantity again (page view *files*, which no case
+  // — `kPageViewCount` is 49, a third quantity again (page view *files*, which no case
   // can move), and it is equal to neither.
   //
   // **Two counts drifted before #1554 re-measured them, and only in the prose.** The
@@ -122,14 +142,15 @@ void main() {
   // an assertion that does not read it is the failure mode, and copying it to a fifth
   // place is how it becomes hard to notice.
   group(
-      'the gate declares sixty-three cases over forty-five pages, and which '
-      'sixty-three is a decision', () {
+      'the gate declares sixty-seven cases over forty-six pages, and which '
+      'sixty-seven is a decision', () {
     test(
         'kPageSurfaceCases holds the pilot two, wave 1\'s five, wave 2\'s nine, '
         'wave 3\'s six, wave 4\'s twenty-one, #1489\'s five non-default tabs, '
         '#1549\'s split page, #1554\'s two fixture states, #1602\'s two '
         'completion branches plus eight diagnostics screens, #1580\'s '
-        'remote-only page, and #1636\'s third Wi-Fi tab', () {
+        'remote-only page, #1636\'s third Wi-Fi tab, #1611\'s three '
+        'rules-full tabs and #1664\'s Auto-IPoE page', () {
       expect(
         kPageSurfaceCases.map((c) => c.id),
         [
@@ -146,6 +167,12 @@ void main() {
           'port_forwarding',
           'port_range',
           'port_triggering',
+          // #1611: the three tabs again with each list at its rule limit — a
+          // fixture state of each tab, marked with `sharesTabWith`. Beside them,
+          // the placement #1489 set for cases of one page.
+          'port_forwarding_full',
+          'port_range_full',
+          'port_triggering_full',
           'pnp_entry',
           'pnp_no_internet',
           'pnp_isp_settings',
@@ -208,6 +235,9 @@ void main() {
           'instant_safety',
           'internet_settings',
           'ipv6_port_service',
+          // #1687: the same page with its list at FWDEV#204's 15-rule limit,
+          // beside its sibling for the reason #1611's three are.
+          'ipv6_port_service_full',
           'local_network',
           'static_routing',
           'statistics',
@@ -224,6 +254,16 @@ void main() {
           // has four content states, three of which cannot overflow, and its list
           // sits below the filter that proves the first premise.
           'notification_history',
+          // #1660: Advanced Settings → Administration, a new page view file that
+          // arrives with the `lib/` change creating it — the 48th. Not `admin`
+          // above, the menu's page with the same title.
+          'administration',
+          'pnp_ipoe',
+          // #879: adding a node, a new page view file that arrives with the `lib/`
+          // change creating it — the 49th.
+          'add_nodes',
+          // #1734: the same flow in the PnP wizard's frame, the 50th, the same way.
+          'pnp_add_nodes',
         ],
         // Updated by #1377, #1378, #1379 and #1380, and the wording is the point of
         // the test.
@@ -391,6 +431,19 @@ void main() {
         // own branch: 62 cases, 44 swept pages of 46 page-view files. With #1580's
         // `notification_history` merged in (2026-10-02): 63 cases, 45 swept pages
         // of 47 page-view files.
+        //
+        // **#1611's three, which are fixture states of tabs already swept.** Each
+        // port forwarding tab again with its list at FWDEV#204's rule limit, where
+        // a `RuleLimitNote` row appears under the header. The first cases to share
+        // an `initialTab` with another case; `sharesTabWith` says so, and the
+        // per-tab test below is what holds that claim to the tab both open. 66
+        // cases, still 45 swept pages of 47 page-view files.
+        //
+        // **#1687's one, a fixture state of a page with no tabs.** IPv6 port
+        // services with its list at FWDEV#204's 15-rule limit, where the same
+        // `RuleLimitNote` row appears under the Rules header. No `sharesTabWith`,
+        // as `firmware_failed` has none. 67 cases, still 45 swept pages of 47
+        // page-view files.
         reason: 'a wave adds pages to this list on purpose, so a mismatch is '
             'either a wave that has not updated its own checkpoint or a page '
             'that left the gate without one. Read the comment above before '
@@ -1332,14 +1385,37 @@ void main() {
         final tabs = cases.map((c) => tabOf(c.view())!).toList();
         final shown =
             cases.map((c) => '${c.id}=${tabOf(c.view())!.$1}').join(', ');
-        expect(
-          tabs.map((t) => t.$1).toSet(),
-          hasLength(cases.length),
-          reason: '$viewClass\'s cases must each open a *different* tab. Every '
-              '`initialTab` is an `int` behind a `clamp`, so a duplicated literal '
-              'is legal at runtime and sweeps an already-swept tab twice while '
-              'still reporting 234 cells each: $shown.',
-        );
+        // Two cases may open one tab only as two fixture states of it — #1611's
+        // "rules full" tabs. A case marks itself as one by naming the tab it
+        // shares in `sharesTabWith`; every other pair must open different tabs.
+        // Without the mark, a second case on a tab is still what it always was:
+        // a wrong `initialTab` the clamp folded onto a swept tab, sweeping it
+        // twice while reporting 234 cells each.
+        final byTab = <int, List<PageSurfaceCase>>{};
+        for (final c in cases) {
+          byTab.putIfAbsent(tabOf(c.view())!.$1, () => []).add(c);
+        }
+        byTab.forEach((tab, onTab) {
+          final unmarked = onTab.where((c) => c.sharesTabWith == null).toList();
+          expect(
+            unmarked,
+            hasLength(1),
+            reason: '$viewClass tab $tab is opened by '
+                '${onTab.map((c) => c.id).join(', ')}. Exactly one may be the '
+                'tab\'s own case; any other must be a fixture state of it and say '
+                'so with `sharesTabWith`. Every `initialTab` is an `int` behind '
+                'a `clamp`, so an unmarked duplicate is a wrong literal: $shown.',
+          );
+          for (final c in onTab.where((c) => c.sharesTabWith != null)) {
+            expect(
+              c.sharesTabWith,
+              unmarked.single.id,
+              reason: 'page.${c.id} says it shares a tab with '
+                  '${c.sharesTabWith}, but tab $tab belongs to '
+                  '${unmarked.single.id}.',
+            );
+          }
+        });
         for (final (tab, count) in tabs) {
           expect(
             tab,
@@ -1356,7 +1432,10 @@ void main() {
         // report the honest {0, 2, 3} as a duplicate-tab error.
 
         for (final page in cases) {
-          final siblings = cases.where((c) => c.id != page.id);
+          // Siblings are the cases on *other* tabs. A fixture state of the same
+          // tab shares its tab type by design; the block above pins those.
+          final tab = tabOf(page.view())!.$1;
+          final siblings = cases.where((c) => tabOf(c.view())!.$1 != tab);
           final shared = siblings.expand((c) => c.requires).toSet();
           expect(
             page.requires.where((t) => !shared.contains(t)),

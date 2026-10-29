@@ -1,12 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/ipv6port_service.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/_shared/utils/firewall_chain_pick.dart';
+import 'package:privacy_gui/page/_shared/services/batch_tally.dart';
+import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_page_data.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
-import 'package:privacy_gui/validator_rules/rules.dart';
 
 final uspIpv6PortServiceServiceProvider = Provider<UspIpv6PortServiceService>(
   (ref) => UspIpv6PortServiceService(ref.read(uspClientProvider)!),
@@ -22,24 +23,42 @@ class UspIpv6PortServiceService {
   // ---------------------------------------------------------------------------
 
   /// Fetch IPv6 port service rules and transform to UI models.
-  Future<List<Ipv6PortServiceRuleUIModel>> fetch() async {
+  Future<List<Ipv6PortServiceRuleUIModel>> fetch() async =>
+      (await fetchPage()).rules;
+
+  /// Fetch the rules the page lists, with the descriptions of every firewall
+  /// rule it does not list, which the rule dialog checks a description
+  /// against.
+  Future<Ipv6PortServicePageData> fetchPage() async {
     try {
       final data = await Ipv6PortService.fetch(_usp);
-      return buildRuleUIModels(data);
+      return Ipv6PortServicePageData(
+        rules: buildRuleUIModels(data),
+        hiddenRuleDescriptions: {
+          for (final r in _defaultChainRules(data))
+            if (!_isListed(r) && r.description.isNotEmpty) r.description,
+        },
+      );
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
   }
 
-  /// Batch save: diff original vs current, execute delete/add/update.
+  /// Batch save: diff original vs current, then Delete, Set and Add.
   ///
-  /// Lenient mode: partial success is acceptable for batch operations,
-  /// only log warnings. Complete failure still throws.
+  /// Every step runs; any failed step fails the batch once they are done
+  /// ([UspCompleteFailureError] when every step failed, otherwise
+  /// [UspPartialFailureError]), with the router's message. FW refuses a rule
+  /// that breaks FWDEV#204's checks (feed_usp#50), and the batch used to log
+  /// that and report success. Counts are returned only when every step
+  /// succeeded.
   Future<({int added, int updated, int deleted})> saveBatch({
     required List<Ipv6PortServiceRuleUIModel> original,
     required List<Ipv6PortServiceRuleUIModel> current,
   }) async {
     try {
+      final tally = BatchTally('[IPv6PortService]');
+
       // 1. Delete (in original, not in current)
       final currentPaths = <String>{
         for (final r in current)
@@ -52,58 +71,14 @@ class UspIpv6PortServiceService {
 
       // Delete in reverse instance order to avoid firmware renumbering issues
       for (final r in toDelete.reversed) {
-        final result = await Ipv6PortService.delete(_usp, [r.instancePath!]);
-        final parsed = UspResultParser.parseDeleteResult(result);
-        switch (parsed) {
-          case UspSuccess():
-            break;
-          case UspPartialSuccess(:final successes, :final failures):
-            logger.w(
-                '[IPv6PortService]: Batch delete partial: ${successes.length} ok, ${failures.length} failed');
-            break;
-          case UspFailure(:final errorSummary, :final errors):
-            throw UspCompleteFailureError(
-              summary: 'IPv6 port service batch delete failed: $errorSummary',
-              failures: errors,
-            );
-        }
+        final result =
+            await Ipv6PortService.deleteRules(_usp, [r.instancePath!]);
+        tally.record('Delete', UspResultParser.parseDeleteResult(result));
       }
 
-      // 2. Add (instancePath == null → new)
-      final toAdd = current.where((r) => r.instancePath == null).toList();
-      if (toAdd.isNotEmpty) {
-        final result = await Ipv6PortService.add(
-          _usp,
-          toAdd
-              .map((r) => {
-                    'Enable': r.enabled,
-                    'Description': r.description,
-                    'IPVersion': 6,
-                    'DestIP': r.ipv6Address,
-                    'DestPort': r.startPort,
-                    'DestPortRangeMax': r.endPort,
-                    'Protocol': mapDisplayToIana(r.protocol),
-                    'Target': 'Accept',
-                  })
-              .toList(),
-        );
-        final parsed = UspResultParser.parseAddResult(result);
-        switch (parsed) {
-          case UspSuccess():
-            break;
-          case UspPartialSuccess(:final successes, :final failures):
-            logger.w(
-                '[IPv6PortService]: Batch add partial: ${successes.length} ok, ${failures.length} failed');
-            break;
-          case UspFailure(:final errorSummary, :final errors):
-            throw UspCompleteFailureError(
-              summary: 'IPv6 port service batch add failed: $errorSummary',
-              failures: errors,
-            );
-        }
-      }
-
-      // 3. Update (same path, different content)
+      // 2. Update (same path, different content), before Add: a rule renamed
+      // or moved off a port in this save frees it for a rule added in it,
+      // and FW checks an Add against the rules as they are when it arrives.
       final originalByPath = <String, Ipv6PortServiceRuleUIModel>{
         for (final r in original)
           if (r.instancePath != null) r.instancePath!: r,
@@ -123,28 +98,43 @@ class UspIpv6PortServiceService {
             destPort: cur.startPort,
             destPortRangeMax: cur.endPort,
             protocol: mapDisplayToIana(cur.protocol),
+            // FW runs its checks when Target is written, so it goes last.
             target: 'Accept',
           ));
         }
       }
 
       if (toUpdate.isNotEmpty) {
-        final result = await Ipv6PortService.update(_usp, toUpdate);
-        final parsed = UspResultParser.parseSetResult(result);
-        switch (parsed) {
-          case UspSuccess():
-            break;
-          case UspPartialSuccess(:final successes, :final failures):
-            logger.w(
-                '[IPv6PortService]: Batch update partial: ${successes.length} ok, ${failures.length} failed');
-            break;
-          case UspFailure(:final errorSummary, :final errors):
-            throw UspCompleteFailureError(
-              summary: 'IPv6 port service batch update failed: $errorSummary',
-              failures: errors,
-            );
-        }
+        final result = await Ipv6PortService.updateRules(_usp, toUpdate);
+        tally.record('Update', UspResultParser.parseSetResult(result));
       }
+
+      // 3. Add (instancePath == null → new)
+      final toAdd = current.where((r) => r.instancePath == null).toList();
+      if (toAdd.isNotEmpty) {
+        final chainPath = await _defaultChainPath();
+        final result = await Ipv6PortService.addRules(
+          _usp,
+          toAdd
+              .map((r) => Ipv6PortServiceRuleAdd(
+                    parentInstancePath: chainPath,
+                    enable: r.enabled,
+                    description: r.description,
+                    ipVersion: 6,
+                    destIp: r.ipv6Address,
+                    destPort: r.startPort,
+                    destPortRangeMax: r.endPort,
+                    protocol: mapDisplayToIana(r.protocol),
+                    // FW runs its checks when Target is written, so it goes
+                    // last.
+                    target: 'Accept',
+                  ))
+              .toList(),
+        );
+        tally.record('Add', UspResultParser.parseAddResult(result));
+      }
+
+      tally.throwIfAnyFailed();
 
       return (
         added: toAdd.length,
@@ -160,8 +150,6 @@ class UspIpv6PortServiceService {
   // ---------------------------------------------------------------------------
   // Protocol IANA <-> display mapping
   // ---------------------------------------------------------------------------
-
-  static const protocolOptions = ['TCP', 'UDP', 'Both'];
 
   static const _ianaToDisplay = {
     6: 'TCP',
@@ -196,11 +184,8 @@ class UspIpv6PortServiceService {
   /// Filter to IPv6 user rules (IPVersion == 6, Target == Accept,
   /// not a system rule by CreationDate) and transform to UI models.
   List<Ipv6PortServiceRuleUIModel> buildRuleUIModels(Ipv6PortService data) {
-    return data.items
-        .where((r) =>
-            r.ipVersion == 6 &&
-            r.target == 'Accept' &&
-            r.creationDate != _systemRuleCreationDate)
+    return _defaultChainRules(data)
+        .where(_isListed)
         .map((r) => Ipv6PortServiceRuleUIModel(
               instancePath: r.instancePath,
               enabled: r.enable,
@@ -213,54 +198,25 @@ class UspIpv6PortServiceService {
         .toList();
   }
 
-  // ---------------------------------------------------------------------------
-  // Validation
-  // ---------------------------------------------------------------------------
+  /// The rules of the `Defaults Configuration` chain, where the router keeps
+  /// these rules; none when the router lists no such chain.
+  static List<Ipv6PortServiceRule> _defaultChainRules(Ipv6PortService data) =>
+      defaultFirewallChainOf(data.items, (c) => c.name)?.rules ??
+      const <Ipv6PortServiceRule>[];
 
-  /// Validate rule fields. Returns a map of field key -> error message.
-  static Map<String, String> validateRule({
-    required String description,
-    required String ipv6Address,
-    required String startPort,
-    required String endPort,
-  }) {
-    final errors = <String, String>{};
-
-    if (description.isEmpty) {
-      errors['description'] = 'Name is required';
-    } else if (!NoSurroundWhitespaceRule().validate(description)) {
-      errors['description'] = 'Name must not have leading or trailing spaces';
-    } else if (description.length > 32) {
-      errors['description'] = 'Name must be 32 characters or less';
+  /// The path new rules are added under: the default chain's.
+  Future<String> _defaultChainPath() async {
+    final chain = defaultFirewallChainOf(
+        (await Ipv6PortService.fetch(_usp)).items, (c) => c.name);
+    if (chain == null) {
+      throw const ResourceNotFoundError(
+          detail: 'No $defaultFirewallChainName chain on the router');
     }
-
-    if (ipv6Address.isEmpty) {
-      errors['ipv6Address'] = 'IPv6 address is required';
-    } else if (!IPv6Rule().validate(ipv6Address)) {
-      errors['ipv6Address'] = 'Invalid IPv6 address format';
-    } else if (!IPv6WithReservedRule().validate(ipv6Address)) {
-      errors['ipv6Address'] = 'Reserved IPv6 address is not allowed';
-    }
-
-    final start = int.tryParse(startPort);
-    final end = int.tryParse(endPort);
-
-    if (startPort.isEmpty || start == null) {
-      errors['startPort'] = 'Start port is required';
-    } else if (start < 1 || start > 65535) {
-      errors['startPort'] = 'Port must be 1-65535';
-    }
-
-    if (endPort.isEmpty || end == null) {
-      errors['endPort'] = 'End port is required';
-    } else if (end < 1 || end > 65535) {
-      errors['endPort'] = 'Port must be 1-65535';
-    }
-
-    if (start != null && end != null && end < start) {
-      errors['endPort'] = 'End port must be >= start port';
-    }
-
-    return errors;
+    return chain.instancePath;
   }
+
+  static bool _isListed(Ipv6PortServiceRule r) =>
+      r.ipVersion == 6 &&
+      r.target == 'Accept' &&
+      r.creationDate != _systemRuleCreationDate;
 }

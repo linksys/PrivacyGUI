@@ -1,17 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
+import 'package:privacy_gui/generated/data_elements_network_info.g.dart';
 import 'package:privacy_gui/generated/device_operations.g.dart';
 import 'package:privacy_gui/generated/network_diagnostics.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
-import 'package:privacy_gui/generated/wan_operations.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
+import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_topology_builder.dart';
 import 'package:privacy_gui/page/_shared/utils/wifi_guest_detection.dart';
@@ -19,13 +22,22 @@ import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_band.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_snapshot.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
+import 'package:privacy_gui/page/internet_settings/services/auto_ipoe_service.dart';
 import 'package:privacy_gui/page/internet_settings/services/usp_internet_settings_service.dart';
 
-final pnpServiceProvider = Provider<PnpService>(
-  (ref) => PnpService(ref.read(uspClientProvider)!),
-);
+final pnpServiceProvider = Provider<PnpService>((ref) {
+  final supportsAutoIPoE =
+      ref.watch(deviceCapabilitiesProvider).has(DeviceCapability.autoIPoE);
+  return PnpService(
+    ref.watch(uspClientProvider)!,
+    fetchAutoIPoE:
+        supportsAutoIPoE ? ref.watch(autoIPoEServiceProvider).fetch : null,
+  );
+});
 
 /// Result of factory-default detection.
 class FactoryDefaultCheckResult {
@@ -65,8 +77,11 @@ enum PnpWifiWriteOutcome { confirmed, unanswered }
 /// This service assumes the user is already authenticated.
 class PnpService {
   final UspClient _usp;
+  final Future<AutoIPoESnapshot> Function()? _fetchAutoIPoE;
 
-  PnpService(this._usp);
+  /// Omitting [fetchAutoIPoE] keeps the ordinary WAN connection check.
+  PnpService(this._usp, {Future<AutoIPoESnapshot> Function()? fetchAutoIPoE})
+      : _fetchAutoIPoE = fetchAutoIPoE;
 
   /// Expose UspClient for UspInternetSettingsService instantiation.
   UspClient get usp => _usp;
@@ -95,10 +110,30 @@ class PnpService {
   // ─── Internet Check ──────────────────────────────────────
 
   /// Returns true if WAN is up with a valid IP address.
+  ///
+  /// A WAN with no IPv4 address returns false, not a throw: on FLWRT 2.0 a WAN
+  /// with no connection has no `IPv4Address` row at all, and the notifier reads
+  /// a throw as "router unreadable" rather than "no internet" (#1098).
   Future<bool> checkInternetConnected() async {
     try {
+      final fetchAutoIPoE = _fetchAutoIPoE;
+      if (fetchAutoIPoE != null) {
+        try {
+          final ipoe = await fetchAutoIPoE();
+          if (ipoe.capabilities.isSupported && ipoe.runtime.isCurrentWANType) {
+            return !ipoe.runtime.isBusy &&
+                ipoe.runtime.isEnabled &&
+                ipoe.runtime.applyState == AutoIPoEApplyState.active &&
+                ipoe.runtime.connectivityVerified == true &&
+                ipoe.runtime.hasVerifiedBackendConnectivity;
+          }
+        } on ResourceNotFoundError {/* Router without the optional adapter. */}
+      }
       final wan = await WanStatus.fetch(_usp);
-      return wan.status == 'Up' && wan.ipAddress.isNotEmpty;
+      final ipv4 = wan.ipv4Addresses.firstOrNull;
+      return wan.status == 'Up' && (ipv4?.ipAddress.isNotEmpty ?? false);
+    } on ServiceError {
+      rethrow;
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
@@ -135,9 +170,23 @@ class PnpService {
       throw mapUspErrorToServiceError(e);
     }
 
-    final ssids = results[0] as WiFiSsids;
-    final aps = results[1] as WiFiAccessPoints;
-    final radios = results[2] as WiFiRadios;
+    // A row with every value blank is none of these (usp-codegen 0.17 dropped
+    // it), so it is never a band and never written to.
+    final ssids = WiFiSsids(
+        items: (results[0] as WiFiSsids)
+            .items
+            .where((s) => !isEmptyWiFiSsid(s))
+            .toList());
+    final aps = WiFiAccessPoints(
+        items: (results[1] as WiFiAccessPoints)
+            .items
+            .where((a) => !isEmptyWiFiAccessPoint(a))
+            .toList());
+    final radios = WiFiRadios(
+        items: (results[2] as WiFiRadios)
+            .items
+            .where((r) => !isEmptyWiFiRadio(r))
+            .toList());
 
     // Helper: find AP for a given SSID
     WiFiAccessPoint? apForSsid(WiFiSsid ssid) {
@@ -401,14 +450,17 @@ class PnpService {
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
+    // A blank row is one the router has not filled in (usp-codegen 0.17
+    // dropped it), so it reads as missing, never as the written value.
     final ssids = {
-      for (final s in (results[0] as WiFiSsids).items) s.instancePath: s,
+      for (final s in (results[0] as WiFiSsids).items)
+        if (!isEmptyWiFiSsid(s)) s.instancePath: s,
     };
     final aps = expectedApEnable.isEmpty
         ? const <String, WiFiAccessPoint>{}
         : {
             for (final a in (results[1] as WiFiAccessPoints).items)
-              a.instancePath: a,
+              if (!isEmptyWiFiAccessPoint(a)) a.instancePath: a,
           };
 
     return expectedSsid.entries.every((e) => ssids[e.key]?.ssid == e.value) &&
@@ -496,12 +548,12 @@ class PnpService {
   /// including PPP/VLAN instance lifecycle, result validation, and
   /// allowPartial handling.
   Future<void> saveIspSettings(PnpIspConfig config) async {
+    final internetSettingsService = UspInternetSettingsService(_usp);
     if (config.type == IspConnectionType.dhcp) {
-      await WanOperations.renewDhcpLease(_usp);
+      await internetSettingsService.renewDhcpLease();
       return;
     }
 
-    final internetSettingsService = UspInternetSettingsService(_usp);
     final fetchResult = await internetSettingsService.fetchSettings();
 
     final original = fetchResult.form;
@@ -550,14 +602,29 @@ class PnpService {
   // ─── Mesh ──────────────────────────────────────────────
 
   /// Fetch mesh node list via DataElements (returns empty if non-mesh).
+  ///
+  /// Reads `ControllerID` beside the node table, as
+  /// `UspDevicesDataService.fetchMeshTopology` does, so an agent whose backhaul
+  /// is not filled in yet is listed as a slave here too rather than as a second
+  /// master (#1688 review).
   Future<MeshTopologyInfo> fetchMeshTopology() async {
     try {
-      final network = await DataElementsNetwork.fetch(_usp);
+      final results = await Future.wait([
+        DataElementsNetwork.fetch(_usp),
+        _fetchControllerId(),
+      ]);
+      // A node with every value blank is no node (usp-codegen 0.17 dropped it).
+      final network = DataElementsNetwork(
+          items: (results[0] as DataElementsNetwork)
+              .items
+              .where((n) => !isEmptyMeshNode(n))
+              .toList());
+      final controllerId = results[1] as String?;
       if (network.items.isEmpty) {
         logger.d('[PnP] DataElements empty — not a mesh or unsupported');
         return MeshTopologyInfo.empty;
       }
-      return _buildTopologyInfo(network);
+      return _buildTopologyInfo(network, controllerId);
     } catch (e) {
       // `w`, not `d` — see the same distinction in
       // `UspDevicesDataService.fetchMeshTopology`. An empty subtree is a
@@ -570,10 +637,25 @@ class PnpService {
     }
   }
 
-  MeshTopologyInfo _buildTopologyInfo(DataElementsNetwork network) {
+  /// `Device.WiFi.DataElements.Network.ControllerID`, or null when the read
+  /// faults. Isolated so a fault here costs only the ControllerID rule — the
+  /// builder falls back to telling the controller apart by backhaul — and
+  /// never the node list.
+  Future<String?> _fetchControllerId() async {
+    try {
+      return (await DataElementsNetworkInfo.fetch(_usp)).controllerId;
+    } catch (e) {
+      logger.w('[PnP] DataElements ControllerID unavailable, the controller is '
+          'told apart by backhaul: $e');
+      return null;
+    }
+  }
+
+  MeshTopologyInfo _buildTopologyInfo(
+      DataElementsNetwork network, String? controllerId) {
     // PnP doesn't need backhaul stats — only node discovery for mesh setup
-    final result =
-        MeshTopologyBuilder.build(network, includeBackhaulStats: false);
+    final result = MeshTopologyBuilder.build(network,
+        includeBackhaulStats: false, controllerId: controllerId);
     logger.d('[PnP] Mesh nodes: ${result.nodes.length}, '
         'client→node mappings: ${result.clientToNodeMap.length}');
     return result;
@@ -584,8 +666,9 @@ class PnpService {
   /// Fetch the primary WiFi SSID name (for display in no-internet view).
   Future<String?> fetchCurrentSsid() async {
     try {
-      final ssids = await WiFiSsids.fetch(_usp);
-      return ssids.items.isNotEmpty ? ssids.items.first.ssid : null;
+      final ssids =
+          (await WiFiSsids.fetch(_usp)).items.where((s) => !isEmptyWiFiSsid(s));
+      return ssids.firstOrNull?.ssid;
     } catch (_) {
       return null;
     }

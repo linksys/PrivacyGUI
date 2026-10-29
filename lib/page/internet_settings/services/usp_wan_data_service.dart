@@ -1,11 +1,16 @@
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
+import 'package:privacy_gui/core/usp/services/active_ipv4_connection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/ipv6_address.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/tr181_path.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/providers/wan_interface_path_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/generated/static_routing.g.dart';
 import 'package:privacy_gui/generated/wan_ipv6addresses.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
@@ -17,12 +22,16 @@ import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
 
 final uspWanDataServiceProvider = Provider<UspWanDataService>(
   (ref) {
-    final usp = ref.read(uspClientProvider);
+    final usp = ref.watch(uspClientProvider);
     if (usp == null) {
       throw const ServiceNotInitializedError(
           detail: 'USP service not available');
     }
-    return UspWanDataService(usp);
+    return UspWanDataService(
+      usp,
+      autoIPoESupported:
+          ref.watch(deviceCapabilitiesProvider).has(DeviceCapability.autoIPoE),
+    );
   },
 );
 
@@ -35,193 +44,169 @@ final uspWanDataServiceProvider = Provider<UspWanDataService>(
 /// Owns codegen calls, gateway/IPv6 query, and WAN UI model building
 /// for [wanDataProvider].
 class UspWanDataService {
-  final UspClient _usp;
+  /// The `addressingType` a bridged WAN reports, in the same display style as
+  /// the other values (`DHCP`, `Static`, `PPPoE`, a tunnel type).
+  static const bridgeAddressingType = 'Bridge';
 
-  UspWanDataService(this._usp);
+  final UspClient _usp;
+  final bool _autoIPoESupported;
+
+  UspWanDataService(this._usp, {bool autoIPoESupported = false})
+      : _autoIPoESupported = autoIPoESupported;
 
   /// Fetches WAN status + gateway + IPv6 addresses and returns a
   /// [WanStatusUIModel].
   Future<WanStatusUIModel> fetch() async {
     try {
-      final results = await Future.wait([
-        _fetchWanStatusTolerantOfNoAddress(),
-        _fetchGatewayAndIpv6Addresses(),
-      ]);
-
-      final wanStatus = results[0] as WanStatus?;
-      final extra =
-          results[1] as ({String gateway, List<String> ipv6Addresses});
-
-      // A down WAN has no address instance at all, so there is no WanStatus to read
-      // fields off. That is a valid state, not a failure — see the helper below.
-      if (wanStatus == null) {
+      final active = await ActiveIpv4Connection.fetch(
+        _usp,
+        autoIPoESupported: _autoIPoESupported,
+      );
+      if (active != null) {
         return WanStatusUIModel(
-          isUp: false,
-          ipAddress: '',
-          subnetMask: '',
-          addressingType: '',
-          mtu: 0,
-          gateway: extra.gateway,
-          ipv6Enabled: false,
-          ipv6Addresses: extra.ipv6Addresses,
+          isUp: active.isUp,
+          ipAddress: active.address,
+          subnetMask: active.text('subnetMask'),
+          addressingType: active.label,
+          mtu: active.mtu,
+          gateway: active.gateway,
+          ipv6Enabled: active.isTunnel || active.ipv6.isNotEmpty,
+          ipv6Addresses: preferGlobalIpv6First(active.ipv6),
         );
       }
 
+      // Bridge next (#1597), on firmware without the native connection object:
+      // `Device.IP.Interface.{wan}.Enable == false` is the only bridge signal.
+      // The WAN IPv4Address row describes the WAN the router has stepped out
+      // of — kept on FW 2.0.3, gone on FW 2.0.2 — so the WAN-side fields below
+      // would report a mode the router is not in.
+      final bridged = await _fetchBridgedStatus();
+      if (bridged != null) return bridged;
+
+      // Typed futures, awaited after Future.wait: a record `.wait` would wrap a
+      // failure in a ParallelWaitError, which mapUspErrorToServiceError cannot
+      // read.
+      final statusFuture = WanStatus.fetch(_usp);
+      final extraFuture = _fetchGatewayAndIpv6Addresses();
+      await Future.wait([statusFuture, extraFuture]);
+      final wanStatus = await statusFuture;
+      final extra = await extraFuture;
+
+      // A WAN with no IPv4Address row (WAN down; FW 2.0.2 in bridge mode) is a
+      // down WAN with no address, not a failed read (#1615).
+      final ipv4 = wanStatus.ipv4Addresses.firstOrNull;
       return WanStatusUIModel(
-        isUp: wanStatus.status.toLowerCase() == 'up',
-        ipAddress: wanStatus.ipAddress,
-        subnetMask: wanStatus.subnetMask,
-        addressingType: wanStatus.addressingType,
+        isUp: ipv4 != null && wanStatus.status.toLowerCase() == 'up',
+        ipAddress: ipv4?.ipAddress ?? '',
+        subnetMask: ipv4?.subnetMask ?? '',
+        addressingType: ipv4?.addressingType ?? '',
         mtu: wanStatus.maxMtuSize,
         gateway: extra.gateway,
         ipv6Enabled: wanStatus.ipv6Enabled,
         ipv6Addresses: extra.ipv6Addresses,
       );
+    } on ServiceError {
+      rethrow;
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
   }
 
-  /// `WanStatus.fetch` but returning `null` instead of throwing when the device has no
-  /// IPv4 address instance.
+  /// The WAN status of a bridged router, or null when the WAN is not bridged.
   ///
-  /// WHY THIS IS THE SERVICE LAYER'S JOB — linksys/PrivacyGUI#1615.
+  /// In bridge mode the router's address is the one br-lan takes from the
+  /// upstream DHCP server, so the IP and subnet are read from the `Alias == lan`
+  /// interface. MTU, gateway and IPv6 still come from the WAN, as they do in
+  /// every other mode.
   ///
-  /// **A WAN with no address is a normal device state, not an error.** Measured on
-  /// FW 2.0.2.26091803 with the interface taken down:
-  ///
-  /// ```
-  /// Device.IP.Interface.2.Status                     => Dormant
-  /// Device.IP.Interface.2.IPv4AddressNumberOfEntries => 0
-  /// Device.IP.Interface.2.IPv4Address.1.IPAddress    => (the parameter does not exist)
-  /// ```
-  ///
-  /// The generated `WanStatus._fromResponse` treats `IPv4Address.1.IPAddress`,
-  /// `.SubnetMask` and `.AddressingType` as REQUIRED and throws when they are absent. So
-  /// every refresh triggered while the WAN is down fails — which is precisely the refresh
-  /// a user most needs, because it is the one that would tell the UI to stop showing an
-  /// address that no longer exists.
-  ///
-  /// **Why here and not in the codegen.** The generated file comes from yaml in
-  /// `linksys/usp_framework`, so relaxing the requirement there is a cross-repository
-  /// change affecting every consumer of that model. And it would be the wrong place even
-  /// if it were cheap: the codegen's job is to report faithfully what the device returned,
-  /// and "these three parameters were absent" IS what it returned. Deciding that absence
-  /// means "no address" rather than "broken response" is a **domain** judgement, and the
-  /// service layer is where this project puts device-reality-to-UI-model translation
-  /// (constitution Article VI).
-  ///
-  /// **Why it is narrow.** Only the specific validation error about missing IPv4 address
-  /// fields is swallowed, and only when the device also reports zero address entries —
-  /// the device's own confirmation that there is nothing to read. Anything else
-  /// propagates, so a genuine transport failure, an auth error or a different missing
-  /// field still surfaces as a `ServiceError` rather than being rendered as "the WAN is
-  /// down".
-  Future<WanStatus?> _fetchWanStatusTolerantOfNoAddress() async {
-    try {
-      return await WanStatus.fetch(_usp);
-    } catch (e) {
-      // FAULT CODE, NOT A SUBSTRING. `9998` is the codegen's required-leaf failure
-      // (`usp_error.dart`, source 3) and `parseUspError` already extracts it. An earlier
-      // version of this matched `'Required fields missing'` in the message text — a
-      // string owned by another repository's generator, which would drift silently the
-      // next time that template is reworded, and would then make this tolerance
-      // disappear without a failing test anywhere.
-      //
-      // The path is still read out of the message, because the code alone does not say
-      // WHICH field was missing and only the address fields may be absent legitimately.
-      final parsed = parseUspError(e);
-      if (parsed?.faultCode != 9998) rethrow;
+  /// The WAN `Enable` is read directly rather than through `WanSettings`: that
+  /// model requires `Enable`, while here an absent `Enable` is not a bridge
+  /// reading and must fall through to the normal read.
+  Future<WanStatusUIModel?> _fetchBridgedStatus() async {
+    final aliases = await _usp.get(['Device.IP.Interface.*.Alias']);
+    final wanPath = interfacePathsByAlias(aliases)[wanInterfaceAlias];
+    if (wanPath == null) return null;
 
-      // The instance is resolved from the error message rather than queried with a
-      // wildcard. A wildcard read returns every interface, and this router has two with
-      // one address each — so "any interface reports zero" would call the WAN down
-      // because the LAN happened to have no address. Only the interface the failure was
-      // actually about counts.
-      //
-      // Anchored on `Device.IP.Interface.` and requiring the `IPv4Address.1.` suffix, so
-      // a 9998 about some other leaf on the same object cannot satisfy it. `.1.` rather
-      // than `.\d+.`: the model reads address instance 1 only, so a missing `.2.` is not
-      // a state this method is about.
-      final instance = RegExp(r'(Device\.IP\.Interface\.\d+\.)IPv4Address\.1\.')
-          .firstMatch(e.toString())
-          ?.group(1);
-      if (instance == null) rethrow;
-
-      // Confirm with the device rather than trusting the error alone: if it reports
-      // address entries, the fields should have been there and something else is wrong —
-      // so the original error must stand.
-      //
-      // WRAPPED, because this confirmation can itself fail. Unguarded, a transport error
-      // here would replace the original — which is both more accurate and the one a
-      // triager needs. A failed confirmation is not a confirmation.
-      //
-      // `throw e`, NOT `rethrow`: inside this inner catch, `rethrow` rethrows
-      // `confirmFailure` — the exact substitution this block exists to prevent. Caught by
-      // a test; the first version of this guard had `rethrow` here and inverted its own
-      // stated purpose.
-      final Object? reported;
-      try {
-        final entries =
-            await _usp.get(['${instance}IPv4AddressNumberOfEntries']);
-        reported = entries['${instance}IPv4AddressNumberOfEntries'];
-      } catch (confirmFailure) {
-        logger.w(
-            '[USP][WanData]: could not confirm '
-            '${instance}IPv4AddressNumberOfEntries; surfacing the original error',
-            error: confirmFailure);
-        throw e;
-      }
-
-      // Parsed as a NUMBER, not compared as a string. The device's value arrives untyped
-      // — `int`, `'0'`, and `'0 '` are all shapes it has been seen to use across
-      // firmware — and a string comparison fails CLOSED, turning a down WAN back into a
-      // fetch error. Anything unparseable is treated as "not confirmed zero" and rethrows.
-      final count = int.tryParse(reported?.toString().trim() ?? '');
-      if (count != 0) rethrow;
-
-      logger.d('[USP][WanData]: ${instance}IPv4Address.1.* absent and '
-          'IPv4AddressNumberOfEntries=0 — treating as WAN down, not an error');
+    final wanState = await _usp.get([
+      '${wanPath}Enable',
+      '${wanPath}MaxMTUSize',
+      '${wanPath}IPv6Enable',
+    ]);
+    // Same rule as the Internet Settings page (`WanSettings.enable` feeding
+    // `UspWanConnectionType.fromRawFields`): bridge is any present `Enable`
+    // that is not true. An absent `Enable` is not a bridge reading, so the
+    // normal path below reads the WAN and reports what it finds.
+    if (!wanState.containsKey('${wanPath}Enable') ||
+        _isTrue(wanState['${wanPath}Enable'])) {
       return null;
     }
+
+    final lan = (await LanNetworkInfo.fetch(_usp)).ipv4Addresses.firstOrNull;
+    final ipAddress = lan?.ipAddress ?? '';
+    final extra = await _fetchGatewayAndIpv6Addresses();
+    return WanStatusUIModel(
+      isUp: ipAddress.isNotEmpty,
+      ipAddress: ipAddress,
+      subnetMask: lan?.subnetMask ?? '',
+      addressingType: bridgeAddressingType,
+      mtu: int.tryParse('${wanState['${wanPath}MaxMTUSize'] ?? ''}') ?? 0,
+      gateway: extra.gateway,
+      ipv6Enabled: _isTrue(wanState['${wanPath}IPv6Enable']),
+      ipv6Addresses: extra.ipv6Addresses,
+    );
   }
+
+  /// The generated models' boolean parse, so both screens read `Enable` alike.
+  static bool _isTrue(Object? v) => v == true || v == 'true' || v == '1';
 
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
 
-  /// Fetches default gateway IP and IPv6 addresses via codegen APIs.
+  /// Fetches the default gateway and the WAN IPv6 addresses.
+  ///
+  /// Each is read on its own and falls back to empty on its own, so a gateway
+  /// that cannot be resolved does not take the IPv6 addresses with it.
   Future<({String gateway, List<String> ipv6Addresses})>
       _fetchGatewayAndIpv6Addresses() async {
+    final gateway = _fetchGateway();
+    final ipv6Addresses = _fetchIpv6Addresses();
+    return (gateway: await gateway, ipv6Addresses: await ipv6Addresses);
+  }
+
+  /// The default route's gateway on the WAN interface, or '' when there is
+  /// none or it cannot be read.
+  Future<String> _fetchGateway() async {
     try {
-      final results = await Future.wait([
-        StaticRouting.fetch(_usp),
-        WanIpv6Addresses.fetch(_usp),
-        resolveWanInterfacePath(_usp),
-      ]);
+      final routingFuture = StaticRouting.fetch(_usp);
+      final wanPathFuture = resolveWanInterfacePath(_usp);
+      await Future.wait([routingFuture, wanPathFuture]);
+      final routing = await routingFuture;
+      final wanPath = await wanPathFuture;
 
-      final routing = results[0] as StaticRouting;
-      final ipv6 = results[1] as WanIpv6Addresses;
-      final wanPath = results[2] as String; // e.g. 'Device.IP.Interface.2.'
-
-      // Find the default route (dest 0.0.0.0) on the resolved WAN interface.
-      // The route's Interface value may or may not carry a trailing dot, so
-      // compare against the dot-less prefix to match exactly — a bare
+      // Find the default route (dest 0.0.0.0) on the resolved WAN interface,
+      // on any router. The route's Interface value may or may not carry a
+      // trailing dot, so both sides are compared dot-terminated — a bare
       // `contains('Interface.2')` would also match Interface.20 / .21.
-      final wanIfacePrefix = wanPath.endsWith('.')
-          ? wanPath.substring(0, wanPath.length - 1)
-          : wanPath;
-      String gateway = '';
-      for (final route in routing.items) {
-        final iface = route.interface_.endsWith('.')
-            ? route.interface_.substring(0, route.interface_.length - 1)
-            : route.interface_;
-        if (route.destIpAddress == '0.0.0.0' && iface == wanIfacePrefix) {
-          gateway = route.gatewayIpAddress;
-          break;
+      final wanIface = ensureTrailingDot(wanPath);
+      final routes = routing.items.expand((router) => router.forwardings);
+      for (final route in routes) {
+        if (route.destIpAddress == '0.0.0.0' &&
+            ensureTrailingDot(route.interface_) == wanIface) {
+          return route.gatewayIpAddress;
         }
       }
+      return '';
+    } catch (e) {
+      logger.w('[USP][WanData]: Gateway fetch failed: $e');
+      return '';
+    }
+  }
 
+  /// The WAN IPv6 addresses, global first, or empty when they cannot be read.
+  Future<List<String>> _fetchIpv6Addresses() async {
+    try {
+      final ipv6 = await WanIpv6Addresses.fetch(_usp);
       // TR-181 returns IPv6 addresses in instance order, which frequently puts
       // the link-local (fe80::/10) address first. The WAN widget shows a single
       // representative address (ipv6Addresses.first), which must prefer the
@@ -230,16 +215,13 @@ class UspWanDataService {
       // with a scope badge rather than hiding it, so a WAN with no global/ULA
       // prefix still shows its link-local address instead of nothing.
       // See linksys/PrivacyGUI#1128.
-      final ipv6Addresses = ipv6.items
+      return preferGlobalIpv6First(ipv6.items
           .map((addr) => addr.ipAddress)
           .where((ip) => ip.isNotEmpty)
-          .toList();
-      final orderedIpv6Addresses = preferGlobalIpv6First(ipv6Addresses);
-
-      return (gateway: gateway, ipv6Addresses: orderedIpv6Addresses);
+          .toList());
     } catch (e) {
-      logger.w('[USP][WanData]: Gateway/IPv6 fetch failed: $e');
-      return (gateway: '', ipv6Addresses: const <String>[]);
+      logger.w('[USP][WanData]: IPv6 address fetch failed: $e');
+      return const <String>[];
     }
   }
 }

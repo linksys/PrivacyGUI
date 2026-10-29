@@ -5,12 +5,14 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/turbo_session_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/ip_getter/ip_getter.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_chunker.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_http_upload_strategy.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service_factory.dart';
+import 'package:privacy_gui/page/firmware_update/models/firmware_upload_method.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_upload_strategy.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_ws_strategy_factory.dart';
 
@@ -44,19 +46,19 @@ final firmwareLocalUploadServiceProvider = Provider<FirmwareLocalUploadService>(
 );
 
 Future<String> _fetchEndpointId(UspClient client) async {
-  final result = await client.get(['Device.LocalAgent.EndpointID']);
+  final Map<String, dynamic> result;
+  try {
+    result = await client.get(['Device.LocalAgent.EndpointID']);
+  } catch (e) {
+    // A lost read now throws the USP string (#1212); map it here, at the
+    // service boundary, as constitution Article XIII asks.
+    throw mapUspErrorToServiceError(e);
+  }
   final endpointId = result['Device.LocalAgent.EndpointID'] as String?;
   if (endpointId == null || endpointId.isEmpty) {
     throw StateError('Failed to fetch router EndpointID');
   }
   return endpointId;
-}
-
-class FirmwareUploadCancelledException implements Exception {
-  const FirmwareUploadCancelledException();
-
-  @override
-  String toString() => 'Firmware upload cancelled by user';
 }
 
 const _tag = '[FirmwareUpdate]';
@@ -98,7 +100,7 @@ class FirmwareLocalUploadService {
   ///
   /// Automatically selects WebSocket when available, with fallback to HTTP.
   /// [isCancelled] is polled before each chunk; when it returns true the
-  /// loop exits with [FirmwareUploadCancelledException].
+  /// loop exits with [OperationCancelledError].
   ///
   /// [commandKey] MUST be a numeric string (e.g. epoch milliseconds) — the
   /// router rejects non-numeric keys with INVALID_COMMAND_ARGS.
@@ -210,7 +212,8 @@ class FirmwareLocalUploadService {
 
     for (final chunk in chunker.chunks(bytes)) {
       if (isCancelled?.call() ?? false) {
-        throw const FirmwareUploadCancelledException();
+        throw const OperationCancelledError(
+            detail: 'Firmware upload cancelled by user');
       }
 
       await strategy.uploadChunk(

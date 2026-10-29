@@ -1,9 +1,15 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../models/diagnostic_result.dart';
 import '../models/diagnostic_state.dart';
 import '../models/recommendation_catalog.dart';
+
+/// Service provider — per Article VI.
+final diagnosticReportServiceProvider = Provider<DiagnosticReportService>(
+  (ref) => const DiagnosticReportService(),
+);
 
 /// Builds and shares a plain-text diagnostic report. Pure logic — no widgets.
 class DiagnosticReportService {

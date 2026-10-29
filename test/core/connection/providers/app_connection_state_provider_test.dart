@@ -6,8 +6,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/connection/services/recovery_probe_service.dart';
+import 'package:privacy_gui/core/connection/models/probe_result.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
+import 'package:privacy_gui/core/usp/models/sse_connection_state.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
@@ -559,6 +560,72 @@ void main() {
       verify(() => mockProbe.probe()).called(1);
       expect(notifier.lastProbeResult, ProbeResult.unreachable);
       expect(notifier.consecutiveFailures, 1);
+    });
+
+    group('startProbingNow — the caller decides when probing starts', () {
+      // A Wi-Fi save enters recovery when it starts, so there is one waiting
+      // state and one dialog for the whole save. The router answers for the
+      // first ~38 s of the reload (bench 2026-10-07), so a probe then would
+      // "recover" before anything had restarted; the save holds the probe off
+      // and starts it once its own write has settled.
+      test('starts the loop now instead of at the end of the cooldown',
+          () async {
+        when(() => mockSseManager.disconnectKeepingSubscriptions())
+            .thenAnswer((_) async {});
+        when(() => mockProbe.probe())
+            .thenAnswer((_) async => ProbeResult.unreachable);
+
+        final container = createContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(appConnectionStateProvider.notifier);
+        notifier.enterWaiting(
+          context: const RecoveryContext(
+            trigger: RecoveryTrigger.operationalWifiChange,
+            cooldown: Duration(minutes: 5),
+          ),
+        );
+        verifyNever(() => mockProbe.probe());
+
+        notifier.startProbingNow();
+        await Future<void>.delayed(Duration.zero);
+
+        verify(() => mockProbe.probe()).called(1);
+      });
+
+      test('recovers through the normal probe exit', () async {
+        when(() => mockSseManager.disconnectKeepingSubscriptions())
+            .thenAnswer((_) async {});
+        when(() => mockSseManager.connect()).thenAnswer((_) async {});
+        when(() => mockProbe.probe())
+            .thenAnswer((_) async => ProbeResult.recovered);
+
+        final container = createContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(appConnectionStateProvider.notifier);
+        notifier.enterWaiting(
+          context: const RecoveryContext(
+            trigger: RecoveryTrigger.operationalWifiChange,
+            cooldown: Duration(minutes: 5),
+          ),
+        );
+
+        notifier.startProbingNow();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(container.read(appConnectionStateProvider),
+            AppConnectionState.authenticated);
+      });
+
+      test('does nothing when not waiting', () async {
+        final container = createContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(appConnectionStateProvider.notifier);
+
+        notifier.startProbingNow();
+        await Future<void>.delayed(Duration.zero);
+
+        verifyNever(() => mockProbe.probe());
+      });
     });
 
     test('exitToLogout resets recovery counters', () async {

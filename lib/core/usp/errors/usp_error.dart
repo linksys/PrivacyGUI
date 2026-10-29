@@ -121,6 +121,30 @@ UspError? parseUspError(Object error) {
   return (UspErrorCategory.protocol, rest);
 }
 
+/// Restores the underlying category inside a client's code-9999 envelope.
+///
+/// The envelope prefixes every failure with `Transport error: `, including
+/// protocol refusals and authentication failures. Remove that one wrapper only
+/// when its detail starts with a known category; never infer a category from
+/// words inside the detail. Older untyped messages keep their transport fallback.
+String unwrapUspClientError(String message) {
+  const transportPrefix = 'Transport error: ';
+  final detail = message.startsWith(transportPrefix)
+      ? message.substring(transportPrefix.length)
+      : message;
+  const categoryPrefixes = [
+    transportPrefix,
+    'Protocol error: ',
+    'Authentication error: ',
+    'Operation error: ',
+    'Validation error: ',
+  ];
+  if (categoryPrefixes.any(detail.startsWith)) return detail;
+  return message.startsWith(transportPrefix)
+      ? message
+      : '$transportPrefix$message';
+}
+
 // =============================================================================
 // ServiceError mapping
 // =============================================================================
@@ -164,6 +188,7 @@ UspError? parseUspError(Object error) {
 /// | 7004 | parameter not writable           | InvalidInputError       |
 /// | 7005 | invalid parameter name¹          | InvalidInputError       |
 /// | 7006 | invalid parameter value          | InvalidInputError       |
+/// | 7016 | object does not exist³           | ResourceNotFoundError   |
 /// | 7022 | command refused by the agent²    | UspCompleteFailureError |
 /// | 7026 | parameter (path) not found       | ResourceNotFoundError   |
 /// | 7027 | object not found                 | ResourceNotFoundError   |
@@ -180,6 +205,13 @@ UspError? parseUspError(Object error) {
 /// cause — `rpcd` missing from the image, so `bbf.diag` never reaches ubus — but
 /// this mapping is about reporting a refusal correctly whatever its reason.
 ///
+/// ³ 7016 is obuspa refusing an Operate on an instance that no longer exists,
+/// before the command runs, so it arrives inside the WASM client's 9999
+/// envelope and is unwrapped to this protocol arm. Measured on FW
+/// 2.0.3.26102008 with `Device.WiFi.DataElements.Network.Device.9.X_LINKSYS_Reboot()`
+/// on a one-node mesh (#876): the shape of a node command sent to a node that
+/// has just left DataElements.
+///
 /// ¹ 7005 has a second, broker-level meaning on OBUSPA: an atomic SET
 /// (`allow_partial=false`) that spans more than one USP micro-service is
 /// rejected with 7005 "Allow partial=false not supported across more than one
@@ -191,10 +223,17 @@ UspError? parseUspError(Object error) {
 ///
 /// ### Source 3 — Dart codegen (`lib/generated/*.g.dart`), NOT from Rust
 ///
-/// | Dart match  | emitted by                                          | → ServiceError    |
-/// |-------------|-----------------------------------------------------|-------------------|
-/// | code `9998` | codegen "Required fields missing from response"     | InvalidInputError |
-/// |             | (category=validation → handled by the validation arm)|                  |
+/// | Dart match  | emitted by                                          | → ServiceError        |
+/// |-------------|-----------------------------------------------------|-----------------------|
+/// | code `9998` | codegen "Required fields missing from response"     | InvalidInputError     |
+/// |             | (category=validation → handled by the validation arm)|                      |
+/// | code `9996` | codegen `_resolveInstance` "Could not resolve …":   | ResourceNotFoundError |
+/// |             | no row has the Alias it resolves by, so this        |                       |
+/// |             | firmware has no such instance (usp-codegen 0.18).   |                       |
+/// |             | Parsed with no category word, so the protocol arm.  |                       |
+/// |             | The number is set by `dart_emit_resolve_failure()`  |                       |
+/// |             | in usp_framework `usp-codegen/src/dart_generator.c`;|                       |
+/// |             | a codegen that renumbers it breaks this arm.        |                       |
 ///
 /// ### Source 4 — synthesised in Dart by `UspClient._operateRefusal` (#1533)
 ///
@@ -259,6 +298,29 @@ ServiceError _mapAuthError(UspError e) {
   return UnexpectedError(originalError: e.rawError, detail: msg);
 }
 
+/// Which of [names] a refused write carries, and on which entry.
+///
+/// Some firmware checks name the rule a write broke at the start of the
+/// refused leaf's `errorMessage` (1.0's error names, e.g.
+/// `ErrorInvalidIPAddress: 127.20.0.0 is a reserved address.`), under a code
+/// that says only that the value was refused. A refused Set gives every leaf
+/// it carried the same code and a "group set failed at …" message, so the
+/// name is looked for in every entry rather than in the first. Measured on
+/// FLWRT 2.0.3.26101641, 2026-10-21 (static routes, linksys/FWDEV#213).
+///
+/// Null when no entry's message starts with one of [names].
+({String name, UspErrorDetail detail})? refusalNameIn(
+  List<UspErrorDetail> failures,
+  List<String> names,
+) {
+  for (final f in failures) {
+    for (final name in names) {
+      if (f.errorMessage.startsWith(name)) return (name: name, detail: f);
+    }
+  }
+  return null;
+}
+
 /// Whether a per-path SET error means the request **never got an answer** —
 /// the browser's `fetch` itself failed — as opposed to the router answering
 /// with a refusal.
@@ -276,6 +338,28 @@ bool isUnansweredTransportFailure(String errorMessage) {
   if (_faultCode.hasMatch(errorMessage)) return false;
   if (errorMessage.contains('Received error response')) return false;
   return errorMessage.contains('Failed to fetch');
+}
+
+/// [isUnansweredTransportFailure], widened for a WiFi write over Remote
+/// Assistance.
+///
+/// Adds one shape only Remote Assistance produces: an `HTTP 5xx` carrying
+/// **no** router fault code. Guardian answers 500 when it cannot reach a router
+/// whose radios are reloading (CLOUD_GUARDIANS#215: the main-password SET came
+/// back `HTTP error: HTTP 500` after 25.9 s, and GETs read empty for ~20 s more
+/// until the router rejoined the cloud). A fault the router itself reported
+/// always carries `(code: N)`, so it is excluded, and a 4xx is never unanswered
+/// — a 401 must end the session (#1627).
+///
+/// A separate predicate rather than a wider [isUnansweredTransportFailure],
+/// because PnP uses that one and was bench-verified on it. Safe in local mode
+/// too: a WiFi caller reads the router back before it believes an unanswered
+/// write, and that read-back fails closed.
+bool isUnansweredWifiWrite(String errorMessage) {
+  if (isUnansweredTransportFailure(errorMessage)) return true;
+  if (_faultCode.hasMatch(errorMessage)) return false;
+  final status = _httpStatus.firstMatch(errorMessage);
+  return status != null && status.group(1)!.startsWith('5');
 }
 
 ServiceError _mapTransportError(UspError e) {
@@ -305,6 +389,9 @@ ServiceError _mapProtocolError(UspError e) {
       7005 =>
         InvalidInputError(code: code, detail: e.message), // bad param name
       7006 => InvalidInputError(code: code, detail: e.message), // bad value
+      // Object does not exist: obuspa's answer to an Operate on a row that has
+      // gone, e.g. a mesh node that left DataElements (#876).
+      7016 => ResourceNotFoundError(code: code, detail: e.message),
       7026 => ResourceNotFoundError(code: code, detail: e.message), // path 404
       7027 =>
         ResourceNotFoundError(code: code, detail: e.message), // object 404
@@ -313,6 +400,9 @@ ServiceError _mapProtocolError(UspError e) {
         ResourceNotFoundError(code: code, detail: e.message), // unimplemented
       9007 => ResourceNotFoundError(code: code, detail: e.message),
       9008 => InvalidInputError(code: code, detail: e.message), // non-writable
+      // Codegen: no instance has the Alias `resolveBy` names (emitted by
+      // usp-codegen's dart_emit_resolve_failure(); see the table above).
+      9996 => ResourceNotFoundError(code: code, detail: e.message),
       _ => UnexpectedError(originalError: e.rawError, detail: e.message),
     };
   }

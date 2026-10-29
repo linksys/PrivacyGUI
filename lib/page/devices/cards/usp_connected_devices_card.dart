@@ -268,10 +268,7 @@ class UspConnectedDevicesCard extends ConsumerWidget {
     required bool compact,
   }) {
     final scheme = Theme.of(context).colorScheme;
-    final deviceCategory = DeviceClassifier.classify(
-      hostname: device.hostName,
-      mac: device.mac,
-    );
+    final deviceCategory = DeviceClassifier.classifyClient(device);
 
     return DeviceRow(
       // The compact form's whole content is the 60px the icon block gives back —

@@ -32,10 +32,11 @@
 // exemption list is gone rather than empty: an empty set asserts the same thing
 // as `isEmpty` and reads as though something is still pending.
 //
-// One invariant is deliberately **not** asserted: `MeshNetworkBuilder` derives
-// `livenessKnown: meshTopology.isNotEmpty` (`mesh_network_builder.dart:186`),
-// and `meshNetworkDevicesData` pairs the default `livenessKnown: true` with the
-// default empty `meshTopology`, which the builder would never emit. It is not
+// One invariant is deliberately **not** asserted. Before #1688
+// `MeshNetworkBuilder` derived `livenessKnown: meshTopology.isNotEmpty`; it now
+// builds every slave from a DataElements agent and passes `livenessKnown:
+// true`. `meshNetworkDevicesData` pairs that with the default empty
+// `meshTopology`, which the builder would never emit alongside a slave. It is not
 // asserted because no consumer behaves differently either way: with
 // `livenessKnown` false the absent match says nothing and the slave is online,
 // with it true the slave carries a `dataElementsId` and is online. Satisfying
@@ -101,10 +102,13 @@ void main() {
   final viewScenes = <String, DevicesData>{
     'singleNodeDevicesData': singleNodeDevicesData,
     'meshNetworkDevicesData': meshNetworkDevicesData,
+    'meshNetworkWithNodeActionsDevicesData':
+        meshNetworkWithNodeActionsDevicesData,
   };
 
   final detailScenes = <String, UspNodeDetailState>{
     'masterNodeWithDevices': masterNodeWithDevices,
+    'masterNodeNamed': masterNodeNamed,
     'masterNodeEmptyDevices': masterNodeEmptyDevices,
     'slaveNodeOffline': slaveNodeOffline,
     'slaveNodeOnlineWithDevices': slaveNodeOnlineWithDevices,
@@ -134,14 +138,33 @@ void main() {
       });
     }
 
+    // The layout gate's topology cell (`kTopologyPageCase`). It must be
+    // `meshNetworkDevicesData` with nothing changed but the agents' node
+    // actions (#876): the healthy tree that scene documents, plus a menu
+    // button on every mesh row.
+    test('meshNetworkWithNodeActionsDevicesData differs only in node actions',
+        () {
+      final base = meshNetworkDevicesData.meshNetwork;
+      final withActions = meshNetworkWithNodeActionsDevicesData.meshNetwork;
+
+      expect(withActions.master, base.master);
+      expect(withActions.slaves, hasLength(base.slaves.length));
+      for (var i = 0; i < base.slaves.length; i++) {
+        expect(withActions.slaves[i].actions, NodeAction.values.toSet());
+        expect(
+            withActions.slaves[i].copyWith(actions: const {}), base.slaves[i]);
+      }
+    });
+
     test('meshNetworkDevicesData draws the healthy mesh it documents', () {
       final mesh = meshNetworkDevicesData.meshNetwork;
       expect(
         mesh.slaves,
         isNotEmpty,
         reason: 'The scene exists to draw the widest tree in the suite, and is '
-            'the layout gate\'s topology cell (`kTopologyPageCase`). Without a '
-            'slave it is `singleNodeDevicesData` twice.',
+            'what the layout gate\'s topology cell pumps, through '
+            '`meshNetworkWithNodeActionsDevicesData`. Without a slave it is '
+            '`singleNodeDevicesData` twice.',
       );
       for (final NodeEntity node in mesh.allNodes) {
         expect(

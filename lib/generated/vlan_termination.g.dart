@@ -9,12 +9,24 @@ class VlanTerminationInstance {
   final String instancePath;
   final bool enable;
   final int vlanId;
+  final int? vlanPriority;
 
   const VlanTerminationInstance({
     required this.instancePath,
     required this.enable,
     required this.vlanId,
+    this.vlanPriority,
   });
+
+  @override
+  String toString() {
+    return 'VlanTerminationInstance('
+        'instancePath: $instancePath, '
+        'enable: $enable, '
+        'vlanId: $vlanId, '
+        'vlanPriority: $vlanPriority'
+        ')';
+  }
 }
 
 /// Update descriptor for VlanTerminationInstance instances
@@ -22,11 +34,13 @@ class VlanTerminationInstanceUpdate {
   final String instancePath;
   final bool? enable;
   final int? vlanId;
+  final int? vlanPriority;
 
   const VlanTerminationInstanceUpdate({
     required this.instancePath,
     this.enable,
     this.vlanId,
+    this.vlanPriority,
   });
 }
 
@@ -36,9 +50,13 @@ class VlanTermination {
 
   const VlanTermination({required this.items});
 
+  @override
+  String toString() => 'VlanTermination(items: $items)';
+
   static const _paths = [
     'Device.Ethernet.VLANTermination.*.Enable',
     'Device.Ethernet.VLANTermination.*.VLANID',
+    'Device.Ethernet.VLANTermination.*.VLANPriority',
   ];
 
   /// Fetch all instances via USP Get message
@@ -62,15 +80,6 @@ class VlanTermination {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([response['${p}Enable'], response['${p}VLANID']].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final missing = <String>[];
       if (!response.containsKey('${p}Enable')) {
         missing.add('${p}Enable');
@@ -87,15 +96,17 @@ class VlanTermination {
             response['${p}Enable'] == 'true' ||
             response['${p}Enable'] == '1',
         vlanId: int.tryParse(response['${p}VLANID']?.toString() ?? '') ?? 0,
+        vlanPriority: response.containsKey('${p}VLANPriority')
+            ? int.tryParse(response['${p}VLANPriority']?.toString() ?? '')
+            : null,
       ));
     }
     return VlanTermination(items: items);
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-      UspClient client, List<VlanTerminationInstanceUpdate> updates,
-      {bool allowPartial = false}) async {
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams(
+      List<VlanTerminationInstanceUpdate> updates) {
     final params = <String, dynamic>{};
     for (final update in updates) {
       if (update.enable != null) {
@@ -104,7 +115,18 @@ class VlanTermination {
       if (update.vlanId != null) {
         params['${update.instancePath}VLANID'] = update.vlanId;
       }
+      if (update.vlanPriority != null) {
+        params['${update.instancePath}VLANPriority'] = update.vlanPriority;
+      }
     }
+    return params;
+  }
+
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+      UspClient client, List<VlanTerminationInstanceUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateParams(updates);
     if (params.isEmpty) {
       return {
         'success': true,

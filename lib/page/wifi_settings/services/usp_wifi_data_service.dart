@@ -11,6 +11,7 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/tr181_path.dart';
 import 'package:privacy_gui/core/utils/wifi_channel.dart';
+import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/_shared/utils/wifi_guest_detection.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
@@ -112,10 +113,41 @@ class UspWifiDataService {
       throw mapUspErrorToServiceError(e);
     }
 
-    final radios = results[0] as WiFiRadios;
-    final ssids = results[1] as WiFiSsids;
-    final accessPoints = results[2] as WiFiAccessPoints;
+    // A row with every value blank is none of these (usp-codegen 0.17 dropped
+    // it), so it is gone before the empty-table check below and every map.
+    final radios = WiFiRadios(
+        items: (results[0] as WiFiRadios)
+            .items
+            .where((r) => !isEmptyWiFiRadio(r))
+            .toList());
+    final ssids = WiFiSsids(
+        items: (results[1] as WiFiSsids)
+            .items
+            .where((s) => !isEmptyWiFiSsid(s))
+            .toList());
+    final accessPoints = WiFiAccessPoints(
+        items: (results[2] as WiFiAccessPoints)
+            .items
+            .where((a) => !isEmptyWiFiAccessPoint(a))
+            .toList());
     final rawWifiClientMap = results[3] as Map<String, WifiClient>;
+
+    // A router always has radios, every radio carries SSIDs, and every SSID
+    // has an access point. A table with no rows is the router answering while
+    // its radios reload — FW 2.0.2 returns exactly that, even after the
+    // recovery probe has passed (bench 2026-10-07: 4 SSIDs and 0 APs 3 s
+    // after one save's recovery; all three tables empty 1 s after another's,
+    // cached as "no networks" and opened on 8 s later). A failed read, so the
+    // orchestrator's provider retry reads it again instead of the page
+    // rendering a router with no WiFi.
+    if (radios.items.isEmpty ||
+        ssids.items.isEmpty ||
+        accessPoints.items.isEmpty) {
+      throw NetworkError(
+          detail: 'WiFi read returned an empty table '
+              '(${radios.items.length} radios, ${ssids.items.length} SSIDs, '
+              '${accessPoints.items.length} APs)');
+    }
 
     // Cross-reference AP → SSID → Radio to get band + SSID name per client
     final connectionDetailMap = _buildConnectionDetailMap(
@@ -235,10 +267,13 @@ class UspWifiDataService {
   /// limitation), falls back to a broader parent-path fetch and manual parse.
   Future<Map<String, WifiClient>> _fetchWifiClients() async {
     final result = await WifiClients.fetch(_usp);
+    // A row with every value blank is no client (usp-codegen 0.17 dropped it),
+    // so a table of only those still takes the fallback below.
+    final clients = result.items.where((c) => !isEmptyWifiClient(c)).toList();
 
-    if (result.items.isNotEmpty) {
+    if (clients.isNotEmpty) {
       return {
-        for (final c in result.items)
+        for (final c in clients)
           if (c.macAddress.isNotEmpty) c.macAddress.toUpperCase(): c,
       };
     }

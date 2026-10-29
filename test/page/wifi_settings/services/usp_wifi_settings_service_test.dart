@@ -11,6 +11,8 @@ import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dar
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
+import '../../../mocks/test_data/wifi_settings_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 // WASM v0.11.0 response helpers
@@ -35,6 +37,48 @@ Map<String, dynamic> uspFailure(
         },
       },
     };
+
+/// A per-path SET error whose request never got an answer — what the WASM
+/// client reports when the browser's `fetch` fails under a WiFi restart.
+Map<String, dynamic> uspUnanswered(String path) => {
+      'success': false,
+      'result': {
+        'data': <String, dynamic>{},
+        'error': {
+          path: {
+            'errorCode': 9999,
+            'errorMessage': 'Transport error: Failed to fetch',
+          }
+        },
+      },
+    };
+
+/// Sends [plan] the way a caller would, returning what it planned and the
+/// outcome — the shape these tests assert on.
+Future<({int count, WifiWriteOutcome outcome, Map<String, dynamic> written})>
+    sent(WifiWritePlan plan) async => (
+          count: plan.count,
+          outcome: await plan.send(),
+          written: plan.params,
+        );
+
+/// Every SET [usp] received, one entry per call, with its `allowPartial`.
+///
+/// Per call rather than merged, because the defect this pins (#1499) is the
+/// NUMBER of writes: a merged key set is identical whether the save sent one SET
+/// or five.
+List<({Map<String, dynamic> params, bool allowPartial})> capturedSets(
+    MockUspClient usp) {
+  final captured = verify(() => usp.set(captureAny(),
+      allowPartial: captureAny(named: 'allowPartial'))).captured;
+  return [
+    for (var i = 0; i < captured.length; i += 2)
+      (
+        params: Map<String, dynamic>.from(captured[i] as Map),
+        allowPartial: captured[i + 1] as bool,
+      ),
+  ];
+}
 
 void main() {
   late UspWifiSettingsService svc;
@@ -927,9 +971,10 @@ void main() {
         ap('Device.WiFi.AccessPoint.3.', 'Device.WiFi.SSID.3.'),
       ]);
 
-      final count = await writeSvc.toggleSsidsByName(ssids, aps, 'Home', false);
+      final result =
+          await sent(writeSvc.toggleSsidsByName(ssids, aps, 'Home', false));
 
-      expect(count, 2); // SSID.1 + SSID.2 (both named "Home")
+      expect(result.count, 2); // SSID.1 + SSID.2 (both named "Home")
       final keys = capturedKeys();
       expect(keys, contains('Device.WiFi.SSID.1.Enable'));
       expect(keys, contains('Device.WiFi.SSID.2.Enable'));
@@ -940,6 +985,36 @@ void main() {
       expect(keys, isNot(contains('Device.WiFi.AccessPoint.3.Enable')));
     });
 
+    test('SSID + AccessPoint Enable go out as ONE SET with allowPartial',
+        () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+      final ssids = WiFiSsids(items: [
+        ssid('Device.WiFi.SSID.1.', 'Home', 'Device.WiFi.Radio.1.'),
+        ssid('Device.WiFi.SSID.2.', 'Home', 'Device.WiFi.Radio.2.'),
+      ]);
+      final aps = WiFiAccessPoints(items: [
+        ap('Device.WiFi.AccessPoint.1.', 'Device.WiFi.SSID.1.'),
+        ap('Device.WiFi.AccessPoint.2.', 'Device.WiFi.SSID.2.'),
+      ]);
+
+      final result =
+          await sent(writeSvc.toggleSsidsByName(ssids, aps, 'Home', false));
+
+      final sets = capturedSets(mockUsp);
+      expect(sets, hasLength(1));
+      expect(sets.single.allowPartial, isTrue);
+      expect(sets.single.params, {
+        'Device.WiFi.SSID.1.Enable': false,
+        'Device.WiFi.SSID.2.Enable': false,
+        'Device.WiFi.AccessPoint.1.Enable': false,
+        'Device.WiFi.AccessPoint.2.Enable': false,
+      });
+      expect(result.count, 2);
+      expect(result.outcome, WifiWriteOutcome.confirmed);
+      expect(result.written, sets.single.params);
+    });
+
     test('returns 0 and issues no writes when no SSID matches', () async {
       final ssids = WiFiSsids(items: [
         ssid('Device.WiFi.SSID.1.', 'Home', 'Device.WiFi.Radio.1.'),
@@ -948,12 +1023,160 @@ void main() {
         ap('Device.WiFi.AccessPoint.1.', 'Device.WiFi.SSID.1.'),
       ]);
 
-      final count =
-          await writeSvc.toggleSsidsByName(ssids, aps, 'Nonexistent', false);
+      final result = await sent(
+          writeSvc.toggleSsidsByName(ssids, aps, 'Nonexistent', false));
 
-      expect(count, 0);
+      expect(result.count, 0);
       verifyNever(
           () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // isApplied — read-back after an unanswered write
+  // -------------------------------------------------------------------------
+
+  group('isApplied', () {
+    late MockUspClient mockUsp;
+    late UspWifiSettingsService writeSvc;
+
+    setUp(() {
+      mockUsp = MockUspClient();
+      writeSvc = UspWifiSettingsService(mockUsp);
+    });
+
+    /// One GET answers all three tables; each generated `fetch` picks its own
+    /// leaves out of it.
+    void routerReads(Map<String, dynamic> leaves) {
+      when(() => mockUsp.get(any())).thenAnswer((_) async => leaves);
+    }
+
+    final router = <String, dynamic>{
+      'Device.WiFi.SSID.1.SSID': 'NewHome',
+      'Device.WiFi.SSID.1.Enable': true,
+      'Device.WiFi.SSID.1.Status': 'Up',
+      'Device.WiFi.SSID.1.BSSID': '',
+      'Device.WiFi.SSID.1.LowerLayers': 'Device.WiFi.Radio.1.',
+      'Device.WiFi.AccessPoint.1.Enable': true,
+      'Device.WiFi.AccessPoint.1.Status': 'Enabled',
+      'Device.WiFi.AccessPoint.1.Security.ModesSupported': 'WPA2-Personal',
+      'Device.WiFi.AccessPoint.1.Security.ModeEnabled': 'WPA2-Personal',
+      'Device.WiFi.AccessPoint.1.Security.EncryptionMode': 'AES',
+      // TR-181 never reads the passphrase back.
+      'Device.WiFi.AccessPoint.1.Security.KeyPassphrase': '',
+      'Device.WiFi.AccessPoint.1.SSIDAdvertisementEnabled': true,
+      'Device.WiFi.AccessPoint.1.SSIDReference': 'Device.WiFi.SSID.1.',
+      'Device.WiFi.Radio.1.Enable': true,
+      'Device.WiFi.Radio.1.Status': 'Up',
+      'Device.WiFi.Radio.1.Channel': 36,
+      'Device.WiFi.Radio.1.OperatingFrequencyBand': '5GHz',
+      'Device.WiFi.Radio.1.OperatingChannelBandwidth': '80MHz',
+      'Device.WiFi.Radio.1.PossibleChannels': '36,40,44,48',
+      'Device.WiFi.Radio.1.OperatingStandards': 'ax',
+      'Device.WiFi.Radio.1.SupportedStandards': 'a,n,ac,ax',
+      'Device.WiFi.Radio.1.TransmitPower': 100,
+      'Device.WiFi.Radio.1.MaxBitRate': 0,
+      'Device.WiFi.Radio.1.AutoChannelEnable': false,
+      'Device.WiFi.Radio.1.IEEE80211hEnabled': true,
+      'Device.WiFi.Radio.1.SupportedOperatingChannelBandwidths': '20MHz,80MHz',
+    };
+
+    test('true when every readable leaf it wrote reads back', () async {
+      routerReads(router);
+
+      expect(
+        await writeSvc.isApplied({
+          'Device.WiFi.SSID.1.SSID': 'NewHome',
+          'Device.WiFi.AccessPoint.1.Security.ModeEnabled': 'WPA2-Personal',
+          'Device.WiFi.Radio.1.Channel': 36,
+        }),
+        isTrue,
+      );
+    });
+
+    test('false while any written leaf still reads the old value', () async {
+      routerReads({...router, 'Device.WiFi.SSID.1.SSID': 'Home'});
+
+      expect(
+        await writeSvc.isApplied({'Device.WiFi.SSID.1.SSID': 'NewHome'}),
+        isFalse,
+      );
+    });
+
+    test('a passphrase is not compared — TR-181 reads it back empty', () async {
+      routerReads(router);
+
+      // Went out in the same SET as the SSID, so the SSID landing means it did.
+      expect(
+        await writeSvc.isApplied({
+          'Device.WiFi.SSID.1.SSID': 'NewHome',
+          'Device.WiFi.AccessPoint.1.Security.KeyPassphrase': 'secret12',
+        }),
+        isTrue,
+      );
+    });
+
+    test('fails closed: nothing comparable is NOT applied', () async {
+      expect(
+        await writeSvc.isApplied({
+          'Device.WiFi.AccessPoint.1.Security.KeyPassphrase': 'secret12',
+        }),
+        isFalse,
+      );
+      expect(await writeSvc.isApplied(const {}), isFalse);
+      verifyNever(() => mockUsp.get(any()));
+    });
+
+    test('a written row read back with every value blank is a failed read',
+        () async {
+      // usp-codegen 0.18 returns such a row where 0.17 dropped it (#1654). It
+      // is the router not there yet, not the router holding an empty SSID.
+      routerReads({
+        for (final e in router.entries)
+          if (e.key.startsWith('Device.WiFi.SSID.1.')) e.key: '',
+      });
+
+      expect(
+        writeSvc.isApplied({'Device.WiFi.SSID.1.SSID': 'NewHome'}),
+        throwsA(isA<NetworkError>()),
+      );
+    });
+
+    test(
+        'an EMPTY table is a failed read, not the old values — the router '
+        'answers a GET with no rows while its radios reload', () async {
+      // Bench round 3, 2026-10-07 (M60, 2.0.2): from 30 s to 60 s after a
+      // Quick Setup rename, every `Device.WiFi.SSID.*.` GET came back `{}` in
+      // ~18 ms. Read as "reached the router, values wrong", that ruled a save
+      // that landed as refused.
+      routerReads(const {});
+
+      expect(
+        writeSvc.isApplied({'Device.WiFi.SSID.1.SSID': 'NewHome'}),
+        throwsA(isA<ServiceError>()),
+      );
+    });
+
+    test('a table that lacks a written row is a failed read too', () async {
+      // Only SSID.1 answered; the save also wrote SSID.2.
+      routerReads(router);
+
+      expect(
+        writeSvc.isApplied({
+          'Device.WiFi.SSID.1.SSID': 'NewHome',
+          'Device.WiFi.SSID.2.SSID': 'NewHome',
+        }),
+        throwsA(isA<ServiceError>()),
+      );
+    });
+
+    test('a failed read is a ServiceError, for the caller to retry', () async {
+      when(() => mockUsp.get(any())).thenThrow(Exception('Failed to fetch'));
+
+      expect(
+        writeSvc.isApplied({'Device.WiFi.SSID.1.SSID': 'NewHome'}),
+        throwsA(isA<ServiceError>()),
+      );
     });
   });
 
@@ -974,14 +1197,51 @@ void main() {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => uspSuccess());
 
-      await writeSvc.updateRadioChannel(
+      final result = await sent(writeSvc.updateRadioChannel(
         'Device.WiFi.Radio.1.',
         channel: 36,
         autoChannel: false,
+      ));
+
+      final sets = capturedSets(mockUsp);
+      expect(sets, hasLength(1));
+      expect(sets.single.params, {
+        'Device.WiFi.Radio.1.Channel': 36,
+        'Device.WiFi.Radio.1.AutoChannelEnable': false,
+      });
+      // One USP service, so the SET stays atomic: the router either moves the
+      // radio or does not, never half (a refused Channel with an accepted
+      // AutoChannelEnable).
+      expect(sets.single.allowPartial, isFalse);
+      expect(result.outcome, WifiWriteOutcome.confirmed);
+      expect(result.written, sets.single.params);
+    });
+
+    test(
+        'auto channel proves itself by AutoChannelEnable alone — the '
+        'firmware picks the channel', () {
+      final plan = writeSvc.updateRadioChannel(
+        'Device.WiFi.Radio.1.',
+        channel: 36,
+        autoChannel: true,
       );
 
-      verify(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .called(1);
+      expect(plan.proof, {'Device.WiFi.Radio.1.AutoChannelEnable': true});
+    });
+
+    test('a lost reply is "unanswered" — a channel change reloads the radio',
+        () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer(
+              (_) async => uspUnanswered('Device.WiFi.Radio.1.Channel'));
+
+      final result = await sent(writeSvc.updateRadioChannel(
+        'Device.WiFi.Radio.1.',
+        channel: 36,
+        autoChannel: false,
+      ));
+
+      expect(result.outcome, WifiWriteOutcome.unanswered);
     });
 
     test('throws UspCompleteFailureError on UspFailure', () async {
@@ -989,11 +1249,11 @@ void main() {
           .thenAnswer((_) async => uspFailure());
 
       expect(
-        () => writeSvc.updateRadioChannel(
+        () => sent(writeSvc.updateRadioChannel(
           'Device.WiFi.Radio.1.',
           channel: 36,
           autoChannel: false,
-        ),
+        )),
         throwsA(isA<UspCompleteFailureError>()),
       );
     });
@@ -1049,7 +1309,7 @@ void main() {
       final original = [makeNetwork(ssid: 'OldName')];
       final current = [makeNetwork(ssid: 'NewName')];
 
-      await writeSvc.saveAdvanced(original: original, current: current);
+      await sent(writeSvc.saveAdvanced(original: original, current: current));
 
       verify(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .called(1);
@@ -1063,18 +1323,59 @@ void main() {
       final current = [makeNetwork(ssid: 'NewName')];
 
       expect(
-        () => writeSvc.saveAdvanced(original: original, current: current),
+        () => sent(writeSvc.saveAdvanced(original: original, current: current)),
         throwsA(isA<UspCompleteFailureError>()),
       );
+    });
+
+    test(
+        'SSID + AP + Radio changes on two networks are ONE SET with '
+        'allowPartial (#1499)', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+      WifiNetworkUIModel second({String ssid = 'TestNet'}) =>
+          WifiSettingsTestData.createNetworkUIModel(
+            ssidInstancePath: 'Device.WiFi.SSID.2.',
+            accessPointInstancePath: 'Device.WiFi.AccessPoint.2.',
+            radioInstancePath: 'Device.WiFi.Radio.2.',
+            ssid: ssid,
+          );
+      final original = [makeNetwork(), second()];
+      final current = [
+        makeNetwork(
+          ssid: 'NewName',
+          keyPassphrase: 'newpass1',
+          autoChannelEnable: false,
+          channel: 40,
+        ),
+        second(ssid: 'NewName'),
+      ];
+
+      final result = await sent(
+          writeSvc.saveAdvanced(original: original, current: current));
+
+      final sets = capturedSets(mockUsp);
+      expect(sets, hasLength(1));
+      expect(sets.single.allowPartial, isTrue);
+      expect(
+        sets.single.params.keys,
+        containsAll([
+          'Device.WiFi.SSID.1.SSID',
+          'Device.WiFi.AccessPoint.1.Security.KeyPassphrase',
+          'Device.WiFi.Radio.1.Channel',
+          'Device.WiFi.SSID.2.SSID',
+        ]),
+      );
+      expect(result.outcome, WifiWriteOutcome.confirmed);
     });
 
     test('skips unchanged networks', () async {
       final networks = [makeNetwork()];
 
-      await writeSvc.saveAdvanced(
+      await sent(writeSvc.saveAdvanced(
         original: networks,
         current: List.of(networks),
-      );
+      ));
 
       verifyNever(
           () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
@@ -1088,7 +1389,7 @@ void main() {
       final original = [makeNetwork(enabled: true)];
       final current = [makeNetwork(enabled: false)];
 
-      await writeSvc.saveAdvanced(original: original, current: current);
+      await sent(writeSvc.saveAdvanced(original: original, current: current));
 
       final captured = verify(() => mockUsp.set(captureAny(),
           allowPartial: any(named: 'allowPartial'))).captured;
@@ -1132,7 +1433,7 @@ void main() {
       ];
       final current = [makeNetwork(band: band, securityMode: selectedMode)];
 
-      await writeSvc.saveAdvanced(original: original, current: current);
+      await sent(writeSvc.saveAdvanced(original: original, current: current));
 
       final captured = verify(() => mockUsp.set(captureAny(),
           allowPartial: any(named: 'allowPartial'))).captured;
@@ -1262,11 +1563,11 @@ void main() {
       );
       final status = WifiSettingsStatus(quickSetupGuestAggregate: guestAgg);
 
-      await writeSvc.saveQuickSetup(
+      await sent(writeSvc.saveQuickSetup(
         original: original,
         current: current,
         status: status,
-      );
+      ));
 
       final keys = capturedKeys();
       // SSID enable write happens…
@@ -1320,11 +1621,11 @@ void main() {
       );
       final status = WifiSettingsStatus(quickSetupMainAggregate: mainAgg);
 
-      await writeSvc.saveQuickSetup(
+      await sent(writeSvc.saveQuickSetup(
         original: original,
         current: current,
         status: status,
-      );
+      ));
 
       final keys = capturedKeys();
       // AP layer gets written — passphrase + mode.
@@ -1336,6 +1637,223 @@ void main() {
           isTrue);
       // SSID layer must NOT be touched.
       expect(keys.any((k) => k.startsWith('Device.WiFi.SSID.')), isFalse);
+    });
+
+    test(
+        'a name + password change is ONE SET with allowPartial, '
+        'carrying both layers (#1499)', () async {
+      // Every WiFi SET reloads all radios on FL-WRT 2.0, so a save split into
+      // one SET per SSID / AP only ever had a live connection under the first
+      // write (#1499 log: SSID.1 25.3 s, SSID.2 26.9 s, then failure).
+      final mainAgg =
+          WifiSettingsTestData.createQuickSetupAggregate(keyPassphrase: '');
+      const mainOrig = WifiQuickSetupSettings(
+        isGuest: false,
+        enabled: true,
+        ssid: 'Home',
+        password: '',
+        securityMode: 'WPA2-Personal',
+        supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal'],
+      );
+      final original = WifiSettingsSettings(
+        networks: [
+          makeNetwork(ssidInstancePath: 'Device.WiFi.SSID.1.'),
+          makeNetwork(
+            ssidInstancePath: 'Device.WiFi.SSID.2.',
+            accessPointInstancePath: 'Device.WiFi.AccessPoint.2.',
+            band: '5GHz',
+          ),
+        ],
+        quickSetupEnabled: true,
+        quickSetupMain: mainOrig,
+      );
+      final current = original.copyWith(
+        quickSetupMain:
+            mainOrig.copyWith(ssid: 'NewHome', password: 'secret12'),
+      );
+
+      final result = await sent(writeSvc.saveQuickSetup(
+        original: original,
+        current: current,
+        status: WifiSettingsStatus(quickSetupMainAggregate: mainAgg),
+      ));
+
+      final sets = capturedSets(mockUsp);
+      expect(sets, hasLength(1));
+      expect(sets.single.allowPartial, isTrue);
+      expect(sets.single.params, {
+        'Device.WiFi.SSID.1.SSID': 'NewHome',
+        'Device.WiFi.SSID.1.Enable': true,
+        'Device.WiFi.SSID.2.SSID': 'NewHome',
+        'Device.WiFi.SSID.2.Enable': true,
+        'Device.WiFi.AccessPoint.1.Security.ModeEnabled': 'WPA2-Personal',
+        'Device.WiFi.AccessPoint.1.Security.KeyPassphrase': 'secret12',
+        'Device.WiFi.AccessPoint.2.Security.ModeEnabled': 'WPA2-Personal',
+        'Device.WiFi.AccessPoint.2.Security.KeyPassphrase': 'secret12',
+      });
+      expect(result.outcome, WifiWriteOutcome.confirmed);
+      expect(result.written, sets.single.params);
+    });
+
+    group('outcome', () {
+      final mainAgg = WifiSettingsTestData.createQuickSetupAggregate(
+        keyPassphrase: '',
+        supportedSecurityModes: const ['WPA2-Personal'],
+        ssidInstancePaths: const ['Device.WiFi.SSID.1.'],
+        apInstancePaths: const ['Device.WiFi.AccessPoint.1.'],
+      );
+      const mainOrig = WifiQuickSetupSettings(
+        isGuest: false,
+        enabled: true,
+        ssid: 'Home',
+        password: '',
+        securityMode: 'WPA2-Personal',
+        supportedSecurityModes: ['WPA2-Personal'],
+      );
+      late WifiSettingsSettings original;
+      setUp(() {
+        original = WifiSettingsSettings(
+          networks: [makeNetwork()],
+          quickSetupEnabled: true,
+          quickSetupMain: mainOrig,
+        );
+      });
+      Future<WifiWriteOutcome> renameAndSave() async =>
+          (await sent(writeSvc.saveQuickSetup(
+            original: original,
+            current: original.copyWith(
+                quickSetupMain: mainOrig.copyWith(ssid: 'NewHome')),
+            status: WifiSettingsStatus(quickSetupMainAggregate: mainAgg),
+          )))
+              .outcome;
+
+      test('a lost reply is "unanswered", not a failure', () async {
+        when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+            .thenAnswer((_) async => uspUnanswered('Device.WiFi.SSID.1.SSID'));
+
+        expect(await renameAndSave(), WifiWriteOutcome.unanswered);
+      });
+
+      test(
+          'Remote Assistance: an HTTP 5xx with no fault code is "unanswered" '
+          '— Guardian could not reach a router that was reloading its radios '
+          '(CLOUD_GUARDIANS#215)', () async {
+        when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+            .thenAnswer((_) async => uspFailure(
+                  path: 'Device.WiFi.SSID.1.SSID',
+                  errorCode: 9999,
+                  // Verbatim from #215's log.
+                  errorMessage:
+                      'Transport error: Transport error: HTTP error: HTTP 500',
+                ));
+
+        expect(await renameAndSave(), WifiWriteOutcome.unanswered);
+      });
+
+      test('an HTTP 4xx still throws — a 401 must end the session (#1627)',
+          () async {
+        when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+            .thenAnswer((_) async => uspFailure(
+                  path: 'Device.WiFi.SSID.1.SSID',
+                  errorCode: 9999,
+                  errorMessage: 'Transport error: HTTP error: HTTP 401',
+                ));
+
+        expect(renameAndSave(), throwsA(isA<ServiceError>()));
+      });
+
+      test('a refusal still throws — 9999 with a fault inside is an answer',
+          () async {
+        when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+            .thenAnswer((_) async => uspFailure(
+                  path: 'Device.WiFi.SSID.1.SSID',
+                  errorCode: 9999,
+                  errorMessage: 'Transport error: Protocol error: Received '
+                      'error response: Invalid value (code: 7012)',
+                ));
+
+        expect(renameAndSave(), throwsA(isA<UspCompleteFailureError>()));
+      });
+
+      test('nothing changed sends no SET and is confirmed', () async {
+        final result = await sent(writeSvc.saveQuickSetup(
+          original: original,
+          current: original,
+          status: WifiSettingsStatus(quickSetupMainAggregate: mainAgg),
+        ));
+
+        expect(result.outcome, WifiWriteOutcome.confirmed);
+        expect(result.written, isEmpty);
+        verifyNever(
+            () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
+      });
+
+      test('an invalid SSID throws InvalidInputError before any SET', () {
+        for (final bad in ['', 'x' * 33]) {
+          expect(
+            () => writeSvc.saveQuickSetup(
+              original: original,
+              current: original.copyWith(
+                  quickSetupMain: mainOrig.copyWith(ssid: bad)),
+              status: WifiSettingsStatus(quickSetupMainAggregate: mainAgg),
+            ),
+            throwsA(isA<InvalidInputError>()),
+            reason: 'ssid "${bad.length > 3 ? '${bad.length} chars' : bad}"',
+          );
+        }
+        verifyNever(
+            () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
+      });
+
+      group('proof — only what this save changes is read back', () {
+        WifiWritePlan planFor(WifiQuickSetupSettings edited) =>
+            writeSvc.saveQuickSetup(
+              original: original,
+              current: original.copyWith(quickSetupMain: edited),
+              status: WifiSettingsStatus(quickSetupMainAggregate: mainAgg),
+            );
+
+        test(
+            'a password-only change has NO proof — the unchanged ModeEnabled '
+            'it resends would read back as the old value and fake a success '
+            '(CLOUD_GUARDIANS#215)', () {
+          final plan = planFor(mainOrig.copyWith(password: 'secret12'));
+
+          // The SET still carries the mode alongside the passphrase…
+          expect(plan.params.keys, {
+            'Device.WiFi.AccessPoint.1.Security.ModeEnabled',
+            'Device.WiFi.AccessPoint.1.Security.KeyPassphrase',
+          });
+          // …but neither can prove the write landed: one is unchanged, the
+          // other reads back empty.
+          expect(plan.proof, isEmpty);
+        });
+
+        test('a rename proves itself by the new SSID', () {
+          final plan = planFor(mainOrig.copyWith(ssid: 'NewHome'));
+
+          expect(plan.proof, {'Device.WiFi.SSID.1.SSID': 'NewHome'});
+        });
+
+        test('a mode change proves itself by the new mode', () {
+          final plan =
+              planFor(mainOrig.copyWith(securityMode: 'WPA3-Personal'));
+
+          expect(
+            plan.proof,
+            {'Device.WiFi.AccessPoint.1.Security.ModeEnabled': 'WPA3-Personal'},
+          );
+        });
+
+        test('an enable toggle proves itself on both rows (#972)', () {
+          final plan = planFor(mainOrig.copyWith(enabled: false));
+
+          expect(plan.proof, {
+            'Device.WiFi.SSID.1.Enable': false,
+            'Device.WiFi.AccessPoint.1.Enable': false,
+          });
+        });
+      });
     });
 
     test('omits keyPassphrase param when password empty on mode change',
@@ -1370,11 +1888,11 @@ void main() {
       );
       final status = WifiSettingsStatus(quickSetupMainAggregate: mainAgg);
 
-      await writeSvc.saveQuickSetup(
+      await sent(writeSvc.saveQuickSetup(
         original: original,
         current: current,
         status: status,
-      );
+      ));
 
       final keys = capturedKeys();
       expect(keys.any((k) => k.contains('Security.ModeEnabled')), isTrue);
@@ -1486,11 +2004,11 @@ void main() {
       );
       final status = WifiSettingsStatus(quickSetupMainAggregate: agg);
 
-      await writeSvc.saveQuickSetup(
+      await sent(writeSvc.saveQuickSetup(
         original: original,
         current: current,
         status: status,
-      );
+      ));
 
       final captured = verify(() => mockUsp.set(captureAny(),
           allowPartial: any(named: 'allowPartial'))).captured;
@@ -1539,6 +2057,126 @@ void main() {
         await capturedModeEnabled(band: '5GHz', selectedMode: 'None'),
         'None',
       );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Security.ModesSupported — Enterprise modes are not offered (#1046)
+  // -------------------------------------------------------------------------
+
+  group('supportedSecurityModes — Enterprise modes dropped (#1046)', () {
+    // Security.ModesSupported as read on FW 2.0.2.26091803 (M60).
+    const fw2Guest = 'None,WPA2-Personal,WPA3-Personal,'
+        'WPA3-Personal-Transition,WPA-Enterprise,WPA2-Enterprise,'
+        'WPA3-Enterprise,WPA-WPA2-Enterprise';
+    const fw2Main = 'None,WPA2-Personal,WPA3-Personal,WPA3-Personal-Transition';
+    const configurable = [
+      'None',
+      'WPA2-Personal',
+      'WPA3-Personal',
+      'WPA3-Personal-Transition',
+    ];
+
+    /// Dual-band main + guest, as FW 2.0 wires them: SSID.1/.2 main on
+    /// Radio.1/.2, SSID.3/.4 guest on the same radios.
+    List<WifiNetworkUIModel> buildDualBand({
+      String mainModes = fw2Main,
+      String guestModes = fw2Guest,
+    }) =>
+        svc.buildWifiNetworks(
+          ssids: WiFiSsids(items: [
+            WifiSettingsTestData.createSsid(
+                instancePath: 'Device.WiFi.SSID.1.',
+                ssid: 'Home',
+                lowerLayers: 'Device.WiFi.Radio.1.',
+                alias: 'wifi-2g'),
+            WifiSettingsTestData.createSsid(
+                instancePath: 'Device.WiFi.SSID.2.',
+                ssid: 'Home',
+                lowerLayers: 'Device.WiFi.Radio.2.',
+                alias: 'wifi-5g'),
+            WifiSettingsTestData.createSsid(
+                instancePath: 'Device.WiFi.SSID.3.',
+                ssid: 'Home-guest',
+                enable: false,
+                lowerLayers: 'Device.WiFi.Radio.1.',
+                alias: 'wifi-2g-guest'),
+            WifiSettingsTestData.createSsid(
+                instancePath: 'Device.WiFi.SSID.4.',
+                ssid: 'Home-guest',
+                enable: false,
+                lowerLayers: 'Device.WiFi.Radio.2.',
+                alias: 'wifi-5g-guest'),
+          ]),
+          accessPoints: WiFiAccessPoints(items: [
+            for (final (i, modes) in [
+              (1, mainModes),
+              (2, mainModes),
+              (3, guestModes),
+              (4, guestModes),
+            ])
+              WifiSettingsTestData.createAccessPoint(
+                instancePath: 'Device.WiFi.AccessPoint.$i.',
+                ssidReference: 'Device.WiFi.SSID.$i.',
+                modesSupported: modes,
+              ),
+          ]),
+          radios: WiFiRadios(items: [
+            WifiSettingsTestData.createRadio(
+                instancePath: 'Device.WiFi.Radio.1.',
+                operatingFrequencyBand: '2.4GHz'),
+            WifiSettingsTestData.createRadio(
+                instancePath: 'Device.WiFi.Radio.2.',
+                operatingFrequencyBand: '5GHz'),
+          ]),
+        );
+
+    test('FW 2.0 guest list keeps only the configurable modes, in order', () {
+      final guests = buildDualBand().where((n) => n.isGuest).toList();
+
+      expect(guests, hasLength(2));
+      for (final g in guests) {
+        expect(g.supportedSecurityModes, configurable);
+      }
+    });
+
+    test('main list, which has no Enterprise mode, is unchanged', () {
+      final mains = buildDualBand().where((n) => !n.isGuest).toList();
+
+      expect(mains, hasLength(2));
+      for (final m in mains) {
+        expect(m.supportedSecurityModes, configurable);
+      }
+    });
+
+    test('an Enterprise-only list parses to empty, as an empty list does', () {
+      final guests = buildDualBand(
+        guestModes: 'WPA2-Enterprise,WPA3-Enterprise',
+      ).where((n) => n.isGuest);
+
+      // Empty is what hides the Password and Security mode rows.
+      for (final g in guests) {
+        expect(g.supportedSecurityModes, isEmpty);
+      }
+    });
+
+    test('a mode the app does not special-case still reaches the picker', () {
+      final guests = buildDualBand(
+        guestModes: 'WPA2-Personal,OWE,WPA2-Enterprise',
+      ).where((n) => n.isGuest);
+
+      for (final g in guests) {
+        expect(g.supportedSecurityModes, ['WPA2-Personal', 'OWE']);
+      }
+    });
+
+    test('Quick Setup guest intersection offers no Enterprise mode', () {
+      final quickSetup = svc.buildQuickSetupNetworks(buildDualBand());
+
+      expect(quickSetup.isQuickSetup, isTrue);
+      expect(quickSetup.guest, isNotNull);
+      expect(quickSetup.guest!.supportedSecurityModes, configurable);
+      expect(quickSetup.main!.supportedSecurityModes, configurable);
     });
   });
 }

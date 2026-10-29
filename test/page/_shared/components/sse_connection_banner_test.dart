@@ -63,6 +63,7 @@ import 'package:privacy_gui/core/mode/local_mode_profile.dart';
 import 'package:privacy_gui/core/mode/remote_mode_profile.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
+import 'package:privacy_gui/core/usp/models/sse_connection_state.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/_shared/components/sse_connection_banner.dart';
 import 'package:ui_kit_library/ui_kit.dart';

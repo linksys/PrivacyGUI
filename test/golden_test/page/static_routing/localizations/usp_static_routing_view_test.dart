@@ -24,6 +24,15 @@ void main() {
         'edit_dirty': (overrides) => overrides.addAll(
               staticRoutingOverrides(dirtyState()),
             ),
+        // #1100: a router with the NAT / Dynamic routing switch.
+        'nat_dynamic_routing': (overrides) => overrides.addAll(
+              staticRoutingOverrides(
+                  dataState([route1, route2], ripEnabled: true)),
+            ),
+        // #1100: at FWDEV#213's 20 routes, Add is disabled and says why.
+        'full': (overrides) => overrides.addAll(
+              staticRoutingOverrides(fullState),
+            ),
       },
       interactions: {
         'dialog_add': Interaction(

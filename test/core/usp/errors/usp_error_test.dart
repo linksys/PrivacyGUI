@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 void main() {
   group('parseUspError', () {
@@ -250,6 +254,21 @@ void main() {
       expect(mapUspErrorToServiceError(raw), isA<ResourceNotFoundError>());
     });
 
+    // obuspa refuses an Operate on a row that is gone before the command runs,
+    // so the code arrives inside the WASM client's 9999 envelope. The string
+    // is the one UspClient.extractOperateResult throws for the envelope
+    // measured on FW 2.0.3.26102008 (#876).
+    test('maps Protocol fault 7016 to ResourceNotFoundError', () {
+      const raw = 'Operate failed: Protocol error: Decoding error: Received '
+          'error response: CheckPathProperties: Object exists in schema, but '
+          'instances are invalid: '
+          'Device.WiFi.DataElements.Network.Device.9.X_LINKSYS_Reboot() '
+          '(code: 7016)';
+      final error = mapUspErrorToServiceError(raw);
+      expect(error, isA<ResourceNotFoundError>());
+      expect(error.code, 7016);
+    });
+
     test('maps Protocol fault 9001 to UnauthorizedError', () {
       const raw =
           'Set failed: Protocol error: Decoding error: Received error response: '
@@ -262,6 +281,18 @@ void main() {
           'Get failed: Protocol error: Decoding error: Received error response: '
           'InvalidParam: Invalid parameter name (code: 9005)';
       expect(mapUspErrorToServiceError(raw), isA<ResourceNotFoundError>());
+    });
+
+    test(
+        'maps codegen 9996 (no instance matches resolveBy) to '
+        'ResourceNotFoundError', () {
+      // Thrown by the generated `_resolveInstance` when no row has the Alias it
+      // resolves by: this firmware has no such instance.
+      const raw = 'Get failed: Could not resolve Device.IP.Interface instance '
+          'with Alias=wan (code: 9996)';
+      final error = mapUspErrorToServiceError(raw);
+      expect(error, isA<ResourceNotFoundError>());
+      expect(error.code, 9996);
     });
 
     test('maps Protocol fault 9008 to InvalidInputError', () {
@@ -303,6 +334,48 @@ void main() {
     });
   });
 
+  group('shared Operate error contract', () {
+    final cases = jsonDecode(
+      File('test/web/usp_operate_errors.json').readAsStringSync(),
+    ) as List<dynamic>;
+    for (final entry in cases) {
+      final fixture = entry as Map<String, dynamic>;
+      test(fixture['name'] as String, () {
+        String? raw;
+        try {
+          UspClient.extractOperateResult({
+            'success': false,
+            'result': {
+              'data': <String, dynamic>{},
+              'error': {
+                'Device.X_LINKSYS_AutoIPoE.Apply()': {
+                  'errorCode': fixture['errorCode'],
+                  'errorMessage': fixture['errorMessage'],
+                },
+              },
+            },
+          });
+        } catch (error) {
+          raw = error as String;
+        }
+        expect(raw, isNotNull);
+        final parsed = parseUspError(raw!);
+        expect(parsed, isNotNull);
+        expect(parsed!.operation, 'Operate');
+        expect(parsed.category.name, fixture['category']);
+        expect(parsed.faultCode, fixture['faultCode']);
+        expect(parsed.httpStatus, fixture['httpStatus']);
+        final mapped = mapUspErrorToServiceError(raw);
+        expect(mapped.runtimeType.toString(), fixture['serviceError']);
+        if (mapped is UspCompleteFailureError) {
+          expect(mapped.failures.single.errorCode, fixture['faultCode']);
+        } else {
+          expect(mapped.code, fixture['mappedCode']);
+        }
+      });
+    }
+  });
+
   group('isUnansweredTransportFailure', () {
     // Both messages are the per-path `errorMessage` the WASM client returned on
     // FLWRT 2.0.2 (2026-10-05). Both carry `errorCode: 9999`, which is why the
@@ -331,6 +404,91 @@ void main() {
     test('is false for a message it does not recognise', () {
       // Fails closed: an unknown error is reported, not assumed to have landed.
       expect(isUnansweredTransportFailure('Something else entirely'), isFalse);
+    });
+  });
+  // A refused Set as FLWRT 2.0.3.26101641 answers it (bench 2026-10-21): every
+  // leaf of the Set gets the same code, and only the refused leaf's message
+  // starts with the firmware's error name.
+  group('refusalNameIn', () {
+    const names = ['ErrorInvalidIPAddress', 'ErrorDuplicateEntryName'];
+    const p = 'Device.Routing.Router.1.IPv4Forwarding.30.';
+    const groupFailed = UspErrorDetail(
+      requestedPath: '${p}Enable',
+      errorCode: 7012,
+      errorMessage:
+          "SetParameterGroup: group set failed at '${p}DestIPAddress' "
+          '(Invalid value)',
+    );
+
+    test('finds the name on the refused leaf, wherever it is in the list', () {
+      final refusal = refusalNameIn(const [
+        groupFailed,
+        UspErrorDetail(
+          requestedPath: '${p}DestIPAddress',
+          errorCode: 7012,
+          errorMessage: 'ErrorInvalidIPAddress: 127.20.0.0 is a reserved '
+              'address.',
+        ),
+      ], names);
+
+      expect(refusal?.name, 'ErrorInvalidIPAddress');
+      expect(refusal?.detail.errorCode, 7012);
+      expect(refusal?.detail.requestedPath, '${p}DestIPAddress');
+    });
+
+    test('is null when no message starts with one of the names', () {
+      expect(refusalNameIn(const [groupFailed], names), isNull);
+      expect(
+          refusalNameIn(const [
+            UspErrorDetail(
+              requestedPath: '${p}Enable',
+              errorCode: 7012,
+              errorMessage: 'Rejected: ErrorInvalidIPAddress later in text',
+            ),
+          ], names),
+          isNull);
+    });
+  });
+
+  group('isUnansweredWifiWrite', () {
+    test('is true for everything isUnansweredTransportFailure accepts', () {
+      expect(
+        isUnansweredWifiWrite('Transport error: HTTP error: error sending '
+            'request: JsValue(TypeError: Failed to fetch)'),
+        isTrue,
+      );
+    });
+
+    test(
+        'is true for an HTTP 5xx with no router fault code — Guardian could '
+        'not reach a router reloading its radios (CLOUD_GUARDIANS#215)', () {
+      expect(
+        // Verbatim from #215's log.
+        isUnansweredWifiWrite(
+            'Transport error: Transport error: HTTP error: HTTP 500'),
+        isTrue,
+      );
+      expect(isUnansweredWifiWrite('Transport error: HTTP error: HTTP 503'),
+          isTrue);
+    });
+
+    test('is false for a 4xx — a 401 must end the session (#1627)', () {
+      expect(isUnansweredWifiWrite('Transport error: HTTP error: HTTP 401'),
+          isFalse);
+      expect(isUnansweredWifiWrite('Transport error: HTTP error: HTTP 404'),
+          isFalse);
+    });
+
+    test('is false when a 5xx carries a fault the router reported', () {
+      expect(
+        isUnansweredWifiWrite('Transport error: HTTP error: HTTP 500 '
+            'Received error response: Invalid value (code: 7012)'),
+        isFalse,
+      );
+    });
+
+    test('fails closed on a message it does not recognise', () {
+      expect(isUnansweredWifiWrite('Something else entirely'), isFalse);
     });
   });
 }

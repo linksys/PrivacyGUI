@@ -2,18 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
 import 'package:privacy_gui/core/utils/ipv6_address.dart';
-import 'package:privacy_gui/core/utils/oui_lookup.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart'
     hide ConnectionType;
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/_shared/components/detail_widgets.dart';
+import 'package:privacy_gui/page/_shared/components/device_category_ui.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/page/devices/providers/device_detail_provider.dart';
+import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
+import 'package:privacy_gui/page/devices/views/dialogs/device_identity_edit_dialog.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/util/network_utils.dart';
@@ -124,11 +127,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   // ===========================================================================
 
   Widget _buildDeviceIdentityCard(BuildContext context, ClientDevice device) {
-    final classification = DeviceClassifier.classifyWithConfidence(
-      hostname: device.hostName,
-      mac: device.mac,
-    );
-    final vendor = OuiLookup.getVendorOrPrivate(device.mac);
+    final category = DeviceClassifier.classifyClient(device);
+    final vendor = DeviceClassifier.manufacturerOf(device);
     final colorScheme = Theme.of(context).colorScheme;
 
     return AppCard(
@@ -148,7 +148,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                     borderRadius: BorderRadius.circular(AppSpacing.sm),
                   ),
                   child: Icon(
-                    classification.category.icon,
+                    category.icon,
                     size: 28,
                     color: colorScheme.onPrimaryContainer,
                   ),
@@ -158,10 +158,17 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AppText.titleLarge(device.displayName),
+                      DetailEditableName(
+                        name: device.displayName,
+                        editLabel: loc(context).editDevice,
+                        identifier: 'device-detail-edit-identity',
+                        onEdit: device.hostInstancePaths.isEmpty
+                            ? null
+                            : () => _editIdentity(context, ref, device),
+                      ),
                       AppGap.xxs(),
                       AppText.labelMedium(
-                        classification.category.displayName,
+                        category.resolveLabel(context),
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ],
@@ -186,8 +193,10 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                 label: loc(context).macAddress,
                 value: device.mac,
               ),
-              if (device.hostName.isNotEmpty &&
-                  device.hostName != device.displayName)
+              // Whenever the host name is non-empty, even when it is also the
+              // display name: with no friendly name it is, and hiding the row
+              // then hid the only name the device reported (#1686 item 3).
+              if (device.hostName.isNotEmpty)
                 DetailInfoTile(
                   icon: Icons.dns,
                   label: loc(context).hostname,
@@ -277,7 +286,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
           isWifi: device.isWifi,
           mac: device.mac,
           ip: device.ip,
-          band: device.band,
+          band: wifiBandLabel(context, device.wifi),
+          mloUnknown: device.wifi?.mloUnknown ?? false,
           ssidName: device.ssidName,
           signalStrength: device.signalStrength,
         ),
@@ -291,7 +301,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
             isWifi: iface.isWifi,
             mac: iface.mac,
             ip: iface.ip,
-            band: iface.band,
+            band: wifiBandLabel(context, iface.wifi),
+            mloUnknown: iface.wifi?.mloUnknown ?? false,
             ssidName: iface.ssidName,
             signalStrength: iface.signalStrength,
           ),
@@ -320,6 +331,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
     required String mac,
     required String ip,
     String? band,
+    bool mloUnknown = false,
     String? ssidName,
     int? signalStrength,
   }) {
@@ -397,21 +409,38 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                   ],
                 ),
               ),
-              if (isWifi && (band != null || ssidName != null))
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    if (band != null)
-                      AppText.bodySmall(
-                        band,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    if (ssidName != null)
-                      AppText.bodySmall(
-                        ssidName,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                  ],
+              if (isWifi && (band != null || ssidName != null || mloUnknown))
+                // Flexible, not a bare Column: `MLO (2.4GHz + 5GHz)` and the
+                // MLO hint are longer than a band, and an unbounded column
+                // would take its width from the IP / MAC column beside it.
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (band != null)
+                        AppText.bodySmall(
+                          band,
+                          color: colorScheme.onSurfaceVariant,
+                          textAlign: TextAlign.end,
+                        ),
+                      if (ssidName != null)
+                        AppText.bodySmall(
+                          ssidName,
+                          color: colorScheme.onSurfaceVariant,
+                          textAlign: TextAlign.end,
+                        ),
+                      // Stacked under band and SSID rather than beside them
+                      // (#1686): the row has no width to spare on a phone.
+                      if (mloUnknown)
+                        AppText.bodySmall(
+                          loc(context).mloStatusUnavailable,
+                          color: colorScheme.onSurfaceVariant,
+                          textAlign: TextAlign.end,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
                 ),
             ],
           ),
@@ -428,7 +457,10 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
     final hasSignalData = device.signalStrength != null;
     final hasSpeedData =
         device.downlinkRate != null || device.uplinkRate != null;
-    final hasBandSsid = device.band != null || device.ssidName != null;
+    final bandLabel = wifiBandLabel(context, device.wifi);
+    final mloUnknown = device.wifi?.mloUnknown ?? false;
+    final hasBandSsid =
+        bandLabel != null || device.ssidName != null || mloUnknown;
 
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -471,7 +503,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
           if (hasBandSsid)
             Row(
               children: [
-                if (device.band != null) ...[
+                if (bandLabel != null || mloUnknown) ...[
                   Expanded(
                     child: LayoutBlock(
                       padding: const EdgeInsets.all(AppSpacing.md),
@@ -493,7 +525,18 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                             ],
                           ),
                           AppGap.xs(),
-                          AppText.bodyMedium(device.band!),
+                          if (bandLabel != null) AppText.bodyMedium(bandLabel),
+                          // Stacked under the band (#1686): the card is half
+                          // the row, with no width to put it beside.
+                          if (mloUnknown)
+                            AppText.bodySmall(
+                              loc(context).mloStatusUnavailable,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                         ],
                       ),
                     ),
@@ -566,29 +609,33 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
     );
   }
 
+  /// The last rates the link used, one card per direction, stacked.
+  ///
+  /// `LastDataDownlinkRate` / `LastDataUplinkRate` are the rate most recently
+  /// used to send data (TR-181), not throughput: an idle client often reads
+  /// 6 Mbps. The captions say so (#1686 item 4), and they no longer fit side
+  /// by side: at 320px each half-width caption had 81dp, and 107 of the 208
+  /// locale × width captions ellipsized. Stacked, each gets the full width.
   Widget _buildSpeedRow(BuildContext context, ClientDevice device) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (device.downlinkRate != null)
-          Expanded(
-            child: DetailSpeedCard(
-              icon: Icons.arrow_downward,
-              label: loc(context).download,
-              speedKbps: device.downlinkRate!,
-              color: colorScheme.primary,
-            ),
+          DetailSpeedCard(
+            icon: Icons.arrow_downward,
+            label: loc(context).lastDownloadRate,
+            speedKbps: device.downlinkRate!,
+            color: colorScheme.primary,
           ),
         if (device.downlinkRate != null && device.uplinkRate != null)
           AppGap.sm(),
         if (device.uplinkRate != null)
-          Expanded(
-            child: DetailSpeedCard(
-              icon: Icons.arrow_upward,
-              label: loc(context).upload,
-              speedKbps: device.uplinkRate!,
-              color: colorScheme.tertiary,
-            ),
+          DetailSpeedCard(
+            icon: Icons.arrow_upward,
+            label: loc(context).lastUploadRate,
+            speedKbps: device.uplinkRate!,
+            color: colorScheme.tertiary,
           ),
       ],
     );
@@ -802,6 +849,39 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
         ),
       ],
     );
+  }
+
+  // ===========================================================================
+  // Identity Actions
+  // ===========================================================================
+
+  /// Names the client and picks its icon (#1691). The dialog saves and shows
+  /// its own progress and errors; this page only confirms a finished save.
+  Future<void> _editIdentity(
+      BuildContext context, WidgetRef ref, ClientDevice device) async {
+    final saved = await showAppDialog<bool>(
+      context: context,
+      builder: (_) => DeviceIdentityEditDialog(
+        initialName: device.userDeviceName ?? '',
+        initialCategory:
+            DeviceCategory.fromUserTypeCode(device.userDeviceType) ??
+                DeviceCategory.unknown,
+        hasUserType: device.userDeviceType != null,
+        // What an empty name shows: cleared, FriendlyName falls back to
+        // devidentd's detected name, else the host name. The detected name is
+        // read on firmware with X_LINKSYS_DetectedName (FWDEV#224).
+        detectedName: device.detectedName ?? device.hostName,
+        onSave: (name, category) =>
+            ref.read(devicesDataProvider.notifier).updateIdentity(
+                  hostInstancePaths: device.hostInstancePaths,
+                  name: name,
+                  userTypeCode: category?.userTypeCode,
+                ),
+      ),
+    );
+    if (saved == true && context.mounted) {
+      showSuccessSnackBar(context, loc(context).changesSaved);
+    }
   }
 
   // ===========================================================================

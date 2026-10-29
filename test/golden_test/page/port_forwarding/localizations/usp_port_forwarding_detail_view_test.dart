@@ -212,47 +212,64 @@ void main() {
           setup: (overrides) => overrides.addAll(
             portForwardingOverrides(dataState()),
           ),
-          steps: (tester) async {
+          steps: withSemantics((tester) async {
             await switchToTab(tester, 1);
-            final addBtn = find.descendant(
-              of: find.byType(UspPortRangeTab),
-              matching: find.byType(AppIconButton),
-            );
-            await tester.tap(addBtn.first);
-            await settleWithTimeout(tester);
-            // Find all EditableText on screen
-            final allFields = find.byType(EditableText);
-            final count = allFields.evaluate().length;
-            if (count < 5) return;
-            // Port range dialog has 5 fields (desc, extStart, extEnd, intPort, client)
-            final baseIndex = count - 5;
-            // Description — over 32 chars
-            await tester.tap(allFields.at(baseIndex));
-            await tester.pump();
-            tester.testTextInput.enterText('x' * 33);
-            await tester.pump();
-            // External port start — out of range
-            await tester.tap(allFields.at(baseIndex + 1));
-            await tester.pump();
-            tester.testTextInput.enterText('99999');
-            await tester.pump();
-            // External port end — less than start
-            await tester.tap(allFields.at(baseIndex + 2));
-            await tester.pump();
-            tester.testTextInput.enterText('1');
-            await tester.pump();
-            // Internal port — out of range
-            await tester.tap(allFields.at(baseIndex + 3));
-            await tester.pump();
-            tester.testTextInput.enterText('0');
-            await tester.pump();
-            // Internal client — invalid IP
-            await tester.tap(allFields.at(baseIndex + 4));
-            await tester.pump();
-            tester.testTextInput.enterText('not-an-ip');
-            await tester.pump();
+            await tapAdd(tester, 'pf-add-port-range');
+            // By identifier: the dialog lost its internal port field (#1080),
+            // so a positional index would type into the wrong box.
+            await typeInto(tester, 'pf-range-description', 'x' * 33);
+            await typeInto(tester, 'pf-range-external-port-start', '99999');
+            await typeInto(tester, 'pf-range-external-port-end', '1');
+            await typeInto(tester, 'pf-range-internal-ip', 'not-an-ip');
             await tester.pump(const Duration(milliseconds: 100));
-          },
+          }),
+        ),
+        // --- FWDEV#204 checks the router no longer refuses on Add ---
+        // A range over the scene's HTTP single port (80, TCP), and the router's
+        // own address as the destination.
+        'dialog_overlap_and_lan_host_port_range': Interaction(
+          setup: (overrides) => overrides.addAll(
+            portForwardingOverrides(dataState()),
+          ),
+          steps: withSemantics((tester) async {
+            await switchToTab(tester, 1);
+            await tapAdd(tester, 'pf-add-port-range');
+            await typeInto(tester, 'pf-range-external-port-start', '70');
+            await typeInto(tester, 'pf-range-external-port-end', '90');
+            await typeInto(tester, 'pf-range-internal-ip', '192.168.1.1');
+            await typeInto(tester, 'pf-range-description', 'Overlap');
+            await tester.pump(const Duration(milliseconds: 100));
+          }),
+        ),
+        'dialog_overlap_port_triggering': Interaction(
+          setup: (overrides) => overrides.addAll(
+            portForwardingOverrides(dataState()),
+          ),
+          steps: withSemantics((tester) async {
+            await switchToTab(tester, 2);
+            await tapAdd(tester, 'pf-add-port-triggering');
+            // 21 is the scene's FTP trigger.
+            await typeInto(tester, 'pf-trigger-trigger-port-start', '21');
+            await typeInto(tester, 'pf-trigger-forward-port-start', '60000');
+            await typeInto(tester, 'pf-trigger-description', 'Overlap');
+            await tester.pump(const Duration(milliseconds: 100));
+          }),
+        ),
+        // --- Every list at its FWDEV#204 limit: Add disabled, reason shown ---
+        'full_single_port': Interaction(
+          setup: (overrides) =>
+              overrides.addAll(portForwardingOverrides(fullDataState)),
+          steps: (tester) async {},
+        ),
+        'full_port_range': Interaction(
+          setup: (overrides) =>
+              overrides.addAll(portForwardingOverrides(fullDataState)),
+          steps: (tester) async => switchToTab(tester, 1),
+        ),
+        'full_port_triggering': Interaction(
+          setup: (overrides) =>
+              overrides.addAll(portForwardingOverrides(fullDataState)),
+          steps: (tester) async => switchToTab(tester, 2),
         ),
       },
     ),

@@ -3,102 +3,7 @@ import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_topology_builder.dart';
 
-/// One radio, optionally carrying the bSTA MAC and a fronthaul BSS.
-///
-/// [backhaulStaMac] is where the node's own backhaul MAC lives since #1555. It
-/// used to be the node-level `BackhaulMACAddress`, which FL-WRT 2.0 does not
-/// define at all.
-MeshRadio _radio(
-  String nodeInstance, {
-  String? backhaulStaMac,
-  List<MeshBss> bssList = const [],
-}) =>
-    MeshRadio(
-      instancePath: '${nodeInstance}Radio.1.',
-      backhaulStaMacAddress: backhaulStaMac,
-      currentOperatingClassProfiles: const [],
-      bssList: bssList,
-    );
-
-/// One fronthaul BSS with [stations] attached, keyed off the node's path.
-MeshBss _bss(
-  String nodeInstance, {
-  required String bssid,
-  required String ssid,
-  List<({String mac, int rcpi})> stations = const [],
-}) =>
-    MeshBss(
-      instancePath: '${nodeInstance}Radio.1.BSS.1.',
-      bssid: bssid,
-      ssid: ssid,
-      stations: [
-        for (var i = 0; i < stations.length; i++)
-          MeshStation(
-            instancePath: '${nodeInstance}Radio.1.BSS.1.STA.${i + 1}.',
-            macAddress: stations[i].mac,
-            signalStrengthRcpi: stations[i].rcpi,
-          ),
-      ],
-    );
-
-/// A [MeshNode] with only the fields a test actually names.
-///
-/// This file used to spell the whole field list out five times. #1555 removed
-/// five of those fields and renamed a sixth, which turned a one-line behaviour
-/// change into 42 compile errors here — so the schema is tracked in one place
-/// now, and a test that does not care about backhaul says so by omission.
-///
-/// **File-local on purpose, for now.** Constitution Article I §1.6.2 wants
-/// codegen fixtures centralised in `test/mocks/test_data/`, and there has never
-/// been a DataElements builder there to import. One other file carries its own
-/// copy of this helper — `mesh_backhaul_link_test.dart` (`_node`) — trimmed to
-/// the fields its own subject reads. (A third, in the Instant Privacy service
-/// test, left with that service in #1636.) Promote the two into one
-/// `test/mocks/test_data/data_elements_test_data.dart` when a **third** file
-/// needs a `MeshNode`, not before: a shared builder written for two known
-/// callers is guesswork about the third, and the version that survives is the
-/// one an actual third caller shapes.
-MeshNode _node({
-  required String instance,
-  required String id,
-  String? model,
-  String? manufacturer,
-  String? serialNumber,
-  String? softwareVersion,
-  String? linkType,
-  String? parentDeviceId,
-  String? backhaulStaMac,
-  int? rcpi,
-  int? uplinkRate,
-  int? downlinkRate,
-  DateTime? lastContactTime,
-  DateTime? statsTimeStamp,
-  List<MeshBss> bssList = const [],
-}) {
-  final path = 'Device.WiFi.DataElements.Network.Device.$instance.';
-  return MeshNode(
-    instancePath: path,
-    id: id,
-    manufacturerModel: model,
-    manufacturer: manufacturer,
-    serialNumber: serialNumber,
-    softwareVersion: softwareVersion,
-    multiApLastContactTime: lastContactTime,
-    multiApEasyMeshAgentOperationMode: '',
-    backhaulLinkType: linkType,
-    backhaulBackhaulDeviceId: parentDeviceId,
-    backhaulBackhaulMacAddress: backhaulStaMac,
-    backhaulStatsLastDataDownlinkRate: downlinkRate,
-    backhaulStatsLastDataUplinkRate: uplinkRate,
-    backhaulStatsSignalStrengthRcpi: rcpi,
-    backhaulStatsPacketsSent: 0,
-    backhaulStatsPacketsReceived: 0,
-    backhaulStatsErrorsSent: 0,
-    backhaulStatsErrorsReceived: 0,
-    backhaulStatsTimeStamp: statsTimeStamp,
-    radios: [_radio(path, backhaulStaMac: backhaulStaMac, bssList: bssList)],
-  );
-}
+import '../../../mocks/test_data/data_elements_test_data.dart';
 
 void main() {
   // ---------------------------------------------------------------------------
@@ -108,7 +13,7 @@ void main() {
   // No `linkType` and no parent — which is how the builder now recognises the
   // controller (`hasMeshBackhaulLink`). It used to be an empty `BackhaulALID`, a
   // field prplMesh does not have (#1555).
-  final masterNode = _node(
+  final masterNode = DataElementsTestData.node(
     instance: '1',
     id: 'AA:BB:CC:DD:EE:01',
     model: 'MR7500',
@@ -116,7 +21,7 @@ void main() {
     serialNumber: 'SN12345',
     softwareVersion: '2.0.0',
     bssList: [
-      _bss(
+      DataElementsTestData.bss(
         'Device.WiFi.DataElements.Network.Device.1.',
         bssid: 'AA:BB:CC:DD:EE:01',
         ssid: 'HomeNetwork',
@@ -128,7 +33,7 @@ void main() {
     ],
   );
 
-  final slaveNode = _node(
+  final slaveNode = DataElementsTestData.node(
     instance: '2',
     id: 'AA:BB:CC:DD:EE:02',
     model: 'MX5500',
@@ -143,7 +48,7 @@ void main() {
     downlinkRate: 600000,
     statsTimeStamp: DateTime.parse('2026-05-18T10:00:00Z'),
     bssList: [
-      _bss(
+      DataElementsTestData.bss(
         'Device.WiFi.DataElements.Network.Device.2.',
         bssid: 'AA:BB:CC:DD:EE:02',
         ssid: 'HomeNetwork',
@@ -169,6 +74,37 @@ void main() {
       expect(result.nodes[1].deviceId, 'AA:BB:CC:DD:EE:02');
       expect(result.nodes[1].model, 'MX5500');
       expect(result.nodes[1].isMaster, isFalse);
+    });
+
+    group('node actions from X_LINKSYS_SupportedOperations (#876)', () {
+      SlaveNode slaveWith(String? supportedOperations) {
+        final agent = DataElementsTestData.node(
+          instance: '2',
+          id: 'AA:BB:CC:DD:EE:02',
+          linkType: 'Wi-Fi',
+          parentDeviceId: 'AA:BB:CC:DD:EE:01',
+          supportedOperations: supportedOperations,
+        );
+        final result =
+            MeshTopologyBuilder.build(DataElementsNetwork(items: [agent]));
+        return result.nodes.single as SlaveNode;
+      }
+
+      test('lists both actions the agent reports', () {
+        expect(slaveWith('Reboot,FactoryReset').actions,
+            {NodeAction.reboot, NodeAction.factoryReset});
+      });
+
+      // The shape on the controller's row and on an agent without
+      // linksys-mesh-sync (third-party, older firmware).
+      test('an empty list and an absent leaf offer nothing', () {
+        expect(slaveWith('').actions, isEmpty);
+        expect(slaveWith(null).actions, isEmpty);
+      });
+
+      test('ignores values it does not know and the space around them', () {
+        expect(slaveWith(' Reboot , Blink ').actions, {NodeAction.reboot});
+      });
     });
 
     test('builds client to node mapping from stations', () {
@@ -212,7 +148,7 @@ void main() {
       // regress it, which nothing could have caught: the view's `!= null` check
       // is the second half of the same rule and would happily print a 0.
       final network = DataElementsNetwork(items: [
-        _node(
+        DataElementsTestData.node(
           instance: '2',
           id: 'AA:BB:CC:DD:EE:02',
           linkType: 'Wi-Fi',
@@ -242,12 +178,12 @@ void main() {
     });
 
     test('normalizes MAC addresses to uppercase', () {
-      final nodeWithLowercase = _node(
+      final nodeWithLowercase = DataElementsTestData.node(
         instance: '1',
         id: 'aa:bb:cc:dd:ee:ff',
         model: 'MR7500',
         bssList: [
-          _bss(
+          DataElementsTestData.bss(
             'Device.WiFi.DataElements.Network.Device.1.',
             bssid: 'aa:bb:cc:dd:ee:ff',
             ssid: 'Test',
@@ -264,7 +200,7 @@ void main() {
     });
 
     test('uses instancePath as deviceId when id is empty', () {
-      final nodeWithEmptyId = _node(
+      final nodeWithEmptyId = DataElementsTestData.node(
         instance: '1',
         id: '',
         model: 'MR7500',
@@ -310,7 +246,7 @@ void main() {
       // `UspInstantPrivacyService` an allow-list entry that matches nothing; both
       // call `isUnsetMac` so they cannot diverge on it.
       final network = DataElementsNetwork(items: [
-        _node(
+        DataElementsTestData.node(
           instance: '2',
           id: 'AA:BB:CC:DD:EE:02',
           linkType: 'Ethernet',
@@ -331,7 +267,7 @@ void main() {
       // `nonEmpty` is what prevents it, shared with `UnifiedDiagnosticsService`
       // so the two graders cannot disagree about whether this node has a parent.
       final network = DataElementsNetwork(items: [
-        _node(
+        DataElementsTestData.node(
           instance: '2',
           id: 'AA:BB:CC:DD:EE:02',
           linkType: 'Wi-Fi',
@@ -353,7 +289,7 @@ void main() {
       // `SlaveNode` whose parent is an address nothing resolves, leaving the
       // topology with no root at all.
       final network = DataElementsNetwork(items: [
-        _node(
+        DataElementsTestData.node(
           instance: '1',
           id: 'AA:BB:CC:DD:EE:01',
           model: 'MR7500',
@@ -379,7 +315,7 @@ void main() {
       // deleted it. The parent-ID half is what the sentinel guard is for and it
       // stays.
       final network = DataElementsNetwork(items: [
-        _node(
+        DataElementsTestData.node(
           instance: '2',
           id: 'AA:BB:CC:DD:EE:02',
           linkType: 'Wi-Fi',
@@ -398,7 +334,7 @@ void main() {
       // `system_info` with `??`, where a whitespace-only value is non-empty and
       // would *win* over the real one from the other source.
       final network = DataElementsNetwork(items: [
-        _node(
+        DataElementsTestData.node(
           instance: '1',
           id: 'AA:BB:CC:DD:EE:01',
           model: '  MR7500 ',
@@ -468,7 +404,7 @@ void main() {
     });
 
     test('populates clientBandSsidMap when bssidToBandMap is provided', () {
-      final nodeWithClient = _node(
+      final nodeWithClient = DataElementsTestData.node(
         instance: '1',
         id: 'AA:BB:CC:DD:EE:01',
         model: 'TestRouter',
@@ -476,7 +412,7 @@ void main() {
         serialNumber: 'SN123',
         softwareVersion: '1.0.0',
         bssList: [
-          _bss(
+          DataElementsTestData.bss(
             'Device.WiFi.DataElements.Network.Device.1.',
             bssid: '11:22:33:44:55:01',
             ssid: 'TestNetwork',
@@ -512,6 +448,614 @@ void main() {
         expect(entry.band, isEmpty);
         expect(entry.ssid, 'HomeNetwork');
       }
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // A client's band and rates on any node, from DataElements (#1686 item 1)
+  // ---------------------------------------------------------------------------
+  //
+  // The passed bssidToBandMap holds only the controller's own BSSIDs (#1118),
+  // so a client on an agent had no band, and no row anywhere gave it a rate.
+  // The radios' operating classes and the STA rows describe every node.
+  group('MeshTopologyBuilder.build — client band and rates (#1686)', () {
+    const agentId = 'AA:BB:CC:DD:EE:02';
+    const agentBssid = '22:22:22:22:22:05';
+    const client = 'DC:52:85:5D:D0:7C';
+    final agentPath = DataElementsTestData.nodePath('2');
+
+    // An agent with its 5 GHz radio as measured on 2.0.3.26101482.
+    DataElementsNetwork agentNetwork({
+      List<int> operatingClasses = const [125, 127, 128],
+      Map<String, ({int downlink, int uplink})> rates = const {},
+    }) =>
+        DataElementsTestData.network([
+          DataElementsTestData.node(instance: '1', id: 'AA:BB:CC:DD:EE:01'),
+          DataElementsTestData.node(
+            instance: '2',
+            id: agentId,
+            linkType: 'Wi-Fi',
+            parentDeviceId: 'AA:BB:CC:DD:EE:01',
+            radios: [
+              DataElementsTestData.radio(agentPath,
+                  operatingClasses: operatingClasses,
+                  bssList: [
+                    DataElementsTestData.bss(agentPath,
+                        bssid: agentBssid,
+                        stations: const [(mac: client, rcpi: 142)],
+                        stationRates: rates),
+                  ]),
+            ],
+          ),
+        ]);
+
+    test('an agent client takes its band from the radio operating class', () {
+      final result = MeshTopologyBuilder.build(agentNetwork());
+
+      expect(result.clientBandSsidMap[client]?.band, '5GHz');
+    });
+
+    // The controller's own map keeps deciding where it answers, so nothing
+    // changes for a client on the controller.
+    test('the passed BSSID map still wins where it has the BSSID', () {
+      final result = MeshTopologyBuilder.build(agentNetwork(),
+          bssidToBandMap: const {agentBssid: '2.4GHz'});
+
+      expect(result.clientBandSsidMap[client]?.band, '2.4GHz');
+    });
+
+    test('a radio with no usable operating class gives no band', () {
+      final result =
+          MeshTopologyBuilder.build(agentNetwork(operatingClasses: [0]));
+
+      expect(result.clientBandSsidMap[client]?.band, isEmpty);
+    });
+
+    // Measured on the bench: an idle client reads 6000 / 24000 kbps.
+    test('records the STA row last rates in kbps', () {
+      final result = MeshTopologyBuilder.build(
+          agentNetwork(rates: const {client: (downlink: 6000, uplink: 24000)}));
+
+      expect(result.clientRateMap[client], (downlink: 6000, uplink: 24000));
+    });
+
+    // 0 is "not filled", as for the backhaul stats; it must not render as a
+    // 0 bps link.
+    test('a direction that reads 0 is no reading', () {
+      final result = MeshTopologyBuilder.build(
+          agentNetwork(rates: const {client: (downlink: 0, uplink: 24000)}));
+
+      expect(result.clientRateMap[client], (downlink: null, uplink: 24000));
+    });
+
+    test('a station with no rate at all is not in the rate map', () {
+      final both0 = MeshTopologyBuilder.build(
+          agentNetwork(rates: const {client: (downlink: 0, uplink: 0)}));
+      final absent = MeshTopologyBuilder.build(agentNetwork());
+
+      expect(both0.clientRateMap, isNot(contains(client)));
+      expect(absent.clientRateMap, isNot(contains(client)));
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Wired-client attribution from Interface.{j}.Neighbor.{k} (#1688 item 2)
+  // ---------------------------------------------------------------------------
+  //
+  // A non-1905 neighbor is a MAC in the node's bridge forwarding table — "seen
+  // through this port", not "plugged into this node". The rules are those of
+  // linksys/usp_framework's data_elements_interfaces.yaml and FWDEV#208 rule 2.
+
+  group('MeshTopologyBuilder.wiredClientAttribution', () {
+    const controller = '74:12:13:21:56:3a';
+    const agent = 'aa:bb:cc:dd:ee:02';
+    const wiredMac = '00:e0:4c:68:08:2d'; // a Mac on a cable, as measured
+    const phoneMac = 'dc:52:85:5d:d0:7c'; // a Wi-Fi STA, as measured
+
+    final p1 = DataElementsTestData.nodePath('1');
+    final p2 = DataElementsTestData.nodePath('2');
+
+    final network = DataElementsTestData.network([
+      DataElementsTestData.node(instance: '1', id: controller),
+      DataElementsTestData.node(
+        instance: '2',
+        id: agent,
+        linkType: 'Wi-Fi',
+        parentDeviceId: controller,
+        backhaulStaMac: 'aa:bb:cc:dd:ee:12',
+        backhaulMac: 'aa:bb:cc:dd:ee:22',
+        backhaulMultiApMac: 'aa:bb:cc:dd:ee:32',
+        bssList: [
+          DataElementsTestData.bss(p2, bssid: 'aa:bb:cc:dd:ee:42'),
+        ],
+      ),
+    ]);
+
+    ({Map<String, String> byNode, Set<String> ambiguous}) attribute(
+      List<({String id, bool? isIeee1905})> controllerNeighbors, {
+      List<({String id, bool? isIeee1905})> agentNeighbors = const [],
+      Set<String> wifiStations = const {},
+    }) =>
+        MeshTopologyBuilder.wiredClientAttribution(
+          network: network,
+          interfaces: DataElementsTestData.interfaces([
+            DataElementsTestData.nodeInterfaces(
+              instance: '1',
+              id: controller,
+              interfaces: [
+                DataElementsTestData.interface(p1,
+                    index: 4,
+                    macAddress: controller,
+                    mediaType: 'IEEE_802_3AB_GIGABIT_ETHERNET',
+                    neighbors: controllerNeighbors),
+              ],
+            ),
+            DataElementsTestData.nodeInterfaces(
+              instance: '2',
+              id: agent,
+              interfaces: [
+                DataElementsTestData.interface(p2,
+                    index: 1,
+                    macAddress: 'aa:bb:cc:dd:ee:52',
+                    mediaType: 'IEEE_802_3AB_GIGABIT_ETHERNET',
+                    neighbors: agentNeighbors),
+              ],
+            ),
+          ]),
+          wifiStations: wifiStations,
+        );
+
+    test('a wired client one node lists goes under that node', () {
+      final result = attribute([(id: wiredMac, isIeee1905: false)]);
+
+      expect(result.byNode, {
+        wiredMac.toUpperCase(): controller.toUpperCase(),
+      });
+      expect(result.ambiguous, isEmpty);
+    });
+
+    // FWDEV#208 rule 2: a client behind a switch both nodes reach is seen
+    // through both uplinks, and the app cannot pick one.
+    test('a MAC two nodes list is ambiguous, not attributed', () {
+      final result = attribute(
+        [(id: wiredMac, isIeee1905: false)],
+        agentNeighbors: [(id: wiredMac, isIeee1905: false)],
+      );
+
+      expect(result.byNode, isEmpty);
+      expect(result.ambiguous, {wiredMac.toUpperCase()});
+    });
+
+    // prplMesh removes only the AL MAC. On the bench 4 of 5 non-1905
+    // neighbors were the nodes' own bridges, backhaul STAs and BSSes.
+    test('drops every MAC a mesh node owns', () {
+      final result = attribute([
+        (id: agent, isIeee1905: false), // AL MAC / Device.{i}.ID
+        (id: 'aa:bb:cc:dd:ee:12', isIeee1905: false), // bSTA
+        (id: 'aa:bb:cc:dd:ee:22', isIeee1905: false), // BackhaulMACAddress
+        (id: 'aa:bb:cc:dd:ee:32', isIeee1905: false), // Backhaul.MACAddress
+        (id: 'aa:bb:cc:dd:ee:42', isIeee1905: false), // a BSSID
+        (id: 'aa:bb:cc:dd:ee:52', isIeee1905: false), // Interface.MACAddress
+        (id: wiredMac, isIeee1905: false),
+      ]);
+
+      expect(result.byNode.keys, [wiredMac.toUpperCase()]);
+    });
+
+    // Measured on 2.0.3.26101482: the controller's Wi-Fi Interface lists the
+    // iPhone as a non-1905 neighbor. It is a BSS.STA entry too, and the
+    // station entry wins.
+    test('a Wi-Fi station is not a wired client', () {
+      final result = attribute(
+        [(id: phoneMac, isIeee1905: false)],
+        wifiStations: {phoneMac.toUpperCase()},
+      );
+
+      expect(result.byNode, isEmpty);
+      expect(result.ambiguous, isEmpty);
+    });
+
+    test('a 1905 neighbor or an unknown row attributes nothing', () {
+      final result = attribute([
+        (id: '11:22:33:44:55:01', isIeee1905: true),
+        (id: '11:22:33:44:55:02', isIeee1905: null),
+      ]);
+
+      expect(result.byNode, isEmpty);
+      expect(result.ambiguous, isEmpty);
+    });
+
+    test('the all-zero and empty neighbor IDs are not clients', () {
+      final result = attribute([
+        (id: '00:00:00:00:00:00', isIeee1905: false),
+        (id: '', isIeee1905: false),
+      ]);
+
+      expect(result.byNode, isEmpty);
+    });
+
+    // The Interface subtree is a separate Get. An agent that left between the
+    // two reads is not built, so a client only it lists has no node to go to:
+    // it is no evidence, and stays on the master rather than becoming an
+    // orphan pointing at a missing node.
+    test('a client listed only by a node the network read lacks is dropped',
+        () {
+      final result = MeshTopologyBuilder.wiredClientAttribution(
+        network: DataElementsTestData.network([
+          DataElementsTestData.node(instance: '1', id: controller),
+        ]),
+        interfaces: DataElementsTestData.interfaces([
+          DataElementsTestData.nodeInterfaces(
+            instance: '2',
+            id: agent,
+            interfaces: [
+              DataElementsTestData.interface(p2,
+                  index: 1,
+                  macAddress: 'aa:bb:cc:dd:ee:52',
+                  neighbors: [(id: wiredMac, isIeee1905: false)]),
+            ],
+          ),
+        ]),
+        wifiStations: const {},
+      );
+
+      expect(result.byNode, isEmpty);
+      expect(result.ambiguous, isEmpty);
+    });
+
+    test('build() carries the attribution onto MeshTopologyInfo', () {
+      final info = MeshTopologyBuilder.build(
+        network,
+        interfaces: DataElementsTestData.interfaces([
+          DataElementsTestData.nodeInterfaces(
+            instance: '1',
+            id: controller,
+            interfaces: [
+              DataElementsTestData.interface(p1,
+                  index: 4,
+                  macAddress: controller,
+                  neighbors: [(id: wiredMac, isIeee1905: false)]),
+            ],
+          ),
+        ]),
+      );
+
+      expect(info.wiredClientToNodeMap,
+          {wiredMac.toUpperCase(): controller.toUpperCase()});
+    });
+
+    // A controller without the Interface object, or a failed read: no wired
+    // client is attributed, and the topology is otherwise unchanged.
+    test('build() without interfaces attributes no wired client', () {
+      final info = MeshTopologyBuilder.build(network);
+
+      expect(info.wiredClientToNodeMap, isEmpty);
+      expect(info.ambiguousWiredClients, isEmpty);
+      expect(info.nodes, hasLength(2));
+    });
+  });
+
+  // #1688 review (W2). The master is the node with no backhaul link unless
+  // ControllerID says otherwise. An agent whose backhaul is not filled in yet
+  // also has no link, so without ControllerID it was a second master and,
+  // since #1688, dropped from the topology.
+  group('MeshTopologyBuilder.build — the controller (ControllerID)', () {
+    const controller = '74:12:13:21:56:3a';
+    const agent = 'aa:bb:cc:dd:ee:02';
+
+    // The agent has no BackhaulDeviceID and no LinkType: the shape an agent
+    // has while it is still joining.
+    final network = DataElementsTestData.network([
+      DataElementsTestData.node(instance: '1', id: controller),
+      DataElementsTestData.node(instance: '2', id: agent),
+    ]);
+
+    test('without ControllerID an agent with no backhaul is a second master',
+        () {
+      final info = MeshTopologyBuilder.build(network);
+
+      expect(info.nodes.whereType<MasterNode>(), hasLength(2));
+      expect(info.nodes.slaves, isEmpty);
+    });
+
+    test('with ControllerID every other node is a slave', () {
+      final info = MeshTopologyBuilder.build(network, controllerId: controller);
+
+      expect(info.nodes.whereType<MasterNode>().single.deviceId,
+          controller.toUpperCase());
+      expect(info.nodes.slaves.map((s) => s.deviceId), [agent.toUpperCase()]);
+    });
+
+    // ControllerID and Device.{i}.ID are separate leaves.
+    test('ControllerID matches regardless of MAC spelling', () {
+      final info =
+          MeshTopologyBuilder.build(network, controllerId: '74-12-13-21-56-3A');
+
+      expect(info.nodes.slaves, hasLength(1));
+    });
+
+    // A ControllerID that names no node in this read must not demote the real
+    // controller: the backhaul rule decides instead.
+    test('a ControllerID naming no listed node is ignored', () {
+      final info =
+          MeshTopologyBuilder.build(network, controllerId: '11:22:33:44:55:66');
+
+      expect(info.nodes.whereType<MasterNode>(), hasLength(2));
+    });
+
+    test('a blank or all-zero ControllerID is ignored', () {
+      for (final id in ['', '  ', '00:00:00:00:00:00']) {
+        final info = MeshTopologyBuilder.build(network, controllerId: id);
+        expect(info.nodes.whereType<MasterNode>(), hasLength(2),
+            reason: '"$id" is not a controller');
+      }
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // MLO clients from APMLD.STAMLD.AffiliatedSTA (#1686 item 2)
+  // ---------------------------------------------------------------------------
+  //
+  // Fixtures follow the 2026-10-20 measurement on 2.0.3.26101482 (an iPhone 17
+  // Pro on MLO, single node): one STAMLD whose MLD MAC is the client's, with a
+  // 2.4 GHz and a 5 GHz link; only the active (5 GHz) link carries values,
+  // RCPI 108 and 960000 / 864000 kbps; the client's one BSS.STA row sits under
+  // the 2.4 GHz BSS it associated on.
+  group('MeshTopologyBuilder — MLO clients (#1686)', () {
+    const nodeId = '74:12:13:21:56:3A';
+    const client = 'AA:BB:CC:DD:EE:77';
+    const bssid24 = '74:12:13:21:56:3B';
+    const bssid5 = '74:12:13:21:56:3C';
+    final path = DataElementsTestData.nodePath('1');
+
+    // The controller with its two radios as measured: DataElements Radio.1
+    // is 5 GHz (classes 125/127/128) and Radio.2 is 2.4 GHz (class 81).
+    DataElementsNetwork network({bool listsClient = true}) =>
+        DataElementsTestData.network([
+          DataElementsTestData.node(
+            instance: '1',
+            id: nodeId,
+            linkType: 'None',
+            radios: [
+              DataElementsTestData.radio(path,
+                  index: 1,
+                  operatingClasses: [125, 127, 128],
+                  bssList: [DataElementsTestData.bss(path, bssid: bssid5)]),
+              DataElementsTestData.radio(path, index: 2, operatingClasses: [
+                81
+              ], bssList: [
+                DataElementsTestData.bss(path, bssid: bssid24, stations: [
+                  if (listsClient) (mac: client, rcpi: 108),
+                ]),
+              ]),
+            ],
+          ),
+        ]);
+
+    final link24 = DataElementsTestData.affiliatedSta(
+        macAddress: 'AA:BB:CC:DD:EE:78', bssid: bssid24);
+    final link5Active = DataElementsTestData.affiliatedSta(
+        macAddress: 'AA:BB:CC:DD:EE:79',
+        bssid: bssid5,
+        rcpi: 108,
+        downlink: 960000,
+        uplink: 864000);
+    final link5Idle = DataElementsTestData.affiliatedSta(
+        macAddress: 'AA:BB:CC:DD:EE:79', bssid: bssid5);
+
+    test('a client on two links is MLO on both bands, in band order', () {
+      final result = MeshTopologyBuilder.mloClientsOf(
+        network: network(),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(instance: '1', id: nodeId, staMlds: [
+            DataElementsTestData.staMld(
+                mldMacAddress: client, links: [link5Active, link24]),
+          ]),
+        ]),
+      );
+
+      expect(result[client]?.bands, ['2.4GHz', '5GHz']);
+    });
+
+    test('signal and rates come from the link that carries values', () {
+      final info = MeshTopologyBuilder.mloClientsOf(
+        network: network(),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(instance: '1', id: nodeId, staMlds: [
+            DataElementsTestData.staMld(
+                mldMacAddress: client, links: [link24, link5Active]),
+          ]),
+        ]),
+      )[client]!;
+
+      expect(info.downlinkRate, 960000);
+      expect(info.uplinkRate, 864000);
+      expect(info.signalStrength, 108 ~/ 2 - 110);
+    });
+
+    // Both links read 0 for ~50 s after association. The client is on MLO
+    // all the same (acceptance criterion), just with no active link yet.
+    test('a client whose links all read 0 is still MLO', () {
+      final info = MeshTopologyBuilder.mloClientsOf(
+        network: network(),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(instance: '1', id: nodeId, staMlds: [
+            DataElementsTestData.staMld(
+                mldMacAddress: client, links: [link24, link5Idle]),
+          ]),
+        ]),
+      )[client];
+
+      expect(info, isNotNull);
+      expect(info!.bands, ['2.4GHz', '5GHz']);
+      expect(info.downlinkRate, isNull);
+      expect(info.uplinkRate, isNull);
+      expect(info.signalStrength, isNull);
+    });
+
+    // Measured with one link carrying values at a time. Should both carry
+    // them (STR), the higher downlink rate is the active link, and signal and
+    // rates come from that one link, never mixed.
+    test('two links with values: the faster one, all from that link', () {
+      final slow24 = DataElementsTestData.affiliatedSta(
+          macAddress: 'AA:BB:CC:DD:EE:78',
+          bssid: bssid24,
+          rcpi: 160,
+          downlink: 6000,
+          uplink: 6000);
+      final info = MeshTopologyBuilder.mloClientsOf(
+        network: network(),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(instance: '1', id: nodeId, staMlds: [
+            DataElementsTestData.staMld(
+                mldMacAddress: client, links: [slow24, link5Active]),
+          ]),
+        ]),
+      )[client]!;
+
+      expect(info.downlinkRate, 960000);
+      expect(info.uplinkRate, 864000);
+      expect(info.signalStrength, 108 ~/ 2 - 110,
+          reason: 'the signal is the chosen link\'s, not the first link\'s');
+    });
+
+    test('a single-link STAMLD is not MLO', () {
+      final result = MeshTopologyBuilder.mloClientsOf(
+        network: network(),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(instance: '1', id: nodeId, staMlds: [
+            DataElementsTestData.staMld(
+                mldMacAddress: client, links: [link5Active]),
+          ]),
+        ]),
+      );
+
+      expect(result, isEmpty);
+    });
+
+    test('a backhaul STA MLD is not a client', () {
+      final result = MeshTopologyBuilder.mloClientsOf(
+        network: network(),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(instance: '1', id: nodeId, staMlds: [
+            DataElementsTestData.staMld(
+                mldMacAddress: client,
+                isBsta: true,
+                links: [link24, link5Active]),
+          ]),
+        ]),
+      );
+
+      expect(result, isEmpty);
+    });
+
+    // FW's rule: the STAMLD counts only under the node whose BSS.STA lists
+    // the client.
+    test('a STAMLD under a node that does not list the client is not MLO', () {
+      final noStation = MeshTopologyBuilder.mloClientsOf(
+        network: network(listsClient: false),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(instance: '1', id: nodeId, staMlds: [
+            DataElementsTestData.staMld(
+                mldMacAddress: client, links: [link24, link5Active]),
+          ]),
+        ]),
+      );
+      final otherNode = MeshTopologyBuilder.mloClientsOf(
+        network: network(),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(
+              instance: '2',
+              id: 'AA:BB:CC:DD:EE:02',
+              staMlds: [
+                DataElementsTestData.staMld(
+                    mldMacAddress: client, links: [link24, link5Active]),
+              ]),
+        ]),
+      );
+
+      expect(noStation, isEmpty);
+      expect(otherNode, isEmpty);
+    });
+
+    // A link whose BSSID names no BSS of the node has no band. The bench
+    // read AffiliatedAP.BSSID as garbage; AffiliatedSTA.BSSID was right, but
+    // an unresolvable link must cost only its own band.
+    test('a link with an unknown BSSID adds no band', () {
+      final info = MeshTopologyBuilder.mloClientsOf(
+        network: network(),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(instance: '1', id: nodeId, staMlds: [
+            DataElementsTestData.staMld(mldMacAddress: client, links: [
+              link5Active,
+              DataElementsTestData.affiliatedSta(
+                  macAddress: 'AA:BB:CC:DD:EE:78', bssid: '00:00:C0:44:E3:35'),
+            ]),
+          ]),
+        ]),
+      )[client];
+
+      expect(info?.bands, ['5GHz']);
+    });
+
+    // Every leaf below Device.{i} is optional in usp_framework#93's
+    // definition. A STAMLD with no MLD MAC names no client; a link with no
+    // BSSID gives no band but still counts towards the two that make it MLO.
+    test('a STAMLD with no MLD MAC is no client', () {
+      final result = MeshTopologyBuilder.mloClientsOf(
+        network: network(),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(instance: '1', id: nodeId, staMlds: [
+            DataElementsTestData.staMld(
+                mldMacAddress: null, links: [link24, link5Active]),
+          ]),
+        ]),
+      );
+
+      expect(result, isEmpty);
+    });
+
+    test('a link with no BSSID adds no band, the client is still MLO', () {
+      final info = MeshTopologyBuilder.mloClientsOf(
+        network: network(),
+        mld: DataElementsTestData.mld([
+          DataElementsTestData.mldNode(instance: '1', id: nodeId, staMlds: [
+            DataElementsTestData.staMld(mldMacAddress: client, links: [
+              link5Active,
+              DataElementsTestData.affiliatedSta(
+                  macAddress: 'AA:BB:CC:DD:EE:78', bssid: null),
+            ]),
+          ]),
+        ]),
+      )[client];
+
+      expect(info, isNotNull);
+      expect(info!.bands, ['5GHz']);
+    });
+
+    // The three states build() hands on: not read, read and empty, entries.
+    test('build: no MLD read is null, an empty read is empty', () {
+      expect(MeshTopologyBuilder.build(network()).mloClients, isNull,
+          reason: 'not read: whether a client is on MLO is not known');
+      expect(
+          MeshTopologyBuilder.build(network(),
+              mld: DataElementsTestData.mld([
+                DataElementsTestData.mldNode(instance: '1', id: nodeId),
+              ])).mloClients,
+          isEmpty,
+          reason: 'read and empty: no client is on MLO');
+      expect(
+          MeshTopologyBuilder.build(network(),
+              mld: DataElementsTestData.mld([
+                DataElementsTestData.mldNode(
+                    instance: '1',
+                    id: nodeId,
+                    staMlds: [
+                      DataElementsTestData.staMld(
+                          mldMacAddress: client, links: [link24, link5Active]),
+                    ]),
+              ])).mloClients,
+          contains(client));
     });
   });
 }

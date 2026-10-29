@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
@@ -9,7 +8,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
-import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_rules.dart';
 import 'package:privacy_gui/page/mac_filter/views/mac_filter_add_device_dialog.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -57,13 +56,14 @@ class InstantPrivacyView extends ConsumerWidget {
   UiKitBottomBarConfig? _buildBottomBar(
       BuildContext context, WidgetRef ref, UspInstantPrivacyState state) {
     if (!state.isDirty) return null;
-    // The firmware refuses `Allow` with an empty list and any list over the
-    // limit, so neither can be saved. Turning on pre-fills every online device,
-    // so the list can start over the limit: rows are removed until it fits, or
-    // the switch is turned back off.
+    // The firmware refuses any list over the limit, so it cannot be saved.
+    // Turning on pre-fills every online device, so the list can start over the
+    // limit: rows are removed until it fits, or the switch is turned back off.
+    // An empty `Allow` list is saveable (#1735): with no client online, e.g. a
+    // wired-only network, Instant Privacy can still be turned on.
     final macs = state.allowedMacs;
-    final unsaveable = state.isEnabled &&
-        (macs.isEmpty || macs.length > UspMacFilterService.maxAddresses);
+    final unsaveable =
+        state.isEnabled && macs.length > MacFilterRules.maxAddresses;
     return UiKitBottomBarConfig(
       positiveLabel: loc(context).save,
       isPositiveEnabled: !state.status.isSaving && !unsaveable,
@@ -114,10 +114,9 @@ class InstantPrivacyView extends ConsumerWidget {
       BuildContext context, WidgetRef ref, UspInstantPrivacyState state) {
     final isEnabled = state.isEnabled;
     final isSaving = state.status.isSaving;
-    // Turning on pre-fills the list with the online devices, so with none online
-    // it would be an empty `Allow` list — refused by the firmware. Off stays
-    // reachable: this only blocks the off → on direction.
-    final cannotEnable = !isEnabled && state.connectedDevices.isEmpty;
+    // Turning on pre-fills the list with the online devices. With none online
+    // the list starts empty and the switch still turns on (#1735); the change
+    // only takes effect on Save.
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: LayoutBlock(
@@ -132,9 +131,7 @@ class InstantPrivacyView extends ConsumerWidget {
                   AppGap.xs(),
                   AppText.bodySmall(isEnabled
                       ? loc(context).onlyAllowedDevicesCanConnect
-                      : cannotEnable
-                          ? loc(context).instantPrivacyCannotBeEnabled
-                          : loc(context).allDevicesCanConnectFreely),
+                      : loc(context).allDevicesCanConnectFreely),
                 ],
               ),
             ),
@@ -143,8 +140,7 @@ class InstantPrivacyView extends ConsumerWidget {
               value: isEnabled,
               isLoading: isSaving,
               busySemanticLabel: isSaving ? loc(context).processing : null,
-              onChanged:
-                  isSaving || cannotEnable ? null : (v) => _onToggle(ref, v),
+              onChanged: isSaving ? null : (v) => _onToggle(ref, v),
             ),
           ],
         ),
@@ -155,7 +151,7 @@ class InstantPrivacyView extends ConsumerWidget {
   Widget _buildDeviceList(
       BuildContext context, WidgetRef ref, UspInstantPrivacyState state) {
     final macs = state.allowedMacs;
-    final atLimit = macs.length >= UspMacFilterService.maxAddresses;
+    final atLimit = macs.length >= MacFilterRules.maxAddresses;
     return SizedBox(
       width: double.infinity,
       child: Column(
@@ -178,8 +174,8 @@ class InstantPrivacyView extends ConsumerWidget {
           ),
           AppGap.md(),
           if (atLimit) ...[
-            AppText.bodySmall(loc(context)
-                .macFilterMaxReached(UspMacFilterService.maxAddresses)),
+            AppText.bodySmall(
+                loc(context).macFilterMaxReached(MacFilterRules.maxAddresses)),
             AppGap.sm(),
           ],
           if (macs.isEmpty)
@@ -359,7 +355,7 @@ class InstantPrivacyView extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, localizeServiceError(context, e));
+        showSaveErrorSnackBar(context, e);
       }
     }
   }

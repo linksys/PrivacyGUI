@@ -15,6 +15,6 @@ Documentation for USP error handling and error-message localization. One through
 
 The cross-cutting refactor of the error handling pipeline is in **PR #953** (`feat(l10n): centralize error message localization for USP features`). Every pattern in the Implementation Guide reflects the codebase as of after PR #953.
 
-## Known, not yet fixed
+## Fixed
 
-- **GET 9999→9998 bug** (Round-trip Reference §2.5): a GET connection failure (9999) is disguised as an "invalid input" error (9998) at the transport layer. It is independent of localization and needs a separate fix — otherwise, no matter how good the l10n is, a GET connection failure will still be shown as "invalid input". Also summarized in the Implementation Guide §7 "Known limitations".
+- **GET 9999→9998 bug** (Round-trip Reference §2.5, #1212): a GET connection failure (9999) used to be disguised as an "invalid input" error (9998), or read as an empty table. GET now keeps its envelope and `UspClient` throws on 9999, so it maps to `NetworkError`.

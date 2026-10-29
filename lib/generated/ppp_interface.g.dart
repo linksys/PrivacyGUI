@@ -14,6 +14,8 @@ class PppInterfaceInstance {
   final int idleDisconnectTime;
   final String lowerLayers;
   final int lcpEcho;
+  final int lcpEchoRetry;
+  final bool? lcpEchoAdaptive;
   final String connectionStatus;
 
   const PppInterfaceInstance({
@@ -25,8 +27,27 @@ class PppInterfaceInstance {
     required this.idleDisconnectTime,
     required this.lowerLayers,
     required this.lcpEcho,
+    required this.lcpEchoRetry,
+    this.lcpEchoAdaptive,
     required this.connectionStatus,
   });
+
+  @override
+  String toString() {
+    return 'PppInterfaceInstance('
+        'instancePath: $instancePath, '
+        'username: $username, '
+        'password: $password, '
+        'pppoeServiceName: $pppoeServiceName, '
+        'connectionTrigger: $connectionTrigger, '
+        'idleDisconnectTime: $idleDisconnectTime, '
+        'lowerLayers: $lowerLayers, '
+        'lcpEcho: $lcpEcho, '
+        'lcpEchoRetry: $lcpEchoRetry, '
+        'lcpEchoAdaptive: $lcpEchoAdaptive, '
+        'connectionStatus: $connectionStatus'
+        ')';
+  }
 }
 
 /// Update descriptor for PppInterfaceInstance instances
@@ -38,6 +59,9 @@ class PppInterfaceInstanceUpdate {
   final String? connectionTrigger;
   final int? idleDisconnectTime;
   final String? lowerLayers;
+  final int? lcpEcho;
+  final int? lcpEchoRetry;
+  final bool? lcpEchoAdaptive;
 
   const PppInterfaceInstanceUpdate({
     required this.instancePath,
@@ -47,6 +71,9 @@ class PppInterfaceInstanceUpdate {
     this.connectionTrigger,
     this.idleDisconnectTime,
     this.lowerLayers,
+    this.lcpEcho,
+    this.lcpEchoRetry,
+    this.lcpEchoAdaptive,
   });
 }
 
@@ -56,6 +83,9 @@ class PppInterface {
 
   const PppInterface({required this.items});
 
+  @override
+  String toString() => 'PppInterface(items: $items)';
+
   static const _paths = [
     'Device.PPP.Interface.*.Username',
     'Device.PPP.Interface.*.Password',
@@ -64,6 +94,8 @@ class PppInterface {
     'Device.PPP.Interface.*.IdleDisconnectTime',
     'Device.PPP.Interface.*.LowerLayers',
     'Device.PPP.Interface.*.LCPEcho',
+    'Device.PPP.Interface.*.LCPEchoRetry',
+    'Device.PPP.Interface.*.LCPEchoAdaptive',
     'Device.PPP.Interface.*.ConnectionStatus',
   ];
 
@@ -88,24 +120,6 @@ class PppInterface {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}Username'],
-        response['${p}Password'],
-        response['${p}PPPoE.ServiceName'],
-        response['${p}ConnectionTrigger'],
-        response['${p}IdleDisconnectTime'],
-        response['${p}LowerLayers'],
-        response['${p}LCPEcho'],
-        response['${p}ConnectionStatus']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) {
-        continue;
-      }
       final missing = <String>[];
       if (!response.containsKey('${p}Username')) {
         missing.add('${p}Username');
@@ -128,6 +142,9 @@ class PppInterface {
       if (!response.containsKey('${p}LCPEcho')) {
         missing.add('${p}LCPEcho');
       }
+      if (!response.containsKey('${p}LCPEchoRetry')) {
+        missing.add('${p}LCPEchoRetry');
+      }
       if (!response.containsKey('${p}ConnectionStatus')) {
         missing.add('${p}ConnectionStatus');
       }
@@ -145,16 +162,22 @@ class PppInterface {
             0,
         lowerLayers: (response['${p}LowerLayers'] ?? '') as String,
         lcpEcho: int.tryParse(response['${p}LCPEcho']?.toString() ?? '') ?? 0,
+        lcpEchoRetry:
+            int.tryParse(response['${p}LCPEchoRetry']?.toString() ?? '') ?? 0,
+        lcpEchoAdaptive: response.containsKey('${p}LCPEchoAdaptive')
+            ? (response['${p}LCPEchoAdaptive'] == true ||
+                response['${p}LCPEchoAdaptive'] == 'true' ||
+                response['${p}LCPEchoAdaptive'] == '1')
+            : null,
         connectionStatus: (response['${p}ConnectionStatus'] ?? '') as String,
       ));
     }
     return PppInterface(items: items);
   }
 
-  /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> update(
-      UspClient client, List<PppInterfaceInstanceUpdate> updates,
-      {bool allowPartial = false}) async {
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams(
+      List<PppInterfaceInstanceUpdate> updates) {
     final params = <String, dynamic>{};
     for (final update in updates) {
       if (update.username != null) {
@@ -178,7 +201,25 @@ class PppInterface {
       if (update.lowerLayers != null) {
         params['${update.instancePath}LowerLayers'] = update.lowerLayers;
       }
+      if (update.lcpEcho != null) {
+        params['${update.instancePath}LCPEcho'] = update.lcpEcho;
+      }
+      if (update.lcpEchoRetry != null) {
+        params['${update.instancePath}LCPEchoRetry'] = update.lcpEchoRetry;
+      }
+      if (update.lcpEchoAdaptive != null) {
+        params['${update.instancePath}LCPEchoAdaptive'] =
+            update.lcpEchoAdaptive;
+      }
     }
+    return params;
+  }
+
+  /// Update writable parameters via USP Set message
+  static Future<Map<String, dynamic>> update(
+      UspClient client, List<PppInterfaceInstanceUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateParams(updates);
     if (params.isEmpty) {
       return {
         'success': true,

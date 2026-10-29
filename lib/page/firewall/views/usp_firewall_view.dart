@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
@@ -82,7 +81,11 @@ class UspFirewallView extends ConsumerWidget {
   ) {
     final notifier = ref.read(uspFirewallProvider.notifier);
     final fw = state.current.model;
-    final disabled = state.status.isSaving;
+    // A switch is locked while saving, and when its rule is not on the router:
+    // it would show a value the router never reported, and a save would write
+    // nothing for it (#1611).
+    bool locked(FirewallSwitch s) =>
+        state.status.isSaving || state.status.lockedSwitches.contains(s);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,11 +95,11 @@ class UspFirewallView extends ConsumerWidget {
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         AppGap.xl(),
-        _buildFirewallSection(context, fw, notifier, disabled),
+        _buildFirewallSection(context, fw, notifier, locked),
         AppGap.md(),
-        _buildVpnSection(context, fw, notifier, disabled),
+        _buildVpnSection(context, fw, notifier, locked),
         AppGap.md(),
-        _buildFiltersSection(context, fw, notifier, disabled),
+        _buildFiltersSection(context, fw, notifier, locked),
         AppGap.md(),
         _buildIpv6PortServiceLink(context),
       ],
@@ -111,7 +114,7 @@ class UspFirewallView extends ConsumerWidget {
     BuildContext context,
     FirewallUIModel fw,
     UspFirewallNotifier notifier,
-    bool disabled,
+    bool Function(FirewallSwitch) locked,
   ) {
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -124,7 +127,7 @@ class UspFirewallView extends ConsumerWidget {
             identifier: 'firewall-spi-ipv4',
             label: loc(context).ipv4SpiFirewall,
             value: fw.isIPv4FirewallEnabled,
-            onChanged: disabled
+            onChanged: locked(FirewallSwitch.ipv4Firewall)
                 ? null
                 : (v) => notifier.updateSetting(
                       (m) => m.copyWith(isIPv4FirewallEnabled: v),
@@ -135,7 +138,7 @@ class UspFirewallView extends ConsumerWidget {
             identifier: 'firewall-spi-ipv6',
             label: loc(context).ipv6SpiFirewall,
             value: fw.isIPv6FirewallEnabled,
-            onChanged: disabled
+            onChanged: locked(FirewallSwitch.ipv6Firewall)
                 ? null
                 : (v) => notifier.updateSetting(
                       (m) => m.copyWith(isIPv6FirewallEnabled: v),
@@ -154,7 +157,7 @@ class UspFirewallView extends ConsumerWidget {
     BuildContext context,
     FirewallUIModel fw,
     UspFirewallNotifier notifier,
-    bool disabled,
+    bool Function(FirewallSwitch) locked,
   ) {
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -166,7 +169,7 @@ class UspFirewallView extends ConsumerWidget {
           SwitchBlock(
             label: loc(context).ipsecPassthrough,
             value: !fw.blockIPSec,
-            onChanged: disabled
+            onChanged: locked(FirewallSwitch.ipsec)
                 ? null
                 : (v) => notifier.updateSetting(
                       (m) => m.copyWith(blockIPSec: !v),
@@ -176,7 +179,7 @@ class UspFirewallView extends ConsumerWidget {
           SwitchBlock(
             label: loc(context).pptpPassthrough,
             value: !fw.blockPPTP,
-            onChanged: disabled
+            onChanged: locked(FirewallSwitch.pptp)
                 ? null
                 : (v) => notifier.updateSetting(
                       (m) => m.copyWith(blockPPTP: !v),
@@ -186,7 +189,7 @@ class UspFirewallView extends ConsumerWidget {
           SwitchBlock(
             label: loc(context).l2tpPassthrough,
             value: !fw.blockL2TP,
-            onChanged: disabled
+            onChanged: locked(FirewallSwitch.l2tp)
                 ? null
                 : (v) => notifier.updateSetting(
                       (m) => m.copyWith(blockL2TP: !v),
@@ -205,7 +208,7 @@ class UspFirewallView extends ConsumerWidget {
     BuildContext context,
     FirewallUIModel fw,
     UspFirewallNotifier notifier,
-    bool disabled,
+    bool Function(FirewallSwitch) locked,
   ) {
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -215,9 +218,10 @@ class UspFirewallView extends ConsumerWidget {
           AppText.titleSmall(loc(context).internetFilters),
           AppGap.md(),
           SwitchBlock(
+            identifier: 'firewall-filter-anonymous',
             label: loc(context).filterAnonymous,
             value: fw.blockAnonymousRequests,
-            onChanged: disabled
+            onChanged: locked(FirewallSwitch.anonymousRequests)
                 ? null
                 : (v) => notifier.updateSetting(
                       (m) => m.copyWith(blockAnonymousRequests: v),
@@ -225,19 +229,33 @@ class UspFirewallView extends ConsumerWidget {
           ),
           AppGap.sm(),
           SwitchBlock(
+            identifier: 'firewall-filter-multicast',
             label: loc(context).filterMulticast,
             value: fw.blockMulticast,
-            onChanged: disabled
+            onChanged: locked(FirewallSwitch.multicast)
                 ? null
                 : (v) => notifier.updateSetting(
                       (m) => m.copyWith(blockMulticast: v),
                     ),
           ),
           AppGap.sm(),
+          // 1.x's order: multicast, NAT redirection, IDENT.
           SwitchBlock(
+            identifier: 'firewall-filter-nat-redirection',
+            label: loc(context).filterInternetNATRedirection,
+            value: fw.blockNATRedirection,
+            onChanged: locked(FirewallSwitch.natRedirection)
+                ? null
+                : (v) => notifier.updateSetting(
+                      (m) => m.copyWith(blockNATRedirection: v),
+                    ),
+          ),
+          AppGap.sm(),
+          SwitchBlock(
+            identifier: 'firewall-filter-ident',
             label: loc(context).filterIdent,
             value: fw.blockIDENT,
-            onChanged: disabled
+            onChanged: locked(FirewallSwitch.ident)
                 ? null
                 : (v) => notifier.updateSetting(
                       (m) => m.copyWith(blockIDENT: v),
@@ -279,7 +297,7 @@ class UspFirewallView extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, localizeServiceError(context, e));
+        showSaveErrorSnackBar(context, e);
       }
     }
   }

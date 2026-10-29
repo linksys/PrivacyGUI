@@ -2,7 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/session/session_exit_actions.dart';
-import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
+import 'package:privacy_gui/core/usp/models/sse_connection_state.dart';
 import 'package:privacy_gui/framework/mode/sse_banner_level.dart';
 import 'package:privacy_gui/framework/mode/surface_strategy.dart';
 import 'package:privacy_gui/page/_shared/components/remote_session_chip.dart';
@@ -131,6 +131,14 @@ class RemoteSurface implements SurfaceStrategy {
   @override
   Widget firmwareManualEntry({required Widget Function() picker}) =>
       const SizedBox.shrink();
+
+  /// No way in to adding a node. The agent is not in the building: they cannot
+  /// put the new node within the controller's Bluetooth range or read its light,
+  /// and the flow is a guide for someone who can. LinksysWRT 1.0 disabled the
+  /// same item in a remote session. `null` is how the topology learns not to
+  /// offer "Add nodes" at all.
+  @override
+  VoidCallback? addNodesEntry(VoidCallback openAddNodes) => null;
 
   @override
   Widget sessionExitAction() => const EndSessionAction();

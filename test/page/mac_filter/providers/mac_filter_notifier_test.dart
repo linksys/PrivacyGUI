@@ -6,6 +6,7 @@ import 'package:privacy_gui/page/mac_filter/models/mac_filter_device_ui_model.da
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_notifier.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_fetch_result.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_state.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
 import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
 
 class MockMacFilterService extends Mock implements UspMacFilterService {}

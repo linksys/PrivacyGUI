@@ -398,6 +398,75 @@ void main() {
       verify(() => mockUsp.delete(any())).called(2);
     });
 
+    // Moving a rule off a port and adding another on it in one save passes the
+    // dialog's overlap check. If the Add goes first the old rule still holds the
+    // port, and FW 2.0.3 stores the new one with ExternalPort = 0 (FWDEV#204).
+    test('updates are sent before adds, so a freed port can be taken',
+        () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+      when(() => mockUsp.add(any())).thenAnswer(
+          (_) async => uspAddSuccess(['Device.NAT.PortMapping.2.']));
+
+      const moved = PortForwardingRuleUIModel(
+        instancePath: 'Device.NAT.PortMapping.1.',
+        description: 'A',
+        externalPort: 80,
+        internalPort: 80,
+        internalClient: '192.168.1.100',
+        protocol: 'TCP',
+        enabled: true,
+      );
+      await service.saveForwardingBatch(
+        original: const [moved],
+        current: [
+          moved.copyWith(externalPort: 81),
+          const PortForwardingRuleUIModel(
+            description: 'B',
+            externalPort: 80,
+            internalPort: 80,
+            internalClient: '192.168.1.101',
+            protocol: 'TCP',
+            enabled: true,
+          ),
+        ],
+      );
+
+      verifyInOrder([
+        () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')),
+        () => mockUsp.add(any()),
+      ]);
+    });
+
+    // FWDEV#204: "Range rules: send InternalPort = ExternalPort". A stored range
+    // can carry another internal port (written before #1080); a toggle sends the
+    // whole rule, so it must not send that value back.
+    test('a range rule is saved with its start port as the internal port',
+        () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+
+      const stored = PortForwardingRuleUIModel(
+        instancePath: 'Device.NAT.PortMapping.1.',
+        description: 'Game',
+        externalPort: 3074,
+        externalPortEndRange: 3080,
+        internalPort: 5000,
+        internalClient: '192.168.1.100',
+        protocol: 'Both',
+        enabled: true,
+      );
+      await service.saveForwardingBatch(
+        original: const [stored],
+        current: [stored.copyWith(enabled: false)],
+      );
+
+      final params = verify(() => mockUsp.set(captureAny(),
+              allowPartial: any(named: 'allowPartial'))).captured.single
+          as Map<String, dynamic>;
+      expect(params['Device.NAT.PortMapping.1.InternalPort'], 3074);
+    });
+
     test('multi-item add sends single batch call', () async {
       when(() => mockUsp.add(any())).thenAnswer((_) async => uspAddSuccess(
           ['Device.NAT.PortMapping.1.', 'Device.NAT.PortMapping.2.']));
@@ -452,7 +521,10 @@ void main() {
       );
     });
 
-    test('does not throw when some operations succeed', () async {
+    // This test used to assert the opposite — "does not throw when some
+    // operations succeed" — which is how a save that dropped a rule still
+    // showed "saved". The rule the user deleted is still on the router.
+    test('throws a partial failure when some operations fail', () async {
       // delete fails, add succeeds
       when(() => mockUsp.delete(any()))
           .thenAnswer((_) async => uspFailure(errorMessage: 'Delete rejected'));
@@ -481,14 +553,14 @@ void main() {
         ),
       ];
 
-      final result = await service.saveForwardingBatch(
-        original: original,
-        current: current,
+      await expectLater(
+        service.saveForwardingBatch(original: original, current: current),
+        throwsA(isA<UspPartialFailureError>().having(
+          (e) => e.failures.single.errorMessage,
+          'the router\'s reason',
+          'Delete rejected',
+        )),
       );
-
-      // Completes without throwing
-      expect(result.deleted, 1);
-      expect(result.added, 1);
     });
   });
 
@@ -600,6 +672,101 @@ void main() {
       );
 
       expect(result.added, 1);
+      verify(() => mockUsp.add(any())).called(1);
+    });
+
+    // Same reason as forwarding: a trigger moved off a port must free it before
+    // a new trigger is Added on it.
+    test('updates are sent before adds, so a freed trigger port can be taken',
+        () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+      when(() => mockUsp.add(any())).thenAnswer(
+          (_) async => uspAddSuccess(['Device.NAT.PortTrigger.2.']));
+
+      const moved = PortTriggeringRuleUIModel(
+        instancePath: 'Device.NAT.PortTrigger.1.',
+        enabled: true,
+        description: 'A',
+        triggerPort: 9000,
+        triggerProtocol: 'Both',
+      );
+      await service.saveTriggeringBatch(
+        original: const [moved],
+        current: [
+          moved.copyWith(triggerPort: 9001),
+          const PortTriggeringRuleUIModel(
+            enabled: true,
+            description: 'B',
+            triggerPort: 9000,
+            triggerProtocol: 'Both',
+          ),
+        ],
+      );
+
+      verifyInOrder([
+        () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')),
+        () => mockUsp.add(any()),
+      ]);
+    });
+
+    // The forward rule's Add result was never read, so a refused forward rule
+    // left a trigger with nothing to open and the save still said "saved".
+    test('a refused forward rule fails the save', () async {
+      var calls = 0;
+      when(() => mockUsp.add(any())).thenAnswer((_) async => calls++ == 0
+          ? uspAddSuccess(['Device.NAT.PortTrigger.5.'])
+          : uspFailure(errorMessage: 'ErrorRulesOverlap: forwarded'));
+
+      final current = [
+        PortTriggeringRuleUIModel(
+          enabled: true,
+          description: 'Chat',
+          triggerPort: 9000,
+          triggerProtocol: 'Both',
+          forwardRules: const [
+            PortTriggerForwardRuleUIModel(
+              forwardPort: 9100,
+              forwardProtocol: 'Both',
+            ),
+          ],
+        ),
+      ];
+
+      await expectLater(
+        service.saveTriggeringBatch(original: [], current: current),
+        throwsA(isA<UspPartialFailureError>().having(
+          (e) => e.failures.single.errorMessage,
+          'the router\'s reason',
+          'ErrorRulesOverlap: forwarded',
+        )),
+      );
+    });
+
+    // A success that names no instance left the forward rules unwritten and
+    // recorded nothing, so the save reported "saved".
+    test('a parent Add that names no instance fails the save', () async {
+      when(() => mockUsp.add(any())).thenAnswer((_) async => uspAddSuccess([]));
+
+      final current = [
+        const PortTriggeringRuleUIModel(
+          enabled: true,
+          description: 'Chat',
+          triggerPort: 9000,
+          triggerProtocol: 'Both',
+          forwardRules: [
+            PortTriggerForwardRuleUIModel(
+              forwardPort: 9100,
+              forwardProtocol: 'Both',
+            ),
+          ],
+        ),
+      ];
+
+      await expectLater(
+        service.saveTriggeringBatch(original: [], current: current),
+        throwsA(isA<UspPartialFailureError>()),
+      );
       verify(() => mockUsp.add(any())).called(1);
     });
 
@@ -720,6 +887,50 @@ void main() {
       expect(params['Device.NAT.PortTrigger.1.Rule.1.Port'], 2048);
       expect(params['Device.NAT.PortTrigger.1.Rule.1.PortEndRange'], 2050);
       expect(params['Device.NAT.PortTrigger.1.Rule.1.Protocol'], 'UDP');
+    });
+
+    // This Set's partial result was logged as a warning and the save went on
+    // to report "saved" with the old forwarded ports still on the router.
+    test('a refused forward-rule edit fails the save', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspFailure(
+              path: 'Device.NAT.PortTrigger.1.Rule.1.Port',
+              errorCode: 7012,
+              errorMessage: 'ErrorRulesOverlap: forwarded'));
+
+      const fwd = PortTriggerForwardRuleUIModel(
+        instancePath: 'Device.NAT.PortTrigger.1.Rule.1.',
+        forwardPort: 1024,
+        forwardProtocol: 'Both',
+      );
+      final original = [
+        PortTriggeringRuleUIModel(
+          instancePath: 'Device.NAT.PortTrigger.1.',
+          enabled: true,
+          description: 'FTP',
+          triggerPort: 21,
+          triggerProtocol: 'Both',
+          forwardRules: const [fwd],
+        ),
+      ];
+      final current = [
+        original.single.copyWith(forwardRules: const [
+          PortTriggerForwardRuleUIModel(
+            instancePath: 'Device.NAT.PortTrigger.1.Rule.1.',
+            forwardPort: 2048,
+            forwardProtocol: 'Both',
+          ),
+        ]),
+      ];
+
+      await expectLater(
+        service.saveTriggeringBatch(original: original, current: current),
+        throwsA(isA<UspCompleteFailureError>().having(
+          (e) => e.failures.single.errorMessage,
+          'the router\'s reason',
+          'ErrorRulesOverlap: forwarded',
+        )),
+      );
     });
 
     test('#1061: adding a forward rule to existing trigger calls add on Rule.',

@@ -8,7 +8,7 @@ import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_settings.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_status.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_state.dart';
-import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
 
 const _devices = [
   MacFilterDeviceUIModel(

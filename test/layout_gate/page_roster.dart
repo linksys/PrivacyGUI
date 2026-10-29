@@ -77,8 +77,14 @@ const String kPageViewRoot = 'lib/page';
 ///
 /// 45 → 46 at #1549, which is the first move of the first kind: the app gained
 /// `firmware_ota_view.dart` by splitting one firmware entry point into two pages, so
-/// the walk is unchanged and one row was added beside it.
-const int kPageViewCount = 47;
+/// the walk is unchanged and one row was added beside it. 46 → 47 at #1580
+/// (`usp_notification_history_view.dart`) and 47 → 48 at #1660
+/// (`usp_administration_view.dart`), both the same kind of move.
+/// 48 → 49 at #1664: PnpIPoEView is a routed page with a supported-ready sweep fixture.
+/// Its inline log widget lives under views/sections/ and is not a page.
+/// 50 → 51 at #1734: `pnp_add_nodes_view.dart`, #879's add-nodes flow in the PnP
+/// wizard's frame, the same kind of move as #879's `add_nodes_view.dart`.
+const int kPageViewCount = 51;
 
 /// The marker for a column with no value, spelled as the overflow baselines spell
 /// it (`page.tsv` writes `-` for every absent `px`, `side`, `site` and `widget`).

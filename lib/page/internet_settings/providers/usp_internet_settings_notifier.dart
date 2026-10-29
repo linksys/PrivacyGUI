@@ -1,3 +1,9 @@
+import 'dart:async';
+import 'package:privacy_gui/framework/preservable.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_snapshot.dart';
+import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_data_provider.dart';
+import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_page_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -23,6 +29,15 @@ final uspInternetSettingsProvider = AutoDisposeNotifierProvider<
   UspInternetSettingsNotifier.new,
 );
 
+/// How long [UspInternetSettingsNotifier.save] holds after entering bridge.
+///
+/// The router is reachable again at `<hostName>.local` only T+20–25s after
+/// entering bridge, T being the SET returning (#762 comment 5987286082), so the
+/// save — and the spinner the view shows for it — lasts until the redirect can
+/// land. A provider so tests can shorten it.
+final bridgeSettleDelayProvider =
+    Provider<Duration>((ref) => const Duration(seconds: 20));
+
 /// Service provider — stateless, created from the current UspClient.
 final uspInternetSettingsServiceProvider =
     Provider.autoDispose<UspInternetSettingsService>((ref) {
@@ -44,18 +59,129 @@ class UspInternetSettingsNotifier
             InternetSettingsStatus, InternetSettingsFeatureState> {
   /// One-shot guard for a device-timing race (#759): immediately after a save
   /// that did NOT change the connection type, the device can transiently report
-  /// an empty `addressingType`. Under the AddressingType-only detection rule
-  /// (see [UspWanConnectionType.fromRawFields]) that empty value would read as
-  /// Bridge. This guard is set in [performSave] when the type was unchanged and
-  /// consumed by the next [performFetch] to preserve the known type.
+  /// an empty `addressingType`. That no longer reads as Bridge — bridge is
+  /// detected from `Device.IP.Interface.{wan}.Enable` alone (see
+  /// [UspWanConnectionType.fromRawFields]) — but an empty value still falls back
+  /// to DHCP, which silently downgrades a Static or PPPoE WAN in the UI. This
+  /// guard is set in [performSave] when the type was unchanged and consumed by
+  /// the next [performFetch] to preserve the known type.
   ///
   /// This is independent of detection correctness and must NOT be removed:
   /// detection keys on a real device value, while this protects against a
   /// transient one during the save→refetch window.
   UspWanConnectionType? _preservedConnectionType;
+  bool _disposed = false;
+  bool _connectionTypeEdited = false;
+  bool _savingIPoE = false;
+  ServiceError? _operationReadError;
+  Completer<void>? _completion;
+  AutoIPoESubmission? _waitingFor;
+
+  static bool isManagedIPoE(AutoIPoESnapshot? snapshot) =>
+      snapshot?.settings.isEnabled == true ||
+      snapshot?.runtime.isEnabled == true ||
+      snapshot?.runtime.needsResetBeforeLeaving == true ||
+      snapshot?.runtime.blockIPv6ManualConfiguration == true;
+
+  bool get needsIPoEReset {
+    final snapshot = ref.read(autoIPoEDataProvider).valueOrNull;
+    final submission = ref.read(autoIPoESubmissionProvider);
+    if (snapshot != null &&
+        submission?.reset == true &&
+        snapshot.outcomeFor(submission) == AutoIPoEOutcome.succeeded &&
+        !isManagedIPoE(snapshot)) {
+      return false;
+    }
+    return state.original.connectionType == UspWanConnectionType.ipoe ||
+        isManagedIPoE(snapshot);
+  }
+
+  void _syncManagedIPoE(AutoIPoESnapshot? snapshot) {
+    if (state.status.isLoading || _savingIPoE || !isManagedIPoE(snapshot)) {
+      return;
+    }
+    final original = state.settings.original.copyWith(
+        form:
+            state.original.copyWith(connectionType: UspWanConnectionType.ipoe));
+    final current = state.isEditing && _connectionTypeEdited
+        ? state.settings.current
+        : state.settings.current.copyWith(
+            form: state.edited
+                .copyWith(connectionType: UspWanConnectionType.ipoe));
+    state = state.copyWith(
+        settings: Preservable(original: original, current: current));
+  }
+
+  void _observeIPoE(AsyncValue<AutoIPoESnapshot> next) {
+    if (!_savingIPoE) return;
+    if (next.hasError) {
+      _operationReadError = next.error is ServiceError
+          ? next.error as ServiceError
+          : const ConnectivityError();
+    }
+    final completion = _completion;
+    final submission = _waitingFor;
+    if (completion == null || completion.isCompleted || submission == null) {
+      return;
+    }
+    if (_operationReadError != null) {
+      completion.completeError(_operationReadError!);
+      return;
+    }
+    final snapshot = next.valueOrNull;
+    if (snapshot == null) return;
+    final outcome = snapshot.outcomeFor(submission);
+    if (outcome == AutoIPoEOutcome.pending) return;
+    if (outcome == AutoIPoEOutcome.succeeded &&
+        (!submission.reset || !isManagedIPoE(snapshot))) {
+      completion.complete();
+    } else {
+      completion.completeError(const InvalidInputError());
+    }
+  }
+
+  Future<void> _submitAndVerifyIPoE(Future<void> Function() submit,
+      {required bool reset}) async {
+    final previous = ref.read(autoIPoESubmissionProvider);
+    _operationReadError = null;
+    await submit();
+    if (_disposed) throw const ConnectivityError();
+    final submission = ref.read(autoIPoESubmissionProvider);
+    if (submission == null ||
+        submission == previous ||
+        submission.reset != reset ||
+        ref.read(autoIPoERejectionProvider) != null) {
+      throw const InvalidInputError();
+    }
+    if (_operationReadError != null) throw _operationReadError!;
+    _waitingFor = submission;
+    final completion = _completion = Completer<void>();
+    _observeIPoE(ref.read(autoIPoEDataProvider));
+    try {
+      // Reuse the data provider's UUID-correlated status polling. This waiter
+      // never submits or resumes a WAN mutation after navigation/reconnection.
+      await completion.future.timeout(const Duration(minutes: 6),
+          onTimeout: () => throw const TimeoutError());
+    } finally {
+      _waitingFor = null;
+      _completion = null;
+    }
+  }
 
   @override
   InternetSettingsFeatureState build() {
+    ref.onDispose(() {
+      _disposed = true;
+      final completion = _completion;
+      if (completion != null && !completion.isCompleted) {
+        completion.completeError(const ConnectivityError());
+      }
+    });
+    // Optional backend reads never block or fail the ordinary WAN fetch.
+    ref.listen(autoIPoEDataProvider, (_, next) {
+      _observeIPoE(next);
+      _syncManagedIPoE(next.valueOrNull);
+    });
     // Synchronous build with loading state; async fetch follows immediately.
     Future.microtask(() => fetch());
     return InternetSettingsFeatureState.initial();
@@ -88,7 +214,7 @@ class UspInternetSettingsNotifier
 
       logger.d('[USP][Network][WAN]: Fetched — '
           'raw addressingType: "${result.debugAddressingType}", '
-          'bridgeEnabled: ${result.debugBridgeEnabled}, '
+          'interfaceEnabled: ${result.debugInterfaceEnabled}, '
           'detected type: ${result.form.connectionType.name}, '
           'mtu: ${result.debugMtu}, ipv6: ${result.debugIpv6Enabled}');
 
@@ -105,6 +231,9 @@ class UspInternetSettingsNotifier
         form = form.copyWith(connectionType: savedType);
       }
 
+      if (isManagedIPoE(ref.read(autoIPoEDataProvider).valueOrNull)) {
+        form = form.copyWith(connectionType: UspWanConnectionType.ipoe);
+      }
       return (
         InternetSettingsSettings(form: form),
         InternetSettingsStatus(
@@ -183,7 +312,52 @@ class UspInternetSettingsNotifier
   // ---------------------------------------------------------------------------
 
   @override
-  Future<InternetSettingsFeatureState> save() async {
+  Future<InternetSettingsFeatureState> save(
+      {bool resetConfirmed = false}) async {
+    if (state.status.isSaving || _savingIPoE) throw const InvalidInputError();
+    final selected = state.edited.connectionType;
+    if (selected == UspWanConnectionType.ipoe || needsIPoEReset) {
+      if (selected != UspWanConnectionType.ipoe && !resetConfirmed) {
+        throw const InvalidInputError();
+      }
+      final submitted = state.edited;
+      _savingIPoE = true;
+      state = state.copyWith(
+          status:
+              state.status.copyWith(isSaving: true, activeMutation: 'save'));
+      try {
+        if (selected == UspWanConnectionType.ipoe) {
+          await _submitAndVerifyIPoE(
+              () => ref.read(autoIPoEPageProvider.notifier).performSave(),
+              reset: false);
+          if (_disposed || state.edited != submitted) {
+            throw const InvalidInputError();
+          }
+          ref.read(autoIPoEPageProvider.notifier).markAsSaved();
+          markAsSaved();
+          state =
+              state.copyWith(status: state.status.copyWith(isEditing: false));
+          return state;
+        }
+        await _submitAndVerifyIPoE(
+            () => ref.read(autoIPoEDataProvider.notifier).reset(),
+            reset: true);
+        if (_disposed || state.edited != submitted) {
+          throw const InvalidInputError();
+        }
+      } finally {
+        _savingIPoE = false;
+        if (!_disposed) {
+          state = state.copyWith(
+              status: state.status
+                  .copyWith(isSaving: false, clearActiveMutation: true));
+        }
+      }
+    }
+    return _saveOrdinary();
+  }
+
+  Future<InternetSettingsFeatureState> _saveOrdinary() async {
     // Detect the entering-bridge transition BEFORE saving: `original` is the
     // baseline type, `edited` is what the user just chose. markAsSaved() below
     // collapses original into current, so this must be read up front.
@@ -192,6 +366,10 @@ class UspInternetSettingsNotifier
             state.edited.connectionType == UspWanConnectionType.bridge;
 
     await performSave();
+    // A successful ordinary Save also discards an unapplied IPoE draft.
+    if (ref.exists(autoIPoEPageProvider)) {
+      ref.read(autoIPoEPageProvider.notifier).revert();
+    }
     markAsSaved();
 
     if (enteringBridge) {
@@ -209,11 +387,16 @@ class UspInternetSettingsNotifier
       //    time out (~15s per GET) and surface a spurious "something went
       //    wrong" error for an operation that actually succeeded. The redirect
       //    dialog is the only valid next step from here.
+      // 3. Hold for [bridgeSettleDelayProvider], after the disconnect: waiting
+      //    with SSE still up would let its reconnect failures reach the
+      //    recovery threshold (~3-5s) before the redirect dialog.
+      final settle = ref.read(bridgeSettleDelayProvider);
       await ref.read(sseManagerProvider)?.disconnect();
+      await Future<void>.delayed(settle);
       return state;
     }
 
-    return fetch(forceRemote: true);
+    return confirmSaved();
   }
 
   // ---------------------------------------------------------------------------
@@ -221,12 +404,18 @@ class UspInternetSettingsNotifier
   // ---------------------------------------------------------------------------
 
   void enterEditMode() {
+    _connectionTypeEdited = false;
     state = state.copyWith(
       status: state.status.copyWith(isEditing: true),
     );
   }
 
   void exitEditMode() {
+    if (_savingIPoE || state.status.isSaving) return;
+    _connectionTypeEdited = false;
+    if (ref.exists(autoIPoEPageProvider)) {
+      ref.read(autoIPoEPageProvider.notifier).revert();
+    }
     // Revert form to original + exit edit mode
     state = state.copyWith(
       settings: state.settings.copyWith(current: state.settings.original),
@@ -237,6 +426,13 @@ class UspInternetSettingsNotifier
   // ---------------------------------------------------------------------------
   // revert — override to also clear isEditing
   // ---------------------------------------------------------------------------
+
+  @override
+  bool isDirty() =>
+      state.isDirty ||
+      _savingIPoE ||
+      (ref.exists(autoIPoEPageProvider) &&
+          ref.read(autoIPoEPageProvider).isDirty);
 
   @override
   void revert() {
@@ -260,6 +456,17 @@ class UspInternetSettingsNotifier
 
   /// Update connection type with appropriate field resets.
   void updateConnectionType(UspWanConnectionType type) {
+    if (_savingIPoE || state.status.isSaving) return;
+    _connectionTypeEdited = true;
+    if (type == UspWanConnectionType.ipoe) {
+      final page = ref.read(autoIPoEPageProvider);
+      ref.read(autoIPoEPageProvider.notifier).updateSettings(page.current
+          .copyWith(
+              isEnabled: true,
+              selectedMode: page.current.selectedMode == AutoIPoEMode.disabled
+                  ? AutoIPoEMode.auto
+                  : page.current.selectedMode));
+    }
     final current = state.settings.current;
     var form = current.form.copyWith(connectionType: type);
 

@@ -284,6 +284,49 @@ class DetailCompactInfoTile extends StatelessWidget {
 // =============================================================================
 
 /// Text that can be tapped to copy to clipboard.
+/// A detail page's title name with an edit pen right after it (#1691), as
+/// [DetailCopyableText] puts its copy icon after the value. The pen is a UI Kit
+/// [AppIconButton], so its touch target meets the 44×44 floor while the glyph
+/// stays small. Without [onEdit] the name is shown alone.
+class DetailEditableName extends StatelessWidget {
+  final String name;
+
+  /// What a screen reader announces for the pen.
+  final String editLabel;
+
+  /// The pen's E2E hook.
+  final String identifier;
+
+  final VoidCallback? onEdit;
+
+  const DetailEditableName({
+    super.key,
+    required this.name,
+    required this.editLabel,
+    required this.identifier,
+    this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final title = AppText.titleLarge(name);
+    if (onEdit == null) return title;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(child: title),
+        AppIconButton.small(
+          icon: AppIcon.font(Icons.edit, size: 16),
+          styleVariant: ButtonStyleVariant.text,
+          semanticLabel: editLabel,
+          identifier: identifier,
+          onTap: onEdit,
+        ),
+      ],
+    );
+  }
+}
+
 class DetailCopyableText extends StatelessWidget {
   final String text;
 
@@ -355,13 +398,14 @@ class DetailSpeedCard extends StatelessWidget {
               Icon(icon, size: 16, color: color),
               AppGap.xs(),
               // The label takes the space the icon leaves instead of its
-              // natural width: this card is laid out in a half-width Expanded,
-              // so a long translation (`fr` needs 192dp for `download` while
-              // the row has 172dp) overflowed the row. The value below carries
-              // the number, so shortening the caption loses nothing — and it
-              // must stay on one line, or sibling cards in the same Row would
-              // end up different heights in locales where only one caption is
-              // long (#1302).
+              // natural width. The node-detail page lays two of these cards
+              // side by side in half-width Expandeds, where a long translation
+              // (`fr` needed 192dp for `download` in a 172dp row) overflowed
+              // (#1302); the value below carries the number, so shortening the
+              // caption loses nothing, and one line keeps sibling cards the
+              // same height. The device-detail page stacks its two cards full
+              // width instead (#1686), so its longer "last rate" captions fit;
+              // see `usp_device_detail_speed_card_overflow_test.dart`.
               Expanded(
                 child: AppText.labelSmall(
                   label,

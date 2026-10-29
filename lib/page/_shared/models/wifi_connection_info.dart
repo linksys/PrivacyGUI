@@ -22,12 +22,28 @@ class WifiConnectionInfo with EquatableMixin, DiagnosticNamed {
   /// Uplink data rate in kbps.
   final int? uplinkRate;
 
+  /// The bands the client is on together, when it is on MLO (#1686 item 2):
+  /// for example `['2.4GHz', '5GHz']`. Null when it is not, or not known.
+  ///
+  /// Kept apart from [band] on purpose. [band] is the key the device filter,
+  /// the analytics band split and the PDF group by, and an MLO label there
+  /// would become a band of its own; it stays the band the client associated
+  /// on. The view shows `MLO (…)` from this instead.
+  final List<String>? mloBands;
+
+  /// Whether the router's MLO data could not be read, so it is not known
+  /// whether this client is on MLO. The view says so rather than showing the
+  /// client as if it were not.
+  final bool mloUnknown;
+
   const WifiConnectionInfo({
     this.signalStrength,
     this.band,
     this.ssidName,
     this.downlinkRate,
     this.uplinkRate,
+    this.mloBands,
+    this.mloUnknown = false,
   });
 
   /// Signal quality as a normalized value (0.0–1.0).
@@ -70,6 +86,8 @@ class WifiConnectionInfo with EquatableMixin, DiagnosticNamed {
         ssidName,
         downlinkRate,
         uplinkRate,
+        mloBands,
+        mloUnknown,
       ];
 
   @override
@@ -82,5 +100,7 @@ class WifiConnectionInfo with EquatableMixin, DiagnosticNamed {
         'ssidName': ssidName,
         'downlinkRate': downlinkRate,
         'uplinkRate': uplinkRate,
+        'mloBands': mloBands,
+        'mloUnknown': mloUnknown,
       };
 }

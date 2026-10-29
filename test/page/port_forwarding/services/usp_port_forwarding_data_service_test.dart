@@ -91,6 +91,27 @@ void main() {
       expect(result[1].description, 'SSH');
     });
 
+    test('a rule row with every value blank is no rule', () async {
+      // usp-codegen 0.18 returns a row with every value blank where 0.17
+      // dropped it (#1654).
+      stubPortForwardingResponse([
+        {'description': 'Web Server'},
+        {
+          'enabled': false,
+          'externalPort': 0,
+          'externalPortEndRange': 0,
+          'internalPort': 0,
+          'internalClient': '',
+          'protocol': '',
+          'description': '',
+        },
+      ]);
+
+      final result = await svc.fetch();
+
+      expect(result.map((r) => r.description), ['Web Server']);
+    });
+
     test('includes instancePath in UI models', () async {
       stubPortForwardingResponse([
         {'description': 'Rule 1'},

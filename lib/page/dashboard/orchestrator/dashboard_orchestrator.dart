@@ -28,6 +28,7 @@ import 'package:privacy_gui/core/usp/providers/bridge_request_throttler_provider
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/providers/wan_interface_path_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 // ---------------------------------------------------------------------------
@@ -143,6 +144,9 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
     for (final (_, provider) in _allDomainProviders) {
       ref.invalidate(provider);
     }
+    // A WAN path that never resolved keeps SSE from classifying WAN status;
+    // a resolved one is left as it is.
+    retryWanInterfacePathIfUnresolved(ref);
     // Re-run orchestrator build (auth check + re-trigger providers).
     ref.invalidateSelf();
   }

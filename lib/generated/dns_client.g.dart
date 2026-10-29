@@ -23,6 +23,19 @@ class DnsServer {
     required this.alias,
     required this.interface_,
   });
+
+  @override
+  String toString() {
+    return 'DnsServer('
+        'instancePath: $instancePath, '
+        'address: $address, '
+        'type: $type, '
+        'enabled: $enabled, '
+        'status: $status, '
+        'alias: $alias, '
+        'interface_: $interface_'
+        ')';
+  }
 }
 
 /// DNS client configuration and server list
@@ -85,6 +98,28 @@ class DnsClient {
     final servers = <DnsServer>[];
     for (final cid_0 in childSorted_0) {
       final cp_0 = '$childBase_0$cid_0.';
+      final missing = <String>[];
+      if (!response.containsKey('${cp_0}DNSServer')) {
+        missing.add('${cp_0}DNSServer');
+      }
+      if (!response.containsKey('${cp_0}Type')) {
+        missing.add('${cp_0}Type');
+      }
+      if (!response.containsKey('${cp_0}Enable')) {
+        missing.add('${cp_0}Enable');
+      }
+      if (!response.containsKey('${cp_0}Status')) {
+        missing.add('${cp_0}Status');
+      }
+      if (!response.containsKey('${cp_0}Alias')) {
+        missing.add('${cp_0}Alias');
+      }
+      if (!response.containsKey('${cp_0}Interface')) {
+        missing.add('${cp_0}Interface');
+      }
+      if (missing.isNotEmpty) {
+        throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+      }
       servers.add(DnsServer(
         instancePath: cp_0,
         address: (response['${cp_0}DNSServer'] ?? '') as String,
@@ -115,7 +150,8 @@ class DnsClient {
     return 'DnsClient('
         'enabled: $enabled, '
         'status: $status, '
-        'serverCount: $serverCount'
+        'serverCount: $serverCount, '
+        'servers: $servers'
         ')';
   }
 }

@@ -90,6 +90,25 @@ void main() {
       expect(result[0].forwardRules[0].forwardPort, 20);
     });
 
+    test('a trigger row with every value blank is no trigger', () async {
+      // usp-codegen 0.18 returns a row with every value blank where 0.17
+      // dropped it (#1654).
+      stubPortTriggeringResponse([
+        {'description': 'FTP'},
+        {
+          'enabled': false,
+          'description': '',
+          'triggerPort': 0,
+          'triggerPortEndRange': 0,
+          'triggerProtocol': '',
+        },
+      ]);
+
+      final result = await svc.fetch();
+
+      expect(result.map((t) => t.description), ['FTP']);
+    });
+
     test('includes instancePath in UI models', () async {
       stubPortTriggeringResponse([
         {'description': 'Trigger 1'},

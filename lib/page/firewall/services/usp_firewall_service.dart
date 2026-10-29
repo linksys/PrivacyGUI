@@ -1,15 +1,37 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/_shared/services/empty_row.dart';
+import 'package:privacy_gui/page/_shared/utils/firewall_chain_pick.dart';
 import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 
 final uspFirewallServiceProvider = Provider<UspFirewallService>(
   (ref) => UspFirewallService(ref.read(uspClientProvider)!),
 );
+
+/// The rule keys (see `_descToFeature`) behind each switch. A switch is
+/// usable only when all of them are on the router: the same pairs
+/// `buildSetPayload` writes together.
+const _switchRuleKeys = <FirewallSwitch, List<String>>{
+  FirewallSwitch.ipv4Firewall: ['spiV4Input', 'spiV4Forward'],
+  FirewallSwitch.ipv6Firewall: ['spiV6Input', 'spiV6Forward'],
+  FirewallSwitch.ipsec: ['ipsec1', 'ipsec2'],
+  FirewallSwitch.pptp: ['pptp'],
+  FirewallSwitch.l2tp: ['l2tp'],
+  FirewallSwitch.anonymousRequests: ['anonymousRequests'],
+  FirewallSwitch.multicast: ['multicast'],
+  FirewallSwitch.natRedirection: ['natRedirection'],
+  FirewallSwitch.ident: ['ident'],
+};
+
+/// [_switchRuleKeys], for tests that build a context holding every rule.
+@visibleForTesting
+List<String> debugRuleKeysOf(FirewallSwitch s) => _switchRuleKeys[s]!;
 
 /// Opaque wrapper around parsed firewall rule data.
 ///
@@ -25,6 +47,21 @@ class FirewallRuleContext extends Equatable {
 
   /// Empty context for initial/loading state.
   static const empty = FirewallRuleContext._({});
+
+  /// No rule on the router matched a known Linksys rule name, so no toggle
+  /// can be read or written.
+  bool get isEmpty => _ruleMap.isEmpty;
+
+  /// The switches missing at least one of their rules on the router. Each
+  /// would show a value the router never reported, and a save would skip it.
+  Set<FirewallSwitch> get lockedSwitches => {
+        for (final s in FirewallSwitch.values)
+          if (!_switchRuleKeys[s]!.every(_ruleMap.containsKey)) s,
+      };
+
+  /// The parsed rules, for tests that hand a context to `buildSetPayload`.
+  @visibleForTesting
+  Map<String, FirewallChainRule> get debugRuleMap => _ruleMap;
 
   @override
   List<Object?> get props => [_ruleMap];
@@ -65,9 +102,17 @@ class UspFirewallService {
         pending: pending,
         rules: context._ruleMap,
       );
+      // A changed toggle with no rule on the router has nothing to write.
+      // Reporting that as a 0-rule save is how FW 2.0.2's missing rules went
+      // unnoticed (#1611).
+      if (updates.isEmpty && pending != original) {
+        throw const ResourceNotFoundError(
+          detail: 'No firewall rule on the router for the changed setting',
+        );
+      }
       // Update all firewall rules in batch
       if (updates.isNotEmpty) {
-        final result = await FirewallChainRules.update(_usp, updates);
+        final result = await FirewallChainRules.updateRules(_usp, updates);
         final parsed = UspResultParser.parseSetResult(result);
         switch (parsed) {
           case UspSuccess():
@@ -114,6 +159,7 @@ class UspFirewallService {
     'RULE_IPSEC_ESP': 'ipsec2',
     'RULE_LAN2WAN_PPTP': 'pptp',
     'RULE_LAN2WAN_L2TP': 'l2tp',
+    'RULE_NAT_REDIRECTION': 'natRedirection',
   };
 
   // -------------------------------------------------------------------------
@@ -122,18 +168,28 @@ class UspFirewallService {
 
   /// Parse [FirewallChainRules] into a map of feature key → [FirewallChainRule].
   ///
-  /// Matches each rule's Description against [_descToFeature].
+  /// Reads the `Defaults Configuration` chain only, and matches each rule's
+  /// Description against [_descToFeature].
   static Map<String, FirewallChainRule> parseFirewallRules(
     FirewallChainRules rules,
   ) {
     final map = <String, FirewallChainRule>{};
-    for (final rule in rules.items) {
+    for (final rule in defaultChainRules(rules)) {
       final featureKey = _descToFeature[rule.description];
       if (featureKey == null) continue;
       map[featureKey] = rule;
     }
     return map;
   }
+
+  /// The rules of the `Defaults Configuration` chain; none when the router
+  /// lists no such chain. A rule with every value blank is no rule
+  /// (usp-codegen 0.17 dropped it), so it is never counted.
+  static List<FirewallChainRule> defaultChainRules(FirewallChainRules rules) =>
+      (defaultFirewallChainOf(rules.items, (c) => c.name)?.rules ??
+              const <FirewallChainRule>[])
+          .where((r) => !isEmptyFirewallChainRule(r))
+          .toList();
 
   // -------------------------------------------------------------------------
   // Build UI model
@@ -142,13 +198,19 @@ class UspFirewallService {
   /// Build [FirewallUIModel] from parsed rules.
   ///
   /// Toggle logic:
-  /// - Accept rules (SPI, Ping, IDENT, Multicast): feature ON = !enable
+  /// - Accept rules (SPI, Ping, IDENT, Multicast, NAT redirection):
+  ///   feature ON = !enable
   /// - Drop rules (IPSec, PPTP, L2TP): block = enable
   static FirewallUIModel buildUIModel({
     required Map<String, FirewallChainRule> rules,
   }) {
-    // Accept rules: feature ON when rule is disabled
-    bool acceptOff(String key) => !(rules[key]?.enable ?? false);
+    // Accept rules: feature ON when rule is disabled. An absent rule reads off:
+    // with nothing behind the switch, nothing is being filtered (#1611).
+    bool acceptOff(String key) {
+      final rule = rules[key];
+      return rule != null && !rule.enable;
+    }
+
     // Drop rules: block ON when rule is enabled
     bool dropOn(String key) => rules[key]?.enable ?? false;
 
@@ -162,6 +224,7 @@ class UspFirewallService {
       blockAnonymousRequests: acceptOff('anonymousRequests'),
       blockMulticast: acceptOff('multicast'),
       blockIDENT: acceptOff('ident'),
+      blockNATRedirection: acceptOff('natRedirection'),
     );
   }
 
@@ -242,6 +305,11 @@ class UspFirewallService {
     // IDENT — single rule 20
     if (pending.blockIDENT != original.blockIDENT) {
       addAcceptRule('ident', pending.blockIDENT);
+    }
+
+    // NAT redirection — single rule (FWDEV#204)
+    if (pending.blockNATRedirection != original.blockNATRedirection) {
+      addAcceptRule('natRedirection', pending.blockNATRedirection);
     }
 
     return updates;

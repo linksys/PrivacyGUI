@@ -4,28 +4,74 @@
 
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
-/// LAN IP configuration, DHCP server pool settings, and IPv6 enable flag
-class LanNetworkInfo {
+/// Nested instance from parent multi-instance table
+class LanIpv4Address {
+  final String instancePath;
   final String ipAddress;
   final String subnetMask;
-  final bool dhcpEnabled;
-  final String minAddress;
-  final String maxAddress;
-  final int leaseTime;
-  final String dnsServers;
-  final String hostName;
-  final bool ipv6Enabled;
 
-  const LanNetworkInfo({
+  const LanIpv4Address({
+    required this.instancePath,
     required this.ipAddress,
     required this.subnetMask,
-    required this.dhcpEnabled,
-    required this.minAddress,
-    required this.maxAddress,
-    required this.leaseTime,
-    required this.dnsServers,
+  });
+
+  @override
+  String toString() {
+    return 'LanIpv4Address('
+        'instancePath: $instancePath, '
+        'ipAddress: $ipAddress, '
+        'subnetMask: $subnetMask'
+        ')';
+  }
+}
+
+/// Nested instance from parent multi-instance table
+class LanIpv6Address {
+  final String instancePath;
+  final String ipAddress;
+
+  const LanIpv6Address({
+    required this.instancePath,
+    required this.ipAddress,
+  });
+
+  @override
+  String toString() {
+    return 'LanIpv6Address('
+        'instancePath: $instancePath, '
+        'ipAddress: $ipAddress'
+        ')';
+  }
+}
+
+/// Update descriptor for LanIpv4Address instances
+class LanIpv4AddressUpdate {
+  final String instancePath;
+  final String? ipAddress;
+  final String? subnetMask;
+
+  const LanIpv4AddressUpdate({
+    required this.instancePath,
+    this.ipAddress,
+    this.subnetMask,
+  });
+}
+
+/// LAN interface IPv4 and IPv6 address tables, hostname, and IPv6 enable flag
+class LanNetworkInfo {
+  final String instancePath;
+  final String hostName;
+  final bool ipv6Enabled;
+  final List<LanIpv4Address> ipv4Addresses;
+  final List<LanIpv6Address> ipv6Addresses;
+
+  const LanNetworkInfo({
+    required this.instancePath,
     required this.hostName,
     required this.ipv6Enabled,
+    required this.ipv4Addresses,
+    required this.ipv6Addresses,
   });
 
   /// Resolve the instance index by searching for Alias='lan'
@@ -40,21 +86,16 @@ class LanNetworkInfo {
         }
       }
     }
-    // Fallback to hardcoded instance 1
-    return 'Device.IP.Interface.1.';
+    throw 'Get failed: Could not resolve Device.IP.Interface instance with Alias=lan (code: 9996)';
   }
 
   /// Build parameter paths using the resolved instance path
   static List<String> _buildPaths(String instancePath) => [
-        '${instancePath}IPv4Address.1.IPAddress',
-        '${instancePath}IPv4Address.1.SubnetMask',
-        'Device.DHCPv4.Server.Pool.1.Enable',
-        'Device.DHCPv4.Server.Pool.1.MinAddress',
-        'Device.DHCPv4.Server.Pool.1.MaxAddress',
-        'Device.DHCPv4.Server.Pool.1.LeaseTime',
-        'Device.DHCPv4.Server.Pool.1.DNSServers',
         'Device.DeviceInfo.HostName',
         '${instancePath}IPv6Enable',
+        '${instancePath}IPv4Address.*.IPAddress',
+        '${instancePath}IPv4Address.*.SubnetMask',
+        '${instancePath}IPv6Address.*.IPAddress',
       ];
 
   /// Fetch all parameters via USP Get message
@@ -67,27 +108,6 @@ class LanNetworkInfo {
   factory LanNetworkInfo._fromResponse(
       Map<String, dynamic> response, String instancePath) {
     final missing = <String>[];
-    if (!response.containsKey('${instancePath}IPv4Address.1.IPAddress')) {
-      missing.add('${instancePath}IPv4Address.1.IPAddress');
-    }
-    if (!response.containsKey('${instancePath}IPv4Address.1.SubnetMask')) {
-      missing.add('${instancePath}IPv4Address.1.SubnetMask');
-    }
-    if (!response.containsKey('Device.DHCPv4.Server.Pool.1.Enable')) {
-      missing.add('Device.DHCPv4.Server.Pool.1.Enable');
-    }
-    if (!response.containsKey('Device.DHCPv4.Server.Pool.1.MinAddress')) {
-      missing.add('Device.DHCPv4.Server.Pool.1.MinAddress');
-    }
-    if (!response.containsKey('Device.DHCPv4.Server.Pool.1.MaxAddress')) {
-      missing.add('Device.DHCPv4.Server.Pool.1.MaxAddress');
-    }
-    if (!response.containsKey('Device.DHCPv4.Server.Pool.1.LeaseTime')) {
-      missing.add('Device.DHCPv4.Server.Pool.1.LeaseTime');
-    }
-    if (!response.containsKey('Device.DHCPv4.Server.Pool.1.DNSServers')) {
-      missing.add('Device.DHCPv4.Server.Pool.1.DNSServers');
-    }
     if (!response.containsKey('Device.DeviceInfo.HostName')) {
       missing.add('Device.DeviceInfo.HostName');
     }
@@ -97,70 +117,120 @@ class LanNetworkInfo {
     if (missing.isNotEmpty) {
       throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
+    final childBase_0 = '${instancePath}IPv4Address.';
+    final childIds_0 = <String>{};
+    for (final key in response.keys) {
+      if (key.startsWith(childBase_0)) {
+        final rest = key.substring(childBase_0.length);
+        final dot = rest.indexOf('.');
+        if (dot > 0) childIds_0.add(rest.substring(0, dot));
+      }
+    }
+    final childSorted_0 = childIds_0.toList()
+      ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+    final ipv4Addresses = <LanIpv4Address>[];
+    for (final cid_0 in childSorted_0) {
+      final cp_0 = '$childBase_0$cid_0.';
+      final missing = <String>[];
+      if (!response.containsKey('${cp_0}IPAddress')) {
+        missing.add('${cp_0}IPAddress');
+      }
+      if (!response.containsKey('${cp_0}SubnetMask')) {
+        missing.add('${cp_0}SubnetMask');
+      }
+      if (missing.isNotEmpty) {
+        throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+      }
+      ipv4Addresses.add(LanIpv4Address(
+        instancePath: cp_0,
+        ipAddress: (response['${cp_0}IPAddress'] ?? '') as String,
+        subnetMask: (response['${cp_0}SubnetMask'] ?? '') as String,
+      ));
+    }
+    final childBase_1 = '${instancePath}IPv6Address.';
+    final childIds_1 = <String>{};
+    for (final key in response.keys) {
+      if (key.startsWith(childBase_1)) {
+        final rest = key.substring(childBase_1.length);
+        final dot = rest.indexOf('.');
+        if (dot > 0) childIds_1.add(rest.substring(0, dot));
+      }
+    }
+    final childSorted_1 = childIds_1.toList()
+      ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+    final ipv6Addresses = <LanIpv6Address>[];
+    for (final cid_1 in childSorted_1) {
+      final cp_1 = '$childBase_1$cid_1.';
+      final missing = <String>[];
+      if (!response.containsKey('${cp_1}IPAddress')) {
+        missing.add('${cp_1}IPAddress');
+      }
+      if (missing.isNotEmpty) {
+        throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+      }
+      ipv6Addresses.add(LanIpv6Address(
+        instancePath: cp_1,
+        ipAddress: (response['${cp_1}IPAddress'] ?? '') as String,
+      ));
+    }
     return LanNetworkInfo(
-      ipAddress:
-          (response['${instancePath}IPv4Address.1.IPAddress'] ?? '') as String,
-      subnetMask:
-          (response['${instancePath}IPv4Address.1.SubnetMask'] ?? '') as String,
-      dhcpEnabled: response['Device.DHCPv4.Server.Pool.1.Enable'] == true ||
-          response['Device.DHCPv4.Server.Pool.1.Enable'] == 'true' ||
-          response['Device.DHCPv4.Server.Pool.1.Enable'] == '1',
-      minAddress:
-          (response['Device.DHCPv4.Server.Pool.1.MinAddress'] ?? '') as String,
-      maxAddress:
-          (response['Device.DHCPv4.Server.Pool.1.MaxAddress'] ?? '') as String,
-      leaseTime: int.tryParse(
-              response['Device.DHCPv4.Server.Pool.1.LeaseTime']?.toString() ??
-                  '') ??
-          0,
-      dnsServers:
-          (response['Device.DHCPv4.Server.Pool.1.DNSServers'] ?? '') as String,
+      instancePath: instancePath,
       hostName: (response['Device.DeviceInfo.HostName'] ?? '') as String,
       ipv6Enabled: response['${instancePath}IPv6Enable'] == true ||
           response['${instancePath}IPv6Enable'] == 'true' ||
           response['${instancePath}IPv6Enable'] == '1',
+      ipv4Addresses: ipv4Addresses,
+      ipv6Addresses: ipv6Addresses,
     );
+  }
+
+  /// Build the Set params of update() without sending them
+  static Map<String, dynamic> updateParams({
+    String? hostName,
+  }) {
+    final params = <String, dynamic>{};
+    if (hostName != null) {
+      params['Device.DeviceInfo.HostName'] = hostName;
+    }
+    return params;
   }
 
   /// Update writable parameters via USP Set message
   static Future<Map<String, dynamic>> update(
     UspClient client, {
-    String? ipAddress,
-    String? subnetMask,
-    bool? dhcpEnabled,
-    String? minAddress,
-    String? maxAddress,
-    int? leaseTime,
-    String? dnsServers,
     String? hostName,
     bool allowPartial = false,
   }) async {
+    final params = updateParams(hostName: hostName);
+    if (params.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    return await client.set(params, allowPartial: allowPartial);
+  }
+
+  /// Build the Set params of updateIpv4Addresses() without sending them
+  static Map<String, dynamic> updateIpv4AddressesParams(
+      List<LanIpv4AddressUpdate> updates) {
     final params = <String, dynamic>{};
-    final instancePath = await _resolveInstance(client);
-    if (ipAddress != null) {
-      params['${instancePath}IPv4Address.1.IPAddress'] = ipAddress;
+    for (final update in updates) {
+      if (update.ipAddress != null) {
+        params['${update.instancePath}IPAddress'] = update.ipAddress;
+      }
+      if (update.subnetMask != null) {
+        params['${update.instancePath}SubnetMask'] = update.subnetMask;
+      }
     }
-    if (subnetMask != null) {
-      params['${instancePath}IPv4Address.1.SubnetMask'] = subnetMask;
-    }
-    if (dhcpEnabled != null) {
-      params['Device.DHCPv4.Server.Pool.1.Enable'] = dhcpEnabled;
-    }
-    if (minAddress != null) {
-      params['Device.DHCPv4.Server.Pool.1.MinAddress'] = minAddress;
-    }
-    if (maxAddress != null) {
-      params['Device.DHCPv4.Server.Pool.1.MaxAddress'] = maxAddress;
-    }
-    if (leaseTime != null) {
-      params['Device.DHCPv4.Server.Pool.1.LeaseTime'] = leaseTime;
-    }
-    if (dnsServers != null) {
-      params['Device.DHCPv4.Server.Pool.1.DNSServers'] = dnsServers;
-    }
-    if (hostName != null) {
-      params['Device.DeviceInfo.HostName'] = hostName;
-    }
+    return params;
+  }
+
+  /// Update LanIpv4Address rows, each through its own instancePath
+  static Future<Map<String, dynamic>> updateIpv4Addresses(
+      UspClient client, List<LanIpv4AddressUpdate> updates,
+      {bool allowPartial = false}) async {
+    final params = updateIpv4AddressesParams(updates);
     if (params.isEmpty) {
       return {
         'success': true,
@@ -173,15 +243,11 @@ class LanNetworkInfo {
   @override
   String toString() {
     return 'LanNetworkInfo('
-        'ipAddress: $ipAddress, '
-        'subnetMask: $subnetMask, '
-        'dhcpEnabled: $dhcpEnabled, '
-        'minAddress: $minAddress, '
-        'maxAddress: $maxAddress, '
-        'leaseTime: $leaseTime, '
-        'dnsServers: $dnsServers, '
+        'instancePath: $instancePath, '
         'hostName: $hostName, '
-        'ipv6Enabled: $ipv6Enabled'
+        'ipv6Enabled: $ipv6Enabled, '
+        'ipv4Addresses: $ipv4Addresses, '
+        'ipv6Addresses: $ipv6Addresses'
         ')';
   }
 }
