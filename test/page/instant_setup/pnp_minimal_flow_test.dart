@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/core/jnap/models/auto_master_status.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
@@ -43,6 +44,11 @@ class _Pnp extends PnpNotifier {
   int configuredChecks = 0;
   final checkedPasswords = <String?>[];
   final calls = <String>[];
+  // Device mode the provider holds when save() is called (#1748).
+  final unconfiguredAtSave = <bool>[];
+  // When set, the Auto Master status this fake reports (#1748). When null the
+  // real notifier's lookup is used, as before.
+  AutoMasterStatus? autoMasterStatus;
   Future<void> Function()? reconnect;
   Future<void> Function(String?)? authenticate;
 
@@ -98,6 +104,7 @@ class _Pnp extends PnpNotifier {
   Future<void> save() {
     saves++;
     calls.add('save');
+    unconfiguredAtSave.add(state.isRouterUnConfigured);
     return saveResult.future;
   }
 
@@ -120,6 +127,14 @@ class _Pnp extends PnpNotifier {
       }
       rethrow;
     }
+  }
+
+  @override
+  Future<AutoMasterStatus?> checkAutoMasterStatus() {
+    final status = autoMasterStatus;
+    return status == null
+        ? super.checkAutoMasterStatus()
+        : Future.value(status);
   }
 
   @override
@@ -459,6 +474,63 @@ void main() {
     expect(pnp.checkedPasswords, ['TestAdminPassword']);
     expect(firmware.checks, 1);
     expect(tester.takeException(), isNull);
+  });
+
+  // #1748: PnP read the device mode while Auto Master was still running and
+  // cached `Unconfigured`. Auto Master then made the router Master, and after
+  // the re-login setup is entered with Auto Master already `complete`. The
+  // save must not be built from the stale value, or it sends
+  // `SetDeviceMode Master` and firmware rejects it with ErrorAlreadyMaster.
+  testWidgets(
+      'stale unconfigured mode is re-read after Auto Master completes (#1748)',
+      (tester) async {
+    final pnp = _Pnp(unconfigured: true)
+      ..autoMasterStatus = AutoMasterStatus.complete
+      ..configuredAfterSave = true; // GetDeviceMode now answers Master.
+    final firmware = _Firmware();
+    await _showSetup(tester, pnp, firmware);
+
+    expect(pnp.configuredChecks, 1);
+    expect(pnp.calls, ['configured', 'save']);
+    expect(pnp.unconfiguredAtSave, [false]);
+  });
+
+  testWidgets(
+      'still-unconfigured router keeps SetDeviceMode after Auto Master (#1748)',
+      (tester) async {
+    final pnp = _Pnp(unconfigured: true)
+      ..autoMasterStatus = AutoMasterStatus.complete
+      ..configuredAfterSave = false; // GetDeviceMode still answers Unconfigured.
+    final firmware = _Firmware();
+    await _showSetup(tester, pnp, firmware);
+
+    expect(pnp.configuredChecks, 1);
+    expect(pnp.unconfiguredAtSave, [true]);
+  });
+
+  for (final status in [AutoMasterStatus.idle, AutoMasterStatus.running]) {
+    testWidgets(
+        'unconfigured router without completed Auto Master is not re-read '
+        '(${status.name}, #1748)', (tester) async {
+      final pnp = _Pnp(unconfigured: true)
+        ..autoMasterStatus = status
+        ..configuredAfterSave = true;
+      final firmware = _Firmware();
+      await _showSetup(tester, pnp, firmware, beginSave: false);
+
+      expect(pnp.configuredChecks, 0);
+      expect(pnp.state.isRouterUnConfigured, isTrue);
+    });
+  }
+
+  testWidgets('configured router is not re-read after Auto Master (#1748)',
+      (tester) async {
+    final pnp = _Pnp()..autoMasterStatus = AutoMasterStatus.complete;
+    final firmware = _Firmware();
+    await _showSetup(tester, pnp, firmware);
+
+    expect(pnp.configuredChecks, 0);
+    expect(pnp.unconfiguredAtSave, [false]);
   });
 
   for (final reachable in [true, false]) {

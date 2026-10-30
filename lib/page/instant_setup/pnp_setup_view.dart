@@ -109,6 +109,23 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           await ref.read(pnpProvider.notifier).checkAutoMasterStatus();
       ref.read(pnpProvider.notifier).setAutoMasterStatusOnEntry(status);
       logger.d('[PnP]: Auto Master status on entry: $status');
+      // #1748: the device mode was read once at PnP entry, possibly while Auto
+      // Master was still running. Auto Master switches the router to Master,
+      // so after it completes a cached `Unconfigured` is stale and the save
+      // would still send `SetDeviceMode Master`, which firmware rejects with
+      // ErrorAlreadyMaster. Re-read it before it is cached below and used to
+      // build the steps and the save transaction.
+      if (status == AutoMasterStatus.complete &&
+          ref.read(pnpProvider).isRouterUnConfigured) {
+        try {
+          await ref.read(pnpProvider.notifier).checkRouterConfigured();
+        } catch (e) {
+          logger.w('[PnP]: Re-reading device mode failed, '
+              'keeping the cached value: $e');
+        }
+        logger.d('[PnP]: Device mode re-read after Auto Master - '
+            'isUnconfigured=${ref.read(pnpProvider).isRouterUnConfigured}');
+      }
     }).then((_) {
       _isUnconfigured = ref.read(pnpProvider).isRouterUnConfigured;
       _isPrePaired = ref.read(pnpProvider).isPrePaired;
