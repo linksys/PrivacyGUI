@@ -68,6 +68,12 @@ class SystemInfoUIModel extends Equatable with DiagnosticLoggable {
   /// location. Null when unset.
   final String? friendlyName;
 
+  /// `DeviceInfo.HostName` (e.g. `Linksys12345`, from the serial number), the
+  /// router's name when the user has given it none (#1751): an agent with no
+  /// user name shows its host name, so the controller does too, rather than
+  /// its model, which every unit of the model shares. Null when unset.
+  final String? hostName;
+
   const SystemInfoUIModel({
     required this.manufacturer,
     required this.modelName,
@@ -82,6 +88,7 @@ class SystemInfoUIModel extends Equatable with DiagnosticLoggable {
     this.baseMacAddress,
     this.userDeviceLocation,
     this.friendlyName,
+    this.hostName,
   });
 
   /// Display name for the gateway (router model or fallback).
@@ -137,5 +144,6 @@ class SystemInfoUIModel extends Equatable with DiagnosticLoggable {
         'baseMacAddress': baseMacAddress,
         'userDeviceLocation': userDeviceLocation,
         'friendlyName': friendlyName,
+        'hostName': hostName,
       };
 }

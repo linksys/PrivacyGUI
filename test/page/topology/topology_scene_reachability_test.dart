@@ -114,6 +114,7 @@ void main() {
     'slaveNodeOnlineWithDevices': slaveNodeOnlineWithDevices,
     'slaveNodeWithBackhaulTiming': slaveNodeWithBackhaulTiming,
     'slaveNodeWithBackhaulRates': slaveNodeWithBackhaulRates,
+    'slaveNodeUnderRenamedController': slaveNodeUnderRenamedController,
     'slaveNodeNoBackhaul': slaveNodeNoBackhaul,
     'slaveNodeGlobalIpv6': slaveNodeGlobalIpv6,
     'slaveNodeLinkLocalIpv6': slaveNodeLinkLocalIpv6,

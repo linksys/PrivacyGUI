@@ -95,6 +95,7 @@ void main() {
     String softwareVersion = '2.0.1.216125',
     String? userDeviceLocation,
     String? friendlyName,
+    String? hostName,
   }) {
     return SystemInfoUIModel(
       manufacturer: manufacturer,
@@ -108,6 +109,7 @@ void main() {
       cpuUsage: 0,
       userDeviceLocation: userDeviceLocation,
       friendlyName: friendlyName,
+      hostName: hostName,
     );
   }
 
@@ -2372,8 +2374,48 @@ void main() {
         expect(master.displayName, 'Main router');
       });
 
-      test('with neither, the name is what it is today', () {
+      test('with neither, DeviceInfo.HostName is the name (#1751)', () {
+        // As an agent with no user name shows its host name. The model is the
+        // same on every unit of it, so it does not tell two routers apart.
+        final master = buildMaster(
+            buildSystemInfo(modelName: 'M60', hostName: 'Linksys12345'));
+        expect(master.hostName, 'Linksys12345');
+        expect(master.displayName, 'Linksys12345');
+      });
+
+      test('the user name and FriendlyName still come before the host name',
+          () {
+        expect(
+          buildMaster(buildSystemInfo(
+            userDeviceLocation: 'Office',
+            hostName: 'Linksys12345',
+          )).displayName,
+          'Office',
+        );
+        expect(
+          buildMaster(buildSystemInfo(
+            friendlyName: 'Main router',
+            hostName: 'Linksys12345',
+          )).displayName,
+          'Main router',
+        );
+      });
+
+      test('with no host name either, the model is the name', () {
         final master = buildMaster(buildSystemInfo(modelName: 'M60'));
+        expect(master.displayName, 'M60');
+      });
+
+      test('an empty host name falls through to the model', () {
+        // The service maps "" to null; this guards the builder on its own.
+        // `hostName` is asserted, not only `displayName`: `displayName` skips an
+        // empty host name by itself, so it reads the model either way. The
+        // field is what the rename dialog shows as the name an empty field
+        // falls back to (`detectedName: node.hostName ?? node.model`), and `??`
+        // does not pass over "", so an empty one would leave that hint blank.
+        final master =
+            buildMaster(buildSystemInfo(modelName: 'M60', hostName: ''));
+        expect(master.hostName, 'M60');
         expect(master.displayName, 'M60');
       });
     });
