@@ -141,6 +141,14 @@ InvalidationDomain? _mapToDomain(
       path.contains('StaticAddress')) {
     return InvalidationDomain.dhcpReservations;
   }
+  // Every other pool value is a pool setting. A LAN subnet change moves
+  // MinAddress / MaxAddress after the Set has returned, so this is how the app
+  // learns the range the router settled on (PrivacyGUI#1729). It arrives over
+  // dhcp-clients-02, which subscribes the whole `Device.DHCPv4.Server.Pool.`
+  // table: narrowing that subscription to the Client table drops it.
+  if (path.startsWith('Device.DHCPv4.Server.Pool.')) {
+    return InvalidationDomain.lanDhcpPool;
+  }
   if (path.startsWith('Device.Routing.Router.') &&
       path.contains('IPv4Forwarding')) {
     return InvalidationDomain.staticRouting;

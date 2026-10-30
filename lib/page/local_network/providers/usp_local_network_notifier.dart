@@ -3,6 +3,7 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_feature_state.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_settings.dart';
@@ -33,8 +34,25 @@ class UspLocalNetworkNotifier
 
   @override
   LocalNetworkFeatureState build() {
-    // LAN data provider has no SSE invalidation domain,
-    // so no SSE listener needed here.
+    // lanDataProvider re-reads on a pool push: after a LAN subnet change the
+    // router settles the pool after the post-save read (PrivacyGUI#1729). Follow
+    // it while there is nothing of the user's to keep: a page with edits, a
+    // save in flight included, is left as it is. Applied from `next` itself:
+    // inside this callback `lanDataProvider.future` still holds the previous
+    // value, so a fetch() here would read the old range again.
+    ref.listen(lanDataProvider, (_, next) {
+      final data = next.valueOrNull;
+      if (data == null || next.isLoading || state.status.isLoading) return;
+      if (isDirty()) return;
+      final (settings, status) = _fromLanData(data);
+      state = state.copyWith(
+        settings: Preservable(original: settings, current: settings),
+        status: state.status.copyWith(
+          lockedOctetCount: status.lockedOctetCount,
+          validationErrors: const {},
+        ),
+      );
+    });
 
     // Synchronous build with loading state; async fetch follows immediately.
     Future.microtask(() => fetch());
@@ -53,33 +71,7 @@ class UspLocalNetworkNotifier
     try {
       // Clone data from the shared data provider (read, not watch).
       final data = await ref.read(lanDataProvider.future);
-      final lan = data.model;
-      final dnsParts = lan.dnsServers.split(',').map((s) => s.trim()).toList();
-      final uiModel = LocalNetworkUIModel(
-        hostName: lan.hostName,
-        ipAddress: lan.ipAddress,
-        subnetMask: lan.subnetMask,
-        dhcpEnabled: lan.dhcpEnabled,
-        minAddress: lan.minAddress,
-        maxAddress: lan.maxAddress,
-        leaseTimeMinutes: lan.leaseTimeMinutes,
-        dnsServer1: dnsParts.isNotEmpty ? dnsParts[0] : '',
-        dnsServer2: dnsParts.length > 1 ? dnsParts[1] : '',
-        dnsServer3: dnsParts.length > 2 ? dnsParts[2] : '',
-      );
-
-      logger.d('[USP][Network][LAN]: Fetched — '
-          'ip: ${uiModel.ipAddress}, '
-          'dhcp: ${uiModel.dhcpEnabled}, '
-          'pool: ${uiModel.minAddress}-${uiModel.maxAddress}');
-
-      return (
-        LocalNetworkSettings(model: uiModel),
-        LocalNetworkStatus(
-          isLoading: false,
-          lockedOctetCount: _svc.lockedOctetCount(uiModel.subnetMask),
-        ),
-      );
+      return _fromLanData(data);
     } on ServiceError catch (e) {
       logger.e('[USP][Network][LAN]: Fetch failed', error: e);
       return (
@@ -87,6 +79,37 @@ class UspLocalNetworkNotifier
         LocalNetworkStatus(isLoading: false, error: e),
       );
     }
+  }
+
+  /// The page's settings and status for the LAN data [data].
+  (LocalNetworkSettings, LocalNetworkStatus) _fromLanData(LanData data) {
+    final lan = data.model;
+    final dnsParts = lan.dnsServers.split(',').map((s) => s.trim()).toList();
+    final uiModel = LocalNetworkUIModel(
+      hostName: lan.hostName,
+      ipAddress: lan.ipAddress,
+      subnetMask: lan.subnetMask,
+      dhcpEnabled: lan.dhcpEnabled,
+      minAddress: lan.minAddress,
+      maxAddress: lan.maxAddress,
+      leaseTimeMinutes: lan.leaseTimeMinutes,
+      dnsServer1: dnsParts.isNotEmpty ? dnsParts[0] : '',
+      dnsServer2: dnsParts.length > 1 ? dnsParts[1] : '',
+      dnsServer3: dnsParts.length > 2 ? dnsParts[2] : '',
+    );
+
+    logger.d('[USP][Network][LAN]: Fetched — '
+        'ip: ${uiModel.ipAddress}, '
+        'dhcp: ${uiModel.dhcpEnabled}, '
+        'pool: ${uiModel.minAddress}-${uiModel.maxAddress}');
+
+    return (
+      LocalNetworkSettings(model: uiModel),
+      LocalNetworkStatus(
+        isLoading: false,
+        lockedOctetCount: _svc.lockedOctetCount(uiModel.subnetMask),
+      ),
+    );
   }
 
   // ---------------------------------------------------------------------------

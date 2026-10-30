@@ -34,6 +34,10 @@ enum InvalidationDomain {
   /// Device.DHCPv4.Server.Pool.1.Client. — DHCP lease changes
   dhcpClients,
 
+  /// Device.DHCPv4.Server.Pool.{i}. — the pool's own settings (range, mask,
+  /// enable, lease time, DNS), not its Client or StaticAddress tables
+  lanDhcpPool,
+
   /// Device.WiFi.AccessPoint.*.AssociatedDevice. — WiFi device connect/disconnect
   wifiClients,
 
