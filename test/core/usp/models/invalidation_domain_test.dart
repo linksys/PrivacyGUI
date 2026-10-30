@@ -52,6 +52,7 @@ void main() {
           'Device.Routing.Router.1.IPv4Forwarding.',
       InvalidationDomain.wifiAccessPoints: 'Device.WiFi.AccessPoint.',
       InvalidationDomain.dhcpClients: 'Device.DHCPv4.Server.Pool.1.Client.',
+      InvalidationDomain.lanDhcpPool: 'Device.DHCPv4.Server.Pool.{i}.',
       InvalidationDomain.wifiClients:
           'Device.WiFi.AccessPoint.*.AssociatedDevice.',
       InvalidationDomain.ethernetInterfaces: 'Device.Ethernet.Interface.',

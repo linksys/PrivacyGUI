@@ -31,6 +31,9 @@ class _TestLanDataNotifier extends LanDataNotifier {
   int buildCount = 0;
   _TestLanDataNotifier(this._testData, {this.errorToThrow, this.failFromBuild});
 
+  /// What the next build returns, once [push] has moved it.
+  LanData? _pushed;
+
   @override
   Future<LanData> build() async {
     buildCount++;
@@ -39,7 +42,14 @@ class _TestLanDataNotifier extends LanDataNotifier {
     if (from != null && buildCount >= from) {
       throw const NetworkError(detail: 'read failed');
     }
-    return _testData;
+    return _pushed ?? _testData;
+  }
+
+  /// Publishes [data] as the SSE-driven refresh does: a new value with no
+  /// rebuild.
+  void push(LanData data) {
+    _pushed = data;
+    state = AsyncData(data);
   }
 }
 
@@ -331,6 +341,79 @@ void main() {
       expect(state.status.error, isNull);
       expect(state.settings.current.model.dnsServer1, '9.9.9.9');
       expect(state.isDirty, isFalse);
+      container.dispose();
+    });
+  });
+
+  // PrivacyGUI#1729: the router settles the pool after the post-save read, and
+  // lanDataProvider learns of it from the pool push. The page must follow, or
+  // it keeps showing the range it read too early.
+  group('UspLocalNetworkNotifier — follows the LAN data (#1729)', () {
+    LanData withPool(String min, String max) => LanData(
+          model: LanInfoUIModel(
+            hostName: 'MyRouter',
+            ipAddress: '192.168.1.1',
+            subnetMask: '255.255.255.0',
+            dhcpEnabled: true,
+            minAddress: min,
+            maxAddress: max,
+            leaseTimeMinutes: 1440,
+            dnsServers: '1.1.1.1,8.8.8.8',
+          ),
+        );
+
+    LocalNetworkUIModel shown(ProviderContainer c) =>
+        c.read(uspLocalNetworkProvider).settings.current.model;
+
+    test('a clean page shows the range the LAN data moves to', () async {
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      (container.read(lanDataProvider.notifier) as _TestLanDataNotifier)
+          .push(withPool('192.168.0.100', '192.168.0.249'));
+      await Future.delayed(Duration.zero);
+
+      final state = container.read(uspLocalNetworkProvider);
+      expect((shown(container).minAddress, shown(container).maxAddress),
+          ('192.168.0.100', '192.168.0.249'));
+      expect(state.isDirty, isFalse,
+          reason: 'what the router holds is the page\'s original too');
+      container.dispose();
+    });
+
+    test('a page with unsaved edits keeps them', () async {
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspLocalNetworkProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(minAddress: '192.168.1.120'));
+
+      (container.read(lanDataProvider.notifier) as _TestLanDataNotifier)
+          .push(withPool('192.168.0.100', '192.168.0.249'));
+      await Future.delayed(Duration.zero);
+
+      expect(shown(container).minAddress, '192.168.1.120');
+      expect(container.read(uspLocalNetworkProvider).isDirty, isTrue);
+      container.dispose();
+    });
+
+    test('after a save, the page follows a later push', () async {
+      when(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+          )).thenAnswer((_) async {});
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspLocalNetworkProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(subnetMask: '255.255.0.0'));
+      await notifier.save();
+
+      // The post-save read held the old range; the push brings the new one.
+      (container.read(lanDataProvider.notifier) as _TestLanDataNotifier)
+          .push(withPool('192.168.0.100', '192.168.0.249'));
+      await Future.delayed(Duration.zero);
+
+      expect(shown(container).minAddress, '192.168.0.100');
+      expect(container.read(uspLocalNetworkProvider).isDirty, isFalse);
       container.dispose();
     });
   });

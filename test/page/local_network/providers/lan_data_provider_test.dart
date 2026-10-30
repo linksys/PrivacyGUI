@@ -1,7 +1,11 @@
+import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
@@ -58,12 +62,29 @@ void main() {
     stubLan();
   });
 
-  ProviderContainer createContainer() {
+  ProviderContainer createContainer({Stream<InvalidationEvent>? sseStream}) {
     return ProviderContainer(
       overrides: [
         uspClientProvider.overrideWithValue(mockUsp),
+        if (sseStream != null)
+          sseInvalidationProvider.overrideWith((ref) => sseStream),
       ],
     );
+  }
+
+  /// Answers the LAN reads with the pool [range], so a test can move the pool
+  /// between two reads as the router does after a subnet change.
+  void stubPool((String, String) Function() range) {
+    when(() => mockUsp.get(any())).thenAnswer((invocation) async {
+      final (min, max) = range();
+      return LocalNetworkTestData.answer(
+        invocation.positionalArguments[0] as List<String>,
+        lanInterfaceGet: lanInterfaceResponse,
+        lanPoolGet: LocalNetworkTestData.lanPoolResponse(
+            minAddress: min, maxAddress: max),
+        ipv6Addresses: ipv6Response,
+      );
+    });
   }
 
   group('LanDataNotifier', () {
@@ -234,6 +255,82 @@ void main() {
         throwsA(isA<NetworkError>()),
       );
       container.dispose();
+    });
+  });
+
+  // PrivacyGUI#1729: after a LAN subnet change the router moves the pool after
+  // the Set has returned, so the post-save read can hold the old range. The
+  // router then pushes the new MinAddress / MaxAddress; this provider must
+  // read again on that push, or it keeps the old range for the session.
+  group('LanDataNotifier — pool push (#1729)', () {
+    test('a lanDhcpPool push reads the pool the router settled on', () {
+      fakeAsync((async) {
+        var range = ('192.168.1.100', '192.168.1.249');
+        stubPool(() => range);
+        final sse = StreamController<InvalidationEvent>.broadcast();
+        final container = createContainer(sseStream: sse.stream);
+
+        // A one-shot read, as a page that has since stopped watching: the push
+        // must refresh with no listener held (#1615).
+        container.read(lanDataProvider);
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 1));
+        expect(container.read(lanDataProvider).valueOrNull?.model.minAddress,
+            '192.168.1.100',
+            reason: 'build() must have completed, or this asserts nothing');
+
+        range = ('192.168.0.100', '192.168.0.249');
+        sse.add((domain: InvalidationDomain.lanDhcpPool, seq: 0));
+        async.elapse(const Duration(seconds: 1));
+
+        final model = container.read(lanDataProvider).valueOrNull!.model;
+        expect((model.minAddress, model.maxAddress),
+            ('192.168.0.100', '192.168.0.249'));
+
+        sse.close();
+        container.dispose();
+      });
+    });
+
+    test('a push for another domain does not read the LAN again', () {
+      fakeAsync((async) {
+        stubPool(() => ('192.168.1.100', '192.168.1.249'));
+        final sse = StreamController<InvalidationEvent>.broadcast();
+        final container = createContainer(sseStream: sse.stream);
+        container.read(lanDataProvider);
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 1));
+        clearInteractions(mockUsp);
+
+        sse.add((domain: InvalidationDomain.dhcpClients, seq: 0));
+        async.elapse(const Duration(seconds: 1));
+
+        verifyNever(() => mockUsp.get(any()));
+        sse.close();
+        container.dispose();
+      });
+    });
+
+    test('a failed push read keeps the last range', () {
+      fakeAsync((async) {
+        stubPool(() => ('192.168.1.100', '192.168.1.249'));
+        final sse = StreamController<InvalidationEvent>.broadcast();
+        final container = createContainer(sseStream: sse.stream);
+        container.read(lanDataProvider);
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 1));
+
+        when(() => mockUsp.get(any()))
+            .thenThrow('Get failed: Transport error: Request timeout');
+        sse.add((domain: InvalidationDomain.lanDhcpPool, seq: 0));
+        async.elapse(const Duration(seconds: 1));
+
+        final lan = container.read(lanDataProvider);
+        expect(lan.hasError, isFalse);
+        expect(lan.valueOrNull?.model.minAddress, '192.168.1.100');
+        sse.close();
+        container.dispose();
+      });
     });
   });
 }
