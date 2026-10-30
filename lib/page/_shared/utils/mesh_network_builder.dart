@@ -553,7 +553,13 @@ class MeshNetworkBuilder {
     // location the user gave comes first, then FriendlyName, which the app does
     // not write: unlike a client's, the firmware does not fill it from the
     // location (measured on 2.0.3.26101472). Neither set, `displayName` falls
-    // to the host name and the model as before.
+    // to the host name, then the model.
+    //
+    // The host name is DeviceInfo's (#1751): the controller has no Hosts row of
+    // its own (measured on 2.0.4.26102918), so `masterDevice` is normally null
+    // and, before, the name fell straight to the model. An agent with no user
+    // name shows its host name, so the controller now does too; the model is
+    // the same on every unit of it and does not tell two apart.
     final userDeviceLocation = nonEmpty(systemInfo?.userDeviceLocation);
 
     return MasterNode(
@@ -563,7 +569,9 @@ class MeshNetworkBuilder {
           nonEmpty(systemInfo?.friendlyName) ??
           masterDevice?.friendlyName,
       userDeviceLocation: userDeviceLocation,
-      hostName: masterDevice?.hostName ?? gatewayName,
+      hostName: nonEmpty(masterDevice?.hostName) ??
+          nonEmpty(systemInfo?.hostName) ??
+          gatewayName,
       // `system_info` first, DataElements second — and the order is the fix,
       // not a preference. The controller row's identity fields are prplMesh
       // describing *itself*, not the product: measured on the bench they read
