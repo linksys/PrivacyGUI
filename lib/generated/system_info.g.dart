@@ -12,6 +12,7 @@ class SystemInfo {
   final String? baseMacAddress;
   final String? friendlyName;
   final String? userDeviceLocation;
+  final String? hostName;
   final String hardwareVersion;
   final String softwareVersion;
   final int uptime;
@@ -30,6 +31,7 @@ class SystemInfo {
     this.baseMacAddress,
     this.friendlyName,
     this.userDeviceLocation,
+    this.hostName,
     required this.hardwareVersion,
     required this.softwareVersion,
     required this.uptime,
@@ -49,6 +51,7 @@ class SystemInfo {
     'Device.DeviceInfo.X_LINKSYS_BaseMACAddress',
     'Device.DeviceInfo.FriendlyName',
     'Device.DeviceInfo.X_LINKSYS_UserDeviceLocation',
+    'Device.DeviceInfo.HostName',
     'Device.DeviceInfo.HardwareVersion',
     'Device.DeviceInfo.SoftwareVersion',
     'Device.DeviceInfo.UpTime',
@@ -121,6 +124,9 @@ class SystemInfo {
       userDeviceLocation: response
               .containsKey('Device.DeviceInfo.X_LINKSYS_UserDeviceLocation')
           ? response['Device.DeviceInfo.X_LINKSYS_UserDeviceLocation'] as String
+          : null,
+      hostName: response.containsKey('Device.DeviceInfo.HostName')
+          ? response['Device.DeviceInfo.HostName'] as String
           : null,
       hardwareVersion:
           (response['Device.DeviceInfo.HardwareVersion'] ?? '') as String,
@@ -206,6 +212,7 @@ class SystemInfo {
         'baseMacAddress: $baseMacAddress, '
         'friendlyName: $friendlyName, '
         'userDeviceLocation: $userDeviceLocation, '
+        'hostName: $hostName, '
         'hardwareVersion: $hardwareVersion, '
         'softwareVersion: $softwareVersion, '
         'uptime: $uptime, '
