@@ -35,6 +35,13 @@ class LocalNetworkFeatureState
   bool get hasIpAddressChange =>
       settings.original.model.ipAddress != settings.current.model.ipAddress;
 
+  /// True when the router's host name changed. `DeviceInfo.HostName` is also
+  /// what the controller is named by when nobody has named it (#1751), and
+  /// that name is read through system info, not this page's LAN read, so a
+  /// save that changes it has to refresh system info as well.
+  bool get hasHostNameChange =>
+      settings.original.model.hostName != settings.current.model.hostName;
+
   @override
   LocalNetworkFeatureState copyWith({
     Preservable<LocalNetworkSettings>? settings,

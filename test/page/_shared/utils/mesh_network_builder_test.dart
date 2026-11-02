@@ -95,6 +95,7 @@ void main() {
     String softwareVersion = '2.0.1.216125',
     String? userDeviceLocation,
     String? friendlyName,
+    String? hostName,
   }) {
     return SystemInfoUIModel(
       manufacturer: manufacturer,
@@ -108,6 +109,7 @@ void main() {
       cpuUsage: 0,
       userDeviceLocation: userDeviceLocation,
       friendlyName: friendlyName,
+      hostName: hostName,
     );
   }
 
@@ -214,6 +216,37 @@ void main() {
       expect(result.master.ipAddress, '192.168.1.1');
       expect(result.master.hostName, 'Router');
       expect(result.allClients.map((c) => c.mac), ['11:22:33:44:55:01']);
+    });
+
+    // #1751 added DeviceInfo.HostName below the controller's own Hosts row.
+    // Three different values, so the result says which one won: the row's
+    // host name, then DeviceInfo's, then the model.
+    test(
+        'a controller\'s own Hosts row host name comes before '
+        'DeviceInfo.HostName (#1751)', () {
+      MasterNode masterWith({required String rowHostName}) =>
+          MeshNetworkBuilder.build(
+            connectedDevices: ConnectedDevices(items: [
+              buildConnectedDevice(
+                macAddress: 'aa:bb:cc:dd:ee:01',
+                hostName: rowHostName,
+              ),
+            ]),
+            wifiClientMap: {},
+            connectionDetailMap: {},
+            meshTopology: MeshTopologyInfo(
+              nodes: [buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01')],
+              clientToNodeMap: const {},
+            ),
+            gatewayName: 'M60',
+            systemInfo:
+                buildSystemInfo(modelName: 'M60', hostName: 'DeviceInfoName'),
+          ).master;
+
+      expect(masterWith(rowHostName: 'RowName').hostName, 'RowName');
+      expect(masterWith(rowHostName: '').hostName, 'DeviceInfoName',
+          reason:
+              'an empty row host name passes to DeviceInfo\'s, not past it');
     });
 
     // The FWDEV#208 rule matches on the MAC, and Hosts and DataElements are
@@ -2372,8 +2405,48 @@ void main() {
         expect(master.displayName, 'Main router');
       });
 
-      test('with neither, the name is what it is today', () {
+      test('with neither, DeviceInfo.HostName is the name (#1751)', () {
+        // As an agent with no user name shows its host name. The model is the
+        // same on every unit of it, so it does not tell two routers apart.
+        final master = buildMaster(
+            buildSystemInfo(modelName: 'M60', hostName: 'Linksys12345'));
+        expect(master.hostName, 'Linksys12345');
+        expect(master.displayName, 'Linksys12345');
+      });
+
+      test('the user name and FriendlyName still come before the host name',
+          () {
+        expect(
+          buildMaster(buildSystemInfo(
+            userDeviceLocation: 'Office',
+            hostName: 'Linksys12345',
+          )).displayName,
+          'Office',
+        );
+        expect(
+          buildMaster(buildSystemInfo(
+            friendlyName: 'Main router',
+            hostName: 'Linksys12345',
+          )).displayName,
+          'Main router',
+        );
+      });
+
+      test('with no host name either, the model is the name', () {
         final master = buildMaster(buildSystemInfo(modelName: 'M60'));
+        expect(master.displayName, 'M60');
+      });
+
+      test('an empty host name falls through to the model', () {
+        // The service maps "" to null; this guards the builder on its own.
+        // `hostName` is asserted, not only `displayName`: `displayName` skips an
+        // empty host name by itself, so it reads the model either way. The
+        // field is what the rename dialog shows as the name an empty field
+        // falls back to (`detectedName: node.hostName ?? node.model`), and `??`
+        // does not pass over "", so an empty one would leave that hint blank.
+        final master =
+            buildMaster(buildSystemInfo(modelName: 'M60', hostName: ''));
+        expect(master.hostName, 'M60');
         expect(master.displayName, 'M60');
       });
     });

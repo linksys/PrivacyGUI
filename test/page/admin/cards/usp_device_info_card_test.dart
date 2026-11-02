@@ -30,10 +30,10 @@ final _gatewayFallbackDevices = DevicesData(
   ),
 );
 
-Widget _buildTestWidget({String? baseMacAddress}) {
+Widget _buildTestWidget({String? baseMacAddress, DevicesData? devicesData}) {
   return ProviderScope(
     overrides: cardOverrides(
-      devicesData: _gatewayFallbackDevices,
+      devicesData: devicesData ?? _gatewayFallbackDevices,
       systemInfoData: SystemInfoData(
         model: SystemInfoTestData.create(baseMacAddress: baseMacAddress),
       ),
@@ -69,6 +69,43 @@ void main() {
 
       expect(find.text('MAC'), findsNothing);
       expect(find.text('GATEWAY'), findsNothing);
+    });
+  });
+
+  // The headline is the controller's name; the model is a subtitle only when
+  // they differ. Since #1751 a controller nobody named is named by its
+  // DeviceInfo.HostName, not its model, so the card reads two lines where it
+  // read one. `MeshNetworkBuilder` puts the host name in `MasterNode.hostName`
+  // (its tests pin that); this pins what the card makes of it.
+  group('UspDeviceInfoCard — the controller\'s name (#1751)', () {
+    DevicesData masterNamed({String? hostName}) => DevicesData(
+          meshNetwork: MeshNetwork(
+            master: MasterNode(
+              deviceId: 'GATEWAY',
+              model: SystemInfoTestData.defaultModel,
+              hostName: hostName,
+            ),
+          ),
+        );
+
+    testWidgets('a host name is the headline, and the model its subtitle',
+        (tester) async {
+      await tester.pumpWidget(
+          _buildTestWidget(devicesData: masterNamed(hostName: 'Linksys12345')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Linksys12345'), findsOneWidget);
+      expect(find.text(SystemInfoTestData.defaultModel), findsOneWidget,
+          reason: 'the model moves to the subtitle, not off the card');
+    });
+
+    testWidgets('with no host name, the model is the one headline',
+        (tester) async {
+      await tester.pumpWidget(_buildTestWidget(devicesData: masterNamed()));
+      await tester.pumpAndSettle();
+
+      expect(find.text(SystemInfoTestData.defaultModel), findsOneWidget,
+          reason: 'headline only: no subtitle repeats it');
     });
   });
 }
