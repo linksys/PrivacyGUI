@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
@@ -46,18 +47,18 @@ class LanDataNotifier extends AsyncNotifier<LanData> {
 
   @override
   Future<LanData> build() async {
-    // A rebuild (the Local Network save's invalidate) supersedes any push in
-    // flight, as in dhcp_data_provider.
+    // A rebuild (the Local Network save's invalidate, or instant_safety's)
+    // supersedes any push in flight, as in dhcp_data_provider.
     _pushGeneration++;
     _debounce?.cancel();
 
-    // A LAN subnet change moves the pool after the Set has returned, so the
-    // post-save read can hold the old range; the router then pushes the range
-    // it settled on (PrivacyGUI#1729). The LAN address itself has no domain:
-    // a mask change also moves Pool.{i}.SubnetMask, which is a pool push.
+    // A LAN subnet change moves the pool after the Set has returned; the
+    // router then pushes the range it settled on (PrivacyGUI#1729). The LAN
+    // address itself has no domain: a mask change also moves
+    // Pool.{i}.SubnetMask, which is a pool push.
     ref.listen(sseInvalidationProvider, (_, next) {
-      if (next.valueOrNull?.domain == InvalidationDomain.lanDhcpPool) {
-        _debouncedRefresh();
+      if (next.valueOrNull?.domain == InvalidationDomain.dhcpPoolSettings) {
+        _debouncedInvalidate();
       }
     });
 
@@ -74,7 +75,7 @@ class LanDataNotifier extends AsyncNotifier<LanData> {
 
   /// One refresh for the burst a pool change pushes (MinAddress, MaxAddress
   /// and SubnetMask arrive together).
-  void _debouncedRefresh() {
+  void _debouncedInvalidate() {
     _debounce?.cancel();
     _debounce =
         Timer(const Duration(milliseconds: 500), () => _refreshFromPush());
@@ -90,11 +91,10 @@ class LanDataNotifier extends AsyncNotifier<LanData> {
       final data = await _fetch();
       if (generation != _pushGeneration) return;
       state = AsyncData(data);
-    } catch (e, st) {
+    } on ServiceError catch (e) {
       logger.w(
           '[USP][LanData] push-triggered refetch failed, keeping previous value',
-          error: e,
-          stackTrace: st);
+          error: e);
     }
   }
 }

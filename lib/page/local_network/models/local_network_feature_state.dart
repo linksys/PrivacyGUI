@@ -30,8 +30,9 @@ class LocalNetworkFeatureState
   /// True when the router IP address specifically changed. This is the trigger
   /// for the post-save redirect + SSE disconnect: only an IP change makes the
   /// old origin unreachable and drops the connection. A subnet-mask-only change
-  /// keeps the same IP, so the current connection survives and normal save
-  /// (await response + re-fetch) applies.
+  /// keeps the same IP, so the connection comes back once the router has
+  /// restarted the LAN; the save then keeps what was sent rather than reading
+  /// back (PrivacyGUI#1729).
   bool get hasIpAddressChange =>
       settings.original.model.ipAddress != settings.current.model.ipAddress;
 

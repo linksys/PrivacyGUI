@@ -258,27 +258,28 @@ void main() {
       );
     });
 
-    test('the pool range and mask → lanDhcpPool', () async {
+    test('the pool range and mask → dhcpPoolSettings', () async {
       // The values a LAN subnet change moves after the Set has returned
       // (PrivacyGUI#1729): MinAddress / MaxAddress follow the new mask late.
       await sendAndExpect(
         'Device.DHCPv4.Server.Pool.4.MinAddress',
-        InvalidationDomain.lanDhcpPool,
+        InvalidationDomain.dhcpPoolSettings,
       );
       await sendAndExpect(
         'Device.DHCPv4.Server.Pool.4.MaxAddress',
-        InvalidationDomain.lanDhcpPool,
+        InvalidationDomain.dhcpPoolSettings,
       );
       await sendAndExpect(
         'Device.DHCPv4.Server.Pool.4.SubnetMask',
-        InvalidationDomain.lanDhcpPool,
+        InvalidationDomain.dhcpPoolSettings,
       );
     });
 
-    test('other Pool.{i} settings → lanDhcpPool, not the DHCP lists', () async {
+    test('other Pool.{i} settings → dhcpPoolSettings, not the DHCP lists',
+        () async {
       await sendAndExpect(
         'Device.DHCPv4.Server.Pool.4.LeaseTime',
-        InvalidationDomain.lanDhcpPool,
+        InvalidationDomain.dhcpPoolSettings,
       );
     });
 

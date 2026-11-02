@@ -8,11 +8,15 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
+import 'package:privacy_gui/page/local_network/services/usp_lan_data_service.dart';
 
 import '../../../mocks/test_data/local_network_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
+
+class MockUspLanDataService extends Mock implements UspLanDataService {}
 
 void main() {
   late MockUspClient mockUsp;
@@ -62,29 +66,12 @@ void main() {
     stubLan();
   });
 
-  ProviderContainer createContainer({Stream<InvalidationEvent>? sseStream}) {
+  ProviderContainer createContainer() {
     return ProviderContainer(
       overrides: [
         uspClientProvider.overrideWithValue(mockUsp),
-        if (sseStream != null)
-          sseInvalidationProvider.overrideWith((ref) => sseStream),
       ],
     );
-  }
-
-  /// Answers the LAN reads with the pool [range], so a test can move the pool
-  /// between two reads as the router does after a subnet change.
-  void stubPool((String, String) Function() range) {
-    when(() => mockUsp.get(any())).thenAnswer((invocation) async {
-      final (min, max) = range();
-      return LocalNetworkTestData.answer(
-        invocation.positionalArguments[0] as List<String>,
-        lanInterfaceGet: lanInterfaceResponse,
-        lanPoolGet: LocalNetworkTestData.lanPoolResponse(
-            minAddress: min, maxAddress: max),
-        ipv6Addresses: ipv6Response,
-      );
-    });
   }
 
   group('LanDataNotifier', () {
@@ -258,35 +245,75 @@ void main() {
     });
   });
 
-  // PrivacyGUI#1729: after a LAN subnet change the router moves the pool after
-  // the Set has returned, so the post-save read can hold the old range. The
-  // router then pushes the new MinAddress / MaxAddress; this provider must
-  // read again on that push, or it keeps the old range for the session.
+  // PrivacyGUI#1729: a LAN subnet change moves the pool after the Set has
+  // returned, and the router then pushes the settled values. This provider
+  // must read again on that push, or it keeps the pre-save range for the
+  // session. The service is mocked so each read can be held open.
   group('LanDataNotifier — pool push (#1729)', () {
-    test('a lanDhcpPool push reads the pool the router settled on', () {
+    late MockUspLanDataService mockService;
+
+    LanInfoUIModel pool(String min) => LanInfoUIModel(
+          ipAddress: '192.168.1.1',
+          subnetMask: '255.255.255.0',
+          dhcpEnabled: true,
+          minAddress: min,
+          maxAddress: '192.168.1.249',
+        );
+
+    ProviderContainer createServiceContainer(Stream<InvalidationEvent> sse) =>
+        ProviderContainer(overrides: [
+          uspLanDataServiceProvider.overrideWithValue(mockService),
+          sseInvalidationProvider.overrideWith((ref) => sse),
+        ]);
+
+    String? shownMin(ProviderContainer c) =>
+        c.read(lanDataProvider).valueOrNull?.model.minAddress;
+
+    setUp(() => mockService = MockUspLanDataService());
+
+    test('a dhcpPoolSettings push reads the pool the router settled on', () {
       fakeAsync((async) {
-        var range = ('192.168.1.100', '192.168.1.249');
-        stubPool(() => range);
+        var min = '192.168.1.100';
+        when(() => mockService.fetch()).thenAnswer((_) async => pool(min));
         final sse = StreamController<InvalidationEvent>.broadcast();
-        final container = createContainer(sseStream: sse.stream);
+        final container = createServiceContainer(sse.stream);
 
         // A one-shot read, as a page that has since stopped watching: the push
         // must refresh with no listener held (#1615).
         container.read(lanDataProvider);
         async.flushMicrotasks();
-        async.elapse(const Duration(seconds: 1));
-        expect(container.read(lanDataProvider).valueOrNull?.model.minAddress,
-            '192.168.1.100',
+        expect(shownMin(container), '192.168.1.100',
             reason: 'build() must have completed, or this asserts nothing');
 
-        range = ('192.168.0.100', '192.168.0.249');
-        sse.add((domain: InvalidationDomain.lanDhcpPool, seq: 0));
+        min = '192.168.0.100';
+        sse.add((domain: InvalidationDomain.dhcpPoolSettings, seq: 0));
         async.elapse(const Duration(seconds: 1));
 
-        final model = container.read(lanDataProvider).valueOrNull!.model;
-        expect((model.minAddress, model.maxAddress),
-            ('192.168.0.100', '192.168.0.249'));
+        expect(shownMin(container), '192.168.0.100');
+        sse.close();
+        container.dispose();
+      });
+    });
 
+    test('a burst of pool values is read once', () {
+      fakeAsync((async) {
+        when(() => mockService.fetch())
+            .thenAnswer((_) async => pool('192.168.1.100'));
+        final sse = StreamController<InvalidationEvent>.broadcast();
+        final container = createServiceContainer(sse.stream);
+        container.read(lanDataProvider);
+        async.flushMicrotasks();
+        clearInteractions(mockService);
+
+        // MinAddress, MaxAddress and SubnetMask arrive within milliseconds.
+        for (var i = 0; i < 3; i++) {
+          sse.add((domain: InvalidationDomain.dhcpPoolSettings, seq: i));
+          async.elapse(const Duration(milliseconds: 10));
+        }
+        verifyNever(() => mockService.fetch());
+        async.elapse(const Duration(milliseconds: 600));
+
+        verify(() => mockService.fetch()).called(1);
         sse.close();
         container.dispose();
       });
@@ -294,18 +321,18 @@ void main() {
 
     test('a push for another domain does not read the LAN again', () {
       fakeAsync((async) {
-        stubPool(() => ('192.168.1.100', '192.168.1.249'));
+        when(() => mockService.fetch())
+            .thenAnswer((_) async => pool('192.168.1.100'));
         final sse = StreamController<InvalidationEvent>.broadcast();
-        final container = createContainer(sseStream: sse.stream);
+        final container = createServiceContainer(sse.stream);
         container.read(lanDataProvider);
         async.flushMicrotasks();
-        async.elapse(const Duration(seconds: 1));
-        clearInteractions(mockUsp);
+        clearInteractions(mockService);
 
         sse.add((domain: InvalidationDomain.dhcpClients, seq: 0));
         async.elapse(const Duration(seconds: 1));
 
-        verifyNever(() => mockUsp.get(any()));
+        verifyNever(() => mockService.fetch());
         sse.close();
         container.dispose();
       });
@@ -313,21 +340,100 @@ void main() {
 
     test('a failed push read keeps the last range', () {
       fakeAsync((async) {
-        stubPool(() => ('192.168.1.100', '192.168.1.249'));
+        when(() => mockService.fetch())
+            .thenAnswer((_) async => pool('192.168.1.100'));
         final sse = StreamController<InvalidationEvent>.broadcast();
-        final container = createContainer(sseStream: sse.stream);
+        final container = createServiceContainer(sse.stream);
         container.read(lanDataProvider);
         async.flushMicrotasks();
-        async.elapse(const Duration(seconds: 1));
 
-        when(() => mockUsp.get(any()))
-            .thenThrow('Get failed: Transport error: Request timeout');
-        sse.add((domain: InvalidationDomain.lanDhcpPool, seq: 0));
+        when(() => mockService.fetch())
+            .thenThrow(const NetworkError(detail: 'Request timeout'));
+        sse.add((domain: InvalidationDomain.dhcpPoolSettings, seq: 0));
         async.elapse(const Duration(seconds: 1));
 
         final lan = container.read(lanDataProvider);
         expect(lan.hasError, isFalse);
-        expect(lan.valueOrNull?.model.minAddress, '192.168.1.100');
+        expect(shownMin(container), '192.168.1.100');
+        sse.close();
+        container.dispose();
+      });
+    });
+
+    // Ordering, as in firewall_data_provider_test (#1618): a push publishes by
+    // assigning `state`, so two overlapping reads finish in completion order
+    // and an older read could overwrite a newer one.
+    test('the later push wins even when its read completes first', () {
+      fakeAsync((async) {
+        final slow = Completer<LanInfoUIModel>();
+        final fast = Completer<LanInfoUIModel>();
+        var call = 0;
+        when(() => mockService.fetch()).thenAnswer((_) {
+          call++;
+          if (call == 1) return Future.value(pool('192.168.1.100'));
+          return call == 2 ? slow.future : fast.future;
+        });
+        final sse = StreamController<InvalidationEvent>.broadcast();
+        final container = createServiceContainer(sse.stream);
+        container.listen(lanDataProvider, (_, __) {});
+        async.flushMicrotasks();
+
+        // Two pushes past the debounce window: two reads in flight together.
+        sse.add((domain: InvalidationDomain.dhcpPoolSettings, seq: 1));
+        async.elapse(const Duration(milliseconds: 600));
+        sse.add((domain: InvalidationDomain.dhcpPoolSettings, seq: 2));
+        async.elapse(const Duration(milliseconds: 600));
+        expect(call, 3,
+            reason: 'two reads must be in flight, or this proves nothing');
+
+        fast.complete(pool('192.168.2.100'));
+        async.flushMicrotasks();
+        slow.complete(pool('192.168.0.100'));
+        async.flushMicrotasks();
+
+        expect(shownMin(container), '192.168.2.100',
+            reason: 'the older read completed last and must be discarded');
+        sse.close();
+        container.dispose();
+      });
+    });
+
+    // A rebuild (a Local Network save that keeps the mask, or instant_safety)
+    // publishes through build(), so the generation guard must cover it too.
+    test('a rebuild wins over a push already in flight', () {
+      fakeAsync((async) {
+        final pushGate = Completer<LanInfoUIModel>();
+        final rebuildGate = Completer<LanInfoUIModel>();
+        var call = 0;
+        when(() => mockService.fetch()).thenAnswer((_) {
+          call++;
+          if (call == 1) return Future.value(pool('192.168.1.100'));
+          return call == 2 ? pushGate.future : rebuildGate.future;
+        });
+        final sse = StreamController<InvalidationEvent>.broadcast();
+        final container = createServiceContainer(sse.stream);
+        container.listen(lanDataProvider, (_, __) {});
+        async.flushMicrotasks();
+
+        // A push starts, carrying older data, and does not finish yet.
+        sse.add((domain: InvalidationDomain.dhcpPoolSettings, seq: 1));
+        async.elapse(const Duration(milliseconds: 600));
+        expect(call, 2,
+            reason: 'the push must be in flight, or this proves nothing');
+
+        // Something invalidates the provider and reads it back.
+        container.invalidate(lanDataProvider);
+        container.read(lanDataProvider);
+        async.flushMicrotasks();
+        expect(call, 3, reason: 'the rebuild must have started its own read');
+
+        rebuildGate.complete(pool('192.168.2.100'));
+        async.flushMicrotasks();
+        pushGate.complete(pool('192.168.1.100'));
+        async.flushMicrotasks();
+
+        expect(shownMin(container), '192.168.2.100',
+            reason: 'the push started before the rebuild and must be dropped');
         sse.close();
         container.dispose();
       });

@@ -3,7 +3,6 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_feature_state.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_settings.dart';
@@ -34,25 +33,9 @@ class UspLocalNetworkNotifier
 
   @override
   LocalNetworkFeatureState build() {
-    // lanDataProvider re-reads on a pool push: after a LAN subnet change the
-    // router settles the pool after the post-save read (PrivacyGUI#1729). Follow
-    // it while there is nothing of the user's to keep: a page with edits, a
-    // save in flight included, is left as it is. Applied from `next` itself:
-    // inside this callback `lanDataProvider.future` still holds the previous
-    // value, so a fetch() here would read the old range again.
-    ref.listen(lanDataProvider, (_, next) {
-      final data = next.valueOrNull;
-      if (data == null || next.isLoading || state.status.isLoading) return;
-      if (isDirty()) return;
-      final (settings, status) = _fromLanData(data);
-      state = state.copyWith(
-        settings: Preservable(original: settings, current: settings),
-        status: state.status.copyWith(
-          lockedOctetCount: status.lockedOctetCount,
-          validationErrors: const {},
-        ),
-      );
-    });
+    // No SSE listener: a push must not move the page under the user
+    // (constitution Article IV Rule 2). lanDataProvider follows the router's
+    // pool pushes, and the page reads it on entry.
 
     // Synchronous build with loading state; async fetch follows immediately.
     Future.microtask(() => fetch());
@@ -71,7 +54,33 @@ class UspLocalNetworkNotifier
     try {
       // Clone data from the shared data provider (read, not watch).
       final data = await ref.read(lanDataProvider.future);
-      return _fromLanData(data);
+      final lan = data.model;
+      final dnsParts = lan.dnsServers.split(',').map((s) => s.trim()).toList();
+      final uiModel = LocalNetworkUIModel(
+        hostName: lan.hostName,
+        ipAddress: lan.ipAddress,
+        subnetMask: lan.subnetMask,
+        dhcpEnabled: lan.dhcpEnabled,
+        minAddress: lan.minAddress,
+        maxAddress: lan.maxAddress,
+        leaseTimeMinutes: lan.leaseTimeMinutes,
+        dnsServer1: dnsParts.isNotEmpty ? dnsParts[0] : '',
+        dnsServer2: dnsParts.length > 1 ? dnsParts[1] : '',
+        dnsServer3: dnsParts.length > 2 ? dnsParts[2] : '',
+      );
+
+      logger.d('[USP][Network][LAN]: Fetched — '
+          'ip: ${uiModel.ipAddress}, '
+          'dhcp: ${uiModel.dhcpEnabled}, '
+          'pool: ${uiModel.minAddress}-${uiModel.maxAddress}');
+
+      return (
+        LocalNetworkSettings(model: uiModel),
+        LocalNetworkStatus(
+          isLoading: false,
+          lockedOctetCount: _svc.lockedOctetCount(uiModel.subnetMask),
+        ),
+      );
     } on ServiceError catch (e) {
       logger.e('[USP][Network][LAN]: Fetch failed', error: e);
       return (
@@ -81,50 +90,20 @@ class UspLocalNetworkNotifier
     }
   }
 
-  /// The page's settings and status for the LAN data [data].
-  (LocalNetworkSettings, LocalNetworkStatus) _fromLanData(LanData data) {
-    final lan = data.model;
-    final dnsParts = lan.dnsServers.split(',').map((s) => s.trim()).toList();
-    final uiModel = LocalNetworkUIModel(
-      hostName: lan.hostName,
-      ipAddress: lan.ipAddress,
-      subnetMask: lan.subnetMask,
-      dhcpEnabled: lan.dhcpEnabled,
-      minAddress: lan.minAddress,
-      maxAddress: lan.maxAddress,
-      leaseTimeMinutes: lan.leaseTimeMinutes,
-      dnsServer1: dnsParts.isNotEmpty ? dnsParts[0] : '',
-      dnsServer2: dnsParts.length > 1 ? dnsParts[1] : '',
-      dnsServer3: dnsParts.length > 2 ? dnsParts[2] : '',
-    );
-
-    logger.d('[USP][Network][LAN]: Fetched — '
-        'ip: ${uiModel.ipAddress}, '
-        'dhcp: ${uiModel.dhcpEnabled}, '
-        'pool: ${uiModel.minAddress}-${uiModel.maxAddress}');
-
-    return (
-      LocalNetworkSettings(model: uiModel),
-      LocalNetworkStatus(
-        isLoading: false,
-        lockedOctetCount: _svc.lockedOctetCount(uiModel.subnetMask),
-      ),
-    );
-  }
-
   // ---------------------------------------------------------------------------
   // save — override the mixin's default (performSave -> markAsSaved -> refetch)
-  // to special-case a router IP / subnet change, which makes the router
-  // unreachable on this origin.
+  // to special-case a router IP / subnet change, which restarts the LAN and,
+  // for an IP change, makes the router unreachable on this origin.
   // ---------------------------------------------------------------------------
 
   @override
   Future<LocalNetworkFeatureState> save() async {
-    // Detect the IP change BEFORE saving: markAsSaved() below collapses
-    // original into current, so this must be read up front. Only an IP address
-    // change (not a mask-only change) drops the current connection, so that is
-    // the trigger for the redirect + SSE disconnect.
+    // Detect the change BEFORE saving: markAsSaved() below collapses original
+    // into current, so this must be read up front. Only an IP address change
+    // (not a mask-only change) drops the current connection, so that is the
+    // trigger for the redirect + SSE disconnect.
     final ipChanged = state.hasIpAddressChange;
+    final maskChanged = state.hasNetworkChange && !ipChanged;
 
     await performSave();
     markAsSaved();
@@ -147,8 +126,30 @@ class UspLocalNetworkNotifier
       return state;
     }
 
-    // No IP change (e.g. only DHCP or subnet-mask fields changed): the
-    // connection is still alive, so re-fetch so the dashboard card updates too.
+    if (maskChanged) {
+      // A mask change makes the router take the LAN down and back up after
+      // SetResp, and the pool settles only once it is back (PrivacyGUI#1729,
+      // bench 2026-11-02: the LAN went down ~3 s after the Set, the pool
+      // settled ~8 s after it). A read inside that window holds the old or a
+      // half-converted range, or fails, so it is not made: the page stays on
+      // what was sent, which the Set reported stored. A write that restarts
+      // what it wrote is not read back in save() (dirty guard guide).
+      //
+      // The guide's other half, reading back once the router has recovered,
+      // is deliberately not done: the app cannot tell when the LAN restart is
+      // over. A probe answers before the LAN even goes down, so it would read
+      // the half-converted range this branch exists to avoid. Instead the
+      // router reports the settled values itself: its pool push (which a mask
+      // change always sends, as Pool.{i}.SubnetMask) re-reads
+      // lanDataProvider, and the page shows them on its next entry.
+      //
+      // lanDataProvider is not re-read now either, for the same reason: a read
+      // now would hand every page the half-converted range.
+      return state;
+    }
+
+    // No IP or mask change (e.g. only DHCP fields changed): the LAN keeps
+    // running, so re-fetch so the dashboard card updates too.
     ref.invalidate(lanDataProvider);
     return confirmSaved();
   }

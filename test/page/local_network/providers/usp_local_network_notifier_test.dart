@@ -31,9 +31,6 @@ class _TestLanDataNotifier extends LanDataNotifier {
   int buildCount = 0;
   _TestLanDataNotifier(this._testData, {this.errorToThrow, this.failFromBuild});
 
-  /// What the next build returns, once [push] has moved it.
-  LanData? _pushed;
-
   @override
   Future<LanData> build() async {
     buildCount++;
@@ -42,14 +39,7 @@ class _TestLanDataNotifier extends LanDataNotifier {
     if (from != null && buildCount >= from) {
       throw const NetworkError(detail: 'read failed');
     }
-    return _pushed ?? _testData;
-  }
-
-  /// Publishes [data] as the SSE-driven refresh does: a new value with no
-  /// rebuild.
-  void push(LanData data) {
-    _pushed = data;
-    state = AsyncData(data);
+    return _testData;
   }
 }
 
@@ -319,6 +309,123 @@ void main() {
       container.dispose();
     });
 
+    // PrivacyGUI#1729: a mask change makes the router take the LAN down and
+    // back up after SetResp, and the pool settles only once it is back. A read
+    // inside that window holds the old or a half-converted range, or fails.
+    // So the save does not read back: the page stays on what was sent.
+    test('save on mask change shows what was sent and does not read back',
+        () async {
+      when(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+          )).thenAnswer((_) async {});
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      final lanNotifier =
+          container.read(lanDataProvider.notifier) as _TestLanDataNotifier;
+
+      final notifier = container.read(uspLocalNetworkProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(
+            subnetMask: '255.255.0.0',
+            minAddress: '192.168.2.100',
+            maxAddress: '192.168.2.249',
+          ));
+      await notifier.save();
+      await Future.delayed(Duration.zero);
+
+      // A read would have put the router's pre-save /24 back on the page.
+      final state = container.read(uspLocalNetworkProvider);
+      final shown = state.settings.current.model;
+      expect((shown.subnetMask, shown.minAddress, shown.maxAddress),
+          ('255.255.0.0', '192.168.2.100', '192.168.2.249'));
+      expect(state.isDirty, isFalse);
+      // L1 is left for the router's pool push: re-read now, it would hold the
+      // half-converted range for every page that reads it.
+      expect(lanNotifier.buildCount, 1);
+      // The connection comes back after the LAN does, so SSE stays up.
+      verifyNever(() => mockSseManager.disconnect());
+      container.dispose();
+    });
+
+    test('a mask change saved with other fields shows all of them as sent',
+        () async {
+      when(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+          )).thenAnswer((_) async {});
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspLocalNetworkProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(
+            subnetMask: '255.255.0.0',
+            hostName: 'NewRouter',
+            dnsServer1: '9.9.9.9',
+          ));
+      final lanNotifier =
+          container.read(lanDataProvider.notifier) as _TestLanDataNotifier;
+      await notifier.save();
+      await Future.delayed(Duration.zero);
+
+      final state = container.read(uspLocalNetworkProvider);
+      final shown = state.settings.current.model;
+      expect((shown.subnetMask, shown.hostName, shown.dnsServer1),
+          ('255.255.0.0', 'NewRouter', '9.9.9.9'));
+      expect(state.isDirty, isFalse);
+      expect(lanNotifier.buildCount, 1);
+      verifyNever(() => mockSseManager.disconnect());
+      container.dispose();
+    });
+
+    test('a mask change the router refuses outright keeps the edits too',
+        () async {
+      when(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+          )).thenThrow(const UspCompleteFailureError(
+        summary: 'mask rejected',
+        failures: [],
+      ));
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspLocalNetworkProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(subnetMask: '255.255.0.0'));
+      await expectLater(
+          notifier.save(), throwsA(isA<UspCompleteFailureError>()));
+
+      final state = container.read(uspLocalNetworkProvider);
+      expect(state.isDirty, isTrue);
+      expect(state.settings.current.model.subnetMask, '255.255.0.0');
+      container.dispose();
+    });
+
+    test('a refused mask change keeps the edits and stays dirty', () async {
+      when(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+          )).thenThrow(const UspPartialFailureError(
+        summary: 'DNS rejected',
+        successPaths: ['Device.IP.Interface.1.IPv4Address.1.SubnetMask'],
+        failures: [],
+      ));
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspLocalNetworkProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(
+            subnetMask: '255.255.0.0',
+            dnsServer1: 'bad',
+          ));
+      await expectLater(
+          notifier.save(), throwsA(isA<UspPartialFailureError>()));
+
+      final state = container.read(uspLocalNetworkProvider);
+      expect(state.isDirty, isTrue);
+      expect(state.settings.current.model.subnetMask, '255.255.0.0');
+      container.dispose();
+    });
+
     // #1212 / #1279: this page sequences its own save, so it must still hand
     // the read-back to the framework's rule rather than call fetch() itself.
     test(
@@ -341,79 +448,6 @@ void main() {
       expect(state.status.error, isNull);
       expect(state.settings.current.model.dnsServer1, '9.9.9.9');
       expect(state.isDirty, isFalse);
-      container.dispose();
-    });
-  });
-
-  // PrivacyGUI#1729: the router settles the pool after the post-save read, and
-  // lanDataProvider learns of it from the pool push. The page must follow, or
-  // it keeps showing the range it read too early.
-  group('UspLocalNetworkNotifier — follows the LAN data (#1729)', () {
-    LanData withPool(String min, String max) => LanData(
-          model: LanInfoUIModel(
-            hostName: 'MyRouter',
-            ipAddress: '192.168.1.1',
-            subnetMask: '255.255.255.0',
-            dhcpEnabled: true,
-            minAddress: min,
-            maxAddress: max,
-            leaseTimeMinutes: 1440,
-            dnsServers: '1.1.1.1,8.8.8.8',
-          ),
-        );
-
-    LocalNetworkUIModel shown(ProviderContainer c) =>
-        c.read(uspLocalNetworkProvider).settings.current.model;
-
-    test('a clean page shows the range the LAN data moves to', () async {
-      final container = createContainer();
-      await Future.delayed(Duration.zero);
-
-      (container.read(lanDataProvider.notifier) as _TestLanDataNotifier)
-          .push(withPool('192.168.0.100', '192.168.0.249'));
-      await Future.delayed(Duration.zero);
-
-      final state = container.read(uspLocalNetworkProvider);
-      expect((shown(container).minAddress, shown(container).maxAddress),
-          ('192.168.0.100', '192.168.0.249'));
-      expect(state.isDirty, isFalse,
-          reason: 'what the router holds is the page\'s original too');
-      container.dispose();
-    });
-
-    test('a page with unsaved edits keeps them', () async {
-      final container = createContainer();
-      await Future.delayed(Duration.zero);
-      final notifier = container.read(uspLocalNetworkProvider.notifier);
-      notifier.updateSetting((m) => m.copyWith(minAddress: '192.168.1.120'));
-
-      (container.read(lanDataProvider.notifier) as _TestLanDataNotifier)
-          .push(withPool('192.168.0.100', '192.168.0.249'));
-      await Future.delayed(Duration.zero);
-
-      expect(shown(container).minAddress, '192.168.1.120');
-      expect(container.read(uspLocalNetworkProvider).isDirty, isTrue);
-      container.dispose();
-    });
-
-    test('after a save, the page follows a later push', () async {
-      when(() => mockService.save(
-            original: any(named: 'original'),
-            pending: any(named: 'pending'),
-          )).thenAnswer((_) async {});
-      final container = createContainer();
-      await Future.delayed(Duration.zero);
-      final notifier = container.read(uspLocalNetworkProvider.notifier);
-      notifier.updateSetting((m) => m.copyWith(subnetMask: '255.255.0.0'));
-      await notifier.save();
-
-      // The post-save read held the old range; the push brings the new one.
-      (container.read(lanDataProvider.notifier) as _TestLanDataNotifier)
-          .push(withPool('192.168.0.100', '192.168.0.249'));
-      await Future.delayed(Duration.zero);
-
-      expect(shown(container).minAddress, '192.168.0.100');
-      expect(container.read(uspLocalNetworkProvider).isDirty, isFalse);
       container.dispose();
     });
   });

@@ -147,7 +147,7 @@ InvalidationDomain? _mapToDomain(
   // dhcp-clients-02, which subscribes the whole `Device.DHCPv4.Server.Pool.`
   // table: narrowing that subscription to the Client table drops it.
   if (path.startsWith('Device.DHCPv4.Server.Pool.')) {
-    return InvalidationDomain.lanDhcpPool;
+    return InvalidationDomain.dhcpPoolSettings;
   }
   if (path.startsWith('Device.Routing.Router.') &&
       path.contains('IPv4Forwarding')) {
