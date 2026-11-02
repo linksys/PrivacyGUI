@@ -477,8 +477,12 @@ class UspNodeDetailView extends ConsumerWidget {
                       children: [
                         AppText.labelSmall(loc(context).connectedTo,
                             color: colorScheme.onSurfaceVariant),
+                        // The parent by the name the rest of the app gives it
+                        // (#1751), not its model: renamed, the page above
+                        // says the new name, and Topology and the parent's
+                        // own page do too. Its model is on its own page.
                         AppText.bodyMedium(
-                            '${parentNode.isMaster ? loc(context).master : loc(context).slave} (${parentNode.model})'),
+                            '${parentNode.isMaster ? loc(context).master : loc(context).slave} (${parentNode.displayName})'),
                       ],
                     ),
                   ),
