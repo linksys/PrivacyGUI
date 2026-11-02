@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
+import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_feature_state.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_settings.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_status.dart';
@@ -104,6 +108,7 @@ class UspLocalNetworkNotifier
     // trigger for the redirect + SSE disconnect.
     final ipChanged = state.hasIpAddressChange;
     final maskChanged = state.hasNetworkChange && !ipChanged;
+    final hostNameChanged = state.hasHostNameChange;
 
     await performSave();
     markAsSaved();
@@ -124,6 +129,20 @@ class UspLocalNetworkNotifier
       //    succeeded. The redirect dialog is the only valid next step.
       await ref.read(sseManagerProvider)?.disconnect();
       return state;
+    }
+
+    // The host name is also the controller's name when nobody has named it
+    // (#1751), and that comes through system info into the master node, which
+    // this page's LAN read does not refresh. Refresh both, as the router rename
+    // does. The order holds without awaiting here: the devices refetch awaits
+    // `systemInfoDataProvider.future` (`_readEnrichment`), which after the
+    // invalidate is the new read. Not awaited, so the save confirms as before.
+    // Done for a mask change too: the SET has stored the host name, and these
+    // reads run in the background, so one that meets the LAN restart only
+    // fails.
+    if (hostNameChanged) {
+      ref.invalidate(systemInfoDataProvider);
+      unawaited(ref.read(devicesDataProvider.notifier).refetch());
     }
 
     if (maskChanged) {
