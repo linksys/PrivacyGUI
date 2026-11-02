@@ -141,6 +141,40 @@ class PnpNotifier extends Notifier<PnpState> {
     }
   }
 
+  /// Reads the mesh nodes again, for the Your Network step after an add (#1734).
+  ///
+  /// Replaces [WizardConfiguring.meshNodes] and nothing else: the Wi-Fi the
+  /// customer has typed stays in the form. The phase stays [WizardConfiguring],
+  /// which [PnpEntryView] does not navigate on, so the stepper keeps its step.
+  ///
+  /// An empty answer keeps the list it had. The controller is always a row of
+  /// its own DataElements, so a network that had nodes and reads none has not
+  /// lost them: [PnpService.fetchMeshTopology] answers a failed read with an
+  /// empty topology rather than throwing.
+  ///
+  /// Does nothing outside [WizardConfiguring], and drops its answer if the
+  /// phase moved on while the read was out — a Save pressed in the meantime
+  /// owns the phase.
+  Future<void> refreshMeshNodes() async {
+    if (state.phase is! WizardConfiguring) return;
+    final mesh = await _svc.fetchMeshTopology();
+    final phase = state.phase;
+    if (phase is! WizardConfiguring) return;
+    if (mesh.nodes.isEmpty) {
+      logger.w('[PnP] Mesh re-read returned no nodes; keeping the '
+          '${phase.meshNodes.length} the step showed');
+      return;
+    }
+    // A new phase without saveError, like every edit: an error the customer
+    // already saw must not be shown again by the view's listener.
+    state = state.copyWith(
+      phase: WizardConfiguring(
+        wifiConfig: phase.wifiConfig,
+        meshNodes: mesh.nodes,
+      ),
+    );
+  }
+
   // ─── Form Updates ────────────────────────────────────────
 
   void updateWifiSsid(String ssid) {

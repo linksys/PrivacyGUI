@@ -35,10 +35,13 @@ void main() {
 
       test('numeric fields default to zero', () {
         expect(form.idleDisconnectTime, 0);
-        expect(form.lcpEchoInterval, 0);
         expect(form.vlanId, 0);
         expect(form.mtu, 0);
         expect(form.ipv6rdIpv4MaskLength, 0);
+      });
+
+      test('the Keep Alive interval defaults to 30 s, 1.0\'s default', () {
+        expect(form.lcpEchoInterval, 30);
       });
 
       test('boolean fields default to false', () {

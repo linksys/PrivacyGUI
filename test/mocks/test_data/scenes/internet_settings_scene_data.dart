@@ -77,6 +77,91 @@ const bridgeForm = UspInternetSettingsForm(
   vlanId: 0,
 );
 
+/// PPTP over a static underlay (1.0 useStaticSettings), Keep Alive.
+const pptpStaticUnderlayForm = UspInternetSettingsForm(
+  connectionType: UspWanConnectionType.pptp,
+  serverAddress: '203.0.113.10',
+  underlayStatic: true,
+  underlayIpAddress: '198.51.100.10',
+  underlaySubnetMask: '255.255.255.0',
+  underlayGateway: '198.51.100.1',
+  underlayDns1: '8.8.8.8',
+  underlayDns2: '8.8.4.4',
+  underlayDns3: '1.1.1.1',
+  pppUsername: 'vpnuser',
+  pppPassword: 'secret123',
+  connectionTrigger: 'AlwaysOn',
+  lcpEchoInterval: 30,
+  mtu: 1460,
+  wanMacAddress: 'AA:BB:CC:DD:EE:FF',
+);
+
+/// L2TP on demand, idle time in minutes; L2TP offers no underlay.
+const l2tpOnDemandForm = UspInternetSettingsForm(
+  connectionType: UspWanConnectionType.l2tp,
+  serverAddress: '203.0.113.20',
+  pppUsername: 'vpnuser',
+  pppPassword: 'secret123',
+  connectionTrigger: 'OnDemand',
+  idleDisconnectTime: 15,
+  mtu: 1460,
+  wanMacAddress: 'AA:BB:CC:DD:EE:FF',
+);
+
+/// Static IP with every field the page checks failing at once (netmngr 036):
+/// a reserved IP, a mask that is not contiguous, an empty gateway, an empty
+/// DNS 1, a reserved DNS 2 and a malformed DNS 3.
+final staticIpValidationErrorForm = staticIpForm.copyWith(
+  staticIpAddress: '127.0.0.1',
+  subnetMask: '255.0.255.0',
+  defaultGateway: '',
+  dnsServer1: '',
+  dnsServer2: '224.0.0.1',
+  dnsServer3: 'bad',
+);
+
+/// PPTP over DHCP, the underlay switch off.
+final pptpDhcpUnderlayForm =
+    pptpStaticUnderlayForm.copyWith(underlayStatic: false);
+
+/// L2TP on Keep Alive, read-only.
+final l2tpKeepAliveForm = l2tpOnDemandForm.copyWith(
+    connectionTrigger: 'AlwaysOn', lcpEchoInterval: 60);
+
+/// PPTP with WAN VLAN tagging on, which the tunnel block draws as a field.
+final pptpVlanForm =
+    pptpDhcpUnderlayForm.copyWith(vlanEnabled: true, vlanId: 100);
+
+/// L2TP with WAN VLAN tagging on, drawn as a read-only row.
+final l2tpVlanForm = l2tpKeepAliveForm.copyWith(vlanEnabled: true, vlanId: 100);
+
+/// PPPoE in edit mode shows the Keep Alive interval as a field.
+final pppoeKeepAliveForm = pppoeForm.copyWith(lcpEchoInterval: 30);
+
+/// Every PPTP field the page checks fails at once: a hostname server, an
+/// empty user name and password, an interval below 20, and a static underlay
+/// with a bad IP, mask, gateway and DNS. The gateway is reserved, since with
+/// no valid IP and mask there is no subnet to check it against.
+final pptpValidationErrorForm = pptpStaticUnderlayForm.copyWith(
+  serverAddress: 'vpn.example.com',
+  pppUsername: '',
+  pppPassword: '',
+  lcpEchoInterval: 10,
+  underlayIpAddress: '127.0.0.1',
+  underlaySubnetMask: '255.0.255.0',
+  underlayGateway: '0.0.0.1',
+  underlayDns1: '',
+  underlayDns2: '224.0.0.1',
+  underlayDns3: 'bad',
+);
+
+/// On Demand with an idle time over 9999 minutes, and a reserved server.
+final l2tpValidationErrorOnDemandForm = l2tpOnDemandForm.copyWith(
+  serverAddress: '0.0.0.1',
+  pppUsername: 'a' * 256,
+  idleDisconnectTime: 10000,
+);
+
 const ipv6EnabledForm = UspInternetSettingsForm(
   connectionType: UspWanConnectionType.dhcp,
   mtu: 1500,

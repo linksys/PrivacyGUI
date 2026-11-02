@@ -5,7 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/pwa/pwa_install_service.dart';
 import 'package:privacy_gui/route/constants.dart';
 
-const List<String> idleCheckWhiteList = [RouteNamed.addNodes];
+/// Routes the idle logout skips: a BLE onboarding session can outlast the idle
+/// window, and logging out mid-session would leave it running unwatched
+/// (REQ-2a). One per entry into the add-nodes flow (#879, #1734).
+const List<String> idleCheckWhiteList = [
+  RouteNamed.addNodes,
+  RouteNamed.pnpAddNodes,
+];
 
 /// Watches for user activity and calls [onIdle] once [idleTime] passes without
 /// any.
