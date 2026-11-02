@@ -1281,6 +1281,8 @@
   "semanticRolePinInput": "PIN 輸入",
   "semanticRoleRadio": "選項按鈕",
   "semanticRoleSwitch": "開關",
+  "semanticRoleShowPassword": "顯示密碼",
+  "semanticRoleHidePassword": "隱藏密碼",
   "nodeActions": "節點操作",
   "rebootMeshMessage": "路由器及您網狀網路中的每個節點都將重新啟動。網路恢復前，所有已連線的裝置都會中斷連線。",
   "factoryResetMeshMessage": "路由器及您網狀網路中的每個節點都將恢復原廠設定，Wi-Fi 與路由器密碼也會還原為路由器標籤上所印的預設值。之後每個節點都必須重新設定。",
@@ -1296,6 +1298,7 @@
   "nodeActionSkippedNodes": "下列節點不支援此命令，因此不會收到該命令，但在其連線所經過的節點離線期間，這些節點也會中斷連線：{nodes}。",
   "nodeActionNotConfirmed": "{node} 未確認此命令。該節點仍可能會執行此命令，因此請先檢視拓撲再重試。",
   "nodeActionNodeGone": "{node} 已不在您的網路中。",
+  "macWillBeAddedAs": "將新增為 {mac}",
   "valueOutOfRange": "必須介於 {min} 和 {max} 之間",
   "maxCharacters": "最多 {max} 個字元",
   "invalidSubnetMask": "子網路遮罩不正確"
