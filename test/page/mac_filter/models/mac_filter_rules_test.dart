@@ -129,5 +129,33 @@ void main() {
         expect(MacFilterRules.macContains(mac, query), isFalse, reason: query);
       }
     });
+
+    // Round 2 (lens E): an IP query must not be read as MAC digits, even when
+    // a MAC happens to contain those digits.
+    test('false for an IP-shaped query, even one whose digits the MAC has', () {
+      const ipLikeMac = '19:21:68:11:6A:BC';
+      for (final query in [
+        '192.',
+        '192.168',
+        '192.168.',
+        '192.168.1',
+        '192.168.1.16',
+        '10.0',
+      ]) {
+        expect(MacFilterRules.macContains(ipLikeMac, query), isFalse,
+            reason: query);
+      }
+      expect(MacFilterRules.macContains('10:00:BB:CC:DD:EE', '10.0'), isFalse);
+    });
+
+    test('a dotted MAC fragment and bare digits are still MAC queries', () {
+      const ipLikeMac = '19:21:68:11:6A:BC';
+      // Four-digit groups are the dotted MAC spelling, not an IP.
+      expect(MacFilterRules.macContains(ipLikeMac, '1921.6811'), isTrue);
+      // Digits with no `.` cannot be told apart from a MAC fragment (#1059).
+      expect(MacFilterRules.macContains(ipLikeMac, '192168'), isTrue);
+      expect(MacFilterRules.macContains(ipLikeMac, '19:21'), isTrue);
+      expect(MacFilterRules.macContains(ipLikeMac, '19-21-68'), isTrue);
+    });
   });
 }
