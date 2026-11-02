@@ -1,4 +1,5 @@
-@Tags(['ui'])
+// Untagged (not `ui`) so `run_tests.sh`, and with it CI's Unit Tests job, runs
+// this suite: it is AC2's guard inside the dialog (linksys/PrivacyGUI#1698).
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';

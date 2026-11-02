@@ -1,4 +1,5 @@
-@Tags(['ui'])
+// Untagged (not `ui`) so `run_tests.sh`, and with it CI's Unit Tests job, runs
+// this suite: it is AC3's message mapping (linksys/PrivacyGUI#1698).
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
