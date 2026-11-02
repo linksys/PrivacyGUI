@@ -1269,6 +1269,8 @@
   "semanticRolePinInput": "Nhập mã PIN",
   "semanticRoleRadio": "Nút radio",
   "semanticRoleSwitch": "Công tắc",
+  "semanticRoleShowPassword": "Hiện mật khẩu",
+  "semanticRoleHidePassword": "Ẩn mật khẩu",
   "nodeActions": "Thao tác với nút",
   "rebootMeshMessage": "Router và mọi nút trong mạng mesh của bạn sẽ khởi động lại. Tất cả thiết bị được kết nối sẽ bị ngắt kết nối cho đến khi mạng hoạt động trở lại.",
   "factoryResetMeshMessage": "Router và mọi nút trong mạng mesh của bạn sẽ được khôi phục cài đặt gốc, bao gồm mật khẩu Wi-Fi và mật khẩu router in trên nhãn của router. Sau đó, mọi nút đều phải được thiết lập lại.",

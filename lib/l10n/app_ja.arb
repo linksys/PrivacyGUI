@@ -1354,6 +1354,8 @@
   "semanticRolePinInput": "PIN 入力",
   "semanticRoleRadio": "ラジオボタン",
   "semanticRoleSwitch": "スイッチ",
+  "semanticRoleShowPassword": "パスワードを表示",
+  "semanticRoleHidePassword": "パスワードを非表示",
   "nodeActions": "ノードの操作",
   "rebootMeshMessage": "ルーターとメッシュ内のすべてのノードが再起動します。ネットワークが復旧するまで、接続中のすべてのデバイスは切断されます。",
   "factoryResetMeshMessage": "ルーターとメッシュ内のすべてのノードが工場出荷時設定にリセットされ、WiFiパスワードとルーターパスワードもルーターのラベルに記載されている値に戻ります。その後、すべてのノードを再度セットアップする必要があります。",

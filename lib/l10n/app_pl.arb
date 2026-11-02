@@ -1269,6 +1269,8 @@
   "semanticRolePinInput": "Wprowadzanie PIN",
   "semanticRoleRadio": "Przycisk opcji",
   "semanticRoleSwitch": "Przełącznik",
+  "semanticRoleShowPassword": "Pokaż hasło",
+  "semanticRoleHidePassword": "Ukryj hasło",
   "nodeActions": "Działania węzła",
   "rebootMeshMessage": "Router i wszystkie węzły w Twojej sieci mesh zostaną uruchomione ponownie. Wszystkie podłączone urządzenia zostaną odłączone do czasu przywrócenia sieci.",
   "factoryResetMeshMessage": "W routerze i wszystkich węzłach Twojej sieci mesh zostaną przywrócone ustawienia fabryczne, w tym hasło WiFi i routera podane na etykiecie routera. Następnie każdy węzeł trzeba będzie ponownie skonfigurować.",

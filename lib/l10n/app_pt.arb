@@ -1269,6 +1269,8 @@
   "semanticRolePinInput": "Entrada de PIN",
   "semanticRoleRadio": "Botão de opção",
   "semanticRoleSwitch": "Interruptor",
+  "semanticRoleShowPassword": "Mostrar senha",
+  "semanticRoleHidePassword": "Ocultar senha",
   "nodeActions": "Ações do nó",
   "rebootMeshMessage": "O roteador e todos os nós da sua rede de malha serão reiniciados. Todos os dispositivos conectados ficarão desconectados até que a rede volte.",
   "factoryResetMeshMessage": "O roteador e todos os nós da sua rede de malha serão redefinidos para as configurações de fábrica, incluindo a senha do WiFi e do roteador impressa na etiqueta do roteador. Depois, cada nó precisará ser configurado novamente.",

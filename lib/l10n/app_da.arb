@@ -1269,6 +1269,8 @@
   "semanticRolePinInput": "PIN-indtastning",
   "semanticRoleRadio": "Alternativknap",
   "semanticRoleSwitch": "Kontakt",
+  "semanticRoleShowPassword": "Vis adgangskode",
+  "semanticRoleHidePassword": "Skjul adgangskode",
   "nodeActions": "Nodehandlinger",
   "rebootMeshMessage": "Routeren og alle noder i dit mesh-netværk genstarter. Alle tilsluttede enheder afbrydes, indtil netværket er tilbage.",
   "factoryResetMeshMessage": "Routeren og alle noder i dit mesh-netværk nulstilles til fabriksindstillingerne, herunder WiFi- og routeradgangskoden, der står på routerens etiket. Derefter skal alle noder konfigureres igen.",

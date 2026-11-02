@@ -1269,6 +1269,8 @@
   "semanticRolePinInput": "Inserimento PIN",
   "semanticRoleRadio": "Pulsante di opzione",
   "semanticRoleSwitch": "Interruttore",
+  "semanticRoleShowPassword": "Mostra password",
+  "semanticRoleHidePassword": "Nascondi password",
   "nodeActions": "Azioni del nodo",
   "rebootMeshMessage": "Il router e tutti i nodi della tua rete mesh si riavvieranno. Tutti i dispositivi connessi verranno disconnessi finché la rete non sarà di nuovo disponibile.",
   "factoryResetMeshMessage": "Il router e tutti i nodi della tua rete mesh verranno ripristinati alle impostazioni di fabbrica, inclusa la password WiFi e del router riportata sull'etichetta del router. Successivamente, ogni nodo dovrà essere configurato di nuovo.",

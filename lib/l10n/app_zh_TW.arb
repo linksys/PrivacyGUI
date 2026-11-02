@@ -1269,6 +1269,8 @@
   "semanticRolePinInput": "PIN 輸入",
   "semanticRoleRadio": "選項按鈕",
   "semanticRoleSwitch": "開關",
+  "semanticRoleShowPassword": "顯示密碼",
+  "semanticRoleHidePassword": "隱藏密碼",
   "nodeActions": "節點操作",
   "rebootMeshMessage": "路由器及您網狀網路中的每個節點都將重新啟動。網路恢復前，所有已連線的裝置都會中斷連線。",
   "factoryResetMeshMessage": "路由器及您網狀網路中的每個節點都將恢復原廠設定，Wi-Fi 與路由器密碼也會還原為路由器標籤上所印的預設值。之後每個節點都必須重新設定。",

@@ -1269,6 +1269,8 @@
   "semanticRolePinInput": "PIN-koodin syöttö",
   "semanticRoleRadio": "Valintanappi",
   "semanticRoleSwitch": "Kytkin",
+  "semanticRoleShowPassword": "Näytä salasana",
+  "semanticRoleHidePassword": "Piilota salasana",
   "nodeActions": "Solmun toiminnot",
   "rebootMeshMessage": "Reititin ja kaikki mesh-verkkosi solmut käynnistyvät uudelleen. Kaikkien yhdistettyjen laitteiden yhteys katkeaa, kunnes verkko on taas käytettävissä.",
   "factoryResetMeshMessage": "Reititin ja kaikki mesh-verkkosi solmut palautetaan tehdasasetuksiin, mukaan lukien reitittimen tarrassa näkyvä WiFi- ja reititinsalasana. Sen jälkeen jokainen solmu on määritettävä uudelleen.",

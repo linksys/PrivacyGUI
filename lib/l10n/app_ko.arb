@@ -1269,6 +1269,8 @@
   "semanticRolePinInput": "PIN 입력",
   "semanticRoleRadio": "라디오 버튼",
   "semanticRoleSwitch": "스위치",
+  "semanticRoleShowPassword": "암호 표시",
+  "semanticRoleHidePassword": "암호 숨기기",
   "nodeActions": "노드 작업",
   "rebootMeshMessage": "라우터와 메시 네트워크의 모든 노드가 재부팅됩니다. 네트워크가 복구될 때까지 연결된 모든 장치의 연결이 끊어집니다.",
   "factoryResetMeshMessage": "라우터와 메시 네트워크의 모든 노드가 공장 초기화되며, WiFi 및 라우터 암호도 라우터 라벨에 표시된 기본값으로 돌아갑니다. 이후 모든 노드를 다시 설정해야 합니다.",

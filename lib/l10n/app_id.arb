@@ -1269,6 +1269,8 @@
   "semanticRolePinInput": "Input PIN",
   "semanticRoleRadio": "Tombol radio",
   "semanticRoleSwitch": "Sakelar",
+  "semanticRoleShowPassword": "Tampilkan kata sandi",
+  "semanticRoleHidePassword": "Sembunyikan kata sandi",
   "nodeActions": "Tindakan Node",
   "rebootMeshMessage": "Router dan semua node di jaringan mesh Anda akan dimulai ulang. Semua perangkat yang tersambung akan terputus hingga jaringan kembali.",
   "factoryResetMeshMessage": "Router dan semua node di jaringan mesh Anda akan dikembalikan ke pengaturan pabrik, termasuk kata sandi WiFi dan router yang tercetak pada label router. Setelah itu, setiap node harus disiapkan ulang.",

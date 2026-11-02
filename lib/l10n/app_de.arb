@@ -1269,6 +1269,8 @@
   "semanticRolePinInput": "PIN-Eingabe",
   "semanticRoleRadio": "Optionsfeld",
   "semanticRoleSwitch": "Schalter",
+  "semanticRoleShowPassword": "Passwort anzeigen",
+  "semanticRoleHidePassword": "Passwort ausblenden",
   "nodeActions": "Knotenaktionen",
   "rebootMeshMessage": "Der Router und alle Knoten in Ihrem Mesh werden neu gestartet. Alle verbundenen Geräte werden getrennt, bis das Netzwerk wieder verfügbar ist.",
   "factoryResetMeshMessage": "Der Router und alle Knoten in Ihrem Mesh werden auf die Werkseinstellungen zurückgesetzt, einschließlich des WLAN- und Router-Passworts auf dem Etikett des Routers. Anschließend muss jeder Knoten neu eingerichtet werden.",

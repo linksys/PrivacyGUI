@@ -1269,6 +1269,8 @@
   "semanticRolePinInput": "Saisie du NIP",
   "semanticRoleRadio": "Bouton radio",
   "semanticRoleSwitch": "Interrupteur",
+  "semanticRoleShowPassword": "Afficher le mot de passe",
+  "semanticRoleHidePassword": "Masquer le mot de passe",
   "nodeActions": "Actions du nœud",
   "rebootMeshMessage": "Le routeur et tous les nœuds de votre réseau maillé redémarreront. Tous les appareils connectés seront déconnectés jusqu'au rétablissement du réseau.",
   "factoryResetMeshMessage": "Le routeur et tous les nœuds de votre réseau maillé seront réinitialisés aux paramètres d'usine, y compris le mot de passe WiFi et du routeur indiqué sur l'étiquette du routeur. Chaque nœud devra ensuite être configuré de nouveau.",
