@@ -1298,5 +1298,8 @@
   "nodeActionNodeGone": "{node} já não está na sua rede.",
   "valueOutOfRange": "Tem de estar entre {min} e {max}",
   "maxCharacters": "No máximo {max} carateres",
-  "invalidSubnetMask": "Máscara de sub-rede inválida"
+  "invalidSubnetMask": "Máscara de sub-rede inválida",
+  "reservationNameHint": "Nome (opcional)",
+  "reservationNameInvalid": "Utilize letras, algarismos e -, sem - no início ou no fim",
+  "reservationNameInUse": "Outra reserva já tem este nome"
 }

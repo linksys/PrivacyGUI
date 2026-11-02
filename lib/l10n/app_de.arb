@@ -1298,5 +1298,8 @@
   "nodeActionNodeGone": "{node} ist nicht mehr in Ihrem Netzwerk.",
   "valueOutOfRange": "Muss zwischen {min} und {max} liegen",
   "maxCharacters": "Höchstens {max} Zeichen",
-  "invalidSubnetMask": "Ungültige Subnetzmaske"
+  "invalidSubnetMask": "Ungültige Subnetzmaske",
+  "reservationNameHint": "Name (optional)",
+  "reservationNameInvalid": "Buchstaben, Ziffern und - verwenden, nicht mit - beginnen oder enden",
+  "reservationNameInUse": "Eine andere Reservierung hat bereits diesen Namen"
 }

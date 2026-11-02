@@ -1383,5 +1383,8 @@
   "nodeActionNodeGone": "{node} はすでにネットワークから外れています。",
   "valueOutOfRange": "{min} から {max} の範囲で入力してください",
   "maxCharacters": "{max} 文字以内",
-  "invalidSubnetMask": "無効なサブネット マスクです。"
+  "invalidSubnetMask": "無効なサブネット マスクです。",
+  "reservationNameHint": "名前 (任意)",
+  "reservationNameInvalid": "英字、数字、- を使用し、先頭と末尾に - は使えません",
+  "reservationNameInUse": "この名前は別の予約ですでに使用されています"
 }

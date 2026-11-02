@@ -1298,5 +1298,8 @@
   "nodeActionNodeGone": "{node} tidak lagi berada di jaringan Anda.",
   "valueOutOfRange": "Harus antara {min} dan {max}",
   "maxCharacters": "Maksimal {max} karakter",
-  "invalidSubnetMask": "Subnet mask tidak valid"
+  "invalidSubnetMask": "Subnet mask tidak valid",
+  "reservationNameHint": "Nama (opsional)",
+  "reservationNameInvalid": "Gunakan huruf, angka, dan -, tidak diawali atau diakhiri -",
+  "reservationNameInUse": "Reservasi lain sudah menggunakan nama ini"
 }

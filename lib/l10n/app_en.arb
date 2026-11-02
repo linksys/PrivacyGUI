@@ -2209,5 +2209,11 @@
   "maxCharacters": "At most {max} characters",
   "@maxCharacters": {"description": "A text field is longer than the router accepts, e.g. a PPP user name of more than 255 characters.", "placeholders": {"max": {"type": "int", "example": "255"}}},
   "invalidSubnetMask": "Invalid subnet mask",
-  "@invalidSubnetMask": {"description": "A subnet mask is not a contiguous dotted IPv4 mask of /8 to /31, or the router refused it (Invalid network prefix length)."}
+  "@invalidSubnetMask": {"description": "A subnet mask is not a contiguous dotted IPv4 mask of /8 to /31, or the router refused it (Invalid network prefix length)."},
+  "reservationNameHint": "Name (optional)",
+  "@reservationNameHint": {"description": "Hint of the name field in the DHCP reservation dialog. The name becomes the client's host name (linksys/FWDEV#211)."},
+  "reservationNameInvalid": "Use letters, digits and -, not starting or ending with -",
+  "@reservationNameInvalid": {"description": "A DHCP reservation name has a character other than a letter, a digit or -, or starts or ends with -; the router refuses it (Invalid reservation description)."},
+  "reservationNameInUse": "Another reservation already has this name",
+  "@reservationNameInUse": {"description": "Another DHCP reservation in the same pool already has this name; the router refuses duplicate names."}
 }

@@ -1298,5 +1298,8 @@
   "nodeActionNodeGone": "{node} er ikke længere i dit netværk.",
   "valueOutOfRange": "Skal være mellem {min} og {max}",
   "maxCharacters": "Højst {max} tegn",
-  "invalidSubnetMask": "Ugyldig undernetmaske"
+  "invalidSubnetMask": "Ugyldig undernetmaske",
+  "reservationNameHint": "Navn (valgfrit)",
+  "reservationNameInvalid": "Brug bogstaver, tal og -, uden - først eller sidst",
+  "reservationNameInUse": "En anden reservation har allerede dette navn"
 }

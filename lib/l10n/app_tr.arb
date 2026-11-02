@@ -1298,5 +1298,8 @@
   "nodeActionNodeGone": "{node} artık ağınızda değil.",
   "valueOutOfRange": "{min} ile {max} arasında olmalıdır",
   "maxCharacters": "En fazla {max} karakter",
-  "invalidSubnetMask": "Geçersiz alt ağ maskesi"
+  "invalidSubnetMask": "Geçersiz alt ağ maskesi",
+  "reservationNameHint": "Ad (isteğe bağlı)",
+  "reservationNameInvalid": "Harf, rakam ve - kullanın; - ile başlamamalı veya bitmemeli",
+  "reservationNameInUse": "Başka bir rezervasyon zaten bu adı kullanıyor"
 }

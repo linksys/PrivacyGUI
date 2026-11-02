@@ -114,6 +114,13 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (reservation.name.isNotEmpty)
+                    AppText.bodySmall(
+                      reservation.name,
+                      color: colorScheme.onSurfaceVariant,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   if (reservation.ip.isNotEmpty)
                     AppText.bodySmall(
                       reservation.ip,
@@ -178,7 +185,7 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
 
   Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
     final options = _buildDeviceOptions(ref);
-    final result = await showAppDialog<({String mac, String ip, bool enable})>(
+    final result = await showAppDialog<DhcpReservationDialogResult>(
       context: context,
       builder: (_) => DhcpReservationEditDialog(
         macDeviceOptions: options.mac,
@@ -192,6 +199,7 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
             mac: result.mac,
             ip: result.ip,
             enable: result.enable,
+            name: result.name,
           ),
         );
   }
@@ -202,7 +210,7 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
     DhcpReservationUIModel reservation,
   ) async {
     final options = _buildDeviceOptions(ref);
-    final result = await showAppDialog<({String mac, String ip, bool enable})>(
+    final result = await showAppDialog<DhcpReservationDialogResult>(
       context: context,
       builder: (_) => DhcpReservationEditDialog(
         reservation: reservation,
@@ -218,6 +226,7 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
             mac: result.mac,
             ip: result.ip,
             enable: result.enable,
+            name: result.name,
           ),
         );
   }

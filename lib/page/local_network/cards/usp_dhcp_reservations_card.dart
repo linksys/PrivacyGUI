@@ -15,6 +15,7 @@ import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/dhcp/views/dialogs/dhcp_reservation_edit_dialog.dart';
+import 'package:privacy_gui/page/dhcp/views/helpers/dhcp_reservation_error_localization.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspDhcpReservationsCard extends ConsumerWidget {
@@ -203,7 +204,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
     List<DhcpReservationUIModel> reservations,
   ) async {
     final options = _buildDeviceOptions(ref);
-    final result = await showAppDialog<({String mac, String ip, bool enable})>(
+    final result = await showAppDialog<DhcpReservationDialogResult>(
       context: context,
       builder: (_) => DhcpReservationEditDialog(
         macDeviceOptions: options.mac,
@@ -221,8 +222,10 @@ class UspDhcpReservationsCard extends ConsumerWidget {
                 mac: result.mac,
                 ip: result.ip,
                 enable: result.enable,
+                name: result.name,
               ),
       successMessage: loc(context).reservationAdded,
+      localizeError: localizeDhcpReservationSaveError,
     );
   }
 
