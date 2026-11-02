@@ -26,6 +26,12 @@ abstract final class MacFilterRules {
   static final _macFragment = RegExp(r'^[0-9A-Fa-f:\-.]+$');
   static final _nonHex = RegExp(r'[^0-9A-Fa-f]');
 
+  /// A dotted-decimal IPv4 address or the start of one: `192.`, `192.168`,
+  /// `192.168.1.16`. Every group has at most three decimal digits, while the
+  /// dotted MAC spelling groups four hex digits, so the two never overlap once
+  /// a `.` is typed.
+  static final _ipShaped = RegExp(r'^\d{1,3}(\.\d{0,3}){1,3}$');
+
   /// Whether [mac] is one MAC in an accepted spelling. Surrounding whitespace is
   /// ignored.
   static bool validateMac(String mac) {
@@ -53,8 +59,13 @@ abstract final class MacFilterRules {
   /// False for a query with anything but hex digits and separators in it. A
   /// name such as `Pixel` reduced to its hex digits is `e`, which most MACs
   /// contain.
+  ///
+  /// Also false for a query shaped like an IP address (`192.168`): it is an IP
+  /// search, and IP search stays as it was (#1737 AC6). Read as digits it would
+  /// find any MAC containing `192168`.
   static bool macContains(String mac, String query) {
     if (!_macFragment.hasMatch(query)) return false;
+    if (_ipShaped.hasMatch(query)) return false;
     final digits = query.replaceAll(_nonHex, '').toLowerCase();
     return digits.isNotEmpty &&
         mac.replaceAll(_nonHex, '').toLowerCase().contains(digits);
