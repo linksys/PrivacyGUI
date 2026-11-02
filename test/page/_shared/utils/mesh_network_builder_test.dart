@@ -218,6 +218,37 @@ void main() {
       expect(result.allClients.map((c) => c.mac), ['11:22:33:44:55:01']);
     });
 
+    // #1751 added DeviceInfo.HostName below the controller's own Hosts row.
+    // Three different values, so the result says which one won: the row's
+    // host name, then DeviceInfo's, then the model.
+    test(
+        'a controller\'s own Hosts row host name comes before '
+        'DeviceInfo.HostName (#1751)', () {
+      MasterNode masterWith({required String rowHostName}) =>
+          MeshNetworkBuilder.build(
+            connectedDevices: ConnectedDevices(items: [
+              buildConnectedDevice(
+                macAddress: 'aa:bb:cc:dd:ee:01',
+                hostName: rowHostName,
+              ),
+            ]),
+            wifiClientMap: {},
+            connectionDetailMap: {},
+            meshTopology: MeshTopologyInfo(
+              nodes: [buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01')],
+              clientToNodeMap: const {},
+            ),
+            gatewayName: 'M60',
+            systemInfo:
+                buildSystemInfo(modelName: 'M60', hostName: 'DeviceInfoName'),
+          ).master;
+
+      expect(masterWith(rowHostName: 'RowName').hostName, 'RowName');
+      expect(masterWith(rowHostName: '').hostName, 'DeviceInfoName',
+          reason:
+              'an empty row host name passes to DeviceInfo\'s, not past it');
+    });
+
     // The FWDEV#208 rule matches on the MAC, and Hosts and DataElements are
     // separate producers. A spelling difference between the two must not turn
     // the agent back into a client.

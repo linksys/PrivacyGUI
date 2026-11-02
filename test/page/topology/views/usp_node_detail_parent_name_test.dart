@@ -56,8 +56,15 @@ void main() {
   ) async {
     await pump(tester, state);
 
-    expect(find.text('${loc.master} (Living room)'), findsOneWidget);
-    expect(find.textContaining('M60-US'), findsNothing,
+    // Looked for inside the connected-to row only, so the model shown anywhere
+    // else on the page cannot make this pass or fail.
+    final row = find.bySemanticsIdentifier('node-detail-parent');
+    expect(
+        find.descendant(
+            of: row, matching: find.text('${loc.master} (Living room)')),
+        findsOneWidget);
+    expect(find.descendant(of: row, matching: find.textContaining('M60-US')),
+        findsNothing,
         reason: 'the model is on the parent\'s own page, not this row');
   });
 }
