@@ -63,6 +63,11 @@ class UspWanDataService {
 
   /// Fetches WAN status + gateway + IPv6 addresses and returns a
   /// [WanStatusUIModel].
+  ///
+  /// The DNS servers are a separate read, [fetchDnsServers], which
+  /// `wanDataProvider` merges in: Diagnostics also calls this method, reads
+  /// `Device.DNS.Client.*` on its own, and on the Auto-IPoE path must read
+  /// nothing but the connection object.
   Future<WanStatusUIModel> fetch() async {
     try {
       final active = await ActiveIpv4Connection.fetch(
@@ -79,9 +84,6 @@ class UspWanDataService {
           gateway: active.gateway,
           ipv6Enabled: active.isTunnel || active.ipv6.isNotEmpty,
           ipv6Addresses: preferGlobalIpv6First(active.ipv6),
-          // The connection object carries no resolver list, so the DNS row
-          // reads the same TR-181 table on both paths (#1702).
-          dnsServers: await _fetchDnsServers(),
         );
       }
 
@@ -98,8 +100,7 @@ class UspWanDataService {
       // read.
       final statusFuture = WanStatus.fetch(_usp);
       final extraFuture = _fetchGatewayAndIpv6Addresses();
-      final dnsFuture = _fetchDnsServers();
-      await Future.wait([statusFuture, extraFuture, dnsFuture]);
+      await Future.wait([statusFuture, extraFuture]);
       final wanStatus = await statusFuture;
       final extra = await extraFuture;
 
@@ -118,7 +119,6 @@ class UspWanDataService {
         gateway: extra.gateway,
         ipv6Enabled: wanStatus.ipv6Enabled,
         ipv6Addresses: extra.ipv6Addresses,
-        dnsServers: await dnsFuture,
       );
     } on ServiceError {
       rethrow;
@@ -248,15 +248,17 @@ class UspWanDataService {
   }
 
   /// The IPv4 DNS servers the WAN is using, or empty when there are none or
-  /// they cannot be read (#1702).
+  /// they cannot be read (#1702). Never throws.
   ///
   /// The in-use resolvers are the enabled `Device.DNS.Client.Server.*` rows on
   /// the WAN interface (linksys/FWDEV#212). `IPv4Address.{i}.X_LINKSYS_DNSServers`
   /// is not read: it is the Static form's configured list, not the list in
-  /// use. On PPTP / L2TP the rows on the WAN are the tunnel's, as on 1.0.
+  /// use. On PPTP / L2TP the rows on the WAN are the tunnel's, as on 1.0. The
+  /// same table is read with and without Auto-IPoE: the connection object
+  /// carries no resolver list.
   ///
   /// A failed read hides the row and never fails the card.
-  Future<List<String>> _fetchDnsServers() async {
+  Future<List<String>> fetchDnsServers() async {
     try {
       final dnsFuture = DnsClient.fetch(_usp);
       final wanPathFuture = resolveWanInterfacePath(_usp);

@@ -1,10 +1,17 @@
 import 'dart:convert';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
+import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/active_ipv4_connection.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/dns_client.g.dart';
+import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
+import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/internet_settings/services/usp_wan_data_service.dart';
 
 import '../../../mocks/test_data/internet_settings_test_data.dart';
@@ -156,6 +163,20 @@ void main() {
   // DNS servers
   // ---------------------------------------------------------------------------
 
+  /// The model `wanDataProvider` publishes — the one the card reads — over the
+  /// real [UspWanDataService] on [usp]. The DNS row is merged there (#1702).
+  Future<WanStatusUIModel> cardModel({bool autoIPoE = false}) async {
+    final container = ProviderContainer(overrides: [
+      uspClientProvider.overrideWithValue(usp),
+      deviceCapabilitiesProvider.overrideWithValue(autoIPoE
+          ? const DeviceCapabilities({DeviceCapability.autoIPoE})
+          : DeviceCapabilities.empty),
+      sseInvalidationProvider.overrideWith((ref) => const Stream.empty()),
+    ]);
+    addTearDown(container.dispose);
+    return (await container.read(wanDataProvider.future)).model;
+  }
+
   group('#1702 DNS servers in use', () {
     for (final type in ['DHCP', 'Static', 'IPCP']) {
       test('$type WAN: the enabled IPv4 resolvers on the WAN, in table order',
@@ -165,7 +186,7 @@ void main() {
           ppp: pppTable('Device.Ethernet.Link.2'),
         );
 
-        final model = await UspWanDataService(usp).fetch();
+        final model = await cardModel();
 
         expect(model.dnsServers, ['203.0.113.53', '198.51.100.53']);
       });
@@ -183,8 +204,7 @@ void main() {
         'mtu': 1500,
       });
 
-      final model =
-          await UspWanDataService(usp, autoIPoESupported: true).fetch();
+      final model = await cardModel(autoIPoE: true);
 
       expect(model.addressingType, 'DHCP');
       expect(model.dnsServers, ['203.0.113.53', '198.51.100.53']);
@@ -194,7 +214,7 @@ void main() {
         () async {
       stub(dns: 'Get failed: Transport error: HTTP error: HTTP 500');
 
-      final model = await UspWanDataService(usp).fetch();
+      final model = await cardModel();
 
       expect(model.dnsServers, isEmpty);
       expect(model.ipAddress, '203.0.113.1');
@@ -218,8 +238,7 @@ void main() {
         },
       );
 
-      final model =
-          await UspWanDataService(usp, autoIPoESupported: true).fetch();
+      final model = await cardModel(autoIPoE: true);
 
       expect(model.dnsServers, isEmpty);
       expect(model.addressingType, 'PPPoE');
@@ -233,10 +252,31 @@ void main() {
           if (!e.key.endsWith('.Interface')) e.key: e.value,
       });
 
-      final model = await UspWanDataService(usp).fetch();
+      final model = await cardModel();
 
       expect(model.dnsServers, isEmpty);
       expect(model.ipAddress, '203.0.113.1');
+    });
+
+    test('fetchDnsServers never throws on a failed read', () async {
+      stub(dns: 'Get failed: Transport error');
+
+      expect(await UspWanDataService(usp).fetchDnsServers(), isEmpty);
+    });
+
+    test('the status read alone does not touch the DNS table', () async {
+      // Diagnostics calls fetch() and reads Device.DNS.Client.* itself, so the
+      // shared status read must not add a DNS read of its own.
+      stub();
+
+      await UspWanDataService(usp).fetch();
+
+      final requested =
+          verify(() => usp.get(captureAny(), priority: any(named: 'priority')))
+              .captured
+              .cast<List<String>>()
+              .expand((p) => p);
+      expect(requested.any((p) => p.startsWith('Device.DNS.')), isFalse);
     });
   });
 
@@ -366,7 +406,7 @@ void main() {
         routing: tunnelRouting(),
       );
 
-      final model = await UspWanDataService(usp).fetch();
+      final model = await cardModel();
 
       expect(model.gateway, '172.16.0.1');
       expect(model.addressingType, 'PPTP');

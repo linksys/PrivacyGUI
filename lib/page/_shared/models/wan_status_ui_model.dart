@@ -35,6 +35,19 @@ class WanStatusUIModel extends Equatable with DiagnosticLoggable {
   @override
   String get diagnosticName => 'WanStatusUIModel';
 
+  /// This model with [dnsServers] replaced.
+  WanStatusUIModel withDnsServers(List<String> dnsServers) => WanStatusUIModel(
+        isUp: isUp,
+        ipAddress: ipAddress,
+        subnetMask: subnetMask,
+        addressingType: addressingType,
+        mtu: mtu,
+        gateway: gateway,
+        ipv6Enabled: ipv6Enabled,
+        ipv6Addresses: ipv6Addresses,
+        dnsServers: dnsServers,
+      );
+
   @override
   Map<String, Object?> get namedProps => {
         'isUp': isUp,
