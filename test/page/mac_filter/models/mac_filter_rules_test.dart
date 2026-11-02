@@ -82,4 +82,52 @@ void main() {
           'AA:BB:CC:DD:EE:01');
     });
   });
+
+  // #1737 AC6: the add-device search finds a MAC however it is typed.
+  group('MacFilterRules — macContains (#1737)', () {
+    const mac = 'AA:BB:CC:DD:EE:FF';
+
+    test('ignores separators and case on both sides', () {
+      for (final query in [
+        'aabb',
+        'AABB',
+        'aa-bb',
+        'aa:bb',
+        'AABB.CC',
+        'bbccdd',
+        'ee:ff',
+        'aabbccddeeff',
+        'aabb.ccdd.eeff',
+      ]) {
+        expect(MacFilterRules.macContains(mac, query), isTrue, reason: query);
+      }
+    });
+
+    test('false for digits the MAC does not contain in that order', () {
+      expect(MacFilterRules.macContains(mac, 'aacc'), isFalse);
+      expect(MacFilterRules.macContains(mac, 'ffaa'), isFalse);
+      expect(MacFilterRules.macContains(mac, 'aabbccddeeff00'), isFalse);
+    });
+
+    test('false for a name or an IP, even one that shares hex digits', () {
+      // `Pixel` reduces to `e`, which this MAC contains. A name is not part of
+      // a MAC: name search is the default matcher's job.
+      for (final query in ['Pixel', 'Pixel-7a', '192.168.1.16', 'e f']) {
+        expect(MacFilterRules.macContains(mac, query), isFalse, reason: query);
+      }
+    });
+
+    test('a word made only of hex letters is read as part of a MAC', () {
+      // `Cafe` cannot be told apart from a MAC fragment (#1059), so it finds a
+      // MAC containing `CA:FE`. Its name still matches through the default.
+      expect(MacFilterRules.macContains('02:CA:FE:33:44:55', 'Cafe'), isTrue);
+      expect(MacFilterRules.macContains(mac, 'Cafe'), isFalse);
+    });
+
+    test('false for separators alone', () {
+      for (final query in [':', '-', '.', ':-.']) {
+        expect(MacFilterRules.macContains(mac, query), isFalse, reason: query);
+      }
+    });
+  });
 }

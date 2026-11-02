@@ -139,6 +139,11 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
           AppSelectAutoComplete(
             options: widget.options,
             controller: _controller,
+            // Name, MAC and IP as before, plus a MAC typed without its
+            // separators (#1737). Each option's value is its MAC.
+            matcher: (option, query) =>
+                AppSelectAutoComplete.defaultMatcher(option, query) ||
+                MacFilterRules.macContains(option.value, query),
             onSelected: (value) {
               _controller.text = value;
               setState(() => _errorKey = _errorFor(_controller.text));

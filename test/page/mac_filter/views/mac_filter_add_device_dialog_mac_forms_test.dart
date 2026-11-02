@@ -34,6 +34,13 @@ void main() {
       displayName: 'Cafe',
       ipAddress: '192.168.1.161',
     ),
+    // The MAC the separator-less search queries aim at (AC6). Its MAC contains
+    // an `E`, as `Pixel` reduced to hex digits would.
+    MacFilterDeviceUIModel(
+      mac: canonical,
+      displayName: 'Laptop',
+      ipAddress: '192.168.1.162',
+    ),
   ];
 
   late List<String> added;
@@ -244,5 +251,51 @@ void main() {
             reason: 'the autocomplete overlay offers the device');
       });
     }
+  });
+
+  group('a MAC is found without its separators (AC6)', () {
+    Finder suggested(String label) =>
+        find.descendant(of: find.byType(ListView), matching: find.text(label));
+
+    for (final (query, label) in [
+      ('aabb', 'Laptop'),
+      ('aa-bb', 'Laptop'),
+      ('AABB.CC', 'Laptop'),
+      ('e8d5', 'Pixel-7a'),
+      ('0211', 'Cafe'),
+    ]) {
+      testWidgets('"$query" suggests only $label', (tester) async {
+        await openDialog(tester);
+        await type(tester, query);
+
+        for (final d in devices) {
+          expect(suggested(d.displayName),
+              d.displayName == label ? findsOneWidget : findsNothing,
+              reason: '"$query" and ${d.displayName}');
+        }
+      });
+    }
+
+    testWidgets('"Pixel" does not suggest a device for the E in its MAC',
+        (tester) async {
+      await openDialog(tester);
+      await type(tester, 'Pixel');
+
+      expect(suggested('Pixel-7a'), findsOneWidget);
+      expect(suggested('Laptop'), findsNothing,
+          reason: 'a name is not read as hex digits');
+    });
+
+    testWidgets('choosing a suggestion found by digits fills in its MAC',
+        (tester) async {
+      await openDialog(tester);
+      await type(tester, 'aabb');
+
+      await tester.tap(suggested('Laptop'));
+      await settle(tester);
+
+      expect(field(tester).controller!.text, canonical);
+      expect(addTap(tester), isNotNull);
+    });
   });
 }

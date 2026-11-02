@@ -22,6 +22,10 @@ abstract final class MacFilterRules {
 
   static final _separators = RegExp(r'[:\-.]');
 
+  /// What part of a MAC can be typed as: hex digits and the separators above.
+  static final _macFragment = RegExp(r'^[0-9A-Fa-f:\-.]+$');
+  static final _nonHex = RegExp(r'[^0-9A-Fa-f]');
+
   /// Whether [mac] is one MAC in an accepted spelling. Surrounding whitespace is
   /// ignored.
   static bool validateMac(String mac) {
@@ -40,5 +44,19 @@ abstract final class MacFilterRules {
     if (!validateMac(value)) return value.replaceAll('-', ':');
     final hex = value.replaceAll(_separators, '');
     return [for (var i = 0; i < 12; i += 2) hex.substring(i, i + 2)].join(':');
+  }
+
+  /// Whether [query], typed as part of a MAC in any accepted spelling, is found
+  /// in [mac]: separators and case are ignored on both sides, so `aabb`,
+  /// `aa-bb` and `AABB.CC` all find `AA:BB:CC:DD:EE:FF` (#1737).
+  ///
+  /// False for a query with anything but hex digits and separators in it. A
+  /// name such as `Pixel` reduced to its hex digits is `e`, which most MACs
+  /// contain.
+  static bool macContains(String mac, String query) {
+    if (!_macFragment.hasMatch(query)) return false;
+    final digits = query.replaceAll(_nonHex, '').toLowerCase();
+    return digits.isNotEmpty &&
+        mac.replaceAll(_nonHex, '').toLowerCase().contains(digits);
   }
 }
