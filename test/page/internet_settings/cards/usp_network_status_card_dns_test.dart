@@ -47,8 +47,7 @@ void main() {
     expect(incidents, isEmpty);
   });
 
-  testWidgets('no DNS servers (none, or a failed read) hides the row',
-      (tester) async {
+  testWidgets('an empty DNS list hides the row', (tester) async {
     const noDns = WanStatusUIModel(
       isUp: true,
       ipAddress: '203.0.113.1',

@@ -12,7 +12,6 @@ import 'package:privacy_gui/core/usp/providers/wan_interface_path_provider.dart'
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/dns_client.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
-import 'package:privacy_gui/generated/ppp_interface.g.dart';
 import 'package:privacy_gui/generated/static_routing.g.dart';
 import 'package:privacy_gui/generated/wan_ipv6addresses.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
@@ -306,21 +305,25 @@ class UspWanDataService {
   /// PPPoE), which is [UspWanConnectionType.fromRawFields]'s own rule. The PPP
   /// row is the one the WAN's `LowerLayers` names, or the only row.
   ///
+  /// Only the `LowerLayers` leaves are read, in one GET. The generated
+  /// `PppInterface` model would also pull the PPP credentials (`Username`,
+  /// `Password`) over the wire, which this read has no use for.
+  ///
   /// When the PPP row cannot be read the raw `IPCP` is kept, as before: a type
   /// guessed as PPPoE would be wrong on PPTP / L2TP, and the card must not fail.
   Future<String> _fetchPppTypeLabel(String wanPath) async {
     try {
-      final wanLowerFuture = _usp.get(['${wanPath}LowerLayers']);
-      final pppFuture = PppInterface.fetch(_usp);
-      await Future.wait([wanLowerFuture, pppFuture]);
-      final wanLower =
-          '${(await wanLowerFuture)['${wanPath}LowerLayers'] ?? ''}';
-      final row = wanPppRow((await pppFuture).items, wanLower);
-      if (row == null) return pppAddressingType;
+      final wanLowerPath = '${wanPath}LowerLayers';
+      final response = await _usp.get([wanLowerPath, pppLowerLayersPath]);
+      final lowerLayers = wanPppLowerLayers(
+        pppLowerLayersByRow(response),
+        '${response[wanLowerPath] ?? ''}',
+      );
+      if (lowerLayers == null) return pppAddressingType;
       return UspWanConnectionType.fromRawFields(
         addressingType: pppAddressingType,
         interfaceEnabled: true,
-        lowerLayers: row.lowerLayers,
+        lowerLayers: lowerLayers,
       ).label;
     } catch (e) {
       logger.w('[USP][WanData]: PPP type fetch failed: $e');
@@ -328,15 +331,32 @@ class UspWanDataService {
     }
   }
 
-  /// The PPP row the WAN runs on: the one [wanLowerLayers] names, or the only
-  /// row. Null when the table is empty, or has several rows the WAN names none
-  /// of. The same rule the Internet Settings page reads its PPP row by.
-  static PppInterfaceInstance? wanPppRow(
-      List<PppInterfaceInstance> rows, String wanLowerLayers) {
-    final named = ensureTrailingDot(wanLowerLayers);
-    for (final row in rows) {
-      if (row.instancePath == named) return row;
+  /// The one PPP leaf the type read needs, for every row.
+  static const pppLowerLayersPath = 'Device.PPP.Interface.*.LowerLayers';
+
+  static final _pppLowerLayersKey =
+      RegExp(r'^(Device\.PPP\.Interface\.\d+\.)LowerLayers$');
+
+  /// `Device.PPP.Interface.{i}.` (dot-terminated) → its `LowerLayers`, in
+  /// response order, from a GET of [pppLowerLayersPath].
+  static Map<String, String> pppLowerLayersByRow(
+      Map<String, dynamic> response) {
+    final rows = <String, String>{};
+    for (final entry in response.entries) {
+      final row = _pppLowerLayersKey.firstMatch(entry.key)?.group(1);
+      if (row != null) rows[row] = '${entry.value ?? ''}';
     }
-    return rows.length == 1 ? rows.single : null;
+    return rows;
+  }
+
+  /// The `LowerLayers` of the PPP row the WAN runs on: the row
+  /// [wanLowerLayers] names, or the only row. Null when there are no rows, or
+  /// several and the WAN names none of them. The same rule the Internet
+  /// Settings page reads its PPP row by.
+  static String? wanPppLowerLayers(
+      Map<String, String> rows, String wanLowerLayers) {
+    final named = rows[ensureTrailingDot(wanLowerLayers)];
+    if (named != null) return named;
+    return rows.length == 1 ? rows.values.single : null;
   }
 }

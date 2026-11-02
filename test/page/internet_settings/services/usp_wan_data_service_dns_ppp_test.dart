@@ -18,6 +18,8 @@ import '../../../mocks/test_data/internet_settings_test_data.dart';
 
 class _MockUspClient extends Mock implements UspClient {}
 
+class _MockWanSvc extends Mock implements UspWanDataService {}
+
 /// linksys/PrivacyGUI#1702 — the Network Status card's DNS row, its PPP type
 /// and its gateway on the TR-181 path, against the contract in FW's comment on
 /// linksys/FWDEV#212:
@@ -141,7 +143,16 @@ void main() {
             addressingType: addressingType);
       }
       if (paths.contains('${wan}LowerLayers')) {
-        return {'${wan}LowerLayers': wanLowerLayers};
+        // The PPP type read: the WAN's LowerLayers, plus every PPP row's
+        // LowerLayers when asked for. A router answers only what is requested.
+        final wantsPpp = paths.contains('Device.PPP.Interface.*.LowerLayers');
+        if (wantsPpp && ppp is Exception) throw ppp;
+        return {
+          '${wan}LowerLayers': wanLowerLayers,
+          if (wantsPpp)
+            for (final e in ((ppp as Map<String, dynamic>?) ?? {}).entries)
+              if (e.key.endsWith('.LowerLayers')) e.key: e.value,
+        };
       }
       if (paths.any((p) => p.startsWith('Device.DNS.Client.'))) {
         if (dns is Exception) throw dns;
@@ -278,6 +289,32 @@ void main() {
               .expand((p) => p);
       expect(requested.any((p) => p.startsWith('Device.DNS.')), isFalse);
     });
+
+    test('a DNS read that throws past the service still leaves the card',
+        () async {
+      // fetchDnsServers is written not to throw; wanDataProvider catches it
+      // anyway, so a later change to the service cannot fail the card.
+      final svc = _MockWanSvc();
+      when(() => svc.fetch()).thenAnswer((_) async => const WanStatusUIModel(
+            isUp: true,
+            ipAddress: '203.0.113.1',
+            subnetMask: '255.255.255.0',
+            addressingType: 'DHCP',
+            mtu: 1500,
+          ));
+      when(() => svc.fetchDnsServers()).thenThrow(StateError('boom'));
+      final container = ProviderContainer(overrides: [
+        uspWanDataServiceProvider.overrideWithValue(svc),
+        deviceCapabilitiesProvider.overrideWithValue(DeviceCapabilities.empty),
+        sseInvalidationProvider.overrideWith((ref) => const Stream.empty()),
+      ]);
+      addTearDown(container.dispose);
+
+      final model = (await container.read(wanDataProvider.future)).model;
+
+      expect(model.dnsServers, isEmpty);
+      expect(model.ipAddress, '203.0.113.1');
+    });
   });
 
   group('#1702 wanDnsServers filter', () {
@@ -390,6 +427,45 @@ void main() {
       final model = await UspWanDataService(usp).fetch();
 
       expect(model.addressingType, 'L2TP');
+    });
+
+    test('several PPP rows and the WAN names none of them: IPCP is kept',
+        () async {
+      stub(
+        addressingType: 'IPCP',
+        wanLowerLayers: 'Device.PPP.Interface.9',
+        ppp: {
+          ...pppTable('Device.GRE.Tunnel.1.Interface.1'),
+          for (final e
+              in pppTable('Device.L2TPv2.Tunnel.1.Interface.1').entries)
+            e.key.replaceFirst('Interface.1.', 'Interface.2.'): e.value,
+        },
+      );
+
+      final model = await UspWanDataService(usp).fetch();
+
+      expect(model.addressingType, 'IPCP');
+    });
+
+    test('the PPP type read asks for LowerLayers only, never the credentials',
+        () async {
+      stub(
+          addressingType: 'IPCP',
+          ppp: pppTable('Device.GRE.Tunnel.1.Interface.1'));
+
+      final model = await UspWanDataService(usp).fetch();
+
+      expect(model.addressingType, 'PPTP');
+      final requested =
+          verify(() => usp.get(captureAny(), priority: any(named: 'priority')))
+              .captured
+              .cast<List<String>>()
+              .expand((p) => p)
+              .toList();
+      expect(
+        requested.where((p) => p.startsWith('Device.PPP.')).toList(),
+        ['Device.PPP.Interface.*.LowerLayers'],
+      );
     });
   });
 
