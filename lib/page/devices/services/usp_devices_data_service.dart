@@ -187,8 +187,10 @@ class UspDevicesDataService {
   /// not erase a type another client wrote.
   ///
   /// [hostInstancePaths] is every row of the device, all written in the one
-  /// Set: devidentd keeps the name per MAC, and a device's rows merge by the
-  /// FriendlyName it reads back, so naming one row would split them (#1719).
+  /// Set: devidentd keeps the name per MAC, so a row left out keeps its old
+  /// name, and the device shows it whenever that row is the only one present.
+  /// The rows merge by `X_LINKSYS_DetectedName` (#1719), which the user's name
+  /// does not change, so naming them does not regroup them.
   Future<void> updateIdentity({
     required List<String> hostInstancePaths,
     required String name,
