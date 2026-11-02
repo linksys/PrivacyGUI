@@ -169,7 +169,7 @@ void main() {
     final container = ProviderContainer(overrides: [
       uspClientProvider.overrideWithValue(usp),
       deviceCapabilitiesProvider.overrideWithValue(autoIPoE
-          ? const DeviceCapabilities({DeviceCapability.autoIPoE})
+          ? DeviceCapabilities({DeviceCapability.autoIPoE})
           : DeviceCapabilities.empty),
       sseInvalidationProvider.overrideWith((ref) => const Stream.empty()),
     ]);
