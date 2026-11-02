@@ -6,11 +6,17 @@ import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
+import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_ui_model.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/local_network/providers/usp_local_network_notifier.dart';
 import 'package:privacy_gui/page/local_network/services/usp_local_network_service.dart';
+
+import '../../../mocks/test_data/system_info_test_data.dart';
 
 class MockUspLocalNetworkService extends Mock
     implements UspLocalNetworkService {}
@@ -41,6 +47,32 @@ class _TestLanDataNotifier extends LanDataNotifier {
     }
     return _testData;
   }
+}
+
+/// Counts system-info reads, so a test can tell whether a save refreshed it.
+class _CountingSystemInfoNotifier extends SystemInfoDataNotifier {
+  int buildCount = 0;
+
+  @override
+  Future<SystemInfoData> build() async {
+    buildCount++;
+    return SystemInfoData(model: SystemInfoTestData.create());
+  }
+}
+
+/// Counts device refetches, the read that rebuilds the master node's name.
+class _CountingDevicesNotifier extends DevicesDataNotifier {
+  int refetchCount = 0;
+
+  @override
+  Future<DevicesData> build() async => DevicesData(
+        meshNetwork: MeshNetwork(
+          master: MasterNode(deviceId: 'GATEWAY', model: 'M60'),
+        ),
+      );
+
+  @override
+  Future<void> refetch() async => refetchCount++;
 }
 
 void main() {
@@ -83,6 +115,8 @@ void main() {
         lanDataProvider.overrideWith(() => _TestLanDataNotifier(
             data ?? testLanData,
             failFromBuild: failFromBuild)),
+        systemInfoDataProvider.overrideWith(_CountingSystemInfoNotifier.new),
+        devicesDataProvider.overrideWith(_CountingDevicesNotifier.new),
       ],
     );
     container.listen(uspLocalNetworkProvider, (_, __) {});
@@ -307,6 +341,55 @@ void main() {
       // lanDataProvider is invalidated → build() runs a second time.
       expect(lanNotifier.buildCount, 2);
       container.dispose();
+    });
+
+    // #1751: DeviceInfo.HostName is also the controller's name when nobody has
+    // named it, and that name reaches the master node through system info, not
+    // through this page's LAN read.
+    group('a host-name change refreshes the controller\'s name (#1751)', () {
+      Future<(int systemInfoReads, int deviceRefetches)> saveWith(
+          LocalNetworkUIModel Function(LocalNetworkUIModel) edit) async {
+        when(() => mockService.save(
+              original: any(named: 'original'),
+              pending: any(named: 'pending'),
+            )).thenAnswer((_) async {});
+        final container = createContainer();
+        addTearDown(container.dispose);
+        // Read once so the counters start from a settled provider.
+        await container.read(systemInfoDataProvider.future);
+        await container.read(devicesDataProvider.future);
+        await Future.delayed(Duration.zero);
+        final systemInfo = container.read(systemInfoDataProvider.notifier)
+            as _CountingSystemInfoNotifier;
+        final devices = container.read(devicesDataProvider.notifier)
+            as _CountingDevicesNotifier;
+        final before = systemInfo.buildCount;
+
+        final notifier = container.read(uspLocalNetworkProvider.notifier);
+        notifier.updateSetting(edit);
+        await notifier.save();
+        await container.read(systemInfoDataProvider.future);
+        await Future.delayed(Duration.zero);
+
+        return (systemInfo.buildCount - before, devices.refetchCount);
+      }
+
+      test('saving a new host name re-reads system info and the devices',
+          () async {
+        final (systemInfoReads, deviceRefetches) =
+            await saveWith((m) => m.copyWith(hostName: 'Linksys12345'));
+
+        expect(systemInfoReads, 1);
+        expect(deviceRefetches, 1);
+      });
+
+      test('a save that leaves the host name alone does not', () async {
+        final (systemInfoReads, deviceRefetches) =
+            await saveWith((m) => m.copyWith(dnsServer1: '9.9.9.9'));
+
+        expect(systemInfoReads, 0);
+        expect(deviceRefetches, 0);
+      });
     });
 
     // #1212 / #1279: this page sequences its own save, so it must still hand
