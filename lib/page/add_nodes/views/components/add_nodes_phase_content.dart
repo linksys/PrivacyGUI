@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/composed/app_node_list_card.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/_shared/utils/mesh_node_identity.dart';
 import 'package:privacy_gui/page/add_nodes/models/add_nodes_ui_models.dart';
 import 'package:privacy_gui/page/add_nodes/providers/add_nodes_state.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -20,10 +21,16 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// is a session to stop. Every other phase is a column the user reads top to
 /// bottom, with its actions inline at the end, the way the PnP wizard lays out
 /// a step.
+///
+/// Both list every node the session found, each with its outcome (#1738), so
+/// the result screen says nothing the waiting screens had not already shown.
 class AddNodesPhaseContent extends StatelessWidget {
   final AddNodesState state;
   final VoidCallback onStart;
-  final VoidCallback onCancel;
+
+  /// Stops following the session — and stops it, when it is this flow's. The
+  /// page leaves through [onDone] once it returns (#1738).
+  final Future<void> Function() onCancel;
   final VoidCallback onRecheck;
   final VoidCallback onDone;
 
@@ -57,6 +64,9 @@ class AddNodesPhaseContent extends StatelessWidget {
             description: loc(context).addNodesOnboardingNodesDesc,
             cancellable: true,
           ),
+        // Nothing to press until every node has an outcome: the session is
+        // over, so there is no Stop() behind a cancel, and leaving is the
+        // back arrow's job.
         AddNodesPhase.joining =>
           _status(context, title: loc(context).addNodesJoining),
         AddNodesPhase.ready => _guidance(context),
@@ -91,6 +101,7 @@ class AddNodesPhaseContent extends StatelessWidget {
           ),
         AddNodesPhase.noNodesFound => _noNodesFound(context),
         AddNodesPhase.failed => _failed(context),
+        AddNodesPhase.partial => _partial(context),
         AddNodesPhase.joined => _joined(context),
         AddNodesPhase.cancelled => _message(
             context,
@@ -126,17 +137,7 @@ class AddNodesPhaseContent extends StatelessWidget {
         children: [
           AppText.headlineSmall(loc(context).addNodesNoNodesFoundTitle),
           AppGap.lg(),
-          AppText.titleMedium(loc(context).modalTroubleshootNoNodesFound),
-          AppGap.md(),
-          AppBulletList(
-            style: AppBulletStyle.number,
-            children: [
-              AppText.bodyMedium(
-                  loc(context).modalTroubleshootNoNodesFoundDesc1),
-              AppText.bodyMedium(
-                  loc(context).modalTroubleshootNoNodesFoundDesc2),
-            ],
-          ),
+          _noNodesTroubleshooting(context),
         ],
         actions: [
           _startButton(context, label: loc(context).tryAgain),
@@ -144,35 +145,30 @@ class AddNodesPhaseContent extends StatelessWidget {
         ],
       );
 
-  /// No node joined. When the session itself reported a node onboarded, or one
-  /// it gave up on, that node can still join after the flow stopped waiting —
-  /// so the nodes are listed as not online yet rather than as lost.
+  /// No node joined. A failed request says why; otherwise each node says what
+  /// became of it, and the checklist is for the ones the router found but could
+  /// not add. With none found — the limit ran out while scanning, or a result
+  /// outside the documented set — there is nothing to move closer, so it is "No
+  /// nodes found"'s checklist instead.
   Widget _failed(BuildContext context) {
     final error = state.error;
-    final waitedFor = state.nodes.where(_mightJoin).toList();
     return _column(
       context,
       children: [
         AppText.headlineSmall(loc(context).addNodesFailedTitle),
-        AppGap.lg(),
-        if (error != null)
-          AppText.bodyMedium(localizeServiceError(context, error))
-        else ...[
-          AppText.titleMedium(loc(context).modalTroubleshootNoNodesFound),
-          AppGap.md(),
-          AppBulletList(
-            style: AppBulletStyle.number,
-            children: [
-              AppText.bodyMedium(
-                  loc(context).modalTroubleshootNoNodesFoundDesc1),
-              AppText.bodyMedium(
-                  loc(context).modalTroubleshootNoNodesFoundDesc2),
-            ],
-          ),
+        if (error != null) ...[
+          AppGap.lg(),
+          AppText.bodyMedium(localizeServiceError(context, error)),
         ],
-        if (waitedFor.isNotEmpty) ...[
+        if (state.nodes.isNotEmpty) ...[
           AppGap.xl(),
-          _nodeList(context, waitedFor),
+          _nodeList(context),
+        ],
+        if (error == null) ...[
+          AppGap.xl(),
+          state.nodes.isEmpty
+              ? _noNodesTroubleshooting(context)
+              : _failedTroubleshooting(context),
         ],
       ],
       actions: [
@@ -182,20 +178,36 @@ class AddNodesPhaseContent extends StatelessWidget {
     );
   }
 
-  /// At least one node joined. The ones still on their way are listed as not
-  /// online yet, and the user is told where the new nodes should go.
+  /// Some nodes joined and some did not (#1738). Try again is for the rest, so
+  /// the checklist is the failure's; where to put the new nodes waits until
+  /// every node is in.
+  Widget _partial(BuildContext context) => _column(
+        context,
+        children: [
+          AppText.headlineSmall(loc(context).addNodesPartialTitle),
+          AppGap.xl(),
+          _nodeList(context),
+          AppGap.xl(),
+          _failedTroubleshooting(context),
+        ],
+        actions: [
+          _startButton(context, label: loc(context).tryAgain),
+          _doneButton(context),
+        ],
+      );
+
+  /// Every node joined: the user is told where the new nodes should go.
   Widget _joined(BuildContext context) {
-    final joinedCount = state.joinedNodeKeys.isEmpty
-        // Taken at the session's word: it onboarded a node it had no AL MAC for.
-        ? state.nodes.where((n) => n.isOnboarded).length
-        : state.joinedNodeKeys.length;
+    final added = state.nodes
+        .where((n) => state.outcomeFor(n) == AddNodesNodeOutcome.added)
+        .length;
     return _column(
       context,
       children: [
         AppText.headlineSmall(
-            loc(context).addNodesAdded(joinedCount < 1 ? 1 : joinedCount)),
+            loc(context).addNodesAdded(added < 1 ? 1 : added)),
         AppGap.xl(),
-        _nodeList(context, state.nodes.where(_mightJoin).toList()),
+        _nodeList(context),
         AppGap.xl(),
         AppText.titleMedium(loc(context).modalMoveChildNodesTitle),
         AppGap.sm(),
@@ -205,36 +217,74 @@ class AddNodesPhaseContent extends StatelessWidget {
     );
   }
 
+  /// What to check when the router found no node: its light, and its range.
+  Widget _noNodesTroubleshooting(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppText.titleMedium(loc(context).modalTroubleshootNoNodesFound),
+          AppGap.md(),
+          AppBulletList(
+            style: AppBulletStyle.number,
+            children: [
+              AppText.bodyMedium(
+                  loc(context).modalTroubleshootNoNodesFoundDesc1),
+              AppText.bodyMedium(
+                  loc(context).modalTroubleshootNoNodesFoundDesc2),
+            ],
+          ),
+        ],
+      );
+
+  /// What to do about the nodes that were found and not added.
+  Widget _failedTroubleshooting(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppText.titleMedium(loc(context).addNodesFailedTroubleshootTitle),
+          AppGap.md(),
+          AppBulletList(
+            style: AppBulletStyle.number,
+            children: [
+              AppText.bodyMedium(loc(context).addNodesFailedTroubleshootDesc1),
+              AppText.bodyMedium(loc(context).addNodesFailedTroubleshootDesc2),
+              AppText.bodyMedium(loc(context).addNodesFailedTroubleshootDesc3),
+            ],
+          ),
+        ],
+      );
+
   // ---------------------------------------------------------------------------
   // Node list
   // ---------------------------------------------------------------------------
 
-  /// A node the session told to onboard, whether or not it finished.
-  static bool _mightJoin(AddNodesNodeUIModel node) =>
-      node.isOnboarded || node.mayStillJoin;
-
-  Widget _nodeList(BuildContext context, List<AddNodesNodeUIModel> nodes) =>
-      Column(
+  /// Every node the session found, in the router's order, each with its
+  /// outcome. All of them, whatever the outcome: a node left off the list is a
+  /// node the user cannot tell happened.
+  Widget _nodeList(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final node in nodes) ...[
+          for (final (i, node) in state.nodes.indexed) ...[
+            if (i > 0) AppGap.sm(),
             _nodeCard(context, node),
-            if (node != nodes.last) AppGap.sm(),
           ],
         ],
       );
 
   Widget _nodeCard(BuildContext context, AddNodesNodeUIModel node) {
-    final alMac = node.alMacAddress;
-    final joined =
-        alMac != null && state.joinedNodeKeys.contains(meshNodeMacKey(alMac));
+    final outcome = state.outcomeFor(node);
     final model = node.modelNumber;
     return AppNodeListCard(
       leading: DeviceImageHelper.getRouterImage(
           routerIconTestByModel(modelNumber: model ?? '')),
       title: model ?? node.bleMacAddress,
-      description: joined ? null : loc(context).addNodesNotOnlineYet,
-      trailing: joined
+      // In words for every outcome: the check mark alone is not one a screen
+      // reader can say, and the other three have no mark at all.
+      description: switch (outcome) {
+        AddNodesNodeOutcome.added => loc(context).addNodesStatusAdded,
+        AddNodesNodeOutcome.joining => loc(context).addNodesStatusJoining,
+        AddNodesNodeOutcome.failed => loc(context).addNodesStatusFailed,
+        AddNodesNodeOutcome.notTried => loc(context).addNodesStatusNotTried,
+      },
+      trailing: outcome == AddNodesNodeOutcome.added
           ? AppIcon.font(
               Icons.check_circle,
               color: Theme.of(context).colorScheme.primary,
@@ -248,9 +298,46 @@ class AddNodesPhaseContent extends StatelessWidget {
   // Layouts
   // ---------------------------------------------------------------------------
 
-  /// A phase the router is working through: a spinner, what it is doing, and a
-  /// cancel while a session is in progress. The notifier decides whether that
-  /// cancel sends a `Stop()`.
+  // ---------------------------------------------------------------------------
+  // Cancel
+  // ---------------------------------------------------------------------------
+
+  /// Cancel leaves the page (#1738): the step or the topology that opened it
+  /// reads the nodes again, and is where the user looks next. When a node is
+  /// already joining, stopping does not undo it, so the user is told and asked
+  /// first — and with none, there is nothing a stop would lose to ask about.
+  Future<void> _confirmCancel(BuildContext context) async {
+    final joining = state.alreadyJoiningCount;
+    if (joining > 0) {
+      final stop = await showSimpleAppDialog<bool>(
+        context,
+        title: loc(context).addNodesStopTitle,
+        content: AppText.bodyMedium(loc(context).addNodesStopDesc(joining)),
+        actions: [
+          AppButton.text(
+            identifier: 'add-nodes-stop-keep',
+            label: loc(context).addNodesKeepAdding,
+            onTap: () => context.pop(false),
+          ),
+          AppButton.primary(
+            identifier: 'add-nodes-stop-confirm',
+            label: loc(context).addNodesStopAdding,
+            onTap: () => context.pop(true),
+          ),
+        ],
+      );
+      if (stop != true) return;
+    }
+    // A session that ended while the dialog was open makes this a no-op; the
+    // page leaves all the same, as the user asked.
+    await onCancel();
+    if (!context.mounted) return;
+    onDone();
+  }
+
+  /// A phase the router is working through: a spinner, what it is doing, the
+  /// nodes found so far, and a cancel while a session is in progress. The
+  /// notifier decides whether that cancel sends a `Stop()`.
   Widget _status(
     BuildContext context, {
     required String title,
@@ -270,12 +357,18 @@ class AddNodesPhaseContent extends StatelessWidget {
                 AppGap.sm(),
                 AppText.bodyMedium(description, textAlign: TextAlign.center),
               ],
+              if (state.nodes.isNotEmpty) ...[
+                AppGap.xl(),
+                // The full column width, as on the result screens, rather than
+                // each card's own.
+                SizedBox(width: double.infinity, child: _nodeList(context)),
+              ],
               if (cancellable && state.isRunning) ...[
                 AppGap.xl(),
                 AppButton.text(
                   label: loc(context).cancel,
                   identifier: 'add-nodes-cancel',
-                  onTap: onCancel,
+                  onTap: () => _confirmCancel(context),
                 ),
               ],
             ],

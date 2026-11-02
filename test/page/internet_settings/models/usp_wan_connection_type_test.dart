@@ -192,25 +192,22 @@ void main() {
       });
     });
 
-    group('pppLowerLayers', () {
-      test('pppoe clears LowerLayers', () {
-        // An empty LowerLayers is what selects plain PPPoE (#762 comment
-        // 5987286082).
-        expect(UspWanConnectionType.pppoe.pppLowerLayers, '');
+    group('isTunnel', () {
+      test('PPTP and L2TP run over a tunnel row', () {
+        expect(UspWanConnectionType.pptp.isTunnel, isTrue);
+        expect(UspWanConnectionType.l2tp.isTunnel, isTrue);
       });
 
-      test('pptp returns GRE.Tunnel.1.Interface.1', () {
-        expect(UspWanConnectionType.pptp.pppLowerLayers,
-            'Device.GRE.Tunnel.1.Interface.1');
-      });
-
-      test('l2tp returns L2TPv2.Tunnel.1.Interface.1', () {
-        expect(UspWanConnectionType.l2tp.pppLowerLayers,
-            'Device.L2TPv2.Tunnel.1.Interface.1');
-      });
-
-      test('dhcp returns null', () {
-        expect(UspWanConnectionType.dhcp.pppLowerLayers, isNull);
+      test('no other type does, PPPoE included', () {
+        for (final type in [
+          UspWanConnectionType.pppoe,
+          UspWanConnectionType.dhcp,
+          UspWanConnectionType.staticIp,
+          UspWanConnectionType.ipoe,
+          UspWanConnectionType.bridge,
+        ]) {
+          expect(type.isTunnel, isFalse, reason: type.name);
+        }
       });
     });
 

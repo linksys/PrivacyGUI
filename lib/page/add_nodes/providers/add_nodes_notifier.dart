@@ -29,14 +29,22 @@ class AddNodesTimings {
   /// `Start()` itself empties the cache, so the first read after it is fresh.
   final Duration pollInterval;
 
-  /// How long a session may run before the flow stops it and gives up.
+  /// How long a session may run per node it found, before the flow stops it
+  /// (#1738). The limit is this times the nodes found, at least one, from the
+  /// moment `Start()` answered, and it grows as the session reports more.
   ///
-  /// Ten minutes. One node can take a scan (5 s, up to three passes), a BLE
-  /// connect, `onboard_timeout` (45 s on the bench) plus `onboard_grace` (75 s),
-  /// retried for a dropped BLE link — and nodes are onboarded one after another.
-  /// The firmware lets a new request override a session older than 300 s, which
-  /// is a wedge-breaker, not a bound on a real one.
-  final Duration sessionLimit;
+  /// Six minutes. Nodes are onboarded one after another, and on 2026-10-28 a
+  /// node that failed took about four, measured from the controller's log: a
+  /// BLE connect (~30 s), the previous node's WPS walk window (85–97 s, every
+  /// node after the first) and WPS-PBC itself (120 s). The same log shows BLE
+  /// connect and onboard-command retries that can add ~2.5 minutes more; those
+  /// are read off the log, not measured. A fixed ten minutes, the figure before
+  /// this, cut the third of three failing nodes off 65 s into its WPS window.
+  ///
+  /// No overall cap: the page is exempt from the idle logout, and Cancel is
+  /// offered throughout. The firmware lets a new request override a session
+  /// older than 300 s, which is a wedge-breaker, not a bound on a real one.
+  final Duration perNodeLimit;
 
   /// How long after the session ends the flow waits for its nodes to appear in
   /// DataElements.
@@ -50,9 +58,13 @@ class AddNodesTimings {
 
   const AddNodesTimings({
     this.pollInterval = const Duration(seconds: 2),
-    this.sessionLimit = const Duration(minutes: 10),
+    this.perNodeLimit = const Duration(minutes: 6),
     this.joinLimit = const Duration(minutes: 3),
   });
+
+  /// The session limit for a session that has found [nodesFound] nodes.
+  Duration sessionLimitFor(int nodesFound) =>
+      perNodeLimit * (nodesFound < 1 ? 1 : nodesFound);
 }
 
 final addNodesTimingsProvider =
@@ -247,20 +259,20 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
   Future<void> _follow(int generation, _StartRun run) async {
     final service = run.service;
     final timings = ref.read(addNodesTimingsProvider);
-    final giveUpAt = clock.now().add(timings.sessionLimit);
+    // The limit grows with the nodes the session reports (#1738); found is read
+    // as the larger of the counter and the table, which can disagree.
+    final startedAt = clock.now();
+    var nodesFound = 0;
     int? ownSession;
     var isFirstRead = true;
 
     while (_current(generation)) {
       if (!isFirstRead) {
-        if (!clock.now().isBefore(giveUpAt)) {
-          logger.w('$_tag the session ran past ${timings.sessionLimit}; '
-              'stopping it');
-          _publish(
-              generation,
-              state.copyWith(
-                  phase: AddNodesPhase.failed, error: const TimeoutError()));
-          await _stop(run);
+        final limit = timings.sessionLimitFor(nodesFound);
+        if (!clock.now().isBefore(startedAt.add(limit))) {
+          logger.w('$_tag the session ran past $limit for $nodesFound '
+              'node(s); stopping it');
+          await _endAtLimit(generation, run);
           return;
         }
         await Future<void>.delayed(timings.pollInterval);
@@ -292,6 +304,10 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
                 phase: AddNodesPhase.failed, clearSessionResult: true));
         return;
       }
+      final reported = session.devicesFound > session.nodes.length
+          ? session.devicesFound
+          : session.nodes.length;
+      if (reported > nodesFound) nodesFound = reported;
 
       switch (session.status) {
         case OnboardingSessionStatus.idle:
@@ -331,16 +347,6 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
     final result = session.result;
     final ended = state.copyWith(nodes: session.nodes, sessionResult: result);
 
-    // The nodes worth waiting for: the ones the session onboarded, and the ones
-    // it gave up on that may still join — the firmware upgrades those to
-    // onboarded when they do, and DataElements can list them first.
-    final awaited = [
-      for (final node in session.nodes)
-        if ((node.isOnboarded || node.mayStillJoin) &&
-            node.alMacAddress != null)
-          node.alMacAddress!,
-    ];
-
     switch (result) {
       case OnboardingSessionResult.cancelled:
         _publish(generation, ended.copyWith(phase: AddNodesPhase.cancelled));
@@ -351,89 +357,120 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
       default:
         break;
     }
-
-    if (awaited.isNotEmpty) {
-      await _awaitJoin(generation, service, ended, awaited);
-      return;
-    }
-    if (result == OnboardingSessionResult.success ||
-        result == OnboardingSessionResult.partial) {
-      // Onboarded, but with no AL MAC to find the node by — an agent that did
-      // not send one over BLE. The session's own verdict is all there is to go
-      // on, so it is taken, and the topology is read again to draw the node.
-      logger.w('$_tag the session reports a node onboarded but no AL MAC to '
-          'confirm it by; taking the session at its word');
-      _publish(generation, ended.copyWith(phase: AddNodesPhase.joined));
-      unawaited(ref.read(devicesDataProvider.notifier).refetch());
-      return;
-    }
-    // Nothing joined and nothing may: Failed, TimedOut with no node that got
-    // far enough to report an AL MAC, or a value outside the documented set.
-    _publish(generation, ended.copyWith(phase: AddNodesPhase.failed));
+    await _awaitJoin(generation, service, ended);
   }
 
-  /// Waits for [awaited] to appear in DataElements, publishing each one as it
-  /// does, and refreshes the topology each time one has.
+  /// The session ran past its limit (#1738): stop it, call the nodes it was
+  /// still working on failed, and wait for the rest like a session that ended.
+  ///
+  /// Stopped first, so the router's rows read afterwards cannot make the app
+  /// wait on a node it has given up on: the interrupted ones are taken from the
+  /// last read before `Stop()`, and [AddNodesState.interruptedNodes] keeps them
+  /// failed whatever the router writes next.
+  Future<void> _endAtLimit(int generation, _StartRun run) async {
+    final interrupted = {
+      for (final node in state.nodes)
+        if (node.status == OnboardingNodeStatus.connecting ||
+            node.status == OnboardingNodeStatus.onboarding)
+          node.bleMacAddress,
+    };
+    await _stop(run);
+    if (!_current(generation)) return;
+    await _awaitJoin(
+        generation, run.service, state.copyWith(interruptedNodes: interrupted));
+  }
+
+  /// Waits for the nodes that may still join to show in DataElements, then
+  /// settles on a result screen chosen by every node's outcome (#1738).
+  ///
+  /// The phase stays [AddNodesPhase.joining] for the whole wait, with each
+  /// node's outcome on the list, so the result is shown once rather than
+  /// changing as nodes arrive. Each join still refreshes the topology as it
+  /// happens: leaving mid-wait disposes this before the rest arrive.
   Future<void> _awaitJoin(
     int generation,
     AddNodesService service,
     AddNodesState ended,
-    List<String> awaited,
   ) async {
     final timings = ref.read(addNodesTimingsProvider);
-    final giveUpAt = clock.now().add(timings.joinLimit);
-    final wanted = meshNodeMacSet(awaited);
-    var joined = <String>{};
-    var isFirstRead = true;
+    final waiting = ended.copyWith(phase: AddNodesPhase.joining);
+    _publish(generation, waiting);
 
-    _publish(generation, ended.copyWith(phase: AddNodesPhase.joining));
+    // The nodes worth looking for: joining through the wait, which needs an AL
+    // MAC to be found by. outcomeOf decides which.
+    final awaited = [
+      for (final node in waiting.nodes)
+        if (waiting.outcomeFor(node) == AddNodesNodeOutcome.joining &&
+            node.alMacAddress != null)
+          node.alMacAddress!,
+    ];
 
-    while (_current(generation)) {
-      if (!isFirstRead) {
-        if (!clock.now().isBefore(giveUpAt)) break;
-        await Future<void>.delayed(timings.pollInterval);
+    if (awaited.isNotEmpty) {
+      final giveUpAt = clock.now().add(timings.joinLimit);
+      final wanted = meshNodeMacSet(awaited);
+      var joined = <String>{};
+      var isFirstRead = true;
+
+      while (_current(generation)) {
+        if (!isFirstRead) {
+          if (!clock.now().isBefore(giveUpAt)) break;
+          await Future<void>.delayed(timings.pollInterval);
+          if (!_current(generation)) return;
+        }
+        isFirstRead = false;
+
+        final Set<String> listed;
+        try {
+          listed = await service.fetchJoinedNodes(awaited);
+        } on ServiceError catch (e) {
+          logger.w('$_tag reading DataElements failed; reading again',
+              error: e);
+          continue;
+        }
         if (!_current(generation)) return;
-      }
-      isFirstRead = false;
 
-      final Set<String> listed;
-      try {
-        listed = await service.fetchJoinedNodes(awaited);
-      } on ServiceError catch (e) {
-        logger.w('$_tag reading DataElements failed; reading again', error: e);
-        continue;
+        // A union, not the latest read: a node seen once has joined, and
+        // dropping out of one read — re-associating — does not undo that.
+        final seen = joined.union(listed);
+        if (seen.length > joined.length) {
+          joined = seen;
+          _publish(generation, state.copyWith(joinedNodeKeys: joined));
+          // The devices provider keeps the topology it has across a device
+          // refresh and re-reads DataElements behind it — but only on a Hosts
+          // push, which can come before the node is in DataElements and so
+          // leave it drawn as a client.
+          unawaited(ref.read(devicesDataProvider.notifier).refetch());
+        }
+        if (joined.containsAll(wanted)) break;
       }
       if (!_current(generation)) return;
-
-      // A union, not the latest read: a node seen once has joined, and dropping
-      // out of one read — re-associating — does not undo that.
-      final seen = joined.union(listed);
-      if (seen.length > joined.length) {
-        joined = seen;
-        _publish(
-            generation,
-            state.copyWith(
-                joinedNodeKeys: joined,
-                // A node is a mesh node now, so the page can say so while it
-                // waits for the rest.
-                phase: AddNodesPhase.joined));
-        // Here, per join, and not once the wait is over: the page offers Done
-        // from the first join, and leaving disposes this before the rest
-        // arrive. The devices provider keeps the topology it has across a
-        // device refresh and re-reads DataElements behind it — but only on a
-        // Hosts push, which can come before the node is in DataElements and so
-        // leave it drawn as a client.
-        unawaited(ref.read(devicesDataProvider.notifier).refetch());
+      if (!joined.containsAll(wanted)) {
+        logger.w('$_tag ${wanted.difference(joined).length} node(s) did not '
+            'appear in DataElements within ${timings.joinLimit}');
       }
-      if (joined.containsAll(wanted)) break;
     }
-    if (!_current(generation)) return;
 
-    if (joined.isEmpty) {
-      logger.w('$_tag no node of the session appeared in DataElements within '
-          '${timings.joinLimit}');
-      _publish(generation, state.copyWith(phase: AddNodesPhase.failed));
+    final settled = state.copyWith(phase: AddNodesPhase.failed);
+    final outcomes = settled.nodes.map(settled.outcomeFor).toList();
+    final added = outcomes.where((o) => o == AddNodesNodeOutcome.added).length;
+    // Taken at the session's word: onboarded with no AL MAC, so no read above
+    // found it and none refreshed the topology to draw it.
+    if (settled.nodes.any((n) =>
+        n.alMacAddress == null &&
+        settled.outcomeFor(n) == AddNodesNodeOutcome.added)) {
+      unawaited(ref.read(devicesDataProvider.notifier).refetch());
     }
+    _publish(
+      generation,
+      settled.copyWith(
+        // No rows at all is no node added: a session that named none.
+        phase: added == 0
+            ? AddNodesPhase.failed
+            : added == outcomes.length
+                ? AddNodesPhase.joined
+                : AddNodesPhase.partial,
+      ),
+    );
   }
 
   // ---------------------------------------------------------------------------

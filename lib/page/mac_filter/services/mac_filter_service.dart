@@ -37,8 +37,8 @@ final uspMacFilterServiceProvider = Provider<UspMacFilterService>(
 /// **Validation is client-side.** The firmware answers an over-limit or
 /// malformed list with only a generic 7012 and silently de-duplicates
 /// (linksys/PrivacyGUI#1612), so this service normalizes, de-duplicates, checks
-/// the 64-address limit and rejects a malformed MAC or an empty Allow list
-/// *before* calling — surfacing an [InvalidInputError] the UI can act on.
+/// the 64-address limit and rejects a malformed MAC *before* calling —
+/// surfacing an [InvalidInputError] the UI can act on.
 class UspMacFilterService {
   UspMacFilterService(this._usp);
 
@@ -144,16 +144,13 @@ class UspMacFilterService {
   }
 
   /// Sets mode and list atomically. The list is normalized and de-duplicated,
-  /// then validated (syntax, count, and the Allow-not-empty rule) before the
-  /// write. Throws [InvalidInputError] on a validation failure and never calls
+  /// then validated (syntax and count) before the write. An empty `Allow` list
+  /// is sent as-is (#1735): Instant Privacy can be turned on with no client
+  /// online. Throws [InvalidInputError] on a validation failure and never calls
   /// the firmware in that case.
   Future<void> setMacFilter(MacFilterMode mode, List<String> macs) async {
     final normalized = _normalizeAndDedupe(macs);
 
-    if (mode == MacFilterMode.allow && normalized.isEmpty) {
-      throw const InvalidInputError(
-          detail: 'Allow mode requires at least one address');
-    }
     for (final mac in normalized) {
       if (!MacFilterRules.validateMac(mac)) {
         throw InvalidInputError(detail: 'Invalid MAC address: $mac');

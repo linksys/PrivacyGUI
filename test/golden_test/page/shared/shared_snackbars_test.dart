@@ -8,6 +8,8 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/firmware_update/localizations/firmware_failure_localizations.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_failure.dart';
+import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
+import 'package:privacy_gui/page/internet_settings/views/helpers/wan_field_error_localization.dart';
 
 import '../../golden_framework/golden_runner.dart';
 import '../../golden_framework/golden_test_config.dart';
@@ -85,6 +87,10 @@ String _serviceError(BuildContext context, ServiceError error) =>
 
 String _firmware(BuildContext context, FirmwareFailure failure) =>
     localizeFirmwareFailure(context, failure);
+
+/// What the Internet Settings save shows for a refusal netmngr named.
+String _wanRefusal(BuildContext context, String name) =>
+    localizeWanSaveError(context, InvalidInputError(field: name, code: 7012));
 
 final _rows = <_Row>[
   // --- Success: a save or an action that completed ---
@@ -214,6 +220,19 @@ final _rows = <_Row>[
   ])
     _Row.failed('firmware_router_${_snake(code.name)}',
         (c) => _firmware(c, FirmwareFailure.routerReported(code))),
+
+  // --- WAN save refusals: every distinct string `localizeWanSaveError` gives
+  // a netmngr message (linksys/FWDEV#212) ---
+  _Row.failed('error_wan_invalid_server',
+      (c) => _wanRefusal(c, WanRefusalNames.invalidServer)),
+  _Row.failed('error_wan_invalid_subnet_mask',
+      (c) => _wanRefusal(c, WanRefusalNames.invalidPrefixLength)),
+  _Row.failed('error_wan_invalid_gateway',
+      (c) => _wanRefusal(c, WanRefusalNames.invalidGateway)),
+  _Row.failed('error_wan_invalid_dns',
+      (c) => _wanRefusal(c, WanRefusalNames.invalidDns)),
+  _Row.failed('error_wan_invalid_mtu',
+      (c) => _wanRefusal(c, WanRefusalNames.invalidMtu)),
 
   // --- Other fixed failure messages ---
   _Row.failed(

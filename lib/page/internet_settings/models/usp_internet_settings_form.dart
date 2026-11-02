@@ -23,9 +23,26 @@ class UspInternetSettingsForm extends Equatable {
   final String pppPassword;
   final String pppoeServiceName;
   final String connectionTrigger; // 'AlwaysOn' | 'OnDemand'
+
+  /// On Demand idle time in minutes, as 1.0 shows it. TR-181
+  /// `IdleDisconnectTime` holds seconds; the service converts.
   final int idleDisconnectTime;
+
+  /// Keep Alive "reconnect after" interval in seconds (`LCPEcho`).
   final int lcpEchoInterval;
-  final String serverAddress; // PPTP/L2TP VPN server hostname or IP
+  final String serverAddress; // PPTP/L2TP VPN server IPv4 address
+
+  // === PPTP static underlay (1.0 useStaticSettings) ===
+  /// Whether the WAN port under the PPTP tunnel takes a static address
+  /// (`X_LINKSYS_UnderlayAddressingType = "Static"`) instead of DHCP. Kept
+  /// apart from the Static WAN fields: on PPTP those hold the tunnel address.
+  final bool underlayStatic;
+  final String underlayIpAddress;
+  final String underlaySubnetMask;
+  final String underlayGateway;
+  final String underlayDns1;
+  final String underlayDns2;
+  final String underlayDns3;
 
   // === VLAN ===
   final bool vlanEnabled;
@@ -67,8 +84,15 @@ class UspInternetSettingsForm extends Equatable {
     this.pppoeServiceName = '',
     this.connectionTrigger = 'AlwaysOn',
     this.idleDisconnectTime = 0,
-    this.lcpEchoInterval = 0,
+    this.lcpEchoInterval = kPppKeepAliveDefaultSeconds,
     this.serverAddress = '',
+    this.underlayStatic = false,
+    this.underlayIpAddress = '',
+    this.underlaySubnetMask = '',
+    this.underlayGateway = '',
+    this.underlayDns1 = '',
+    this.underlayDns2 = '',
+    this.underlayDns3 = '',
     this.vlanEnabled = false,
     this.vlanId = 0,
     this.mtu = 0,
@@ -97,6 +121,13 @@ class UspInternetSettingsForm extends Equatable {
     int? idleDisconnectTime,
     int? lcpEchoInterval,
     String? serverAddress,
+    bool? underlayStatic,
+    String? underlayIpAddress,
+    String? underlaySubnetMask,
+    String? underlayGateway,
+    String? underlayDns1,
+    String? underlayDns2,
+    String? underlayDns3,
     bool? vlanEnabled,
     int? vlanId,
     int? mtu,
@@ -124,6 +155,13 @@ class UspInternetSettingsForm extends Equatable {
       idleDisconnectTime: idleDisconnectTime ?? this.idleDisconnectTime,
       lcpEchoInterval: lcpEchoInterval ?? this.lcpEchoInterval,
       serverAddress: serverAddress ?? this.serverAddress,
+      underlayStatic: underlayStatic ?? this.underlayStatic,
+      underlayIpAddress: underlayIpAddress ?? this.underlayIpAddress,
+      underlaySubnetMask: underlaySubnetMask ?? this.underlaySubnetMask,
+      underlayGateway: underlayGateway ?? this.underlayGateway,
+      underlayDns1: underlayDns1 ?? this.underlayDns1,
+      underlayDns2: underlayDns2 ?? this.underlayDns2,
+      underlayDns3: underlayDns3 ?? this.underlayDns3,
       vlanEnabled: vlanEnabled ?? this.vlanEnabled,
       vlanId: vlanId ?? this.vlanId,
       mtu: mtu ?? this.mtu,
@@ -154,6 +192,13 @@ class UspInternetSettingsForm extends Equatable {
         idleDisconnectTime,
         lcpEchoInterval,
         serverAddress,
+        underlayStatic,
+        underlayIpAddress,
+        underlaySubnetMask,
+        underlayGateway,
+        underlayDns1,
+        underlayDns2,
+        underlayDns3,
         vlanEnabled,
         vlanId,
         mtu,

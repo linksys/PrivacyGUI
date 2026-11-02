@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 
-SystemInfoUIModel _model({String? userDeviceLocation, String? friendlyName}) =>
+SystemInfoUIModel _model(
+        {String? userDeviceLocation, String? friendlyName, String? hostName}) =>
     SystemInfoUIModel(
       manufacturer: 'Linksys',
       modelName: 'M60',
@@ -14,6 +15,7 @@ SystemInfoUIModel _model({String? userDeviceLocation, String? friendlyName}) =>
       cpuUsage: 0,
       userDeviceLocation: userDeviceLocation,
       friendlyName: friendlyName,
+      hostName: hostName,
     );
 
 void main() {
@@ -33,6 +35,13 @@ void main() {
     test('FriendlyName takes part in equality', () {
       expect(_model(friendlyName: 'Main'),
           isNot(equals(_model(friendlyName: 'Other'))));
+    });
+    // The controller's name when the user gave none (#1751): equal models
+    // would hide a host name that changed or appeared.
+    test('the host name takes part in equality', () {
+      expect(_model(hostName: 'Linksys12345'),
+          isNot(equals(_model(hostName: 'Linksys67890'))));
+      expect(_model(hostName: 'Linksys12345'), isNot(equals(_model())));
     });
   });
 }

@@ -389,6 +389,40 @@ final slaveNodeWithBackhaulRates = UspNodeDetailState(
   connectedClients: _meshSlaveClients,
 );
 
+/// Slave node whose parent is a **renamed controller**: the one scene with a
+/// `parentNode`, so the only one that renders the backhaul card's connected-to
+/// row (#1751).
+///
+/// The parent's name and model deliberately differ, so a row that printed the
+/// model instead of the name — what it did before #1751 — cannot pass a test
+/// that looks for the name. The name is the user's (`userDeviceLocation` puts
+/// it in `friendlyName`, as `MeshNetworkBuilder` does), not a host name, since
+/// a rename is the case the row got wrong.
+final slaveNodeUnderRenamedController = UspNodeDetailState(
+  node: SlaveNode(
+    deviceId: 'AA:BB:CC:DD:FF:06',
+    dataElementsId: 'AA:BB:CC:DD:FF:16',
+    model: 'MX2000',
+    manufacturer: 'Linksys',
+    serialNumber: 'DEF789016',
+    softwareVersion: '1.0.10.200000',
+    connectedClients: const [],
+    backhaul: BackhaulInfo(
+      linkType: 'Wi-Fi',
+      signalStrength: -50,
+      parentNodeId: 'AA:BB:CC:DD:EE:01',
+    ),
+  ),
+  parentNode: MasterNode(
+    deviceId: 'AA:BB:CC:DD:EE:01',
+    model: 'M60-US',
+    friendlyName: 'Living room',
+    userDeviceLocation: 'Living room',
+    hostName: 'Linksys12345',
+  ),
+  connectedClients: const [],
+);
+
 /// Slave node with **no backhaul at all** — `BackhaulInfo.hasInfo` is false, so
 /// it is neither Wi-Fi nor Ethernet.
 ///

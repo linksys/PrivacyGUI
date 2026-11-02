@@ -386,11 +386,16 @@ class PageSurfaceFamily extends OverflowSurfaceFamily {
 /// no route matches, so without a destination such a tap looks like it worked. Every
 /// swept cell passes none: the sweep pumps and measures, it does not press anything,
 /// and a route list that differed per cell would be a second axis.
+///
+/// [childRoutes] go *under* [view]'s route rather than beside it, for a test that
+/// pushes a page over [view] and needs the pop to land back on it (#1734). The
+/// sweep passes none, for the same reason it passes no [extraRoutes].
 Widget pageSurfaceHost({
   required Widget view,
   required Locale locale,
   List<Override> overrides = const [],
   List<RouteBase> extraRoutes = const [],
+  List<RouteBase> childRoutes = const [],
 }) {
   // Same call as `lib/app.dart`, not a copy of its body — see #1285.
   final theme = FallbackFontResolver.withFallbackFont(_baseTheme, locale);
@@ -416,6 +421,7 @@ Widget pageSurfaceHost({
             path: '/',
             name: 'test_root',
             builder: (context, state) => view,
+            routes: childRoutes,
           ),
           ...extraRoutes,
         ],

@@ -28,12 +28,13 @@ void main() {
       }
     });
 
-    test('can start on entry and after a session that ended without a node',
-        () {
+    test('can start on entry and after a session that left a node out', () {
       const startable = {
         AddNodesPhase.ready,
         AddNodesPhase.noNodesFound,
         AddNodesPhase.failed,
+        // Some joined and some did not: Try again is for the rest (#1738).
+        AddNodesPhase.partial,
         // The page offers Try again after a stop, so start() must take it.
         AddNodesPhase.cancelled,
       };
@@ -41,6 +42,107 @@ void main() {
         expect(AddNodesState(phase: phase).canStart, startable.contains(phase),
             reason: phase.name);
       }
+    });
+
+    test('is running a session, waiting on DataElements, or settled (#1738)',
+        () {
+      const stages = {
+        AddNodesPhase.starting: AddNodesStage.running,
+        AddNodesPhase.searching: AddNodesStage.running,
+        AddNodesPhase.onboarding: AddNodesStage.running,
+        AddNodesPhase.joining: AddNodesStage.awaiting,
+      };
+      for (final phase in AddNodesPhase.values) {
+        expect(AddNodesState(phase: phase).stage,
+            stages[phase] ?? AddNodesStage.settled,
+            reason: phase.name);
+      }
+    });
+  });
+
+  group('AddNodesState - outcomeFor (#1738)', () {
+    const node = AddNodesNodeUIModel(
+      bleMacAddress: 'AA:BB:CC:00:00:01',
+      status: OnboardingNodeStatus.onboarded,
+      alMacAddress: 'aa:bb:cc:00:00:02',
+    );
+
+    test('reads the node\'s join from joinedNodeKeys, normalized', () {
+      const state = AddNodesState(
+        phase: AddNodesPhase.joining,
+        joinedNodeKeys: {'AABBCC000002'},
+      );
+      expect(state.outcomeFor(node), AddNodesNodeOutcome.added);
+    });
+
+    test('reads its stage from the phase', () {
+      expect(const AddNodesState(phase: AddNodesPhase.joining).outcomeFor(node),
+          AddNodesNodeOutcome.joining);
+      expect(const AddNodesState(phase: AddNodesPhase.failed).outcomeFor(node),
+          AddNodesNodeOutcome.failed);
+    });
+
+    test('holds a node the flow stopped at its limit failed', () {
+      const state = AddNodesState(
+        phase: AddNodesPhase.joining,
+        interruptedNodes: {'AA:BB:CC:00:00:01'},
+      );
+      expect(state.outcomeFor(node), AddNodesNodeOutcome.failed);
+    });
+
+    test('compares the interrupted set by value, and copyWith keeps it', () {
+      const a = AddNodesState(interruptedNodes: {'X'});
+      expect(a, const AddNodesState(interruptedNodes: {'X'}));
+      expect(a, isNot(const AddNodesState()));
+      expect(a.copyWith(phase: AddNodesPhase.failed).interruptedNodes, {'X'});
+    });
+  });
+
+  group('AddNodesState - alreadyJoiningCount (#1738)', () {
+    AddNodesNodeUIModel node(int i, OnboardingNodeStatus status,
+            {bool withAlMac = true}) =>
+        AddNodesNodeUIModel(
+          bleMacAddress: 'AA:BB:CC:00:01:0$i',
+          status: status,
+          alMacAddress: withAlMac ? 'aa:bb:cc:00:02:0$i' : null,
+        );
+
+    test('counts onboarded nodes, with or without an AL MAC', () {
+      final state = AddNodesState(
+        phase: AddNodesPhase.onboarding,
+        nodes: [
+          node(1, OnboardingNodeStatus.onboarded),
+          node(2, OnboardingNodeStatus.onboarded, withAlMac: false),
+        ],
+      );
+      expect(state.alreadyJoiningCount, 2);
+    });
+
+    test('counts a node DataElements lists, whatever its row says', () {
+      // The router corrects a late join upward after DataElements has it.
+      final state = AddNodesState(
+        phase: AddNodesPhase.onboarding,
+        nodes: [node(1, OnboardingNodeStatus.failedWps)],
+        joinedNodeKeys: const {'AABBCC000201'},
+      );
+      expect(state.alreadyJoiningCount, 1);
+    });
+
+    test('counts no node still on its way, failed, or not reached', () {
+      final state = AddNodesState(
+        phase: AddNodesPhase.onboarding,
+        nodes: [
+          for (final (i, status) in [
+            OnboardingNodeStatus.pending,
+            OnboardingNodeStatus.connecting,
+            OnboardingNodeStatus.onboarding,
+            OnboardingNodeStatus.failedWps,
+            OnboardingNodeStatus.failedConnect,
+          ].indexed)
+            node(i + 1, status),
+        ],
+      );
+      expect(state.alreadyJoiningCount, 0);
     });
   });
 

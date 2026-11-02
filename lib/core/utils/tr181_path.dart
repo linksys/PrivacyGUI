@@ -9,6 +9,12 @@ String ensureTrailingDot(String path) {
   return path.endsWith('.') ? path : '$path.';
 }
 
+/// [path] without its trailing dot, the form a reference parameter such as
+/// `LowerLayers` holds (`Device.GRE.Tunnel.1.Interface.1`). Returns [path]
+/// unchanged when it has none.
+String withoutTrailingDot(String path) =>
+    path.endsWith('.') ? path.substring(0, path.length - 1) : path;
+
 /// The `Alias` of the LAN `Device.IP.Interface.{i}`.
 const lanInterfaceAlias = 'lan';
 
