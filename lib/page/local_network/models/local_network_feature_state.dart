@@ -23,9 +23,7 @@ class LocalNetworkFeatureState
   }
 
   /// True when router IP or subnet mask changed — save needs confirmation.
-  bool get hasNetworkChange =>
-      settings.original.model.ipAddress != settings.current.model.ipAddress ||
-      settings.original.model.subnetMask != settings.current.model.subnetMask;
+  bool get hasNetworkChange => hasIpAddressChange || hasSubnetMaskChange;
 
   /// True when the router IP address specifically changed. This is the trigger
   /// for the post-save redirect + SSE disconnect: only an IP change makes the

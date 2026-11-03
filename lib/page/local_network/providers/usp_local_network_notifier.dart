@@ -107,6 +107,8 @@ class UspLocalNetworkNotifier
     // (not a mask-only change) drops the current connection, so that is the
     // trigger for the redirect + SSE disconnect.
     final ipChanged = state.hasIpAddressChange;
+    // Also true for an IP change saved with a mask change: that save takes the
+    // IP branch, which returns before the mask branch reads this.
     final maskChanged = state.hasSubnetMaskChange;
     final hostNameChanged = state.hasHostNameChange;
 

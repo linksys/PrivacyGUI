@@ -5,7 +5,7 @@ import 'package:privacy_gui/core/usp/models/sse_notification.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/wan_interface_path_provider.dart';
-import 'package:privacy_gui/page/_shared/utils/usp_subscriptions.dart';
+import 'package:privacy_gui/generated/subscriptions.g.dart';
 
 import '../mocks.dart';
 
