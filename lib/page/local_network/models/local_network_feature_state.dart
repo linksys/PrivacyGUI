@@ -36,6 +36,12 @@ class LocalNetworkFeatureState
   bool get hasIpAddressChange =>
       settings.original.model.ipAddress != settings.current.model.ipAddress;
 
+  /// True when the subnet mask changed. The router then takes the LAN down
+  /// and back up after the Set returns, so the save does not read back
+  /// (PrivacyGUI#1729). An IP change is handled first, by the redirect.
+  bool get hasSubnetMaskChange =>
+      settings.original.model.subnetMask != settings.current.model.subnetMask;
+
   /// True when the router's host name changed. `DeviceInfo.HostName` is also
   /// what the controller is named by when nobody has named it (#1751), and
   /// that name is read through system info, not this page's LAN read, so a

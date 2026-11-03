@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/usp/models/sse_notification.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/wan_interface_path_provider.dart';
+import 'package:privacy_gui/page/_shared/utils/usp_subscriptions.dart';
 
 import '../mocks.dart';
 
@@ -281,6 +282,20 @@ void main() {
         'Device.DHCPv4.Server.Pool.4.LeaseTime',
         InvalidationDomain.dhcpPoolSettings,
       );
+    });
+
+    test('the app subscribes the pool settings this mapping relies on', () {
+      // lanDataProvider learns the pool the router settled on after a mask
+      // change only from these ValueChanges (PrivacyGUI#1729). They arrive
+      // because a core subscription covers the whole pool table; one narrowed
+      // to the Client table would drop them with nothing else failing.
+      bool subscribed(String path) => coreSubscriptions
+          .any((s) => s.$2 == 'ValueChange' && path.startsWith(s.$3));
+
+      for (final leaf in ['MinAddress', 'MaxAddress', 'SubnetMask']) {
+        expect(subscribed('Device.DHCPv4.Server.Pool.1.$leaf'), isTrue,
+            reason: 'no core ValueChange subscription covers Pool.{i}.$leaf');
+      }
     });
 
     test('Device.DHCPv4.*.StaticAddress.* → dhcpReservations', () async {

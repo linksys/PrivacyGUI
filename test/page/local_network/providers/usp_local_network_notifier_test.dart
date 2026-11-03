@@ -318,6 +318,28 @@ void main() {
       container.dispose();
     });
 
+    test('an IP change saved with a mask change takes the IP path', () async {
+      // Both leave the router unreadable for a while, but only the IP change
+      // leaves this origin, so the redirect path must win over the mask path.
+      when(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+          )).thenAnswer((_) async {});
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      final lanNotifier =
+          container.read(lanDataProvider.notifier) as _TestLanDataNotifier;
+
+      final notifier = container.read(uspLocalNetworkProvider.notifier);
+      notifier.updateSetting((m) =>
+          m.copyWith(ipAddress: '192.168.5.1', subnetMask: '255.255.0.0'));
+      await notifier.save();
+
+      verify(() => mockSseManager.disconnect()).called(1);
+      expect(lanNotifier.buildCount, 1);
+      container.dispose();
+    });
+
     test('save on non-network change re-fetches and does not disconnect SSE',
         () async {
       when(() => mockService.save(
