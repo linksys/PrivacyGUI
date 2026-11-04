@@ -1298,5 +1298,8 @@
   "nodeActionNodeGone": "{node} không còn trong mạng của bạn.",
   "valueOutOfRange": "Phải nằm trong khoảng {min} đến {max}",
   "maxCharacters": "Tối đa {max} ký tự",
-  "invalidSubnetMask": "Mặt nạ mạng con không hợp lệ"
+  "invalidSubnetMask": "Mặt nạ mạng con không hợp lệ",
+  "reservationNameHint": "Tên (không bắt buộc)",
+  "reservationNameInvalid": "Dùng chữ cái, chữ số và -, không bắt đầu hoặc kết thúc bằng -",
+  "reservationNameInUse": "Một đặt chỗ khác đã dùng tên này"
 }

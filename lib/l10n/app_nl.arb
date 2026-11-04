@@ -1298,5 +1298,8 @@
   "nodeActionNodeGone": "{node} bevindt zich niet meer in uw netwerk.",
   "valueOutOfRange": "Moet tussen {min} en {max} liggen",
   "maxCharacters": "Maximaal {max} tekens",
-  "invalidSubnetMask": "Ongeldig subnetmasker"
+  "invalidSubnetMask": "Ongeldig subnetmasker",
+  "reservationNameHint": "Naam (optioneel)",
+  "reservationNameInvalid": "Gebruik letters, cijfers en -, niet beginnend of eindigend met -",
+  "reservationNameInUse": "Een andere reservering heeft deze naam al"
 }

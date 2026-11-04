@@ -1298,5 +1298,8 @@
   "nodeActionNodeGone": "{node}이(가) 더 이상 네트워크에 없습니다.",
   "valueOutOfRange": "{min}에서 {max} 사이여야 합니다",
   "maxCharacters": "최대 {max}자",
-  "invalidSubnetMask": "잘못된 서브넷 마스크"
+  "invalidSubnetMask": "잘못된 서브넷 마스크",
+  "reservationNameHint": "이름 (선택 사항)",
+  "reservationNameInvalid": "문자, 숫자, -를 사용하고 -로 시작하거나 끝나지 않아야 합니다",
+  "reservationNameInUse": "다른 예약에서 이미 이 이름을 사용하고 있습니다"
 }
