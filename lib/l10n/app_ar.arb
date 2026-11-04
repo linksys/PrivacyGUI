@@ -1281,6 +1281,8 @@
   "semanticRolePinInput": "إدخال رمز PIN",
   "semanticRoleRadio": "زر اختيار",
   "semanticRoleSwitch": "مفتاح تبديل",
+  "semanticRoleShowPassword": "إظهار كلمة المرور",
+  "semanticRoleHidePassword": "إخفاء كلمة المرور",
   "nodeActions": "إجراءات العقدة",
   "rebootMeshMessage": "ستتم إعادة تشغيل جهاز التوجيه وجميع العُقد في شبكتك المتداخلة. سيُفصل جميع الأجهزة المتصلة حتى تعود الشبكة إلى العمل.",
   "factoryResetMeshMessage": "ستتم إعادة ضبط جهاز التوجيه وجميع العُقد في شبكتك المتداخلة إلى إعدادات المصنع، بما في ذلك كلمة مرور WiFi وكلمة مرور جهاز التوجيه المطبوعتان على ملصق جهاز التوجيه. بعد ذلك يجب إعداد كل عقدة من جديد.",
@@ -1296,6 +1298,7 @@
   "nodeActionSkippedNodes": "لا تدعم هذه العُقد هذا الأمر ولن يُرسل إليها، لكنها ستفقد اتصالها أثناء توقف العُقد التي تتصل عبرها عن العمل: {nodes}.",
   "nodeActionNotConfirmed": "لم تؤكد {node} الأمر. وقد تنفذه رغم ذلك، لذا تحقق من الطوبولوجيا قبل المحاولة مرة أخرى.",
   "nodeActionNodeGone": "لم تعد {node} موجودة في شبكتك.",
+  "macWillBeAddedAs": "ستتم الإضافة باسم {mac}",
   "valueOutOfRange": "يجب أن تكون القيمة بين {min} و{max}",
   "maxCharacters": "{max} حرفًا كحد أقصى",
   "invalidSubnetMask": "قناع الشبكة الفرعية غير صالح"
