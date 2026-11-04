@@ -64,6 +64,11 @@ class WiFiCredential {
   final bool isHidden;
 
   String generate() {
+    // An open network is "nopass" in the WiFi QR format, and must not carry a
+    // password, or phones try to join it as WPA.
+    if (type == SecurityType.none) {
+      return 'WIFI:S:$ssid;T:nopass;H:$isHidden;;';
+    }
     return 'WIFI:S:$ssid;P:$password;T:${type.name.toUpperCase()};H:$isHidden;;';
   }
 }

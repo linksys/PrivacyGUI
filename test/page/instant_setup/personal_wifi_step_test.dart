@@ -67,19 +67,13 @@ void main() async {
     ));
   });
 
-  // The defaults info modal holds six paragraphs, so it cannot be a plain
-  // Column: on a short viewport, or in a locale with longer copy, the body
-  // must scroll instead of overflowing.
-  testWidgets('defaults info modal body scrolls instead of overflowing',
-      (tester) async {
-    // 420px tall leaves the six paragraphs no chance of fitting - an
-    // unscrollable body fails here with a RenderFlex overflow.
-    await tester.binding.setSurfaceSize(const Size(1280, 420));
-    tester.view.physicalSize = const Size(1280, 420);
+  // Pumps the setup flow at [size] until the personalization step shows.
+  Future<void> pumpPersonalizeStep(WidgetTester tester, Size size) async {
+    await tester.binding.setSurfaceSize(size);
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
-    addTearDown(() async {
-      await tester.binding.setSurfaceSize(null);
-    });
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    addTearDown(tester.view.reset);
     await loadTestFonts();
 
     await tester.pumpWidget(
@@ -93,10 +87,25 @@ void main() async {
     );
     await tester.pump(const Duration(seconds: 6));
     // Trick - setState to trigger build
-    final state =
-        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
-    state.setState(() {});
+    tester
+        .state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView))
+        .setState(() {});
     await tester.pumpAndSettle();
+  }
+
+  final ssidField = find.descendant(
+    of: find.byType(WiFiSSIDField),
+    matching: find.byType(TextField),
+  );
+
+  // The defaults info modal holds six paragraphs, so it cannot be a plain
+  // Column: on a short viewport, or in a locale with longer copy, the body
+  // must scroll instead of overflowing.
+  testWidgets('defaults info modal body scrolls instead of overflowing',
+      (tester) async {
+    // 420px tall leaves the six paragraphs no chance of fitting - an
+    // unscrollable body fails here with a RenderFlex overflow.
+    await pumpPersonalizeStep(tester, const Size(1280, 420));
 
     final infoIcon = find.byIcon(LinksysIcons.infoCircle).last;
     await tester.ensureVisible(infoIcon);
@@ -128,36 +137,10 @@ void main() async {
   // wrong until something is actually edited.
   testWidgets('QR warning follows edits to the shipped WiFi credentials',
       (tester) async {
-    await tester.binding.setSurfaceSize(const Size(1280, 1200));
-    tester.view.physicalSize = const Size(1280, 1200);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(() async {
-      await tester.binding.setSurfaceSize(null);
-    });
-    await loadTestFonts();
+    await pumpPersonalizeStep(tester, const Size(1280, 1200));
 
-    await tester.pumpWidget(
-      testableSingleRoute(
-        child: const PnpSetupView(),
-        config: LinksysRouteConfig(
-            column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-        locale: const Locale('en'),
-        overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
-      ),
-    );
-    await tester.pump(const Duration(seconds: 6));
-    // Trick - setState to trigger build
-    final state =
-        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
-    state.setState(() {});
-    await tester.pumpAndSettle();
-
-    final reminder = find.textContaining("what's printed on the Quick Start");
+    final reminder = find.textContaining('Keep in mind');
     final warning = find.textContaining('will stop the QR codes');
-    final ssidField = find.descendant(
-      of: find.byType(WiFiSSIDField),
-      matching: find.byType(TextField),
-    );
 
     // Untouched defaults - plain reminder only.
     expect(reminder, findsOneWidget);
@@ -167,19 +150,33 @@ void main() async {
     await tester.pumpAndSettle();
     expect(warning, findsOneWidget);
     expect(reminder, findsNothing);
-    // The defaults modal stays reachable from the warning card.
-    expect(
-      find.descendant(
-        of: find.byType(AppSettingCard),
-        matching: find.byIcon(LinksysIcons.infoCircle),
-      ),
-      findsOneWidget,
-    );
 
     // Typing the shipped SSID back takes the warning away again.
     await tester.enterText(ssidField, 'Linksys1234567');
     await tester.pumpAndSettle();
     expect(warning, findsNothing);
     expect(reminder, findsOneWidget);
+  });
+
+  // The warning is about the printed QR codes, so its info button explains
+  // those - in the same words WiFi Settings uses for the same warning.
+  testWidgets('the QR warning explains the printed QR codes', (tester) async {
+    await pumpPersonalizeStep(tester, const Size(1280, 1200));
+
+    await tester.enterText(ssidField, 'MyHomeWiFi');
+    await tester.pumpAndSettle();
+    await tester.tap(find.descendant(
+      of: find.byType(AppSettingCard),
+      matching: find.byIcon(LinksysIcons.infoCircle),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('About the printed QR codes'),
+      ),
+      findsOneWidget,
+    );
   });
 }

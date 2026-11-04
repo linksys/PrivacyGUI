@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' as service;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/error_code.dart';
@@ -27,22 +26,18 @@ import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/pnp_auto_master_flow.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/pnp_auto_master_waiting_view.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/pnp_stepper.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_qr_credentials.dart';
+import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_qr_cards.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/util/qr_code.dart';
 import 'package:privacy_gui/util/wifi_credential.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
-import 'package:qr_flutter/qr_flutter.dart';
-import 'package:privacy_gui/util/export_selector/export_base.dart'
-    if (dart.library.io) 'package:privacy_gui/util/export_selector/export_mobile.dart'
-    if (dart.library.html) 'package:privacy_gui/util/export_selector/export_web.dart';
 
 enum _PnpSetupStep {
   init,
@@ -390,6 +385,19 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     }
     // Headline uses the primary/first band's SSID.
     final headlineSSID = bands.firstOrNull?.ssid ?? '';
+    // The same cards a WiFi Settings save ends on. Setup only personalizes the
+    // name and password, so every code stays WPA, as the router shipped.
+    final qrBands = [
+      for (final b in bands)
+        WiFiQRBand(
+          label: _bandLabel(b.band),
+          credential: WiFiCredential(
+            ssid: b.ssid,
+            password: b.password,
+            type: SecurityType.wpa,
+          ),
+        ),
+    ];
     // Bound the height and split scrollable content from a pinned footer, the
     // same pattern the stepper uses, so the "Done" button stays visible at the
     // bottom and is aligned/styled consistently with the Back/Next steps.
@@ -421,19 +429,11 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                   const AppGap.medium(),
                   AppText.bodyMedium(loc(context).pnpScanQR),
                   const AppGap.large5(),
-                  if (isSplitMode)
-                    ...bands.map((b) => Padding(
-                          padding:
-                              const EdgeInsets.only(bottom: Spacing.small2),
-                          child: _splitBandCard(b.band, b.ssid, b.password),
-                        ))
-                  else
-                    _unifiedWiFiCard(
-                        headlineSSID, bands.firstOrNull?.password ?? ''),
+                  WiFiQRCards(bands: qrBands, qrSize: 240),
                   const AppGap.medium(),
                   // Where to find the QR again once setup is over.
                   AppText.bodySmall(
-                    loc(context).pnpWiFiReadyReshareInfo,
+                    loc(context).pnpWiFiReadyReshareInfo(qrBands.length),
                     maxLines: 5,
                   ),
                 ],
@@ -454,175 +454,12 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     );
   }
 
-  // Unified mode: large QR + separate password card (original layout).
-  Widget _unifiedWiFiCard(String wifiSSID, String wifiPassword) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Center(
-          child: AppCard(
-              child: Column(
-            children: [
-              Container(
-                color: Colors.white,
-                height: 240,
-                width: 240,
-                child: QrImageView(
-                  data: WiFiCredential(
-                    ssid: wifiSSID,
-                    password: wifiPassword,
-                    type: SecurityType
-                        .wpa, //TODO: The security type is fixed for now
-                  ).generate(),
-                ),
-              ),
-              const AppGap.medium(),
-              // Printing or saving the regenerated QR is the main thing to do
-              // here - the printed card no longer works - so give both actions
-              // button weight instead of plain text links.
-              Row(
-                children: [
-                  Expanded(
-                    child: AppOutlinedButton.fillWidth(
-                      loc(context).print,
-                      icon: LinksysIcons.print,
-                      onTap: () => _printWiFi(wifiSSID, wifiPassword),
-                    ),
-                  ),
-                  const AppGap.medium(),
-                  Expanded(
-                    child: AppOutlinedButton.fillWidth(
-                      loc(context).downloadQR,
-                      icon: LinksysIcons.download,
-                      onTap: () => _downloadWiFi(wifiSSID, wifiPassword),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          )),
-        ),
-        const AppGap.small2(),
-        Center(
-          child: AppSettingCard(
-            title: loc(context).wifiPassword,
-            description: wifiPassword,
-            trailing: AppIconButton(
-              icon: LinksysIcons.fileCopy,
-              semanticLabel: 'file copy',
-              onTap: () => _copyPassword(wifiPassword),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Split mode: one compact horizontal card per band (QR on the left, band
-  // name / SSID / password / actions on the right).
-  Widget _splitBandCard(String band, String ssid, String password) {
-    return AppCard(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            color: Colors.white,
-            height: 120,
-            width: 120,
-            child: QrImageView(
-              data: WiFiCredential(
-                ssid: ssid,
-                password: password,
-                type: SecurityType.wpa,
-              ).generate(),
-            ),
-          ),
-          const AppGap.medium(),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppText.labelLarge(_bandLabel(band)),
-                const AppGap.small1(),
-                AppText.bodySmall(loc(context).wifiName),
-                AppText.bodyMedium(ssid),
-                const AppGap.small1(),
-                AppText.bodySmall(loc(context).wifiPassword),
-                Row(
-                  children: [
-                    Expanded(child: AppText.bodyMedium(password)),
-                    AppIconButton.noPadding(
-                      icon: LinksysIcons.fileCopy,
-                      semanticLabel: 'file copy',
-                      onTap: () => _copyPassword(password),
-                    ),
-                  ],
-                ),
-                const AppGap.small2(),
-                // Wrap, not Row - the band card is narrow and these labels get
-                // long in other locales.
-                Wrap(
-                  spacing: Spacing.medium,
-                  runSpacing: Spacing.small1,
-                  children: [
-                    AppOutlinedButton(
-                      loc(context).print,
-                      icon: LinksysIcons.print,
-                      onTap: () => _printWiFi(ssid, password),
-                    ),
-                    AppOutlinedButton(
-                      loc(context).downloadQR,
-                      icon: LinksysIcons.download,
-                      onTap: () => _downloadWiFi(ssid, password),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   String _bandLabel(String band) {
     if (band.contains('2.4')) return '2.4 GHz';
     if (band.contains('5GHz_2')) return '5 GHz-2';
     if (band.contains('5GHz') || band.contains('5G')) return '5 GHz';
     if (band.contains('6GHz') || band.contains('6G')) return '6 GHz';
     return band;
-  }
-
-  void _printWiFi(String ssid, String password) {
-    final ctx = context;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        createWiFiQRCode(WiFiCredential(
-                ssid: ssid, password: password, type: SecurityType.wpa))
-            .then((imageBytes) {
-          printWiFiQRCode(ctx, imageBytes, ssid, password);
-        });
-      }
-    });
-  }
-
-  void _downloadWiFi(String ssid, String password) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        createWiFiQRCode(WiFiCredential(
-                ssid: ssid, password: password, type: SecurityType.wpa))
-            .then((imageBytes) {
-          exportFileFromBytes(
-              fileName: 'share_wifi_$ssid.png', utf8Bytes: imageBytes);
-        });
-      }
-    });
-  }
-
-  void _copyPassword(String password) {
-    service.Clipboard.setData(service.ClipboardData(text: password))
-        .then((value) => showSharedCopiedSnackBar());
   }
 
   Widget _showNeedReconnect() {

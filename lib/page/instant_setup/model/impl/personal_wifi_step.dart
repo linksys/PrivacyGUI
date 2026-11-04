@@ -6,12 +6,12 @@ import 'package:privacy_gui/page/instant_setup/data/pnp_wifi_settings.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_password_widget.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_ssid_widget.dart';
+import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_qr_warning_card.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 class PersonalWiFiStep extends PnpStep {
@@ -243,18 +243,10 @@ class PersonalWiFiStep extends PnpStep {
     );
   }
 
+  // The same card WiFi Settings shows, so its info button explains the printed
+  // QR codes in the same words.
   Widget _buildQRWarningCard(BuildContext context) {
-    final errorColor = Theme.of(context).colorScheme.error;
-    return AppSettingCard(
-      title: loc(context).pnpPersonalizeQRWarning,
-      leading: Icon(
-        LinksysIcons.error,
-        semanticLabel: 'warning',
-        color: errorColor,
-      ),
-      borderColor: errorColor,
-      trailing: _buildInfoButton(context),
-    );
+    return WiFiQRWarningCard(message: loc(context).pnpPersonalizeQRWarning);
   }
 
   Widget _buildInfoButton(BuildContext context) {

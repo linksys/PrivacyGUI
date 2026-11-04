@@ -585,6 +585,45 @@ void main() {
       await tester.pumpAndSettle();
     });
 
+    // Bands saved with their own names each get a QR in a narrow card, which is
+    // where long locales run out of room first.
+    testLocalizations(
+        'Incredible-WiFi - Wifi list view - new QR codes after save - per band',
+        (tester, locale) async {
+      final saved = WiFiState.fromMap(wifiListTestState);
+      final perBand = saved.copyWith(mainWiFi: [
+        saved.mainWiFi[0].copyWith(ssid: 'MyHome-2.4'),
+        saved.mainWiFi[1].copyWith(ssid: 'MyHome-5'),
+      ]);
+      when(mockWiFiListNotifier.build()).thenReturn(perBand);
+      when(mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
+        await Future.delayed(Durations.extralong1);
+        return saved;
+      });
+      when(mockWiFiListNotifier.save())
+          .thenAnswer((realInvocation) async => perBand);
+
+      final widget = testableSingleRoute(
+        overrides: [
+          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
+          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
+          wifiAdvancedProvider
+              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
+          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
+        ],
+        locale: locale,
+        child: const WiFiMainView(),
+      );
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(AppFilledButton));
+      await tester.pumpAndSettle();
+      // Confirm the save; the actions are [Cancel, OK].
+      await tester.tap(find.byType(AppTextButton).last);
+      await tester.pumpAndSettle();
+    });
+
     testLocalizations(
         'Incredible-WiFi - Wifi list view - save confirm modal - MLO warning',
         (tester, locale) async {

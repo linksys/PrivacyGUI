@@ -11,15 +11,15 @@ import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_qr_credentials.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_list_advanced_mode_view.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_list_simple_mode_view.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_qr_dialog.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_qr_warning_card.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 
 class WiFiListView extends ArgumentsConsumerStatefulView {
   const WiFiListView({Key? key, super.args}) : super(key: key);
@@ -79,6 +79,12 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
     final hasChanged =
         _stateHasChanged(state: state, preserved: _preservedMainWiFiState);
     final isPositiveEnabled = hasChanged && _dataVerify(state);
+    // Only once there is something to save: simple mode takes one band's
+    // security mode, so bands that differ in nothing else would otherwise warn
+    // the moment the page opens.
+    final showQRWarning = hasChanged &&
+        wifiQRCredentialsChanged(
+            state: state, preserved: _preservedMainWiFiState);
 
     final wifiBands =
         state.mainWiFi.map((e) => e.radioID.bandName).toList().join(', ');
@@ -93,7 +99,7 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
         onPositiveTap: () async {
           // Read this before setQuickSetup pushes the simple-mode values onto
           // every band, which would make the comparison always come out equal.
-          final credentialsChanged = _wifiCredentialsChanged(
+          final credentialsChanged = wifiQRCredentialsChanged(
               state: state, preserved: _preservedMainWiFiState);
           if (state.isSimpleMode) {
             setQuickSetup(
@@ -103,8 +109,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
               mainWiFi: state.mainWiFi,
             );
           }
-          final result = await _showSaveConfirmModal(
-              offerNewQR: credentialsChanged);
+          final result =
+              await _showSaveConfirmModal(offerNewQR: credentialsChanged);
           if (!result) {
             _restoreMainWifi();
           }
@@ -119,9 +125,11 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
             const AppGap.medium(),
             _quickSetupSwitch(state.isSimpleMode),
             const AppGap.medium(),
-            if (_wifiCredentialsChanged(
-                state: state, preserved: _preservedMainWiFiState)) ...[
-              _qrWarning(),
+            // The printed QR codes encode the WiFi name, password and security
+            // mode, so the moment one is edited those codes are about to stop
+            // working - say so before the user saves, not after.
+            if (showQRWarning) ...[
+              WiFiQRWarningCard(message: loc(context).wifiListQRWarning),
               const AppGap.medium(),
             ],
             Expanded(
@@ -184,55 +192,6 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
     );
   }
 
-  // The name and password the router shipped with are what the printed QR codes
-  // encode, so the moment either one is edited those codes are about to stop
-  // working - say so before the user saves, not after.
-  Widget _qrWarning() {
-    final errorColor = Theme.of(context).colorScheme.error;
-    return AppSettingCard(
-      title: loc(context).wifiListQRWarning,
-      leading: Icon(
-        LinksysIcons.error,
-        semanticLabel: 'warning',
-        color: errorColor,
-      ),
-      borderColor: errorColor,
-      trailing: AppIconButton.noPadding(
-        icon: LinksysIcons.infoCircle,
-        semanticLabel: 'info',
-        color: Theme.of(context).colorScheme.primary,
-        onTap: _showQRInfoModal,
-      ),
-    );
-  }
-
-  void _showQRInfoModal() {
-    showSimpleAppDialog(
-      context,
-      title: loc(context).modalWiFiQRInfoTitle,
-      scrollable: true,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppText.bodyMedium(loc(context).modalWiFiQRInfoDesc1),
-          const AppGap.medium(),
-          AppText.bodyMedium(loc(context).modalWiFiQRInfoDesc2),
-          const AppGap.medium(),
-          AppText.bodyMedium(loc(context).modalWiFiQRInfoDesc3),
-        ],
-      ),
-      actions: [
-        AppTextButton(
-          loc(context).close,
-          onTap: () {
-            context.pop();
-          },
-        ),
-      ],
-    );
-  }
-
   Widget _quickSetupSwitch(bool isSimpleMode) {
     return AppCard(
       child: Row(
@@ -284,19 +243,10 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
       notifier.setWiFiSSID(ssid, radio.radioID);
       // Password
       notifier.setWiFiPassword(password, radio.radioID);
-      // Security type
-      if (radio.radioID == WifiRadioBand.radio_6) {
-        // Handle security type for 6G band
-        if (securityType.isOpenVariant) {
-          notifier.setWiFiSecurityType(
-              WifiSecurityType.enhancedOpenOnly, radio.radioID);
-        } else {
-          notifier.setWiFiSecurityType(
-              WifiSecurityType.wpa3Personal, radio.radioID);
-        }
-      } else {
-        notifier.setWiFiSecurityType(securityType, radio.radioID);
-      }
+      // Security type - shared with wifiQRCredentialsChanged, so the QR warning
+      // judges the same per-band value this writes.
+      notifier.setWiFiSecurityType(
+          radio.radioID.simpleModeSecurityType(securityType), radio.radioID);
       // Enable wifi
       notifier.setWiFiEnabled(true, radio.radioID);
     }
@@ -317,47 +267,16 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
     }
   }
 
-  // Narrower than _stateHasChanged: only the main WiFi name and password are
-  // encoded in the printed QR codes, so guest WiFi, security mode and channel
-  // edits must not trigger the warning or the new-QR dialog.
-  bool _wifiCredentialsChanged(
-      {required WiFiState state, WiFiState? preserved}) {
-    if (preserved == null) return false;
-
-    if (state.isSimpleMode) {
-      // Saving in simple mode pushes one name/password onto every band, so
-      // compare that pair against what each band broadcasts today. This also
-      // covers switching over from advanced mode with per-band names.
-      final simple = state.simpleModeWifi;
-      return preserved.mainWiFi.any((radio) =>
-          radio.ssid != simple.ssid || radio.password != simple.password);
-    }
-    return state.mainWiFi.any((radio) {
-      final before =
-          preserved.mainWiFi.firstWhereOrNull((e) => e.radioID == radio.radioID);
-      return before != null &&
-          (before.ssid != radio.ssid || before.password != radio.password);
-    });
-  }
-
-  // The QR codes the router shipped with are dead as soon as this save lands, so
-  // hand the user a replacement they can print or download straight away.
-  void _showNewQRDialog(WiFiState state) {
-    final enabled = state.mainWiFi.where((e) => e.isEnabled).toList();
-    if (enabled.isEmpty) return;
-
-    final bands = enabled
-        .map((e) => WiFiQRBand(
-              label: e.radioID.bandName,
-              ssid: e.ssid,
-              password: e.password,
-            ))
-        .toList();
-    // Bands sharing one name and password are one network to the user - show a
-    // single QR rather than the same code repeated per band.
-    final isUnified = bands.every((b) =>
-        b.ssid == bands.first.ssid && b.password == bands.first.password);
-    showWiFiQRDialog(context, bands: isUnified ? [bands.first] : bands);
+  // The save landed, directly or after the router came back. When it changed
+  // what the printed QR codes encode, those codes are dead now, so hand the
+  // user a replacement they can print or download straight away.
+  void _onSaved(WiFiState? state, {required bool offerNewQR}) {
+    update(state);
+    showChangesSavedSnackBar();
+    if (!offerNewQR || state == null) return;
+    final bands = wifiQRBandsFor(state);
+    if (bands.isEmpty) return;
+    showWiFiQRDialog(context, bands: bands);
   }
 
   Future<bool> _showSaveConfirmModal({bool offerNewQR = false}) async {
@@ -396,22 +315,14 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
               context, ref.read(wifiListProvider.notifier).save())
           .then((state) {
         if (!mounted) return false;
-        update(state);
-        showChangesSavedSnackBar();
-        if (offerNewQR && state != null) {
-          _showNewQRDialog(state);
-        }
+        _onSaved(state, offerNewQR: offerNewQR);
       }).catchError((error, stackTrace) {
         if (!mounted) return false;
         showRouterNotFoundAlert(context, ref,
             onComplete: () =>
                 ref.read(wifiListProvider.notifier).fetch(true)).then((state) {
           if (!mounted) return false;
-          update(state);
-          showChangesSavedSnackBar();
-          if (offerNewQR && state != null) {
-            _showNewQRDialog(state);
-          }
+          _onSaved(state, offerNewQR: offerNewQR);
         });
       }, test: (error) => error is JNAPSideEffectError).onError(
               (error, stackTrace) {
