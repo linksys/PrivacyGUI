@@ -57,6 +57,8 @@ void main() {
           'Device.WiFi.AccessPoint.*.AssociatedDevice.',
       InvalidationDomain.ethernetInterfaces: 'Device.Ethernet.Interface.',
       InvalidationDomain.wanStatus: 'Device.IP.Interface.',
+      InvalidationDomain.macFilter:
+          'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode',
     };
 
     test('every domain declares the TR-181 subtree it stands for', () {

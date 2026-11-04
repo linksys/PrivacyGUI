@@ -48,6 +48,11 @@ enum InvalidationDomain {
   /// The WAN instance is resolved by Alias, not hardcoded — see
   /// [wanInterfacePathProvider].
   wanStatus,
+
+  /// Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode — the
+  /// network-wide MAC filter mode, which the hardware privacy switch changes
+  /// too (PrivacyGUI#1755). The leaf, not the Network object.
+  macFilter,
 }
 
 /// One SSE invalidation event: the [domain] that changed, plus a [seq] that

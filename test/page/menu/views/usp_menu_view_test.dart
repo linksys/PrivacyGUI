@@ -1,18 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/app_menu_card.dart';
 import 'package:privacy_gui/core/capability/capability_provider.dart';
 import 'package:privacy_gui/core/capability/device_capability.dart';
-import 'package:privacy_gui/framework/preservable.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
-import 'package:privacy_gui/page/mac_filter/models/mac_filter_settings.dart';
-import 'package:privacy_gui/page/mac_filter/models/mac_filter_status.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_data.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
+import 'package:privacy_gui/page/mac_filter/providers/mac_filter_data_provider.dart';
 import 'package:privacy_gui/page/menu/views/usp_menu_view.dart';
 import 'package:privacy_gui/page/models/menu_badge.dart';
 
 import '../../../layout_gate/families/page_surface_family.dart';
+import '../../../mocks/provider_overrides/mock_mac_filter.dart';
 import '../../../mocks/provider_overrides/mock_menu.dart';
 import '../../../mocks/test_data/scenes/dhcp_scene_data.dart' as dhcp;
 import '../../../util/app_test_fonts.dart';
@@ -23,7 +25,9 @@ import '../../../util/app_test_fonts.dart';
 /// and its capability gate (#1635) lives on that page.
 ///
 /// The Instant Privacy badge reads the device's applied mode, and Instant
-/// Privacy is on only in `Allow` — MAC Filter's `Deny` must read as Off.
+/// Privacy is on only in `Allow` — MAC Filter's `Deny` must read as Off. It reads
+/// the session-wide MAC filter (`macFilterDataProvider`), which the router keeps
+/// current by pushing a mode change, the hardware privacy switch's too (#1755).
 ///
 /// **Untagged on purpose** so `run_tests.sh` runs it.
 void main() {
@@ -33,7 +37,8 @@ void main() {
 
   Future<void> pumpMenu(WidgetTester tester, String key,
       {required DeviceCapabilities capabilities,
-      MacFilterMode mode = MacFilterMode.disabled}) async {
+      MacFilterMode mode = MacFilterMode.disabled,
+      List<Override> extra = const []}) async {
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -45,6 +50,7 @@ void main() {
         overrides: [
           ...menuOverrides(lanInfo: dhcp.testLanInfo, privacyMode: mode),
           deviceCapabilitiesProvider.overrideWithValue(capabilities),
+          ...extra,
         ],
       ),
     ));
@@ -84,7 +90,7 @@ void main() {
         overrides: [
           ...menuOverrides(
               lanInfo: dhcp.testLanInfo, privacyMode: MacFilterMode.disabled),
-          uspInstantPrivacyProvider.overrideWith(() => privacy),
+          macFilterDataProvider.overrideWith(() => privacy),
           deviceCapabilitiesProvider
               .overrideWithValue(DeviceCapabilities.empty),
         ],
@@ -128,25 +134,77 @@ void main() {
             findsOneWidget);
       });
     }
+
+    Finder badgeText(String label) => find.descendant(
+        of: card('menu-instant-privacy'), matching: find.text(label));
+
+    // The switch moved while the menu was open: the push re-read the filter,
+    // and the badge follows without a reload.
+    testWidgets('follows a pushed mode change without a reload',
+        (tester) async {
+      final privacy = FixedMacFilterDataNotifier(
+          const MacFilterData(mode: MacFilterMode.disabled, macs: []));
+      await pumpMenu(tester, 'badge-push',
+          capabilities:
+              DeviceCapabilities(const {DeviceCapability.wifiMacFilter}),
+          extra: [macFilterDataProvider.overrideWith(() => privacy)]);
+      expect(badgeText(MenuBadge.off.label), findsOneWidget);
+
+      privacy.push(const MacFilterData(
+          mode: MacFilterMode.allow, macs: ['AA:BB:CC:DD:EE:01']));
+      await tester.pump();
+
+      expect(badgeText(MenuBadge.on.label), findsOneWidget);
+      expect(badgeText(MenuBadge.off.label), findsNothing);
+    });
+
+    testWidgets('shows no badge while the filter is still being read',
+        (tester) async {
+      await pumpMenu(tester, 'badge-loading',
+          capabilities:
+              DeviceCapabilities(const {DeviceCapability.wifiMacFilter}),
+          extra: [macFilterDataProvider.overrideWith(_NeverReadMacFilter.new)]);
+
+      expect(card('menu-instant-privacy'), findsOneWidget);
+      expect(badgeText(MenuBadge.on.label), findsNothing);
+      expect(badgeText(MenuBadge.off.label), findsNothing);
+    });
+
+    // Unchanged from before #1755: a failed read reads Off.
+    testWidgets('a failed read reads Off', (tester) async {
+      await pumpMenu(tester, 'badge-error',
+          capabilities:
+              DeviceCapabilities(const {DeviceCapability.wifiMacFilter}),
+          extra: [macFilterDataProvider.overrideWith(_FailedMacFilter.new)]);
+
+      expect(badgeText(MenuBadge.off.label), findsOneWidget);
+    });
   });
 }
 
 /// Counts `build()` calls — the provider fetches on build, so a build is a fetch.
-class _CountingPrivacy extends FixedInstantPrivacyNotifier {
+class _CountingPrivacy extends FixedMacFilterDataNotifier {
   _CountingPrivacy()
-      : super(UspInstantPrivacyState(
-          settings: Preservable(
-            original: MacFilterSettings.empty(),
-            current: MacFilterSettings.empty(),
-          ),
-          status: const MacFilterStatus(),
-        ));
+      : super(const MacFilterData(mode: MacFilterMode.disabled, macs: []));
 
   int builds = 0;
 
   @override
-  UspInstantPrivacyState build() {
+  Future<MacFilterData> build() {
     builds++;
     return super.build();
   }
+}
+
+/// A read that has not answered yet.
+class _NeverReadMacFilter extends MacFilterDataNotifier {
+  @override
+  Future<MacFilterData> build() => Completer<MacFilterData>().future;
+}
+
+/// A read that failed.
+class _FailedMacFilter extends MacFilterDataNotifier {
+  @override
+  Future<MacFilterData> build() async =>
+      throw const UnexpectedError(detail: 'read failed');
 }

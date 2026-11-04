@@ -2,14 +2,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_data.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_device_ui_model.dart';
+import 'package:privacy_gui/page/mac_filter/providers/mac_filter_data_provider.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_notifier.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_fetch_result.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_state.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
 import 'package:privacy_gui/page/mac_filter/services/mac_filter_service.dart';
+import 'package:privacy_gui/page/mac_filter/services/usp_mac_filter_data_service.dart';
 
 class MockMacFilterService extends Mock implements UspMacFilterService {}
+
+class MockUspMacFilterDataService extends Mock
+    implements UspMacFilterDataService {}
 
 void main() {
   late MockMacFilterService mockService;
@@ -47,14 +53,17 @@ void main() {
     when(() => mockService.setMacFilter(any(), any())).thenAnswer((_) async {});
   });
 
-  ProviderContainer makeContainer() => ProviderContainer(overrides: [
+  ProviderContainer makeContainer([List<Override> extra = const []]) =>
+      ProviderContainer(overrides: [
         uspMacFilterServiceProvider.overrideWithValue(mockService),
+        ...extra,
       ]);
 
   Future<(ProviderContainer, UspMacFilterNotifier)> loaded(
-      MacFilterFetchResult result) async {
+      MacFilterFetchResult result,
+      {List<Override> extra = const []}) async {
     when(() => mockService.fetchAll()).thenAnswer((_) async => result);
-    final c = makeContainer();
+    final c = makeContainer(extra);
     // Keep the AutoDispose provider alive across the async fetch, then let
     // build()'s microtask-triggered fetch() settle.
     c.listen(uspMacFilterProvider, (_, __) {});
@@ -63,6 +72,28 @@ void main() {
   }
 
   group('fetch', () {
+    // #1755 step 4: the page opens on the router, not on the session-wide
+    // filter, which learns of a mode change only and so can hold a stale list.
+    test('opening reads the router, not the session-wide filter', () async {
+      final data = MockUspMacFilterDataService();
+      when(() => data.fetch()).thenAnswer((_) async =>
+          const MacFilterData(mode: MacFilterMode.allow, macs: ['AA:BB']));
+      when(() => mockService.fetchAll()).thenAnswer((_) async => denyResult());
+      final c = makeContainer(
+          [uspMacFilterDataServiceProvider.overrideWithValue(data)]);
+      addTearDown(c.dispose);
+      c.listen(macFilterDataProvider, (_, __) {});
+      await c.read(macFilterDataProvider.future);
+
+      c.listen(uspMacFilterProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+
+      final s = c.read(uspMacFilterProvider);
+      expect(s.settings.original.mode, MacFilterMode.deny);
+      expect(s.settings.original.macs, ['AA:BB:CC:DD:EE:99']);
+      verify(() => mockService.fetchAll()).called(1);
+    });
+
     test('loads mode + list into a clean (non-dirty) state', () async {
       final (c, _) = await loaded(denyResult());
       final s = c.read(uspMacFilterProvider);
@@ -217,6 +248,29 @@ void main() {
   });
 
   group('save', () {
+    // The menu badge reads the session-wide filter; a save must reach it even
+    // when the SSE push does not (#1755). Deny reads Off there.
+    test('makes the session-wide filter re-read the router', () async {
+      final data = MockUspMacFilterDataService();
+      when(() => data.fetch()).thenAnswer((_) async =>
+          const MacFilterData(mode: MacFilterMode.allow, macs: []));
+      final (c, n) = await loaded(allowResult(),
+          extra: [uspMacFilterDataServiceProvider.overrideWithValue(data)]);
+      c.listen(macFilterDataProvider, (_, __) {});
+      expect((await c.read(macFilterDataProvider.future)).mode,
+          MacFilterMode.allow);
+
+      n.setEnabled(true);
+      n.addMac('AA:BB:CC:DD:EE:02');
+      when(() => data.fetch()).thenAnswer((_) async => const MacFilterData(
+          mode: MacFilterMode.deny, macs: ['AA:BB:CC:DD:EE:02']));
+      await n.save();
+
+      expect((await c.read(macFilterDataProvider.future)).mode,
+          MacFilterMode.deny);
+      c.dispose();
+    });
+
     test('writes current (mode, macs) exactly once', () async {
       final (c, n) = await loaded(disabledResult());
       n.setEnabled(true);

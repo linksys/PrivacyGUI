@@ -327,6 +327,34 @@ void main() {
       );
     });
 
+    // The payload the router sends when the hardware privacy switch or a save
+    // changes the mode, measured on 2.0.4.26102917 (PrivacyGUI#1755).
+    test('the MAC filter mode leaf → macFilter', () async {
+      await sendAndExpect(
+        'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode',
+        InvalidationDomain.macFilter,
+      );
+    });
+
+    test('another Network leaf is not macFilter', () async {
+      await sendAndExpectEmpty('Device.WiFi.DataElements.Network.ControllerID');
+    });
+
+    test('the app subscribes the MAC filter mode leaf, not the Network object',
+        () {
+      // The menu's Instant Privacy badge learns of a switch move only from this
+      // ValueChange. The whole `Network.` object would push every mesh change.
+      final mode = coreSubscriptions.where((s) =>
+          s.$2 == 'ValueChange' &&
+          s.$3 == 'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode');
+      expect(mode, hasLength(1),
+          reason: 'no core ValueChange subscription on the mode leaf');
+      expect(
+          coreSubscriptions
+              .where((s) => s.$3 == 'Device.WiFi.DataElements.Network.'),
+          isEmpty);
+    });
+
     test('path with .Stats. → filtered out (null)', () async {
       await sendAndExpectEmpty(
           'Device.WiFi.SSID.2.Stats.UnicastPacketsReceived');
