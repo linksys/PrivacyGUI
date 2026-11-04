@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
@@ -24,9 +25,11 @@ class ExternalDeviceDetailNotifier extends Notifier<ExternalDeviceDetailState> {
     if (targetId.isEmpty) {
       return newState;
     }
-    final targetItem = filteredDevices.firstWhere(
+    final targetItem = filteredDevices.firstWhereOrNull(
       (device) => device.deviceId == targetId,
     );
+    // Deleting a client updates the list before its detail route is closed.
+    if (targetItem == null) return newState;
     newState = newState.copyWith(
       item: targetItem,
     );
