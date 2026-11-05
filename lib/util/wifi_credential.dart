@@ -1,3 +1,8 @@
+/// Characters the WiFi QR format gives a meaning of its own: ; : , separate
+/// the fields, \ escapes and " quotes. A name or password holding one must
+/// escape it with a backslash.
+final _qrSpecialCharacters = RegExp(r'[\\;,:"]');
+
 enum SecurityType { wpa, wep, none }
 
 class WiFiCredential {
@@ -64,11 +69,16 @@ class WiFiCredential {
   final bool isHidden;
 
   String generate() {
+    final name = _escape(ssid);
     // An open network is "nopass" in the WiFi QR format, and must not carry a
     // password, or phones try to join it as WPA.
     if (type == SecurityType.none) {
-      return 'WIFI:S:$ssid;T:nopass;H:$isHidden;;';
+      return 'WIFI:S:$name;T:nopass;H:$isHidden;;';
     }
-    return 'WIFI:S:$ssid;P:$password;T:${type.name.toUpperCase()};H:$isHidden;;';
+    return 'WIFI:S:$name;P:${_escape(password)};'
+        'T:${type.name.toUpperCase()};H:$isHidden;;';
   }
+
+  static String _escape(String value) =>
+      value.replaceAllMapped(_qrSpecialCharacters, (m) => '\\${m[0]}');
 }
