@@ -5,6 +5,9 @@ import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/page/dashboard/orchestrator/dashboard_orchestrator.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_data.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
+import 'package:privacy_gui/page/mac_filter/providers/mac_filter_data_provider.dart';
 
 /// Connection state a test can move by hand. `build()` is overridden so none of
 /// the real notifier's wiring (SSE manager, auth listener) runs.
@@ -24,6 +27,17 @@ class _CountingWanDataNotifier extends WanDataNotifier {
   Future<WanData> build() async {
     builds++;
     throw StateError('not read by these tests');
+  }
+}
+
+/// Counts reads of the session-wide MAC filter (the menu's Instant Privacy badge).
+class _CountingMacFilterDataNotifier extends MacFilterDataNotifier {
+  int builds = 0;
+
+  @override
+  Future<MacFilterData> build() async {
+    builds++;
+    return const MacFilterData(mode: MacFilterMode.disabled, macs: []);
   }
 }
 
@@ -154,6 +168,34 @@ void main() {
       await settle();
 
       expect(wan.builds, 1);
+    });
+  });
+
+  group('DashboardOrchestrator - the MAC filter (#1755)', () {
+    // A hardware privacy switch move made while the router is off is applied at
+    // boot, and its push goes out before the app is back. Only a re-read after
+    // the recovery wait brings the menu's Instant Privacy badge to it.
+    test('is re-read after a recovery wait', () async {
+      final connection = _DrivenConnectionState();
+      final macFilter = _CountingMacFilterDataNotifier();
+      final container = ProviderContainer(overrides: [
+        appConnectionStateProvider.overrideWith(() => connection),
+        macFilterDataProvider.overrideWith(() => macFilter),
+      ]);
+      addTearDown(container.dispose);
+      container.listen(appConnectionStateProvider, (_, __) {});
+      container.listen(macFilterDataProvider, (_, __) {});
+      container.listen(dashboardOrchestratorProvider, (_, __) {});
+      await pumpEventQueue();
+      expect(macFilter.builds, 1);
+
+      connection.move(AppConnectionState.waitingForRecovery);
+      connection.move(AppConnectionState.authenticated);
+      await pumpEventQueue();
+      container.read(macFilterDataProvider);
+      await pumpEventQueue();
+
+      expect(macFilter.builds, 2);
     });
   });
 }

@@ -113,8 +113,10 @@ class UspMenuView extends ConsumerWidget {
           badges: privacy.when(
             data: (filter) =>
                 [filter.isInstantPrivacyOn ? MenuBadge.on : MenuBadge.off],
+            // Not read yet, or the read failed: the mode is unknown, so no
+            // badge rather than an Off it cannot vouch for.
             loading: () => [],
-            error: (_, __) => [MenuBadge.off],
+            error: (_, __) => [],
           ),
           onTap: () => context.goNamed(RouteNamed.uspInstantPrivacy),
         ),

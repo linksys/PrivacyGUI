@@ -170,14 +170,17 @@ void main() {
       expect(badgeText(MenuBadge.off.label), findsNothing);
     });
 
-    // Unchanged from before #1755: a failed read reads Off.
-    testWidgets('a failed read reads Off', (tester) async {
+    // A failed read does not know the mode, so it claims neither On nor Off:
+    // no badge, as while loading and as the Instant Safety badge beside it.
+    testWidgets('shows no badge when the read failed', (tester) async {
       await pumpMenu(tester, 'badge-error',
           capabilities:
               DeviceCapabilities(const {DeviceCapability.wifiMacFilter}),
           extra: [macFilterDataProvider.overrideWith(_FailedMacFilter.new)]);
 
-      expect(badgeText(MenuBadge.off.label), findsOneWidget);
+      expect(card('menu-instant-privacy'), findsOneWidget);
+      expect(badgeText(MenuBadge.on.label), findsNothing);
+      expect(badgeText(MenuBadge.off.label), findsNothing);
     });
   });
 }

@@ -15,6 +15,9 @@ import 'package:privacy_gui/page/mac_filter/services/usp_mac_filter_data_service
 /// which writes the filter without the app (PrivacyGUI#1755). A push re-reads
 /// the filter here.
 ///
+/// Only the mode is kept current: a change to the list alone is not pushed, so
+/// [MacFilterData.macs] is as of the last read. Do not show the list from here.
+///
 /// The Instant Privacy and MAC Filter pages keep their own working copy and
 /// read the router when they open; a push never reaches them (constitution
 /// Article IV Rule 2). Their save invalidates this provider.

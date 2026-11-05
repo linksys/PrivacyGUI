@@ -6,6 +6,10 @@ import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
 /// One state behind both Instant Privacy (`Allow`) and MAC Filter (`Deny`).
 class MacFilterData extends Equatable {
   final MacFilterMode mode;
+
+  /// The list as of the last read. The router pushes a change of the mode only
+  /// (#1755), so in `macFilterDataProvider` this can be stale after a change to
+  /// the list alone; a surface that shows the list reads the router itself.
   final List<String> macs;
 
   const MacFilterData({required this.mode, required this.macs});

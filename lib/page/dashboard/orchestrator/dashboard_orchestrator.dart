@@ -16,6 +16,7 @@ import 'package:privacy_gui/page/local_network/providers/ethernet_data_provider.
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
+import 'package:privacy_gui/page/mac_filter/providers/mac_filter_data_provider.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_auto_update_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
@@ -87,6 +88,10 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
   /// would keep answering "no update" from the reading it took at login, and pull
   /// to refresh would not fix it — which is the one gesture a user makes when they
   /// think the page is stale.
+  ///
+  /// `macFilter` is the menu's Instant Privacy badge (#1755). It has a push, but a
+  /// hardware privacy switch move made while the router is off is applied at
+  /// boot, before the app is back to hear it.
   static final _allDomainProviders = [
     ('systemInfo', systemInfoDataProvider),
     ('devices', devicesDataProvider),
@@ -101,6 +106,7 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
     ('time', timeDataProvider),
     ('firmwareBanks', firmwareBanksDataProvider),
     ('firmwareAutoUpdate', firmwareAutoUpdateDataProvider),
+    ('macFilter', macFilterDataProvider),
   ];
 
   @override
