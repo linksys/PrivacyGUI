@@ -5,7 +5,7 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 
 /// Warns that the QR codes printed with the router are about to stop working,
 /// with an info button explaining them. Setup and WiFi Settings both show it,
@@ -19,19 +19,30 @@ class WiFiQRWarningCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // Informational, not a validation failure - so not the error color.
     final color = Theme.of(context).colorSchemeExt.orange;
-    return AppSettingCard(
-      title: message,
-      leading: Icon(
-        LinksysIcons.error,
-        semanticLabel: 'warning',
-        color: color,
-      ),
+    // Laid out like the info cards it sits next to: same padding, icon size,
+    // gap and text style. A triangle, so it does not read like the round
+    // info button at the other end.
+    return AppCard(
       borderColor: color,
-      trailing: AppIconButton.noPadding(
-        icon: LinksysIcons.infoCircle,
-        semanticLabel: 'info',
-        color: Theme.of(context).colorScheme.primary,
-        onTap: () => showWiFiQRInfoModal(context),
+      child: Row(
+        children: [
+          Icon(
+            Icons.warning_amber_rounded,
+            semanticLabel: 'warning',
+            color: color,
+          ),
+          const AppGap.medium(),
+          Expanded(
+            child: AppText.bodySmall(message, maxLines: 30),
+          ),
+          const AppGap.medium(),
+          AppIconButton.noPadding(
+            icon: LinksysIcons.infoCircle,
+            semanticLabel: 'info',
+            color: Theme.of(context).colorScheme.primary,
+            onTap: () => showWiFiQRInfoModal(context),
+          ),
+        ],
       ),
     );
   }

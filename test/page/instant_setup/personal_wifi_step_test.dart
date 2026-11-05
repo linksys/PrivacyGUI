@@ -15,9 +15,9 @@ import 'package:privacy_gui/page/instant_setup/data/pnp_wifi_settings.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_setup_view.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_ssid_widget.dart';
+import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_qr_warning_card.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import '../../common/di.dart';
 import '../../common/testable_router.dart';
 import '../../common/theme_data.dart';
@@ -166,7 +166,7 @@ void main() async {
     await tester.enterText(ssidField, 'MyHomeWiFi');
     await tester.pumpAndSettle();
     await tester.tap(find.descendant(
-      of: find.byType(AppSettingCard),
+      of: find.byType(WiFiQRWarningCard),
       matching: find.byIcon(LinksysIcons.infoCircle),
     ));
     await tester.pumpAndSettle();
