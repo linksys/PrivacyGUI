@@ -6,11 +6,13 @@ import 'package:privacy_gui/page/instant_setup/data/pnp_wifi_settings.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_password_widget.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_ssid_widget.dart';
+import 'package:privacy_gui/page/components/widgets/wifi_qr/wifi_qr_warning_card.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 class PersonalWiFiStep extends PnpStep {
   static int id = 0;
@@ -25,6 +27,10 @@ class PersonalWiFiStep extends PnpStep {
 
   // WiFi settings
   PnpWiFiSettings? _wifiSettings;
+
+  // Fires whenever any name/password field changes, so the QR warning can
+  // appear as soon as the shipped credentials are edited.
+  Listenable _wifiFieldsListenable = Listenable.merge([]);
 
   PersonalWiFiStep({
     super.saveChanges,
@@ -54,6 +60,13 @@ class PersonalWiFiStep extends PnpStep {
       _ssidEditController?.text = primaryRadio?.ssid ?? '';
       _passwordEditController?.text = primaryRadio?.password ?? '';
     }
+
+    _wifiFieldsListenable = Listenable.merge([
+      _ssidEditController,
+      _passwordEditController,
+      ...?_perBandSsidControllers?.values,
+      ...?_perBandPasswordControllers?.values,
+    ]);
 
     _checkForEnablingNext(ref);
     canGoNext(saveChanges == null);
@@ -121,6 +134,7 @@ class PersonalWiFiStep extends PnpStep {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _buildOptionalNotice(context),
         WiFiSSIDField(
           controller: _ssidEditController,
           label: loc(context).wifiName,
@@ -150,6 +164,7 @@ class PersonalWiFiStep extends PnpStep {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _buildOptionalNotice(context),
         for (final radio in _wifiSettings!.radios) ...[
           AppCard(
             child: Column(
@@ -187,7 +202,32 @@ class PersonalWiFiStep extends PnpStep {
     );
   }
 
+  // Personalizing is optional: the shipped WiFi credentials are already
+  // secure, so state that up front - before the fields - so users who already
+  // have devices on the printed default network know they can just continue.
+  Widget _buildOptionalNotice(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Spacing.large2),
+      child: AppText.bodyMedium(
+        loc(context).pnpPersonalizeOptionalInfo,
+        maxLines: 10,
+      ),
+    );
+  }
+
+  // Keeping the shipped credentials changes nothing, so a plain reminder is
+  // enough - but once a field is edited the printed QR codes are about to stop
+  // working, which the user must not miss before saving.
   Widget _buildInfoSection(BuildContext context) {
+    return ListenableBuilder(
+      listenable: _wifiFieldsListenable,
+      builder: (context, _) => _isWiFiChanged()
+          ? _buildQRWarningCard(context)
+          : _buildDefaultsReminder(context),
+    );
+  }
+
+  Widget _buildDefaultsReminder(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,16 +238,46 @@ class PersonalWiFiStep extends PnpStep {
             maxLines: 10,
           ),
         ),
-        AppIconButton.noPadding(
-          icon: LinksysIcons.infoCircle,
-          semanticLabel: 'info',
-          color: Theme.of(context).colorScheme.primary,
-          onTap: () {
-            _showDefaultsInfoModal(context);
-          },
-        )
+        _buildInfoButton(context),
       ],
     );
+  }
+
+  // The same card WiFi Settings shows, so its info button explains the printed
+  // QR codes in the same words.
+  Widget _buildQRWarningCard(BuildContext context) {
+    return WiFiQRWarningCard(message: loc(context).pnpPersonalizeQRWarning);
+  }
+
+  Widget _buildInfoButton(BuildContext context) {
+    return AppIconButton.noPadding(
+      icon: LinksysIcons.infoCircle,
+      semanticLabel: 'info',
+      color: Theme.of(context).colorScheme.primary,
+      onTap: () {
+        _showDefaultsInfoModal(context);
+      },
+    );
+  }
+
+  // Compares against the credentials the router shipped with, so reverting an
+  // edit takes the warning away again.
+  bool _isWiFiChanged() {
+    final settings = _wifiSettings;
+    if (settings == null) {
+      return false;
+    }
+    if (settings.isSplitMode) {
+      return settings.radios.any((radio) =>
+          _perBandSsidControllers?[radio.band]?.text != radio.ssid ||
+          _perBandPasswordControllers?[radio.band]?.text != radio.password);
+    }
+    final primaryRadio = settings.primaryRadio;
+    if (primaryRadio == null) {
+      return false;
+    }
+    return _ssidEditController?.text != primaryRadio.ssid ||
+        _passwordEditController?.text != primaryRadio.password;
   }
 
   String _getBandLabel(String band) {
@@ -282,20 +352,33 @@ class PersonalWiFiStep extends PnpStep {
               },
             ),
           ],
+          // The body holds six paragraphs, which can exceed the viewport on
+          // short screens or in locales with longer copy. Scroll the body only,
+          // so the title and the Close action stay visible.
           content: SizedBox(
             width: 400.0,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppText.bodyMedium(loc(context).modalPnpWiFiDefaultsInfoDesc1),
-                const AppGap.medium(),
-                AppText.bodyMedium(loc(context).modalPnpWiFiDefaultsInfoDesc2),
-                const AppGap.medium(),
-                AppText.bodyMedium(loc(context).modalPnpWiFiDefaultsInfoDesc3),
-                const AppGap.medium(),
-                AppText.bodyMedium(loc(context).modalPnpWiFiDefaultsInfoDesc4),
-              ],
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.bodyMedium(loc(context).modalPnpWiFiOptionalDesc1),
+                  const AppGap.medium(),
+                  AppText.bodyMedium(loc(context).modalPnpWiFiOptionalDesc2),
+                  const AppGap.medium(),
+                  AppText.bodyMedium(
+                      loc(context).modalPnpWiFiDefaultsInfoDesc1),
+                  const AppGap.medium(),
+                  AppText.bodyMedium(
+                      loc(context).modalPnpWiFiDefaultsInfoDesc2),
+                  const AppGap.medium(),
+                  AppText.bodyMedium(
+                      loc(context).modalPnpWiFiDefaultsInfoDesc3),
+                  const AppGap.medium(),
+                  AppText.bodyMedium(
+                      loc(context).modalPnpWiFiDefaultsInfoDesc4),
+                ],
+              ),
             ),
           ),
         );

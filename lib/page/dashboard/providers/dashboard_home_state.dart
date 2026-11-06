@@ -1,11 +1,15 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_item.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_qr_credentials.dart';
+import 'package:privacy_gui/util/wifi_credential.dart';
 
 class DashboardSpeedItem extends Equatable {
   final String unit;
@@ -60,6 +64,11 @@ class DashboardWiFiItem extends Equatable {
   final bool isEnabled;
   final int numOfConnectedDevices;
 
+  /// The security mode the network broadcasts; null where it is not known
+  /// (the guest network), which shares a WPA code as before.
+  final WifiSecurityType? securityType;
+  final bool isBroadcast;
+
   const DashboardWiFiItem({
     required this.ssid,
     required this.password,
@@ -67,6 +76,8 @@ class DashboardWiFiItem extends Equatable {
     required this.isGuest,
     required this.isEnabled,
     required this.numOfConnectedDevices,
+    this.securityType,
+    this.isBroadcast = true,
   });
 
   factory DashboardWiFiItem.fromMainRadios(
@@ -79,6 +90,8 @@ class DashboardWiFiItem extends Equatable {
       isGuest: false,
       isEnabled: radio.settings.isEnabled,
       numOfConnectedDevices: connectedDevices,
+      securityType: _securityTypeOf(radio.settings.security),
+      isBroadcast: radio.settings.broadcastSSID,
     );
   }
 
@@ -102,6 +115,8 @@ class DashboardWiFiItem extends Equatable {
     bool? isGuest,
     bool? isEnabled,
     int? numOfConnectedDevices,
+    WifiSecurityType? securityType,
+    bool? isBroadcast,
   }) {
     return DashboardWiFiItem(
       ssid: ssid ?? this.ssid,
@@ -111,8 +126,19 @@ class DashboardWiFiItem extends Equatable {
       isEnabled: isEnabled ?? this.isEnabled,
       numOfConnectedDevices:
           numOfConnectedDevices ?? this.numOfConnectedDevices,
+      securityType: securityType ?? this.securityType,
+      isBroadcast: isBroadcast ?? this.isBroadcast,
     );
   }
+
+  /// What the QR code Share WiFi hands out for this network encodes - the
+  /// same code a WiFi Settings save ends on.
+  WiFiCredential get qrCredential => wifiQRCredential(
+        ssid: ssid,
+        password: password,
+        securityType: securityType,
+        isBroadcast: isBroadcast,
+      );
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
@@ -122,6 +148,8 @@ class DashboardWiFiItem extends Equatable {
       'isGuest': isGuest,
       'isEnabled': isEnabled,
       'numOfConnectedDevices': numOfConnectedDevices,
+      'securityType': securityType?.value,
+      'isBroadcast': isBroadcast,
     };
   }
 
@@ -133,6 +161,8 @@ class DashboardWiFiItem extends Equatable {
       isGuest: map['isGuest'] as bool,
       isEnabled: map['isEnabled'] as bool,
       numOfConnectedDevices: map['numOfConnectedDevices'] as int,
+      securityType: _securityTypeOf(map['securityType'] as String?),
+      isBroadcast: map['isBroadcast'] as bool? ?? true,
     );
   }
 
@@ -145,7 +175,7 @@ class DashboardWiFiItem extends Equatable {
   bool get stringify => true;
 
   @override
-  List<Object> get props {
+  List<Object?> get props {
     return [
       ssid,
       password,
@@ -153,8 +183,15 @@ class DashboardWiFiItem extends Equatable {
       isGuest,
       isEnabled,
       numOfConnectedDevices,
+      securityType,
+      isBroadcast,
     ];
   }
+
+  // A security mode this app does not know is treated as not known, rather
+  // than failing the dashboard.
+  static WifiSecurityType? _securityTypeOf(String? value) =>
+      WifiSecurityType.values.firstWhereOrNull((e) => e.value == value);
 }
 
 class DashboardHomeState extends Equatable {

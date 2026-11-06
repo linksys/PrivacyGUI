@@ -478,6 +478,232 @@ void main() {
     });
 
     testLocalizations(
+        'Incredible-WiFi - Wifi list view - simple mode - QR invalidation warning',
+        (tester, locale) async {
+      final saved = WiFiState.fromMap(wifiListTestState);
+      // build() is the state the user is editing, fetch() is what the router
+      // broadcasts today - a differing WiFi name is what puts the view in the
+      // edited state the warning reacts to.
+      when(mockWiFiListNotifier.build()).thenReturn(saved.copyWith(
+        isSimpleMode: true,
+        simpleModeWifi: saved.simpleModeWifi.copyWith(ssid: 'MyNewWiFi'),
+      ));
+      when(mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
+        await Future.delayed(Durations.extralong1);
+        return saved;
+      });
+
+      final widget = testableSingleRoute(
+        overrides: [
+          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
+          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
+          wifiAdvancedProvider
+              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
+          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
+        ],
+        locale: locale,
+        child: const WiFiMainView(),
+      );
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+    }, screens: [
+      ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
+      ...responsiveDesktopScreens
+    ]);
+
+    // Advanced mode lays the bands out as cards of their own; one band's
+    // security mode alone is enough to raise the warning above them.
+    testLocalizations(
+        'Incredible-WiFi - Wifi list view - advanced mode - QR invalidation warning',
+        (tester, locale) async {
+      final saved = WiFiState.fromMap(wifiListTestState);
+      when(mockWiFiListNotifier.build()).thenReturn(saved.copyWith(mainWiFi: [
+        saved.mainWiFi[0],
+        saved.mainWiFi[1].copyWith(securityType: WifiSecurityType.wpa3Personal),
+      ]));
+      when(mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
+        await Future.delayed(Durations.extralong1);
+        return saved;
+      });
+
+      final widget = testableSingleRoute(
+        overrides: [
+          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
+          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
+          wifiAdvancedProvider
+              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
+          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
+        ],
+        locale: locale,
+        child: const WiFiMainView(),
+      );
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+    }, screens: [
+      ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
+      ...responsiveDesktopScreens
+    ]);
+
+    testLocalizations(
+        'Incredible-WiFi - Wifi list view - simple mode - QR invalidation info modal',
+        (tester, locale) async {
+      final saved = WiFiState.fromMap(wifiListTestState);
+      when(mockWiFiListNotifier.build()).thenReturn(saved.copyWith(
+        isSimpleMode: true,
+        simpleModeWifi: saved.simpleModeWifi.copyWith(ssid: 'MyNewWiFi'),
+      ));
+      when(mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
+        await Future.delayed(Durations.extralong1);
+        return saved;
+      });
+
+      final widget = testableSingleRoute(
+        overrides: [
+          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
+          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
+          wifiAdvancedProvider
+              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
+          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
+        ],
+        locale: locale,
+        child: const WiFiMainView(),
+      );
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.bySemanticsLabel('info').first);
+      await tester.pumpAndSettle();
+    });
+
+    testLocalizations(
+        'Incredible-WiFi - Wifi list view - new QR code after save',
+        (tester, locale) async {
+      final saved = WiFiState.fromMap(wifiListTestState);
+      final personalized = saved.copyWith(
+        isSimpleMode: true,
+        simpleModeWifi: saved.simpleModeWifi.copyWith(ssid: 'MyNewWiFi'),
+      );
+      when(mockWiFiListNotifier.build()).thenReturn(personalized);
+      when(mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
+        await Future.delayed(Durations.extralong1);
+        return saved;
+      });
+      // What the router reports once the new name has landed on every band.
+      when(mockWiFiListNotifier.save()).thenAnswer((realInvocation) async {
+        return personalized.copyWith(
+          mainWiFi: personalized.mainWiFi
+              .map((e) => e.copyWith(ssid: 'MyNewWiFi'))
+              .toList(),
+        );
+      });
+
+      final widget = testableSingleRoute(
+        overrides: [
+          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
+          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
+          wifiAdvancedProvider
+              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
+          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
+        ],
+        locale: locale,
+        child: const WiFiMainView(),
+      );
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(AppFilledButton));
+      await tester.pumpAndSettle();
+      // Confirm the save; the actions are [Cancel, OK].
+      await tester.tap(find.byType(AppTextButton).last);
+      await tester.pumpAndSettle();
+    });
+
+    // An open network joins without a password, so its new QR comes with no
+    // password to show or copy.
+    testLocalizations(
+        'Incredible-WiFi - Wifi list view - new QR code after save - open network',
+        (tester, locale) async {
+      final saved = WiFiState.fromMap(wifiListTestState);
+      final open = saved.copyWith(
+        isSimpleMode: true,
+        simpleModeWifi:
+            saved.simpleModeWifi.copyWith(securityType: WifiSecurityType.open),
+      );
+      when(mockWiFiListNotifier.build()).thenReturn(open);
+      when(mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
+        await Future.delayed(Durations.extralong1);
+        return saved;
+      });
+      // What the router reports once every band is open.
+      when(mockWiFiListNotifier.save()).thenAnswer((realInvocation) async {
+        return open.copyWith(
+          mainWiFi: open.mainWiFi
+              .map((e) => e.copyWith(securityType: WifiSecurityType.open))
+              .toList(),
+        );
+      });
+
+      final widget = testableSingleRoute(
+        overrides: [
+          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
+          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
+          wifiAdvancedProvider
+              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
+          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
+        ],
+        locale: locale,
+        child: const WiFiMainView(),
+      );
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(AppFilledButton));
+      await tester.pumpAndSettle();
+      // Confirm the save; the actions are [Cancel, OK].
+      await tester.tap(find.byType(AppTextButton).last);
+      await tester.pumpAndSettle();
+    });
+
+    // Bands saved with their own names each get a QR in a narrow card, which is
+    // where long locales run out of room first.
+    testLocalizations(
+        'Incredible-WiFi - Wifi list view - new QR codes after save - per band',
+        (tester, locale) async {
+      final saved = WiFiState.fromMap(wifiListTestState);
+      final perBand = saved.copyWith(mainWiFi: [
+        saved.mainWiFi[0].copyWith(ssid: 'MyHome-2.4'),
+        saved.mainWiFi[1].copyWith(ssid: 'MyHome-5'),
+      ]);
+      when(mockWiFiListNotifier.build()).thenReturn(perBand);
+      when(mockWiFiListNotifier.fetch()).thenAnswer((realInvocation) async {
+        await Future.delayed(Durations.extralong1);
+        return saved;
+      });
+      when(mockWiFiListNotifier.save())
+          .thenAnswer((realInvocation) async => perBand);
+
+      final widget = testableSingleRoute(
+        overrides: [
+          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
+          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
+          wifiAdvancedProvider
+              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
+          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
+        ],
+        locale: locale,
+        child: const WiFiMainView(),
+      );
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(AppFilledButton));
+      await tester.pumpAndSettle();
+      // Confirm the save; the actions are [Cancel, OK].
+      await tester.tap(find.byType(AppTextButton).last);
+      await tester.pumpAndSettle();
+    });
+
+    testLocalizations(
         'Incredible-WiFi - Wifi list view - save confirm modal - MLO warning',
         (tester, locale) async {
       final wifiState = WiFiState.fromMap(wifiListGuestEnabledTestState);
