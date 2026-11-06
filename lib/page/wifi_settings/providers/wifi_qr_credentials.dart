@@ -9,6 +9,24 @@ import 'package:privacy_gui/util/wifi_credential.dart';
 SecurityType wifiQRSecurityType(WifiSecurityType type) =>
     type.isOpenVariant ? SecurityType.none : SecurityType.wpa;
 
+/// What the QR code for a network broadcasting [ssid] with [password] and
+/// [securityType] encodes. A network whose security mode is not known gets a
+/// WPA code, as the router ships.
+WiFiCredential wifiQRCredential({
+  required String ssid,
+  required String password,
+  WifiSecurityType? securityType,
+  bool isBroadcast = true,
+}) =>
+    WiFiCredential(
+      ssid: ssid,
+      password: password,
+      type: securityType == null
+          ? SecurityType.wpa
+          : wifiQRSecurityType(securityType),
+      isHidden: !isBroadcast,
+    );
+
 /// The QR codes to hand the user once [saved] is what the router broadcasts.
 ///
 /// Bands whose codes come out identical are one network to the user, so they
@@ -18,11 +36,11 @@ List<WiFiQRBand> wifiQRBandsFor(WiFiState saved) {
       .where((e) => e.isEnabled)
       .map((e) => WiFiQRBand(
             label: e.radioID.bandName,
-            credential: WiFiCredential(
+            credential: wifiQRCredential(
               ssid: e.ssid,
               password: e.password,
-              type: wifiQRSecurityType(e.securityType),
-              isHidden: !e.isBroadcast,
+              securityType: e.securityType,
+              isBroadcast: e.isBroadcast,
             ),
           ))
       .toList();

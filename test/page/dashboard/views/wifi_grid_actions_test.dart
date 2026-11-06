@@ -8,8 +8,11 @@ import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_item.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_list_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
+import 'package:privacy_gui/page/wifi_settings/views/wifi_share_detail_view.dart';
+import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 import '../../../common/config.dart';
@@ -152,6 +155,30 @@ void main() {
       expect(errors, isEmpty);
       expectNothingSaved();
       expect(find.text('Ok'), findsNothing, reason: 'the dialog is closed');
+    });
+  });
+
+  // Share WiFi hands out the same code a WiFi Settings save ends on, so an
+  // open network shares a code that joins without a password.
+  group('Share WiFi', () {
+    testWidgets('an open network shares a code without a password',
+        (tester) async {
+      final home = DashboardHomeState.fromMap(dashboardHomeCherry7TestState);
+      when(mockDashboardHomeNotifier.build()).thenReturn(home.copyWith(wifis: [
+        home.wifis.first.copyWith(securityType: WifiSecurityType.open),
+        ...home.wifis.skip(1),
+      ]));
+      await pump(tester);
+
+      await tester.tap(find.byIcon(LinksysIcons.qrCode).first);
+      await tester.pumpAndSettle();
+
+      final share =
+          tester.widget<WiFiShareDetailView>(find.byType(WiFiShareDetailView));
+      expect(
+        share.credential!.generate(),
+        'WIFI:S:Linksys03041;T:nopass;H:false;;',
+      );
     });
   });
 }
