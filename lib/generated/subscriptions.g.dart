@@ -3,6 +3,11 @@
 // Any modifications will be overwritten on next generation
 
 const coreSubscriptions = [
+  (
+    'mac-filter-mode-valuechange',
+    'ValueChange',
+    'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode'
+  ),
   ('ethernet-valuechange', 'ValueChange', 'Device.Ethernet.Interface.'),
   ('wan-status-valuechange', 'ValueChange', 'Device.IP.Interface.'),
   ('dhcp-clients-02', 'ValueChange', 'Device.DHCPv4.Server.Pool.'),

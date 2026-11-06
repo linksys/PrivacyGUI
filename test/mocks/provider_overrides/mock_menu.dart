@@ -18,12 +18,9 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
-import 'package:privacy_gui/framework/preservable.dart';
-import 'package:privacy_gui/page/mac_filter/models/mac_filter_settings.dart';
-import 'package:privacy_gui/page/mac_filter/models/mac_filter_status.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_data.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
+import 'package:privacy_gui/page/mac_filter/providers/mac_filter_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 import 'package:privacy_gui/core/capability/capability_provider.dart';
 import 'package:privacy_gui/core/capability/device_capability.dart';
@@ -31,22 +28,9 @@ import 'package:privacy_gui/core/capability/device_capability.dart';
 // `FixedLanDataNotifier` is imported rather than restated. It is the same one-method
 // subclass either way, and two of them would be two places to fix when
 // `LanDataNotifier` gains a member — the reason the constitution wants one canonical
-// definition of anything a test depends on.
+// definition of anything a test depends on. `FixedMacFilterDataNotifier` likewise.
 import 'mock_dhcp.dart' show FixedLanDataNotifier;
-
-/// A [UspInstantPrivacyNotifier] pinned to one state.
-///
-/// `build()` is the only member overridden: the menu reads `isAppliedOn` and
-/// nothing else, and none of the notifier's mutations are reachable from this page — the
-/// card's `onTap` navigates to the privacy page rather than toggling anything.
-class FixedInstantPrivacyNotifier extends UspInstantPrivacyNotifier {
-  final UspInstantPrivacyState _fixedState;
-
-  FixedInstantPrivacyNotifier(this._fixedState);
-
-  @override
-  UspInstantPrivacyState build() => _fixedState;
-}
+import 'mock_mac_filter.dart' show FixedMacFilterDataNotifier;
 
 /// Overrides for `usp_menu_view`.
 ///
@@ -63,16 +47,11 @@ List<Override> menuOverrides({
     [
       lanDataProvider
           .overrideWith(() => FixedLanDataNotifier(LanData(model: lanInfo))),
-      uspInstantPrivacyProvider.overrideWith(
-        () => FixedInstantPrivacyNotifier(
-          UspInstantPrivacyState(
-            settings: Preservable(
-              original: MacFilterSettings(mode: privacyMode, macs: const []),
-              current: MacFilterSettings(mode: privacyMode, macs: const []),
-            ),
-            status: const MacFilterStatus(isLoading: false),
-          ),
-        ),
+      // The badge reads the session-wide MAC filter (L1), not the Instant
+      // Privacy page's notifier (#1755).
+      macFilterDataProvider.overrideWith(
+        () => FixedMacFilterDataNotifier(
+            MacFilterData(mode: privacyMode, macs: const [])),
       ),
       // The Instant Privacy card exists only on firmware that serves the MAC
       // filter (#1635); without this the card, and the badge row this fixture pins

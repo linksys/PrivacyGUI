@@ -156,6 +156,9 @@ InvalidationDomain? _mapToDomain(
   if (path.startsWith('Device.Ethernet.Interface.')) {
     return InvalidationDomain.ethernetInterfaces;
   }
+  if (path == 'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode') {
+    return InvalidationDomain.macFilter;
+  }
   if (wanPath != null && path.startsWith(wanPath)) {
     return InvalidationDomain.wanStatus;
   }

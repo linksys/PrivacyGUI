@@ -16,13 +16,13 @@ void main() {
         'badges_on': (overrides) => overrides.addAll(
               menuOverrides(
                 lanData: menuLanDataBadgesOn,
-                privacyState: menuPrivacyOn,
+                privacy: menuPrivacyOn,
               ),
             ),
         'badges_off': (overrides) => overrides.addAll(
               menuOverrides(
                 lanData: menuLanDataBadgesOff,
-                privacyState: menuPrivacyOff,
+                privacy: menuPrivacyOff,
               ),
             ),
       },

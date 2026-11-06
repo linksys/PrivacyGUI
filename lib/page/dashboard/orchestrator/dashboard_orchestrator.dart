@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
 import 'package:privacy_gui/page/_shared/utils/usp_subscriptions.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
@@ -16,6 +17,7 @@ import 'package:privacy_gui/page/local_network/providers/ethernet_data_provider.
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
+import 'package:privacy_gui/page/mac_filter/providers/mac_filter_data_provider.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_auto_update_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
@@ -87,6 +89,10 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
   /// would keep answering "no update" from the reading it took at login, and pull
   /// to refresh would not fix it — which is the one gesture a user makes when they
   /// think the page is stale.
+  ///
+  /// `macFilter` is the menu's Instant Privacy badge (#1755). It has a push, but a
+  /// hardware privacy switch move made while the router is off is applied at
+  /// boot, before the app is back to hear it.
   static final _allDomainProviders = [
     ('systemInfo', systemInfoDataProvider),
     ('devices', devicesDataProvider),
@@ -101,6 +107,7 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
     ('time', timeDataProvider),
     ('firmwareBanks', firmwareBanksDataProvider),
     ('firmwareAutoUpdate', firmwareAutoUpdateDataProvider),
+    ('macFilter', macFilterDataProvider),
   ];
 
   @override
@@ -271,7 +278,9 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
       await manager.connect();
     }
 
-    manager.setCoreSubscriptions(coreSubscriptions);
+    // Capabilities are resolved at login, before the dashboard opens.
+    manager.setCoreSubscriptions(
+        coreSubscriptionsFor(ref.read(deviceCapabilitiesProvider)));
     await manager.registerCoreSubscriptions();
     logger.d(
         '[USP][Orchestrator]: SSE subscriptions registered after domain ready');
