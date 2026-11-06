@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
 import 'package:privacy_gui/page/_shared/utils/usp_subscriptions.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
@@ -277,7 +278,9 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
       await manager.connect();
     }
 
-    manager.setCoreSubscriptions(coreSubscriptions);
+    // Capabilities are resolved at login, before the dashboard opens.
+    manager.setCoreSubscriptions(
+        coreSubscriptionsFor(ref.read(deviceCapabilitiesProvider)));
     await manager.registerCoreSubscriptions();
     logger.d(
         '[USP][Orchestrator]: SSE subscriptions registered after domain ready');

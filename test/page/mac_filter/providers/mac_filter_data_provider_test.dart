@@ -4,6 +4,8 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_data.dart';
@@ -26,12 +28,18 @@ void main() {
 
   setUp(() {
     service = MockUspMacFilterDataService();
-    when(() => service.fetch()).thenAnswer((_) async => _disabled);
+    when(() => service.fetch(fresh: any(named: 'fresh')))
+        .thenAnswer((_) async => _disabled);
   });
 
-  ProviderContainer createContainer({Stream<InvalidationEvent>? sse}) {
+  ProviderContainer createContainer({
+    Stream<InvalidationEvent>? sse,
+    DeviceCapabilities? capabilities,
+  }) {
     return ProviderContainer(overrides: [
       uspMacFilterDataServiceProvider.overrideWithValue(service),
+      deviceCapabilitiesProvider.overrideWithValue(capabilities ??
+          DeviceCapabilities(const {DeviceCapability.wifiMacFilter})),
       if (sse != null) sseInvalidationProvider.overrideWith((ref) => sse),
     ]);
   }
@@ -42,11 +50,31 @@ void main() {
       addTearDown(container.dispose);
 
       expect(await container.read(macFilterDataProvider.future), _disabled);
-      verify(() => service.fetch()).called(1);
+      verify(() => service.fetch(fresh: any(named: 'fresh'))).called(1);
+    });
+
+    test('the first read may be served from the cache', () async {
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      await container.read(macFilterDataProvider.future);
+
+      verify(() => service.fetch(fresh: false)).called(1);
+    });
+
+    // Firmware without the filter has nothing to read, and the orchestrator's
+    // retry builds this provider whether or not the menu watches it. No read:
+    // no filter is in effect there, so it is Disabled with no list.
+    test('without the capability, reads nothing and is Disabled', () async {
+      final container = createContainer(capabilities: DeviceCapabilities.empty);
+      addTearDown(container.dispose);
+
+      expect(await container.read(macFilterDataProvider.future), _disabled);
+      verifyNever(() => service.fetch(fresh: any(named: 'fresh')));
     });
 
     test('surfaces a failed read as an error', () async {
-      when(() => service.fetch())
+      when(() => service.fetch(fresh: any(named: 'fresh')))
           .thenThrow(const UnexpectedError(detail: 'read failed'));
       final container = createContainer();
       addTearDown(container.dispose);
@@ -72,15 +100,16 @@ void main() {
         final sse = StreamController<InvalidationEvent>.broadcast();
         final container = createContainer(sse: sse.stream);
         settle(async, container);
-        when(() => service.fetch()).thenAnswer((_) async => _locked);
+        when(() => service.fetch(fresh: any(named: 'fresh')))
+            .thenAnswer((_) async => _locked);
 
         sse.add((domain: InvalidationDomain.macFilter, seq: 0));
         async.elapse(const Duration(milliseconds: 499));
-        verifyNever(() => service.fetch());
+        verifyNever(() => service.fetch(fresh: any(named: 'fresh')));
 
         async.elapse(const Duration(milliseconds: 1));
         async.flushMicrotasks();
-        verify(() => service.fetch()).called(1);
+        verify(() => service.fetch(fresh: any(named: 'fresh'))).called(1);
         expect(container.read(macFilterDataProvider).value, _locked);
 
         sse.close();
@@ -101,7 +130,7 @@ void main() {
         async.elapse(const Duration(milliseconds: 500));
         async.flushMicrotasks();
 
-        verify(() => service.fetch()).called(1);
+        verify(() => service.fetch(fresh: any(named: 'fresh'))).called(1);
 
         sse.close();
         container.dispose();
@@ -113,7 +142,7 @@ void main() {
         final sse = StreamController<InvalidationEvent>.broadcast();
         final container = createContainer(sse: sse.stream);
         settle(async, container);
-        when(() => service.fetch())
+        when(() => service.fetch(fresh: any(named: 'fresh')))
             .thenThrow(const UnexpectedError(detail: 'read failed'));
 
         sse.add((domain: InvalidationDomain.macFilter, seq: 0));
@@ -138,7 +167,7 @@ void main() {
         () async {
       final pushGate = Completer<MacFilterData>();
       var call = 0;
-      when(() => service.fetch()).thenAnswer((_) {
+      when(() => service.fetch(fresh: any(named: 'fresh'))).thenAnswer((_) {
         call++;
         if (call == 1) return Future.value(_disabled);
         return call == 2 ? pushGate.future : Future.value(_disabled);
@@ -166,6 +195,37 @@ void main() {
       expect(container.read(macFilterDataProvider).value, _disabled);
     });
 
+    // Lock, then Unlock two seconds later: both re-reads fall inside the
+    // throttler's 5 s cache window. Each must reach the router, or the second
+    // replays the first and the badge stays On.
+    test('two pushes inside the cache window each read the router', () {
+      fakeAsync((async) {
+        final sse = StreamController<InvalidationEvent>.broadcast();
+        final container = createContainer(sse: sse.stream);
+        settle(async, container);
+
+        when(() => service.fetch(fresh: any(named: 'fresh')))
+            .thenAnswer((_) async => _locked);
+        sse.add((domain: InvalidationDomain.macFilter, seq: 0));
+        async.elapse(const Duration(milliseconds: 500));
+        async.flushMicrotasks();
+        expect(container.read(macFilterDataProvider).value, _locked);
+
+        async.elapse(const Duration(milliseconds: 1500));
+        when(() => service.fetch(fresh: any(named: 'fresh')))
+            .thenAnswer((_) async => _disabled);
+        sse.add((domain: InvalidationDomain.macFilter, seq: 1));
+        async.elapse(const Duration(milliseconds: 500));
+        async.flushMicrotasks();
+
+        expect(container.read(macFilterDataProvider).value, _disabled);
+        verify(() => service.fetch(fresh: true)).called(2);
+
+        sse.close();
+        container.dispose();
+      });
+    });
+
     test('another domain does not re-read', () {
       fakeAsync((async) {
         final sse = StreamController<InvalidationEvent>.broadcast();
@@ -176,7 +236,7 @@ void main() {
         async.elapse(const Duration(seconds: 1));
         async.flushMicrotasks();
 
-        verifyNever(() => service.fetch());
+        verifyNever(() => service.fetch(fresh: any(named: 'fresh')));
 
         sse.close();
         container.dispose();

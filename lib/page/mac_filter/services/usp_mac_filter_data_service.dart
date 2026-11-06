@@ -27,7 +27,14 @@ class UspMacFilterDataService {
   UspMacFilterDataService(this._usp);
 
   /// Reads the current mode and list.
-  Future<MacFilterData> fetch() async {
+  ///
+  /// [fresh] drops the throttler's GET cache first. The cache answers a repeated
+  /// read for 5 s and only the app's own writes clear it, so a read made because
+  /// the router pushed a change it made itself (the hardware privacy switch,
+  /// #1755) would otherwise replay the mode from before the change. Same remedy
+  /// as `dropWifiReadBackCache` (#1212).
+  Future<MacFilterData> fetch({bool fresh = false}) async {
+    if (fresh) _usp.throttler?.clearCache();
     try {
       final raw = await MacFilterNetwork.fetch(_usp);
       return MacFilterData.fromWire(raw.macFilterMode, raw.macFilterList);

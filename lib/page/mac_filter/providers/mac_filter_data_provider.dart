@@ -1,10 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_data.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
 import 'package:privacy_gui/page/mac_filter/services/usp_mac_filter_data_service.dart';
 
 /// L1: the MAC filter as the device has it applied, for the whole session.
@@ -43,6 +46,16 @@ class MacFilterDataNotifier extends AsyncNotifier<MacFilterData> {
     _pushGeneration++;
     _debounce?.cancel();
 
+    // Firmware without the filter (#1635) has nothing to read, and the
+    // orchestrator's retry builds this provider whether or not the menu watches
+    // it. No filter is in effect there, which is what Disabled with no list says;
+    // the menu is gated on the same capability and never shows it.
+    if (!ref
+        .watch(deviceCapabilitiesProvider)
+        .has(DeviceCapability.wifiMacFilter)) {
+      return const MacFilterData(mode: MacFilterMode.disabled, macs: []);
+    }
+
     ref.listen(sseInvalidationProvider, (prev, next) {
       if (next.valueOrNull?.domain == InvalidationDomain.macFilter) {
         _debouncedRefresh();
@@ -54,8 +67,8 @@ class MacFilterDataNotifier extends AsyncNotifier<MacFilterData> {
     return _fetch();
   }
 
-  Future<MacFilterData> _fetch() =>
-      ref.read(uspMacFilterDataServiceProvider).fetch();
+  Future<MacFilterData> _fetch({bool fresh = false}) =>
+      ref.read(uspMacFilterDataServiceProvider).fetch(fresh: fresh);
 
   void _debouncedRefresh() {
     _debounce?.cancel();
@@ -66,7 +79,9 @@ class MacFilterDataNotifier extends AsyncNotifier<MacFilterData> {
   Future<void> _refreshFromPush() async {
     final generation = ++_pushGeneration;
     try {
-      final data = await _fetch();
+      // Fresh: the change was made on the router, so a cached read from before
+      // it would replay the old mode (#1755).
+      final data = await _fetch(fresh: true);
       if (generation != _pushGeneration) return;
       state = AsyncData(data);
     } on ServiceError catch (e, st) {

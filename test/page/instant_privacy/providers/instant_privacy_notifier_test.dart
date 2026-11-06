@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_data.dart';
@@ -76,11 +78,14 @@ void main() {
     // which learns of a mode change only and so can hold a stale list.
     test('opening reads the router, not the session-wide filter', () async {
       final data = MockUspMacFilterDataService();
-      when(() => data.fetch()).thenAnswer((_) async =>
+      when(() => data.fetch(fresh: any(named: 'fresh'))).thenAnswer((_) async =>
           const MacFilterData(mode: MacFilterMode.allow, macs: ['AA:BB']));
       when(() => mockService.fetchAll()).thenAnswer((_) async => denyResult());
-      final c = makeContainer(
-          [uspMacFilterDataServiceProvider.overrideWithValue(data)]);
+      final c = makeContainer([
+        uspMacFilterDataServiceProvider.overrideWithValue(data),
+        deviceCapabilitiesProvider.overrideWithValue(
+            DeviceCapabilities(const {DeviceCapability.wifiMacFilter})),
+      ]);
       addTearDown(c.dispose);
       c.listen(macFilterDataProvider, (_, __) {});
       await c.read(macFilterDataProvider.future);
@@ -261,16 +266,19 @@ void main() {
     // when the SSE push does not (#1755).
     test('makes the session-wide filter re-read the router', () async {
       final data = MockUspMacFilterDataService();
-      when(() => data.fetch()).thenAnswer((_) async =>
+      when(() => data.fetch(fresh: any(named: 'fresh'))).thenAnswer((_) async =>
           const MacFilterData(mode: MacFilterMode.disabled, macs: []));
-      final (c, n) = await loaded(disabledResult(),
-          extra: [uspMacFilterDataServiceProvider.overrideWithValue(data)]);
+      final (c, n) = await loaded(disabledResult(), extra: [
+        uspMacFilterDataServiceProvider.overrideWithValue(data),
+        deviceCapabilitiesProvider.overrideWithValue(
+            DeviceCapabilities(const {DeviceCapability.wifiMacFilter})),
+      ]);
       c.listen(macFilterDataProvider, (_, __) {});
       expect((await c.read(macFilterDataProvider.future)).mode,
           MacFilterMode.disabled);
 
       n.setEnabled(true);
-      when(() => data.fetch()).thenAnswer((_) async =>
+      when(() => data.fetch(fresh: any(named: 'fresh'))).thenAnswer((_) async =>
           const MacFilterData(mode: MacFilterMode.allow, macs: []));
       await n.save();
 
