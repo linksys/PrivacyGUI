@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' as service;
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_qr_credentials.dart';
+import 'package:privacy_gui/page/components/widgets/wifi_qr/wifi_qr_band.dart';
 import 'package:privacy_gui/util/qr_code.dart';
 import 'package:privacy_gui/util/export_selector/export_base.dart'
     if (dart.library.io) 'package:privacy_gui/util/export_selector/export_mobile.dart'

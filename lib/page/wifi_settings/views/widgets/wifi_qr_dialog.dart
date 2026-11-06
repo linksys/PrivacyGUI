@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_qr_credentials.dart';
-import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_qr_cards.dart';
+import 'package:privacy_gui/page/components/widgets/wifi_qr/wifi_qr_band.dart';
+import 'package:privacy_gui/page/components/widgets/wifi_qr/wifi_qr_cards.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 

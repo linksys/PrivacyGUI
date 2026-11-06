@@ -17,7 +17,7 @@ import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart
 import 'package:privacy_gui/page/wifi_settings/views/wifi_list_advanced_mode_view.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_list_simple_mode_view.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_qr_dialog.dart';
-import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_qr_warning_card.dart';
+import 'package:privacy_gui/page/components/widgets/wifi_qr/wifi_qr_warning_card.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 

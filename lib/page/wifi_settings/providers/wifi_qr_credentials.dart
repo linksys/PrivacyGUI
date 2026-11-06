@@ -1,20 +1,8 @@
 import 'package:collection/collection.dart';
+import 'package:privacy_gui/page/components/widgets/wifi_qr/wifi_qr_band.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_item.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
 import 'package:privacy_gui/util/wifi_credential.dart';
-
-/// One network the user can be handed a QR code for.
-class WiFiQRBand {
-  final String label;
-
-  /// What the QR code, and the printed or downloaded copy of it, encodes.
-  final WiFiCredential credential;
-
-  const WiFiQRBand({required this.label, required this.credential});
-
-  /// An open network has no password to show or copy.
-  bool get hasPassword => credential.type != SecurityType.none;
-}
 
 /// The security type a WiFi QR code for a [type] network is written with: an
 /// open network joins without a password, every personal WPA mode joins as WPA.
@@ -45,8 +33,14 @@ List<WiFiQRBand> wifiQRBandsFor(WiFiState saved) {
   return isUnified ? [bands.first] : bands;
 }
 
-/// Whether saving [state] would change what the printed QR codes encode for a
-/// band [preserved] broadcasts today.
+/// Whether saving [state] would change a band's WiFi name, password or
+/// security mode from what [preserved] broadcasts today - the changes the
+/// printed-QR warning covers.
+///
+/// A security mode change counts even where the code itself would not change
+/// (WPA2 to WPA3 is still a WPA code), since a phone may not join a WPA3-only
+/// network from it. Hiding the name is left out on purpose: the warning
+/// covers the name, password and security mode only.
 bool wifiQRCredentialsChanged({
   required WiFiState state,
   WiFiState? preserved,
@@ -60,7 +54,7 @@ bool wifiQRCredentialsChanged({
     // with per-band settings.
     final simple = state.simpleModeWifi;
     return preserved.mainWiFi.any((radio) =>
-        _printedQRFields(radio) !=
+        _qrWarningFields(radio) !=
         (
           simple.ssid,
           simple.password,
@@ -71,10 +65,10 @@ bool wifiQRCredentialsChanged({
     final before =
         preserved.mainWiFi.firstWhereOrNull((e) => e.radioID == radio.radioID);
     return before != null &&
-        _printedQRFields(before) != _printedQRFields(radio);
+        _qrWarningFields(before) != _qrWarningFields(radio);
   });
 }
 
-/// What the printed QR codes encode for [radio].
-(String, String, WifiSecurityType) _printedQRFields(WiFiItem radio) =>
+/// The settings of [radio] whose change raises the printed-QR warning.
+(String, String, WifiSecurityType) _qrWarningFields(WiFiItem radio) =>
     (radio.ssid, radio.password, radio.securityType);
