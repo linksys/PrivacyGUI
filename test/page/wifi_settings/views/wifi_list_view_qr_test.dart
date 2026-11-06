@@ -1,6 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/jnap/models/device_info.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
@@ -13,6 +20,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../../common/_index.dart';
 import '../../../common/di.dart';
 import '../../../mocks/_index.dart';
+import '../../../mocks/polling_notifier_mocks.dart';
 import '../../../mocks/wifi_view_notifier_mocks.dart';
 import '../../../test_data/_index.dart';
 
@@ -21,6 +29,7 @@ void main() {
   late MockWifiListNotifier mockWiFiListNotifier;
   late MockWifiAdvancedSettingsNotifier mockWiFiAdvancedSettingsNotifier;
   late MockInstantPrivacyNotifier mockInstantPrivacyNotifier;
+  late MockPollingNotifier mockPollingNotifier;
 
   // What the router broadcasts today: 2.4 GHz and 5 GHz share one name,
   // password and WPA2/WPA3 mixed security.
@@ -39,6 +48,7 @@ void main() {
     mockWiFiListNotifier = MockWifiListNotifier();
     mockWiFiAdvancedSettingsNotifier = MockWifiAdvancedSettingsNotifier();
     mockInstantPrivacyNotifier = MockInstantPrivacyNotifier();
+    mockPollingNotifier = MockPollingNotifier();
 
     when(mockWiFiViewNotifier.build()).thenReturn(WiFiViewState());
     when(mockWiFiAdvancedSettingsNotifier.build()).thenReturn(
@@ -50,6 +60,8 @@ void main() {
     when(mockInstantPrivacyNotifier.fetch(fetchRemote: anyNamed('fetchRemote')))
         .thenAnswer(
             (_) async => InstantPrivacyState.fromMap(instantPrivacyTestState));
+    when(mockPollingNotifier.build()).thenReturn(
+        const CoreTransactionData(lastUpdate: 0, isReady: true, data: {}));
   });
 
   // [edited] is the state the user is editing, [broadcast] what the router
@@ -72,6 +84,8 @@ void main() {
         wifiAdvancedProvider
             .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
         instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
+        dashboardManagerProvider.overrideWith(_RouterIsBack.new),
+        pollingProvider.overrideWith(() => mockPollingNotifier),
       ],
       locale: const Locale('en'),
       child: const WiFiMainView(),
@@ -151,6 +165,34 @@ void main() {
         findsOneWidget);
   });
 
+  // A save that drops the connection only lands once the router is back, so
+  // the new QR code waits for that and shows what the router reports then.
+  testWidgets('a save that needs the router back still ends on the new QR code',
+      (tester) async {
+    final renamed = simple(ssid: 'MyNewWiFi');
+    await pumpWiFiList(tester, edited: renamed);
+    // A real save takes a while before the connection drops; failing at once
+    // would beat the spinner to listening for it.
+    when(mockWiFiListNotifier.save()).thenAnswer((_) async {
+      await Future.delayed(const Duration(milliseconds: 500));
+      throw const JNAPSideEffectError();
+    });
+    when(mockWiFiListNotifier.fetch(true))
+        .thenAnswer((_) async => renamed.copyWith(mainWiFi: [
+              for (final radio in renamed.mainWiFi)
+                radio.copyWith(ssid: 'MyNewWiFi'),
+            ]));
+
+    await saveAndAnswer(tester, 'Ok');
+    expect(newQRDialog, findsNothing, reason: 'the router is not back yet');
+
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+
+    expect(newQRDialog, findsOneWidget);
+    expect(inDialog(find.byType(QrImageView)), findsOneWidget);
+  });
+
   // Switching to Open leaves name and password alone, yet the printed codes
   // ask phones for a password the network no longer takes.
   testWidgets(
@@ -184,4 +226,15 @@ void main() {
 
     expect(inDialog(find.byType(QrImageView)), findsNWidgets(2));
   });
+}
+
+// The generated dashboard manager mock predates checkRouterIsBack, so it cannot
+// stub it; this fake answers that the router is back.
+class _RouterIsBack extends DashboardManagerNotifier {
+  @override
+  DashboardManagerState build() => const DashboardManagerState();
+
+  @override
+  Future<NodeDeviceInfo> checkRouterIsBack() async =>
+      NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']);
 }
