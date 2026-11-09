@@ -6,8 +6,8 @@ import 'package:privacy_gui/core/utils/logger.dart';
 ///
 /// Any step that failed, partly or fully, fails the save: the batch used to
 /// throw only when *every* step failed, so a save that left a rule behind on
-/// the router still reported "saved". The router's own error for the first
-/// failure is what the user is shown.
+/// the router still reported "saved". The user is shown the reason the router
+/// named on any failure, else its error for the first one.
 class BatchTally {
   /// [_tag] is the grep-friendly log prefix, e.g. `[PortForwarding]`.
   BatchTally(this._tag);

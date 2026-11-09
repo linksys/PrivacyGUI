@@ -1304,5 +1304,17 @@
   "invalidSubnetMask": "Mặt nạ mạng con không hợp lệ",
   "reservationNameHint": "Tên (không bắt buộc)",
   "reservationNameInvalid": "Dùng chữ cái, chữ số và -, không bắt đầu hoặc kết thúc bằng -",
-  "reservationNameInUse": "Một đặt chỗ khác đã dùng tên này"
+  "reservationNameInUse": "Một đặt chỗ khác đã dùng tên này",
+  "errorRefusedRulesOverlap": "Bộ định tuyến không chấp nhận quy tắc này: các cổng của quy tắc trùng với một quy tắc khác cùng giao thức.",
+  "errorRefusedTooManyRules": "Bộ định tuyến không chấp nhận quy tắc này: danh sách đã đầy.",
+  "errorRefusedInvalidInternalServerIpAddress": "Bộ định tuyến không chấp nhận quy tắc này: địa chỉ IP này không thuộc thiết bị nào trong mạng cục bộ của bạn.",
+  "errorRefusedDescriptionTooLong": "Bộ định tuyến không chấp nhận quy tắc này: tên quá dài.",
+  "errorRefusedInvalidDestinationIpAddress": "Bộ định tuyến không chấp nhận địa chỉ IP của máy chủ DMZ.",
+  "errorRefusedInvalidDestinationMacAddress": "Bộ định tuyến không chấp nhận địa chỉ MAC của máy chủ DMZ.",
+  "errorRefusedMultipleDestinations": "Bộ định tuyến không chấp nhận máy chủ DMZ: hãy đặt bằng địa chỉ IP hoặc địa chỉ MAC, không dùng cả hai.",
+  "errorRefusedInvalidSourceRestriction": "Bộ định tuyến không chấp nhận dải IP nguồn: đây là dải được dành riêng.",
+  "errorRefusedNoPortRanges": "Bộ định tuyến không chấp nhận quy tắc này: quy tắc không có cổng.",
+  "errorRefusedInvalidPortRange": "Bộ định tuyến không chấp nhận quy tắc này: cổng bắt đầu lớn hơn cổng kết thúc.",
+  "errorRefusedInvalidPort": "Bộ định tuyến không chấp nhận quy tắc này: số cổng không hợp lệ.",
+  "errorRefusedDescriptionInUse": "Bộ định tuyến không chấp nhận quy tắc này: một quy tắc tường lửa khác đã dùng tên này."
 }

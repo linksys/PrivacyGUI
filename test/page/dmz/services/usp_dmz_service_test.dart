@@ -1,9 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/usp/errors/usp_refusal_reason.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/dmz.g.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/dmz/services/usp_dmz_service.dart';
+
+import '../../../mocks/test_data/usp_refusal_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -362,6 +365,38 @@ void main() {
       );
 
       verify(() => mockUsp.set(captureAny())).called(1);
+    });
+  });
+
+  // FWDEV#204's DMZ errors (#1775). The per-leaf 7012 shape is PortMapping's
+  // (bench 2026-10-12); the name is the contract's and not yet measured on
+  // Device.Firewall.DMZ. A refused Add answers success (2026-10-12), so no
+  // reason arrives on one and none is tested.
+  group('UspDmzService — a refused save keeps the router reason', () {
+    const p = 'Device.Firewall.DMZ.1.';
+
+    test('an update the router refuses names its reason', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => refusedSetEnvelope(
+            instancePath: p,
+            refusedLeaf: 'DestIP',
+            message: "ErrorInvalidDestinationIPAddress: '192.168.1.1' is not "
+                'a LAN host address.',
+            otherLeaves: ['Enable'],
+          ));
+
+      await expectLater(
+        service.update(
+          instancePath: p,
+          model: DmzUIModel(
+            isEnabled: true,
+            destIp: '192.168.1.1',
+            sourceType: DmzSourceType.any,
+            sourcePrefix: '',
+          ),
+        ),
+        throwsA(
+            carriesRefusalReason(UspRefusalReason.invalidDestinationIpAddress)),
+      );
     });
   });
 }

@@ -1,10 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/errors/usp_refusal_reason.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/ipv6port_service.g.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
 import 'package:privacy_gui/page/ipv6_port_service/services/usp_ipv6_port_service_service.dart';
+
+import '../../../mocks/test_data/usp_refusal_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -669,6 +672,57 @@ void main() {
         () => service.saveBatch(original: original, current: []),
         throwsA(isA<ServiceError>()),
       );
+    });
+  });
+
+  // FWDEV#204's IPv6 port services (#1775). FW checks when Target is written,
+  // so Target is the refused leaf and the rest of the Set failed with it. That
+  // shape is PortMapping's (bench 2026-10-12); the names are the contract's
+  // (FWDEV#204, 2026-10-14) and not yet measured on an IPv6 rule.
+  group('UspIpv6PortServiceService — a refused save keeps the router reason',
+      () {
+    const p = 'Device.Firewall.Chain.1.Rule.40.';
+    final rule = Ipv6PortServiceRuleUIModel(
+      instancePath: p,
+      enabled: true,
+      description: 'zz1775-v6b',
+      ipv6Address: '2001:db8::1',
+      protocol: 'TCP',
+      startPort: 18300,
+      endPort: 18310,
+    );
+
+    Future<void> expectReason(String message, UspRefusalReason reason) async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => refusedSetEnvelope(
+                instancePath: p,
+                refusedLeaf: 'Target',
+                message: message,
+                otherLeaves: ['DestPort'],
+              ));
+      await expectLater(
+        service.saveBatch(
+            original: [rule], current: [rule.copyWith(startPort: 18085)]),
+        throwsA(carriesRefusalReason(reason)),
+      );
+    }
+
+    test('an edit onto another rule\'s ports keeps ErrorRulesOverlap',
+        () async {
+      await expectReason('ErrorRulesOverlap: x', UspRefusalReason.rulesOverlap);
+    });
+
+    test(
+        'a start port above the end port keeps ErrorInvalidPortRange, not '
+        'ErrorInvalidPort', () async {
+      await expectReason(
+          'ErrorInvalidPortRange: x', UspRefusalReason.invalidPortRange);
+    });
+
+    test('a name another firewall rule has keeps ErrorDescriptionInUse',
+        () async {
+      await expectReason(
+          'ErrorDescriptionInUse: x', UspRefusalReason.descriptionInUse);
     });
   });
 }

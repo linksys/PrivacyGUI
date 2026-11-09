@@ -1232,6 +1232,7 @@ All USP error parsing and `ServiceError` mapping is centralized in a single util
 |----------|---------|
 | `parseUspError(Object error)` | Parses raw USP error string into structured `UspError` (operation, category, fault code, HTTP status) |
 | `mapUspErrorToServiceError(Object error)` | Parses + maps to `ServiceError` subtype — **the only function USP Services need to call** |
+| `UspRefusalReason.fromErrorMessage(String)` (`lib/core/usp/errors/usp_refusal_reason.dart`) | Reads the error name a firmware refusal puts at the start of its message (`ErrorRulesOverlap: …`) into a typed reason. Called by `UspResultParser` and `mapUspErrorToServiceError` only; Services never call it |
 
 **Mapping summary**:
 
@@ -1247,7 +1248,10 @@ All USP error parsing and `ServiceError` mapping is centralized in a single util
 | Protocol (fault 7004, 9008) | `InvalidInputError` |
 | Protocol (fault 9001) | `UnauthorizedError` |
 | Validation | `InvalidInputError` |
+| Any category whose router message names a `UspRefusalReason` | `UspCompleteFailureError`, one entry carrying the reason |
 | Unrecognized | `UnexpectedError` |
+
+*Amended 2026-11-09 (#1775): the refusal-reason row and utility were added. Rationale: linksys/FWDEV#204 names why a write was refused in the message, under a code (7012) that says only that it was; the reason is parsed once here so the UI maps a type, never the router's text. Backwards compatible: a message naming no known reason maps exactly as before. Its parser lives in its own file, next to this one, because `UspResultParser` calls it too and `usp_error.dart` already imports that parser's file.*
 
 **Reference implementation**: `lib/page/dmz/services/usp_dmz_service.dart`
 

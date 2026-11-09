@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/core/usp/errors/usp_refusal_reason.dart';
 import 'package:privacy_gui/core/usp/models/usp_operation_result.dart';
 
 void main() {
@@ -250,6 +251,55 @@ void main() {
       expect(failure.errors.first.requestedPath, 'Device.WiFi.SSID.1.SSID');
       expect(failure.errors.first.errorCode, -1);
       expect(failure.errors.first.errorMessage, contains('Network timeout'));
+    });
+  });
+
+  // linksys/FWDEV#204: the firmware names why it refused at the start of the
+  // refused leaf's message; `UspRefusalReason.fromErrorMessage` (its own test
+  // file) reads it, and the parser stamps it on each entry. Envelope verbatim
+  // from the bench
+  // (FLWRT 2.0.3.26100921, 2026-10-12, Device.NAT.PortMapping, the app's WASM
+  // client, allowPartial:false).
+  group('UspResultParser — the reason a refused write names', () {
+    const p = 'Device.NAT.PortMapping.2.';
+    const groupFailed = "SetParameterGroup: group set failed at "
+        "'Device.NAT.PortMapping.2.ExternalPortEndRange' (Invalid value)";
+
+    test(
+        'a refused Set: the refused leaf carries the reason, wherever it is '
+        'listed; the leaves that only failed with it carry none', () {
+      final result = UspResultParser.parseSetResult({
+        'success': false,
+        'result': {
+          'data': <String, dynamic>{},
+          'error': {
+            '${p}ExternalPort': {
+              'errorCode': 7012,
+              'errorMessage': groupFailed
+            },
+            '${p}ExternalPortEndRange': {
+              'errorCode': 7012,
+              'errorMessage':
+                  'ErrorRulesOverlap: external ports 18070-18090 are already '
+                      'forwarded.',
+            },
+            '${p}InternalPort': {
+              'errorCode': 7012,
+              'errorMessage': groupFailed
+            },
+            '${p}Description': {'errorCode': 7012, 'errorMessage': groupFailed},
+          },
+        },
+      });
+
+      final errors = (result as UspFailure).errors;
+      final byPath = {for (final e in errors) e.requestedPath: e.refusalReason};
+      expect(byPath, {
+        '${p}ExternalPort': UspRefusalReason.unknown,
+        '${p}ExternalPortEndRange': UspRefusalReason.rulesOverlap,
+        '${p}InternalPort': UspRefusalReason.unknown,
+        '${p}Description': UspRefusalReason.unknown,
+      });
     });
   });
 

@@ -1,3 +1,4 @@
+import 'package:privacy_gui/core/usp/errors/usp_refusal_reason.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
 /// USP 操作結果的 sealed class hierarchy
@@ -163,14 +164,37 @@ class UspErrorDetail {
   final int errorCode;
   final String errorMessage;
 
+  /// Why the router refused, when it named a reason ([UspRefusalReason]).
+  ///
+  /// Set from [errorMessage] once, by [UspErrorDetail.fromResponse], where a
+  /// failure enters the app. Code above the USP layer reads this, never
+  /// [errorMessage]. The plain constructor leaves it [UspRefusalReason.unknown]:
+  /// it is for failures the app makes itself.
+  final UspRefusalReason refusalReason;
+
   const UspErrorDetail({
     required this.requestedPath,
     required this.errorCode,
     required this.errorMessage,
+    this.refusalReason = UspRefusalReason.unknown,
   });
 
+  /// A failure as a response reported it (the router's, or the WASM
+  /// client's), with [refusalReason] read off its message.
+  factory UspErrorDetail.fromResponse({
+    required String requestedPath,
+    required int errorCode,
+    required String errorMessage,
+  }) =>
+      UspErrorDetail(
+        requestedPath: requestedPath,
+        errorCode: errorCode,
+        errorMessage: errorMessage,
+        refusalReason: UspRefusalReason.fromErrorMessage(errorMessage),
+      );
+
   factory UspErrorDetail.fromMap(Map<String, dynamic> map) {
-    return UspErrorDetail(
+    return UspErrorDetail.fromResponse(
       requestedPath: map['requestedPath'] as String,
       errorCode: map['errorCode'] as int? ?? -1,
       errorMessage: map['errorMessage'] as String? ?? 'Unknown error',
@@ -311,15 +335,7 @@ class UspResultParser {
     if (!success) {
       final failures = <UspErrorDetail>[];
       if (error != null) {
-        for (final entry in error.entries) {
-          final errorInfo = entry.value as Map<String, dynamic>;
-          failures.add(UspErrorDetail(
-            requestedPath: entry.key,
-            errorCode: errorInfo['errorCode'] as int? ?? -1,
-            errorMessage:
-                errorInfo['errorMessage'] as String? ?? 'Unknown error',
-          ));
-        }
+        failures.addAll(_errorDetails(error));
       } else {
         failures.add(const UspErrorDetail(
           requestedPath: 'add_operation',
@@ -349,16 +365,7 @@ class UspResultParser {
     ];
 
     if (error != null && error.isNotEmpty) {
-      final failures = <UspErrorDetail>[];
-      for (final entry in error.entries) {
-        final errorInfo = entry.value as Map<String, dynamic>;
-        failures.add(UspErrorDetail(
-          requestedPath: entry.key,
-          errorCode: errorInfo['errorCode'] as int? ?? -1,
-          errorMessage: errorInfo['errorMessage'] as String? ?? 'Unknown error',
-        ));
-      }
-      return UspPartialSuccess<List<String>>(successes, failures);
+      return UspPartialSuccess<List<String>>(successes, _errorDetails(error));
     }
 
     return UspSuccess<List<String>>(successes);
@@ -405,30 +412,13 @@ class UspResultParser {
         ));
       }
 
-      for (final entry in error.entries) {
-        final path = entry.key;
-        final errorInfo = entry.value as Map<String, dynamic>;
-        failures.add(UspErrorDetail(
-          requestedPath: path,
-          errorCode: errorInfo['errorCode'] as int? ?? -1,
-          errorMessage: errorInfo['errorMessage'] as String? ?? 'Unknown error',
-        ));
-      }
+      failures.addAll(_errorDetails(error));
 
       return UspPartialSuccess<T>(successes, failures);
     } else {
       // All failure: success=false
       if (error != null) {
-        for (final entry in error.entries) {
-          final path = entry.key;
-          final errorInfo = entry.value as Map<String, dynamic>;
-          failures.add(UspErrorDetail(
-            requestedPath: path,
-            errorCode: errorInfo['errorCode'] as int? ?? -1,
-            errorMessage:
-                errorInfo['errorMessage'] as String? ?? 'Unknown error',
-          ));
-        }
+        failures.addAll(_errorDetails(error));
       } else {
         // No specific error info, create generic failure
         failures.add(const UspErrorDetail(
@@ -441,6 +431,16 @@ class UspResultParser {
       return UspFailure<T>(failures);
     }
   }
+
+  /// The envelope's `error` member, one entry per path, each with the reason
+  /// its message names ([UspErrorDetail.fromResponse]).
+  static List<UspErrorDetail> _errorDetails(Map<String, dynamic> error) => [
+        for (final entry in error.entries)
+          UspErrorDetail.fromMap({
+            ...entry.value as Map<String, dynamic>,
+            'requestedPath': entry.key,
+          }),
+      ];
 
   /// 創建空的成功結果（當沒有參數需要操作時）
   static UspOperationResult<T> createEmptySuccess<T>() {

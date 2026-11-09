@@ -1304,5 +1304,17 @@
   "invalidSubnetMask": "Ongeldig subnetmasker",
   "reservationNameHint": "Naam (optioneel)",
   "reservationNameInvalid": "Gebruik letters, cijfers en -, niet beginnend of eindigend met -",
-  "reservationNameInUse": "Een andere reservering heeft deze naam al"
+  "reservationNameInUse": "Een andere reservering heeft deze naam al",
+  "errorRefusedRulesOverlap": "De router heeft deze regel niet geaccepteerd: de poorten overlappen met een andere regel voor hetzelfde protocol.",
+  "errorRefusedTooManyRules": "De router heeft deze regel niet geaccepteerd: de lijst is vol.",
+  "errorRefusedInvalidInternalServerIpAddress": "De router heeft deze regel niet geaccepteerd: het IP-adres hoort bij geen enkel apparaat in uw lokale netwerk.",
+  "errorRefusedDescriptionTooLong": "De router heeft deze regel niet geaccepteerd: de naam is te lang.",
+  "errorRefusedInvalidDestinationIpAddress": "De router heeft het IP-adres van de DMZ-host niet geaccepteerd.",
+  "errorRefusedInvalidDestinationMacAddress": "De router heeft het MAC-adres van de DMZ-host niet geaccepteerd.",
+  "errorRefusedMultipleDestinations": "De router heeft de DMZ-host niet geaccepteerd: stel deze in op IP-adres of op MAC-adres, niet allebei.",
+  "errorRefusedInvalidSourceRestriction": "De router heeft het bron-IP-bereik niet geaccepteerd: het is een gereserveerd bereik.",
+  "errorRefusedNoPortRanges": "De router heeft deze regel niet geaccepteerd: er is geen poort opgegeven.",
+  "errorRefusedInvalidPortRange": "De router heeft deze regel niet geaccepteerd: de beginpoort is hoger dan de eindpoort.",
+  "errorRefusedInvalidPort": "De router heeft deze regel niet geaccepteerd: een poortnummer is ongeldig.",
+  "errorRefusedDescriptionInUse": "De router heeft deze regel niet geaccepteerd: een andere firewallregel heeft deze naam al."
 }

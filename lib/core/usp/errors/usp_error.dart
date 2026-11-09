@@ -1,4 +1,5 @@
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/errors/usp_refusal_reason.dart';
 import 'package:privacy_gui/core/usp/models/usp_operation_result.dart'
     show UspErrorDetail;
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -245,6 +246,18 @@ String unwrapUspClientError(String message) {
 /// This is the only source that is **not** produced outside Dart, and it is the
 /// reason `_mapOperationError` is no longer dead in production (see below).
 ///
+/// ### Source 5 — a refusal reason the router names (linksys/FWDEV#204, #1775)
+///
+/// | Dart match                                  | → ServiceError           |
+/// |---------------------------------------------|--------------------------|
+/// | router message starts with a                | UspCompleteFailureError, |
+/// | [UspRefusalReason] name (`ErrorRulesOverlap`| one entry carrying the   |
+/// | …), bare or after `Received error response: `| reason                  |
+///
+/// Checked before the category arms (`_mapNamedRefusal`). A write's refusal
+/// usually arrives in its envelope instead, where `UspResultParser` reads the
+/// same names; this arm is for one that is thrown.
+///
 /// ### Dead match points (kept for completeness / contract tests only)
 /// `_mapOperationError`'s *string* match points — `'Path not found'`,
 /// `'read-only'`, `'Invalid value'` — map `OperationError::*`, which is
@@ -265,17 +278,64 @@ ServiceError mapUspErrorToServiceError(Object error) {
     return result;
   }
 
-  final result = switch (parsed.category) {
-    UspErrorCategory.auth => _mapAuthError(parsed),
-    UspErrorCategory.transport => _mapTransportError(parsed),
-    UspErrorCategory.protocol => _mapProtocolError(parsed),
-    UspErrorCategory.operation => _mapOperationError(parsed),
-    UspErrorCategory.validation =>
-      InvalidInputError(code: parsed.faultCode, detail: parsed.message),
-  };
+  final result = _mapNamedRefusal(parsed) ??
+      switch (parsed.category) {
+        UspErrorCategory.auth => _mapAuthError(parsed),
+        UspErrorCategory.transport => _mapTransportError(parsed),
+        UspErrorCategory.protocol => _mapProtocolError(parsed),
+        UspErrorCategory.operation => _mapOperationError(parsed),
+        UspErrorCategory.validation =>
+          InvalidInputError(code: parsed.faultCode, detail: parsed.message),
+      };
   logger.w('[USP][ServiceError]: "$error" → ${result.runtimeType}');
   return result;
 }
+
+/// A thrown error whose router message names why it refused
+/// ([UspRefusalReason], linksys/FWDEV#204), whatever category the client put
+/// it under: the name can only come from the router, so it is read before the
+/// category picks a mapper.
+///
+/// It becomes the shape a refused write's envelope becomes in
+/// `UspResultParser`: a complete failure with one entry carrying the reason,
+/// which `service_error_localizations.dart` maps to that reason's message.
+/// Without this, a 7012 refusal fell through `_mapProtocolError` to
+/// `UnexpectedError(detail: …)`, whose detail is shown verbatim.
+///
+/// Null when the message names no reason; the category mappers decide.
+ServiceError? _mapNamedRefusal(UspError e) {
+  final reason = UspRefusalReason.fromErrorMessage(e.message);
+  if (reason == UspRefusalReason.unknown) return null;
+  // The name, as the short message: the whole text is in summary and detail.
+  return _refusal(e,
+      code: e.faultCode, errorMessage: reason.errorName!, reason: reason);
+}
+
+/// A thrown refusal as the one-entry complete failure a refused write's
+/// envelope also becomes, so the localizer reads both one way.
+///
+/// `requestedPath` is empty on purpose: the thrown string carries the path in
+/// its text, and recovering it would couple this mapper to a format built
+/// elsewhere (see `_mapOperationError`).
+UspCompleteFailureError _refusal(
+  UspError e, {
+  required int? code,
+  required String errorMessage,
+  UspRefusalReason reason = UspRefusalReason.unknown,
+}) =>
+    UspCompleteFailureError(
+      summary: e.message,
+      failures: [
+        UspErrorDetail(
+          requestedPath: '',
+          errorCode: code ?? 0,
+          errorMessage: errorMessage,
+          refusalReason: reason,
+        ),
+      ],
+      code: code,
+      detail: e.message,
+    );
 
 ServiceError _mapAuthError(UspError e) {
   final msg = e.message;
@@ -485,28 +545,21 @@ ServiceError _mapOperationError(UspError e) {
   // map, not from the shim — which is why this is a guard rather than a branch.
   final refusalCode = e.faultCode;
   if (refusalCode != null && refusalCode != 9999) {
-    return UspCompleteFailureError(
-      summary: msg,
-      failures: [
-        UspErrorDetail(
-          requestedPath: '',
-          errorCode: refusalCode,
-          // Short and true for every code. Two wrong answers were tried here first:
-          // `'Command Failure'` is TR-369's name for **7022 alone** and was being
-          // stamped onto 9005 and 7004 refusals; the formatted summary that replaced
-          // it is the whole log line, in a field five other construction sites use
-          // for the agent's short message — `usp_test_console_view.dart` renders it
-          // right after `Code ${errorCode}`, so the code appeared twice on one line.
-          //
-          // The router's own fragment is not recoverable here without re-parsing a
-          // format built in `UspClient._operateRefusal`, which this mapper
-          // deliberately does not couple itself to. `summary` and `detail` already
-          // carry the full text for anyone who wants it.
-          errorMessage: 'Command refused',
-        ),
-      ],
+    return _refusal(
+      e,
       code: refusalCode,
-      detail: msg,
+      // Short and true for every code. Two wrong answers were tried here first:
+      // `'Command Failure'` is TR-369's name for **7022 alone** and was being
+      // stamped onto 9005 and 7004 refusals; the formatted summary that replaced
+      // it is the whole log line, in a field five other construction sites use
+      // for the agent's short message — `usp_test_console_view.dart` renders it
+      // right after `Code ${errorCode}`, so the code appeared twice on one line.
+      //
+      // The router's own fragment is not recoverable here without re-parsing a
+      // format built in `UspClient._operateRefusal`, which this mapper
+      // deliberately does not couple itself to. `summary` and `detail` already
+      // carry the full text for anyone who wants it.
+      errorMessage: 'Command refused',
     );
   }
   if (msg.contains('Path not found')) return const ResourceNotFoundError();

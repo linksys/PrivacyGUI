@@ -1304,5 +1304,17 @@
   "invalidSubnetMask": "Nieprawidłowa maska podsieci",
   "reservationNameHint": "Nazwa (opcjonalnie)",
   "reservationNameInvalid": "Użyj liter, cyfr i -, bez - na początku ani na końcu",
-  "reservationNameInUse": "Inna rezerwacja ma już tę nazwę"
+  "reservationNameInUse": "Inna rezerwacja ma już tę nazwę",
+  "errorRefusedRulesOverlap": "Router nie zaakceptował tej reguły: jej porty pokrywają się z inną regułą dla tego samego protokołu.",
+  "errorRefusedTooManyRules": "Router nie zaakceptował tej reguły: lista jest pełna.",
+  "errorRefusedInvalidInternalServerIpAddress": "Router nie zaakceptował tej reguły: adres IP nie należy do żadnego urządzenia w sieci lokalnej.",
+  "errorRefusedDescriptionTooLong": "Router nie zaakceptował tej reguły: nazwa jest za długa.",
+  "errorRefusedInvalidDestinationIpAddress": "Router nie zaakceptował adresu IP hosta DMZ.",
+  "errorRefusedInvalidDestinationMacAddress": "Router nie zaakceptował adresu MAC hosta DMZ.",
+  "errorRefusedMultipleDestinations": "Router nie zaakceptował hosta DMZ: ustaw go według adresu IP albo adresu MAC, nie obu jednocześnie.",
+  "errorRefusedInvalidSourceRestriction": "Router nie zaakceptował zakresu źródłowych adresów IP: jest to zakres zarezerwowany.",
+  "errorRefusedNoPortRanges": "Router nie zaakceptował tej reguły: nie ma ona żadnego portu.",
+  "errorRefusedInvalidPortRange": "Router nie zaakceptował tej reguły: port początkowy jest większy niż port końcowy.",
+  "errorRefusedInvalidPort": "Router nie zaakceptował tej reguły: numer portu jest nieprawidłowy.",
+  "errorRefusedDescriptionInUse": "Router nie zaakceptował tej reguły: inna reguła zapory ma już tę nazwę."
 }

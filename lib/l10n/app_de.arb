@@ -1304,5 +1304,17 @@
   "invalidSubnetMask": "Ungültige Subnetzmaske",
   "reservationNameHint": "Name (optional)",
   "reservationNameInvalid": "Buchstaben, Ziffern und - verwenden, nicht mit - beginnen oder enden",
-  "reservationNameInUse": "Eine andere Reservierung hat bereits diesen Namen"
+  "reservationNameInUse": "Eine andere Reservierung hat bereits diesen Namen",
+  "errorRefusedRulesOverlap": "Der Router hat diese Regel nicht übernommen: Ihre Ports überschneiden sich mit einer anderen Regel für dasselbe Protokoll.",
+  "errorRefusedTooManyRules": "Der Router hat diese Regel nicht übernommen: Die Liste ist voll.",
+  "errorRefusedInvalidInternalServerIpAddress": "Der Router hat diese Regel nicht übernommen: Die IP-Adresse gehört zu keinem Gerät in Ihrem lokalen Netzwerk.",
+  "errorRefusedDescriptionTooLong": "Der Router hat diese Regel nicht übernommen: Der Name ist zu lang.",
+  "errorRefusedInvalidDestinationIpAddress": "Der Router hat die IP-Adresse des DMZ-Hosts nicht übernommen.",
+  "errorRefusedInvalidDestinationMacAddress": "Der Router hat die MAC-Adresse des DMZ-Hosts nicht übernommen.",
+  "errorRefusedMultipleDestinations": "Der Router hat den DMZ-Host nicht übernommen: Legen Sie ihn per IP-Adresse oder per MAC-Adresse fest, nicht mit beiden.",
+  "errorRefusedInvalidSourceRestriction": "Der Router hat den Quell-IP-Bereich nicht übernommen: Es handelt sich um einen reservierten Bereich.",
+  "errorRefusedNoPortRanges": "Der Router hat diese Regel nicht übernommen: Sie enthält keinen Port.",
+  "errorRefusedInvalidPortRange": "Der Router hat diese Regel nicht übernommen: Der Start-Port ist größer als der End-Port.",
+  "errorRefusedInvalidPort": "Der Router hat diese Regel nicht übernommen: Eine Portnummer ist ungültig.",
+  "errorRefusedDescriptionInUse": "Der Router hat diese Regel nicht übernommen: Eine andere Firewall-Regel hat bereits diesen Namen."
 }
