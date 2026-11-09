@@ -539,10 +539,12 @@ void main() {
     });
   });
 
-  // FWDEV#204: only one of DestIP and X_LINKSYS_DestMACAddress may be set,
-  // so a switch sets the other one to "" first. Its checks run per field in
-  // write order, so the clear goes in a Set of its own and nothing depends
-  // on how the router orders the leaves of one Set.
+  // FWDEV#204: only one of DestIP and X_LINKSYS_DestMACAddress may be set, and
+  // its checks run per leaf in write order. Bench, 2.0.4.26103108
+  // (2026-11-09), Enable 0 and 1 alike: one Set that clears the old leaf
+  // before it writes the new one is accepted both ways, in ~7.5 s; the other
+  // order is refused with ErrorMultipleDestinations, and the clear is written
+  // anyway, leaving no host.
   group('UspDmzService — update across host types', () {
     const p = 'Device.Firewall.DMZ.1.';
     const ok = {
@@ -577,7 +579,7 @@ void main() {
       expect(writes.single.containsKey('${p}DestIP'), isFalse);
     });
 
-    test('IP to MAC: DestIP is cleared in its own Set, then the MAC is set',
+    test('IP to MAC: one Set, DestIP cleared before the MAC is written',
         () async {
       when(() => mockUsp.set(any())).thenAnswer((_) async => ok);
 
@@ -586,14 +588,18 @@ void main() {
           savedType: DmzDestinationType.ip,
           model: model(DmzDestinationType.mac));
 
-      final writes = sets();
-      expect(writes, hasLength(2));
-      expect(writes.first, {'${p}DestIP': ''});
-      expect(writes.last['${p}X_LINKSYS_DestMACAddress'], 'aa:bb:cc:dd:ee:ff');
-      expect(writes.last.containsKey('${p}DestIP'), isFalse);
+      final write = sets().single;
+      expect(write.keys.toList(), [
+        '${p}DestIP',
+        '${p}Enable',
+        '${p}X_LINKSYS_DestMACAddress',
+        '${p}SourcePrefix',
+      ]);
+      expect(write['${p}DestIP'], '');
+      expect(write['${p}X_LINKSYS_DestMACAddress'], 'aa:bb:cc:dd:ee:ff');
     });
 
-    test('MAC to IP: the MAC is cleared in its own Set, then DestIP is set',
+    test('MAC to IP: one Set, the MAC cleared before DestIP is written',
         () async {
       when(() => mockUsp.set(any())).thenAnswer((_) async => ok);
 
@@ -602,23 +608,27 @@ void main() {
           savedType: DmzDestinationType.mac,
           model: model(DmzDestinationType.ip));
 
-      final writes = sets();
-      expect(writes, hasLength(2));
-      expect(writes.first, {'${p}X_LINKSYS_DestMACAddress': ''});
-      expect(writes.last['${p}DestIP'], '192.168.1.50');
-      expect(writes.last.containsKey('${p}X_LINKSYS_DestMACAddress'), isFalse);
+      final write = sets().single;
+      // The bench's accepted order (S6); DestIP first was refused (S5).
+      expect(write.keys.toList(), [
+        '${p}X_LINKSYS_DestMACAddress',
+        '${p}Enable',
+        '${p}DestIP',
+        '${p}SourcePrefix',
+      ]);
+      expect(write['${p}X_LINKSYS_DestMACAddress'], '');
+      expect(write['${p}DestIP'], '192.168.1.50');
     });
 
     test(
-        'a refused new host after an accepted clear is a partial failure: '
-        'the router now holds neither', () async {
-      var call = 0;
-      when(() => mockUsp.set(any())).thenAnswer((_) async => call++ == 0
-          ? ok
-          : refusedSetEnvelope(
-              instancePath: p,
-              refusedLeaf: 'X_LINKSYS_DestMACAddress',
-              message: 'ErrorInvalidDestinationMACAddress: x'));
+        'a refused switch is a partial failure: FW keeps the clear, so the '
+        'router may hold no host', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => refusedSetEnvelope(
+            instancePath: p,
+            refusedLeaf: 'X_LINKSYS_DestMACAddress',
+            message: "ErrorInvalidDestinationMACAddress: 'ff:ff:ff:ff:ff:ff'.",
+            otherLeaves: ['DestIP', 'Enable', 'SourcePrefix'],
+          ));
 
       await expectLater(
         service.update(
@@ -630,7 +640,24 @@ void main() {
             'refusal reasons',
             contains(UspRefusalReason.invalidDestinationMacAddress))),
       );
-      expect(sets(), hasLength(2));
+      expect(sets(), hasLength(1));
+    });
+
+    test('a refused update that switches nothing is a complete failure',
+        () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => refusedSetEnvelope(
+            instancePath: p,
+            refusedLeaf: 'X_LINKSYS_DestMACAddress',
+            message: "ErrorInvalidDestinationMACAddress: 'ff:ff:ff:ff:ff:ff'.",
+          ));
+
+      await expectLater(
+        service.update(
+            instancePath: p,
+            savedType: DmzDestinationType.mac,
+            model: model(DmzDestinationType.mac)),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
     });
 
     test('a MAC typed with - separators is written with :', () async {
@@ -644,23 +671,6 @@ void main() {
 
       expect(
           sets().single['${p}X_LINKSYS_DestMACAddress'], 'aa:bb:cc:dd:ee:ff');
-    });
-
-    test('a refused clear stops the save before the new host is written',
-        () async {
-      when(() => mockUsp.set(any())).thenAnswer((_) async => refusedSetEnvelope(
-          instancePath: p,
-          refusedLeaf: 'DestIP',
-          message: 'ErrorMultipleDestinations: x'));
-
-      await expectLater(
-        service.update(
-            instancePath: p,
-            savedType: DmzDestinationType.ip,
-            model: model(DmzDestinationType.mac)),
-        throwsA(carriesRefusalReason(UspRefusalReason.multipleDestinations)),
-      );
-      expect(sets(), hasLength(1));
     });
   });
 

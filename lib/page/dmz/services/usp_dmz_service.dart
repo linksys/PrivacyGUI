@@ -103,14 +103,17 @@ class UspDmzService {
   /// Update an existing DMZ entry.
   ///
   /// [savedType] is how the router holds the host now. When [model] gives it
-  /// the other way, the router's leaf is first set to "" in a Set of its own
-  /// (FWDEV#204: only one of `DestIP` and `X_LINKSYS_DestMACAddress` may be
-  /// set, and the checks run per field in write order), and only once that is
-  /// accepted is the new host written. A refused clear writes nothing more.
+  /// the other way, the Set clears the router's leaf before it writes the new
+  /// one (FWDEV#204: only one of `DestIP` and `X_LINKSYS_DestMACAddress` may
+  /// be set, and the checks run per leaf in write order). The clear is the
+  /// first of two updates of the one instance, so the generated params put it
+  /// first; the order reaches the router as sent. Bench, 2.0.4.26103108
+  /// (2026-11-09): this order is accepted both ways in one ~7.5 s Set, and the
+  /// other order is refused.
   ///
-  /// A new host refused after an accepted clear leaves the router with no
-  /// host at all, so it throws [UspPartialFailureError]: the save wrote part
-  /// of itself, and the page reads the router again.
+  /// A refused switch throws [UspPartialFailureError]: FW keeps the leaves it
+  /// did not refuse (measured), so the clear may have landed and the router
+  /// may hold no host. The page reads the router again.
   Future<void> update({
     required String instancePath,
     required DmzDestinationType savedType,
@@ -119,38 +122,34 @@ class UspDmzService {
     try {
       final byIp = model.destinationType == DmzDestinationType.ip;
       final switching = model.destinationType != savedType;
-      if (switching) {
-        await _setOnce(
-          DmzEntryUpdate(
-            instancePath: instancePath,
-            destIp: byIp ? null : '',
-            destMacAddress: byIp ? '' : null,
-          ),
-          summaryPrefix: 'DMZ clear ${savedType.name}',
-        );
-      }
       final sourcePrefix = model.sourceType == DmzSourceType.any
           ? '0.0.0.0/0'
           : model.sourcePrefix;
       try {
         await _setOnce(
-          DmzEntryUpdate(
-            instancePath: instancePath,
-            enable: model.isEnabled,
-            destIp: byIp ? model.destIp : null,
-            destMacAddress: byIp ? null : _wireMac(model.destMac),
-            sourcePrefix: sourcePrefix,
-          ),
+          [
+            if (switching)
+              DmzEntryUpdate(
+                instancePath: instancePath,
+                destIp: byIp ? null : '',
+                destMacAddress: byIp ? '' : null,
+              ),
+            DmzEntryUpdate(
+              instancePath: instancePath,
+              enable: model.isEnabled,
+              destIp: byIp ? model.destIp : null,
+              destMacAddress: byIp ? null : _wireMac(model.destMac),
+              sourcePrefix: sourcePrefix,
+            ),
+          ],
           summaryPrefix: 'DMZ update',
         );
       } on UspCompleteFailureError catch (e) {
         if (!switching) rethrow;
         throw UspPartialFailureError(
-          summary: 'DMZ ${savedType.name} cleared, new host refused: '
-              '${e.summary}',
-          successPaths: [
-            '$instancePath${byIp ? 'X_LINKSYS_DestMACAddress' : 'DestIP'}',
-          ],
+          summary: 'DMZ switch from ${savedType.name} refused, the router may '
+              'hold no host: ${e.summary}',
+          successPaths: const [],
           failures: e.failures,
         );
       }
@@ -160,12 +159,13 @@ class UspDmzService {
     }
   }
 
-  /// One Set of [entry]; any refusal throws, with the router's failures.
+  /// One Set of [entries], their params in list order; any refusal throws,
+  /// with the router's failures.
   Future<void> _setOnce(
-    DmzEntryUpdate entry, {
+    List<DmzEntryUpdate> entries, {
     required String summaryPrefix,
   }) async {
-    final result = await Dmz.update(_usp, [entry]);
+    final result = await Dmz.update(_usp, entries);
     final parsed = UspResultParser.parseSetResult(result);
     switch (parsed) {
       case UspSuccess():
