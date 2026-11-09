@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/constants/jnap_const.dart';
 import 'package:privacy_gui/core/ai_session/ai_session_service.dart';
@@ -11,6 +12,9 @@ import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../mocks/router_repository_mocks.dart';
+
+const _needsRouterAi =
+    'Router AI paths: run with --dart-define=enable_router_ai=true';
 
 class _RecordingAiSessionService implements AiSessionService {
   _RecordingAiSessionService({this.result = true});
@@ -52,63 +56,74 @@ void stubLogin(MockRouterRepository router, String result) {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() {
-    FlutterSecureStorage.setMockInitialValues({});
-    SharedPreferences.setMockInitialValues({});
-  });
+  // These exercise the AI paths in AuthNotifier, which exist only in a
+  // Router AI build. Run with --dart-define=enable_router_ai=true.
+  group('Router AI build', () {
+    setUp(() {
+      FlutterSecureStorage.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({});
+    });
 
-  test('successful router login bootstraps the AI cookie once', () async {
-    final router = MockRouterRepository();
-    final aiSession = _RecordingAiSessionService();
-    stubLogin(router, jnapResultOk);
-    final container = ProviderContainer(overrides: [
-      routerRepositoryProvider.overrideWithValue(router),
-      aiSessionServiceProvider.overrideWithValue(aiSession),
-    ]);
-    addTearDown(container.dispose);
+    test('successful router login bootstraps the AI cookie once', () async {
+      final router = MockRouterRepository();
+      final aiSession = _RecordingAiSessionService();
+      stubLogin(router, jnapResultOk);
+      final container = ProviderContainer(overrides: [
+        routerRepositoryProvider.overrideWithValue(router),
+        aiSessionServiceProvider.overrideWithValue(aiSession),
+      ]);
+      addTearDown(container.dispose);
 
-    await container.read(authProvider.future);
-    await container.read(authProvider.notifier).localLogin('CandidateSecret!');
+      await container.read(authProvider.future);
+      await container
+          .read(authProvider.notifier)
+          .localLogin('CandidateSecret!');
 
-    expect(aiSession.bootstraps, ['CandidateSecret!']);
-    expect(container.read(authProvider).value?.loginType, LoginType.local);
-  });
+      expect(aiSession.bootstraps, ['CandidateSecret!']);
+      expect(container.read(authProvider).value?.loginType, LoginType.local);
+    });
 
-  test('AI bootstrap outage does not invalidate a successful router login',
-      () async {
-    final router = MockRouterRepository();
-    final aiSession = _RecordingAiSessionService(result: false);
-    stubLogin(router, jnapResultOk);
-    final container = ProviderContainer(overrides: [
-      routerRepositoryProvider.overrideWithValue(router),
-      aiSessionServiceProvider.overrideWithValue(aiSession),
-    ]);
-    addTearDown(container.dispose);
+    test('AI bootstrap outage does not invalidate a successful router login',
+        () async {
+      final router = MockRouterRepository();
+      final aiSession = _RecordingAiSessionService(result: false);
+      stubLogin(router, jnapResultOk);
+      final container = ProviderContainer(overrides: [
+        routerRepositoryProvider.overrideWithValue(router),
+        aiSessionServiceProvider.overrideWithValue(aiSession),
+      ]);
+      addTearDown(container.dispose);
 
-    await container.read(authProvider.future);
-    await container.read(authProvider.notifier).localLogin('CandidateSecret!');
+      await container.read(authProvider.future);
+      await container
+          .read(authProvider.notifier)
+          .localLogin('CandidateSecret!');
 
-    expect(container.read(authProvider).hasError, isFalse);
-    expect(container.read(authProvider).value?.loginType, LoginType.local);
-  });
+      expect(container.read(authProvider).hasError, isFalse);
+      expect(container.read(authProvider).value?.loginType, LoginType.local);
+    });
 
-  test('UI idle logout revokes the AI session through the shared logout path',
-      () async {
-    final router = MockRouterRepository();
-    final aiSession = _RecordingAiSessionService();
-    stubLogin(router, jnapResultOk);
-    final container = ProviderContainer(overrides: [
-      routerRepositoryProvider.overrideWithValue(router),
-      aiSessionServiceProvider.overrideWithValue(aiSession),
-    ]);
-    addTearDown(container.dispose);
+    test('UI idle logout revokes the AI session through the shared logout path',
+        () async {
+      final router = MockRouterRepository();
+      final aiSession = _RecordingAiSessionService();
+      stubLogin(router, jnapResultOk);
+      final container = ProviderContainer(overrides: [
+        routerRepositoryProvider.overrideWithValue(router),
+        aiSessionServiceProvider.overrideWithValue(aiSession),
+      ]);
+      addTearDown(container.dispose);
 
-    await container.read(authProvider.future);
-    await container.read(authProvider.notifier).localLogin('CandidateSecret!');
-    await container.read(idleLogoutProvider)();
+      await container.read(authProvider.future);
+      await container
+          .read(authProvider.notifier)
+          .localLogin('CandidateSecret!');
+      await container.read(idleLogoutProvider)();
 
-    expect(aiSession.logouts, 1);
-    expect(container.read(authProvider).value?.loginType, LoginType.none);
-    expect(container.read(uiIdleDurationProvider), const Duration(minutes: 15));
-  });
+      expect(aiSession.logouts, 1);
+      expect(container.read(authProvider).value?.loginType, LoginType.none);
+      expect(
+          container.read(uiIdleDurationProvider), const Duration(minutes: 15));
+    });
+  }, skip: BuildConfig.enableRouterAi ? false : _needsRouterAi);
 }

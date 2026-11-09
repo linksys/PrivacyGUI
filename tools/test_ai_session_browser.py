@@ -83,6 +83,7 @@ def main():
             f'--dart-define=AI_SESSION_TEST_ORIGIN=http://localhost:{server.server_port}',
             'test/core/ai_session/ai_session_http_browser_test.dart',
             'test/core/ai_session/ai_session_service_factory_web_test.dart',
+            'test/core/ai_session/router_ai_loader_web_test.dart',
         ], cwd=root, timeout=180).returncode
     finally:
         SessionFixture.release.set()

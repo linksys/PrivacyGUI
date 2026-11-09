@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:privacy_gui/constants/build_config.dart';
 
 import 'ai_session_service_factory.dart'
     if (dart.library.html) 'ai_session_service_factory_web.dart';
@@ -11,6 +12,21 @@ abstract interface class AiSessionService {
   Future<bool> bootstrap(String adminPassword);
   Future<void> logout();
   void close();
+}
+
+/// Used when the build does not enable Router AI, and on non-web platforms.
+/// Sends nothing: no credential leaves the GUI and no AI endpoint is called.
+class DisabledAiSessionService implements AiSessionService {
+  const DisabledAiSessionService();
+
+  @override
+  Future<bool> bootstrap(String adminPassword) async => false;
+
+  @override
+  Future<void> logout() async {}
+
+  @override
+  void close() {}
 }
 
 class HttpAiSessionService implements AiSessionService {
@@ -95,7 +111,7 @@ class HttpAiSessionService implements AiSessionService {
     // poll from resurrecting the chat after logout, so transient failures are
     // retried. A newer login/logout supersedes the loop instead of letting a
     // stale retry revoke the session it now owns.
-    for (var attempt = 1; ; attempt++) {
+    for (var attempt = 1;; attempt++) {
       try {
         await _post(const {'action': 'logout'});
         return;
@@ -116,6 +132,7 @@ class HttpAiSessionService implements AiSessionService {
 }
 
 final aiSessionServiceProvider = Provider<AiSessionService>((ref) {
+  if (!BuildConfig.enableRouterAi) return const DisabledAiSessionService();
   final service = createAiSessionService();
   ref.onDispose(service.close);
   return service;

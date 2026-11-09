@@ -8,6 +8,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
 import 'package:privacy_gui/core/ai_session/ai_session_service.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
@@ -185,16 +186,18 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       );
     });
     final restored = state.value;
-    if (!state.hasError &&
-        restored?.loginType == LoginType.local &&
-        restored?.localPassword != null) {
-      unawaited(_bootstrapAiSession(restored!.localPassword!));
-    } else {
-      // No restored local login means nothing will bootstrap, so revoke any
-      // AI session cookie left by a logout whose revocation never reached the
-      // router — otherwise the widget's status poll resurrects the chat and
-      // keeps sliding the server idle timeout.
-      unawaited(_logoutAiSession());
+    if (BuildConfig.enableRouterAi) {
+      if (!state.hasError &&
+          restored?.loginType == LoginType.local &&
+          restored?.localPassword != null) {
+        unawaited(_bootstrapAiSession(restored!.localPassword!));
+      } else {
+        // No restored local login means nothing will bootstrap, so revoke any
+        // AI session cookie left by a logout whose revocation never reached
+        // the router — otherwise the widget's status poll resurrects the chat
+        // and keeps sliding the server idle timeout.
+        unawaited(_logoutAiSession());
+      }
     }
     return restored;
   }
@@ -376,7 +379,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         throw response;
       }
     }, (error) => guardError);
-    if (!state.hasError && state.value?.loginType == LoginType.local) {
+    if (BuildConfig.enableRouterAi &&
+        !state.hasError &&
+        state.value?.loginType == LoginType.local) {
       unawaited(_bootstrapAiSession(password));
     }
     logger.d(
@@ -419,10 +424,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   Future logout() async {
     logger.d('[Prepare]: Logout');
-    // Optional server revocation must not delay native logout or retain the
-    // previous authenticated state while the endpoint is unavailable.
-    unawaited(_logoutAiSession());
-    state = AsyncValue.data(AuthState.empty());
+    if (BuildConfig.enableRouterAi) {
+      // Optional server revocation must not delay native logout or retain the
+      // previous authenticated state while the endpoint is unavailable.
+      unawaited(_logoutAiSession());
+      state = AsyncValue.data(AuthState.empty());
+    } else {
+      state = const AsyncValue.loading();
+    }
 
     state = await AsyncValue.guard(() async {
       final prefs = await SharedPreferences.getInstance();
