@@ -23,17 +23,22 @@ class LocalNetworkFeatureState
   }
 
   /// True when router IP or subnet mask changed — save needs confirmation.
-  bool get hasNetworkChange =>
-      settings.original.model.ipAddress != settings.current.model.ipAddress ||
-      settings.original.model.subnetMask != settings.current.model.subnetMask;
+  bool get hasNetworkChange => hasIpAddressChange || hasSubnetMaskChange;
 
   /// True when the router IP address specifically changed. This is the trigger
   /// for the post-save redirect + SSE disconnect: only an IP change makes the
   /// old origin unreachable and drops the connection. A subnet-mask-only change
-  /// keeps the same IP, so the current connection survives and normal save
-  /// (await response + re-fetch) applies.
+  /// keeps the same IP, so the connection comes back once the router has
+  /// restarted the LAN; the save then keeps what was sent rather than reading
+  /// back (PrivacyGUI#1729).
   bool get hasIpAddressChange =>
       settings.original.model.ipAddress != settings.current.model.ipAddress;
+
+  /// True when the subnet mask changed. The router then takes the LAN down
+  /// and back up after the Set returns, so the save does not read back
+  /// (PrivacyGUI#1729). An IP change is handled first, by the redirect.
+  bool get hasSubnetMaskChange =>
+      settings.original.model.subnetMask != settings.current.model.subnetMask;
 
   /// True when the router's host name changed. `DeviceInfo.HostName` is also
   /// what the controller is named by when nobody has named it (#1751), and
