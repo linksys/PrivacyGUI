@@ -240,7 +240,7 @@ class UspDmzService {
         final mac = model.destMac.trim();
         if (mac.isEmpty) {
           errors['destMac'] = DmzErrorKeys.destMacRequired;
-        } else if (!MACAddressRule().validate(mac)) {
+        } else if (!MACAddressRule().validate(mac) || _isGroupMac(mac)) {
           errors['destMac'] = DmzErrorKeys.invalidMacAddress;
         }
     }
@@ -253,6 +253,15 @@ class UspDmzService {
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
+
+  /// Whether a well-formed [mac] names a group (broadcast or multicast): the
+  /// lowest bit of its first octet is set. A DMZ host is one device; FW
+  /// refuses a group MAC with ErrorInvalidDestinationMACAddress on a Set and
+  /// empties it on an Add (bench 2.0.4.26103108, 2026-11-09, measured with
+  /// usp-client 0.13.0, which dropped an Add's refusals). So it is checked
+  /// before anything is written.
+  static bool _isGroupMac(String mac) =>
+      int.parse(mac.substring(0, 2), radix: 16) & 1 == 1;
 
   /// [mac] as it is written: `-` separators become `:`, the form the router
   /// reports. Case is kept, so a MAC picked from the device list is written

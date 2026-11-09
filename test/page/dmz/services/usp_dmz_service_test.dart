@@ -267,6 +267,31 @@ void main() {
           {'destMac': DmzErrorKeys.invalidMacAddress});
     });
 
+    // Bench, 2.0.4.26103108 (2026-11-09): FW refuses both with
+    // ErrorInvalidDestinationMACAddress on a Set; a refused Add answers
+    // success with the host emptied (Status Error_Misconfigured), so on a
+    // first save only this check stops it. A DMZ host is one device, never a
+    // group: the multicast bit (the first octet's lowest) covers both.
+    test('a broadcast or multicast MAC is invalid', () {
+      for (final mac in [
+        'ff:ff:ff:ff:ff:ff',
+        '01:00:5e:00:00:01',
+        '33-33-00-00-00-01'
+      ]) {
+        expect(
+            service
+                .validateForm(form(type: DmzDestinationType.mac, destMac: mac)),
+            {'destMac': DmzErrorKeys.invalidMacAddress},
+            reason: mac);
+      }
+      // A locally administered unicast MAC (a phone's private address) is a
+      // host; the bench accepted this one.
+      expect(
+          service.validateForm(
+              form(type: DmzDestinationType.mac, destMac: 'aa:c8:bf:74:39:f6')),
+          isEmpty);
+    });
+
     test('an empty MAC in MAC mode is required', () {
       expect(service.validateForm(form(type: DmzDestinationType.mac)),
           {'destMac': DmzErrorKeys.destMacRequired});
