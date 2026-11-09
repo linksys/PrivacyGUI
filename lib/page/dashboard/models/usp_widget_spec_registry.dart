@@ -15,7 +15,7 @@ abstract class UspWidgetSpecRegistry {
 
   // ---------------------------------------------------------------------------
   // Card Specs (2-column default, preferredColumns=6)
-  // h values sized for fixed slot height: 100px per row
+  // h values sized for fixed slot height: 120px per row (kDashboardSlotHeight)
   // ---------------------------------------------------------------------------
 
   static const statsPanel = WidgetSpec(

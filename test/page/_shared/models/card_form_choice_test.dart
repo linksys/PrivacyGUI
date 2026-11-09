@@ -10,7 +10,7 @@ import 'package:sliver_dashboard/sliver_dashboard.dart' show LayoutItem;
 /// #1299 — the inversion, at the seam where a stored pick becomes geometry.
 ///
 /// #1232 runs **width → density**. This ticket runs **density → the sizes that
-/// are legal**, and `UspWidgetSpecs._applyCardForm` is the whole of that arrow: a
+/// are legal**, and `UspCardSizing._applyCardForm` is the whole of that arrow: a
 /// function from (item, grid, pick) to a box whose `isResizable`, `minW` and
 /// `minH` say what the chosen form allows. Everything else in the feature — the
 /// panel, the persistence, the render scope — only moves the pick around.
@@ -26,7 +26,7 @@ import 'package:sliver_dashboard/sliver_dashboard.dart' show LayoutItem;
 ///
 /// ## Mutation table
 ///
-/// Each row is one edit to `usp_widget_specs.dart` — except 19-21 and 23-25, which
+/// Each row is one edit to `usp_card_sizing.dart` — except 19-21 and 23-25, which
 /// edit the models in `card_form_choice.dart` — applied to the real file and run
 /// against this file *and* `usp_card_form_persistence_test.dart` (some of the
 /// arithmetic is only observable once a pick has been through the pref). The counts
