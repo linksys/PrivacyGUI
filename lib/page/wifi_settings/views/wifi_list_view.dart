@@ -11,10 +11,13 @@ import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_qr_credentials.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_list_advanced_mode_view.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_list_simple_mode_view.dart';
+import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_qr_dialog.dart';
+import 'package:privacy_gui/page/components/widgets/wifi_qr/wifi_qr_warning_card.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 
@@ -76,6 +79,12 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
     final hasChanged =
         _stateHasChanged(state: state, preserved: _preservedMainWiFiState);
     final isPositiveEnabled = hasChanged && _dataVerify(state);
+    // Only once there is something to save: simple mode takes one band's
+    // security mode, so bands that differ in nothing else would otherwise warn
+    // the moment the page opens.
+    final showQRWarning = hasChanged &&
+        wifiQRCredentialsChanged(
+            state: state, preserved: _preservedMainWiFiState);
 
     final wifiBands =
         state.mainWiFi.map((e) => e.radioID.bandName).toList().join(', ');
@@ -88,6 +97,10 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
       bottomBar: PageBottomBar(
         isPositiveEnabled: isPositiveEnabled,
         onPositiveTap: () async {
+          // Read this before setQuickSetup pushes the simple-mode values onto
+          // every band, which would make the comparison always come out equal.
+          final credentialsChanged = wifiQRCredentialsChanged(
+              state: state, preserved: _preservedMainWiFiState);
           if (state.isSimpleMode) {
             setQuickSetup(
               ssid: state.simpleModeWifi.ssid,
@@ -96,7 +109,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
               mainWiFi: state.mainWiFi,
             );
           }
-          final result = await _showSaveConfirmModal();
+          final result =
+              await _showSaveConfirmModal(offerNewQR: credentialsChanged);
           if (!result) {
             _restoreMainWifi();
           }
@@ -111,6 +125,13 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
             const AppGap.medium(),
             _quickSetupSwitch(state.isSimpleMode),
             const AppGap.medium(),
+            // The printed QR codes encode the WiFi name, password and security
+            // mode, so the moment one is edited those codes are about to stop
+            // working - say so before the user saves, not after.
+            if (showQRWarning) ...[
+              WiFiQRWarningCard(message: loc(context).wifiListQRWarning),
+              const AppGap.medium(),
+            ],
             Expanded(
               child: state.isSimpleMode
                   ? SimpleModeView(
@@ -222,19 +243,10 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
       notifier.setWiFiSSID(ssid, radio.radioID);
       // Password
       notifier.setWiFiPassword(password, radio.radioID);
-      // Security type
-      if (radio.radioID == WifiRadioBand.radio_6) {
-        // Handle security type for 6G band
-        if (securityType.isOpenVariant) {
-          notifier.setWiFiSecurityType(
-              WifiSecurityType.enhancedOpenOnly, radio.radioID);
-        } else {
-          notifier.setWiFiSecurityType(
-              WifiSecurityType.wpa3Personal, radio.radioID);
-        }
-      } else {
-        notifier.setWiFiSecurityType(securityType, radio.radioID);
-      }
+      // Security type - shared with wifiQRCredentialsChanged, so the QR warning
+      // judges the same per-band value this writes.
+      notifier.setWiFiSecurityType(
+          radio.radioID.simpleModeSecurityType(securityType), radio.radioID);
       // Enable wifi
       notifier.setWiFiEnabled(true, radio.radioID);
     }
@@ -255,7 +267,19 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
     }
   }
 
-  Future<bool> _showSaveConfirmModal() async {
+  // The save landed, directly or after the router came back. When it changed
+  // what the printed QR codes encode, those codes are dead now, so hand the
+  // user a replacement they can print or download straight away.
+  void _onSaved(WiFiState? state, {required bool offerNewQR}) {
+    update(state);
+    showChangesSavedSnackBar();
+    if (!offerNewQR || state == null) return;
+    final bands = wifiQRBandsFor(state);
+    if (bands.isEmpty) return;
+    showWiFiQRDialog(context, bands: bands);
+  }
+
+  Future<bool> _showSaveConfirmModal({bool offerNewQR = false}) async {
     final newState = ref.read(wifiListProvider);
     final result = await showSimpleAppDialog(context,
         title: loc(context).wifiListSaveModalTitle,
@@ -291,16 +315,14 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
               context, ref.read(wifiListProvider.notifier).save())
           .then((state) {
         if (!mounted) return false;
-        update(state);
-        showChangesSavedSnackBar();
+        _onSaved(state, offerNewQR: offerNewQR);
       }).catchError((error, stackTrace) {
         if (!mounted) return false;
         showRouterNotFoundAlert(context, ref,
             onComplete: () =>
                 ref.read(wifiListProvider.notifier).fetch(true)).then((state) {
           if (!mounted) return false;
-          update(state);
-          showChangesSavedSnackBar();
+          _onSaved(state, offerNewQR: offerNewQR);
         });
       }, test: (error) => error is JNAPSideEffectError).onError(
               (error, stackTrace) {
