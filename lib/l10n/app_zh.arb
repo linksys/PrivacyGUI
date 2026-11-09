@@ -1316,5 +1316,7 @@
   "errorRefusedNoPortRanges": "路由器未接受此规则：未指定端口。",
   "errorRefusedInvalidPortRange": "路由器未接受此规则：起始端口大于结束端口。",
   "errorRefusedInvalidPort": "路由器未接受此规则：端口号无效。",
-  "errorRefusedDescriptionInUse": "路由器未接受此规则：已有其他防火墙规则使用此名称。"
+  "errorRefusedDescriptionInUse": "路由器未接受此规则：已有其他防火墙规则使用此名称。",
+  "dmzDestination": "目标",
+  "macAddressRequired": "MAC 地址为必填项"
 }

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:privacy_gui/core/usp/errors/usp_refusal_reason.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/errors/usp_refusal_reason.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/dmz.g.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
@@ -26,6 +26,36 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('UspDmzService — buildUIModel', () {
+    DmzEntry entry({String destIp = '', String? destMacAddress}) => DmzEntry(
+          instancePath: 'Device.Firewall.DMZ.1.',
+          enable: true,
+          destIp: destIp,
+          destMacAddress: destMacAddress,
+          sourcePrefix: '0.0.0.0/0',
+          interface_: '',
+          description: 'DMZ',
+          status: 'Enabled',
+        );
+
+    // FWDEV#204: only one of DestIP and X_LINKSYS_DestMACAddress is set, and
+    // the non-empty one is the host.
+    test('a router that reports a MAC opens in MAC mode, showing that MAC', () {
+      final model = service.buildUIModel(
+          Dmz(items: [entry(destMacAddress: 'aa:bb:cc:dd:ee:ff')]));
+
+      expect(model.destinationType, DmzDestinationType.mac);
+      expect(model.destMac, 'aa:bb:cc:dd:ee:ff');
+    });
+
+    test('a router that reports an IP opens in IP mode', () {
+      final model = service.buildUIModel(
+          Dmz(items: [entry(destIp: '192.168.1.50', destMacAddress: '')]));
+
+      expect(model.destinationType, DmzDestinationType.ip);
+      expect(model.destIp, '192.168.1.50');
+      expect(model.destMac, '');
+    });
+
     test('returns disabled model when items list is empty', () {
       const data = Dmz(items: []);
 
@@ -153,7 +183,7 @@ void main() {
       final errors = service.validateForm(model);
 
       expect(errors, contains('destIp'));
-      expect(errors['destIp'], 'Destination IP is required');
+      expect(errors['destIp'], DmzErrorKeys.destIpRequired);
     });
 
     test('returns error when destIp is invalid', () {
@@ -167,7 +197,7 @@ void main() {
       final errors = service.validateForm(model);
 
       expect(errors, contains('destIp'));
-      expect(errors['destIp'], 'Invalid IP address');
+      expect(errors['destIp'], DmzErrorKeys.invalidIpAddress);
     });
 
     test('returns no errors for valid enabled configuration', () {
@@ -194,7 +224,7 @@ void main() {
       final errors = service.validateForm(model);
 
       expect(errors, contains('sourcePrefix'));
-      expect(errors['sourcePrefix'], 'CIDR range is required');
+      expect(errors['sourcePrefix'], DmzErrorKeys.cidrRequired);
     });
 
     test('returns no error when sourceType is cidr with valid prefix', () {
@@ -208,6 +238,60 @@ void main() {
       final errors = service.validateForm(model);
 
       expect(errors, isEmpty);
+    });
+
+    // #1775: the DMZ host by MAC.
+    DmzUIModel form({
+      DmzDestinationType type = DmzDestinationType.ip,
+      String destIp = '',
+      String destMac = '',
+      bool isEnabled = true,
+    }) =>
+        DmzUIModel(
+          isEnabled: isEnabled,
+          destinationType: type,
+          destIp: destIp,
+          destMac: destMac,
+          sourceType: DmzSourceType.any,
+          sourcePrefix: '',
+        );
+
+    test('a malformed MAC is an error, by MACAddressRule', () {
+      expect(
+          service.validateForm(
+              form(type: DmzDestinationType.mac, destMac: 'zz:zz:zz:zz:zz:zz')),
+          {'destMac': DmzErrorKeys.invalidMacAddress});
+      expect(
+          service.validateForm(
+              form(type: DmzDestinationType.mac, destMac: 'aa:bb:cc:dd:ee')),
+          {'destMac': DmzErrorKeys.invalidMacAddress});
+    });
+
+    test('an empty MAC in MAC mode is required', () {
+      expect(service.validateForm(form(type: DmzDestinationType.mac)),
+          {'destMac': DmzErrorKeys.destMacRequired});
+    });
+
+    test('a well-formed MAC passes, with : or - separators', () {
+      for (final mac in ['aa:bb:cc:dd:ee:ff', 'AA-BB-CC-DD-EE-FF']) {
+        expect(
+            service
+                .validateForm(form(type: DmzDestinationType.mac, destMac: mac)),
+            isEmpty,
+            reason: mac);
+      }
+    });
+
+    test('only the field the type names is checked', () {
+      // An IP left over from IP mode is not saved, so it is not an error.
+      expect(
+          service.validateForm(form(
+              type: DmzDestinationType.mac,
+              destIp: 'not-an-ip',
+              destMac: 'aa:bb:cc:dd:ee:ff')),
+          isEmpty);
+      expect(service.validateForm(form(destIp: '192.168.1.50', destMac: 'zz')),
+          isEmpty);
     });
   });
 
@@ -302,6 +386,64 @@ void main() {
       expect(params['DestIP'], '192.168.1.50');
     });
 
+    test('add by MAC sends the MAC and no DestIP', () async {
+      when(() => mockUsp.add(any())).thenAnswer((_) async => {
+            'success': true,
+            'result': {
+              'data': {
+                'instances': ['Device.Firewall.DMZ.1.'],
+              },
+            },
+          });
+
+      await service.add(
+        model: DmzUIModel(
+          isEnabled: true,
+          destinationType: DmzDestinationType.mac,
+          // Left over from IP mode: not the host, so not written.
+          destIp: '192.168.1.50',
+          destMac: 'aa:bb:cc:dd:ee:ff',
+          sourceType: DmzSourceType.any,
+          sourcePrefix: '',
+        ),
+      );
+
+      final items =
+          verify(() => mockUsp.add(captureAny())).captured.single as List;
+      final params = (items.single as Map<String, dynamic>)['params']
+          as Map<String, dynamic>;
+      expect(params['X_LINKSYS_DestMACAddress'], 'aa:bb:cc:dd:ee:ff');
+      expect(params.containsKey('DestIP'), isFalse);
+    });
+
+    test('add by IP sends DestIP and no MAC', () async {
+      when(() => mockUsp.add(any())).thenAnswer((_) async => {
+            'success': true,
+            'result': {
+              'data': {
+                'instances': ['Device.Firewall.DMZ.1.'],
+              },
+            },
+          });
+
+      await service.add(
+        model: DmzUIModel(
+          isEnabled: true,
+          destIp: '192.168.1.50',
+          destMac: 'aa:bb:cc:dd:ee:ff',
+          sourceType: DmzSourceType.any,
+          sourcePrefix: '',
+        ),
+      );
+
+      final items =
+          verify(() => mockUsp.add(captureAny())).captured.single as List;
+      final params = (items.single as Map<String, dynamic>)['params']
+          as Map<String, dynamic>;
+      expect(params['DestIP'], '192.168.1.50');
+      expect(params.containsKey('X_LINKSYS_DestMACAddress'), isFalse);
+    });
+
     test('add with sourceType.cidr sends the CIDR value', () async {
       when(() => mockUsp.add(any())).thenAnswer((_) async => {
             'success': true,
@@ -338,6 +480,7 @@ void main() {
 
       await service.update(
         instancePath: 'Device.Firewall.DMZ.1.',
+        savedType: DmzDestinationType.ip,
         model: DmzUIModel(
           isEnabled: false,
           destIp: '192.168.1.100',
@@ -358,6 +501,7 @@ void main() {
 
       await service.update(
         instancePath: 'Device.Firewall.DMZ.1.',
+        savedType: DmzDestinationType.ip,
         model: DmzUIModel(
           isEnabled: true,
           destIp: '192.168.1.100',
@@ -367,6 +511,131 @@ void main() {
       );
 
       verify(() => mockUsp.set(captureAny())).called(1);
+    });
+  });
+
+  // FWDEV#204: only one of DestIP and X_LINKSYS_DestMACAddress may be set,
+  // so a switch sets the other one to "" first. Its checks run per field in
+  // write order, so the clear goes in a Set of its own and nothing depends
+  // on how the router orders the leaves of one Set.
+  group('UspDmzService — update across host types', () {
+    const p = 'Device.Firewall.DMZ.1.';
+    const ok = {
+      'success': true,
+      'result': {'data': <String, dynamic>{}},
+    };
+    DmzUIModel model(DmzDestinationType type) => DmzUIModel(
+          isEnabled: true,
+          destinationType: type,
+          destIp: '192.168.1.50',
+          destMac: 'aa:bb:cc:dd:ee:ff',
+          sourceType: DmzSourceType.any,
+          sourcePrefix: '',
+        );
+    List<Map<String, dynamic>> sets() => verify(() => mockUsp.set(captureAny()))
+        .captured
+        .cast<Map<String, dynamic>>();
+
+    test('unchanged: one Set, writing only the leaf that names the host',
+        () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => ok);
+
+      await service.update(
+          instancePath: p,
+          savedType: DmzDestinationType.mac,
+          model: model(DmzDestinationType.mac));
+
+      final writes = sets();
+      expect(writes, hasLength(1));
+      expect(
+          writes.single['${p}X_LINKSYS_DestMACAddress'], 'aa:bb:cc:dd:ee:ff');
+      expect(writes.single.containsKey('${p}DestIP'), isFalse);
+    });
+
+    test('IP to MAC: DestIP is cleared in its own Set, then the MAC is set',
+        () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => ok);
+
+      await service.update(
+          instancePath: p,
+          savedType: DmzDestinationType.ip,
+          model: model(DmzDestinationType.mac));
+
+      final writes = sets();
+      expect(writes, hasLength(2));
+      expect(writes.first, {'${p}DestIP': ''});
+      expect(writes.last['${p}X_LINKSYS_DestMACAddress'], 'aa:bb:cc:dd:ee:ff');
+      expect(writes.last.containsKey('${p}DestIP'), isFalse);
+    });
+
+    test('MAC to IP: the MAC is cleared in its own Set, then DestIP is set',
+        () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => ok);
+
+      await service.update(
+          instancePath: p,
+          savedType: DmzDestinationType.mac,
+          model: model(DmzDestinationType.ip));
+
+      final writes = sets();
+      expect(writes, hasLength(2));
+      expect(writes.first, {'${p}X_LINKSYS_DestMACAddress': ''});
+      expect(writes.last['${p}DestIP'], '192.168.1.50');
+      expect(writes.last.containsKey('${p}X_LINKSYS_DestMACAddress'), isFalse);
+    });
+
+    test(
+        'a refused new host after an accepted clear is a partial failure: '
+        'the router now holds neither', () async {
+      var call = 0;
+      when(() => mockUsp.set(any())).thenAnswer((_) async => call++ == 0
+          ? ok
+          : refusedSetEnvelope(
+              instancePath: p,
+              refusedLeaf: 'X_LINKSYS_DestMACAddress',
+              message: 'ErrorInvalidDestinationMACAddress: x'));
+
+      await expectLater(
+        service.update(
+            instancePath: p,
+            savedType: DmzDestinationType.ip,
+            model: model(DmzDestinationType.mac)),
+        throwsA(isA<UspPartialFailureError>().having(
+            (e) => e.failures.map((f) => f.refusalReason),
+            'refusal reasons',
+            contains(UspRefusalReason.invalidDestinationMacAddress))),
+      );
+      expect(sets(), hasLength(2));
+    });
+
+    test('a MAC typed with - separators is written with :', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => ok);
+
+      await service.update(
+          instancePath: p,
+          savedType: DmzDestinationType.mac,
+          model: model(DmzDestinationType.mac)
+              .copyWith(destMac: ' aa-bb-cc-dd-ee-ff '));
+
+      expect(
+          sets().single['${p}X_LINKSYS_DestMACAddress'], 'aa:bb:cc:dd:ee:ff');
+    });
+
+    test('a refused clear stops the save before the new host is written',
+        () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => refusedSetEnvelope(
+          instancePath: p,
+          refusedLeaf: 'DestIP',
+          message: 'ErrorMultipleDestinations: x'));
+
+      await expectLater(
+        service.update(
+            instancePath: p,
+            savedType: DmzDestinationType.ip,
+            model: model(DmzDestinationType.mac)),
+        throwsA(carriesRefusalReason(UspRefusalReason.multipleDestinations)),
+      );
+      expect(sets(), hasLength(1));
     });
   });
 
@@ -389,6 +658,7 @@ void main() {
       await expectLater(
         service.update(
           instancePath: p,
+          savedType: DmzDestinationType.ip,
           model: DmzUIModel(
             isEnabled: true,
             destIp: '192.168.1.1',

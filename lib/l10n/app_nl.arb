@@ -1316,5 +1316,7 @@
   "errorRefusedNoPortRanges": "De router heeft deze regel niet geaccepteerd: er is geen poort opgegeven.",
   "errorRefusedInvalidPortRange": "De router heeft deze regel niet geaccepteerd: de beginpoort is hoger dan de eindpoort.",
   "errorRefusedInvalidPort": "De router heeft deze regel niet geaccepteerd: een poortnummer is ongeldig.",
-  "errorRefusedDescriptionInUse": "De router heeft deze regel niet geaccepteerd: een andere firewallregel heeft deze naam al."
+  "errorRefusedDescriptionInUse": "De router heeft deze regel niet geaccepteerd: een andere firewallregel heeft deze naam al.",
+  "dmzDestination": "Bestemming",
+  "macAddressRequired": "MAC-adres is vereist"
 }

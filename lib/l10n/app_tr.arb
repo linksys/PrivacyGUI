@@ -1316,5 +1316,7 @@
   "errorRefusedNoPortRanges": "Yönlendirici bu kuralı kabul etmedi: kuralda port yok.",
   "errorRefusedInvalidPortRange": "Yönlendirici bu kuralı kabul etmedi: başlangıç portu bitiş portundan büyük.",
   "errorRefusedInvalidPort": "Yönlendirici bu kuralı kabul etmedi: bir port numarası geçersiz.",
-  "errorRefusedDescriptionInUse": "Yönlendirici bu kuralı kabul etmedi: bu ad başka bir güvenlik duvarı kuralı tarafından zaten kullanılıyor."
+  "errorRefusedDescriptionInUse": "Yönlendirici bu kuralı kabul etmedi: bu ad başka bir güvenlik duvarı kuralı tarafından zaten kullanılıyor.",
+  "dmzDestination": "Hedef",
+  "macAddressRequired": "MAC adresi gereklidir"
 }

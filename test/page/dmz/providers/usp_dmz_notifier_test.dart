@@ -27,6 +27,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const DmzUIModel.disabled());
+    registerFallbackValue(DmzDestinationType.ip);
   });
 
   setUp(() {
@@ -117,6 +118,7 @@ void main() {
       verify(() => mockService.add(model: any(named: 'model'))).called(1);
       verifyNever(() => mockService.update(
           instancePath: any(named: 'instancePath'),
+          savedType: any(named: 'savedType'),
           model: any(named: 'model')));
       container.dispose();
     });
@@ -126,6 +128,7 @@ void main() {
           .thenAnswer((_) async => (testSettings, testStatus));
       when(() => mockService.update(
             instancePath: any(named: 'instancePath'),
+            savedType: any(named: 'savedType'),
             model: any(named: 'model'),
           )).thenAnswer((_) async {});
       when(() => mockService.validateForm(any())).thenReturn({});
@@ -140,6 +143,7 @@ void main() {
 
       verify(() => mockService.update(
             instancePath: 'Device.Firewall.DMZ.1.',
+            savedType: any(named: 'savedType'),
             model: any(named: 'model'),
           )).called(1);
       verifyNever(() => mockService.add(model: any(named: 'model')));
@@ -203,6 +207,7 @@ void main() {
       verifyNever(() => mockService.add(model: any(named: 'model')));
       verifyNever(() => mockService.update(
           instancePath: any(named: 'instancePath'),
+          savedType: any(named: 'savedType'),
           model: any(named: 'model')));
       container.dispose();
     });
@@ -231,6 +236,7 @@ void main() {
           .thenAnswer((_) async => (testSettings, testStatus));
       when(() => mockService.update(
             instancePath: any(named: 'instancePath'),
+            savedType: any(named: 'savedType'),
             model: any(named: 'model'),
           )).thenThrow(const NetworkError(detail: 'save failed'));
       when(() => mockService.validateForm(any())).thenReturn({});
@@ -260,6 +266,7 @@ void main() {
       });
       when(() => mockService.update(
             instancePath: any(named: 'instancePath'),
+            savedType: any(named: 'savedType'),
             model: any(named: 'model'),
           )).thenAnswer((_) async {});
       when(() => mockService.validateForm(any())).thenReturn({});
@@ -304,6 +311,7 @@ void main() {
           .thenAnswer((_) async => rows++);
       when(() => mockService.update(
             instancePath: any(named: 'instancePath'),
+            savedType: any(named: 'savedType'),
             model: any(named: 'model'),
           )).thenAnswer((_) async {});
       when(() => mockService.validateForm(any())).thenReturn({});
@@ -337,8 +345,96 @@ void main() {
       expect(rows, 1);
       verify(() => mockService.update(
             instancePath: 'Device.Firewall.DMZ.1.',
+            savedType: any(named: 'savedType'),
             model: any(named: 'model'),
           )).called(1);
+      container.dispose();
+    });
+
+    // #1775: the service clears the router's leaf before writing the other,
+    // so it is told which one the router holds: the original, not the edit.
+    test('a save after switching IP to MAC says the router holds an IP',
+        () async {
+      when(() => mockService.fetch())
+          .thenAnswer((_) async => (testSettings, testStatus));
+      when(() => mockService.update(
+            instancePath: any(named: 'instancePath'),
+            savedType: any(named: 'savedType'),
+            model: any(named: 'model'),
+          )).thenAnswer((_) async {});
+      when(() => mockService.validateForm(any())).thenReturn({});
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspDmzProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(
+          destinationType: DmzDestinationType.mac,
+          destMac: 'aa:bb:cc:dd:ee:ff'));
+      await notifier.save();
+
+      final model = verify(() => mockService.update(
+            instancePath: 'Device.Firewall.DMZ.1.',
+            savedType: DmzDestinationType.ip,
+            model: captureAny(named: 'model'),
+          )).captured.single as DmzUIModel;
+      expect(model.destinationType, DmzDestinationType.mac);
+      container.dispose();
+    });
+
+    // The Save button is enabled only with no field errors, but those are set
+    // on blur; a save is checked again here, so a malformed MAC never reaches
+    // the router, on a first save (an Add) as on an update.
+    test('a malformed MAC is not saved, on a first save (an Add) too',
+        () async {
+      when(() => mockService.fetch()).thenAnswer((_) async => (
+            const DmzSettings(model: DmzUIModel.disabled()),
+            testStatus,
+          ));
+      when(() => mockService.validateForm(any()))
+          .thenReturn({'destMac': DmzErrorKeys.invalidMacAddress});
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspDmzProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(
+          isEnabled: true,
+          destinationType: DmzDestinationType.mac,
+          destMac: 'zz:zz:zz:zz:zz:zz'));
+
+      await expectLater(notifier.save(), throwsA(isA<InvalidInputError>()));
+      verifyNever(() => mockService.add(model: any(named: 'model')));
+      final state = container.read(uspDmzProvider);
+      expect(state.status.fieldErrors,
+          {'destMac': DmzErrorKeys.invalidMacAddress});
+      expect(state.status.isSaving, isFalse);
+      container.dispose();
+    });
+
+    // #1775: a switch that cleared the router's host and then had the new one
+    // refused leaves the router with neither, so the page reads it again, as
+    // port forwarding does after a save that wrote some rules.
+    test('a save that wrote part of a switch re-reads the router', () async {
+      when(() => mockService.fetch())
+          .thenAnswer((_) async => (testSettings, testStatus));
+      when(() => mockService.validateForm(any())).thenReturn({});
+      when(() => mockService.update(
+                instancePath: any(named: 'instancePath'),
+                savedType: any(named: 'savedType'),
+                model: any(named: 'model'),
+              ))
+          .thenThrow(const UspPartialFailureError(
+              summary: 's', successPaths: [], failures: []));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspDmzProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(
+          destinationType: DmzDestinationType.mac,
+          destMac: 'aa:bb:cc:dd:ee:ff'));
+
+      await expectLater(
+          notifier.save(), throwsA(isA<UspPartialFailureError>()));
+      verify(() => mockService.fetch()).called(2);
       container.dispose();
     });
 
@@ -351,6 +447,7 @@ void main() {
             const DmzSettings(model: DmzUIModel.disabled()),
             testStatus,
           ));
+      when(() => mockService.validateForm(any())).thenReturn({});
       when(() => mockService.add(model: any(named: 'model'))).thenThrow(
           const UspPartialFailureError(
               summary: 's', successPaths: [], failures: []));
@@ -364,6 +461,32 @@ void main() {
       await expectLater(
           notifier.save(), throwsA(isA<UspPartialFailureError>()));
       verify(() => mockService.fetch()).called(2);
+      container.dispose();
+    });
+
+    test('a save that wrote nothing keeps the edit for a retry', () async {
+      when(() => mockService.fetch())
+          .thenAnswer((_) async => (testSettings, testStatus));
+      when(() => mockService.validateForm(any())).thenReturn({});
+      when(() => mockService.update(
+                instancePath: any(named: 'instancePath'),
+                savedType: any(named: 'savedType'),
+                model: any(named: 'model'),
+              ))
+          .thenThrow(const UspCompleteFailureError(summary: 's', failures: []));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspDmzProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(
+          destinationType: DmzDestinationType.mac,
+          destMac: 'aa:bb:cc:dd:ee:ff'));
+
+      await expectLater(
+          notifier.save(), throwsA(isA<UspCompleteFailureError>()));
+      verify(() => mockService.fetch()).called(1);
+      expect(container.read(uspDmzProvider).settings.current.model.destMac,
+          'aa:bb:cc:dd:ee:ff');
       container.dispose();
     });
 

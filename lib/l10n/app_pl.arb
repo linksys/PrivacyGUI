@@ -1316,5 +1316,7 @@
   "errorRefusedNoPortRanges": "Router nie zaakceptował tej reguły: nie ma ona żadnego portu.",
   "errorRefusedInvalidPortRange": "Router nie zaakceptował tej reguły: port początkowy jest większy niż port końcowy.",
   "errorRefusedInvalidPort": "Router nie zaakceptował tej reguły: numer portu jest nieprawidłowy.",
-  "errorRefusedDescriptionInUse": "Router nie zaakceptował tej reguły: inna reguła zapory ma już tę nazwę."
+  "errorRefusedDescriptionInUse": "Router nie zaakceptował tej reguły: inna reguła zapory ma już tę nazwę.",
+  "dmzDestination": "Miejsce docelowe",
+  "macAddressRequired": "Adres MAC jest wymagany"
 }

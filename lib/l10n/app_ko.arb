@@ -1316,5 +1316,7 @@
   "errorRefusedNoPortRanges": "라우터가 이 규칙을 받아들이지 않았습니다. 포트가 없습니다.",
   "errorRefusedInvalidPortRange": "라우터가 이 규칙을 받아들이지 않았습니다. 시작 포트가 끝 포트보다 큽니다.",
   "errorRefusedInvalidPort": "라우터가 이 규칙을 받아들이지 않았습니다. 포트 번호가 올바르지 않습니다.",
-  "errorRefusedDescriptionInUse": "라우터가 이 규칙을 받아들이지 않았습니다. 다른 방화벽 규칙에서 이미 이 이름을 사용하고 있습니다."
+  "errorRefusedDescriptionInUse": "라우터가 이 규칙을 받아들이지 않았습니다. 다른 방화벽 규칙에서 이미 이 이름을 사용하고 있습니다.",
+  "dmzDestination": "대상",
+  "macAddressRequired": "MAC 주소는 필수입니다"
 }

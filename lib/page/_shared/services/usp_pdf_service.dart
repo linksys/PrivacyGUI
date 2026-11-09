@@ -936,7 +936,10 @@ class UspPdfService {
       _sectionTitle('DMZ'),
       _keyValue('Status', dmz.isEnabled ? 'Enabled' : 'Disabled'),
       if (dmz.isEnabled) ...[
-        _keyValue('Destination IP', dmz.destIp),
+        if (dmz.destinationType == DmzDestinationType.mac)
+          _keyValue('Destination MAC', dmz.destMac)
+        else
+          _keyValue('Destination IP', dmz.destIp),
         _keyValue('Source',
             dmz.sourceType == DmzSourceType.any ? 'Any' : dmz.sourcePrefix),
       ],

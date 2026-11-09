@@ -1316,5 +1316,7 @@
   "errorRefusedNoPortRanges": "Reititin ei hyväksynyt tätä sääntöä: siinä ei ole porttia.",
   "errorRefusedInvalidPortRange": "Reititin ei hyväksynyt tätä sääntöä: aloitusportti on suurempi kuin lopetusportti.",
   "errorRefusedInvalidPort": "Reititin ei hyväksynyt tätä sääntöä: porttinumero ei kelpaa.",
-  "errorRefusedDescriptionInUse": "Reititin ei hyväksynyt tätä sääntöä: toisella palomuurisäännöllä on jo tämä nimi."
+  "errorRefusedDescriptionInUse": "Reititin ei hyväksynyt tätä sääntöä: toisella palomuurisäännöllä on jo tämä nimi.",
+  "dmzDestination": "Kohde",
+  "macAddressRequired": "MAC-osoite vaaditaan"
 }

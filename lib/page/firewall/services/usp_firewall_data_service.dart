@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
+import 'package:privacy_gui/page/dmz/services/usp_dmz_service.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
 import 'package:privacy_gui/page/firewall/services/usp_firewall_service.dart';
@@ -91,7 +92,8 @@ class UspFirewallDataService {
         .toList();
 
     // Build DMZ UIModel.
-    final dmzModel = _buildDmzUIModel(dmzRaw);
+    // The DMZ page's own transform, so the host's type is read the same way.
+    final dmzModel = UspDmzService.uiModelOf(dmzRaw);
 
     // Build per-DMZ entry summaries.
     final dmzSummaries = dmzRaw.items
@@ -104,22 +106,6 @@ class UspFirewallDataService {
       ruleSummaries: ruleSummaries,
       dmzModel: dmzModel,
       dmzSummaries: dmzSummaries,
-    );
-  }
-
-  /// Build DmzUIModel from raw codegen.
-  static DmzUIModel _buildDmzUIModel(Dmz data) {
-    if (data.items.isEmpty) return const DmzUIModel.disabled();
-    final entry = data.items.first;
-    final sourceType =
-        (entry.sourcePrefix.isEmpty || entry.sourcePrefix == '0.0.0.0/0')
-            ? DmzSourceType.any
-            : DmzSourceType.cidr;
-    return DmzUIModel(
-      isEnabled: entry.enable,
-      destIp: entry.destIp,
-      sourceType: sourceType,
-      sourcePrefix: entry.sourcePrefix,
     );
   }
 }

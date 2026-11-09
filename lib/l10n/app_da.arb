@@ -1316,5 +1316,7 @@
   "errorRefusedNoPortRanges": "Routeren accepterede ikke denne regel: den har ingen port.",
   "errorRefusedInvalidPortRange": "Routeren accepterede ikke denne regel: startporten er højere end slutporten.",
   "errorRefusedInvalidPort": "Routeren accepterede ikke denne regel: et portnummer er ugyldigt.",
-  "errorRefusedDescriptionInUse": "Routeren accepterede ikke denne regel: en anden firewallregel har allerede dette navn."
+  "errorRefusedDescriptionInUse": "Routeren accepterede ikke denne regel: en anden firewallregel har allerede dette navn.",
+  "dmzDestination": "Destination",
+  "macAddressRequired": "MAC-adresse er påkrævet"
 }

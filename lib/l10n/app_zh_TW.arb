@@ -1316,5 +1316,7 @@
   "errorRefusedNoPortRanges": "路由器未接受此規則：未指定連接埠。",
   "errorRefusedInvalidPortRange": "路由器未接受此規則：起始連接埠大於結束連接埠。",
   "errorRefusedInvalidPort": "路由器未接受此規則：連接埠號碼無效。",
-  "errorRefusedDescriptionInUse": "路由器未接受此規則：已有其他防火牆規則使用此名稱。"
+  "errorRefusedDescriptionInUse": "路由器未接受此規則：已有其他防火牆規則使用此名稱。",
+  "dmzDestination": "目的地",
+  "macAddressRequired": "必須填寫 MAC 位址"
 }

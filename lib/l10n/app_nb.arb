@@ -1316,5 +1316,7 @@
   "errorRefusedNoPortRanges": "Ruteren godtok ikke denne regelen: den har ingen port.",
   "errorRefusedInvalidPortRange": "Ruteren godtok ikke denne regelen: startporten er høyere enn sluttporten.",
   "errorRefusedInvalidPort": "Ruteren godtok ikke denne regelen: et portnummer er ugyldig.",
-  "errorRefusedDescriptionInUse": "Ruteren godtok ikke denne regelen: en annen brannmurregel har allerede dette navnet."
+  "errorRefusedDescriptionInUse": "Ruteren godtok ikke denne regelen: en annen brannmurregel har allerede dette navnet.",
+  "dmzDestination": "Mål",
+  "macAddressRequired": "MAC-adresse er påkrevd"
 }
