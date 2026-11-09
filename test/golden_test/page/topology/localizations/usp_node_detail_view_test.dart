@@ -69,9 +69,10 @@ void main() {
         'empty_devices': (overrides) => overrides.addAll(
               nodeDetailOverrides(masterNodeEmptyDevices),
             ),
-        // The router's LAN rows, taken from the LAN interface because the
-        // controller has no Hosts row of its own on FL-WRT 2.0 (#1722): one
-        // IPv4, one routable IPv6 and one link-local IPv6 with its scope badge.
+        // The router's LAN rows, which come from the LAN interface (#1722): one
+        // IPv4 and one routable IPv6. Only one IPv6 row fits, as
+        // `routerLanData` explains: the tallest locales would be cropped at
+        // phone480 with two.
         'master_lan_addresses': (overrides) => overrides.addAll([
               ...nodeDetailOverrides(masterNodeEmptyDevices),
               lanDataProvider
