@@ -107,6 +107,9 @@ final authProvider =
     AsyncNotifierProvider<AuthNotifier, AuthState>(() => AuthNotifier());
 
 class AuthNotifier extends AsyncNotifier<AuthState> {
+  // Router AI builds only: set by the first init() of this app launch.
+  bool _aiStartupReconciled = false;
+
   AuthNotifier() : super() {
     LinksysHttpClient.onError = (error) async {
       logger.e('Http Response Error: $error');
@@ -186,7 +189,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       );
     });
     final restored = state.value;
-    if (BuildConfig.enableRouterAi) {
+    // init() runs at startup and again on every router redirect. The AI
+    // session is reconciled with the stored login once per app launch: a
+    // repeat would re-post the admin password on each navigation and abort
+    // the previous request, orphaning server-side sessions. localLogin() and
+    // logout() keep the AI session in step after that. The check-and-set has
+    // no await, so concurrent startup calls reconcile exactly once.
+    if (BuildConfig.enableRouterAi && !_aiStartupReconciled) {
+      _aiStartupReconciled = true;
       if (!state.hasError &&
           restored?.loginType == LoginType.local &&
           restored?.localPassword != null) {

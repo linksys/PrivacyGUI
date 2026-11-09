@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/constants/jnap_const.dart';
+import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/ai_session/ai_session_service.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
@@ -125,5 +126,90 @@ void main() {
       expect(
           container.read(uiIdleDurationProvider), const Duration(minutes: 15));
     });
+
+    // init() runs at startup (app.dart) and on every router redirect
+    // (router_provider.dart _authCheck). Only the first may touch the AI
+    // session, or each navigation re-posts the admin password.
+    test('repeated init() with a saved login bootstraps the AI session once',
+        () async {
+      FlutterSecureStorage.setMockInitialValues(
+          {pLocalPassword: 'CandidateSecret!'});
+      final router = MockRouterRepository();
+      final aiSession = _RecordingAiSessionService();
+      stubLogin(router, jnapResultOk);
+      final container = ProviderContainer(overrides: [
+        routerRepositoryProvider.overrideWithValue(router),
+        aiSessionServiceProvider.overrideWithValue(aiSession),
+      ]);
+      addTearDown(container.dispose);
+
+      await container.read(authProvider.future);
+      final auth = container.read(authProvider.notifier);
+      // Startup and the first redirect race; later redirects follow.
+      await Future.wait([auth.init(), auth.init()]);
+      await auth.init();
+      await auth.init();
+
+      expect(aiSession.bootstraps, ['CandidateSecret!']);
+      expect(aiSession.logouts, 0);
+      expect(container.read(authProvider).value?.loginType, LoginType.local);
+    });
+
+    test(
+        'repeated init() without a saved login revokes a stale AI session once',
+        () async {
+      final router = MockRouterRepository();
+      final aiSession = _RecordingAiSessionService();
+      stubLogin(router, jnapResultOk);
+      final container = ProviderContainer(overrides: [
+        routerRepositoryProvider.overrideWithValue(router),
+        aiSessionServiceProvider.overrideWithValue(aiSession),
+      ]);
+      addTearDown(container.dispose);
+
+      await container.read(authProvider.future);
+      final auth = container.read(authProvider.notifier);
+      await Future.wait([auth.init(), auth.init()]);
+      await auth.init();
+
+      expect(aiSession.logouts, 1);
+      expect(aiSession.bootstraps, isEmpty);
+    });
+
+    // Logout clears AuthState before it deletes the stored password, so a
+    // router re-check can run in that gap. It must not start a new AI
+    // session, and the logout must still win.
+    for (final order in ['init started first', 'logout started first']) {
+      test(
+          'logout racing a router re-check never restarts the AI session '
+          '($order)', () async {
+        final router = MockRouterRepository();
+        final aiSession = _RecordingAiSessionService();
+        stubLogin(router, jnapResultOk);
+        final container = ProviderContainer(overrides: [
+          routerRepositoryProvider.overrideWithValue(router),
+          aiSessionServiceProvider.overrideWithValue(aiSession),
+        ]);
+        addTearDown(container.dispose);
+
+        await container.read(authProvider.future);
+        final auth = container.read(authProvider.notifier);
+        await auth.init(); // app startup, before any login
+        await auth.localLogin('CandidateSecret!');
+        expect(aiSession.bootstraps, ['CandidateSecret!']);
+
+        final racing = order == 'init started first'
+            ? [auth.init(), auth.logout()]
+            : [auth.logout(), auth.init()];
+        await Future.wait(racing);
+
+        expect(aiSession.bootstraps, ['CandidateSecret!'],
+            reason: 'no AI bootstrap after logout');
+        expect(aiSession.logouts, greaterThanOrEqualTo(1));
+        expect(await const FlutterSecureStorage().read(key: pLocalPassword),
+            isNull);
+        expect(container.read(authProvider).value?.loginType, LoginType.none);
+      });
+    }
   }, skip: BuildConfig.enableRouterAi ? false : _needsRouterAi);
 }
