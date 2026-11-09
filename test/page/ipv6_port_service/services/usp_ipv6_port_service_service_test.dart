@@ -675,10 +675,11 @@ void main() {
     });
   });
 
-  // FWDEV#204's IPv6 port services (#1775). FW checks when Target is written,
-  // so Target is the refused leaf and the rest of the Set failed with it. That
-  // shape is PortMapping's (bench 2026-10-12); the names are the contract's
-  // (FWDEV#204, 2026-10-14) and not yet measured on an IPv6 rule.
+  // FWDEV#204's IPv6 port services (#1775). Refused leaves and messages are the
+  // bench's (2.0.4.26103108, 2026-11-09, the app's own edit of one rule): most
+  // checks run when Target is written, so Target is the refused leaf, but a
+  // name in use is refused at Description and a port above 65535 at
+  // DestPortRangeMax. Every other leaf of the Set says the group failed.
   group('UspIpv6PortServiceService — a refused save keeps the router reason',
       () {
     const p = 'Device.Firewall.Chain.1.Rule.40.';
@@ -692,13 +693,29 @@ void main() {
       endPort: 18310,
     );
 
-    Future<void> expectReason(String message, UspRefusalReason reason) async {
+    // The app's edit, in the codegen's order.
+    const leaves = [
+      'Enable',
+      'Description',
+      'IPVersion',
+      'DestIP',
+      'DestPort',
+      'DestPortRangeMax',
+      'Protocol',
+      'Target',
+    ];
+
+    Future<void> expectReason(String message, UspRefusalReason reason,
+        {String refusedLeaf = 'Target'}) async {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => refusedSetEnvelope(
                 instancePath: p,
-                refusedLeaf: 'Target',
+                refusedLeaf: refusedLeaf,
                 message: message,
-                otherLeaves: ['DestPort'],
+                otherLeaves: [
+                  for (final l in leaves)
+                    if (l != refusedLeaf) l,
+                ],
               ));
       await expectLater(
         service.saveBatch(
@@ -709,20 +726,35 @@ void main() {
 
     test('an edit onto another rule\'s ports keeps ErrorRulesOverlap',
         () async {
-      await expectReason('ErrorRulesOverlap: x', UspRefusalReason.rulesOverlap);
+      await expectReason(
+          'ErrorRulesOverlap: ports 18085:18095 already open to '
+          'fd00::1775:1.',
+          UspRefusalReason.rulesOverlap);
     });
 
     test(
         'a start port above the end port keeps ErrorInvalidPortRange, not '
         'ErrorInvalidPort', () async {
       await expectReason(
-          'ErrorInvalidPortRange: x', UspRefusalReason.invalidPortRange);
+          'ErrorInvalidPortRange: DestPort 18400 is above DestPortRangeMax '
+          '18390.',
+          UspRefusalReason.invalidPortRange);
     });
 
     test('a name another firewall rule has keeps ErrorDescriptionInUse',
         () async {
       await expectReason(
-          'ErrorDescriptionInUse: x', UspRefusalReason.descriptionInUse);
+          "ErrorDescriptionInUse: another firewall rule is named "
+          "'zz1775-v6a'.",
+          UspRefusalReason.descriptionInUse,
+          refusedLeaf: 'Description');
+    });
+
+    test('a port above 65535 keeps ErrorInvalidPort, refused at its own leaf',
+        () async {
+      await expectReason('ErrorInvalidPort: 70000 is above 65535.',
+          UspRefusalReason.invalidPort,
+          refusedLeaf: 'DestPortRangeMax');
     });
   });
 }

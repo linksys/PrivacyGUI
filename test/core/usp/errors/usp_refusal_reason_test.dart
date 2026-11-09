@@ -33,7 +33,7 @@ void main() {
           reason: 'every reason is one the contract names');
     });
 
-    test('the measured messages (bench 2026-10-12)', () {
+    test('the measured messages (bench 2.0.3, 2026-10-12)', () {
       expect(
           UspRefusalReason.fromErrorMessage(
               'ErrorRulesOverlap: external port 18080 is already forwarded.'),
@@ -47,6 +47,43 @@ void main() {
               "ErrorInvalidInternalServerIPAddress"
               ": '192.168.1.1' is not a LAN host address."),
           UspRefusalReason.invalidInternalServerIpAddress);
+    });
+
+    // Bench 2.0.4.26103108, 2026-11-09: every other name, verbatim.
+    test('the measured messages (bench 2.0.4, 2026-11-09)', () {
+      const measured = {
+        'ErrorRulesOverlap: trigger ports 19000-19000 overlap another rule.':
+            UspRefusalReason.rulesOverlap,
+        'ErrorRulesOverlap: ports 18085:18095 already open to fd00::1775:1.':
+            UspRefusalReason.rulesOverlap,
+        'ErrorDescriptionTooLong: at most 64 bytes.':
+            UspRefusalReason.descriptionTooLong,
+        "ErrorDescriptionInUse: another firewall rule is named 'zz1775-v6a'.":
+            UspRefusalReason.descriptionInUse,
+        'ErrorInvalidPortRange: DestPort 18400 is above DestPortRangeMax 18390.':
+            UspRefusalReason.invalidPortRange,
+        'ErrorInvalidPort: 70000 is above 65535.': UspRefusalReason.invalidPort,
+        'ErrorNoPortRanges: the rule has no DestPort.':
+            UspRefusalReason.noPortRanges,
+        "ErrorInvalidDestinationIPAddress: '192.168.1.1' is not a LAN host "
+            'address.': UspRefusalReason.invalidDestinationIpAddress,
+        "ErrorInvalidDestinationMACAddress: 'ff:ff:ff:ff:ff:ff'.":
+            UspRefusalReason.invalidDestinationMacAddress,
+        'ErrorMultipleDestinations: clear DestIP first.':
+            UspRefusalReason.multipleDestinations,
+        'ErrorMultipleDestinations: clear X_LINKSYS_DestMACAddress first.':
+            UspRefusalReason.multipleDestinations,
+        "ErrorInvalidSourceRestriction: '127.0.0.0/8'.":
+            UspRefusalReason.invalidSourceRestriction,
+        // A malformed MAC fails the leaf's schema pattern before FW's own
+        // check, so it names no reason; the page's MACAddressRule stops it.
+        "List patterns did not match 'zz:zz:zz:zz:zz:zz' value":
+            UspRefusalReason.unknown,
+      };
+      measured.forEach((message, reason) {
+        expect(UspRefusalReason.fromErrorMessage(message), reason,
+            reason: message);
+      });
     });
 
     test(

@@ -12,8 +12,12 @@ import 'package:privacy_gui/core/usp/errors/usp_refusal_reason.dart';
 /// that the group failed at the refused leaf. The refused leaf is listed after
 /// [otherLeaves], since the bench showed it need not come first.
 ///
-/// On other tables (DMZ, IPv6 port services) the same shape is assumed until
-/// it is measured; a test using it there says so.
+/// Measured again on 2.0.4.26103108 (2026-11-09) on all four tables the pages
+/// write — `NAT.PortMapping`, `NAT.PortTrigger`, the IPv6 rules under
+/// `Firewall.Chain` and `Firewall.DMZ` — with the same shape on each, and no
+/// refusal arriving as transport 9999. The router lists the leaves in the
+/// order they were written, the refused one wherever it falls; nothing reads
+/// that order, so the refused leaf is put last here.
 Map<String, dynamic> refusedSetEnvelope({
   required String instancePath,
   required String refusedLeaf,

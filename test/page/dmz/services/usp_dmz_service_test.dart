@@ -368,9 +368,9 @@ void main() {
     });
   });
 
-  // FWDEV#204's DMZ errors (#1775). The per-leaf 7012 shape is PortMapping's
-  // (bench 2026-10-12); the name is the contract's and not yet measured on
-  // Device.Firewall.DMZ. A refused Add answers success (2026-10-12), so no
+  // FWDEV#204's DMZ errors (#1775). The message is the bench's (2.0.4.26103108,
+  // 2026-11-09): a refused DMZ Set comes back per leaf under 7012, as on the
+  // NAT tables. A refused Add answers success with the host emptied, so no
   // reason arrives on one and none is tested.
   group('UspDmzService — a refused save keeps the router reason', () {
     const p = 'Device.Firewall.DMZ.1.';
