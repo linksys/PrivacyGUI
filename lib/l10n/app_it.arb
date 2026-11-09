@@ -1281,6 +1281,8 @@
   "semanticRolePinInput": "Inserimento PIN",
   "semanticRoleRadio": "Pulsante di opzione",
   "semanticRoleSwitch": "Interruttore",
+  "semanticRoleShowPassword": "Mostra password",
+  "semanticRoleHidePassword": "Nascondi password",
   "nodeActions": "Azioni del nodo",
   "rebootMeshMessage": "Il router e tutti i nodi della tua rete mesh si riavvieranno. Tutti i dispositivi connessi verranno disconnessi finché la rete non sarà di nuovo disponibile.",
   "factoryResetMeshMessage": "Il router e tutti i nodi della tua rete mesh verranno ripristinati alle impostazioni di fabbrica, inclusa la password WiFi e del router riportata sull'etichetta del router. Successivamente, ogni nodo dovrà essere configurato di nuovo.",
@@ -1296,6 +1298,7 @@
   "nodeActionSkippedNodes": "Questi nodi non supportano questo comando e non lo riceveranno, ma perderanno la connessione mentre i nodi tramite cui sono connessi sono offline: {nodes}.",
   "nodeActionNotConfirmed": "{node} non ha confermato il comando. Potrebbe comunque eseguirlo, quindi controlla la topologia prima di riprovare.",
   "nodeActionNodeGone": "{node} non fa più parte della tua rete.",
+  "macWillBeAddedAs": "Verrà aggiunto come {mac}",
   "valueOutOfRange": "Deve essere compreso tra {min} e {max}",
   "maxCharacters": "Massimo {max} caratteri",
   "invalidSubnetMask": "Subnet mask non valida"

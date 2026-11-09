@@ -110,6 +110,7 @@ void main() {
     'masterNodeWithDevices': masterNodeWithDevices,
     'masterNodeNamed': masterNodeNamed,
     'masterNodeEmptyDevices': masterNodeEmptyDevices,
+    'masterNodeWithHostsAddresses': masterNodeWithHostsAddresses,
     'slaveNodeOffline': slaveNodeOffline,
     'slaveNodeOnlineWithDevices': slaveNodeOnlineWithDevices,
     'slaveNodeWithBackhaulTiming': slaveNodeWithBackhaulTiming,

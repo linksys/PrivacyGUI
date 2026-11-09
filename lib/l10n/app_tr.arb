@@ -1281,6 +1281,8 @@
   "semanticRolePinInput": "PIN girişi",
   "semanticRoleRadio": "Radyo düğmesi",
   "semanticRoleSwitch": "Anahtar",
+  "semanticRoleShowPassword": "Parolayı göster",
+  "semanticRoleHidePassword": "Parolayı gizle",
   "nodeActions": "Düğüm İşlemleri",
   "rebootMeshMessage": "Yönlendirici ve mesh ağınızdaki tüm düğümler yeniden başlatılacak. Ağ yeniden kullanılabilir olana kadar bağlı tüm cihazların bağlantısı kesilecek.",
   "factoryResetMeshMessage": "Yönlendirici ve mesh ağınızdaki tüm düğümler, yönlendiricinin etiketinde yazan WiFi ve yönlendirici parolası dahil olmak üzere fabrika ayarlarına sıfırlanacak. Ardından her düğümün yeniden kurulması gerekecek.",
@@ -1296,6 +1298,7 @@
   "nodeActionSkippedNodes": "Bu düğümler bu komutu desteklemedikleri için komut onlara gönderilmeyecek, ancak üzerinden bağlandıkları düğümler devre dışıyken bağlantılarını kaybedecekler: {nodes}.",
   "nodeActionNotConfirmed": "{node} komutu onaylamadı. Komutu yine de uygulayabilir, bu nedenle yeniden denemeden önce topolojiyi kontrol edin.",
   "nodeActionNodeGone": "{node} artık ağınızda değil.",
+  "macWillBeAddedAs": "{mac} olarak eklenecek",
   "valueOutOfRange": "{min} ile {max} arasında olmalıdır",
   "maxCharacters": "En fazla {max} karakter",
   "invalidSubnetMask": "Geçersiz alt ağ maskesi"
