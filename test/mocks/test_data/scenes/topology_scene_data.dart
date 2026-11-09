@@ -20,12 +20,14 @@
 
 import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
+import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
+import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
 
 // ---------------------------------------------------------------------------
@@ -461,6 +463,40 @@ final masterNodeEmptyDevices = UspNodeDetailState(
     connectedClients: [],
   ),
   connectedClients: [],
+);
+
+// ---------------------------------------------------------------------------
+// Router LAN addresses (#1722)
+// ---------------------------------------------------------------------------
+
+/// The router's LAN interface as `lanDataProvider` serves it. On FL-WRT 2.0
+/// the controller has no Hosts row of its own, so its node holds no LAN
+/// address and the node detail page falls back to this. One routable and one
+/// link-local IPv6, so both kinds of IPv6 row are drawn.
+final routerLanData = LanData(
+  model: const LanInfoUIModel(
+    ipAddress: '192.168.1.1',
+    subnetMask: '255.255.255.0',
+    dhcpEnabled: true,
+    minAddress: '192.168.1.100',
+    maxAddress: '192.168.1.249',
+    ipv6Addresses: ['2001:db8::1', 'fe80::1'],
+  ),
+);
+
+/// The router as it would be if a build gave the controller a Hosts row with
+/// addresses. Each differs from [routerLanData]'s, so a test can tell which
+/// source the page drew.
+final masterNodeWithHostsAddresses = UspNodeDetailState(
+  node: MasterNode(
+    deviceId: '11:22:33:44:55:66',
+    model: 'MR7500',
+    manufacturer: 'Linksys',
+    serialNumber: 'ABC123456',
+    softwareVersion: '1.0.16.215118',
+    ipAddress: '192.168.1.254',
+    ipv6Addresses: const ['2001:db8::254'],
+  ),
 );
 
 // Slave node with a global (routable) LAN IPv6 — shown without a scope badge.

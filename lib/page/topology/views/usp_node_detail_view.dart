@@ -20,6 +20,7 @@ import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_list_tile.dart';
 import 'package:privacy_gui/page/devices/views/dialogs/device_identity_edit_dialog.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
+import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
 import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indicator.dart';
@@ -380,6 +381,23 @@ class UspNodeDetailView extends ConsumerWidget {
     final wanIp = wanData?.ipAddress;
     final wanIpv6Addresses = wanData?.ipv6Addresses ?? [];
 
+    // LAN addresses. An agent's come from its own Hosts row. The router's
+    // would too, but on FL-WRT 2.0 the controller has no Hosts row of its own
+    // (measured on 2.0.4.26110110: no row carries its MAC), so `node` holds
+    // neither address and both LAN rows were hidden (#1722). The LAN interface
+    // has them — it is what the Local Network page shows — so the router falls
+    // back to it. A Hosts row that does carry an address still comes first,
+    // each address on its own, in case a build gives the controller one.
+    // A failed LAN read leaves `lanInfo` null and the rows hidden, as before.
+    final lanInfo =
+        node.isMaster ? ref.watch(lanDataProvider).valueOrNull?.model : null;
+    final hostsIp = node.ipAddress;
+    final lanIp =
+        hostsIp != null && hostsIp.isNotEmpty ? hostsIp : lanInfo?.ipAddress;
+    final lanIpv6Addresses = node.ipv6Addresses.isNotEmpty
+        ? node.ipv6Addresses
+        : lanInfo?.ipv6Addresses ?? const <String>[];
+
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
@@ -393,16 +411,15 @@ class UspNodeDetailView extends ConsumerWidget {
           DetailInfoBlock(
             children: [
               // LAN IPv4
-              if (node.ipAddress != null && node.ipAddress!.isNotEmpty)
+              if (lanIp != null && lanIp.isNotEmpty)
                 DetailCopyableTile(
                   icon: Icons.language,
                   label: loc(context).lanIp,
-                  value: node.ipAddress!,
+                  value: lanIp,
                 ),
-              // LAN IPv6 (from Hosts) — routable addresses first; a link-local
-              // address swaps its leading icon for a scope badge (see
-              // #1128/#1129).
-              for (final ipv6 in preferGlobalIpv6First(node.ipv6Addresses))
+              // LAN IPv6 — routable addresses first; a link-local address
+              // swaps its leading icon for a scope badge (see #1128/#1129).
+              for (final ipv6 in preferGlobalIpv6First(lanIpv6Addresses))
                 DetailCopyableTile(
                   icon: Icons.language,
                   label: loc(context).lanIpv6,

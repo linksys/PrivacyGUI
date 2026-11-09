@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 import 'package:privacy_gui/page/topology/views/usp_node_detail_view.dart';
 
 import '../../../golden_framework/golden_runner.dart';
 import '../../../golden_framework/golden_test_config.dart';
+import '../../../../mocks/provider_overrides/mock_dhcp.dart';
 import '../../../../mocks/provider_overrides/mock_topology.dart';
 import '../../../../mocks/test_data/scenes/topology_scene_data.dart';
 
@@ -67,6 +69,14 @@ void main() {
         'empty_devices': (overrides) => overrides.addAll(
               nodeDetailOverrides(masterNodeEmptyDevices),
             ),
+        // The router's LAN rows, taken from the LAN interface because the
+        // controller has no Hosts row of its own on FL-WRT 2.0 (#1722): one
+        // IPv4, one routable IPv6 and one link-local IPv6 with its scope badge.
+        'master_lan_addresses': (overrides) => overrides.addAll([
+              ...nodeDetailOverrides(masterNodeEmptyDevices),
+              lanDataProvider
+                  .overrideWith(() => FixedLanDataNotifier(routerLanData)),
+            ]),
         'not_found': (overrides) => overrides.addAll(
               nodeDetailOverrides(nodeNotFoundState),
             ),
