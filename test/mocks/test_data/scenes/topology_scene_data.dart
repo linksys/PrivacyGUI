@@ -20,12 +20,14 @@
 
 import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
+import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
+import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
 
 // ---------------------------------------------------------------------------
@@ -461,6 +463,46 @@ final masterNodeEmptyDevices = UspNodeDetailState(
     connectedClients: [],
   ),
   connectedClients: [],
+);
+
+// ---------------------------------------------------------------------------
+// Router LAN addresses (#1722)
+// ---------------------------------------------------------------------------
+
+/// The router's LAN interface as `lanDataProvider` serves it. This is the
+/// only source of the router's LAN rows on its node detail page.
+///
+/// It has one IPv6, a routable one, so that the `master_lan_addresses` golden
+/// fits the 1200px canvas. With a second, link-local row the page is 1213px
+/// tall at phone480 in `el` (1208px in `de`, `fi`, `fr_CA`, `it`, `nl`, `pl`).
+/// The link-local row with its scope badge is photographed on the extender, in
+/// `link_local_ipv6`.
+final routerLanData = LanData(
+  model: const LanInfoUIModel(
+    ipAddress: '192.168.1.1',
+    subnetMask: '255.255.255.0',
+    dhcpEnabled: true,
+    minAddress: '192.168.1.100',
+    maxAddress: '192.168.1.249',
+    ipv6Addresses: ['2001:db8::1'],
+  ),
+);
+
+/// The router with a Hosts row that carries addresses, which the router's
+/// node never carries on FL-WRT 2.0. The node detail page does not draw them:
+/// the router's LAN rows come from the LAN interface alone. Each address
+/// differs from [routerLanData]'s, so a test can tell which source the page
+/// drew.
+final masterNodeWithHostsAddresses = UspNodeDetailState(
+  node: MasterNode(
+    deviceId: '11:22:33:44:55:66',
+    model: 'MR7500',
+    manufacturer: 'Linksys',
+    serialNumber: 'ABC123456',
+    softwareVersion: '1.0.16.215118',
+    ipAddress: '192.168.1.254',
+    ipv6Addresses: const ['2001:db8::254'],
+  ),
 );
 
 // Slave node with a global (routable) LAN IPv6 — shown without a scope badge.

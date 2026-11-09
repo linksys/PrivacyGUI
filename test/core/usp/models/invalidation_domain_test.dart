@@ -52,10 +52,13 @@ void main() {
           'Device.Routing.Router.1.IPv4Forwarding.',
       InvalidationDomain.wifiAccessPoints: 'Device.WiFi.AccessPoint.',
       InvalidationDomain.dhcpClients: 'Device.DHCPv4.Server.Pool.1.Client.',
+      InvalidationDomain.dhcpPoolSettings: 'Device.DHCPv4.Server.Pool.{i}.',
       InvalidationDomain.wifiClients:
           'Device.WiFi.AccessPoint.*.AssociatedDevice.',
       InvalidationDomain.ethernetInterfaces: 'Device.Ethernet.Interface.',
       InvalidationDomain.wanStatus: 'Device.IP.Interface.',
+      InvalidationDomain.macFilter:
+          'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode',
     };
 
     test('every domain declares the TR-181 subtree it stands for', () {

@@ -27,13 +27,6 @@ void main() {
     service = UspMacFilterService(usp);
   });
 
-  void stubGet(String mode, String list) {
-    when(() => usp.get(any())).thenAnswer((_) async => {
-          _modePath: mode,
-          _listPath: list,
-        });
-  }
-
   void stubOperateOk() {
     when(() => usp.operate(any(), args: any(named: 'args')))
         .thenAnswer((_) async => {
@@ -43,53 +36,6 @@ void main() {
               }
             });
   }
-
-  // ---------------------------------------------------------------------------
-  // fetch — read side (comma-split, mode parse)
-  // ---------------------------------------------------------------------------
-
-  group('fetch', () {
-    test('parses mode and comma-joined list', () async {
-      stubGet('Deny', 'AA:BB:CC:DD:EE:01,AA:BB:CC:DD:EE:02');
-
-      final data = await service.fetch();
-
-      expect(data.mode, MacFilterMode.deny);
-      expect(data.macs, ['AA:BB:CC:DD:EE:01', 'AA:BB:CC:DD:EE:02']);
-    });
-
-    test('empty list string yields empty macs (no phantom "")', () async {
-      stubGet('Disabled', '');
-
-      final data = await service.fetch();
-
-      expect(data.mode, MacFilterMode.disabled);
-      expect(data.macs, isEmpty);
-    });
-
-    test('Allow mode parses', () async {
-      stubGet('Allow', 'AA:BB:CC:DD:EE:01');
-
-      final data = await service.fetch();
-
-      expect(data.mode, MacFilterMode.allow);
-      expect(data.macs, ['AA:BB:CC:DD:EE:01']);
-    });
-
-    test('unknown mode string falls back to Disabled (defensive)', () async {
-      stubGet('Weird', '');
-
-      final data = await service.fetch();
-
-      expect(data.mode, MacFilterMode.disabled);
-    });
-
-    test('maps a thrown USP error to ServiceError', () async {
-      when(() => usp.get(any())).thenThrow(Exception('boom'));
-
-      expect(() => service.fetch(), throwsA(isA<ServiceError>()));
-    });
-  });
 
   // ---------------------------------------------------------------------------
   // fetchAll — the online devices the pages offer
@@ -346,7 +292,7 @@ void main() {
       });
       stubOperateOk();
 
-      await service.fetch();
+      await service.fetchAll();
       await service.setMacFilter(MacFilterMode.allow, ['AA:BB:CC:DD:EE:01']);
 
       expect(paths, isNot(contains(contains('AccessPoint'))));

@@ -85,14 +85,43 @@ void main() {
       expect(data.hint, ja.processing);
       handle.dispose();
     });
+
+    testWidgets(
+        "a password field's eye button names what a tap does, in the locale",
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      final zhTw = lookupAppLocalizations(const Locale('zh', 'TW'));
+
+      await pumpInLocale(
+        tester,
+        const Locale('zh', 'TW'),
+        // No `showLabel` / `hideLabel`: no call site in `lib/` passes them.
+        const SizedBox(width: 320, child: AppPasswordInput()),
+      );
+
+      expect(
+          find.bySemanticsLabel(zhTw.semanticRoleShowPassword), findsOneWidget);
+      expect(
+          find.bySemanticsLabel(
+              SemanticRoleLabels.english(SemanticRoleLabel.showPassword)),
+          findsNothing);
+
+      await tester.tap(find.bySemanticsLabel(zhTw.semanticRoleShowPassword));
+      await tester.pump();
+
+      expect(
+          find.bySemanticsLabel(zhTw.semanticRoleHidePassword), findsOneWidget);
+      handle.dispose();
+    });
   });
 
   group('resolve', () {
     test('every role this app reaches resolves in every shipped locale', () {
       // Unreachable from `lib/`: `GlobalMaterialLocalizations` names every
-      // dismiss barrier first, and nothing mounts a slider or a side sheet, or
-      // sets `onDeleted:` on a tag or badge.
+      // dismiss barrier first, nothing mounts an avatar, a slider or a side
+      // sheet, and nothing sets `onDeleted:` on a tag or badge.
       const deferred = {
+        SemanticRoleLabel.avatar,
         SemanticRoleLabel.deleteTarget,
         SemanticRoleLabel.dismissBarrier,
         SemanticRoleLabel.sideSheet,

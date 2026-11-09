@@ -10,18 +10,11 @@ import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/generated/mac_filter_network.g.dart';
 import 'package:privacy_gui/generated/mac_filter_network_operations.g.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_node_identity.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_data.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_device_ui_model.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_fetch_result.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_rules.dart';
-
-/// The resolved MAC filter state read from the device.
-class MacFilterData {
-  final MacFilterMode mode;
-  final List<String> macs;
-
-  const MacFilterData({required this.mode, required this.macs});
-}
 
 final uspMacFilterServiceProvider = Provider<UspMacFilterService>(
   (ref) => UspMacFilterService(ref.read(uspClientProvider)!),
@@ -29,7 +22,8 @@ final uspMacFilterServiceProvider = Provider<UspMacFilterService>(
 
 /// The one service both the MAC Filter page and Instant Privacy write through.
 ///
-/// Read via [MacFilterNetwork.fetch] (the mode leaf plus a comma-joined list);
+/// Read via [MacFilterNetwork.fetch] (the mode leaf plus a comma-joined list,
+/// parsed by [MacFilterData.fromWire]);
 /// write via [MacFilterNetworkOperations.setMacFilter], which takes the list as
 /// the JSON array the firmware requires. Instant Privacy drives it in
 /// [MacFilterMode.allow]; the MAC Filter page can also select [MacFilterMode.deny].
@@ -68,7 +62,8 @@ class UspMacFilterService {
       final devices = results[1] as ConnectedDevices;
       final nodeMacs = results[2] as Set<String>;
 
-      final macs = _parseList(network.macFilterList);
+      final filter =
+          MacFilterData.fromWire(network.macFilterMode, network.macFilterList);
 
       final connected = devices.items
           .where((d) =>
@@ -85,26 +80,9 @@ class UspMacFilterService {
           .toList();
 
       return MacFilterFetchResult(
-        mode: MacFilterMode.fromWire(network.macFilterMode),
-        macs: macs,
+        mode: filter.mode,
+        macs: filter.macs,
         connectedDevices: connected,
-      );
-    } on ServiceError {
-      rethrow;
-    } catch (e) {
-      throw mapUspErrorToServiceError(e);
-    }
-  }
-
-  /// Reads the current mode and list. The list leaf is comma-joined with no
-  /// spaces (empty string when the list is empty), so split on ',' after
-  /// guarding for empty.
-  Future<MacFilterData> fetch() async {
-    try {
-      final raw = await MacFilterNetwork.fetch(_usp);
-      return MacFilterData(
-        mode: MacFilterMode.fromWire(raw.macFilterMode),
-        macs: _parseList(raw.macFilterList),
       );
     } on ServiceError {
       rethrow;
@@ -129,18 +107,6 @@ class UspMacFilterService {
       logger.w('[USP][MacFilter]: node list unavailable, no node excluded: $e');
       return const {};
     }
-  }
-
-  /// Splits the comma-joined `X_LINKSYS_MACFilterList` read-back into MACs,
-  /// guarding the empty-string case (which reads as an empty list, not `['']`).
-  static List<String> _parseList(String raw) {
-    final list = raw.trim();
-    if (list.isEmpty) return const [];
-    return list
-        .split(',')
-        .map((s) => s.trim())
-        .where((s) => s.isNotEmpty)
-        .toList();
   }
 
   /// Sets mode and list atomically. The list is normalized and de-duplicated,
@@ -194,9 +160,7 @@ class UspMacFilterService {
     for (final mac in macs) {
       // Normalize only well-formed entries; a malformed one is passed through
       // unchanged so the syntax check below can reject it with its raw text.
-      final value = MacFilterRules.validateMac(mac)
-          ? MacFilterRules.normalizeMac(mac)
-          : mac.trim();
+      final value = MacFilterRules.canonicalMac(mac) ?? mac.trim();
       if (value.isEmpty || !seen.add(value.toUpperCase())) continue;
       out.add(value);
     }
