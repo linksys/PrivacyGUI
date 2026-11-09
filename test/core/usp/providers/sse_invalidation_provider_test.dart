@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/usp/models/sse_notification.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/wan_interface_path_provider.dart';
+import 'package:privacy_gui/generated/subscriptions.g.dart';
 
 import '../mocks.dart';
 
@@ -258,8 +259,43 @@ void main() {
       );
     });
 
-    test('other Pool.{i} values map to nothing', () async {
-      await sendAndExpectEmpty('Device.DHCPv4.Server.Pool.4.LeaseTime');
+    test('the pool range and mask → dhcpPoolSettings', () async {
+      // The values a LAN subnet change moves after the Set has returned
+      // (PrivacyGUI#1729): MinAddress / MaxAddress follow the new mask late.
+      await sendAndExpect(
+        'Device.DHCPv4.Server.Pool.4.MinAddress',
+        InvalidationDomain.dhcpPoolSettings,
+      );
+      await sendAndExpect(
+        'Device.DHCPv4.Server.Pool.4.MaxAddress',
+        InvalidationDomain.dhcpPoolSettings,
+      );
+      await sendAndExpect(
+        'Device.DHCPv4.Server.Pool.4.SubnetMask',
+        InvalidationDomain.dhcpPoolSettings,
+      );
+    });
+
+    test('other Pool.{i} settings → dhcpPoolSettings, not the DHCP lists',
+        () async {
+      await sendAndExpect(
+        'Device.DHCPv4.Server.Pool.4.LeaseTime',
+        InvalidationDomain.dhcpPoolSettings,
+      );
+    });
+
+    test('the app subscribes the pool settings this mapping relies on', () {
+      // lanDataProvider learns the pool the router settled on after a mask
+      // change only from these ValueChanges (PrivacyGUI#1729). They arrive
+      // because a core subscription covers the whole pool table; one narrowed
+      // to the Client table would drop them with nothing else failing.
+      bool subscribed(String path) => coreSubscriptions
+          .any((s) => s.$2 == 'ValueChange' && path.startsWith(s.$3));
+
+      for (final leaf in ['MinAddress', 'MaxAddress', 'SubnetMask']) {
+        expect(subscribed('Device.DHCPv4.Server.Pool.1.$leaf'), isTrue,
+            reason: 'no core ValueChange subscription covers Pool.{i}.$leaf');
+      }
     });
 
     test('Device.DHCPv4.*.StaticAddress.* → dhcpReservations', () async {
@@ -289,6 +325,34 @@ void main() {
         'Device.Ethernet.Interface.1.Status',
         InvalidationDomain.ethernetInterfaces,
       );
+    });
+
+    // The payload the router sends when the hardware privacy switch or a save
+    // changes the mode, measured on 2.0.4.26102917 (PrivacyGUI#1755).
+    test('the MAC filter mode leaf → macFilter', () async {
+      await sendAndExpect(
+        'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode',
+        InvalidationDomain.macFilter,
+      );
+    });
+
+    test('another Network leaf is not macFilter', () async {
+      await sendAndExpectEmpty('Device.WiFi.DataElements.Network.ControllerID');
+    });
+
+    test('the app subscribes the MAC filter mode leaf, not the Network object',
+        () {
+      // The menu's Instant Privacy badge learns of a switch move only from this
+      // ValueChange. The whole `Network.` object would push every mesh change.
+      final mode = coreSubscriptions.where((s) =>
+          s.$2 == 'ValueChange' &&
+          s.$3 == 'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode');
+      expect(mode, hasLength(1),
+          reason: 'no core ValueChange subscription on the mode leaf');
+      expect(
+          coreSubscriptions
+              .where((s) => s.$3 == 'Device.WiFi.DataElements.Network.'),
+          isEmpty);
     });
 
     test('path with .Stats. → filtered out (null)', () async {

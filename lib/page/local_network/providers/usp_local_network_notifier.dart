@@ -37,8 +37,9 @@ class UspLocalNetworkNotifier
 
   @override
   LocalNetworkFeatureState build() {
-    // LAN data provider has no SSE invalidation domain,
-    // so no SSE listener needed here.
+    // No SSE listener: a push must not move the page under the user
+    // (constitution Article IV Rule 2). lanDataProvider follows the router's
+    // pool pushes, and the page reads it on entry.
 
     // Synchronous build with loading state; async fetch follows immediately.
     Future.microtask(() => fetch());
@@ -95,17 +96,20 @@ class UspLocalNetworkNotifier
 
   // ---------------------------------------------------------------------------
   // save — override the mixin's default (performSave -> markAsSaved -> refetch)
-  // to special-case a router IP / subnet change, which makes the router
-  // unreachable on this origin.
+  // to special-case a router IP / subnet change, which restarts the LAN and,
+  // for an IP change, makes the router unreachable on this origin.
   // ---------------------------------------------------------------------------
 
   @override
   Future<LocalNetworkFeatureState> save() async {
-    // Detect the IP change BEFORE saving: markAsSaved() below collapses
-    // original into current, so this must be read up front. Only an IP address
-    // change (not a mask-only change) drops the current connection, so that is
-    // the trigger for the redirect + SSE disconnect.
+    // Detect the change BEFORE saving: markAsSaved() below collapses original
+    // into current, so this must be read up front. Only an IP address change
+    // (not a mask-only change) drops the current connection, so that is the
+    // trigger for the redirect + SSE disconnect.
     final ipChanged = state.hasIpAddressChange;
+    // Also true for an IP change saved with a mask change: that save takes the
+    // IP branch, which returns before the mask branch reads this.
+    final maskChanged = state.hasSubnetMaskChange;
     final hostNameChanged = state.hasHostNameChange;
 
     await performSave();
@@ -129,19 +133,45 @@ class UspLocalNetworkNotifier
       return state;
     }
 
-    // No IP change (e.g. only DHCP or subnet-mask fields changed): the
-    // connection is still alive, so re-fetch so the dashboard card updates too.
-    ref.invalidate(lanDataProvider);
     // The host name is also the controller's name when nobody has named it
     // (#1751), and that comes through system info into the master node, which
     // this page's LAN read does not refresh. Refresh both, as the router rename
     // does. The order holds without awaiting here: the devices refetch awaits
     // `systemInfoDataProvider.future` (`_readEnrichment`), which after the
     // invalidate is the new read. Not awaited, so the save confirms as before.
+    // Done for a mask change too: the SET has stored the host name, and these
+    // reads run in the background, so one that meets the LAN restart only
+    // fails.
     if (hostNameChanged) {
       ref.invalidate(systemInfoDataProvider);
       unawaited(ref.read(devicesDataProvider.notifier).refetch());
     }
+
+    if (maskChanged) {
+      // A mask change makes the router take the LAN down and back up after
+      // SetResp, and the pool settles only once it is back (PrivacyGUI#1729,
+      // bench 2026-11-02: the LAN went down ~3 s after the Set, the pool
+      // settled ~8 s after it). A read inside that window holds the old or a
+      // half-converted range, or fails, so it is not made: the page stays on
+      // what was sent, which the Set reported stored. A write that restarts
+      // what it wrote is not read back in save() (dirty guard guide).
+      //
+      // The guide's other half, reading back once the router has recovered,
+      // is deliberately not done: the app cannot tell when the LAN restart is
+      // over. A probe answers before the LAN even goes down, so it would read
+      // the half-converted range this branch exists to avoid. Instead the
+      // router reports the settled values itself: its pool push (which a mask
+      // change always sends, as Pool.{i}.SubnetMask) re-reads
+      // lanDataProvider, and the page shows them on its next entry.
+      //
+      // lanDataProvider is not re-read now either, for the same reason: a read
+      // now would hand every page the half-converted range.
+      return state;
+    }
+
+    // No IP or mask change (e.g. only DHCP fields changed): the LAN keeps
+    // running, so re-fetch so the dashboard card updates too.
+    ref.invalidate(lanDataProvider);
     return confirmSaved();
   }
 
