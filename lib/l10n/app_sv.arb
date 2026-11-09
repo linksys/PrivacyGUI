@@ -1281,6 +1281,8 @@
   "semanticRolePinInput": "PIN-inmatning",
   "semanticRoleRadio": "Alternativknapp",
   "semanticRoleSwitch": "Reglage",
+  "semanticRoleShowPassword": "Visa lösenord",
+  "semanticRoleHidePassword": "Dölj lösenord",
   "nodeActions": "Nodåtgärder",
   "rebootMeshMessage": "Routern och alla noder i ditt mesh-nätverk startas om. Alla anslutna enheter kopplas bort tills nätverket är tillbaka.",
   "factoryResetMeshMessage": "Routern och alla noder i ditt mesh-nätverk återställs till fabriksinställningarna, inklusive WiFi- och routerlösenordet som står på routerns etikett. Därefter måste alla noder konfigureras igen.",
@@ -1296,6 +1298,7 @@
   "nodeActionSkippedNodes": "De här noderna kan inte ta emot det här kommandot, och det skickas inte till dem, men de förlorar anslutningen medan noderna som de är anslutna via är nere: {nodes}.",
   "nodeActionNotConfirmed": "{node} bekräftade inte kommandot. Den kan fortfarande utföra det, så kontrollera topologin innan du försöker igen.",
   "nodeActionNodeGone": "{node} finns inte längre i ditt nätverk.",
+  "macWillBeAddedAs": "Läggs till som {mac}",
   "valueOutOfRange": "Måste vara mellan {min} och {max}",
   "maxCharacters": "Högst {max} tecken",
   "invalidSubnetMask": "Ogiltig nätmask"

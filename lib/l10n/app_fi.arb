@@ -1281,6 +1281,8 @@
   "semanticRolePinInput": "PIN-koodin syöttö",
   "semanticRoleRadio": "Valintanappi",
   "semanticRoleSwitch": "Kytkin",
+  "semanticRoleShowPassword": "Näytä salasana",
+  "semanticRoleHidePassword": "Piilota salasana",
   "nodeActions": "Solmun toiminnot",
   "rebootMeshMessage": "Reititin ja kaikki mesh-verkkosi solmut käynnistyvät uudelleen. Kaikkien yhdistettyjen laitteiden yhteys katkeaa, kunnes verkko on taas käytettävissä.",
   "factoryResetMeshMessage": "Reititin ja kaikki mesh-verkkosi solmut palautetaan tehdasasetuksiin, mukaan lukien reitittimen tarrassa näkyvä WiFi- ja reititinsalasana. Sen jälkeen jokainen solmu on määritettävä uudelleen.",
@@ -1296,6 +1298,7 @@
   "nodeActionSkippedNodes": "Nämä solmut eivät voi vastaanottaa tätä komentoa, eikä sitä lähetetä niille, mutta niiden yhteys katkeaa siksi aikaa, kun solmut, joiden kautta ne on yhdistetty, eivät ole käytettävissä: {nodes}.",
   "nodeActionNotConfirmed": "{node} ei vahvistanut komentoa. Se voi silti suorittaa sen, joten tarkista topologia ennen kuin yrität uudelleen.",
   "nodeActionNodeGone": "{node} ei ole enää verkossasi.",
+  "macWillBeAddedAs": "Lisätään muodossa {mac}",
   "valueOutOfRange": "Arvon on oltava välillä {min}–{max}",
   "maxCharacters": "Enintään {max} merkkiä",
   "invalidSubnetMask": "Virheellinen aliverkon peite"
