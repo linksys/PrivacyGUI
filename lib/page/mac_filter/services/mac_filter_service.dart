@@ -194,9 +194,7 @@ class UspMacFilterService {
     for (final mac in macs) {
       // Normalize only well-formed entries; a malformed one is passed through
       // unchanged so the syntax check below can reject it with its raw text.
-      final value = MacFilterRules.validateMac(mac)
-          ? MacFilterRules.normalizeMac(mac)
-          : mac.trim();
+      final value = MacFilterRules.canonicalMac(mac) ?? mac.trim();
       if (value.isEmpty || !seen.add(value.toUpperCase())) continue;
       out.add(value);
     }

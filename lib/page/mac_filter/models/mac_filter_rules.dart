@@ -39,18 +39,19 @@ abstract final class MacFilterRules {
     return _macForms.any((form) => form.hasMatch(value));
   }
 
-  /// Uppercase colon-separated canonical form, `AA:BB:CC:DD:EE:FF`, of any
-  /// spelling [validateMac] accepts.
-  ///
-  /// Precondition: passes [validateMac]. Anything else is only trimmed,
-  /// upper-cased and has `-` turned into `:`, as it always was, so a caller that
-  /// passes a malformed value through still sees its own text.
-  static String normalizeMac(String mac) {
-    final value = mac.trim().toUpperCase();
-    if (!validateMac(value)) return value.replaceAll('-', ':');
-    final hex = value.replaceAll(_separators, '');
+  /// Uppercase colon-separated canonical form, `AA:BB:CC:DD:EE:FF`, of [mac]
+  /// when it is one MAC in an accepted spelling; null when it is not.
+  static String? canonicalMac(String mac) {
+    if (!validateMac(mac)) return null;
+    final hex = mac.trim().toUpperCase().replaceAll(_separators, '');
     return [for (var i = 0; i < 12; i += 2) hex.substring(i, i + 2)].join(':');
   }
+
+  /// [canonicalMac] of a well-formed [mac]. Anything else is only trimmed,
+  /// upper-cased and has `-` turned into `:`, as it always was, so a caller that
+  /// passes a malformed value through still sees its own text.
+  static String normalizeMac(String mac) =>
+      canonicalMac(mac) ?? mac.trim().toUpperCase().replaceAll('-', ':');
 
   /// Whether [query], typed as part of a MAC in any accepted spelling, is found
   /// in [mac]: separators and case are ignored on both sides, so `aabb`,
@@ -63,6 +64,12 @@ abstract final class MacFilterRules {
   /// Also false for a query shaped like an IP address (`192.168`): it is an IP
   /// search, and IP search stays as it was (#1737 AC6). Read as digits it would
   /// find any MAC containing `192168`.
+  ///
+  /// Digits with no `.` yet (`192`, `1234`) are still read as MAC digits. They
+  /// could be a name, an IP being typed or part of a MAC, and treating them as
+  /// an IP would stop `1234` finding `12:34:…`. They may add a suggestion; the
+  /// name and IP matches the dialog's default matcher finds stay. Accepted for
+  /// #1737 AC6.
   static bool macContains(String mac, String query) {
     if (!_macFragment.hasMatch(query)) return false;
     if (_ipShaped.hasMatch(query)) return false;

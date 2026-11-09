@@ -58,7 +58,8 @@ void main() {
 }
 
 Future<void> _openDialogAndType(WidgetTester tester, String text) async {
-  await tester.tap(find.byType(AppButton).first);
+  await tester.tap(find.byWidgetPredicate(
+      (w) => w is AppButton && w.identifier == 'instant-privacy-add-device'));
   await tester.pump();
   for (int i = 0; i < 10; i++) {
     await tester.pump(const Duration(milliseconds: 50));

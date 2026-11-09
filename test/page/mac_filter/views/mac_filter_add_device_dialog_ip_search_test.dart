@@ -7,7 +7,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 import '../../../layout_gate/families/page_surface_family.dart';
 import '../../../util/app_test_fonts.dart';
 
-/// #1737 AC6, round 2: "name and IP search behave exactly as today".
+/// #1737 AC6: "name and IP search behave exactly as today".
 ///
 /// The separator-less MAC search compares hex digits, and an IP such as
 /// `192.168.1.16` is made only of hex digits and `.`. Without a guard it would

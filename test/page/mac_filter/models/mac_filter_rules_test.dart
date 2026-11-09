@@ -74,6 +74,26 @@ void main() {
     });
   });
 
+  group('MacFilterRules — canonicalMac', () {
+    test('every accepted spelling gives AA:BB:CC:DD:EE:FF', () {
+      for (final form in [
+        'aa-bb-cc-dd-ee-ff',
+        'aabbccddeeff',
+        'AABB.CCDD.EEFF',
+        '  AA:BB:CC:DD:EE:FF  ',
+      ]) {
+        expect(MacFilterRules.canonicalMac(form), 'AA:BB:CC:DD:EE:FF',
+            reason: form);
+      }
+    });
+
+    test('null for what is not one MAC, where normalizeMac keeps the text', () {
+      for (final bad in [' zz-zz ', 'AABBCCDDEEFF0', '192.168.1.10', '']) {
+        expect(MacFilterRules.canonicalMac(bad), isNull, reason: bad);
+      }
+    });
+  });
+
   group('MacFilterRules — normalizeMac', () {
     test('uppercases and colon-separates', () {
       expect(MacFilterRules.normalizeMac('aa-bb-cc-dd-ee-01'),
@@ -130,8 +150,8 @@ void main() {
       }
     });
 
-    // Round 2 (lens E): an IP query must not be read as MAC digits, even when
-    // a MAC happens to contain those digits.
+    // #1737 AC6: an IP query must not be read as MAC digits, even when a MAC
+    // happens to contain those digits.
     test('false for an IP-shaped query, even one whose digits the MAC has', () {
       const ipLikeMac = '19:21:68:11:6A:BC';
       for (final query in [

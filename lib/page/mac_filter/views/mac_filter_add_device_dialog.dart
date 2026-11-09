@@ -73,18 +73,20 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
   String? _errorFor(String raw) {
     final value = raw.trim();
     if (value.isEmpty) return null;
-    if (!MacFilterRules.validateMac(value)) return 'invalidMacFormat';
-    final normalized = MacFilterRules.normalizeMac(value);
-    final present = widget.existingMacs
-        .map((m) => m.toUpperCase())
-        .contains(normalized.toUpperCase());
+    final canonical = MacFilterRules.canonicalMac(value);
+    if (canonical == null) return 'invalidMacFormat';
+    final present =
+        widget.existingMacs.map((m) => m.toUpperCase()).contains(canonical);
     if (present) return 'alreadyInList';
     return null;
   }
 
+  /// Re-checks the field's text: the error shown under it, and whether Add is
+  /// enabled.
   void _revalidate() {
     final text = _controller.text;
-    _canConfirm.value = text.trim().isNotEmpty && _errorFor(text) == null;
+    setState(() => _errorKey = _errorFor(text));
+    _canConfirm.value = text.trim().isNotEmpty && _errorKey == null;
   }
 
   String? _localizedError(BuildContext context) => switch (_errorKey) {
@@ -97,11 +99,8 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
   /// complete, addable MAC in any accepted spelling (#1737). Null for partial
   /// input, a name or an IP — and while an error is shown, which already says
   /// why the value cannot be added.
-  String? get _canonicalPreview {
-    final text = _controller.text;
-    if (_errorKey != null || !MacFilterRules.validateMac(text)) return null;
-    return MacFilterRules.normalizeMac(text);
-  }
+  String? get _canonicalPreview =>
+      _errorKey != null ? null : MacFilterRules.canonicalMac(_controller.text);
 
   /// On blur, a complete MAC is rewritten to its canonical form (#1737). Only
   /// here, never per keystroke: the field is also the name / IP search box, and
@@ -109,14 +108,12 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
   void _onFocusChange() {
     if (!mounted || _focusNode.hasFocus) return;
     final text = _controller.text;
-    if (!MacFilterRules.validateMac(text)) return;
-    final canonical = MacFilterRules.normalizeMac(text);
-    if (canonical == text) return;
+    final canonical = MacFilterRules.canonicalMac(text);
+    if (canonical == null || canonical == text) return;
     _controller.value = TextEditingValue(
       text: canonical,
       selection: TextSelection.collapsed(offset: canonical.length),
     );
-    setState(() => _errorKey = _errorFor(_controller.text));
     _revalidate();
   }
 
@@ -146,7 +143,6 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
                 MacFilterRules.macContains(option.value, query),
             onSelected: (value) {
               _controller.text = value;
-              setState(() => _errorKey = _errorFor(_controller.text));
               _revalidate();
             },
             child: AppTextField(
@@ -156,10 +152,7 @@ class _AddDeviceDialogState extends State<_AddDeviceDialog> {
               hintText: loc(context).searchByNameMacIp,
               errorText: _localizedError(context),
               errorDisplayMode: AppErrorDisplayMode.text,
-              onChanged: (_) {
-                setState(() => _errorKey = _errorFor(_controller.text));
-                _revalidate();
-              },
+              onChanged: (_) => _revalidate(),
             ),
           ),
           // After the field, never around it: wrapping or re-ordering the field
