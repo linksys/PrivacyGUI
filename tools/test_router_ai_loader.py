@@ -6,6 +6,9 @@ loader is added at runtime by lib/core/ai_session/router_ai_loader.dart, and
 only in a build made with ENABLE_ROUTER_AI=true (--dart-define=enable_router_ai).
 """
 
+# Keeps the `str | None` annotations below importable on Python 3.9.
+from __future__ import annotations
+
 from html.parser import HTMLParser
 from pathlib import Path
 import os

@@ -211,5 +211,39 @@ void main() {
         expect(container.read(authProvider).value?.loginType, LoginType.none);
       });
     }
+
+    // A logout during the FIRST init() of a launch (for example onError →
+    // logout() when the stored password is rejected) must not let that init()
+    // bootstrap the stored password after the AI logout.
+    for (final order in ['init started first', 'logout started first']) {
+      test(
+          'logout during the first init() of a launch never bootstraps the '
+          'stored password ($order)', () async {
+        FlutterSecureStorage.setMockInitialValues(
+            {pLocalPassword: 'StaleSecret!'});
+        final router = MockRouterRepository();
+        final aiSession = _RecordingAiSessionService();
+        stubLogin(router, jnapResultOk);
+        final container = ProviderContainer(overrides: [
+          routerRepositoryProvider.overrideWithValue(router),
+          aiSessionServiceProvider.overrideWithValue(aiSession),
+        ]);
+        addTearDown(container.dispose);
+
+        await container.read(authProvider.future);
+        final auth = container.read(authProvider.notifier);
+        final racing = order == 'init started first'
+            ? [auth.init(), auth.logout()]
+            : [auth.logout(), auth.init()];
+        await Future.wait(racing);
+
+        expect(aiSession.bootstraps, isEmpty,
+            reason: 'no AI bootstrap after logout');
+        expect(aiSession.logouts, greaterThanOrEqualTo(1));
+        expect(await const FlutterSecureStorage().read(key: pLocalPassword),
+            isNull);
+        expect(container.read(authProvider).value?.loginType, LoginType.none);
+      });
+    }
   }, skip: BuildConfig.enableRouterAi ? false : _needsRouterAi);
 }

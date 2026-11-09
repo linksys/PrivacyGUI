@@ -435,6 +435,10 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   Future logout() async {
     logger.d('[Prepare]: Logout');
     if (BuildConfig.enableRouterAi) {
+      // A logout settles this launch's AI session. If the first init() is
+      // still reading storage, it must not bootstrap the old password after
+      // this revocation.
+      _aiStartupReconciled = true;
       // Optional server revocation must not delay native logout or retain the
       // previous authenticated state while the endpoint is unavailable.
       unawaited(_logoutAiSession());
