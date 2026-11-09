@@ -118,9 +118,10 @@ void main() {
   group('resolve', () {
     test('every role this app reaches resolves in every shipped locale', () {
       // Unreachable from `lib/`: `GlobalMaterialLocalizations` names every
-      // dismiss barrier first, and nothing mounts a slider or a side sheet, or
-      // sets `onDeleted:` on a tag or badge.
+      // dismiss barrier first, nothing mounts an avatar, a slider or a side
+      // sheet, and nothing sets `onDeleted:` on a tag or badge.
       const deferred = {
+        SemanticRoleLabel.avatar,
         SemanticRoleLabel.deleteTarget,
         SemanticRoleLabel.dismissBarrier,
         SemanticRoleLabel.sideSheet,

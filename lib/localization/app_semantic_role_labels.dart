@@ -58,8 +58,10 @@ class AppSemanticRoleLabels {
       SemanticRoleLabel.showPassword => l10n.semanticRoleShowPassword,
       SemanticRoleLabel.toggle => l10n.semanticRoleSwitch,
       // Unreachable from `lib/`: `GlobalMaterialLocalizations` names every
-      // dismiss barrier before the kit asks, and nothing mounts a slider or a
-      // side sheet, or sets `onDeleted:` on an `AppTag`/`AppBadge`.
+      // dismiss barrier before the kit asks, nothing mounts an `AppAvatar`, a
+      // slider or a side sheet, and nothing sets `onDeleted:` on an
+      // `AppTag`/`AppBadge`.
+      SemanticRoleLabel.avatar ||
       SemanticRoleLabel.deleteTarget ||
       SemanticRoleLabel.dismissBarrier ||
       SemanticRoleLabel.sideSheet ||
