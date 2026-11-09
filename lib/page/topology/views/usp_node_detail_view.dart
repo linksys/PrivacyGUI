@@ -381,23 +381,20 @@ class UspNodeDetailView extends ConsumerWidget {
     final wanIp = wanData?.ipAddress;
     final wanIpv6Addresses = wanData?.ipv6Addresses ?? [];
 
-    // LAN addresses. An agent's come from its own Hosts row. The router's come
-    // from the LAN interface, which is what the Local Network page shows (#1722).
-    // On FL-WRT 2.0 the controller has no Hosts row of its own (measured on
-    // 2.0.4.26110110: no row carries its MAC), so `node` holds neither address.
-    // A Hosts row is the router's fallback, checked address by address, in
-    // case a build gives the controller one. `lanInfo` is null until a LAN read
-    // has succeeded, which leaves only that fallback. After that, `valueOrNull`
-    // keeps the last value through a failed refresh, as the WAN rows do.
+    // LAN addresses, each node's from one source. An agent's come from its own
+    // Hosts row. The router's come from the LAN interface, the address it
+    // serves the LAN on and what the Local Network page shows (#1722). The
+    // Hosts table lists the LAN's clients, and on FL-WRT 2.0 it has no row for
+    // the controller (measured on 2.0.4.26110110: no row carries its MAC).
+    // `lanInfo` is null until a LAN read has succeeded, and until then the
+    // router's LAN rows are hidden. After that, `valueOrNull` keeps the last
+    // value through a failed refresh, as the WAN rows do.
     final lanInfo =
         node.isMaster ? ref.watch(lanDataProvider).valueOrNull?.model : null;
-    final interfaceIp = lanInfo?.ipAddress;
-    final lanIp = interfaceIp != null && interfaceIp.isNotEmpty
-        ? interfaceIp
-        : node.ipAddress;
-    final interfaceIpv6 = lanInfo?.ipv6Addresses ?? const <String>[];
-    final lanIpv6Addresses =
-        interfaceIpv6.isNotEmpty ? interfaceIpv6 : node.ipv6Addresses;
+    final lanIp = node.isMaster ? lanInfo?.ipAddress : node.ipAddress;
+    final lanIpv6Addresses = node.isMaster
+        ? lanInfo?.ipv6Addresses ?? const <String>[]
+        : node.ipv6Addresses;
 
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),

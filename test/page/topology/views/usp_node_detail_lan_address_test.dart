@@ -23,14 +23,12 @@ class _FailingLanDataNotifier extends LanDataNotifier {
       throw const NetworkError(detail: 'LAN read failed');
 }
 
-/// The router's LAN addresses on its node detail page (#1722).
+/// The LAN addresses on a node's detail page (#1722).
 ///
-/// On FL-WRT 2.0 the controller has no `Device.Hosts.Host` row of its own, so
-/// its node carries no LAN address and the Network card showed only the WAN
-/// rows. The router's LAN addresses now come from the LAN interface
+/// Each node's come from one source. The router's come from the LAN interface
 /// (`lanDataProvider`), which is what the Local Network page shows. Its Hosts
-/// row, if a build gives it one, is the fallback, checked address by address.
-/// An agent still takes its addresses from its own Hosts row only.
+/// row is never drawn, and on FL-WRT 2.0 it has none. An agent's come from its
+/// own Hosts row.
 void main() {
   late AppLocalizations loc;
   setUpAll(() async {
@@ -55,9 +53,6 @@ void main() {
 
   List<Override> lanServing(LanData data) =>
       [lanDataProvider.overrideWith(() => FixedLanDataNotifier(data))];
-  final lanFailing = [
-    lanDataProvider.overrideWith(_FailingLanDataNotifier.new),
-  ];
 
   // What the LAN interface and the Hosts row each carry, asserted rather than
   // assumed: the tests below tell the two sources apart by these values.
@@ -65,6 +60,12 @@ void main() {
   const interfaceIpv6 = '2001:db8::1';
   const hostsIp = '192.168.1.254';
   const hostsIpv6 = '2001:db8::254';
+
+  /// Neither of the router's Hosts addresses is anywhere on the page.
+  void expectNoHostsAddresses() {
+    expect(find.text(hostsIp), findsNothing);
+    expect(find.text(hostsIpv6), findsNothing);
+  }
 
   test('the fixtures carry the addresses the tests tell apart', () {
     expect(routerLanData.model.ipAddress, interfaceIp);
@@ -94,58 +95,47 @@ void main() {
     expect(find.text(interfaceIpv6), findsOneWidget);
   });
 
-  testWidgets('the LAN interface comes before a Hosts row', (tester) async {
+  testWidgets('a router draws the LAN interface, not its Hosts row', (
+    tester,
+  ) async {
     await pump(tester, masterNodeWithHostsAddresses,
         lan: lanServing(routerLanData));
 
     expect(find.text(interfaceIp), findsOneWidget);
     expect(find.text(interfaceIpv6), findsOneWidget);
-    expect(find.text(hostsIp), findsNothing);
-    expect(find.text(hostsIpv6), findsNothing);
+    expectNoHostsAddresses();
   });
 
-  testWidgets('each address the LAN interface lacks falls back on its own', (
+  testWidgets('an address the LAN interface lacks is not taken from Hosts', (
     tester,
   ) async {
-    // The interface has an IPv4 and no IPv6: the IPv4 is the interface's and
-    // the IPv6 is the Hosts row's. Taking both from one source would lose one.
+    // The interface has an IPv4 and no IPv6, and the Hosts row has both.
     await pump(tester, masterNodeWithHostsAddresses,
         lan: lanServing(testLanDisabledData));
 
     expect(find.text(interfaceIp), findsOneWidget);
-    expect(find.text(hostsIp), findsNothing);
-    expect(find.text(hostsIpv6), findsOneWidget);
-    expect(find.text(loc.lanIpv6), findsOneWidget);
+    expect(find.text(loc.lanIpv6), findsNothing);
+    expectNoHostsAddresses();
   });
 
-  testWidgets('a LAN interface with no address falls back to the Hosts row', (
+  testWidgets('a LAN interface with no address leaves the LAN rows hidden', (
     tester,
   ) async {
     // `LanData.empty()` reads the interface's IPv4 as '', not null.
     await pump(tester, masterNodeWithHostsAddresses,
         lan: lanServing(const LanData.empty()));
 
-    expect(find.text(hostsIp), findsOneWidget);
-    expect(find.text(hostsIpv6), findsOneWidget);
+    expect(find.text(loc.lanIp), findsNothing);
+    expect(find.text(loc.lanIpv6), findsNothing);
+    expectNoHostsAddresses();
   });
 
-  testWidgets('until a LAN read succeeds the router uses its Hosts row', (
+  testWidgets('a failed LAN read hides the LAN rows and leaves the page', (
     tester,
   ) async {
-    await pump(tester, masterNodeWithHostsAddresses, lan: lanFailing);
-
-    final container = ProviderScope.containerOf(
-        tester.element(find.byType(UspNodeDetailView)));
-    expect(container.read(lanDataProvider).hasError, isTrue,
-        reason: 'the read must have failed, not still be loading');
-    expect(find.text(hostsIp), findsOneWidget);
-    expect(find.text(hostsIpv6), findsOneWidget);
-  });
-
-  testWidgets('a failed LAN read and no Hosts row hide the LAN rows only', (
-    tester,
-  ) async {
-    await pump(tester, masterNodeEmptyDevices, lan: lanFailing);
+    await pump(tester, masterNodeWithHostsAddresses, lan: [
+      lanDataProvider.overrideWith(_FailingLanDataNotifier.new),
+    ]);
 
     final container = ProviderScope.containerOf(
         tester.element(find.byType(UspNodeDetailView)));
@@ -153,6 +143,7 @@ void main() {
         reason: 'the read must have failed, not still be loading');
     expect(find.text(loc.lanIp), findsNothing);
     expect(find.text(loc.lanIpv6), findsNothing);
+    expectNoHostsAddresses();
     // The rest of the page still renders: the Network card's own header and
     // the router's model on the node card.
     expect(find.text(loc.network), findsOneWidget);

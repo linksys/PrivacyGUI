@@ -469,15 +469,14 @@ final masterNodeEmptyDevices = UspNodeDetailState(
 // Router LAN addresses (#1722)
 // ---------------------------------------------------------------------------
 
-/// The router's LAN interface as `lanDataProvider` serves it, the source of
-/// the router's LAN rows on its node detail page. On FL-WRT 2.0 the controller
-/// has no Hosts row of its own.
+/// The router's LAN interface as `lanDataProvider` serves it. This is the
+/// only source of the router's LAN rows on its node detail page.
 ///
-/// It has one IPv6, a routable one, because the `master_lan_addresses` golden
-/// draws this scene. With a second, link-local row the page grew to 1213px at
-/// phone480 in `el` (1208px in `de`, `fi`, `fr_CA`, `it`, `nl`, `pl`) and was
-/// cropped by the 1200px canvas. The link-local row with its scope badge is
-/// photographed on the extender, in `link_local_ipv6`.
+/// It has one IPv6, a routable one, so that the `master_lan_addresses` golden
+/// fits the 1200px canvas. With a second, link-local row the page is 1213px
+/// tall at phone480 in `el` (1208px in `de`, `fi`, `fr_CA`, `it`, `nl`, `pl`).
+/// The link-local row with its scope badge is photographed on the extender, in
+/// `link_local_ipv6`.
 final routerLanData = LanData(
   model: const LanInfoUIModel(
     ipAddress: '192.168.1.1',
@@ -489,8 +488,9 @@ final routerLanData = LanData(
   ),
 );
 
-/// The router as it would be if a build gave the controller a Hosts row with
-/// addresses: the fallback when the LAN interface has none. Each address
+/// The router with a Hosts row that carries addresses, which the router's
+/// node never carries on FL-WRT 2.0. The node detail page does not draw them:
+/// the router's LAN rows come from the LAN interface alone. Each address
 /// differs from [routerLanData]'s, so a test can tell which source the page
 /// drew.
 final masterNodeWithHostsAddresses = UspNodeDetailState(
