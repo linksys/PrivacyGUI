@@ -457,9 +457,10 @@ void main() {
       final setCaptures = verify(() => mockUsp.set(captureAny())).captured;
       final vlanSet = setCaptures.whereType<Map<String, dynamic>>().where(
           (params) => params.keys.any((k) => k.contains('VLANTermination')));
-      expect(vlanSet, isNotEmpty);
+      // Enable alone: the VLAN ID field is closed, so its 0 is not the user's
+      // and FW 2.0.4 refuses it (#1072).
       expect(
-          vlanSet.first['Device.Ethernet.VLANTermination.1.Enable'], isFalse);
+          vlanSet.single, {'Device.Ethernet.VLANTermination.1.Enable': false});
 
       // Verify no DELETE was called
       verifyNever(() => mockUsp.delete(any()));
@@ -539,6 +540,48 @@ void main() {
 
       // Verify no ADD was called
       verifyNever(() => mockUsp.add(any()));
+    });
+
+    // #1072: FW 2.0.4 ships the WAN VLAN row off with VLAN ID 1 and refuses a
+    // VLAN ID of 0 (7012, range 1-4094). Measured on M60-EU 2.0.4.26102917
+    // right after a factory reset.
+    test('PPPoE without VLAN writes no VLAN ID to the shipped VLAN row (#1072)',
+        () async {
+      final pppFactoryResponse = <String, dynamic>{
+        ...pppExistingResponse,
+        'Device.PPP.Interface.1.Username': '',
+        'Device.PPP.Interface.1.Password': '',
+        'Device.PPP.Interface.1.LowerLayers': '',
+        'Device.PPP.Interface.1.ConnectionStatus': 'Disconnected',
+      };
+      final vlanShippedResponse = <String, dynamic>{
+        ...vlanExistingResponse,
+        'Device.Ethernet.VLANTermination.1.Enable': false,
+        'Device.Ethernet.VLANTermination.1.VLANID': '1',
+      };
+      setupFetchMocks(
+          pppResponse: pppFactoryResponse, vlanResponse: vlanShippedResponse);
+      setupSetMocks();
+
+      // What the PPPoE step submits with the VLAN field closed.
+      const config = PnpIspConfig(
+        type: IspConnectionType.pppoe,
+        pppUsername: 'userrr',
+        pppPassword: 'passsss',
+        vlanEnabled: false,
+        vlanId: 0,
+      );
+
+      await service.saveIspSettings(config);
+
+      final setCaptures = verify(() => mockUsp.set(captureAny())).captured;
+      final vlanIdWrites = setCaptures.whereType<Map<String, dynamic>>().where(
+          (params) => params.keys.any((k) =>
+              k.startsWith('Device.Ethernet.VLANTermination.') &&
+              k.endsWith('.VLANID')));
+      expect(vlanIdWrites, isEmpty,
+          reason: 'the user never opened the VLAN field, so no VLAN ID is '
+              'theirs to write; FW 2.0.4 refuses 0 and fails the whole save');
     });
   });
 

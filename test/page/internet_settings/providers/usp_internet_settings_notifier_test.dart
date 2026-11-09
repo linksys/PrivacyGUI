@@ -568,4 +568,62 @@ void main() {
       container.dispose();
     });
   });
+
+  // #1072: FW 2.0.4 ships the WAN VLAN row off with VLAN ID 1 and refuses 0.
+  group('UspInternetSettingsNotifier - setVlanEnabled (#1072)', () {
+    final pppoeForm = UspInternetSettingsForm(
+      connectionType: UspWanConnectionType.pppoe,
+      mtu: 1492,
+      vlanEnabled: false,
+      vlanId: 1,
+    );
+
+    Future<ProviderContainer> loadPppoeInEditMode() async {
+      when(() => mockService.fetchSettings())
+          .thenAnswer((_) async => InternetSettingsFetchResult(
+                form: pppoeForm,
+                readOnlyInfo: const InternetSettingsReadOnlyInfo(),
+              ));
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      container.read(uspInternetSettingsProvider.notifier).enterEditMode();
+      return container;
+    }
+
+    test('turning VLAN off drops an ID cleared while it was on', () async {
+      final container = await loadPppoeInEditMode();
+      final notifier = container.read(uspInternetSettingsProvider.notifier);
+
+      notifier.setVlanEnabled(true);
+      // What the VLAN ID field writes when the user empties it.
+      notifier.updateField((f) => f.copyWith(vlanId: 0));
+      notifier.setVlanEnabled(false);
+
+      final form =
+          container.read(uspInternetSettingsProvider).settings.current.form;
+      expect(form.vlanEnabled, isFalse);
+      expect(form.vlanId, 1,
+          reason: 'with VLAN off the save would write this ID, and FW 2.0.4 '
+              'refuses 0');
+      expect(notifier.isDirty(), isFalse,
+          reason: 'on, cleared, then off again leaves nothing to save');
+      container.dispose();
+    });
+
+    test('turning VLAN off drops an ID typed while it was on', () async {
+      final container = await loadPppoeInEditMode();
+      final notifier = container.read(uspInternetSettingsProvider.notifier);
+
+      notifier.setVlanEnabled(true);
+      notifier.updateField((f) => f.copyWith(vlanId: 200));
+      notifier.setVlanEnabled(false);
+
+      final form =
+          container.read(uspInternetSettingsProvider).settings.current.form;
+      expect(form.vlanId, 1,
+          reason: 'with VLAN off the save would write the abandoned 200');
+      expect(notifier.isDirty(), isFalse);
+      container.dispose();
+    });
+  });
 }

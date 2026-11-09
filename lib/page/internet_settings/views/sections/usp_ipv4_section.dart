@@ -368,7 +368,9 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
           const Spacer(),
           AppSwitch(
             value: form.vlanEnabled,
-            onChanged: (v) => _updateField((f) => f.copyWith(vlanEnabled: v)),
+            onChanged: (v) => ref
+                .read(uspInternetSettingsProvider.notifier)
+                .setVlanEnabled(v),
           ),
         ],
       ),
@@ -429,7 +431,9 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
           const Spacer(),
           AppSwitch(
             value: form.vlanEnabled,
-            onChanged: (v) => _updateField((f) => f.copyWith(vlanEnabled: v)),
+            onChanged: (v) => ref
+                .read(uspInternetSettingsProvider.notifier)
+                .setVlanEnabled(v),
           ),
         ],
       ),
