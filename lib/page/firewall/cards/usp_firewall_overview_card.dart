@@ -525,7 +525,7 @@ class _PortsTab extends StatelessWidget {
                 children: [
                   UspStatusDot(isActive: true),
                   AppGap.sm(),
-                  AppText.bodySmall(loc(context).targetIp(d.destIp)),
+                  AppText.bodySmall(loc(context).targetIp(d.host)),
                 ],
               )),
         ],

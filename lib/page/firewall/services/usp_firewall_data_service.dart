@@ -97,7 +97,11 @@ class UspFirewallDataService {
 
     // Build per-DMZ entry summaries.
     final dmzSummaries = dmzRaw.items
-        .map((d) => DmzEntrySummary(enable: d.enable, destIp: d.destIp))
+        .map((d) => DmzEntrySummary(
+              enable: d.enable,
+              destIp: d.destIp,
+              destMac: d.destMacAddress ?? '',
+            ))
         .toList();
 
     return FirewallDataFetchResult(
