@@ -97,9 +97,10 @@ class UspWidgetFactory {
   /// a user may drag to, not a claim about the content.
   ///
   /// No `columns` argument: it only changes the answer for
-  /// `AspectRatioHeightStrategy`, which no spec in `usp_widget_specs.dart` uses,
-  /// and the presentation's width is a constant rather than a span
-  /// ([kCardPresentationWidth]) so there would be no span to pass.
+  /// `AspectRatioHeightStrategy`, which no spec in
+  /// `usp_widget_spec_registry.dart` uses, and the presentation's width is a
+  /// constant rather than a span ([kCardPresentationWidth]) so there would be
+  /// no span to pass.
   double? _normalHeightOf(String id) {
     final constraints = getSpec(id)?.getConstraints(DisplayMode.normal);
     return constraints == null
