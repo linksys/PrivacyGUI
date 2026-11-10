@@ -1301,5 +1301,8 @@
   "macWillBeAddedAs": "将添加为 {mac}",
   "valueOutOfRange": "必须介于 {min} 和 {max} 之间",
   "maxCharacters": "最多 {max} 个字符",
-  "invalidSubnetMask": "子网掩码无效"
+  "invalidSubnetMask": "子网掩码无效",
+  "reservationNameHint": "名称（可选）",
+  "reservationNameInvalid": "请使用字母、数字和 -，且不能以 - 开头或结尾",
+  "reservationNameInUse": "其他保留项已使用此名称"
 }

@@ -1301,5 +1301,8 @@
   "macWillBeAddedAs": "Θα προστεθεί ως {mac}",
   "valueOutOfRange": "Πρέπει να είναι μεταξύ {min} και {max}",
   "maxCharacters": "Έως {max} χαρακτήρες",
-  "invalidSubnetMask": "Μη έγκυρη μάσκα υποδικτύου"
+  "invalidSubnetMask": "Μη έγκυρη μάσκα υποδικτύου",
+  "reservationNameHint": "Όνομα (προαιρετικό)",
+  "reservationNameInvalid": "Χρησιμοποιήστε γράμματα, ψηφία και -, χωρίς - στην αρχή ή στο τέλος",
+  "reservationNameInUse": "Μια άλλη δέσμευση έχει ήδη αυτό το όνομα"
 }

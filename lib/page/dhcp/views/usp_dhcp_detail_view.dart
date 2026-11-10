@@ -16,6 +16,7 @@ import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.d
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_active_leases_card.dart';
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_reservations_detail_card.dart';
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_server_info_card.dart';
+import 'package:privacy_gui/page/dhcp/views/helpers/dhcp_reservation_error_localization.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -206,7 +207,13 @@ class UspDhcpDetailView extends ConsumerWidget {
         showSuccessSnackBar(context, loc(context).dhcpReservationsSaved);
       }
     } catch (e) {
-      if (context.mounted) {
+      if (!context.mounted) return;
+      // A value FW refused by name reads as that check (linksys/FWDEV#211).
+      if (e is InvalidInputError &&
+          DhcpReservationRefusalNames.all.contains(e.field)) {
+        showFailedSnackBar(
+            context, localizeDhcpReservationSaveError(context, e));
+      } else {
         showSaveErrorSnackBar(context, e);
       }
     }

@@ -5,10 +5,19 @@ import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+/// What [DhcpReservationEditDialog] pops with on submit. [name] is `''` when
+/// the reservation has none.
+typedef DhcpReservationDialogResult = ({
+  String mac,
+  String ip,
+  bool enable,
+  String name,
+});
+
 /// Unified dialog for adding or editing a DHCP reservation.
 ///
 /// Pass [reservation] to pre-fill for editing; omit for adding.
-/// Returns a `({String mac, String ip, bool enable})` record on submit, or null on cancel.
+/// Returns a [DhcpReservationDialogResult] on submit, or null on cancel.
 class DhcpReservationEditDialog extends StatefulWidget {
   final DhcpReservationUIModel? reservation;
   final List<AppAutoCompleteOption> macDeviceOptions;
@@ -44,8 +53,10 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
 
   late TextEditingController _macController;
   late TextEditingController _ipController;
+  late TextEditingController _nameController;
   final _macFocusNode = FocusNode();
   final _ipFocusNode = FocusNode();
+  final _nameFocusNode = FocusNode();
   late bool _enabled;
   Map<String, String> _errors = {};
 
@@ -61,19 +72,24 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
     final r = widget.reservation;
     _macController = TextEditingController(text: r?.mac ?? '');
     _ipController = TextEditingController(text: r?.ip ?? '');
+    _nameController = TextEditingController(text: r?.name ?? '');
     _enabled = r?.enable ?? true;
     _macFocusNode.addListener(_onMacFocusChange);
     _ipFocusNode.addListener(_onIpFocusChange);
+    _nameFocusNode.addListener(_onNameFocusChange);
   }
 
   @override
   void dispose() {
     _macFocusNode.removeListener(_onMacFocusChange);
     _ipFocusNode.removeListener(_onIpFocusChange);
+    _nameFocusNode.removeListener(_onNameFocusChange);
     _macFocusNode.dispose();
     _ipFocusNode.dispose();
+    _nameFocusNode.dispose();
     _macController.dispose();
     _ipController.dispose();
+    _nameController.dispose();
     super.dispose();
   }
 
@@ -83,6 +99,10 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
 
   void _onIpFocusChange() {
     if (!_ipFocusNode.hasFocus) _validate();
+  }
+
+  void _onNameFocusChange() {
+    if (!_nameFocusNode.hasFocus) _validate();
   }
 
   void _validate() {
@@ -131,6 +151,12 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
       errors['ip'] = 'duplicateIpAddress';
     }
 
+    // FW's name rule (linksys/FWDEV#211), checked here so a name FW would
+    // refuse is never sent: obuspa commits the rest of a refused Set.
+    final nameError =
+        DhcpReservationUIModel.validateName(_nameController.text, others);
+    if (nameError != null) errors['name'] = nameError;
+
     setState(() => _errors = errors);
   }
 
@@ -142,6 +168,10 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
       'reservedIpNotAllowed' => loc(context).reservedIpNotAllowed,
       'duplicateMacAddress' => loc(context).duplicateMacAddress,
       'duplicateIpAddress' => loc(context).duplicateIpAddress,
+      DhcpReservationNameErrors.tooLong =>
+        loc(context).maxCharacters(DhcpReservationUIModel.nameMaxLength),
+      DhcpReservationNameErrors.invalid => loc(context).reservationNameInvalid,
+      DhcpReservationNameErrors.inUse => loc(context).reservationNameInUse,
       _ => key,
     };
   }
@@ -197,6 +227,15 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
             ),
           ),
           AppGap.lg(),
+          // After MAC and IP, so those two fields keep their positions.
+          AppTextField(
+            controller: _nameController,
+            focusNode: _nameFocusNode,
+            identifier: 'dhcp-reservation-name',
+            hintText: loc(context).reservationNameHint,
+            errorText: _localizeError(_errors['name']),
+          ),
+          AppGap.lg(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -230,6 +269,8 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
     if (!_isFormValid) return;
     final mac = _macController.text.trim();
     final ip = _ipController.text.trim();
-    context.pop((mac: mac, ip: ip, enable: _enabled));
+    final DhcpReservationDialogResult result =
+        (mac: mac, ip: ip, enable: _enabled, name: _nameController.text);
+    context.pop(result);
   }
 }

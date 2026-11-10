@@ -1301,5 +1301,8 @@
   "macWillBeAddedAs": "Läggs till som {mac}",
   "valueOutOfRange": "Måste vara mellan {min} och {max}",
   "maxCharacters": "Högst {max} tecken",
-  "invalidSubnetMask": "Ogiltig nätmask"
+  "invalidSubnetMask": "Ogiltig nätmask",
+  "reservationNameHint": "Namn (valfritt)",
+  "reservationNameInvalid": "Använd bokstäver, siffror och -, utan - först eller sist",
+  "reservationNameInUse": "En annan reservation har redan det här namnet"
 }

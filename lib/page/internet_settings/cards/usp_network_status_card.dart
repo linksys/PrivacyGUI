@@ -134,6 +134,13 @@ class UspNetworkStatusCard extends ConsumerWidget {
                 )
               else if (wan.ipv6Enabled)
                 InfoGridItem(label: 'IPv6', value: 'Enabled'),
+              // Hidden when there are none or they could not be read (#1702).
+              if (wan.dnsServers.isNotEmpty)
+                InfoGridItem(
+                  label: loc(context).dnsServers,
+                  value: wan.dnsServers.join(', '),
+                  fullWidth: true,
+                ),
             ],
           ),
         ],

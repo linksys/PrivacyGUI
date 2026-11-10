@@ -1301,5 +1301,8 @@
   "macWillBeAddedAs": "ستتم الإضافة باسم {mac}",
   "valueOutOfRange": "يجب أن تكون القيمة بين {min} و{max}",
   "maxCharacters": "{max} حرفًا كحد أقصى",
-  "invalidSubnetMask": "قناع الشبكة الفرعية غير صالح"
+  "invalidSubnetMask": "قناع الشبكة الفرعية غير صالح",
+  "reservationNameHint": "الاسم (اختياري)",
+  "reservationNameInvalid": "استخدم الأحرف والأرقام و -، دون أن يبدأ أو ينتهي بـ -",
+  "reservationNameInUse": "يوجد حجز آخر بهذا الاسم بالفعل"
 }

@@ -126,6 +126,9 @@ const testWanOnline = WanStatusUIModel(
   gateway: '203.0.113.1',
   ipv6Enabled: true,
   ipv6Addresses: ['2001:db8::1'],
+  // Two resolvers, so the layout gate measures the DNS row (#1702) at its
+  // common width rather than not at all.
+  dnsServers: ['203.0.113.53', '198.51.100.53'],
 );
 
 const testWanOffline = WanStatusUIModel(
