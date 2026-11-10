@@ -84,14 +84,12 @@ class StatsTrafficDistributionSection extends ConsumerWidget {
             AppChartLegendEntry.statistic(
               mark: const ChartMark.swatch(),
               color: colorScheme.primary,
-              label:
-                  loc(context).wanSpeed(UspFormatters.formatBytes(wanTotal)),
+              label: loc(context).wanSpeed(UspFormatters.formatBytes(wanTotal)),
             ),
             AppChartLegendEntry.statistic(
               mark: const ChartMark.swatch(),
               color: colorScheme.secondary,
-              label:
-                  loc(context).lanSpeed(UspFormatters.formatBytes(lanTotal)),
+              label: loc(context).lanSpeed(UspFormatters.formatBytes(lanTotal)),
             ),
           ],
         ),
