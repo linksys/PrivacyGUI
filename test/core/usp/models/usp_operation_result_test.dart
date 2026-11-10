@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/usp/errors/usp_refusal_reason.dart';
 import 'package:privacy_gui/core/usp/models/usp_operation_result.dart';
 
+import '../../../mocks/test_data/usp_add_refusal_test_data.dart';
+
 void main() {
   group('UspOperationResult sealed class', () {
     test('UspSuccess should indicate complete success', () {
@@ -300,6 +302,41 @@ void main() {
         '${p}InternalPort': UspRefusalReason.unknown,
         '${p}Description': UspRefusalReason.unknown,
       });
+    });
+  });
+
+  // usp-client 0.14.0 (linksys/usp_framework#114). The envelope is what 0.14.0
+  // returns for the bench's captured AddResp (FW 2.0.4.26103108, 2026-11-09,
+  // a 26th port trigger), decoded from those bytes; 0.13.0 returned the same
+  // `data` with no `error`, which read as a clean success.
+  group('UspResultParser — a refused Add (usp-client 0.14.0)', () {
+    const row = 'Device.NAT.PortTrigger.26.';
+    test('reads as a partial success: the row, and every refused parameter',
+        () {
+      final result =
+          UspResultParser.parseAddResult(UspAddRefusalTestData.refusedAdd(
+        instances: [row],
+        refusedRow: row,
+        otherParams: ['Enable', 'Description', 'PortEndRange', 'Protocol'],
+      ));
+
+      expect(result, isA<UspPartialSuccess<List<String>>>());
+      final partial = result as UspPartialSuccess<List<String>>;
+      expect(
+          partial.successes.single.createdInstances!.single.affectedPath, row);
+      expect(partial.failures, hasLength(5));
+      expect(
+          partial.failures
+              .singleWhere((f) => f.requestedPath == '${row}Port')
+              .errorMessage,
+          'ErrorTooManyRules: at most 25 port triggering rules.');
+      // The one FWDEV#204 reason no refused Set can produce: only an Add
+      // reaches the limit, so it needed 0.14.0 to arrive at all.
+      expect(
+          partial.failures
+              .singleWhere((f) => f.requestedPath == '${row}Port')
+              .refusalReason,
+          UspRefusalReason.tooManyRules);
     });
   });
 

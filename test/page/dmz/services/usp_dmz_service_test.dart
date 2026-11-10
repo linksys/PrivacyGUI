@@ -1,12 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/errors/usp_refusal_reason.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/dmz.g.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/dmz/services/usp_dmz_service.dart';
 
 import '../../../mocks/test_data/usp_refusal_test_data.dart';
+import '../../../mocks/test_data/usp_add_refusal_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -370,8 +372,8 @@ void main() {
 
   // FWDEV#204's DMZ errors (#1775). The message is the bench's (2.0.4.26103108,
   // 2026-11-09): a refused DMZ Set comes back per leaf under 7012, as on the
-  // NAT tables. A refused Add answers success with the host emptied, so no
-  // reason arrives on one and none is tested.
+  // NAT tables. A refused Add's reason arrives since usp-client 0.14.0; that
+  // case is in the group below, with the row it leaves.
   group('UspDmzService — a refused save keeps the router reason', () {
     const p = 'Device.Firewall.DMZ.1.';
 
@@ -397,6 +399,43 @@ void main() {
         throwsA(
             carriesRefusalReason(UspRefusalReason.invalidDestinationIpAddress)),
       );
+    });
+  });
+
+  // usp-client 0.14.0 (linksys/usp_framework#114): a first save is an Add, and
+  // a refused one creates the row with the host emptied (bench 2.0.4,
+  // Error_Misconfigured). The row is deleted, so a retry adds one DMZ row.
+  group('UspDmzService — a refused Add is undone', () {
+    test(
+        'the row is deleted, the save wrote nothing, and the reason reaches '
+        'the page', () async {
+      const row = 'Device.Firewall.DMZ.1.';
+      when(() => mockUsp.add(any())).thenAnswer((_) async =>
+          UspAddRefusalTestData.refusedAdd(
+              instances: [row],
+              refusedRow: row,
+              refusedParam: 'DestIP',
+              message:
+                  "ErrorInvalidDestinationIPAddress: '192.168.1.1' is not a "
+                  'LAN host address.'));
+      when(() => mockUsp.delete(any()))
+          .thenAnswer((_) async => UspAddRefusalTestData.accepted);
+
+      await expectLater(
+        service.add(
+          model: DmzUIModel(
+            isEnabled: true,
+            destIp: '192.168.1.1',
+            sourceType: DmzSourceType.any,
+            sourcePrefix: '',
+          ),
+        ),
+        throwsA(allOf(
+          isA<UspCompleteFailureError>(),
+          carriesRefusalReason(UspRefusalReason.invalidDestinationIpAddress),
+        )),
+      );
+      verify(() => mockUsp.delete([row])).called(1);
     });
   });
 }

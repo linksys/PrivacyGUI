@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/dmz/models/dmz_settings.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_status.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/util/network_utils.dart';
+import 'package:privacy_gui/page/_shared/services/refused_add_service.dart';
 
 final uspDmzServiceProvider = Provider<UspDmzService>(
   (ref) => UspDmzService(ref.read(uspClientProvider)!),
@@ -66,7 +67,8 @@ class UspDmzService {
           }
         ],
       );
-      final parsed = UspResultParser.parseAddResult(result);
+      final parsed = await parseAddRemovingRefusedRows(_usp, result,
+          tag: '[USP][Firewall][DMZ]');
       switch (parsed) {
         case UspSuccess():
           break;

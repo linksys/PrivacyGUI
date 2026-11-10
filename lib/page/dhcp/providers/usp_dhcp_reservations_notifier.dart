@@ -85,11 +85,18 @@ class UspDhcpReservationsNotifier
   /// Set, and an Add or Delete earlier in the batch may have landed. The error
   /// still reaches the page. A save that wrote nothing keeps the user's edits
   /// for a retry.
+  ///
+  /// Since usp-client 0.14.0 (linksys/usp_framework#114) a refused Add reaches
+  /// here too: the service deletes the row the router kept, and when that
+  /// fails, the row is on the router and this read puts it on the page with
+  /// its path, so a second Save does not add it again. The dashboard card is
+  /// refreshed for the same reason.
   @override
   Future<DhcpReservationsFeatureState> save() async {
     try {
       return await super.save();
     } on ServiceError {
+      ref.invalidate(dhcpDataProvider);
       final (router, _) = await performFetch(forceRemote: true);
       if (router != null && router != state.settings.original) {
         state = state.copyWith(

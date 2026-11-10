@@ -62,6 +62,20 @@ class UspDmzNotifier extends AutoDisposeNotifier<DmzFeatureState>
   }
 
   // ---------------------------------------------------------------------------
+  // save — re-read the router after a save that left a row behind
+  // ---------------------------------------------------------------------------
+
+  /// A refused first save (an Add) whose row the service could not delete
+  /// leaves a DMZ row on the router (usp-client 0.14.0,
+  /// linksys/usp_framework#114), so the page reads the router again: the next
+  /// save then updates that row instead of adding a second. The error still
+  /// reaches the page. A save that wrote nothing keeps the user's edit for a
+  /// retry. Same rule as port forwarding.
+  @override
+  Future<DmzFeatureState> save() =>
+      saveReadingBackAfterPartialWrite(super.save);
+
+  // ---------------------------------------------------------------------------
   // performSave — required by PreservableAutoDisposeNotifierMixin
   // ---------------------------------------------------------------------------
 

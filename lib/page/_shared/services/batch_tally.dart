@@ -1,6 +1,7 @@
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/usp/models/usp_operation_result.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/_shared/services/refused_add_service.dart';
 
 /// The outcome of every step in one batch save.
 ///
@@ -32,6 +33,16 @@ class BatchTally {
     _failures.addAll(failures);
     logger.w('$_tag: $step failed: '
         '${failures.map((f) => f.errorMessage).join('; ')}');
+  }
+
+  /// Records an Add step from its [raw] result, after deleting any row the
+  /// router refused part of ([parseAddRemovingRefusedRows]); returns the
+  /// parsed result, for a caller that needs the created path.
+  Future<UspAddResult> recordAdd(
+      UspClient usp, String step, Map<String, dynamic> raw) async {
+    final result = await parseAddRemovingRefusedRows(usp, raw, tag: _tag);
+    record(step, result);
+    return result;
   }
 
   /// A step whose result said success but left the save unable to go on.

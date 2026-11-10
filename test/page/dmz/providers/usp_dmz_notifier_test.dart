@@ -342,6 +342,31 @@ void main() {
       container.dispose();
     });
 
+    // usp-client 0.14.0 (linksys/usp_framework#114): a refused first save (an
+    // Add) whose row the service could not delete leaves a DMZ row on the
+    // router. The page reads it, so the next save updates it instead of
+    // adding a second DMZ row.
+    test('a save that left a row behind re-reads the router', () async {
+      when(() => mockService.fetch()).thenAnswer((_) async => (
+            const DmzSettings(model: DmzUIModel.disabled()),
+            testStatus,
+          ));
+      when(() => mockService.add(model: any(named: 'model'))).thenThrow(
+          const UspPartialFailureError(
+              summary: 's', successPaths: [], failures: []));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspDmzProvider.notifier);
+      notifier.updateSetting(
+          (m) => m.copyWith(isEnabled: true, destIp: '192.168.1.50'));
+
+      await expectLater(
+          notifier.save(), throwsA(isA<UspPartialFailureError>()));
+      verify(() => mockService.fetch()).called(2);
+      container.dispose();
+    });
+
     test('revert restores original settings', () async {
       when(() => mockService.fetch())
           .thenAnswer((_) async => (testSettings, testStatus));

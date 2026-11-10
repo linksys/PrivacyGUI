@@ -114,6 +114,42 @@ void main() {
       container.dispose();
     });
 
+    // A failed save may have written rows: obuspa commits the rest of a
+    // refused Set (linksys/FWDEV#211), and since usp-client 0.14.0 a refused
+    // Add's row stays when the service cannot delete it. So the dashboard card
+    // is refreshed as well. The page's own re-read is in
+    // usp_dhcp_reservations_refusal_test.dart.
+    test('a failed save refreshes the dashboard card', () async {
+      when(() => mockService.fetchReservations()).thenAnswer((_) async => [r1]);
+      when(() => mockService.saveBatch(
+                original: any(named: 'original'),
+                current: any(named: 'current'),
+              ))
+          .thenThrow(const UspPartialFailureError(
+              summary: 's', successPaths: [], failures: []));
+
+      var dhcpDataInvalidated = false;
+      final container = ProviderContainer(
+        overrides: [
+          uspDhcpServiceProvider.overrideWithValue(mockService),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          dhcpDataProvider.overrideWith(() => _TestDhcpDataNotifier(
+                onInvalidate: () => dhcpDataInvalidated = true,
+              )),
+        ],
+      );
+      container.listen(uspDhcpReservationsProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspDhcpReservationsProvider.notifier);
+      notifier.addReservation(DhcpReservationUIModel(
+          mac: 'AA:BB:CC:DD:EE:03', ip: '192.168.1.102', enable: true));
+
+      await expectLater(
+          notifier.save(), throwsA(isA<UspPartialFailureError>()));
+      expect(dhcpDataInvalidated, isTrue);
+      container.dispose();
+    });
+
     test('addReservation appends to list', () async {
       when(() => mockService.fetchReservations()).thenAnswer((_) async => [r1]);
       final container = createContainer();
@@ -279,6 +315,44 @@ void main() {
             ip: '192.168.1.99',
             enable: true,
           )).called(1);
+      expect(dhcpDataInvalidated, isTrue);
+      container.dispose();
+    });
+
+    // A failed quick add (the card, Reserve IP on a device) may have written
+    // its row: FW keeps the rest of a refused Add (linksys/FWDEV#211), and
+    // since usp-client 0.14.0 a refused row the service could not delete
+    // stays. So the card's data is refreshed before the error.
+    test('a quick add that failed still invalidates dhcpDataProvider',
+        () async {
+      when(() => mockService.fetchReservations()).thenAnswer((_) async => []);
+      when(() => mockService.immediateAdd(
+                mac: any(named: 'mac'),
+                ip: any(named: 'ip'),
+                enable: any(named: 'enable'),
+              ))
+          .thenThrow(const UspPartialFailureError(
+              summary: 's', successPaths: [], failures: []));
+
+      var dhcpDataInvalidated = false;
+      final container = ProviderContainer(
+        overrides: [
+          uspDhcpServiceProvider.overrideWithValue(mockService),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          dhcpDataProvider.overrideWith(() => _TestDhcpDataNotifier(
+                onInvalidate: () => dhcpDataInvalidated = true,
+              )),
+        ],
+      );
+      container.listen(uspDhcpReservationsProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+
+      await expectLater(
+        container
+            .read(uspDhcpReservationsProvider.notifier)
+            .immediateAdd(mac: 'AA:BB:CC:DD:EE:99', ip: '192.168.2.9'),
+        throwsA(isA<UspPartialFailureError>()),
+      );
       expect(dhcpDataInvalidated, isTrue);
       container.dispose();
     });

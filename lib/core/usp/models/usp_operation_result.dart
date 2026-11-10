@@ -64,6 +64,13 @@ final class UspPartialSuccess<T> extends UspOperationResult<T> {
 
   const UspPartialSuccess(this.successes, this.failures);
 
+  /// Every instance the operation created, as [UspSuccess.allCreatedInstances]
+  /// has it. An Add the agent created but refused part of comes back as a
+  /// partial success with its rows here (usp-client 0.14.0).
+  List<UspCreatedInstance> get allCreatedInstances => successes
+      .expand((d) => d.createdInstances ?? <UspCreatedInstance>[])
+      .toList();
+
   /// 錯誤摘要
   String get errorSummary =>
       failures.map((f) => '${f.requestedPath}: ${f.errorMessage}').join('; ');

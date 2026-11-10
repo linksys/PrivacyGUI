@@ -78,8 +78,9 @@ class UspStaticRoutingNotifier
   // ---------------------------------------------------------------------------
 
   /// Checks the list as it will be sent before anything is written: FW refuses
-  /// a duplicate name or a 21st route (FWDEV#213), and a refused Add still
-  /// leaves a broken row behind, so the page is the guard. A failed check
+  /// a duplicate name or a 21st route (FWDEV#213), and a refused Add leaves a
+  /// half-written row the service then has to delete, so the page is the
+  /// guard. A failed check
   /// throws an [InvalidInputError] whose `field` is the
   /// [StaticRoutingErrorKeys] key, and keeps the edits.
   ///

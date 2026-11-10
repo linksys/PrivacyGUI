@@ -521,6 +521,52 @@ void main() {
       verify(() => ptData.fetch()).called(1);
     });
 
+    // usp-client 0.14.0 (linksys/usp_framework#114): a quick add from the
+    // dashboard card whose refused row could not be deleted has written that
+    // row. The card and the dialogs' overlap checks read L1, so it is
+    // refreshed before the error reaches the card.
+    test('a quick add that wrote part of itself refreshes the rule list',
+        () async {
+      stubFetch();
+      final pfData = MockUspPortForwardingDataService();
+      when(() => pfData.fetch()).thenAnswer((_) async => [pf1]);
+      final container = ProviderContainer(overrides: [
+        uspPortForwardingServiceProvider.overrideWithValue(mockService),
+        uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+        uspPortForwardingDataServiceProvider.overrideWithValue(pfData),
+      ]);
+      addTearDown(container.dispose);
+      container.listen(portForwardingDataProvider, (_, __) {});
+      await container.read(portForwardingDataProvider.future);
+      clearInteractions(pfData);
+      when(() => mockService.immediateAddForwarding(
+                externalPort: any(named: 'externalPort'),
+                internalPort: any(named: 'internalPort'),
+                internalClient: any(named: 'internalClient'),
+                protocol: any(named: 'protocol'),
+                description: any(named: 'description'),
+                enabled: any(named: 'enabled'),
+                externalPortEndRange: any(named: 'externalPortEndRange'),
+              ))
+          .thenThrow(const UspPartialFailureError(
+              summary: 's', successPaths: [], failures: []));
+
+      await expectLater(
+        container
+            .read(uspPortForwardingPageProvider.notifier)
+            .immediateAddForwarding(
+              externalPort: 18201,
+              internalPort: 80,
+              internalClient: '192.168.1.1',
+              protocol: 'TCP',
+            ),
+        throwsA(isA<UspPartialFailureError>()),
+      );
+      await container.read(portForwardingDataProvider.future);
+
+      verify(() => pfData.fetch()).called(1);
+    });
+
     // A refused forwarding step used to stop the save there, so the triggering
     // edits in the same Save were never sent, then the re-read wiped them.
     test('a forwarding batch that partly failed still saves the triggering one',

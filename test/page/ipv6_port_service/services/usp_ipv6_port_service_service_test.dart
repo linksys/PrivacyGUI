@@ -8,6 +8,7 @@ import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_m
 import 'package:privacy_gui/page/ipv6_port_service/services/usp_ipv6_port_service_service.dart';
 
 import '../../../mocks/test_data/usp_refusal_test_data.dart';
+import '../../../mocks/test_data/usp_add_refusal_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -755,6 +756,35 @@ void main() {
       await expectReason('ErrorInvalidPort: 70000 is above 65535.',
           UspRefusalReason.invalidPort,
           refusedLeaf: 'DestPortRangeMax');
+    });
+  });
+
+  // usp-client 0.14.0 (linksys/usp_framework#114). Bench 2.0.4: a refused Add
+  // stores the rule with `Target="Drop"`, which the page never lists. It is
+  // deleted, so no hidden Drop rule stays behind holding the name.
+  group('UspIpv6PortServiceService — a refused Add is undone', () {
+    test(
+        'the Drop row is deleted, the save wrote nothing, and the reason '
+        'reaches the page', () async {
+      const row = 'Device.Firewall.Chain.3.Rule.49.';
+      when(() => mockUsp.add(any())).thenAnswer((_) async =>
+          UspAddRefusalTestData.refusedAdd(
+              instances: [row],
+              refusedRow: row,
+              refusedParam: 'Target',
+              message:
+                  'ErrorTooManyRules: at most 15 IPv6 port service rules.'));
+      when(() => mockUsp.delete(any()))
+          .thenAnswer((_) async => UspAddRefusalTestData.accepted);
+
+      await expectLater(
+        service.saveBatch(original: [], current: [_ui(instancePath: null)]),
+        throwsA(allOf(
+          isA<UspCompleteFailureError>(),
+          carriesRefusalReason(UspRefusalReason.tooManyRules),
+        )),
+      );
+      verify(() => mockUsp.delete([row])).called(1);
     });
   });
 }
