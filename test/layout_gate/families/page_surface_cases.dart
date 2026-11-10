@@ -190,6 +190,7 @@ import 'package:ui_kit_library/ui_kit.dart'
         AppBadge,
         AppButton,
         AppCard,
+        AppChartLegendEntry,
         AppDropdown,
         AppExpansionPanel,
         AppIconButton,
@@ -2647,12 +2648,14 @@ final kStaticRoutingPageCase = PageSurfaceCase(
 ///    that belongs to another tab is absent from the element tree, which makes "which
 ///    tab is this" a `find.byType` away. Every other tabbed case in this family states
 ///    its tab in prose; these three assert it, once per cell.
-/// 4. [StatsLegendDot] — the entry that proves the fixture, not the layout. Every
+/// 4. [AppChartLegendEntry] — the entry that proves the fixture, not the layout. Every
 ///    section renders its placeholder *inside* its [StatsSectionCard] (`state.current ==
 ///    null ? Center(waitingForDeviceData) : _buildChart(...)`), so entries 2 and 3
 ///    survive a scene thinned down to placeholders — and a placeholder has no legend
-///    row, which is precisely the widget #1488's 35 red cells lived in. The dot is
-///    rendered only on the populated path, by sections on all three tabs, so requiring
+///    row, which is precisely the widget #1488's 35 red cells lived in. The kit legend
+///    entry (the page's legend since #1324 replaced the hand-rolled dot) is rendered
+///    only on the populated path — by each tab's first section, the one entry 3
+///    names — so requiring
 ///    it turns "someone dropped a provider from `gateStatisticsOverrides()`" from a
 ///    silent narrowing into 234 red cells. `mock_statistics.dart` says which providers
 ///    those are.
@@ -2664,7 +2667,7 @@ final kStatisticsPageCase = PageSurfaceCase(
     UspTopBar,
     StatsSectionCard,
     StatsTrafficMonitorSection,
-    StatsLegendDot,
+    AppChartLegendEntry,
   ],
   forbids: const [AppLoader, ServiceErrorView],
 );
@@ -2726,7 +2729,7 @@ final kStatisticsDevicesPageCase = PageSurfaceCase(
     UspTopBar,
     StatsSectionCard,
     StatsDeviceDistributionSection,
-    StatsLegendDot,
+    AppChartLegendEntry,
   ],
   forbids: const [AppLoader, ServiceErrorView],
 );
@@ -2762,7 +2765,7 @@ final kStatisticsSystemPageCase = PageSurfaceCase(
     UspTopBar,
     StatsSectionCard,
     StatsSystemGaugesSection,
-    StatsLegendDot,
+    AppChartLegendEntry,
   ],
   forbids: const [AppLoader, ServiceErrorView],
 );

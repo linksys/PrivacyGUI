@@ -80,23 +80,17 @@ class StatsDeviceDistributionSection extends ConsumerWidget {
           spacing: AppSpacing.lg,
           runSpacing: AppSpacing.xs,
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                StatsLegendDot(color: colorScheme.primary),
-                AppGap.xs(),
-                AppText.labelSmall(
-                    loc(context).wifiCount(distribution.wifiCount)),
-              ],
+            // Count-bearing labels, so `.statistic` (#1324). No chart series
+            // to echo here, so the mark is the swatch.
+            AppChartLegendEntry.statistic(
+              mark: const ChartMark.swatch(),
+              color: colorScheme.primary,
+              label: loc(context).wifiCount(distribution.wifiCount),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                StatsLegendDot(color: colorScheme.secondary),
-                AppGap.xs(),
-                AppText.labelSmall(
-                    loc(context).wiredCount(distribution.wiredCount)),
-              ],
+            AppChartLegendEntry.statistic(
+              mark: const ChartMark.swatch(),
+              color: colorScheme.secondary,
+              label: loc(context).wiredCount(distribution.wiredCount),
             ),
             AppText.labelSmall(
               loc(context).nOffline(distribution.offlineCount),
