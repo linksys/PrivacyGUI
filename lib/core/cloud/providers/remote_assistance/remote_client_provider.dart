@@ -42,9 +42,22 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
   Timer? _expiredCountdownTimer;
   DeviceCredentials? _credentials;
 
+  /// Bumped when this notifier is disposed, which Riverpod 2 also does before
+  /// it rebuilds this same instance. A poll keeps the value it started under
+  /// and stops once that changes.
+  ///
+  /// Cancelling it is not enough on its own. The session poll is an async*
+  /// generator, which runs on to its next `yield` after its subscription is
+  /// cancelled, so a poll waiting out its interval would read `state` and
+  /// `ref` again. A session-creation tick may be awaiting a fetch when its
+  /// timer is cancelled, and would then write into the next lifetime's state
+  /// and start polls that nothing cancels.
+  int _lifetime = 0;
+
   @override
   RemoteClientState build() {
     ref.onDispose(() {
+      _lifetime++;
       _sessionPollSub?.cancel();
       _sessionCreationPollTimer?.cancel();
       _expiredCountdownTimer?.cancel();
@@ -165,6 +178,7 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
   /// Once a session is found, create PIN and switch to pending state.
   void _startSessionCreationPoll({int intervalSeconds = 5}) {
     _sessionCreationPollTimer?.cancel();
+    final lifetime = _lifetime;
     _sessionCreationPollTimer =
         Timer.periodic(Duration(seconds: intervalSeconds), (_) async {
       final creds = _credsOrNull;
@@ -181,6 +195,7 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
           macAddress: creds.macAddress,
           deviceUUID: creds.deviceUUID,
         );
+        if (lifetime != _lifetime) return;
 
         if (sessions.isNotEmpty) {
           logger.i(
@@ -196,12 +211,14 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
             macAddress: creds.macAddress,
             deviceUUID: creds.deviceUUID,
           );
+          if (lifetime != _lifetime) return;
 
           state = state.copyWith(sessionInfo: () => sessionInfo);
 
           // Create PIN to authorize CA
           logger.i('[RemoteAssistance]: Creating PIN for session');
           await _createPin();
+          if (lifetime != _lifetime) return;
 
           _startExpiredCountdownTimer(sessionInfo);
 
@@ -359,8 +376,11 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
       return;
     }
 
-    // Poll while session is valid (not INVALID) and not expired (expiredIn > 0 means time remaining)
-    while (state.sessionInfo != null &&
+    final lifetime = _lifetime;
+    // Poll while this notifier lives, and while the session is valid (not
+    // INVALID) and not expired (expiredIn > 0 means time remaining).
+    while (lifetime == _lifetime &&
+        state.sessionInfo != null &&
         state.sessionInfo!.status != GRASessionStatus.invalid &&
         state.sessionInfo!.expiredIn > 0) {
       try {
