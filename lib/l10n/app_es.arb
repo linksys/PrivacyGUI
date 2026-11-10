@@ -1128,6 +1128,7 @@
   "trafficMonitor": "Monitor de tráfico",
   "trafficMonitorSubtitle": "Velocidades de subida/descarga WAN en tiempo real",
   "trafficRate": "Tasa de tráfico",
+  "trafficRateBytesPerSec": "Tasa de tráfico (Bytes/s)",
   "trafficTrends": "Tendencias de tráfico",
   "trafficTrendsSubtitle": "Vista de doble eje de Bytes/s y Paquetes/s",
   "trend": "Tendencia",

@@ -1128,6 +1128,7 @@
   "trafficMonitor": "Παρακολούθηση κίνησης",
   "trafficMonitorSubtitle": "Ταχύτητες αποστολής/λήψης WAN σε πραγματικό χρόνο",
   "trafficRate": "Ρυθμός κίνησης",
+  "trafficRateBytesPerSec": "Ρυθμός κίνησης (Byte/s)",
   "trafficTrends": "Τάσεις κίνησης",
   "trafficTrendsSubtitle": "Προβολή διπλού άξονα Byte/s και Πακέτα/s",
   "trend": "Τάση",

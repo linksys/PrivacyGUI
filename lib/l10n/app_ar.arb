@@ -1128,6 +1128,7 @@
   "trafficMonitor": "مراقب حركة المرور",
   "trafficMonitorSubtitle": "سرعات تحميل/تنزيل WAN في الوقت الفعلي",
   "trafficRate": "معدل حركة المرور",
+  "trafficRateBytesPerSec": "معدل حركة المرور (بايت/ث)",
   "trafficTrends": "اتجاهات حركة المرور",
   "trafficTrendsSubtitle": "عرض ثنائي المحور لـ بايت/ث وحِزم/ث",
   "trend": "الاتجاه",

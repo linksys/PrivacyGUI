@@ -1128,6 +1128,7 @@
   "trafficMonitor": "Giám sát lưu lượng",
   "trafficMonitorSubtitle": "Tốc độ tải lên/tải xuống WAN thời gian thực",
   "trafficRate": "Tốc độ lưu lượng",
+  "trafficRateBytesPerSec": "Tốc độ lưu lượng (Byte/giây)",
   "trafficTrends": "Xu hướng lưu lượng",
   "trafficTrendsSubtitle": "Chế độ xem hai trục Byte/giây và Gói/giây",
   "trend": "Xu hướng",

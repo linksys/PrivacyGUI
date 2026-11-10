@@ -1128,6 +1128,7 @@
   "trafficMonitor": "Liikennemonitori",
   "trafficMonitorSubtitle": "Reaaliaikaiset WAN-lähetys-/latausnopeudet",
   "trafficRate": "Liikenteen nopeus",
+  "trafficRateBytesPerSec": "Liikenteen nopeus (tavua/s)",
   "trafficTrends": "Liikennetrendit",
   "trafficTrendsSubtitle": "Tavua/s ja pak./s kaksiakselinen näkymä",
   "trend": "Trendi",

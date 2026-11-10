@@ -51,37 +51,27 @@ class StatsConnectionTrendsSection extends ConsumerWidget {
             (s) => s.hour.hour % 3 == 0 ? '${s.hour.hour}'.padLeft(2, '0') : '')
         .toList();
 
+    final series = [
+      AppChartSeries(
+          label: loc(context).wifi, data: wifiData, color: colorScheme.primary),
+      AppChartSeries(
+          label: loc(context).wired,
+          data: wiredData,
+          color: colorScheme.secondary),
+    ];
+
     return Column(
       children: [
         Expanded(
           child: AppBarChart(
-            series: [
-              AppChartSeries(
-                  label: loc(context).wifi,
-                  data: wifiData,
-                  color: colorScheme.primary),
-              AppChartSeries(
-                  label: loc(context).wired,
-                  data: wiredData,
-                  color: colorScheme.secondary),
-            ],
+            series: series,
             stacked: true,
             xLabels: xLabels,
           ),
         ),
         AppGap.sm(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            StatsLegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).wifi),
-            AppGap.lg(),
-            StatsLegendDot(color: colorScheme.secondary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).wired),
-          ],
-        ),
+        // The legend is derived from the same list the chart drew (#1324).
+        AppChartLegend.bar(series: series),
       ],
     );
   }

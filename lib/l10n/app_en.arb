@@ -613,6 +613,10 @@
   "trafficMonitor": "Traffic Monitor",
   "trafficMonitorSubtitle": "Real-time WAN upload/download speeds",
   "trafficRate": "Traffic rate",
+  "trafficRateBytesPerSec": "Traffic rate (Bytes/s)",
+  "@trafficRateBytesPerSec": {
+    "description": "Legend label of a traffic-rate series drawn against a secondary (right-hand) axis; names the unit so it is not read on the left axis scale (#1324)."
+  },
   "trafficTrends": "Traffic Trends",
   "trafficTrendsSubtitle": "Bytes/s and Packets/s dual-axis view",
   "trend": "Trend",

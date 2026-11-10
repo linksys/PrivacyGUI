@@ -1128,6 +1128,7 @@
   "trafficMonitor": "Monitor Lalu Lintas",
   "trafficMonitorSubtitle": "Kecepatan unggah/unduh WAN waktu nyata",
   "trafficRate": "Laju lalu lintas",
+  "trafficRateBytesPerSec": "Laju lalu lintas (Byte/d)",
   "trafficTrends": "Tren Lalu Lintas",
   "trafficTrendsSubtitle": "Tampilan dua sumbu Byte/d dan Paket/d",
   "trend": "Tren",

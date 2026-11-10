@@ -1128,6 +1128,7 @@
   "trafficMonitor": "トラフィックモニター",
   "trafficMonitorSubtitle": "リアルタイムの WAN アップロード/ダウンロード速度",
   "trafficRate": "トラフィックレート",
+  "trafficRateBytesPerSec": "トラフィックレート (バイト/秒)",
   "trafficTrends": "トラフィックの傾向",
   "trafficTrendsSubtitle": "バイト/秒とパケット/秒の2軸ビュー",
   "trend": "傾向",
