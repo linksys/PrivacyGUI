@@ -1301,5 +1301,8 @@
   "macWillBeAddedAs": "Будет добавлен как {mac}",
   "valueOutOfRange": "Значение должно быть от {min} до {max}",
   "maxCharacters": "Не более {max} символов",
-  "invalidSubnetMask": "Недопустимая маска подсети"
+  "invalidSubnetMask": "Недопустимая маска подсети",
+  "reservationNameHint": "Имя (необязательно)",
+  "reservationNameInvalid": "Используйте буквы, цифры и -, без - в начале или в конце",
+  "reservationNameInUse": "Это имя уже используется другим резервированием"
 }

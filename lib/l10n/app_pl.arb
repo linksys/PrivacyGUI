@@ -1301,5 +1301,8 @@
   "macWillBeAddedAs": "Zostanie dodany jako {mac}",
   "valueOutOfRange": "Wartość musi mieścić się w zakresie {min}–{max}",
   "maxCharacters": "Maksymalnie {max} znaków",
-  "invalidSubnetMask": "Nieprawidłowa maska podsieci"
+  "invalidSubnetMask": "Nieprawidłowa maska podsieci",
+  "reservationNameHint": "Nazwa (opcjonalnie)",
+  "reservationNameInvalid": "Użyj liter, cyfr i -, bez - na początku ani na końcu",
+  "reservationNameInUse": "Inna rezerwacja ma już tę nazwę"
 }

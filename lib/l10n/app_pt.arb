@@ -1301,5 +1301,8 @@
   "macWillBeAddedAs": "Será adicionado como {mac}",
   "valueOutOfRange": "Deve estar entre {min} e {max}",
   "maxCharacters": "No máximo {max} caracteres",
-  "invalidSubnetMask": "Máscara de sub-rede inválida"
+  "invalidSubnetMask": "Máscara de sub-rede inválida",
+  "reservationNameHint": "Nome (opcional)",
+  "reservationNameInvalid": "Use letras, números e -, sem - no início ou no fim",
+  "reservationNameInUse": "Outra reserva já tem este nome"
 }

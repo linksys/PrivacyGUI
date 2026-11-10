@@ -1301,5 +1301,8 @@
   "macWillBeAddedAs": "Lisätään muodossa {mac}",
   "valueOutOfRange": "Arvon on oltava välillä {min}–{max}",
   "maxCharacters": "Enintään {max} merkkiä",
-  "invalidSubnetMask": "Virheellinen aliverkon peite"
+  "invalidSubnetMask": "Virheellinen aliverkon peite",
+  "reservationNameHint": "Nimi (valinnainen)",
+  "reservationNameInvalid": "Käytä kirjaimia, numeroita ja -, ei - alussa tai lopussa",
+  "reservationNameInUse": "Toisella varauksella on jo tämä nimi"
 }

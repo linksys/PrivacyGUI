@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/dhcp/models/dhcp_reservation_list.dart';
@@ -75,6 +76,31 @@ class UspDhcpReservationsNotifier
   }
 
   // ---------------------------------------------------------------------------
+  // save — re-read the router after a refused save
+  // ---------------------------------------------------------------------------
+
+  /// A save that failed re-reads the router and puts the page on what it
+  /// holds, when that differs from what the page last read: FW refuses a value
+  /// by name (linksys/FWDEV#211) but obuspa still commits the rest of the same
+  /// Set, and an Add or Delete earlier in the batch may have landed. The error
+  /// still reaches the page. A save that wrote nothing keeps the user's edits
+  /// for a retry.
+  @override
+  Future<DhcpReservationsFeatureState> save() async {
+    try {
+      return await super.save();
+    } on ServiceError {
+      final (router, _) = await performFetch(forceRemote: true);
+      if (router != null && router != state.settings.original) {
+        state = state.copyWith(
+          settings: Preservable(original: router, current: router),
+        );
+      }
+      rethrow;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // performSave — diff original vs current, batch API calls
   // ---------------------------------------------------------------------------
 
@@ -129,17 +155,22 @@ class UspDhcpReservationsNotifier
   }
 
   /// Add a reservation immediately (writes to router).
+  ///
+  /// A failed Add still re-reads the dashboard's reservations: FW may have
+  /// refused one value of the Add (linksys/FWDEV#211) and kept the rest.
   Future<void> immediateAdd({
     required String mac,
     required String ip,
     bool enable = true,
+    String name = '',
   }) async {
     try {
       await ref.read(uspMutationLockProvider).withLock(() async {
-        await _svc.immediateAdd(mac: mac, ip: ip, enable: enable);
+        await _svc.immediateAdd(mac: mac, ip: ip, enable: enable, name: name);
       });
     } on ServiceError catch (e) {
       logger.e('[USP][DHCP]: Immediate add failed', error: e);
+      ref.invalidate(dhcpDataProvider);
       rethrow;
     }
     ref.invalidate(dhcpDataProvider);

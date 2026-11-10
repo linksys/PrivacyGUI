@@ -1301,5 +1301,8 @@
   "macWillBeAddedAs": "จะถูกเพิ่มเป็น {mac}",
   "valueOutOfRange": "ต้องอยู่ระหว่าง {min} ถึง {max}",
   "maxCharacters": "ไม่เกิน {max} อักขระ",
-  "invalidSubnetMask": "ซับเน็ตมาสก์ไม่ถูกต้อง"
+  "invalidSubnetMask": "ซับเน็ตมาสก์ไม่ถูกต้อง",
+  "reservationNameHint": "ชื่อ (ไม่บังคับ)",
+  "reservationNameInvalid": "ใช้ตัวอักษร ตัวเลข และ - โดยไม่ขึ้นต้นหรือลงท้ายด้วย -",
+  "reservationNameInUse": "มีการสำรองอื่นใช้ชื่อนี้แล้ว"
 }

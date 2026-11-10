@@ -1301,5 +1301,8 @@
   "macWillBeAddedAs": "Legges til som {mac}",
   "valueOutOfRange": "Må være mellom {min} og {max}",
   "maxCharacters": "Maks. {max} tegn",
-  "invalidSubnetMask": "Ugyldig nettverksmaske"
+  "invalidSubnetMask": "Ugyldig nettverksmaske",
+  "reservationNameHint": "Navn (valgfritt)",
+  "reservationNameInvalid": "Bruk bokstaver, sifre og -, uten - først eller sist",
+  "reservationNameInUse": "En annen reservasjon har allerede dette navnet"
 }

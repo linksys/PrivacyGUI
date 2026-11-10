@@ -35,12 +35,41 @@ class UspDhcpService {
                 mac: r.chaddr,
                 ip: r.yiaddr,
                 enable: r.enable,
+                name: r.name ?? '',
               ))
           .toList();
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
   }
+
+  /// The name to write for a reservation, or null to leave the leaf out.
+  ///
+  /// `''` is never sent: dhcpmngr counts it as a name in its uniqueness check
+  /// (linksys/feed_usp#54, usp_framework#89), so it is refused on every Add,
+  /// and on a Set whenever another reservation has no name either.
+  static String? _nameToSend(String name) => name.isEmpty ? null : name;
+
+  /// A refusal that carries one of dhcpmngr's messages, as an
+  /// [InvalidInputError] whose `field` is that message, so the page can show
+  /// the check FW applied. Null for any other failure.
+  static InvalidInputError? _refusalOf(List<UspErrorDetail> failures) {
+    final refusal = refusalNameIn(failures, DhcpReservationRefusalNames.all);
+    if (refusal == null) return null;
+    return InvalidInputError(
+      field: refusal.name,
+      code: refusal.detail.errorCode,
+      detail: refusal.detail.errorMessage,
+    );
+  }
+
+  /// [error], or the named refusal it carries ([_refusalOf]).
+  static ServiceError _named(ServiceError error) => switch (error) {
+        UspCompleteFailureError(:final failures) ||
+        UspPartialFailureError(:final failures) =>
+          _refusalOf(failures) ?? error,
+        _ => error,
+      };
 
   /// The LAN pool's reservation table, or null when the router lists none.
   static DhcpReservationPool? _lanPool(DhcpReservations reservations) =>
@@ -98,6 +127,7 @@ class UspDhcpService {
     required String mac,
     required String ip,
     bool enable = true,
+    String name = '',
   }) async {
     try {
       final result = await DhcpReservations.addStaticAddresses(_usp, [
@@ -106,6 +136,7 @@ class UspDhcpService {
           enable: enable,
           chaddr: mac,
           yiaddr: ip,
+          name: _nameToSend(name),
         ),
       ]);
       final parsed = UspResultParser.parseAddResult(result);
@@ -129,7 +160,7 @@ class UspDhcpService {
           );
       }
     } catch (e) {
-      if (e is ServiceError) rethrow;
+      if (e is ServiceError) throw _named(e);
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -172,7 +203,9 @@ class UspDhcpService {
   /// Batch save: diff original vs current, execute delete/add/update.
   ///
   /// Lenient mode: partial success is acceptable for batch operations,
-  /// only log warnings. Complete failure still throws.
+  /// only log warnings. Complete failure still throws. A failure carrying one
+  /// of dhcpmngr's messages ([DhcpReservationRefusalNames], linksys/FWDEV#211)
+  /// always throws, as an [InvalidInputError] whose `field` is that message.
   Future<({int added, int updated, int deleted})> saveBatch({
     required List<DhcpReservationUIModel> original,
     required List<DhcpReservationUIModel> current,
@@ -220,6 +253,7 @@ class UspDhcpService {
                     enable: r.enable,
                     chaddr: r.mac,
                     yiaddr: r.ip,
+                    name: _nameToSend(r.name),
                   ))
               .toList(),
         );
@@ -228,6 +262,9 @@ class UspDhcpService {
           case UspSuccess():
             break;
           case UspPartialSuccess(:final successes, :final failures):
+            // A value FW refused by name is shown, whatever else landed.
+            final refusal = _refusalOf(failures);
+            if (refusal != null) throw refusal;
             logger.w(
                 '[DHCP]: Batch add partial: ${successes.length} ok, ${failures.length} failed');
             break;
@@ -256,6 +293,9 @@ class UspDhcpService {
             enable: cur.enable,
             chaddr: cur.mac,
             yiaddr: cur.ip,
+            // Only a changed, non-empty name: an unchanged one is not
+            // re-checked against FW's uniqueness rule, and '' is never sent.
+            name: cur.name == orig.name ? null : _nameToSend(cur.name),
           ));
         }
       }
@@ -268,6 +308,9 @@ class UspDhcpService {
           case UspSuccess():
             break;
           case UspPartialSuccess(:final successes, :final failures):
+            // A value FW refused by name is shown, whatever else landed.
+            final refusal = _refusalOf(failures);
+            if (refusal != null) throw refusal;
             logger.w(
                 '[DHCP]: Batch update partial: ${successes.length} ok, ${failures.length} failed');
             break;
@@ -285,7 +328,7 @@ class UspDhcpService {
         deleted: toDelete.length,
       );
     } catch (e) {
-      if (e is ServiceError) rethrow;
+      if (e is ServiceError) throw _named(e);
       throw mapUspErrorToServiceError(e);
     }
   }
