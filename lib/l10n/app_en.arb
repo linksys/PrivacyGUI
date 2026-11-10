@@ -632,6 +632,7 @@
   "udp": "UDP",
   "unknownError": "Unknown error",
   "unknownErrorCode": "Unknown error: {code}",
+  "unsavedChangesBeforeOpeningDesc": "Save or discard your changes before you continue.",
   "unsavedChangesDesc": "Navigating away from this page will discard any inputs.",
   "unsavedChangesTitle": "You have unsaved changes on this page",
   "upToDate": "Up to date",

@@ -75,6 +75,27 @@ LocalNetworkFeatureState dirtyState({bool isSaving = false}) {
   );
 }
 
+/// Unsaved DHCP fields only (lease time, DNS): the router's IP and mask are as
+/// saved, so the page's Save asks nothing and the LAN stays up (#1433).
+LocalNetworkFeatureState dirtyDhcpOnlyState() => _dirtyFrom(
+      dhcpEnabledModel.copyWith(leaseTimeMinutes: 720, dnsServer1: '1.1.1.1'),
+    );
+
+/// An unsaved subnet mask only: Save asks first, and the router restarts the
+/// LAN afterwards, but the IP and so the page's address stay (#1433, #1729).
+LocalNetworkFeatureState dirtySubnetMaskOnlyState() => _dirtyFrom(
+      dhcpEnabledModel.copyWith(subnetMask: '255.255.0.0'),
+    );
+
+LocalNetworkFeatureState _dirtyFrom(LocalNetworkUIModel current) =>
+    LocalNetworkFeatureState(
+      settings: Preservable(
+        original: const LocalNetworkSettings(model: dhcpEnabledModel),
+        current: LocalNetworkSettings(model: current),
+      ),
+      status: const LocalNetworkStatus(isLoading: false, lockedOctetCount: 3),
+    );
+
 LocalNetworkFeatureState get errorState => LocalNetworkFeatureState(
       settings: Preservable(
         original: const LocalNetworkSettings.empty(),
