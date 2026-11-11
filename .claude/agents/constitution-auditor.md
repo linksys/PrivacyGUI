@@ -58,7 +58,8 @@ grep -rn "class.*extends StatelessWidget" lib/page/*/views/   # inspect for cust
 
 ### E. Naming conventions (Article III) — usually LOW/MEDIUM
 - Files: `snake_case`, singular folder-noun files (`*_service.dart`, `*_provider.dart`, `*_state.dart`)
-- Classes: `[Feature]Service`, `[Feature]Notifier`, `[Feature]State`, `*UIModel`, `Mock[Class]`
+- Classes: `[Feature]Service`, `[Feature]Notifier`, `[Feature]State`, `*UIModel`, `Mock[Class]` — `*UIModel` binds only the presentation models §3.3.4 defines; layout, geometry, config and registry classes in `models/` are exempt
+- Test groups: no class prefix required (§3.6.2) — do not flag a group for lacking `[ClassName] - `
 - Providers: `lowerCamelCase` ending in `Provider`
 - Test cases: no numbering (no `TC001`, `Test case 1`)
 ```bash
