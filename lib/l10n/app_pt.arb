@@ -380,6 +380,7 @@
   "udp": "UDP",
   "unknownError": "Erro desconhecido",
   "unknownErrorCode": "Erro desconhecido: {code}",
+  "unsavedChangesBeforeOpeningDesc": "Salve ou descarte suas alterações antes de continuar.",
   "unsavedChangesDesc": "Se você sair desta página, todas as entradas serão descartadas.",
   "unsavedChangesTitle": "Existem alterações não salvas nesta página",
   "upToDate": "Atualizado",

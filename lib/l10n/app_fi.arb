@@ -378,6 +378,7 @@
   "udp": "UDP",
   "unknownError": "Tuntematon virhe",
   "unknownErrorCode": "Tuntematon virhe: {code}",
+  "unsavedChangesBeforeOpeningDesc": "Tallenna tai hylkää muutokset ennen kuin jatkat.",
   "unsavedChangesDesc": "Tältä sivulta poistuminen hylkää kaikki syötteet.",
   "unsavedChangesTitle": "Sivulla on tallentamattomia muutoksia",
   "upToDate": "Ajan tasalla",

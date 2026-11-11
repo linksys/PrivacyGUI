@@ -381,6 +381,7 @@
   "udp": "UDP",
   "unknownError": "خطأ غير معروف",
   "unknownErrorCode": "خطأ غير معروف: {code}",
+  "unsavedChangesBeforeOpeningDesc": "احفظ التغييرات أو تجاهلها قبل المتابعة.",
   "unsavedChangesDesc": "سيؤدي الانتقال بعيدًا عن هذه الصفحة إلى تجاهل أي مدخلات.",
   "unsavedChangesTitle": "لديك تغييرات لم يتم حفظها في هذه الصفحة",
   "upToDate": "محدَّث حتى تاريخه",

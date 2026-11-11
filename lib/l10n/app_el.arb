@@ -378,6 +378,7 @@
   "udp": "UDP",
   "unknownError": "Άγνωστο σφάλμα",
   "unknownErrorCode": "Άγνωστο σφάλμα: {code}",
+  "unsavedChangesBeforeOpeningDesc": "Αποθηκεύστε ή απορρίψτε τις αλλαγές σας πριν συνεχίσετε.",
   "unsavedChangesDesc": "Η πλοήγηση μακριά από αυτήν τη σελίδα θα απορρίψει τυχόν καταχωρίσεις.",
   "unsavedChangesTitle": "Έχετε μη αποθηκευμένες αλλαγές σε αυτήν τη σελίδα",
   "upToDate": "Ενημερωμένο",

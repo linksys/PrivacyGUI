@@ -378,6 +378,7 @@
   "udp": "UDP",
   "unknownError": "Nieznany błąd",
   "unknownErrorCode": "Nieznany błąd: {code}",
+  "unsavedChangesBeforeOpeningDesc": "Zapisz lub odrzuć zmiany, zanim przejdziesz dalej.",
   "unsavedChangesDesc": "Opuszczenie tej strony spowoduje odrzucenie wszystkich wprowadzonych danych.",
   "unsavedChangesTitle": "Na tej stronie znajdują się niezapisane zmiany",
   "upToDate": "Aktualne",

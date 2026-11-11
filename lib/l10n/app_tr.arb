@@ -378,6 +378,7 @@
   "udp": "UDP",
   "unknownError": "Bilinmeyen hata",
   "unknownErrorCode": "Bilinmeyen hata: {code}",
+  "unsavedChangesBeforeOpeningDesc": "Devam etmeden önce değişikliklerinizi kaydedin veya atın.",
   "unsavedChangesDesc": "Bu sayfadan ayrılmak tüm girişleri atacaktır.",
   "unsavedChangesTitle": "Bu sayfada kaydedilmemiş değişiklikleriniz var",
   "upToDate": "Güncelle",

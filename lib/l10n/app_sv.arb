@@ -380,6 +380,7 @@
   "udp": "UDP",
   "unknownError": "Okänt fel",
   "unknownErrorCode": "Okänt fel: {code}",
+  "unsavedChangesBeforeOpeningDesc": "Spara eller ta bort dina ändringar innan du fortsätter.",
   "unsavedChangesDesc": "Om du lämnar denna sida kommer alla poster att kasseras.",
   "unsavedChangesTitle": "Du har osparade ändringar på den här sidan",
   "upToDate": "Uppdaterad",

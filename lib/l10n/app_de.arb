@@ -380,6 +380,7 @@
   "udp": "UDP",
   "unknownError": "Unbekannter Fehler",
   "unknownErrorCode": "Unbekannter Fehler: {code}",
+  "unsavedChangesBeforeOpeningDesc": "Speichern oder verwerfen Sie Ihre Änderungen, bevor Sie fortfahren.",
   "unsavedChangesDesc": "Wenn Sie diese Seite verlassen, werden alle Eingaben verworfen.",
   "unsavedChangesTitle": "Sie haben die Änderungen auf dieser Seite nicht gespeichert",
   "upToDate": "Aktuell",

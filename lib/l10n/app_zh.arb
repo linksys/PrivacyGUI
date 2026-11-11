@@ -381,6 +381,7 @@
   "udp": "UDP",
   "unknownError": "未知错误",
   "unknownErrorCode": "未知错误：{code}",
+  "unsavedChangesBeforeOpeningDesc": "继续之前，请保存或放弃更改。",
   "unsavedChangesDesc": "离开此页面将放弃所有输入内容。",
   "unsavedChangesTitle": "此页上有未保存的更改",
   "upToDate": "已为最新版本",

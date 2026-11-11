@@ -380,6 +380,7 @@
   "udp": "UDP",
   "unknownError": "Errore sconosciuto",
   "unknownErrorCode": "Errore sconosciuto: {code}",
+  "unsavedChangesBeforeOpeningDesc": "Salva o annulla le modifiche prima di continuare.",
   "unsavedChangesDesc": "Se si lascia questa pagina, qualsiasi iscrizione verrà scartata.",
   "unsavedChangesTitle": "Alcune modifiche non sono state salvate in questa pagina",
   "upToDate": "Aggiornato",

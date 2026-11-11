@@ -378,6 +378,7 @@
   "udp": "UDP",
   "unknownError": "Kesalahan tidak dikenal",
   "unknownErrorCode": "Kesalahan tidak dikenal: {code}",
+  "unsavedChangesBeforeOpeningDesc": "Simpan atau buang perubahan Anda sebelum melanjutkan.",
   "unsavedChangesDesc": "Menavigasi keluar dari halaman ini akan membuang semua input.",
   "unsavedChangesTitle": "Ada perubahan yang belum Anda simpan pada laman ini",
   "upToDate": "Mutakhir",

@@ -29,6 +29,17 @@ void main() {
             await tester.pump(const Duration(milliseconds: 300));
           },
         ),
+        // The prompt one editable page raises before it opens another
+        // (#1433): Firewall -> IPv6 Port Service, Local Network -> DHCP
+        // Reservations. Three actions, so the row stacks in most locales.
+        'unsaved_before_opening_dialog': Interaction(
+          setup: (overrides) {},
+          steps: (tester) async {
+            final context = tester.element(find.byType(Scaffold));
+            showUnsavedBeforeOpeningAlert(context, canSave: true);
+            await pumpOverlayIn(tester);
+          },
+        ),
         // Through `doSomethingWithSpinner` itself, not `showAppSpinnerDialog`
         // (#905). The lower-level call defaults to no messages, so this golden
         // used to show a spinner no user sees: every one of the 18 call sites
