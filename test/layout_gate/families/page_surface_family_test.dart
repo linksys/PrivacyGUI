@@ -97,9 +97,10 @@ void main() {
     expect(kAutoIPoEPageCase.forbids, contains(AppLoader));
   });
 
-  // "Cases" and not "pages", corrected by #1489: this list is sixty-eight cases over
-  // forty-seven pages, because six of those pages are swept more than once. The two
-  // counts were equal for the whole of #1369 and the group title read "pages"
+  // "Cases" and not "pages", corrected by #1489: this list is seventy-three cases over
+  // fifty pages (recounted at #641's merge), because several of those pages are swept
+  // more than once. The two counts were equal for the whole of #1369 and the group
+  // title read "pages"
   // throughout, which is exactly the kind of coincidence a name should not be built on
   // — `kPageViewCount` is 52, a third quantity again (page view *files*, which no case
   // can move), and it is equal to neither.
@@ -142,8 +143,8 @@ void main() {
   // an assertion that does not read it is the failure mode, and copying it to a fifth
   // place is how it becomes hard to notice.
   group(
-      'the gate declares sixty-eight cases over forty-seven pages, and which '
-      'sixty-eight is a decision', () {
+      'the gate declares seventy-three cases over fifty pages, and which '
+      'seventy-three is a decision', () {
     test(
         'kPageSurfaceCases holds the pilot two, wave 1\'s five, wave 2\'s nine, '
         'wave 3\'s six, wave 4\'s twenty-one, #1489\'s five non-default tabs, '
@@ -230,6 +231,9 @@ void main() {
           'admin',
           'apps',
           'dmz',
+          // #1775: the same page with the DMZ host given by MAC, beside its
+          // sibling as `ipv6_port_service_full` is.
+          'dmz_mac',
           'firewall',
           'instant_privacy',
           'instant_safety',
@@ -447,6 +451,10 @@ void main() {
         // `RuleLimitNote` row appears under the Rules header. No `sharesTabWith`,
         // as `firmware_failed` has none. 67 cases, still 45 swept pages of 47
         // page-view files.
+        //
+        // **#1775's one, the same shape.** DMZ with the host given by MAC, the
+        // second option of the destination card's new radio list. 68 cases on
+        // its branch.
         reason: 'a wave adds pages to this list on purpose, so a mismatch is '
             'either a wave that has not updated its own checkpoint or a page '
             'that left the gate without one. Read the comment above before '

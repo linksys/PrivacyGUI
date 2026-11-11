@@ -471,6 +471,12 @@ void main() {
     expectedCellCount: 234,
   );
 
+  // The same page with the DMZ host given by MAC (#1775).
+  runOverflowSweep(
+    family: PageSurfaceFamily(kDmzMacPageCase),
+    expectedCellCount: 234,
+  );
+
   // Advanced Settings → DDNS (#641): the provider card and the status card; see
   // `kDdnsPageCase`.
   runOverflowSweep(

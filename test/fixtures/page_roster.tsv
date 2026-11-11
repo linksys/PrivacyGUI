@@ -474,6 +474,22 @@
 # second-state same direction as #1611. Cost to the gate: about 234 x 27ms, ~6s on one lane.
 # second-state PREFIX CONSEQUENCE, the fourth time: 'page.ipv6_port_service' runs both groups; use
 # second-state 'page.ipv6_port_service screen_px' for the default case alone.
+# second-state
+# second-state A SECOND CASE ON A PAGE WITH NO TABS, FOR THE SAME ROW (#1775, 2026-11-09).
+# second-state usp_dmz_view.dart now carries two cases: kDmzPageCase and kDmzMacPageCase, the DMZ host
+# second-state given by MAC (FWDEV#204's X_LINKSYS_DestMACAddress), the second option of the radio list
+# second-state that replaced the destination card's AppIpv4TextField. The same widget types as its
+# second-state sibling, and more text. Figures on this column's basis (--plain-name 'page.dmz',
+# second-state --reporter json, nine coordinate tests summed / 234, three runs, median), the default case
+# second-state measured in the same runs as control:
+# second-state
+# second-state   usp_dmz_view.dart   row 32.3   mac  18.4 (18.0 / 19.0 / 18.4)  ctl 25.8
+# second-state
+# second-state 0.7x its control, on two trees of the same size. The control runs first in file order;
+# second-state whether that is the difference was not measured. The row over-projects both. Cost to the
+# second-state gate: about 234 x 18ms, ~4s on one lane.
+# second-state PREFIX CONSEQUENCE, the fifth time: 'page.dmz' runs both groups; use
+# second-state 'page.dmz screen_px' for the default case alone.
 # added PnpIPoEView (#1664): supported-ready settings fixture, 234 cells, 2026-10-08.
 # Auto-IPoE moved to PnP; capability-backed ready state is exercised by page.pnp_ipoe:
 # added ms/cell 35.3 / 35.6 / 35.0; median 35.3. The PnP ready fixture has no log widget.

@@ -103,9 +103,12 @@ class UspStaticRoutingService {
   /// names becomes an [InvalidInputError] whose `field` is that name, so the
   /// page can say which check FW applied.
   ///
-  /// The page checks every value FW refuses before it saves: a refused Add
-  /// reaches the app as a success and leaves a row without the refused leaf
-  /// (bench 2026-10-21), so only a Set is ever seen to fail here.
+  /// The page checks every value FW refuses before it saves, so a refusal here
+  /// is one the page did not foresee. Since usp-client 0.14.0
+  /// (linksys/usp_framework#114) that can be an Add as well: the router keeps
+  /// the row without the refused leaf, so [BatchTally.recordAdd] deletes it and
+  /// records the Add as failed. Before 0.14.0 a refused Add read as a success
+  /// (bench 2026-10-21).
   Future<({int added, int updated, int deleted})> saveBatch({
     required List<StaticRouteUIModel> original,
     required List<StaticRouteUIModel> current,
@@ -184,7 +187,7 @@ class UspStaticRoutingService {
       // 3. Add (instancePath == null → new)
       if (adds.isNotEmpty) {
         final result = await StaticRouting.addForwardings(_usp, adds);
-        tally.record('Add', UspResultParser.parseAddResult(result));
+        await tally.recordAdd(_usp, 'Add', result);
         tally.throwIfAnyFailed();
       }
 

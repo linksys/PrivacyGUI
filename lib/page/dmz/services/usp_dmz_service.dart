@@ -9,6 +9,8 @@ import 'package:privacy_gui/page/dmz/models/dmz_settings.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_status.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/util/network_utils.dart';
+import 'package:privacy_gui/page/_shared/services/refused_add_service.dart';
+import 'package:privacy_gui/validator_rules/rules.dart';
 
 final uspDmzServiceProvider = Provider<UspDmzService>(
   (ref) => UspDmzService(ref.read(uspClientProvider)!),
@@ -55,18 +57,24 @@ class UspDmzService {
       final sourcePrefix = model.sourceType == DmzSourceType.any
           ? '0.0.0.0/0'
           : model.sourcePrefix;
+      // Only the leaf that names the host: the new row has neither set, and
+      // FWDEV#204 refuses a row with both.
       final result = await Dmz.add(
         _usp,
         [
           {
             'Enable': true,
-            'DestIP': model.destIp,
+            if (model.destinationType == DmzDestinationType.ip)
+              'DestIP': model.destIp
+            else
+              'X_LINKSYS_DestMACAddress': _wireMac(model.destMac),
             'SourcePrefix': sourcePrefix,
             'Description': 'DMZ',
           }
         ],
       );
-      final parsed = UspResultParser.parseAddResult(result);
+      final parsed = await parseAddRemovingRefusedRows(_usp, result,
+          tag: '[USP][Firewall][DMZ]');
       switch (parsed) {
         case UspSuccess():
           break;
@@ -93,48 +101,90 @@ class UspDmzService {
   }
 
   /// Update an existing DMZ entry.
+  ///
+  /// [savedType] is how the router holds the host now. When [model] gives it
+  /// the other way, the Set clears the router's leaf before it writes the new
+  /// one (FWDEV#204: only one of `DestIP` and `X_LINKSYS_DestMACAddress` may
+  /// be set, and the checks run per leaf in write order). The clear is the
+  /// first of two updates of the one instance, so the generated params put it
+  /// first; the order reaches the router as sent. Bench, 2.0.4.26103108
+  /// (2026-11-09): this order is accepted both ways in one ~7.5 s Set, and the
+  /// other order is refused.
+  ///
+  /// A refused switch throws [UspPartialFailureError]: FW keeps the leaves it
+  /// did not refuse (measured), so the clear may have landed and the router
+  /// may hold no host. The page reads the router again.
   Future<void> update({
     required String instancePath,
+    required DmzDestinationType savedType,
     required DmzUIModel model,
   }) async {
     try {
+      final byIp = model.destinationType == DmzDestinationType.ip;
+      final switching = model.destinationType != savedType;
       final sourcePrefix = model.sourceType == DmzSourceType.any
           ? '0.0.0.0/0'
           : model.sourcePrefix;
-      final result = await Dmz.update(
-        _usp,
-        [
-          DmzEntryUpdate(
-            instancePath: instancePath,
-            enable: model.isEnabled,
-            destIp: model.destIp,
-            sourcePrefix: sourcePrefix,
-          )
-        ],
-      );
-      final parsed = UspResultParser.parseSetResult(result);
-      switch (parsed) {
-        case UspSuccess():
-          break;
-        case UspPartialSuccess(
-            :final errorSummary,
-            :final successes,
-            :final failures
-          ):
-          throw UspPartialFailureError(
-            summary: 'DMZ update partial failure: $errorSummary',
-            successPaths: successes.map((s) => s.requestedPath).toList(),
-            failures: failures,
-          );
-        case UspFailure(:final errorSummary, :final errors):
-          throw UspCompleteFailureError(
-            summary: 'DMZ update failed: $errorSummary',
-            failures: errors,
-          );
+      try {
+        await _setOnce(
+          [
+            if (switching)
+              DmzEntryUpdate(
+                instancePath: instancePath,
+                destIp: byIp ? null : '',
+                destMacAddress: byIp ? '' : null,
+              ),
+            DmzEntryUpdate(
+              instancePath: instancePath,
+              enable: model.isEnabled,
+              destIp: byIp ? model.destIp : null,
+              destMacAddress: byIp ? null : _wireMac(model.destMac),
+              sourcePrefix: sourcePrefix,
+            ),
+          ],
+          summaryPrefix: 'DMZ update',
+        );
+      } on UspCompleteFailureError catch (e) {
+        if (!switching) rethrow;
+        throw UspPartialFailureError(
+          summary: 'DMZ switch from ${savedType.name} refused, the router may '
+              'hold no host: ${e.summary}',
+          successPaths: const [],
+          failures: e.failures,
+        );
       }
     } catch (e) {
       if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  /// One Set of [entries], their params in list order; any refusal throws,
+  /// with the router's failures.
+  Future<void> _setOnce(
+    List<DmzEntryUpdate> entries, {
+    required String summaryPrefix,
+  }) async {
+    final result = await Dmz.update(_usp, entries);
+    final parsed = UspResultParser.parseSetResult(result);
+    switch (parsed) {
+      case UspSuccess():
+        break;
+      case UspPartialSuccess(
+          :final errorSummary,
+          :final successes,
+          :final failures
+        ):
+        throw UspPartialFailureError(
+          summary: '$summaryPrefix partial failure: $errorSummary',
+          successPaths: successes.map((s) => s.requestedPath).toList(),
+          failures: failures,
+        );
+      case UspFailure(:final errorSummary, :final errors):
+        throw UspCompleteFailureError(
+          summary: '$summaryPrefix failed: $errorSummary',
+          failures: errors,
+        );
     }
   }
 
@@ -143,12 +193,21 @@ class UspDmzService {
   // ---------------------------------------------------------------------------
 
   /// Build a [DmzUIModel] from codegen [Dmz] collection.
-  DmzUIModel buildUIModel(Dmz data) {
+  DmzUIModel buildUIModel(Dmz data) => uiModelOf(data);
+
+  /// [buildUIModel] without a service: the Firewall data service builds the
+  /// same model for the dashboard and the PDF report.
+  static DmzUIModel uiModelOf(Dmz data) {
     if (data.items.isEmpty) return const DmzUIModel.disabled();
     final entry = data.items.first;
+    // FWDEV#204: one of the two is set, and the non-empty one is the host.
+    final destMac = entry.destMacAddress ?? '';
     return DmzUIModel(
       isEnabled: entry.enable,
+      destinationType:
+          destMac.isNotEmpty ? DmzDestinationType.mac : DmzDestinationType.ip,
       destIp: entry.destIp,
+      destMac: destMac,
       sourceType: _parseSourceType(entry.sourcePrefix),
       sourcePrefix: entry.sourcePrefix,
     );
@@ -158,17 +217,35 @@ class UspDmzService {
   // Validation
   // ---------------------------------------------------------------------------
 
-  /// Validate DMZ form fields. Returns field-level errors (empty map = valid).
+  /// Validate DMZ form fields. Returns field-level [DmzErrorKeys] by field
+  /// (empty map = valid).
+  ///
+  /// Only the field [DmzUIModel.destinationType] names is checked: the other
+  /// is not saved. The MAC check also runs before a first save, which is an
+  /// Add: a refused Add creates the row with the refused field emptied
+  /// (FWDEV#204, bench 2026-10-12). Since usp-client 0.14.0 the reason
+  /// arrives and the row is deleted again ([add]); this check saves that
+  /// round trip.
   Map<String, String> validateForm(DmzUIModel model) {
     final errors = <String, String>{};
     if (!model.isEnabled) return errors;
-    if (model.destIp.isEmpty) {
-      errors['destIp'] = 'Destination IP is required';
-    } else if (!NetworkUtils.isValidIpAddress(model.destIp)) {
-      errors['destIp'] = 'Invalid IP address';
+    switch (model.destinationType) {
+      case DmzDestinationType.ip:
+        if (model.destIp.isEmpty) {
+          errors['destIp'] = DmzErrorKeys.destIpRequired;
+        } else if (!NetworkUtils.isValidIpAddress(model.destIp)) {
+          errors['destIp'] = DmzErrorKeys.invalidIpAddress;
+        }
+      case DmzDestinationType.mac:
+        final mac = model.destMac.trim();
+        if (mac.isEmpty) {
+          errors['destMac'] = DmzErrorKeys.destMacRequired;
+        } else if (!MACAddressRule().validate(mac) || _isGroupMac(mac)) {
+          errors['destMac'] = DmzErrorKeys.invalidMacAddress;
+        }
     }
     if (model.sourceType == DmzSourceType.cidr && model.sourcePrefix.isEmpty) {
-      errors['sourcePrefix'] = 'CIDR range is required';
+      errors['sourcePrefix'] = DmzErrorKeys.cidrRequired;
     }
     return errors;
   }
@@ -177,7 +254,21 @@ class UspDmzService {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  DmzSourceType _parseSourceType(String prefix) {
+  /// Whether a well-formed [mac] names a group (broadcast or multicast): the
+  /// lowest bit of its first octet is set. A DMZ host is one device; FW
+  /// refuses a group MAC with ErrorInvalidDestinationMACAddress on a Set and
+  /// empties it on an Add (bench 2.0.4.26103108, 2026-11-09, measured with
+  /// usp-client 0.13.0, which dropped an Add's refusals). So it is checked
+  /// before anything is written.
+  static bool _isGroupMac(String mac) =>
+      int.parse(mac.substring(0, 2), radix: 16) & 1 == 1;
+
+  /// [mac] as it is written: `-` separators become `:`, the form the router
+  /// reports. Case is kept, so a MAC picked from the device list is written
+  /// exactly as the router listed it.
+  static String _wireMac(String mac) => mac.trim().replaceAll('-', ':');
+
+  static DmzSourceType _parseSourceType(String prefix) {
     if (prefix.isEmpty || prefix == '0.0.0.0/0') {
       return DmzSourceType.any;
     }

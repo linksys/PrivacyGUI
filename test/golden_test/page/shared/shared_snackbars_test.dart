@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/errors/usp_refusal_reason.dart';
 import 'package:privacy_gui/core/usp/models/usp_operation_result.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/firmware_update/localizations/firmware_failure_localizations.dart';
@@ -233,6 +234,25 @@ final _rows = <_Row>[
       (c) => _wanRefusal(c, WanRefusalNames.invalidDns)),
   _Row.failed('error_wan_invalid_mtu',
       (c) => _wanRefusal(c, WanRefusalNames.invalidMtu)),
+
+  // --- Firewall / NAT save refusals: the message each reason the router names
+  // gets (linksys/FWDEV#204, #1775). Shown through `showSaveErrorSnackBar`,
+  // which uses the failure style for these. ---
+  for (final reason in UspRefusalReason.values)
+    if (reason != UspRefusalReason.unknown)
+      _Row.failed(
+          'error_refused_${_snake(reason.name)}',
+          (c) => _serviceError(
+                c,
+                UspCompleteFailureError(summary: 's', failures: [
+                  UspErrorDetail(
+                    requestedPath: 'Device.NAT.PortMapping.1.ExternalPort',
+                    errorCode: 7012,
+                    errorMessage: '',
+                    refusalReason: reason,
+                  ),
+                ]),
+              )),
 
   // --- Other fixed failure messages ---
   _Row.failed(

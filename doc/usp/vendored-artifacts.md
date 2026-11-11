@@ -11,13 +11,50 @@ Files in this repo that are built or generated from `linksys/usp_framework` and 
 
 ## Manifest
 
-**Last updated**: 2026-10-27 (all of `lib/generated` on usp-codegen 0.19.0, from `usp_framework` `main` @ `3d0bbef`, #1654; see below)
+**Last updated**: 2026-11-09 (usp-client 0.14.0, linksys/usp_framework#114; see below). Before that 2026-10-27 (all of `lib/generated` on usp-codegen 0.19.0, from `usp_framework` `main` @ `3d0bbef`, #1654; see below)
 
 The web package records reviewed `usp_framework` commit
-`d135f4df652684bc176bc02d83ec4a1c7b84c65c` (merged `main`, PR #59 — the
-unmodified Broadband Forum USP schemas, which fixed `OperateResp` swallowing
-synchronous failures) and was built with both the
-`wasm` and `websocket` features. Machine-verifiable local hashes and the
+`d5604633785091f94d93c9a992f3848ece7fb6e8`, the commit CI built the 0.14.0
+package from (run 42589938930, artifact
+`usp-client-wasm-d5604633…`). It reached `main` as `381d69f` (PR #116,
+linksys/usp_framework#114), and the `pkg/` files there match the artifact
+manifest's SHA-256 digests. It was built with both the `wasm` and `websocket`
+features.
+
+**0.14.0 changes what a refused Add returns.** An agent that creates an object
+but refuses some of its parameters reports each one in AddResp's
+`OperationSuccess.param_errs`. The client sends every Add parameter with
+`required: false`, so FL-WRT's FWDEV#204 checks land there, and 0.13.0 dropped
+them: a refused Add answered as a clean success. 0.14.0 keeps `success: true`
+and the instance in `data.instances`, since the row does exist on the router,
+and adds one `error` entry per refused parameter, keyed
+`<instance path><param>`. `UspResultParser.parseAddResult` reads that as a
+`UspPartialSuccess`, so the services that add rows now report a failed save.
+Measured, 2026-11-09: the bench's captured response to a 26th port trigger
+(FW 2.0.4.26103108) decodes under 0.13.0 as a clean success, and under 0.14.0
+with `Device.NAT.PortTrigger.26.Port` →
+`ErrorTooManyRules: at most 25 port triggering rules.` (code 7005).
+**The half-written row stays on the router**, so the app deletes it:
+every service that adds rows parses the Add with
+`parseAddRemovingRefusedRows` (`lib/page/_shared/services/refused_add_service.dart`;
+batch saves call it through `BatchTally.recordAdd`). It deletes each instance
+row a failure names, highest number first, and never a table path. When that
+was every row the Add created, the Add reads as a complete failure, so the
+page keeps the user's edit. Otherwise it stays a partial success, and the page
+reads the router again. Port forwarding, IPv6 port services and DMZ do that
+through `saveReadingBackAfterPartialWrite`
+(`lib/framework/preservable_notifier_mixin.dart`), which also makes the next
+Save read the router first when that re-read fails. DHCP reservations (#1698)
+and static routes re-read after any failed save, since a refused Set there
+still writes the rest, through `saveReadingBackAfterFailure`, which keeps the
+same read-first rule. The dashboard's quick adds (port forwarding, DHCP)
+refresh their card after a failure. DHCP's batch save moved to `BatchTally`
+at the same time: it used to log a partial result and report it as saved.
+`required: true` is linksys/usp_framework#115, still open.
+
+0.13.0 was built from `d135f4df` (merged `main`, PR #59, the unmodified
+Broadband Forum USP schemas, which fixed `OperateResp` swallowing synchronous
+failures). Machine-verifiable local hashes and the
 reviewed upstream paths are recorded in `web/usp-artifacts.json`. Consumer CI
 does not authenticate the cross-repository commit reference; the producer
 repository owns the source-to-committed-package rebuild gate.
@@ -32,9 +69,9 @@ without review.
 | # | Artifact | Version | Checked-in path | Upstream source |
 |---|----------|---------|-----------------|-----------------|
 | 1 | `usp-codegen` (Mach-O arm64) | **0.19.0** | `tools/usp-codegen` | `usp-codegen/bin/usp-codegen` (built from `src/` via `Makefile.standalone`) |
-| 2 | `usp_client.js` | **0.13.0** | `web/usp_client.js` | `usp-client/pkg/usp_client.js` |
-| 3 | `usp_client_bg.wasm` | **0.13.0** | `web/usp_client_bg.wasm` | `usp-client/pkg/usp_client_bg.wasm` |
-| 4 | `usp_client.d.ts` | **0.13.0** | `web/usp_client.d.ts` | `usp-client/pkg/usp_client.d.ts` |
+| 2 | `usp_client.js` | **0.14.0** | `web/usp_client.js` | `usp-client/pkg/usp_client.js` |
+| 3 | `usp_client_bg.wasm` | **0.14.0** | `web/usp_client_bg.wasm` | `usp-client/pkg/usp_client_bg.wasm` |
+| 4 | `usp_client.d.ts` | **0.14.0** | `web/usp_client.d.ts` | `usp-client/pkg/usp_client.d.ts` |
 
 ## Derived (generated locally, not copied)
 

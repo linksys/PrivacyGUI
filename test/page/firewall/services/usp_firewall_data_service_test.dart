@@ -57,6 +57,9 @@ void main() {
           final prefix = 'Device.Firewall.DMZ.${i + 1}.';
           result['${prefix}Enable'] = entry['enable'] ?? true;
           result['${prefix}DestIP'] = entry['destIp'] ?? '';
+          if (entry.containsKey('destMac')) {
+            result['${prefix}X_LINKSYS_DestMACAddress'] = entry['destMac'];
+          }
           result['${prefix}SourcePrefix'] = entry['sourcePrefix'] ?? '';
           result['${prefix}Interface'] = entry['interface'] ?? '';
           result['${prefix}Description'] = entry['description'] ?? '';
@@ -149,6 +152,26 @@ void main() {
       expect(result.dmzSummaries[0].enable, isTrue);
       expect(result.dmzSummaries[0].destIp, '192.168.1.100');
       expect(result.dmzSummaries[1].enable, isFalse);
+    });
+
+    // #1775: a host given by MAC leaves DestIP empty, so a summary that
+    // carried the IP alone showed the dashboard card and the Statistics page
+    // an empty target. The host is the non-empty one, as on the DMZ page.
+    test('a DMZ host given by MAC is the summary\'s host', () async {
+      stubResponses(dmzEntries: [
+        {
+          'enable': true,
+          'destIp': '',
+          'destMac': 'AA:BB:CC:DD:EE:01',
+          'sourcePrefix': '',
+        },
+        {'enable': true, 'destIp': '192.168.1.100', 'sourcePrefix': ''},
+      ]);
+
+      final result = await svc.fetch();
+
+      expect(result.dmzSummaries.map((d) => d.host),
+          ['AA:BB:CC:DD:EE:01', '192.168.1.100']);
     });
   });
 
