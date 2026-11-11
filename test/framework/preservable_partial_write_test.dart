@@ -41,7 +41,14 @@ class _State extends FeatureState<_Value, _Status> {
   Map<String, dynamic> toMap() => {};
 }
 
-enum _Outcome { partial, complete }
+enum _Outcome {
+  partial,
+  complete,
+
+  /// FW commits the rest of a refused Set, so the save answers a complete
+  /// failure and still wrote (linksys/FWDEV#211).
+  completeButWrote,
+}
 
 class _Router {
   _Value value = const _Value('', path: 'Device.X.1.');
@@ -53,7 +60,7 @@ class _Router {
 
 final _router = Provider((_) => _Router());
 
-class _Page extends AutoDisposeNotifier<_State>
+abstract class _PageBase extends AutoDisposeNotifier<_State>
     with PreservableAutoDisposeNotifierMixin<_Value, _Status, _State> {
   @override
   _State build() {
@@ -63,9 +70,6 @@ class _Page extends AutoDisposeNotifier<_State>
       status: _Status(),
     );
   }
-
-  @override
-  Future<_State> save() => saveReadingBackAfterPartialWrite(super.save);
 
   @override
   Future<(_Value?, _Status?)> performFetch({
@@ -90,6 +94,9 @@ class _Page extends AutoDisposeNotifier<_State>
     }
     router.value =
         _Value(state.current.text, path: 'Device.X.${router.writes + 1}.');
+    if (router.outcome == _Outcome.completeButWrote) {
+      throw const UspCompleteFailureError(summary: 'refused', failures: []);
+    }
     throw const UspPartialFailureError(
         summary: 'partly refused', successPaths: [], failures: []);
   }
@@ -98,7 +105,21 @@ class _Page extends AutoDisposeNotifier<_State>
       state = state.copyWith(settings: state.settings.update(_Value(text)));
 }
 
+/// Port forwarding's rule: only a partial failure wrote something.
+class _Page extends _PageBase {
+  @override
+  Future<_State> save() => saveReadingBackAfterPartialWrite(super.save);
+}
+
+/// DHCP's and static routing's rule: any failure may have written something.
+class _AnyFailurePage extends _PageBase {
+  @override
+  Future<_State> save() => saveReadingBackAfterFailure(super.save);
+}
+
 final _page = AutoDisposeNotifierProvider<_Page, _State>(_Page.new);
+final _anyFailurePage =
+    AutoDisposeNotifierProvider<_AnyFailurePage, _State>(_AnyFailurePage.new);
 
 void main() {
   late ProviderContainer container;
@@ -149,5 +170,57 @@ void main() {
 
     expect(router.reads, readsBefore);
     expect(container.read(_page).current, const _Value('new row'));
+  });
+
+  group('saveReadingBackAfterFailure', () {
+    late ProviderContainer c;
+    late _Router r;
+
+    setUp(() async {
+      c = ProviderContainer();
+      c.listen(_anyFailurePage, (_, __) {});
+      r = c.read(_router);
+      await Future<void>.delayed(Duration.zero);
+    });
+
+    tearDown(() => c.dispose());
+
+    test(
+        'a complete failure that still wrote moves the page onto the '
+        'router\'s rows, and still throws its own error', () async {
+      r.outcome = _Outcome.completeButWrote;
+      final n = c.read(_anyFailurePage.notifier)..create('new row');
+
+      await expectLater(n.save(), throwsA(isA<UspCompleteFailureError>()));
+
+      expect(c.read(_anyFailurePage).current.path, 'Device.X.2.');
+      expect(c.read(_anyFailurePage).isDirty, isFalse);
+    });
+
+    test('a failure that wrote nothing keeps the edit for a retry', () async {
+      r.outcome = _Outcome.complete;
+      final n = c.read(_anyFailurePage.notifier)..create('new row');
+      final readsBefore = r.reads;
+
+      await expectLater(n.save(), throwsA(isA<UspCompleteFailureError>()));
+
+      expect(r.reads, readsBefore + 1, reason: 'it read the router back');
+      expect(c.read(_anyFailurePage).current, const _Value('new row'));
+    });
+
+    test(
+        'when the read fails too, the edit is kept with no load error, and '
+        'the next save reads first instead of adding the row again', () async {
+      final n = c.read(_anyFailurePage.notifier)..create('new row');
+      r.readFails = true;
+
+      await expectLater(n.save(), throwsA(isA<UspPartialFailureError>()));
+      expect(c.read(_anyFailurePage).status.error, isNull);
+      expect(c.read(_anyFailurePage).current, const _Value('new row'));
+      expect(r.writes, 1);
+
+      await expectLater(n.save(), throwsA(isA<NetworkError>()));
+      expect(r.writes, 1, reason: 'a second add is a duplicate row');
+    });
   });
 }

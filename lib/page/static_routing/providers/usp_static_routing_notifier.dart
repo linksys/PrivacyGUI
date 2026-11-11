@@ -4,7 +4,6 @@ import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/static_routing/models/static_route_list.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_feature_state.dart';
@@ -89,7 +88,9 @@ class UspStaticRoutingNotifier
   /// refused Set keeps the leaves it took (bench 2026-10-21), and routes Added
   /// before a later step failed would otherwise be Added again by a second
   /// Save. A save that wrote nothing, or whose read-back fails, keeps the
-  /// edits for a retry. The error reaches the page either way.
+  /// edits for a retry; when the read-back fails, the next Save reads the
+  /// router before it writes. The error reaches the page either way. All of
+  /// this is [saveReadingBackAfterFailure].
   ///
   /// This is not the detection constitution Article IV Rule 2 keeps for
   /// `Preservable` (a device changed by someone else mid-edit, #1279): it runs
@@ -103,17 +104,7 @@ class UspStaticRoutingNotifier
       current: state.settings.current.routes,
     );
     if (problem != null) throw InvalidInputError(field: problem);
-    try {
-      return await super.save();
-    } on ServiceError {
-      final (router, _) = await performFetch(forceRemote: true);
-      if (router != null && router != state.settings.original) {
-        state = state.copyWith(
-          settings: Preservable(original: router, current: router),
-        );
-      }
-      rethrow;
-    }
+    return saveReadingBackAfterFailure(super.save);
   }
 
   // ---------------------------------------------------------------------------

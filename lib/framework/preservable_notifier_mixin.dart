@@ -176,6 +176,44 @@ class _PreservableDelegate<
     }
   }
 
+  /// Runs [save], and when it fails for any reason reads the router back
+  /// before rethrowing that error. For a page whose refused write can still
+  /// have written part of itself whatever the error says: FW commits the rest
+  /// of a refused Set (linksys/FWDEV#211, bench 2026-10-21), so a complete
+  /// failure is no proof that nothing landed.
+  ///
+  /// The page moves onto the router's rows only when they differ from what it
+  /// last read: the save wrote something, and those rows carry their paths.
+  /// When they are the same, the save wrote nothing and the user's edit is
+  /// kept for a retry. When the read fails too, the edit is kept, the read's
+  /// status is not applied, and, if a row there has no path
+  /// ([HasUnconfirmedRows]), the next save reads the router before it writes,
+  /// as after [confirmSaved]. The read's own error is dropped; the caller
+  /// reports the save's.
+  Future<TState> saveReadingBackAfterFailure(
+      Future<TState> Function() save) async {
+    try {
+      return await save();
+    } on ServiceError {
+      final (router, _) = await _performFetch(forceRemote: true);
+      final s = _getState();
+      if (router == null) {
+        final Object settings = s.settings.current;
+        if (settings is HasUnconfirmedRows && settings.hasUnconfirmedRows) {
+          _mustReadBeforeWrite = true;
+        }
+      } else {
+        _mustReadBeforeWrite = false;
+        if (router != s.settings.original) {
+          _setState(s.copyWith(
+            settings: Preservable(original: router, current: router),
+          ) as TState);
+        }
+      }
+      rethrow;
+    }
+  }
+
   /// The post-save half of [save]: reads the router back after a write that
   /// landed and was marked saved, under the rule documented there.
   ///
@@ -291,6 +329,12 @@ mixin PreservableNotifierMixin<
           Future<TState> Function() save) =>
       _delegate.saveReadingBackAfterPartialWrite(save);
 
+  /// [save] that reads the router back after any failure. See
+  /// `_PreservableDelegate.saveReadingBackAfterFailure()`. Override `save()`
+  /// as `saveReadingBackAfterFailure(super.save)`.
+  Future<TState> saveReadingBackAfterFailure(Future<TState> Function() save) =>
+      _delegate.saveReadingBackAfterFailure(save);
+
   /// [confirmSaved], retried. See `_PreservableDelegate.confirmSavedRetrying()`.
   Future<TState> confirmSavedRetrying({
     required int attempts,
@@ -351,6 +395,12 @@ mixin PreservableAutoDisposeNotifierMixin<
   Future<TState> saveReadingBackAfterPartialWrite(
           Future<TState> Function() save) =>
       _delegate.saveReadingBackAfterPartialWrite(save);
+
+  /// [save] that reads the router back after any failure. See
+  /// `_PreservableDelegate.saveReadingBackAfterFailure()`. Override `save()`
+  /// as `saveReadingBackAfterFailure(super.save)`.
+  Future<TState> saveReadingBackAfterFailure(Future<TState> Function() save) =>
+      _delegate.saveReadingBackAfterFailure(save);
 
   /// [confirmSaved], retried. See `_PreservableDelegate.confirmSavedRetrying()`.
   Future<TState> confirmSavedRetrying({

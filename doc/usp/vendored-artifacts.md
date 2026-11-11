@@ -46,7 +46,8 @@ through `saveReadingBackAfterPartialWrite`
 (`lib/framework/preservable_notifier_mixin.dart`), which also makes the next
 Save read the router first when that re-read fails. DHCP reservations (#1698)
 and static routes re-read after any failed save, since a refused Set there
-still writes the rest. The dashboard's quick adds (port forwarding, DHCP)
+still writes the rest, through `saveReadingBackAfterFailure`, which keeps the
+same read-first rule. The dashboard's quick adds (port forwarding, DHCP)
 refresh their card after a failure. DHCP's batch save moved to `BatchTally`
 at the same time: it used to log a partial result and report it as saved.
 `required: true` is linksys/usp_framework#115, still open.
