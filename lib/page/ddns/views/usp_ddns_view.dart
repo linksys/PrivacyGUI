@@ -224,9 +224,10 @@ class _UspDdnsViewState extends ConsumerState<UspDdnsView> {
               identifier: 'ddns-password',
               label: l.password,
               // The router keeps its password secret, so the field starts
-              // empty; with an account stored, empty keeps it.
-              hintText:
-                  settings.hasStoredAccount ? l.ddnsPasswordKeepHint : null,
+              // empty; while the account is the router's, empty keeps it.
+              hintText: settings.canKeepStoredPassword
+                  ? l.ddnsPasswordKeepHint
+                  : null,
               errorText: errors.contains(DdnsField.password)
                   ? l.invalidPassword
                   : null,

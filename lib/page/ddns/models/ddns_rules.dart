@@ -50,13 +50,13 @@ bool isValidDdnsCredential(String value) =>
 /// saved.
 ///
 /// "Disabled" checks nothing, because it writes only `Enable`. The password may
-/// be left empty when the router already holds an account
-/// ([DdnsSettings.hasStoredAccount]): an empty password is not sent, so the
-/// stored one is kept.
+/// be left empty while the account is the one the router holds
+/// ([DdnsSettings.canKeepStoredPassword]): an empty password is not sent, so
+/// the stored one is kept.
 Set<DdnsField> invalidDdnsFields(DdnsSettings settings) {
   if (!settings.isEnabled) return const {};
   final keepsStoredPassword =
-      settings.password.isEmpty && settings.hasStoredAccount;
+      settings.password.isEmpty && settings.canKeepStoredPassword;
   return {
     if (!isValidDdnsCredential(settings.username)) DdnsField.username,
     if (!keepsStoredPassword && !isValidDdnsCredential(settings.password))

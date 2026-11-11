@@ -80,7 +80,8 @@ class DdnsTestData {
 
   /// The page's working copy. Defaults to the shipped rows: both providers,
   /// "Disabled", nothing stored. [clientEnabled] follows [providerPath]
-  /// unless given.
+  /// unless given. [storedUsername] and [storedServerPath] are what the router
+  /// holds, apart from what the page edits.
   static DdnsSettings settings({
     List<DdnsServerUIModel> providers = const [dynDns, noIp],
     bool? clientEnabled,
@@ -88,7 +89,8 @@ class DdnsTestData {
     String username = '',
     String password = '',
     String hostname = '',
-    bool hasStoredAccount = false,
+    String storedUsername = '',
+    String storedServerPath = '',
   }) =>
       DdnsSettings(
         providers: providers,
@@ -97,23 +99,29 @@ class DdnsTestData {
         username: username,
         password: password,
         hostname: hostname,
-        hasStoredAccount: hasStoredAccount,
+        storedUsername: storedUsername,
+        storedServerPath: storedServerPath,
         clientPath: clientPath,
         hostnamePath: hostnamePath,
       );
 
   /// [settings] for the client [configuredResponse] reads: No-IP, an account
-  /// and a host name stored, the password untouched.
+  /// and a host name stored, the password untouched. [providerPath],
+  /// [username], [password] and [hostname] are the page's; the router keeps
+  /// No-IP and `user@example.com`.
   static DdnsSettings configuredSettings({
+    String? providerPath = noIpPath,
     String username = 'user@example.com',
     String password = '',
     String hostname = 'home.example.net',
   }) =>
       settings(
-        providerPath: noIpPath,
+        clientEnabled: true,
+        providerPath: providerPath,
         username: username,
         password: password,
         hostname: hostname,
-        hasStoredAccount: true,
+        storedUsername: 'user@example.com',
+        storedServerPath: noIpPath,
       );
 }

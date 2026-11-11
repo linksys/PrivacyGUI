@@ -219,6 +219,32 @@ void main() {
           DdnsUpdateStatus.authenticationFailed);
     });
 
+    test('a refresh that fails during a rebuild leaves the rebuild\'s read',
+        () async {
+      final container = createContainer();
+      addTearDown(container.dispose);
+      container.listen(ddnsStatusDataProvider, (_, __) {});
+      await container.read(ddnsStatusDataProvider.future);
+
+      final slowBuild = Completer<DdnsUpdateStatus>();
+      when(() => service.fetch(fresh: false))
+          .thenAnswer((_) => slowBuild.future);
+      when(() => service.fetch(fresh: true))
+          .thenThrow(const NetworkError(detail: 'read failed'));
+      container.invalidate(ddnsStatusDataProvider);
+      container.read(ddnsStatusDataProvider);
+
+      // The refresh starts after the rebuild's read and fails.
+      final refresh = container.read(ddnsStatusDataProvider.notifier).refresh();
+      slowBuild.complete(DdnsUpdateStatus.success);
+      await expectLater(refresh, throwsA(isA<NetworkError>()));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(ddnsStatusDataProvider).value,
+          DdnsUpdateStatus.success,
+          reason: 'a read that failed must not make another one be dropped');
+    });
+
     test('a failed refresh keeps the value and throws for the caller',
         () async {
       final container = createContainer();

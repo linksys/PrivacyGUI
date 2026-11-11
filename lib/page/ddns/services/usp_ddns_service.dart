@@ -112,7 +112,8 @@ class UspDdnsService {
       username: client.username,
       password: '',
       hostname: hostname.name,
-      hasStoredAccount: client.username.isNotEmpty,
+      storedUsername: client.username,
+      storedServerPath: serverPath,
       clientPath: client.instancePath,
       hostnamePath: hostname.instancePath,
     );

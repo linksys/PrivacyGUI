@@ -258,7 +258,8 @@ void main() {
             DdnsTestData.settings(
               clientEnabled: true,
               username: 'user@example.com',
-              hasStoredAccount: true,
+              storedUsername: 'user@example.com',
+              storedServerPath: DdnsTestData.noIpPath,
             ),
             loaded,
           ));

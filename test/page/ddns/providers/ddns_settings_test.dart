@@ -44,6 +44,27 @@ void main() {
     });
   });
 
+  group('DdnsSettings - stored account', () {
+    test('a stored user name is a stored account', () {
+      expect(DdnsTestData.settings().hasStoredAccount, isFalse);
+      expect(DdnsTestData.configuredSettings().hasStoredAccount, isTrue);
+    });
+
+    test('the stored password may be kept only for the stored account', () {
+      final stored = DdnsTestData.configuredSettings();
+
+      expect(stored.canKeepStoredPassword, isTrue);
+      expect(stored.copyWith(username: 'bob').canKeepStoredPassword, isFalse);
+      expect(
+          stored
+              .copyWith(providerPath: DdnsTestData.dynDnsPath)
+              .canKeepStoredPassword,
+          isFalse);
+      expect(DdnsTestData.settings().canKeepStoredPassword, isFalse,
+          reason: 'nothing stored');
+    });
+  });
+
   group('DdnsSettings - copyWith', () {
     test('changes only the fields given', () {
       final original = DdnsTestData.configuredSettings();
@@ -54,7 +75,8 @@ void main() {
       expect(next.username, original.username);
       expect(next.providerPath, original.providerPath);
       expect(next.providers, original.providers);
-      expect(next.hasStoredAccount, original.hasStoredAccount);
+      expect(next.storedUsername, original.storedUsername);
+      expect(next.storedServerPath, original.storedServerPath);
       expect(next.clientPath, original.clientPath);
       expect(next.hostnamePath, original.hostnamePath);
     });

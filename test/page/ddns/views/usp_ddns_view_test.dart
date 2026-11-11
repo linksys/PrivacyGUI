@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
 import 'package:privacy_gui/page/ddns/models/ddns_settings.dart';
@@ -153,6 +154,17 @@ void main() {
           findsOneWidget);
     });
 
+    testWidgets('a new provider drops the keep hint: its password is needed',
+        (tester) async {
+      device = DdnsTestData.configuredSettings();
+      await pumpPage(tester);
+
+      await chooseProvider(tester, 'DynDNS');
+
+      expect(
+          find.text('Leave blank to keep the current password'), findsNothing);
+    });
+
     testWidgets('with no account stored the password field has no keep hint',
         (tester) async {
       await pumpPage(tester);
@@ -291,6 +303,21 @@ void main() {
 
       expect(find.text('Failed'), findsOneWidget);
       expect(find.textContaining('is private'), findsNothing);
+    });
+
+    testWidgets('a status read that fails still shows the card, as unknown',
+        (tester) async {
+      device = DdnsTestData.configuredSettings();
+      when(() => statusService.fetch(fresh: any(named: 'fresh')))
+          .thenThrow(const NetworkError(detail: 'read failed'));
+      await pumpPage(tester);
+
+      expect(find.text('DDNS status'), findsOneWidget);
+      expect(find.text('Unknown'), findsOneWidget);
+      expect(
+          find.byWidgetPredicate((w) =>
+              w is AppIconButton && w.identifier == 'ddns-status-refresh'),
+          findsOneWidget);
     });
 
     testWidgets('the refresh icon reads the status again', (tester) async {

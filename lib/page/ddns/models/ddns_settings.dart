@@ -43,13 +43,13 @@ class DdnsSettings extends Equatable {
 
   final String hostname;
 
-  /// Whether the router holds an account for this client, read as a stored
-  /// user name.
-  ///
-  /// The stored password cannot be read, so a stored user name is what says
-  /// one was saved with it. With an account, an empty [password] keeps the
-  /// stored one; without one, a password is required.
-  final bool hasStoredAccount;
+  /// The user name the router holds for this client, as read; never edited.
+  final String storedUsername;
+
+  /// The provider the router holds for this client (`Client.Server` without
+  /// its trailing dot, `""` for none), as read, whether or not the client is
+  /// enabled; never edited.
+  final String storedServerPath;
 
   /// `Device.DynamicDNS.Client.{i}.`, the client the page edits.
   final String clientPath;
@@ -64,7 +64,8 @@ class DdnsSettings extends Equatable {
     required this.username,
     required this.password,
     required this.hostname,
-    required this.hasStoredAccount,
+    required this.storedUsername,
+    required this.storedServerPath,
     required this.clientPath,
     required this.hostnamePath,
   });
@@ -77,13 +78,29 @@ class DdnsSettings extends Equatable {
         username = '',
         password = '',
         hostname = '',
-        hasStoredAccount = false,
+        storedUsername = '',
+        storedServerPath = '',
         clientPath = '',
         hostnamePath = '';
 
   /// Whether a provider is chosen, so a save writes the account; false is
   /// "Disabled", which writes `Enable` false alone.
   bool get isEnabled => clientEnabled && providerPath != null;
+
+  /// Whether the router holds an account for this client, read as a stored
+  /// user name. The stored password cannot be read, so a stored user name is
+  /// what says one was saved with it.
+  bool get hasStoredAccount => storedUsername.isNotEmpty;
+
+  /// Whether an empty [password] may keep the router's: the account on the
+  /// page is the one the router holds — the same provider and the same user
+  /// name — so the stored password still belongs to it. A new provider or a
+  /// new user name needs its own password typed; otherwise the router would
+  /// send the old account's password for the new one.
+  bool get canKeepStoredPassword =>
+      hasStoredAccount &&
+      providerPath == storedServerPath &&
+      username == storedUsername;
 
   DdnsSettings copyWith({
     bool? clientEnabled,
@@ -101,7 +118,8 @@ class DdnsSettings extends Equatable {
       username: username ?? this.username,
       password: password ?? this.password,
       hostname: hostname ?? this.hostname,
-      hasStoredAccount: hasStoredAccount,
+      storedUsername: storedUsername,
+      storedServerPath: storedServerPath,
       clientPath: clientPath,
       hostnamePath: hostnamePath,
     );
@@ -115,7 +133,8 @@ class DdnsSettings extends Equatable {
         username,
         password,
         hostname,
-        hasStoredAccount,
+        storedUsername,
+        storedServerPath,
         clientPath,
         hostnamePath,
       ];
@@ -130,7 +149,8 @@ class DdnsSettings extends Equatable {
       'username: ${username.isEmpty ? 'empty' : 'set'}, '
       'password: ${password.isEmpty ? 'untouched' : 'typed'}, '
       'hostname: $hostname, '
-      'hasStoredAccount: $hasStoredAccount, '
+      'storedUsername: ${storedUsername.isEmpty ? 'empty' : 'set'}, '
+      'storedServerPath: $storedServerPath, '
       'clientPath: $clientPath, '
       'hostnamePath: $hostnamePath)';
 }

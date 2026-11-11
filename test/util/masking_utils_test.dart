@@ -85,6 +85,27 @@ void main() {
           '{"Device.X.Alias": "admin", "Device.X.Password": "************"}');
     });
 
+    test(
+        'maskSensitiveJsonValues: masks a secret holding , } and a quote whole',
+        () {
+      const raw = r'{"Device.DynamicDNS.Client.1.Password": "ab,cd}e\"f", '
+          r'"Device.X.Name": "n"}';
+
+      final masked = MaskingUtils.maskSensitiveJsonValues(raw);
+
+      expect(
+          masked,
+          r'{"Device.DynamicDNS.Client.1.Password": "************", '
+          r'"Device.X.Name": "n"}');
+    });
+
+    test('maskSensitiveJsonValues: masks an unquoted value', () {
+      const raw = '{username: admin, other: 1}';
+
+      expect(MaskingUtils.maskSensitiveJsonValues(raw),
+          '{username: ************, other: 1}');
+    });
+
     test('maskSensitiveJsonValues: leaves an empty value as it is', () {
       // A Get reads a secure password as "".
       const raw = '{"Device.DynamicDNS.Client.1.Password": ""}';
@@ -102,6 +123,28 @@ void main() {
       const rawJson = 'invalid json';
       final maskedJson = MaskingUtils.maskSensitiveJsonValues(rawJson);
       expect(maskedJson, rawJson);
+    });
+  });
+
+  group('maskUsernamePasswordBodyValue', () {
+    test('masks both values of a form body', () {
+      expect(
+          MaskingUtils.maskUsernamePasswordBodyValue(
+              'username=alice&password=s3cret&x=1\n'),
+          'username=************&password=************&x=1\n');
+    });
+
+    test('masks the value where it was found, not its first occurrence', () {
+      // `admin` also appears earlier, as another field's value.
+      expect(
+          MaskingUtils.maskUsernamePasswordBodyValue(
+              'user=admin&password=admin\n'),
+          'user=admin&password=************\n');
+    });
+
+    test('matches the key in any letter case, up to the end of the text', () {
+      expect(MaskingUtils.maskUsernamePasswordBodyValue('Password=s3cret'),
+          'Password=************');
     });
   });
 

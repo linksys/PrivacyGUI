@@ -97,10 +97,39 @@ void main() {
       expect(invalidDdnsFields(settings), {DdnsField.hostname});
     });
 
-    test('an emptied user name fails it', () {
+    test('an emptied user name fails it, and then needs a password', () {
       final settings = DdnsTestData.configuredSettings(username: '');
 
-      expect(invalidDdnsFields(settings), {DdnsField.username});
+      expect(invalidDdnsFields(settings),
+          {DdnsField.username, DdnsField.password});
+    });
+
+    // The stored password belongs to the stored account. Kept for a new
+    // provider or a new user name, the router would send it for an account
+    // it does not belong to.
+    test('a new provider needs its password typed', () {
+      final settings = DdnsTestData.configuredSettings(
+          providerPath: DdnsTestData.dynDnsPath);
+
+      expect(invalidDdnsFields(settings), {DdnsField.password});
+    });
+
+    test('a new user name needs its password typed', () {
+      final settings =
+          DdnsTestData.configuredSettings(username: 'bob@example.com');
+
+      expect(invalidDdnsFields(settings), {DdnsField.password});
+      expect(
+          invalidDdnsFields(DdnsTestData.configuredSettings(
+              username: 'bob@example.com', password: 'secret')),
+          isEmpty);
+    });
+
+    test('a new host name on the stored account keeps the stored password', () {
+      final settings =
+          DdnsTestData.configuredSettings(hostname: 'other.example.net');
+
+      expect(invalidDdnsFields(settings), isEmpty);
     });
   });
 

@@ -18,7 +18,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// [ddnsStatusDataProvider] and the address from [wanDataProvider], each kept
 /// current by its own push. It shows the router's applied state, not the
 /// page's unsaved choice, and is absent while the router's client is
-/// disabled.
+/// disabled or before the first read has answered.
 class DdnsStatusCard extends ConsumerStatefulWidget {
   const DdnsStatusCard({super.key});
 
@@ -31,7 +31,12 @@ class _DdnsStatusCardState extends ConsumerState<DdnsStatusCard> {
 
   @override
   Widget build(BuildContext context) {
-    final status = ref.watch(ddnsStatusDataProvider).valueOrNull;
+    // A read that failed before any value arrived shows the card as unknown,
+    // with its refresh icon, rather than hiding it: hidden would read the same
+    // as a disabled client, and leave nothing to retry with.
+    final async = ref.watch(ddnsStatusDataProvider);
+    final status =
+        async.valueOrNull ?? (async.hasError ? DdnsUpdateStatus.unknown : null);
     if (status == null || status == DdnsUpdateStatus.disabled) {
       return const SizedBox.shrink();
     }

@@ -113,6 +113,9 @@ void main() {
       expect(settings.username, 'user@example.com');
       expect(settings.hostname, 'home.example.net');
       expect(settings.hasStoredAccount, isTrue);
+      expect(settings.storedUsername, 'user@example.com');
+      expect(settings.storedServerPath, DdnsTestData.noIpPath,
+          reason: 'choosing No-IP again keeps the stored password');
     });
 
     test('lists only the enabled Server rows, in instance order', () async {

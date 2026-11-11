@@ -33,16 +33,20 @@ final ddnsStatusDataProvider =
 class DdnsStatusDataNotifier extends AsyncNotifier<DdnsUpdateStatus> {
   Timer? _debounce;
 
-  /// Bumped by every rebuild and every read this notifier publishes itself, so
-  /// a read that started earlier and finishes later is discarded instead of
-  /// overwriting newer data.
-  int _generation = 0;
+  /// Numbers every read, a build's or a refresh's, in the order it started.
+  int _started = 0;
+
+  /// The number of the newest read whose answer is on screen.
+  ///
+  /// A read publishes only if nothing that started after it has published, so
+  /// an answer that arrives late never covers a newer one. A read that fails
+  /// publishes nothing, so it never makes another read's answer be dropped.
+  int _published = 0;
 
   @override
   Future<DdnsUpdateStatus> build() async {
-    // A rebuild (the page's re-read) supersedes any read in flight, and a
-    // timer armed before it would only re-read what the rebuild just read.
-    final generation = ++_generation;
+    // A timer armed before a rebuild would only re-read what it reads.
+    final mine = ++_started;
     _debounce?.cancel();
 
     ref.listen(sseInvalidationProvider, (prev, next) {
@@ -54,10 +58,11 @@ class DdnsStatusDataNotifier extends AsyncNotifier<DdnsUpdateStatus> {
     ref.onDispose(() => _debounce?.cancel());
 
     final status = await ref.read(uspDdnsStatusDataServiceProvider).fetch();
-    // The other direction: a refresh that started after this read and
-    // published first holds the newer value, and assigning `state` does not
-    // cancel this future, so returning the older read would overwrite it.
-    if (generation != _generation && state.hasValue) return state.requireValue;
+    // A refresh that started after this read and has already published holds
+    // the newer value. Assigning `state` does not cancel this future, so
+    // returning this read would overwrite it.
+    if (_published > mine && state.hasValue) return state.requireValue;
+    _published = mine;
     return status;
   }
 
@@ -67,10 +72,11 @@ class DdnsStatusDataNotifier extends AsyncNotifier<DdnsUpdateStatus> {
   /// the failure is thrown for the caller to report.
   Future<void> refresh() async {
     _debounce?.cancel();
-    final generation = ++_generation;
+    final mine = ++_started;
     final status =
         await ref.read(uspDdnsStatusDataServiceProvider).fetch(fresh: true);
-    if (generation != _generation) return;
+    if (_published > mine) return;
+    _published = mine;
     state = AsyncData(status);
   }
 
