@@ -106,8 +106,15 @@ runs:
     #
     # Fixes no longer arrive on their own. Upgrading is a deliberate PR of its
     # own: `fvm flutter pub upgrade`, and the pubspec.lock diff is what gets
-    # reviewed. linksys/PrivacyGUI-golden-ci clones this repo and runs
-    # `flutter pub get` inside it, so it picks the lock up with no change there.
+    # reviewed. test/web/canvaskit_variant_test.dart asserts that every
+    # `pub get` here carries the flag, so dropping it to turn this step green is
+    # a red test rather than a silent return to floating.
+    #
+    # This pins CI, not every consumer. linksys/PrivacyGUI-golden-ci clones this
+    # repo and reads the lock, but it runs a plain `flutter pub get` on
+    # `channel: stable` (3.47.9 on 2026-11-10, against 3.47.2 here), so the
+    # packages Flutter pins itself re-resolve there without failing. Its goldens
+    # float until that repo pins the SDK and enforces the lock too.
     - name: Install Dependencies
       shell: bash
       run: flutter pub get --enforce-lockfile
