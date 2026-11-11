@@ -33,6 +33,11 @@ import 'package:privacy_gui/core/utils/logger.dart';
 /// not remove, or one with no instance path), and the caller has to read the
 /// router again. A `BatchTally` step takes `BatchTally.recordAdd`, which
 /// calls this.
+///
+/// Use it for every Add that sends parameters. The two that send none, the
+/// PPP interface (`UspInternetSettingsService`) and the notification
+/// subscription (`UspClient`), keep `UspResultParser.parseAddResult`: with no
+/// parameter there is nothing for the agent to refuse and leave behind.
 Future<UspAddResult> parseAddRemovingRefusedRows(
   UspClient usp,
   Map<String, dynamic> raw, {
