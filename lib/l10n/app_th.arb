@@ -378,6 +378,7 @@
   "udp": "UDP",
   "unknownError": "ข้อผิดพลาดที่ไม่ทราบสาเหตุ",
   "unknownErrorCode": "ข้อผิดพลาดที่ไม่ทราบสาเหตุ: {code}",
+  "unsavedChangesBeforeOpeningDesc": "บันทึกหรือละทิ้งการเปลี่ยนแปลงก่อนดำเนินการต่อ",
   "unsavedChangesDesc": "การนำทางออกจากหน้านี้จะละทิ้งข้อมูลที่ป้อน",
   "unsavedChangesTitle": "คุณมีการเปลี่ยนแปลงที่ไม่ได้บันทึกในหน้านี้",
   "upToDate": "ทันสมัย",

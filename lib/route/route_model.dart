@@ -62,6 +62,12 @@ class LinksysRouteConfig extends Equatable {
 /// Prompting on a push would ask the user to decide something they have not done
 /// yet. Pinned in `test/framework/linksys_route_test.dart`.
 ///
+/// The one push where that reasoning fails is into **another editable page**:
+/// both are then dirty-capable on one stack, and leaving them asks twice, the
+/// second time about a page that is not on screen. Those entries ask before the
+/// push instead, through `pushNamedPastUnsavedChanges`
+/// (`navigation_extensions.dart`, #1433); this guard is unchanged.
+///
 /// ## Passing [preservableProvider] is what turns the guard on
 ///
 /// There is no separate switch. Pass the page's notifier provider as

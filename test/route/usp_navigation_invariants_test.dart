@@ -171,20 +171,25 @@ final Map<String, String> _routeViewClass = () {
   return map;
 }();
 
-/// go_router's named-navigation verbs, plus the one this app adds.
+/// go_router's named-navigation verbs, plus the two this app adds.
 ///
-/// `pushNamed` and [NavigationExtension.pushNamedIfNotCurrent] keep the caller on
-/// the stack; the other three overwrite a location, which is what makes back land
+/// `pushNamed`, [NavigationExtension.pushNamedIfNotCurrent] and
+/// [NavigationExtension.pushNamedPastUnsavedChanges] keep the caller on the
+/// stack; the other three overwrite a location, which is what makes back land
 /// somewhere the user never was. `replaceNamed` and `pushReplacementNamed` have
 /// no call site in `lib/` today — they are matched anyway because their absence
 /// is a fact about today, not a property of the rule, and a rule that names only
 /// two of the three replacing verbs would read as if the other two were
 /// acceptable.
-const _navVerbs = r'goNamed|pushNamed|pushNamedIfNotCurrent|replaceNamed|'
-    r'pushReplacementNamed';
+const _navVerbs = r'goNamed|pushNamed|pushNamedIfNotCurrent|'
+    r'pushNamedPastUnsavedChanges|replaceNamed|pushReplacementNamed';
 
 /// The verbs that leave the caller on the stack, so back returns to it.
-const _stackingVerbs = {'pushNamed', 'pushNamedIfNotCurrent'};
+const _stackingVerbs = {
+  'pushNamed',
+  'pushNamedIfNotCurrent',
+  'pushNamedPastUnsavedChanges',
+};
 
 class _NavSite {
   final String file;
@@ -242,6 +247,24 @@ const _globalChromeFiles = <String>{
   // history page it opens included (#1580).
   'lib/page/_shared/components/remote_session_chip.dart',
 };
+
+/// The routes with an unsaved-changes guard: a `preservableProvider:` in their
+/// `LinksysRoute`, read from the route file. Each one is attributed to the last
+/// `name:` above it, which holds because a route declares its own arguments
+/// before its `routes:` children.
+final Set<String> _guardedRoutes = () {
+  const routeFile = 'lib/route/route_usp_dashboard.dart';
+  final namePattern = RegExp(r'name: RouteNamed\.(\w+),');
+  final guarded = <String>{};
+  String? lastName;
+  for (final line in _codeLines(File(routeFile))) {
+    lastName = namePattern.firstMatch(line)?.group(1) ?? lastName;
+    if (line.contains('preservableProvider:') && lastName != null) {
+      guarded.add(lastName);
+    }
+  }
+  return guarded;
+}();
 
 /// Every named-navigation call in `lib/` whose target is NOT a literal, as
 /// (file, verb, argument). These are the shared entry components and the menu:
@@ -902,6 +925,9 @@ void main() {
     });
 
     test('the scanners found the call sites they are supposed to guard', () {
+      expect(_guardedRoutes, hasLength(greaterThanOrEqualTo(10)),
+          reason: 'the unsaved-changes guard scanner found almost nothing — '
+              'is preservableProvider still declared in the route file?');
       // A silent scanner regression would make every rule above vacuous, so the
       // shape of the harvest is asserted too.
       expect(_navSites.length, greaterThanOrEqualTo(40),
@@ -924,6 +950,64 @@ void main() {
           reason:
               'every route in the tree must resolve to a view class, or the '
               'hub exemption cannot be computed');
+    });
+  });
+  // #1433: a page with unsaved changes that pushes another editable page stays
+  // dirty under it, so leaving the pair asked twice, the second time about a
+  // page that was not on screen. `pushNamedPastUnsavedChanges` asks at the
+  // entry instead (its behaviour: test/route/navigation_extensions_test.dart).
+  //
+  // Read from the page's own view file only: an entry placed in a component
+  // file of that page would not be seen. Today both entries sit in the view.
+  // And from the USP dashboard tree only, as the rest of this file is: PnP's
+  // one guarded route (`route_pnp.dart`) is a wizard step no USP page opens.
+  group('#1433 editable page into editable page', () {
+    /// (view file, target) for every push from a guarded page's view into
+    /// another guarded page, with the verb used.
+    List<_NavSite> guardedToGuarded() {
+      final viewFileOf = {
+        for (final route in _guardedRoutes)
+          if (_classFile[_routeViewClass[route]] case final file?) file: route,
+      };
+      return _navSites
+          .where((s) =>
+              !s.replaces &&
+              viewFileOf.containsKey(s.file) &&
+              _guardedRoutes.contains(s.target) &&
+              viewFileOf[s.file] != s.target)
+          .toList();
+    }
+
+    test('it is opened through the verb that asks first', () {
+      final offenders = guardedToGuarded()
+          .where((s) => s.verb != 'pushNamedPastUnsavedChanges')
+          .map((s) => s.toString())
+          .toList();
+      expect(offenders, isEmpty,
+          reason: 'this page has an unsaved-changes guard and so does the one '
+              'it opens; use pushNamedPastUnsavedChanges so it asks before '
+              'opening, not twice on leaving:\n${offenders.join('\n')}');
+    });
+
+    test('the pairs are these two', () {
+      // Pinned, because each pair needs its own decision about what Save does
+      // there — Local Network's IP and subnet change was one (#1433). A new
+      // pair failing here is how that decision gets asked.
+      expect(
+        {for (final s in guardedToGuarded()) (s.file, s.target)},
+        {
+          (
+            'lib/page/firewall/views/usp_firewall_view.dart',
+            RouteNamed.uspIpv6PortService,
+          ),
+          (
+            'lib/page/local_network/views/usp_local_network_view.dart',
+            RouteNamed.uspDhcpDetail,
+          ),
+        },
+        reason: 'an editable page now opens another one: decide what Save '
+            'does on it, then add the pair here',
+      );
     });
   });
 }

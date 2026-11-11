@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/route/navigation_extra.dart';
 
 extension NavigationExtension on BuildContext {
@@ -55,6 +57,54 @@ extension NavigationExtension on BuildContext {
   void pushNamedIfNotCurrent(String name) {
     if (GoRouter.of(this).state.topRoute?.name == name) return;
     pushNamed(name);
+  }
+
+  /// Pushes [name] from an editable page, asking first when [parent] — that
+  /// page's notifier — has unsaved changes (#1433).
+  ///
+  /// The entry verb for **one editable page opening another**. A bare
+  /// `pushNamed` keeps the caller's working copy alive underneath, which is
+  /// right when the next page edits nothing (`route_model.dart`, "The guard
+  /// fires when the page LEAVES the stack"). When it edits too, leaving the
+  /// pair later raised the child's unsaved-changes prompt and then the
+  /// parent's, for a page that was not on screen. So this asks at the entry:
+  ///
+  /// - Go back, or dismissing the prompt: nothing happens.
+  /// - Discard changes: `parent.revert()`, then push.
+  /// - Save: run [save], the page's own save flow, and push only if it returns
+  ///   true. The flow shows its own progress and errors and decides what
+  ///   "succeeded" means for that page; Local Network returns false after a
+  ///   router IP or subnet change, because the next page could not be read.
+  ///
+  /// [canSave] false shows Save disabled. Pass the condition the page's own
+  /// Save button is enabled by; it is required so that no call site offers a
+  /// Save its page would refuse. With nothing unsaved it pushes straight away.
+  ///
+  /// Which pages must use it is pinned in
+  /// `test/route/usp_navigation_invariants_test.dart`; its behaviour in
+  /// `test/route/navigation_extensions_test.dart`.
+  Future<void> pushNamedPastUnsavedChanges(
+    String name, {
+    required PreservableContract parent,
+    required Future<bool> Function() save,
+    required bool canSave,
+  }) async {
+    if (!parent.isDirty()) {
+      pushNamed(name);
+      return;
+    }
+    final choice = await showUnsavedBeforeOpeningAlert(this, canSave: canSave);
+    if (!mounted) return;
+    switch (choice) {
+      case UnsavedChangesChoice.discard:
+        parent.revert();
+        pushNamed(name);
+      case UnsavedChangesChoice.save:
+        if (await save() && mounted) pushNamed(name);
+      case UnsavedChangesChoice.goBack:
+      case null:
+        return;
+    }
   }
 
   void navigateBack({String? fallback}) {

@@ -8,6 +8,7 @@ import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_feature_state.dart';
 import 'package:privacy_gui/page/local_network/providers/usp_local_network_notifier.dart';
 import 'package:privacy_gui/page/local_network/views/helpers/lan_ip_redirect_dialog.dart';
@@ -159,9 +160,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
     // which triggers TextField unfocus on Flutter Web.
     return UiKitBottomBarConfig(
       positiveLabel: loc(context).save,
-      isPositiveEnabled: state.isDirty &&
-          !state.status.isSaving &&
-          !state.status.hasValidationErrors,
+      isPositiveEnabled: state.isDirty && _canSave(state),
       isNegativeEnabled: state.isDirty,
       onPositiveTap: state.isDirty ? () => _onSave(context, ref, state) : null,
       onNegativeTap: state.isDirty
@@ -400,10 +399,11 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
             // Reservations Link Block
             LayoutBlock(
               identifier: 'local-network-dhcp-reservations',
-              // Detail pages are entered with pushNamed: `go` replaces the
-              // location, so the entry point (e.g. the Dashboard) is dropped from
-              // the back stack and back falls through to backFallback (#1421).
-              onTap: () => context.pushNamed(RouteNamed.uspDhcpDetail),
+              // Pushed, not `go`: `go` replaces the location, so the entry point
+              // (e.g. the Dashboard) is dropped from the back stack and back
+              // falls through to backFallback (#1421). Through the verb that asks
+              // first, because DHCP Reservations is an editable page too (#1433).
+              onTap: () => _openReservations(context, ref),
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -432,11 +432,39 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
     );
   }
 
+  /// Whether this page's changes can be saved: the bottom bar's Save and the
+  /// Save offered on the way to DHCP Reservations are enabled by the same rule.
+  static bool _canSave(LocalNetworkFeatureState state) =>
+      !state.status.isSaving && !state.status.hasValidationErrors;
+
+  /// Opens DHCP Reservations, asking first when this page has unsaved changes.
+  ///
+  /// Save there opens the reservations only when the router IP and subnet are
+  /// as saved: changing either restarts the LAN, and an IP change also sends
+  /// the browser to the router's new address, so the next page could not be
+  /// read. Save then runs as this page's own Save and the user stays (#1433).
+  void _openReservations(BuildContext context, WidgetRef ref) {
+    final state = ref.read(uspLocalNetworkProvider);
+    context.pushNamedPastUnsavedChanges(
+      RouteNamed.uspDhcpDetail,
+      parent: ref.read(uspLocalNetworkProvider.notifier),
+      canSave: _canSave(state),
+      save: () async {
+        // Read before saving: a save collapses original into current.
+        final networkChanged = state.hasNetworkChange;
+        final saved = await _onSave(context, ref, state);
+        return saved && !networkChanged;
+      },
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Save
   // ---------------------------------------------------------------------------
 
-  Future<void> _onSave(
+  /// Returns whether the save ran and succeeded; false when the user cancelled
+  /// the network-change question or the save failed.
+  Future<bool> _onSave(
     BuildContext context,
     WidgetRef ref,
     LocalNetworkFeatureState state,
@@ -454,7 +482,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
     // Warn if router IP or subnet changed (may cause disconnection)
     if (networkChanged) {
       final confirmed = await _showNetworkChangeConfirmation(context);
-      if (confirmed != true || !context.mounted) return;
+      if (confirmed != true || !context.mounted) return false;
     }
 
     try {
@@ -462,7 +490,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
         context,
         ref.read(uspLocalNetworkProvider.notifier).save(),
       );
-      if (!context.mounted) return;
+      if (!context.mounted) return true;
 
       // Only redirect after a confirmed save when the IP address actually
       // changed: the old address is now unreachable, so the browser must be
@@ -474,10 +502,12 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
       } else {
         showSuccessSnackBar(context, loc(context).localNetworkSettingsSaved);
       }
+      return true;
     } catch (e) {
       if (context.mounted) {
         showSaveErrorSnackBar(context, e);
       }
+      return false;
     }
   }
 

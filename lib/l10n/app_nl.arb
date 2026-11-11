@@ -380,6 +380,7 @@
   "udp": "UDP",
   "unknownError": "Onbekende fout",
   "unknownErrorCode": "Onbekende fout: {code}",
+  "unsavedChangesBeforeOpeningDesc": "Sla uw wijzigingen op of negeer ze voordat u verdergaat.",
   "unsavedChangesDesc": "Als u deze pagina verlaat, worden alle invoergegevens verwijderd.",
   "unsavedChangesTitle": "Er zijn niet-opgeslagen wijzigingen op deze pagina",
   "upToDate": "Up-to-date",
