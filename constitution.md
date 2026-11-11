@@ -4,7 +4,7 @@
 **Status:** Active
 **Context:** Source of Truth for Architectural Discipline
 **Ratified:** 2025-12-09
-**Last Amended:** 2026-10-21
+**Last Amended:** 2026-11-11
 
 ## Preamble
 This document establishes the immutable principles governing the development process of the Linksys Flutter application. It serves as the architectural DNA of the system, ensuring consistency, simplicity, and quality across all implementations.
@@ -179,10 +179,14 @@ All files MUST use `snake_case`:
 | Provider | `[feature]_provider.dart` | `auth_provider.dart`, `dmz_settings_provider.dart` |
 | State | `[feature]_state.dart` | `auth_state.dart`, `dmz_settings_state.dart` |
 | Model | Based on class name | `dmz_settings.dart`, `dmz_ui_settings.dart` |
-| Test | `[file_name]_test.dart` | `auth_service_test.dart` |
+| Test of one source file | `[file_name]_test.dart` | `auth_service_test.dart` |
+| Test of one source file, split by scenario | `[file_name]_[scenario]_test.dart` | `usp_client_rebind_test.dart` |
+| Test that covers no single source file | Named after what it checks | `composition_root_test.dart`, `mode_contract_roster_test.dart` |
 | Test Data Builder | `[feature]_test_data.dart` | `dmz_test_data.dart`, `auth_test_data.dart` |
 
 **Note**: File names use the **singular** form (`service.dart`, not `services.dart`).
+
+*Amended 2026-11-11 (#1313): the Test row used to assume every test file is named after one `lib/` source, and 42% of test files on `dev-2.7.4` (258 of 613) are not. 50 of them split one source's tests by scenario — `usp_client.dart` alone has seven. Others check a rule across many files — architecture scans, rosters, call-site scans, overflow sweeps — and have no source name to take. Backwards compatible: a test of one source file is named exactly as before.*
 
 ---
 
@@ -215,6 +219,9 @@ class DMZSettingsState extends FeatureState<DMZSettingsUIModel, DMZStatus> { ...
 **3.3.4: Model Classes**
 
 **UI Models** (Presentation Layer):
+
+The `UIModel` suffix is required on one kind of class: one that a Service builds from codegen models (Article VI) **and** that a Provider or State hands to a View to render. Both halves must hold. A class that fails either keeps a name that says what it is. Layout, grid geometry, configuration and registry classes usually fail the first half, but it is the test that decides, not the category.
+
 ```dart
 // Naming pattern: [Feature][Type]UIModel (must end with UIModel)
 class DMZSettingsUIModel extends Equatable { ... }
@@ -222,6 +229,8 @@ class WirelessConfigUIModel extends Equatable { ... }
 class SpeedTestUIModel extends Equatable { ... }
 class FirmwareUpdateUIModel extends Equatable { ... }
 ```
+
+*Amended 2026-11-11 (#1313): the rule named the pattern without saying which classes it binds, so whether `CardGridGeometry`, `WidgetSpec` and `UspLayoutEnvelope` in `lib/page/dashboard/models/` broke it could not be answered from the text. Under the test above, no type in that directory is a UI Model: none is built by a Service, and none imports codegen. Backwards compatible: the definition only says where the suffix is required, so no class is renamed in either direction.*
 
 **Generated Models** (USP Codegen, `lib/generated/*.g.dart`):
 ```dart
@@ -350,23 +359,35 @@ test('Test case 1', () { ... });
 ```
 
 **3.6.2: Test Group Naming**
+
+A group name states what its tests share — the subject, method, behaviour, scenario or category. It does not have to name the class under test:
+* In a test file named after one source file (Section 3.2), the path already names the class. A class prefix would repeat the file name in every group.
+* In a test file that covers no single source file, the group name is all the reader has, so it must make sense on its own.
+
 ```dart
-// Naming pattern: [ClassName] - [Feature/Category]
-group('AuthService - Session Token Management', () { ... });
-group('AuthNotifier - Cloud Login', () { ... });
-group('DMZService - Settings Transformation', () { ... });
+// ✅ Correct
+group('cache dedup', () { ... });                             // bridge_request_throttler_test.dart
+group('fetchSettings', () { ... });                           // usp_internet_settings_service_test.dart
+group('every AppMode is named in every root', () { ... });    // composition_root_test.dart
+group('AuthService - Session Token Management', () { ... });  // a class prefix is allowed, not required
+
+// ❌ Incorrect: numbering says nothing about what the tests share
+group('Group 1', () { ... });
+group('TC-01', () { ... });
 ```
+
+*Amended 2026-11-11 (#1313): this section used to require `[ClassName] - [Feature/Category]`, and on `dev-2.7.4` 136 of 1,861 groups (7%) followed it. The prefix restates the file name wherever the test file is named after its source, and cannot be formed where there is no single source. Nothing in the repo filters tests by class name; `--plain-name` is used only with layout-gate page keys. The part kept is the part that carried information: a group says what its tests share. Backwards compatible: the amendment removes a requirement and adds none that an existing group breaks (no group in the repo uses numbering), so no group is renamed, the 136 prefixed ones included.*
 
 **3.6.3: Test File Organization**
 ```dart
-// test/page/wifi/services/wifi_service_test.dart
+// test/page/wifi/services/wifi_service_test.dart — the path names the class
 void main() {
-  group('WifiService - fetchSettings', () {
+  group('fetchSettings', () {
     test('returns UI model on success', () { ... });
     test('throws ServiceError on USP error', () { ... });
   });
 
-  group('WifiService - updateSsid', () {
+  group('updateSsid', () {
     test('transforms UI model to codegen update', () { ... });
     test('calls UspService with correct parameters', () { ... });
   });
