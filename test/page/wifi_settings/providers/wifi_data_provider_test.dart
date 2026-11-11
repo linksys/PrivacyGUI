@@ -322,38 +322,4 @@ void main() {
       container.dispose();
     });
   });
-
-  group('channelUtilizationRefreshProvider', () {
-    setUpAll(() => registerFallbackValue(WifiCodegenContext.empty));
-
-    test(
-        'reads on opening, then every 60 s while watched, and stops once '
-        'nothing watches it', () {
-      fakeAsync((async) {
-        when(() => mockService.fetchUtilizationByRadioPath(any()))
-            .thenAnswer((_) async => const {});
-        final container = createContainer();
-        container.listen(wifiDataProvider, (_, __) {});
-        async.flushMicrotasks();
-
-        // The Channels tab opens.
-        final tab =
-            container.listen(channelUtilizationRefreshProvider, (_, __) {});
-        async.flushMicrotasks();
-        verify(() => mockService.fetchUtilizationByRadioPath(any())).called(1);
-
-        async.elapse(const Duration(seconds: 59));
-        verifyNever(() => mockService.fetchUtilizationByRadioPath(any()));
-        async.elapse(const Duration(seconds: 1));
-        verify(() => mockService.fetchUtilizationByRadioPath(any())).called(1);
-
-        // The user leaves the tab: the card stops building it.
-        tab.close();
-        async.elapse(const Duration(minutes: 5));
-        verifyNever(() => mockService.fetchUtilizationByRadioPath(any()));
-
-        container.dispose();
-      });
-    });
-  });
 }

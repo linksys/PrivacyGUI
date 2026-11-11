@@ -209,8 +209,9 @@ class WifiDataNotifier extends AsyncNotifier<WifiData> {
   /// Nothing pushes a utilization change, and the only Wi-Fi change the core
   /// subscriptions push (`subscriptions.g.dart`) is a client joining, so
   /// without this the Channels tab keeps the reading from the last time one
-  /// did. [channelUtilizationRefreshProvider] calls it while that tab is on
-  /// screen.
+  /// did. `channelUtilizationRefreshProvider`
+  /// (`channel_utilization_refresh_provider.dart`) calls it while that tab is
+  /// on screen.
   ///
   /// The readings are applied to whatever [state] holds when they arrive, so a
   /// re-read that landed meanwhile keeps its radios and clients. A failed read
@@ -243,31 +244,3 @@ class WifiDataNotifier extends AsyncNotifier<WifiData> {
     ));
   }
 }
-
-/// How often the Channels tab re-reads channel utilization: DataElements
-/// collects it every 60 s (`CollectionInterval` = 60000 on FW 2.0.4), so a
-/// shorter period returns nothing new (#1295).
-const channelUtilizationRefreshInterval = Duration(seconds: 60);
-
-/// While the WiFi Performance card's Channels tab is on screen, re-reads each
-/// radio's channel utilization: once when it opens, then every
-/// [channelUtilizationRefreshInterval] (#1295).
-///
-/// autoDispose and watched only by that tab. The card builds only the
-/// selected tab, so leaving the tab, or the dashboard, disposes this and
-/// stops the timer — the lifecycle of `uspAppsProvider`'s poll.
-final channelUtilizationRefreshProvider = Provider.autoDispose<void>((ref) {
-  var disposed = false;
-  void refresh() {
-    if (disposed) return;
-    unawaited(ref.read(wifiDataProvider.notifier).refreshUtilization());
-  }
-
-  Future.microtask(refresh);
-  final timer =
-      Timer.periodic(channelUtilizationRefreshInterval, (_) => refresh());
-  ref.onDispose(() {
-    disposed = true;
-    timer.cancel();
-  });
-});
