@@ -219,6 +219,9 @@ class DMZSettingsState extends FeatureState<DMZSettingsUIModel, DMZStatus> { ...
 **3.3.4: Model Classes**
 
 **UI Models** (Presentation Layer):
+
+The `UIModel` suffix is required on one kind of class: one that a Service builds from codegen models (Article VI) **and** that a Provider or State hands to a View to render. Both halves must hold. A class that fails either keeps a name that says what it is. Layout, grid geometry, configuration and registry classes usually fail the first half, but it is the test that decides, not the category.
+
 ```dart
 // Naming pattern: [Feature][Type]UIModel (must end with UIModel)
 class DMZSettingsUIModel extends Equatable { ... }
@@ -227,7 +230,7 @@ class SpeedTestUIModel extends Equatable { ... }
 class FirmwareUpdateUIModel extends Equatable { ... }
 ```
 
-A UI Model is the data a Provider or State hands a View to render, built by a Service from codegen models (Article VI). Only those carry the `UIModel` suffix. A class in a feature's `models/` directory that describes layout, grid geometry, configuration or a registry is not a UI Model and keeps a name that says what it is — `CardGridGeometry`, `WidgetSpec` and `UspLayoutEnvelope` in `lib/page/dashboard/models/` are correctly named. *Amended 2026-11-11 (#1313): the rule named the pattern without saying which classes it binds, so whether those three broke it could not be answered from the text. Backwards compatible: the definition only says where the suffix is required, so no class is renamed in either direction.*
+*Amended 2026-11-11 (#1313): the rule named the pattern without saying which classes it binds, so whether `CardGridGeometry`, `WidgetSpec` and `UspLayoutEnvelope` in `lib/page/dashboard/models/` broke it could not be answered from the text. Under the test above, no type in that directory is a UI Model: none is built by a Service, and none imports codegen. Backwards compatible: the definition only says where the suffix is required, so no class is renamed in either direction.*
 
 **Generated Models** (USP Codegen, `lib/generated/*.g.dart`):
 ```dart
@@ -373,7 +376,7 @@ group('Group 1', () { ... });
 group('TC-01', () { ... });
 ```
 
-*Amended 2026-11-11 (#1313): this section used to require `[ClassName] - [Feature/Category]`, and on `dev-2.7.4` 136 of 1,861 groups (7%) followed it. The prefix restates the file name wherever the test file is named after its source, and cannot be formed where there is no single source. Nothing in the repo filters tests by class name; `--plain-name` is used only with layout-gate page keys. The part kept is the part that carried information: a group says what its tests share. Backwards compatible: the amendment removes a requirement and adds none, so no group is renamed, the 136 prefixed ones included.*
+*Amended 2026-11-11 (#1313): this section used to require `[ClassName] - [Feature/Category]`, and on `dev-2.7.4` 136 of 1,861 groups (7%) followed it. The prefix restates the file name wherever the test file is named after its source, and cannot be formed where there is no single source. Nothing in the repo filters tests by class name; `--plain-name` is used only with layout-gate page keys. The part kept is the part that carried information: a group says what its tests share. Backwards compatible: the amendment removes a requirement and adds none that an existing group breaks (no group in the repo uses numbering), so no group is renamed, the 136 prefixed ones included.*
 
 **3.6.3: Test File Organization**
 ```dart
