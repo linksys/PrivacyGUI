@@ -368,12 +368,13 @@ String localizeServiceError(BuildContext context, Object error) {
 
 The `switch` is **exhaustive** over the sealed `ServiceError` — this is a design point: when a subclass is added, the compiler warns that a case is missing here, **forcing you to add the l10n**, so nothing is missed.
 
-### 4.2 batch errors: display the specific message of the first entry
+### 4.2 batch errors: display the reason the router named, else the first entry's message
 
-`Usp*FailureError` holds multiple `failures`. **Strategy: always display the specific error of `failures.first`** (translated into the corresponding l10n sentence by its `errorCode`).
+`Usp*FailureError` holds multiple `failures`. **Strategy: display the reason the router named, else the specific error of `failures.first`** (translated into the corresponding l10n sentence by its `errorCode`).
 
 - ❌ Do not use "N settings failed" — vague, and the user has no way to fix it.
 - ✅ Display the specific error of the first entry; if there is still a second entry after the user fixes it, the next save will display the next one — still traceable.
+- ✅ **A named reason comes first, from any entry** (#1775). linksys/FWDEV#204's checks put an error name at the start of the refused leaf's message (`ErrorRulesOverlap: …`, code 7012), and a refused Set lists every other leaf it carried under the same code with `SetParameterGroup: group set failed at …` — the refused leaf need not be listed first. `UspResultParser` reads the name into `UspErrorDetail.refusalReason` (a `UspRefusalReason`) when the failure comes in, and `mapUspErrorToServiceError` does the same for a thrown one. The mapper looks for the first entry whose `refusalReason` is not `unknown` and shows that reason's message; with none, `failures.first.errorCode` decides as below. **Never read `errorMessage` in the mapper** — a new name is a new `UspRefusalReason` value, which the exhaustive switch then asks you to localize.
 
 ```dart
 String _localizeFaultCode(BuildContext context, int code) => switch (code) {
@@ -397,10 +398,10 @@ String _localizeFaultCode(BuildContext context, int code) => switch (code) {
    errorInvalidInput, errorNetwork, errorConnectivity, errorTimeout,
    errorServiceNotReady, errorUnexpected
    ```
-   Plus the shared: `failedToLoadSettings`, `retry`.
+   Plus the shared: `failedToLoadSettings`, `retry`. And one `errorRefusedXxx` per `UspRefusalReason` value (the reason a firmware refusal names, see §4.2), named after the value: `UspRefusalReason.rulesOverlap` → `errorRefusedRulesOverlap`.
 3. **Multi-language**: after adding the English key to `app_en.arb`, also add translations for the other 25 locales (`app_es.arb` / `app_ja.arb` …).
 
-**In most cases you don't need to add an error key** — the existing 12 types already cover common errors. You only need to when adding a ServiceError subclass (see §6).
+**In most cases you don't need to add an error key** — the existing 12 types already cover common errors. You only need to when adding a ServiceError subclass (see §6), or a `UspRefusalReason` value for a new firmware error name (§4.2).
 
 ---
 

@@ -247,6 +247,7 @@ class UspWifiDataService {
         transmitPower: radio.transmitPower,
         maxBitRate: radio.maxBitRate,
         channel: radio.channel,
+        channelInUse: parseChannelInUse(radio.channelsInUse),
         autoChannelEnable: radio.autoChannelEnable,
         channelBandwidth: radio.operatingChannelBandwidth,
         supportedStandards: radio.supportedStandards,

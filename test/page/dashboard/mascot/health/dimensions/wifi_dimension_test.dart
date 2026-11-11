@@ -26,6 +26,7 @@ void main() {
         transmitPower: 100,
         maxBitRate: 1200,
         channel: 6,
+        channelInUse: 6,
         autoChannelEnable: true,
         channelBandwidth: '20MHz',
         supportedStandards: '802.11ax',

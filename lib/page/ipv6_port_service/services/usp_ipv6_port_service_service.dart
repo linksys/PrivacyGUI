@@ -131,7 +131,7 @@ class UspIpv6PortServiceService {
                   ))
               .toList(),
         );
-        tally.record('Add', UspResultParser.parseAddResult(result));
+        await tally.recordAdd(_usp, 'Add', result);
       }
 
       tally.throwIfAnyFailed();

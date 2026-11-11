@@ -43,9 +43,9 @@ void main() {
     required String channelDisplay,
     required List<WifiAccessPointUIModel> aps,
   }) {
-    // channelDisplay is derived from channel + autoChannelEnable; pick values
-    // that reproduce the desired string. "149 (Auto)" is a realistic worst
-    // case: a 3-digit 5 GHz channel plus the Auto suffix.
+    // channelInUseDisplay is derived from channelInUse + autoChannelEnable;
+    // pick values that reproduce the desired string. "149 (Auto)" is a
+    // realistic worst case: a 3-digit 5 GHz channel plus the Auto suffix.
     final parts = channelDisplay.endsWith(' (Auto)');
     final channel = int.parse(channelDisplay.replaceAll(' (Auto)', '').trim());
     return WifiData(
@@ -58,6 +58,7 @@ void main() {
           transmitPower: -1,
           maxBitRate: 4800,
           channel: channel,
+          channelInUse: channel,
           autoChannelEnable: parts,
           channelBandwidth: '80MHz',
           supportedStandards: '802.11ax',

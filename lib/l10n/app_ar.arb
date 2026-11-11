@@ -1305,5 +1305,19 @@
   "invalidSubnetMask": "قناع الشبكة الفرعية غير صالح",
   "reservationNameHint": "الاسم (اختياري)",
   "reservationNameInvalid": "استخدم الأحرف والأرقام و -، دون أن يبدأ أو ينتهي بـ -",
-  "reservationNameInUse": "يوجد حجز آخر بهذا الاسم بالفعل"
+  "reservationNameInUse": "يوجد حجز آخر بهذا الاسم بالفعل",
+  "errorRefusedRulesOverlap": "لم يقبل جهاز التوجيه هذه القاعدة: منافذها تتداخل مع قاعدة أخرى على البروتوكول نفسه.",
+  "errorRefusedTooManyRules": "لم يقبل جهاز التوجيه هذه القاعدة: القائمة ممتلئة.",
+  "errorRefusedInvalidInternalServerIpAddress": "لم يقبل جهاز التوجيه هذه القاعدة: عنوان IP لا يخص أي جهاز على شبكتك المحلية.",
+  "errorRefusedDescriptionTooLong": "لم يقبل جهاز التوجيه هذه القاعدة: الاسم طويل جدًا.",
+  "errorRefusedInvalidDestinationIpAddress": "لم يقبل جهاز التوجيه عنوان IP لمضيف DMZ.",
+  "errorRefusedInvalidDestinationMacAddress": "لم يقبل جهاز التوجيه عنوان MAC لمضيف DMZ.",
+  "errorRefusedMultipleDestinations": "لم يقبل جهاز التوجيه مضيف DMZ: حدّده بعنوان IP أو بعنوان MAC، وليس بكليهما.",
+  "errorRefusedInvalidSourceRestriction": "لم يقبل جهاز التوجيه نطاق عناوين IP المصدر: إنه نطاق محجوز.",
+  "errorRefusedNoPortRanges": "لم يقبل جهاز التوجيه هذه القاعدة: لا تحتوي على منفذ.",
+  "errorRefusedInvalidPortRange": "لم يقبل جهاز التوجيه هذه القاعدة: منفذ البداية أكبر من منفذ النهاية.",
+  "errorRefusedInvalidPort": "لم يقبل جهاز التوجيه هذه القاعدة: رقم منفذ غير صالح.",
+  "errorRefusedDescriptionInUse": "لم يقبل جهاز التوجيه هذه القاعدة: توجد قاعدة جدار حماية أخرى بهذا الاسم بالفعل.",
+  "dmzDestination": "الوجهة",
+  "macAddressRequired": "عنوان MAC مطلوب"
 }

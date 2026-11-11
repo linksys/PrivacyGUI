@@ -106,7 +106,7 @@ import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_reservations_det
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_server_info_card.dart';
 import 'package:privacy_gui/page/dhcp/views/usp_dhcp_detail_view.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart'
-    show DmzSourceType;
+    show DmzDestinationType, DmzSourceType;
 import 'package:privacy_gui/page/dmz/views/usp_dmz_view.dart';
 import 'package:privacy_gui/page/firewall/views/usp_firewall_view.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_install_phase_card.dart';
@@ -198,6 +198,7 @@ import 'package:ui_kit_library/ui_kit.dart'
         AppPasswordInput,
         AppPinInput,
         AppRadioList,
+        AppSelectAutoComplete,
         AppSliverTimeline,
         AppStepper,
         AppSwitch,
@@ -245,6 +246,7 @@ import '../../mocks/test_data/scenes/dhcp_scene_data.dart' as dhcp;
 import '../../mocks/test_data/scenes/login_scene_data.dart';
 import '../../mocks/test_data/scenes/pnp_scene_data.dart';
 import '../../mocks/test_data/scenes/port_forwarding_scene_data.dart' as pf;
+import '../../mocks/test_data/scenes/dmz_scene_data.dart' as dmz;
 import '../../mocks/test_data/scenes/ipv6_port_service_scene_data.dart' as ipv6;
 import '../../mocks/test_data/scenes/topology_scene_data.dart';
 import '../../mocks/test_data/scenes/unified_diagnostics_scene_data.dart';
@@ -1946,22 +1948,26 @@ final kAppsPageCase = PageSurfaceCase(
   forbids: const [AppLoader],
 );
 
-/// `usp_dmz_view` — one switch, one IPv4 field and a two-option radio list, in three
-/// cards that appear as the switch is turned on.
+/// `usp_dmz_view` — one switch and two two-option radio lists (the DMZ host by IP or
+/// by MAC since #1775, then the source), in three cards that appear as the switch is
+/// turned on.
 ///
 /// **The first Type A form page in this family that is not a `pnp` step**, and what it
 /// adds over wave 2's forms is a field whose width is fixed in logical pixels rather
-/// than granted by the layout. `AppIpv4TextField` is four boxes and three separators;
-/// the CIDR field under the radio list is an `AppTextFormField` inside a
-/// `BoxConstraints(maxWidth: 429)` (`usp_dmz_view.dart:276`). At 320px the content box
+/// than granted by the layout. Until #1775 the destination was an `AppIpv4TextField`,
+/// four boxes and three separators; it is now an `AppTextFormField` under an
+/// [AppSelectAutoComplete]. The CIDR field under the source list is an
+/// `AppTextFormField` inside a
+/// `BoxConstraints(maxWidth: 429)` (`_buildSourceCard` in `usp_dmz_view.dart`). At 320px the content box
 /// is 288px, so the constraint is inert and the field takes what it is given — but both
 /// sit inside `LayoutBlock`s inside `AppCard`s with `AppSpacing.md` padding twice over,
 /// which is 24px of the 288 gone before the field starts. That stack is what these
 /// cells measure and what no `pnp` page has.
 ///
-/// The premise is three widgets and each one is a card: [AppSwitch] is the enable card,
-/// [AppIpv4TextField] the destination card, [AppRadioList] the source card. Naming all
-/// three is not belt-and-braces here — the last two render only
+/// The premise is one widget per card: [AppSwitch] is the enable card,
+/// `AppRadioList<DmzDestinationType>` and its [AppSelectAutoComplete] the destination
+/// card, `AppRadioList<DmzSourceType>` the source card. Naming them all
+/// is not belt-and-braces here — the last two render only
 /// `if (pending.isEnabled)`, so a fixture that lost `isEnabled` would still satisfy a
 /// premise that named the switch alone, and 234 cells would measure a page with
 /// two-thirds of its content absent and nothing to overflow. The radio list is named at
@@ -1985,7 +1991,39 @@ final kDmzPageCase = PageSurfaceCase(
   requires: const [
     UspTopBar,
     AppSwitch,
-    AppIpv4TextField,
+    AppRadioList<DmzDestinationType>,
+    AppSelectAutoComplete,
+    AppRadioList<DmzSourceType>,
+  ],
+  forbids: const [AppLoader, ServiceErrorView],
+);
+
+/// [kDmzPageCase] with the DMZ host given by MAC (#1775).
+///
+/// Since #1775 the destination card is a second radio list, IP address or MAC
+/// address (FWDEV#204's `X_LINKSYS_DestMACAddress`), whose selected item expands
+/// into an [AppSelectAutoComplete] over an `AppTextFormField`; it replaced the
+/// `AppIpv4TextField` the default case used to require. What MAC mode adds is
+/// text, not widgets: the radio list's selected item moves to the second row, and
+/// the field's hint — `macAddressHint`, "MAC Address (e.g. AA:BB:CC:DD:EE:FF)" —
+/// is the longest string the card renders, which is why the scene leaves the
+/// field empty.
+///
+/// **The premise cannot tell the two modes apart, and says so.** Both build the
+/// same types, so a fixture that drifted back to IP mode would satisfy these
+/// `requires` and sweep its sibling's tree twice. The scene pins the mode
+/// (`gateDmzMacState`, `destinationType: mac`) and nothing here re-checks it.
+/// Not a tab case, so no `sharesTabWith`; it pairs the way `firmware_failed` and
+/// `ipv6_port_service_full` do.
+final kDmzMacPageCase = PageSurfaceCase(
+  id: 'dmz_mac',
+  view: () => const UspDmzView(),
+  overrides: () => dmzOverrides(dmz.gateDmzMacState),
+  requires: const [
+    UspTopBar,
+    AppSwitch,
+    AppRadioList<DmzDestinationType>,
+    AppSelectAutoComplete,
     AppRadioList<DmzSourceType>,
   ],
   forbids: const [AppLoader, ServiceErrorView],
@@ -2986,6 +3024,7 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kAdminPageCase,
   kAppsPageCase,
   kDmzPageCase,
+  kDmzMacPageCase,
   kFirewallPageCase,
   kInstantPrivacyPageCase,
   kInstantSafetyPageCase,

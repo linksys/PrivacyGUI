@@ -1305,5 +1305,19 @@
   "invalidSubnetMask": "Máscara de sub-rede inválida",
   "reservationNameHint": "Nome (opcional)",
   "reservationNameInvalid": "Use letras, números e -, sem - no início ou no fim",
-  "reservationNameInUse": "Outra reserva já tem este nome"
+  "reservationNameInUse": "Outra reserva já tem este nome",
+  "errorRefusedRulesOverlap": "O roteador não aceitou esta regra: as portas se sobrepõem a outra regra no mesmo protocolo.",
+  "errorRefusedTooManyRules": "O roteador não aceitou esta regra: a lista está cheia.",
+  "errorRefusedInvalidInternalServerIpAddress": "O roteador não aceitou esta regra: o endereço IP não pertence a nenhum dispositivo da sua rede local.",
+  "errorRefusedDescriptionTooLong": "O roteador não aceitou esta regra: o nome é muito longo.",
+  "errorRefusedInvalidDestinationIpAddress": "O roteador não aceitou o endereço IP do host DMZ.",
+  "errorRefusedInvalidDestinationMacAddress": "O roteador não aceitou o endereço MAC do host DMZ.",
+  "errorRefusedMultipleDestinations": "O roteador não aceitou o host DMZ: defina-o pelo endereço IP ou pelo endereço MAC, não pelos dois.",
+  "errorRefusedInvalidSourceRestriction": "O roteador não aceitou o intervalo de IP de origem: é um intervalo reservado.",
+  "errorRefusedNoPortRanges": "O roteador não aceitou esta regra: ela não tem nenhuma porta.",
+  "errorRefusedInvalidPortRange": "O roteador não aceitou esta regra: a porta inicial é maior que a porta final.",
+  "errorRefusedInvalidPort": "O roteador não aceitou esta regra: um número de porta não é válido.",
+  "errorRefusedDescriptionInUse": "O roteador não aceitou esta regra: outra regra de firewall já tem este nome.",
+  "dmzDestination": "Destino",
+  "macAddressRequired": "O endereço MAC é obrigatório"
 }

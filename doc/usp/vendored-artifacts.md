@@ -11,13 +11,50 @@ Files in this repo that are built or generated from `linksys/usp_framework` and 
 
 ## Manifest
 
-**Last updated**: 2026-10-27 (all of `lib/generated` on usp-codegen 0.19.0, from `usp_framework` `main` @ `3d0bbef`, #1654; see below)
+**Last updated**: 2026-11-09 (usp-client 0.14.0, linksys/usp_framework#114; see below). Before that 2026-10-27 (all of `lib/generated` on usp-codegen 0.19.0, from `usp_framework` `main` @ `3d0bbef`, #1654; see below)
 
 The web package records reviewed `usp_framework` commit
-`d135f4df652684bc176bc02d83ec4a1c7b84c65c` (merged `main`, PR #59 — the
-unmodified Broadband Forum USP schemas, which fixed `OperateResp` swallowing
-synchronous failures) and was built with both the
-`wasm` and `websocket` features. Machine-verifiable local hashes and the
+`d5604633785091f94d93c9a992f3848ece7fb6e8`, the commit CI built the 0.14.0
+package from (run 42589938930, artifact
+`usp-client-wasm-d5604633…`). It reached `main` as `381d69f` (PR #116,
+linksys/usp_framework#114), and the `pkg/` files there match the artifact
+manifest's SHA-256 digests. It was built with both the `wasm` and `websocket`
+features.
+
+**0.14.0 changes what a refused Add returns.** An agent that creates an object
+but refuses some of its parameters reports each one in AddResp's
+`OperationSuccess.param_errs`. The client sends every Add parameter with
+`required: false`, so FL-WRT's FWDEV#204 checks land there, and 0.13.0 dropped
+them: a refused Add answered as a clean success. 0.14.0 keeps `success: true`
+and the instance in `data.instances`, since the row does exist on the router,
+and adds one `error` entry per refused parameter, keyed
+`<instance path><param>`. `UspResultParser.parseAddResult` reads that as a
+`UspPartialSuccess`, so the services that add rows now report a failed save.
+Measured, 2026-11-09: the bench's captured response to a 26th port trigger
+(FW 2.0.4.26103108) decodes under 0.13.0 as a clean success, and under 0.14.0
+with `Device.NAT.PortTrigger.26.Port` →
+`ErrorTooManyRules: at most 25 port triggering rules.` (code 7005).
+**The half-written row stays on the router**, so the app deletes it:
+every service that adds rows parses the Add with
+`parseAddRemovingRefusedRows` (`lib/page/_shared/services/refused_add_service.dart`;
+batch saves call it through `BatchTally.recordAdd`). It deletes each instance
+row a failure names, highest number first, and never a table path. When that
+was every row the Add created, the Add reads as a complete failure, so the
+page keeps the user's edit. Otherwise it stays a partial success, and the page
+reads the router again. Port forwarding, IPv6 port services and DMZ do that
+through `saveReadingBackAfterPartialWrite`
+(`lib/framework/preservable_notifier_mixin.dart`), which also makes the next
+Save read the router first when that re-read fails. DHCP reservations (#1698)
+and static routes re-read after any failed save, since a refused Set there
+still writes the rest, through `saveReadingBackAfterFailure`, which keeps the
+same read-first rule. The dashboard's quick adds (port forwarding, DHCP)
+refresh their card after a failure. DHCP's batch save moved to `BatchTally`
+at the same time: it used to log a partial result and report it as saved.
+`required: true` is linksys/usp_framework#115, still open.
+
+0.13.0 was built from `d135f4df` (merged `main`, PR #59, the unmodified
+Broadband Forum USP schemas, which fixed `OperateResp` swallowing synchronous
+failures). Machine-verifiable local hashes and the
 reviewed upstream paths are recorded in `web/usp-artifacts.json`. Consumer CI
 does not authenticate the cross-repository commit reference; the producer
 repository owns the source-to-committed-package rebuild gate.
@@ -32,9 +69,9 @@ without review.
 | # | Artifact | Version | Checked-in path | Upstream source |
 |---|----------|---------|-----------------|-----------------|
 | 1 | `usp-codegen` (Mach-O arm64) | **0.19.0** | `tools/usp-codegen` | `usp-codegen/bin/usp-codegen` (built from `src/` via `Makefile.standalone`) |
-| 2 | `usp_client.js` | **0.13.0** | `web/usp_client.js` | `usp-client/pkg/usp_client.js` |
-| 3 | `usp_client_bg.wasm` | **0.13.0** | `web/usp_client_bg.wasm` | `usp-client/pkg/usp_client_bg.wasm` |
-| 4 | `usp_client.d.ts` | **0.13.0** | `web/usp_client.d.ts` | `usp-client/pkg/usp_client.d.ts` |
+| 2 | `usp_client.js` | **0.14.0** | `web/usp_client.js` | `usp-client/pkg/usp_client.js` |
+| 3 | `usp_client_bg.wasm` | **0.14.0** | `web/usp_client_bg.wasm` | `usp-client/pkg/usp_client_bg.wasm` |
+| 4 | `usp_client.d.ts` | **0.14.0** | `web/usp_client.d.ts` | `usp-client/pkg/usp_client.d.ts` |
 
 ## Derived (generated locally, not copied)
 
@@ -66,6 +103,8 @@ The YAML definitions are **not vendored** into this repo and individual definiti
 **`system_info.g.dart` carries `hostName` (#1751).** It is 0.19.0 output from `usp_framework` `main` @ `4eabb53`, the merge of linksys/usp_framework#108: `system_info.yaml` 2.4.0 adds `hostName` on `.HostName`, read-only and optional, which the controller's name falls back to before its model (`MeshNetworkBuilder`, master branch). `lan_network_info.yaml` already reads the same leaf and keeps the write. It was first generated contract first from #108's branch (`5ccebaa`, on `a19b9d5`, the merge of PR #105); #107 was the same commit from a fork, closed because CI does not run on fork PRs there. **Recheck after #108 merged:** ~~regenerate `system_info.g.dart` from merged `main` and diff it against the contract-first output.~~ **Done 2026-11-02** at `4eabb53`: byte-identical, and every other file the command writes is unchanged, `gre_tunnels.g.dart`, `l2tp_tunnels.g.dart` and `wan_settings.g.dart` included, so the checked-in output of PR #105's head agrees with merged `main` too; `index.dart` comes out in a different order with the same exports and is left as checked in.
 
 **`mac_filter_network.g.dart` and `subscriptions.g.dart` carry the MAC filter mode subscription (#1755).** They are 0.19.0 output from `usp_framework` `main` @ `4eabb53` with `mac_filter_network.yaml` replaced by its 1.1.0 from linksys/usp_framework#112, which has since merged as `298af0d`. The 1.1.0 file adds a ValueChange subscription, `mac-filter-mode-valuechange`, on `Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode` alone. The two files differ from `4eabb53`'s output only by that subscription: a `subscribe()` method the app does not call, and one `coreSubscriptions` row, which a session registers only on firmware with `wifiMacFilter` (`coreSubscriptionsFor`). Every other file the same command writes is unchanged, and with the base YAML the command reproduces both checked-in files byte for byte. They are not generated from `main` because `main` has since gained `dynamic_dns.yaml` (#641), whose `ddns-valuechange` would enter `coreSubscriptions` with no consumer here. **Recheck after #112 merged:** ~~regenerate the two files from merged `main` and diff them against these.~~ **Done 2026-11-05** at `298af0d`, the merge of linksys/usp_framework#112: `mac_filter_network.g.dart` is byte-identical, and `subscriptions.g.dart` differs only by the `ddns-valuechange` row, which stays out until #641 consumes it. Until then, regenerate `subscriptions.g.dart` with `network/dynamic_dns.yaml` left out of the definitions directory, so the row does not come back; never delete it from the output by hand.
+
+**`wi_fi_radios.g.dart` carries `channelsInUse` (#1782).** It is 0.19.0 output from `usp_framework` `main` @ `5292301`, which contains linksys/usp_framework#120 (merged 2026-11-11 as `5887110`): `wi_fi_radios.yaml` 1.2.0 adds `channelsInUse` on `.ChannelsInUse`, read-only, a required `string`, and says `channel` is the configured channel. Generated with `network/dynamic_dns.yaml` left out, as above, from `git archive upstream/main usp-definitions` rather than from the fork clone's checkout. Only this file is taken. The same command also rewrites `data_elements_network.g.dart`, `data_elements_network_info.g.dart`, `data_elements_network_operations.g.dart` and `device_operations.g.dart`; that is linksys/usp_framework#113 (Architecture#195, whole-network `X_LINKSYS_RebootAll()` / `X_LINKSYS_FactoryResetAll()`, the action-status leaves, and `Device.Reboot()` / `Device.FactoryReset()` described as this node only), which belongs to #1777 and is left as checked in. With the definitions of `298af0d` the command reproduces every checked-in file byte for byte except `index.dart`'s order. Because the new leaf is required, a radio row without it fails `WiFiRadios.fetch()` with 9998; demo mode and the E2E runs read the canonical fixture in linksys/PrivacyGUI-USP-E2E, whose radios gain it in linksys/PrivacyGUI-USP-E2E#179.
 
 Make sure that clone's `main` is up to date with `upstream` (`github.com/linksys/usp_framework`), not just with `origin`. Generating from a stale fork `main` silently reproduces the bug #1555 fixed: the fork's `data_elements_network.yaml` was the 2026-08-05 revision and had no `data_elements_network_info.yaml`.
 

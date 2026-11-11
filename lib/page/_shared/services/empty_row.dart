@@ -46,11 +46,12 @@ bool isEmptyDhcpClient(DhcpClient c) {
 bool isEmptyDhcpReservation(DhcpReservation r) =>
     [r.enable, r.chaddr, r.yiaddr].every(isBlank);
 
-/// A DMZ row with no host, source, interface or state. Its MAC is new in
-/// usp-codegen 0.18 and was not read.
+/// A DMZ row with no host (by IP or by MAC, #1775), source, interface or
+/// state.
 bool isEmptyDmzEntry(DmzEntry d) => [
       d.enable,
       d.destIp,
+      d.destMacAddress,
       d.sourcePrefix,
       d.interface_,
       d.description,
@@ -88,7 +89,9 @@ bool isEmptyWiFiAccessPoint(WiFiAccessPoint a) => [
       a.ssidReference,
     ].every(isBlank);
 
-/// A Wi-Fi radio row with no band, channel or capability.
+/// A Wi-Fi radio row with no band, channel or capability. Its channel in use
+/// is new in WiFiRadios 1.2.0 and is not read (#1782): a row with only that
+/// leaf set has no band and no state, so it is no radio a page could name.
 bool isEmptyWiFiRadio(WiFiRadio r) => [
       r.alias,
       r.enable,

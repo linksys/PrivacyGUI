@@ -27,6 +27,10 @@ void main() {
                     instancePath: 'Device.Firewall.DMZ.1.'),
               ),
             ),
+        // #1775: the DMZ host given by MAC, its field empty so the hint shows.
+        'enabled_mac': (overrides) => overrides.addAll(
+              dmzOverrides(gateDmzMacState),
+            ),
         'edit_dirty': (overrides) => overrides.addAll(
               dmzOverrides(dirtyState()),
             ),
