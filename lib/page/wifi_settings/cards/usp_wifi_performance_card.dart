@@ -493,7 +493,7 @@ class _ChannelsTab extends StatelessWidget {
                         ],
                       ),
                       AppText.bodySmall(
-                        '${loc(context).channel} ${radio.channelDisplay}'
+                        '${loc(context).channel} ${radio.channelInUseDisplay}'
                         '  \u00b7  ${radio.channelBandwidth}',
                         color: colorScheme.onSurfaceVariant,
                       ),

@@ -58,7 +58,14 @@ class DhcpPoolUsageUIModel {
 class WiFiRadioUIModel {
   final String instancePath;
   final String band;
+
+  /// The configured channel (`Radio.{i}.Channel`), which a fixed channel keeps
+  /// when the radio moves. The channel the radio is on is [channelInUse].
   final int channel;
+
+  /// The channel the radio is on (`Radio.{i}.ChannelsInUse`), or null when
+  /// unknown (#1782).
+  final int? channelInUse;
   final String channelBandwidth;
   final int transmitPower;
   final String status;
@@ -68,6 +75,7 @@ class WiFiRadioUIModel {
     required this.instancePath,
     required this.band,
     required this.channel,
+    required this.channelInUse,
     required this.channelBandwidth,
     required this.transmitPower,
     required this.status,
@@ -139,7 +147,13 @@ class RadioSignalStatsUIModel {
   /// Empty when this bucket holds clients whose radio could not be resolved.
   final String instancePath;
   final String band;
+
+  /// The configured channel (`Radio.{i}.Channel`); see [channelInUse].
   final int channel;
+
+  /// The channel the radio is on (`Radio.{i}.ChannelsInUse`), or null when
+  /// unknown, as it is for the bucket of clients no radio resolved (#1782).
+  final int? channelInUse;
   final String status;
   final int clientCount;
 
@@ -153,6 +167,7 @@ class RadioSignalStatsUIModel {
     required this.instancePath,
     required this.band,
     required this.channel,
+    required this.channelInUse,
     required this.status,
     required this.clientCount,
     required this.averageRssi,

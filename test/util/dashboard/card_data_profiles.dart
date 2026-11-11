@@ -146,7 +146,7 @@ final triBandProfile = CardDataProfile(
       '(testWifiDataTriBand)',
   overrides: () => cardOverrides(wifiData: testWifiDataTriBand),
   // The third radio's channel string, which only this profile can produce:
-  // `channelDisplay` appends ` (Auto)` unlocalized, and no default fixture has a
+  // `channelInUseDisplay` appends ` (Auto)` unlocalized, and no default fixture has a
   // 320MHz radio. Both halves are checked because either alone could survive a
   // partially-applied override.
   markers: const ['233 (Auto)', '320MHz'],
