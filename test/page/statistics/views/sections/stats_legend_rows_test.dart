@@ -236,11 +236,15 @@ void main() {
           // satisfied by a legend shredded into one group per line. Runs are
           // counted off the labels' own y positions, clustered at 2px, because
           // `Wrap` exposes no run count.
+          // #1324 declared change (d): the kit's 16px `ChartMark` replaces the
+          // 8px dot, so the four-entry signal quality legend may take a third
+          // run at 320px. Every label above is still asserted whole.
+          final maxRuns = identical(site, _signalQualitySite) ? 3 : 2;
           expect(
             _runCount(tops),
-            lessThanOrEqualTo(2),
-            reason: '${site.name} legend took more than two lines in $tag at '
-                '320px (label tops: $tops)',
+            lessThanOrEqualTo(maxRuns),
+            reason: '${site.name} legend took more than $maxRuns lines in $tag '
+                'at 320px (label tops: $tops)',
           );
         });
       }
@@ -276,30 +280,19 @@ void main() {
             reason: '"$label" ends in the sample count; an ellipsis would eat '
                 'the number this legend exists to state',
           );
+          // #1324 declared change (e): the kit's `AppChartLegendEntry.statistic`
+          // never clips — it hard-codes `maxLines: null` — so the label is
+          // uncapped and must soft-wrap whole rather than within a 2-line cap.
           expect(
             text.maxLines,
-            isNotNull,
-            reason: 'the label must be line-capped: it is the only child that '
-                'can yield, so an uncapped one would grow the legend into the '
-                'chart instead of overflowing',
-          );
-          expect(
-            text.maxLines,
-            lessThanOrEqualTo(2),
-            reason:
-                'two lines is the budget — the chart above it is `Expanded` '
-                'and yields the height, but not without limit',
+            isNull,
+            reason: 'the kit `.statistic` entry is uncapped by design (#1324 '
+                'declared change (e))',
           );
           expect(
             tester.isTextClipped(finder),
             isFalse,
-            reason: '"$label" hit its `maxLines` cap in $tag at 320px, so the '
-                'cap is too low for this string',
-          );
-          expect(
-            tester.textLineCount(finder),
-            lessThanOrEqualTo(text.maxLines!),
-            reason: '"$label" painted on more lines than its cap allows',
+            reason: '"$label" was clipped in $tag at 320px',
           );
           if (!kLocalesWithoutWordSpaces.contains(tag)) {
             expect(
@@ -366,17 +359,7 @@ final _sites = <_LegendSite>[
   // this section at 9 widths × 26 locales (`page_surface_cases.dart`), so the 22
   // not listed here are measured, just not for legibility. These four are the
   // widest realizations of the row, so a regression in it reddens here first.
-  _LegendSite(
-    name: 'signal quality',
-    section: () => const StatsSignalQualitySection(),
-    locales: const ['ru', 'th', 'es', 'pl'],
-    labels: (l10n) => [
-      '${l10n.excellent}: ${_distribution.signalLevelDistribution[3]}',
-      '${l10n.good}: ${_distribution.signalLevelDistribution[2]}',
-      '${l10n.fair}: ${_distribution.signalLevelDistribution[1]}',
-      '${l10n.poor}: ${_distribution.signalLevelDistribution[0]}',
-    ],
-  ),
+  _signalQualitySite,
   // 5 of 26 at 320px — de, el, es, es_AR, fi; worst `el` at 28px.
   _LegendSite(
     name: 'device distribution',
@@ -406,6 +389,21 @@ final _sites = <_LegendSite>[
   ),
   _softWrapSite,
 ];
+
+/// The four-entry signal quality legend — the widest `Wrap` site. Held by
+/// identity so the run-count budget in #1324 declared change (d) cannot drift
+/// onto another site through a display-name edit.
+final _signalQualitySite = _LegendSite(
+  name: 'signal quality',
+  section: () => const StatsSignalQualitySection(),
+  locales: const ['ru', 'th', 'es', 'pl'],
+  labels: (l10n) => [
+    '${l10n.excellent}: ${_distribution.signalLevelDistribution[3]}',
+    '${l10n.good}: ${_distribution.signalLevelDistribution[2]}',
+    '${l10n.fair}: ${_distribution.signalLevelDistribution[1]}',
+    '${l10n.poor}: ${_distribution.signalLevelDistribution[0]}',
+  ],
+);
 
 /// The one site `Wrap` cannot fix — a single dot and a single label.
 ///
