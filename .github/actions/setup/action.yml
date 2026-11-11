@@ -111,10 +111,11 @@ runs:
     # a red test rather than a silent return to floating.
     #
     # This pins CI, not every consumer. linksys/PrivacyGUI-golden-ci clones this
-    # repo and reads the lock, but it runs a plain `flutter pub get` on
-    # `channel: stable` (3.47.9 on 2026-11-10, against 3.47.2 here), so the
-    # packages Flutter pins itself re-resolve there without failing. Its goldens
-    # float until that repo pins the SDK and enforces the lock too.
+    # repo and reads the lock, but it sets Flutter up from `channel: stable`
+    # (3.47.9 on 2026-11-10, against 3.47.2 here) and runs a plain
+    # `flutter pub get`. So its goldens are drawn by an engine this repo does not
+    # pin, and a lock that stopped matching there would be re-resolved without
+    # failing. Tracked in linksys/PrivacyGUI-golden-ci#42.
     - name: Install Dependencies
       shell: bash
       run: flutter pub get --enforce-lockfile
