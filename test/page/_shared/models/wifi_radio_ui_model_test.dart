@@ -67,8 +67,8 @@ void main() {
     });
 
     // Utilization changes about once a minute with nothing else on the radio
-    // changing (#1295), so it must count for equality, or the Channels tab
-    // would keep printing the reading it was first built with.
+    // changing (#1295), so it must count for equality: a re-read that brings
+    // only a new reading must still rebuild the Channels tab.
     test('utilization is included in equality', () {
       expect(_createRadio(utilization: 46),
           isNot(equals(_createRadio(utilization: 58))));

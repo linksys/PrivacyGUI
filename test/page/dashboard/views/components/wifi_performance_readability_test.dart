@@ -468,19 +468,25 @@ void main() {
     // line it sits under. Plus attribution, as for the channel readout above.
     //
     // `th` is the widest locale at this width (see the band/channel row's
-    // figures in `usp_wifi_performance_card.dart`).
+    // figures in `usp_wifi_performance_card.dart`). The tri-band profile, so
+    // that both forms of the line are checked in every locale here: a reading
+    // on 2.4 and 5 GHz, and the unknown form on 6 GHz.
     for (final tag in ['en', 'ru', 'tr', 'th']) {
       testWidgets(
-          'each radio\'s channel utilization is whole and unshrunken at the '
-          'narrowest width in $tag', (tester) async {
+          'each radio\'s channel utilization, read or unknown, is whole and '
+          'unshrunken at the narrowest width in $tag', (tester) async {
         final locale = _localeFor(tag);
-        await pumpNarrowest(tester, tabIndex: 2, locale: locale);
+        await pumpNarrowest(tester,
+            tabIndex: 2,
+            locale: locale,
+            extraOverrides: triBandProfile.overrides());
         final l = await AppLocalizations.delegate.load(locale);
 
-        // `testRadios`: 46 on 2.4 GHz and 11 on 5 GHz, the bench's readings.
+        // 46 on 2.4 GHz and 11 on 5 GHz (the bench's readings), none on 6 GHz.
         final readouts = [
           exactly(tester, l.channelUtilizationValue(18)),
           exactly(tester, l.channelUtilizationValue(4)),
+          exactly(tester, l.channelUtilizationUnavailable),
         ];
         final texts = renderedTexts(tester);
         final bands = texts
@@ -489,7 +495,7 @@ void main() {
           ..sort(
               (a, b) => rectOf(tester, a).top.compareTo(rectOf(tester, b).top));
         final snrs = texts.where((t) => t.data!.contains(_snrMarker)).toList();
-        expect(bands.map((t) => t.data), ['2.4GHz', '5GHz']);
+        expect(bands.map((t) => t.data), ['2.4GHz', '5GHz', '6GHz']);
 
         for (final (i, readout) in readouts.indexed) {
           expectWholeAndUnshrunken(tester, readout, besideSnrOf: snrs);

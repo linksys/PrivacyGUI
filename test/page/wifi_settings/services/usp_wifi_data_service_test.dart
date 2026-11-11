@@ -111,17 +111,20 @@ Map<String, dynamic> _buildDataElementsRadiosResponse() => {
 /// Stubs `mockUsp.get()` to return the right response based on the requested
 /// paths. Each codegen `.fetch()` requests distinct base paths, so we can
 /// dispatch based on the first path element. [radios] replaces the radio
-/// table and [dataElements] the DataElements radio leaves.
+/// table and [dataElements] the DataElements radio leaves;
+/// [dataElementsFails] makes the DataElements read throw instead.
 void _stubAllFetches(
   MockUspClient mockUsp, {
   Map<String, dynamic>? radios,
   Map<String, dynamic>? dataElements,
+  bool dataElementsFails = false,
 }) {
   when(() => mockUsp.get(any(), priority: any(named: 'priority')))
       .thenAnswer((invocation) async {
     final paths = invocation.positionalArguments[0] as List<String>;
     final first = paths.isNotEmpty ? paths.first : '';
     if (first.startsWith('Device.WiFi.DataElements.')) {
+      if (dataElementsFails) throw Exception('USP timeout');
       return dataElements ?? _buildDataElementsRadiosResponse();
     } else if (first.startsWith('Device.WiFi.Radio.')) {
       return radios ?? _buildRadiosResponse();
@@ -432,22 +435,7 @@ void main() {
         'the WiFi data as it was', () async {
       _stubAllFetches(mockUsp);
       final healthy = await svc.fetch();
-      when(() => mockUsp.get(any(), priority: any(named: 'priority')))
-          .thenAnswer((invocation) async {
-        final first = (invocation.positionalArguments[0] as List<String>).first;
-        if (first.startsWith('Device.WiFi.DataElements.')) {
-          throw Exception('USP timeout');
-        }
-        if (first.startsWith('Device.WiFi.Radio.')) {
-          return _buildRadiosResponse();
-        }
-        if (first.startsWith('Device.WiFi.SSID.')) return _buildSsidsResponse();
-        if (first.startsWith('Device.WiFi.AccessPoint.') &&
-            !first.contains('AssociatedDevice')) {
-          return _buildAccessPointsResponse();
-        }
-        return <String, dynamic>{};
-      });
+      _stubAllFetches(mockUsp, dataElementsFails: true);
 
       final radios = (await svc.fetch()).radioModels;
 
