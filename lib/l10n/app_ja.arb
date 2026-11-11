@@ -381,6 +381,7 @@
   "udp": "UDP",
   "unknownError": "不明なエラー",
   "unknownErrorCode": "不明なエラー: {code}",
+  "unsavedChangesBeforeOpeningDesc": "続行する前に、変更を保存するか破棄してください。",
   "unsavedChangesDesc": "このページから離れると、入力内容は破棄されます。",
   "unsavedChangesTitle": "このページに未保存の変更があります",
   "upToDate": "最新の状態",

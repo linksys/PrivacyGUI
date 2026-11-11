@@ -378,6 +378,7 @@
   "udp": "UDP",
   "unknownError": "Lỗi không xác định",
   "unknownErrorCode": "Mã lỗi không xác định",
+  "unsavedChangesBeforeOpeningDesc": "Hãy lưu hoặc hủy bỏ các thay đổi trước khi tiếp tục.",
   "unsavedChangesDesc": "Bạn có các thay đổi chưa được lưu. Bạn có muốn rời đi mà không lưu không?",
   "unsavedChangesTitle": "Bạn có các thay đổi chưa được lưu trên trang này",
   "upToDate": "Mới nhất",

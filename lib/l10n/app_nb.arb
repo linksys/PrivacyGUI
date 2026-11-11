@@ -380,6 +380,7 @@
   "udp": "UDP",
   "unknownError": "Ukjent feil",
   "unknownErrorCode": "Ukjent feil: {code}",
+  "unsavedChangesBeforeOpeningDesc": "Lagre eller forkast endringene før du fortsetter.",
   "unsavedChangesDesc": "Hvis du forlater denne siden, vil alle oppføringer bli forkastet.",
   "unsavedChangesTitle": "Du har ulagrede endringer på denne siden",
   "upToDate": "Oppdatert",

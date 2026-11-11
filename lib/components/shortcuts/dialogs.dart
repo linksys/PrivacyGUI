@@ -421,6 +421,45 @@ Future<bool?> showUnsavedAlert(BuildContext context,
   );
 }
 
+/// The answer to [showUnsavedBeforeOpeningAlert].
+enum UnsavedChangesChoice { goBack, discard, save }
+
+/// Asked before one editable page opens another while it has unsaved changes
+/// (#1433). Unlike [showUnsavedAlert], which is asked when a page is about to
+/// be lost, this one can also save, so the user does not have to go back, save
+/// and tap the entry again. [canSave] is false when the page's own Save would
+/// be disabled; the button is then shown disabled rather than hidden, as the
+/// page's bottom bar does.
+///
+/// Returns null when the dialog is dismissed without an answer.
+Future<UnsavedChangesChoice?> showUnsavedBeforeOpeningAlert(
+  BuildContext context, {
+  required bool canSave,
+}) {
+  return showMessageAppDialog<UnsavedChangesChoice>(
+    context,
+    title: loc(context).unsavedChangesTitle,
+    message: loc(context).unsavedChangesBeforeOpeningDesc,
+    actions: [
+      AppButton.text(
+        label: loc(context).goBack,
+        identifier: 'unsaved-open-go-back',
+        onTap: () => context.pop(UnsavedChangesChoice.goBack),
+      ),
+      AppButton.dangerText(
+        label: loc(context).discardChanges,
+        identifier: 'unsaved-open-discard',
+        onTap: () => context.pop(UnsavedChangesChoice.discard),
+      ),
+      AppButton.primary(
+        label: loc(context).save,
+        identifier: 'unsaved-open-save',
+        onTap: canSave ? () => context.pop(UnsavedChangesChoice.save) : null,
+      ),
+    ],
+  );
+}
+
 Future<T?> showRouterNotFoundAlert<T>(BuildContext context, WidgetRef ref,
     {FutureOr<T?> Function()? onComplete}) {
   logger.d('[Dialog]: show Router not found alert');
