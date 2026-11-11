@@ -181,6 +181,28 @@ void main() {
         expect(radios.length, 2);
       });
 
+      // #1782: the model gets both channels under names it cannot mix up.
+      test('getWifiSettings carries the configured channel and the one in use',
+          () async {
+        final provider = container.read(_testUspCommandProvider);
+        final result = await provider.execute('getWifiSettings', {});
+
+        final radio = (result.data['radios'] as List)[1] as Map;
+        expect(radio['channel'], 40);
+        expect(radio['channelInUse'], 36);
+      });
+
+      test('getWifiStatus carries the configured channel and the one in use',
+          () async {
+        final provider = container.read(_testUspCommandProvider);
+        final result = await provider.execute('getWifiStatus', {});
+
+        final radio = (result.data['radios'] as List)[1] as Map;
+        expect(radio['channel'], 40);
+        expect(radio['channelInUse'], 36);
+        expect(radio['channelInUseDisplay'], '36');
+      });
+
       test('getWanStatus returns wan data', () async {
         final provider = container.read(_testUspCommandProvider);
         final result = await provider.execute('getWanStatus', {});
@@ -609,6 +631,7 @@ final _testWifiData = WifiData(
       enable: true,
       transmitPower: -1,
       channel: 6,
+      channelInUse: 6,
       autoChannelEnable: false,
       channelBandwidth: '20MHz',
       maxBitRate: 300,
@@ -628,8 +651,10 @@ final _testWifiData = WifiData(
       band: '5GHz',
       enable: true,
       transmitPower: -1,
-      channel: 36,
-      autoChannelEnable: true,
+      // Set to 40, on 36: hostapd's 20/40 MHz coexistence swap (#1782).
+      channel: 40,
+      channelInUse: 36,
+      autoChannelEnable: false,
       channelBandwidth: '80MHz',
       maxBitRate: 1200,
       supportedStandards: 'a,n,ac,ax',

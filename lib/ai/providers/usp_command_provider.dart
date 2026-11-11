@@ -406,7 +406,10 @@ class UspCommandProvider implements IRouterCommandProvider {
       return {
         'band': radio.band,
         'isEnabled': radio.enable,
+        // The configured channel and the one the radio is on, which differ
+        // when hostapd moves a fixed channel (#1782); null when unknown.
         'channel': radio.channel,
+        'channelInUse': radio.channelInUse,
         'channelWidth': radio.channelBandwidth,
         'ssid': primaryAp?.ssidName ?? '',
         'securityMode': primaryAp?.securityMode ?? '',
@@ -820,8 +823,11 @@ class UspCommandProvider implements IRouterCommandProvider {
         'txPowerDisplay': radio.txPowerDisplay,
         'maxBitRate': radio.maxBitRate,
         'bitRateNormalized': radio.bitRateNormalized,
+        // As in _getWifiSettings: configured, and the one the radio is on,
+        // also as the cards print it ("36 (Auto)", "--" when unknown).
         'channel': radio.channel,
-        'channelDisplay': radio.channelDisplay,
+        'channelInUse': radio.channelInUse,
+        'channelInUseDisplay': radio.channelInUseDisplay,
         'autoChannel': radio.autoChannelEnable,
         'channelBandwidth': radio.channelBandwidth,
         'supportedStandards': radio.supportedStandards,
