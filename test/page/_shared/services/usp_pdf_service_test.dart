@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/services/usp_pdf_service.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 
 import '../../../mocks/test_data/devices_test_data.dart';
 import '../../../mocks/test_data/firmware_update_test_data.dart';
@@ -166,6 +167,51 @@ void main() {
         '0',
       ]);
       expect(rows.last[1], 'Extender');
+    });
+  });
+
+  // #1775: a DMZ host given by MAC leaves DestIP empty, so a report that
+  // printed the IP alone showed an empty destination.
+  group('dmzRows', () {
+    List<(String, String)> rowsOf(DmzUIModel dmz) =>
+        UspPdfService.dmzRows(dmz).map((r) => (r.label, r.value)).toList();
+
+    test('a DMZ host given by MAC is printed as the destination MAC', () {
+      expect(
+        rowsOf(const DmzUIModel(
+          isEnabled: true,
+          destinationType: DmzDestinationType.mac,
+          destIp: '',
+          destMac: 'AA:BB:CC:DD:EE:01',
+          sourceType: DmzSourceType.any,
+          sourcePrefix: '',
+        )),
+        [
+          ('Status', 'Enabled'),
+          ('Destination MAC', 'AA:BB:CC:DD:EE:01'),
+          ('Source', 'Any'),
+        ],
+      );
+    });
+
+    test('a DMZ host given by IP is printed as the destination IP', () {
+      expect(
+        rowsOf(const DmzUIModel(
+          isEnabled: true,
+          destIp: '192.168.1.50',
+          sourceType: DmzSourceType.cidr,
+          sourcePrefix: '10.0.0.0/8',
+        )),
+        [
+          ('Status', 'Enabled'),
+          ('Destination IP', '192.168.1.50'),
+          ('Source', '10.0.0.0/8'),
+        ],
+      );
+    });
+
+    test('a disabled DMZ prints its status alone', () {
+      expect(rowsOf(const DmzUIModel.disabled()), [('Status', 'Disabled')]);
     });
   });
 }

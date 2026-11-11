@@ -1317,5 +1317,7 @@
   "errorRefusedNoPortRanges": "เราเตอร์ไม่ยอมรับกฎนี้: กฎไม่มีพอร์ต",
   "errorRefusedInvalidPortRange": "เราเตอร์ไม่ยอมรับกฎนี้: พอร์ตเริ่มต้นมากกว่าพอร์ตสิ้นสุด",
   "errorRefusedInvalidPort": "เราเตอร์ไม่ยอมรับกฎนี้: หมายเลขพอร์ตไม่ถูกต้อง",
-  "errorRefusedDescriptionInUse": "เราเตอร์ไม่ยอมรับกฎนี้: มีกฎไฟร์วอลล์อื่นใช้ชื่อนี้อยู่แล้ว"
+  "errorRefusedDescriptionInUse": "เราเตอร์ไม่ยอมรับกฎนี้: มีกฎไฟร์วอลล์อื่นใช้ชื่อนี้อยู่แล้ว",
+  "dmzDestination": "ปลายทาง",
+  "macAddressRequired": "ต้องระบุแอดเดรส MAC"
 }

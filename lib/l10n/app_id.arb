@@ -1317,5 +1317,7 @@
   "errorRefusedNoPortRanges": "Router tidak menerima aturan ini: aturan tidak memiliki port.",
   "errorRefusedInvalidPortRange": "Router tidak menerima aturan ini: port awal lebih besar dari port akhir.",
   "errorRefusedInvalidPort": "Router tidak menerima aturan ini: nomor port tidak valid.",
-  "errorRefusedDescriptionInUse": "Router tidak menerima aturan ini: aturan firewall lain sudah menggunakan nama ini."
+  "errorRefusedDescriptionInUse": "Router tidak menerima aturan ini: aturan firewall lain sudah menggunakan nama ini.",
+  "dmzDestination": "Tujuan",
+  "macAddressRequired": "Alamat MAC wajib diisi"
 }

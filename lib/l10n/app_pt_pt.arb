@@ -1317,5 +1317,7 @@
   "errorRefusedNoPortRanges": "O router não aceitou esta regra: não tem nenhuma porta.",
   "errorRefusedInvalidPortRange": "O router não aceitou esta regra: a porta inicial é superior à porta final.",
   "errorRefusedInvalidPort": "O router não aceitou esta regra: um número de porta não é válido.",
-  "errorRefusedDescriptionInUse": "O router não aceitou esta regra: outra regra de firewall já tem este nome."
+  "errorRefusedDescriptionInUse": "O router não aceitou esta regra: outra regra de firewall já tem este nome.",
+  "dmzDestination": "Destino",
+  "macAddressRequired": "O endereço MAC é obrigatório"
 }

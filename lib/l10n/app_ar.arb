@@ -1317,5 +1317,7 @@
   "errorRefusedNoPortRanges": "لم يقبل جهاز التوجيه هذه القاعدة: لا تحتوي على منفذ.",
   "errorRefusedInvalidPortRange": "لم يقبل جهاز التوجيه هذه القاعدة: منفذ البداية أكبر من منفذ النهاية.",
   "errorRefusedInvalidPort": "لم يقبل جهاز التوجيه هذه القاعدة: رقم منفذ غير صالح.",
-  "errorRefusedDescriptionInUse": "لم يقبل جهاز التوجيه هذه القاعدة: توجد قاعدة جدار حماية أخرى بهذا الاسم بالفعل."
+  "errorRefusedDescriptionInUse": "لم يقبل جهاز التوجيه هذه القاعدة: توجد قاعدة جدار حماية أخرى بهذا الاسم بالفعل.",
+  "dmzDestination": "الوجهة",
+  "macAddressRequired": "عنوان MAC مطلوب"
 }

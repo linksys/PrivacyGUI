@@ -46,11 +46,12 @@ bool isEmptyDhcpClient(DhcpClient c) {
 bool isEmptyDhcpReservation(DhcpReservation r) =>
     [r.enable, r.chaddr, r.yiaddr].every(isBlank);
 
-/// A DMZ row with no host, source, interface or state. Its MAC is new in
-/// usp-codegen 0.18 and was not read.
+/// A DMZ row with no host (by IP or by MAC, #1775), source, interface or
+/// state.
 bool isEmptyDmzEntry(DmzEntry d) => [
       d.enable,
       d.destIp,
+      d.destMacAddress,
       d.sourcePrefix,
       d.interface_,
       d.description,

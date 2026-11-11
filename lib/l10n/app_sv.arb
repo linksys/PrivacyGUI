@@ -1317,5 +1317,7 @@
   "errorRefusedNoPortRanges": "Routern godtog inte den här regeln: den har ingen port.",
   "errorRefusedInvalidPortRange": "Routern godtog inte den här regeln: startporten är högre än slutporten.",
   "errorRefusedInvalidPort": "Routern godtog inte den här regeln: ett portnummer är ogiltigt.",
-  "errorRefusedDescriptionInUse": "Routern godtog inte den här regeln: en annan brandväggsregel har redan det här namnet."
+  "errorRefusedDescriptionInUse": "Routern godtog inte den här regeln: en annan brandväggsregel har redan det här namnet.",
+  "dmzDestination": "Mål",
+  "macAddressRequired": "MAC-adress krävs"
 }

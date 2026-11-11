@@ -1317,5 +1317,7 @@
   "errorRefusedNoPortRanges": "Der Router hat diese Regel nicht übernommen: Sie enthält keinen Port.",
   "errorRefusedInvalidPortRange": "Der Router hat diese Regel nicht übernommen: Der Start-Port ist größer als der End-Port.",
   "errorRefusedInvalidPort": "Der Router hat diese Regel nicht übernommen: Eine Portnummer ist ungültig.",
-  "errorRefusedDescriptionInUse": "Der Router hat diese Regel nicht übernommen: Eine andere Firewall-Regel hat bereits diesen Namen."
+  "errorRefusedDescriptionInUse": "Der Router hat diese Regel nicht übernommen: Eine andere Firewall-Regel hat bereits diesen Namen.",
+  "dmzDestination": "Ziel",
+  "macAddressRequired": "MAC-Adresse ist erforderlich"
 }

@@ -471,6 +471,12 @@ void main() {
     expectedCellCount: 234,
   );
 
+  // The same page with the DMZ host given by MAC (#1775).
+  runOverflowSweep(
+    family: PageSurfaceFamily(kDmzMacPageCase),
+    expectedCellCount: 234,
+  );
+
   runOverflowSweep(
     family: PageSurfaceFamily(kFirewallPageCase),
     expectedCellCount: 234,

@@ -1402,5 +1402,7 @@
   "errorRefusedNoPortRanges": "ルーターはこのルールを受け付けませんでした。ポートが指定されていません。",
   "errorRefusedInvalidPortRange": "ルーターはこのルールを受け付けませんでした。開始ポートが終了ポートより大きくなっています。",
   "errorRefusedInvalidPort": "ルーターはこのルールを受け付けませんでした。ポート番号が無効です。",
-  "errorRefusedDescriptionInUse": "ルーターはこのルールを受け付けませんでした。この名前は別のファイアウォール ルールですでに使用されています。"
+  "errorRefusedDescriptionInUse": "ルーターはこのルールを受け付けませんでした。この名前は別のファイアウォール ルールですでに使用されています。",
+  "dmzDestination": "宛先",
+  "macAddressRequired": "MAC アドレスは必須です"
 }

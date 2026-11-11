@@ -1317,5 +1317,7 @@
   "errorRefusedNoPortRanges": "Le routeur n'a pas accepté cette règle : elle n'a aucun port.",
   "errorRefusedInvalidPortRange": "Le routeur n'a pas accepté cette règle : le port de début est supérieur au port de fin.",
   "errorRefusedInvalidPort": "Le routeur n'a pas accepté cette règle : un numéro de port n'est pas valide.",
-  "errorRefusedDescriptionInUse": "Le routeur n'a pas accepté cette règle : une autre règle de pare-feu porte déjà ce nom."
+  "errorRefusedDescriptionInUse": "Le routeur n'a pas accepté cette règle : une autre règle de pare-feu porte déjà ce nom.",
+  "dmzDestination": "Destination",
+  "macAddressRequired": "L'adresse MAC est requise"
 }
