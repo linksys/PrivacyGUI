@@ -164,6 +164,7 @@ void main() {
       final result = WifiSignalCheckUIModel(
         rssi: -50,
         channel: 6,
+        channelInUse: 6,
         band: '2.4GHz',
         connectedDevices: 10,
         severity: DiagnosticSeverity.ok,
@@ -188,6 +189,7 @@ void main() {
       final weak = WifiSignalCheckUIModel(
         rssi: -80, // < -71 → weak
         channel: 1,
+        channelInUse: 1,
         band: '2.4GHz',
         connectedDevices: 5,
         severity: DiagnosticSeverity.warning,
@@ -198,6 +200,7 @@ void main() {
       final medium = WifiSignalCheckUIModel(
         rssi: -68, // >= -71, < -65 → medium
         channel: 36,
+        channelInUse: 36,
         band: '5GHz',
         connectedDevices: 5,
         severity: DiagnosticSeverity.ok,
@@ -208,6 +211,7 @@ void main() {
       final strong = WifiSignalCheckUIModel(
         rssi: -50, // >= -65 → strong
         channel: 149,
+        channelInUse: 149,
         band: '5GHz',
         connectedDevices: 5,
         severity: DiagnosticSeverity.ok,

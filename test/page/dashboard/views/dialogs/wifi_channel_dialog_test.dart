@@ -28,6 +28,7 @@ WifiRadioUIModel _radio({
     transmitPower: 100,
     maxBitRate: 1200,
     channel: channel,
+    channelInUse: channel,
     autoChannelEnable: autoChannelEnable,
     channelBandwidth: '80MHz',
     supportedStandards: 'ax',

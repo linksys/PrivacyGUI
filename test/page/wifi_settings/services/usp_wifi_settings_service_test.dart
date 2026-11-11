@@ -124,6 +124,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 36,
+          channelsInUse: '36',
           operatingFrequencyBand: '5GHz',
           operatingChannelBandwidth: '80MHz',
           possibleChannels: '36,40,44,48,52,56,60,64',
@@ -148,6 +149,30 @@ void main() {
 
       // supportedBandwidths parsed from comma-separated string
       expect(n.supportedBandwidths, ['Auto', '20MHz', '40MHz', '80MHz']);
+    });
+
+    // #1782: the form edits the setting, so a radio set to 40 that hostapd
+    // moved to 36 still shows 40 there.
+    test('the form carries the configured channel, not the channel in use', () {
+      final n = svc
+          .buildWifiNetworks(
+            ssids: WiFiSsids(items: [WifiSettingsTestData.createSsid()]),
+            accessPoints: WiFiAccessPoints(
+                items: [WifiSettingsTestData.createAccessPoint()]),
+            radios: WiFiRadios(items: [
+              WifiSettingsTestData.createRadio(
+                operatingFrequencyBand: '5GHz',
+                channel: 40,
+                channelsInUse: '36',
+                possibleChannels: '36,40,44,48',
+                autoChannelEnable: false,
+              ),
+            ]),
+          )
+          .single;
+
+      expect(n.channel, 40);
+      expect(n.channelDisplay, '40');
     });
 
     test('populates availableChannelsPerBandwidth with bonding rules', () {
@@ -182,6 +207,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 36,
+          channelsInUse: '36',
           operatingFrequencyBand: '5GHz',
           operatingChannelBandwidth: '80MHz',
           possibleChannels: '36,40,44,48,52,56,60,64',
@@ -260,6 +286,7 @@ void main() {
             enable: true,
             status: 'Up',
             channel: 36,
+            channelsInUse: '36',
             operatingFrequencyBand: '5GHz',
             operatingChannelBandwidth: '80MHz',
             possibleChannels: '36,40,44,48,52,56,60,64,100,104,108,112',
@@ -348,6 +375,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 6,
+          channelsInUse: '6',
           operatingFrequencyBand: '2.4GHz',
           operatingChannelBandwidth: '20MHz',
           possibleChannels: '1,2,3,4,5,6,7,8,9,10,11',
@@ -430,6 +458,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 6,
+          channelsInUse: '6',
           operatingFrequencyBand: '2.4GHz',
           operatingChannelBandwidth: '20MHz',
           possibleChannels: '1,2,3,4,5,6,7,8,9,10,11',
@@ -446,6 +475,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 36,
+          channelsInUse: '36',
           operatingFrequencyBand: '5GHz',
           operatingChannelBandwidth: '80MHz',
           possibleChannels: '36,40,44,48',
@@ -518,6 +548,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 1,
+          channelsInUse: '1',
           operatingFrequencyBand: '6GHz', // already normalized
           operatingChannelBandwidth: '80MHz',
           possibleChannels: '1,5,9,13,17,21,25,29',
@@ -614,6 +645,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 6,
+          channelsInUse: '6',
           operatingFrequencyBand: '2.4GHz',
           operatingChannelBandwidth: '20MHz',
           possibleChannels: '1,6,11',
@@ -700,6 +732,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 6,
+          channelsInUse: '6',
           operatingFrequencyBand: '2.4GHz',
           operatingChannelBandwidth: '20MHz',
           possibleChannels: '1,6,11',
@@ -716,6 +749,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 36,
+          channelsInUse: '36',
           operatingFrequencyBand: '5GHz',
           operatingChannelBandwidth: '80MHz',
           possibleChannels: '36,40,44,48',
@@ -780,6 +814,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 6,
+          channelsInUse: '6',
           operatingFrequencyBand: band,
           operatingChannelBandwidth: '20MHz',
           possibleChannels: '1,6,11',
@@ -1069,6 +1104,7 @@ void main() {
       'Device.WiFi.Radio.1.Enable': true,
       'Device.WiFi.Radio.1.Status': 'Up',
       'Device.WiFi.Radio.1.Channel': 36,
+      'Device.WiFi.Radio.1.ChannelsInUse': '36',
       'Device.WiFi.Radio.1.OperatingFrequencyBand': '5GHz',
       'Device.WiFi.Radio.1.OperatingChannelBandwidth': '80MHz',
       'Device.WiFi.Radio.1.PossibleChannels': '36,40,44,48',
@@ -1092,6 +1128,21 @@ void main() {
         }),
         isTrue,
       );
+    });
+
+    // #1782: hostapd's 20/40 MHz coexistence check can move a radio set to 40
+    // onto 36. `Channel` keeps 40, and FW keeps it so on purpose so this
+    // comparison holds (#1295); the channel in use is not what was written.
+    test('a written channel is proved by Channel, not by the channel in use',
+        () async {
+      routerReads({
+        ...router,
+        'Device.WiFi.Radio.1.Channel': 40,
+        'Device.WiFi.Radio.1.ChannelsInUse': '36',
+      });
+
+      expect(await writeSvc.isApplied({'Device.WiFi.Radio.1.Channel': 40}),
+          isTrue);
     });
 
     test('false while any written leaf still reads the old value', () async {

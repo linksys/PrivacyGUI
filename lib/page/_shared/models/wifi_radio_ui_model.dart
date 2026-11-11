@@ -8,7 +8,19 @@ class WifiRadioUIModel extends Equatable with DiagnosticLoggable {
   final bool enable;
   final int transmitPower; // -1 means max
   final int maxBitRate; // Mbps
+
+  /// The configured channel (`Device.WiFi.Radio.{i}.Channel`): what the
+  /// channel dialog selects and returns, and what a save's read-back compares
+  /// with the value written. On FL-WRT 2.0 a fixed channel keeps this value
+  /// when hostapd's 20/40 MHz coexistence check moves the radio, so it is not
+  /// the channel the radio is on; that is [channelInUse].
   final int channel;
+
+  /// The channel the radio is on (`Device.WiFi.Radio.{i}.ChannelsInUse`, read
+  /// from the driver), or null when that is unknown (#1782). Every place that
+  /// shows the channel a radio is on prints this, never [channel], and an
+  /// unknown one is shown as unknown rather than as 0 or as [channel].
+  final int? channelInUse;
   final bool autoChannelEnable;
   final String channelBandwidth;
   final String supportedStandards;
@@ -44,6 +56,7 @@ class WifiRadioUIModel extends Equatable with DiagnosticLoggable {
     required this.transmitPower,
     required this.maxBitRate,
     required this.channel,
+    required this.channelInUse,
     required this.autoChannelEnable,
     required this.channelBandwidth,
     required this.supportedStandards,
@@ -58,8 +71,10 @@ class WifiRadioUIModel extends Equatable with DiagnosticLoggable {
 
   String get txPowerDisplay => transmitPower == -1 ? 'Max' : '$txPowerPercent%';
 
-  /// Channel display: "6 (Auto)" or "6".
-  String get channelDisplay => '$channel${autoChannelEnable ? ' (Auto)' : ''}';
+  /// The channel the radio is on: "6 (Auto)" or "6", and "--" in place of the
+  /// number when [channelInUse] is unknown.
+  String get channelInUseDisplay =>
+      '${channelInUse ?? '--'}${autoChannelEnable ? ' (Auto)' : ''}';
 
   /// Bit rate normalized to 0–100 scale based on band max.
   double get bitRateNormalized {
@@ -82,6 +97,7 @@ class WifiRadioUIModel extends Equatable with DiagnosticLoggable {
         'transmitPower': transmitPower,
         'maxBitRate': maxBitRate,
         'channel': channel,
+        'channelInUse': channelInUse,
         'autoChannelEnable': autoChannelEnable,
         'channelBandwidth': channelBandwidth,
         'supportedStandards': supportedStandards,

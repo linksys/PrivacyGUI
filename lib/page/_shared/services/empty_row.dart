@@ -88,7 +88,9 @@ bool isEmptyWiFiAccessPoint(WiFiAccessPoint a) => [
       a.ssidReference,
     ].every(isBlank);
 
-/// A Wi-Fi radio row with no band, channel or capability.
+/// A Wi-Fi radio row with no band, channel or capability. Its channel in use
+/// is new in WiFiRadios 1.2.0 and is not read (#1782): a row with only that
+/// leaf set has no band and no state, so it is no radio a page could name.
 bool isEmptyWiFiRadio(WiFiRadio r) => [
       r.alias,
       r.enable,

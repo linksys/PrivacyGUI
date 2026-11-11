@@ -13,6 +13,7 @@ Map<String, dynamic> _buildRadiosResponse() => {
       'Device.WiFi.Radio.1.Enable': true,
       'Device.WiFi.Radio.1.Status': 'Up',
       'Device.WiFi.Radio.1.Channel': 6,
+      'Device.WiFi.Radio.1.ChannelsInUse': '6',
       'Device.WiFi.Radio.1.OperatingFrequencyBand': '2.4GHz',
       'Device.WiFi.Radio.1.OperatingChannelBandwidth': '20MHz',
       'Device.WiFi.Radio.1.PossibleChannels': '1,6,11',
@@ -27,6 +28,7 @@ Map<String, dynamic> _buildRadiosResponse() => {
       'Device.WiFi.Radio.2.Enable': true,
       'Device.WiFi.Radio.2.Status': 'Up',
       'Device.WiFi.Radio.2.Channel': 36,
+      'Device.WiFi.Radio.2.ChannelsInUse': '36',
       'Device.WiFi.Radio.2.OperatingFrequencyBand': '5GHz',
       'Device.WiFi.Radio.2.OperatingChannelBandwidth': '80MHz',
       'Device.WiFi.Radio.2.PossibleChannels': '36,40,44,48',
@@ -95,14 +97,15 @@ Map<String, dynamic> _buildAccessPointsResponse() => {
 
 /// Stubs `mockUsp.get()` to return the right response based on the requested
 /// paths. Each codegen `.fetch()` requests distinct base paths, so we can
-/// dispatch based on the first path element.
-void _stubAllFetches(MockUspClient mockUsp) {
+/// dispatch based on the first path element. [radios] replaces the radio
+/// table.
+void _stubAllFetches(MockUspClient mockUsp, {Map<String, dynamic>? radios}) {
   when(() => mockUsp.get(any(), priority: any(named: 'priority')))
       .thenAnswer((invocation) async {
     final paths = invocation.positionalArguments[0] as List<String>;
     final first = paths.isNotEmpty ? paths.first : '';
     if (first.startsWith('Device.WiFi.Radio.')) {
-      return _buildRadiosResponse();
+      return radios ?? _buildRadiosResponse();
     } else if (first.startsWith('Device.WiFi.SSID.')) {
       return _buildSsidsResponse();
     } else if (first.startsWith('Device.WiFi.AccessPoint.') &&
@@ -132,6 +135,7 @@ void _stubRadioWithPossibleChannels(
         'Device.WiFi.Radio.1.Enable': true,
         'Device.WiFi.Radio.1.Status': 'Up',
         'Device.WiFi.Radio.1.Channel': 36,
+        'Device.WiFi.Radio.1.ChannelsInUse': '36',
         'Device.WiFi.Radio.1.OperatingFrequencyBand': '5GHz',
         'Device.WiFi.Radio.1.OperatingChannelBandwidth': '80MHz',
         'Device.WiFi.Radio.1.PossibleChannels': possibleChannels,
@@ -326,6 +330,36 @@ void main() {
       expect(radio2.maxBitRate, 2400);
     });
 
+    // #1782, measured on 2.0.4.26103108 (#1295): set to 40, hostapd's
+    // 20/40 MHz coexistence check moved the radio to 36. `Channel` keeps 40.
+    test('the channel in use is ChannelsInUse; the configured one is Channel',
+        () async {
+      _stubAllFetches(mockUsp, radios: {
+        ..._buildRadiosResponse(),
+        'Device.WiFi.Radio.2.Channel': 40,
+        'Device.WiFi.Radio.2.ChannelsInUse': '36',
+      });
+
+      final radio2 = (await svc.fetch()).radioModels[1];
+
+      expect(radio2.channel, 40);
+      expect(radio2.channelInUse, 36);
+    });
+
+    test('a ChannelsInUse that is not one number is unknown, not Channel',
+        () async {
+      _stubAllFetches(mockUsp, radios: {
+        ..._buildRadiosResponse(),
+        'Device.WiFi.Radio.1.ChannelsInUse': '',
+        'Device.WiFi.Radio.2.ChannelsInUse': '36,40',
+      });
+
+      final radios = (await svc.fetch()).radioModels;
+
+      expect(radios[0].channelInUse, isNull);
+      expect(radios[1].channelInUse, isNull);
+    });
+
     test('threads IEEE80211hEnabled into radio model isDfsEnabled', () async {
       _stubAllFetches(mockUsp);
 
@@ -457,6 +491,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 6,
+          channelsInUse: '6',
           operatingFrequencyBand: '2.4GHz',
           operatingChannelBandwidth: '20MHz',
           possibleChannels: '1,6,11',
@@ -473,6 +508,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 36,
+          channelsInUse: '36',
           operatingFrequencyBand: '5GHz',
           operatingChannelBandwidth: '80MHz',
           possibleChannels: '36,40,44,48',
@@ -512,6 +548,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 6,
+          channelsInUse: '6',
           operatingFrequencyBand: '2.4GHz',
           operatingChannelBandwidth: '20MHz',
           possibleChannels: '1,6,11',
@@ -548,6 +585,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 6,
+          channelsInUse: '6',
           operatingFrequencyBand: '2.4GHz',
           operatingChannelBandwidth: '20MHz',
           possibleChannels: '1,6,11',
