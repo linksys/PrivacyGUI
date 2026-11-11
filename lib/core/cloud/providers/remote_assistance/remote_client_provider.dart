@@ -44,7 +44,8 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
 
   /// Bumped when this notifier is disposed, which Riverpod 2 also does before
   /// it rebuilds this same instance. A poll keeps the value it started under
-  /// and stops once that changes.
+  /// and stops once that changes; so do [initiateRemoteAssistance] and
+  /// [_createPin], after each of their awaits.
   ///
   /// Cancelling it is not enough on its own. The session poll is an async*
   /// generator, which runs on to its next `yield` after its subscription is
@@ -93,12 +94,16 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
     }
 
     logger.i('[RemoteAssistance]: initiateRemoteAssistance');
+    // Like the polls this starts: nothing after an await may touch a
+    // lifetime that has ended ([_lifetime]).
+    final lifetime = _lifetime;
 
     final sessions = await _svc.fetchSessions(
       serialNumber: creds.serialNumber,
       macAddress: creds.macAddress,
       deviceUUID: creds.deviceUUID,
     );
+    if (lifetime != _lifetime) return;
 
     if (sessions.isEmpty) {
       // No session - CA hasn't created one yet
@@ -130,6 +135,7 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
       macAddress: creds.macAddress,
       deviceUUID: creds.deviceUUID,
     );
+    if (lifetime != _lifetime) return;
 
     state = state.copyWith(sessionInfo: () => sessionInfo);
 
@@ -144,6 +150,7 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
         await _createPin();
       }
     }
+    if (lifetime != _lifetime) return;
 
     _startExpiredCountdownTimer(sessionInfo);
 
@@ -158,12 +165,14 @@ class RemoteClientNotifier extends Notifier<RemoteClientState> {
       logger.w('[RemoteAssistance]: Cannot create PIN - credentials not set');
       return;
     }
+    final lifetime = _lifetime;
     try {
       final result = await _svc.createPin(
         serialNumber: creds.serialNumber,
         macAddress: creds.macAddress,
         deviceUUID: creds.deviceUUID,
       );
+      if (lifetime != _lifetime) return;
       state = state.copyWith(pin: () => result.pin);
       logger.i('[RemoteAssistance]: PIN created successfully');
     } on ServiceError catch (e) {
