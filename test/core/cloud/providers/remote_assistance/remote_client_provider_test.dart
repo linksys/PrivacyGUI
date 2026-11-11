@@ -666,6 +666,69 @@ void main() {
           container.dispose();
         });
       });
+
+      // The two awaits of initiateRemoteAssistance the tests above do not
+      // reach (PR #1784 review, Round 2): its first fetch, and its PIN.
+      test(
+          'an initiate whose session list answers after an invalidate writes '
+          'nothing and starts no creation poll', () {
+        late Completer<List<GRASessionInfo>> sessionsLate;
+        var calls = 0;
+        stubSessions(() {
+          calls++;
+          return calls == 1 ? sessionsLate.future : Future.value([]);
+        });
+
+        fakeAsync((async) {
+          sessionsLate = Completer();
+          final container = createContainer();
+          container.read(remoteClientProvider.notifier)
+            ..setCredentials(RemoteAssistanceTestData.credentials())
+            ..initiateRemoteAssistance();
+          async.flushMicrotasks();
+          container.invalidate(remoteClientProvider);
+          expect(container.read(remoteClientProvider).sessionInfo, isNull);
+          sessionsLate.complete([]);
+          async.elapse(const Duration(seconds: 12));
+
+          expect(container.read(remoteClientProvider).sessionInfo, isNull);
+          expect(calls, 1, reason: 'no creation poll started');
+          container.dispose();
+        });
+      });
+
+      test(
+          'an initiate whose PIN answers after an invalidate starts no '
+          'countdown and no session poll', () {
+        final session = RemoteAssistanceTestData.initiateSession();
+        late Completer<({String sessionId, String pin})> pinLate;
+        stubSessions(() async => [session]);
+        stubSessionInfo(session);
+        when(() => mockService.createPin(
+              serialNumber: any(named: 'serialNumber'),
+              macAddress: any(named: 'macAddress'),
+              deviceUUID: any(named: 'deviceUUID'),
+            )).thenAnswer((_) => pinLate.future);
+
+        fakeAsync((async) {
+          pinLate = Completer();
+          final container = createContainer();
+          container.read(remoteClientProvider.notifier)
+            ..setCredentials(RemoteAssistanceTestData.credentials())
+            ..initiateRemoteAssistance();
+          async.flushMicrotasks();
+          container.invalidate(remoteClientProvider);
+          expect(container.read(remoteClientProvider).sessionInfo, isNull);
+          pinLate.complete(RemoteAssistanceTestData.createPinResult());
+          async.elapse(const Duration(seconds: 10));
+
+          final state = container.read(remoteClientProvider);
+          expect(state.expiredCountdown, isNull);
+          expect(state.sessionInfo, isNull);
+          expect(sessionInfoFetches(), 1, reason: 'no session poll started');
+          container.dispose();
+        });
+      });
     });
 
     group('DeviceCredentials', () {
