@@ -23,9 +23,9 @@ import '../../../../util/statistics/stats_section_probe.dart';
 ///   warning colour instead of a hard-coded `Colors.orange`.
 ///
 /// Every test here is red on the base (`ecd85d61d`): there the marks are a
-/// `Container` / a `StatsLegendDot`, no `AppChartLegendEntry` exists on the
-/// statistics page, the unit-bearing label does not exist, and the discards
-/// colour is `Colors.orange`.
+/// `Container` / the deleted hand-rolled legend dot, no `AppChartLegendEntry`
+/// exists on the statistics page, the unit-bearing label does not exist, and
+/// the discards colour is `Colors.orange`.
 void main() {
   setUpAll(() async {
     await loadAppFonts();
