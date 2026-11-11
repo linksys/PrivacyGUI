@@ -1077,6 +1077,8 @@
   "slowHops": "Trage hops",
   "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
+  "channelUtilizationValue": "Kanaalgebruik: {percent}%",
+  "channelUtilizationUnavailable": "Kanaalgebruik: —",
   "sourceRestriction": "Bronbeperking",
   "specificDeviceConnectionProblems": "Specifiek apparaat heeft verbindingsproblemen",
   "speedTestComplete": "Snelheidstest voltooid",

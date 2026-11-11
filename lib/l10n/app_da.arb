@@ -1077,6 +1077,8 @@
   "slowHops": "Langsomme hop",
   "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
+  "channelUtilizationValue": "Kanaludnyttelse: {percent}%",
+  "channelUtilizationUnavailable": "Kanaludnyttelse: —",
   "sourceRestriction": "Kildebegrænsning",
   "specificDeviceConnectionProblems": "En bestemt enhed har forbindelsesproblemer",
   "speedTestComplete": "Hastighedstest fuldført",

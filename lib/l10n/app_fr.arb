@@ -1077,6 +1077,8 @@
   "slowHops": "Sauts lents",
   "snrUnavailable": "SNR: —",
   "snrValue": "SNR : {value} dB",
+  "channelUtilizationValue": "Utilisation du canal : {percent} %",
+  "channelUtilizationUnavailable": "Utilisation du canal : —",
   "sourceRestriction": "Restriction de source",
   "specificDeviceConnectionProblems": "Un périphérique spécifique a des problèmes de connexion",
   "speedTestComplete": "Test de vitesse terminé",

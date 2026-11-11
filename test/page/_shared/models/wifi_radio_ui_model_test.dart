@@ -66,6 +66,29 @@ void main() {
           isNot(equals(_createRadio(channel: 40, channelInUse: 40))));
     });
 
+    // Utilization changes about once a minute with nothing else on the radio
+    // changing (#1295), so it must count for equality, or the Channels tab
+    // would keep printing the reading it was first built with.
+    test('utilization is included in equality', () {
+      expect(_createRadio(utilization: 46),
+          isNot(equals(_createRadio(utilization: 58))));
+    });
+
+    group('utilizationPercent', () {
+      // DataElements reports 0–255, where 255 is 100 %. The readings are the
+      // bench's (FW 2.0.4.26103108, 2026-11-09): 46 on 2.4 GHz, 11 on 5 GHz.
+      test('converts the 0–255 reading to a whole percent', () {
+        expect(_createRadio(utilization: 46).utilizationPercent, 18);
+        expect(_createRadio(utilization: 11).utilizationPercent, 4);
+        expect(_createRadio(utilization: 255).utilizationPercent, 100);
+        expect(_createRadio(utilization: 0).utilizationPercent, 0);
+      });
+
+      test('an unknown utilization is null, never 0', () {
+        expect(_createRadio(utilization: null).utilizationPercent, isNull);
+      });
+    });
+
     test('accessPoints defaults to empty list', () {
       final model = WifiRadioUIModel(
         instancePath: 'Device.WiFi.Radio.1.',
@@ -260,6 +283,7 @@ WifiRadioUIModel _createRadio({
   bool autoChannelEnable = true,
   String channelBandwidth = '20MHz',
   String supportedStandards = 'ax',
+  int? utilization,
   List<int> possibleChannels = const [],
   List<WifiAccessPointUIModel> accessPoints = const [],
 }) {
@@ -274,6 +298,7 @@ WifiRadioUIModel _createRadio({
     autoChannelEnable: autoChannelEnable,
     channelBandwidth: channelBandwidth,
     supportedStandards: supportedStandards,
+    utilization: utilization,
     possibleChannels: possibleChannels,
     accessPoints: accessPoints,
   );

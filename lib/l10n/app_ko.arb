@@ -1077,6 +1077,8 @@
   "slowHops": "느린 홉",
   "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
+  "channelUtilizationValue": "채널 사용률: {percent}%",
+  "channelUtilizationUnavailable": "채널 사용률: —",
   "sourceRestriction": "소스 제한",
   "specificDeviceConnectionProblems": "특정 장치에 연결 문제가 있음",
   "speedTestComplete": "속도 테스트 완료",

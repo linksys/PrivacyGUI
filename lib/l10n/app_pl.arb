@@ -1077,6 +1077,8 @@
   "slowHops": "Wolne przeskoki",
   "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
+  "channelUtilizationValue": "Wykorzystanie kanału: {percent}%",
+  "channelUtilizationUnavailable": "Wykorzystanie kanału: —",
   "sourceRestriction": "Ograniczenie źródła",
   "specificDeviceConnectionProblems": "Konkretne urządzenie ma problemy z połączeniem",
   "speedTestComplete": "Test szybkości zakończony",

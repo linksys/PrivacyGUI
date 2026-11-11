@@ -384,6 +384,9 @@ class _ChannelsTab extends StatelessWidget {
             // `null` when no client on this radio reported a noise floor — a
             // distinct state from 0 dB, and rendered as one below (#1271).
             final snr = stats.averageSnr(i);
+            // `null` when DataElements reported nothing for this radio — its
+            // own string below, never `0%` (#1295).
+            final utilization = radio.utilizationPercent;
 
             return LayoutBlock(
               child: Column(
@@ -524,6 +527,14 @@ class _ChannelsTab extends StatelessWidget {
                   AppText.bodySmall(snr == null
                       ? loc(context).snrUnavailable
                       : loc(context).snrValue(snr.toInt())),
+                  // How busy this radio's channel is (#1295): the thing a tab
+                  // named Channels could not say before. The same shape as the
+                  // SNR line, for the same reason — a lone text has no sibling
+                  // to collide with, so a long translation wraps inside its own
+                  // paragraph instead of overflowing.
+                  AppText.bodySmall(utilization == null
+                      ? loc(context).channelUtilizationUnavailable
+                      : loc(context).channelUtilizationValue(utilization)),
                 ],
               ),
             );
@@ -541,11 +552,9 @@ class _ChannelsTab extends StatelessWidget {
         //
         // Re-slicing it per *channel* was considered and does not help: a radio
         // has one channel, so channel-keyed slices are band-keyed slices with a
-        // different legend. What would earn this space is something the tab does
-        // not say — airtime utilization or same-channel neighbours
-        // (`…DataElements.Network.Device.{i}.Radio.{i}.Utilization`), which no
-        // provider fetches and `WifiRadioUIModel` has no field for. Follow-up
-        // ticket, not a layout fix.
+        // different legend. What earned the space is something the tab did not
+        // say: each radio's channel utilization, now one line in its block
+        // (#1295), not a chart here.
         //
         // It is also what broke the card. Fixed at 120px inside an `Expanded`,
         // it took whatever height the blocks left; on a tri-band router at the

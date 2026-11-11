@@ -108,6 +108,7 @@ class UspWifiDataService {
         WiFiSsids.fetch(_usp),
         WiFiAccessPoints.fetch(_usp),
         _fetchWifiClients(),
+        _fetchUtilizationByRadioMac(),
       ]);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
@@ -131,6 +132,7 @@ class UspWifiDataService {
             .where((a) => !isEmptyWiFiAccessPoint(a))
             .toList());
     final rawWifiClientMap = results[3] as Map<String, WifiClient>;
+    final utilizationByMac = results[4] as Map<String, int>;
 
     // A router always has radios, every radio carries SSIDs, and every SSID
     // has an access point. A table with no rows is the router answering while
@@ -165,6 +167,7 @@ class UspWifiDataService {
       radios: radios,
       ssids: ssids,
       accessPoints: accessPoints,
+      utilizationByMac: utilizationByMac,
     );
 
     return WifiDataFetchResult(
@@ -186,14 +189,32 @@ class UspWifiDataService {
   ///
   /// Guest detection: Per-radio instance ordering. Within each radio group,
   /// the lowest-index SSID is Main; all subsequent are Guest.
+  ///
+  /// Each radio's channel utilization comes from outside those three, from
+  /// DataElements ([utilizationByMac], read by [_fetchUtilizationByRadioMac]),
+  /// and is matched to the radio through its SSIDs' BSSIDs.
   List<WifiRadioUIModel> _buildWifiRadioUIModels({
     required WiFiRadios radios,
     required WiFiSsids ssids,
     required WiFiAccessPoints accessPoints,
+    required Map<String, int> utilizationByMac,
   }) {
     final ssidByPath = {
       for (final s in ssids.items) ensureTrailingDot(s.instancePath): s,
     };
+
+    // A DataElements radio's `ID` is the `BSSID` of that radio's primary SSID,
+    // and the SSID's `LowerLayers` names its `Device.WiFi.Radio` row. Matched
+    // through that, not by instance number: FW 2.0.4 numbers the two tables in
+    // opposite orders (#1295). A radio no DataElements radio matches — a
+    // satellite's, or one DataElements does not report — stays unknown.
+    final utilizationByRadioPath = <String, int>{};
+    for (final ssid in ssids.items) {
+      final utilization = utilizationByMac[ssid.bssid.trim().toUpperCase()];
+      if (utilization == null) continue;
+      utilizationByRadioPath.putIfAbsent(
+          ensureTrailingDot(ssid.lowerLayers), () => utilization);
+    }
 
     // Determine guest SSIDs via the canonical alias rule (see
     // wifi_guest_detection). Single source of truth shared across the app.
@@ -251,11 +272,55 @@ class UspWifiDataService {
         autoChannelEnable: radio.autoChannelEnable,
         channelBandwidth: radio.operatingChannelBandwidth,
         supportedStandards: radio.supportedStandards,
+        utilization:
+            utilizationByRadioPath[ensureTrailingDot(radio.instancePath)],
         possibleChannels: parsePossibleChannels(radio.possibleChannels),
         isDfsEnabled: radio.ieee80211hEnabled,
         accessPoints: apModels,
       );
     }).toList();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Channel utilization (DataElements)
+  // ---------------------------------------------------------------------------
+
+  static const _dataElementsRadio =
+      'Device.WiFi.DataElements.Network.Device.*.Radio.*.';
+
+  /// Each DataElements radio's `Utilization`, keyed by its `ID` — the radio's
+  /// MAC — in upper case (#1295).
+  ///
+  /// Two leaves rather than `DataElementsNetwork.fetch`, which reads every BSS
+  /// and station of every node on each Wi-Fi refresh to get one number per
+  /// radio.
+  ///
+  /// Never throws. Utilization is the one reading on the Channels tab that
+  /// does not come from `Device.WiFi.`, and a failed read of it must not take
+  /// the radios, networks and clients down with it: a fault leaves every
+  /// radio's utilization unknown and the rest of [fetch] as it was.
+  Future<Map<String, int>> _fetchUtilizationByRadioMac() async {
+    try {
+      final response = await _usp.get([
+        '${_dataElementsRadio}ID',
+        '${_dataElementsRadio}Utilization',
+      ]);
+      final result = <String, int>{};
+      for (final MapEntry(:key, :value) in response.entries) {
+        if (!key.endsWith('.ID')) continue;
+        final radioPath = key.substring(0, key.length - 'ID'.length);
+        final mac = '$value'.trim().toUpperCase();
+        final utilization =
+            int.tryParse('${response['${radioPath}Utilization'] ?? ''}');
+        if (mac.isEmpty || utilization == null) continue;
+        result[mac] = utilization;
+      }
+      return result;
+    } catch (e) {
+      logger.w('[USP][WiFi] DataElements radio utilization read failed, so it '
+          'is unknown on every radio: $e');
+      return const {};
+    }
   }
 
   // ---------------------------------------------------------------------------
