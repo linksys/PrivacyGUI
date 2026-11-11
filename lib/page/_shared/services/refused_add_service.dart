@@ -15,16 +15,24 @@ import 'package:privacy_gui/core/utils/logger.dart';
 /// and a 16th IPv6 port service with `Target=Drop`, which the page never
 /// lists.
 ///
-/// A row is refused when a failure's path starts with the row's path. Each
-/// refused row is deleted, one at a time and the highest instance number
-/// first, as the app's batch deletes go, since the router renumbers rows
-/// after a delete. Rows that were not refused stay.
+/// A row is refused when a failure's path starts with the row's path. The
+/// row path keeps its trailing dot, so `….1.` never matches a failure on
+/// `….10.…`. Each refused row is deleted, one at a time and the highest
+/// instance number first, as the app's batch deletes go, since the router
+/// renumbers rows after a delete. Rows that were not refused stay.
+///
+/// The deletes are writes, so call this inside the mutation lock
+/// (`uspMutationLockProvider.withLock`), as every caller does through its
+/// notifier. A delete can renumber the rows above it, so the paths the
+/// returned result lists for rows of the same Add may no longer be theirs.
+/// No caller uses them: on a partial result the page reads the router back.
 ///
 /// Only an instance path, `….<number>.`, is ever deleted. When the agent
 /// names no instance, 0.14.0 falls back to the table path (`Device.X.Y.`).
 /// Such a row, or any other shape, is left alone and keeps the result
 /// partial, so the page reads the router. The refused instance rows of the
-/// same Add are still deleted.
+/// same Add are still deleted; the partial result still lists them among its
+/// successes, which the read-back makes moot.
 ///
 /// Returns a [UspFailure] carrying the refusals when every created row was
 /// refused and deleted: the Add wrote nothing, so the caller can keep the
