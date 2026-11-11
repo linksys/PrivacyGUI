@@ -36,6 +36,19 @@ void main() {
             await switchToTab(tester, 1);
           },
         ),
+        // The Devices tab's WiFi Channels section with no channel in use read:
+        // "Channel -- (Auto)", never the configured channel (#1782).
+        'tab_devices_channel_in_use_unknown': Interaction(
+          setup: (overrides) => overrides.addAll(
+            statisticsOverrides(
+              deviceAnalyticsState: testDeviceAnalyticsState,
+              wifiData: testWifiChannelInUseUnknownData,
+            ),
+          ),
+          steps: (tester) async {
+            await switchToTab(tester, 1);
+          },
+        ),
         'tab_system': Interaction(
           setup: (overrides) => overrides.addAll(
             statisticsOverrides(

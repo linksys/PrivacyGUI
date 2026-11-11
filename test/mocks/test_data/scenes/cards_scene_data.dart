@@ -776,6 +776,73 @@ final testWifiOneDisabledData = WifiData(
   connectionDetailMap: testConnectionDetails,
 );
 
+// ─── Channel in use (#1782) ─────────────────────────────────────────────────
+
+/// Radios whose channel dialog has channels to offer: 2.4 GHz on auto, and
+/// 5 GHz set to 40, which hostapd's 20/40 MHz coexistence check moved to 36
+/// (FW 2.0.4.26103108, #1295). [testRadios] list no PossibleChannels, so their
+/// dialog only says there is nothing to choose.
+List<WifiRadioUIModel> _radiosWithChannelChoices({
+  required int? channelInUse24,
+  required int? channelInUse5,
+}) =>
+    [
+      WifiRadioUIModel(
+        instancePath: 'Device.WiFi.Radio.1.',
+        band: '2.4GHz',
+        enable: true,
+        transmitPower: -1,
+        maxBitRate: 574,
+        channel: 6,
+        channelInUse: channelInUse24,
+        autoChannelEnable: true,
+        channelBandwidth: '40MHz',
+        supportedStandards: '802.11b/g/n/ax',
+        possibleChannels: const [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+        accessPoints: testRadios[0].accessPoints,
+      ),
+      WifiRadioUIModel(
+        instancePath: 'Device.WiFi.Radio.2.',
+        band: '5GHz',
+        enable: true,
+        transmitPower: -1,
+        maxBitRate: 4804,
+        channel: 40,
+        channelInUse: channelInUse5,
+        autoChannelEnable: false,
+        channelBandwidth: '80MHz',
+        supportedStandards: '802.11a/n/ac/ax',
+        possibleChannels: const [
+          36, 40, 44, 48, 52, 56, 60, 64, //
+          100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144,
+          149, 153, 157, 161, 165,
+        ],
+        isDfsEnabled: true,
+        accessPoints: testRadios[1].accessPoints,
+      ),
+    ];
+
+/// The 5 GHz row prints 36, the channel the radio is on; its dialog selects
+/// 40, the configured one, and says it is using 36.
+final testWifiWithChannelChoicesData = WifiData(
+  codegenContext: WifiCodegenContext.empty,
+  radioModels: _radiosWithChannelChoices(channelInUse24: 6, channelInUse5: 36),
+  wifiClientMap: testWifiClients,
+  connectionDetailMap: testConnectionDetails,
+);
+
+/// [testWifiWithChannelChoicesData] with no channel in use on either radio, as
+/// a failed driver read leaves `ChannelsInUse` empty. The rows print "--" and
+/// "-- (Auto)", never the configured channel, and the dialog leaves out its
+/// "Currently using" line.
+final testWifiChannelInUseUnknownData = WifiData(
+  codegenContext: WifiCodegenContext.empty,
+  radioModels:
+      _radiosWithChannelChoices(channelInUse24: null, channelInUse5: null),
+  wifiClientMap: testWifiClients,
+  connectionDetailMap: testConnectionDetails,
+);
+
 // ---------------------------------------------------------------------------
 // Port Forwarding & Triggering
 // ---------------------------------------------------------------------------

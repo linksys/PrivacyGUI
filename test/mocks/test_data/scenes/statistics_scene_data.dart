@@ -170,6 +170,39 @@ const testWifiData = WifiData(
   ],
 );
 
+/// [testWifiData] with no channel in use on either radio, as a failed driver
+/// read leaves `ChannelsInUse` empty (#1782). The WiFi Channels rows print
+/// "-- (Auto)", never the configured channel.
+const testWifiChannelInUseUnknownData = WifiData(
+  codegenContext: WifiCodegenContext.empty,
+  radioModels: [
+    WifiRadioUIModel(
+      instancePath: 'Device.WiFi.Radio.1.',
+      band: '2.4GHz',
+      enable: true,
+      transmitPower: -1,
+      maxBitRate: 300,
+      channel: 6,
+      channelInUse: null,
+      autoChannelEnable: true,
+      channelBandwidth: '20/40MHz',
+      supportedStandards: 'b,g,n',
+    ),
+    WifiRadioUIModel(
+      instancePath: 'Device.WiFi.Radio.2.',
+      band: '5GHz',
+      enable: true,
+      transmitPower: -1,
+      maxBitRate: 1733,
+      channel: 36,
+      channelInUse: null,
+      autoChannelEnable: true,
+      channelBandwidth: '80MHz',
+      supportedStandards: 'a,n,ac,ax',
+    ),
+  ],
+);
+
 // ---------------------------------------------------------------------------
 // The gate scene
 // ---------------------------------------------------------------------------
