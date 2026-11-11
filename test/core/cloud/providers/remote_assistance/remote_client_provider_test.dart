@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -402,9 +405,9 @@ void main() {
     });
 
     group('expiredCountdownTimer', () {
-      test('starts countdown timer when session info is set', () async {
-        final session = RemoteAssistanceTestData.activeSession();
-
+      // On the fake clock: the countdown is a 1 s periodic timer, and reading
+      // it after real waits made these depend on how loaded the machine was.
+      void stubActiveSession(GRASessionInfo session) {
         when(() => mockService.fetchSessions(
               serialNumber: any(named: 'serialNumber'),
               macAddress: any(named: 'macAddress'),
@@ -417,71 +420,47 @@ void main() {
               macAddress: any(named: 'macAddress'),
               deviceUUID: any(named: 'deviceUUID'),
             )).thenAnswer((_) async => session);
+      }
 
-        when(() => mockService.endSession(
-              sessionId: any(named: 'sessionId'),
-              serialNumber: any(named: 'serialNumber'),
-              macAddress: any(named: 'macAddress'),
-              deviceUUID: any(named: 'deviceUUID'),
-            )).thenAnswer((_) async {});
+      test('starts countdown timer when session info is set', () {
+        stubActiveSession(RemoteAssistanceTestData.activeSession());
 
-        final container = createContainer();
+        fakeAsync((async) {
+          final container = createContainer();
+          container.read(remoteClientProvider.notifier)
+            ..setCredentials(RemoteAssistanceTestData.credentials())
+            ..initiateRemoteAssistance();
+          async.flushMicrotasks();
 
-        final notifier = container.read(remoteClientProvider.notifier);
-        notifier.setCredentials(RemoteAssistanceTestData.credentials());
+          async.elapse(const Duration(seconds: 1));
 
-        await notifier.initiateRemoteAssistance();
-
-        // Wait for timer to tick
-        await Future.delayed(const Duration(milliseconds: 1100));
-
-        final state = container.read(remoteClientProvider);
-        // expiredIn is 600 (600 seconds remaining), countdown starts at 600
-        // After ~1 second, should be around 599
-        expect(state.expiredCountdown, isNotNull);
-        expect(state.expiredCountdown, lessThan(600));
-
-        // Clean up: end session to stop polling before container dispose
-        await notifier.endRemoteAssistance();
-        container.dispose();
+          // expiredIn is 600 (600 seconds remaining); one tick takes it to 599.
+          expect(container.read(remoteClientProvider).expiredCountdown, 599);
+          container.dispose();
+        });
       });
 
-      test('countdown decrements each second', () async {
-        final session = RemoteAssistanceTestData.activeSession();
+      test('countdown decrements each second', () {
+        stubActiveSession(RemoteAssistanceTestData.activeSession());
 
-        when(() => mockService.fetchSessions(
-              serialNumber: any(named: 'serialNumber'),
-              macAddress: any(named: 'macAddress'),
-              deviceUUID: any(named: 'deviceUUID'),
-            )).thenAnswer((_) async => [session]);
+        fakeAsync((async) {
+          final container = createContainer();
+          container.read(remoteClientProvider.notifier)
+            ..setCredentials(RemoteAssistanceTestData.credentials())
+            ..initiateRemoteAssistance();
+          async.flushMicrotasks();
 
-        when(() => mockService.fetchSessionInfo(
-              sessionId: any(named: 'sessionId'),
-              serialNumber: any(named: 'serialNumber'),
-              macAddress: any(named: 'macAddress'),
-              deviceUUID: any(named: 'deviceUUID'),
-            )).thenAnswer((_) async => session);
+          async.elapse(const Duration(seconds: 1));
+          final firstRead =
+              container.read(remoteClientProvider).expiredCountdown;
+          async.elapse(const Duration(seconds: 1));
+          final secondRead =
+              container.read(remoteClientProvider).expiredCountdown;
 
-        final container = createContainer();
-        addTearDown(container.dispose);
-
-        final notifier = container.read(remoteClientProvider.notifier);
-        notifier.setCredentials(RemoteAssistanceTestData.credentials());
-
-        await notifier.initiateRemoteAssistance();
-
-        // Record initial countdown
-        await Future.delayed(const Duration(milliseconds: 1100));
-        final firstRead = container.read(remoteClientProvider).expiredCountdown;
-
-        // Wait another second
-        await Future.delayed(const Duration(milliseconds: 1000));
-        final secondRead =
-            container.read(remoteClientProvider).expiredCountdown;
-
-        expect(firstRead, isNotNull);
-        expect(secondRead, isNotNull);
-        expect(secondRead!, lessThan(firstRead!));
+          expect(firstRead, 599);
+          expect(secondRead, 598);
+          container.dispose();
+        });
       });
 
       test('timer is cancelled when endRemoteAssistance is called', () async {
@@ -519,6 +498,236 @@ void main() {
         // State should be cleared
         final state = container.read(remoteClientProvider);
         expect(state.expiredCountdown, isNull);
+      });
+    });
+
+    // A poll must not outlive the notifier. Both polls wait between fetches,
+    // and neither stops the moment it is cancelled: the session poll is an
+    // async* generator, which runs on to its next `yield` after a cancel, and
+    // the session-creation poll is a timer whose callback may be awaiting a
+    // fetch. Either then read `ref` from a disposed container, which surfaced
+    // as a test failing "after it had already completed", in whichever test
+    // the full suite happened to be running 3 s later.
+    group('a poll does not outlive the notifier', () {
+      void stubSessions(Future<List<GRASessionInfo>> Function() sessions) {
+        when(() => mockService.fetchSessions(
+              serialNumber: any(named: 'serialNumber'),
+              macAddress: any(named: 'macAddress'),
+              deviceUUID: any(named: 'deviceUUID'),
+            )).thenAnswer((_) => sessions());
+      }
+
+      void stubSessionInfo(GRASessionInfo session) {
+        when(() => mockService.fetchSessionInfo(
+              sessionId: any(named: 'sessionId'),
+              serialNumber: any(named: 'serialNumber'),
+              macAddress: any(named: 'macAddress'),
+              deviceUUID: any(named: 'deviceUUID'),
+            )).thenAnswer((_) async => session);
+      }
+
+      int sessionInfoFetches() => verify(() => mockService.fetchSessionInfo(
+            sessionId: any(named: 'sessionId'),
+            serialNumber: any(named: 'serialNumber'),
+            macAddress: any(named: 'macAddress'),
+            deviceUUID: any(named: 'deviceUUID'),
+          )).callCount;
+
+      test('the session poll, waiting out its interval, stops at dispose', () {
+        final session = RemoteAssistanceTestData.activeSession();
+        stubSessions(() async => [session]);
+        stubSessionInfo(session);
+        final errors = <Object>[];
+
+        fakeAsync((async) {
+          runZonedGuarded(() {
+            final container = createContainer();
+            container.read(remoteClientProvider.notifier)
+              ..setCredentials(RemoteAssistanceTestData.credentials())
+              ..initiateRemoteAssistance();
+            async.flushMicrotasks();
+            container.dispose();
+            async.elapse(const Duration(seconds: 10));
+          }, (e, _) => errors.add(e));
+        });
+
+        expect(errors, isEmpty);
+        // initiate's own fetch and the poll's first; none after dispose.
+        expect(sessionInfoFetches(), 2);
+      });
+
+      // The same notifier serves the provider again after an invalidate
+      // (Riverpod 2 keeps the instance), so a fetch the old lifetime started
+      // would otherwise write into the new state and start polls that nothing
+      // cancels.
+      test(
+          'a session-creation poll whose fetch answers after an invalidate '
+          'touches nothing', () {
+        final session = RemoteAssistanceTestData.pendingSession();
+        // Made inside fakeAsync: a completer made outside it completes on the
+        // real event loop, after the fake clock (and this test) has finished.
+        late Completer<List<GRASessionInfo>> answeredLate;
+        var calls = 0;
+        stubSessions(
+            () => calls++ == 0 ? Future.value([]) : answeredLate.future);
+        stubSessionInfo(session);
+
+        fakeAsync((async) {
+          answeredLate = Completer<List<GRASessionInfo>>();
+          final container = createContainer();
+          container.read(remoteClientProvider.notifier)
+            ..setCredentials(RemoteAssistanceTestData.credentials())
+            ..initiateRemoteAssistance();
+          async.flushMicrotasks();
+          // No session yet, so it polls for one every 5 s.
+          async.elapse(const Duration(seconds: 5));
+          container.invalidate(remoteClientProvider);
+          expect(container.read(remoteClientProvider).sessionInfo, isNull);
+          answeredLate.complete([session]);
+          async.elapse(const Duration(seconds: 10));
+
+          expect(calls, 2);
+          expect(container.read(remoteClientProvider).sessions, isEmpty);
+          verifyNever(() => mockService.fetchSessionInfo(
+                sessionId: any(named: 'sessionId'),
+                serialNumber: any(named: 'serialNumber'),
+                macAddress: any(named: 'macAddress'),
+                deviceUUID: any(named: 'deviceUUID'),
+              ));
+          container.dispose();
+        });
+      });
+
+      // The same guard covers the awaits a poll runs into: creating the PIN
+      // (PR #1784 review) and the initiate flow that starts the polls.
+      test('a PIN that answers after an invalidate is not written', () {
+        final session = RemoteAssistanceTestData.initiateSession();
+        late Completer<({String sessionId, String pin})> pinLate;
+        var calls = 0;
+        stubSessions(
+            () => calls++ == 0 ? Future.value([]) : Future.value([session]));
+        stubSessionInfo(session);
+        when(() => mockService.createPin(
+              serialNumber: any(named: 'serialNumber'),
+              macAddress: any(named: 'macAddress'),
+              deviceUUID: any(named: 'deviceUUID'),
+            )).thenAnswer((_) => pinLate.future);
+
+        fakeAsync((async) {
+          pinLate = Completer();
+          final container = createContainer();
+          container.read(remoteClientProvider.notifier)
+            ..setCredentials(RemoteAssistanceTestData.credentials())
+            ..initiateRemoteAssistance();
+          async.flushMicrotasks();
+          // The creation poll finds the session and asks for a PIN.
+          async.elapse(const Duration(seconds: 5));
+          container.invalidate(remoteClientProvider);
+          expect(container.read(remoteClientProvider).pin, isNull);
+          pinLate.complete(RemoteAssistanceTestData.createPinResult());
+          async.elapse(const Duration(seconds: 10));
+
+          expect(container.read(remoteClientProvider).pin, isNull);
+          expect(container.read(remoteClientProvider).expiredCountdown, isNull,
+              reason: 'no countdown is started for the old lifetime');
+          container.dispose();
+        });
+      });
+
+      test(
+          'an initiate whose session info answers after an invalidate writes '
+          'nothing and starts no poll', () {
+        final session = RemoteAssistanceTestData.activeSession();
+        late Completer<GRASessionInfo> infoLate;
+        stubSessions(() async => [session]);
+        when(() => mockService.fetchSessionInfo(
+              sessionId: any(named: 'sessionId'),
+              serialNumber: any(named: 'serialNumber'),
+              macAddress: any(named: 'macAddress'),
+              deviceUUID: any(named: 'deviceUUID'),
+            )).thenAnswer((_) => infoLate.future);
+
+        fakeAsync((async) {
+          infoLate = Completer();
+          final container = createContainer();
+          container.read(remoteClientProvider.notifier)
+            ..setCredentials(RemoteAssistanceTestData.credentials())
+            ..initiateRemoteAssistance();
+          async.flushMicrotasks();
+          container.invalidate(remoteClientProvider);
+          expect(container.read(remoteClientProvider).sessions, isEmpty);
+          infoLate.complete(session);
+          async.elapse(const Duration(seconds: 10));
+
+          final state = container.read(remoteClientProvider);
+          expect(state.sessionInfo, isNull);
+          expect(state.expiredCountdown, isNull);
+          expect(sessionInfoFetches(), 1, reason: 'no session poll started');
+          container.dispose();
+        });
+      });
+
+      // The two awaits of initiateRemoteAssistance the tests above do not
+      // reach (PR #1784 review, Round 2): its first fetch, and its PIN.
+      test(
+          'an initiate whose session list answers after an invalidate writes '
+          'nothing and starts no creation poll', () {
+        late Completer<List<GRASessionInfo>> sessionsLate;
+        var calls = 0;
+        stubSessions(() {
+          calls++;
+          return calls == 1 ? sessionsLate.future : Future.value([]);
+        });
+
+        fakeAsync((async) {
+          sessionsLate = Completer();
+          final container = createContainer();
+          container.read(remoteClientProvider.notifier)
+            ..setCredentials(RemoteAssistanceTestData.credentials())
+            ..initiateRemoteAssistance();
+          async.flushMicrotasks();
+          container.invalidate(remoteClientProvider);
+          expect(container.read(remoteClientProvider).sessionInfo, isNull);
+          sessionsLate.complete([]);
+          async.elapse(const Duration(seconds: 12));
+
+          expect(container.read(remoteClientProvider).sessionInfo, isNull);
+          expect(calls, 1, reason: 'no creation poll started');
+          container.dispose();
+        });
+      });
+
+      test(
+          'an initiate whose PIN answers after an invalidate starts no '
+          'countdown and no session poll', () {
+        final session = RemoteAssistanceTestData.initiateSession();
+        late Completer<({String sessionId, String pin})> pinLate;
+        stubSessions(() async => [session]);
+        stubSessionInfo(session);
+        when(() => mockService.createPin(
+              serialNumber: any(named: 'serialNumber'),
+              macAddress: any(named: 'macAddress'),
+              deviceUUID: any(named: 'deviceUUID'),
+            )).thenAnswer((_) => pinLate.future);
+
+        fakeAsync((async) {
+          pinLate = Completer();
+          final container = createContainer();
+          container.read(remoteClientProvider.notifier)
+            ..setCredentials(RemoteAssistanceTestData.credentials())
+            ..initiateRemoteAssistance();
+          async.flushMicrotasks();
+          container.invalidate(remoteClientProvider);
+          expect(container.read(remoteClientProvider).sessionInfo, isNull);
+          pinLate.complete(RemoteAssistanceTestData.createPinResult());
+          async.elapse(const Duration(seconds: 10));
+
+          final state = container.read(remoteClientProvider);
+          expect(state.expiredCountdown, isNull);
+          expect(state.sessionInfo, isNull);
+          expect(sessionInfoFetches(), 1, reason: 'no session poll started');
+          container.dispose();
+        });
       });
     });
 

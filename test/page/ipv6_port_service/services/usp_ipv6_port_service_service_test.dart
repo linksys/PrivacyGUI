@@ -1,10 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/errors/usp_refusal_reason.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/ipv6port_service.g.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
 import 'package:privacy_gui/page/ipv6_port_service/services/usp_ipv6_port_service_service.dart';
+
+import '../../../mocks/test_data/usp_refusal_test_data.dart';
+import '../../../mocks/test_data/usp_add_refusal_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -669,6 +673,118 @@ void main() {
         () => service.saveBatch(original: original, current: []),
         throwsA(isA<ServiceError>()),
       );
+    });
+  });
+
+  // FWDEV#204's IPv6 port services (#1775). Refused leaves and messages are the
+  // bench's (2.0.4.26103108, 2026-11-09, the app's own edit of one rule): most
+  // checks run when Target is written, so Target is the refused leaf, but a
+  // name in use is refused at Description and a port above 65535 at
+  // DestPortRangeMax. Every other leaf of the Set says the group failed.
+  group('UspIpv6PortServiceService — a refused save keeps the router reason',
+      () {
+    const p = 'Device.Firewall.Chain.1.Rule.40.';
+    final rule = Ipv6PortServiceRuleUIModel(
+      instancePath: p,
+      enabled: true,
+      description: 'zz1775-v6b',
+      ipv6Address: '2001:db8::1',
+      protocol: 'TCP',
+      startPort: 18300,
+      endPort: 18310,
+    );
+
+    // The app's edit, in the codegen's order.
+    const leaves = [
+      'Enable',
+      'Description',
+      'IPVersion',
+      'DestIP',
+      'DestPort',
+      'DestPortRangeMax',
+      'Protocol',
+      'Target',
+    ];
+
+    Future<void> expectReason(String message, UspRefusalReason reason,
+        {String refusedLeaf = 'Target'}) async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => refusedSetEnvelope(
+                instancePath: p,
+                refusedLeaf: refusedLeaf,
+                message: message,
+                otherLeaves: [
+                  for (final l in leaves)
+                    if (l != refusedLeaf) l,
+                ],
+              ));
+      await expectLater(
+        service.saveBatch(
+            original: [rule], current: [rule.copyWith(startPort: 18085)]),
+        throwsA(carriesRefusalReason(reason)),
+      );
+    }
+
+    test('an edit onto another rule\'s ports keeps ErrorRulesOverlap',
+        () async {
+      await expectReason(
+          'ErrorRulesOverlap: ports 18085:18095 already open to '
+          'fd00::1775:1.',
+          UspRefusalReason.rulesOverlap);
+    });
+
+    test(
+        'a start port above the end port keeps ErrorInvalidPortRange, not '
+        'ErrorInvalidPort', () async {
+      await expectReason(
+          'ErrorInvalidPortRange: DestPort 18400 is above DestPortRangeMax '
+          '18390.',
+          UspRefusalReason.invalidPortRange);
+    });
+
+    test('a name another firewall rule has keeps ErrorDescriptionInUse',
+        () async {
+      await expectReason(
+          "ErrorDescriptionInUse: another firewall rule is named "
+          "'zz1775-v6a'.",
+          UspRefusalReason.descriptionInUse,
+          refusedLeaf: 'Description');
+    });
+
+    test('a port above 65535 keeps ErrorInvalidPort, refused at its own leaf',
+        () async {
+      await expectReason('ErrorInvalidPort: 70000 is above 65535.',
+          UspRefusalReason.invalidPort,
+          refusedLeaf: 'DestPortRangeMax');
+    });
+  });
+
+  // usp-client 0.14.0 (linksys/usp_framework#114). Bench 2.0.4: a refused Add
+  // stores the rule with `Target="Drop"`, which the page never lists. It is
+  // deleted, so no hidden Drop rule stays behind holding the name.
+  group('UspIpv6PortServiceService — a refused Add is undone', () {
+    test(
+        'the Drop row is deleted, the save wrote nothing, and the reason '
+        'reaches the page', () async {
+      const row = 'Device.Firewall.Chain.3.Rule.49.';
+      when(() => mockUsp.add(any())).thenAnswer((_) async =>
+          UspAddRefusalTestData.refusedAdd(
+              instances: [row],
+              refusedRow: row,
+              refusedParam: 'Target',
+              message:
+                  'ErrorTooManyRules: at most 15 IPv6 port service rules.'));
+      when(() => mockUsp.delete(any()))
+          .thenAnswer((_) async => UspAddRefusalTestData.accepted);
+
+      await expectLater(
+        service.saveBatch(original: [], current: [_ui(instancePath: null)]),
+        throwsA(allOf(
+          isA<UspCompleteFailureError>(),
+          carriesRefusalReason(UspRefusalReason.tooManyRules),
+        )),
+      );
+      verify(() => mockUsp.delete([row])).called(1);
     });
   });
 }

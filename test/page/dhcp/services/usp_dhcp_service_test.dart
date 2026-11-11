@@ -8,6 +8,8 @@ import 'package:privacy_gui/page/dhcp/services/usp_dhcp_service.dart';
 import '../../../mocks/test_data/local_network_test_data.dart';
 import '../../../util/usp_param_templates.dart';
 
+import '../../../mocks/test_data/usp_add_refusal_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 void main() {
@@ -677,7 +679,12 @@ void main() {
       );
     });
 
-    test('saveBatch partial success logs warning but continues', () async {
+    // This test used to pin the opposite ("lenient mode accepts partial
+    // success"), which is how a refused reservation read as saved. Until
+    // usp-client 0.14.0 an Add never answered like this, so the branch was
+    // unreachable; now it is the answer to a refused reservation.
+    test('saveBatch fails as partial when an Add answers a partial success',
+        () async {
       // Partial success: one succeeds, one fails
       when(() => mockUsp.add(any())).thenAnswer((_) async => {
             'success': true,
@@ -699,10 +706,121 @@ void main() {
             mac: 'AA:AA:AA:AA:AA:02', ip: '192.168.1.2', enable: true),
       ];
 
-      // Should NOT throw — lenient mode accepts partial success
-      final result = await service.saveBatch(original: [], current: current);
+      await expectLater(
+        service.saveBatch(original: [], current: current),
+        throwsA(isA<UspPartialFailureError>()),
+      );
+    });
+  });
 
-      expect(result.added, 2);
+  // usp-client 0.14.0 (linksys/usp_framework#114): a refused reservation is
+  // created anyway with the refused field emptied, and now reported.
+  group('UspDhcpService — a refused Add', () {
+    const pool = 'Device.DHCPv4.Server.Pool.1.';
+    DhcpReservationUIModel r(String mac, String ip) =>
+        DhcpReservationUIModel(mac: mac, ip: ip, enable: true);
+
+    setUp(() {
+      when(() => mockUsp.delete(any()))
+          .thenAnswer((_) async => UspAddRefusalTestData.accepted);
+    });
+
+    test(
+        'in a batch: only the refused row is deleted, and the save fails as '
+        'partial instead of reading as saved', () async {
+      const good = '${pool}StaticAddress.4.';
+      const bad = '${pool}StaticAddress.5.';
+      when(() => mockUsp.add(any())).thenAnswer((_) async =>
+          UspAddRefusalTestData.refusedAdd(
+              instances: [good, bad],
+              refusedRow: bad,
+              refusedParam: 'Yiaddr',
+              message: "Invalid value '192.168.2.9'"));
+
+      await expectLater(
+        service.saveBatch(original: const [], current: [
+          r('11:22:33:44:55:66', '192.168.1.200'),
+          r('11:22:33:44:55:77', '192.168.2.9'),
+        ]),
+        throwsA(isA<UspPartialFailureError>()),
+      );
+      verify(() => mockUsp.delete([bad])).called(1);
+      verifyNever(() => mockUsp.delete([good]));
+    });
+
+    // A Delete that landed before a refused Add has changed the router, and it
+    // renumbers rows after a delete: reading that as "wrote nothing" would
+    // keep the old list, and a retry would delete the wrong reservation.
+    test('a Delete that landed, then a refused Add: a partial failure',
+        () async {
+      const bad = '${pool}StaticAddress.5.';
+      when(() => mockUsp.add(any())).thenAnswer((_) async =>
+          UspAddRefusalTestData.refusedAdd(
+              instances: [bad],
+              refusedRow: bad,
+              refusedParam: 'Yiaddr',
+              message: "Invalid value '192.168.2.9'"));
+
+      await expectLater(
+        service.saveBatch(original: [
+          DhcpReservationUIModel(
+              instancePath: '${pool}StaticAddress.1.',
+              mac: 'AA:AA:AA:AA:AA:01',
+              ip: '192.168.1.10',
+              enable: true),
+        ], current: [
+          r('11:22:33:44:55:77', '192.168.2.9'),
+        ]),
+        throwsA(isA<UspPartialFailureError>()),
+      );
+      verify(() => mockUsp.delete(['${pool}StaticAddress.1.'])).called(1);
+      verify(() => mockUsp.delete([bad])).called(1);
+    });
+
+    test('an edit in the same save is still sent after a refused Add',
+        () async {
+      const bad = '${pool}StaticAddress.5.';
+      const kept = '${pool}StaticAddress.2.';
+      when(() => mockUsp.add(any())).thenAnswer((_) async =>
+          UspAddRefusalTestData.refusedAdd(
+              instances: [bad],
+              refusedRow: bad,
+              refusedParam: 'Yiaddr',
+              message: "Invalid value '192.168.2.9'"));
+      when(() => mockUsp.set(any()))
+          .thenAnswer((_) async => UspAddRefusalTestData.accepted);
+      final before = DhcpReservationUIModel(
+          instancePath: kept,
+          mac: 'AA:AA:AA:AA:AA:02',
+          ip: '192.168.1.20',
+          enable: true);
+
+      await expectLater(
+        service.saveBatch(original: [
+          before
+        ], current: [
+          before.copyWith(ip: '192.168.1.21'),
+          r('11:22:33:44:55:77', '192.168.2.9'),
+        ]),
+        throwsA(isA<UspPartialFailureError>()),
+      );
+      verify(() => mockUsp.set(any())).called(1);
+    });
+
+    test('alone: the row is deleted and the add wrote nothing', () async {
+      const bad = '${pool}StaticAddress.5.';
+      when(() => mockUsp.add(any())).thenAnswer((_) async =>
+          UspAddRefusalTestData.refusedAdd(
+              instances: [bad],
+              refusedRow: bad,
+              refusedParam: 'Yiaddr',
+              message: "Invalid value '192.168.2.9'"));
+
+      await expectLater(
+        service.immediateAdd(mac: '11:22:33:44:55:77', ip: '192.168.2.9'),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+      verify(() => mockUsp.delete([bad])).called(1);
     });
   });
 }

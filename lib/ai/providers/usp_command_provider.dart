@@ -592,6 +592,7 @@ class UspCommandProvider implements IRouterCommandProvider {
           .map((d) => {
                 'enabled': d.enable,
                 'destIp': d.destIp,
+                'destMac': d.destMac,
               })
           .toList(),
       'portForwardingRuleCount': pfData?.ruleModels.length ?? 0,
