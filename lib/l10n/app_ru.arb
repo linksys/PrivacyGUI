@@ -1305,5 +1305,17 @@
   "invalidSubnetMask": "Недопустимая маска подсети",
   "reservationNameHint": "Имя (необязательно)",
   "reservationNameInvalid": "Используйте буквы, цифры и -, без - в начале или в конце",
-  "reservationNameInUse": "Это имя уже используется другим резервированием"
+  "reservationNameInUse": "Это имя уже используется другим резервированием",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "Имя хоста всегда указывает на интернет-IP-адрес роутера, даже если интернет-провайдер его меняет.",
+  "selectAProvider": "Выберите поставщика",
+  "invalidUsername": "Недействительное имя пользователя",
+  "invalidPassword": "Недопустимый пароль",
+  "invalidHostname": "Недопустимое имя хоста",
+  "ddnsPasswordKeepHint": "Оставьте пустым, чтобы сохранить текущий пароль",
+  "ddnsStatusTitle": "Состояние DDNS",
+  "internetIPAddress": "IP-адрес в Интернете",
+  "ddnsAuthenticationFailed": "Ошибка аутентификации",
+  "ddnsSettingsIncomplete": "Ошибка — настройки не заполнены",
+  "ddnsWanAddressPrivate": "Интернет-IP-адрес роутера частный, и его нельзя опубликовать. Для DDNS нужен публичный IP-адрес от интернет-провайдера."
 }

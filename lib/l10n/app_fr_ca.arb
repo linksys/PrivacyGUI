@@ -1305,5 +1305,17 @@
   "invalidSubnetMask": "Masque de sous-réseau non valide",
   "reservationNameHint": "Nom (facultatif)",
   "reservationNameInvalid": "Utilisez des lettres, des chiffres et -, sans - au début ni à la fin",
-  "reservationNameInUse": "Une autre réservation porte déjà ce nom"
+  "reservationNameInUse": "Une autre réservation porte déjà ce nom",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "Maintenez un nom d'hôte pointé vers l'adresse IP Internet de votre routeur, même lorsque votre fournisseur Internet la modifie.",
+  "selectAProvider": "Sélectionner un fournisseur",
+  "invalidUsername": "Nom d'utilisateur invalide",
+  "invalidPassword": "Mot de passe non valide",
+  "invalidHostname": "Nom d'hôte non valide",
+  "ddnsPasswordKeepHint": "Laissez vide pour conserver le mot de passe actuel",
+  "ddnsStatusTitle": "État du DDNS",
+  "internetIPAddress": "Adresse IP Internet",
+  "ddnsAuthenticationFailed": "Échec de l'authentification",
+  "ddnsSettingsIncomplete": "Échec — paramètres incomplets",
+  "ddnsWanAddressPrivate": "L'adresse IP Internet du routeur est privée et ne peut pas être publiée. Le DDNS nécessite une adresse IP publique fournie par votre fournisseur Internet."
 }

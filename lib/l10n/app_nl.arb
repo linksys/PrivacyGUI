@@ -1305,5 +1305,17 @@
   "invalidSubnetMask": "Ongeldig subnetmasker",
   "reservationNameHint": "Naam (optioneel)",
   "reservationNameInvalid": "Gebruik letters, cijfers en -, niet beginnend of eindigend met -",
-  "reservationNameInUse": "Een andere reservering heeft deze naam al"
+  "reservationNameInUse": "Een andere reservering heeft deze naam al",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "Houd een hostnaam gekoppeld aan het internet-IP-adres van uw router, ook als uw internetprovider het wijzigt.",
+  "selectAProvider": "Selecteer een provider",
+  "invalidUsername": "Ongeldige gebruikersnaam",
+  "invalidPassword": "Ongeldig wachtwoord",
+  "invalidHostname": "Ongeldige hostnaam",
+  "ddnsPasswordKeepHint": "Laat leeg om het huidige wachtwoord te behouden",
+  "ddnsStatusTitle": "DDNS-status",
+  "internetIPAddress": "Internet-IP-adres",
+  "ddnsAuthenticationFailed": "Verificatie mislukt",
+  "ddnsSettingsIncomplete": "Mislukt — instellingen onvolledig",
+  "ddnsWanAddressPrivate": "Het internet-IP-adres van de router is privé en kan niet worden gepubliceerd. DDNS heeft een openbaar IP-adres van uw internetprovider nodig."
 }

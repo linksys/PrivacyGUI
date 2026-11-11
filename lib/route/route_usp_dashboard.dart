@@ -256,6 +256,12 @@ final uspDashboardRoute = ShellRoute(
           preservableProvider: uspPortForwardingPageProvider.notifier,
         ),
         LinksysRoute(
+          name: RouteNamed.uspDdns,
+          path: RoutePath.uspDdns,
+          builder: (context, state) => const UspDdnsView(),
+          preservableProvider: uspDdnsProvider.notifier,
+        ),
+        LinksysRoute(
           name: RouteNamed.uspStaticRouting,
           path: RoutePath.uspStaticRouting,
           builder: (context, state) => const UspStaticRoutingView(),

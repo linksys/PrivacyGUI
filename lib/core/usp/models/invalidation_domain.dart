@@ -53,6 +53,10 @@ enum InvalidationDomain {
   /// network-wide MAC filter mode, which the hardware privacy switch changes
   /// too (PrivacyGUI#1755). The leaf, not the Network object.
   macFilter,
+
+  /// Device.DynamicDNS. — a DDNS client's update status, which the router
+  /// changes on its own as an update runs (`ddns-valuechange`, PrivacyGUI#641)
+  dynamicDns,
 }
 
 /// One SSE invalidation event: the [domain] that changed, plus a [seq] that

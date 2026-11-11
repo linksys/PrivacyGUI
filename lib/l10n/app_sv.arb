@@ -1305,5 +1305,17 @@
   "invalidSubnetMask": "Ogiltig nätmask",
   "reservationNameHint": "Namn (valfritt)",
   "reservationNameInvalid": "Använd bokstäver, siffror och -, utan - först eller sist",
-  "reservationNameInUse": "En annan reservation har redan det här namnet"
+  "reservationNameInUse": "En annan reservation har redan det här namnet",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "Håll ett värdnamn kopplat till routerns internet-IP-adress, även när internetleverantören ändrar den.",
+  "selectAProvider": "Välj en leverantör",
+  "invalidUsername": "Ogiltigt användarnamn",
+  "invalidPassword": "Ogiltigt lösenord",
+  "invalidHostname": "Ogiltigt värdnamn",
+  "ddnsPasswordKeepHint": "Lämna tomt för att behålla det nuvarande lösenordet",
+  "ddnsStatusTitle": "DDNS-status",
+  "internetIPAddress": "IP-adress för internet",
+  "ddnsAuthenticationFailed": "Autentiseringen misslyckades",
+  "ddnsSettingsIncomplete": "Misslyckades – inställningarna är ofullständiga",
+  "ddnsWanAddressPrivate": "Routerns internet-IP-adress är privat och kan inte publiceras. DDNS kräver en offentlig IP-adress från internetleverantören."
 }

@@ -1305,5 +1305,17 @@
   "invalidSubnetMask": "Geçersiz alt ağ maskesi",
   "reservationNameHint": "Ad (isteğe bağlı)",
   "reservationNameInvalid": "Harf, rakam ve - kullanın; - ile başlamamalı veya bitmemeli",
-  "reservationNameInUse": "Başka bir rezervasyon zaten bu adı kullanıyor"
+  "reservationNameInUse": "Başka bir rezervasyon zaten bu adı kullanıyor",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "İnternet servis sağlayıcınız değiştirse bile bir ana bilgisayar adının yönlendiricinizin İnternet IP adresini göstermesini sağlar.",
+  "selectAProvider": "Bir sağlayıcı seç",
+  "invalidUsername": "Geçersiz kullanıcı adı",
+  "invalidPassword": "Geçersiz parola",
+  "invalidHostname": "Geçersiz Ana Bilgisayar Adı",
+  "ddnsPasswordKeepHint": "Mevcut parolayı korumak için boş bırakın",
+  "ddnsStatusTitle": "DDNS durumu",
+  "internetIPAddress": "İnternet IP Adresi",
+  "ddnsAuthenticationFailed": "Kimlik doğrulama başarısız",
+  "ddnsSettingsIncomplete": "Başarısız — ayarlar eksik",
+  "ddnsWanAddressPrivate": "Yönlendiricinin İnternet IP adresi özel olduğundan yayımlanamaz. DDNS için İnternet servis sağlayıcınızdan genel bir IP adresi gerekir."
 }

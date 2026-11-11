@@ -1305,5 +1305,17 @@
   "invalidSubnetMask": "잘못된 서브넷 마스크",
   "reservationNameHint": "이름 (선택 사항)",
   "reservationNameInvalid": "문자, 숫자, -를 사용하고 -로 시작하거나 끝나지 않아야 합니다",
-  "reservationNameInUse": "다른 예약에서 이미 이 이름을 사용하고 있습니다"
+  "reservationNameInUse": "다른 예약에서 이미 이 이름을 사용하고 있습니다",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "인터넷 서비스 제공업체가 라우터의 인터넷 IP 주소를 변경해도 호스트 이름이 해당 주소를 가리키도록 유지합니다.",
+  "selectAProvider": "제공자 선택",
+  "invalidUsername": "잘못된 사용자 이름",
+  "invalidPassword": "잘못된 암호",
+  "invalidHostname": "잘못된 호스트 이름",
+  "ddnsPasswordKeepHint": "현재 암호를 유지하려면 비워 두세요",
+  "ddnsStatusTitle": "DDNS 상태",
+  "internetIPAddress": "인터넷 IP 주소",
+  "ddnsAuthenticationFailed": "인증 실패",
+  "ddnsSettingsIncomplete": "실패 — 설정이 완료되지 않음",
+  "ddnsWanAddressPrivate": "라우터의 인터넷 IP 주소가 사설 주소라서 게시할 수 없습니다. DDNS를 사용하려면 인터넷 서비스 제공업체의 공인 IP 주소가 필요합니다."
 }

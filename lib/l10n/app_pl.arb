@@ -1305,5 +1305,17 @@
   "invalidSubnetMask": "Nieprawidłowa maska podsieci",
   "reservationNameHint": "Nazwa (opcjonalnie)",
   "reservationNameInvalid": "Użyj liter, cyfr i -, bez - na początku ani na końcu",
-  "reservationNameInUse": "Inna rezerwacja ma już tę nazwę"
+  "reservationNameInUse": "Inna rezerwacja ma już tę nazwę",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "Utrzymuje nazwę hosta wskazującą na internetowy adres IP routera, nawet gdy dostawca internetu go zmieni.",
+  "selectAProvider": "Wybierz dostawcę",
+  "invalidUsername": "Nieprawidłowa nazwa użytkownika",
+  "invalidPassword": "Nieprawidłowe hasło",
+  "invalidHostname": "Nieprawidłowa nazwa hosta",
+  "ddnsPasswordKeepHint": "Pozostaw puste, aby zachować bieżące hasło",
+  "ddnsStatusTitle": "Stan DDNS",
+  "internetIPAddress": "Adres IP w Internecie",
+  "ddnsAuthenticationFailed": "Uwierzytelnianie nie powiodło się",
+  "ddnsSettingsIncomplete": "Niepowodzenie — niepełne ustawienia",
+  "ddnsWanAddressPrivate": "Internetowy adres IP routera jest prywatny i nie może zostać opublikowany. DDNS wymaga publicznego adresu IP od dostawcy internetu."
 }

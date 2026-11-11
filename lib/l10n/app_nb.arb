@@ -1305,5 +1305,17 @@
   "invalidSubnetMask": "Ugyldig nettverksmaske",
   "reservationNameHint": "Navn (valgfritt)",
   "reservationNameInvalid": "Bruk bokstaver, sifre og -, uten - først eller sist",
-  "reservationNameInUse": "En annen reservasjon har allerede dette navnet"
+  "reservationNameInUse": "En annen reservasjon har allerede dette navnet",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "Hold et vertsnavn rettet mot ruterens Internett-IP-adresse, også når Internett-leverandøren endrer den.",
+  "selectAProvider": "Velg leverandør",
+  "invalidUsername": "Ugyldig brukernavn",
+  "invalidPassword": "Ugyldig passord",
+  "invalidHostname": "Ugyldig vertsnavn",
+  "ddnsPasswordKeepHint": "La feltet stå tomt for å beholde gjeldende passord",
+  "ddnsStatusTitle": "DDNS-status",
+  "internetIPAddress": "Internett IP-adresse",
+  "ddnsAuthenticationFailed": "Autentisering mislyktes",
+  "ddnsSettingsIncomplete": "Mislyktes – innstillingene er ufullstendige",
+  "ddnsWanAddressPrivate": "Ruterens Internett-IP-adresse er privat og kan ikke publiseres. DDNS krever en offentlig IP-adresse fra Internett-leverandøren."
 }

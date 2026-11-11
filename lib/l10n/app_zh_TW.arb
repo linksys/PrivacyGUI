@@ -1305,5 +1305,17 @@
   "invalidSubnetMask": "子網路遮罩不正確",
   "reservationNameHint": "名稱（選填）",
   "reservationNameInvalid": "請使用字母、數字和 -，且不能以 - 開頭或結尾",
-  "reservationNameInUse": "其他保留項目已使用此名稱"
+  "reservationNameInUse": "其他保留項目已使用此名稱",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "即使網際網路服務供應商變更了路由器的網際網路 IP 位址，主機名稱仍會指向該位址。",
+  "selectAProvider": "選取提供者",
+  "invalidUsername": "使用者名稱無效",
+  "invalidPassword": "密碼無效",
+  "invalidHostname": "主機名稱無效",
+  "ddnsPasswordKeepHint": "留空即可保留目前的密碼",
+  "ddnsStatusTitle": "DDNS 狀態",
+  "internetIPAddress": "網際網路 IP 位址",
+  "ddnsAuthenticationFailed": "驗證失敗",
+  "ddnsSettingsIncomplete": "失敗：設定不完整",
+  "ddnsWanAddressPrivate": "路由器的網際網路 IP 位址是私人位址，無法發布。DDNS 需要網際網路服務供應商提供的公用 IP 位址。"
 }

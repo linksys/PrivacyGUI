@@ -1305,5 +1305,17 @@
   "invalidSubnetMask": "Mặt nạ mạng con không hợp lệ",
   "reservationNameHint": "Tên (không bắt buộc)",
   "reservationNameInvalid": "Dùng chữ cái, chữ số và -, không bắt đầu hoặc kết thúc bằng -",
-  "reservationNameInUse": "Một đặt chỗ khác đã dùng tên này"
+  "reservationNameInUse": "Một đặt chỗ khác đã dùng tên này",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "Giữ tên máy chủ luôn trỏ đến địa chỉ IP Internet của bộ định tuyến, kể cả khi nhà cung cấp dịch vụ Internet thay đổi địa chỉ đó.",
+  "selectAProvider": "Chọn nhà cung cấp",
+  "invalidUsername": "Tên người dùng không hợp lệ",
+  "invalidPassword": "Mật khẩu không hợp lệ",
+  "invalidHostname": "Tên máy chủ không hợp lệ",
+  "ddnsPasswordKeepHint": "Để trống để giữ mật khẩu hiện tại",
+  "ddnsStatusTitle": "Trạng thái DDNS",
+  "internetIPAddress": "Địa chỉ IP Internet",
+  "ddnsAuthenticationFailed": "Xác thực không thành công",
+  "ddnsSettingsIncomplete": "Không thành công — cài đặt chưa đầy đủ",
+  "ddnsWanAddressPrivate": "Địa chỉ IP Internet của bộ định tuyến là địa chỉ riêng nên không thể công bố. DDNS cần một địa chỉ IP công cộng từ nhà cung cấp dịch vụ Internet."
 }

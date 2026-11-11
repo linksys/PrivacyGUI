@@ -1390,5 +1390,17 @@
   "invalidSubnetMask": "無効なサブネット マスクです。",
   "reservationNameHint": "名前 (任意)",
   "reservationNameInvalid": "英字、数字、- を使用し、先頭と末尾に - は使えません",
-  "reservationNameInUse": "この名前は別の予約ですでに使用されています"
+  "reservationNameInUse": "この名前は別の予約ですでに使用されています",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "インターネットプロバイダーがルーターのインターネットIPアドレスを変更しても、ホスト名がそのアドレスを指すように保ちます。",
+  "selectAProvider": "プロバイダーの選択",
+  "invalidUsername": "無効なユーザー名",
+  "invalidPassword": "無効なパスワード",
+  "invalidHostname": "無効なホスト名",
+  "ddnsPasswordKeepHint": "現在のパスワードを使用する場合は空欄のままにしてください",
+  "ddnsStatusTitle": "DDNSの状態",
+  "internetIPAddress": "インターネットIPアドレス",
+  "ddnsAuthenticationFailed": "認証に失敗しました",
+  "ddnsSettingsIncomplete": "失敗 — 設定が不完全です",
+  "ddnsWanAddressPrivate": "ルーターのインターネットIPアドレスはプライベートアドレスのため公開できません。DDNSにはプロバイダーから割り当てられたパブリックIPアドレスが必要です。"
 }

@@ -84,7 +84,9 @@ const String kPageViewRoot = 'lib/page';
 /// Its inline log widget lives under views/sections/ and is not a page.
 /// 50 → 51 at #1734: `pnp_add_nodes_view.dart`, #879's add-nodes flow in the PnP
 /// wizard's frame, the same kind of move as #879's `add_nodes_view.dart`.
-const int kPageViewCount = 51;
+/// 51 → 52 at #641: `usp_ddns_view.dart`, Advanced Settings → DDNS, the same kind
+/// of move.
+const int kPageViewCount = 52;
 
 /// The marker for a column with no value, spelled as the overflow baselines spell
 /// it (`page.tsv` writes `-` for every absent `px`, `side`, `site` and `widget`).

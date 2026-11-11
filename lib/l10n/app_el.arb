@@ -1305,5 +1305,17 @@
   "invalidSubnetMask": "Μη έγκυρη μάσκα υποδικτύου",
   "reservationNameHint": "Όνομα (προαιρετικό)",
   "reservationNameInvalid": "Χρησιμοποιήστε γράμματα, ψηφία και -, χωρίς - στην αρχή ή στο τέλος",
-  "reservationNameInUse": "Μια άλλη δέσμευση έχει ήδη αυτό το όνομα"
+  "reservationNameInUse": "Μια άλλη δέσμευση έχει ήδη αυτό το όνομα",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "Διατηρεί ένα όνομα κεντρικού υπολογιστή να δείχνει στη διεύθυνση IP Internet του δρομολογητή σας, ακόμη και όταν ο πάροχος την αλλάζει.",
+  "selectAProvider": "Επιλέξτε έναν πάροχο",
+  "invalidUsername": "Μη έγκυρο όνομα χρήστη",
+  "invalidPassword": "Μη έγκυρος κωδικός πρόσβασης",
+  "invalidHostname": "Μη έγκυρο όνομα κεντρικού υπολογιστή",
+  "ddnsPasswordKeepHint": "Αφήστε το κενό για να διατηρηθεί ο τρέχων κωδικός πρόσβασης",
+  "ddnsStatusTitle": "Κατάσταση DDNS",
+  "internetIPAddress": "Διεύθυνση IP Internet",
+  "ddnsAuthenticationFailed": "Ο έλεγχος ταυτότητας απέτυχε",
+  "ddnsSettingsIncomplete": "Απέτυχε — ελλιπείς ρυθμίσεις",
+  "ddnsWanAddressPrivate": "Η διεύθυνση IP Internet του δρομολογητή είναι ιδιωτική και δεν μπορεί να δημοσιευτεί. Το DDNS χρειάζεται δημόσια διεύθυνση IP από τον πάροχό σας."
 }

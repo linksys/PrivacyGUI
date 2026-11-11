@@ -64,6 +64,7 @@ import 'package:privacy_gui/page/system_log/views/usp_system_log_view.dart';
 import 'package:privacy_gui/page/advanced_settings/views/usp_advanced_settings_view.dart';
 import 'package:privacy_gui/page/firewall/views/usp_firewall_view.dart';
 import 'package:privacy_gui/page/dmz/views/usp_dmz_view.dart';
+import 'package:privacy_gui/page/ddns/views/usp_ddns_view.dart';
 import 'package:privacy_gui/page/administration/views/usp_administration_view.dart';
 import 'package:privacy_gui/page/local_network/views/usp_local_network_view.dart';
 import 'package:privacy_gui/page/static_routing/views/usp_static_routing_view.dart';
@@ -71,6 +72,7 @@ import 'package:privacy_gui/page/ipv6_port_service/views/usp_ipv6_port_service_v
 import 'package:privacy_gui/page/statistics/views/usp_statistics_view.dart';
 import 'package:privacy_gui/page/test_console/views/usp_test_console_view.dart';
 import 'package:privacy_gui/page/dmz/providers/usp_dmz_notifier.dart';
+import 'package:privacy_gui/page/ddns/providers/usp_ddns_notifier.dart';
 import 'package:privacy_gui/page/administration/providers/usp_administration_notifier.dart';
 import 'package:privacy_gui/page/firewall/providers/usp_firewall_notifier.dart';
 import 'package:privacy_gui/page/local_network/providers/usp_local_network_notifier.dart';

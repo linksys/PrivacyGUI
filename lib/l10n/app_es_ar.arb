@@ -1305,5 +1305,17 @@
   "invalidSubnetMask": "Máscara de subred no válida",
   "reservationNameHint": "Nombre (opcional)",
   "reservationNameInvalid": "Usá letras, dígitos y -, sin - al principio ni al final",
-  "reservationNameInUse": "Otra reserva ya tiene este nombre"
+  "reservationNameInUse": "Otra reserva ya tiene este nombre",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "Mantenga un nombre de host apuntando a la dirección IP de Internet del router, aunque su proveedor de Internet la cambie.",
+  "selectAProvider": "Seleccionar un proveedor",
+  "invalidUsername": "Nombre de usuario no válido",
+  "invalidPassword": "La contraseña no es válida",
+  "invalidHostname": "Nombre de host no válido",
+  "ddnsPasswordKeepHint": "Déjelo en blanco para conservar la contraseña actual",
+  "ddnsStatusTitle": "Estado de DDNS",
+  "internetIPAddress": "Dirección IP de Internet",
+  "ddnsAuthenticationFailed": "Error de autenticación",
+  "ddnsSettingsIncomplete": "Error: configuración incompleta",
+  "ddnsWanAddressPrivate": "La dirección IP de Internet del router es privada y no se puede publicar. DDNS necesita una dirección IP pública de su proveedor de Internet."
 }

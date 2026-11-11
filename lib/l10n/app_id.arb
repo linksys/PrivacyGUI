@@ -1305,5 +1305,17 @@
   "invalidSubnetMask": "Subnet mask tidak valid",
   "reservationNameHint": "Nama (opsional)",
   "reservationNameInvalid": "Gunakan huruf, angka, dan -, tidak diawali atau diakhiri -",
-  "reservationNameInUse": "Reservasi lain sudah menggunakan nama ini"
+  "reservationNameInUse": "Reservasi lain sudah menggunakan nama ini",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "Pertahankan nama host yang mengarah ke alamat IP Internet router Anda, meskipun ISP Anda mengubahnya.",
+  "selectAProvider": "Pilih penyedia",
+  "invalidUsername": "Nama pengguna tidak valid",
+  "invalidPassword": "Kata sandi tidak sah",
+  "invalidHostname": "Nama host tidak valid",
+  "ddnsPasswordKeepHint": "Biarkan kosong untuk mempertahankan kata sandi saat ini",
+  "ddnsStatusTitle": "Status DDNS",
+  "internetIPAddress": "Alamat IP Internet",
+  "ddnsAuthenticationFailed": "Autentikasi gagal",
+  "ddnsSettingsIncomplete": "Gagal — pengaturan tidak lengkap",
+  "ddnsWanAddressPrivate": "Alamat IP Internet router bersifat pribadi dan tidak dapat dipublikasikan. DDNS memerlukan alamat IP publik dari ISP Anda."
 }

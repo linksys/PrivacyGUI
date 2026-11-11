@@ -108,6 +108,9 @@ import 'package:privacy_gui/page/dhcp/views/usp_dhcp_detail_view.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart'
     show DmzSourceType;
 import 'package:privacy_gui/page/dmz/views/usp_dmz_view.dart';
+import 'package:privacy_gui/page/ddns/views/components/ddns_status_card.dart';
+import 'package:privacy_gui/page/ddns/views/usp_ddns_view.dart';
+import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
 import 'package:privacy_gui/page/firewall/views/usp_firewall_view.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_install_phase_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_update_warning_note.dart';
@@ -213,6 +216,7 @@ import '../../mocks/provider_overrides/mock_auto_ipoe.dart';
 import '../../mocks/provider_overrides/mock_dashboard_page.dart';
 import '../../mocks/provider_overrides/mock_devices.dart';
 import '../../mocks/provider_overrides/mock_dhcp.dart';
+import '../../mocks/provider_overrides/mock_ddns.dart';
 import '../../mocks/provider_overrides/mock_dmz.dart';
 import '../../mocks/provider_overrides/mock_firewall.dart';
 import '../../mocks/provider_overrides/mock_firmware_update.dart';
@@ -2025,6 +2029,45 @@ final kAdministrationPageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView],
 );
 
+/// `usp_ddns_view` — Advanced Settings → DDNS (#641): a provider card and a status
+/// card, side by side from the desktop breakpoint and stacked below it, as 1.x laid
+/// them out.
+///
+/// The provider card is an [AppDropdown] over the router's `Server` rows and, once a
+/// provider is chosen, three fields: user name and host name as [AppTextFormField]s
+/// and the password as an [AppPasswordInput], whose reveal toggle is a fixed-width
+/// suffix. All three show their errors as a line of text under the field
+/// (`AppErrorDisplayMode.text`), so an error adds height rather than an icon. The
+/// status card is a title beside a refresh [AppIconButton], then two [UspInfoRow]s —
+/// `internetIPAddress` and the status — and, on a connection failure behind a
+/// private address, a note under them (`ddnsWanAddressPrivate`, the longest text on
+/// the page). It arrived with the `lib/` change that created it, straight to
+/// `swept`.
+///
+/// The scene is the page at its fullest, which no single moment of a real flow is:
+/// see `ddns_scene_data.dart`. The premise names one widget per part of it.
+/// [AppPasswordInput] and [AppTextFormField] render only while a provider is
+/// chosen, and [UspInfoRow] only while the router's client is not disabled — the
+/// card returns an empty box then — so a fixture that lost either half would fail
+/// its premise rather than sweep a page with half its content gone. [AppDropdown]
+/// is named at its instantiation, `AppDropdown<String>`, for the reason
+/// [kDmzPageCase] gives about `AppRadioList`. The loader and the
+/// [ServiceErrorView] are the page's other two arms.
+final kDdnsPageCase = PageSurfaceCase(
+  id: 'ddns',
+  view: () => const UspDdnsView(),
+  overrides: () => ddnsOverrides(),
+  requires: const [
+    UspTopBar,
+    AppDropdown<String>,
+    AppTextFormField,
+    AppPasswordInput,
+    DdnsStatusCard,
+    UspInfoRow,
+  ],
+  forbids: const [AppLoader, ServiceErrorView],
+);
+
 /// `usp_firewall_view` — ten rows in three cards: two SPI switches, three VPN
 /// passthrough switches, four internet filters and a link out to IPv6 port service.
 ///
@@ -3009,4 +3052,7 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kAutoIPoEPageCase,
   kAddNodesPageCase,
   kPnpAddNodesPageCase,
+  // #641: Advanced Settings → DDNS, arriving with the `lib/` change that
+  // creates it.
+  kDdnsPageCase,
 ];

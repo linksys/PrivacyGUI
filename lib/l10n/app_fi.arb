@@ -1305,5 +1305,17 @@
   "invalidSubnetMask": "Virheellinen aliverkon peite",
   "reservationNameHint": "Nimi (valinnainen)",
   "reservationNameInvalid": "Käytä kirjaimia, numeroita ja -, ei - alussa tai lopussa",
-  "reservationNameInUse": "Toisella varauksella on jo tämä nimi"
+  "reservationNameInUse": "Toisella varauksella on jo tämä nimi",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "Pitää isäntänimen reitittimen internet-IP-osoitteessa silloinkin, kun internetpalveluntarjoaja vaihtaa sen.",
+  "selectAProvider": "Valitse palveluntarjoaja",
+  "invalidUsername": "Virheellinen käyttäjänimi",
+  "invalidPassword": "Salasana ei kelpaa",
+  "invalidHostname": "Virheellinen isäntänimi",
+  "ddnsPasswordKeepHint": "Jätä tyhjäksi, jos haluat säilyttää nykyisen salasanan",
+  "ddnsStatusTitle": "DDNS-tila",
+  "internetIPAddress": "Internet-IP-osoite",
+  "ddnsAuthenticationFailed": "Todennus epäonnistui",
+  "ddnsSettingsIncomplete": "Epäonnistui – asetukset ovat puutteelliset",
+  "ddnsWanAddressPrivate": "Reitittimen internet-IP-osoite on yksityinen, eikä sitä voi julkaista. DDNS edellyttää julkista IP-osoitetta internetpalveluntarjoajalta."
 }

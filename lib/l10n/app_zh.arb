@@ -1305,5 +1305,17 @@
   "invalidSubnetMask": "子网掩码无效",
   "reservationNameHint": "名称（可选）",
   "reservationNameInvalid": "请使用字母、数字和 -，且不能以 - 开头或结尾",
-  "reservationNameInUse": "其他保留项已使用此名称"
+  "reservationNameInUse": "其他保留项已使用此名称",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "即使互联网服务提供商更改了路由器的互联网 IP 地址，主机名仍会指向该地址。",
+  "selectAProvider": "请选择提供商",
+  "invalidUsername": "用户名无效",
+  "invalidPassword": "密码无效",
+  "invalidHostname": "主机名无效",
+  "ddnsPasswordKeepHint": "留空即可保留当前密码",
+  "ddnsStatusTitle": "DDNS 状态",
+  "internetIPAddress": "互联网IP地址",
+  "ddnsAuthenticationFailed": "身份验证失败",
+  "ddnsSettingsIncomplete": "失败：设置不完整",
+  "ddnsWanAddressPrivate": "路由器的互联网 IP 地址是私有地址，无法发布。DDNS 需要互联网服务提供商提供的公网 IP 地址。"
 }
