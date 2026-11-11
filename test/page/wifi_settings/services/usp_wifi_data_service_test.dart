@@ -309,6 +309,39 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
+  // fetchUtilizationByRadioPath — the Channels tab's refresh (#1295)
+  // -------------------------------------------------------------------------
+
+  group('fetchUtilizationByRadioPath', () {
+    test(
+        'returns each radio\'s new reading by its instance path, matched by '
+        'MAC', () async {
+      _stubAllFetches(mockUsp);
+      final context = (await svc.fetch()).codegenContext;
+      _stubAllFetches(mockUsp, dataElements: {
+        ..._buildDataElementsRadiosResponse(),
+        'Device.WiFi.DataElements.Network.Device.1.Radio.2.Utilization': '58',
+      });
+
+      expect(await svc.fetchUtilizationByRadioPath(context), {
+        'Device.WiFi.Radio.1.': 58,
+        'Device.WiFi.Radio.2.': 11,
+      });
+    });
+
+    test('a failed read is a ServiceError, not "nothing reported"', () async {
+      // The caller keeps the readings it has on a failure; an empty map would
+      // tell it every radio reported none and wipe them to unknown.
+      _stubAllFetches(mockUsp);
+      final context = (await svc.fetch()).codegenContext;
+      _stubAllFetches(mockUsp, dataElementsFails: true);
+
+      await expectLater(svc.fetchUtilizationByRadioPath(context),
+          throwsA(isA<ServiceError>()));
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // radio UI models — radio-AP cross-reference
   // -------------------------------------------------------------------------
 

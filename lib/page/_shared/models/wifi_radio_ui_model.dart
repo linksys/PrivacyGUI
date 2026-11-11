@@ -90,6 +90,26 @@ class WifiRadioUIModel extends Equatable with DiagnosticLoggable {
   int? get utilizationPercent =>
       utilization == null ? null : (utilization! * 100 / 255).round();
 
+  /// This radio with [utilization] replaced — null makes it unknown — and
+  /// everything else as it was: the Channels tab's refresh re-reads only that
+  /// (#1295).
+  WifiRadioUIModel withUtilization(int? utilization) => WifiRadioUIModel(
+        instancePath: instancePath,
+        band: band,
+        enable: enable,
+        transmitPower: transmitPower,
+        maxBitRate: maxBitRate,
+        channel: channel,
+        channelInUse: channelInUse,
+        autoChannelEnable: autoChannelEnable,
+        channelBandwidth: channelBandwidth,
+        supportedStandards: supportedStandards,
+        utilization: utilization,
+        possibleChannels: possibleChannels,
+        isDfsEnabled: isDfsEnabled,
+        accessPoints: accessPoints,
+      );
+
   /// Bit rate normalized to 0–100 scale based on band max.
   double get bitRateNormalized {
     final maxForBand = band.contains('6')

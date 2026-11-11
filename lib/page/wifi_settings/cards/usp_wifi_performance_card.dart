@@ -340,7 +340,7 @@ class _SpeedTab extends StatelessWidget {
 // Tab 3: Channels — radio info + band distribution
 // =============================================================================
 
-class _ChannelsTab extends StatelessWidget {
+class _ChannelsTab extends ConsumerWidget {
   final List<WifiRadioUIModel> radios;
   final List<_ClientInfo> clients;
 
@@ -350,7 +350,11 @@ class _ChannelsTab extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Keeps each radio's channel utilization current while this tab is on
+    // screen, and only then: the card builds only the selected tab, so this
+    // watch ends, and the re-reads stop, when the user leaves it (#1295).
+    ref.watch(channelUtilizationRefreshProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
     if (radios.isEmpty) {
