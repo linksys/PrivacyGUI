@@ -52,6 +52,29 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // parseChannelInUse — the channel a radio is on (TR-181 ChannelsInUse, #1782)
+  // ---------------------------------------------------------------------------
+
+  group('parseChannelInUse', () {
+    test('one number is the channel the radio is on ("36")', () {
+      expect(parseChannelInUse('36'), 36);
+    });
+
+    test('empty, as a failed driver read returns, is unknown', () {
+      expect(parseChannelInUse(''), isNull);
+    });
+
+    test('a list or a range (TR-181 allows both) is unknown', () {
+      expect(parseChannelInUse('36,40'), isNull);
+      expect(parseChannelInUse('36-48'), isNull);
+    });
+
+    test('0 is no channel, so unknown', () {
+      expect(parseChannelInUse('0'), isNull);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // isDfsChannel — 5 GHz DFS classification
   // ---------------------------------------------------------------------------
 

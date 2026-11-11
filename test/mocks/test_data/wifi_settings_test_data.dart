@@ -66,6 +66,10 @@ class WifiSettingsTestData {
     String status = 'Up',
     String operatingFrequencyBand = '2.4GHz',
     int channel = 6,
+
+    /// The channel the radio is on; [channel] when not given, as on a radio
+    /// hostapd has not moved.
+    String? channelsInUse,
     String operatingChannelBandwidth = '20MHz',
     String possibleChannels = '1,6,11',
     String operatingStandards = 'n',
@@ -81,6 +85,7 @@ class WifiSettingsTestData {
         enable: enable,
         status: status,
         channel: channel,
+        channelsInUse: channelsInUse ?? '$channel',
         operatingFrequencyBand: operatingFrequencyBand,
         operatingChannelBandwidth: operatingChannelBandwidth,
         possibleChannels: possibleChannels,
@@ -454,6 +459,7 @@ class WifiSettingsTestData {
         transmitPower: transmitPower,
         maxBitRate: maxBitRate,
         channel: channel,
+        channelInUse: channel,
         autoChannelEnable: autoChannelEnable,
         channelBandwidth: channelBandwidth,
         supportedStandards: supportedStandards,

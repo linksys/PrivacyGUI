@@ -78,6 +78,7 @@ void main() {
         WifiSignalCheckUIModel(
           rssi: -65,
           channel: 36,
+          channelInUse: 36,
           band: '5GHz',
           connectedDevices: 4,
           severity: DiagnosticSeverity.warning,

@@ -482,6 +482,7 @@ const testRadios = [
     transmitPower: -1,
     maxBitRate: 574,
     channel: 6,
+    channelInUse: 6,
     autoChannelEnable: false,
     channelBandwidth: '40MHz',
     supportedStandards: '802.11b/g/n/ax',
@@ -508,6 +509,7 @@ const testRadios = [
     transmitPower: -1,
     maxBitRate: 4804,
     channel: 36,
+    channelInUse: 36,
     autoChannelEnable: true,
     channelBandwidth: '160MHz',
     supportedStandards: '802.11a/n/ac/ax',
@@ -605,8 +607,8 @@ final testWifiEmptyData = WifiData(
 /// widest thing a shipping router can put in the band/channel string:
 ///
 ///  - `channel: 233` with `autoChannelEnable` — 3 digits *plus* the ` (Auto)`
-///    suffix `channelDisplay` appends, which is the longest form that getter can
-///    produce ([WifiRadioUIModel.channelDisplay]).
+///    suffix `channelInUseDisplay` appends, which is the longest form that getter can
+///    produce ([WifiRadioUIModel.channelInUseDisplay]).
 ///  - `channelBandwidth: '320MHz'` — 6GHz-only, and one glyph wider than the
 ///    `160MHz` this fixture's other radios cap out at.
 ///  - a third radio at all, which is what multiplies the tab's per-radio blocks
@@ -627,6 +629,7 @@ final testRadiosTriBand = [
     transmitPower: -1,
     maxBitRate: 11529,
     channel: 233,
+    channelInUse: 233,
     autoChannelEnable: true,
     channelBandwidth: '320MHz',
     supportedStandards: '802.11a/n/ac/ax/be',
@@ -700,6 +703,7 @@ final testRadiosSixRadio = [
       transmitPower: -1,
       maxBitRate: 11529,
       channel: spec.channel,
+      channelInUse: spec.channel,
       autoChannelEnable: true,
       channelBandwidth: spec.bandwidth,
       supportedStandards: '802.11a/n/ac/ax/be',
@@ -730,6 +734,7 @@ const testRadiosOneDisabled = [
     transmitPower: -1,
     maxBitRate: 574,
     channel: 6,
+    channelInUse: 6,
     autoChannelEnable: false,
     channelBandwidth: '40MHz',
     supportedStandards: '802.11b/g/n/ax',
@@ -749,6 +754,7 @@ const testRadiosOneDisabled = [
     transmitPower: -1,
     maxBitRate: 4804,
     channel: 36,
+    channelInUse: 36,
     autoChannelEnable: true,
     channelBandwidth: '160MHz',
     supportedStandards: '802.11a/n/ac/ax',

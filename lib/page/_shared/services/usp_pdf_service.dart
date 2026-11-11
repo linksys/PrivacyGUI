@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/pdf_report_data.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
+import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 
@@ -330,6 +331,20 @@ class UspPdfService {
   // Page 2: WiFi
   // ===========================================================================
 
+  /// The key-value rows of one radio's box on the WiFi page. "Channel" is the
+  /// channel the radio is on, which a fixed channel can differ from when
+  /// hostapd moves the radio (#1782).
+  @visibleForTesting
+  static List<PdfKeyValue> wifiRadioRows(WifiRadioUIModel radio) => [
+        PdfKeyValue('Status', radio.enable ? 'Enabled' : 'Disabled'),
+        PdfKeyValue('Channel', radio.channelInUseDisplay),
+        PdfKeyValue('Bandwidth', radio.channelBandwidth),
+        PdfKeyValue('TX Power', radio.txPowerDisplay),
+        PdfKeyValue('Max Bit Rate', '${radio.maxBitRate} Mbps'),
+        if (radio.supportedStandards.isNotEmpty)
+          PdfKeyValue('Standards', radio.supportedStandards),
+      ];
+
   static List<pw.Widget> _buildWifi(PdfReportData data) {
     final radios = data.radioModels ?? [];
     final widgets = <pw.Widget>[_sectionTitle('WiFi Configuration')];
@@ -352,13 +367,8 @@ class UspPdfService {
                     pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12),
               ),
               pw.SizedBox(height: 4),
-              _keyValue('Status', radio.enable ? 'Enabled' : 'Disabled'),
-              _keyValue('Channel', radio.channelDisplay),
-              _keyValue('Bandwidth', radio.channelBandwidth),
-              _keyValue('TX Power', radio.txPowerDisplay),
-              _keyValue('Max Bit Rate', '${radio.maxBitRate} Mbps'),
-              if (radio.supportedStandards.isNotEmpty)
-                _keyValue('Standards', radio.supportedStandards),
+              ...wifiRadioRows(radio)
+                  .map((row) => _keyValue(row.label, row.value)),
               if (radio.accessPoints.isNotEmpty) ...[
                 pw.SizedBox(height: 6),
                 pw.Text('Access Points:',
