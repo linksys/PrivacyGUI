@@ -89,9 +89,28 @@ runs:
       shell: bash
       run: cp assets/agents/env.template assets/agents/.env
 
+    # The dependency graph is pinned the same way the SDK above is, and for the
+    # same reason (#1414). Until then pubspec.lock was gitignored, so this step
+    # ran with no lock and resolved every constraint to the newest version it
+    # allowed — a `pub upgrade` on every run of every job. Two builds of one
+    # commit could contain different package code, and a golden diff could not
+    # be told apart from flutter_svg / vector_graphics moving underneath it.
+    #
+    # `--enforce-lockfile` installs exactly what the committed lock says and
+    # FAILS instead of re-resolving when pubspec.yaml no longer agrees with it
+    # (it also checks each hosted package's content hash). If this step is red,
+    # the PR changed pubspec.yaml — a constraint, a new package, a ui_kit `ref:`
+    # — without committing the lock that goes with it: run `fvm flutter pub get`
+    # and commit pubspec.lock. Resolving under any SDK other than the pin above
+    # moves the packages Flutter pins itself and fails here too, so use fvm.
+    #
+    # Fixes no longer arrive on their own. Upgrading is a deliberate PR of its
+    # own: `fvm flutter pub upgrade`, and the pubspec.lock diff is what gets
+    # reviewed. linksys/PrivacyGUI-golden-ci clones this repo and runs
+    # `flutter pub get` inside it, so it picks the lock up with no change there.
     - name: Install Dependencies
       shell: bash
-      run: flutter pub get
+      run: flutter pub get --enforce-lockfile
 
     # Generated l10n is gitignored, so it must exist before analyze, before any
     # test compiles, and before the web build.
