@@ -347,14 +347,29 @@ void main() {
       verifyNever(() => mockUsp.operate(any()));
     });
 
-    // Another client can start one between the read and the call.
-    test('a 7002 refusal is a whole-network action already running', () async {
-      routerAnswers({statusPath: ''});
-      when(() => mockUsp.operate(any())).thenThrow('Operate failed: '
-          'Operation error: $rebootAll refused: Busy (code: 7002)');
+    // Another client can start one between the read and the call. Which shape
+    // the agent's 7002 takes is unmeasured: a refused command
+    // (`UspClient._operateRefusal`) or the Operate refused as a whole
+    // (`UspClient._failedAsAWhole`). Both are read.
+    for (final (shape, thrown) in [
+      (
+        'a refused command',
+        'Operate failed: Operation error: $rebootAll refused: Busy '
+            '(code: 7002)'
+      ),
+      (
+        'the Operate refused as a whole',
+        'Operate failed: Protocol error: Busy (code: 7002)'
+      ),
+    ]) {
+      test('a 7002 as $shape is a whole-network action already running',
+          () async {
+        routerAnswers({statusPath: ''});
+        when(() => mockUsp.operate(any())).thenThrow(thrown);
 
-      expect(await service.reboot(), RouterRestartStart.alreadyRunning);
-    });
+        expect(await service.reboot(), RouterRestartStart.alreadyRunning);
+      });
+    }
 
     test('a Busy status is a whole-network action already running', () async {
       routerAnswers({statusPath: 'Completed'});

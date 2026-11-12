@@ -501,7 +501,11 @@ ServiceError _mapProtocolError(UspError e) {
       // `originalError` keeps the text.
       9997 => InvalidInputError(code: code, detail: e.message),
       9998 => UnexpectedError(originalError: e.rawError, code: code),
-      _ => UnexpectedError(originalError: e.rawError, detail: e.message),
+      // The router's code is kept, as on every other arm. A caller that knows
+      // what a code means for its own command reads it there: a whole-network
+      // reboot refused as a whole with 7002 is one already running (#1777).
+      _ => UnexpectedError(
+          originalError: e.rawError, code: code, detail: e.message),
     };
   }
   return UnexpectedError(originalError: e.rawError, detail: e.message);

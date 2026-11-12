@@ -221,7 +221,8 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
   /// nothing, and the wait goes on. The
   /// definition gives `""` no meaning once an action has started, and an absent
   /// leaf is also what a read looks like when the router answered it with a
-  /// per-path error (`UspClient.extractGetResult` throws only on `9999`).
+  /// per-path error (`UspClient.extractGetResult` throws only for a Get that
+  /// failed as a whole, and leaves a failed path out).
   /// Reading either as the end would declare the router back while the
   /// controller is still to go.
   ///

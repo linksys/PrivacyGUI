@@ -372,6 +372,19 @@ void main() {
       const raw = 'Get failed: Protocol error: Malformed message: bad data';
       expect(mapUspErrorToServiceError(raw), isA<UnexpectedError>());
     });
+
+    // A code with no arm of its own still says what the router answered, and
+    // a caller that knows what it means for its own command reads it there:
+    // a whole-network reboot refused as a whole with 7002 is one already
+    // running (#1777).
+    test('keeps the router code of an unmapped Protocol error', () {
+      const raw = 'Operate failed: Protocol error: Busy (code: 7002)';
+
+      final mapped = mapUspErrorToServiceError(raw);
+
+      expect(mapped, isA<UnexpectedError>());
+      expect(mapped.code, 7002);
+    });
   });
 
   group('shared Operate error contract', () {
