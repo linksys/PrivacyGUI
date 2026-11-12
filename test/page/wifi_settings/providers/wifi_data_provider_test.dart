@@ -336,6 +336,28 @@ void main() {
       container.dispose();
     });
 
+    test('does not read at all while a Wi-Fi re-read is in flight', () async {
+      // The re-read reads utilization itself, so a read now is a wasted
+      // request (PR #1796 review, round 2: this guard had no test).
+      when(() => mockService.fetchUtilizationByRadioPath(any()))
+          .thenAnswer((_) async => const {});
+      final container = createContainer();
+      container.listen(wifiDataProvider, (_, __) {});
+      await container.read(wifiDataProvider.future);
+
+      final rebuild = Completer<WifiDataFetchResult>();
+      when(() => mockService.fetch()).thenAnswer((_) => rebuild.future);
+      container.invalidate(wifiDataProvider);
+      container.read(wifiDataProvider);
+      await container.read(wifiDataProvider.notifier).refreshUtilization();
+
+      verifyNever(() => mockService.fetchUtilizationByRadioPath(any()));
+      rebuild.complete(WifiSettingsTestData.createWifiDataFetchResult(
+          radioModels: radios()));
+      await container.read(wifiDataProvider.future);
+      container.dispose();
+    });
+
     test('a failed read keeps the previous readings', () async {
       when(() => mockService.fetchUtilizationByRadioPath(any()))
           .thenThrow(const NetworkError(detail: 'timeout'));

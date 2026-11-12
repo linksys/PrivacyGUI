@@ -132,7 +132,7 @@ class UspWifiDataService {
             .where((a) => !isEmptyWiFiAccessPoint(a))
             .toList());
     final rawWifiClientMap = results[3] as Map<String, WifiClient>;
-    final utilizationByMac = results[4] as Map<String, int>;
+    final utilizationByMac = results[4] as Map<String, int?>;
 
     // A router always has radios, every radio carries SSIDs, and every SSID
     // has an access point. A table with no rows is the router answering while
@@ -197,7 +197,7 @@ class UspWifiDataService {
     required WiFiRadios radios,
     required WiFiSsids ssids,
     required WiFiAccessPoints accessPoints,
-    required Map<String, int> utilizationByMac,
+    required Map<String, int?> utilizationByMac,
   }) {
     final ssidByPath = {
       for (final s in ssids.items) ensureTrailingDot(s.instancePath): s,
@@ -286,11 +286,13 @@ class UspWifiDataService {
   /// can keep the readings it has instead of replacing them with unknown ones.
   /// A read that comes back with no DataElements radio at all counts as
   /// failed too: a path the router does not answer reads as absent rather
-  /// than as an error (#1212), and DataElements empties while prplMesh
-  /// restarts — the same reasoning as an empty Wi-Fi table in [fetch].
+  /// than as an error (#1212), and DataElements may come back empty while
+  /// prplMesh restarts (inferred, not measured) — the same reasoning as an
+  /// empty Wi-Fi table in [fetch]. Radios that are there but report no usable
+  /// value are a reading, not a failure: each of them is unknown.
   Future<Map<String, int>> fetchUtilizationByRadioPath(
       WifiCodegenContext context) async {
-    final Map<String, int> byMac;
+    final Map<String, int?> byMac;
     try {
       byMac = await _readUtilizationByRadioMac();
     } catch (e) {
@@ -304,27 +306,30 @@ class UspWifiDataService {
   }
 
   /// Each DataElements radio's `Utilization`, keyed by its `ID` — the radio's
-  /// MAC — in upper case (#1295).
+  /// MAC — in upper case (#1295). A radio that is there but has no usable
+  /// value maps to null, so an empty map means no radio came back at all.
   ///
   /// Two leaves rather than `DataElementsNetwork.fetch`, which reads every BSS
-  /// and station of every node to get one number per radio. A value outside
-  /// TR-181's 0–255 is no reading, so that radio is left out (unknown) rather
-  /// than shown as over 100 % or negative.
-  Future<Map<String, int>> _readUtilizationByRadioMac() async {
+  /// and station of every node to get one number per radio. A value that is
+  /// missing, empty, not a number or outside TR-181's 0–255 is no reading
+  /// (null), rather than shown as 0, over 100 % or negative.
+  Future<Map<String, int?>> _readUtilizationByRadioMac() async {
     final response = await _usp.get([
       '${_dataElementsRadio}ID',
       '${_dataElementsRadio}Utilization',
     ]);
-    final result = <String, int>{};
+    final result = <String, int?>{};
     for (final MapEntry(:key, :value) in response.entries) {
       if (!key.endsWith('.ID')) continue;
       final radioPath = key.substring(0, key.length - 'ID'.length);
       final mac = '$value'.trim().toUpperCase();
+      if (mac.isEmpty) continue;
       final utilization =
           int.tryParse('${response['${radioPath}Utilization'] ?? ''}');
-      if (mac.isEmpty || utilization == null) continue;
-      if (utilization < 0 || utilization > 255) continue;
-      result[mac] = utilization;
+      result[mac] =
+          utilization != null && utilization >= 0 && utilization <= 255
+              ? utilization
+              : null;
     }
     return result;
   }
@@ -334,7 +339,7 @@ class UspWifiDataService {
   /// from `Device.WiFi.`, and a failed read of it must not take the radios,
   /// networks and clients down with it: a fault leaves every radio's
   /// utilization unknown and the rest of [fetch] as it was.
-  Future<Map<String, int>> _readUtilizationByRadioMacOrNone() async {
+  Future<Map<String, int?>> _readUtilizationByRadioMacOrNone() async {
     try {
       return await _readUtilizationByRadioMac();
     } catch (e) {
@@ -351,9 +356,9 @@ class UspWifiDataService {
   /// through that, not by instance number: FW 2.0.4 numbers the two tables in
   /// opposite orders (#1295). A radio no DataElements radio matches — a
   /// satellite's, or one DataElements does not report — is left out, so it
-  /// reads as unknown.
+  /// reads as unknown, and so is one whose reading is null.
   static Map<String, int> _utilizationByRadioPath(
-      WiFiSsids ssids, Map<String, int> utilizationByMac) {
+      WiFiSsids ssids, Map<String, int?> utilizationByMac) {
     final result = <String, int>{};
     for (final ssid in ssids.items) {
       final utilization = utilizationByMac[ssid.bssid.trim().toUpperCase()];
