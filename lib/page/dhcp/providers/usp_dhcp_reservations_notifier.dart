@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/dhcp/models/dhcp_reservation_list.dart';
@@ -85,17 +84,20 @@ class UspDhcpReservationsNotifier
   /// Set, and an Add or Delete earlier in the batch may have landed. The error
   /// still reaches the page. A save that wrote nothing keeps the user's edits
   /// for a retry.
+  ///
+  /// Since usp-client 0.14.0 (linksys/usp_framework#114) a refused Add reaches
+  /// here too: the service deletes the row the router kept, and when that
+  /// fails, the row is on the router and this read puts it on the page with
+  /// its path, so a second Save does not add it again. When that read fails
+  /// as well, the next Save reads the router before it writes. All of this is
+  /// [saveReadingBackAfterFailure]; the dashboard card is refreshed for the
+  /// same reason.
   @override
   Future<DhcpReservationsFeatureState> save() async {
     try {
-      return await super.save();
+      return await saveReadingBackAfterFailure(super.save);
     } on ServiceError {
-      final (router, _) = await performFetch(forceRemote: true);
-      if (router != null && router != state.settings.original) {
-        state = state.copyWith(
-          settings: Preservable(original: router, current: router),
-        );
-      }
+      ref.invalidate(dhcpDataProvider);
       rethrow;
     }
   }

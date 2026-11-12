@@ -944,15 +944,24 @@ class UspPdfService {
   static List<pw.Widget> _buildDmzSettings(DmzUIModel dmz) {
     return [
       _sectionTitle('DMZ'),
-      _keyValue('Status', dmz.isEnabled ? 'Enabled' : 'Disabled'),
-      if (dmz.isEnabled) ...[
-        _keyValue('Destination IP', dmz.destIp),
-        _keyValue('Source',
-            dmz.sourceType == DmzSourceType.any ? 'Any' : dmz.sourcePrefix),
-      ],
+      ...dmzRows(dmz).map((row) => _keyValue(row.label, row.value)),
       pw.SizedBox(height: 12),
     ];
   }
+
+  /// The DMZ section's rows. The host is printed by the type the router holds
+  /// it by: a host given by MAC leaves `DestIP` empty (#1775).
+  static List<PdfKeyValue> dmzRows(DmzUIModel dmz) => [
+        PdfKeyValue('Status', dmz.isEnabled ? 'Enabled' : 'Disabled'),
+        if (dmz.isEnabled) ...[
+          if (dmz.destinationType == DmzDestinationType.mac)
+            PdfKeyValue('Destination MAC', dmz.destMac)
+          else
+            PdfKeyValue('Destination IP', dmz.destIp),
+          PdfKeyValue('Source',
+              dmz.sourceType == DmzSourceType.any ? 'Any' : dmz.sourcePrefix),
+        ],
+      ];
 
   // ===========================================================================
   // Page 6: Port Rules + Routing

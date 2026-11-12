@@ -20,6 +20,12 @@ IPv6 port services page at FWDEV#204's 15-rule limit. **The other 234 are `page.
 been red by exactly that group since; this capture records it rather than leaving the drift for the
 next PR to explain.
 
+**#1775's**: 16,146 → **16,848** (+702 rows, every one `clean`; none removed and none changed, read
+off the diff of the re-capture). 234 are `page.dmz_mac`, the DMZ page with the host given by MAC.
+**The other 468 are `page.add_nodes` and `page.pnp_add_nodes`, which #1740 (`c047a1e7c`) declared and
+swept without re-capturing**, the same drift as `page.pnp_ipoe` above, recorded here for the same
+reason.
+
 Every port in epic #1335 is signed off by one claim: *the ported sweep measures
 the same cells and reaches the same verdicts as before*. The main card sweep
 measures 1,917 coordinates. Nobody can check that by reading output, so this
@@ -328,12 +334,14 @@ swept reads as 234 rows saying `no longer measured`, and only if somebody runs
 `check`.
 
 **`-dirty` in `# commit` means what it says.** The suffix is appended when any of
-`lib/`, `test/` or `pubspec.yaml` carried uncommitted work at capture time — that
-last one because most of the widgets these rows measure are not in this repo:
-`ui_kit_library` and `generative_ui` are git dependencies pinned by ref there, so
-bumping the ref moves rows exactly as directly as editing `lib/` does. (Not
-`pubspec.lock`: it is gitignored here, so no stamp can see a resolved-version
-drift. `assets/fonts/` is not on the list either — not because fonts are
+`lib/`, `test/`, `pubspec.yaml` or `pubspec.lock` carried uncommitted work at
+capture time — the last two because most of the widgets these rows measure are not
+in this repo: `ui_kit_library` and `generative_ui` are git dependencies pinned by
+ref in `pubspec.yaml`, so bumping the ref moves rows exactly as directly as editing
+`lib/` does, and `pubspec.lock` pins the resolved version of every package they
+draw with, so a local `pub upgrade` does too. (The lock joined the list when #1414
+started tracking it; while it was gitignored no stamp could see it.
+`assets/fonts/` is not on the list either — not because fonts are
 irrelevant, they decide every measurement in this dataset, but because none of
 the fonts these sweeps load live there: all five call `loadAppFonts()`, which
 reads the ui_kit faces from the pub-cache checkout `pubspec.yaml` pins and the

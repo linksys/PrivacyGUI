@@ -1,39 +1,49 @@
 import 'package:privacy_gui/core/utils/fernet_manager.dart';
 
 class MaskingUtils {
+  /// Masks the value of every `"<key>": <value>` whose key ends in one of
+  /// [keys], in any letter case.
+  ///
+  /// Case-insensitive because a USP log names a leaf by its TR-181 path, so a
+  /// password arrives as `"Device.DynamicDNS.Client.1.Password": "…"` and a
+  /// Wi-Fi key as `"…AccessPoint.1.Security.KeyPassphrase": "…"`, never as a
+  /// lower-case `password`.
+  ///
+  /// A quoted value is read as a JSON string, to its closing quote, so a
+  /// secret holding `,`, `}` or an escaped `"` is masked whole; an unquoted one
+  /// runs to the next `,` or `}`. Each value is replaced where it was matched,
+  /// not by searching the text for it: the same characters can appear earlier
+  /// (in a key, or an unrelated value), and replacing that occurrence would
+  /// leave the secret in place. An empty value is left as it is.
   static String maskJsonValue(String raw, List<String> keys) {
-    final pattern = '"?(${keys.join('|')})"?\\s*:\\s*"?([\\s\\S]*?)"?(?=,|})';
-    RegExp regex = RegExp(pattern, multiLine: true);
-    String result = raw;
-
-    regex.allMatches(raw).forEach((element) {
-      for (final key in keys) {
-        if (element.groupCount == 2 &&
-            element.group(1)!.toLowerCase() == key.toLowerCase()) {
-          final target = element.group(2)!;
-          result = result.replaceFirst(target, '************');
-        }
-      }
+    if (keys.isEmpty) return raw;
+    final regex = RegExp(
+      '("?(?:${keys.join('|')})"?\\s*:\\s*)'
+      r'(?:"((?:[^"\\]|\\.)*)"|([^,}\s][^,}\n]*))',
+      caseSensitive: false,
+    );
+    return raw.replaceAllMapped(regex, (match) {
+      final prefix = match.group(1)!;
+      final quoted = match.group(2);
+      if (quoted == null) return '$prefix************';
+      return quoted.isEmpty ? match.group(0)! : '$prefix"************"';
     });
-    return result;
   }
 
+  /// Masks the user name and password of a form body
+  /// (`username=…&password=…`), in any letter case, each where it was matched.
+  /// A value runs to the next `&`, line end or the end of the text.
   static String maskUsernamePasswordBodyValue(String raw) {
-    List<String> keys = ['username', 'password'];
-    final pattern = '(${keys.join('|')})\\s*=\\s*([\\S]*?)(?=&|\\n)';
-    RegExp regex = RegExp(pattern, multiLine: true);
-    String result = raw;
-
-    regex.allMatches(raw).forEach((element) {
-      for (final key in keys) {
-        if (element.groupCount == 2 &&
-            element.group(1)!.toLowerCase() == key.toLowerCase()) {
-          final target = element.group(2)!;
-          result = result.replaceFirst(target, '************');
-        }
-      }
-    });
-    return result;
+    final regex = RegExp(
+      r'((?:username|password)\s*=\s*)([^&\s]*)(?=&|\n|$)',
+      caseSensitive: false,
+    );
+    return raw.replaceAllMapped(
+      regex,
+      (match) => match.group(2)!.isEmpty
+          ? match.group(0)!
+          : '${match.group(1)}************',
+    );
   }
 
   static String maskSensitiveJsonValues(String raw) {

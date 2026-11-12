@@ -8,6 +8,8 @@ import 'package:privacy_gui/page/static_routing/services/usp_static_routing_serv
 
 import '../../../util/usp_param_templates.dart';
 
+import '../../../mocks/test_data/usp_add_refusal_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 const _lan = 'Device.IP.Interface.3';
@@ -1042,6 +1044,38 @@ void main() {
         () => service.saveBatch(original: original, current: []),
         throwsA(isA<ServiceError>()),
       );
+    });
+  });
+
+  // usp-client 0.14.0 (linksys/usp_framework#114): a refused route is created
+  // anyway; it is deleted, so a retry adds one route.
+  group('UspStaticRoutingService — a refused Add is undone', () {
+    test('the route is deleted', () async {
+      const row = 'Device.Routing.Router.1.IPv4Forwarding.30.';
+      when(() => mockUsp.add(any())).thenAnswer((_) async =>
+          UspAddRefusalTestData.refusedAdd(
+              instances: [row],
+              refusedRow: row,
+              refusedParam: 'DestIPAddress',
+              message:
+                  'ErrorInvalidIPAddress: 127.20.0.0 is a reserved address.'));
+      when(() => mockUsp.delete(any()))
+          .thenAnswer((_) async => UspAddRefusalTestData.accepted);
+
+      await expectLater(
+        service.saveBatch(original: const [], current: [
+          StaticRouteUIModel(
+            enabled: true,
+            name: 'NewRoute',
+            destIpAddress: '127.20.0.0',
+            destSubnetMask: '255.255.0.0',
+            gatewayIpAddress: '192.168.1.1',
+            interfaceName: 'LAN',
+          ),
+        ]),
+        throwsA(isA<ServiceError>()),
+      );
+      verify(() => mockUsp.delete([row])).called(1);
     });
   });
 }

@@ -6,6 +6,7 @@ import 'package:privacy_gui/generated/port_triggering.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/services/batch_tally.dart';
+import 'package:privacy_gui/page/_shared/services/refused_add_service.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/services/port_forwarding_transforms.dart';
@@ -113,7 +114,8 @@ class UspPortForwardingService {
           }
         ],
       );
-      final parsed = UspResultParser.parseAddResult(result);
+      final parsed = await parseAddRemovingRefusedRows(_usp, result,
+          tag: '[PortForwarding]');
       switch (parsed) {
         case UspSuccess():
           break;
@@ -254,7 +256,7 @@ class UspPortForwardingService {
                   })
               .toList(),
         );
-        tally.record('Add', UspResultParser.parseAddResult(result));
+        await tally.recordAdd(_usp, 'Add', result);
       }
 
       tally.throwIfAnyFailed();
@@ -367,8 +369,11 @@ class UspPortForwardingService {
         );
 
         // Extract instance path from structured response
-        final parsedResult = UspResultParser.parseAddResult(result);
-        tally.record('Add parent', parsedResult);
+        // A refused parent is deleted (a UspFailure then). One the delete
+        // could not remove stays a UspPartialSuccess. Either way no forward
+        // rule is added under it: a parent the router refused part of is not
+        // the trigger the user asked for.
+        final parsedResult = await tally.recordAdd(_usp, 'Add parent', result);
         String? parentPath;
         switch (parsedResult) {
           case UspSuccess():
@@ -376,21 +381,15 @@ class UspPortForwardingService {
             if (createdInstances.isNotEmpty) {
               parentPath = createdInstances.first.affectedPath;
             }
-          case UspPartialSuccess():
-            final createdInstances = parsedResult.successes
-                .expand((s) => s.createdInstances ?? <UspCreatedInstance>[])
-                .toList();
-            if (createdInstances.isNotEmpty) {
-              parentPath = createdInstances.first.affectedPath;
-            }
-          case UspFailure():
+          case UspPartialSuccess() || UspFailure():
             break;
         }
 
         // Add forward rules only if parent was created. A parent Add that
         // succeeded without naming its instance leaves them unwritable, which
-        // is a failed save, not a skipped step.
-        if (parentPath == null && parsedResult is! UspFailure) {
+        // is a failed save, not a skipped step. A refused one is already in
+        // the tally.
+        if (parentPath == null && parsedResult is UspSuccess) {
           tally.recordMissing('Add parent',
               'no instance path returned for trigger ${r.triggerPortDisplay}');
         }
@@ -403,7 +402,7 @@ class UspPortForwardingService {
               forwardPortEndRange: fr.forwardPortEndRange,
               forwardProtocol: fr.forwardProtocol,
             );
-            tally.record('Add forward', UspResultParser.parseAddResult(fwd));
+            await tally.recordAdd(_usp, 'Add forward', fwd);
           }
         }
       }
@@ -481,7 +480,7 @@ class UspPortForwardingService {
         forwardPortEndRange: fr.forwardPortEndRange,
         forwardProtocol: fr.forwardProtocol,
       );
-      tally.record('Add forward', UspResultParser.parseAddResult(result));
+      await tally.recordAdd(_usp, 'Add forward', result);
     }
   }
 }

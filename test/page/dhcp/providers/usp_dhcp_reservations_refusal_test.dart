@@ -111,4 +111,43 @@ void main() {
         )).called(1);
     c.dispose();
   });
+
+  // PR #1784 review (Hank, Peter): when the read-back fails as well, a
+  // reservation the save may have added has no path on the page. The next
+  // Save reads the router first instead of adding it a second time.
+  test(
+      'a failed save whose read-back fails makes the next save read the '
+      'router first, not add again', () async {
+    final added = DhcpReservationUIModel(
+        mac: 'AA:BB:CC:DD:EE:02', ip: '192.168.1.11', enable: true);
+    final onRouter = added.copyWith(
+        instancePath: 'Device.DHCPv4.Server.Pool.4.StaticAddress.6.');
+    var reads = 0;
+    when(() => svc.fetchReservations()).thenAnswer((_) async {
+      reads++;
+      if (reads == 2) throw const NetworkError(detail: 'offline');
+      return reads == 1 ? [saved] : [saved, onRouter];
+    });
+    when(() => svc.saveBatch(
+              original: any(named: 'original'),
+              current: any(named: 'current'),
+            ))
+        .thenThrow(const UspPartialFailureError(
+            summary: 's', successPaths: [], failures: []));
+    final c = container();
+    await Future.delayed(Duration.zero);
+    final n = c.read(uspDhcpReservationsProvider.notifier);
+    n.addReservation(added);
+
+    await expectLater(n.save(), throwsA(isA<UspPartialFailureError>()));
+    await expectLater(
+        n.save(), throwsA(isA<SaveDiscardedForRouterRowsError>()));
+    verify(() => svc.saveBatch(
+          original: any(named: 'original'),
+          current: any(named: 'current'),
+        )).called(1);
+    expect(c.read(uspDhcpReservationsProvider).settings.current.reservations,
+        [saved, onRouter]);
+    c.dispose();
+  });
 }

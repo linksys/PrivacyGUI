@@ -134,13 +134,10 @@ class _StatsSignalQualitySectionState
                 // being left out.
                 if (distribution.signalLevelDistribution[entry.$1]
                     case final count?)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      StatsLegendDot(color: entry.$3),
-                      AppGap.xs(),
-                      AppText.labelSmall('${entry.$2}: $count'),
-                    ],
+                  AppChartLegendEntry.statistic(
+                    mark: const ChartMark.swatch(),
+                    color: entry.$3,
+                    label: '${entry.$2}: $count',
                   ),
             ],
           ),
@@ -161,13 +158,15 @@ class _RadarTooltipRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        StatsLegendDot(color: color),
-        AppGap.xs(),
-        AppText.labelSmall('$band: ${(quality * 100).toInt()}%'),
-      ],
+    // The kit entry, centred as the row was (#1324). `Center` rather than a
+    // centred `Row`: the entry's label is `Flexible`, so it needs a bounded
+    // width. The mark is the radar's filled area, which is what is touched.
+    return Center(
+      child: AppChartLegendEntry.statistic(
+        mark: const ChartMark.radarFilled(),
+        color: color,
+        label: '$band: ${(quality * 100).toInt()}%',
+      ),
     );
   }
 }
