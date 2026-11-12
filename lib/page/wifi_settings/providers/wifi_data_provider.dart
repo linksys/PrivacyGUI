@@ -214,12 +214,14 @@ class WifiDataNotifier extends AsyncNotifier<WifiData> {
   /// on screen.
   ///
   /// The readings are applied to whatever [state] holds when they arrive, so a
-  /// re-read that landed meanwhile keeps its radios and clients. A failed read
-  /// keeps the previous readings, as [_refreshFromPush] keeps the previous
-  /// value.
+  /// re-read that landed meanwhile keeps its radios and clients. Nothing is
+  /// published while a re-read is still in flight: [build] reads utilization
+  /// too, and publishing over it would put back the radios from before it. A
+  /// failed read keeps the previous readings, as [_refreshFromPush] keeps the
+  /// previous value.
   Future<void> refreshUtilization() async {
     final current = state.valueOrNull;
-    if (current == null) return;
+    if (current == null || state.isLoading) return;
     final Map<String, int> byRadioPath;
     try {
       byRadioPath = await ref
@@ -231,7 +233,7 @@ class WifiDataNotifier extends AsyncNotifier<WifiData> {
       return;
     }
     final latest = state.valueOrNull;
-    if (latest == null) return;
+    if (latest == null || state.isLoading) return;
     state = AsyncData(WifiData(
       codegenContext: latest.codegenContext,
       wifiClientMap: latest.wifiClientMap,

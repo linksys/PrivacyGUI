@@ -304,6 +304,38 @@ void main() {
       container.dispose();
     });
 
+    test(
+        'does not publish while a Wi-Fi re-read is in flight, which brings '
+        'its own readings', () async {
+      final read = Completer<Map<String, int>>();
+      when(() => mockService.fetchUtilizationByRadioPath(any()))
+          .thenAnswer((_) => read.future);
+      final container = createContainer();
+      container.listen(wifiDataProvider, (_, __) {});
+      await container.read(wifiDataProvider.future);
+
+      final refreshing =
+          container.read(wifiDataProvider.notifier).refreshUtilization();
+      // A save re-reads the Wi-Fi data, and that read is still out when the
+      // utilization read comes back.
+      final rebuild = Completer<WifiDataFetchResult>();
+      when(() => mockService.fetch()).thenAnswer((_) => rebuild.future);
+      container.invalidate(wifiDataProvider);
+      container.read(wifiDataProvider);
+      read.complete({'Device.WiFi.Radio.1.': 99, 'Device.WiFi.Radio.2.': 99});
+      await refreshing;
+
+      expect(container.read(wifiDataProvider).isLoading, isTrue,
+          reason: 'the utilization refresh published the pre-save radios over '
+              'the re-read in flight (PR #1796 review)');
+
+      rebuild.complete(WifiSettingsTestData.createWifiDataFetchResult(
+          radioModels: radios()));
+      final after = await container.read(wifiDataProvider.future);
+      expect(after.radioModels.map((r) => r.utilization), [46, 11]);
+      container.dispose();
+    });
+
     test('a failed read keeps the previous readings', () async {
       when(() => mockService.fetchUtilizationByRadioPath(any()))
           .thenThrow(const NetworkError(detail: 'timeout'));

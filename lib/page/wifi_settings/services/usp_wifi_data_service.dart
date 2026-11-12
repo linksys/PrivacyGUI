@@ -284,6 +284,10 @@ class UspWifiDataService {
   ///
   /// Throws [ServiceError] when the read fails, unlike [fetch], so the caller
   /// can keep the readings it has instead of replacing them with unknown ones.
+  /// A read that comes back with no DataElements radio at all counts as
+  /// failed too: a path the router does not answer reads as absent rather
+  /// than as an error (#1212), and DataElements empties while prplMesh
+  /// restarts — the same reasoning as an empty Wi-Fi table in [fetch].
   Future<Map<String, int>> fetchUtilizationByRadioPath(
       WifiCodegenContext context) async {
     final Map<String, int> byMac;
@@ -292,6 +296,10 @@ class UspWifiDataService {
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
+    if (byMac.isEmpty) {
+      throw const NetworkError(
+          detail: 'DataElements utilization read returned no radio');
+    }
     return _utilizationByRadioPath(context.raw.ssids, byMac);
   }
 
@@ -299,7 +307,9 @@ class UspWifiDataService {
   /// MAC — in upper case (#1295).
   ///
   /// Two leaves rather than `DataElementsNetwork.fetch`, which reads every BSS
-  /// and station of every node to get one number per radio.
+  /// and station of every node to get one number per radio. A value outside
+  /// TR-181's 0–255 is no reading, so that radio is left out (unknown) rather
+  /// than shown as over 100 % or negative.
   Future<Map<String, int>> _readUtilizationByRadioMac() async {
     final response = await _usp.get([
       '${_dataElementsRadio}ID',
@@ -313,6 +323,7 @@ class UspWifiDataService {
       final utilization =
           int.tryParse('${response['${radioPath}Utilization'] ?? ''}');
       if (mac.isEmpty || utilization == null) continue;
+      if (utilization < 0 || utilization > 255) continue;
       result[mac] = utilization;
     }
     return result;

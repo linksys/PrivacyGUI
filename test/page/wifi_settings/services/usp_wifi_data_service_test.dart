@@ -339,6 +339,22 @@ void main() {
       await expectLater(svc.fetchUtilizationByRadioPath(context),
           throwsA(isA<ServiceError>()));
     });
+
+    test(
+        'a read that returns no DataElements radio at all is a ServiceError '
+        'too', () async {
+      // A path the router does not answer reads as absent, not as an error
+      // (#1212), and DataElements empties while prplMesh restarts. Taking that
+      // as "every radio reported none" would wipe every reading to unknown
+      // for a minute; as with an empty Wi-Fi table in `fetch`, it is a failed
+      // read, and the caller keeps what it has (PR #1796 review).
+      _stubAllFetches(mockUsp);
+      final context = (await svc.fetch()).codegenContext;
+      _stubAllFetches(mockUsp, dataElements: const {});
+
+      await expectLater(svc.fetchUtilizationByRadioPath(context),
+          throwsA(isA<ServiceError>()));
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -447,6 +463,20 @@ void main() {
 
       expect(radios[0].utilization, isNull);
       expect(radios[1].utilization, 11);
+    });
+
+    test('a reading outside 0–255 is unknown, not over 100 % or negative',
+        () async {
+      // TR-181 types `Utilization` as unsignedInt[:255].
+      _stubAllFetches(mockUsp, dataElements: {
+        ..._buildDataElementsRadiosResponse(),
+        'Device.WiFi.DataElements.Network.Device.1.Radio.1.Utilization': '300',
+        'Device.WiFi.DataElements.Network.Device.1.Radio.2.Utilization': '-1',
+      });
+
+      final radios = (await svc.fetch()).radioModels;
+
+      expect(radios.map((r) => r.utilization), [null, null]);
     });
 
     test('a reported 0 is a reading of 0, not unknown', () async {

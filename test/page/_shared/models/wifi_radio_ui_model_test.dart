@@ -74,6 +74,44 @@ void main() {
           isNot(equals(_createRadio(utilization: 58))));
     });
 
+    // A field `withUtilization` failed to copy would come back at its default
+    // (PR #1796 review). Every field here is off its default, so equality
+    // catches one that was dropped.
+    test('withUtilization replaces utilization and copies every other field',
+        () {
+      const radio = WifiRadioUIModel(
+        instancePath: 'Device.WiFi.Radio.2.',
+        band: '5GHz',
+        enable: false,
+        transmitPower: 75,
+        maxBitRate: 4804,
+        channel: 40,
+        channelInUse: 36,
+        autoChannelEnable: false,
+        channelBandwidth: '80MHz',
+        supportedStandards: 'a,n,ac,ax',
+        utilization: 46,
+        possibleChannels: [36, 40, 44, 48],
+        isDfsEnabled: true,
+        accessPoints: [
+          WifiAccessPointUIModel(
+            enable: true,
+            ssidName: 'Home',
+            securityMode: 'WPA3-Personal',
+            encryptionMode: 'AES',
+            isGuest: true,
+            accessPointInstancePath: 'Device.WiFi.AccessPoint.2.',
+            ssidInstancePath: 'Device.WiFi.SSID.2.',
+          ),
+        ],
+      );
+
+      expect(radio.withUtilization(46), radio);
+      expect(radio.withUtilization(11).utilization, 11);
+      expect(radio.withUtilization(11).withUtilization(46), radio);
+      expect(radio.withUtilization(null).utilization, isNull);
+    });
+
     group('utilizationPercent', () {
       // DataElements reports 0–255, where 255 is 100 %. The readings are the
       // bench's (FW 2.0.4.26103108, 2026-11-09): 46 on 2.4 GHz, 11 on 5 GHz.
