@@ -7,13 +7,14 @@ class UspAddRefusalTestData {
   UspAddRefusalTestData._();
 
   /// `success` stays true, every created row is in `data.instances`, and each
-  /// refused parameter of [refusedRow] has an `error` entry keyed
+  /// refused parameter of [refusedRow] has a `kind: parameter` entry keyed
   /// `<row path><param>`.
   ///
   /// The shape and the default message are the bench's (FW 2.0.4.26103108,
   /// 2026-11-09, a 26th port trigger, its captured response decoded by
   /// 0.14.0): code 7005 on every entry, the error name on the refused leaf,
-  /// and "group set failed" on each of [otherParams].
+  /// and "group set failed" on each of [otherParams]. 0.16.0 reports the same
+  /// entries with `kind: parameter` (`OperationSuccess.param_errs`).
   static Map<String, dynamic> refusedAdd({
     required List<String> instances,
     required String refusedRow,
@@ -21,24 +22,19 @@ class UspAddRefusalTestData {
     String message = 'ErrorTooManyRules: at most 25 port triggering rules.',
     List<String> otherParams = const ['Enable'],
   }) =>
-      {
-        'success': true,
-        'result': {
-          'data': {'affectedCount': instances.length, 'instances': instances},
-          'error': {
-            for (final p in otherParams)
-              '$refusedRow$p': {
-                'errorCode': 7005,
-                'errorMessage': "SetParameterGroup: group set failed at "
-                    "'$refusedRow$refusedParam' (Resources exceeded)",
-              },
-            '$refusedRow$refusedParam': {
-              'errorCode': 7005,
-              'errorMessage': message,
-            },
-          },
+      UspEnvelopeTestData.parameterErrors(
+        {
+          for (final p in otherParams)
+            '$refusedRow$p': (
+              code: 7005,
+              message: "SetParameterGroup: group set failed at "
+                  "'$refusedRow$refusedParam' (Resources exceeded)",
+            ),
+          '$refusedRow$refusedParam': (code: 7005, message: message),
         },
-      };
+        success: true,
+        data: {'affectedCount': instances.length, 'instances': instances},
+      );
 
   /// An Add the router refused as a whole (a USP `Error`), as usp-client
   /// 0.15.0 and later return it: `success: false`, nothing created

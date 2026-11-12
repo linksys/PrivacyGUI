@@ -37,8 +37,13 @@ throws; `kind: path` is one path (a Get's 7026, a command the router refused).
 A router code under `kind: request` is rethrown as `Protocol error: … (code: N)`,
 the shape 0.14.0 gave it, so `mapUspErrorToServiceError` maps it as before: a
 7016 for a mesh node that has left is still `ResourceNotFoundError`. Writes
-still read the `error` map (`UspResultParser`), and a refused atomic write now
-carries the router's code there. `test/web/usp_operate_test.mjs` runs the
+read the same list (`UspResultParser`): one failure per entry, its `kind`
+carried for the log and deciding nothing, so a write still reads as success,
+partial success or failure by `success` and whether any entry is there. A
+refused atomic write carries the router's code under `kind: request`. Nothing
+in the app reads the `error` map any more, so the client release that drops it
+needs no app change; the list also keeps a second entry under a path the map
+would overwrite. `test/web/usp_operate_test.mjs` runs the
 vendored client from Node against `test/web/usp_operate_errors.json`, the same
 fixture the Dart mapping tests read.
 

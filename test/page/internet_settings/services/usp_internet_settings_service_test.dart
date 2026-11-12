@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_typ
 import 'package:privacy_gui/page/internet_settings/services/usp_internet_settings_service.dart';
 
 import '../../../mocks/test_data/internet_settings_test_data.dart';
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -1016,18 +1017,15 @@ void main() {
       // disconnect — a genuine config failure that must still reach the user,
       // never swallowed by the fire-and-forget handling.
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': false,
-                'result': {
-                  'data': <String, dynamic>{},
-                  'error': {
-                    'Device.IP.Interface.2.Enable': {
-                      'errorCode': 7006,
-                      'errorMessage': 'Invalid value',
-                    },
-                  },
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'Device.IP.Interface.2.Enable': (
+                    code: 7006,
+                    message: 'Invalid value',
+                  ),
                 },
-              });
+                success: false,
+              ));
 
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.dhcp,
@@ -1296,18 +1294,15 @@ void main() {
       // A fault code on Enable means the router rejected the exit before any
       // disconnect — a genuine failure the user must see.
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': false,
-                'result': {
-                  'data': <String, dynamic>{},
-                  'error': {
-                    'Device.IP.Interface.2.Enable': {
-                      'errorCode': 7006,
-                      'errorMessage': 'Invalid value',
-                    },
-                  },
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'Device.IP.Interface.2.Enable': (
+                    code: 7006,
+                    message: 'Invalid value',
+                  ),
                 },
-              });
+                success: false,
+              ));
 
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.bridge,
@@ -2315,22 +2310,19 @@ void main() {
               'result': {'data': <String, dynamic>{}}
             };
           }
-          return {
-            'success': false,
-            'result': {
-              'data': <String, dynamic>{},
-              'error': {
-                for (final p in paths)
-                  p: {
-                    'errorCode': 7012,
-                    'errorMessage': p.endsWith(refused)
-                        ? message
-                        : "SetParameterGroup: group set failed at '$tunnel$refused' "
-                            '(Invalid value)',
-                  },
-              },
+          return UspEnvelopeTestData.parameterErrors(
+            {
+              for (final p in paths)
+                p: (
+                  code: 7012,
+                  message: p.endsWith(refused)
+                      ? message
+                      : "SetParameterGroup: group set failed at '$tunnel$refused' "
+                          '(Invalid value)',
+                ),
             },
-          };
+            success: false,
+          );
         });
       }
 
@@ -2402,18 +2394,15 @@ void main() {
     test('a rejected bridge SET fails at once, without waiting', () {
       fakeAsync((async) {
         when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-            .thenAnswer((_) async => {
-                  'success': false,
-                  'result': {
-                    'data': <String, dynamic>{},
-                    'error': {
-                      'Device.IP.Interface.2.Enable': {
-                        'errorCode': 7006,
-                        'errorMessage': 'Invalid value',
-                      },
-                    },
+            .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                  {
+                    'Device.IP.Interface.2.Enable': (
+                      code: 7006,
+                      message: 'Invalid value',
+                    ),
                   },
-                });
+                  success: false,
+                ));
 
         Object? error;
         service
@@ -2610,20 +2599,17 @@ void main() {
     test('saveAll throws UspCompleteFailureError on SET failure', () async {
       // Mock for _resolveInstance()
       when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
-      // WASM v0.11.0 format: success=false
+      // Unified format: success=false
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': false,
-                'result': {
-                  'data': <String, dynamic>{},
-                  'error': {
-                    'Device.IP.Interface.2.MaxMTUSize': {
-                      'errorCode': 7004,
-                      'errorMessage': 'Parameter not writable',
-                    },
-                  },
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'Device.IP.Interface.2.MaxMTUSize': (
+                    code: 7004,
+                    message: 'Parameter not writable',
+                  ),
                 },
-              });
+                success: false,
+              ));
 
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.dhcp,
@@ -2641,22 +2627,18 @@ void main() {
         () async {
       // Mock for _resolveInstance()
       when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
-      // WASM v0.11.0 format: success=true but has error field
+      // Unified format: success=true but errors has entries
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': true,
-                'result': {
-                  'data': {
-                    'Device.IP.Interface.2.MaxMTUSize': 1400,
-                  },
-                  'error': {
-                    'Device.IP.Interface.2.SomeOtherParam': {
-                      'errorCode': 7026,
-                      'errorMessage': 'Parameter does not exist',
-                    },
-                  },
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'Device.IP.Interface.2.SomeOtherParam': (
+                    code: 7026,
+                    message: 'Parameter does not exist',
+                  ),
                 },
-              });
+                success: true,
+                data: {'Device.IP.Interface.2.MaxMTUSize': 1400},
+              ));
 
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.dhcp,
@@ -2674,18 +2656,15 @@ void main() {
       // Mock for _resolveInstance()
       when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': false,
-                'result': {
-                  'data': <String, dynamic>{},
-                  'error': {
-                    'Device.IP.Interface.2.MaxMTUSize': {
-                      'errorCode': 7004,
-                      'errorMessage': 'Parameter not writable',
-                    },
-                  },
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'Device.IP.Interface.2.MaxMTUSize': (
+                    code: 7004,
+                    message: 'Parameter not writable',
+                  ),
                 },
-              });
+                success: false,
+              ));
 
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.dhcp,
@@ -2709,20 +2688,16 @@ void main() {
       // Mock for _resolveInstance()
       when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': true,
-                'result': {
-                  'data': {
-                    'Device.IP.Interface.2.MaxMTUSize': 1400,
-                  },
-                  'error': {
-                    'Device.IP.Interface.2.SomeOtherParam': {
-                      'errorCode': 7026,
-                      'errorMessage': 'Parameter does not exist',
-                    },
-                  },
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'Device.IP.Interface.2.SomeOtherParam': (
+                    code: 7026,
+                    message: 'Parameter does not exist',
+                  ),
                 },
-              });
+                success: true,
+                data: {'Device.IP.Interface.2.MaxMTUSize': 1400},
+              ));
 
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.dhcp,

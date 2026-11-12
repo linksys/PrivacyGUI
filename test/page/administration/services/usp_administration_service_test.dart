@@ -4,6 +4,8 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/administration/services/usp_administration_service.dart';
 
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 const _upnpEnable = 'Device.UPnP.Device.Enable';
@@ -63,15 +65,10 @@ Map<String, dynamic> _setFailure({
   int errorCode = 9007,
   String errorMessage = 'Invalid parameter value',
 }) =>
-    {
-      'success': false,
-      'result': {
-        'data': <String, dynamic>{},
-        'error': {
-          path: {'errorCode': errorCode, 'errorMessage': errorMessage},
-        },
-      },
-    };
+    UspEnvelopeTestData.parameterErrors(
+      {path: (code: errorCode, message: errorMessage)},
+      success: false,
+    );
 
 void main() {
   late MockUspClient mockUsp;
@@ -250,18 +247,16 @@ void main() {
       // A one-leaf Set should not come back partial, but the parser can say so
       // and the branch must not read as success if it ever does.
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': true,
-                'result': {
-                  'data': {'Device.UPnP.Device.UPnPIGD': '1'},
-                  'error': {
-                    'Device.UPnP.Device.Enable': {
-                      'errorCode': 9007,
-                      'errorMessage': 'Invalid parameter value',
-                    },
-                  },
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'Device.UPnP.Device.Enable': (
+                    code: 9007,
+                    message: 'Invalid parameter value',
+                  ),
                 },
-              });
+                success: true,
+                data: {'Device.UPnP.Device.UPnPIGD': '1'},
+              ));
 
       expect(() => svc.setUpnpEnabled(false),
           throwsA(isA<UspPartialFailureError>()));

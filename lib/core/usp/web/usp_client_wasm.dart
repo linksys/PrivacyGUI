@@ -290,18 +290,21 @@ class UspClientWeb implements UspTransport {
       return _safeConvertToStringDynamicMap(result.dartify());
     } catch (e) {
       logger.e('$_tag DELETE exception: $e');
-      // Return WASM v0.11.0 unified format for consistency with UspResultParser
+      // The unified failure shape UspResultParser reads: the call failed as a
+      // whole, one `kind: request` entry per path, as the client reports one.
       return {
         'success': false,
         'result': {
           'data': <String, dynamic>{},
-          'error': {
+          'errors': [
             for (final path in paths)
-              path: {
+              {
+                'kind': 'request',
+                'path': path,
                 'errorCode': -1,
                 'errorMessage': e.toString(),
               },
-          },
+          ],
         },
       };
     }

@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/local_network/models/local_network_ui_model.dar
 import 'package:privacy_gui/page/local_network/services/usp_local_network_service.dart';
 
 import '../../../mocks/test_data/local_network_test_data.dart';
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
 import '../../../util/usp_param_templates.dart';
 
 class MockUspClient extends Mock implements UspClient {}
@@ -625,18 +626,15 @@ void main() {
     test('save throws UspCompleteFailureError on firmware failure', () async {
       stubLanGets();
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': false,
-                'result': {
-                  'data': <String, dynamic>{},
-                  'error': {
-                    '${LocalNetworkTestData.lanPool}MinAddress': {
-                      'errorCode': 7004,
-                      'errorMessage': 'Parameter not writable'
-                    }
-                  }
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  '${LocalNetworkTestData.lanPool}MinAddress': (
+                    code: 7004,
+                    message: 'Parameter not writable'
+                  ),
                 },
-              });
+                success: false,
+              ));
 
       expect(
         () => service.save(
@@ -650,20 +648,18 @@ void main() {
     test('save throws UspPartialFailureError on partial success', () async {
       stubLanGets();
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': true,
-                'result': {
-                  'data': {
-                    '${LocalNetworkTestData.lanPool}MinAddress': '192.168.1.50'
-                  },
-                  'error': {
-                    '${LocalNetworkTestData.lanPool}MaxAddress': {
-                      'errorCode': 7004,
-                      'errorMessage': 'Parameter not writable'
-                    }
-                  }
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  '${LocalNetworkTestData.lanPool}MaxAddress': (
+                    code: 7004,
+                    message: 'Parameter not writable'
+                  ),
                 },
-              });
+                success: true,
+                data: {
+                  '${LocalNetworkTestData.lanPool}MinAddress': '192.168.1.50'
+                },
+              ));
 
       expect(
         () => service.save(
@@ -744,19 +740,13 @@ void main() {
       // Router actively rejected the SET BEFORE any disconnect — a genuine
       // config failure that must reach the user, never swallowed.
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': false,
-                'result': {
-                  'data': <String, dynamic>{},
-                  'error': {
-                    '${LocalNetworkTestData.lanInterface}IPv4Address.3.IPAddress':
-                        {
-                      'errorCode': 7006,
-                      'errorMessage': 'Invalid value',
-                    },
-                  },
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  '${LocalNetworkTestData.lanInterface}IPv4Address.3.IPAddress':
+                      (code: 7006, message: 'Invalid value'),
                 },
-              });
+                success: false,
+              ));
 
       await expectLater(
         service.save(

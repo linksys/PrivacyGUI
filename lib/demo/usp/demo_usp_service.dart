@@ -13,7 +13,7 @@
 ///   [UspClient] coerces. The old demo `_coerce` duplicated UspClient's logic
 ///   and is gone.
 /// - `set`/`add`/`delete`/`operate` return the WASM v0.11.0 **unified** result
-///   shape `{success, result: {data, error?}}` — byte-identical to the real
+///   shape `{success, result: {data, errors?}}` — byte-identical to the real
 ///   WASM client — so [UspResultParser] and the service layer treat demo
 ///   results exactly like production. (The old demo `{overallSuccess, results}`
 ///   shape did not match the parser's `map['success']` read.)

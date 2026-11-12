@@ -4,6 +4,8 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/admin/services/usp_admin_service.dart';
 
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 void main() {
@@ -96,18 +98,16 @@ void main() {
     });
 
     test('throws UspCompleteFailureError on SET failure', () async {
-      when(() => mockUsp.set(any())).thenAnswer((_) async => {
-            'success': false,
-            'result': {
-              'data': <String, dynamic>{},
-              'error': {
-                'Device.Users.User.2.Password': {
-                  'errorCode': 7004,
-                  'errorMessage': 'Parameter not writable',
+      when(() => mockUsp.set(any()))
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'Device.Users.User.2.Password': (
+                    code: 7004,
+                    message: 'Parameter not writable',
+                  ),
                 },
-              },
-            },
-          });
+                success: false,
+              ));
 
       expect(
         () => service.updatePassword(
