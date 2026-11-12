@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
+import 'package:privacy_gui/page/dashboard/views/components/card_and_preset_names.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Shows a dialog for selecting a dashboard preset.
@@ -147,7 +148,7 @@ class _PresetCard extends StatelessWidget {
                       children: [
                         Flexible(
                           child: AppText.titleSmall(
-                            preset.displayName,
+                            preset.resolveName(loc(context)),
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
                           ),
@@ -170,7 +171,7 @@ class _PresetCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     AppText.bodySmall(
-                      preset.description,
+                      preset.resolveDescription(loc(context)),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),

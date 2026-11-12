@@ -5,32 +5,6 @@ import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
 
 void main() {
   group('Extension getters', () {
-    test('essential displayName', () {
-      expect(UspDashboardPreset.essential.displayName, 'Essential');
-    });
-
-    test('standard displayName', () {
-      expect(UspDashboardPreset.standard.displayName, 'Standard');
-    });
-
-    test('professional displayName', () {
-      expect(UspDashboardPreset.professional.displayName, 'Professional');
-    });
-
-    test('monitoring displayName', () {
-      expect(UspDashboardPreset.monitoring.displayName, 'Monitoring');
-    });
-
-    test('each preset has non-empty description', () {
-      for (final preset in UspDashboardPreset.values) {
-        expect(
-          preset.description.isNotEmpty,
-          isTrue,
-          reason: '${preset.name} should have a description',
-        );
-      }
-    });
-
     test('essential icon', () {
       expect(UspDashboardPreset.essential.icon, Icons.dashboard_outlined);
     });
@@ -96,7 +70,6 @@ void main() {
     // #1474 must not read this exclusion as permission to delete the value.
     test('remote is excluded from the picker, not removed from the enum', () {
       expect(UspDashboardPreset.values, contains(UspDashboardPreset.remote));
-      expect(UspDashboardPreset.remote.displayName, 'Remote Support');
       expect(UspDashboardPreset.remote.createLayout().length, 8);
     });
   });
