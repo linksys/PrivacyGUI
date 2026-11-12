@@ -1319,5 +1319,17 @@
   "errorRefusedInvalidPort": "Der Router hat diese Regel nicht übernommen: Eine Portnummer ist ungültig.",
   "errorRefusedDescriptionInUse": "Der Router hat diese Regel nicht übernommen: Eine andere Firewall-Regel hat bereits diesen Namen.",
   "dmzDestination": "Ziel",
-  "macAddressRequired": "MAC-Adresse ist erforderlich"
+  "macAddressRequired": "MAC-Adresse ist erforderlich",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "Hält einen Hostnamen auf die Internet-IP-Adresse Ihres Routers gerichtet, auch wenn Ihr Internetanbieter sie ändert.",
+  "selectAProvider": "Anbieter auswählen",
+  "invalidUsername": "Ungültiger Benutzername",
+  "invalidPassword": "Ungültiges Passwort",
+  "invalidHostname": "Ungültiger Host-Name",
+  "ddnsPasswordKeepHint": "Leer lassen, um das aktuelle Passwort beizubehalten",
+  "ddnsStatusTitle": "DDNS-Status",
+  "internetIPAddress": "Internet IP-Adresse",
+  "ddnsAuthenticationFailed": "Authentifizierung fehlgeschlagen",
+  "ddnsSettingsIncomplete": "Fehlgeschlagen – Einstellungen unvollständig",
+  "ddnsWanAddressPrivate": "Die Internet-IP-Adresse des Routers ist privat und kann nicht veröffentlicht werden. DDNS benötigt eine öffentliche IP-Adresse von Ihrem Internetanbieter."
 }

@@ -1319,5 +1319,17 @@
   "errorRefusedInvalidPort": "O router não aceitou esta regra: um número de porta não é válido.",
   "errorRefusedDescriptionInUse": "O router não aceitou esta regra: outra regra de firewall já tem este nome.",
   "dmzDestination": "Destino",
-  "macAddressRequired": "O endereço MAC é obrigatório"
+  "macAddressRequired": "O endereço MAC é obrigatório",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "Mantenha um nome do host a apontar para o endereço IP de Internet do router, mesmo quando o fornecedor de Internet o alterar.",
+  "selectAProvider": "Selecione um fornecedor",
+  "invalidUsername": "Nome de utilizador inválido",
+  "invalidPassword": "Palavra-passe inválida",
+  "invalidHostname": "Nome do host inválido",
+  "ddnsPasswordKeepHint": "Deixe em branco para manter a palavra-passe atual",
+  "ddnsStatusTitle": "Estado do DDNS",
+  "internetIPAddress": "Endereço IP da Internet",
+  "ddnsAuthenticationFailed": "Falha na autenticação",
+  "ddnsSettingsIncomplete": "Falha — definições incompletas",
+  "ddnsWanAddressPrivate": "O endereço IP de Internet do router é privado e não pode ser publicado. O DDNS precisa de um endereço IP público do seu fornecedor de Internet."
 }

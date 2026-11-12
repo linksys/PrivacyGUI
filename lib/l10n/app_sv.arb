@@ -1319,5 +1319,17 @@
   "errorRefusedInvalidPort": "Routern godtog inte den här regeln: ett portnummer är ogiltigt.",
   "errorRefusedDescriptionInUse": "Routern godtog inte den här regeln: en annan brandväggsregel har redan det här namnet.",
   "dmzDestination": "Mål",
-  "macAddressRequired": "MAC-adress krävs"
+  "macAddressRequired": "MAC-adress krävs",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "Håll ett värdnamn kopplat till routerns internet-IP-adress, även när internetleverantören ändrar den.",
+  "selectAProvider": "Välj en leverantör",
+  "invalidUsername": "Ogiltigt användarnamn",
+  "invalidPassword": "Ogiltigt lösenord",
+  "invalidHostname": "Ogiltigt värdnamn",
+  "ddnsPasswordKeepHint": "Lämna tomt för att behålla det nuvarande lösenordet",
+  "ddnsStatusTitle": "DDNS-status",
+  "internetIPAddress": "IP-adress för internet",
+  "ddnsAuthenticationFailed": "Autentiseringen misslyckades",
+  "ddnsSettingsIncomplete": "Misslyckades – inställningarna är ofullständiga",
+  "ddnsWanAddressPrivate": "Routerns internet-IP-adress är privat och kan inte publiceras. DDNS kräver en offentlig IP-adress från internetleverantören."
 }

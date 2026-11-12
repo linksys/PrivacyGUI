@@ -1319,5 +1319,17 @@
   "errorRefusedInvalidPort": "Reititin ei hyväksynyt tätä sääntöä: porttinumero ei kelpaa.",
   "errorRefusedDescriptionInUse": "Reititin ei hyväksynyt tätä sääntöä: toisella palomuurisäännöllä on jo tämä nimi.",
   "dmzDestination": "Kohde",
-  "macAddressRequired": "MAC-osoite vaaditaan"
+  "macAddressRequired": "MAC-osoite vaaditaan",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "Pitää isäntänimen reitittimen internet-IP-osoitteessa silloinkin, kun internetpalveluntarjoaja vaihtaa sen.",
+  "selectAProvider": "Valitse palveluntarjoaja",
+  "invalidUsername": "Virheellinen käyttäjänimi",
+  "invalidPassword": "Salasana ei kelpaa",
+  "invalidHostname": "Virheellinen isäntänimi",
+  "ddnsPasswordKeepHint": "Jätä tyhjäksi, jos haluat säilyttää nykyisen salasanan",
+  "ddnsStatusTitle": "DDNS-tila",
+  "internetIPAddress": "Internet-IP-osoite",
+  "ddnsAuthenticationFailed": "Todennus epäonnistui",
+  "ddnsSettingsIncomplete": "Epäonnistui – asetukset ovat puutteelliset",
+  "ddnsWanAddressPrivate": "Reitittimen internet-IP-osoite on yksityinen, eikä sitä voi julkaista. DDNS edellyttää julkista IP-osoitetta internetpalveluntarjoajalta."
 }

@@ -1319,5 +1319,17 @@
   "errorRefusedInvalidPort": "Router nie zaakceptował tej reguły: numer portu jest nieprawidłowy.",
   "errorRefusedDescriptionInUse": "Router nie zaakceptował tej reguły: inna reguła zapory ma już tę nazwę.",
   "dmzDestination": "Miejsce docelowe",
-  "macAddressRequired": "Adres MAC jest wymagany"
+  "macAddressRequired": "Adres MAC jest wymagany",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "Utrzymuje nazwę hosta wskazującą na internetowy adres IP routera, nawet gdy dostawca internetu go zmieni.",
+  "selectAProvider": "Wybierz dostawcę",
+  "invalidUsername": "Nieprawidłowa nazwa użytkownika",
+  "invalidPassword": "Nieprawidłowe hasło",
+  "invalidHostname": "Nieprawidłowa nazwa hosta",
+  "ddnsPasswordKeepHint": "Pozostaw puste, aby zachować bieżące hasło",
+  "ddnsStatusTitle": "Stan DDNS",
+  "internetIPAddress": "Adres IP w Internecie",
+  "ddnsAuthenticationFailed": "Uwierzytelnianie nie powiodło się",
+  "ddnsSettingsIncomplete": "Niepowodzenie — niepełne ustawienia",
+  "ddnsWanAddressPrivate": "Internetowy adres IP routera jest prywatny i nie może zostać opublikowany. DDNS wymaga publicznego adresu IP od dostawcy internetu."
 }

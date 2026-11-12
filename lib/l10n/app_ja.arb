@@ -1404,5 +1404,17 @@
   "errorRefusedInvalidPort": "ルーターはこのルールを受け付けませんでした。ポート番号が無効です。",
   "errorRefusedDescriptionInUse": "ルーターはこのルールを受け付けませんでした。この名前は別のファイアウォール ルールですでに使用されています。",
   "dmzDestination": "宛先",
-  "macAddressRequired": "MAC アドレスは必須です"
+  "macAddressRequired": "MAC アドレスは必須です",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "インターネットプロバイダーがルーターのインターネットIPアドレスを変更しても、ホスト名がそのアドレスを指すように保ちます。",
+  "selectAProvider": "プロバイダーの選択",
+  "invalidUsername": "無効なユーザー名",
+  "invalidPassword": "無効なパスワード",
+  "invalidHostname": "無効なホスト名",
+  "ddnsPasswordKeepHint": "現在のパスワードを使用する場合は空欄のままにしてください",
+  "ddnsStatusTitle": "DDNSの状態",
+  "internetIPAddress": "インターネットIPアドレス",
+  "ddnsAuthenticationFailed": "認証に失敗しました",
+  "ddnsSettingsIncomplete": "失敗 — 設定が不完全です",
+  "ddnsWanAddressPrivate": "ルーターのインターネットIPアドレスはプライベートアドレスのため公開できません。DDNSにはプロバイダーから割り当てられたパブリックIPアドレスが必要です。"
 }

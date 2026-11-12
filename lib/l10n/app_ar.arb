@@ -1319,5 +1319,17 @@
   "errorRefusedInvalidPort": "لم يقبل جهاز التوجيه هذه القاعدة: رقم منفذ غير صالح.",
   "errorRefusedDescriptionInUse": "لم يقبل جهاز التوجيه هذه القاعدة: توجد قاعدة جدار حماية أخرى بهذا الاسم بالفعل.",
   "dmzDestination": "الوجهة",
-  "macAddressRequired": "عنوان MAC مطلوب"
+  "macAddressRequired": "عنوان MAC مطلوب",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "احتفظ باسم مضيف يشير إلى عنوان IP الخاص بالإنترنت لجهاز التوجيه، حتى عندما يغيّره مزوّد خدمة الإنترنت.",
+  "selectAProvider": "حدد موفّرًا",
+  "invalidUsername": "اسم المستخدم غير صالح",
+  "invalidPassword": "كلمة مرور غير صالحة",
+  "invalidHostname": "اسم المضيف غير صالح",
+  "ddnsPasswordKeepHint": "اتركه فارغًا للإبقاء على كلمة المرور الحالية",
+  "ddnsStatusTitle": "حالة DDNS",
+  "internetIPAddress": "عنوان IP للانترنت",
+  "ddnsAuthenticationFailed": "فشلت المصادقة",
+  "ddnsSettingsIncomplete": "فشل — الإعدادات غير مكتملة",
+  "ddnsWanAddressPrivate": "عنوان IP الخاص بالإنترنت لجهاز التوجيه عنوان خاص ولا يمكن نشره. يحتاج DDNS إلى عنوان IP عام من مزوّد خدمة الإنترنت."
 }

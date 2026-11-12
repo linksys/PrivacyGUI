@@ -1319,5 +1319,17 @@
   "errorRefusedInvalidPort": "Le routeur n'a pas accepté cette règle : un numéro de port n'est pas valide.",
   "errorRefusedDescriptionInUse": "Le routeur n'a pas accepté cette règle : une autre règle de pare-feu porte déjà ce nom.",
   "dmzDestination": "Destination",
-  "macAddressRequired": "L'adresse MAC est requise"
+  "macAddressRequired": "L'adresse MAC est requise",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "Maintenez un nom d'hôte pointé vers l'adresse IP Internet de votre routeur, même lorsque votre fournisseur d'accès la modifie.",
+  "selectAProvider": "Sélectionnez un fournisseur",
+  "invalidUsername": "Nom d'utilisateur invalide",
+  "invalidPassword": "Mot de passe non valide",
+  "invalidHostname": "Nom d'hôte non valide",
+  "ddnsPasswordKeepHint": "Laissez vide pour conserver le mot de passe actuel",
+  "ddnsStatusTitle": "Statut DDNS",
+  "internetIPAddress": "Adresse IP Internet",
+  "ddnsAuthenticationFailed": "Échec de l'authentification",
+  "ddnsSettingsIncomplete": "Échec — paramètres incomplets",
+  "ddnsWanAddressPrivate": "L'adresse IP Internet du routeur est privée et ne peut pas être publiée. Le DDNS nécessite une adresse IP publique fournie par votre fournisseur d'accès."
 }

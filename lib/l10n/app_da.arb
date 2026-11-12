@@ -1319,5 +1319,17 @@
   "errorRefusedInvalidPort": "Routeren accepterede ikke denne regel: et portnummer er ugyldigt.",
   "errorRefusedDescriptionInUse": "Routeren accepterede ikke denne regel: en anden firewallregel har allerede dette navn.",
   "dmzDestination": "Destination",
-  "macAddressRequired": "MAC-adresse er påkrævet"
+  "macAddressRequired": "MAC-adresse er påkrævet",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "Hold et værtsnavn rettet mod routerens internet-IP-adresse, også når din internetudbyder ændrer den.",
+  "selectAProvider": "Vælg en udbyder",
+  "invalidUsername": "Ugyldigt brugernavn",
+  "invalidPassword": "Ugyldig adgangskode",
+  "invalidHostname": "Ugyldigt værtsnavn",
+  "ddnsPasswordKeepHint": "Lad feltet stå tomt for at beholde den nuværende adgangskode",
+  "ddnsStatusTitle": "DDNS-status",
+  "internetIPAddress": "Internet-IP-adresse",
+  "ddnsAuthenticationFailed": "Godkendelse mislykkedes",
+  "ddnsSettingsIncomplete": "Mislykkedes – indstillingerne er ufuldstændige",
+  "ddnsWanAddressPrivate": "Routerens internet-IP-adresse er privat og kan ikke offentliggøres. DDNS kræver en offentlig IP-adresse fra din internetudbyder."
 }

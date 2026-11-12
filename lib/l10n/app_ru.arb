@@ -1319,5 +1319,17 @@
   "errorRefusedInvalidPort": "Маршрутизатор не принял это правило: недопустимый номер порта.",
   "errorRefusedDescriptionInUse": "Маршрутизатор не принял это правило: другое правило брандмауэра уже использует это имя.",
   "dmzDestination": "Назначение",
-  "macAddressRequired": "Требуется MAC-адрес"
+  "macAddressRequired": "Требуется MAC-адрес",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "Имя хоста всегда указывает на интернет-IP-адрес роутера, даже если интернет-провайдер его меняет.",
+  "selectAProvider": "Выберите поставщика",
+  "invalidUsername": "Недействительное имя пользователя",
+  "invalidPassword": "Недопустимый пароль",
+  "invalidHostname": "Недопустимое имя хоста",
+  "ddnsPasswordKeepHint": "Оставьте пустым, чтобы сохранить текущий пароль",
+  "ddnsStatusTitle": "Состояние DDNS",
+  "internetIPAddress": "IP-адрес в Интернете",
+  "ddnsAuthenticationFailed": "Ошибка аутентификации",
+  "ddnsSettingsIncomplete": "Ошибка — настройки не заполнены",
+  "ddnsWanAddressPrivate": "Интернет-IP-адрес роутера частный, и его нельзя опубликовать. Для DDNS нужен публичный IP-адрес от интернет-провайдера."
 }
