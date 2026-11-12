@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
 import 'package:privacy_gui/page/internet_settings/services/auto_ipoe_service.dart';
 
 import '../../../mocks/test_data/internet_settings_test_data.dart';
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -800,26 +801,19 @@ void main() {
           },
         };
 
-    /// What the broker sent back on FLWRT 2.0.2 for an atomic SET across the
-    /// SSID and AccessPoint tables, copied from the bench log of 2026-10-05: the
-    /// router answered and refused, yet every path carries the same `9999` a
-    /// lost answer does.
-    Map<String, dynamic> refusedAsTransport(Map<String, dynamic> params) => {
-          'success': false,
-          'result': {
-            'data': <String, dynamic>{},
-            'error': {
-              for (final path in params.keys)
-                path: {
-                  'errorCode': 9999,
-                  'errorMessage': 'Transport error: Protocol error: Decoding '
-                      'error: Received error response: '
-                      'ProcessSet_AllowPartialFalse: Allow partial=false not '
-                      'supported across more than one USP Service (code: 7005)',
-                },
-            },
-          },
-        };
+    /// What the broker sends back for an atomic SET across the SSID and
+    /// AccessPoint tables (FLWRT 2.0.2, bench log of 2026-10-05): the router
+    /// refuses the request as a whole. Up to usp-client 0.14.0 every path
+    /// carried the same `9999` a lost answer does, with this message inside
+    /// `Received error response: … (code: 7005)`; since 0.15.0 each carries
+    /// the router's own code and message (#1787).
+    Map<String, dynamic> refusedAcrossServices(Map<String, dynamic> params) =>
+        UspEnvelopeTestData.failedAsAWhole(
+          params.keys.toList(),
+          errorCode: 7005,
+          errorMessage: 'ProcessSet_AllowPartialFalse: Allow partial=false not '
+              'supported across more than one USP Service',
+        );
 
     /// #1000's form: main renamed and re-passworded, guest turned on, renamed
     /// and passworded.
@@ -925,10 +919,10 @@ void main() {
     });
 
     test(
-        'saveWifi throws on a refusal the WASM client reports as 9999 — the '
-        'router answered, so nothing landed', () async {
+        'saveWifi throws on a cross-service refusal — the router answered, so '
+        'nothing landed', () async {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((inv) async => refusedAsTransport(
+          .thenAnswer((inv) async => refusedAcrossServices(
               inv.positionalArguments[0] as Map<String, dynamic>));
 
       await expectLater(

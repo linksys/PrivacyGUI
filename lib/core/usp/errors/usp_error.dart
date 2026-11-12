@@ -146,6 +146,12 @@ String unwrapUspClientError(String message) {
       : '$transportPrefix$message';
 }
 
+/// Whether an envelope's `errorCode` is the WASM client's own rather than the
+/// router's (usp-client 0.15.0): 9999 a transport or session failure, 9998 an
+/// answer it could not decode, 9997 input it refused before sending. Every
+/// other code in an envelope is the router's.
+bool isUspClientFaultCode(int code) => code >= 9997 && code <= 9999;
+
 // =============================================================================
 // ServiceError mapping
 // =============================================================================
@@ -207,8 +213,11 @@ String unwrapUspClientError(String message) {
 /// this mapping is about reporting a refusal correctly whatever its reason.
 ///
 /// ³ 7016 is obuspa refusing an Operate on an instance that no longer exists,
-/// before the command runs, so it arrives inside the WASM client's 9999
-/// envelope and is unwrapped to this protocol arm. Measured on FW
+/// before the command runs, so the request is refused as a whole (a USP
+/// `Error`). Up to usp-client 0.14.0 that arrived inside the client's 9999
+/// envelope and was unwrapped to this protocol arm; since 0.15.0 it carries
+/// its own code, and `UspClient` writes it in the same protocol shape (#1787),
+/// so it still lands here rather than on `_mapOperationError`. Measured on FW
 /// 2.0.3.26102008 with `Device.WiFi.DataElements.Network.Device.9.X_LINKSYS_Reboot()`
 /// on a one-node mesh (#876): the shape of a node command sent to a node that
 /// has just left DataElements.
@@ -258,13 +267,27 @@ String unwrapUspClientError(String message) {
 /// usually arrives in its envelope instead, where `UspResultParser` reads the
 /// same names; this arm is for one that is thrown.
 ///
+/// ### Source 6 — the WASM client's own codes, written in by `UspClient` (#1787)
+///
+/// | Dart match | emitted by                                        | → ServiceError          |
+/// |------------|---------------------------------------------------|-------------------------|
+/// | code `9997`| input the client refused (`Validation error: …`); | InvalidInputError       |
+/// |            | the validation arm takes it before this table     |                         |
+/// | code `9998`| an answer the client could not decode             | UnexpectedError, with   |
+/// |            | (`Protocol error: …`)                             | no `detail`             |
+///
+/// usp-client 0.15.0 emits both; every failure of a call as a whole used to
+/// be 9999. `UspClient` appends them to the client's message when a Get or an
+/// Operate fails as a whole. It does not append 9999: the transport and auth
+/// arms read the message, and a 401 has to keep reading `HTTP 401`.
+///
 /// ### Dead match points (kept for completeness / contract tests only)
 /// `_mapOperationError`'s *string* match points — `'Path not found'`,
 /// `'read-only'`, `'Invalid value'` — map `OperationError::*`, which is
 /// constructed ONLY in the Rust `ffi` module (native,
 /// `#[cfg(not(target_arch = "wasm32"))]`). Those never fire in the production WASM
 /// build. **Its coded-refusal arm does**, from source 4 — any fault code except the
-/// `9999` transport sentinel — so the function itself is live even though its string
+/// client's own 9997–9999 — so the function itself is live even though its string
 /// arms are not. See [_mapOperationError].
 ///
 /// **Warning**: anything not matched above falls through to NetworkError
@@ -385,12 +408,15 @@ ServiceError _mapAuthError(UspError e) {
 /// the browser's `fetch` itself failed — as opposed to the router answering
 /// with a refusal.
 ///
-/// The per-path `errorCode` cannot say which: the WASM client reports both as
-/// `9999`. A refusal still carries the router's own fault inside the message
-/// (`… Received error response: … (code: 7005)`), and a lost answer carries
+/// Read from the message, which says it either way. Up to usp-client 0.14.0
+/// the `errorCode` could not: the client reported both as `9999`, a refusal
+/// with the router's fault inside the message
+/// (`… Received error response: … (code: 7005)`), a lost answer with
 /// `Failed to fetch`. Both measured on FLWRT 2.0.2, 2026-10-05 — mistaking the
 /// first for the second is how a refused PnP WiFi save once reported itself as
-/// applied.
+/// applied. Since 0.15.0 a refusal carries the router's own code and message
+/// instead (#1787), which contain neither `Failed to fetch` nor a fault-code
+/// suffix, so it still reads as answered.
 ///
 /// Fails closed: a message matching neither shape is not treated as unanswered,
 /// so an unrecognized error is reported rather than assumed to have landed.
@@ -407,9 +433,11 @@ bool isUnansweredTransportFailure(String errorMessage) {
 /// **no** router fault code. Guardian answers 500 when it cannot reach a router
 /// whose radios are reloading (CLOUD_GUARDIANS#215: the main-password SET came
 /// back `HTTP error: HTTP 500` after 25.9 s, and GETs read empty for ~20 s more
-/// until the router rejoined the cloud). A fault the router itself reported
-/// always carries `(code: N)`, so it is excluded, and a 4xx is never unanswered
-/// — a 401 must end the session (#1627).
+/// until the router rejoined the cloud). A fault the router itself reported is
+/// excluded: up to usp-client 0.14.0 its message carried `(code: N)`, and since
+/// 0.15.0 its message is the router's own, with its code in `errorCode` and no
+/// HTTP status in the text (#1787). A 4xx is never unanswered — a 401 must end
+/// the session (#1627).
 ///
 /// A separate predicate rather than a wider [isUnansweredTransportFailure],
 /// because PnP uses that one and was bench-verified on it. Safe in local mode
@@ -463,6 +491,16 @@ ServiceError _mapProtocolError(UspError e) {
       // Codegen: no instance has the Alias `resolveBy` names (emitted by
       // usp-codegen's dart_emit_resolve_failure(); see the table above).
       9996 => ResourceNotFoundError(code: code, detail: e.message),
+      // The WASM client's own codes (source 6). 9997 is input it refused. This
+      // arm is not reached from `UspClient`: its 9997 strings start with
+      // `Validation error:`, and the validation arm takes them before the
+      // category reaches here. It is kept so this table mirrors
+      // `_localizeFaultCode`, which must map the same codes the same way.
+      // 9998 is an answer it could not decode: no `detail`, so the user reads
+      // the localized generic message rather than the decoder's English;
+      // `originalError` keeps the text.
+      9997 => InvalidInputError(code: code, detail: e.message),
+      9998 => UnexpectedError(originalError: e.rawError, code: code),
       _ => UnexpectedError(originalError: e.rawError, detail: e.message),
     };
   }
@@ -536,15 +574,17 @@ ServiceError _mapOperationError(UspError e) {
   // what they describe: they match native `OperationError::*` strings, which carry
   // no `(code: N)` suffix at all, so `faultCode` is null for them and this `if`
   // declines.
-  // `9999` is excluded on purpose. It is the WASM client's **transport** sentinel —
-  // `_localizeFaultCode`'s own table says "never reached the router" and maps it to
-  // `l.errorNetwork`. Routing a *refusal* there would report the router answering as
-  // the network failing, which is the exact confusion #1533 exists to remove, so the
-  // one code that must not take this arm is the one that would invert its purpose.
-  // It should not arrive here at all — the code comes out of the agent's own `error`
-  // map, not from the shim — which is why this is a guard rather than a branch.
+  // The client's own codes, 9997–9999, are excluded on purpose. `9999` is its
+  // **transport** sentinel — `_localizeFaultCode`'s own table says "never reached
+  // the router" and maps it to `l.errorNetwork`. Routing a *refusal* there would
+  // report the router answering as the network failing, which is the exact
+  // confusion #1533 exists to remove. 9998 (an answer that does not decode) and
+  // 9997 (input the client refused) are the client's too since usp-client 0.15.0
+  // (#1787): neither is the router refusing anything. They should not arrive here
+  // at all — `UspClient` reads them as a failure of the whole call, not as a
+  // command the router refused — which is why this is a guard rather than a branch.
   final refusalCode = e.faultCode;
-  if (refusalCode != null && refusalCode != 9999) {
+  if (refusalCode != null && !isUspClientFaultCode(refusalCode)) {
     return _refusal(
       e,
       code: refusalCode,
