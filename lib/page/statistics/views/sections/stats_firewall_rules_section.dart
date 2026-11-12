@@ -112,15 +112,11 @@ class StatsFirewallRulesSection extends ConsumerWidget {
           alignment: WrapAlignment.center,
           children: [
             for (var i = 0; i < targetCounts.length; i++)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  StatsLegendDot(color: seriesColors[i % seriesColors.length]),
-                  AppGap.xs(),
-                  AppText.labelSmall(
+              AppChartLegendEntry.statistic(
+                mark: const ChartMark.swatch(),
+                color: seriesColors[i % seriesColors.length],
+                label:
                     '${targetCounts.keys.elementAt(i)}: ${targetCounts.values.elementAt(i)}',
-                  ),
-                ],
               ),
           ],
         ),

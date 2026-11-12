@@ -97,11 +97,12 @@ void main() {
     expect(kAutoIPoEPageCase.forbids, contains(AppLoader));
   });
 
-  // "Cases" and not "pages", corrected by #1489: this list is sixty-seven cases over
-  // forty-six pages, because six of those pages are swept more than once. The two
-  // counts were equal for the whole of #1369 and the group title read "pages"
+  // "Cases" and not "pages", corrected by #1489: this list is seventy-three cases over
+  // fifty pages (recounted at #641's merge), because several of those pages are swept
+  // more than once. The two counts were equal for the whole of #1369 and the group
+  // title read "pages"
   // throughout, which is exactly the kind of coincidence a name should not be built on
-  // — `kPageViewCount` is 49, a third quantity again (page view *files*, which no case
+  // — `kPageViewCount` is 52, a third quantity again (page view *files*, which no case
   // can move), and it is equal to neither.
   //
   // **Two counts drifted before #1554 re-measured them, and only in the prose.** The
@@ -142,15 +143,15 @@ void main() {
   // an assertion that does not read it is the failure mode, and copying it to a fifth
   // place is how it becomes hard to notice.
   group(
-      'the gate declares sixty-seven cases over forty-six pages, and which '
-      'sixty-seven is a decision', () {
+      'the gate declares seventy-three cases over fifty pages, and which '
+      'seventy-three is a decision', () {
     test(
         'kPageSurfaceCases holds the pilot two, wave 1\'s five, wave 2\'s nine, '
         'wave 3\'s six, wave 4\'s twenty-one, #1489\'s five non-default tabs, '
         '#1549\'s split page, #1554\'s two fixture states, #1602\'s two '
         'completion branches plus eight diagnostics screens, #1580\'s '
         'remote-only page, #1636\'s third Wi-Fi tab, #1611\'s three '
-        'rules-full tabs and #1664\'s Auto-IPoE page', () {
+        'rules-full tabs, #1664\'s Auto-IPoE page and #641\'s DDNS page', () {
       expect(
         kPageSurfaceCases.map((c) => c.id),
         [
@@ -267,6 +268,9 @@ void main() {
           'add_nodes',
           // #1734: the same flow in the PnP wizard's frame, the 50th, the same way.
           'pnp_add_nodes',
+          // #641: Advanced Settings → DDNS, a page view file arriving the same
+          // way.
+          'ddns',
         ],
         // Updated by #1377, #1378, #1379 and #1380, and the wording is the point of
         // the test.
@@ -1175,10 +1179,10 @@ void main() {
       );
       expect(
         kStatisticsPageCase.requires,
-        contains(StatsLegendDot),
+        contains(AppChartLegendEntry),
         reason: 'a section renders its "waiting for data" placeholder inside '
             'its own card, so the two premises above survive a scene thinned '
-            'to placeholders. The legend dot is on the populated path only — '
+            'to placeholders. The legend entry is on the populated path only — '
             'and a legend row is the thing #1488 fixed, so a cell that cannot '
             'find one is not measuring what this page was swept for.',
       );
@@ -1284,7 +1288,11 @@ void main() {
       // The three entries every case must have, and the reason each is shared: the
       // frame, the fact that the sliver laid out content, and the fact that the fixture
       // populated it. Only the tab's own section is allowed to vary.
-      const sharedPremise = <Type>[UspTopBar, StatsSectionCard, StatsLegendDot];
+      const sharedPremise = <Type>[
+        UspTopBar,
+        StatsSectionCard,
+        AppChartLegendEntry,
+      ];
       final tabDiscriminators = <Type>[];
       for (final page in statisticsCases) {
         expect(

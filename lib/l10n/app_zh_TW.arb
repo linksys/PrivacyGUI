@@ -1129,6 +1129,7 @@
   "trafficMonitor": "流量監控",
   "trafficMonitorSubtitle": "即時 WAN 上傳/下載速度",
   "trafficRate": "流量速率",
+  "trafficRateBytesPerSec": "流量速率 (Bytes/s)",
   "trafficTrends": "流量趨勢",
   "trafficTrendsSubtitle": "Bytes/s 與 Packets/s 雙軸檢視",
   "trend": "趨勢",
@@ -1319,5 +1320,17 @@
   "errorRefusedInvalidPort": "路由器未接受此規則：連接埠號碼無效。",
   "errorRefusedDescriptionInUse": "路由器未接受此規則：已有其他防火牆規則使用此名稱。",
   "dmzDestination": "目的地",
-  "macAddressRequired": "必須填寫 MAC 位址"
+  "macAddressRequired": "必須填寫 MAC 位址",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "即使網際網路服務供應商變更了路由器的網際網路 IP 位址，主機名稱仍會指向該位址。",
+  "selectAProvider": "選取提供者",
+  "invalidUsername": "使用者名稱無效",
+  "invalidPassword": "密碼無效",
+  "invalidHostname": "主機名稱無效",
+  "ddnsPasswordKeepHint": "留空即可保留目前的密碼",
+  "ddnsStatusTitle": "DDNS 狀態",
+  "internetIPAddress": "網際網路 IP 位址",
+  "ddnsAuthenticationFailed": "驗證失敗",
+  "ddnsSettingsIncomplete": "失敗：設定不完整",
+  "ddnsWanAddressPrivate": "路由器的網際網路 IP 位址是私人位址，無法發布。DDNS 需要網際網路服務供應商提供的公用 IP 位址。"
 }

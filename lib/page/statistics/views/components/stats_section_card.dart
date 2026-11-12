@@ -81,21 +81,6 @@ class StatsSectionCard extends StatelessWidget {
   }
 }
 
-/// Shared legend dot — 8×8 colored circle for chart legends.
-class StatsLegendDot extends StatelessWidget {
-  final Color color;
-  const StatsLegendDot({super.key, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-    );
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Interactive Pie Chart — shows section details on hover/tap in donut center
 // ---------------------------------------------------------------------------

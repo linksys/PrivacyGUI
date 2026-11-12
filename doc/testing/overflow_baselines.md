@@ -334,12 +334,14 @@ swept reads as 234 rows saying `no longer measured`, and only if somebody runs
 `check`.
 
 **`-dirty` in `# commit` means what it says.** The suffix is appended when any of
-`lib/`, `test/` or `pubspec.yaml` carried uncommitted work at capture time — that
-last one because most of the widgets these rows measure are not in this repo:
-`ui_kit_library` and `generative_ui` are git dependencies pinned by ref there, so
-bumping the ref moves rows exactly as directly as editing `lib/` does. (Not
-`pubspec.lock`: it is gitignored here, so no stamp can see a resolved-version
-drift. `assets/fonts/` is not on the list either — not because fonts are
+`lib/`, `test/`, `pubspec.yaml` or `pubspec.lock` carried uncommitted work at
+capture time — the last two because most of the widgets these rows measure are not
+in this repo: `ui_kit_library` and `generative_ui` are git dependencies pinned by
+ref in `pubspec.yaml`, so bumping the ref moves rows exactly as directly as editing
+`lib/` does, and `pubspec.lock` pins the resolved version of every package they
+draw with, so a local `pub upgrade` does too. (The lock joined the list when #1414
+started tracking it; while it was gitignored no stamp could see it.
+`assets/fonts/` is not on the list either — not because fonts are
 irrelevant, they decide every measurement in this dataset, but because none of
 the fonts these sweeps load live there: all five call `loadAppFonts()`, which
 reads the ui_kit faces from the pub-cache checkout `pubspec.yaml` pins and the

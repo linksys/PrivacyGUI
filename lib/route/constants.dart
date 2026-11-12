@@ -64,6 +64,7 @@ class RoutePath {
   static const uspDmz = 'uspDmz';
   static const uspAdministration = 'uspAdministration';
   static const uspPortForwardingDetail = 'uspPortForwardingDetail';
+  static const uspDdns = 'uspDdns';
   static const uspStaticRouting = 'uspStaticRouting';
   static const uspIpv6PortService = 'uspIpv6PortService';
 
@@ -219,6 +220,8 @@ class RouteNamed {
   // menu's password / time zone / reboot page.
   static const uspAdministration = 'uspAdministration';
   static const uspLocalNetwork = 'uspLocalNetwork';
+  // Advanced Settings → DDNS (#641). Not [settingsDDNS], 1.x's route name.
+  static const uspDdns = 'uspDdns';
   static const uspStaticRouting = 'uspStaticRouting';
   static const uspAdvancedSettings = 'uspAdvancedSettings';
   static const uspIpv6PortService = 'uspIpv6PortService';

@@ -108,6 +108,9 @@ import 'package:privacy_gui/page/dhcp/views/usp_dhcp_detail_view.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart'
     show DmzDestinationType, DmzSourceType;
 import 'package:privacy_gui/page/dmz/views/usp_dmz_view.dart';
+import 'package:privacy_gui/page/ddns/views/components/ddns_status_card.dart';
+import 'package:privacy_gui/page/ddns/views/usp_ddns_view.dart';
+import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
 import 'package:privacy_gui/page/firewall/views/usp_firewall_view.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_install_phase_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_update_warning_note.dart';
@@ -190,6 +193,7 @@ import 'package:ui_kit_library/ui_kit.dart'
         AppBadge,
         AppButton,
         AppCard,
+        AppChartLegendEntry,
         AppDropdown,
         AppExpansionPanel,
         AppIconButton,
@@ -214,6 +218,7 @@ import '../../mocks/provider_overrides/mock_auto_ipoe.dart';
 import '../../mocks/provider_overrides/mock_dashboard_page.dart';
 import '../../mocks/provider_overrides/mock_devices.dart';
 import '../../mocks/provider_overrides/mock_dhcp.dart';
+import '../../mocks/provider_overrides/mock_ddns.dart';
 import '../../mocks/provider_overrides/mock_dmz.dart';
 import '../../mocks/provider_overrides/mock_firewall.dart';
 import '../../mocks/provider_overrides/mock_firmware_update.dart';
@@ -2063,6 +2068,45 @@ final kAdministrationPageCase = PageSurfaceCase(
   forbids: const [AppLoader, ServiceErrorView],
 );
 
+/// `usp_ddns_view` — Advanced Settings → DDNS (#641): a provider card and a status
+/// card, side by side from the desktop breakpoint and stacked below it, as 1.x laid
+/// them out.
+///
+/// The provider card is an [AppDropdown] over the router's `Server` rows and, once a
+/// provider is chosen, three fields: user name and host name as [AppTextFormField]s
+/// and the password as an [AppPasswordInput], whose reveal toggle is a fixed-width
+/// suffix. All three show their errors as a line of text under the field
+/// (`AppErrorDisplayMode.text`), so an error adds height rather than an icon. The
+/// status card is a title beside a refresh [AppIconButton], then two [UspInfoRow]s —
+/// `internetIPAddress` and the status — and, on a connection failure behind a
+/// private address, a note under them (`ddnsWanAddressPrivate`, the longest text on
+/// the page). It arrived with the `lib/` change that created it, straight to
+/// `swept`.
+///
+/// The scene is the page at its fullest, which no single moment of a real flow is:
+/// see `ddns_scene_data.dart`. The premise names one widget per part of it.
+/// [AppPasswordInput] and [AppTextFormField] render only while a provider is
+/// chosen, and [UspInfoRow] only while the router's client is not disabled — the
+/// card returns an empty box then — so a fixture that lost either half would fail
+/// its premise rather than sweep a page with half its content gone. [AppDropdown]
+/// is named at its instantiation, `AppDropdown<String>`, for the reason
+/// [kDmzPageCase] gives about `AppRadioList`. The loader and the
+/// [ServiceErrorView] are the page's other two arms.
+final kDdnsPageCase = PageSurfaceCase(
+  id: 'ddns',
+  view: () => const UspDdnsView(),
+  overrides: () => ddnsOverrides(),
+  requires: const [
+    UspTopBar,
+    AppDropdown<String>,
+    AppTextFormField,
+    AppPasswordInput,
+    DdnsStatusCard,
+    UspInfoRow,
+  ],
+  forbids: const [AppLoader, ServiceErrorView],
+);
+
 /// `usp_firewall_view` — ten rows in three cards: two SPI switches, three VPN
 /// passthrough switches, four internet filters and a link out to IPv6 port service.
 ///
@@ -2685,12 +2729,14 @@ final kStaticRoutingPageCase = PageSurfaceCase(
 ///    that belongs to another tab is absent from the element tree, which makes "which
 ///    tab is this" a `find.byType` away. Every other tabbed case in this family states
 ///    its tab in prose; these three assert it, once per cell.
-/// 4. [StatsLegendDot] — the entry that proves the fixture, not the layout. Every
+/// 4. [AppChartLegendEntry] — the entry that proves the fixture, not the layout. Every
 ///    section renders its placeholder *inside* its [StatsSectionCard] (`state.current ==
 ///    null ? Center(waitingForDeviceData) : _buildChart(...)`), so entries 2 and 3
 ///    survive a scene thinned down to placeholders — and a placeholder has no legend
-///    row, which is precisely the widget #1488's 35 red cells lived in. The dot is
-///    rendered only on the populated path, by sections on all three tabs, so requiring
+///    row, which is precisely the widget #1488's 35 red cells lived in. The kit legend
+///    entry (the page's legend since #1324 replaced the hand-rolled dot) is rendered
+///    only on the populated path — by each tab's first section, the one entry 3
+///    names — so requiring
 ///    it turns "someone dropped a provider from `gateStatisticsOverrides()`" from a
 ///    silent narrowing into 234 red cells. `mock_statistics.dart` says which providers
 ///    those are.
@@ -2702,7 +2748,7 @@ final kStatisticsPageCase = PageSurfaceCase(
     UspTopBar,
     StatsSectionCard,
     StatsTrafficMonitorSection,
-    StatsLegendDot,
+    AppChartLegendEntry,
   ],
   forbids: const [AppLoader, ServiceErrorView],
 );
@@ -2764,7 +2810,7 @@ final kStatisticsDevicesPageCase = PageSurfaceCase(
     UspTopBar,
     StatsSectionCard,
     StatsDeviceDistributionSection,
-    StatsLegendDot,
+    AppChartLegendEntry,
   ],
   forbids: const [AppLoader, ServiceErrorView],
 );
@@ -2800,7 +2846,7 @@ final kStatisticsSystemPageCase = PageSurfaceCase(
     UspTopBar,
     StatsSectionCard,
     StatsSystemGaugesSection,
-    StatsLegendDot,
+    AppChartLegendEntry,
   ],
   forbids: const [AppLoader, ServiceErrorView],
 );
@@ -3048,4 +3094,7 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kAutoIPoEPageCase,
   kAddNodesPageCase,
   kPnpAddNodesPageCase,
+  // #641: Advanced Settings → DDNS, arriving with the `lib/` change that
+  // creates it.
+  kDdnsPageCase,
 ];

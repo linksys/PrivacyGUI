@@ -1129,6 +1129,7 @@
   "trafficMonitor": "การตรวจสอบทราฟฟิก",
   "trafficMonitorSubtitle": "ความเร็วอัปโหลด/ดาวน์โหลดของ WAN แบบเรียลไทม์",
   "trafficRate": "อัตราทราฟฟิก",
+  "trafficRateBytesPerSec": "อัตราทราฟฟิก (Bytes/s)",
   "trafficTrends": "แนวโน้มทราฟฟิก",
   "trafficTrendsSubtitle": "มุมมองสองแกน Bytes/s และ Packets/s",
   "trend": "แนวโน้ม",
@@ -1319,5 +1320,17 @@
   "errorRefusedInvalidPort": "เราเตอร์ไม่ยอมรับกฎนี้: หมายเลขพอร์ตไม่ถูกต้อง",
   "errorRefusedDescriptionInUse": "เราเตอร์ไม่ยอมรับกฎนี้: มีกฎไฟร์วอลล์อื่นใช้ชื่อนี้อยู่แล้ว",
   "dmzDestination": "ปลายทาง",
-  "macAddressRequired": "ต้องระบุแอดเดรส MAC"
+  "macAddressRequired": "ต้องระบุแอดเดรส MAC",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "ให้ชื่อโฮสต์ชี้ไปยังที่อยู่ IP อินเทอร์เน็ตของเราเตอร์เสมอ แม้ผู้ให้บริการอินเทอร์เน็ตจะเปลี่ยนที่อยู่นั้น",
+  "selectAProvider": "เลือกผู้ให้บริการ",
+  "invalidUsername": "ชื่อผู้ใช้ไม่ถูกต้อง",
+  "invalidPassword": "รหัสผ่านไม่ถูกต้อง",
+  "invalidHostname": "ชื่อโฮสต์ไม่ถูกต้อง",
+  "ddnsPasswordKeepHint": "เว้นว่างไว้เพื่อใช้รหัสผ่านปัจจุบันต่อ",
+  "ddnsStatusTitle": "สถานะ DDNS",
+  "internetIPAddress": "IP แอดเดรสอินเทอร์เน็ต",
+  "ddnsAuthenticationFailed": "การตรวจสอบสิทธิ์ล้มเหลว",
+  "ddnsSettingsIncomplete": "ล้มเหลว — การตั้งค่าไม่ครบถ้วน",
+  "ddnsWanAddressPrivate": "ที่อยู่ IP อินเทอร์เน็ตของเราเตอร์เป็นที่อยู่ส่วนตัวจึงเผยแพร่ไม่ได้ DDNS ต้องใช้ที่อยู่ IP สาธารณะจากผู้ให้บริการอินเทอร์เน็ต"
 }
