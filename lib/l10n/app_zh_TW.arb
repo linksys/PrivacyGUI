@@ -1129,6 +1129,7 @@
   "trafficMonitor": "流量監控",
   "trafficMonitorSubtitle": "即時 WAN 上傳/下載速度",
   "trafficRate": "流量速率",
+  "trafficRateBytesPerSec": "流量速率 (Bytes/s)",
   "trafficTrends": "流量趨勢",
   "trafficTrendsSubtitle": "Bytes/s 與 Packets/s 雙軸檢視",
   "trend": "趨勢",

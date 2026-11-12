@@ -1179,10 +1179,10 @@ void main() {
       );
       expect(
         kStatisticsPageCase.requires,
-        contains(StatsLegendDot),
+        contains(AppChartLegendEntry),
         reason: 'a section renders its "waiting for data" placeholder inside '
             'its own card, so the two premises above survive a scene thinned '
-            'to placeholders. The legend dot is on the populated path only — '
+            'to placeholders. The legend entry is on the populated path only — '
             'and a legend row is the thing #1488 fixed, so a cell that cannot '
             'find one is not measuring what this page was swept for.',
       );
@@ -1288,7 +1288,11 @@ void main() {
       // The three entries every case must have, and the reason each is shared: the
       // frame, the fact that the sliver laid out content, and the fact that the fixture
       // populated it. Only the tab's own section is allowed to vary.
-      const sharedPremise = <Type>[UspTopBar, StatsSectionCard, StatsLegendDot];
+      const sharedPremise = <Type>[
+        UspTopBar,
+        StatsSectionCard,
+        AppChartLegendEntry,
+      ];
       final tabDiscriminators = <Type>[];
       for (final page in statisticsCases) {
         expect(

@@ -1129,6 +1129,7 @@
   "trafficMonitor": "Trafikkovervåking",
   "trafficMonitorSubtitle": "WAN-opplastings-/nedlastingshastigheter i sanntid",
   "trafficRate": "Trafikkhastighet",
+  "trafficRateBytesPerSec": "Trafikkhastighet (Byte/s)",
   "trafficTrends": "Trafikktrender",
   "trafficTrendsSubtitle": "Byte/s og pakker/s dobbeltakse-visning",
   "trend": "Trend",

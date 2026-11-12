@@ -1129,6 +1129,7 @@
   "trafficMonitor": "Moniteur de trafic",
   "trafficMonitorSubtitle": "Vitesses de téléversement/téléchargement WAN en temps réel",
   "trafficRate": "Débit du trafic",
+  "trafficRateBytesPerSec": "Débit du trafic (Octets/s)",
   "trafficTrends": "Tendances du trafic",
   "trafficTrendsSubtitle": "Vue à double axe Octets/s et Paquets/s",
   "trend": "Tendance",

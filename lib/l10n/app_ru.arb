@@ -1129,6 +1129,7 @@
   "trafficMonitor": "Мониторинг трафика",
   "trafficMonitorSubtitle": "Скорости отдачи/загрузки WAN в реальном времени",
   "trafficRate": "Скорость трафика",
+  "trafficRateBytesPerSec": "Скорость трафика (Байт/с)",
   "trafficTrends": "Тенденции трафика",
   "trafficTrendsSubtitle": "Двухосевой вид Байт/с и Пакетов/с",
   "trend": "Тенденция",

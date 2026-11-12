@@ -85,18 +85,30 @@ class StatsSystemGaugesSection extends ConsumerWidget {
           ),
         ),
         AppGap.md(),
-        Row(
-          children: [
-            StatsLegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall(
-                loc(context).cpuPercent('${latest?.cpuPercent ?? '--'}')),
-            AppGap.lg(),
-            StatsLegendDot(color: colorScheme.secondary),
-            AppGap.xs(),
-            AppText.labelSmall(
-                loc(context).memoryPercent('${latest?.memoryPercent ?? '--'}')),
-          ],
+        // Value-bearing labels, so `.statistic` (never clipped). A gauge has
+        // no series stroke to echo, so the mark is the swatch (#1324). Start
+        // aligned, as the row was: a `Wrap` shrinks to its content and the
+        // `Column` would centre it, so the full-width box keeps it at start.
+        SizedBox(
+          width: double.infinity,
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.xs,
+            children: [
+              AppChartLegendEntry.statistic(
+                mark: const ChartMark.swatch(),
+                color: colorScheme.primary,
+                label: loc(context).cpuPercent('${latest?.cpuPercent ?? '--'}'),
+              ),
+              AppChartLegendEntry.statistic(
+                mark: const ChartMark.swatch(),
+                color: colorScheme.secondary,
+                label: loc(context)
+                    .memoryPercent('${latest?.memoryPercent ?? '--'}'),
+              ),
+            ],
+          ),
         ),
       ],
     );

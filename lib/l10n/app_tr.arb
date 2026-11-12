@@ -1129,6 +1129,7 @@
   "trafficMonitor": "Trafik İzleyici",
   "trafficMonitorSubtitle": "Gerçek zamanlı WAN yükleme/indirme hızları",
   "trafficRate": "Trafik hızı",
+  "trafficRateBytesPerSec": "Trafik hızı (Bayt/sn)",
   "trafficTrends": "Trafik Eğilimleri",
   "trafficTrendsSubtitle": "Bayt/sn ve Paket/sn çift eksenli görünüm",
   "trend": "Eğilim",

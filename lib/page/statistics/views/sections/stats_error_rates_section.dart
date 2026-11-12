@@ -34,6 +34,11 @@ class StatsErrorRatesSection extends ConsumerWidget {
 
   Widget _buildChart(BuildContext context, TrafficAnalysisState state) {
     final colorScheme = Theme.of(context).colorScheme;
+    // The discards series uses the theme's warning colour, with the same
+    // fallback as `app_menu_card.dart` (#1324).
+    final discardColor =
+        Theme.of(context).extension<AppColorScheme>()?.semanticWarning ??
+            Colors.orange;
     final history = state.history;
 
     final errorData = history
@@ -73,7 +78,7 @@ class StatsErrorRatesSection extends ConsumerWidget {
                 AppChartSeries(
                   label: loc(context).discards,
                   data: discardData,
-                  color: Colors.orange,
+                  color: discardColor,
                 ),
               ],
               yAxis: AppChartAxis(min: 0, max: yMax),
@@ -84,20 +89,25 @@ class StatsErrorRatesSection extends ConsumerWidget {
           ),
         ),
         AppGap.sm(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        // Value-bearing labels, so `.statistic` (never clipped). The marks are
+        // the chart's strokes — filled for errors, plain for discards — with
+        // point markers, since `showDots` is at its default (#1324).
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppSpacing.lg,
+          runSpacing: AppSpacing.xs,
           children: [
-            StatsLegendDot(color: colorScheme.error),
-            AppGap.xs(),
-            AppText.labelSmall(
-              'Avg: ${NetworkHealthHelpers.formatFaultRate(avgErr)}'
-              '  Peak: ${NetworkHealthHelpers.formatFaultRate(peakErr)}',
+            AppChartLegendEntry.statistic(
+              mark: const ChartMark.lineFilled(dot: true),
+              color: colorScheme.error,
+              label: 'Avg: ${NetworkHealthHelpers.formatFaultRate(avgErr)}'
+                  '  Peak: ${NetworkHealthHelpers.formatFaultRate(peakErr)}',
             ),
-            AppGap.lg(),
-            StatsLegendDot(color: Colors.orange),
-            AppGap.xs(),
-            AppText.labelSmall(
-              'Avg: ${NetworkHealthHelpers.formatFaultRate(avgDisc)}',
+            AppChartLegendEntry.statistic(
+              mark: const ChartMark.line(dot: true),
+              color: discardColor,
+              label: 'Avg: ${NetworkHealthHelpers.formatFaultRate(avgDisc)}',
             ),
           ],
         ),

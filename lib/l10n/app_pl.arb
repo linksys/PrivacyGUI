@@ -1129,6 +1129,7 @@
   "trafficMonitor": "Monitor ruchu",
   "trafficMonitorSubtitle": "Szybkości wysyłania/pobierania WAN w czasie rzeczywistym",
   "trafficRate": "Szybkość ruchu",
+  "trafficRateBytesPerSec": "Szybkość ruchu (Bajty/s)",
   "trafficTrends": "Trendy ruchu",
   "trafficTrendsSubtitle": "Widok dwuosiowy bajtów/s i pakietów/s",
   "trend": "Trend",

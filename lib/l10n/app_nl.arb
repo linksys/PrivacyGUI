@@ -1129,6 +1129,7 @@
   "trafficMonitor": "Verkeersmonitor",
   "trafficMonitorSubtitle": "Realtime WAN-upload-/downloadsnelheden",
   "trafficRate": "Verkeersnelheid",
+  "trafficRateBytesPerSec": "Verkeersnelheid (Bytes/s)",
   "trafficTrends": "Verkeerstrends",
   "trafficTrendsSubtitle": "Dubbele-as-weergave van Bytes/s en Pakketten/s",
   "trend": "Trend",

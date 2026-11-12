@@ -89,16 +89,27 @@ class StatsCorrelationSection extends ConsumerWidget {
           ),
         ),
         AppGap.sm(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        // Explicit entries rather than `AppChartLegend.line`, because the labels
+        // here are not the series labels: on a dual-axis chart each label names
+        // the scale it is read against (#1324, kit #30). The marks are the ones
+        // the chart draws — a filled stroke for CPU, and a dashed stroke for the
+        // traffic rate — with point markers, since `showDots` is at its default.
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppSpacing.lg,
+          runSpacing: AppSpacing.xs,
           children: [
-            StatsLegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).cpuPercentLabel),
-            AppGap.lg(),
-            StatsLegendDot(color: colorScheme.tertiary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).trafficRate),
+            AppChartLegendEntry.seriesName(
+              mark: const ChartMark.lineFilled(dot: true),
+              color: colorScheme.primary,
+              label: loc(context).cpuPercentLabel,
+            ),
+            AppChartLegendEntry.seriesName(
+              mark: const ChartMark.line(dashed: true, dot: true),
+              color: colorScheme.tertiary,
+              label: loc(context).trafficRateBytesPerSec,
+            ),
           ],
         ),
       ],

@@ -79,16 +79,24 @@ class StatsTrafficComparisonSection extends ConsumerWidget {
           ),
         ),
         AppGap.sm(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        // Value-bearing labels, so `.statistic` (never clipped). The mark is
+        // the bar chart's block (#1324).
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppSpacing.lg,
+          runSpacing: AppSpacing.xs,
           children: [
-            StatsLegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).wanSpeed(_formatSpeed(wanRate))),
-            AppGap.lg(),
-            StatsLegendDot(color: colorScheme.secondary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).lanSpeed(_formatSpeed(lanRate))),
+            AppChartLegendEntry.statistic(
+              mark: const ChartMark.block(),
+              color: colorScheme.primary,
+              label: loc(context).wanSpeed(_formatSpeed(wanRate)),
+            ),
+            AppChartLegendEntry.statistic(
+              mark: const ChartMark.block(),
+              color: colorScheme.secondary,
+              label: loc(context).lanSpeed(_formatSpeed(lanRate)),
+            ),
           ],
         ),
       ],

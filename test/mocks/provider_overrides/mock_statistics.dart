@@ -155,7 +155,7 @@ List<Override> statisticsOverrides({
 /// to be.
 ///
 /// Thinning this scene is now a test failure rather than a silent narrowing. Each of the
-/// three cases requires `StatsLegendDot`, and a section renders its "waiting for device
+/// three cases requires `AppChartLegendEntry`, and a section renders its "waiting for device
 /// data" placeholder *inside* its own card — so dropping a state back to its `const`
 /// empty default would keep the tab bar, keep the cards, keep the section types, and
 /// still fail all 234 of that tab's cells on the missing legend. That is deliberate: the

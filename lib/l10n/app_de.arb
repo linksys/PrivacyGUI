@@ -1129,6 +1129,7 @@
   "trafficMonitor": "Datenverkehrsmonitor",
   "trafficMonitorSubtitle": "WAN-Upload-/Download-Geschwindigkeiten in Echtzeit",
   "trafficRate": "Datenverkehrsrate",
+  "trafficRateBytesPerSec": "Datenverkehrsrate (Bytes/s)",
   "trafficTrends": "Datenverkehrstrends",
   "trafficTrendsSubtitle": "Bytes/s- und Pakete/s-Ansicht mit zwei Achsen",
   "trend": "Trend",
