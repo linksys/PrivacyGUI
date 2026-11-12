@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
+import 'package:privacy_gui/core/usp/errors/usp_refusal_reason.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 void main() {
@@ -245,6 +246,43 @@ void main() {
           'Set failed: Protocol error: Decoding error: Received error response: '
           'SetFailed: Invalid parameter value (code: 7006)';
       expect(mapUspErrorToServiceError(raw), isA<InvalidInputError>());
+    });
+
+    // A thrown write the router refused with a FWDEV#204 name (#1775). Only
+    // the wrapper is measured (7005/7026 above); a name inside it is not, so
+    // these pin where it is read and what it becomes. It becomes the same
+    // shape a refused write's envelope does, so one localizer path serves both.
+    group('a thrown refusal that names its reason', () {
+      const raw = 'Set failed: Protocol error: Decoding error: Received error '
+          'response: ErrorMultipleDestinations: clear DestIP first. '
+          '(code: 7012)';
+
+      test('carries the reason on a one-entry complete failure', () {
+        final error = mapUspErrorToServiceError(raw);
+        expect(error, isA<UspCompleteFailureError>());
+        final failure = (error as UspCompleteFailureError).failures.single;
+        expect(failure.refusalReason, UspRefusalReason.multipleDestinations);
+        expect(failure.errorCode, 7012);
+        expect(error.code, 7012);
+      });
+
+      test('inside the client transport wrapper, too', () {
+        final error = mapUspErrorToServiceError(
+            'Set failed: Transport error: Protocol error: Decoding error: '
+            'Received error response: ErrorInvalidDestinationMACAddress: '
+            "'zz' is not a MAC address. (code: 7012)");
+        expect((error as UspCompleteFailureError).failures.single.refusalReason,
+            UspRefusalReason.invalidDestinationMacAddress);
+      });
+
+      test('a fault with no name it knows maps as before', () {
+        // 7012 alone is not in the protocol table: UnexpectedError, unchanged.
+        expect(
+            mapUspErrorToServiceError(
+                'Set failed: Protocol error: Decoding error: Received error '
+                'response: Invalid value (code: 7012)'),
+            isA<UnexpectedError>());
+      });
     });
 
     test('maps Protocol fault 7027 to ResourceNotFoundError', () {

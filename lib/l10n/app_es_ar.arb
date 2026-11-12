@@ -1305,5 +1305,19 @@
   "invalidSubnetMask": "Máscara de subred no válida",
   "reservationNameHint": "Nombre (opcional)",
   "reservationNameInvalid": "Usá letras, dígitos y -, sin - al principio ni al final",
-  "reservationNameInUse": "Otra reserva ya tiene este nombre"
+  "reservationNameInUse": "Otra reserva ya tiene este nombre",
+  "errorRefusedRulesOverlap": "El router no aceptó esta regla: sus puertos se superponen con otra regla del mismo protocolo.",
+  "errorRefusedTooManyRules": "El router no aceptó esta regla: la lista está llena.",
+  "errorRefusedInvalidInternalServerIpAddress": "El router no aceptó esta regla: la dirección IP no corresponde a ningún dispositivo de tu red local.",
+  "errorRefusedDescriptionTooLong": "El router no aceptó esta regla: el nombre es demasiado largo.",
+  "errorRefusedInvalidDestinationIpAddress": "El router no aceptó la dirección IP del host DMZ.",
+  "errorRefusedInvalidDestinationMacAddress": "El router no aceptó la dirección MAC del host DMZ.",
+  "errorRefusedMultipleDestinations": "El router no aceptó el host DMZ: indícalo por dirección IP o por dirección MAC, no por ambas.",
+  "errorRefusedInvalidSourceRestriction": "El router no aceptó el rango de IP de origen: es un rango reservado.",
+  "errorRefusedNoPortRanges": "El router no aceptó esta regla: no tiene ningún puerto.",
+  "errorRefusedInvalidPortRange": "El router no aceptó esta regla: el puerto inicial es mayor que el puerto final.",
+  "errorRefusedInvalidPort": "El router no aceptó esta regla: un número de puerto no es válido.",
+  "errorRefusedDescriptionInUse": "El router no aceptó esta regla: otra regla del firewall ya tiene este nombre.",
+  "dmzDestination": "Destino",
+  "macAddressRequired": "La dirección MAC es obligatoria"
 }

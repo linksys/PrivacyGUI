@@ -20,6 +20,12 @@ IPv6 port services page at FWDEV#204's 15-rule limit. **The other 234 are `page.
 been red by exactly that group since; this capture records it rather than leaving the drift for the
 next PR to explain.
 
+**#1775's**: 16,146 → **16,848** (+702 rows, every one `clean`; none removed and none changed, read
+off the diff of the re-capture). 234 are `page.dmz_mac`, the DMZ page with the host given by MAC.
+**The other 468 are `page.add_nodes` and `page.pnp_add_nodes`, which #1740 (`c047a1e7c`) declared and
+swept without re-capturing**, the same drift as `page.pnp_ipoe` above, recorded here for the same
+reason.
+
 Every port in epic #1335 is signed off by one claim: *the ported sweep measures
 the same cells and reaches the same verdicts as before*. The main card sweep
 measures 1,917 coordinates. Nobody can check that by reading output, so this

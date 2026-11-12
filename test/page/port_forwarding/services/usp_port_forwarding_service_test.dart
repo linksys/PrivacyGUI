@@ -1,12 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/errors/usp_refusal_reason.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/generated/port_triggering.g.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/services/usp_port_forwarding_service.dart';
+
+import '../../../mocks/test_data/usp_refusal_test_data.dart';
+import '../../../mocks/test_data/usp_add_refusal_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -1252,6 +1256,218 @@ void main() {
         ),
         throwsA(isA<NetworkError>()),
       );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // FWDEV#204 refusals (#1775): the reason the router names reaches the error
+  // ---------------------------------------------------------------------------
+
+  // The bench's shape (refusedSetEnvelope) and its measured messages.
+  group('UspPortForwardingService — a refused save keeps the router reason',
+      () {
+    PortForwardingRuleUIModel rule({int externalPort = 18300}) =>
+        PortForwardingRuleUIModel(
+          instancePath: 'Device.NAT.PortMapping.2.',
+          description: 'zz204-c',
+          externalPort: externalPort,
+          internalPort: 80,
+          internalClient: '192.168.1.156',
+          protocol: 'TCP',
+          enabled: true,
+        );
+
+    test('an edit onto another rule\'s port: ErrorRulesOverlap', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => refusedSetEnvelope(
+              instancePath: 'Device.NAT.PortMapping.2.',
+              refusedLeaf: 'ExternalPort',
+              message: 'ErrorRulesOverlap: external port 18080 is already '
+                  'forwarded.',
+              otherLeaves: ['ExternalPortEndRange', 'Protocol']));
+
+      await expectLater(
+        service.saveForwardingBatch(
+            original: [rule()], current: [rule(externalPort: 18080)]),
+        throwsA(carriesRefusalReason(UspRefusalReason.rulesOverlap)),
+      );
+    });
+
+    test('a range edit: the refused leaf is not the first one listed',
+        () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => refusedSetEnvelope(
+              instancePath: 'Device.NAT.PortMapping.2.',
+              refusedLeaf: 'ExternalPortEndRange',
+              message: 'ErrorRulesOverlap: external ports 18070-18090 are '
+                  'already forwarded.',
+              otherLeaves: ['ExternalPort', 'InternalPort', 'Description']));
+
+      final range = PortForwardingRuleUIModel(
+        instancePath: 'Device.NAT.PortMapping.2.',
+        description: 'zz204-r',
+        externalPort: 18300,
+        externalPortEndRange: 18310,
+        internalPort: 18300,
+        internalClient: '192.168.1.156',
+        protocol: 'TCP',
+        enabled: true,
+      );
+      await expectLater(
+        service.saveForwardingBatch(original: [
+          range
+        ], current: [
+          range.copyWith(externalPort: 18070, externalPortEndRange: 18090)
+        ]),
+        throwsA(carriesRefusalReason(UspRefusalReason.rulesOverlap)),
+      );
+    });
+
+    test('a trigger whose name is too long: ErrorDescriptionTooLong', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => refusedSetEnvelope(
+                instancePath: 'Device.NAT.PortTrigger.1.',
+                refusedLeaf: 'Description',
+                message: 'ErrorDescriptionTooLong: at most 32 bytes.',
+              ));
+
+      final trigger = PortTriggeringRuleUIModel(
+        instancePath: 'Device.NAT.PortTrigger.1.',
+        enabled: true,
+        description: 'zz204-t',
+        triggerPort: 19000,
+        triggerProtocol: 'Both',
+      );
+      await expectLater(
+        service.saveTriggeringBatch(
+          original: [trigger],
+          current: [trigger.copyWith(description: 'y' * 33)],
+        ),
+        throwsA(carriesRefusalReason(UspRefusalReason.descriptionTooLong)),
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // A refused Add (usp-client 0.14.0, linksys/usp_framework#114)
+  // ---------------------------------------------------------------------------
+
+  // The router creates the row and refuses a parameter; 0.14.0 reports it. The
+  // row is deleted, so a retry adds one row, not a second.
+  group('UspPortForwardingService — a refused Add is undone', () {
+    setUp(() {
+      when(() => mockUsp.delete(any()))
+          .thenAnswer((_) async => UspAddRefusalTestData.accepted);
+    });
+
+    test(
+        'a 26th trigger: the parent is deleted, no forward rule is added '
+        'under it, and the save wrote nothing', () async {
+      const parent = 'Device.NAT.PortTrigger.26.';
+      when(() => mockUsp.add(any())).thenAnswer((_) async =>
+          UspAddRefusalTestData.refusedAdd(
+              instances: [parent], refusedRow: parent));
+
+      await expectLater(
+        service.saveTriggeringBatch(original: const [], current: [
+          PortTriggeringRuleUIModel(
+            enabled: true,
+            description: 'zz',
+            triggerPort: 19490,
+            triggerProtocol: 'TCP',
+            forwardRules: const [
+              PortTriggerForwardRuleUIModel(
+                  forwardPort: 19500, forwardProtocol: 'TCP'),
+            ],
+          ),
+        ]),
+        throwsA(allOf(
+          isA<UspCompleteFailureError>(),
+          carriesRefusalReason(UspRefusalReason.tooManyRules),
+        )),
+      );
+      verify(() => mockUsp.delete([parent])).called(1);
+      verify(() => mockUsp.add(any())).called(1);
+    });
+
+    test(
+        'a refused parent the delete could not remove gets no forward rule '
+        'either, and the page reads the router', () async {
+      const parent = 'Device.NAT.PortTrigger.26.';
+      when(() => mockUsp.add(any())).thenAnswer((_) async =>
+          UspAddRefusalTestData.refusedAdd(
+              instances: [parent], refusedRow: parent));
+      when(() => mockUsp.delete(any()))
+          .thenThrow('Delete failed: Transport error: Request timeout');
+
+      await expectLater(
+        service.saveTriggeringBatch(original: const [], current: [
+          PortTriggeringRuleUIModel(
+            enabled: true,
+            description: 'zz',
+            triggerPort: 19490,
+            triggerProtocol: 'TCP',
+            forwardRules: const [
+              PortTriggerForwardRuleUIModel(
+                  forwardPort: 19500, forwardProtocol: 'TCP'),
+            ],
+          ),
+        ]),
+        throwsA(isA<UspPartialFailureError>()),
+      );
+      verify(() => mockUsp.add(any())).called(1);
+    });
+
+    test('a refused forwarding rule in a batch is deleted', () async {
+      const row = 'Device.NAT.PortMapping.51.';
+      when(() => mockUsp.add(any()))
+          .thenAnswer((_) async => UspAddRefusalTestData.refusedAdd(
+              instances: [row],
+              refusedRow: row,
+              refusedParam: 'ExternalPort',
+              message: 'ErrorTooManyRules: at most 50 single port forwarding '
+                  'rules.'));
+
+      await expectLater(
+        service.saveForwardingBatch(original: const [], current: [
+          PortForwardingRuleUIModel(
+            description: 'zz',
+            externalPort: 18080,
+            internalPort: 80,
+            internalClient: '192.168.1.156',
+            protocol: 'TCP',
+            enabled: true,
+          ),
+        ]),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+      verify(() => mockUsp.delete([row])).called(1);
+    });
+
+    test('a refused quick add from the dashboard is deleted', () async {
+      const row = 'Device.NAT.PortMapping.3.';
+      when(() => mockUsp.add(any())).thenAnswer((_) async =>
+          UspAddRefusalTestData.refusedAdd(
+              instances: [row],
+              refusedRow: row,
+              refusedParam: 'InternalClient',
+              message:
+                  "ErrorInvalidInternalServerIPAddress: '192.168.1.1' is not "
+                  'a LAN host address.'));
+
+      await expectLater(
+        service.immediateAddForwarding(
+          externalPort: 18201,
+          internalPort: 80,
+          internalClient: '192.168.1.1',
+          protocol: 'TCP',
+        ),
+        throwsA(allOf(
+          isA<UspCompleteFailureError>(),
+          carriesRefusalReason(UspRefusalReason.invalidInternalServerIpAddress),
+        )),
+      );
+      verify(() => mockUsp.delete([row])).called(1);
     });
   });
 }
