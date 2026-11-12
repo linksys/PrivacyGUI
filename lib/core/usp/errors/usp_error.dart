@@ -491,10 +491,14 @@ ServiceError _mapProtocolError(UspError e) {
       // Codegen: no instance has the Alias `resolveBy` names (emitted by
       // usp-codegen's dart_emit_resolve_failure(); see the table above).
       9996 => ResourceNotFoundError(code: code, detail: e.message),
-      // The WASM client's own codes (source 6). 9997 is input it refused, as
-      // the validation arm reads it. 9998 is an answer it could not decode:
-      // no `detail`, so the user reads the localized generic message rather
-      // than the decoder's English; `originalError` keeps the text.
+      // The WASM client's own codes (source 6). 9997 is input it refused. This
+      // arm is not reached from `UspClient`: its 9997 strings start with
+      // `Validation error:`, and the validation arm takes them before the
+      // category reaches here. It is kept so this table mirrors
+      // `_localizeFaultCode`, which must map the same codes the same way.
+      // 9998 is an answer it could not decode: no `detail`, so the user reads
+      // the localized generic message rather than the decoder's English;
+      // `originalError` keeps the text.
       9997 => InvalidInputError(code: code, detail: e.message),
       9998 => UnexpectedError(originalError: e.rawError, code: code),
       _ => UnexpectedError(originalError: e.rawError, detail: e.message),
