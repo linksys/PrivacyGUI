@@ -30,6 +30,7 @@ List<Override> kitchenSinkOverrides() => [
         portForwardingData: testPortForwardingData,
         portTriggeringData: testPortTriggeringData,
         firewallData: testFirewallData,
+        upnpEnabled: true,
         systemMonitorState: testSystemMonitorWithHistory,
         trafficAnalysisState: testTrafficWithHistory,
         deviceAnalyticsState: testDeviceAnalyticsWithData,

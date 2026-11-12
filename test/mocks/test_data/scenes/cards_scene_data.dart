@@ -923,16 +923,35 @@ final testFirewallData = FirewallData(
   ],
 );
 
-final testFirewallEmptyData = FirewallData(
+/// The Firewall card's longest state (#1130): both SPI firewalls off, so the
+/// warning row shows its longest value, and DMZ on by MAC, the longest host the
+/// DMZ row prints.
+final testFirewallAllOpenData = FirewallData(
   firewallModel: const FirewallUIModel(
     isIPv4FirewallEnabled: false,
     isIPv6FirewallEnabled: false,
-    blockIPSec: false,
-    blockPPTP: false,
-    blockL2TP: false,
-    blockAnonymousRequests: false,
-    blockMulticast: false,
-    blockIDENT: false,
+  ),
+  ruleContext: FirewallRuleContext.empty,
+  ruleSummaries: const [],
+  dmzModel: const DmzUIModel(
+    isEnabled: true,
+    destinationType: DmzDestinationType.mac,
+    destIp: '',
+    destMac: 'AA:BB:CC:DD:EE:FF',
+    sourceType: DmzSourceType.any,
+    sourcePrefix: '',
+  ),
+  dmzSummaries: const [
+    DmzEntrySummary(enable: true, destIp: '', destMac: 'AA:BB:CC:DD:EE:FF'),
+  ],
+);
+
+/// A new router (#1130): both SPI firewalls on and DMZ off. With no port rules
+/// this is the Firewall card's "nothing opened" state.
+final testFirewallNewRouterData = FirewallData(
+  firewallModel: const FirewallUIModel(
+    isIPv4FirewallEnabled: true,
+    isIPv6FirewallEnabled: true,
   ),
   ruleContext: FirewallRuleContext.empty,
   ruleSummaries: const [],

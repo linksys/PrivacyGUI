@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
+import 'package:privacy_gui/page/administration/providers/upnp_data_provider.dart';
 import 'package:privacy_gui/page/dashboard/orchestrator/dashboard_orchestrator.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_data.dart';
@@ -196,6 +197,36 @@ void main() {
       await pumpEventQueue();
 
       expect(macFilter.builds, 2);
+    });
+  });
+
+  group('DashboardOrchestrator - UPnP (#1130)', () {
+    // The Firewall card shows UPnP, and the router pushes nothing for it, so
+    // only the dashboard's re-reads bring it up to date.
+    test('is re-read after a recovery wait', () async {
+      final connection = _DrivenConnectionState();
+      var upnpReads = 0;
+      final container = ProviderContainer(overrides: [
+        appConnectionStateProvider.overrideWith(() => connection),
+        upnpDataProvider.overrideWith((ref) async {
+          upnpReads++;
+          return true;
+        }),
+      ]);
+      addTearDown(container.dispose);
+      container.listen(appConnectionStateProvider, (_, __) {});
+      container.listen(upnpDataProvider, (_, __) {});
+      container.listen(dashboardOrchestratorProvider, (_, __) {});
+      await pumpEventQueue();
+      expect(upnpReads, 1);
+
+      connection.move(AppConnectionState.waitingForRecovery);
+      connection.move(AppConnectionState.authenticated);
+      await pumpEventQueue();
+      container.read(upnpDataProvider);
+      await pumpEventQueue();
+
+      expect(upnpReads, 2);
     });
   });
 }

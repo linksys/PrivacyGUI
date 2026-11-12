@@ -9,6 +9,7 @@ import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/administration/models/administration_feature_state.dart';
 import 'package:privacy_gui/page/administration/models/administration_settings.dart';
 import 'package:privacy_gui/page/administration/models/administration_status.dart';
+import 'package:privacy_gui/page/administration/providers/upnp_data_provider.dart';
 import 'package:privacy_gui/page/administration/services/usp_administration_service.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
 
@@ -96,6 +97,9 @@ class UspAdministrationNotifier
       await ref.read(uspMutationLockProvider).withLock(() async {
         if (current.upnpEnabled != original.upnpEnabled) {
           await _svc.setUpnpEnabled(current.upnpEnabled);
+          // The dashboard's Firewall card shows UPnP, and the router pushes
+          // nothing for Device.UPnP., so it is read again here (#1130).
+          ref.invalidate(upnpDataProvider);
         }
         if (current.sipAlgEnabled != original.sipAlgEnabled) {
           await _svc.setSipAlgEnabled(current.sipAlgEnabled);

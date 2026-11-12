@@ -279,10 +279,10 @@ abstract class UspCardSizing {
   ///
   /// [CardDensity.normal] appears only alongside something to return *from* — on
   /// its own it is not a choice, just the status quo with a control attached.
-  /// [CardDensity.compact] appears only for the seven cards that read the density
+  /// [CardDensity.compact] appears only for the eight cards that read the density
   /// (`normalAbove != null` is the existing predicate); offered anywhere else it
   /// would render exactly the normal form, which is a control that visibly does
-  /// nothing. Building compact forms for the other eleven is card-own design work
+  /// nothing. Building compact forms for the other ten is card-own design work
   /// at #1288-#1291's scale and is out of this ticket's scope.
   static List<CardDensity> selectableForms(String id) {
     final spec = UspWidgetSpecRegistry.getById(id);

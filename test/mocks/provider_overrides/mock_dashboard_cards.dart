@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/administration/providers/upnp_data_provider.dart';
 import 'package:privacy_gui/page/_shared/models/device_analytics_state.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
@@ -171,6 +172,7 @@ List<Override> cardOverrides({
   PortForwardingData? portForwardingData,
   PortTriggeringData? portTriggeringData,
   FirewallData? firewallData,
+  bool? upnpEnabled,
   SystemMonitorState? systemMonitorState,
   TrafficAnalysisState? trafficAnalysisState,
   DeviceAnalyticsState? deviceAnalyticsState,
@@ -204,6 +206,8 @@ List<Override> cardOverrides({
       if (firewallData != null)
         firewallDataProvider
             .overrideWith(() => FixedFirewallDataNotifier(firewallData)),
+      if (upnpEnabled != null)
+        upnpDataProvider.overrideWith((ref) async => upnpEnabled),
       if (systemMonitorState != null)
         uspSystemMonitorProvider
             .overrideWith(() => FixedSystemMonitorNotifier(systemMonitorState)),
