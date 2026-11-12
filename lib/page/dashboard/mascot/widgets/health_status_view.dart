@@ -197,7 +197,7 @@ class HealthStatusView extends ConsumerWidget {
               Icon(icon, color: tierColor, size: 18),
               const SizedBox(width: 8),
               AppText.labelLarge(
-                dimension.displayName(loc(context)),
+                dimension.resolveName(loc(context)),
                 color: tierColor,
               ),
               const SizedBox(width: 8),
@@ -250,7 +250,7 @@ class HealthStatusView extends ConsumerWidget {
                 ),
                 const SizedBox(width: 4),
                 AppText.labelSmall(
-                  dim.displayName(loc(context)),
+                  dim.resolveName(loc(context)),
                   color: textColor.withValues(alpha: 0.8),
                 ),
               ],

@@ -108,9 +108,10 @@ const categoryWeights = <MascotMessageCategory, int>{
 ///
 /// Every name in them is the app's own key for that menu, page or card, so a
 /// tip names what the user actually sees, in their language. Each one also
-/// points where the thing really is: Firewall is under Advanced Settings, not
-/// in the sidebar, and firmware is the OTA Update card on the Administration
-/// page (#1312).
+/// points where the thing really is: the app has no sidebar (its menu is a top
+/// bar on desktop and a bottom bar on mobile), Firewall is under Advanced
+/// Settings, and firmware is the OTA Update card on the Administration page
+/// (#1312).
 final guidanceTemplates = <MascotMessageTemplate>[
   MascotMessageTemplate(
     id: 'guide_wifi',

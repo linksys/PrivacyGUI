@@ -47,6 +47,8 @@ extension WidgetSpecName on WidgetSpec {
 /// not compile until it has keys. That includes `remote`, which no picker
 /// offers: skipping it would need a case that returns English.
 extension UspDashboardPresetName on UspDashboardPreset {
+  /// The preset's name in [l10n]'s language, as the picker and the layout
+  /// settings panel show it.
   String resolveName(AppLocalizations l10n) => switch (this) {
         UspDashboardPreset.essential => l10n.dashboardPresetEssential,
         UspDashboardPreset.standard => l10n.dashboardPresetStandard,
@@ -55,6 +57,8 @@ extension UspDashboardPresetName on UspDashboardPreset {
         UspDashboardPreset.remote => l10n.dashboardPresetRemoteSupport,
       };
 
+  /// The one-line description under the preset's name in the picker, in
+  /// [l10n]'s language.
   String resolveDescription(AppLocalizations l10n) => switch (this) {
         UspDashboardPreset.essential => l10n.dashboardPresetEssentialDesc,
         UspDashboardPreset.standard => l10n.dashboardPresetStandardDesc,

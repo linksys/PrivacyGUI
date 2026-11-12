@@ -23,7 +23,7 @@ class SecurityHealthDimension extends HealthDimension {
   HealthDimensionType get type => HealthDimensionType.security;
 
   @override
-  String displayName(AppLocalizations l10n) => l10n.security;
+  String resolveName(AppLocalizations l10n) => l10n.security;
 
   @override
   IconData get icon => Icons.security;
@@ -60,7 +60,6 @@ class SecurityHealthDimension extends HealthDimension {
     if (firewall == null) {
       return DimensionSummary(
         status: l10n.loadingEllipsis,
-        hint: l10n.mascotTapForActions,
       );
     }
 
@@ -88,7 +87,6 @@ class SecurityHealthDimension extends HealthDimension {
     return DimensionSummary(
       status: status,
       items: items,
-      hint: l10n.mascotTapForActions,
     );
   }
 

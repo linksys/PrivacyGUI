@@ -23,7 +23,7 @@ class FirmwareHealthDimension extends HealthDimension {
   HealthDimensionType get type => HealthDimensionType.firmware;
 
   @override
-  String displayName(AppLocalizations l10n) => l10n.firmware;
+  String resolveName(AppLocalizations l10n) => l10n.firmware;
 
   @override
   IconData get icon => Icons.system_update;
@@ -53,7 +53,6 @@ class FirmwareHealthDimension extends HealthDimension {
     if (firmware == null) {
       return DimensionSummary(
         status: l10n.loadingEllipsis,
-        hint: l10n.mascotTapForActions,
       );
     }
 
@@ -81,7 +80,6 @@ class FirmwareHealthDimension extends HealthDimension {
     return DimensionSummary(
       status: status,
       items: items,
-      hint: l10n.mascotTapForActions,
     );
   }
 

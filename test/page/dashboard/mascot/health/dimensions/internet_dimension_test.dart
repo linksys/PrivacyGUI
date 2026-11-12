@@ -72,7 +72,6 @@ void main() {
         final summary = dimension.getSummary(context, en);
 
         expect(summary.status, 'Loading...');
-        expect(summary.hint, 'Tap for actions');
       });
 
       test('returns Connected status when WAN is up', () {

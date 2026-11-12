@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 
-import 'arb_keys_read.dart';
+import '../../util/arb_keys_read.dart';
 
 /// #1312: every ARB key the mascot and the card and preset names read is
 /// translated in every locale.

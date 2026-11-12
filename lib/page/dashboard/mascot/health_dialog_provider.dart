@@ -167,7 +167,7 @@ class HealthDialogProvider extends MascotDialogProvider {
 
     controller.showDialog(MascotDialogNode.custom(
       id: 'dimension_${dimensionType.name}',
-      text: dimension.displayName(l10n),
+      text: dimension.resolveName(l10n),
       barrier: MascotDialogBarrier.dismissible,
       contentBuilder: (ctx, textColor) => DimensionDetailView(
         dimension: dimension,

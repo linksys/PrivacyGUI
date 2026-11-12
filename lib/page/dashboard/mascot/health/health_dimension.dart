@@ -70,20 +70,19 @@ class SummaryItem extends Equatable {
   List<Object?> get props => [label, value];
 }
 
-/// Summary information displayed in the tooltip on long-press.
+/// A dimension's status and its detail rows, shown in the health view and on
+/// the dimension's detail page.
 class DimensionSummary extends Equatable {
   final String status;
   final List<SummaryItem> items;
-  final String? hint;
 
   const DimensionSummary({
     required this.status,
     this.items = const [],
-    this.hint,
   });
 
   @override
-  List<Object?> get props => [status, items, hint];
+  List<Object?> get props => [status, items];
 }
 
 /// An action the user can take for a dimension.
@@ -147,7 +146,7 @@ abstract class HealthDimension {
   HealthDimensionType get type;
 
   /// The dimension's name in [l10n]'s language (#1312).
-  String displayName(AppLocalizations l10n);
+  String resolveName(AppLocalizations l10n);
 
   /// Icon representing this dimension.
   IconData get icon;

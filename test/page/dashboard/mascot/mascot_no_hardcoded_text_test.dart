@@ -12,10 +12,17 @@ import 'package:flutter_test/flutter_test.dart';
 /// ## What counts as user-visible
 ///
 /// A string literal whose text, with interpolations removed, has a letter and
-/// either a space, a leading capital or trailing sentence punctuation. That
-/// reads `'Tap for actions'`, `'Loading...'` and `'internet connection'` as
-/// copy, and `'health_dashboard'`, `'cat_$i'` and `'mascot-to-ai-assistant'` as
-/// identifiers. The detector's own cases below pin both halves.
+/// either whitespace, a leading capital or trailing sentence punctuation. That
+/// reads `'Tap for actions'`, `'Loading...'`, `'internet connection'` and
+/// `'$enabled/$total enabled'` as copy, and `'health_dashboard'`, `'cat_$i'`
+/// and `'mascot-to-ai-assistant'` as identifiers. The detector's own cases
+/// below pin both halves.
+///
+/// One shape it cannot tell apart: a single lowercase word, which reads like
+/// `'back'` or `'main'`, the dialog's option ids. A bare `'enabled'` shown to
+/// the user would pass here; `dashboard_text_translated_test.dart` and the
+/// per-locale widget test in `health_dialog_provider_test.dart` are the
+/// backstop for that.
 ///
 /// ## The allowlist
 ///
@@ -42,7 +49,7 @@ class _Literal {
 bool _looksUserVisible(String text) {
   final words = text.replaceAll('{}', '').trim();
   if (!RegExp('[A-Za-z]').hasMatch(words)) return false;
-  return RegExp(r'[A-Za-z]\s+\S').hasMatch(words) ||
+  return RegExp(r'\s').hasMatch(words) ||
       RegExp('^[A-Z]').hasMatch(words) ||
       RegExp(r'[.!?]$').hasMatch(words);
 }
@@ -158,6 +165,9 @@ void main() {
         'internet connection',
         '{} WiFi radio has been disabled.',
         'Your mesh network has {} node{} active',
+        // The ticket's own example: `'$enabledCount/$totalCount enabled'`.
+        '{}/{} enabled',
+        '{}% used',
       ]) {
         expect(_looksUserVisible(copy), isTrue, reason: copy);
       }

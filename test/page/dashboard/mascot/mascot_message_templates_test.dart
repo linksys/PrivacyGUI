@@ -101,8 +101,9 @@ void main() {
 
   group('a tip that names a place in the app', () {
     test('names where it really is', () {
-      expect(say('guide_wifi', en),
-          "WiFi settings are in the sidebar under 'WiFi Settings'");
+      // The app has no sidebar: its menu is a top bar on desktop and a bottom
+      // bar on mobile.
+      expect(say('guide_wifi', en), "WiFi settings are under 'WiFi Settings'");
       expect(say('guide_devices', en),
           "Tap 'Devices' to see all connected devices");
       // Firmware is the OTA Update card on the Administration page, Firewall is

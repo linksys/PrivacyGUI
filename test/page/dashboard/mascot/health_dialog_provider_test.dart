@@ -14,7 +14,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 import '../../../mocks/test_data/firewall_test_data.dart';
 import '../../../mocks/test_data/system_health_test_data.dart';
 import '../../../util/app_test_fonts.dart';
-import '../arb_keys_read.dart';
+import '../../../util/arb_keys_read.dart';
 
 /// Every health item scored, with Security the one that needs attention, so the
 /// opening dialog shows a problem row as well as the healthy chips.

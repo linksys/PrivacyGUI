@@ -62,7 +62,7 @@ class DimensionDetailView extends StatelessWidget {
             const SizedBox(width: 6),
             Expanded(
               child: AppText.titleMedium(
-                dimension.displayName(loc(context)),
+                dimension.resolveName(loc(context)),
                 color: textColor,
               ),
             ),

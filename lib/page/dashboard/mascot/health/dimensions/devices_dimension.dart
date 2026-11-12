@@ -24,7 +24,7 @@ class DevicesHealthDimension extends HealthDimension {
   HealthDimensionType get type => HealthDimensionType.devices;
 
   @override
-  String displayName(AppLocalizations l10n) => l10n.devices;
+  String resolveName(AppLocalizations l10n) => l10n.devices;
 
   @override
   IconData get icon => Icons.devices;
@@ -62,7 +62,6 @@ class DevicesHealthDimension extends HealthDimension {
     if (devices == null) {
       return DimensionSummary(
         status: l10n.loadingEllipsis,
-        hint: l10n.mascotTapForActions,
       );
     }
 
@@ -90,7 +89,6 @@ class DevicesHealthDimension extends HealthDimension {
     return DimensionSummary(
       status: status,
       items: items,
-      hint: l10n.mascotTapForActions,
     );
   }
 

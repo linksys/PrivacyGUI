@@ -21,7 +21,7 @@ class InternetHealthDimension extends HealthDimension {
   HealthDimensionType get type => HealthDimensionType.internet;
 
   @override
-  String displayName(AppLocalizations l10n) => l10n.internet;
+  String resolveName(AppLocalizations l10n) => l10n.internet;
 
   @override
   IconData get icon => Icons.public;
@@ -52,7 +52,6 @@ class InternetHealthDimension extends HealthDimension {
     if (wan == null) {
       return DimensionSummary(
         status: l10n.loadingEllipsis,
-        hint: l10n.mascotTapForActions,
       );
     }
 
@@ -73,7 +72,6 @@ class InternetHealthDimension extends HealthDimension {
     return DimensionSummary(
       status: isUp ? l10n.connected : l10n.disconnected,
       items: items,
-      hint: l10n.mascotTapForActions,
     );
   }
 

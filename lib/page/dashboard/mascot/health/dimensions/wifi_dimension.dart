@@ -21,7 +21,7 @@ class WifiHealthDimension extends HealthDimension {
   HealthDimensionType get type => HealthDimensionType.wifi;
 
   @override
-  String displayName(AppLocalizations l10n) => l10n.wifi;
+  String resolveName(AppLocalizations l10n) => l10n.wifi;
 
   @override
   IconData get icon => Icons.wifi;
@@ -58,7 +58,6 @@ class WifiHealthDimension extends HealthDimension {
     if (wifi == null) {
       return DimensionSummary(
         status: l10n.loadingEllipsis,
-        hint: l10n.mascotTapForActions,
       );
     }
 
@@ -66,7 +65,6 @@ class WifiHealthDimension extends HealthDimension {
     if (radios.isEmpty) {
       return DimensionSummary(
         status: l10n.mascotWifiNoRadios,
-        hint: l10n.mascotTapForActions,
       );
     }
 
@@ -97,7 +95,6 @@ class WifiHealthDimension extends HealthDimension {
     return DimensionSummary(
       status: status,
       items: items,
-      hint: l10n.mascotTapForActions,
     );
   }
 
