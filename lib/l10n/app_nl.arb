@@ -969,7 +969,7 @@
   "pwaMacInstallDescription": "Voeg deze app toe aan uw Dock voor snelle toegang.",
   "pwaMacStep1": "Klik op de knop Delen in de Safari-werkbalk.",
   "pwaMacStep2": "Kies \"Voeg toe aan Dock\".",
-  "quickSetupNotice": "Snelle installatie past dezelfde naam, hetzelfde wachtwoord en dezelfde beveiligingsmodus toe op alle banden. Een wachtwoord is vereist om op te slaan.",
+  "quickSetupNotice": "Snelle installatie past dezelfde naam, hetzelfde wachtwoord en dezelfde beveiligingsmodus toe op alle banden.",
   "radioBand": "Radio: {band}",
   "radios": "Radio's",
   "range": "Bereik",

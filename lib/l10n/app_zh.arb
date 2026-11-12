@@ -969,7 +969,7 @@
   "pwaMacInstallDescription": "将此应用添加到您的程序坞以便快速访问。",
   "pwaMacStep1": "点按 Safari 工具栏中的“共享”按钮。",
   "pwaMacStep2": "选择“添加到程序坞”。",
-  "quickSetupNotice": "快速设置会将相同的名称、密码和安全模式应用于所有频段。保存需要密码。",
+  "quickSetupNotice": "快速设置会将相同的名称、密码和安全模式应用于所有频段。",
   "radioBand": "无线电：{band}",
   "radios": "无线电",
   "range": "范围",

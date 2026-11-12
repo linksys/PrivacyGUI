@@ -572,9 +572,13 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
     // Use the explicit [networks] list when called from performFetch (the new
     // networks haven't been written to state yet at that point).
     final effectiveNetworks = networks ?? state.settings.current.networks;
-    final allEnabled = effectiveNetworks
-        .where((n) => n.isGuest == isGuest)
-        .every((n) => n.enabled);
+    final group = effectiveNetworks.where((n) => n.isGuest == isGuest);
+    final allEnabled = group.every((n) => n.enabled);
+    // The card shows the first network's mode, so another band in the group
+    // can be open while it reads WPA2 (#1720). Only the bands Save writes,
+    // i.e. those with an AccessPoint.
+    final hasOpenNetwork =
+        group.any((n) => n.accessPointInstancePath != null && n.isOpenSecurity);
 
     return WifiQuickSetupSettings(
       isGuest: isGuest,
@@ -582,6 +586,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       ssid: aggregate.ssid,
       password: '',
       securityMode: aggregate.securityMode,
+      hasOpenNetwork: hasOpenNetwork,
       supportedSecurityModes: aggregate.supportedSecurityModes,
     );
   }

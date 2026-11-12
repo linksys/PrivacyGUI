@@ -969,7 +969,7 @@
   "pwaMacInstallDescription": "Ajoutez cette application à votre Dock pour un accès rapide.",
   "pwaMacStep1": "Cliquez sur le bouton Partager dans la barre d'outils de Safari.",
   "pwaMacStep2": "Choisissez « Ajouter au Dock ».",
-  "quickSetupNotice": "La configuration rapide applique le même nom, mot de passe et mode de sécurité à toutes les bandes. Un mot de passe est requis pour enregistrer.",
+  "quickSetupNotice": "La configuration rapide applique le même nom, mot de passe et mode de sécurité à toutes les bandes.",
   "radioBand": "Radio : {band}",
   "radios": "Radios",
   "range": "Plage",

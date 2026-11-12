@@ -11,7 +11,8 @@ import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 ///
 /// [isValid] must be `true` before the page-level Save button is enabled.
 /// Validity is evaluated against [original] so that a password is only
-/// required when the user is actually changing password or securityMode.
+/// required when the user typed one, or when the save would secure a network
+/// that has no passphrase yet (see [isPasswordRequired]).
 class WifiQuickSetupSettings extends Equatable {
   final bool isGuest;
 
@@ -21,10 +22,16 @@ class WifiQuickSetupSettings extends Equatable {
 
   final String ssid;
 
-  /// Empty string = user has not yet entered a password (blocks Save).
+  /// Empty string = the user has not typed a password, so the router keeps
+  /// the one it has. Blocks Save only when [isPasswordRequired].
   final String password;
 
   final String securityMode;
+
+  /// Whether any network in this group is open on the router now — its own
+  /// mode, not [securityMode], which is the first network's. Read-only, like
+  /// [supportedSecurityModes]: set from the router, never edited.
+  final bool hasOpenNetwork;
 
   /// Intersection of `supportedSecurityModes` across all networks in the group.
   /// Used to populate the security mode dropdown in [WifiQuickSetupCard].
@@ -36,26 +43,40 @@ class WifiQuickSetupSettings extends Equatable {
     required this.ssid,
     required this.password,
     required this.securityMode,
+    required this.hasOpenNetwork,
     required this.supportedSecurityModes,
   });
 
-  /// True when the next Save will actually send `KeyPassphrase` to firmware
-  /// AND the resulting security mode is non-open.
+  /// True when the next Save must carry a passphrase the user types, and the
+  /// resulting security mode is non-open.
   ///
-  /// [original] is the server-side snapshot (pre-edit). The AP-layer write
-  /// is only issued when [password] or [securityMode] changed, and the
-  /// passphrase is only meaningful when the mode is non-open. Toggling
-  /// [enabled] or changing only the SSID name therefore does not require a
-  /// password — callers (UI label, validation) should use this to avoid
-  /// showing spurious "(Required)" indicators.
+  /// [original] is the server-side snapshot (pre-edit). A typed password is
+  /// always sent, so it must be valid. A mode change alone needs none: the
+  /// router keeps its passphrase across WPA modes (#1720, FW 2.0.4: a Set of
+  /// `ModeEnabled` alone left the key as it was, and a client that knew it
+  /// joined again on WPA3). The exception is a group with an open network,
+  /// which has no passphrase the user knows — FW would restore an old key or
+  /// make one up — so securing it asks for one.
+  ///
+  /// Toggling [enabled] or changing only the SSID name sends no security
+  /// parameters, so it never requires a password.
+  ///
+  /// [original]'s own mode counts too, not only [hasOpenNetwork]: the flag is
+  /// read once from the router, and a save whose read-back fails keeps what
+  /// was written as the new [original], flag and all — so a group just saved
+  /// as open still carries the flag from before.
   bool isPasswordRequired(WifiQuickSetupSettings? original) {
-    final passwordChanged = original == null || password != original.password;
-    final modeChanged =
-        original == null || securityMode != original.securityMode;
-    // 'OWE' is the TR-181 token for Enhanced Open (firmware only accepts 'OWE').
-    final isOpen = securityMode == 'None' || securityMode == 'OWE';
-    return (passwordChanged || modeChanged) && !isOpen;
+    if (_isOpenMode(securityMode)) return false;
+    if (original == null) return true;
+    final passwordChanged = password != original.password;
+    final modeChanged = securityMode != original.securityMode;
+    final hadNoKey =
+        original.hasOpenNetwork || _isOpenMode(original.securityMode);
+    return passwordChanged || (modeChanged && hadNoKey);
   }
+
+  // 'OWE' is the TR-181 token for Enhanced Open (firmware only accepts 'OWE').
+  static bool _isOpenMode(String mode) => mode == 'None' || mode == 'OWE';
 
   /// True when all required fields are filled and valid for the write that
   /// will actually be issued against firmware.
@@ -79,13 +100,21 @@ class WifiQuickSetupSettings extends Equatable {
       ssid: ssid ?? this.ssid,
       password: password ?? this.password,
       securityMode: securityMode ?? this.securityMode,
+      hasOpenNetwork: hasOpenNetwork,
       supportedSecurityModes: supportedSecurityModes,
     );
   }
 
   @override
-  List<Object?> get props =>
-      [isGuest, enabled, ssid, password, securityMode, supportedSecurityModes];
+  List<Object?> get props => [
+        isGuest,
+        enabled,
+        ssid,
+        password,
+        securityMode,
+        hasOpenNetwork,
+        supportedSecurityModes,
+      ];
 }
 
 /// User-editable settings for the WiFi Settings page.

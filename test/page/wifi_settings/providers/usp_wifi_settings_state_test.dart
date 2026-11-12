@@ -92,6 +92,7 @@ void main() {
             ssid: 'Home',
             password: 'newpass1',
             securityMode: 'WPA2-Personal',
+            hasOpenNetwork: false,
             supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal'],
           ),
         );
@@ -114,6 +115,7 @@ void main() {
           ssid: 'Home',
           password: '',
           securityMode: 'WPA2-Personal',
+          hasOpenNetwork: false,
           supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal'],
         );
         final settings = WifiSettingsSettings(
@@ -137,6 +139,7 @@ void main() {
           ssid: 'Guest',
           password: '',
           securityMode: 'WPA2-Personal',
+          hasOpenNetwork: false,
           supportedSecurityModes: ['WPA2-Personal'],
         );
         final networks = WifiSettingsTestData.createNetworks();
@@ -212,6 +215,7 @@ void main() {
             ssid: 'Home',
             password: 'validpass',
             securityMode: 'WPA2-Personal',
+            hasOpenNetwork: false,
             supportedSecurityModes: ['WPA2-Personal'],
           ),
         );
@@ -237,6 +241,7 @@ void main() {
             ssid: 'Home',
             password: 'short', // < 8 chars
             securityMode: 'WPA2-Personal',
+            hasOpenNetwork: false,
             supportedSecurityModes: ['WPA2-Personal'],
           ),
         );
@@ -256,6 +261,7 @@ void main() {
           ssid: 'Home',
           password: 'validpass',
           securityMode: 'WPA2-Personal',
+          hasOpenNetwork: false,
           supportedSecurityModes: ['WPA2-Personal'],
         );
         final networks = WifiSettingsTestData.createNetworks();
@@ -283,6 +289,7 @@ void main() {
           ssid: 'Home',
           password: '',
           securityMode: 'WPA2-Personal',
+          hasOpenNetwork: false,
           supportedSecurityModes: ['None', 'WPA2-Personal', 'WPA3-Personal'],
         );
         final settings = WifiSettingsSettings(
@@ -304,8 +311,8 @@ void main() {
       });
 
       test(
-          'false in quick setup mode when security mode changes but password still empty',
-          () {
+          'true in quick setup mode when switching between WPA modes with no '
+          'password (the router keeps its passphrase, #1720)', () {
         final networks = WifiSettingsTestData.createNetworks();
         const qsMain = WifiQuickSetupSettings(
           isGuest: false,
@@ -313,6 +320,7 @@ void main() {
           ssid: 'Home',
           password: '',
           securityMode: 'WPA2-Personal',
+          hasOpenNetwork: false,
           supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal'],
         );
         final settings = WifiSettingsSettings(
@@ -329,10 +337,10 @@ void main() {
           status: const WifiSettingsStatus(),
         );
 
-        // isDirty because securityMode changed, but canSave false because
-        // password is still empty and the new mode requires one.
+        // Only ModeEnabled goes out; FW 2.0.4 keeps the key across WPA2 ↔
+        // WPA3, so an empty password does not block Save.
         expect(state.isDirty, isTrue);
-        expect(state.canSave, isFalse);
+        expect(state.canSave, isTrue);
       });
 
       test('true in quick setup mode with open security and empty password',
@@ -349,6 +357,7 @@ void main() {
             ssid: 'OpenNet',
             password: '',
             securityMode: 'None',
+            hasOpenNetwork: true,
             supportedSecurityModes: ['None', 'WPA2-Personal'],
           ),
         );
@@ -371,6 +380,7 @@ void main() {
           ssid: 'Home-Guest',
           password: '',
           securityMode: 'None',
+          hasOpenNetwork: true,
           supportedSecurityModes: [],
         );
         final original = WifiSettingsSettings(
@@ -403,6 +413,7 @@ void main() {
           ssid: 'Home',
           password: '',
           securityMode: 'WPA2-Personal',
+          hasOpenNetwork: false,
           supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal'],
         );
         final original = WifiSettingsSettings(
@@ -434,6 +445,7 @@ void main() {
           ssid: 'Home',
           password: '',
           securityMode: 'WPA2-Personal',
+          hasOpenNetwork: false,
           supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal'],
         );
         final original = WifiSettingsSettings(
@@ -468,6 +480,7 @@ void main() {
         ssid: 'Home',
         password: '',
         securityMode: 'WPA2-Personal',
+        hasOpenNetwork: false,
         supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal'],
       );
 
@@ -492,12 +505,87 @@ void main() {
         );
       });
 
-      test('true when security mode changed to a non-open mode', () {
+      test('false when switching between WPA modes (#1720)', () {
         expect(
           wpa2Orig
               .copyWith(securityMode: 'WPA3-Personal')
               .isPasswordRequired(wpa2Orig),
+          isFalse,
+        );
+      });
+
+      // The card shows the first network's mode, so a group can read WPA2
+      // while another band in it is open and has no passphrase to keep.
+      const mixedOrig = WifiQuickSetupSettings(
+        isGuest: false,
+        enabled: true,
+        ssid: 'Home',
+        password: '',
+        securityMode: 'WPA2-Personal',
+        hasOpenNetwork: true,
+        supportedSecurityModes: ['None', 'WPA2-Personal', 'WPA3-Personal'],
+      );
+
+      test('true when the mode changes and a network in the group is open', () {
+        expect(
+          mixedOrig
+              .copyWith(securityMode: 'WPA3-Personal')
+              .isPasswordRequired(mixedOrig),
           isTrue,
+        );
+      });
+
+      test('true when switching from open to a WPA mode', () {
+        const openMain = WifiQuickSetupSettings(
+          isGuest: false,
+          enabled: true,
+          ssid: 'Home',
+          password: '',
+          securityMode: 'None',
+          hasOpenNetwork: true,
+          supportedSecurityModes: ['None', 'WPA2-Personal', 'WPA3-Personal'],
+        );
+        expect(
+          openMain
+              .copyWith(securityMode: 'WPA2-Personal')
+              .isPasswordRequired(openMain),
+          isTrue,
+        );
+      });
+
+      test(
+          "true when the original's own mode is open, whatever the flag says "
+          '(a save to open kept as written)', () {
+        const savedOpen = WifiQuickSetupSettings(
+          isGuest: false,
+          enabled: true,
+          ssid: 'Home',
+          password: '',
+          securityMode: 'None',
+          hasOpenNetwork: false,
+          supportedSecurityModes: ['None', 'WPA2-Personal', 'WPA3-Personal'],
+        );
+        expect(
+          savedOpen
+              .copyWith(securityMode: 'WPA2-Personal')
+              .isPasswordRequired(savedOpen),
+          isTrue,
+        );
+      });
+
+      test('a typed password must be valid on a WPA to WPA switch', () {
+        final switched = wpa2Orig.copyWith(securityMode: 'WPA3-Personal');
+        expect(switched.copyWith(password: 'short').isValid(wpa2Orig), isFalse);
+        expect(switched.copyWith(password: 'longenough1').isValid(wpa2Orig),
+            isTrue);
+      });
+
+      test(
+          'false when a network in the group is open but only the name changes',
+          () {
+        expect(
+          mixedOrig.copyWith(ssid: 'Renamed').isPasswordRequired(mixedOrig),
+          isFalse,
         );
       });
 
@@ -515,6 +603,7 @@ void main() {
           ssid: 'Home-Guest',
           password: '',
           securityMode: 'None',
+          hasOpenNetwork: true,
           supportedSecurityModes: [],
         );
         expect(
@@ -535,6 +624,7 @@ void main() {
           ssid: 'OpenNet',
           password: '',
           securityMode: 'OWE',
+          hasOpenNetwork: true,
           supportedSecurityModes: ['None', 'OWE'],
         );
         expect(openPending.isPasswordRequired(null), isFalse);

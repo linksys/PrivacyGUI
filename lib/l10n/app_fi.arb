@@ -969,7 +969,7 @@
   "pwaMacInstallDescription": "Lisää tämä sovellus Dockiin nopeaa käyttöä varten.",
   "pwaMacStep1": "Napsauta Safarin työkalupalkin Jaa-painiketta.",
   "pwaMacStep2": "Valitse \"Lisää Dockiin\".",
-  "quickSetupNotice": "Pika-asennus käyttää samaa nimeä, salasanaa ja suojaustilaa kaikilla taajuusalueilla. Tallentaminen edellyttää salasanaa.",
+  "quickSetupNotice": "Pika-asennus käyttää samaa nimeä, salasanaa ja suojaustilaa kaikilla taajuusalueilla.",
   "radioBand": "Radio: {band}",
   "radios": "Radiot",
   "range": "Alue",

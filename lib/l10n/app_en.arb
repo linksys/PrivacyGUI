@@ -1395,7 +1395,7 @@
   "wifiSettingsSaved": "WiFi settings saved",
   "channelUpdated": "Channel updated",
   "noWifiNetworksFound": "No WiFi networks found. Check router connection.",
-  "quickSetupNotice": "Quick Setup applies the same name, password, and security mode to all bands. A password is required to save.",
+  "quickSetupNotice": "Quick Setup applies the same name, password, and security mode to all bands.",
   "noAdvancedWifiSettings": "No advanced WiFi settings available for this device.",
   "dynamicFrequencySelection": "Dynamic Frequency Selection (DFS)",
   "dfsDescription": "Enables IEEE 802.11h on 5 GHz radios, which activates both Dynamic Frequency Selection (DFS) and Transmit Power Control (TPC).\n\nDFS allows the router to use 5 GHz channels shared with radar systems. If a radar signal is detected, the router will automatically switch to an unoccupied channel, which may cause a brief interruption in connectivity.",

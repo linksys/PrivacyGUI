@@ -969,7 +969,7 @@
   "pwaMacInstallDescription": "Lägg till den här appen i din Dock för snabb åtkomst.",
   "pwaMacStep1": "Klicka på knappen Dela i Safaris verktygsfält.",
   "pwaMacStep2": "Välj \"Lägg till i Dock\".",
-  "quickSetupNotice": "Snabbinstallation tillämpar samma namn, lösenord och säkerhetsläge på alla band. Ett lösenord krävs för att spara.",
+  "quickSetupNotice": "Snabbinstallation tillämpar samma namn, lösenord och säkerhetsläge på alla band.",
   "radioBand": "Radio: {band}",
   "radios": "Radior",
   "range": "Intervall",
