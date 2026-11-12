@@ -109,13 +109,6 @@ final guidanceTemplates = <MascotMessageTemplate>[
     builder: (_) => "Tap 'Devices' to see all connected devices",
   ),
   MascotMessageTemplate(
-    id: 'guide_diagnostics',
-    category: MascotMessageCategory.guidance,
-    builder: (_) =>
-        "Run diagnostics by tapping me and selecting 'Run Diagnostics'",
-    suggestedAnimation: MascotAnimationKey.greet,
-  ),
-  MascotMessageTemplate(
     id: 'guide_firmware',
     category: MascotMessageCategory.guidance,
     builder: (_) => "Check for firmware updates in 'Administration > Firmware'",

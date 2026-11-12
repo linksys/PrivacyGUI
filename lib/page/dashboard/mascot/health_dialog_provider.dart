@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/url_links.dart';
 import 'package:privacy_gui/page/support/faq_data.dart';
-import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_state.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-
-import 'dashboard_dialog_provider.dart' show DiagnosticsResult;
 
 import 'health/health_dimension.dart';
 import 'health/health_dimension_registry.dart';
@@ -24,8 +21,6 @@ class HealthDialogProvider extends MascotDialogProvider {
   HealthDialogProvider({
     required this.ref,
     required this.controller,
-    required this.onRunFullDiagnostics,
-    required this.onRunFlowDiagnostics,
     required this.onPrintReport,
     required this.onOpenThemeStudio,
     required this.onOpenAiAssistant,
@@ -39,9 +34,6 @@ class HealthDialogProvider extends MascotDialogProvider {
 
   final WidgetRef ref;
   final MascotController controller;
-  final Future<DiagnosticsResult> Function() onRunFullDiagnostics;
-  final Future<DiagnosticsResult> Function(DiagnosticFlow flow)
-      onRunFlowDiagnostics;
   final Future<void> Function() onPrintReport;
   final VoidCallback onOpenThemeStudio;
   final VoidCallback onOpenAiAssistant;
@@ -238,123 +230,7 @@ class HealthDialogProvider extends MascotDialogProvider {
       }
     }
 
-    // Diagnostics result
-    if (nodeId == 'diagnostics_result') {
-      if (optionId == 'back') return _diagnosticsMenu();
-      if (optionId == 'main') return getInitialDialog();
-    }
-
-    // Diagnostics menu
-    if (nodeId == 'diagnostics_menu') {
-      if (optionId == 'back') return getInitialDialog();
-      if (optionId == 'full') return _runFullDiagnostics();
-      final flow = _flowFromOptionId(optionId);
-      if (flow != null) return _runFlowDiagnostics(flow);
-    }
-
     return null;
-  }
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // Diagnostics
-  // ══════════════════════════════════════════════════════════════════════════
-
-  MascotDialogNode _diagnosticsMenu() {
-    return const MascotDialogNode(
-      id: 'diagnostics_menu',
-      text: 'What would you like to check?',
-      barrier: MascotDialogBarrier.dismissible,
-      options: [
-        MascotDialogOption(
-          id: 'full',
-          label: 'Full diagnostic',
-          icon: Icons.checklist,
-        ),
-        MascotDialogOption(
-          id: 'internet',
-          label: 'Internet connection',
-          icon: Icons.public,
-        ),
-        MascotDialogOption(
-          id: 'wifi',
-          label: 'WiFi coverage',
-          icon: Icons.wifi,
-        ),
-        MascotDialogOption(
-          id: 'back',
-          label: 'Back',
-          icon: Icons.arrow_back,
-        ),
-      ],
-    );
-  }
-
-  DiagnosticFlow? _flowFromOptionId(String optionId) {
-    return switch (optionId) {
-      'internet' => DiagnosticFlow.internet,
-      'wifi' => DiagnosticFlow.wifiCoverage,
-      _ => null,
-    };
-  }
-
-  Future<MascotDialogNode> _runFullDiagnostics() async {
-    _showLoading('Running full diagnostic...');
-    final result = await onRunFullDiagnostics();
-    return _buildDiagnosticsResult(result);
-  }
-
-  Future<MascotDialogNode> _runFlowDiagnostics(DiagnosticFlow flow) async {
-    final flowName = _flowDisplayName(flow);
-    _showLoading('Checking $flowName...');
-    final result = await onRunFlowDiagnostics(flow);
-    return _buildDiagnosticsResult(result);
-  }
-
-  void _showLoading(String message) {
-    controller.showDialog(MascotDialogNode(
-      id: 'diagnostics_loading',
-      text: message,
-      type: MascotDialogType.loading,
-      suggestedAnimation: MascotAnimationKey.think,
-    ));
-  }
-
-  String _flowDisplayName(DiagnosticFlow flow) {
-    return switch (flow) {
-      DiagnosticFlow.internet => 'internet connection',
-      DiagnosticFlow.wifiCoverage => 'WiFi coverage',
-      DiagnosticFlow.meshBackhaul => 'mesh backhaul',
-      DiagnosticFlow.deviceIssues => 'device issues',
-      DiagnosticFlow.intermittent => 'intermittent issues',
-    };
-  }
-
-  MascotDialogNode _buildDiagnosticsResult(DiagnosticsResult result) {
-    final type =
-        result.hasIssues ? MascotDialogType.error : MascotDialogType.success;
-    final animation = result.hasIssues
-        ? MascotAnimationKey.sad
-        : MascotAnimationKey.celebrate;
-
-    return MascotDialogNode(
-      id: 'diagnostics_result',
-      text: result.message,
-      type: type,
-      suggestedAnimation: animation,
-      barrier: MascotDialogBarrier.dismissible,
-      options: const [
-        MascotDialogOption(
-          id: 'back',
-          label: 'Run another test',
-          icon: Icons.refresh,
-        ),
-        MascotDialogOption(
-          id: 'main',
-          label: 'Main menu',
-          icon: Icons.home,
-        ),
-      ],
-    );
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -365,6 +241,15 @@ class HealthDialogProvider extends MascotDialogProvider {
     _showLoading('Generating report...');
     await onPrintReport();
     controller.dismissDialog();
+  }
+
+  void _showLoading(String message) {
+    controller.showDialog(MascotDialogNode(
+      id: 'diagnostics_loading',
+      text: message,
+      type: MascotDialogType.loading,
+      suggestedAnimation: MascotAnimationKey.think,
+    ));
   }
 
   // ══════════════════════════════════════════════════════════════════════════
