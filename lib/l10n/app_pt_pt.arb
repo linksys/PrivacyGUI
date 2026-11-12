@@ -65,7 +65,7 @@
   "enabled": "Activado",
   "endPort": "Porta final",
   "endPortOptional": "Porta final (opcional)",
-  "endUserLicenseAgreement": "Contrato de Licença de Usuário Final",
+  "endUserLicenseAgreement": "Contrato de Licença de Utilizador Final",
   "error": "Erro",
   "errorEmailAddressNotFound": "Endereço de e-mail não encontrado",
   "errorEnterAValidEmailFormat": "Digite um formato de e-mail válido",
