@@ -230,6 +230,9 @@ void main() {
           'admin',
           'apps',
           'dmz',
+          // #1775: the same page with the DMZ host given by MAC, beside its
+          // sibling as `ipv6_port_service_full` is.
+          'dmz_mac',
           'firewall',
           'instant_privacy',
           'instant_safety',
@@ -444,6 +447,10 @@ void main() {
         // `RuleLimitNote` row appears under the Rules header. No `sharesTabWith`,
         // as `firmware_failed` has none. 67 cases, still 45 swept pages of 47
         // page-view files.
+        //
+        // **#1775's one, the same shape.** DMZ with the host given by MAC, the
+        // second option of the destination card's new radio list. 68 cases on
+        // its branch.
         reason: 'a wave adds pages to this list on purpose, so a mismatch is '
             'either a wave that has not updated its own checkpoint or a page '
             'that left the gate without one. Read the comment above before '

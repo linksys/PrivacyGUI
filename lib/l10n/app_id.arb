@@ -378,6 +378,7 @@
   "udp": "UDP",
   "unknownError": "Kesalahan tidak dikenal",
   "unknownErrorCode": "Kesalahan tidak dikenal: {code}",
+  "unsavedChangesBeforeOpeningDesc": "Simpan atau buang perubahan Anda sebelum melanjutkan.",
   "unsavedChangesDesc": "Menavigasi keluar dari halaman ini akan membuang semua input.",
   "unsavedChangesTitle": "Ada perubahan yang belum Anda simpan pada laman ini",
   "upToDate": "Mutakhir",
@@ -1305,5 +1306,19 @@
   "invalidSubnetMask": "Subnet mask tidak valid",
   "reservationNameHint": "Nama (opsional)",
   "reservationNameInvalid": "Gunakan huruf, angka, dan -, tidak diawali atau diakhiri -",
-  "reservationNameInUse": "Reservasi lain sudah menggunakan nama ini"
+  "reservationNameInUse": "Reservasi lain sudah menggunakan nama ini",
+  "errorRefusedRulesOverlap": "Router tidak menerima aturan ini: port-nya tumpang tindih dengan aturan lain pada protokol yang sama.",
+  "errorRefusedTooManyRules": "Router tidak menerima aturan ini: daftar sudah penuh.",
+  "errorRefusedInvalidInternalServerIpAddress": "Router tidak menerima aturan ini: alamat IP tersebut bukan milik perangkat di jaringan lokal Anda.",
+  "errorRefusedDescriptionTooLong": "Router tidak menerima aturan ini: namanya terlalu panjang.",
+  "errorRefusedInvalidDestinationIpAddress": "Router tidak menerima alamat IP host DMZ.",
+  "errorRefusedInvalidDestinationMacAddress": "Router tidak menerima alamat MAC host DMZ.",
+  "errorRefusedMultipleDestinations": "Router tidak menerima host DMZ: tetapkan dengan alamat IP atau alamat MAC, jangan keduanya.",
+  "errorRefusedInvalidSourceRestriction": "Router tidak menerima rentang IP sumber: rentang tersebut dicadangkan.",
+  "errorRefusedNoPortRanges": "Router tidak menerima aturan ini: aturan tidak memiliki port.",
+  "errorRefusedInvalidPortRange": "Router tidak menerima aturan ini: port awal lebih besar dari port akhir.",
+  "errorRefusedInvalidPort": "Router tidak menerima aturan ini: nomor port tidak valid.",
+  "errorRefusedDescriptionInUse": "Router tidak menerima aturan ini: aturan firewall lain sudah menggunakan nama ini.",
+  "dmzDestination": "Tujuan",
+  "macAddressRequired": "Alamat MAC wajib diisi"
 }

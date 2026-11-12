@@ -380,6 +380,7 @@
   "udp": "UDP",
   "unknownError": "Erro desconhecido",
   "unknownErrorCode": "Erro desconhecido: {code}",
+  "unsavedChangesBeforeOpeningDesc": "Guarde ou elimine as alterações antes de continuar.",
   "unsavedChangesDesc": "Se você sair desta página, todas as entradas serão descartadas.",
   "unsavedChangesTitle": "Tem alterações não guardadas nesta página",
   "upToDate": "Atualizado",
@@ -1305,5 +1306,19 @@
   "invalidSubnetMask": "Máscara de sub-rede inválida",
   "reservationNameHint": "Nome (opcional)",
   "reservationNameInvalid": "Utilize letras, algarismos e -, sem - no início ou no fim",
-  "reservationNameInUse": "Outra reserva já tem este nome"
+  "reservationNameInUse": "Outra reserva já tem este nome",
+  "errorRefusedRulesOverlap": "O router não aceitou esta regra: as portas sobrepõem-se a outra regra no mesmo protocolo.",
+  "errorRefusedTooManyRules": "O router não aceitou esta regra: a lista está cheia.",
+  "errorRefusedInvalidInternalServerIpAddress": "O router não aceitou esta regra: o endereço IP não pertence a nenhum dispositivo da sua rede local.",
+  "errorRefusedDescriptionTooLong": "O router não aceitou esta regra: o nome é demasiado longo.",
+  "errorRefusedInvalidDestinationIpAddress": "O router não aceitou o endereço IP do anfitrião DMZ.",
+  "errorRefusedInvalidDestinationMacAddress": "O router não aceitou o endereço MAC do anfitrião DMZ.",
+  "errorRefusedMultipleDestinations": "O router não aceitou o anfitrião DMZ: defina-o pelo endereço IP ou pelo endereço MAC, não pelos dois.",
+  "errorRefusedInvalidSourceRestriction": "O router não aceitou o intervalo de IP de origem: é um intervalo reservado.",
+  "errorRefusedNoPortRanges": "O router não aceitou esta regra: não tem nenhuma porta.",
+  "errorRefusedInvalidPortRange": "O router não aceitou esta regra: a porta inicial é superior à porta final.",
+  "errorRefusedInvalidPort": "O router não aceitou esta regra: um número de porta não é válido.",
+  "errorRefusedDescriptionInUse": "O router não aceitou esta regra: outra regra de firewall já tem este nome.",
+  "dmzDestination": "Destino",
+  "macAddressRequired": "O endereço MAC é obrigatório"
 }

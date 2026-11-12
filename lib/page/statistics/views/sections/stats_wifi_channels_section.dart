@@ -218,7 +218,7 @@ class StatsWifiChannelsSection extends ConsumerWidget {
                     // row's guard walks all 26 locales rather than a sample
                     // (`stats_wifi_channels_section_test.dart`, AC-1 ladder).
                     AppText.bodySmall(
-                      '${loc(context).channel} ${radio.channelDisplay}'
+                      '${loc(context).channel} ${radio.channelInUseDisplay}'
                       '  \u00b7  ${radio.channelBandwidth}',
                       color: colorScheme.onSurfaceVariant,
                     ),

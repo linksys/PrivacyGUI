@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
@@ -8,6 +7,7 @@ import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_feature_state.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 import 'package:privacy_gui/page/firewall/providers/usp_firewall_notifier.dart';
@@ -101,7 +101,7 @@ class UspFirewallView extends ConsumerWidget {
         AppGap.md(),
         _buildFiltersSection(context, fw, notifier, locked),
         AppGap.md(),
-        _buildIpv6PortServiceLink(context),
+        _buildIpv6PortServiceLink(context, ref),
       ],
     );
   }
@@ -270,15 +270,23 @@ class UspFirewallView extends ConsumerWidget {
   // IPv6 Port Service Link
   // ---------------------------------------------------------------------------
 
-  Widget _buildIpv6PortServiceLink(BuildContext context) {
+  Widget _buildIpv6PortServiceLink(BuildContext context, WidgetRef ref) {
     return NavLinkBlock(
       identifier: 'firewall-ipv6-port-service',
       title: loc(context).ipv6PortService,
       description: loc(context).manageIpv6PortRules,
-      // Detail pages are entered with pushNamed: `go` replaces the location, so
-      // the entry point (e.g. the Dashboard) is dropped from the back stack and
-      // Firewall's own back falls through to backFallback instead (#1420).
-      onTap: () => context.pushNamed(RouteNamed.uspIpv6PortService),
+      // Pushed, not `go`: `go` replaces the location, so the entry point (e.g.
+      // the Dashboard) is dropped from the back stack and Firewall's own back
+      // falls through to backFallback instead (#1420). And through the verb that
+      // asks first: IPv6 Port Service is an editable page too, and leaving it
+      // with this page still unsaved underneath asked twice (#1433).
+      onTap: () => context.pushNamedPastUnsavedChanges(
+        RouteNamed.uspIpv6PortService,
+        parent: ref.read(uspFirewallProvider.notifier),
+        // The bottom bar's own condition for Save.
+        canSave: !ref.read(uspFirewallProvider).status.isSaving,
+        save: () => _onSave(context, ref),
+      ),
     );
   }
 
@@ -286,7 +294,8 @@ class UspFirewallView extends ConsumerWidget {
   // Save
   // ---------------------------------------------------------------------------
 
-  Future<void> _onSave(BuildContext context, WidgetRef ref) async {
+  /// Returns whether the save succeeded.
+  Future<bool> _onSave(BuildContext context, WidgetRef ref) async {
     try {
       await doSomethingWithSpinner(
         context,
@@ -295,10 +304,12 @@ class UspFirewallView extends ConsumerWidget {
       if (context.mounted) {
         showSuccessSnackBar(context, loc(context).firewallSettingsSaved);
       }
+      return true;
     } catch (e) {
       if (context.mounted) {
         showSaveErrorSnackBar(context, e);
       }
+      return false;
     }
   }
 }

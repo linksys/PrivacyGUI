@@ -378,6 +378,7 @@
   "udp": "UDP",
   "unknownError": "Неизвестная ошибка",
   "unknownErrorCode": "Неизвестная ошибка: {code}",
+  "unsavedChangesBeforeOpeningDesc": "Сохраните или отмените изменения, прежде чем продолжить.",
   "unsavedChangesDesc": "При переходе с этой страницы все введенные данные будут отменены.",
   "unsavedChangesTitle": "У вас есть несохраненные изменения на этой странице",
   "upToDate": "Установлена последняя версия",
@@ -1305,5 +1306,19 @@
   "invalidSubnetMask": "Недопустимая маска подсети",
   "reservationNameHint": "Имя (необязательно)",
   "reservationNameInvalid": "Используйте буквы, цифры и -, без - в начале или в конце",
-  "reservationNameInUse": "Это имя уже используется другим резервированием"
+  "reservationNameInUse": "Это имя уже используется другим резервированием",
+  "errorRefusedRulesOverlap": "Маршрутизатор не принял это правило: его порты пересекаются с другим правилом для того же протокола.",
+  "errorRefusedTooManyRules": "Маршрутизатор не принял это правило: список заполнен.",
+  "errorRefusedInvalidInternalServerIpAddress": "Маршрутизатор не принял это правило: этот IP-адрес не принадлежит ни одному устройству в вашей локальной сети.",
+  "errorRefusedDescriptionTooLong": "Маршрутизатор не принял это правило: имя слишком длинное.",
+  "errorRefusedInvalidDestinationIpAddress": "Маршрутизатор не принял IP-адрес узла DMZ.",
+  "errorRefusedInvalidDestinationMacAddress": "Маршрутизатор не принял MAC-адрес узла DMZ.",
+  "errorRefusedMultipleDestinations": "Маршрутизатор не принял узел DMZ: укажите его по IP-адресу или по MAC-адресу, но не по обоим.",
+  "errorRefusedInvalidSourceRestriction": "Маршрутизатор не принял диапазон IP-адресов источника: это зарезервированный диапазон.",
+  "errorRefusedNoPortRanges": "Маршрутизатор не принял это правило: в нём не указан порт.",
+  "errorRefusedInvalidPortRange": "Маршрутизатор не принял это правило: начальный порт больше конечного.",
+  "errorRefusedInvalidPort": "Маршрутизатор не принял это правило: недопустимый номер порта.",
+  "errorRefusedDescriptionInUse": "Маршрутизатор не принял это правило: другое правило брандмауэра уже использует это имя.",
+  "dmzDestination": "Назначение",
+  "macAddressRequired": "Требуется MAC-адрес"
 }

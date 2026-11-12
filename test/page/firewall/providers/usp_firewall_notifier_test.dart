@@ -384,6 +384,20 @@ void main() {
       expect(a, isNot(equals(b)));
     });
 
+    // #1775: a DMZ host given by MAC leaves DestIP empty, so moving the DMZ
+    // from one MAC to another changes nothing but the MAC. Data that compared
+    // equal would not notify, and the dashboard card would keep the old host.
+    test('differs when only a DMZ host\'s MAC changes', () {
+      final a = dataWith(dmzSummaries: const [
+        DmzEntrySummary(enable: true, destIp: '', destMac: 'AA:BB:CC:DD:EE:01'),
+      ]);
+      final b = dataWith(dmzSummaries: const [
+        DmzEntrySummary(enable: true, destIp: '', destMac: 'AA:BB:CC:DD:EE:02'),
+      ]);
+
+      expect(a, isNot(equals(b)));
+    });
+
     test('namedProps stays lean for diagnostic output', () {
       final data = dataWith(ruleSummaries: const [
         FirewallRuleSummary(target: 'ACCEPT', enabled: true),

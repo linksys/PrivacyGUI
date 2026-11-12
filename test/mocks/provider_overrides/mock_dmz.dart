@@ -7,13 +7,16 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_feature_state.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_settings.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_status.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/dmz/providers/usp_dmz_notifier.dart';
 
+import '../test_data/devices_test_data.dart';
 import '../test_data/scenes/dmz_scene_data.dart';
+import 'mock_devices.dart' show FixedDevicesDataNotifier;
 
 /// A `uspDmzProvider` pinned to one state.
 ///
@@ -44,9 +47,16 @@ class FixedDmzNotifier extends UspDmzNotifier {
 
 /// Overrides for `usp_dmz_view`, defaulting to [gateDmzState].
 ///
-/// The state stays a parameter because the golden suite passes four of them; the
-/// default is what the gate sweeps.
-List<Override> dmzOverrides([DmzFeatureState? state]) => [
+/// The state stays a parameter because the golden suite passes several of
+/// them; the default is what the gate sweeps. `devicesDataProvider` is
+/// overridden because the destination card watches it for its suggestions
+/// (#1775), on the page's own build path.
+List<Override> dmzOverrides([DmzFeatureState? state, DevicesData? devices]) => [
       uspDmzProvider
           .overrideWith(() => FixedDmzNotifier(state ?? gateDmzState)),
+      // No LAN devices by default: the suggestions open only as the user
+      // types, so no cell renders them.
+      devicesDataProvider.overrideWith(() => FixedDevicesDataNotifier(devices ??
+          DevicesTestData.createDevicesData(
+              meshNetwork: DevicesTestData.createEmptyNetwork()))),
     ];

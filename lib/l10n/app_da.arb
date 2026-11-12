@@ -380,6 +380,7 @@
   "udp": "UDP",
   "unknownError": "Ukendt fejl",
   "unknownErrorCode": "Ukendt fejl: {code}",
+  "unsavedChangesBeforeOpeningDesc": "Gem eller annuller dine ændringer, før du fortsætter.",
   "unsavedChangesDesc": "Hvis du forlader denne side, kasseres alle poster.",
   "unsavedChangesTitle": "Der ændringer, som ikke er gemt.",
   "upToDate": "Opdateret",
@@ -1305,5 +1306,19 @@
   "invalidSubnetMask": "Ugyldig undernetmaske",
   "reservationNameHint": "Navn (valgfrit)",
   "reservationNameInvalid": "Brug bogstaver, tal og -, uden - først eller sidst",
-  "reservationNameInUse": "En anden reservation har allerede dette navn"
+  "reservationNameInUse": "En anden reservation har allerede dette navn",
+  "errorRefusedRulesOverlap": "Routeren accepterede ikke denne regel: dens porte overlapper en anden regel med samme protokol.",
+  "errorRefusedTooManyRules": "Routeren accepterede ikke denne regel: listen er fuld.",
+  "errorRefusedInvalidInternalServerIpAddress": "Routeren accepterede ikke denne regel: IP-adressen tilhører ingen enhed på dit lokale netværk.",
+  "errorRefusedDescriptionTooLong": "Routeren accepterede ikke denne regel: navnet er for langt.",
+  "errorRefusedInvalidDestinationIpAddress": "Routeren accepterede ikke DMZ-værtens IP-adresse.",
+  "errorRefusedInvalidDestinationMacAddress": "Routeren accepterede ikke DMZ-værtens MAC-adresse.",
+  "errorRefusedMultipleDestinations": "Routeren accepterede ikke DMZ-værten: angiv den med IP-adresse eller MAC-adresse, ikke begge.",
+  "errorRefusedInvalidSourceRestriction": "Routeren accepterede ikke kilde-IP-intervallet: det er et reserveret interval.",
+  "errorRefusedNoPortRanges": "Routeren accepterede ikke denne regel: den har ingen port.",
+  "errorRefusedInvalidPortRange": "Routeren accepterede ikke denne regel: startporten er højere end slutporten.",
+  "errorRefusedInvalidPort": "Routeren accepterede ikke denne regel: et portnummer er ugyldigt.",
+  "errorRefusedDescriptionInUse": "Routeren accepterede ikke denne regel: en anden firewallregel har allerede dette navn.",
+  "dmzDestination": "Destination",
+  "macAddressRequired": "MAC-adresse er påkrævet"
 }

@@ -381,6 +381,7 @@
   "udp": "UDP",
   "unknownError": "不明なエラー",
   "unknownErrorCode": "不明なエラー: {code}",
+  "unsavedChangesBeforeOpeningDesc": "続行する前に、変更を保存するか破棄してください。",
   "unsavedChangesDesc": "このページから離れると、入力内容は破棄されます。",
   "unsavedChangesTitle": "このページに未保存の変更があります",
   "upToDate": "最新の状態",
@@ -1390,5 +1391,19 @@
   "invalidSubnetMask": "無効なサブネット マスクです。",
   "reservationNameHint": "名前 (任意)",
   "reservationNameInvalid": "英字、数字、- を使用し、先頭と末尾に - は使えません",
-  "reservationNameInUse": "この名前は別の予約ですでに使用されています"
+  "reservationNameInUse": "この名前は別の予約ですでに使用されています",
+  "errorRefusedRulesOverlap": "ルーターはこのルールを受け付けませんでした。ポートが同じプロトコルの別のルールと重複しています。",
+  "errorRefusedTooManyRules": "ルーターはこのルールを受け付けませんでした。リストがいっぱいです。",
+  "errorRefusedInvalidInternalServerIpAddress": "ルーターはこのルールを受け付けませんでした。この IP アドレスはローカル ネットワーク上のデバイスではありません。",
+  "errorRefusedDescriptionTooLong": "ルーターはこのルールを受け付けませんでした。名前が長すぎます。",
+  "errorRefusedInvalidDestinationIpAddress": "ルーターは DMZ ホストの IP アドレスを受け付けませんでした。",
+  "errorRefusedInvalidDestinationMacAddress": "ルーターは DMZ ホストの MAC アドレスを受け付けませんでした。",
+  "errorRefusedMultipleDestinations": "ルーターは DMZ ホストを受け付けませんでした。IP アドレスか MAC アドレスのどちらか一方で指定してください。",
+  "errorRefusedInvalidSourceRestriction": "ルーターは送信元 IP 範囲を受け付けませんでした。予約済みの範囲です。",
+  "errorRefusedNoPortRanges": "ルーターはこのルールを受け付けませんでした。ポートが指定されていません。",
+  "errorRefusedInvalidPortRange": "ルーターはこのルールを受け付けませんでした。開始ポートが終了ポートより大きくなっています。",
+  "errorRefusedInvalidPort": "ルーターはこのルールを受け付けませんでした。ポート番号が無効です。",
+  "errorRefusedDescriptionInUse": "ルーターはこのルールを受け付けませんでした。この名前は別のファイアウォール ルールですでに使用されています。",
+  "dmzDestination": "宛先",
+  "macAddressRequired": "MAC アドレスは必須です"
 }

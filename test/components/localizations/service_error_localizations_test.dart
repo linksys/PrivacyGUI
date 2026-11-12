@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/errors/usp_refusal_reason.dart';
 import 'package:privacy_gui/core/usp/models/usp_operation_result.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -183,6 +184,132 @@ void main() {
         failures: [_detail(7026)],
       );
       expect(localizeServiceError(ctx, error), loc(ctx).errorResourceNotFound);
+    });
+  });
+
+  // linksys/FWDEV#204 (#1775): a refused write names its reason on the refused
+  // leaf, and the USP layer reads it into `refusalReason`. The localizer
+  // chooses from that field and never from the router's text.
+  group('batch — the reason the router named', () {
+    UspErrorDetail refused(UspRefusalReason reason, {String message = 'raw'}) =>
+        UspErrorDetail(
+          requestedPath: 'Device.NAT.PortMapping.2.ExternalPort',
+          errorCode: 7012,
+          errorMessage: message,
+          refusalReason: reason,
+        );
+    // What every other leaf of a refused Set carries (bench 2026-10-12).
+    const groupFailed = UspErrorDetail(
+      requestedPath: 'Device.NAT.PortMapping.2.Description',
+      errorCode: 7012,
+      errorMessage: "SetParameterGroup: group set failed at "
+          "'Device.NAT.PortMapping.2.ExternalPort' (Invalid value)",
+    );
+
+    testWidgets('each reason has its own message', (tester) async {
+      final ctx = await pumpContext(tester);
+      final l = loc(ctx);
+      final expected = <UspRefusalReason, String>{
+        UspRefusalReason.rulesOverlap: l.errorRefusedRulesOverlap,
+        UspRefusalReason.tooManyRules: l.errorRefusedTooManyRules,
+        UspRefusalReason.invalidInternalServerIpAddress:
+            l.errorRefusedInvalidInternalServerIpAddress,
+        UspRefusalReason.descriptionTooLong: l.errorRefusedDescriptionTooLong,
+        UspRefusalReason.invalidDestinationIpAddress:
+            l.errorRefusedInvalidDestinationIpAddress,
+        UspRefusalReason.invalidDestinationMacAddress:
+            l.errorRefusedInvalidDestinationMacAddress,
+        UspRefusalReason.multipleDestinations:
+            l.errorRefusedMultipleDestinations,
+        UspRefusalReason.invalidSourceRestriction:
+            l.errorRefusedInvalidSourceRestriction,
+        UspRefusalReason.noPortRanges: l.errorRefusedNoPortRanges,
+        UspRefusalReason.invalidPortRange: l.errorRefusedInvalidPortRange,
+        UspRefusalReason.invalidPort: l.errorRefusedInvalidPort,
+        UspRefusalReason.descriptionInUse: l.errorRefusedDescriptionInUse,
+      };
+      expect(expected.keys.toSet(),
+          UspRefusalReason.values.toSet()..remove(UspRefusalReason.unknown));
+      expect(expected.values.toSet(), hasLength(expected.length),
+          reason: 'no two reasons share a message');
+      expected.forEach((reason, message) {
+        expect(
+            localizeServiceError(
+                ctx,
+                UspCompleteFailureError(
+                    summary: 's', failures: [refused(reason)])),
+            message,
+            reason: '$reason');
+      });
+    });
+
+    testWidgets(
+        'the refused leaf decides, wherever it is listed, for a complete or a '
+        'partial failure', (tester) async {
+      final ctx = await pumpContext(tester);
+      final l = loc(ctx);
+      final failures = [
+        groupFailed,
+        refused(UspRefusalReason.rulesOverlap),
+        groupFailed,
+      ];
+      expect(
+          localizeServiceError(
+              ctx, UspCompleteFailureError(summary: 's', failures: failures)),
+          l.errorRefusedRulesOverlap);
+      expect(
+          localizeServiceError(
+              ctx,
+              UspPartialFailureError(
+                  summary: 's', successPaths: const [], failures: failures)),
+          l.errorRefusedRulesOverlap);
+    });
+
+    testWidgets(
+        'the message is chosen from the reason, never from errorMessage',
+        (tester) async {
+      final ctx = await pumpContext(tester);
+      final l = loc(ctx);
+      // The router's text names one reason, the field another: the field wins.
+      expect(
+          localizeServiceError(
+              ctx,
+              UspCompleteFailureError(summary: 's', failures: [
+                refused(UspRefusalReason.tooManyRules,
+                    message: 'ErrorRulesOverlap: external port 18080 is '
+                        'already forwarded.'),
+              ])),
+          l.errorRefusedTooManyRules);
+      // A name in the text with no reason read from it is not a reason: the
+      // fault code decides, as before (7012 has no message of its own).
+      expect(
+          localizeServiceError(
+              ctx,
+              UspCompleteFailureError(summary: 's', failures: [
+                refused(UspRefusalReason.unknown,
+                    message: 'ErrorRulesOverlap: external port 18080 is '
+                        'already forwarded.'),
+              ])),
+          l.errorUnexpected);
+    });
+
+    testWidgets(
+        'a transport 9999 that names a reason reads as the refusal, not as a '
+        'network error', (tester) async {
+      final ctx = await pumpContext(tester);
+      final l = loc(ctx);
+      expect(
+          localizeServiceError(
+              ctx,
+              const UspCompleteFailureError(summary: 's', failures: [
+                UspErrorDetail(
+                  requestedPath: 'Device.Firewall.DMZ.1.DestIP',
+                  errorCode: 9999,
+                  errorMessage: 'raw',
+                  refusalReason: UspRefusalReason.multipleDestinations,
+                ),
+              ])),
+          l.errorRefusedMultipleDestinations);
     });
   });
 

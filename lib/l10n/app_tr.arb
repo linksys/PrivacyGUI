@@ -378,6 +378,7 @@
   "udp": "UDP",
   "unknownError": "Bilinmeyen hata",
   "unknownErrorCode": "Bilinmeyen hata: {code}",
+  "unsavedChangesBeforeOpeningDesc": "Devam etmeden önce değişikliklerinizi kaydedin veya atın.",
   "unsavedChangesDesc": "Bu sayfadan ayrılmak tüm girişleri atacaktır.",
   "unsavedChangesTitle": "Bu sayfada kaydedilmemiş değişiklikleriniz var",
   "upToDate": "Güncelle",
@@ -1305,5 +1306,19 @@
   "invalidSubnetMask": "Geçersiz alt ağ maskesi",
   "reservationNameHint": "Ad (isteğe bağlı)",
   "reservationNameInvalid": "Harf, rakam ve - kullanın; - ile başlamamalı veya bitmemeli",
-  "reservationNameInUse": "Başka bir rezervasyon zaten bu adı kullanıyor"
+  "reservationNameInUse": "Başka bir rezervasyon zaten bu adı kullanıyor",
+  "errorRefusedRulesOverlap": "Yönlendirici bu kuralı kabul etmedi: portları aynı protokoldeki başka bir kuralla çakışıyor.",
+  "errorRefusedTooManyRules": "Yönlendirici bu kuralı kabul etmedi: liste dolu.",
+  "errorRefusedInvalidInternalServerIpAddress": "Yönlendirici bu kuralı kabul etmedi: IP adresi yerel ağınızdaki bir cihaza ait değil.",
+  "errorRefusedDescriptionTooLong": "Yönlendirici bu kuralı kabul etmedi: ad çok uzun.",
+  "errorRefusedInvalidDestinationIpAddress": "Yönlendirici DMZ ana bilgisayarının IP adresini kabul etmedi.",
+  "errorRefusedInvalidDestinationMacAddress": "Yönlendirici DMZ ana bilgisayarının MAC adresini kabul etmedi.",
+  "errorRefusedMultipleDestinations": "Yönlendirici DMZ ana bilgisayarını kabul etmedi: IP adresiyle ya da MAC adresiyle belirtin, ikisiyle birden değil.",
+  "errorRefusedInvalidSourceRestriction": "Yönlendirici kaynak IP aralığını kabul etmedi: bu ayrılmış bir aralık.",
+  "errorRefusedNoPortRanges": "Yönlendirici bu kuralı kabul etmedi: kuralda port yok.",
+  "errorRefusedInvalidPortRange": "Yönlendirici bu kuralı kabul etmedi: başlangıç portu bitiş portundan büyük.",
+  "errorRefusedInvalidPort": "Yönlendirici bu kuralı kabul etmedi: bir port numarası geçersiz.",
+  "errorRefusedDescriptionInUse": "Yönlendirici bu kuralı kabul etmedi: bu ad başka bir güvenlik duvarı kuralı tarafından zaten kullanılıyor.",
+  "dmzDestination": "Hedef",
+  "macAddressRequired": "MAC adresi gereklidir"
 }

@@ -978,6 +978,67 @@ void main() {
       });
     });
 
+    group('WiFi signal summary', () {
+      // #1782: the 5 GHz radio is set to 40 and on 36 (hostapd's 20/40 MHz
+      // coexistence swap, 2.0.4.26103108). The summary names where it is.
+      test('names the channel the busiest radio is on, not the configured one',
+          () async {
+        final container = createContainer();
+        final notifier = container.read(unifiedDiagnosticsProvider.notifier);
+
+        when(() => mockService.checkWanStatus())
+            .thenAnswer((_) async => const WanStatusUIModel(
+                  status: 'Up',
+                  ipAddress: '192.168.1.100',
+                  subnetMask: '255.255.255.0',
+                  addressingType: 'DHCP',
+                ));
+        when(() =>
+                mockService.pingGateway(repeatCount: any(named: 'repeatCount')))
+            .thenAnswer((_) async => _createPingResult('192.168.1.1'));
+        when(() => mockService.pingDns(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('8.8.8.8'));
+        when(() => mockService.pingInternet(
+              host: any(named: 'host'),
+              repeatCount: any(named: 'repeatCount'),
+            )).thenAnswer((_) async => _createPingResult('1.1.1.1'));
+        when(() => mockService.analyzeWifiSignalPerRadio())
+            .thenAnswer((_) async => const WifiSignalPerRadioUIModel(radios: [
+                  RadioSignalStatsUIModel(
+                    instancePath: 'Device.WiFi.Radio.2.',
+                    band: '5GHz',
+                    channel: 40,
+                    channelInUse: 36,
+                    status: 'Up',
+                    clientCount: 2,
+                    averageRssi: -50,
+                    minRssi: -55,
+                  ),
+                ]));
+        when(() => mockService.checkConnectedDevices())
+            .thenAnswer((_) async => const ConnectedDevicesUIModel(
+                  totalDevices: 2,
+                  activeDevices: 2,
+                  highBandwidthDevices: [],
+                ));
+        when(() => mockService.checkMeshBackhaul())
+            .thenAnswer((_) async => const []);
+
+        await notifier.runFullDiagnostic();
+        await Future.delayed(Duration.zero);
+
+        final wifi = container
+            .read(unifiedDiagnosticsProvider)
+            .results
+            .whereType<WifiSignalCheckUIModel>()
+            .single;
+        expect(wifi.channelInUse, 36);
+        container.dispose();
+      });
+    });
+
     group('Cancellation', () {
       test('cancel awaits the in-flight run and releases scope', () async {
         final container = createContainer();

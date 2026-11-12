@@ -380,6 +380,7 @@
   "udp": "UDP",
   "unknownError": "Erreur inconnue",
   "unknownErrorCode": "Erreur inconnue : {code}",
+  "unsavedChangesBeforeOpeningDesc": "Enregistrez ou supprimez vos modifications avant de continuer.",
   "unsavedChangesDesc": "Le fait de naviguer hors de cette page annulera toutes les entrées.",
   "unsavedChangesTitle": "Vous avez des modifications non enregistrées sur cette page",
   "upToDate": "À jour",
@@ -1305,5 +1306,19 @@
   "invalidSubnetMask": "Masque de sous-réseau non valide",
   "reservationNameHint": "Nom (facultatif)",
   "reservationNameInvalid": "Utilisez des lettres, des chiffres et -, sans - au début ni à la fin",
-  "reservationNameInUse": "Une autre réservation porte déjà ce nom"
+  "reservationNameInUse": "Une autre réservation porte déjà ce nom",
+  "errorRefusedRulesOverlap": "Le routeur n'a pas accepté cette règle : ses ports chevauchent une autre règle utilisant le même protocole.",
+  "errorRefusedTooManyRules": "Le routeur n'a pas accepté cette règle : la liste est pleine.",
+  "errorRefusedInvalidInternalServerIpAddress": "Le routeur n'a pas accepté cette règle : l'adresse IP ne correspond à aucun appareil de votre réseau local.",
+  "errorRefusedDescriptionTooLong": "Le routeur n'a pas accepté cette règle : le nom est trop long.",
+  "errorRefusedInvalidDestinationIpAddress": "Le routeur n'a pas accepté l'adresse IP de l'hôte DMZ.",
+  "errorRefusedInvalidDestinationMacAddress": "Le routeur n'a pas accepté l'adresse MAC de l'hôte DMZ.",
+  "errorRefusedMultipleDestinations": "Le routeur n'a pas accepté l'hôte DMZ : définissez-le par adresse IP ou par adresse MAC, pas les deux.",
+  "errorRefusedInvalidSourceRestriction": "Le routeur n'a pas accepté la plage d'adresses IP source : il s'agit d'une plage réservée.",
+  "errorRefusedNoPortRanges": "Le routeur n'a pas accepté cette règle : elle n'a aucun port.",
+  "errorRefusedInvalidPortRange": "Le routeur n'a pas accepté cette règle : le port de début est supérieur au port de fin.",
+  "errorRefusedInvalidPort": "Le routeur n'a pas accepté cette règle : un numéro de port n'est pas valide.",
+  "errorRefusedDescriptionInUse": "Le routeur n'a pas accepté cette règle : une autre règle de pare-feu porte déjà ce nom.",
+  "dmzDestination": "Destination",
+  "macAddressRequired": "L'adresse MAC est requise"
 }

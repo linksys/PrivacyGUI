@@ -1254,6 +1254,7 @@ class UnifiedDiagnosticsNotifier
       return WifiSignalCheckUIModel(
         rssi: 0,
         channel: firstResolved?.channel ?? 0,
+        channelInUse: firstResolved?.channelInUse,
         band: firstResolved?.band ?? 'Unknown',
         connectedDevices: 0,
         radios: info.radios,
@@ -1291,6 +1292,7 @@ class UnifiedDiagnosticsNotifier
     return WifiSignalCheckUIModel(
       rssi: weighted,
       channel: primary?.channel ?? 0,
+      channelInUse: primary?.channelInUse,
       band: primary?.band ?? 'Unknown',
       connectedDevices: info.totalClients,
       radios: info.radios,

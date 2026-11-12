@@ -378,6 +378,7 @@
   "udp": "UDP",
   "unknownError": "알 수 없는 오류",
   "unknownErrorCode": "알 수 없는 오류: {code}",
+  "unsavedChangesBeforeOpeningDesc": "계속하기 전에 변경사항을 저장하거나 삭제하세요.",
   "unsavedChangesDesc": "이 페이지에서 나가면 입력한 내용이 삭제됩니다.",
   "unsavedChangesTitle": "이 페이지에 저장되지 않은 변경사항이 있습니다.",
   "upToDate": "최신 상태",
@@ -1305,5 +1306,19 @@
   "invalidSubnetMask": "잘못된 서브넷 마스크",
   "reservationNameHint": "이름 (선택 사항)",
   "reservationNameInvalid": "문자, 숫자, -를 사용하고 -로 시작하거나 끝나지 않아야 합니다",
-  "reservationNameInUse": "다른 예약에서 이미 이 이름을 사용하고 있습니다"
+  "reservationNameInUse": "다른 예약에서 이미 이 이름을 사용하고 있습니다",
+  "errorRefusedRulesOverlap": "라우터가 이 규칙을 받아들이지 않았습니다. 포트가 같은 프로토콜의 다른 규칙과 겹칩니다.",
+  "errorRefusedTooManyRules": "라우터가 이 규칙을 받아들이지 않았습니다. 목록이 가득 찼습니다.",
+  "errorRefusedInvalidInternalServerIpAddress": "라우터가 이 규칙을 받아들이지 않았습니다. 이 IP 주소는 로컬 네트워크의 기기가 아닙니다.",
+  "errorRefusedDescriptionTooLong": "라우터가 이 규칙을 받아들이지 않았습니다. 이름이 너무 깁니다.",
+  "errorRefusedInvalidDestinationIpAddress": "라우터가 DMZ 호스트의 IP 주소를 받아들이지 않았습니다.",
+  "errorRefusedInvalidDestinationMacAddress": "라우터가 DMZ 호스트의 MAC 주소를 받아들이지 않았습니다.",
+  "errorRefusedMultipleDestinations": "라우터가 DMZ 호스트를 받아들이지 않았습니다. IP 주소 또는 MAC 주소 중 하나로만 지정하세요.",
+  "errorRefusedInvalidSourceRestriction": "라우터가 소스 IP 범위를 받아들이지 않았습니다. 예약된 범위입니다.",
+  "errorRefusedNoPortRanges": "라우터가 이 규칙을 받아들이지 않았습니다. 포트가 없습니다.",
+  "errorRefusedInvalidPortRange": "라우터가 이 규칙을 받아들이지 않았습니다. 시작 포트가 끝 포트보다 큽니다.",
+  "errorRefusedInvalidPort": "라우터가 이 규칙을 받아들이지 않았습니다. 포트 번호가 올바르지 않습니다.",
+  "errorRefusedDescriptionInUse": "라우터가 이 규칙을 받아들이지 않았습니다. 다른 방화벽 규칙에서 이미 이 이름을 사용하고 있습니다.",
+  "dmzDestination": "대상",
+  "macAddressRequired": "MAC 주소는 필수입니다"
 }

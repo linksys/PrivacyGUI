@@ -611,6 +611,7 @@ void main() {
           'Device.WiFi.Radio.$i.Enable': true,
           'Device.WiFi.Radio.$i.Status': 'Up',
           'Device.WiFi.Radio.$i.Channel': channel,
+          'Device.WiFi.Radio.$i.ChannelsInUse': '$channel',
           'Device.WiFi.Radio.$i.OperatingFrequencyBand': band,
           'Device.WiFi.Radio.$i.OperatingChannelBandwidth': '20MHz',
           'Device.WiFi.Radio.$i.PossibleChannels': '1,6,11',
@@ -716,6 +717,7 @@ void main() {
               'Device.WiFi.Radio.$i.Enable': true,
               'Device.WiFi.Radio.$i.Status': 'Up',
               'Device.WiFi.Radio.$i.Channel': i == 1 ? 6 : 36,
+              'Device.WiFi.Radio.$i.ChannelsInUse': i == 1 ? '6' : '36',
               'Device.WiFi.Radio.$i.OperatingFrequencyBand':
                   i == 1 ? '2.4GHz' : '5GHz',
               'Device.WiFi.Radio.$i.OperatingChannelBandwidth': '20MHz',

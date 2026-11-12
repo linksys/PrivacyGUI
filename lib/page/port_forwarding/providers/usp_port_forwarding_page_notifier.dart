@@ -90,14 +90,8 @@ class UspPortForwardingPageNotifier
   /// [performSave] reports "wrote some" as a [UspPartialFailureError], whichever
   /// batch it came from, so the error type alone tells the two apart.
   @override
-  Future<PortForwardingPageFeatureState> save() async {
-    try {
-      return await super.save();
-    } on UspPartialFailureError {
-      await fetch(forceRemote: true);
-      rethrow;
-    }
-  }
+  Future<PortForwardingPageFeatureState> save() =>
+      saveReadingBackAfterPartialWrite(super.save);
 
   // ---------------------------------------------------------------------------
   // performSave — diff original vs current, batch API calls
@@ -315,6 +309,12 @@ class UspPortForwardingPageNotifier
           externalPortEndRange: externalPortEndRange,
         );
       });
+    } on UspPartialFailureError catch (e) {
+      // The router kept a row the service could not delete (usp-client
+      // 0.14.0, linksys/usp_framework#114), so the card's list is stale.
+      logger.e('[USP][PortFwd]: Immediate add forwarding failed', error: e);
+      ref.invalidate(portForwardingDataProvider);
+      rethrow;
     } on ServiceError catch (e) {
       logger.e('[USP][PortFwd]: Immediate add forwarding failed', error: e);
       rethrow;

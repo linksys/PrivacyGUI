@@ -143,7 +143,13 @@ class PingCheckUIModel extends DiagnosticStepUIModel {
 /// per-radio detail used by the result UI.
 class WifiSignalCheckUIModel extends DiagnosticStepUIModel {
   final int rssi;
+
+  /// The configured channel of the summary radio; see [channelInUse].
   final int channel;
+
+  /// The channel the summary radio is on, or null when unknown (#1782). The
+  /// result shows this one.
+  final int? channelInUse;
   final String band;
   final int connectedDevices;
   final List<RadioSignalStatsUIModel> radios;
@@ -151,6 +157,7 @@ class WifiSignalCheckUIModel extends DiagnosticStepUIModel {
   WifiSignalCheckUIModel({
     required this.rssi,
     required this.channel,
+    required this.channelInUse,
     required this.band,
     required this.connectedDevices,
     this.radios = const [],
@@ -162,6 +169,7 @@ class WifiSignalCheckUIModel extends DiagnosticStepUIModel {
           rawData: {
             'rssi': rssi,
             'channel': channel,
+            'channelInUse': channelInUse,
             'band': band,
             'connectedDevices': connectedDevices,
             'radios': radios
@@ -169,6 +177,7 @@ class WifiSignalCheckUIModel extends DiagnosticStepUIModel {
                       'instancePath': r.instancePath,
                       'band': r.band,
                       'channel': r.channel,
+                      'channelInUse': r.channelInUse,
                       'clientCount': r.clientCount,
                       'averageRssi': r.averageRssi,
                       'minRssi': r.minRssi,
