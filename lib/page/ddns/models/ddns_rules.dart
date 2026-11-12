@@ -12,8 +12,9 @@ import 'package:privacy_gui/util/network_utils.dart';
 /// a host name the provider does not know is not a save error, and the status
 /// reports it after the save.
 
-/// The longest user name or password the router stores, in bytes: the
-/// `ddnsmngr` setters refuse a longer value.
+/// The longest user name or password the page sends, in UTF-8 bytes: the
+/// `ddnsmngr` setters refuse a value over 256 (linksys/FWDEV#191
+/// implementation doc §8.1).
 const int kDdnsCredentialMaxBytes = 256;
 
 /// One host name label: a letter or digit, then at most 61 letters, digits or
@@ -40,9 +41,11 @@ bool isValidDdnsHostname(String value) =>
 /// Whether [value] is a user name or password 1.0 accepted: not empty, and no
 /// longer than the router stores.
 ///
-/// The limit is counted in UTF-8 bytes because the setter counts bytes, so a
-/// password of 200 non-Latin characters is refused here rather than by the
-/// router mid-save.
+/// The limit is counted in UTF-8 bytes, the stricter reading of the setter's
+/// 256: whether it counts bytes or characters has not been measured, and
+/// counting bytes can only refuse here what the setter might refuse mid-save.
+/// A non-Latin value of more than 256 bytes but at most 256 characters is
+/// refused here even if the router would take it.
 bool isValidDdnsCredential(String value) =>
     value.isNotEmpty && utf8.encode(value).length <= kDdnsCredentialMaxBytes;
 

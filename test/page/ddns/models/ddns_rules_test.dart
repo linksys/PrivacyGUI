@@ -54,7 +54,8 @@ void main() {
       expect(isValidDdnsCredential('a' * 257), isFalse);
     });
 
-    test('counts UTF-8 bytes, as the router does, not characters', () {
+    test('counts UTF-8 bytes, not characters', () {
+      // The stricter reading of the setter's 256 (see isValidDdnsCredential):
       // 86 three-byte characters are 258 bytes, though only 86 characters.
       expect(isValidDdnsCredential('密' * 85), isTrue);
       expect(isValidDdnsCredential('密' * 86), isFalse);
