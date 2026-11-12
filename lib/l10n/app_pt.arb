@@ -1284,6 +1284,7 @@
   "nodeActions": "Ações do nó",
   "rebootMeshMessage": "O roteador e todos os nós da sua rede de malha serão reiniciados. Todos os dispositivos conectados ficarão desconectados até que a rede volte.",
   "factoryResetMeshMessage": "O roteador e todos os nós da sua rede de malha serão redefinidos para as configurações de fábrica, incluindo a senha do WiFi e do roteador impressa na etiqueta do roteador. Depois, cada nó precisará ser configurado novamente.",
+  "networkRestartAlreadyRunning": "Sua rede já está sendo reiniciada ou redefinida. Aguarde a conclusão.",
   "rebootNodeMessage": "{node} será reiniciado. Os dispositivos conectados por meio dele ficarão desconectados até que ele volte.",
   "rebootNodesMessage": "Estes nós serão reiniciados, começando pelo mais distante: {nodes}. Os dispositivos conectados por meio deles ficarão desconectados até que eles voltem.",
   "factoryResetNodeMessage": "{node} será redefinido para as configurações de fábrica e sairá da sua rede. Adicione-o novamente para usá-lo.",

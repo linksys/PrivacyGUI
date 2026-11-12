@@ -320,6 +320,48 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
     _startProbeLoop();
   }
 
+  /// Starts the cooldown over, from now, for a caller that learns when the
+  /// router goes down only after it has entered recovery.
+  ///
+  /// A whole-network reboot or reset (#1777) enters recovery once the command
+  /// is accepted, with a cooldown that is only a ceiling: the controller acts
+  /// on its agents first and goes down last, so the countdown cannot start at
+  /// the reply. When the network status says the controller is going down,
+  /// this replaces the ceiling with the usual countdown. A no-op when not
+  /// waiting, or once the probe loop has started.
+  void restartCooldown(Duration cooldown) {
+    if (state != AppConnectionState.waitingForRecovery) return;
+    if (!(_cooldownTimer?.isActive ?? false)) return;
+    _cooldownTimer!.cancel();
+    _cooldownTimer = Timer(cooldown, _startProbeLoop);
+  }
+
+  /// Leaves recovery with the session intact, for a caller that learns the
+  /// router is not going down after all.
+  ///
+  /// A whole-network reboot or reset (#1777) enters recovery once the command
+  /// is accepted, before the controller's turn. When the network status then
+  /// reads `Failed`, or is still running at the caller's limit, the controller
+  /// has not gone down, and probing would end the wait the wrong way: a factory
+  /// reset's recovery reads a router that answers as one that was reset, and
+  /// ends the session. This ends it as a recovered one does instead — back to
+  /// `authenticated`, with the event stream reconnected. A no-op when not
+  /// waiting.
+  void leaveWaiting() {
+    if (state != AppConnectionState.waitingForRecovery) return;
+    _probeTimer?.cancel();
+    _probeTimer = null;
+    _cooldownTimer?.cancel();
+    _cooldownTimer = null;
+    _recoveryContext = null;
+    _recoveryPlan = null;
+    _consecutiveFailures = 0;
+    _lastProbeResult = null;
+    state = AppConnectionState.authenticated;
+    logger.i('[Connection] Left waiting — the router did not go down');
+    ref.read(sseManagerProvider)?.connect();
+  }
+
   void _startProbeLoop() {
     _probeTimer?.cancel();
     _runProbe();

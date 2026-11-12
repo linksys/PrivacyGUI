@@ -1284,6 +1284,7 @@
   "nodeActions": "節點操作",
   "rebootMeshMessage": "路由器及您網狀網路中的每個節點都將重新啟動。網路恢復前，所有已連線的裝置都會中斷連線。",
   "factoryResetMeshMessage": "路由器及您網狀網路中的每個節點都將恢復原廠設定，Wi-Fi 與路由器密碼也會還原為路由器標籤上所印的預設值。之後每個節點都必須重新設定。",
+  "networkRestartAlreadyRunning": "您的網路已在重新啟動或重設中，請等待完成。",
   "rebootNodeMessage": "{node} 將重新啟動。透過它連線的裝置會中斷連線，直到它恢復為止。",
   "rebootNodesMessage": "下列節點將重新啟動，由最遠的開始：{nodes}。透過這些節點連線的裝置會中斷連線，直到它們恢復為止。",
   "factoryResetNodeMessage": "{node} 將恢復原廠設定並離開您的網路。若要繼續使用，請重新將它加入網路。",

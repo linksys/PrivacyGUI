@@ -1284,6 +1284,7 @@
   "nodeActions": "Nodehandlinger",
   "rebootMeshMessage": "Ruteren og alle nodene i mesh-nettverket ditt starter på nytt. Alle tilkoblede enheter kobles fra til nettverket er tilbake.",
   "factoryResetMeshMessage": "Ruteren og alle nodene i mesh-nettverket ditt tilbakestilles til fabrikkinnstillinger, inkludert WiFi- og ruterpassordet som står på ruterens etikett. Deretter må alle nodene settes opp på nytt.",
+  "networkRestartAlreadyRunning": "Nettverket ditt holder allerede på å starte på nytt eller bli tilbakestilt. Vent til det er ferdig.",
   "rebootNodeMessage": "{node} starter på nytt. Enheter som er koblet til via den, kobles fra til den er tilbake.",
   "rebootNodesMessage": "Disse nodene starter på nytt, den fjerneste først: {nodes}. Enheter som er koblet til via dem, kobles fra til de er tilbake.",
   "factoryResetNodeMessage": "{node} tilbakestilles til fabrikkinnstillinger og forlater nettverket ditt. Legg den til på nytt for å bruke den.",

@@ -1284,6 +1284,7 @@
   "nodeActions": "Actions du nœud",
   "rebootMeshMessage": "Le routeur et tous les nœuds de votre réseau maillé redémarreront. Tous les appareils connectés seront déconnectés jusqu'au rétablissement du réseau.",
   "factoryResetMeshMessage": "Le routeur et tous les nœuds de votre réseau maillé seront réinitialisés aux paramètres d'usine, y compris le mot de passe WiFi et du routeur indiqué sur l'étiquette du routeur. Chaque nœud devra ensuite être configuré de nouveau.",
+  "networkRestartAlreadyRunning": "Votre réseau est déjà en cours de redémarrage ou de réinitialisation. Veuillez patienter jusqu'à la fin de l'opération.",
   "rebootNodeMessage": "{node} redémarrera. Les appareils connectés par son intermédiaire seront déconnectés jusqu'à son retour.",
   "rebootNodesMessage": "Ces nœuds redémarreront, en commençant par le plus éloigné : {nodes}. Les appareils connectés par leur intermédiaire seront déconnectés jusqu'à leur retour.",
   "factoryResetNodeMessage": "{node} sera réinitialisé aux paramètres d'usine et quittera votre réseau. Ajoutez-le de nouveau pour l'utiliser.",

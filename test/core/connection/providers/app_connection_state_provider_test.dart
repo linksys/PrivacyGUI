@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -625,6 +626,133 @@ void main() {
         await Future<void>.delayed(Duration.zero);
 
         verifyNever(() => mockProbe.probe());
+      });
+    });
+
+    group('restartCooldown — the countdown starts when the router goes', () {
+      // A whole-network reboot (#1777) enters recovery at the reply with a
+      // cooldown that is only a ceiling: the controller goes down last, after
+      // every agent. Once the network status says it is going, the flow swaps
+      // the ceiling for the usual countdown, counted from then.
+      test('replaces the ceiling with a countdown from now', () {
+        fakeAsync((async) {
+          when(() => mockSseManager.disconnectKeepingSubscriptions())
+              .thenAnswer((_) async {});
+          when(() => mockProbe.probe())
+              .thenAnswer((_) async => ProbeResult.unreachable);
+
+          final container = createContainer();
+          final notifier = container.read(appConnectionStateProvider.notifier);
+          notifier.enterWaiting(
+            context: const RecoveryContext(
+              trigger: RecoveryTrigger.operationalReboot,
+              cooldown: Duration(minutes: 4),
+            ),
+          );
+          async.elapse(const Duration(seconds: 30));
+
+          notifier.restartCooldown(const Duration(seconds: 60));
+          async.elapse(const Duration(seconds: 59));
+          verifyNever(() => mockProbe.probe());
+
+          async.elapse(const Duration(seconds: 2));
+          verify(() => mockProbe.probe()).called(1);
+          container.dispose();
+        });
+      });
+
+      test('does not hold off a probe loop that has already started', () {
+        fakeAsync((async) {
+          when(() => mockSseManager.disconnectKeepingSubscriptions())
+              .thenAnswer((_) async {});
+          when(() => mockProbe.probe())
+              .thenAnswer((_) async => ProbeResult.unreachable);
+
+          final container = createContainer();
+          final notifier = container.read(appConnectionStateProvider.notifier);
+          notifier.enterWaiting(
+            context: const RecoveryContext(
+              trigger: RecoveryTrigger.operationalReboot,
+              cooldown: Duration(seconds: 5),
+            ),
+          );
+          async.elapse(const Duration(seconds: 6));
+          verify(() => mockProbe.probe()).called(1);
+
+          notifier.restartCooldown(const Duration(seconds: 60));
+          // The local probe interval is 10 s; the loop keeps its cadence.
+          async.elapse(const Duration(seconds: 10));
+          verify(() => mockProbe.probe()).called(1);
+          container.dispose();
+        });
+      });
+
+      test('does nothing when not waiting', () {
+        fakeAsync((async) {
+          final container = createContainer();
+          final notifier = container.read(appConnectionStateProvider.notifier);
+
+          notifier.restartCooldown(const Duration(seconds: 1));
+          async.elapse(const Duration(seconds: 5));
+
+          verifyNever(() => mockProbe.probe());
+          expect(container.read(appConnectionStateProvider),
+              AppConnectionState.authenticated);
+          container.dispose();
+        });
+      });
+    });
+
+    group('leaveWaiting — the router did not go down after all', () {
+      // A whole-network factory reset whose status reads Failed (#1777): the
+      // controller is still up with the session's credential. Probing would
+      // read it as a router that came back reset and end the session; this
+      // ends the wait as a recovered one instead.
+      test('returns to authenticated, keeps the session, and never probes', () {
+        fakeAsync((async) {
+          when(() => mockSseManager.disconnectKeepingSubscriptions())
+              .thenAnswer((_) async {});
+          when(() => mockSseManager.connect()).thenAnswer((_) async {});
+          when(() => mockProbe.probe())
+              .thenAnswer((_) async => ProbeResult.recovered);
+
+          final container = createContainer();
+          final notifier = container.read(appConnectionStateProvider.notifier);
+          notifier.enterWaiting(
+            context: const RecoveryContext(
+              trigger: RecoveryTrigger.operationalFactoryReset,
+              cooldown: Duration(minutes: 4),
+              healthOnly: true,
+            ),
+          );
+          async.elapse(const Duration(seconds: 10));
+
+          notifier.leaveWaiting();
+          async.elapse(const Duration(minutes: 5));
+
+          expect(container.read(appConnectionStateProvider),
+              AppConnectionState.authenticated);
+          expect(notifier.takePendingSessionExit(), isNull,
+              reason: 'nothing may report the session as over');
+          verify(() => mockSseManager.connect()).called(1);
+          verifyNever(() => mockProbe.probe());
+          container.dispose();
+        });
+      });
+
+      test('does nothing when not waiting', () {
+        fakeAsync((async) {
+          final container = createContainer();
+          final notifier = container.read(appConnectionStateProvider.notifier);
+
+          notifier.leaveWaiting();
+          async.flushMicrotasks();
+
+          verifyNever(() => mockSseManager.connect());
+          expect(container.read(appConnectionStateProvider),
+              AppConnectionState.authenticated);
+          container.dispose();
+        });
       });
     });
 

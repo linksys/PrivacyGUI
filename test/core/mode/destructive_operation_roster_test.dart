@@ -244,6 +244,11 @@ const _commandCallSites = <String, List<String>>{
     'BleOnboardingOperations.stop',
   ],
   'lib/page/admin/services/usp_admin_service.dart': [
+    // The whole-network pair and the router-only pair are one operation each,
+    // behind the same two seams: which pair goes out is read from the router
+    // right before the call (#1777).
+    'DataElementsNetworkOperations.factoryResetAll',
+    'DataElementsNetworkOperations.rebootAll',
     'DeviceOperations.factoryReset',
     'DeviceOperations.reboot',
   ],

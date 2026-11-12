@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/admin/models/network_action_models.dart';
 import 'package:privacy_gui/page/admin/services/usp_admin_service.dart';
 
 import '../../../mocks/test_data/usp_envelope_test_data.dart';
@@ -238,6 +239,8 @@ void main() {
     });
 
     test('reboot maps USP error to ServiceError', () {
+      when(() => mockUsp.get(any(), fresh: any(named: 'fresh')))
+          .thenAnswer((_) async => {});
       when(() => mockUsp.operate(any()))
           .thenThrow('Operate failed: Transport error: Connection refused');
 
@@ -245,11 +248,216 @@ void main() {
     });
 
     test('factoryReset maps USP error to ServiceError', () {
+      when(() => mockUsp.get(any(), fresh: any(named: 'fresh')))
+          .thenAnswer((_) async => {});
       when(() => mockUsp.operate(any()))
           .thenThrow('Operate failed: Authentication error: Session expired');
 
       expect(() => service.factoryReset(),
           throwsA(isA<SessionTokenExpiredError>()));
+    });
+  });
+
+  // #1777 (Architecture#195). Which command goes out is read from the router
+  // right before the call: the network status leaf exists exactly where the
+  // whole-network commands do.
+  group('reboot and factoryReset — which command', () {
+    const statusPath =
+        'Device.WiFi.DataElements.Network.X_LINKSYS_NetworkActionStatus';
+    const rebootAll = 'Device.WiFi.DataElements.Network.X_LINKSYS_RebootAll()';
+    const factoryResetAll =
+        'Device.WiFi.DataElements.Network.X_LINKSYS_FactoryResetAll()';
+
+    void routerAnswers(Map<String, dynamic> status) =>
+        when(() => mockUsp.get(any(), fresh: any(named: 'fresh')))
+            .thenAnswer((_) async => status);
+
+    void operateAnswers(Map<String, dynamic> output) =>
+        when(() => mockUsp.operate(any())).thenAnswer((_) async => output);
+
+    test('without the status leaf, reboot sends Device.Reboot()', () async {
+      routerAnswers({});
+      operateAnswers({});
+
+      expect(await service.reboot(), RouterRestartStart.router);
+
+      verify(() => mockUsp.operate('Device.Reboot()')).called(1);
+      verifyNever(() => mockUsp.operate(rebootAll));
+    });
+
+    test('without the status leaf, factoryReset sends Device.FactoryReset()',
+        () async {
+      routerAnswers({});
+      operateAnswers({});
+
+      expect(await service.factoryReset(), RouterRestartStart.router);
+
+      verify(() => mockUsp.operate('Device.FactoryReset()')).called(1);
+      verifyNever(() => mockUsp.operate(factoryResetAll));
+    });
+
+    // The leaf reads "" until a whole-network action runs, which is what a
+    // router reads at almost any moment someone presses Reboot. Presence is the
+    // test; a non-empty rule would send Device.Reboot() and restart only the
+    // controller.
+    test('with the status leaf reading "", reboot sends RebootAll', () async {
+      routerAnswers({statusPath: ''});
+      operateAnswers({'Status': 'Started'});
+
+      expect(await service.reboot(), RouterRestartStart.network);
+
+      verify(() => mockUsp.operate(rebootAll)).called(1);
+      verifyNever(() => mockUsp.operate('Device.Reboot()'));
+    });
+
+    test('with the status leaf, factoryReset sends FactoryResetAll', () async {
+      routerAnswers({statusPath: ''});
+      operateAnswers({'Status': 'Started'});
+
+      expect(await service.factoryReset(), RouterRestartStart.network);
+
+      verify(() => mockUsp.operate(factoryResetAll)).called(1);
+      verifyNever(() => mockUsp.operate('Device.FactoryReset()'));
+    });
+
+    test('reads the status leaf fresh, past the cache', () async {
+      routerAnswers({});
+      operateAnswers({});
+
+      await service.reboot();
+
+      verify(() => mockUsp.get([statusPath], fresh: true)).called(1);
+    });
+
+    test('a failed status read sends nothing', () async {
+      when(() => mockUsp.get(any(), fresh: any(named: 'fresh')))
+          .thenThrow('Get failed: Transport error: Request timeout');
+
+      await expectLater(service.reboot(), throwsA(isA<NetworkError>()));
+
+      verifyNever(() => mockUsp.operate(any()));
+    });
+
+    test('a status reading Running sends nothing: one is already running',
+        () async {
+      routerAnswers({statusPath: 'Running'});
+
+      expect(await service.factoryReset(), RouterRestartStart.alreadyRunning);
+
+      verifyNever(() => mockUsp.operate(any()));
+    });
+
+    // Another client can start one between the read and the call.
+    test('a 7002 refusal is a whole-network action already running', () async {
+      routerAnswers({statusPath: ''});
+      when(() => mockUsp.operate(any())).thenThrow('Operate failed: '
+          'Operation error: $rebootAll refused: Busy (code: 7002)');
+
+      expect(await service.reboot(), RouterRestartStart.alreadyRunning);
+    });
+
+    test('a Busy status is a whole-network action already running', () async {
+      routerAnswers({statusPath: 'Completed'});
+      operateAnswers({'Status': 'Busy'});
+
+      expect(await service.factoryReset(), RouterRestartStart.alreadyRunning);
+    });
+
+    test('a reply with no Status is taken as started', () async {
+      routerAnswers({statusPath: ''});
+      operateAnswers({'commandKey': 'k1'});
+
+      expect(await service.reboot(), RouterRestartStart.network);
+    });
+
+    // Waiting on a reply that is not a start would only time out after the
+    // whole limit, with the user watching a spinner.
+    for (final reply in ['Failed', 'Error_Other']) {
+      test('a $reply Status throws when the leaf does not read Running',
+          () async {
+        routerAnswers({statusPath: ''});
+        operateAnswers({'Status': reply});
+
+        await expectLater(
+            service.reboot(), throwsA(isA<UspCompleteFailureError>()));
+      });
+    }
+
+    // An agent answering in its own words may have started anyway; calling
+    // that a failure would leave the network restarting outside recovery.
+    test('an unknown Status with the leaf now Running is a start', () async {
+      final reads = [
+        {statusPath: ''},
+        {statusPath: 'Running'},
+      ];
+      when(() => mockUsp.get(any(), fresh: any(named: 'fresh')))
+          .thenAnswer((_) async => reads.removeAt(0));
+      operateAnswers({'Status': 'Success'});
+
+      expect(await service.reboot(), RouterRestartStart.network);
+    });
+
+    // A value left behind by a finished action must not lock the buttons
+    // until the router restarts; a running one is still refused as busy.
+    test('a value it does not know does not stop the press', () async {
+      routerAnswers({statusPath: 'Cancelled'});
+      operateAnswers({'Status': 'Started'});
+
+      expect(await service.reboot(), RouterRestartStart.network);
+
+      verify(() => mockUsp.operate(rebootAll)).called(1);
+    });
+
+    test('any other refusal of the whole-network command throws', () async {
+      routerAnswers({statusPath: ''});
+      when(() => mockUsp.operate(any())).thenThrow('Operate failed: '
+          'Operation error: $rebootAll refused: Internal error (code: 7003)');
+
+      await expectLater(
+        service.reboot(),
+        throwsA(
+            isA<UspCompleteFailureError>().having((e) => e.code, 'code', 7003)),
+      );
+    });
+
+    // 7002 means "already running" only for the whole-network pair. On the
+    // router-only path it is an ordinary refusal and is reported as one.
+    test('a 7002 from Device.Reboot() throws', () async {
+      routerAnswers({});
+      when(() => mockUsp.operate(any())).thenThrow('Operate failed: '
+          'Operation error: Device.Reboot() refused: (code: 7002)');
+
+      await expectLater(
+          service.reboot(), throwsA(isA<UspCompleteFailureError>()));
+    });
+  });
+
+  group('readNetworkActionStatus', () {
+    const statusPath =
+        'Device.WiFi.DataElements.Network.X_LINKSYS_NetworkActionStatus';
+
+    Future<NetworkActionStatus?> reading(Map<String, dynamic> response) {
+      when(() => mockUsp.get(any(), fresh: any(named: 'fresh')))
+          .thenAnswer((_) async => response);
+      return service.readNetworkActionStatus();
+    }
+
+    test('is null when the router does not have the leaf', () async {
+      expect(await reading({}), isNull);
+    });
+
+    test('reads each value the definition names', () async {
+      expect(await reading({statusPath: ''}), NetworkActionStatus.idle);
+      expect(
+          await reading({statusPath: 'Running'}), NetworkActionStatus.running);
+      expect(await reading({statusPath: 'Completed'}),
+          NetworkActionStatus.completed);
+      expect(await reading({statusPath: 'Failed'}), NetworkActionStatus.failed);
+    });
+
+    test('reads a value the definition does not name as unknown', () async {
+      expect(
+          await reading({statusPath: 'Paused'}), NetworkActionStatus.unknown);
     });
   });
 }

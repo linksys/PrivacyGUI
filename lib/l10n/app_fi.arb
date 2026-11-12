@@ -1284,6 +1284,7 @@
   "nodeActions": "Solmun toiminnot",
   "rebootMeshMessage": "Reititin ja kaikki mesh-verkkosi solmut käynnistyvät uudelleen. Kaikkien yhdistettyjen laitteiden yhteys katkeaa, kunnes verkko on taas käytettävissä.",
   "factoryResetMeshMessage": "Reititin ja kaikki mesh-verkkosi solmut palautetaan tehdasasetuksiin, mukaan lukien reitittimen tarrassa näkyvä WiFi- ja reititinsalasana. Sen jälkeen jokainen solmu on määritettävä uudelleen.",
+  "networkRestartAlreadyRunning": "Verkkoasi käynnistetään jo uudelleen tai palautetaan. Odota, kunnes toiminto on valmis.",
   "rebootNodeMessage": "{node} käynnistyy uudelleen. Sen kautta yhdistettyjen laitteiden yhteys katkeaa, kunnes se on taas käytettävissä.",
   "rebootNodesMessage": "Nämä solmut käynnistyvät uudelleen kauimmaisesta alkaen: {nodes}. Niiden kautta yhdistettyjen laitteiden yhteys katkeaa, kunnes ne ovat taas käytettävissä.",
   "factoryResetNodeMessage": "{node} palautetaan tehdasasetuksiin, ja se poistuu verkostasi. Lisää se uudelleen, jotta voit käyttää sitä.",

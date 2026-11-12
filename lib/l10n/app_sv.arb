@@ -1284,6 +1284,7 @@
   "nodeActions": "Nodåtgärder",
   "rebootMeshMessage": "Routern och alla noder i ditt mesh-nätverk startas om. Alla anslutna enheter kopplas bort tills nätverket är tillbaka.",
   "factoryResetMeshMessage": "Routern och alla noder i ditt mesh-nätverk återställs till fabriksinställningarna, inklusive WiFi- och routerlösenordet som står på routerns etikett. Därefter måste alla noder konfigureras igen.",
+  "networkRestartAlreadyRunning": "Ditt nätverk håller redan på att startas om eller återställas. Vänta tills det är klart.",
   "rebootNodeMessage": "{node} startas om. Enheter som är anslutna via den kopplas bort tills den är tillbaka.",
   "rebootNodesMessage": "De här noderna startas om, den mest avlägsna först: {nodes}. Enheter som är anslutna via dem kopplas bort tills de är tillbaka.",
   "factoryResetNodeMessage": "{node} återställs till fabriksinställningarna och lämnar ditt nätverk. Lägg till den igen för att använda den.",
