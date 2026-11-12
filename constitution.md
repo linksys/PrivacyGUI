@@ -22,7 +22,7 @@ Where this document and another document in the repository disagree, this one wi
 |---|---|---|
 | I | Presentation files don't use the data layer; `lib/core/` doesn't import `lib/page/` | Test |
 | II | JNAP goes through `RouterRepository`; the HSL spec's `[noauth]` decides `auth:` | Review |
-| III | Tests run through `run_tests.sh`; changes ship tests | Review now; #1802's gate and roster and #1803's floor as they land |
+| III | Tests run through `run_tests.sh`; changes ship tests; screenshot tests and mocks follow one pattern | Test for where screenshot checks live; review for the rest, until #1802's gate and roster and #1803's floor land |
 | IV | Feature state lives in `Notifier` / `AsyncNotifier`; `…State` classes extend `Equatable` | Review |
 | V | File, class, provider and directory names | Review |
 | VI | User-visible strings come from the ARB files | CI (#1802 P1) for missing keys; review for hard-coded strings |
@@ -168,6 +168,48 @@ The overflow sweep cannot see this: adding `maxLines: 1` turns every overflowing
 
 **Enforced by**: Review. #1802 P4 adds the first set of guards.
 
+### 3.5 Screenshot tests
+
+A page's screenshot test is a `testLocalizations` case, from `test/common/test_responsive_widget.dart`:
+
+- `testLocalizations` tags the case `loc`, so `run_tests.sh` skips it (3.1). No other file calls `matchesGoldenFile`: a golden check written in a plain `testWidgets` would run in the unit suite.
+- The case lives in a `localizations/` directory beside the feature's other tests, such as `test/page/dashboard/localizations/dashboard_home_view_test.dart`.
+- The case replaces the page's providers with `overrideWith`, using the mocks in `test/mocks/` (3.6) and the data in `test/test_data/`.
+
+#1802's layout gate reuses these cases, so the case 3.3 asks for is a `testLocalizations` case. How to write, run and debug one is in `docs/screenshot_testing_guide.md`.
+
+<!-- screenshot-exceptions:begin -->
+| File | Calls |
+|---|---|
+| `test/page/components/pwa/install_prompt_banner_test.dart` | `testLocalizations` |
+<!-- screenshot-exceptions:end -->
+
+**Enforced by**: Test, for the first two points: `test/constitution/screenshot_placement_test.dart` fails when a file other than the helper calls `matchesGoldenFile`, or a file outside a `localizations/` directory calls `testLocalizations`, and the table above has no row for it. It also fails when a row no longer matches. Review for the third point.
+
+### 3.6 Mocks
+
+1.x mocks with mockito; it has no mocktail.
+
+- A mock is generated. Its spec is `test/mocks/mockito_specs/<name>_spec.dart`, holding `@GenerateNiceMocks([MockSpec<ClassName>()])`. `dart run build_runner build` writes `<name>_spec.mocks.dart` beside it, and those generated files are gitignored.
+- A mock that tests share is copied into `test/mocks/` and committed. A new one is named `test/mocks/<name>_mocks.dart`.
+- When a notifier mock is copied into `test/mocks/`, its class signature must be changed. The generated `extends Mock` becomes `extends` the notifier's base class, with `Mock` mixed in, because Riverpod's notifiers need that inheritance chain in tests (`docs/screenshot_testing_guide.md` 2.3):
+
+  ```dart
+  // Generated, in test/mocks/mockito_specs/
+  class MockWifiListNotifier extends Mock implements WifiListNotifier {
+
+  // Copied, in test/mocks/
+  class MockWifiListNotifier extends Notifier<WiFiState>
+      with Mock
+      implements WifiListNotifier {
+  ```
+
+  The same applies to `AsyncNotifier` and `AutoDisposeNotifier`. Any other mock keeps the generated class line.
+- When a mocked class gains or changes a method, rerun `build_runner` and copy the mock again. A copy that predates the method returns null from it.
+- A mock is `Mock[ClassName]`.
+
+**Enforced by**: Review.
+
 ---
 
 ## Article IV: State Management
@@ -202,7 +244,7 @@ Exceptions: `PnpTroubleshooterState`, `SelectNetworkState`, `InstantTopologyStat
 - A notifier class ends in `Notifier`. Exceptions: `HealthCheckProvider` and `PwaInstallService`.
 - A notifier's provider ends in `Provider` and has no `Notifier` in its name: `WifiListNotifier` is read through `wifiListProvider`.
 - A class written to be a notifier's state ends in `State`, like `WiFiState` or `PnpState`. Its prefix need not repeat the notifier's: `WifiListNotifier` holds a `WiFiState`. A notifier may also hold a model as its state, like `AppSettings` or `JNAPSideEffect`.
-- A mock is `Mock[ClassName]`.
+- Mocks are named in 3.6.
 
 ### 5.3 Feature directories
 
