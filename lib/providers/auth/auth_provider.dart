@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
@@ -6,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
+import 'package:privacy_gui/core/ai_session/ai_session_service.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
@@ -104,7 +107,8 @@ final authProvider =
     AsyncNotifierProvider<AuthNotifier, AuthState>(() => AuthNotifier());
 
 class AuthNotifier extends AsyncNotifier<AuthState> {
-  bool _isInit = false;
+  // Router AI builds only: set by the first init() of this app launch.
+  bool _aiStartupReconciled = false;
 
   AuthNotifier() : super() {
     LinksysHttpClient.onError = (error) async {
@@ -184,7 +188,28 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         localPassword: localPassword,
       );
     });
-    return state.value;
+    final restored = state.value;
+    // init() runs at startup and again on every router redirect. The AI
+    // session is reconciled with the stored login once per app launch: a
+    // repeat would re-post the admin password on each navigation and abort
+    // the previous request, orphaning server-side sessions. localLogin() and
+    // logout() keep the AI session in step after that. The check-and-set has
+    // no await, so concurrent startup calls reconcile exactly once.
+    if (BuildConfig.enableRouterAi && !_aiStartupReconciled) {
+      _aiStartupReconciled = true;
+      if (!state.hasError &&
+          restored?.loginType == LoginType.local &&
+          restored?.localPassword != null) {
+        unawaited(_bootstrapAiSession(restored!.localPassword!));
+      } else {
+        // No restored local login means nothing will bootstrap, so revoke any
+        // AI session cookie left by a logout whose revocation never reached
+        // the router — otherwise the widget's status poll resurrects the chat
+        // and keeps sliding the server idle timeout.
+        unawaited(_logoutAiSession());
+      }
+    }
+    return restored;
   }
 
   Future<SessionToken?> checkSessionToken() async {
@@ -276,7 +301,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         password: password,
       );
     });
-    logger.d('[Auth]: Cloud login done: Auth state = $state');
+    logger.d('[Auth]: Cloud login done: authenticated = ${state.hasValue}');
   }
 
   Future<AuthState> updateCloudCredientials({
@@ -364,7 +389,13 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         throw response;
       }
     }, (error) => guardError);
-    logger.d('[Auth]: Local login done: Auth state = $state');
+    if (BuildConfig.enableRouterAi &&
+        !state.hasError &&
+        state.value?.loginType == LoginType.local) {
+      unawaited(_bootstrapAiSession(password));
+    }
+    logger.d(
+        '[Auth]: Local login done: authenticated=${state.value?.loginType == LoginType.local}');
   }
 
   Future<void> getPasswordHint() async {
@@ -403,7 +434,18 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   Future logout() async {
     logger.d('[Prepare]: Logout');
-    state = const AsyncValue.loading();
+    if (BuildConfig.enableRouterAi) {
+      // A logout settles this launch's AI session. If the first init() is
+      // still reading storage, it must not bootstrap the old password after
+      // this revocation.
+      _aiStartupReconciled = true;
+      // Optional server revocation must not delay native logout or retain the
+      // previous authenticated state while the endpoint is unavailable.
+      unawaited(_logoutAiSession());
+      state = AsyncValue.data(AuthState.empty());
+    } else {
+      state = const AsyncValue.loading();
+    }
 
     state = await AsyncValue.guard(() async {
       final prefs = await SharedPreferences.getInstance();
@@ -435,6 +477,26 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     });
     ref.read(pollingProvider.notifier).stopPolling();
     ref.read(selectedNetworkIdProvider.notifier).state = null;
+  }
+
+  Future<void> _logoutAiSession() async {
+    try {
+      await ref.read(aiSessionServiceProvider).logout();
+    } catch (_) {
+      logger.w('[Auth]: AI session logout was unavailable');
+    }
+  }
+
+  Future<void> _bootstrapAiSession(String password) async {
+    try {
+      final active =
+          await ref.read(aiSessionServiceProvider).bootstrap(password);
+      if (!active) {
+        logger.w('[Auth]: Instant AI session bootstrap was unavailable');
+      }
+    } catch (_) {
+      logger.w('[Auth]: Instant AI session bootstrap was unavailable');
+    }
   }
 
   bool isCloudLogin() => state.value?.loginType == LoginType.remote;

@@ -1,11 +1,11 @@
 function buildWebApp() {
   echo "start building web app #${buildNumber}-${force}-${cloud}"
   echo "base href is ${href}"
-  echo "source revision is ${SOURCE_REVISION}, remote assistance is ${ENABLE_REMOTE_ASSISTANCE}, remote read-only is ${REMOTE_READ_ONLY}"
+  echo "source revision is ${SOURCE_REVISION}, remote assistance is ${ENABLE_REMOTE_ASSISTANCE}, remote read-only is ${REMOTE_READ_ONLY}, router AI is ${ENABLE_ROUTER_AI}"
 
   # The qa and non-qa branches this replaces were byte-identical, which is how
   # both of the flags below came to be appended twice.
-  flutter build web --target=lib/main.dart --base-href="/${href}" --build-number="${buildNumber}" --dart-define=force="${force}" --dart-define=cloud_env="${cloud}" --dart-define=enable_env_picker="${picker}" --dart-define=ca="${ca}" $enableHTMLRenderer --dart-define=year="${YEAR}" --dart-define=source_revision="${SOURCE_REVISION}" --dart-define=enable_remote_assistance="${ENABLE_REMOTE_ASSISTANCE}" --dart-define=remote_read_only="${REMOTE_READ_ONLY}"
+  flutter build web --target=lib/main.dart --base-href="/${href}" --build-number="${buildNumber}" --dart-define=force="${force}" --dart-define=cloud_env="${cloud}" --dart-define=enable_env_picker="${picker}" --dart-define=ca="${ca}" $enableHTMLRenderer --dart-define=year="${YEAR}" --dart-define=source_revision="${SOURCE_REVISION}" --dart-define=enable_remote_assistance="${ENABLE_REMOTE_ASSISTANCE}" --dart-define=remote_read_only="${REMOTE_READ_ONLY}" --dart-define=enable_router_ai="${ENABLE_ROUTER_AI}"
   # rm -rf ./build/web/canvasKit
 }
 
@@ -42,6 +42,15 @@ fi
 REMOTE_READ_ONLY="${REMOTE_READ_ONLY:-false}"
 if [ "$REMOTE_READ_ONLY" != "true" ] && [ "$REMOTE_READ_ONLY" != "false" ]; then
     echo "REMOTE_READ_ONLY must be exactly 'true' or 'false', got '${REMOTE_READ_ONLY}'" >&2
+    exit 1
+fi
+
+# Router AI (Instant AI) client: widget loader plus AI session bootstrap and
+# revocation. Only AI-enabled firmware lanes (for example the CF test images)
+# set this to true; a default build ships none of it. Same contract as above.
+ENABLE_ROUTER_AI="${ENABLE_ROUTER_AI:-false}"
+if [ "$ENABLE_ROUTER_AI" != "true" ] && [ "$ENABLE_ROUTER_AI" != "false" ]; then
+    echo "ENABLE_ROUTER_AI must be exactly 'true' or 'false', got '${ENABLE_ROUTER_AI}'" >&2
     exit 1
 fi
 
