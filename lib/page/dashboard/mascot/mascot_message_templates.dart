@@ -1,3 +1,4 @@
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Message category for mascot random speech.
@@ -44,10 +45,14 @@ class MascotMessageContext {
 }
 
 /// A message template that can generate dynamic text.
+///
+/// [builder] is handed the strings for the app's locale, so a bubble is in the
+/// user's language (#1312).
 class MascotMessageTemplate {
   final String id;
   final MascotMessageCategory category;
-  final String Function(MascotMessageContext ctx) builder;
+  final String Function(MascotMessageContext ctx, AppLocalizations l10n)
+      builder;
   final bool Function(MascotMessageContext ctx)? condition;
   final MascotAnimationKey? suggestedAnimation;
 
@@ -64,8 +69,9 @@ class MascotMessageTemplate {
     return condition == null || condition!(ctx);
   }
 
-  /// Generate the message text from context.
-  String generate(MascotMessageContext ctx) => builder(ctx);
+  /// Generate the message text from context, in [l10n]'s language.
+  String generate(MascotMessageContext ctx, AppLocalizations l10n) =>
+      builder(ctx, l10n);
 }
 
 /// Generated message ready for display.
@@ -80,10 +86,11 @@ class MascotMessage {
     this.suggestedAnimation,
   });
 
-  static const fallback = MascotMessage(
-    text: "I'm here if you need help!",
-    category: MascotMessageCategory.tips,
-  );
+  /// What the mascot says before the dashboard has loaded.
+  static MascotMessage fallback(AppLocalizations l10n) => MascotMessage(
+        text: l10n.mascotTipHere,
+        category: MascotMessageCategory.tips,
+      );
 }
 
 /// Category weight distribution for random selection.
@@ -97,31 +104,44 @@ const categoryWeights = <MascotMessageCategory, int>{
 // GUIDANCE TEMPLATES (Static)
 // =============================================================================
 
+/// Tips that tell the user where something is.
+///
+/// Every name in them is the app's own key for that menu, page or card, so a
+/// tip names what the user actually sees, in their language. Each one also
+/// points where the thing really is: Firewall is under Advanced Settings, not
+/// in the sidebar, and firmware is the OTA Update card on the Administration
+/// page (#1312).
 final guidanceTemplates = <MascotMessageTemplate>[
   MascotMessageTemplate(
     id: 'guide_wifi',
     category: MascotMessageCategory.guidance,
-    builder: (_) => "WiFi settings are in the sidebar under 'WiFi Settings'",
+    builder: (_, l10n) => l10n.mascotGuideWifi(l10n.menuWifiSettings),
   ),
   MascotMessageTemplate(
     id: 'guide_devices',
     category: MascotMessageCategory.guidance,
-    builder: (_) => "Tap 'Devices' to see all connected devices",
+    builder: (_, l10n) => l10n.mascotGuideDevices(l10n.devices),
   ),
   MascotMessageTemplate(
     id: 'guide_firmware',
     category: MascotMessageCategory.guidance,
-    builder: (_) => "Check for firmware updates in 'Administration > Firmware'",
+    builder: (_, l10n) => l10n.mascotGuideFirmware(
+      l10n.mascotMenuPath(l10n.administration, l10n.otaUpdate),
+    ),
   ),
   MascotMessageTemplate(
     id: 'guide_security',
     category: MascotMessageCategory.guidance,
-    builder: (_) => "Security settings are under 'Firewall' in the sidebar",
+    builder: (_, l10n) => l10n.mascotGuideSecurity(
+      l10n.mascotMenuPath(l10n.advancedSettings, l10n.firewall),
+    ),
   ),
   MascotMessageTemplate(
     id: 'guide_guest',
     category: MascotMessageCategory.guidance,
-    builder: (_) => "Create a guest network in 'WiFi Settings > Guest Network'",
+    builder: (_, l10n) => l10n.mascotGuideGuest(
+      l10n.mascotMenuPath(l10n.menuWifiSettings, l10n.guest),
+    ),
   ),
 ];
 
@@ -129,20 +149,25 @@ final guidanceTemplates = <MascotMessageTemplate>[
 // STATUS TEMPLATES (Dynamic + Conditional)
 // =============================================================================
 
+/// Lines about the router's current state.
+///
+/// Every count is an ICU plural in the ARB file, not string arithmetic, so
+/// "1 of 1 device connected" agrees in English and each locale gets its own
+/// plural forms.
 final statusTemplates = <MascotMessageTemplate>[
   // CPU status
   MascotMessageTemplate(
     id: 'status_cpu_high',
     category: MascotMessageCategory.status,
     condition: (ctx) => (ctx.cpuPercent ?? 0) > 80,
-    builder: (ctx) => "Your router is working hard! CPU at ${ctx.cpuPercent}%",
+    builder: (ctx, l10n) => l10n.mascotStatusCpuHigh(ctx.cpuPercent!),
     suggestedAnimation: MascotAnimationKey.think,
   ),
   MascotMessageTemplate(
     id: 'status_cpu_normal',
     category: MascotMessageCategory.status,
     condition: (ctx) => ctx.cpuPercent != null && ctx.cpuPercent! <= 80,
-    builder: (ctx) => "System running smoothly, CPU at ${ctx.cpuPercent}%",
+    builder: (ctx, l10n) => l10n.mascotStatusCpuNormal(ctx.cpuPercent!),
     suggestedAnimation: MascotAnimationKey.idle,
   ),
 
@@ -151,7 +176,7 @@ final statusTemplates = <MascotMessageTemplate>[
     id: 'status_memory_high',
     category: MascotMessageCategory.status,
     condition: (ctx) => (ctx.memoryPercent ?? 0) > 80,
-    builder: (ctx) => "Memory usage is getting high (${ctx.memoryPercent}%)",
+    builder: (ctx, l10n) => l10n.mascotStatusMemoryHigh(ctx.memoryPercent!),
     suggestedAnimation: MascotAnimationKey.think,
   ),
 
@@ -159,9 +184,13 @@ final statusTemplates = <MascotMessageTemplate>[
   MascotMessageTemplate(
     id: 'status_devices',
     category: MascotMessageCategory.status,
-    condition: (ctx) => ctx.onlineDeviceCount != null,
-    builder: (ctx) =>
-        "${ctx.onlineDeviceCount} of ${ctx.totalDeviceCount} devices connected",
+    // Both counts come from the same `DevicesData`, so they are null together.
+    condition: (ctx) =>
+        ctx.onlineDeviceCount != null && ctx.totalDeviceCount != null,
+    builder: (ctx, l10n) => l10n.mascotStatusDevices(
+      ctx.onlineDeviceCount!,
+      ctx.totalDeviceCount!,
+    ),
   ),
 
   // Mesh nodes
@@ -169,8 +198,7 @@ final statusTemplates = <MascotMessageTemplate>[
     id: 'status_mesh',
     category: MascotMessageCategory.status,
     condition: (ctx) => (ctx.meshNodeCount ?? 0) > 0,
-    builder: (ctx) =>
-        "Your mesh network has ${ctx.meshNodeCount} node${ctx.meshNodeCount == 1 ? '' : 's'} active",
+    builder: (ctx, l10n) => l10n.mascotStatusMesh(ctx.meshNodeCount!),
     suggestedAnimation: MascotAnimationKey.celebrate,
   ),
 
@@ -179,14 +207,14 @@ final statusTemplates = <MascotMessageTemplate>[
     id: 'status_wan_up',
     category: MascotMessageCategory.status,
     condition: (ctx) => ctx.wanConnected == true,
-    builder: (_) => "Internet connection is stable",
+    builder: (_, l10n) => l10n.mascotStatusWanUp,
     suggestedAnimation: MascotAnimationKey.idle,
   ),
   MascotMessageTemplate(
     id: 'status_wan_down',
     category: MascotMessageCategory.status,
     condition: (ctx) => ctx.wanConnected == false,
-    builder: (_) => "Internet connection appears to be down",
+    builder: (_, l10n) => l10n.mascotStatusWanDown,
     suggestedAnimation: MascotAnimationKey.sad,
   ),
 
@@ -197,7 +225,7 @@ final statusTemplates = <MascotMessageTemplate>[
     condition: (ctx) =>
         ctx.totalRadioCount != null &&
         ctx.enabledRadioCount == ctx.totalRadioCount,
-    builder: (ctx) => "All ${ctx.totalRadioCount} WiFi radios are active",
+    builder: (ctx, l10n) => l10n.mascotStatusWifiAll(ctx.totalRadioCount!),
   ),
   MascotMessageTemplate(
     id: 'status_wifi_partial',
@@ -206,8 +234,10 @@ final statusTemplates = <MascotMessageTemplate>[
         ctx.totalRadioCount != null &&
         ctx.enabledRadioCount != null &&
         ctx.enabledRadioCount! < ctx.totalRadioCount!,
-    builder: (ctx) =>
-        "${ctx.enabledRadioCount} of ${ctx.totalRadioCount} WiFi radios enabled",
+    builder: (ctx, l10n) => l10n.mascotStatusWifiPartial(
+      ctx.enabledRadioCount!,
+      ctx.totalRadioCount!,
+    ),
   ),
 
   // Uptime
@@ -215,7 +245,7 @@ final statusTemplates = <MascotMessageTemplate>[
     id: 'status_uptime',
     category: MascotMessageCategory.status,
     condition: (ctx) => ctx.uptime != null && ctx.uptime!.isNotEmpty,
-    builder: (ctx) => "Router uptime: ${ctx.uptime}",
+    builder: (ctx, l10n) => l10n.mascotStatusUptime(ctx.uptime!),
   ),
 ];
 
@@ -227,56 +257,53 @@ final tipsTemplates = <MascotMessageTemplate>[
   MascotMessageTemplate(
     id: 'tip_password',
     category: MascotMessageCategory.tips,
-    builder: (_) =>
-        "Tip: Change your WiFi password regularly for better security",
+    builder: (_, l10n) => l10n.mascotTipPassword,
   ),
   MascotMessageTemplate(
     id: 'tip_firmware',
     category: MascotMessageCategory.tips,
-    builder: (_) => "Keep your router firmware up to date for security patches",
+    builder: (_, l10n) => l10n.mascotTipFirmware,
   ),
   MascotMessageTemplate(
     id: 'tip_guest',
     category: MascotMessageCategory.tips,
-    builder: (_) =>
-        "Use a guest network for visitors to keep your main network secure",
+    builder: (_, l10n) => l10n.mascotTipGuest,
   ),
   MascotMessageTemplate(
     id: 'tip_wpa3',
     category: MascotMessageCategory.tips,
-    builder: (_) => "WPA3 offers the strongest WiFi encryption available",
+    builder: (_, l10n) => l10n.mascotTipWpa3,
   ),
   MascotMessageTemplate(
     id: 'tip_placement',
     category: MascotMessageCategory.tips,
-    builder: (_) => "Place your router in a central location for best coverage",
+    builder: (_, l10n) => l10n.mascotTipPlacement,
   ),
   MascotMessageTemplate(
     id: 'tip_reboot',
     category: MascotMessageCategory.tips,
-    builder: (_) =>
-        "Rebooting your router occasionally can improve performance",
+    builder: (_, l10n) => l10n.mascotTipReboot,
   ),
   MascotMessageTemplate(
     id: 'tip_interference',
     category: MascotMessageCategory.tips,
-    builder: (_) => "Keep your router away from microwaves and cordless phones",
+    builder: (_, l10n) => l10n.mascotTipInterference,
   ),
   MascotMessageTemplate(
     id: 'tip_5ghz',
     category: MascotMessageCategory.tips,
-    builder: (_) => "5GHz WiFi is faster but has shorter range than 2.4GHz",
+    builder: (_, l10n) => l10n.mascotTip5Ghz,
   ),
   MascotMessageTemplate(
     id: 'tip_here',
     category: MascotMessageCategory.tips,
-    builder: (_) => "I'm here if you need help!",
+    builder: (_, l10n) => l10n.mascotTipHere,
     suggestedAnimation: MascotAnimationKey.greet,
   ),
   MascotMessageTemplate(
     id: 'tip_tap',
     category: MascotMessageCategory.tips,
-    builder: (_) => "Tap me if you need assistance!",
+    builder: (_, l10n) => l10n.mascotTipTap,
     suggestedAnimation: MascotAnimationKey.greet,
   ),
 ];

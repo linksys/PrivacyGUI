@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -22,7 +23,7 @@ class FirmwareHealthDimension extends HealthDimension {
   HealthDimensionType get type => HealthDimensionType.firmware;
 
   @override
-  String get displayName => 'Firmware';
+  String displayName(AppLocalizations l10n) => l10n.firmware;
 
   @override
   IconData get icon => Icons.system_update;
@@ -44,12 +45,15 @@ class FirmwareHealthDimension extends HealthDimension {
   }
 
   @override
-  DimensionSummary getSummary(HealthEvaluationContext context) {
+  DimensionSummary getSummary(
+    HealthEvaluationContext context,
+    AppLocalizations l10n,
+  ) {
     final firmware = context.firmware;
     if (firmware == null) {
-      return const DimensionSummary(
-        status: 'Loading...',
-        hint: 'Tap for actions',
+      return DimensionSummary(
+        status: l10n.loadingEllipsis,
+        hint: l10n.mascotTapForActions,
       );
     }
 
@@ -59,25 +63,25 @@ class FirmwareHealthDimension extends HealthDimension {
 
     String status;
     if (hasUpdate) {
-      status = 'Update Available';
+      status = l10n.mascotFirmwareUpdateAvailable;
     } else {
-      status = 'Up to Date';
+      status = l10n.mascotFirmwareUpToDate;
     }
 
     final items = <SummaryItem>[];
 
     if (active != null) {
-      items.add(SummaryItem('Current', active.version));
+      items.add(SummaryItem(l10n.mascotFirmwareCurrent, active.version));
     }
 
     if (hasUpdate) {
-      items.add(SummaryItem('Available', ota.version));
+      items.add(SummaryItem(l10n.mascotFirmwareAvailable, ota.version));
     }
 
     return DimensionSummary(
       status: status,
       items: items,
-      hint: 'Tap for actions',
+      hint: l10n.mascotTapForActions,
     );
   }
 

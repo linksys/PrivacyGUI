@@ -8,6 +8,9 @@ import 'package:privacy_gui/page/dashboard/mascot/health/health_dimension.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 
 void main() {
+  // English, so these assertions also pin the copy the keys replaced (#1312).
+  final en = lookupAppLocalizations(const Locale('en'));
+
   group('InternetHealthDimension', () {
     late InternetHealthDimension dimension;
 
@@ -66,7 +69,7 @@ void main() {
       test('returns loading state when wan data is null', () {
         const context = HealthEvaluationContext();
 
-        final summary = dimension.getSummary(context);
+        final summary = dimension.getSummary(context, en);
 
         expect(summary.status, 'Loading...');
         expect(summary.hint, 'Tap for actions');
@@ -86,7 +89,7 @@ void main() {
           ),
         );
 
-        final summary = dimension.getSummary(context);
+        final summary = dimension.getSummary(context, en);
 
         expect(summary.status, 'Connected');
         expect(summary.items.any((i) => i.label == 'IP'), true);
@@ -107,7 +110,7 @@ void main() {
           ),
         );
 
-        final summary = dimension.getSummary(context);
+        final summary = dimension.getSummary(context, en);
 
         expect(summary.status, 'Disconnected');
       });

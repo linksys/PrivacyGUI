@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/network_health_helpers.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -61,7 +62,7 @@ class DimensionDetailView extends StatelessWidget {
             const SizedBox(width: 6),
             Expanded(
               child: AppText.titleMedium(
-                dimension.displayName,
+                dimension.displayName(loc(context)),
                 color: textColor,
               ),
             ),

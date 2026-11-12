@@ -72,6 +72,7 @@ final mascotHealthDialogProvider =
       getFaqItemTitle: args.getFaqItemTitle,
       isThemeStudioEnabled: BuildConfig.enableThemeStudio,
       getRouterTime: () => _getRouterTime(ref),
+      l10n: ref.watch(appLocalizationsProvider),
     );
   },
 );

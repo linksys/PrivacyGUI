@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -23,7 +24,7 @@ class DevicesHealthDimension extends HealthDimension {
   HealthDimensionType get type => HealthDimensionType.devices;
 
   @override
-  String get displayName => 'Devices';
+  String displayName(AppLocalizations l10n) => l10n.devices;
 
   @override
   IconData get icon => Icons.devices;
@@ -53,12 +54,15 @@ class DevicesHealthDimension extends HealthDimension {
   }
 
   @override
-  DimensionSummary getSummary(HealthEvaluationContext context) {
+  DimensionSummary getSummary(
+    HealthEvaluationContext context,
+    AppLocalizations l10n,
+  ) {
     final devices = context.devices;
     if (devices == null) {
-      return const DimensionSummary(
-        status: 'Loading...',
-        hint: 'Tap for actions',
+      return DimensionSummary(
+        status: l10n.loadingEllipsis,
+        hint: l10n.mascotTapForActions,
       );
     }
 
@@ -68,25 +72,25 @@ class DevicesHealthDimension extends HealthDimension {
 
     String status;
     if (total == 0) {
-      status = 'No devices';
+      status = l10n.mascotDevicesNone;
     } else if (online == total) {
-      status = 'All Online';
+      status = l10n.mascotDevicesAllOnline;
     } else {
-      status = '$online Online';
+      status = l10n.mascotDevicesOnlineCount(online);
     }
 
     final items = <SummaryItem>[
-      SummaryItem('Connected', '$online/$total'),
+      SummaryItem(l10n.connected, '$online/$total'),
     ];
 
     if (meshNodes > 0) {
-      items.add(SummaryItem('Mesh Nodes', '$meshNodes'));
+      items.add(SummaryItem(l10n.mascotDevicesMeshNodes, '$meshNodes'));
     }
 
     return DimensionSummary(
       status: status,
       items: items,
-      hint: 'Tap for actions',
+      hint: l10n.mascotTapForActions,
     );
   }
 
