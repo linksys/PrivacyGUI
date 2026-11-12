@@ -7,7 +7,6 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/constants/_constants.dart';
-import 'package:privacy_gui/core/ai_session/router_ai_loader.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/app.dart';
@@ -26,9 +25,9 @@ void main() async {
   //   usePathUrlStrategy();
   // }
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  // No-op unless the build enables Router AI. Runs before any login so the
-  // widget's login bridge is installed before the first local login.
-  loadRouterAiBundle();
+  // The Router AI widget is not loaded here: it must never appear before the
+  // router login. AuthNotifier loads it only after the AI session is
+  // authenticated (see lib/core/ai_session/router_ai_loader.dart).
 
   // TODO Revisit again until Flutter SDK 3.27.x
   // https://github.com/flutter/engine/commit/35af5fe80e0212caff4b34b583232d833b5a2596

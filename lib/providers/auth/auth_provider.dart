@@ -8,6 +8,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
 import 'package:privacy_gui/core/ai_session/ai_session_service.dart';
+import 'package:privacy_gui/core/ai_session/router_ai_loader.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
@@ -109,6 +110,9 @@ final authProvider =
 class AuthNotifier extends AsyncNotifier<AuthState> {
   // Router AI builds only: set by the first init() of this app launch.
   bool _aiStartupReconciled = false;
+  // Router AI builds only: bumped by every logout, so a bootstrap that
+  // started before a logout never shows the widget after it.
+  int _aiLogoutCount = 0;
 
   AuthNotifier() : super() {
     LinksysHttpClient.onError = (error) async {
@@ -439,6 +443,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       // still reading storage, it must not bootstrap the old password after
       // this revocation.
       _aiStartupReconciled = true;
+      _aiLogoutCount++;
       // Optional server revocation must not delay native logout or retain the
       // previous authenticated state while the endpoint is unavailable.
       unawaited(_logoutAiSession());
@@ -488,11 +493,22 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future<void> _bootstrapAiSession(String password) async {
+    final logoutCount = _aiLogoutCount;
     try {
       final active =
           await ref.read(aiSessionServiceProvider).bootstrap(password);
       if (!active) {
         logger.w('[Auth]: Instant AI session bootstrap was unavailable');
+        return;
+      }
+      // The widget appears only once the router login and the AI session are
+      // both authenticated, never on the login screen. A logout while the
+      // bootstrap was in flight normally cancels it (it throws); the counter
+      // also covers a logout that lands between the response and this line.
+      // It is used instead of the auth state because init() re-runs on every
+      // redirect and briefly puts the state into loading.
+      if (logoutCount == _aiLogoutCount) {
+        ref.read(routerAiLoaderProvider)();
       }
     } catch (_) {
       logger.w('[Auth]: Instant AI session bootstrap was unavailable');

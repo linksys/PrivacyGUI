@@ -78,8 +78,24 @@ class RouterAiLoaderContractTest(unittest.TestCase):
         loader = (ROOT / "lib/core/ai_session/router_ai_loader.dart").read_text(encoding="utf-8")
         self.assertIn("const routerAiBundlePath = '/ai/linksys-ai.js';", loader)
         self.assertIn("if (!BuildConfig.enableRouterAi) return false;", loader)
+
+    def test_widget_is_not_loaded_before_login(self) -> None:
+        # The widget must never be on the login screen, so nothing loads it at
+        # startup. AuthNotifier shows it only after the AI session bootstrap
+        # succeeds.
         main = (ROOT / "lib/main.dart").read_text(encoding="utf-8")
-        self.assertEqual(len(re.findall(r"^\s*loadRouterAiBundle\(\);", main, re.M)), 1)
+        self.assertEqual(re.findall(r"^\s*loadRouterAiBundle\(\)", main, re.M), [])
+        self.assertEqual(re.findall(r"^import .*router_ai_loader\.dart", main, re.M), [])
+        auth = (ROOT / "lib/providers/auth/auth_provider.dart").read_text(encoding="utf-8")
+        self.assertEqual(len(re.findall(r"ref\.read\(routerAiLoaderProvider\)\(\);", auth)), 1)
+        callers = subprocess.run(
+            ["git", "grep", "-l", r"loadRouterAiBundle\|routerAiLoaderProvider", "--", "lib"],
+            cwd=ROOT, capture_output=True, text=True, check=True,
+        ).stdout.split()
+        self.assertEqual(
+            sorted(callers),
+            ["lib/core/ai_session/router_ai_loader.dart", "lib/providers/auth/auth_provider.dart"],
+        )
 
     def test_flag_defaults_off_in_dart(self) -> None:
         config = (ROOT / "lib/constants/build_config.dart").read_text(encoding="utf-8")
