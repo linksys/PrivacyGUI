@@ -222,8 +222,10 @@ final statusTemplates = <MascotMessageTemplate>[
   MascotMessageTemplate(
     id: 'status_wifi_all',
     category: MascotMessageCategory.status,
+    // Not for a router that reports no radio: 0 == 0 would say "All 0 WiFi
+    // radios are active".
     condition: (ctx) =>
-        ctx.totalRadioCount != null &&
+        (ctx.totalRadioCount ?? 0) > 0 &&
         ctx.enabledRadioCount == ctx.totalRadioCount,
     builder: (ctx, l10n) => l10n.mascotStatusWifiAll(ctx.totalRadioCount!),
   ),

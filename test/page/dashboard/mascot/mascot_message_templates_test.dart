@@ -66,6 +66,19 @@ void main() {
       );
     });
 
+    test('no WiFi radio is not "all of them on"', () {
+      // 0 == 0 used to pass the condition and read "All 0 WiFi radios are
+      // active" — and in French, where 0 takes the `one` form, "your WiFi
+      // radio is active".
+      final allOn =
+          statusTemplates.singleWhere((t) => t.id == 'status_wifi_all');
+      expect(
+        allOn.shouldShow(const MascotMessageContext(
+            enabledRadioCount: 0, totalRadioCount: 0)),
+        isFalse,
+      );
+    });
+
     test('some WiFi radios on', () {
       expect(
         say(
