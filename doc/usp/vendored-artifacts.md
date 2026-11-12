@@ -11,15 +11,40 @@ Files in this repo that are built or generated from `linksys/usp_framework` and 
 
 ## Manifest
 
-**Last updated**: 2026-11-09 (usp-client 0.14.0, linksys/usp_framework#114; see below). Before that 2026-10-27 (all of `lib/generated` on usp-codegen 0.19.0, from `usp_framework` `main` @ `3d0bbef`, #1654; see below)
+**Last updated**: 2026-11-11 (usp-client 0.16.0, linksys/usp_framework#61 and #118, #1787; see below). Before that 2026-11-09 (usp-client 0.14.0, linksys/usp_framework#114). Before that 2026-10-27 (all of `lib/generated` on usp-codegen 0.19.0, from `usp_framework` `main` @ `3d0bbef`, #1654; see below)
 
 The web package records reviewed `usp_framework` commit
-`d5604633785091f94d93c9a992f3848ece7fb6e8`, the commit CI built the 0.14.0
-package from (run 42589938930, artifact
-`usp-client-wasm-d5604633…`). It reached `main` as `381d69f` (PR #116,
-linksys/usp_framework#114), and the `pkg/` files there match the artifact
-manifest's SHA-256 digests. It was built with both the `wasm` and `websocket`
+`7902af856a08f324009b533cd2b26bbdc1741b70`, the commit CI built the 0.16.0
+package from (run 42764973857, artifact `usp-client-wasm-7902af85…`, whose
+`artifact-manifest.json` binds the bytes to that commit). It reached `main` as
+`dba763c` (PR #121, linksys/usp_framework#118), and the `pkg/` files there are
+byte-identical to the artifact: the three files match its SHA-256 digests and
+upstream's git blobs. It was built with both the `wasm` and `websocket`
 features.
+
+**0.15.0 and 0.16.0 change how a failed call reads (#1787).** 0.15.0 (PR #119,
+linksys/usp_framework#61): a request the router refuses as a whole (a USP
+`Error`) keeps the router's code and message, where it used to be a 9999
+wrapping `Protocol error: … Received error response: … (code: N)`; an answer
+the client cannot decode is 9998 (`Protocol error: …`) and input it refuses is
+9997 (`Validation error: …`), both 9999 before; a transport failure has one
+`Transport error: ` prefix instead of two. 0.16.0 (PR #121,
+linksys/usp_framework#118) adds `result.errors`, a list of
+`{ kind, path?, errorCode, errorMessage }` next to the `error` map, which is
+deprecated and goes in the next minor release. `UspClient` reads a Get and an
+Operate by it: an entry of `kind: request` is the call failing as a whole, and
+throws; `kind: path` is one path (a Get's 7026, a command the router refused).
+A router code under `kind: request` is rethrown as `Protocol error: … (code: N)`,
+the shape 0.14.0 gave it, so `mapUspErrorToServiceError` maps it as before: a
+7016 for a mesh node that has left is still `ResourceNotFoundError`. Writes
+still read the `error` map (`UspResultParser`), and a refused atomic write now
+carries the router's code there. `test/web/usp_operate_test.mjs` runs the
+vendored client from Node against `test/web/usp_operate_errors.json`, the same
+fixture the Dart mapping tests read.
+
+0.14.0 was built from `d5604633785091f94d93c9a992f3848ece7fb6e8` (run
+42589938930), and reached `main` as `381d69f` (PR #116,
+linksys/usp_framework#114).
 
 **0.14.0 changes what a refused Add returns.** An agent that creates an object
 but refuses some of its parameters reports each one in AddResp's
@@ -69,9 +94,9 @@ without review.
 | # | Artifact | Version | Checked-in path | Upstream source |
 |---|----------|---------|-----------------|-----------------|
 | 1 | `usp-codegen` (Mach-O arm64) | **0.19.0** | `tools/usp-codegen` | `usp-codegen/bin/usp-codegen` (built from `src/` via `Makefile.standalone`) |
-| 2 | `usp_client.js` | **0.14.0** | `web/usp_client.js` | `usp-client/pkg/usp_client.js` |
-| 3 | `usp_client_bg.wasm` | **0.14.0** | `web/usp_client_bg.wasm` | `usp-client/pkg/usp_client_bg.wasm` |
-| 4 | `usp_client.d.ts` | **0.14.0** | `web/usp_client.d.ts` | `usp-client/pkg/usp_client.d.ts` |
+| 2 | `usp_client.js` | **0.16.0** | `web/usp_client.js` | `usp-client/pkg/usp_client.js` |
+| 3 | `usp_client_bg.wasm` | **0.16.0** | `web/usp_client_bg.wasm` | `usp-client/pkg/usp_client_bg.wasm` |
+| 4 | `usp_client.d.ts` | **0.16.0** | `web/usp_client.d.ts` | `usp-client/pkg/usp_client.d.ts` |
 
 ## Derived (generated locally, not copied)
 
@@ -136,15 +161,23 @@ Make sure that clone's `main` is up to date with `upstream` (`github.com/linksys
    the newest language version, switches to the 3.7 "tall" style, and turns a
    3-file change into a 46-file diff of pure noise.
 
-3. **Web client assets**
+3. **Web client assets** — copy CI's bytes, never a local build.
+   `usp-client/pkg/` on `usp_framework` `main` already is CI's output (each
+   release vendors it from the producer artifact). A local `wasm-pack build`
+   does not reproduce it: measured for #1787, a local `usp_client_bg.wasm` is
+   570427 bytes where CI's 0.16.0 is 562086.
    ```bash
-   cd linksys/usp/usp_framework/usp-client
-   wasm-pack build --release --target web --out-dir pkg --features wasm,websocket
-   cd -
-   cp linksys/usp/usp_framework/usp-client/pkg/usp_client.js      web/usp_client.js
-   cp linksys/usp/usp_framework/usp-client/pkg/usp_client_bg.wasm web/usp_client_bg.wasm
-   cp linksys/usp/usp_framework/usp-client/pkg/usp_client.d.ts    web/usp_client.d.ts
+   S=<full usp_framework commit on main>
+   for f in usp_client.js usp_client_bg.wasm usp_client.d.ts; do
+     gh api -H "Accept: application/vnd.github.raw" \
+       "repos/linksys/usp_framework/contents/usp-client/pkg/$f?ref=$S" > web/$f
+   done
    ```
+   Then compare `git hash-object web/<file>` with upstream's blob for each
+   file, and `shasum -a 256` with the producer artifact's
+   `artifact-manifest.json` (`gh run download <run> -R linksys/usp_framework
+   -n usp-client-wasm-<commit>`). The upstream commit to record is that
+   manifest's `commit`, the one CI built from, not the merge on `main`.
 
 4. **Update `web/usp-artifacts.json` and the version table above** in the same
    commit as the artifact change. Use the full upstream commit SHA and hashes
@@ -152,7 +185,8 @@ Make sure that clone's `main` is up to date with `upstream` (`github.com/linksys
 
 5. **Sanity checks**
    - `python3 tools/usp_boundary/verify_artifacts.py --manifest web/usp-artifacts.json --root .`
-   - `python3 tools/usp_boundary/check_boundary.py --help`
+   - `python3 tools/usp_boundary/check_boundary.py --dts web/usp_client.d.ts --dart-root lib/core/usp/web --policy tools/usp_boundary/policy.json --root .`
+   - `node --test test/web/usp_operate_test.mjs` — the vendored client against the shared error fixture
    - `flutter analyze lib/generated` — no new errors
    - `flutter analyze lib/page lib/core` — no new errors
    - Grep for removed APIs when bumping `usp-client` (e.g. `setOrderedWithOptions` was removed in 0.9.0)

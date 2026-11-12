@@ -9,6 +9,8 @@
 > - **localization**: the View produces a localized message based on the ServiceError type (central mapper `localizeServiceError`), implemented in PR #953. For how to write it see the [implementation guide](error-handling-implementation-guide.md).
 > - **§2.5 GET bug (fixed, #1212)**: a 9999 GET failure used to be disguised as 9998. GET now keeps the envelope, and `UspClient.extractGetResult` throws on 9999.
 
+> **Written against usp-client 0.14.0 and earlier.** Since 0.15.0 (#1787) every failure of a call as a whole is no longer 9999: a request the router refuses as a whole keeps the router's code and message, an answer the client cannot decode is 9998 (`Protocol error: …`), input it refuses is 9997 (`Validation error: …`), and a transport failure has one `Transport error: ` prefix. 0.16.0 adds `result.errors`, whose `kind` (`request` / `path` / `parameter`) is what `UspClient` reads a Get and an Operate by; the `error` map is deprecated. Where this doc says "9999", read "9997–9999 or the router's code under `kind: request`". The current shapes, measured from Node against the vendored client, are in `test/web/usp_operate_errors.json`; the summary is in [`../usp/vendored-artifacts.md`](../usp/vendored-artifacts.md).
+
 ---
 
 ## Layer Quick Reference (main line: USP read/write = HTTP POST, not WebSocket)
