@@ -53,7 +53,7 @@ Follow these instructions to get the project up and running on your local machin
 2.  **Install dependencies:**
     Run the following command to fetch all the required packages.
     ```bash
-    flutter pub get
+    fvm flutter pub get
     ```
 
 ### Running the Application

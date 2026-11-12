@@ -635,6 +635,38 @@ outputs:
     });
   });
 
+  // #1414 pinned the dependency graph the way #1316 pinned the SDK, and the pin
+  // has the same way of coming undone: the step that enforces it is the step
+  // that goes red when a PR forgets the lock, and deleting `--enforce-lockfile`
+  // turns it green again while putting CI back to re-resolving on every run.
+  group('CI installs the committed pubspec.lock (#1414)', () {
+    test('pubspec.lock is tracked', () {
+      final result = Process.runSync(
+          'git', ['ls-files', '--error-unmatch', 'pubspec.lock']);
+      expect(result.exitCode, 0,
+          reason: 'pubspec.lock is the record of which dependency versions a '
+              'build was made from. Untracked, every CI run resolves its own.');
+    });
+
+    test('every pub get in the setup action enforces the lock', () {
+      final setup = _withoutLineComments(
+          File('.github/actions/setup/action.yml').readAsStringSync(), '#');
+      final installs = RegExp(r'^.*\bpub\s+get\b.*$', multiLine: true)
+          .allMatches(setup)
+          .map((m) => m.group(0)!)
+          .toList();
+      expect(installs, isNotEmpty,
+          reason: 'The setup action no longer runs `pub get`. Find where '
+              'dependencies are installed now and move this assertion there.');
+      for (final line in installs) {
+        expect(line, contains('--enforce-lockfile'),
+            reason: 'A plain `pub get` honours the lock but re-resolves '
+                'silently when pubspec.yaml disagrees with it. Commit the lock '
+                'the PR needs instead of dropping the flag.');
+      }
+    });
+  });
+
   // Every check above reads code through this helper, so a way to make it drop
   // real code is a way to make any of them pass on a broken file. Tested on
   // inputs rather than only through the files, because the files contain none
