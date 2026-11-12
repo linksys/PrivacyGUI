@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/administration/providers/upnp_data_provider.dart';
+import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
+import 'package:privacy_gui/page/ipv6_port_service/providers/ipv6_port_service_data_provider.dart';
 import 'package:privacy_gui/page/_shared/models/device_analytics_state.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
@@ -173,6 +175,7 @@ List<Override> cardOverrides({
   PortTriggeringData? portTriggeringData,
   FirewallData? firewallData,
   bool? upnpEnabled,
+  List<Ipv6PortServiceRuleUIModel>? ipv6PortServiceRules,
   SystemMonitorState? systemMonitorState,
   TrafficAnalysisState? trafficAnalysisState,
   DeviceAnalyticsState? deviceAnalyticsState,
@@ -208,6 +211,9 @@ List<Override> cardOverrides({
             .overrideWith(() => FixedFirewallDataNotifier(firewallData)),
       if (upnpEnabled != null)
         upnpDataProvider.overrideWith((ref) async => upnpEnabled),
+      if (ipv6PortServiceRules != null)
+        ipv6PortServiceDataProvider
+            .overrideWith((ref) async => ipv6PortServiceRules),
       if (systemMonitorState != null)
         uspSystemMonitorProvider
             .overrideWith(() => FixedSystemMonitorNotifier(systemMonitorState)),

@@ -1327,7 +1327,7 @@
   "ddnsSettingsIncomplete": "Fehlgeschlagen – Einstellungen unvollständig",
   "ddnsWanAddressPrivate": "Die Internet-IP-Adresse des Routers ist privat und kann nicht veröffentlicht werden. DDNS benötigt eine öffentliche IP-Adresse von Ihrem Internetanbieter.",
   "firewallCardNothingOpen": "Sie haben kein Gerät für das Internet geöffnet",
-  "firewallCardNothingOpenInfo": "Die Firewall blockiert Verbindungen, die aus dem Internet gestartet werden. Nur DMZ, Portweiterleitung (einschließlich Portbereich-Triggering) und Ports, die Geräte über UPnP öffnen, kommen durch.",
+  "firewallCardNothingOpenInfo": "Die Firewall blockiert Verbindungen, die aus dem Internet gestartet werden. Nur DMZ, Portweiterleitung (einschließlich Portbereich-Triggering), IPv6-Portdienst und Ports, die Geräte über UPnP öffnen, kommen durch.",
   "firewallCardSpiFirewall": "SPI-Firewall",
   "firewallCardSpiIpv4Off": "IPv4 aus",
   "firewallCardSpiIpv6Off": "IPv6 aus",

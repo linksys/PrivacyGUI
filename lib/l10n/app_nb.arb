@@ -1327,7 +1327,7 @@
   "ddnsSettingsIncomplete": "Mislyktes – innstillingene er ufullstendige",
   "ddnsWanAddressPrivate": "Ruterens Internett-IP-adresse er privat og kan ikke publiseres. DDNS krever en offentlig IP-adresse fra Internett-leverandøren.",
   "firewallCardNothingOpen": "Du har ikke åpnet noen enhet mot internett",
-  "firewallCardNothingOpenInfo": "Brannmuren blokkerer tilkoblinger som startes fra internett. Bare DMZ, Portvideresending (inkludert Portområdeutløsing) og porter som enheter åpner via UPnP, slipper gjennom.",
+  "firewallCardNothingOpenInfo": "Brannmuren blokkerer tilkoblinger som startes fra internett. Bare DMZ, Portvideresending (inkludert Portområdeutløsing), IPv6-porttjeneste og porter som enheter åpner via UPnP, slipper gjennom.",
   "firewallCardSpiFirewall": "SPI-brannmur",
   "firewallCardSpiIpv4Off": "IPv4 av",
   "firewallCardSpiIpv6Off": "IPv6 av",

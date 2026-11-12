@@ -186,6 +186,7 @@ final firewallAllOpenProfile = CardDataProfile(
     portForwardingData: testPortForwardingData,
     portTriggeringData: testPortTriggeringEmptyData,
     upnpEnabled: true,
+    ipv6PortServiceRules: const [],
   ),
   // One per row the default fixture cannot produce: the SPI row's value, the
   // DMZ host, and the port count's "on of total" form.
@@ -204,6 +205,7 @@ final firewallNewRouterProfile = CardDataProfile(
     portForwardingData: testPortForwardingEmptyData,
     portTriggeringData: testPortTriggeringEmptyData,
     upnpEnabled: true,
+    ipv6PortServiceRules: const [],
   ),
   markers: const ["You haven't opened any device to the internet"],
 );

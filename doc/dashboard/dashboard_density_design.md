@@ -2997,6 +2997,14 @@ every realization it pumps, which is not redundant with the gate: the gate pumps
 caption and fl_chart's axis strip are built at all — the two sites #1230 fixed were
 otherwise measured by nothing at the height they actually render.
 
+**Since #1130 that suite is gone, with the card it measured.** The donut, the
+protocol chart and both tabs were replaced by one row per settings page, so the
+claims above describe a card that no longer exists. The card's readability is now
+held by `test/page/firewall/cards/usp_firewall_overview_card_readability_test.dart`:
+no mid-word break and no ellipsis at the full form's 272px floor, and at the compact
+form's 200px floor no mid-word break and no ellipsis except an `AppOverflowText` one,
+in all 26 locales and three router states.
+
 Three follow-ups left open rather than folded into #1230: the narrow arrangement's
 tile is `_InfoGridTile` in a `Row`, which `layout_blocks` has no variant for and
 `ethernet_ports` hand-rolls too (**#1275**); the helpers these readability

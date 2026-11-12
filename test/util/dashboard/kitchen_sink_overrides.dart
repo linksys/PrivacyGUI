@@ -31,6 +31,7 @@ List<Override> kitchenSinkOverrides() => [
         portTriggeringData: testPortTriggeringData,
         firewallData: testFirewallData,
         upnpEnabled: true,
+        ipv6PortServiceRules: const [],
         systemMonitorState: testSystemMonitorWithHistory,
         trafficAnalysisState: testTrafficWithHistory,
         deviceAnalyticsState: testDeviceAnalyticsWithData,

@@ -20,6 +20,7 @@ import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_data_provider.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
+import 'package:privacy_gui/page/ipv6_port_service/providers/ipv6_port_service_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_auto_update_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
@@ -95,9 +96,10 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
   /// hardware privacy switch move made while the router is off is applied at
   /// boot, before the app is back to hear it.
   ///
-  /// `upnp` is the Firewall card's UPnP row (#1130). The router pushes nothing
-  /// for it, so these re-reads and the Administration page's save are the only
-  /// ones it gets.
+  /// `upnp` is the Firewall card's UPnP row and `ipv6PortService` the rules that
+  /// decide its "nothing opened" sentence (#1130). Nothing the app hears is
+  /// pushed for either, so these re-reads and their own page's save are the
+  /// only ones they get.
   static final List<(String, ProviderBase<AsyncValue<Object?>>)>
       _allDomainProviders = [
     ('systemInfo', systemInfoDataProvider),
@@ -115,6 +117,7 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
     ('firmwareAutoUpdate', firmwareAutoUpdateDataProvider),
     ('macFilter', macFilterDataProvider),
     ('upnp', upnpDataProvider),
+    ('ipv6PortService', ipv6PortServiceDataProvider),
   ];
 
   @override

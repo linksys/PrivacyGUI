@@ -1327,7 +1327,7 @@
   "ddnsSettingsIncomplete": "Mislykkedes – indstillingerne er ufuldstændige",
   "ddnsWanAddressPrivate": "Routerens internet-IP-adresse er privat og kan ikke offentliggøres. DDNS kræver en offentlig IP-adresse fra din internetudbyder.",
   "firewallCardNothingOpen": "Du har ikke åbnet nogen enhed mod internettet",
-  "firewallCardNothingOpenInfo": "Firewallen blokerer forbindelser, der startes fra internettet. Kun DMZ, Portvideresendelse (herunder Porttriggeringsinterval) og porte, som enheder åbner via UPnP, slipper igennem.",
+  "firewallCardNothingOpenInfo": "Firewallen blokerer forbindelser, der startes fra internettet. Kun DMZ, Portvideresendelse (herunder Porttriggeringsinterval), IPv6-porttjeneste og porte, som enheder åbner via UPnP, slipper igennem.",
   "firewallCardSpiFirewall": "SPI-firewall",
   "firewallCardSpiIpv4Off": "IPv4 fra",
   "firewallCardSpiIpv6Off": "IPv6 fra",

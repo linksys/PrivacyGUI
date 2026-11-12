@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/page/administration/providers/upnp_data_provider.dart';
+import 'package:privacy_gui/page/ipv6_port_service/providers/ipv6_port_service_data_provider.dart';
 import 'package:privacy_gui/page/dashboard/orchestrator/dashboard_orchestrator.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_data.dart';
@@ -227,6 +228,36 @@ void main() {
       await pumpEventQueue();
 
       expect(upnpReads, 2);
+    });
+  });
+
+  group('DashboardOrchestrator - IPv6 Port Service rules (#1130)', () {
+    // They decide the Firewall card's "nothing opened" sentence, and nothing
+    // the app hears is pushed for them.
+    test('are re-read after a recovery wait', () async {
+      final connection = _DrivenConnectionState();
+      var reads = 0;
+      final container = ProviderContainer(overrides: [
+        appConnectionStateProvider.overrideWith(() => connection),
+        ipv6PortServiceDataProvider.overrideWith((ref) async {
+          reads++;
+          return const [];
+        }),
+      ]);
+      addTearDown(container.dispose);
+      container.listen(appConnectionStateProvider, (_, __) {});
+      container.listen(ipv6PortServiceDataProvider, (_, __) {});
+      container.listen(dashboardOrchestratorProvider, (_, __) {});
+      await pumpEventQueue();
+      expect(reads, 1);
+
+      connection.move(AppConnectionState.waitingForRecovery);
+      connection.move(AppConnectionState.authenticated);
+      await pumpEventQueue();
+      container.read(ipv6PortServiceDataProvider);
+      await pumpEventQueue();
+
+      expect(reads, 2);
     });
   });
 }

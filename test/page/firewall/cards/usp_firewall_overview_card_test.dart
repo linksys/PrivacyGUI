@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/firewall/cards/usp_firewall_overview_card.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
+import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_triggering_data_provider.dart';
@@ -19,6 +20,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../mocks/provider_overrides/mock_dashboard_cards.dart';
 import '../../../mocks/test_data/firewall_test_data.dart';
+import '../../../mocks/test_data/ipv6_port_service_test_data.dart';
 import '../../../mocks/test_data/port_forwarding_test_data.dart';
 
 final _theme = AppTheme.create(
@@ -42,6 +44,7 @@ Future<void> pumpCard(
   FirewallData? firewall,
   List<PortForwardingRuleUIModel> forwarding = const [],
   List<PortTriggeringRuleUIModel> triggering = const [],
+  List<Ipv6PortServiceRuleUIModel> ipv6 = const [],
   bool upnp = true,
   bool upnpRead = true,
   CardDensity density = CardDensity.normal,
@@ -76,6 +79,7 @@ Future<void> pumpCard(
         firewallData: firewall ?? FirewallTestData.createFirewallData(),
         portForwardingData: PortForwardingData(ruleModels: forwarding),
         portTriggeringData: PortTriggeringData(ruleModels: triggering),
+        ipv6PortServiceRules: ipv6,
         upnpEnabled: upnpRead ? upnp : null,
       ),
       // A UPnP read that failed: the router answered nothing for it.
@@ -110,6 +114,16 @@ void main() {
       expect(find.text('On'), findsOneWidget);
       expect(find.textContaining('SPI'), findsNothing);
     });
+  });
+
+  testWidgets('an IPv6 Port Service rule that is on is an opened device',
+      (tester) async {
+    // The rules have no row — the page sits under the Firewall page — but the
+    // sentence would be false while one is on (PR #1806 review).
+    await pumpCard(tester, ipv6: [Ipv6PortServiceTestData.createRule()]);
+
+    expect(find.text("You haven't opened any device to the internet"),
+        findsNothing);
   });
 
   group('DMZ and port forwarding in use', () {

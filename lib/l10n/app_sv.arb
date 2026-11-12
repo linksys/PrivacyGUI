@@ -1327,7 +1327,7 @@
   "ddnsSettingsIncomplete": "Misslyckades – inställningarna är ofullständiga",
   "ddnsWanAddressPrivate": "Routerns internet-IP-adress är privat och kan inte publiceras. DDNS kräver en offentlig IP-adress från internetleverantören.",
   "firewallCardNothingOpen": "Du har inte öppnat någon enhet mot internet",
-  "firewallCardNothingOpenInfo": "Brandväggen blockerar anslutningar som startas från internet. Bara DMZ, Portvidarebefordran (inklusive Porttriggning av intervall) och portar som enheter öppnar via UPnP släpps igenom.",
+  "firewallCardNothingOpenInfo": "Brandväggen blockerar anslutningar som startas från internet. Bara DMZ, Portvidarebefordran (inklusive Porttriggning av intervall), IPv6-porttjänst och portar som enheter öppnar via UPnP släpps igenom.",
   "firewallCardSpiFirewall": "SPI-brandvägg",
   "firewallCardSpiIpv4Off": "IPv4 av",
   "firewallCardSpiIpv6Off": "IPv6 av",

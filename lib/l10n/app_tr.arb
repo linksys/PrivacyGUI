@@ -1327,7 +1327,7 @@
   "ddnsSettingsIncomplete": "Başarısız — ayarlar eksik",
   "ddnsWanAddressPrivate": "Yönlendiricinin İnternet IP adresi özel olduğundan yayımlanamaz. DDNS için İnternet servis sağlayıcınızdan genel bir IP adresi gerekir.",
   "firewallCardNothingOpen": "Hiçbir cihazı internete açmadınız",
-  "firewallCardNothingOpenInfo": "Güvenlik duvarı, internetten başlatılan bağlantıları engeller. Yalnızca DMZ, Port Yönlendirme (Port Aralığı Tetikleme dahil) ve cihazların UPnP ile açtığı portlar geçebilir.",
+  "firewallCardNothingOpenInfo": "Güvenlik duvarı, internetten başlatılan bağlantıları engeller. Yalnızca DMZ, Port Yönlendirme (Port Aralığı Tetikleme dahil), IPv6 Port Hizmeti ve cihazların UPnP ile açtığı portlar geçebilir.",
   "firewallCardSpiFirewall": "SPI Güvenlik Duvarı",
   "firewallCardSpiIpv4Off": "IPv4 kapalı",
   "firewallCardSpiIpv6Off": "IPv6 kapalı",

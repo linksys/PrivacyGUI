@@ -1327,7 +1327,7 @@
   "ddnsSettingsIncomplete": "Mislukt — instellingen onvolledig",
   "ddnsWanAddressPrivate": "Het internet-IP-adres van de router is privé en kan niet worden gepubliceerd. DDNS heeft een openbaar IP-adres van uw internetprovider nodig.",
   "firewallCardNothingOpen": "U hebt geen apparaat opengezet naar internet",
-  "firewallCardNothingOpenInfo": "De firewall blokkeert verbindingen die vanaf internet worden gestart. Alleen DMZ, Port forwarding (inclusief Poortbereik triggering) en poorten die apparaten via UPnP openen, komen erdoor.",
+  "firewallCardNothingOpenInfo": "De firewall blokkeert verbindingen die vanaf internet worden gestart. Alleen DMZ, Port forwarding (inclusief Poortbereik triggering), IPv6-poortservice en poorten die apparaten via UPnP openen, komen erdoor.",
   "firewallCardSpiFirewall": "SPI-firewall",
   "firewallCardSpiIpv4Off": "IPv4 uit",
   "firewallCardSpiIpv6Off": "IPv6 uit",

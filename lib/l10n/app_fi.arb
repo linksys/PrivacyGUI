@@ -1327,7 +1327,7 @@
   "ddnsSettingsIncomplete": "Epäonnistui – asetukset ovat puutteelliset",
   "ddnsWanAddressPrivate": "Reitittimen internet-IP-osoite on yksityinen, eikä sitä voi julkaista. DDNS edellyttää julkista IP-osoitetta internetpalveluntarjoajalta.",
   "firewallCardNothingOpen": "Et ole avannut yhtään laitetta internetiin",
-  "firewallCardNothingOpenInfo": "Palomuuri estää internetistä aloitetut yhteydet. Läpi pääsevät vain DMZ, Portinohjaus (myös Porttialueen laukaisu) ja portit, jotka laitteet avaavat UPnP:n kautta.",
+  "firewallCardNothingOpenInfo": "Palomuuri estää internetistä aloitetut yhteydet. Läpi pääsevät vain DMZ, Portinohjaus (myös Porttialueen laukaisu), IPv6-porttipalvelu ja portit, jotka laitteet avaavat UPnP:n kautta.",
   "firewallCardSpiFirewall": "SPI-palomuuri",
   "firewallCardSpiIpv4Off": "IPv4 pois päältä",
   "firewallCardSpiIpv6Off": "IPv6 pois päältä",

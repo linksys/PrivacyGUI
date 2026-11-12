@@ -1327,7 +1327,7 @@
   "ddnsSettingsIncomplete": "Niepowodzenie — niepełne ustawienia",
   "ddnsWanAddressPrivate": "Internetowy adres IP routera jest prywatny i nie może zostać opublikowany. DDNS wymaga publicznego adresu IP od dostawcy internetu.",
   "firewallCardNothingOpen": "Żadne urządzenie nie jest otwarte na internet",
-  "firewallCardNothingOpenInfo": "Zapora blokuje połączenia rozpoczęte z internetu. Przechodzą tylko DMZ, Przekierowanie portów (w tym Wyzwalanie zakresu portów) i porty, które urządzenia otwierają przez UPnP.",
+  "firewallCardNothingOpenInfo": "Zapora blokuje połączenia rozpoczęte z internetu. Przechodzą tylko DMZ, Przekierowanie portów (w tym Wyzwalanie zakresu portów), Usługa portów IPv6 i porty, które urządzenia otwierają przez UPnP.",
   "firewallCardSpiFirewall": "Zapora SPI",
   "firewallCardSpiIpv4Off": "IPv4 wył.",
   "firewallCardSpiIpv6Off": "IPv6 wył.",

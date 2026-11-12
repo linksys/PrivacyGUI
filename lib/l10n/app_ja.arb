@@ -1412,7 +1412,7 @@
   "ddnsSettingsIncomplete": "失敗 — 設定が不完全です",
   "ddnsWanAddressPrivate": "ルーターのインターネットIPアドレスはプライベートアドレスのため公開できません。DDNSにはプロバイダーから割り当てられたパブリックIPアドレスが必要です。",
   "firewallCardNothingOpen": "インターネットに公開しているデバイスはありません",
-  "firewallCardNothingOpenInfo": "ファイアウォールは、インターネット側から開始された接続をブロックします。通過できるのは、DMZ、ポート転送(ポート範囲トリガーを含む)、およびデバイスが UPnP で開いたポートだけです。",
+  "firewallCardNothingOpenInfo": "ファイアウォールは、インターネット側から開始された接続をブロックします。通過できるのは、DMZ、ポート転送(ポート範囲トリガーを含む)、IPv6 ポートサービス、およびデバイスが UPnP で開いたポートだけです。",
   "firewallCardSpiFirewall": "SPI ファイアウォール",
   "firewallCardSpiIpv4Off": "IPv4 オフ",
   "firewallCardSpiIpv6Off": "IPv6 オフ",

@@ -1327,7 +1327,7 @@
   "ddnsSettingsIncomplete": "Gagal — pengaturan tidak lengkap",
   "ddnsWanAddressPrivate": "Alamat IP Internet router bersifat pribadi dan tidak dapat dipublikasikan. DDNS memerlukan alamat IP publik dari ISP Anda.",
   "firewallCardNothingOpen": "Anda belum membuka perangkat apa pun ke internet",
-  "firewallCardNothingOpenInfo": "Firewall memblokir koneksi yang dimulai dari internet. Hanya DMZ, Penerusan Port (termasuk Pemicu Rentang Port), dan port yang dibuka perangkat melalui UPnP yang bisa lewat.",
+  "firewallCardNothingOpenInfo": "Firewall memblokir koneksi yang dimulai dari internet. Hanya DMZ, Penerusan Port (termasuk Pemicu Rentang Port), Layanan Port IPv6, dan port yang dibuka perangkat melalui UPnP yang bisa lewat.",
   "firewallCardSpiFirewall": "Firewall SPI",
   "firewallCardSpiIpv4Off": "IPv4 mati",
   "firewallCardSpiIpv6Off": "IPv6 mati",

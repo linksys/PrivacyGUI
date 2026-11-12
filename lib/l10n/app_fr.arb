@@ -1327,7 +1327,7 @@
   "ddnsSettingsIncomplete": "Échec — paramètres incomplets",
   "ddnsWanAddressPrivate": "L'adresse IP Internet du routeur est privée et ne peut pas être publiée. Le DDNS nécessite une adresse IP publique fournie par votre fournisseur d'accès.",
   "firewallCardNothingOpen": "Vous n'avez ouvert aucun appareil à Internet",
-  "firewallCardNothingOpenInfo": "Le pare-feu bloque les connexions initiées depuis Internet. Seuls la DMZ, la Redirection de port (y compris le Déclenchement de plage de ports) et les ports que les appareils ouvrent via UPnP passent.",
+  "firewallCardNothingOpenInfo": "Le pare-feu bloque les connexions initiées depuis Internet. Seuls la DMZ, la Redirection de port (y compris le Déclenchement de plage de ports), le Service de port IPv6 et les ports que les appareils ouvrent via UPnP passent.",
   "firewallCardSpiFirewall": "Pare-feu SPI",
   "firewallCardSpiIpv4Off": "IPv4 désactivé",
   "firewallCardSpiIpv6Off": "IPv6 désactivé",

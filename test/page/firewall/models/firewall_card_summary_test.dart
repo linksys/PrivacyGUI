@@ -4,9 +4,11 @@ import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_card_summary.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_verdict.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
+import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 
 import '../../../mocks/test_data/firewall_test_data.dart';
+import '../../../mocks/test_data/ipv6_port_service_test_data.dart';
 import '../../../mocks/test_data/port_forwarding_test_data.dart';
 
 /// What the dashboard's Firewall card shows, rule by rule from #1130's 11-09
@@ -35,12 +37,14 @@ void main() {
     FirewallData? data,
     List<PortForwardingRuleUIModel>? forwarding = const [],
     List<PortTriggeringRuleUIModel>? triggering = const [],
+    List<Ipv6PortServiceRuleUIModel>? ipv6 = const [],
     bool? upnp = true,
   }) =>
       FirewallCardSummary.of(
         firewall: data ?? firewall(),
         forwardingRules: forwarding,
         triggeringRules: triggering,
+        ipv6PortServiceRules: ipv6,
         upnpEnabled: upnp,
       );
 
@@ -167,6 +171,27 @@ void main() {
 
     test('is not claimed while the port rules are unknown', () {
       expect(summary(forwarding: null).nothingOpen, isFalse);
+    });
+
+    // An IPv6 port service rule lets IPv6 connections from the internet reach
+    // a device in the home, so it opens that device as much as port forwarding
+    // does (PR #1806 review).
+    test('is hidden by an IPv6 Port Service rule that is on', () {
+      final s = summary(ipv6: [Ipv6PortServiceTestData.createRule()]);
+
+      expect(s.nothingOpen, isFalse);
+    });
+
+    test('shows when every IPv6 Port Service rule is off', () {
+      final s = summary(
+        ipv6: [Ipv6PortServiceTestData.createRule(enabled: false)],
+      );
+
+      expect(s.nothingOpen, isTrue);
+    });
+
+    test('is not claimed while the IPv6 rules are unknown', () {
+      expect(summary(ipv6: null).nothingOpen, isFalse);
     });
   });
 }

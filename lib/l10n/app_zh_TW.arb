@@ -1327,7 +1327,7 @@
   "ddnsSettingsIncomplete": "失敗：設定不完整",
   "ddnsWanAddressPrivate": "路由器的網際網路 IP 位址是私人位址，無法發布。DDNS 需要網際網路服務供應商提供的公用 IP 位址。",
   "firewallCardNothingOpen": "您未向網際網路開放任何裝置",
-  "firewallCardNothingOpenInfo": "防火牆會封鎖從網際網路發起的連線。只有 DMZ、連接埠轉送（包括連接埠範圍觸發），以及裝置透過 UPnP 開啟的連接埠能夠通過。",
+  "firewallCardNothingOpenInfo": "防火牆會封鎖從網際網路發起的連線。只有 DMZ、連接埠轉送（包括連接埠範圍觸發）、IPv6 連接埠服務，以及裝置透過 UPnP 開啟的連接埠能夠通過。",
   "firewallCardSpiFirewall": "SPI 防火牆",
   "firewallCardSpiIpv4Off": "IPv4 已關閉",
   "firewallCardSpiIpv6Off": "IPv6 已關閉",

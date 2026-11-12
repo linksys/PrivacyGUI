@@ -1327,7 +1327,7 @@
   "ddnsSettingsIncomplete": "실패 — 설정이 완료되지 않음",
   "ddnsWanAddressPrivate": "라우터의 인터넷 IP 주소가 사설 주소라서 게시할 수 없습니다. DDNS를 사용하려면 인터넷 서비스 제공업체의 공인 IP 주소가 필요합니다.",
   "firewallCardNothingOpen": "인터넷에 공개한 기기가 없습니다",
-  "firewallCardNothingOpenInfo": "방화벽은 인터넷에서 시작된 연결을 차단합니다. DMZ, 포트 포워딩(포트 범위 트리거링 포함), 그리고 기기가 UPnP로 연 포트만 통과합니다.",
+  "firewallCardNothingOpenInfo": "방화벽은 인터넷에서 시작된 연결을 차단합니다. DMZ, 포트 포워딩(포트 범위 트리거링 포함), IPv6 포트 서비스, 그리고 기기가 UPnP로 연 포트만 통과합니다.",
   "firewallCardSpiFirewall": "SPI 방화벽",
   "firewallCardSpiIpv4Off": "IPv4 꺼짐",
   "firewallCardSpiIpv6Off": "IPv6 꺼짐",

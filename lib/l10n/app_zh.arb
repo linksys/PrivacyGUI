@@ -1327,7 +1327,7 @@
   "ddnsSettingsIncomplete": "失败：设置不完整",
   "ddnsWanAddressPrivate": "路由器的互联网 IP 地址是私有地址，无法发布。DDNS 需要互联网服务提供商提供的公网 IP 地址。",
   "firewallCardNothingOpen": "您未向互联网开放任何设备",
-  "firewallCardNothingOpenInfo": "防火墙会阻止从互联网发起的连接。只有 DMZ、端口转发（包括端口范围触发）以及设备通过 UPnP 打开的端口能够通过。",
+  "firewallCardNothingOpenInfo": "防火墙会阻止从互联网发起的连接。只有 DMZ、端口转发（包括端口范围触发）、IPv6 端口服务以及设备通过 UPnP 打开的端口能够通过。",
   "firewallCardSpiFirewall": "SPI 防火墙",
   "firewallCardSpiIpv4Off": "IPv4 已关闭",
   "firewallCardSpiIpv6Off": "IPv6 已关闭",

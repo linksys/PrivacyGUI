@@ -192,6 +192,7 @@ void main() {
                 portForwardingData: testPortForwardingData,
                 portTriggeringData: testPortTriggeringData,
                 upnpEnabled: true,
+                ipv6PortServiceRules: const [],
               ),
             ),
         // The layout gate's two data profiles for this card, so the pictures

@@ -3,6 +3,7 @@ import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.da
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_verdict.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
+import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 
 /// Which SPI firewall is off, when one is.
@@ -35,6 +36,11 @@ class FirewallCardSummary extends Equatable {
   /// triggering are read.
   final ({int on, int total})? portRules;
 
+  /// IPv6 Port Service rules that are on. No row of their own — the page sits
+  /// under the Firewall page — but they open a device to the internet as port
+  /// forwarding does, so they decide [nothingOpen]. Null until read.
+  final int? ipv6RulesOn;
+
   /// Whether UPnP is on, as on the Administration page. Null until it is read.
   final bool? upnpOn;
 
@@ -44,6 +50,7 @@ class FirewallCardSummary extends Equatable {
     required this.dmzOn,
     required this.dmzHost,
     required this.portRules,
+    required this.ipv6RulesOn,
     required this.upnpOn,
   });
 
@@ -51,6 +58,7 @@ class FirewallCardSummary extends Equatable {
     required FirewallData firewall,
     required List<PortForwardingRuleUIModel>? forwardingRules,
     required List<PortTriggeringRuleUIModel>? triggeringRules,
+    required List<Ipv6PortServiceRuleUIModel>? ipv6PortServiceRules,
     required bool? upnpEnabled,
   }) {
     final ipv4On = firewall.firewallModel.isIPv4FirewallEnabled;
@@ -79,17 +87,20 @@ class FirewallCardSummary extends Equatable {
                   triggeringRules.where((r) => r.enabled).length,
               total: forwardingRules.length + triggeringRules.length,
             ),
+      ipv6RulesOn: ipv6PortServiceRules?.where((r) => r.enabled).length,
       upnpOn: upnpEnabled,
     );
   }
 
   /// Whether the card says "You haven't opened any device to the internet":
-  /// both SPI firewalls on, DMZ off and no port rule on. UPnP on does not hide
-  /// it, which is why the sentence does not claim nothing can be reached.
-  /// Never claimed while the port rules are unknown.
-  bool get nothingOpen => spiOff == null && !dmzOn && portRules?.on == 0;
+  /// both SPI firewalls on, DMZ off, and no port forwarding, triggering or IPv6
+  /// Port Service rule on. UPnP on does not hide it, which is why the sentence
+  /// does not claim nothing can be reached. Never claimed while any of those
+  /// rules is unknown.
+  bool get nothingOpen =>
+      spiOff == null && !dmzOn && portRules?.on == 0 && ipv6RulesOn == 0;
 
   @override
   List<Object?> get props =>
-      [verdict, spiOff, dmzOn, dmzHost, portRules, upnpOn];
+      [verdict, spiOff, dmzOn, dmzHost, portRules, ipv6RulesOn, upnpOn];
 }

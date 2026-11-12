@@ -1327,7 +1327,7 @@
   "ddnsSettingsIncomplete": "Không thành công — cài đặt chưa đầy đủ",
   "ddnsWanAddressPrivate": "Địa chỉ IP Internet của bộ định tuyến là địa chỉ riêng nên không thể công bố. DDNS cần một địa chỉ IP công cộng từ nhà cung cấp dịch vụ Internet.",
   "firewallCardNothingOpen": "Bạn chưa mở thiết bị nào ra internet",
-  "firewallCardNothingOpenInfo": "Tường lửa chặn các kết nối bắt đầu từ internet. Chỉ DMZ, Chuyển tiếp cổng (bao gồm Kích hoạt dải cổng) và các cổng mà thiết bị mở qua UPnP mới đi qua được.",
+  "firewallCardNothingOpenInfo": "Tường lửa chặn các kết nối bắt đầu từ internet. Chỉ DMZ, Chuyển tiếp cổng (bao gồm Kích hoạt dải cổng), Dịch vụ cổng IPv6 và các cổng mà thiết bị mở qua UPnP mới đi qua được.",
   "firewallCardSpiFirewall": "Tường lửa SPI",
   "firewallCardSpiIpv4Off": "Tắt IPv4",
   "firewallCardSpiIpv6Off": "Tắt IPv6",

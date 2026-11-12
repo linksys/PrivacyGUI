@@ -12,6 +12,7 @@ import 'package:privacy_gui/page/administration/providers/upnp_data_provider.dar
 import 'package:privacy_gui/page/firewall/models/firewall_card_summary.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_verdict.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
+import 'package:privacy_gui/page/ipv6_port_service/providers/ipv6_port_service_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_triggering_data_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -51,6 +52,7 @@ class UspFirewallOverviewCard extends ConsumerWidget {
           ref.watch(portForwardingDataProvider).valueOrNull?.ruleModels,
       triggeringRules:
           ref.watch(portTriggeringDataProvider).valueOrNull?.ruleModels,
+      ipv6PortServiceRules: ref.watch(ipv6PortServiceDataProvider).valueOrNull,
       upnpEnabled: ref.watch(upnpDataProvider).valueOrNull,
     );
     final verdict = _verdictLabel(context, summary.verdict);

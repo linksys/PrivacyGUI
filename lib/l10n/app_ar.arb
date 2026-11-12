@@ -1327,7 +1327,7 @@
   "ddnsSettingsIncomplete": "فشل — الإعدادات غير مكتملة",
   "ddnsWanAddressPrivate": "عنوان IP الخاص بالإنترنت لجهاز التوجيه عنوان خاص ولا يمكن نشره. يحتاج DDNS إلى عنوان IP عام من مزوّد خدمة الإنترنت.",
   "firewallCardNothingOpen": "لم تفتح أي جهاز على الإنترنت",
-  "firewallCardNothingOpenInfo": "يحظر جدار الحماية الاتصالات التي تبدأ من الإنترنت. لا يمر إلا DMZ وإعادة توجيه المنافذ (بما في ذلك تشغيل نطاق المنافذ) والمنافذ التي تفتحها الأجهزة عبر UPnP.",
+  "firewallCardNothingOpenInfo": "يحظر جدار الحماية الاتصالات التي تبدأ من الإنترنت. لا يمر إلا DMZ وإعادة توجيه المنافذ (بما في ذلك تشغيل نطاق المنافذ) وخدمة منافذ IPv6 والمنافذ التي تفتحها الأجهزة عبر UPnP.",
   "firewallCardSpiFirewall": "جدار حماية SPI",
   "firewallCardSpiIpv4Off": "IPv4 متوقف",
   "firewallCardSpiIpv6Off": "IPv6 متوقف",
