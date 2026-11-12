@@ -98,7 +98,7 @@ To retire a row, move the call into the feature's notifier (or the type out of `
 
 ### 1.5 Enforcement
 
-**Test**: `test/architecture/architecture_boundary_test.dart` scans `lib/` and compares what it finds with the table in 1.4. It fails when:
+**Test**: `test/constitution/architecture_boundary_test.dart` scans `lib/` and compares what it finds with the table in 1.4. It fails when:
 
 - a dependency breaks 1.2 or 1.3 and has no row. This is a new violation, or a row deleted without fixing the code;
 - a row no longer matches the code. The code was fixed and the row has to go.

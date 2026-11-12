@@ -1,3 +1,5 @@
+import 'source_scan.dart';
+
 /// Finds the dependencies that cross an architecture boundary set by
 /// `constitution.md` Article I.
 ///
@@ -6,7 +8,7 @@
 Set<String> findBoundaryViolations(Map<String, String> sources) {
   final violations = <String>{};
   sources.forEach((path, source) {
-    final code = _withoutLineStartComments(source);
+    final code = withoutLineStartComments(source);
     if (_isPresentation(path)) {
       // Constitution 1.2.
       for (final target in _directiveTargets(path, code)) {
@@ -54,15 +56,6 @@ bool _isPresentation(String path) {
   final directories = path.split('/')..removeLast();
   return !directories.any(_applicationDirectories.contains);
 }
-
-/// A comment that starts a line: `//` to the end of the line, or `/*` to the
-/// next `*/`. A comment after code is left alone, so that a URL in a string,
-/// such as `'http://…'`, cannot hide the rest of its line.
-final _lineStartComment =
-    RegExp(r'^\s*(?://[^\n]*|/\*[\s\S]*?\*/)', multiLine: true);
-
-String _withoutLineStartComments(String source) =>
-    source.replaceAll(_lineStartComment, '');
 
 /// An import or export up to its `;`, conditional URIs included.
 final _directive = RegExp(r'^\s*(?:import|export)\b([^;]*);', multiLine: true);
