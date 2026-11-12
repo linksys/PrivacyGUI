@@ -1320,5 +1320,17 @@
   "errorRefusedInvalidPort": "O roteador não aceitou esta regra: um número de porta não é válido.",
   "errorRefusedDescriptionInUse": "O roteador não aceitou esta regra: outra regra de firewall já tem este nome.",
   "dmzDestination": "Destino",
-  "macAddressRequired": "O endereço MAC é obrigatório"
+  "macAddressRequired": "O endereço MAC é obrigatório",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "Mantenha um nome de host apontando para o endereço IP de Internet do roteador, mesmo quando o provedor o alterar.",
+  "selectAProvider": "Selecione um fornecedor",
+  "invalidUsername": "Nome de usuário inválido",
+  "invalidPassword": "Senha inválida",
+  "invalidHostname": "Nome de host inválido",
+  "ddnsPasswordKeepHint": "Deixe em branco para manter a senha atual",
+  "ddnsStatusTitle": "Status do DDNS",
+  "internetIPAddress": "Endereço IP da Internet",
+  "ddnsAuthenticationFailed": "Falha na autenticação",
+  "ddnsSettingsIncomplete": "Falha — configurações incompletas",
+  "ddnsWanAddressPrivate": "O endereço IP de Internet do roteador é privado e não pode ser publicado. O DDNS precisa de um endereço IP público do seu provedor."
 }

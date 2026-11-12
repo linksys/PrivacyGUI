@@ -1320,5 +1320,17 @@
   "errorRefusedInvalidPort": "Bộ định tuyến không chấp nhận quy tắc này: số cổng không hợp lệ.",
   "errorRefusedDescriptionInUse": "Bộ định tuyến không chấp nhận quy tắc này: một quy tắc tường lửa khác đã dùng tên này.",
   "dmzDestination": "Đích",
-  "macAddressRequired": "Bắt buộc nhập địa chỉ MAC"
+  "macAddressRequired": "Bắt buộc nhập địa chỉ MAC",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "Giữ tên máy chủ luôn trỏ đến địa chỉ IP Internet của bộ định tuyến, kể cả khi nhà cung cấp dịch vụ Internet thay đổi địa chỉ đó.",
+  "selectAProvider": "Chọn nhà cung cấp",
+  "invalidUsername": "Tên người dùng không hợp lệ",
+  "invalidPassword": "Mật khẩu không hợp lệ",
+  "invalidHostname": "Tên máy chủ không hợp lệ",
+  "ddnsPasswordKeepHint": "Để trống để giữ mật khẩu hiện tại",
+  "ddnsStatusTitle": "Trạng thái DDNS",
+  "internetIPAddress": "Địa chỉ IP Internet",
+  "ddnsAuthenticationFailed": "Xác thực không thành công",
+  "ddnsSettingsIncomplete": "Không thành công — cài đặt chưa đầy đủ",
+  "ddnsWanAddressPrivate": "Địa chỉ IP Internet của bộ định tuyến là địa chỉ riêng nên không thể công bố. DDNS cần một địa chỉ IP công cộng từ nhà cung cấp dịch vụ Internet."
 }

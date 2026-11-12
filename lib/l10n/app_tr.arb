@@ -1320,5 +1320,17 @@
   "errorRefusedInvalidPort": "Yönlendirici bu kuralı kabul etmedi: bir port numarası geçersiz.",
   "errorRefusedDescriptionInUse": "Yönlendirici bu kuralı kabul etmedi: bu ad başka bir güvenlik duvarı kuralı tarafından zaten kullanılıyor.",
   "dmzDestination": "Hedef",
-  "macAddressRequired": "MAC adresi gereklidir"
+  "macAddressRequired": "MAC adresi gereklidir",
+  "ddns": "DDNS",
+  "ddnsPageDesc": "İnternet servis sağlayıcınız değiştirse bile bir ana bilgisayar adının yönlendiricinizin İnternet IP adresini göstermesini sağlar.",
+  "selectAProvider": "Bir sağlayıcı seç",
+  "invalidUsername": "Geçersiz kullanıcı adı",
+  "invalidPassword": "Geçersiz parola",
+  "invalidHostname": "Geçersiz Ana Bilgisayar Adı",
+  "ddnsPasswordKeepHint": "Mevcut parolayı korumak için boş bırakın",
+  "ddnsStatusTitle": "DDNS durumu",
+  "internetIPAddress": "İnternet IP Adresi",
+  "ddnsAuthenticationFailed": "Kimlik doğrulama başarısız",
+  "ddnsSettingsIncomplete": "Başarısız — ayarlar eksik",
+  "ddnsWanAddressPrivate": "Yönlendiricinin İnternet IP adresi özel olduğundan yayımlanamaz. DDNS için İnternet servis sağlayıcınızdan genel bir IP adresi gerekir."
 }
