@@ -571,7 +571,7 @@ class PnpService {
   ///
   /// UI pre-fills fields from router's current settings, so submitted values
   /// represent the user's final intent — no need to preserve original on empty.
-  /// The VLAN ID is the exception: it is the user's only while VLAN is on.
+  /// The VLAN ID is the exception: it counts only while VLAN is on.
   UspInternetSettingsForm _applyIspConfigToForm(
     PnpIspConfig config,
     UspInternetSettingsForm original,
@@ -588,10 +588,10 @@ class PnpService {
       pppUsername: config.pppUsername,
       pppPassword: config.pppPassword,
       vlanEnabled: vlanEnabled,
-      // With VLAN off, config.vlanId is not the user's: the hidden field holds
-      // 0 when it was never filled, or the ID pre-filled from a router that had
-      // VLAN on. Keep the router's ID: FW 2.0.4 ships the WAN VLAN row with ID 1
-      // and refuses 0 (#1072).
+      // With VLAN off, config.vlanId is not the user's: Static IP has no VLAN
+      // field, and PPPoE's hidden field holds whatever was last typed or
+      // pre-filled, or 0 when empty. Keep the router's ID: FW 2.0.4 ships the
+      // WAN VLAN row with ID 1 and refuses 0 (#1072).
       vlanId: vlanEnabled ? config.vlanId : original.vlanId,
     );
   }
