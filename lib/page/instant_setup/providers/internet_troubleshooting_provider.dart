@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_setup/models/troubleshooting_phase.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
@@ -72,9 +71,6 @@ class InternetTroubleshootingNotifier
       logger.e(
           '[Troubleshooting] Internet check read failure: $e (code=${e.code})');
       _set(TroubleshootingReadFailure(code: e.code, detail: '$e'));
-    } catch (e) {
-      logger.e('[Troubleshooting] Internet check unexpected error: $e');
-      _set(TroubleshootingReadFailure(detail: '$e'));
     }
   }
 
@@ -108,7 +104,7 @@ class InternetTroubleshootingNotifier
   /// that could not be read lands on [TroubleshootingReadFailure] (#1098).
   Future<void> _modemRestartCheckInternet() async {
     const maxAttempts = 30;
-    Object? lastReadFailure;
+    ServiceError? lastReadFailure;
     for (int i = 1; i <= maxAttempts; i++) {
       if (_disposed) return;
       state = ModemRestartCheckingInternet(
@@ -124,17 +120,14 @@ class InternetTroubleshootingNotifier
           _set(const TroubleshootingRecovered());
           return;
         }
-      } catch (e) {
+      } on ServiceError catch (e) {
         lastReadFailure = e;
       }
     }
     final failure = lastReadFailure;
     if (failure != null) {
       logger.e('[Troubleshooting] Modem restart check read failure: $failure');
-      _set(TroubleshootingReadFailure(
-        code: failure is ServiceError ? failure.code : null,
-        detail: '$failure',
-      ));
+      _set(TroubleshootingReadFailure(code: failure.code, detail: '$failure'));
       return;
     }
     _set(const TroubleshootingNoInternet());
@@ -147,9 +140,7 @@ class InternetTroubleshootingNotifier
     if (_disposed) return;
     try {
       state = const IspSaving(step: IspSaveStep.saving);
-      await ref.read(uspMutationLockProvider).withLock(() async {
-        await _svc.saveIspSettings(config);
-      });
+      await _svc.saveIspSettings(config);
 
       _set(const IspSaving(step: IspSaveStep.checkingSettings));
       await Future.delayed(const Duration(seconds: 3));
@@ -159,18 +150,12 @@ class InternetTroubleshootingNotifier
       _refreshPrefill();
       await _checkInternet();
     } on ServiceError catch (e) {
+      // The service throws only `ServiceError` — the mutation lock's timeout
+      // included, typed where it starts — so this is the only catch the
+      // constitution allows here (§13.4).
       logger.e('[Troubleshooting] ISP save failed: $e');
       _refreshPrefill();
       _set(TroubleshootingNoInternet(saveError: e));
-    } catch (e) {
-      // Not only `ServiceError`, unlike constitution §13.4's pattern, and on
-      // purpose: `UspMutationLock.withLock` times out with a bare
-      // `TimeoutException`, and anything left uncaught here strands the form on
-      // its progress screen. Typed on the way into state all the same.
-      logger.e('[Troubleshooting] ISP save failed: $e');
-      _refreshPrefill();
-      _set(TroubleshootingNoInternet(
-          saveError: UnexpectedError(originalError: e)));
     }
   }
 

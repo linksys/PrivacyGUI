@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/instant_setup/models/troubleshooting_phase.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/providers/internet_troubleshooting_provider.dart';
@@ -41,7 +40,6 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         internetTroubleshootingServiceProvider.overrideWithValue(mockService),
-        uspMutationLockProvider.overrideWithValue(UspMutationLock()),
       ],
     );
     container.listen(internetTroubleshootingProvider, (_, __) {});
@@ -220,27 +218,6 @@ void main() {
       final phase = container.read(internetTroubleshootingProvider);
       expect(phase, isA<TroubleshootingNoInternet>());
       expect((phase as TroubleshootingNoInternet).saveError, same(failure));
-      container.dispose();
-    });
-
-    test('a save that fails outside the service is still typed, not stranded',
-        () async {
-      // The mutation lock times out with a bare TimeoutException; the form must
-      // leave its progress screen with something it can localize.
-      final failure = Exception('lock timed out');
-      when(() => mockService.saveIspSettings(any())).thenThrow(failure);
-
-      final container = createContainer();
-      await container
-          .read(internetTroubleshootingProvider.notifier)
-          .saveIspWithProgress(
-              const PnpIspConfig(type: IspConnectionType.dhcp));
-
-      final phase = container.read(internetTroubleshootingProvider)
-          as TroubleshootingNoInternet;
-      expect(phase.saveError, isA<UnexpectedError>());
-      expect(
-          (phase.saveError! as UnexpectedError).originalError, same(failure));
       container.dispose();
     });
 

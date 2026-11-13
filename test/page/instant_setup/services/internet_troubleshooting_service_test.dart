@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/services/internet_troubleshooting_service.dart';
@@ -9,6 +12,15 @@ import 'package:privacy_gui/page/internet_settings/services/usp_internet_setting
 import '../../../mocks/test_data/internet_settings_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
+
+/// A lock whose holder never lets go, the way `UspMutationLock` ends a hung
+/// WASM call: a bare `TimeoutException`.
+class _TimingOutLock extends UspMutationLock {
+  @override
+  Future<T> withLock<T>(Future<T> Function() action,
+          {Duration timeout = UspMutationLock.defaultTimeout}) =>
+      throw TimeoutException('USP mutation timed out', timeout);
+}
 
 /// The ISP save the no-internet troubleshooting flow runs (#1511 P1).
 ///
@@ -191,6 +203,23 @@ void main() {
     service = InternetTroubleshootingService(
       internetSettings: UspInternetSettingsService(mockUsp),
       checkInternetConnected: () async => false,
+      mutationLock: UspMutationLock(),
+    );
+  });
+
+  test('a save that outlasts the mutation lock is a TimeoutError', () async {
+    // Typed where it starts, so the provider above can handle ServiceError
+    // alone (constitution §13.4) and still leave its progress screen.
+    final timingOut = InternetTroubleshootingService(
+      internetSettings: UspInternetSettingsService(mockUsp),
+      checkInternetConnected: () async => false,
+      mutationLock: _TimingOutLock(),
+    );
+
+    await expectLater(
+      timingOut
+          .saveIspSettings(const PnpIspConfig(type: IspConnectionType.dhcp)),
+      throwsA(isA<TimeoutError>()),
     );
   });
 

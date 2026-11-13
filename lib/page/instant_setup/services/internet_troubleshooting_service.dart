@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
@@ -19,6 +23,7 @@ final internetTroubleshootingServiceProvider =
     internetSettings: ref.watch(uspInternetSettingsServiceProvider),
     checkInternetConnected:
         ref.watch(pnpServiceProvider).checkInternetConnected,
+    mutationLock: ref.watch(uspMutationLockProvider),
   );
 });
 
@@ -28,11 +33,14 @@ class InternetTroubleshootingService {
   InternetTroubleshootingService({
     required UspInternetSettingsService internetSettings,
     required Future<bool> Function() checkInternetConnected,
+    required UspMutationLock mutationLock,
   })  : _internetSettings = internetSettings,
-        _checkInternetConnected = checkInternetConnected;
+        _checkInternetConnected = checkInternetConnected,
+        _mutationLock = mutationLock;
 
   final UspInternetSettingsService _internetSettings;
   final Future<bool> Function() _checkInternetConnected;
+  final UspMutationLock _mutationLock;
 
   /// Whether the WAN is up with an address. A failed read throws a
   /// `ServiceError` rather than answering `false`: "could not read the router"
@@ -53,12 +61,26 @@ class InternetTroubleshootingService {
     }
   }
 
-  /// Save ISP settings by delegating to [UspInternetSettingsService].
+  /// Save ISP settings by delegating to [UspInternetSettingsService], under the
+  /// USP mutation lock.
   ///
   /// This ensures troubleshooting uses the same save logic as Advanced Settings,
   /// including PPP/VLAN instance lifecycle, result validation, and allowPartial
   /// handling.
+  ///
+  /// Throws only `ServiceError`. The lock times out with Dart's bare
+  /// `TimeoutException`, which is folded into [TimeoutError] here, where it
+  /// starts, so the provider above handles `ServiceError` alone (constitution
+  /// §13.4).
   Future<void> saveIspSettings(PnpIspConfig config) async {
+    try {
+      await _mutationLock.withLock(() => _writeIspSettings(config));
+    } on TimeoutException catch (e) {
+      throw TimeoutError(detail: e.message);
+    }
+  }
+
+  Future<void> _writeIspSettings(PnpIspConfig config) async {
     if (config.type == IspConnectionType.dhcp) {
       await _internetSettings.renewDhcpLease();
       return;
