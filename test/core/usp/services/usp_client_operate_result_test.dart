@@ -5,6 +5,8 @@ import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/usp/transport/usp_transport.dart';
 
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
+
 class _MockTransport extends Mock implements UspTransport {}
 
 // =============================================================================
@@ -51,19 +53,20 @@ String _thrownFrom(Map<String, dynamic> raw) {
 /// number can arrive across the interop boundary.
 extension on Map<String, dynamic> {
   Map<String, dynamic> withDoubleCode() {
-    final error = (this['result'] as Map)['error'] as Map;
-    final entry = error.entries.first;
-    final detail = Map<String, dynamic>.from(entry.value as Map);
-    detail['errorCode'] = (detail['errorCode'] as int).toDouble();
-    return {
-      ...this,
-      'result': {
-        ...(this['result'] as Map),
-        'error': {entry.key: detail},
-      },
-    };
+    final entry = ((this['result'] as Map)['errors'] as List).single as Map;
+    return UspEnvelopeTestData.pathErrors({
+      entry['path'] as String: (
+        code: (entry['errorCode'] as int).toDouble(),
+        message: entry['errorMessage'] as String,
+      ),
+    }, success: false);
   }
 }
+
+/// A command the router refused (`kind: path`) whose entry is exactly [error].
+Map<String, dynamic> _refusedWith(({Object? code, String message}) error) =>
+    UspEnvelopeTestData.pathErrors({'Device.X()': error},
+        success: false, data: null);
 
 void main() {
   Map<String, dynamic> refused({
@@ -71,15 +74,8 @@ void main() {
     int code = 7022,
     String message = 'Command Failure',
   }) =>
-      {
-        'success': false,
-        'result': {
-          'data': <String, dynamic>{},
-          'error': {
-            path: {'errorCode': code, 'errorMessage': message},
-          },
-        },
-      };
+      UspEnvelopeTestData.pathErrors({path: (code: code, message: message)},
+          success: false);
 
   // ══════════════════════════════════════════════════════════════════════════
   // Round-1 review remediation — the three defects the reviews found
@@ -133,14 +129,7 @@ void main() {
       // Normalising means "render an integer as an integer", not "coerce anything
       // numeric into one". A fractional value is not a USP fault code and must not
       // be promoted into looking like one.
-      final thrown = _thrownFrom({
-        'success': false,
-        'result': {
-          'error': {
-            'Device.X()': {'errorCode': 70.5, 'errorMessage': 'odd'},
-          },
-        },
-      });
+      final thrown = _thrownFrom(_refusedWith((code: 70.5, message: 'odd')));
 
       expect(thrown, contains('70.5'));
       expect(parseUspError(thrown)?.faultCode, isNull);
@@ -242,14 +231,8 @@ void main() {
       // `UnsupportedError: Infinity or NaN toInt` — swapping the refusal string for
       // a crash and losing the code and the router's message with it. NaN was safe
       // only because `NaN != NaN`.
-      final thrown = _thrownFrom({
-        'success': false,
-        'result': {
-          'error': {
-            'Device.X()': {'errorCode': double.infinity, 'errorMessage': 'odd'},
-          },
-        },
-      });
+      final thrown =
+          _thrownFrom(_refusedWith((code: double.infinity, message: 'odd')));
 
       expect(thrown, contains('refused'));
       expect(thrown, contains('Infinity'),
@@ -261,36 +244,32 @@ void main() {
       // The suffix is appended *after* the router's verbatim message, so a vendor
       // message carrying its own `(code: N)` used to win `firstMatch`. Measured:
       // with 9001 in the message and 7022 in the suffix, the parser returned 9001.
-      final thrown = _thrownFrom({
-        'success': false,
-        'result': {
-          'error': {
-            'Device.X()': {
-              'errorCode': 7022,
-              'errorMessage': 'upstream said (code: 9001)',
-            },
-          },
-        },
-      });
+      final thrown = _thrownFrom(
+          _refusedWith((code: 7022, message: 'upstream said (code: 9001)')));
 
       expect(parseUspError(thrown)?.faultCode, 7022,
           reason:
               'the suffix is the code; a code-shaped substring of prose is not');
     });
 
-    test('9999 is not treated as a refusal', () {
-      // `_localizeFaultCode` maps 9999 to `errorNetwork`, and its own table says
-      // 9999 "never reached the router". Routing a *refusal* there would report the
-      // router answering as the network failing — the exact confusion #1533 exists
-      // to remove. It should never arrive (the code comes from the agent's own
-      // error map), which is why this is a guard rather than a branch.
-      final error = mapUspErrorToServiceError(_thrownFrom(refused(code: 9999)));
+    for (final code in [9997, 9998, 9999]) {
+      test('the client\'s own $code is not treated as a refusal', () {
+        // `_localizeFaultCode` maps 9999 to `errorNetwork`, and its own table says
+        // 9999 "never reached the router". Routing a *refusal* there would report
+        // the router answering as the network failing — the exact confusion #1533
+        // exists to remove. 9998 and 9997 are the client's too since usp-client
+        // 0.15.0 (#1787). None should arrive as a command failure (the client
+        // reports them as the call failing as a whole), which is why this is a
+        // guard rather than a branch.
+        final error =
+            mapUspErrorToServiceError(_thrownFrom(refused(code: code)));
 
-      // The positive outcome, not just the negative: `isNot(isA<...>())` also passes
-      // for the inverse regression this guard exists to stop.
-      expect(error, isA<UnexpectedError>());
-      expect(error, isNot(isA<UspCompleteFailureError>()));
-    });
+        // The positive outcome, not just the negative: `isNot(isA<...>())` also
+        // passes for the inverse regression this guard exists to stop.
+        expect(error, isA<UnexpectedError>());
+        expect(error, isNot(isA<UspCompleteFailureError>()));
+      });
+    }
 
     test('the failure detail is not labelled with 7022\'s own name', () {
       // `'Command Failure'` is TR-369's name for 7022 alone. Once the arm covered
@@ -320,14 +299,8 @@ void main() {
       // `(code: 9001)` — adopted as the fault code and rendered to the user as
       // "request denied" for a refusal the router gave no code for. Measured on head
       // before the fix.
-      final thrown = _thrownFrom({
-        'success': false,
-        'result': {
-          'error': {
-            'Device.X()': {'errorMessage': 'upstream said (code: 9001)'},
-          },
-        },
-      });
+      final thrown = _thrownFrom(
+          _refusedWith((code: null, message: 'upstream said (code: 9001)')));
 
       expect(parseUspError(thrown)?.faultCode, isNull,
           reason: 'the router named no code; ours is the only one that counts');
@@ -337,17 +310,8 @@ void main() {
     });
 
     test('our suffix still wins when the message also carries one', () {
-      final thrown = _thrownFrom({
-        'success': false,
-        'result': {
-          'error': {
-            'Device.X()': {
-              'errorCode': 7022,
-              'errorMessage': 'upstream said (code: 9001)',
-            },
-          },
-        },
-      });
+      final thrown = _thrownFrom(
+          _refusedWith((code: 7022, message: 'upstream said (code: 9001)')));
 
       expect(parseUspError(thrown)?.faultCode, 7022);
       expect(thrown, contains('[code: 9001]'));
@@ -443,6 +407,51 @@ void main() {
     });
   });
 
+  // usp-client 0.15.0 emits 9998 and 9997 where every failure of a call as a
+  // whole used to be 9999, and keeps the router's own code when it refuses the
+  // request; 0.16.0 marks all of them `kind: request` (#1787). None of them is
+  // the command failing. Messages are the vendored client's, measured from Node.
+  group('UspClient.extractOperateResult — a call that failed as a whole', () {
+    const command =
+        'Device.WiFi.DataElements.Network.Device.9.X_LINKSYS_Reboot()';
+
+    ServiceError mapped(int code, String message) => mapUspErrorToServiceError(
+        _thrownFrom(UspEnvelopeTestData.failedAsAWhole([command],
+            errorCode: code, errorMessage: message)));
+
+    test('9998, an answer that does not decode, is a client failure', () {
+      final error =
+          mapped(9998, 'Protocol error: Decoding error: Empty response data');
+
+      expect(error, isA<UnexpectedError>());
+      expect(error.code, 9998);
+      expect(error.detail, isNull,
+          reason: "the decoder's English is not shown to the user");
+    });
+
+    test('9997, input the client refused, is a client failure', () {
+      final error = mapped(
+          9997, 'Validation error: Command path must contain parentheses');
+
+      expect(error, isA<InvalidInputError>());
+      expect(error.code, 9997);
+    });
+
+    test('a 9999 401 still reads as the session ending', () {
+      expect(mapped(9999, 'Transport error: HTTP error: HTTP 401'),
+          isA<NotAuthenticatedError>());
+    });
+
+    test('the router refusing the whole request is not a refused command', () {
+      // obuspa's 7016 for a node that has left DataElements (#876): the node
+      // action page tells the user the node is gone from ResourceNotFoundError.
+      final error = mapped(7016, 'Object does not exist');
+
+      expect(error, isA<ResourceNotFoundError>());
+      expect(error.code, 7016);
+    });
+  });
+
   group('UspClient.extractOperateResult — success', () {
     test('flattens commandKey and outputArgs as before', () {
       final out = UspClient.extractOperateResult({
@@ -505,18 +514,12 @@ void main() {
         () async {
       final transport = _MockTransport();
       when(() => transport.operate(any(), args: any(named: 'args')))
-          .thenAnswer((_) async => {
-                'success': false,
-                'result': {
-                  'data': <String, dynamic>{},
-                  'error': {
-                    'Device.LocalAgent.X_LINKSYS_Download()': {
-                      'errorCode': 7022,
-                      'errorMessage': 'Command Failure',
-                    },
-                  },
-                },
-              });
+          .thenAnswer((_) async => UspEnvelopeTestData.pathErrors({
+                'Device.LocalAgent.X_LINKSYS_Download()': (
+                  code: 7022,
+                  message: 'Command Failure',
+                ),
+              }, success: false));
       final client = UspClient.withTransport(transport);
 
       Object? thrown;

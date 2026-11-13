@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/usp/errors/usp_refusal_reason.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/services/refused_add_service.dart';
 
@@ -134,6 +135,34 @@ void main() {
           UspAddRefusalTestData.refusedAdd(instances: [row], refusedRow: row));
 
       expect(result, isA<UspPartialSuccess<List<String>>>());
+    });
+
+    test(
+        'an Add refused as a whole (usp-client 0.15.0) created nothing: no row '
+        'is deleted, and it is a complete failure carrying the reason',
+        () async {
+      // The `{i}` key names a template, not a row, and there are no instances
+      // to match it against anyway (#1787).
+      final result = await run(UspAddRefusalTestData.refusedAsAWhole());
+
+      verifyNever(() => usp.delete(any()));
+      expect(result, isA<UspFailure<List<String>>>());
+      final failure = (result as UspFailure).errors.single;
+      expect(failure.requestedPath, 'Device.NAT.PortTrigger.{i}.Port');
+      expect(failure.errorCode, 7005);
+      expect(failure.refusalReason, UspRefusalReason.tooManyRules);
+    });
+
+    test(
+        'an Add refused as a whole that names no parameter is keyed by the '
+        'table, which is never deleted', () async {
+      final result = await run(UspAddRefusalTestData.refusedAsAWhole(
+          errorCode: 7004, refusedParam: null, message: 'Request denied'));
+
+      verifyNever(() => usp.delete(any()));
+      expect(result, isA<UspFailure<List<String>>>());
+      expect((result as UspFailure).errors.single.requestedPath,
+          'Device.NAT.PortTrigger.');
     });
 
     test('a delete that throws is the same: the row may still be there',

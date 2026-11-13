@@ -1,5 +1,8 @@
+import 'usp_envelope_test_data.dart';
+
 /// Responses for an Add the agent created but refused part of, as usp-client
-/// 0.14.0 returns them (linksys/usp_framework#114).
+/// 0.14.0 returns them (linksys/usp_framework#114), and for one it refused as
+/// a whole, as 0.15.0 does ([refusedAsAWhole], #1787).
 class UspAddRefusalTestData {
   UspAddRefusalTestData._();
 
@@ -36,6 +39,34 @@ class UspAddRefusalTestData {
           },
         },
       };
+
+  /// An Add the router refused as a whole (a USP `Error`), as usp-client
+  /// 0.15.0 and later return it: `success: false`, nothing created
+  /// (`affectedCount: 0`, no instances), one `kind: request` entry per
+  /// parameter the `Error` names, keyed by its `param_path`, or, when it names
+  /// none, one keyed by the table path that was added to.
+  ///
+  /// The shape is the vendored 0.16.0 client's, from Node, for an `Error`
+  /// whose `param_errs` names `Device.NAT.PortTrigger.{i}.Port` (#1787): the
+  /// instance number is the template's `{i}`, since no row was created.
+  static Map<String, dynamic> refusedAsAWhole({
+    String table = 'Device.NAT.PortTrigger.',
+    int errorCode = 7005,
+    String? refusedParam = 'Port',
+    String message = 'ErrorTooManyRules: at most 25 port triggering rules.',
+  }) =>
+      UspEnvelopeTestData.envelope(
+        success: false,
+        data: const {'affectedCount': 0, 'instances': <String>[]},
+        errors: [
+          (
+            kind: 'request',
+            path: refusedParam == null ? table : '$table{i}.$refusedParam',
+            errorCode: errorCode,
+            errorMessage: message,
+          ),
+        ],
+      );
 
   /// A write the router accepted (a Set or a Delete).
   static const Map<String, dynamic> accepted = {
