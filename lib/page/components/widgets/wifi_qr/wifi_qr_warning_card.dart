@@ -8,7 +8,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 
 /// Warns that the QR codes printed with the router are about to stop working,
-/// with an info button explaining them. Setup and WiFi Settings both show it,
+/// with a help button explaining them. Setup and WiFi Settings both show it,
 /// so the two surfaces look and explain the same.
 class WiFiQRWarningCard extends StatelessWidget {
   final String message;
@@ -21,7 +21,8 @@ class WiFiQRWarningCard extends StatelessWidget {
     final color = Theme.of(context).colorSchemeExt.orange;
     // Laid out like the info cards it sits next to: same padding, icon size,
     // gap and text style. A triangle, so it does not read like the round
-    // info button at the other end.
+    // help button at the other end - and a help icon there, so the button
+    // does not repeat the info icon those cards lead with.
     return AppCard(
       borderColor: color,
       child: Row(
@@ -37,7 +38,7 @@ class WiFiQRWarningCard extends StatelessWidget {
           ),
           const AppGap.medium(),
           AppIconButton.noPadding(
-            icon: LinksysIcons.infoCircle,
+            icon: LinksysIcons.help,
             semanticLabel: 'info',
             color: Theme.of(context).colorScheme.primary,
             onTap: () => showWiFiQRInfoModal(context),

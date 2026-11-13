@@ -97,6 +97,18 @@ void main() async {
     of: find.byType(WiFiSSIDField),
     matching: find.byType(TextField),
   );
+  final optionalNotice =
+      find.textContaining('Personalizing your WiFi is optional');
+  final reminder = find.textContaining('Keep in mind');
+  final warning = find.textContaining('will stop the QR codes');
+
+  // Read top to bottom: [above] ends before [below] starts.
+  void expectAbove(WidgetTester tester, Finder above, Finder below) {
+    expect(
+      tester.getBottomLeft(above).dy,
+      lessThanOrEqualTo(tester.getTopLeft(below).dy),
+    );
+  }
 
   // The defaults info modal holds six paragraphs, so it cannot be a plain
   // Column: on a short viewport, or in a locale with longer copy, the body
@@ -107,10 +119,10 @@ void main() async {
     // unscrollable body fails here with a RenderFlex overflow.
     await pumpPersonalizeStep(tester, const Size(1280, 420));
 
-    final infoIcon = find.byIcon(LinksysIcons.infoCircle).last;
-    await tester.ensureVisible(infoIcon);
+    final helpButton = find.byIcon(LinksysIcons.help);
+    await tester.ensureVisible(helpButton);
     await tester.pumpAndSettle();
-    await tester.tap(infoIcon);
+    await tester.tap(helpButton);
     await tester.pumpAndSettle();
 
     expect(find.byType(AlertDialog), findsOneWidget);
@@ -132,15 +144,67 @@ void main() async {
     expect(lastParagraph, findsOneWidget);
   });
 
+  // Between the optional notice and the fields, the reminder - and the warning
+  // that replaces it - is read before the user starts typing, not found under
+  // the password afterwards.
+  testWidgets('the reminder and the QR warning sit above the WiFi name field',
+      (tester) async {
+    await pumpPersonalizeStep(tester, const Size(1280, 1200));
+
+    expectAbove(tester, optionalNotice, reminder);
+    expectAbove(tester, reminder, find.byType(WiFiSSIDField));
+
+    await tester.enterText(ssidField, 'MyHomeWiFi');
+    await tester.pumpAndSettle();
+    expectAbove(tester, optionalNotice, warning);
+    expectAbove(tester, warning, find.byType(WiFiSSIDField));
+  });
+
+  // With per-band names, the fields sit in one card per band - the reminder,
+  // and the warning that replaces it, still come before the first of them.
+  testWidgets(
+      'with split bands the reminder and the QR warning sit above the first band',
+      (tester) async {
+    when(mockPnpNotifier.getDefaultWiFiSettings()).thenReturn(
+      const PnpWiFiSettings(
+        isSplitMode: true,
+        radios: [
+          PnpWiFiRadio(
+            radioId: 'RADIO_2.4GHz',
+            band: 'RADIO_2.4GHz',
+            ssid: 'Linksys1234567',
+            password: 'Linksys123456@',
+            security: 'WPA2/WPA3-Mixed-Personal',
+            isEnabled: true,
+          ),
+          PnpWiFiRadio(
+            radioId: 'RADIO_5GHz',
+            band: 'RADIO_5GHz',
+            ssid: 'Linksys1234567_5GHz',
+            password: 'Linksys123456@',
+            security: 'WPA2/WPA3-Mixed-Personal',
+            isEnabled: true,
+          ),
+        ],
+      ),
+    );
+    await pumpPersonalizeStep(tester, const Size(1280, 1600));
+
+    expectAbove(tester, optionalNotice, reminder);
+    expectAbove(tester, reminder, find.text('2.4 GHz'));
+
+    await tester.enterText(ssidField.first, 'MyHomeWiFi');
+    await tester.pumpAndSettle();
+    expectAbove(tester, optionalNotice, warning);
+    expectAbove(tester, warning, find.text('2.4 GHz'));
+  });
+
   // The QR warning must track the fields, not the visit: keeping the shipped
   // credentials changes nothing, so warning about the printed QR codes would be
   // wrong until something is actually edited.
   testWidgets('QR warning follows edits to the shipped WiFi credentials',
       (tester) async {
     await pumpPersonalizeStep(tester, const Size(1280, 1200));
-
-    final reminder = find.textContaining('Keep in mind');
-    final warning = find.textContaining('will stop the QR codes');
 
     // Untouched defaults - plain reminder only.
     expect(reminder, findsOneWidget);
@@ -158,7 +222,7 @@ void main() async {
     expect(reminder, findsOneWidget);
   });
 
-  // The warning is about the printed QR codes, so its info button explains
+  // The warning is about the printed QR codes, so its help button explains
   // those - in the same words WiFi Settings uses for the same warning.
   testWidgets('the QR warning explains the printed QR codes', (tester) async {
     await pumpPersonalizeStep(tester, const Size(1280, 1200));
@@ -167,7 +231,7 @@ void main() async {
     await tester.pumpAndSettle();
     await tester.tap(find.descendant(
       of: find.byType(WiFiQRWarningCard),
-      matching: find.byIcon(LinksysIcons.infoCircle),
+      matching: find.byIcon(LinksysIcons.help),
     ));
     await tester.pumpAndSettle();
 

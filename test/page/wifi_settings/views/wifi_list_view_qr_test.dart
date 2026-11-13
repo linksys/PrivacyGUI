@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart'
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/page/components/widgets/wifi_qr/wifi_qr_warning_card.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
@@ -73,6 +74,8 @@ void main() {
   }) async {
     await tester.binding.setSurfaceSize(const Size(1280, 1600));
     addTearDown(() => tester.binding.setSurfaceSize(null));
+    // Real fonts, since some tests compare where cards end up on screen.
+    await loadTestFonts();
     when(mockWiFiListNotifier.build()).thenReturn(edited);
     when(mockWiFiListNotifier.fetch())
         .thenAnswer((_) async => broadcast ?? saved);
@@ -117,6 +120,37 @@ void main() {
     );
 
     expect(warning, findsOneWidget);
+  });
+
+  // Right under the page description, the warning is read before the Quick
+  // Setup switch and the band settings it is about.
+  testWidgets('the warning sits between the page description and Quick Setup',
+      (tester) async {
+    await pumpWiFiList(tester, edited: simple(ssid: 'MyNewWiFi'));
+
+    expect(
+      tester.getBottomLeft(find.textContaining('Easily customize')).dy,
+      lessThanOrEqualTo(tester.getTopLeft(warning).dy),
+    );
+    expect(
+      tester.getBottomLeft(warning).dy,
+      lessThanOrEqualTo(tester.getTopLeft(find.text('Quick Setup')).dy),
+    );
+  });
+
+  // The page description leads with an info icon, so the warning's button that
+  // explains the printed QR codes is a help icon - the two must not look alike.
+  testWidgets('the warning explains the printed QR codes from a help button',
+      (tester) async {
+    await pumpWiFiList(tester, edited: simple(ssid: 'MyNewWiFi'));
+
+    await tester.tap(find.descendant(
+      of: find.byType(WiFiQRWarningCard),
+      matching: find.byIcon(LinksysIcons.help),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(inDialog(find.text('About the printed QR codes')), findsOneWidget);
   });
 
   // Simple mode takes its security mode from 2.4 GHz, so a 5 GHz band on a
