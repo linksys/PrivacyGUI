@@ -969,7 +969,7 @@
   "pwaMacInstallDescription": "Legg denne appen til i Dock for rask tilgang.",
   "pwaMacStep1": "Klikk på Del-knappen i Safari-verktøylinjen.",
   "pwaMacStep2": "Velg «Legg til i Dock».",
-  "quickSetupNotice": "Hurtigoppsett bruker samme navn, passord og sikkerhetsmodus på alle bånd. Et passord kreves for å lagre.",
+  "quickSetupNotice": "Hurtigoppsett bruker samme navn, passord og sikkerhetsmodus på alle bånd.",
   "radioBand": "Radio: {band}",
   "radios": "Radioer",
   "range": "Område",

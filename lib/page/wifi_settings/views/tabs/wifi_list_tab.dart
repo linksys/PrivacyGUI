@@ -17,8 +17,9 @@ import 'package:ui_kit_library/ui_kit.dart';
 ///   + Security mode only — changes fan out to all bands on Save.
 ///
 /// A page-level **Save** button appears at the bottom whenever there are
-/// pending (dirty) changes. In Quick Setup mode it is also disabled until the
-/// user enters a valid password.
+/// pending (dirty) changes. In Quick Setup mode it is also disabled while a
+/// group needs a password it does not have yet
+/// (`WifiQuickSetupSettings.isPasswordRequired`).
 class UspWifiListTab extends ConsumerWidget {
   const UspWifiListTab({super.key});
 

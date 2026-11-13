@@ -969,7 +969,7 @@
   "pwaMacInstallDescription": "Dodaj tę aplikację do Docka, aby uzyskać szybki dostęp.",
   "pwaMacStep1": "Kliknij przycisk Udostępnij na pasku narzędzi Safari.",
   "pwaMacStep2": "Wybierz „Dodaj do Docka”.",
-  "quickSetupNotice": "Szybka konfiguracja stosuje tę samą nazwę, hasło i tryb zabezpieczeń do wszystkich pasm. Do zapisania wymagane jest hasło.",
+  "quickSetupNotice": "Szybka konfiguracja stosuje tę samą nazwę, hasło i tryb zabezpieczeń do wszystkich pasm.",
   "radioBand": "Radio: {band}",
   "radios": "Radia",
   "range": "Zakres",

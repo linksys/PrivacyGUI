@@ -353,8 +353,9 @@ class UspWifiSettingsService {
             if (modeByApPath[p] != securityMode) {
               proof['${p}Security.ModeEnabled'] = securityMode;
             }
-            // Omit an empty passphrase (e.g. when only securityMode
-            // changed to an open mode) so firmware does not reject it.
+            // Omit an empty passphrase so firmware does not reject it: an
+            // open mode needs none, and a switch between WPA modes keeps
+            // the router's own (#1720).
             if (pending.password.isNotEmpty) {
               params['${p}Security.KeyPassphrase'] = pending.password;
             }
