@@ -14,6 +14,17 @@ void main() {
     });
   });
 
+  for (final call in ['screenMatchesGolden', 'multiScreenGolden']) {
+    test('a golden_toolkit $call check is a violation', () {
+      final violations = findScreenshotTestViolations({
+        'test/page/foo/views/foo_view_test.dart':
+            "await $call(tester, 'foo');\n",
+      });
+
+      expect(violations, {'test/page/foo/views/foo_view_test.dart -> $call'});
+    });
+  }
+
   test(
       'a testLocalizations case outside a localizations/ directory is a '
       'violation', () {

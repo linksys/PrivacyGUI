@@ -57,8 +57,10 @@ bool _isPresentation(String path) {
   return !directories.any(_applicationDirectories.contains);
 }
 
-/// An import or export up to its `;`, conditional URIs included.
-final _directive = RegExp(r'^\s*(?:import|export)\b([^;]*);', multiLine: true);
+/// An import or export up to its `;`, conditional URIs included. It starts a
+/// line or follows the `;` of the directive before it.
+final _directive =
+    RegExp(r'(?<=^|;)\s*(?:import|export)\b([^;]*);', multiLine: true);
 final _uri = RegExp(r'''['"]([^'"]+)['"]''');
 
 const _packagePrefix = 'package:privacy_gui/';

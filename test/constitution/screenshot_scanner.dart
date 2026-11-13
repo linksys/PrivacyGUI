@@ -9,8 +9,8 @@ Set<String> findScreenshotTestViolations(Map<String, String> sources) {
   sources.forEach((path, source) {
     if (path == _helper) return;
     final code = withoutLineStartComments(source);
-    if (_goldenCheck.hasMatch(code)) {
-      violations.add('$path -> matchesGoldenFile');
+    for (final check in _goldenCheck.allMatches(code)) {
+      violations.add('$path -> ${check.group(1)}');
     }
     final directories = path.split('/')..removeLast();
     if (!directories.contains('localizations') &&
@@ -24,5 +24,7 @@ Set<String> findScreenshotTestViolations(Map<String, String> sources) {
 /// Defines `testLocalizations`, the one place a golden check is made.
 const _helper = 'test/common/test_responsive_widget.dart';
 
-final _goldenCheck = RegExp(r'\bmatchesGoldenFile\b');
+/// Flutter's golden matcher, and `golden_toolkit`'s two golden checks.
+final _goldenCheck =
+    RegExp(r'\b(matchesGoldenFile|screenMatchesGolden|multiScreenGolden)\b');
 final _localizationsCase = RegExp(r'\btestLocalizations\s*\(');

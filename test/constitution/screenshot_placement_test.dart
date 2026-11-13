@@ -13,10 +13,8 @@ void main() {
   late Set<String> listed;
 
   setUpAll(() {
-    // test/constitution/ holds these checks and their fixtures, which name
-    // the very calls they look for.
     final sources = dartSources('test')
-      ..removeWhere((path, _) => path.startsWith('test/constitution/'));
+      ..removeWhere((path, _) => _namesTheCalls.contains(path));
     found = findScreenshotTestViolations(sources);
     listed = readExceptionTable(
       File('constitution.md').readAsStringSync(),
@@ -33,7 +31,7 @@ void main() {
       unlisted,
       isEmpty,
       reason: 'These files break constitution.md 3.5 and have no row in its '
-          'table:\n${_bullets(unlisted)}\n'
+          'table:\n${bulletList(unlisted)}\n'
           'Write the golden check as a testLocalizations case, in a '
           'localizations/ directory. Adding a row instead is an amendment '
           '(Article IX).',
@@ -47,10 +45,13 @@ void main() {
       stale,
       isEmpty,
       reason: 'These rows of the constitution.md 3.5 table no longer match the '
-          'tests. Delete them:\n${_bullets(stale)}',
+          'tests. Delete them:\n${bulletList(stale)}',
     );
   });
 }
 
-String _bullets(Set<String> items) =>
-    (items.toList()..sort()).map((item) => '  - $item').join('\n');
+/// The scanner and its fixtures, which name the very calls they look for.
+const _namesTheCalls = {
+  'test/constitution/screenshot_scanner.dart',
+  'test/constitution/screenshot_scanner_test.dart',
+};

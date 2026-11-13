@@ -26,7 +26,7 @@ void main() {
       unlisted,
       isEmpty,
       reason: 'These dependencies break constitution.md Article I and have no '
-          'row in its 1.4 table:\n${_bullets(unlisted)}\n'
+          'row in its 1.4 table:\n${bulletList(unlisted)}\n'
           "Move the call into the feature's notifier. Adding a row instead is "
           'an amendment (Article IX).',
     );
@@ -39,10 +39,7 @@ void main() {
       stale,
       isEmpty,
       reason: 'These rows of the constitution.md 1.4 table no longer match the '
-          'code. Delete them:\n${_bullets(stale)}',
+          'code. Delete them:\n${bulletList(stale)}',
     );
   });
 }
-
-String _bullets(Set<String> items) =>
-    (items.toList()..sort()).map((item) => '  - $item').join('\n');

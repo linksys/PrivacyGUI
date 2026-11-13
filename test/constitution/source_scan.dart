@@ -23,14 +23,39 @@ final _row = RegExp(r'^\|\s*`([^`]+)`\s*\|\s*`([^`]+)`\s*\|', multiLine: true);
 /// Reads the exception table that `constitution.md` keeps between
 /// `<!-- [name]:begin -->` and `<!-- [name]:end -->`, as `<from> -> <to>`
 /// taken from the first two cells of each row.
+///
+/// Throws when the markers are not there exactly once, in order, or when a
+/// row below the header has no backticked first two cells, so that a row the
+/// checks cannot read never goes unnoticed.
 Set<String> readExceptionTable(String constitution, String name) {
-  final begin = constitution.indexOf('<!-- $name:begin -->');
-  final end = constitution.indexOf('<!-- $name:end -->');
-  if (begin < 0 || end < begin) {
-    throw StateError('constitution.md has lost its "$name" table markers.');
+  final beginMarker = '<!-- $name:begin -->';
+  final endMarker = '<!-- $name:end -->';
+  final begin = constitution.indexOf(beginMarker);
+  final end = constitution.indexOf(endMarker);
+  if (beginMarker.allMatches(constitution).length != 1 ||
+      endMarker.allMatches(constitution).length != 1 ||
+      end < begin) {
+    throw StateError(
+        'constitution.md must hold the "$name" table markers once, in order.');
   }
-  return {
-    for (final row in _row.allMatches(constitution.substring(begin, end)))
-      '${row.group(1)} -> ${row.group(2)}',
-  };
+  final rows = <String>{};
+  final tableLines = constitution
+      .substring(begin, end)
+      .split('\n')
+      .where((line) => line.startsWith('|'));
+  // The first two lines are the header and its separator.
+  for (final line in tableLines.skip(2)) {
+    final row = _row.firstMatch(line);
+    if (row == null) {
+      throw StateError(
+          'The "$name" table in constitution.md has a row the checks cannot '
+          'read; put its first two cells in backticks:\n$line');
+    }
+    rows.add('${row.group(1)} -> ${row.group(2)}');
+  }
+  return rows;
 }
+
+/// [items], sorted, one `  - item` line each, for a failure message.
+String bulletList(Set<String> items) =>
+    (items.toList()..sort()).map((item) => '  - $item').join('\n');

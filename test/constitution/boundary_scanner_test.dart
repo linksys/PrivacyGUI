@@ -26,6 +26,30 @@ void main() {
       });
     });
 
+    test('a second directive on the same line is checked', () {
+      final violations = findBoundaryViolations({
+        'lib/page/foo/views/foo_view.dart':
+            "import 'package:flutter/material.dart'; "
+                "import 'package:privacy_gui/core/jnap/router_repository.dart';\n",
+      });
+
+      expect(violations, {
+        'lib/page/foo/views/foo_view.dart -> lib/core/jnap/router_repository.dart',
+      });
+    });
+
+    test('an import with a show clause is checked', () {
+      final violations = findBoundaryViolations({
+        'lib/page/foo/views/foo_view.dart':
+            "import 'package:privacy_gui/core/jnap/router_repository.dart' "
+                'show RouterRepository;\n',
+      });
+
+      expect(violations, {
+        'lib/page/foo/views/foo_view.dart -> lib/core/jnap/router_repository.dart',
+      });
+    });
+
     test('a conditional import is checked on every URI it names', () {
       final violations = findBoundaryViolations({
         'lib/page/foo/views/foo_view.dart':
