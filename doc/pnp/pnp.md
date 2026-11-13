@@ -140,8 +140,8 @@ lib/page/instant_setup/
 ├── providers/
 │   ├── pnp_providers.dart       # Provider exports
 │   ├── pnp_notifier.dart        # State machine logic
-│   ├── pnp_setting_steps.dart   # The step list + the flow-level dirty guard
-│   └── pnp_wifi_drafts.dart     # One Preservable draft per setting step
+│   ├── pnp_setting_steps_provider.dart  # The step list + the flow-level dirty guard
+│   └── pnp_wifi_draft_provider.dart     # One Preservable draft per setting step
 ├── services/
 │   ├── pnp_service.dart         # USP operations
 │   └── pnp_status_service.dart  # PnP completion tracking

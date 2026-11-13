@@ -7,9 +7,9 @@ import 'package:privacy_gui/page/instant_setup/views/pnp_wifi_step_view.dart';
 /// A PnP setting step's page side: its stepper label and its view (#1511 P4).
 ///
 /// The flow side — its inclusion condition and its draft — is
-/// `kPnpSettingSteps` in `providers/pnp_setting_steps.dart`; a provider may
+/// `kPnpSettingSteps` in `providers/pnp_setting_steps_provider.dart`; a provider may
 /// not import a view, so the step is two entries, one per layer.
-/// `pnp_setting_steps_test.dart` keeps the two lists naming the same steps in
+/// `pnp_setting_steps_provider_test.dart` keeps the two lists naming the same steps in
 /// the same order. The routes under `/pnp/pnpConfig` are built from this list.
 class PnpSettingStepPage {
   const PnpSettingStepPage({

@@ -14,7 +14,7 @@ import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_wifi_drafts.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_wifi_draft_provider.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_guest_step_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_wifi_step_view.dart';

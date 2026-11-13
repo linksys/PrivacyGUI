@@ -8,7 +8,7 @@ import 'pnp_wifi_write.dart';
 /// Top-level PnP state — where the flow is, plus what it learned on the way.
 ///
 /// Since #1511 P4 it holds **no form**: what the user types lives in the
-/// setting steps' drafts (`pnp_wifi_drafts.dart`), so an edit never changes
+/// setting steps' drafts (`pnp_wifi_draft_provider.dart`), so an edit never changes
 /// this state and adding a step never adds a field here.
 class PnpState extends Equatable {
   final PnpPhase phase;

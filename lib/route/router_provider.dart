@@ -99,7 +99,7 @@ import 'package:privacy_gui/page/instant_setup/providers/pnp_troubleshooting_end
 import 'package:privacy_gui/page/instant_setup/views/pnp_entry_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_flow_shell.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_flow_plan.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_setting_steps.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_setting_steps_provider.dart';
 import 'package:privacy_gui/page/instant_setup/views/components/pnp_leave_setup_dialog.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_setting_step_pages.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_your_network_step_view.dart';

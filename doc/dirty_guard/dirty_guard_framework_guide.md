@@ -241,7 +241,7 @@ restarts every radio. Its steps therefore:
   whose status can carry no read error;
 - implement `isDirty()`, `revert()` and `markAsSaved()` directly on that
   `Preservable` (one line each; see `PnpStepDraft` in
-  `providers/pnp_wifi_drafts.dart`);
+  `providers/pnp_wifi_draft_provider.dart`);
 - are begun and held by the flow, and guarded on the route by one
   `PreservableContract` over all of them (`pnpWizardDraftsProvider`), the same
   shape as the Wi-Fi page's `_WifiPageDirtyProxy`.

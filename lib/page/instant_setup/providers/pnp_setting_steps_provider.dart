@@ -4,13 +4,13 @@ import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_flow_plan.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_settings.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_wifi_drafts.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_wifi_draft_provider.dart';
 
 /// A setting step of the PnP wizard, as the flow sees it (#1511 P4).
 ///
 /// The page side of the same step — its stepper label and its view — is in
 /// `views/pnp_setting_step_pages.dart`, because a provider must not import a
-/// view (constitution Article V §5.4). `pnp_setting_steps_test.dart` keeps the
+/// view (constitution Article V §5.4). `pnp_setting_steps_provider_test.dart` keeps the
 /// two lists naming the same steps in the same order.
 class PnpSettingStep {
   const PnpSettingStep({

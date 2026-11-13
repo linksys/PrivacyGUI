@@ -4,7 +4,7 @@ import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_draft_state.dart'
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_settings.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_notifier.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_wifi_drafts.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_wifi_draft_provider.dart';
 
 /// A [PnpNotifier] frozen at one phase.
 ///

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_wifi_drafts.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_wifi_draft_provider.dart';
 import 'package:privacy_gui/page/instant_setup/views/components/pnp_step_footer.dart';
 import 'package:privacy_gui/page/instant_setup/views/components/pnp_wifi_fields.dart';
 import 'package:ui_kit_library/ui_kit.dart';
