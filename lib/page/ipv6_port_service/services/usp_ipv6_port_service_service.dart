@@ -9,9 +9,17 @@ import 'package:privacy_gui/page/_shared/services/batch_tally.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_page_data.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
 
-final uspIpv6PortServiceServiceProvider = Provider<UspIpv6PortServiceService>(
-  (ref) => UspIpv6PortServiceService(ref.read(uspClientProvider)!),
-);
+/// Also read by the dashboard's Firewall card through
+/// `ipv6PortServiceDataProvider` (#1130), so a missing client is a
+/// [ServiceError], as for the other services the dashboard reads.
+final uspIpv6PortServiceServiceProvider =
+    Provider<UspIpv6PortServiceService>((ref) {
+  final usp = ref.read(uspClientProvider);
+  if (usp == null) {
+    throw const ServiceNotInitializedError(detail: 'USP service not available');
+  }
+  return UspIpv6PortServiceService(usp);
+});
 
 /// Service layer for IPv6 Port Service — encapsulates codegen CRUD + transform + validation.
 class UspIpv6PortServiceService {

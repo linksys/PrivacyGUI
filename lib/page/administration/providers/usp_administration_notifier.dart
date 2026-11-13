@@ -96,10 +96,15 @@ class UspAdministrationNotifier
     try {
       await ref.read(uspMutationLockProvider).withLock(() async {
         if (current.upnpEnabled != original.upnpEnabled) {
-          await _svc.setUpnpEnabled(current.upnpEnabled);
-          // The dashboard's Firewall card shows UPnP, and the router pushes
-          // nothing for Device.UPnP., so it is read again here (#1130).
-          ref.invalidate(upnpDataProvider);
+          try {
+            await _svc.setUpnpEnabled(current.upnpEnabled);
+          } finally {
+            // The dashboard's Firewall card shows UPnP, and the router pushes
+            // nothing for Device.UPnP., so it is read again here (#1130). A
+            // failed Set too: save() re-reads the page then, because nobody
+            // knows what landed, and the card must not keep the old value.
+            ref.invalidate(upnpDataProvider);
+          }
         }
         if (current.sipAlgEnabled != original.sipAlgEnabled) {
           await _svc.setSipAlgEnabled(current.sipAlgEnabled);

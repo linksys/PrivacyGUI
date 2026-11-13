@@ -391,6 +391,35 @@ void main() {
       expect(upnpReads, 2);
     });
 
+    test('a failed UPnP Set refreshes what the Firewall card shows too',
+        () async {
+      // The page re-reads after a failure because nobody knows what landed;
+      // the card must not keep showing the value from before the save.
+      when(() => svc.setUpnpEnabled(any()))
+          .thenThrow(const NetworkError(detail: 'response lost'));
+      when(() => svc.fetch()).thenAnswer((_) async => _settings());
+      var upnpReads = 0;
+      final container = ProviderContainer(overrides: [
+        uspAdministrationServiceProvider.overrideWithValue(svc),
+        uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+        upnpDataProvider.overrideWith((ref) async {
+          upnpReads++;
+          return true;
+        }),
+      ]);
+      addTearDown(container.dispose);
+      container.listen(uspAdministrationProvider, (_, __) {});
+      container.listen(upnpDataProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspAdministrationProvider.notifier);
+      expect(upnpReads, 1);
+
+      notifier.setUpnpEnabled(false);
+      await expectLater(notifier.save(), throwsA(isA<NetworkError>()));
+      await Future.delayed(Duration.zero);
+      expect(upnpReads, 2);
+    });
+
     test('a firmware without the rule never writes it', () async {
       // The switch is hidden there, so nothing can change it; editing the
       // other switches must not reach for a rule that is not on the router.

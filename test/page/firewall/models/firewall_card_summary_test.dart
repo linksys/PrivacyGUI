@@ -115,12 +115,20 @@ void main() {
 
   group('Port Forwarding row', () {
     test('counts the rules that are on, on all three tabs', () {
+      // Single-port and port-range rules come in one list; triggering is the
+      // third tab.
       final s = summary(
-        forwarding: [on, on, off],
+        forwarding: [
+          on,
+          on,
+          off,
+          PortForwardingTestData.createRangeRule(enabled: true),
+          PortForwardingTestData.createRangeRule(enabled: false),
+        ],
         triggering: [triggerOn, triggerOff],
       );
 
-      expect(s.portRules, (on: 3, total: 5));
+      expect(s.portRules, (on: 4, total: 7));
     });
 
     test('is unknown until both forwarding and triggering are read', () {

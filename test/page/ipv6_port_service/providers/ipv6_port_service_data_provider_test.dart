@@ -48,4 +48,17 @@ void main() {
     );
     expect(container.read(ipv6PortServiceDataProvider).valueOrNull, isNull);
   });
+
+  test('with no USP client it is a ServiceError, not a null check', () async {
+    // The dashboard reads this provider, as it reads the other L1 caches,
+    // whose services all fail this way when there is no client.
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    container.listen(ipv6PortServiceDataProvider, (_, __) {});
+
+    await expectLater(
+      container.read(ipv6PortServiceDataProvider.future),
+      throwsA(isA<ServiceNotInitializedError>()),
+    );
+  });
 }
