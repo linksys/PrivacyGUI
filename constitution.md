@@ -55,6 +55,8 @@ Core           lib/core/
 
 A **presentation file** is any Dart file under `lib/page/` that is not inside a directory named `providers`, `service`, `services`, `data`, `models` or `model`.
 
+The rest of `lib/` is outside these layers, and the test in 1.5 does not check it: `lib/route/`, `lib/util/`, `lib/constants/`, `app.dart` and the other top-level files. For example, `RouterNotifier` in `lib/route/router_provider.dart` sends `getDeviceInfo` through `RouterRepository` in `_prepareLocal`.
+
 ### 1.2 Presentation files don't use the data layer
 
 A presentation file does not:
@@ -72,7 +74,7 @@ No file under `lib/core/` imports or exports a file under `lib/page/`. Every fea
 
 ### 1.4 Exceptions
 
-These dependencies predate this constitution. They are listed, not fixed (#1804, Decision 2). The test in 1.5 reads the first two columns of this table, so keep the file and the dependency of each row in backticks. A dependency is a file or a provider name.
+These dependencies predate this constitution. They are listed, not fixed (#1804, Decision 2). The test in 1.5 reads the first two columns of this table and fails on a row it cannot read, so keep the file and the dependency of each row in backticks. A dependency is a file or a provider name.
 
 <!-- boundary-exceptions:begin -->
 | File | Depends on | What it uses |
@@ -104,6 +106,10 @@ To retire a row, move the call into the feature's notifier (or the type out of `
 - a row no longer matches the code. The code was fixed and the row has to go.
 
 The test cannot tell a new row from an old one: a PR that adds a violation and its row together passes it. That the table only shrinks is enforced by Article IX, because adding a row amends this constitution.
+
+A row covers a dependency, not each use of it. A listed file can add more calls through a provider it already reads, and the test stays green; review catches that.
+
+The test reads source text; it does not parse Dart. A provider name in a string, or in a comment that follows code on the same line, counts as a read. Reword or remove it rather than adding a row.
 
 ---
 
@@ -172,7 +178,7 @@ The overflow sweep cannot see this: adding `maxLines: 1` turns every overflowing
 
 A page's screenshot test is a `testLocalizations` case, from `test/common/test_responsive_widget.dart`:
 
-- `testLocalizations` tags the case `loc`, so `run_tests.sh` skips it (3.1). No other file calls `matchesGoldenFile`: a golden check written in a plain `testWidgets` would run in the unit suite.
+- `testLocalizations` tags the case `loc`, so `run_tests.sh` skips it (3.1). No other file makes a golden check, with `matchesGoldenFile` or with `golden_toolkit`'s `screenMatchesGolden` and `multiScreenGolden`. A golden check in a plain `testWidgets` would run in the unit suite.
 - The case lives in a `localizations/` directory beside the feature's other tests, such as `test/page/dashboard/localizations/dashboard_home_view_test.dart`.
 - The case replaces the page's providers with `overrideWith`, using the mocks in `test/mocks/` (3.6) and the data in `test/test_data/`.
 
@@ -184,7 +190,7 @@ A page's screenshot test is a `testLocalizations` case, from `test/common/test_r
 | `test/page/components/pwa/install_prompt_banner_test.dart` | `testLocalizations` |
 <!-- screenshot-exceptions:end -->
 
-**Enforced by**: Test, for the first two points: `test/constitution/screenshot_placement_test.dart` fails when a file other than the helper calls `matchesGoldenFile`, or a file outside a `localizations/` directory calls `testLocalizations`, and the table above has no row for it. It also fails when a row no longer matches. Review for the third point.
+**Enforced by**: Test, for the first point and for the `localizations/` directory in the second. `test/constitution/screenshot_placement_test.dart` fails when a file other than the helper makes a golden check, or when a file outside a `localizations/` directory calls `testLocalizations`, and the table above has no row for it. It also fails when a row no longer matches. Review for where the `localizations/` directory sits, and for the third point.
 
 ### 3.6 Mocks
 
