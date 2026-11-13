@@ -47,6 +47,21 @@ Future<bool> _pnpFirmwareExitGuard(
   return phase is! WizardUpdatingFirmware && phase is! WizardCheckingFirmware;
 }
 
+/// One shell over the PnP flow (#1511 P2) — the `/pnp` tree, and only it.
+///
+/// [PnpFlowShell] owns the flow's phase→page mapping, and a shell's widget is not
+/// rebuilt while the user moves between its children, so it sees every phase
+/// change for as long as the user is in the flow. The no-internet troubleshooting
+/// tree ([pnpNoInternetRoute]) is deliberately outside it: it has state of its own
+/// and more than one caller (#1511 P1).
+///
+/// No `navigatorKey`, unlike `uspDashboardRoute`: nothing pushes onto this
+/// navigator from outside, so go_router's own key is enough.
+final pnpShellRoute = ShellRoute(
+  builder: (context, state, child) => PnpFlowShell(child: child),
+  routes: [pnpRoute],
+);
+
 final pnpRoute = LinksysRoute(
   name: RouteNamed.pnp,
   path: RoutePath.pnp,

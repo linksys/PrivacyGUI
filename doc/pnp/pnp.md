@@ -60,7 +60,9 @@ User opens app
 2. Fetches device info (serial number, model name)
 3. Checks internet connectivity
 
-**Flow Branching:**
+**Flow Branching** — the navigation is `PnpFlowShell`'s, the `ShellRoute` over
+the `/pnp` tree, which maps phases to pages in one place (`pnpFlowDestination`,
+#1511 P2); `PnpEntryView` only renders the checks:
 - Internet connected → `WizardConfiguring` → navigate to `/pnp/config`
 - No internet → `NoInternet` → navigate to `/pnpNoInternetConnection/pnp`
 - Error → `AdminError` → show error with retry

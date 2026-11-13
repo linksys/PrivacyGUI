@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
-import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-/// PnP entry point — checks internet connectivity and routes to wizard or troubleshooter.
+/// PnP entry point — starts the flow and shows its entry checks.
 ///
 /// User authentication is handled by LoginLocalView before reaching this view.
-/// This view only handles the post-login PnP flow: internet check and navigation.
+/// The navigation the checks lead to — the wizard, or troubleshooting — is
+/// `PnpFlowShell`'s, not this page's (#1511 P2).
 class PnpEntryView extends ConsumerStatefulWidget {
   const PnpEntryView({super.key});
 
@@ -28,30 +27,9 @@ class _PnpEntryViewState extends ConsumerState<PnpEntryView> {
 
   @override
   Widget build(BuildContext context) {
+    // Renders the entry checks only. Where the flow goes next is the shell's
+    // (`pnpFlowDestination`, #1511 P2).
     final pnpState = ref.watch(pnpProvider);
-
-    ref.listen(pnpProvider, (prev, next) {
-      // Only navigate to config from initial states (AdminInternetConnected,
-      // WizardInitializing), not when returning from save failure (WizardSaving).
-      // This prevents re-navigating to /pnp/config when save fails, which would
-      // reset the view's local _currentStep state and show step 0 instead of
-      // the step where the user pressed save.
-      if (next.phase is WizardConfiguring &&
-          prev?.phase is! WizardSaving &&
-          prev?.phase is! WizardConfiguring) {
-        context.goNamed(RouteNamed.pnpConfig);
-      }
-      if (next.phase is NoInternet) {
-        // Hand off to the troubleshooting flow as its PnP caller, whose ending
-        // brings the user back here once the internet is (#1511 P1).
-        context.goNamed(
-          RouteNamed.pnpNoInternetConnection,
-          pathParameters: {
-            TroubleshootingCaller.param: TroubleshootingCaller.pnp,
-          },
-        );
-      }
-    });
 
     return UiKitPageView(
       appBarStyle: UiKitAppBarStyle.none,

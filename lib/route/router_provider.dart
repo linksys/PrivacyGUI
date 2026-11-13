@@ -96,6 +96,7 @@ import 'package:privacy_gui/page/instant_setup/models/troubleshooting_ending.dar
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_troubleshooting_ending_provider.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_entry_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_flow_shell.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_setup_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_add_nodes_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_no_internet_view.dart';
@@ -127,7 +128,7 @@ final sharedAppRoutes = [
   localLoginRoute,
   homeRoute,
   uspDashboardRoute,
-  pnpRoute,
+  pnpShellRoute,
   pnpNoInternetRoute,
 ];
 

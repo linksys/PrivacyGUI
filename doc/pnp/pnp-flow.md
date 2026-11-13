@@ -100,6 +100,15 @@ WizardWifiReady --> DashboardRoute <<end>> : User taps Done\nNavigate to /usp/da
 | `WizardWifiReady` | Setup complete. Show credentials + QR. | No FW update needed |
 | `WizardError` | Recoverable error during wizard. | Exception in wizard operations |
 
+### Who navigates
+
+Since #1511 P2 the `/pnp` tree sits under one `ShellRoute` whose body,
+`PnpFlowShell` (`lib/page/instant_setup/views/pnp_flow_shell.dart`), is the only
+place a `PnpPhase` becomes a page: `pnpFlowDestination(previous, next)` opens the
+wizard on `WizardConfiguring` (not after a failed save, not on an edit) and hands
+`NoInternet` to troubleshooting. The views render phases; none of them navigates
+on one.
+
 ### Troubleshooting phases (`TroubleshootingPhase`, not `PnpPhase`)
 
 Since #1511 P1 the no-internet troubleshooting flow is a sub-flow with state of
