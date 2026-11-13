@@ -1296,8 +1296,9 @@ void main() {
       // it — and are the ones the user just set.
       //
       // They survive because `WizardWifiReady` is built before the stage runs and
-      // the reboot is the *router's*: the SPA is not reloaded, `pnpProvider` is not
-      // `autoDispose`, and there is one container. This used to also assert a
+      // the reboot is the *router's*: the SPA is not reloaded, `pnpProvider` is
+      // held for the whole stage (in the app by `PnpFlowShell`, here by
+      // `_holdingTheFlow` — #1511 P3), and there is one container. This used to also assert a
       // `FlutterSecureStorage` copy read back through a fresh store; that copy is
       // deleted — see `WizardWifiReady`'s doc for the two measurements that retired
       // it, one of which is that `read()` never had a production caller.
