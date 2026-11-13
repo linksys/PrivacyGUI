@@ -45,7 +45,6 @@
 | 016 | [node-detail-service](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/specs/016-node-detail-service/) | Node Detail | 2026-01-02 | ✅ |
 | 017 | [node-light-settings-service](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/specs/017-node-light-settings-service/) | Node LED Settings | 2026-01-02 | ✅ |
 | 018 | [add-nodes-service](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/specs/018-add-nodes-service/) | Add Nodes | 2026-01-06 | ✅ |
-| 019 | [auto-parent-login-service](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/specs/019-auto-parent-login-service/) | Auto Parent Login | 2026-01-07 | ✅ |
 
 ---
 

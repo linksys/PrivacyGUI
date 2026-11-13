@@ -1,11 +1,11 @@
-/// Provider overrides for the four `lib/page/login/` pages (#1379, wave 3).
+/// Provider overrides for the three `lib/page/login/` pages (#1379, wave 3).
 ///
-/// One file for all four because they share a directory tree and, more usefully, the
+/// One file for all three because they share a directory tree and, more usefully, the
 /// same shape of problem: each view's `initState` or `build` reaches a provider that
 /// in USP-only mode is either a **stub** with a hardcoded return or a real notifier
 /// that touches a service. A fixed notifier is how a case pins which branch it means,
-/// and — for `sessionProvider` and `autoParentFirstLoginProvider` — how a cell gets
-/// measured at all instead of throwing.
+/// and — for `sessionProvider` — how a cell gets measured at all instead of throwing.
+/// There were four until #1511 P0 deleted the dead `auto_parent_first_login_view`.
 ///
 /// The states these builders take live in
 /// `test/mocks/test_data/scenes/login_scene_data.dart`.
@@ -14,7 +14,6 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/models/device_info.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
-import 'package:privacy_gui/page/login/auto_parent/providers/auto_parent_first_login_provider.dart';
 import 'package:privacy_gui/page/login/providers/router_password_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
@@ -82,31 +81,6 @@ class FixedRouterPasswordNotifier extends RouterPasswordNotifier {
   ) async {}
 }
 
-/// An [AutoParentFirstLoginNotifier] that reports firmware waiting to install.
-///
-/// The real notifier's `checkAndAutoInstallFirmware()` is a USP-mode stub returning
-/// **false**, and false is the branch that leaves the page: the view then calls
-/// `finishFirstTimeLogin`, which reaches `autoParentFirstLoginServiceProvider`, and
-/// on return does `context.goNamed(RouteNamed.dashboardHome)` — a route
-/// `pageSurfaceHost`'s single-route router does not have, so the cell dies on a
-/// navigation error instead of measuring a page.
-///
-/// So `true` is not the convenient answer, it is the only one that keeps this view
-/// mounted: firmware-is-installing is the state the screen exists to show.
-/// `finishFirstTimeLogin` is neutralised as well, so the fixture does not depend on
-/// the check branch being taken to stay off the service.
-class FixedAutoParentFirstLoginNotifier extends AutoParentFirstLoginNotifier {
-  final bool _firmwareAvailable;
-
-  FixedAutoParentFirstLoginNotifier(this._firmwareAvailable);
-
-  @override
-  Future<bool> checkAndAutoInstallFirmware() async => _firmwareAvailable;
-
-  @override
-  Future<void> finishFirstTimeLogin([bool failCheck = false]) async {}
-}
-
 /// Overrides for `login_local_view`.
 List<Override> loginLocalOverrides({
   required AuthState authState,
@@ -122,14 +96,4 @@ List<Override> loginLocalOverrides({
 List<Override> routerPasswordOverrides(RouterPasswordState state) => [
       routerPasswordProvider
           .overrideWith(() => FixedRouterPasswordNotifier(state)),
-    ];
-
-/// Overrides for `auto_parent_first_login_view`.
-List<Override> autoParentFirstLoginOverrides({
-  bool firmwareAvailable = true,
-}) =>
-    [
-      autoParentFirstLoginProvider.overrideWith(
-        () => FixedAutoParentFirstLoginNotifier(firmwareAvailable),
-      ),
     ];

@@ -224,8 +224,6 @@
   "passwwordUpdated": "路由器密碼已更新",
   "ping": "偵測",
   "pnpErrorForStaticIpAndDhcp": "無法建立連線。請檢查您的資訊並再試一次。",
-  "pnpFwUpdateDesc": "請等待我們下載更新並重新啟動您的裝置。完成後，指示燈將變為亮白色。",
-  "pnpFwUpdateTitle": "正在保存您的設定並檢查軟件更新...",
   "pnpIspTypeSelectionDhcpDesc": "動態主機設定協定（DHCP）會自動為連接到網絡的裝置分配IP地址。",
   "pnpIspTypeSelectionPppoeDesc": "乙太網路上的點對點通訊協定是一個在乙太網路區域網路上，將多台電腦使用者連線至遠端站台的規格。",
   "pnpIspTypeSelectionStaticDesc": "靜態網際網路通訊協定 (IP) 位址（靜態 IP 位址）是由網際網路服務提供者 (ISP) 指派給網路的永久編號。",

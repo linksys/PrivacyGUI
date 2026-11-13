@@ -223,8 +223,6 @@
   "passwwordUpdated": "Senha do roteador atualizada",
   "ping": "Ping",
   "pnpErrorForStaticIpAndDhcp": "Não foi possível estabelecer uma ligação. Verifique a sua informação e tente novamente.",
-  "pnpFwUpdateDesc": "Aguarde enquanto baixamos a atualização e reiniciamos o dispositivo. O indicador LED ficará branco brilhante quando o processo for concluído.",
-  "pnpFwUpdateTitle": "Salvando sua configuração e verificando se há atualizações de software...",
   "pnpIspTypeSelectionDhcpDesc": "O Dynamic Host Configuration Protocol (DHCP) atribui automaticamente endereços IP aos dispositivos conectados à rede.",
   "pnpIspTypeSelectionPppoeDesc": "O Protocolo Ponto a Ponto (PPP) sobre ethernet é uma especificação para ligar vários utilizadores de computadores de uma rede ethernet local a um local remoto.",
   "pnpIspTypeSelectionStaticDesc": "Um endereço IP (Internet Protocol) estático é um número permanente atribuído a uma rede por um fornecedor de serviços internet (ISP).",

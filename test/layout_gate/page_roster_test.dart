@@ -152,21 +152,6 @@ void main() {
       expect(roster.paths, isNot(contains(path)));
     });
 
-    test('the page a one-level glob misses is discovered', () {
-      expect(
-        discovered,
-        contains(
-          'lib/page/login/auto_parent/views/auto_parent_first_login_view.dart',
-        ),
-        reason: 'this is the file that makes the difference between 45 and 46, '
-            'and it sits two levels under lib/page/ rather than one. It is also '
-            'exactly the kind of page a coverage record forgets. The test used to '
-            'be named after its ordinal ("the 45th page"); #1549 added a page and '
-            'the ordinal was the only thing about it that changed, which is a name '
-            'promising something the assertion never checked.',
-      );
-    });
-
     test('no discovered page view is absent from the roster', () {
       expect(
         roster.unrecordedPages(discovered),
@@ -483,14 +468,14 @@ void main() {
       expect(roster.needsFixture, isEmpty);
 
       // PnpIPoEView adds one pending fixture after the original queue was cleared.
-      // The four pages below still have their declared coverage; a new queued
-      // page must not erase that completed work.
+      // The three pages below still have their declared coverage; a new queued
+      // page must not erase that completed work. There were four until #1511 P0:
+      // wave 3's one unit of debt, `auto_parent_first_login_view.dart` — a
+      // directory deeper than the other login views, and unmeasurable because its
+      // opening state was its only state — was deleted as dead code, so it left
+      // this set by being deleted, not by being dropped.
       const paidDown = {
         'lib/page/instant_setup/views/pnp_ipoe_view.dart',
-        // Wave 3's one unit of debt: #1370's glob found this file one directory
-        // deeper than the other login views and could not measure it at all,
-        // because its opening state is the only state it has.
-        'lib/page/login/auto_parent/views/auto_parent_first_login_view.dart',
         // #1370 recorded this as needing a fixture and #1378 wrote it — one
         // composed `NoInternet` state, shared with three other pages in the flow.
         'lib/page/instant_setup/views/pnp_waiting_modem_view.dart',
@@ -535,7 +520,7 @@ void main() {
       );
     });
 
-    test('the register reads 47 swept, 0 queued, 2 excluded', () {
+    test('the register reads 49 swept, 0 queued, 2 excluded', () {
       // 2/41/2 when #1382 shipped it; wave 1 (#1377) moved five from queued to
       // swept, wave 2 (#1378) nine — eight on the day, and `pnp_setup` the day
       // after, when ui_kit v2.40.2 unblocked it — wave 3 (#1379) six, and wave 4
@@ -547,7 +532,7 @@ void main() {
       // short version is that unreachability is the only reason this epic accepts
       // and none of the four is unreachable.
       //
-      // 47 swept + 2 excluded = 49 accounted for. PnpIPoEView's supported-ready
+      // 49 swept + 2 excluded = 51 accounted for. PnpIPoEView's supported-ready
       // fixture now exercises its settings, completed result, and log panel.
       //
       // The 44th is #1549's `firmware_ota_view.dart`, and it is the first row added
@@ -572,8 +557,13 @@ void main() {
       // 48th #1734's `pnp_add_nodes_view.dart`, the same flow in the wizard's frame.
       // The 50th is #641's `usp_ddns_view.dart`, Advanced Settings → DDNS, the
       // same way.
+      //
+      // Then the first row the register lost: #1511 P0 deleted
+      // `auto_parent_first_login_view.dart`, a wave 3 page, as dead code — its route
+      // was reachable only by typing the URL, and its only exit named a route
+      // nothing registers. 50 → 49, with the file, not by un-sweeping it.
       expect(
-          roster.withDisposition(PageRosterDisposition.swept), hasLength(50));
+          roster.withDisposition(PageRosterDisposition.swept), hasLength(49));
       expect(
         roster.withDisposition(PageRosterDisposition.queued).map((r) => r.path),
         isEmpty,
@@ -738,7 +728,6 @@ void main() {
         'lib/page/ipv6_port_service/views/usp_ipv6_port_service_view.dart',
         'lib/page/landing/views/home_view.dart',
         'lib/page/local_network/views/usp_local_network_view.dart',
-        'lib/page/login/auto_parent/views/auto_parent_first_login_view.dart',
         'lib/page/login/views/local_reset_router_password_view.dart',
         'lib/page/login/views/local_router_recovery_view.dart',
         'lib/page/login/views/login_local_view.dart',

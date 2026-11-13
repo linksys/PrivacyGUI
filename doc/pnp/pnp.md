@@ -60,10 +60,12 @@ User opens app
 2. Fetches device info (serial number, model name)
 3. Checks internet connectivity
 
-**Flow Branching:**
+**Flow Branching** — the navigation is `PnpFlowShell`'s, the `ShellRoute` over
+the `/pnp` tree, which maps phases to pages in one place (`pnpFlowDestination`,
+#1511 P2); `PnpEntryView` only renders the checks:
 - Internet connected → `WizardConfiguring` → navigate to `/pnp/config`
-- No internet → `NoInternet` → navigate to `/pnpNoInternetConnection`
-- Error → `AdminError` → show error with retry
+- No internet → `NoInternet` → navigate to `/pnpNoInternetConnection/pnp`
+- Router could not be read → `AdminReadFailure` → show its error card with Try again
 
 ### 3.3. Network Troubleshooter Flow
 
@@ -75,7 +77,13 @@ When no internet connection is detected, this flow provides solutions.
         *   Flow: `PnpUnplugModemView` → `PnpModemLightsOffView` → `PnpWaitingModemView`
     2.  **Option B - Manual ISP Settings**: Enter ISP connection info
         *   Flow: `PnpIspSettingsView` → `PnpStaticIpView` / `PnpPppoeView`
-*   **Outcome**: Re-check internet. Success → wizard; Failure → stay in troubleshooter.
+*   **Outcome**: Re-check internet. Success → the caller's ending (for PnP, back to
+    `/pnp`, which re-runs the check and starts the wizard); Failure → stay in
+    troubleshooter.
+*   **State**: its own, not PnP's (#1511 P1) — `internetTroubleshootingProvider`,
+    with the WAN prefill in `troubleshootingWanPrefillProvider`. The caller is the
+    `:caller` segment of every troubleshooting URL (`pnp` or `dashboard`), turned
+    into a `TroubleshootingEnding` by the route layer; see `pnp-flow.md`.
 
 ### 3.4. Setup Wizard Flow (`PnpSetupView`)
 
@@ -87,7 +95,7 @@ Multi-step wizard for WiFi configuration:
     2. `PnpStatusService.acknowledge(serialNumber)` → mark PnP complete
     3. If SSID changed → `WizardNeedsReconnect` → user reconnects to new WiFi
     4. `WizardTestingReconnect` → poll router with exponential backoff
-    5. `WizardCheckingFirmware` → (placeholder for future FW update)
+    5. `WizardCheckingFirmware` → the router's OTA check; `WizardUpdatingFirmware` while an update installs (locked)
     6. `WizardWifiReady` → show new credentials + QR code → Done
 
 ## 4. State Management

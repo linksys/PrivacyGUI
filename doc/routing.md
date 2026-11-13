@@ -19,11 +19,10 @@ The routing logic can be understood as a state machine that directs users based 
 When a user starts the app, the `redirect` function detects the initial `/` location and calls the `_autoConfigurationLogic` method. This is the primary entry workflow.
 
 1.  **Connectivity Check**: It first forces an update of the network connectivity status.
-2.  **PnP Determination**: If on a local network, it initiates a series of checks via `pnpProvider` to determine the router's state (e.g., is it a new device, is it configured, is it a special "Auto Parent" type?).
-3.  **Branching**: Based on the result, the user is redirected to one of three main flows:
+2.  **PnP Determination**: If on a local network, it initiates a series of checks via `pnpProvider` to determine the router's state (e.g., is it a new device, is it configured?).
+3.  **Branching**: Based on the result, the user is redirected to one of two main flows:
     *   **PnP Flow (`/pnp` path)**: For new or factory-reset routers that require initial setup.
     *   **Login Flow** (e.g., `/localLoginPassword`): For previously configured routers.
-    *   **First-Time Login Flow (`/autoParentFirstLogin`)**: For a specific device type requiring a unique setup.
 
 ### 3.2. General Navigation & Route Guarding (`_redirectLogic`)
 

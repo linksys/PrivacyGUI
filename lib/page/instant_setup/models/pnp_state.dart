@@ -1,24 +1,18 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
-import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'pnp_wifi_config.dart';
 import 'pnp_wifi_ready_band.dart';
-
-/// Whether this is a factory-default first-time setup or a reconfigure.
-enum PnpFlowMode { unconfigured, configured }
 
 /// Top-level PnP state — holds the current phase + shared context.
 class PnpState extends Equatable {
   final PnpPhase phase;
-  final PnpFlowMode flowMode;
   final String? serialNumber;
   final String? modelName;
   final String? errorMessage;
 
   const PnpState({
     required this.phase,
-    this.flowMode = PnpFlowMode.unconfigured,
     this.serialNumber,
     this.modelName,
     this.errorMessage,
@@ -28,7 +22,6 @@ class PnpState extends Equatable {
 
   PnpState copyWith({
     PnpPhase? phase,
-    PnpFlowMode? flowMode,
     String? serialNumber,
     String? modelName,
     String? errorMessage,
@@ -36,7 +29,6 @@ class PnpState extends Equatable {
   }) {
     return PnpState(
       phase: phase ?? this.phase,
-      flowMode: flowMode ?? this.flowMode,
       serialNumber: serialNumber ?? this.serialNumber,
       modelName: modelName ?? this.modelName,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
@@ -44,8 +36,7 @@ class PnpState extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [phase, flowMode, serialNumber, modelName, errorMessage];
+  List<Object?> get props => [phase, serialNumber, modelName, errorMessage];
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -91,51 +82,17 @@ class AdminReadFailure extends PnpPhase {
   List<Object?> get props => [code, detail];
 }
 
-/// No internet detected — route to troubleshooter.
+/// No internet detected — PnP hands the user to the troubleshooting flow.
+///
+/// PnP's part ends here (#1511 P1): retrying, restarting the modem and entering
+/// ISP settings are the troubleshooting flow's, with state of its own, and it
+/// reads the WAN for its forms itself. Internet back means `/pnp` again, which
+/// re-runs this check.
 class NoInternet extends PnpPhase {
   final String? ssid;
-  final UspInternetSettingsForm? currentWanSettings;
-  const NoInternet({this.ssid, this.currentWanSettings});
+  const NoInternet({this.ssid});
   @override
-  List<Object?> get props => [ssid, currentWanSettings];
-}
-
-// ─── Modem Restart Phase ────────────────────────────────────
-
-/// Modem restart countdown running (150s → 0s).
-class ModemRestartCountdown extends PnpPhase {
-  final int remainingSeconds;
-  final int totalSeconds;
-  const ModemRestartCountdown({
-    required this.remainingSeconds,
-    this.totalSeconds = 150,
-  });
-  @override
-  List<Object?> get props => [remainingSeconds, totalSeconds];
-}
-
-/// Modem restart: checking internet (polling up to maxAttempts).
-class ModemRestartCheckingInternet extends PnpPhase {
-  final int attemptCount;
-  final int maxAttempts;
-  const ModemRestartCheckingInternet({
-    required this.attemptCount,
-    this.maxAttempts = 30,
-  });
-  @override
-  List<Object?> get props => [attemptCount, maxAttempts];
-}
-
-// ─── ISP Save Progress Phase ────────────────────────────────
-
-enum IspSaveStep { saving, checkingSettings, checkingInternet }
-
-/// ISP settings save is in progress, with multi-step display.
-class IspSaving extends PnpPhase {
-  final IspSaveStep step;
-  const IspSaving({required this.step});
-  @override
-  List<Object?> get props => [step];
+  List<Object?> get props => [ssid];
 }
 
 // ─── Wizard Phase ──────────────────────────────────────────

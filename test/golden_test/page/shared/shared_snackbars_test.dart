@@ -267,8 +267,9 @@ final _rows = <_Row>[
           const NetworkError(detail: 'connection closed').toString())),
 
   // --- Wrapping ---
-  // Instant Setup passes the caught exception's `toString()` straight through
-  // (`pnp_notifier.dart`'s `errorMessage: '$e'`). Unbounded and unlocalized, it
+  // Instant Setup passed the caught exception's `toString()` straight through
+  // (`pnp_notifier.dart`'s `errorMessage: '$e'`, until #1511 P1 typed it and
+  // localized it). Unbounded and unlocalized, it
   // is the longest text a snackbar can be handed, so it is the one picture of
   // the snackbar wrapping across several lines.
   _Row.failed(

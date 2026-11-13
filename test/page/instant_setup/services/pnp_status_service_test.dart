@@ -34,7 +34,6 @@ void main() {
         final result = await service.check('SN123');
 
         expect(result.needsPnp, isTrue);
-        expect(result.configurationMethod, AutoConfigurationMethod.none);
       });
 
       test('returns needsPnp=true when acknowledged SN is empty', () async {
@@ -131,36 +130,17 @@ void main() {
       expect(result.needsPnp, isFalse);
     });
 
-    test('returns needsPnp=true with autoParent method when not acknowledged',
-        () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async =>
-          _setupResponse(acknowledged: false, method: 'AutoParent'));
-
-      final result = await service.check('SN-IGNORED');
-
-      expect(result.needsPnp, isTrue);
-      expect(result.configurationMethod, AutoConfigurationMethod.autoParent);
-    });
-
     test(
-        'returns needsPnp=true with preConfigured method when not acknowledged',
-        () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async =>
-          _setupResponse(acknowledged: false, method: 'PreConfigured'));
+        'returns needsPnp=true when not acknowledged, whatever '
+        'AutoConfigurationMethod the router reports', () async {
+      for (final method in ['AutoParent', 'PreConfigured', 'None']) {
+        when(() => mockUsp.get(any())).thenAnswer(
+            (_) async => _setupResponse(acknowledged: false, method: method));
 
-      final result = await service.check(null);
+        final result = await service.check(null);
 
-      expect(result.needsPnp, isTrue);
-      expect(result.configurationMethod, AutoConfigurationMethod.preConfigured);
-    });
-
-    test('maps unknown AutoConfigurationMethod string to none', () async {
-      when(() => mockUsp.get(any())).thenAnswer(
-          (_) async => _setupResponse(acknowledged: false, method: 'None'));
-
-      final result = await service.check(null);
-
-      expect(result.configurationMethod, AutoConfigurationMethod.none);
+        expect(result.needsPnp, isTrue, reason: 'method=$method');
+      }
     });
 
     test('acknowledge invokes SetUserAcknowledgedAutoConfig() operate',
@@ -180,7 +160,6 @@ void main() {
       final result = await service.check('SN-IGNORED');
 
       expect(result.needsPnp, isFalse);
-      expect(result.configurationMethod, AutoConfigurationMethod.none);
     });
 
     test('acknowledge swallows operate failures', () async {
@@ -198,22 +177,12 @@ void main() {
       final result = PnpTriggerResult.notNeeded();
 
       expect(result.needsPnp, isFalse);
-      expect(result.configurationMethod, AutoConfigurationMethod.none);
     });
 
-    test('needed factory creates correct result with default method', () {
+    test('needed factory creates correct result', () {
       final result = PnpTriggerResult.needed();
 
       expect(result.needsPnp, isTrue);
-      expect(result.configurationMethod, AutoConfigurationMethod.none);
-    });
-
-    test('needed factory accepts custom configuration method', () {
-      final result =
-          PnpTriggerResult.needed(method: AutoConfigurationMethod.autoParent);
-
-      expect(result.needsPnp, isTrue);
-      expect(result.configurationMethod, AutoConfigurationMethod.autoParent);
     });
 
     test('equality works correctly', () {

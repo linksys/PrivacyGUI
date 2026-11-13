@@ -493,14 +493,16 @@
 # added PnpIPoEView (#1664): supported-ready settings fixture, 234 cells, 2026-10-08.
 # Auto-IPoE moved to PnP; capability-backed ready state is exercised by page.pnp_ipoe:
 # added ms/cell 35.3 / 35.6 / 35.0; median 35.3. The PnP ready fixture has no log widget.
+# removed auto_parent_first_login_view (#1511 P0, 2026-11-13): dead code, deleted with its route.
+# removed Its swept row (19.9) went with the file; the figures above that cite it are history.
 # rows sorted by path, so adding a page is a one-line diff
 # reader test/layout_gate/page_roster.dart
 # oracle test/layout_gate/page_roster_test.dart
 # doc doc/testing/overflow_gate_architecture.md section 11.5; the onboarding queue is section 11.6
-# pages 52
-# swept 50
+# pages 51
+# swept 49
 # queued 0
-# measured 50
+# measured 49
 # needs_fixture 0
 # excluded 2
 # columns path	disposition	ms_per_cell
@@ -538,7 +540,6 @@ lib/page/internet_settings/views/usp_internet_settings_view.dart	swept	36.1
 lib/page/ipv6_port_service/views/usp_ipv6_port_service_view.dart	swept	19.6
 lib/page/landing/views/home_view.dart	swept	11.0
 lib/page/local_network/views/usp_local_network_view.dart	swept	104.7
-lib/page/login/auto_parent/views/auto_parent_first_login_view.dart	swept	19.9
 lib/page/login/views/local_reset_router_password_view.dart	swept	26.4
 lib/page/login/views/local_router_recovery_view.dart	swept	19.1
 lib/page/login/views/login_local_view.dart	swept	21.8

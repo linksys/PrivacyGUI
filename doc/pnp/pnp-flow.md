@@ -31,13 +31,13 @@ state AdminPhase {
     AdminCheckingInternet : Fetch device info\nCheck WAN status
     AdminCheckingInternet --> AdminInternetConnected : Internet OK
     AdminCheckingInternet --> NoInternet : No internet
-    AdminCheckingInternet --> AdminError : Critical error
+    AdminCheckingInternet --> AdminReadFailure : Router could not be read
 
     AdminInternetConnected --> WizardInitializing : Auto transition
-    AdminError --> AdminCheckingInternet : User taps Retry
+    AdminReadFailure --> AdminCheckingInternet : User taps Try again
 }
 
-NoInternet --> TroubleshooterRoute <<end>> : Navigate to\n/pnpNoInternetConnection
+NoInternet --> TroubleshooterRoute <<end>> : Navigate to\n/pnpNoInternetConnection/pnp
 
 state WizardPhase {
     WizardInitializing : Fetch WiFi config\nFetch mesh topology
@@ -61,8 +61,11 @@ state WizardPhase {
     WizardTestingReconnect --> WizardSaved : Reconnect OK\nSN matches
     WizardTestingReconnect --> WizardNeedsReconnect : All attempts failed
 
-    WizardCheckingFirmware : (Placeholder for FW update)
-    WizardCheckingFirmware --> WizardWifiReady : No FW update needed
+    WizardCheckingFirmware : Router OTA check\n(15 s deadline)
+    WizardCheckingFirmware --> WizardWifiReady : No update, or the check failed
+    WizardCheckingFirmware --> WizardUpdatingFirmware : Update available
+    WizardUpdatingFirmware : Router installs and reboots\n(locked: no Back)
+    WizardUpdatingFirmware --> WizardWifiReady : Router back, or 6 min deadline
 
     WizardWifiReady : Show new credentials\nDisplay QR code
     WizardError --> WizardInitializing : User taps Retry
@@ -83,7 +86,7 @@ WizardWifiReady --> DashboardRoute <<end>> : User taps Done\nNavigate to /usp/da
 |-------|-------------|----------|
 | `AdminCheckingInternet` | Entry point. Fetch device info, check WAN status. | `startPostLoginFlow()` |
 | `AdminInternetConnected` | WAN up with valid IP. Ready for wizard. | Internet check success |
-| `AdminError` | Critical error during admin phase. | Exception in `startPostLoginFlow()` |
+| `AdminReadFailure` | The router could not be read (device info or WAN), so its internet state is unknown. Shows its own card with Try again. | A read that throws in `startPostLoginFlow()` |
 | `NoInternet` | WAN down or no IP. Route to troubleshooter. | Internet check failed |
 
 ### WizardPhase (PnpSetupView)
@@ -96,17 +99,44 @@ WizardWifiReady --> DashboardRoute <<end>> : User taps Done\nNavigate to /usp/da
 | `WizardSaved` | Save complete, no SSID change. | Save success (no reconnect needed) |
 | `WizardNeedsReconnect` | Main WiFi SSID changed. Connection dropped. | Save success (SSID changed) |
 | `WizardTestingReconnect` | Polling router after reconnect. | `testReconnect()` |
-| `WizardCheckingFirmware` | Placeholder for firmware update check. | After save/reconnect complete |
+| `WizardCheckingFirmware` | The router's OTA check, bounded at 15 s; every outcome but "update available" finishes setup. | After save/reconnect complete |
+| `WizardUpdatingFirmware` | The router is installing a newer firmware; the route refuses to be left. | The check found an update |
 | `WizardWifiReady` | Setup complete. Show credentials + QR. | No FW update needed |
 | `WizardError` | Recoverable error during wizard. | Exception in wizard operations |
 
-### Troubleshooter Phases (ModemRestart / ISP)
+### Who navigates
+
+Since #1511 P2 the `/pnp` tree sits under one `ShellRoute` whose body,
+`PnpFlowShell` (`lib/page/instant_setup/views/pnp_flow_shell.dart`), is the only
+place a `PnpPhase` becomes a page: `pnpFlowDestination(previous, next)` opens the
+wizard on `WizardConfiguring` (not after a failed save, not on an edit) and hands
+`NoInternet` to troubleshooting. The views render phases; none of them navigates
+on one.
+
+### Troubleshooting phases (`TroubleshootingPhase`, not `PnpPhase`)
+
+Since #1511 P1 the no-internet troubleshooting flow is a sub-flow with state of
+its own — `internetTroubleshootingProvider` (`autoDispose`), in
+`lib/page/instant_setup/providers/internet_troubleshooting_provider.dart` — and
+none of its pages reads `pnpProvider`. PnP's part ends at `NoInternet`, which hands
+the user to `/pnpNoInternetConnection/pnp`.
 
 | Phase | Description |
 |-------|-------------|
+| `TroubleshootingNoInternet` | The hub and its forms; carries a failed ISP save's message once |
 | `ModemRestartCountdown` | 150s countdown while modem reboots |
 | `ModemRestartCheckingInternet` | Polling internet after modem restart (30 attempts) |
 | `IspSaving` | Saving ISP settings with progress steps |
+| `TroubleshootingRecovered` | Internet is back — the caller's ending takes over |
+| `TroubleshootingReadFailure` | The router could not be read — the caller's ending takes over |
+
+**The caller is in the URL** (`/pnpNoInternetConnection/:caller/…`), and the route
+layer turns it into a `TroubleshootingEnding`: where a finished run goes, and
+whether the hub offers "Log into router". PnP's (`pnp`) goes back to `/pnp`, whose
+entry re-runs its check, and offers "Log into router" (acknowledge, then the
+dashboard). The dashboard's (`dashboard`) goes back to the dashboard and offers no
+bypass; no dashboard entry ships yet. The hub, which sits under every other page
+of the tree, is the only page that hands a finished run over.
 
 ---
 

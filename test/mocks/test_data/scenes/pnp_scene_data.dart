@@ -7,10 +7,16 @@
 //
 // Every other page in the layout gate is a *destination*: it fetches, and its
 // provider's state is "loading" then "loaded". The PnP pages are a **state
-// machine's screens** — nine views over one `pnpProvider`, where the phase
-// decides not just whether the page has data but *which page-sized tree it
-// renders*. `PnpNotifier.build()` returns `AdminCheckingInternet` for all of
-// them, which is the phase before any of the nine has anything to show.
+// machine's screens** — views over one `pnpProvider` (nine when this was
+// written), where the phase decides not just whether the page has data but
+// *which page-sized tree it renders*. `PnpNotifier.build()` returns
+// `AdminCheckingInternet`, which is the phase before any of them has anything
+// to show.
+//
+// Since #1511 P1 the no-internet troubleshooting pages are a state machine of
+// their own (`internetTroubleshootingProvider`) and no longer read `pnpProvider`;
+// their scenes are at the bottom of this file, handed to
+// `internetTroubleshootingOverrides()` instead.
 //
 // So a "fixture" here is a phase, and picking it is picking which of a view's
 // branches is measured. Each state below records the branch it selects and why
@@ -20,11 +26,13 @@
 import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
+import 'package:privacy_gui/page/instant_setup/models/troubleshooting_ending.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_band.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_ready_band.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
+import 'package:privacy_gui/route/constants.dart';
 
 // ---------------------------------------------------------------------------
 // WiFi configuration — the wizard's editable payload
@@ -195,13 +203,13 @@ final pnpMeshNodes = <NodeEntity>[
 // WAN settings — what the two ISP forms prefill from
 // ---------------------------------------------------------------------------
 
-/// The router's current WAN settings, carried on [NoInternet].
+/// The router's current WAN settings, as `troubleshootingWanPrefillProvider`
+/// answers them.
 ///
 /// Both ISP forms prefill from this in `initState` and **only** from this:
-/// `PnpPppoeView._prefillFromCurrentSettings` and its `PnpStaticIpView`
-/// counterpart both bail unless the phase is `NoInternet` with a non-null
-/// `currentWanSettings`. A fixture without it renders every field empty, which
-/// is a narrower tree than any real user sees.
+/// `PnpPppoeView._prefill` and its `PnpStaticIpView` counterpart run only once
+/// the prefill has a value. A fixture without it renders every field empty,
+/// which is a narrower tree than any real user sees.
 ///
 /// Two fields are load-bearing beyond their own text:
 /// - `vlanEnabled` flips `PnpPppoeView._showVlan`, which adds the VLAN label and
@@ -248,22 +256,6 @@ const pnpAdminReadFailureState = PnpState(
   phase: AdminReadFailure(
     code: 9998,
     detail: 'Device.DeviceInfo. returned no parameters',
-  ),
-  serialNumber: 'SN-TEST',
-);
-
-/// `NoInternet` — the phase the whole troubleshooter branch runs under.
-///
-/// Four of the nine views are on screen while the state machine sits here:
-/// `PnpNoInternetView` (the hub), `PnpIspSettingsView`, and the two ISP forms.
-/// `PnpWaitingModemView` is on screen here too, before its countdown starts.
-///
-/// `currentWanSettings` is what makes it the widest such state — see
-/// [pnpCurrentWanSettings].
-const pnpNoInternetState = PnpState(
-  phase: NoInternet(
-    ssid: 'Linksys-Test',
-    currentWanSettings: pnpCurrentWanSettings,
   ),
   serialNumber: 'SN-TEST',
 );
@@ -428,3 +420,24 @@ const pnpWizardErrorState = PnpState(
   ),
   serialNumber: 'SN-TEST',
 );
+
+// ---------------------------------------------------------------------------
+// The no-internet troubleshooting tree (#1511 P1)
+// ---------------------------------------------------------------------------
+//
+// Its pages read `internetTroubleshootingProvider` and its WAN prefill, not
+// `pnpProvider`. At rest the run is on `TroubleshootingNoInternet` — the state a
+// default `internetTroubleshootingOverrides()` pins — so the only scene it needs
+// is the WAN above and the caller's ending below.
+
+/// PnP's ending, as the route layer hands it to the hub and to Auto-IPoE.
+///
+/// With a "continue without internet", because that is what PnP supplies and so
+/// what renders the hub's "Log into router" button: an ending without one would
+/// sweep a hub that is a button shorter than any PnP user sees.
+const pnpTroubleshootingEndingScene = TroubleshootingEnding(
+  exitLocation: RoutePath.pnp,
+  continueWithoutInternet: _continueToDashboard,
+);
+
+Future<String> _continueToDashboard() async => RoutePath.uspDashboard;

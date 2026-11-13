@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
+import 'package:privacy_gui/page/instant_setup/models/troubleshooting_phase.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Progress indicator shown while ISP settings are being saved & verified.

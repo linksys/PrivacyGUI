@@ -19,15 +19,11 @@ import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_topology_builder.dart';
 import 'package:privacy_gui/page/_shared/utils/wifi_guest_detection.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
-import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_band.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
 import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_models.dart';
 import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_snapshot.dart';
-import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
-import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 import 'package:privacy_gui/page/internet_settings/services/auto_ipoe_service.dart';
-import 'package:privacy_gui/page/internet_settings/services/usp_internet_settings_service.dart';
 
 final pnpServiceProvider = Provider<PnpService>((ref) {
   final supportsAutoIPoE =
@@ -41,12 +37,10 @@ final pnpServiceProvider = Provider<PnpService>((ref) {
 
 /// Result of factory-default detection.
 class FactoryDefaultCheckResult {
-  final bool isFactoryDefault;
   final String serialNumber;
   final String modelName;
 
   const FactoryDefaultCheckResult({
-    required this.isFactoryDefault,
     required this.serialNumber,
     required this.modelName,
   });
@@ -98,7 +92,6 @@ class PnpService {
     try {
       final info = await SystemInfo.fetch(_usp);
       return FactoryDefaultCheckResult(
-        isFactoryDefault: false,
         serialNumber: info.serialNumber,
         modelName: info.modelName,
       );
@@ -538,71 +531,6 @@ class PnpService {
       }
     }
     return params;
-  }
-
-  // ─── ISP/WAN Save ───────────────────────────────────────
-
-  /// Save ISP settings by delegating to [UspInternetSettingsService].
-  ///
-  /// This ensures PNP uses the same save logic as Advanced Settings,
-  /// including PPP/VLAN instance lifecycle, result validation, and
-  /// allowPartial handling.
-  Future<void> saveIspSettings(PnpIspConfig config) async {
-    final internetSettingsService = UspInternetSettingsService(_usp);
-    if (config.type == IspConnectionType.dhcp) {
-      await internetSettingsService.renewDhcpLease();
-      return;
-    }
-
-    final fetchResult = await internetSettingsService.fetchSettings();
-
-    final original = fetchResult.form;
-    final edited = _applyIspConfigToForm(config, original);
-
-    await internetSettingsService.saveAll(
-      original,
-      edited,
-      pppInstancePath: fetchResult.pppInstancePath,
-      vlanInstancePath: fetchResult.vlanInstancePath,
-    );
-  }
-
-  /// Map [PnpIspConfig] to [UspInternetSettingsForm].
-  ///
-  /// UI pre-fills fields from router's current settings, so submitted values
-  /// represent the user's final intent — no need to preserve original on empty.
-  /// The VLAN ID is the exception: it counts only while VLAN is on.
-  UspInternetSettingsForm _applyIspConfigToForm(
-    PnpIspConfig config,
-    UspInternetSettingsForm original,
-  ) {
-    final vlanEnabled = config.type == IspConnectionType.pppoeVlan;
-    // dnsServer3 intentionally omitted — PNP has no UI for it, preserve original
-    return original.copyWith(
-      connectionType: _mapConnectionType(config.type),
-      staticIpAddress: config.staticIpAddress,
-      subnetMask: config.subnetMask,
-      defaultGateway: config.defaultGateway,
-      dnsServer1: config.dnsServer1,
-      dnsServer2: config.dnsServer2,
-      pppUsername: config.pppUsername,
-      pppPassword: config.pppPassword,
-      vlanEnabled: vlanEnabled,
-      // With VLAN off, config.vlanId is not the user's: Static IP has no VLAN
-      // field, and PPPoE's hidden field holds whatever was last typed or
-      // pre-filled, or 0 when empty. Keep the router's ID: FW 2.0.4 ships the
-      // WAN VLAN row with ID 1 and refuses 0 (#1072).
-      vlanId: vlanEnabled ? config.vlanId : original.vlanId,
-    );
-  }
-
-  UspWanConnectionType _mapConnectionType(IspConnectionType type) {
-    return switch (type) {
-      IspConnectionType.dhcp => UspWanConnectionType.dhcp,
-      IspConnectionType.pppoe => UspWanConnectionType.pppoe,
-      IspConnectionType.pppoeVlan => UspWanConnectionType.pppoe,
-      IspConnectionType.staticIp => UspWanConnectionType.staticIp,
-    };
   }
 
   // ─── Mesh ──────────────────────────────────────────────

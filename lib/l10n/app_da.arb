@@ -223,8 +223,6 @@
   "passwwordUpdated": "Router-adgangskode opdateret",
   "ping": "Ping",
   "pnpErrorForStaticIpAndDhcp": "Der kunne ikke oprettes forbindelse. Kontrollér oplysningerne, og prøv igen.",
-  "pnpFwUpdateDesc": "Vent venligst, mens vi downloader opdateringen og genstarter din enhed. Når processen er færdig, vil LED'en lyse hvidt.",
-  "pnpFwUpdateTitle": "Gem din konfiguration, og tjek for softwareopdateringer...",
   "pnpIspTypeSelectionDhcpDesc": "Dynamic Host Configuration Protocol (DHCP) tildeler automatisk IP-adresser til de enheder, der er tilsluttet netværket.",
   "pnpIspTypeSelectionPppoeDesc": "Point-to-Point-protokollen over ethernet er en specifikation til forbindelse af flere computerbrugere på et ethernet-lokalnetværk til et eksternt websted.",
   "pnpIspTypeSelectionStaticDesc": "En statisk internetprotokol adresse (statisk IP-adresse) er et permanent nummer, der er tildelt et netværk af en internetudbyder (ISP).",

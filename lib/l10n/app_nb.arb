@@ -223,8 +223,6 @@
   "passwwordUpdated": "Ruterpassordet er oppdatert",
   "ping": "Ping",
   "pnpErrorForStaticIpAndDhcp": "Kunne ikke opprette en tilkobling. Sjekk informasjonen og prøv på nytt.",
-  "pnpFwUpdateDesc": "Vent mens vi laster ned oppdateringen, og start deretter enheten på nytt. LED-lampen lyser hvitt når prosessen er fullført.",
-  "pnpFwUpdateTitle": "Lagre konfigurasjonen og se etter programvareoppdateringer...",
   "pnpIspTypeSelectionDhcpDesc": "DHCP (Dynamic Host Configuration Protocol) tildeler automatisk IP-adresser til enheter som er koblet til nettverket.",
   "pnpIspTypeSelectionPppoeDesc": "Punkt til punkt-protokoll over Ethernet er en spesifikasjon for tilkobling av flere datamaskinbrukere på et Ethernet-lokalnett til et eksternt område.",
   "pnpIspTypeSelectionStaticDesc": "En statisk IP-adresse er et permanent nummer tilordnet et nettverk av en Internett-leverandør.",

@@ -4,14 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
-import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_notifier.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
+import 'package:privacy_gui/page/instant_setup/models/troubleshooting_ending.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_no_internet_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../mocks/provider_overrides/mock_common.dart';
+import '../../../mocks/provider_overrides/mock_internet_troubleshooting.dart';
 
 final _testTheme = AppTheme.create(
   brightness: Brightness.light,
@@ -19,32 +18,19 @@ final _testTheme = AppTheme.create(
   designThemeBuilder: (c) => CustomDesignTheme.fromJson({'style': 'flat'}),
 );
 
-/// Fake notifier that starts on [NoInternet] and records bypass calls, so the
-/// view test never touches real USP services.
-class _FakePnpNotifier extends PnpNotifier {
-  int bypassCalls = 0;
-  int retryCalls = 0;
-
-  @override
-  PnpState build() => const PnpState(
-        phase: NoInternet(ssid: 'Linksys-Test'),
-        serialNumber: 'SN-TEST',
-      );
-
-  @override
-  Future<void> bypassToDashboard() async {
-    bypassCalls++;
-  }
-
-  @override
-  Future<void> retryInternetCheck() async {
-    retryCalls++;
-  }
-}
-
 void main() {
-  late _FakePnpNotifier fakeNotifier;
+  late int bypassCalls;
   late String currentLocation;
+
+  /// PnP's ending as the route layer hands it to the hub (#1511 P1), recording
+  /// the "continue without internet" it runs before going where it answers.
+  TroubleshootingEnding pnpEnding() => TroubleshootingEnding(
+        exitLocation: RoutePath.pnp,
+        continueWithoutInternet: () async {
+          bypassCalls++;
+          return RoutePath.uspDashboard;
+        },
+      );
 
   // The view is taller than the default 800x600 test surface; enlarge it so
   // the bottom buttons are on-screen and tappable.
@@ -54,14 +40,15 @@ void main() {
     addTearDown(tester.view.reset);
   }
 
-  Widget host() {
-    fakeNotifier = _FakePnpNotifier();
+  Widget host({TroubleshootingEnding? ending}) {
+    bypassCalls = 0;
+    final hubEnding = ending ?? pnpEnding();
     final router = GoRouter(
-      initialLocation: RoutePath.pnpNoInternetConnection,
+      initialLocation: '/troubleshooting',
       routes: [
         GoRoute(
-          path: RoutePath.pnpNoInternetConnection,
-          builder: (_, __) => const PnpNoInternetView(),
+          path: '/troubleshooting',
+          builder: (_, __) => PnpNoInternetView(ending: hubEnding),
         ),
         GoRoute(
           path: RoutePath.uspDashboard,
@@ -80,7 +67,7 @@ void main() {
     return ProviderScope(
       overrides: [
         ...commonOverrides(),
-        pnpProvider.overrideWith(() => fakeNotifier),
+        ...internetTroubleshootingOverrides(),
       ],
       child: MaterialApp.router(
         theme: _testTheme,
@@ -116,24 +103,23 @@ void main() {
     await tester.tap(find.text('Log into router'));
     await _settle(tester);
 
-    expect(fakeNotifier.bypassCalls, 1);
+    expect(bypassCalls, 1);
     expect(currentLocation, RoutePath.uspDashboard);
     expect(find.text('DASHBOARD_STUB'), findsOneWidget);
   });
 
-  testWidgets('bypass navigates even when notifier skips acknowledge (no SN)',
+  testWidgets('a caller with nothing to continue into offers no bypass',
       (tester) async {
-    // The fake's bypassToDashboard is a no-op (mirrors the SN-null early return
-    // in production, which also completes without throwing). The view must
-    // still navigate — proving the SN-null path is a deliberate, safe bypass.
+    // The dashboard's ending (#1511 P1): there is no setup to acknowledge, so
+    // the hub has no "Log into router" — and "Try again" is still there.
     enlargeSurface(tester);
-    await tester.pumpWidget(host());
+    await tester.pumpWidget(host(
+      ending: const TroubleshootingEnding(exitLocation: RoutePath.uspDashboard),
+    ));
     await _settle(tester);
 
-    await tester.tap(find.text('Log into router'));
-    await _settle(tester);
-
-    expect(currentLocation, RoutePath.uspDashboard);
+    expect(find.text('Log into router'), findsNothing);
+    expect(find.text('Try again'), findsOneWidget);
   });
 }
 

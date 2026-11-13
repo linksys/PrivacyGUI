@@ -221,8 +221,6 @@
   "passwwordUpdated": "Reitittimen salasana päivitetty",
   "ping": "Ping",
   "pnpErrorForStaticIpAndDhcp": "Yhteyttä ei voitu muodostaa. Tarkista tiedot ja yritä uudelleen.",
-  "pnpFwUpdateDesc": "Odota, kun lataamme ja käynnistämme laitteesi uudelleen. LED muuttuu kirkkaanvalkoiseksi, kun prosessi on valmis. Reitittimesi WiFi saattaa sammua hetkeksi ja käynnistyä sitten uudelleen. Jos yhteys katkeaa, yhdistä uudelleen reitittimesi WiFiin käyttääksesi Internetiä.",
-  "pnpFwUpdateTitle": "Tallennetaan määrityksiäsi ja tarkistetaan ohjelmistopäivityksiä...",
   "pnpIspTypeSelectionDhcpDesc": "Dynamic Host Configuration Protocol (DHCP) määrittää IP-osoitteet automaattisesti verkkoon yhdistetyille laitteille.",
   "pnpIspTypeSelectionPppoeDesc": "Point-to-Point Protocol over Ethernet (PPPoE) on konfiguraatio, jossa useita tietokoneita kytketään Ethernet-lähiverkosta etäsijaintiin.",
   "pnpIspTypeSelectionStaticDesc": "Staattinen IP-osoite (staattinen IP-protokolla) on Internet-palveluntarjoajan verkolle määrittämä pysyvä numero.",

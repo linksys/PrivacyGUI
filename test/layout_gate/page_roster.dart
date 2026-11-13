@@ -30,6 +30,12 @@
 /// | directly inside a `views/` dir, any depth | **45** | what this file does |
 /// | `find -path '*/views/*_view.dart'` | 49 | **too wide** — `*` crosses `/` in `find` |
 ///
+/// **Since #1511 P0 the first two spellings find the same set**: that PR deleted
+/// `auto_parent_first_login_view.dart`, the only page view that sat deeper than
+/// `lib/page/<feature>/views/`. The rule keeps its any-depth clause anyway — see
+/// [isPageViewPath] — because narrowing it would make the next nested page view
+/// invisible rather than counted.
+///
 /// The four false positives are all in `lib/page/unified_diagnostics/views/widgets/`:
 /// `diagnostic_start_view`, `diagnostic_running_view`, `diagnostic_results_view`,
 /// `diagnostic_manual_tools_view`. They are composed widgets, not pages — none of
@@ -86,7 +92,10 @@ const String kPageViewRoot = 'lib/page';
 /// wizard's frame, the same kind of move as #879's `add_nodes_view.dart`.
 /// 51 → 52 at #641: `usp_ddns_view.dart`, Advanced Settings → DDNS, the same kind
 /// of move.
-const int kPageViewCount = 52;
+/// 52 → 51 at #1511 P0, the first downward move: the app lost
+/// `auto_parent_first_login_view.dart`, dead code deleted with its route. The walk is
+/// unchanged and one row went with the file.
+const int kPageViewCount = 51;
 
 /// The marker for a column with no value, spelled as the overflow baselines spell
 /// it (`page.tsv` writes `-` for every absent `px`, `side`, `site` and `widget`).
@@ -516,6 +525,13 @@ bool isPageViewPath(String path) {
   // `[length - 1]` is the file; its parent directory must be `views` itself, not
   // merely have a `views` somewhere above it. This is the whole difference between
   // 45 and `find`'s 49.
+  //
+  // The rule allows any depth under `lib/page/`, and since #1511 P0 deleted
+  // `lib/page/login/auto_parent/views/auto_parent_first_login_view.dart` no file
+  // exercises that: every page view is `lib/page/<feature>/views/*_view.dart`, so a
+  // one-level rule would find the same set today. The oracle's test for the nested
+  // page was deleted rather than rewritten — with no nested page left, any rewrite
+  // would pass under the correct rule and a narrowed one alike.
   return segments.length >= 3 && segments[segments.length - 2] == 'views';
 }
 
