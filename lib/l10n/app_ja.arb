@@ -968,7 +968,7 @@
   "pwaMacInstallDescription": "すばやくアクセスできるよう、このアプリを Dock に追加してください。",
   "pwaMacStep1": "Safari のツールバーで共有ボタンをクリックします。",
   "pwaMacStep2": "「Dock に追加」を選択します。",
-  "quickSetupNotice": "クイックセットアップは、同じ名前、パスワード、セキュリティモードをすべてのバンドに適用します。保存にはパスワードが必要です。",
+  "quickSetupNotice": "クイックセットアップは、同じ名前、パスワード、セキュリティモードをすべてのバンドに適用します。",
   "radioBand": "無線: {band}",
   "radios": "無線",
   "range": "範囲",

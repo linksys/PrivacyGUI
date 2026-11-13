@@ -968,7 +968,7 @@
   "pwaMacInstallDescription": "Thêm ứng dụng này vào Dock của bạn để truy cập nhanh.",
   "pwaMacStep1": "Nhấp nút Chia sẻ trên thanh công cụ Safari.",
   "pwaMacStep2": "Chọn \"Thêm vào Dock\".",
-  "quickSetupNotice": "Thiết lập nhanh áp dụng cùng tên, mật khẩu và chế độ bảo mật cho tất cả băng tần. Cần có mật khẩu để lưu.",
+  "quickSetupNotice": "Thiết lập nhanh áp dụng cùng tên, mật khẩu và chế độ bảo mật cho tất cả băng tần.",
   "radioBand": "Radio: {band}",
   "radios": "Radio",
   "range": "Dải",

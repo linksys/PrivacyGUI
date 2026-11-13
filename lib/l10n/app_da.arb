@@ -968,7 +968,7 @@
   "pwaMacInstallDescription": "Føj denne app til din Dock for hurtig adgang.",
   "pwaMacStep1": "Klik på Del-knappen på Safari-værktøjslinjen.",
   "pwaMacStep2": "Vælg \"Føj til Dock\".",
-  "quickSetupNotice": "Hurtig opsætning anvender samme navn, adgangskode og sikkerhedstilstand på alle bånd. En adgangskode er påkrævet for at gemme.",
+  "quickSetupNotice": "Hurtig opsætning anvender samme navn, adgangskode og sikkerhedstilstand på alle bånd.",
   "radioBand": "Radio: {band}",
   "radios": "Radioer",
   "range": "Interval",

@@ -968,7 +968,7 @@
   "pwaMacInstallDescription": "Tambahkan aplikasi ini ke Dock Anda untuk akses cepat.",
   "pwaMacStep1": "Klik tombol Bagikan di bilah alat Safari.",
   "pwaMacStep2": "Pilih \"Tambahkan ke Dock\".",
-  "quickSetupNotice": "Penyiapan Cepat menerapkan nama, kata sandi, dan mode keamanan yang sama untuk semua pita. Kata sandi diperlukan untuk menyimpan.",
+  "quickSetupNotice": "Penyiapan Cepat menerapkan nama, kata sandi, dan mode keamanan yang sama untuk semua pita.",
   "radioBand": "Radio: {band}",
   "radios": "Radio",
   "range": "Rentang",

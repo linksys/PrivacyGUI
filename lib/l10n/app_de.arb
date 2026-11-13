@@ -968,7 +968,7 @@
   "pwaMacInstallDescription": "Fügen Sie diese App für schnellen Zugriff zu Ihrem Dock hinzu.",
   "pwaMacStep1": "Klicken Sie in der Safari-Symbolleiste auf die Teilen-Schaltfläche.",
   "pwaMacStep2": "Wählen Sie „Zum Dock hinzufügen“.",
-  "quickSetupNotice": "Die Schnelleinrichtung wendet denselben Namen, dasselbe Passwort und denselben Sicherheitsmodus auf alle Frequenzbänder an. Zum Speichern ist ein Passwort erforderlich.",
+  "quickSetupNotice": "Die Schnelleinrichtung wendet denselben Namen, dasselbe Passwort und denselben Sicherheitsmodus auf alle Frequenzbänder an.",
   "radioBand": "Funkmodul: {band}",
   "radios": "Funkmodule",
   "range": "Bereich",

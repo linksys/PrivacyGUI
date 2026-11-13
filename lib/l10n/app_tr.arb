@@ -968,7 +968,7 @@
   "pwaMacInstallDescription": "Hızlı erişim için bu uygulamayı Dock'unuza ekleyin.",
   "pwaMacStep1": "Safari araç çubuğundaki Paylaş düğmesine tıklayın.",
   "pwaMacStep2": "\"Dock'a Ekle\"yi seçin.",
-  "quickSetupNotice": "Hızlı Kurulum tüm bantlara aynı adı, parolayı ve güvenlik modunu uygular. Kaydetmek için bir parola gereklidir.",
+  "quickSetupNotice": "Hızlı Kurulum tüm bantlara aynı adı, parolayı ve güvenlik modunu uygular.",
   "radioBand": "Radyo: {band}",
   "radios": "Radyolar",
   "range": "Aralık",

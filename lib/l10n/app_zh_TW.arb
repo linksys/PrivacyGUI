@@ -968,7 +968,7 @@
   "pwaMacInstallDescription": "將此 App 加入您的 Dock 以快速存取。",
   "pwaMacStep1": "點選 Safari 工具列中的分享按鈕。",
   "pwaMacStep2": "選擇「加入 Dock」。",
-  "quickSetupNotice": "快速設定會將相同的名稱、密碼與安全性模式套用至所有頻段。儲存時必須輸入密碼。",
+  "quickSetupNotice": "快速設定會將相同的名稱、密碼與安全性模式套用至所有頻段。",
   "radioBand": "無線電：{band}",
   "radios": "無線電",
   "range": "範圍",
