@@ -31,10 +31,10 @@ state AdminPhase {
     AdminCheckingInternet : Fetch device info\nCheck WAN status
     AdminCheckingInternet --> AdminInternetConnected : Internet OK
     AdminCheckingInternet --> NoInternet : No internet
-    AdminCheckingInternet --> AdminError : Critical error
+    AdminCheckingInternet --> AdminReadFailure : Router could not be read
 
     AdminInternetConnected --> WizardInitializing : Auto transition
-    AdminError --> AdminCheckingInternet : User taps Retry
+    AdminReadFailure --> AdminCheckingInternet : User taps Try again
 }
 
 NoInternet --> TroubleshooterRoute <<end>> : Navigate to\n/pnpNoInternetConnection/pnp
@@ -61,8 +61,11 @@ state WizardPhase {
     WizardTestingReconnect --> WizardSaved : Reconnect OK\nSN matches
     WizardTestingReconnect --> WizardNeedsReconnect : All attempts failed
 
-    WizardCheckingFirmware : (Placeholder for FW update)
-    WizardCheckingFirmware --> WizardWifiReady : No FW update needed
+    WizardCheckingFirmware : Router OTA check\n(15 s deadline)
+    WizardCheckingFirmware --> WizardWifiReady : No update, or the check failed
+    WizardCheckingFirmware --> WizardUpdatingFirmware : Update available
+    WizardUpdatingFirmware : Router installs and reboots\n(locked: no Back)
+    WizardUpdatingFirmware --> WizardWifiReady : Router back, or 6 min deadline
 
     WizardWifiReady : Show new credentials\nDisplay QR code
     WizardError --> WizardInitializing : User taps Retry
@@ -83,7 +86,7 @@ WizardWifiReady --> DashboardRoute <<end>> : User taps Done\nNavigate to /usp/da
 |-------|-------------|----------|
 | `AdminCheckingInternet` | Entry point. Fetch device info, check WAN status. | `startPostLoginFlow()` |
 | `AdminInternetConnected` | WAN up with valid IP. Ready for wizard. | Internet check success |
-| `AdminError` | Critical error during admin phase. | Exception in `startPostLoginFlow()` |
+| `AdminReadFailure` | The router could not be read (device info or WAN), so its internet state is unknown. Shows its own card with Try again. | A read that throws in `startPostLoginFlow()` |
 | `NoInternet` | WAN down or no IP. Route to troubleshooter. | Internet check failed |
 
 ### WizardPhase (PnpSetupView)
@@ -96,7 +99,8 @@ WizardWifiReady --> DashboardRoute <<end>> : User taps Done\nNavigate to /usp/da
 | `WizardSaved` | Save complete, no SSID change. | Save success (no reconnect needed) |
 | `WizardNeedsReconnect` | Main WiFi SSID changed. Connection dropped. | Save success (SSID changed) |
 | `WizardTestingReconnect` | Polling router after reconnect. | `testReconnect()` |
-| `WizardCheckingFirmware` | Placeholder for firmware update check. | After save/reconnect complete |
+| `WizardCheckingFirmware` | The router's OTA check, bounded at 15 s; every outcome but "update available" finishes setup. | After save/reconnect complete |
+| `WizardUpdatingFirmware` | The router is installing a newer firmware; the route refuses to be left. | The check found an update |
 | `WizardWifiReady` | Setup complete. Show credentials + QR. | No FW update needed |
 | `WizardError` | Recoverable error during wizard. | Exception in wizard operations |
 

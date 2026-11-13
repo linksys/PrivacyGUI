@@ -7,10 +7,11 @@
 //
 // Every other page in the layout gate is a *destination*: it fetches, and its
 // provider's state is "loading" then "loaded". The PnP pages are a **state
-// machine's screens** — nine views over one `pnpProvider`, where the phase
-// decides not just whether the page has data but *which page-sized tree it
-// renders*. `PnpNotifier.build()` returns `AdminCheckingInternet` for all of
-// them, which is the phase before any of the nine has anything to show.
+// machine's screens** — views over one `pnpProvider` (nine when this was
+// written), where the phase decides not just whether the page has data but
+// *which page-sized tree it renders*. `PnpNotifier.build()` returns
+// `AdminCheckingInternet`, which is the phase before any of them has anything
+// to show.
 //
 // Since #1511 P1 the no-internet troubleshooting pages are a state machine of
 // their own (`internetTroubleshootingProvider`) and no longer read `pnpProvider`;

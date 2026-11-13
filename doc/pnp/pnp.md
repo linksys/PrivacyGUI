@@ -65,7 +65,7 @@ the `/pnp` tree, which maps phases to pages in one place (`pnpFlowDestination`,
 #1511 P2); `PnpEntryView` only renders the checks:
 - Internet connected → `WizardConfiguring` → navigate to `/pnp/config`
 - No internet → `NoInternet` → navigate to `/pnpNoInternetConnection/pnp`
-- Error → `AdminError` → show error with retry
+- Router could not be read → `AdminReadFailure` → show its error card with Try again
 
 ### 3.3. Network Troubleshooter Flow
 
@@ -95,7 +95,7 @@ Multi-step wizard for WiFi configuration:
     2. `PnpStatusService.acknowledge(serialNumber)` → mark PnP complete
     3. If SSID changed → `WizardNeedsReconnect` → user reconnects to new WiFi
     4. `WizardTestingReconnect` → poll router with exponential backoff
-    5. `WizardCheckingFirmware` → (placeholder for future FW update)
+    5. `WizardCheckingFirmware` → the router's OTA check; `WizardUpdatingFirmware` while an update installs (locked)
     6. `WizardWifiReady` → show new credentials + QR code → Done
 
 ## 4. State Management

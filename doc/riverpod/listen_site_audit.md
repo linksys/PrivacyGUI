@@ -237,6 +237,13 @@ replace, not a push.
 | 20 | `page/instant_setup/views/pnp_static_ip_view.dart:64` | `idempotent` | yes | Identical shape to #19 (`:66`, `:71`, `:72-75`). |
 | 21 | `page/instant_setup/views/pnp_waiting_modem_view.dart:27` | `idempotent` | yes | `:29` is `context.go(RoutePath.pnp)`; `:30` is prev-guarded on `NoInternet`. |
 
+**Superseded by #1511 P1/P2 (2026-11-13).** The five sites above no longer exist as measured: #18–#21 are
+troubleshooting's now — they listen to `internetTroubleshootingProvider`, not `pnpProvider`, and only the hub
+(#18) hands a finished run over, to its caller's ending — and #17's two navigations moved into `PnpFlowShell`
+(`pnp_flow_shell.dart`), the one listener on `pnpProvider` that navigates
+(`test/architecture/pnp_phase_navigation_owner_test.dart`). `retryInternetCheck()` below is troubleshooting's too.
+Re-measure before reusing these rows for #1512.
+
 Producer note, corrected during this audit: a consecutive-equal `PnpState` **is** reachable in production —
 `retryInternetCheck()` (`pnp_notifier.dart:404`) assigns `const AdminCheckingInternet()`, so a double-tap on
 "try again" can emit the same state twice. An earlier draft of this audit claimed only `setDemoPhase`

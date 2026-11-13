@@ -7,8 +7,8 @@ import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 ///
 /// Every other page in `test/mocks/provider_overrides/` overrides a provider that
 /// *fetches*, so its fake only has to return a state and no-op its fetch. The PnP
-/// flow is a state machine, so the thing that has to be stopped is different: the
-/// nine views drive each other by **calling transition methods**, and the real
+/// flow is a state machine, so the thing that has to be stopped is different: its
+/// views drive each other by **calling transition methods**, and the real
 /// ones reach `pnpServiceProvider`, whose `ref.read(uspClientProvider)!` throws on
 /// a null client and lands the flow in `AdminReadFailure` via
 /// `startPostLoginFlow`'s `catch`.

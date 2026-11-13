@@ -345,7 +345,7 @@ class _PnpIPoEViewState extends ConsumerState<PnpIPoEView> {
         outcome == AutoIPoEOutcome.succeeded &&
         submission?.reset == false &&
         ref.read(autoIPoERejectionProvider) == null) {
-      await _continuePnp();
+      await _continueToEnding();
       return;
     }
     setState(() {
@@ -400,7 +400,7 @@ class _PnpIPoEViewState extends ConsumerState<PnpIPoEView> {
     }
     if (page.status.snapshot.outcomeFor(submission) ==
         AutoIPoEOutcome.succeeded) {
-      await _continuePnp();
+      await _continueToEnding();
     }
   }
 
@@ -409,7 +409,7 @@ class _PnpIPoEViewState extends ConsumerState<PnpIPoEView> {
   /// It used to run PnP's `startPostLoginFlow()` first and then go to `/pnp`,
   /// whose entry runs the same flow again as it mounts. The ending is all that is
   /// left of that (#1511 P1): PnP's entry does the check, once.
-  Future<void> _continuePnp() async {
+  Future<void> _continueToEnding() async {
     if (!_supportsAutoIPoE || _continuing) return;
     setState(() {
       _continuing = true;

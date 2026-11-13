@@ -147,9 +147,9 @@ void main() {
     test('a run that is left stops counting down', () {
       // New with the move: the state is `autoDispose` now, so leaving the flow
       // mid-countdown disposes it. The loop must stop at its next tick rather
-      // than count on — and then poll — for a page nobody is on.
-      when(() => mockService.checkInternetConnected())
-          .thenAnswer((_) async => false);
+      // than count on — and then poll — for a page nobody is on. The timers are
+      // what shows it: 12 s into a 150 s countdown, no poll could have run yet
+      // either way.
       final container = createContainer();
 
       fakeAsync((async) {
@@ -163,8 +163,6 @@ void main() {
         expect(async.pendingTimers, isEmpty,
             reason: 'a countdown still ticking after the run was left');
       });
-
-      verifyNever(() => mockService.checkInternetConnected());
     });
   });
 
