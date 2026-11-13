@@ -1284,6 +1284,7 @@
   "nodeActions": "Düğüm İşlemleri",
   "rebootMeshMessage": "Yönlendirici ve mesh ağınızdaki tüm düğümler yeniden başlatılacak. Ağ yeniden kullanılabilir olana kadar bağlı tüm cihazların bağlantısı kesilecek.",
   "factoryResetMeshMessage": "Yönlendirici ve mesh ağınızdaki tüm düğümler, yönlendiricinin etiketinde yazan WiFi ve yönlendirici parolası dahil olmak üzere fabrika ayarlarına sıfırlanacak. Ardından her düğümün yeniden kurulması gerekecek.",
+  "networkRestartAlreadyRunning": "Ağınız zaten yeniden başlatılıyor veya sıfırlanıyor. Tamamlanmasını bekleyin.",
   "rebootNodeMessage": "{node} yeniden başlatılacak. Bu düğüm üzerinden bağlanan cihazların bağlantısı, düğüm geri gelene kadar kesilecek.",
   "rebootNodesMessage": "Bu düğümler en uzaktakinden başlayarak yeniden başlatılacak: {nodes}. Bu düğümler üzerinden bağlanan cihazların bağlantısı, düğümler geri gelene kadar kesilecek.",
   "factoryResetNodeMessage": "{node} fabrika ayarlarına sıfırlanacak ve ağınızdan ayrılacak. Kullanmak için yeniden ekleyin.",

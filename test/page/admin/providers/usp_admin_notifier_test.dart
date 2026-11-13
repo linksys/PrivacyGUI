@@ -1,6 +1,9 @@
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
+import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/mode/app_mode_profile.dart';
 import 'package:privacy_gui/core/mode/remote_mode_profile.dart';
@@ -11,6 +14,7 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/admin/models/admin_ui_models.dart';
+import 'package:privacy_gui/page/admin/models/network_action_models.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_notifier.dart';
 import 'package:privacy_gui/page/admin/services/usp_admin_service.dart';
@@ -238,30 +242,38 @@ void main() {
       container.dispose();
     });
 
-    test('reboot calls service reboot', () async {
+    test('reboot calls service reboot and returns how the router took it',
+        () async {
       when(() => mockAdminService.fetchAdmin())
           .thenAnswer((_) async => testAdmin);
-      when(() => mockAdminService.reboot()).thenAnswer((_) async {});
+      when(() => mockAdminService.reboot())
+          .thenAnswer((_) async => RouterRestartStart.network);
 
       final container = createContainer();
       await container.read(uspAdminProvider.future);
 
-      await container.read(uspAdminProvider.notifier).reboot();
+      final start = await container.read(uspAdminProvider.notifier).reboot();
 
+      expect(start, RouterRestartStart.network);
       verify(() => mockAdminService.reboot()).called(1);
       container.dispose();
     });
 
-    test('factoryReset calls service factoryReset', () async {
+    test(
+        'factoryReset calls service factoryReset and returns how the router '
+        'took it', () async {
       when(() => mockAdminService.fetchAdmin())
           .thenAnswer((_) async => testAdmin);
-      when(() => mockAdminService.factoryReset()).thenAnswer((_) async {});
+      when(() => mockAdminService.factoryReset())
+          .thenAnswer((_) async => RouterRestartStart.alreadyRunning);
 
       final container = createContainer();
       await container.read(uspAdminProvider.future);
 
-      await container.read(uspAdminProvider.notifier).factoryReset();
+      final start =
+          await container.read(uspAdminProvider.notifier).factoryReset();
 
+      expect(start, RouterRestartStart.alreadyRunning);
       verify(() => mockAdminService.factoryReset()).called(1);
       container.dispose();
     });
@@ -377,8 +389,10 @@ void main() {
     setUp(() {
       when(() => mockAdminService.fetchAdmin())
           .thenAnswer((_) async => testAdmin);
-      when(() => mockAdminService.reboot()).thenAnswer((_) async {});
-      when(() => mockAdminService.factoryReset()).thenAnswer((_) async {});
+      when(() => mockAdminService.reboot())
+          .thenAnswer((_) async => RouterRestartStart.network);
+      when(() => mockAdminService.factoryReset())
+          .thenAnswer((_) async => RouterRestartStart.network);
     });
 
     /// Remote Assistance, selected by overriding the composition root.
@@ -421,4 +435,184 @@ void main() {
       container.dispose();
     });
   });
+
+  // #1777. The whole-network command replies at once and the controller goes
+  // down last, so the flow waits on the network status before counting down.
+  // Each test feeds the status reads one value per poll.
+  group('awaitNetworkAction', () {
+    const interval = UspAdminNotifier.networkActionPollInterval;
+
+    /// Runs one wait under fake time, with [reads] answering the status reads
+    /// in order (a [ServiceError] is thrown). Returns the outcome once it
+    /// settled within [elapse], and how many reads went out.
+    ({NetworkActionOutcome? outcome, int reads}) runWait(
+      List<Object?> reads, {
+      Duration elapse = const Duration(minutes: 4),
+      Duration readTakes = Duration.zero,
+      void Function(FakeAsync async, _FixedConnectionNotifier connection)?
+          during,
+    }) {
+      late ({NetworkActionOutcome? outcome, int reads}) result;
+      fakeAsync((async) {
+        when(() => mockAdminService.fetchAdmin())
+            .thenAnswer((_) async => testAdmin);
+        var count = 0;
+        when(() => mockAdminService.readNetworkActionStatus())
+            .thenAnswer((_) async {
+          final next = reads[count < reads.length ? count : reads.length - 1];
+          count++;
+          if (readTakes > Duration.zero) await Future<void>.delayed(readTakes);
+          if (next is ServiceError) throw next;
+          return next as NetworkActionStatus?;
+        });
+        final connection =
+            _FixedConnectionNotifier(AppConnectionState.waitingForRecovery);
+        final container = createContainer(extra: [
+          appConnectionStateProvider.overrideWith(() => connection),
+        ]);
+        // The flow keeps the autoDispose notifier alive the same way.
+        final keepAlive = container.listen(uspAdminProvider, (_, __) {});
+        async.flushMicrotasks();
+
+        NetworkActionOutcome? outcome;
+        container
+            .read(uspAdminProvider.notifier)
+            .awaitNetworkAction()
+            .then((o) => outcome = o);
+        if (during != null) {
+          during(async, connection);
+        } else {
+          async.elapse(elapse);
+        }
+        result = (outcome: outcome, reads: count);
+        keepAlive.close();
+        container.dispose();
+      });
+      return result;
+    }
+
+    test('returns controllerGoingDown at the first Completed', () {
+      final r = runWait([
+        NetworkActionStatus.running,
+        NetworkActionStatus.running,
+        NetworkActionStatus.completed,
+      ]);
+      expect(r.outcome, NetworkActionOutcome.controllerGoingDown);
+      expect(r.reads, 3);
+    });
+
+    test('returns failed at Failed', () {
+      final r =
+          runWait([NetworkActionStatus.running, NetworkActionStatus.failed]);
+      expect(r.outcome, NetworkActionOutcome.failed);
+      expect(r.reads, 2);
+    });
+
+    test('returns unreachable at the first failed read, and reads no more', () {
+      final r = runWait([
+        NetworkActionStatus.running,
+        const NetworkError(detail: 'timeout'),
+        NetworkActionStatus.completed,
+      ]);
+      expect(r.outcome, NetworkActionOutcome.unreachable);
+      expect(r.reads, 2,
+          reason: 'a read after the controller restarted would go out on a '
+              'credential a factory reset has wiped');
+    });
+
+    test('keeps waiting through "" before Running', () {
+      final r = runWait([
+        NetworkActionStatus.idle,
+        NetworkActionStatus.idle,
+        NetworkActionStatus.running,
+        NetworkActionStatus.completed,
+      ]);
+      expect(r.outcome, NetworkActionOutcome.controllerGoingDown);
+      expect(r.reads, 4);
+    });
+
+    // Neither settles anything: the definition gives `""` no meaning once an
+    // action has started, and an absent leaf is also what a read the router
+    // answered with a per-path error looks like. Taking either as the end
+    // would report the router back while the controller is still to go.
+    test('keeps waiting through "" after Running', () {
+      final r = runWait([
+        NetworkActionStatus.running,
+        NetworkActionStatus.idle,
+        NetworkActionStatus.completed,
+      ]);
+      expect(r.outcome, NetworkActionOutcome.controllerGoingDown);
+      expect(r.reads, 3);
+    });
+
+    test('keeps waiting through a value the definition does not name', () {
+      final r = runWait([
+        NetworkActionStatus.running,
+        NetworkActionStatus.unknown,
+        NetworkActionStatus.completed,
+      ]);
+      expect(r.outcome, NetworkActionOutcome.controllerGoingDown);
+      expect(r.reads, 3);
+    });
+
+    test('keeps waiting through an absent leaf', () {
+      final r = runWait([
+        NetworkActionStatus.running,
+        null,
+        NetworkActionStatus.completed,
+      ]);
+      expect(r.outcome, NetworkActionOutcome.controllerGoingDown);
+      expect(r.reads, 3);
+    });
+
+    test('returns timedOut when nothing settles it by the limit', () {
+      final r = runWait([NetworkActionStatus.running, null]);
+      expect(r.outcome, NetworkActionOutcome.timedOut);
+    });
+
+    test('does not settle before the limit while it is running', () {
+      final r = runWait(
+        [NetworkActionStatus.running],
+        elapse: UspAdminNotifier.networkActionLimit - interval,
+      );
+      expect(r.outcome, isNull);
+    });
+
+    // Remote Assistance reads through Guardian. Counting reads against the
+    // limit would let slow reads stretch it past the recovery ceiling.
+    test('slow reads do not stretch the limit', () {
+      final r = runWait(
+        [NetworkActionStatus.running],
+        readTakes: const Duration(seconds: 2),
+        elapse: UspAdminNotifier.networkActionLimit + interval * 3,
+      );
+      expect(r.outcome, NetworkActionOutcome.timedOut);
+    });
+
+    test('stops reading once the app is no longer waiting', () {
+      final r = runWait(
+        [NetworkActionStatus.running],
+        during: (async, connection) {
+          async.elapse(interval * 2);
+          connection.set(AppConnectionState.loggedOut);
+          async.elapse(interval * 5);
+        },
+      );
+      expect(r.outcome, NetworkActionOutcome.abandoned);
+      expect(r.reads, 2);
+    });
+  });
+}
+
+/// A connection state a test sets by hand, with none of the real notifier's
+/// SSE or auth wiring.
+class _FixedConnectionNotifier extends AppConnectionStateNotifier {
+  _FixedConnectionNotifier(this._initial);
+
+  final AppConnectionState _initial;
+
+  @override
+  AppConnectionState build() => _initial;
+
+  void set(AppConnectionState next) => state = next;
 }

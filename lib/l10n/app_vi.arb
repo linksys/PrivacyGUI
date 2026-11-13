@@ -1284,6 +1284,7 @@
   "nodeActions": "Thao tác với nút",
   "rebootMeshMessage": "Router và mọi nút trong mạng mesh của bạn sẽ khởi động lại. Tất cả thiết bị được kết nối sẽ bị ngắt kết nối cho đến khi mạng hoạt động trở lại.",
   "factoryResetMeshMessage": "Router và mọi nút trong mạng mesh của bạn sẽ được khôi phục cài đặt gốc, bao gồm mật khẩu Wi-Fi và mật khẩu router in trên nhãn của router. Sau đó, mọi nút đều phải được thiết lập lại.",
+  "networkRestartAlreadyRunning": "Mạng của bạn hiện đang được khởi động lại hoặc đặt lại. Vui lòng đợi cho đến khi hoàn tất.",
   "rebootNodeMessage": "{node} sẽ khởi động lại. Các thiết bị kết nối qua nút này sẽ bị ngắt kết nối cho đến khi nút hoạt động trở lại.",
   "rebootNodesMessage": "Các nút sau sẽ khởi động lại, bắt đầu từ nút xa nhất: {nodes}. Các thiết bị kết nối qua các nút này sẽ bị ngắt kết nối cho đến khi chúng hoạt động trở lại.",
   "factoryResetNodeMessage": "{node} sẽ được khôi phục cài đặt gốc và rời khỏi mạng của bạn. Hãy thêm lại nút này để sử dụng.",

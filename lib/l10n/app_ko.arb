@@ -1284,6 +1284,7 @@
   "nodeActions": "노드 작업",
   "rebootMeshMessage": "라우터와 메시 네트워크의 모든 노드가 재부팅됩니다. 네트워크가 복구될 때까지 연결된 모든 장치의 연결이 끊어집니다.",
   "factoryResetMeshMessage": "라우터와 메시 네트워크의 모든 노드가 공장 초기화되며, WiFi 및 라우터 암호도 라우터 라벨에 표시된 기본값으로 돌아갑니다. 이후 모든 노드를 다시 설정해야 합니다.",
+  "networkRestartAlreadyRunning": "네트워크가 이미 재부팅 또는 초기화 중입니다. 완료될 때까지 기다려 주세요.",
   "rebootNodeMessage": "{node}이(가) 재부팅됩니다. 복구될 때까지 이 노드를 통해 연결된 장치의 연결이 끊어집니다.",
   "rebootNodesMessage": "다음 노드가 가장 먼 노드부터 재부팅됩니다: {nodes}. 복구될 때까지 이 노드들을 통해 연결된 장치의 연결이 끊어집니다.",
   "factoryResetNodeMessage": "{node}이(가) 공장 초기화되어 네트워크에서 제거됩니다. 계속 사용하려면 다시 추가하세요.",

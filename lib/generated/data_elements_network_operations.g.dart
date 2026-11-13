@@ -4,7 +4,7 @@
 
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
-/// Commands on a DataElements mesh node - standard WPS push-button, and Linksys reboot and factory reset of one node
+/// Commands on DataElements mesh nodes - standard WPS push-button, Linksys reboot and factory reset of one node or of the whole network
 class DataElementsNetworkOperations {
   /// Standard TR-181 WPS push-button on one mesh node, no BLE step. Pass the instance whose ID equals Network.ControllerID; Status is "Success", or "Error_Other" if the arm failed. Any other instance returns "Error_Invalid_Input". The joined node then appears as a new DataElements Device.{i}.
   static Future<Map<String, dynamic>> initiateWpsPbc(
@@ -13,17 +13,29 @@ class DataElementsNetworkOperations {
         'Device.WiFi.DataElements.Network.Device.$instance.InitiateWPSPBC()');
   }
 
-  /// Reboot one mesh node (FWDEV#202). Offer it only where that row's supportedOperations lists "Reboot" (a freshly joined agent reads "" until its capabilities reply arrives, so re-read rather than treat "" as final), and look the instance up by ID right before the call, since instance numbers change. The reply comes within 25 s, once the agent has accepted the command, and every other USP request queues behind it meanwhile (obuspa's broker thread waits for the service's reply); success means accepted, not that the node is back, and the node leaves DataElements while it restarts. A failed call carries only an error code: 7002 on the controller's own row (call Device.Reboot() instead); 7003 when linksys-mesh-sync could not be called; 7016 when the row is gone, as when the node has just left DataElements; 7022 when the agent is unreachable, does not run the command, or did not confirm within 25 s, which the caller cannot tell apart. A 7022 does not mean the agent is unchanged: linksys-mesh-sync sends the command once more within 20 s, and a command that reached the agent still runs when its confirm is lost. For a node with nodes behind it, send one call per node, farthest first; the firmware does that only for the controller's Device.Reboot().
+  /// Reboot one mesh node (FWDEV#202). Offer it only where that row's supportedOperations lists "Reboot" (a freshly joined agent reads "" until its capabilities reply arrives, so re-read rather than treat "" as final), and look the instance up by ID right before the call, since instance numbers change. The reply comes within 25 s, once the agent has accepted the command, and every other USP request queues behind it meanwhile (obuspa's broker thread waits for the service's reply); success means accepted, not that the node is back, and the node leaves DataElements while it restarts. A failed call carries only an error code: 7002 on the controller's own row (call Device.Reboot() instead); 7003 when linksys-mesh-sync could not be called; 7016 when the row is gone, as when the node has just left DataElements; 7022 when the agent is unreachable, does not run the command, or did not confirm within 25 s, which the caller cannot tell apart. A 7022 does not mean the agent is unchanged: linksys-mesh-sync sends the command once more within 20 s, and a command that reached the agent still runs when its confirm is lost. Each call acts on that one node only; for the whole network use rebootAll (Architecture#195).
   static Future<Map<String, dynamic>> rebootNode(
       UspClient client, int instance) async {
     return await client.operate(
         'Device.WiFi.DataElements.Network.Device.$instance.X_LINKSYS_Reboot()');
   }
 
-  /// Factory-reset one mesh node (FWDEV#202). Offer it only where that row's supportedOperations lists "FactoryReset" (a freshly joined agent reads "" until its capabilities reply arrives, so re-read rather than treat "" as final), and look the instance up by ID right before the call, since instance numbers change. The reply comes within 25 s, once the agent has accepted the command, and every other USP request queues behind it meanwhile (obuspa's broker thread waits for the service's reply); success means accepted, and the node then leaves DataElements until it is onboarded again. A failed call carries only an error code: 7002 on the controller's own row (call Device.FactoryReset() instead); 7003 when linksys-mesh-sync could not be called; 7016 when the row is gone, as when the node has just left DataElements; 7022 when the agent is unreachable, does not run the command, or did not confirm within 25 s, which the caller cannot tell apart. A 7022 does not mean the agent is unchanged: linksys-mesh-sync sends the command once more within 20 s, and a command that reached the agent still runs when its confirm is lost, so do not retry at once. For a node with nodes behind it, send one call per node, farthest first. The firmware does not check where the call came from; PrivacyGUI#876 allows both actions in Remote Assistance.
+  /// Factory-reset one mesh node (FWDEV#202). Offer it only where that row's supportedOperations lists "FactoryReset" (a freshly joined agent reads "" until its capabilities reply arrives, so re-read rather than treat "" as final), and look the instance up by ID right before the call, since instance numbers change. The reply comes within 25 s, once the agent has accepted the command, and every other USP request queues behind it meanwhile (obuspa's broker thread waits for the service's reply); success means accepted, and the node then leaves DataElements until it is onboarded again. A failed call carries only an error code: 7002 on the controller's own row (call Device.FactoryReset() instead); 7003 when linksys-mesh-sync could not be called; 7016 when the row is gone, as when the node has just left DataElements; 7022 when the agent is unreachable, does not run the command, or did not confirm within 25 s, which the caller cannot tell apart. A 7022 does not mean the agent is unchanged: linksys-mesh-sync sends the command once more within 20 s, and a command that reached the agent still runs when its confirm is lost, so do not retry at once. Each call acts on that one node only; for the whole network use factoryResetAll (Architecture#195). The firmware does not check where the call came from; PrivacyGUI#876 allows both actions in Remote Assistance.
   static Future<Map<String, dynamic>> factoryResetNode(
       UspClient client, int instance) async {
     return await client.operate(
         'Device.WiFi.DataElements.Network.Device.$instance.X_LINKSYS_FactoryReset()');
+  }
+
+  /// Reboot the whole mesh (Architecture#195). Call it on the controller. It returns at once with Status "Started" and the controller runs the sequence itself, so it completes even when the caller's connection goes through a node that restarts: every agent, one hop level at a time, farthest first, each level once its nodes confirmed or hit 25 s; then the controller's own Device.Reboot(). Progress is each agent row's nodeActionStatus (Waiting, Sending, Confirmed, NotConfirmed) and the network's networkActionStatus (Running, then Completed when the controller reboots). An agent that did not confirm does not stop the reboot; the controller names it in a syslog warning first. 7002 with Status "Busy" while a sequence runs.
+  static Future<Map<String, dynamic>> rebootAll(UspClient client) async {
+    return await client
+        .operate('Device.WiFi.DataElements.Network.X_LINKSYS_RebootAll()');
+  }
+
+  /// Factory-reset the whole mesh (Architecture#195), as rebootAll but with node factory resets and the controller's own Device.FactoryReset(). As on LinksysWRT 1.0, the controller is reset even when an agent did not confirm; it names those agents in a syslog warning first. Such an agent keeps the old network and must be reset with its button and added again. 7002 with Status "Busy" while a sequence runs.
+  static Future<Map<String, dynamic>> factoryResetAll(UspClient client) async {
+    return await client.operate(
+        'Device.WiFi.DataElements.Network.X_LINKSYS_FactoryResetAll()');
   }
 }

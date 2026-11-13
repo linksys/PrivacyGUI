@@ -1284,6 +1284,7 @@
   "nodeActions": "Nodehandlinger",
   "rebootMeshMessage": "Routeren og alle noder i dit mesh-netværk genstarter. Alle tilsluttede enheder afbrydes, indtil netværket er tilbage.",
   "factoryResetMeshMessage": "Routeren og alle noder i dit mesh-netværk nulstilles til fabriksindstillingerne, herunder WiFi- og routeradgangskoden, der står på routerens etiket. Derefter skal alle noder konfigureres igen.",
+  "networkRestartAlreadyRunning": "Dit netværk er allerede ved at genstarte eller blive nulstillet. Vent, til det er færdigt.",
   "rebootNodeMessage": "{node} genstarter. Enheder, der er tilsluttet via den, afbrydes, indtil den er tilbage.",
   "rebootNodesMessage": "Disse noder genstarter, den fjerneste først: {nodes}. Enheder, der er tilsluttet via dem, afbrydes, indtil de er tilbage.",
   "factoryResetNodeMessage": "{node} nulstilles til fabriksindstillingerne og forlader dit netværk. Tilføj den igen for at bruge den.",
