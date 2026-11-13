@@ -62,6 +62,58 @@ void main() {
       });
     });
 
+    test('an import after an annotation on the same line is checked', () {
+      final violations = findBoundaryViolations({
+        'lib/page/foo/views/foo_view.dart': "@Deprecated('x') "
+            "import 'package:privacy_gui/core/jnap/router_repository.dart';\n",
+      });
+
+      expect(violations, {
+        'lib/page/foo/views/foo_view.dart -> lib/core/jnap/router_repository.dart',
+      });
+    });
+
+    test('a package URI with .. is resolved', () {
+      final violations = findBoundaryViolations({
+        'lib/page/foo/views/foo_view.dart':
+            "import 'package:privacy_gui/core/utils/../jnap/router_repository.dart';\n",
+      });
+
+      expect(violations, {
+        'lib/page/foo/views/foo_view.dart -> lib/core/jnap/router_repository.dart',
+      });
+    });
+
+    test('a /* line inside a string does not hide a read after it', () {
+      final violations = findBoundaryViolations({
+        'lib/page/foo/views/foo_view.dart': "final help = '''\n"
+            '/* not a comment\n'
+            "''';\n"
+            'final repository = ref.read(routerRepositoryProvider);\n'
+            '// */\n',
+      });
+
+      expect(violations, {
+        'lib/page/foo/views/foo_view.dart -> routerRepositoryProvider',
+      });
+    });
+
+    test('names in strings and comments are not violations', () {
+      final violations = findBoundaryViolations({
+        'lib/page/foo/views/foo_view.dart':
+            "final label = 'routerRepositoryProvider';\n"
+                'final count = 1; // routerRepositoryProvider\n'
+                "final note = 'a; import "
+                '"package:privacy_gui/core/jnap/router_repository.dart";\';\n'
+                '/* a /* b */ '
+                "import 'package:privacy_gui/core/jnap/router_repository.dart'; */\n"
+                '/// Reads [cloudRepositoryProvider] through FooNotifier.\n'
+                'class Foo {}\n',
+      });
+
+      expect(violations, isEmpty);
+    });
+
     test('commented-out code is not a violation', () {
       final violations = findBoundaryViolations({
         'lib/page/foo/views/foo_view.dart': '/*\n'
@@ -80,6 +132,7 @@ void main() {
       'lib/core/http/linksys_http_client.dart',
       'lib/core/http/client/any_client.dart',
       'lib/core/cloud/linksys_cloud_repository.dart',
+      'lib/core/cloud/linksys_device_cloud_service.dart',
     ]) {
       test('a view that imports $target is a violation', () {
         final violations = findBoundaryViolations({
@@ -105,6 +158,7 @@ void main() {
     for (final provider in [
       'routerRepositoryProvider',
       'cloudRepositoryProvider',
+      'deviceCloudServiceProvider',
     ]) {
       test('a view that reads $provider is a violation', () {
         final violations = findBoundaryViolations({
@@ -137,6 +191,33 @@ void main() {
         expect(violations, isEmpty);
       });
     }
+
+    test('a widget under model/ is a presentation file', () {
+      final violations = findBoundaryViolations({
+        'lib/page/foo/model/impl/foo_step.dart':
+            "import 'package:privacy_gui/core/jnap/router_repository.dart';\n"
+                '\n'
+                'class FooStep extends StatelessWidget {}\n',
+      });
+
+      expect(violations, {
+        'lib/page/foo/model/impl/foo_step.dart -> lib/core/jnap/router_repository.dart',
+      });
+    });
+
+    test(
+        'a file under providers/ that takes a WidgetRef is a presentation '
+        'file', () {
+      final violations = findBoundaryViolations({
+        'lib/page/foo/providers/foo_display.dart':
+            'Widget fooDisplay(WidgetRef ref) =>\n'
+                '    Text(ref.read(routerRepositoryProvider).getLocalIP());\n',
+      });
+
+      expect(violations, {
+        'lib/page/foo/providers/foo_display.dart -> routerRepositoryProvider',
+      });
+    });
   });
 
   group('core files', () {

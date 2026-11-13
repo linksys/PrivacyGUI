@@ -2,66 +2,85 @@ import 'package:test/test.dart';
 
 import 'screenshot_scanner.dart';
 
+const _helper = 'test/common/test_responsive_widget.dart';
+const _viewTest = 'test/page/foo/views/foo_view_test.dart';
+
 void main() {
-  test('a golden check outside testLocalizations is a violation', () {
-    final violations = findScreenshotTestViolations({
-      'test/page/foo/views/foo_view_test.dart':
-          "await expectLater(find.byType(FooView), matchesGoldenFile('foo.png'));\n",
-    });
-
-    expect(violations, {
-      'test/page/foo/views/foo_view_test.dart -> matchesGoldenFile',
-    });
-  });
-
-  for (final call in ['screenMatchesGolden', 'multiScreenGolden']) {
-    test('a golden_toolkit $call check is a violation', () {
+  group('golden checks', () {
+    test('a golden check outside testLocalizations is a violation', () {
       final violations = findScreenshotTestViolations({
-        'test/page/foo/views/foo_view_test.dart':
-            "await $call(tester, 'foo');\n",
+        _viewTest: 'void main() async {\n'
+            "  await expectLater(find.byType(FooView), matchesGoldenFile('foo.png'));\n"
+            '}\n',
       });
 
-      expect(violations, {'test/page/foo/views/foo_view_test.dart -> $call'});
-    });
-  }
-
-  test(
-      'a testLocalizations case outside a localizations/ directory is a '
-      'violation', () {
-    final violations = findScreenshotTestViolations({
-      'test/page/foo/views/foo_view_test.dart':
-          "testLocalizations('Foo view', (tester, locale) async {});\n",
+      expect(violations, {'$_viewTest -> matchesGoldenFile'});
     });
 
-    expect(violations, {
-      'test/page/foo/views/foo_view_test.dart -> testLocalizations',
+    for (final call in ['screenMatchesGolden', 'multiScreenGolden']) {
+      test('a golden_toolkit $call check is a violation', () {
+        final violations = findScreenshotTestViolations({
+          _viewTest: "void main() async {\n  await $call(tester, 'foo');\n}\n",
+        });
+
+        expect(violations, {'$_viewTest -> $call'});
+      });
+    }
+
+    test('a golden check inside testLocalizations is not a violation', () {
+      final violations = findScreenshotTestViolations({
+        _helper: 'void testLocalizations(String name) {\n'
+            "  expectLater(find.byType(Foo), matchesGoldenFile('goldens/\$name.png'));\n"
+            '}\n',
+      });
+
+      expect(violations, isEmpty);
+    });
+
+    test('a golden check elsewhere in the helper file is a violation', () {
+      final violations = findScreenshotTestViolations({
+        _helper: 'void testLocalizations(String name) {}\n'
+            '\n'
+            'void testGolden(String name) {\n'
+            "  expectLater(find.byType(Foo), matchesGoldenFile('goldens/\$name.png'));\n"
+            '}\n',
+      });
+
+      expect(violations, {'$_helper -> matchesGoldenFile'});
     });
   });
 
-  test('a testLocalizations case under localizations/ is not a violation', () {
-    final violations = findScreenshotTestViolations({
-      'test/page/foo/views/localizations/foo_view_test.dart':
-          "testLocalizations('Foo view', (tester, locale) async {});\n",
+  group('testLocalizations cases', () {
+    test('a case outside a localizations/ directory is a violation', () {
+      final violations = findScreenshotTestViolations({
+        _viewTest: 'void main() {\n'
+            "  testLocalizations('Foo view', (tester, locale) async {});\n"
+            '}\n',
+      });
+
+      expect(violations, {'$_viewTest -> testLocalizations'});
     });
 
-    expect(violations, isEmpty);
-  });
+    test('a case under localizations/ is not a violation', () {
+      final violations = findScreenshotTestViolations({
+        'test/page/foo/views/localizations/foo_view_test.dart':
+            'void main() {\n'
+                "  testLocalizations('Foo view', (tester, locale) async {});\n"
+                '}\n',
+      });
 
-  test('commented-out calls are not violations', () {
-    final violations = findScreenshotTestViolations({
-      'test/page/foo/views/foo_view_test.dart':
-          "    // testLocalizations('Foo view', (tester, locale) async {});\n"
-              '/// Compared with [matchesGoldenFile] by the localizations/ tests.\n',
+      expect(violations, isEmpty);
     });
-
-    expect(violations, isEmpty);
   });
 
-  test('the helper that defines testLocalizations is not a violation', () {
+  test('names in strings and comments are not violations', () {
     final violations = findScreenshotTestViolations({
-      'test/common/test_responsive_widget.dart':
-          'void testLocalizations(String name) {}\n'
-              "final matcher = matchesGoldenFile('goldens/foo.png');\n",
+      _viewTest: 'void main() {\n'
+          "  // testLocalizations('Foo view', (tester, locale) async {});\n"
+          "  print('matchesGoldenFile and testLocalizations(x)');\n"
+          '}\n'
+          '/// Compared with [matchesGoldenFile] by the localizations/ tests.\n'
+          'class Foo {}\n',
     });
 
     expect(violations, isEmpty);

@@ -43,6 +43,34 @@ void main() {
       );
     });
 
+    test('a table without its header row fails', () {
+      expect(
+        () => readExceptionTable(
+          '<!-- t:begin -->\n'
+              '|---|---|\n'
+              '| `lib/a.dart` | `lib/b.dart` |\n'
+              '| `lib/c.dart` | `lib/d.dart` |\n'
+              '<!-- t:end -->\n',
+          't',
+        ),
+        throwsStateError,
+      );
+    });
+
+    test('a table without its separator row fails', () {
+      expect(
+        () => readExceptionTable(
+          '<!-- t:begin -->\n'
+              '| File | Depends on |\n'
+              '| `lib/a.dart` | `lib/b.dart` |\n'
+              '| `lib/c.dart` | `lib/d.dart` |\n'
+              '<!-- t:end -->\n',
+          't',
+        ),
+        throwsStateError,
+      );
+    });
+
     test('missing markers fail', () {
       expect(
         () => readExceptionTable('| `lib/a.dart` | `lib/b.dart` |\n', 't'),
