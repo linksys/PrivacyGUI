@@ -486,6 +486,9 @@ const testRadios = [
     autoChannelEnable: false,
     channelBandwidth: '40MHz',
     supportedStandards: '802.11b/g/n/ax',
+    // The bench's 2.4 GHz reading (FW 2.0.4.26103108, 2026-11-09, #1295):
+    // 46 of 255, printed as 18 %.
+    utilization: 46,
     accessPoints: [
       WifiAccessPointUIModel(
         enable: true,
@@ -513,6 +516,8 @@ const testRadios = [
     autoChannelEnable: true,
     channelBandwidth: '160MHz',
     supportedStandards: '802.11a/n/ac/ax',
+    // The bench's 5 GHz reading, same capture: 11 of 255, printed as 4 %.
+    utilization: 11,
     accessPoints: [
       WifiAccessPointUIModel(
         enable: true,
@@ -616,6 +621,9 @@ final testWifiEmptyData = WifiData(
 ///    band-distribution donut below them into ~40px and it painted over the
 ///    block above; #1267 removed the donut, so what a third radio costs now is
 ///    just its own block.
+///  - no `utilization`, so its channel utilization line is the unknown form
+///    (#1295) — the only profile the gate sweeps that renders it, and in most
+///    locales it is the longer of the two.
 ///
 /// Spliced onto [testRadios] rather than restating it: the two profiles must
 /// differ in exactly the third radio, or a later edit to the shared two makes the
@@ -668,16 +676,19 @@ final testWifiDataTriBand = WifiData(
 /// #1267 made that tab scroll, so content taller than the card has somewhere to
 /// go instead of being painted over the text above it. A mechanism with no load
 /// on it is untested, and after the donut was removed nothing in the repo could
-/// supply the load: three radio blocks leave roughly 120px of slack at the
-/// narrowest card, so [testRadiosTriBand] now *fits*, and the test that used to
+/// supply the load: three radio blocks fit the narrowest card with room to spare
+/// (figures below), so [testRadiosTriBand] *fits*, and the test that used to
 /// overflow is green for a reason that has nothing to do with scrolling.
 ///
 /// Shipping hardware reaches four (2.4GHz + two 5GHz + 6GHz) and five with a
 /// dedicated backhaul radio, so the honest description of this fixture is "one
-/// past today's maximum". Five is the first count that overflows, and only by
-/// ~7px — close enough to the gate's 2.0px tolerance that a font-metric change
-/// could flip it, which is no basis for an assertion. Six clears the viewport by
-/// ~80px, so the test measures the mechanism rather than the margin.
+/// past today's maximum". Measured 2026-11-11 for #1295 (`tr`, the 261px card,
+/// real fonts), after each radio block gained its channel utilization line:
+/// three radios leave 57px, four already scroll by 61px, five by 167px and six
+/// by 273px. Six stays the load because it is one past what ships, not because
+/// a smaller count would fit. (The #1267 figures this paragraph used to carry —
+/// five the first count to overflow, by ~7px, and six by ~80px — had already
+/// drifted to 87px and 177px before #1295, with four fitting by 15px.)
 ///
 /// It is deliberately **not** in the gate's sweep list (`card_data_profiles.dart`):
 /// coordinates recorded against a router nobody sells would be permanent
@@ -839,6 +850,32 @@ final testWifiChannelInUseUnknownData = WifiData(
   codegenContext: WifiCodegenContext.empty,
   radioModels:
       _radiosWithChannelChoices(channelInUse24: null, channelInUse5: null),
+  wifiClientMap: testWifiClients,
+  connectionDetailMap: testConnectionDetails,
+);
+
+/// [testWifiData] with no channel utilization on its 5 GHz radio (#1295): no
+/// DataElements radio carries that radio's MAC, or the read failed. Its row
+/// reads "Channel utilization: —", never "0%", under a 2.4 GHz row that has a
+/// reading. Two radios, so both forms fit one screenshot without scrolling.
+final testWifiUtilizationUnknownData = WifiData(
+  codegenContext: WifiCodegenContext.empty,
+  radioModels: [
+    testRadios[0],
+    WifiRadioUIModel(
+      instancePath: testRadios[1].instancePath,
+      band: testRadios[1].band,
+      enable: testRadios[1].enable,
+      transmitPower: testRadios[1].transmitPower,
+      maxBitRate: testRadios[1].maxBitRate,
+      channel: testRadios[1].channel,
+      channelInUse: testRadios[1].channelInUse,
+      autoChannelEnable: testRadios[1].autoChannelEnable,
+      channelBandwidth: testRadios[1].channelBandwidth,
+      supportedStandards: testRadios[1].supportedStandards,
+      accessPoints: testRadios[1].accessPoints,
+    ),
+  ],
   wifiClientMap: testWifiClients,
   connectionDetailMap: testConnectionDetails,
 );

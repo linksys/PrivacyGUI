@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/localization/supported_locales_provider.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
@@ -17,30 +19,34 @@ import 'mascot_message_templates.dart';
 final mascotMessageProvider =
     Provider.autoDispose<MascotMessageNotifier>((ref) {
   final isReady = ref.watch(dashboardDomainReadyProvider).hasValue;
+  final l10n = ref.watch(appLocalizationsProvider);
   if (!isReady) {
-    return MascotMessageNotifier._empty(ref);
+    return MascotMessageNotifier._empty(ref, l10n);
   }
-  return MascotMessageNotifier(ref);
+  return MascotMessageNotifier(ref, l10n);
 });
 
 /// Generates dynamic mascot messages based on system state.
 class MascotMessageNotifier {
   final Ref _ref;
+
+  /// The strings every message is built from, in the app's locale (#1312).
+  final AppLocalizations _l10n;
   final Random _random;
   final bool _isEmpty;
 
-  MascotMessageNotifier(this._ref)
+  MascotMessageNotifier(this._ref, this._l10n)
       : _random = Random(),
         _isEmpty = false;
 
-  MascotMessageNotifier._empty(this._ref)
+  MascotMessageNotifier._empty(this._ref, this._l10n)
       : _random = Random(),
         _isEmpty = true;
 
   /// Get a random message, selecting category by weight then template randomly.
   MascotMessage getRandomMessage() {
     if (_isEmpty) {
-      return MascotMessage.fallback;
+      return MascotMessage.fallback(_l10n);
     }
 
     final category = _selectCategoryByWeight();
@@ -81,7 +87,7 @@ class MascotMessageNotifier {
 
     final template = validTemplates[_random.nextInt(validTemplates.length)];
     return MascotMessage(
-      text: template.generate(context),
+      text: template.generate(context, _l10n),
       category: template.category,
       suggestedAnimation: template.suggestedAnimation,
     );

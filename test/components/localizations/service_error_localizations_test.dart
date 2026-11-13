@@ -149,6 +149,22 @@ void main() {
           loc(ctx).errorNetwork);
     });
 
+    testWidgets(
+        '9997 (input the client refused) → errorInvalidInput, as a thrown '
+        'Validation error maps', (tester) async {
+      final ctx = await pumpContext(tester);
+      expect(localizeServiceError(ctx, _completeWith(9997)),
+          loc(ctx).errorInvalidInput);
+    });
+
+    testWidgets(
+        '9998 (an answer the client could not decode) → errorUnexpected, not '
+        'errorNetwork', (tester) async {
+      final ctx = await pumpContext(tester);
+      expect(localizeServiceError(ctx, _completeWith(9998)),
+          loc(ctx).errorUnexpected);
+    });
+
     testWidgets('unknown vendor code → errorUnexpected (no raw text leak)',
         (tester) async {
       final ctx = await pumpContext(tester);
@@ -294,8 +310,11 @@ void main() {
     });
 
     testWidgets(
-        'a transport 9999 that names a reason reads as the refusal, not as a '
-        'network error', (tester) async {
+        'a request refused as a whole that names a reason reads as the '
+        'refusal, not by its code', (tester) async {
+      // usp-client 0.15.0 keeps the router's code for a request it refuses as
+      // a whole (7005 for an atomic Set across USP Services); up to 0.14.0 it
+      // was 9999, which alone would read as a network error (#1787).
       final ctx = await pumpContext(tester);
       final l = loc(ctx);
       expect(
@@ -304,7 +323,7 @@ void main() {
               const UspCompleteFailureError(summary: 's', failures: [
                 UspErrorDetail(
                   requestedPath: 'Device.Firewall.DMZ.1.DestIP',
-                  errorCode: 9999,
+                  errorCode: 7005,
                   errorMessage: 'raw',
                   refusalReason: UspRefusalReason.multipleDestinations,
                 ),

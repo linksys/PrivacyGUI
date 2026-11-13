@@ -1817,14 +1817,14 @@ void main() {
         expect(renameAndSave(), throwsA(isA<ServiceError>()));
       });
 
-      test('a refusal still throws — 9999 with a fault inside is an answer',
-          () async {
+      test(
+          'a refusal still throws — the router\'s own code and message are an '
+          'answer (usp-client 0.15.0, #1787)', () async {
         when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
             .thenAnswer((_) async => uspFailure(
                   path: 'Device.WiFi.SSID.1.SSID',
-                  errorCode: 9999,
-                  errorMessage: 'Transport error: Protocol error: Received '
-                      'error response: Invalid value (code: 7012)',
+                  errorCode: 7012,
+                  errorMessage: 'Invalid value',
                 ));
 
         expect(renameAndSave(), throwsA(isA<UspCompleteFailureError>()));

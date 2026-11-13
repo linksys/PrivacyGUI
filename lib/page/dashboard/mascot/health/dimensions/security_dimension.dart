@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -22,7 +23,7 @@ class SecurityHealthDimension extends HealthDimension {
   HealthDimensionType get type => HealthDimensionType.security;
 
   @override
-  String get displayName => 'Security';
+  String resolveName(AppLocalizations l10n) => l10n.security;
 
   @override
   IconData get icon => Icons.security;
@@ -51,12 +52,14 @@ class SecurityHealthDimension extends HealthDimension {
   }
 
   @override
-  DimensionSummary getSummary(HealthEvaluationContext context) {
+  DimensionSummary getSummary(
+    HealthEvaluationContext context,
+    AppLocalizations l10n,
+  ) {
     final firewall = context.firewall;
     if (firewall == null) {
-      return const DimensionSummary(
-        status: 'Loading...',
-        hint: 'Tap for actions',
+      return DimensionSummary(
+        status: l10n.loadingEllipsis,
       );
     }
 
@@ -66,25 +69,24 @@ class SecurityHealthDimension extends HealthDimension {
 
     String status;
     if (!ipv4On) {
-      status = 'At Risk';
+      status = l10n.mascotSecurityAtRisk;
     } else if (dmzOn) {
-      status = 'DMZ Active';
+      status = l10n.mascotSecurityDmzActive;
     } else if (ipv4On && ipv6On) {
-      status = 'Protected';
+      status = l10n.mascotSecurityProtected;
     } else {
-      status = 'Basic';
+      status = l10n.mascotSecurityBasic;
     }
 
     final items = <SummaryItem>[
-      SummaryItem('IPv4 Firewall', ipv4On ? 'On' : 'Off'),
-      SummaryItem('IPv6 Firewall', ipv6On ? 'On' : 'Off'),
-      SummaryItem('DMZ', dmzOn ? 'Enabled' : 'Disabled'),
+      SummaryItem(l10n.ipv4Firewall, ipv4On ? l10n.on : l10n.off),
+      SummaryItem(l10n.ipv6Firewall, ipv6On ? l10n.on : l10n.off),
+      SummaryItem(l10n.dmz, dmzOn ? l10n.enabled : l10n.disabled),
     ];
 
     return DimensionSummary(
       status: status,
       items: items,
-      hint: 'Tap for actions',
     );
   }
 

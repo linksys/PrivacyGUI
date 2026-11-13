@@ -596,8 +596,9 @@ class UspWifiSettingsService {
   ///
   /// Returns [WifiWriteOutcome.unanswered] when every error says the request
   /// never got an answer ([isUnansweredTransportFailure]) — the reply was lost to
-  /// the reload. A refusal throws: a router that answered applied nothing, and
-  /// the WASM client stamps `9999` on both, so only the message tells them apart.
+  /// the reload. A refusal throws: a router that answered applied nothing. The
+  /// message tells them apart; up to usp-client 0.14.0 the WASM client stamped
+  /// `9999` on both, so the `errorCode` could not.
   /// Nothing to write is [WifiWriteOutcome.confirmed] with no SET at all.
   Future<WifiWriteOutcome> _writeOnce(
     Map<String, dynamic> params,

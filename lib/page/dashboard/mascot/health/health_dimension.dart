@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
@@ -69,20 +70,19 @@ class SummaryItem extends Equatable {
   List<Object?> get props => [label, value];
 }
 
-/// Summary information displayed in the tooltip on long-press.
+/// A dimension's status and its detail rows, shown in the health view and on
+/// the dimension's detail page.
 class DimensionSummary extends Equatable {
   final String status;
   final List<SummaryItem> items;
-  final String? hint;
 
   const DimensionSummary({
     required this.status,
     this.items = const [],
-    this.hint,
   });
 
   @override
-  List<Object?> get props => [status, items, hint];
+  List<Object?> get props => [status, items];
 }
 
 /// An action the user can take for a dimension.
@@ -145,8 +145,8 @@ abstract class HealthDimension {
   /// The type identifier for this dimension.
   HealthDimensionType get type;
 
-  /// Display name shown in the word cloud.
-  String get displayName;
+  /// The dimension's name in [l10n]'s language (#1312).
+  String resolveName(AppLocalizations l10n);
 
   /// Icon representing this dimension.
   IconData get icon;
@@ -160,8 +160,11 @@ abstract class HealthDimension {
   /// Should return 100 if data is unavailable (assume healthy).
   int evaluate(HealthEvaluationContext context);
 
-  /// Get summary information for the tooltip.
-  DimensionSummary getSummary(HealthEvaluationContext context);
+  /// Summary information for the tooltip, in [l10n]'s language (#1312).
+  DimensionSummary getSummary(
+    HealthEvaluationContext context,
+    AppLocalizations l10n,
+  );
 
   /// Get available actions for this dimension.
   ///

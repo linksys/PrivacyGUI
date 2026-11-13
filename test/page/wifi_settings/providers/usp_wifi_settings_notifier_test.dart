@@ -1387,6 +1387,9 @@ class _FakeWifiDataNotifier extends AsyncNotifier<WifiData>
 
   @override
   Future<WifiData> build() async => _data;
+
+  @override
+  Future<void> refreshUtilization() async {}
 }
 
 /// Builds normally, then throws on the next build once [failNext] is set — the
@@ -1406,6 +1409,9 @@ class _ThrowOnRefresh extends AsyncNotifier<WifiData>
     }
     return WifiSettingsTestData.createWifiData();
   }
+
+  @override
+  Future<void> refreshUtilization() async {}
 }
 
 // ---------------------------------------------------------------------------
@@ -1419,4 +1425,7 @@ class _ErrorWifiDataNotifier extends AsyncNotifier<WifiData>
 
   @override
   Future<WifiData> build() async => throw _error;
+
+  @override
+  Future<void> refreshUtilization() async {}
 }
