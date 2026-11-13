@@ -44,7 +44,8 @@ abstract interface class UspTransport {
   Future<Map<String, dynamic>> get(List<String> paths);
 
   /// Write the given [parameters] (path→value). Returns the unified USP result
-  /// map ({success, result:{data, error?}}).
+  /// map ({success, result:{data, error?, errors?}}). Its failures are read
+  /// from `errors` ([UspResultParser]); the `error` map is deprecated.
   Future<Map<String, dynamic>> set(
     Map<String, String> parameters, {
     bool allowPartial,

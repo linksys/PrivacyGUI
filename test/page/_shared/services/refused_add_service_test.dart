@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/services/refused_add_service.dart';
 
 import '../../../mocks/test_data/usp_add_refusal_test_data.dart';
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -99,10 +100,12 @@ void main() {
       // Listed lowest last, so reversing the list would get it wrong.
       final raw =
           UspAddRefusalTestData.refusedAdd(instances: [b, a], refusedRow: a);
-      (raw['result']['error'] as Map<String, dynamic>)['${b}Target'] = {
+      (raw['result']['errors'] as List).add({
+        'kind': 'parameter',
+        'path': '${b}Target',
         'errorCode': 7005,
         'errorMessage': 'ErrorRulesOverlap: x',
-      };
+      });
       final calls = <String>[];
       when(() => usp.delete(any())).thenAnswer((inv) async {
         calls.add((inv.positionalArguments.first as List<String>).single);
@@ -121,15 +124,11 @@ void main() {
         'a refused row the delete could not remove keeps the Add a partial '
         'success, so the page reads the router again', () async {
       const row = 'Device.NAT.PortTrigger.26.';
-      when(() => usp.delete(any())).thenAnswer((_) async => {
-            'success': false,
-            'result': {
-              'data': <String, dynamic>{},
-              'error': {
-                row: {'errorCode': 7027, 'errorMessage': 'Object not found'},
-              },
-            },
-          });
+      when(() => usp.delete(any()))
+          .thenAnswer((_) async => UspEnvelopeTestData.pathErrors(
+                {row: (code: 7027, message: 'Object not found')},
+                success: false,
+              ));
 
       final result = await run(
           UspAddRefusalTestData.refusedAdd(instances: [row], refusedRow: row));

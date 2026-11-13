@@ -6,6 +6,8 @@ import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_settings.dar
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_advanced_service.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 // WASM v0.11.0 set-result shapes consumed by UspResultParser.parseSetResult.
@@ -19,44 +21,28 @@ Map<String, dynamic> _setPartial({
   int errorCode = 7008,
   String errorMessage = 'Invalid value',
 }) =>
-    {
-      'success': true,
-      'result': {
-        'data': {'Device.WiFi.Radio.1.IEEE80211hEnabled': false},
-        'error': {
-          path: {'errorCode': errorCode, 'errorMessage': errorMessage},
-        },
-      },
-    };
+    UspEnvelopeTestData.parameterErrors(
+      {path: (code: errorCode, message: errorMessage)},
+      success: true,
+      data: {'Device.WiFi.Radio.1.IEEE80211hEnabled': false},
+    );
 
 Map<String, dynamic> _setFailure({
   String path = 'bulk_operation',
   int errorCode = 7004,
   String errorMessage = 'Operation failed',
 }) =>
-    {
-      'success': false,
-      'result': {
-        'data': <String, dynamic>{},
-        'error': {
-          path: {'errorCode': errorCode, 'errorMessage': errorMessage},
-        },
-      },
-    };
+    UspEnvelopeTestData.parameterErrors(
+      {path: (code: errorCode, message: errorMessage)},
+      success: false,
+    );
 
 /// A per-path SET error whose request never got an answer.
-Map<String, dynamic> _setUnanswered() => {
-      'success': false,
-      'result': {
-        'data': <String, dynamic>{},
-        'error': {
-          'Device.WiFi.Radio.1.IEEE80211hEnabled': {
-            'errorCode': 9999,
-            'errorMessage': 'Transport error: Failed to fetch',
-          },
-        },
-      },
-    };
+Map<String, dynamic> _setUnanswered() => UspEnvelopeTestData.failedAsAWhole(
+      ['Device.WiFi.Radio.1.IEEE80211hEnabled'],
+      errorCode: 9999,
+      errorMessage: 'Transport error: Failed to fetch',
+    );
 
 void main() {
   late MockUspClient mockUsp;

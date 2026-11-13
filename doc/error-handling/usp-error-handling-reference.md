@@ -9,7 +9,7 @@
 > - **localization**: the View produces a localized message based on the ServiceError type (central mapper `localizeServiceError`), implemented in PR #953. For how to write it see the [implementation guide](error-handling-implementation-guide.md).
 > - **§2.5 GET bug (fixed, #1212)**: a 9999 GET failure used to be disguised as 9998. GET now keeps the envelope, and `UspClient.extractGetResult` throws on 9999.
 
-> **Written against usp-client 0.14.0 and earlier.** Since 0.15.0 (#1787) every failure of a call as a whole is no longer 9999: a request the router refuses as a whole keeps the router's code and message, an answer the client cannot decode is 9998 (`Protocol error: …`), input it refuses is 9997 (`Validation error: …`), and a transport failure has one `Transport error: ` prefix. 0.16.0 adds `result.errors`, whose `kind` (`request` / `path` / `parameter`) is what `UspClient` reads a Get and an Operate by; the `error` map is deprecated. Where this doc says "9999", read "9997–9999 or the router's code under `kind: request`". The current shapes, measured from Node against the vendored client, are in `test/web/usp_operate_errors.json`; the summary is in [`../usp/vendored-artifacts.md`](../usp/vendored-artifacts.md).
+> **Written against usp-client 0.14.0 and earlier.** Since 0.15.0 (#1787) every failure of a call as a whole is no longer 9999: a request the router refuses as a whole keeps the router's code and message, an answer the client cannot decode is 9998 (`Protocol error: …`), input it refuses is 9997 (`Validation error: …`), and a transport failure has one `Transport error: ` prefix. 0.16.0 adds `result.errors`, whose `kind` (`request` / `path` / `parameter`) is what `UspClient` reads a Get and an Operate by; `UspResultParser` reads a write's failures from the same list. The `error` map is deprecated and nothing in the app reads it; where this doc shows an `error` map, read the `errors` list. Where this doc says "9999", read "9997–9999 or the router's code under `kind: request`". The current shapes, measured from Node against the vendored client, are in `test/web/usp_operate_errors.json`; the summary is in [`../usp/vendored-artifacts.md`](../usp/vendored-artifacts.md).
 
 ---
 
@@ -65,7 +65,7 @@ Take **DMZ** as the example (SET: enable DMZ pointing to `192.168.1.150`).
 
 ### Upstream (response coming back) — unified envelope
 
-The return is always the WASM v0.11.0 unified format: `{ success, result: { data, error? } }`. **`error` is omitted entirely when there is no error; on partial failure `success:true` but it carries `error`** — so even with `success===true` you must still check `error`.
+The return is always the unified format: `{ success, result: { data, errors? } }` (usp-client 0.16.0, which also returns the same entries as the deprecated `error` map, keyed by path; the app does not read it). **`errors` is omitted entirely when there is no error; on partial failure `success:true` but it carries `errors`** — so even with `success===true` you must still check `errors`.
 
 ```js
 // SET success
@@ -73,11 +73,11 @@ The return is always the WASM v0.11.0 unified format: `{ success, result: { data
 
 // SET partial(SourcePrefix value invalid)
 { success: true, result: {
-    data:  { "Device.Firewall.DMZ.1.Enable": "true", "...DestIP": "192.168.1.150" },
-    error: { "Device.Firewall.DMZ.1.SourcePrefix": { errorCode: 7006, errorMessage: "..." } } } }
+    data:   { "Device.Firewall.DMZ.1.Enable": "true", "...DestIP": "192.168.1.150" },
+    errors: [ { kind: "parameter", path: "Device.Firewall.DMZ.1.SourcePrefix", errorCode: 7006, errorMessage: "..." } ] } }
 
 // transport failure(401/timeout)
-{ success: false, result: { error: { "<path>": { errorCode: 9999, errorMessage: "Transport error: ..." } } } }
+{ success: false, result: { data: {}, errors: [ { kind: "request", path: "<path>", errorCode: 9999, errorMessage: "Transport error: ..." } ] } }
 ```
 
 | Layer | Action | File |
@@ -112,7 +112,7 @@ To understand the whole error model, the most important thing is to **not tie to
 
 **Axis two — form (what it looks like) has 2:**
 - **A. throws a string** (Promise reject / Dart throw): `"{Op} failed: {category}: {detail}"`
-- **B. structured envelope**: `{success, result:{data, error?{path:{errorCode, errorMessage}}}}`
+- **B. structured envelope**: `{success, result:{data, errors?[{kind, path?, errorCode, errorMessage}]}}`
 
 **Key point: both forms have different sources mixed in — you cannot say "WASM=string, firmware=envelope".** The real correspondence is:
 

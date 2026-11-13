@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dar
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
 import '../../../mocks/test_data/wifi_settings_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
@@ -21,37 +22,29 @@ Map<String, dynamic> uspSuccess({Map<String, dynamic> data = const {}}) => {
       'result': {'data': data},
     };
 
+/// A failed SET on [path]: a 9999 is the client's transport failure, the call
+/// failing as a whole (`kind: request`); any other code the router refusing
+/// that parameter (`kind: parameter`).
 Map<String, dynamic> uspFailure(
         {String path = 'bulk_operation',
         int errorCode = 7004,
         String errorMessage = 'Operation failed'}) =>
-    {
-      'success': false,
-      'result': {
-        'data': <String, dynamic>{},
-        'error': {
-          path: {
-            'errorCode': errorCode,
-            'errorMessage': errorMessage,
-          }
-        },
-      },
-    };
+    errorCode == 9999
+        ? UspEnvelopeTestData.failedAsAWhole([path],
+            errorCode: errorCode, errorMessage: errorMessage)
+        : UspEnvelopeTestData.parameterErrors(
+            {path: (code: errorCode, message: errorMessage)},
+            success: false,
+          );
 
 /// A per-path SET error whose request never got an answer — what the WASM
 /// client reports when the browser's `fetch` fails under a WiFi restart.
-Map<String, dynamic> uspUnanswered(String path) => {
-      'success': false,
-      'result': {
-        'data': <String, dynamic>{},
-        'error': {
-          path: {
-            'errorCode': 9999,
-            'errorMessage': 'Transport error: Failed to fetch',
-          }
-        },
-      },
-    };
+Map<String, dynamic> uspUnanswered(String path) =>
+    UspEnvelopeTestData.failedAsAWhole(
+      [path],
+      errorCode: 9999,
+      errorMessage: 'Transport error: Failed to fetch',
+    );
 
 /// Sends [plan] the way a caller would, returning what it planned and the
 /// outcome — the shape these tests assert on.

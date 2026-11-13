@@ -4,6 +4,8 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/admin/services/usp_system_info_data_service.dart';
 
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 void main() {
@@ -299,18 +301,15 @@ void main() {
     test('a refused Set throws UspCompleteFailureError', () {
       // What the firmware does for 65 bytes: the whole Set is refused.
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': false,
-                'result': {
-                  'data': <String, dynamic>{},
-                  'error': {
-                    'Device.DeviceInfo.X_LINKSYS_UserDeviceLocation': {
-                      'errorCode': 9007,
-                      'errorMessage': 'Invalid parameter value',
-                    },
-                  },
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'Device.DeviceInfo.X_LINKSYS_UserDeviceLocation': (
+                    code: 9007,
+                    message: 'Invalid parameter value',
+                  ),
                 },
-              });
+                success: false,
+              ));
 
       expect(() => svc.updateRouterName('x'),
           throwsA(isA<UspCompleteFailureError>()));

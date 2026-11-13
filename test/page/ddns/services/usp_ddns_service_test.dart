@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/ddns/services/usp_ddns_service.dart';
 
 import '../../../mocks/test_data/ddns_test_data.dart';
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -271,18 +272,10 @@ void main() {
     test('a refused Set is UspCompleteFailureError', () async {
       stubGets(DdnsTestData.response());
       when(() => usp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': false,
-                'result': {
-                  'data': <String, dynamic>{},
-                  'error': {
-                    '${_client}Username': {
-                      'errorCode': 7012,
-                      'errorMessage': 'Value too long',
-                    },
-                  },
-                },
-              });
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {'${_client}Username': (code: 7012, message: 'Value too long')},
+                success: false,
+              ));
 
       expect(service.save(DdnsTestData.configuredSettings()),
           throwsA(isA<UspCompleteFailureError>()));
@@ -293,18 +286,11 @@ void main() {
     test('a partly applied Set is UspPartialFailureError', () async {
       stubGets(DdnsTestData.response());
       when(() => usp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': true,
-                'result': {
-                  'data': {'${_client}Enable': true},
-                  'error': {
-                    '${_hostname}Name': {
-                      'errorCode': 7012,
-                      'errorMessage': 'Value too long',
-                    },
-                  },
-                },
-              });
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {'${_hostname}Name': (code: 7012, message: 'Value too long')},
+                success: true,
+                data: {'${_client}Enable': true},
+              ));
 
       expect(service.save(DdnsTestData.configuredSettings()),
           throwsA(isA<UspPartialFailureError>()));

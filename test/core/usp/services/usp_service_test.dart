@@ -1,10 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
+
 /// Tests for USP structured response core functionality
 /// Focus on result parsing logic, sealed class conversion, and error handling
 ///
-/// These tests use WASM v0.11.0 format: {success, result: {data, error?}}
+/// These tests use the unified format: {success, result: {data, errors?}}
 void main() {
   group('USP Structured Response Parsing Tests', () {
     group('UspResultParser parsing logic', () {
@@ -36,21 +38,17 @@ void main() {
 
       test('parseSetResult() should create UspPartialSuccess for mixed results',
           () {
-        // WASM v0.11.0 format: success=true, but has error field
-        final mockResponse = {
-          'success': true,
-          'result': {
-            'data': {
-              'Device.WiFi.SSID.1.SSID': 'NewNetwork',
-            },
-            'error': {
-              'Device.WiFi.SSID.1.InvalidParam': {
-                'errorCode': 7004,
-                'errorMessage': 'Parameter not writable',
-              },
-            },
+        // success=true, but errors has an entry
+        final mockResponse = UspEnvelopeTestData.parameterErrors(
+          {
+            'Device.WiFi.SSID.1.InvalidParam': (
+              code: 7004,
+              message: 'Parameter not writable',
+            ),
           },
-        };
+          success: true,
+          data: {'Device.WiFi.SSID.1.SSID': 'NewNetwork'},
+        );
 
         final result = UspResultParser.parseSetResult(mockResponse);
 
@@ -73,23 +71,17 @@ void main() {
 
       test('parseSetResult() should create UspFailure for complete failure',
           () {
-        // WASM v0.11.0 format: success=false
-        final mockResponse = {
-          'success': false,
-          'result': {
-            'data': <String, dynamic>{},
-            'error': {
-              'Device.Invalid.Path': {
-                'errorCode': 7026,
-                'errorMessage': 'Parameter not found',
-              },
-              'Device.Another.Invalid.Path': {
-                'errorCode': 7005,
-                'errorMessage': 'Invalid parameter name',
-              },
-            },
+        // success=false
+        final mockResponse = UspEnvelopeTestData.pathErrors(
+          {
+            'Device.Invalid.Path': (code: 7026, message: 'Parameter not found'),
+            'Device.Another.Invalid.Path': (
+              code: 7005,
+              message: 'Invalid parameter name',
+            ),
           },
-        };
+          success: false,
+        );
 
         final result = UspResultParser.parseSetResult(mockResponse);
 

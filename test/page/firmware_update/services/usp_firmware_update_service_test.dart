@@ -6,6 +6,7 @@ import 'package:privacy_gui/page/firmware_update/models/firmware_auto_update_ui_
 import 'package:privacy_gui/page/firmware_update/services/usp_firmware_update_service.dart';
 
 import '../../../mocks/test_data/firmware_update_test_data.dart';
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -694,18 +695,16 @@ void main() {
     });
 
     test('a rejected Set becomes a ServiceError', () {
-      when(() => mockUsp.set(any())).thenAnswer((_) async => {
-            'success': false,
-            'result': {
-              'data': <String, dynamic>{},
-              'error': {
-                'Device.X_LINKSYS_UCI.linksys.fwup.autoupdate_flags': {
-                  'errorCode': 7004,
-                  'errorMessage': 'Parameter not writable',
+      when(() => mockUsp.set(any()))
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'Device.X_LINKSYS_UCI.linksys.fwup.autoupdate_flags': (
+                    code: 7004,
+                    message: 'Parameter not writable',
+                  ),
                 },
-              },
-            },
-          });
+                success: false,
+              ));
 
       expect(
         () => service.setAutoUpdatePolicy(FirmwareAutoUpdatePolicy.autoInstall),

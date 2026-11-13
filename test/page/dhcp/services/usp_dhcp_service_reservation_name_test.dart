@@ -6,6 +6,7 @@ import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/dhcp/services/usp_dhcp_service.dart';
 
 import '../../../mocks/test_data/local_network_test_data.dart';
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -173,22 +174,20 @@ void main() {
   group('FW refusals', () {
     /// A refused Set as obuspa answers it: 7012 on every leaf of the row, the
     /// message only on the leaf dhcpmngr refused, the rest "group set failed".
-    Map<String, dynamic> refusedSet(String leaf, String message) => {
-          'success': false,
-          'result': {
-            'data': <String, dynamic>{},
-            'error': {
-              for (final l in ['Enable', 'Chaddr', 'Yiaddr'])
-                '$p5$l': {
-                  'errorCode': 7012,
-                  'errorMessage': l == leaf
-                      ? message
-                      : "SetParameterGroup: group set failed at '$p5$leaf' "
-                          '(Invalid value)',
-                },
-            },
+    Map<String, dynamic> refusedSet(String leaf, String message) =>
+        UspEnvelopeTestData.parameterErrors(
+          {
+            for (final l in ['Enable', 'Chaddr', 'Yiaddr'])
+              '$p5$l': (
+                code: 7012,
+                message: l == leaf
+                    ? message
+                    : "SetParameterGroup: group set failed at '$p5$leaf' "
+                        '(Invalid value)',
+              ),
           },
-        };
+          success: false,
+        );
 
     test('a refused Set carries FW\'s message', () async {
       when(() => mockUsp.set(any())).thenAnswer((_) async =>
@@ -208,18 +207,17 @@ void main() {
 
     test('a Set partly refused still fails with FW\'s message', () async {
       // obuspa commits the other values; the refusal must still reach the page.
-      when(() => mockUsp.set(any())).thenAnswer((_) async => {
-            'success': true,
-            'result': {
-              'data': {'${p5}Enable': true},
-              'error': {
-                '${p5}X_LINKSYS_Name': {
-                  'errorCode': 7012,
-                  'errorMessage': DhcpReservationRefusalNames.invalidName,
+      when(() => mockUsp.set(any()))
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  '${p5}X_LINKSYS_Name': (
+                    code: 7012,
+                    message: DhcpReservationRefusalNames.invalidName,
+                  ),
                 },
-              },
-            },
-          });
+                success: true,
+                data: {'${p5}Enable': true},
+              ));
 
       await expectLater(
         service.saveBatch(
@@ -234,18 +232,16 @@ void main() {
     });
 
     test('a refused Add carries FW\'s message', () async {
-      when(() => mockUsp.add(any())).thenAnswer((_) async => {
-            'success': false,
-            'result': {
-              'data': <String, dynamic>{},
-              'error': {
-                '${lan}StaticAddress.': {
-                  'errorCode': 7004,
-                  'errorMessage': DhcpReservationRefusalNames.invalidIp,
+      when(() => mockUsp.add(any()))
+          .thenAnswer((_) async => UspEnvelopeTestData.pathErrors(
+                {
+                  '${lan}StaticAddress.': (
+                    code: 7004,
+                    message: DhcpReservationRefusalNames.invalidIp,
+                  ),
                 },
-              },
-            },
-          });
+                success: false,
+              ));
 
       await expectLater(
         service.immediateAdd(mac: 'AA:BB:CC:DD:EE:FF', ip: '10.0.0.5'),
