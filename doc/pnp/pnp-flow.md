@@ -37,7 +37,7 @@ state AdminPhase {
     AdminError --> AdminCheckingInternet : User taps Retry
 }
 
-NoInternet --> TroubleshooterRoute <<end>> : Navigate to\n/pnpNoInternetConnection
+NoInternet --> TroubleshooterRoute <<end>> : Navigate to\n/pnpNoInternetConnection/pnp
 
 state WizardPhase {
     WizardInitializing : Fetch WiFi config\nFetch mesh topology
@@ -100,13 +100,30 @@ WizardWifiReady --> DashboardRoute <<end>> : User taps Done\nNavigate to /usp/da
 | `WizardWifiReady` | Setup complete. Show credentials + QR. | No FW update needed |
 | `WizardError` | Recoverable error during wizard. | Exception in wizard operations |
 
-### Troubleshooter Phases (ModemRestart / ISP)
+### Troubleshooting phases (`TroubleshootingPhase`, not `PnpPhase`)
+
+Since #1511 P1 the no-internet troubleshooting flow is a sub-flow with state of
+its own — `internetTroubleshootingProvider` (`autoDispose`), in
+`lib/page/instant_setup/providers/internet_troubleshooting_provider.dart` — and
+none of its pages reads `pnpProvider`. PnP's part ends at `NoInternet`, which hands
+the user to `/pnpNoInternetConnection/pnp`.
 
 | Phase | Description |
 |-------|-------------|
+| `TroubleshootingNoInternet` | The hub and its forms; carries a failed ISP save's message once |
 | `ModemRestartCountdown` | 150s countdown while modem reboots |
 | `ModemRestartCheckingInternet` | Polling internet after modem restart (30 attempts) |
 | `IspSaving` | Saving ISP settings with progress steps |
+| `TroubleshootingRecovered` | Internet is back — the caller's ending takes over |
+| `TroubleshootingReadFailure` | The router could not be read — the caller's ending takes over |
+
+**The caller is in the URL** (`/pnpNoInternetConnection/:caller/…`), and the route
+layer turns it into a `TroubleshootingEnding`: where a finished run goes, and
+whether the hub offers "Log into router". PnP's (`pnp`) goes back to `/pnp`, whose
+entry re-runs its check, and offers "Log into router" (acknowledge, then the
+dashboard). The dashboard's (`dashboard`) goes back to the dashboard and offers no
+bypass; no dashboard entry ships yet. The hub, which sits under every other page
+of the tree, is the only page that hands a finished run over.
 
 ---
 

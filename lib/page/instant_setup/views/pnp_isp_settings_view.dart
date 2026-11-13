@@ -5,14 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/instant_setup/models/internet_troubleshooting_phase.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
-import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
+import 'package:privacy_gui/page/instant_setup/providers/internet_troubleshooting_provider.dart';
 import 'package:privacy_gui/page/instant_setup/views/components/pnp_isp_saving_progress.dart';
+import 'package:privacy_gui/page/instant_setup/views/components/troubleshooting_navigation.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -21,7 +21,9 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// Owns the save flow only when DHCP is chosen (DHCP saves inline on this
 /// page). For PPPoE/Static IP, the corresponding form view owns the flow,
 /// so this page must not react to those save outcomes — otherwise the
-/// SnackBar / navigation would fire from two pages at once.
+/// SnackBar would fire from two pages at once. A save that brings the internet
+/// back, or ends on a router that cannot be read, is handed over by the hub
+/// underneath this page (#1511 P1), whichever form ran it.
 class PnpIspSettingsView extends ConsumerStatefulWidget {
   const PnpIspSettingsView({super.key});
 
@@ -35,22 +37,14 @@ class _PnpIspSettingsViewState extends ConsumerState<PnpIspSettingsView> {
   Future<void> _onDhcpTap() async {
     setState(() => _dhcpSaving = true);
     await ref
-        .read(pnpProvider.notifier)
+        .read(internetTroubleshootingProvider.notifier)
         .saveIspWithProgress(const PnpIspConfig(type: IspConnectionType.dhcp));
     if (!mounted) return;
     setState(() => _dhcpSaving = false);
 
-    final state = ref.read(pnpProvider);
-    final phase = state.phase;
-    if (phase is WizardConfiguring || phase is WizardInitializing) {
-      context.go(RoutePath.pnp);
-    } else if (phase is AdminReadFailure) {
-      // Save succeeded but the trailing internet check could not read router
-      // state. Route back to the entry view, which re-runs the flow (implicit
-      // retry) and renders the read-failure card if it still fails.
-      context.go(RoutePath.pnp);
-    } else if (state.errorMessage != null) {
-      showFailedSnackBar(context, state.errorMessage!);
+    final phase = ref.read(internetTroubleshootingProvider);
+    if (phase is TroubleshootingNoInternet && phase.errorMessage != null) {
+      showFailedSnackBar(context, phase.errorMessage!);
     }
   }
 
@@ -61,8 +55,8 @@ class _PnpIspSettingsViewState extends ConsumerState<PnpIspSettingsView> {
     // PPPoE/Static IP save flows do not cause this page to rebuild.
     final ispSavingPhase = _dhcpSaving
         ? ref.watch(
-            pnpProvider.select(
-              (s) => s.phase is IspSaving ? s.phase as IspSaving : null,
+            internetTroubleshootingProvider.select(
+              (phase) => phase is IspSaving ? phase : null,
             ),
           )
         : null;
@@ -134,7 +128,8 @@ class _PnpIspSettingsViewState extends ConsumerState<PnpIspSettingsView> {
             description: managed
                 ? loc(context).autoIpoeResetBeforeSwitching
                 : loc(context).autoIpoePnpDescription,
-            onTap: () => context.pushNamed(RouteNamed.pnpAutoIPoE),
+            onTap: () =>
+                context.pushWithinTroubleshooting(RouteNamed.pnpAutoIPoE),
           ),
           AppGap.md(),
         ],
@@ -145,7 +140,7 @@ class _PnpIspSettingsViewState extends ConsumerState<PnpIspSettingsView> {
             icon: Icons.vpn_key_outlined,
             title: 'PPPoE',
             description: loc(context).pnpIspTypeSelectionPppoeDesc,
-            onTap: () => context.goNamed(RouteNamed.pnpPPPOE),
+            onTap: () => context.goWithinTroubleshooting(RouteNamed.pnpPPPOE),
           ),
           AppGap.md(),
           _buildTypeCard(
@@ -154,7 +149,8 @@ class _PnpIspSettingsViewState extends ConsumerState<PnpIspSettingsView> {
             icon: Icons.pin_outlined,
             title: loc(context).ipAddress,
             description: loc(context).pnpIspTypeSelectionStaticDesc,
-            onTap: () => context.goNamed(RouteNamed.pnpStaticIp),
+            onTap: () =>
+                context.goWithinTroubleshooting(RouteNamed.pnpStaticIp),
           ),
         ],
       ],

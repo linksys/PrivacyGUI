@@ -268,7 +268,8 @@ final _rows = <_Row>[
 
   // --- Wrapping ---
   // Instant Setup passes the caught exception's `toString()` straight through
-  // (`pnp_notifier.dart`'s `errorMessage: '$e'`). Unbounded and unlocalized, it
+  // (`internet_troubleshooting_provider.dart`'s `errorMessage: '$e'`, in
+  // `pnp_notifier.dart` before #1511 P1). Unbounded and unlocalized, it
   // is the longest text a snackbar can be handed, so it is the one picture of
   // the snackbar wrapping across several lines.
   _Row.failed(

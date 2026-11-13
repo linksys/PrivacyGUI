@@ -9,7 +9,8 @@ import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
+import 'package:privacy_gui/page/instant_setup/models/troubleshooting_ending.dart';
+import 'package:privacy_gui/page/instant_setup/views/components/troubleshooting_navigation.dart';
 import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -33,8 +34,14 @@ final autoIPoEPnpExitGuardProvider = Provider.autoDispose<AutoIPoEPnpExitGuard>(
 );
 
 /// PnP setup with verified completion and guarded recovery before exit.
+///
+/// Its "continue" ends the troubleshooting run without a phase change, so it is
+/// the one page besides the hub that is handed the caller's [ending] (#1511 P1).
 class PnpIPoEView extends ConsumerStatefulWidget {
-  const PnpIPoEView({super.key});
+  const PnpIPoEView({super.key, required this.ending});
+
+  /// How whoever entered troubleshooting wants it to end.
+  final TroubleshootingEnding ending;
 
   @override
   ConsumerState<PnpIPoEView> createState() => _PnpIPoEViewState();
@@ -397,40 +404,27 @@ class _PnpIPoEViewState extends ConsumerState<PnpIPoEView> {
     }
   }
 
+  /// The connection is verified: hand the run to the caller's ending.
+  ///
+  /// It used to run PnP's `startPostLoginFlow()` first and then go to `/pnp`,
+  /// whose entry runs the same flow again as it mounts. The ending is all that is
+  /// left of that (#1511 P1): PnP's entry does the check, once.
   Future<void> _continuePnp() async {
     if (!_supportsAutoIPoE || _continuing) return;
-    final session = _currentSession();
     setState(() {
       _continuing = true;
       _actionError = null;
     });
     _requestId = null;
-    try {
-      await ref.read(pnpProvider.notifier).startPostLoginFlow();
-      if (_ownsCurrentSession(session)) {
-        // Only verified forward completion may leave without restoring WAN.
-        ref.read(autoIPoEPageProvider.notifier).markAsSaved();
-        _allowPnpExit = true;
-        context.go(RoutePath.pnp);
-      } else if (mounted) {
-        setState(() => _continuing = false);
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _continuing = false;
-          if (_ownsCurrentSession(session)) {
-            _actionError = e;
-            _actionErrorSession = session;
-          }
-        });
-      }
-    }
+    // Only verified forward completion may leave without restoring WAN.
+    ref.read(autoIPoEPageProvider.notifier).markAsSaved();
+    _allowPnpExit = true;
+    context.go(widget.ending.exitLocation);
   }
 
   Future<void> _back() async {
     if (await _preparePnpExit() && mounted) {
-      context.goNamed(RouteNamed.pnpIspTypeSelection);
+      context.goWithinTroubleshooting(RouteNamed.pnpIspTypeSelection);
     }
   }
 

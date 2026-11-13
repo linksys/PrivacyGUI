@@ -74,6 +74,39 @@ final pnpRoute = LinksysRoute(
   ],
 );
 
+/// The dashboard's ending: back to the dashboard, and no "continue without
+/// internet" — there is no setup to acknowledge (#1511 P1).
+///
+/// Declared here rather than beside a dashboard entry because none ships yet; the
+/// route accepts the caller so that a second caller exists and is tested. It moves
+/// to the dashboard with that entry.
+const _dashboardTroubleshootingEnding = TroubleshootingEnding(
+  exitLocation: RoutePath.uspDashboard,
+);
+
+/// The ending the URL's `:caller` names, or `null` for a caller nobody supplies.
+///
+/// The one place a caller id becomes behaviour, so the troubleshooting pages are
+/// handed an ending and never see the id. Two pages take one: the hub, which sits
+/// under every other page of the tree and so is the one that hands a finished run
+/// over, and Auto-IPoE, whose "continue" ends the run without a phase change.
+TroubleshootingEnding? _troubleshootingEnding(
+  BuildContext context,
+  GoRouterState state,
+) =>
+    switch (state.pathParameters[TroubleshootingCaller.param]) {
+      TroubleshootingCaller.pnp => ProviderScope.containerOf(context)
+          .read(pnpTroubleshootingEndingProvider),
+      TroubleshootingCaller.dashboard => _dashboardTroubleshootingEnding,
+      _ => null,
+    };
+
+/// [_troubleshootingEnding] for a page builder. Non-null by construction: the
+/// tree's root redirects an unknown caller before any page in it is built, and
+/// route-level redirects run for every match, parents first.
+TroubleshootingEnding _endingOf(BuildContext context, GoRouterState state) =>
+    _troubleshootingEnding(context, state)!;
+
 Future<bool> _pnpAutoIPoEExitGuard(
     BuildContext context, GoRouterState state) async {
   final container = ProviderScope.containerOf(context);
@@ -88,7 +121,12 @@ final pnpNoInternetRoute = LinksysRoute(
   name: RouteNamed.pnpNoInternetConnection,
   path: RoutePath.pnpNoInternetConnection,
   config: _pnpRouteConfig,
-  builder: (context, state) => const PnpNoInternetView(),
+  // A caller nobody supplies has no ending to hand over to, so the app starts
+  // again from its own entry, which decides where this router belongs.
+  redirect: (context, state) =>
+      _troubleshootingEnding(context, state) == null ? '/' : null,
+  builder: (context, state) =>
+      PnpNoInternetView(ending: _endingOf(context, state)),
   routes: [
     LinksysRoute(
       name: RouteNamed.pnpIspTypeSelection,
@@ -105,9 +143,13 @@ final pnpNoInternetRoute = LinksysRoute(
                 .read(deviceCapabilitiesProvider);
             return capabilities.has(DeviceCapability.autoIPoE)
                 ? null
-                : context.namedLocation(RouteNamed.pnpIspTypeSelection);
+                : context.namedLocation(
+                    RouteNamed.pnpIspTypeSelection,
+                    pathParameters: state.pathParameters,
+                  );
           },
-          builder: (context, state) => const PnpIPoEView(),
+          builder: (context, state) =>
+              PnpIPoEView(ending: _endingOf(context, state)),
           onExit: _pnpAutoIPoEExitGuard,
           preservableProvider: autoIPoEPageProvider.notifier,
         ),

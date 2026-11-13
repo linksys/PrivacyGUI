@@ -62,7 +62,7 @@ User opens app
 
 **Flow Branching:**
 - Internet connected → `WizardConfiguring` → navigate to `/pnp/config`
-- No internet → `NoInternet` → navigate to `/pnpNoInternetConnection`
+- No internet → `NoInternet` → navigate to `/pnpNoInternetConnection/pnp`
 - Error → `AdminError` → show error with retry
 
 ### 3.3. Network Troubleshooter Flow
@@ -75,7 +75,13 @@ When no internet connection is detected, this flow provides solutions.
         *   Flow: `PnpUnplugModemView` → `PnpModemLightsOffView` → `PnpWaitingModemView`
     2.  **Option B - Manual ISP Settings**: Enter ISP connection info
         *   Flow: `PnpIspSettingsView` → `PnpStaticIpView` / `PnpPppoeView`
-*   **Outcome**: Re-check internet. Success → wizard; Failure → stay in troubleshooter.
+*   **Outcome**: Re-check internet. Success → the caller's ending (for PnP, back to
+    `/pnp`, which re-runs the check and starts the wizard); Failure → stay in
+    troubleshooter.
+*   **State**: its own, not PnP's (#1511 P1) — `internetTroubleshootingProvider`,
+    with the WAN prefill in `troubleshootingWanPrefillProvider`. The caller is the
+    `:caller` segment of every troubleshooting URL (`pnp` or `dashboard`), turned
+    into a `TroubleshootingEnding` by the route layer; see `pnp-flow.md`.
 
 ### 3.4. Setup Wizard Flow (`PnpSetupView`)
 

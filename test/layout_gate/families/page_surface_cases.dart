@@ -231,6 +231,7 @@ import '../../mocks/provider_overrides/mock_static_routing.dart';
 import '../../mocks/provider_overrides/mock_statistics.dart';
 import '../../mocks/provider_overrides/mock_notification_history.dart';
 import '../../mocks/provider_overrides/mock_system_log.dart';
+import '../../mocks/provider_overrides/mock_internet_troubleshooting.dart';
 import '../../mocks/provider_overrides/mock_login.dart';
 import '../../mocks/provider_overrides/mock_menu.dart';
 import '../../mocks/provider_overrides/mock_pnp.dart';
@@ -739,9 +740,9 @@ final kPnpEntryPageCase = PageSurfaceCase(
 ///
 /// One of the three pages in this wave that needs **no** fixture, and the case
 /// says so with an empty override list rather than pinning a phase it does not
-/// read. `build` watches `pnpProvider` only inside `_dhcpSaving ? … : null`, so at
-/// rest this page is provider-independent — the real `PnpNotifier.build()` returns
-/// `PnpState.initial()` and touches no service.
+/// read. `build` watches the troubleshooting run's phase only inside
+/// `_dhcpSaving ? … : null` (`pnpProvider` until #1511 P1), so at rest this page
+/// is independent of it.
 ///
 /// [PnpIspSavingProgress] is forbidden for that reason: it is the one tree that
 /// replaces the whole page, and its absence is what makes "at rest" a checked
@@ -756,19 +757,21 @@ final kPnpIspSettingsPageCase = PageSurfaceCase(
 
 /// `page.pnp_no_internet` — the troubleshooter hub.
 ///
-/// The tree does not depend on the phase, so pinning `NoInternet` is not what gets
-/// the page to render — it is what makes the branch a *decision*. Unpinned, this
-/// page renders the same thing because `AdminCheckingInternet` happens to fail the
-/// two `is` checks in `ref.listen`, and a fixture that is right by coincidence is
-/// one nobody notices going wrong.
+/// The tree does not depend on the phase, so pinning `TroubleshootingNoInternet`
+/// is not what gets the page to render — it is what makes the branch a
+/// *decision*, and it keeps the hub's listener from handing the run over. What
+/// the tree does depend on since #1511 P1 is the caller's ending: PnP's supplies a
+/// "continue without internet", which is the hub's "Log into router" button, so
+/// the case is handed PnP's.
 ///
 /// Both required widgets are here because they are on opposite sides of the page:
 /// [AppCard] is the two option cards and [AppButton] is the two text buttons
 /// beneath them, so a `Column` that lost its tail would still satisfy the first.
 final kPnpNoInternetPageCase = PageSurfaceCase(
   id: 'pnp_no_internet',
-  view: () => const PnpNoInternetView(),
-  overrides: () => pnpOverrides(pnpNoInternetState),
+  view: () => const PnpNoInternetView(ending: pnpTroubleshootingEndingScene),
+  overrides: () =>
+      internetTroubleshootingOverrides(wanPrefill: pnpCurrentWanSettings),
   requires: const [AppCard, AppButton],
   forbids: const [AppLoader],
 );
@@ -776,8 +779,9 @@ final kPnpNoInternetPageCase = PageSurfaceCase(
 /// `page.pnp_pppoe` — the PPPoE form, prefilled and with its VLAN row open.
 ///
 /// This is the page where the fixture changes what is measured rather than whether
-/// anything is. `_prefillFromCurrentSettings` runs in `initState` and reads **only**
-/// `NoInternet.currentWanSettings`; without it every field renders empty, and
+/// anything is. `_prefill` runs in `initState` and reads **only** the run's WAN
+/// prefill (`NoInternet.currentWanSettings` until #1511 P1); without it every
+/// field renders empty, and
 /// `vlanEnabled` is what flips `_showVlan` and adds the VLAN label and field at
 /// all. An unpinned fixture would sweep 234 cells of a shorter form than any real
 /// user sees — the same under-measurement `kDhcpPageCase` warns about with its
@@ -789,7 +793,8 @@ final kPnpNoInternetPageCase = PageSurfaceCase(
 final kPnpPppoePageCase = PageSurfaceCase(
   id: 'pnp_pppoe',
   view: () => const PnpPppoeView(),
-  overrides: () => pnpOverrides(pnpNoInternetState),
+  overrides: () =>
+      internetTroubleshootingOverrides(wanPrefill: pnpCurrentWanSettings),
   requires: const [AppTextField, AppPasswordInput, AppButton],
   forbids: const [AppLoader, PnpIspSavingProgress],
 );
@@ -803,7 +808,8 @@ final kPnpPppoePageCase = PageSurfaceCase(
 final kPnpStaticIpPageCase = PageSurfaceCase(
   id: 'pnp_static_ip',
   view: () => const PnpStaticIpView(),
-  overrides: () => pnpOverrides(pnpNoInternetState),
+  overrides: () =>
+      internetTroubleshootingOverrides(wanPrefill: pnpCurrentWanSettings),
   requires: const [AppIpv4TextField, AppButton],
   forbids: const [AppLoader, PnpIspSavingProgress],
 );
@@ -843,8 +849,9 @@ final kPnpModemLightsOffPageCase = PageSurfaceCase(
 
 /// `page.pnp_waiting_modem` — step 3, at its instruction stage.
 ///
-/// Three stages share this view and the phase picks between them: `NoInternet`
-/// renders the plug-back-in instruction, `ModemRestartCountdown` a
+/// Three stages share this view and the phase picks between them:
+/// `TroubleshootingNoInternet` renders the plug-back-in instruction,
+/// `ModemRestartCountdown` a
 /// [CircularCountdownWidget] and `ModemRestartCheckingInternet` a spinner. Only the
 /// first is a page-shaped tree; the other two are centred fixed-size boxes.
 ///
@@ -856,7 +863,7 @@ final kPnpModemLightsOffPageCase = PageSurfaceCase(
 final kPnpWaitingModemPageCase = PageSurfaceCase(
   id: 'pnp_waiting_modem',
   view: () => const PnpWaitingModemView(),
-  overrides: () => pnpOverrides(pnpNoInternetState),
+  overrides: () => internetTroubleshootingOverrides(),
   requires: const [AppButton],
   forbids: const [AppLoader, CircularCountdownWidget],
 );
@@ -2901,7 +2908,7 @@ final kNotificationHistoryPageCase = PageSurfaceCase(
 // The PnP ready state must show the supported mode controls and Execute action.
 final kAutoIPoEPageCase = PageSurfaceCase(
   id: 'pnp_ipoe',
-  view: () => const PnpIPoEView(),
+  view: () => const PnpIPoEView(ending: pnpTroubleshootingEndingScene),
   overrides: autoIPoEOverrides,
   requires: const [AutoIPoESection, AppDropdown<AutoIPoEMode>, AppButton],
   forbids: const [AppLoader, ServiceErrorView],

@@ -72,6 +72,13 @@ class PnpDemoLauncher extends ConsumerWidget {
     );
   }
 
+  /// The troubleshooting tree's caller, for the three entries into it (#1511 P1).
+  /// Nothing else to set up: the tree has state of its own, which starts on the
+  /// hub's "no internet" and reads the WAN for its forms itself.
+  static const _asPnp = {
+    TroubleshootingCaller.param: TroubleshootingCaller.pnp
+  };
+
   List<_DemoEntry> _buildEntries(BuildContext context, WidgetRef ref) {
     return [
       _DemoEntry(
@@ -123,13 +130,10 @@ class PnpDemoLauncher extends ConsumerWidget {
         icon: Icons.wifi_off,
         title: 'No Internet',
         subtitle: 'Troubleshooter hub',
-        onTap: () {
-          ref.invalidate(pnpProvider);
-          ref.read(pnpProvider.notifier).setDemoPhase(
-                const NoInternet(ssid: 'Linksys-Demo'),
-              );
-          context.go(RoutePath.pnpNoInternetConnection);
-        },
+        onTap: () => context.goNamed(
+          RouteNamed.pnpNoInternetConnection,
+          pathParameters: _asPnp,
+        ),
       ),
       _DemoEntry(
         icon: Icons.power_off,
@@ -137,29 +141,19 @@ class PnpDemoLauncher extends ConsumerWidget {
         // Three-step sequence, not a two-part mapping, so MapsToRow does not
         // fit; U+2013 is covered by every font in the declared set.
         subtitle: 'Unplug – Lights off – Wait',
-        onTap: () {
-          ref.invalidate(pnpProvider);
-          ref.read(pnpProvider.notifier).setDemoPhase(
-                const NoInternet(),
-              );
-          context.go(
-            '${RoutePath.pnpNoInternetConnection}/${RoutePath.pnpUnplugModem}',
-          );
-        },
+        onTap: () => context.goNamed(
+          RouteNamed.pnpUnplugModem,
+          pathParameters: _asPnp,
+        ),
       ),
       _DemoEntry(
         icon: Icons.settings_ethernet,
         title: 'ISP Settings',
         subtitle: 'DHCP / PPPoE / Static IP',
-        onTap: () {
-          ref.invalidate(pnpProvider);
-          ref.read(pnpProvider.notifier).setDemoPhase(
-                const NoInternet(),
-              );
-          context.go(
-            '${RoutePath.pnpNoInternetConnection}/${RoutePath.pnpIspTypeSelection}',
-          );
-        },
+        onTap: () => context.goNamed(
+          RouteNamed.pnpIspTypeSelection,
+          pathParameters: _asPnp,
+        ),
       ),
       _DemoEntry(
         icon: Icons.sync,

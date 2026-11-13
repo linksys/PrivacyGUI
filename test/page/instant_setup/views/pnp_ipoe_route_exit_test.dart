@@ -22,9 +22,6 @@ import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_page_prov
 import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_page_state.dart';
 import 'package:privacy_gui/page/internet_settings/services/auto_ipoe_service.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_ipoe_view.dart';
-import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_notifier.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -100,18 +97,6 @@ class _ExitAuth extends AuthNotifier {
   }
 }
 
-class _ExitPnp extends PnpNotifier {
-  int starts = 0;
-  Future<void> Function()? onStart;
-  @override
-  PnpState build() => PnpState.initial();
-  @override
-  Future<void> startPostLoginFlow() async {
-    starts++;
-    await onStart?.call();
-  }
-}
-
 GoRouter _router() {
   final picker = pnpNoInternetRoute.routes.whereType<GoRoute>().singleWhere(
         (route) => route.name == RouteNamed.pnpIspTypeSelection,
@@ -121,10 +106,13 @@ GoRouter _router() {
         (route) => route.name == RouteNamed.pnpAutoIPoE,
       );
   return GoRouter(
-    initialLocation: '/wan/${RoutePath.pnpAutoIPoE}',
+    // The caller in the path, as in production: the route builds Auto-IPoE with
+    // the ending its `:caller` names (#1511 P1).
+    initialLocation:
+        '/wan/${TroubleshootingCaller.pnp}/${RoutePath.pnpAutoIPoE}',
     routes: [
       GoRoute(
-        path: '/wan',
+        path: '/wan/:${TroubleshootingCaller.param}',
         name: RouteNamed.pnpIspTypeSelection,
         builder: (_, __) => const Text('WAN selection'),
         routes: [ipoe],
@@ -143,8 +131,7 @@ Future<ProviderContainer> _pump(
   WidgetTester tester,
   GoRouter router,
   _ExitData data,
-  _ExitPage page,
-  _ExitPnp pnp, {
+  _ExitPage page, {
   AutoIPoESubmission? submission,
   _ExitAuth? auth,
   AutoIPoEService Function()? serviceFactory,
@@ -169,7 +156,6 @@ Future<ProviderContainer> _pump(
         return serviceFactory?.call() ?? _ExitService();
       }),
       autoIPoESubmissionProvider.overrideWith((ref) => submission),
-      pnpProvider.overrideWith(() => pnp),
     ],
     child: MaterialApp.router(
       theme: AppTheme.create(brightness: Brightness.light),
@@ -211,11 +197,10 @@ void _pnpTests() {
       final data = _ExitData(snapshot);
       final page = _ExitPage(snapshot, dirty: true);
       final auth = _ExitAuth();
-      final pnp = _ExitPnp();
       final router = _router();
       addTearDown(router.dispose);
       const submission = AutoIPoESubmission(AutoIPoETestData.id, reset: false);
-      final container = await _pump(tester, router, data, page, pnp,
+      final container = await _pump(tester, router, data, page,
           submission: submission, auth: auth);
       data.fail(error);
       for (var i = 0; i < 8; i++) {
@@ -227,7 +212,7 @@ void _pnpTests() {
       if (isSessionError) expect(auth.cause, EndCause.sessionLost);
       expect(data.exits, 0);
       expect(page.saves, 0);
-      expect(pnp.starts, 0);
+      expect(find.text('Next setup step'), findsNothing);
       expect(container.read(autoIPoESubmissionProvider), submission);
       expect((await SharedPreferences.getInstance()).getString(savedKey),
           savedRequest);
@@ -245,7 +230,7 @@ void _pnpTests() {
     final auth = _ExitAuth();
     final router = _router();
     addTearDown(router.dispose);
-    final container = await _pump(tester, router, data, page, _ExitPnp(),
+    final container = await _pump(tester, router, data, page,
         auth: auth,
         submission:
             const AutoIPoESubmission(AutoIPoETestData.id, reset: false));
@@ -280,7 +265,7 @@ void _pnpTests() {
         if (generationChanged) throw const NotAuthenticatedError();
       });
       addTearDown(router.dispose);
-      final container = await _pump(tester, router, data, page, _ExitPnp(),
+      final container = await _pump(tester, router, data, page,
           auth: auth, serviceFactory: rebind ? () => service : null);
       final completed = Completer<void>();
       page.onSave = () => completed.future;
@@ -325,7 +310,7 @@ void _pnpTests() {
       if (generationChanged) throw const NotAuthenticatedError();
     });
     addTearDown(router.dispose);
-    await _pump(tester, router, data, page, _ExitPnp(),
+    await _pump(tester, router, data, page,
         auth: auth, serviceFactory: () => service);
     generationChanged = true;
     data.fail(const NotAuthenticatedError());
@@ -344,10 +329,9 @@ void _pnpTests() {
     final data = _ExitData(snapshot);
     final page = _ExitPage(snapshot, dirty: true);
     final auth = _ExitAuth();
-    final pnp = _ExitPnp();
     final router = _router();
     addTearDown(router.dispose);
-    final container = await _pump(tester, router, data, page, pnp, auth: auth);
+    final container = await _pump(tester, router, data, page, auth: auth);
     page.onSave = () async {
       container.read(autoIPoESubmissionProvider.notifier).state =
           const AutoIPoESubmission(AutoIPoETestData.id, reset: false);
@@ -363,7 +347,7 @@ void _pnpTests() {
     expect(auth.logouts, 1);
     expect(page.saves, 1);
     expect(data.exits, 0);
-    expect(pnp.starts, 0);
+    expect(find.text('Next setup step'), findsNothing);
     expect(container.read(autoIPoESubmissionProvider)?.requestId,
         AutoIPoETestData.id);
     expect(find.byType(AlertDialog), findsNothing);
@@ -375,14 +359,13 @@ void _pnpTests() {
     final snapshot = AutoIPoETestData.snapshot();
     final data = _ExitData(snapshot);
     final page = _ExitPage(snapshot, dirty: true);
-    final pnp = _ExitPnp();
     final auth = _ExitAuth();
     final service = _ExitService();
     final capabilities = StateProvider<DeviceCapabilities>(
         (_) => DeviceCapabilities({DeviceCapability.autoIPoE}));
     final router = _router();
     addTearDown(router.dispose);
-    final container = await _pump(tester, router, data, page, pnp,
+    final container = await _pump(tester, router, data, page,
         auth: auth, capabilities: capabilities, serviceFactory: () => service);
     final execute = tester
         .widget<AppButton>(find.byWidgetPredicate((widget) =>
@@ -405,7 +388,7 @@ void _pnpTests() {
         findsNothing);
     expect(auth.logouts, 0);
     expect(page.saves, 0);
-    expect(pnp.starts, 0);
+    expect(find.text('Next setup step'), findsNothing);
     expect(tester.takeException(), isNull);
 
     await tester.tap(find.byKey(const ValueKey('auto-ipoe-pnp-back')));
@@ -417,70 +400,60 @@ void _pnpTests() {
     expect(data.exits, 0);
     expect(page.saves, 0);
     expect(auth.logouts, 0);
-    expect(pnp.starts, 0);
+    expect(find.text('Next setup step'), findsNothing);
     verifyZeroInteractions(service);
     expect(tester.takeException(), isNull);
   });
 
-  for (final stage in ['apply', 'continue']) {
-    testWidgets('capability withdrawal stops late $stage completion',
-        (tester) async {
-      final continuing = stage == 'continue';
-      final snapshot = AutoIPoETestData.snapshot(
-          requestId: continuing ? AutoIPoETestData.id : null,
-          exitCode: continuing ? 0 : null,
-          verified: continuing);
-      final data = _ExitData(snapshot);
-      final page = _ExitPage(snapshot, dirty: !continuing);
-      final pnp = _ExitPnp();
-      final done = Completer<void>();
-      final capabilities = StateProvider<DeviceCapabilities>(
-          (_) => DeviceCapabilities({DeviceCapability.autoIPoE}));
-      final router = _router();
-      addTearDown(router.dispose);
-      final container = await _pump(tester, router, data, page, pnp,
-          capabilities: capabilities,
-          submission: continuing
-              ? const AutoIPoESubmission(AutoIPoETestData.id, reset: false)
-              : null);
-      if (continuing) {
-        pnp.onStart = () => done.future;
-      } else {
-        page.onSave = () async {
-          container.read(autoIPoESubmissionProvider.notifier).state =
-              const AutoIPoESubmission(AutoIPoETestData.id, reset: false);
-          await done.future;
-          final completed = AutoIPoETestData.snapshot(
-              requestId: AutoIPoETestData.id, exitCode: 0, verified: true);
-          data.publish(completed);
-          page.publish(completed);
-        };
-      }
-      final execute = find.byWidgetPredicate((widget) =>
-          widget is AppButton && widget.identifier == 'auto-ipoe-pnp-continue');
-      tester.widget<AppButton>(execute).onTap!();
-      await tester.pump();
+  // There was a second stage here, `continue`: "continue" used to await PnP's
+  // `startPostLoginFlow()` before leaving, and a capability withdrawn during
+  // that wait had to stop the late navigation. #1511 P1 removed the wait —
+  // "continue" now goes straight to the caller's ending — so the window that
+  // case raced no longer exists.
+  testWidgets('capability withdrawal stops late apply completion',
+      (tester) async {
+    final snapshot = AutoIPoETestData.snapshot();
+    final data = _ExitData(snapshot);
+    final page = _ExitPage(snapshot, dirty: true);
+    final done = Completer<void>();
+    final capabilities = StateProvider<DeviceCapabilities>(
+        (_) => DeviceCapabilities({DeviceCapability.autoIPoE}));
+    final router = _router();
+    addTearDown(router.dispose);
+    final container =
+        await _pump(tester, router, data, page, capabilities: capabilities);
+    page.onSave = () async {
+      container.read(autoIPoESubmissionProvider.notifier).state =
+          const AutoIPoESubmission(AutoIPoETestData.id, reset: false);
+      await done.future;
+      final completed = AutoIPoETestData.snapshot(
+          requestId: AutoIPoETestData.id, exitCode: 0, verified: true);
+      data.publish(completed);
+      page.publish(completed);
+    };
+    final execute = find.byWidgetPredicate((widget) =>
+        widget is AppButton && widget.identifier == 'auto-ipoe-pnp-continue');
+    tester.widget<AppButton>(execute).onTap!();
+    await tester.pump();
 
-      container.read(capabilities.notifier).state = DeviceCapabilities.empty;
-      done.complete();
-      for (var i = 0; i < 5; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+    container.read(capabilities.notifier).state = DeviceCapabilities.empty;
+    done.complete();
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
 
-      expect(find.byType(PnpIPoEView), findsOneWidget);
-      expect(find.text('Next setup step'), findsNothing);
-      expect(page.saves, continuing ? 0 : 1);
-      expect(pnp.starts, continuing ? 1 : 0);
-      expect(data.exits, 0);
-      expect(tester.takeException(), isNull);
+    expect(find.byType(PnpIPoEView), findsOneWidget);
+    expect(find.text('Next setup step'), findsNothing);
+    expect(page.saves, 1);
+    expect(data.exits, 0);
+    expect(tester.takeException(), isNull);
 
-      await tester.tap(find.byKey(const ValueKey('auto-ipoe-pnp-back')));
-      await tester.pumpAndSettle();
-      expect(find.text('WAN selection'), findsOneWidget);
-      expect(data.exits, 0);
-      expect(tester.takeException(), isNull);
-    });
-  }
+    await tester.tap(find.byKey(const ValueKey('auto-ipoe-pnp-back')));
+    await tester.pumpAndSettle();
+    expect(find.text('WAN selection'), findsOneWidget);
+    expect(data.exits, 0);
+    expect(tester.takeException(), isNull);
+  });
 
   for (final fails in [false, true]) {
     testWidgets(
@@ -499,7 +472,6 @@ void _pnpTests() {
         router,
         data,
         page,
-        _ExitPnp(),
         submission: const AutoIPoESubmission(AutoIPoETestData.id, reset: false),
       );
       final guard = container.read(autoIPoEPnpExitGuardProvider);
@@ -521,7 +493,8 @@ void _pnpTests() {
         // The exit guard and the Navigator transition finish asynchronously.
         // Wait for both instead of counting frames of the outgoing page.
         await tester.pumpAndSettle();
-        expect(router.routerDelegate.currentConfiguration.uri.path, '/wan');
+        expect(router.routerDelegate.currentConfiguration.uri.path,
+            '/wan/${TroubleshootingCaller.pnp}');
       }
       expect(find.byType(PnpIPoEView), fails ? findsOneWidget : findsNothing);
       expect(data.exits, 1);
@@ -536,10 +509,9 @@ void _pnpTests() {
     final initial = AutoIPoETestData.snapshot();
     final data = _ExitData(initial);
     final page = _ExitPage(initial, dirty: true);
-    final pnp = _ExitPnp();
     final router = _router();
     addTearDown(router.dispose);
-    final container = await _pump(tester, router, data, page, pnp);
+    final container = await _pump(tester, router, data, page);
     final guard = container.read(autoIPoEPnpExitGuardProvider);
     page.onSave = () async {
       container.read(autoIPoESubmissionProvider.notifier).state =
@@ -564,7 +536,6 @@ void _pnpTests() {
     expect(find.text('Next setup step'), findsOneWidget);
     expect(find.byType(AlertDialog), findsNothing);
     expect(page.saves, 1);
-    expect(pnp.starts, 1);
     expect(data.exits, 0);
     expect(guard.onExit, isNull);
     expect(tester.takeException(), isNull);

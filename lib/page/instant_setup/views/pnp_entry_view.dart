@@ -42,7 +42,14 @@ class _PnpEntryViewState extends ConsumerState<PnpEntryView> {
         context.goNamed(RouteNamed.pnpConfig);
       }
       if (next.phase is NoInternet) {
-        context.go(RoutePath.pnpNoInternetConnection);
+        // Hand off to the troubleshooting flow as its PnP caller, whose ending
+        // brings the user back here once the internet is (#1511 P1).
+        context.goNamed(
+          RouteNamed.pnpNoInternetConnection,
+          pathParameters: {
+            TroubleshootingCaller.param: TroubleshootingCaller.pnp,
+          },
+        );
       }
     });
 

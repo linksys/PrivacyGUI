@@ -13,14 +13,11 @@ import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
-import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
-import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
-import 'package:privacy_gui/page/internet_settings/services/usp_internet_settings_service.dart';
 
 /// PnP state machine notifier.
 ///
@@ -73,15 +70,9 @@ class PnpNotifier extends Notifier<PnpState> {
         state = state.copyWith(phase: const AdminInternetConnected());
         await _initWizard();
       } else {
-        final results = await Future.wait([
-          _svc.fetchCurrentSsid(),
-          _fetchCurrentWanSettings(),
-        ]);
-        final ssid = results[0] as String?;
-        final wanSettings = results[1] as UspInternetSettingsForm?;
-        state = state.copyWith(
-          phase: NoInternet(ssid: ssid, currentWanSettings: wanSettings),
-        );
+        // Hand off. The troubleshooting flow reads the WAN for its own forms.
+        final ssid = await _svc.fetchCurrentSsid();
+        state = state.copyWith(phase: NoInternet(ssid: ssid));
       }
     } on ServiceError catch (e) {
       // The WAN read threw — we could NOT determine the WAN state (router
@@ -95,17 +86,6 @@ class PnpNotifier extends Notifier<PnpState> {
     } catch (e) {
       logger.e('[PnP] Internet check unexpected error: $e');
       state = state.copyWith(phase: AdminReadFailure(detail: '$e'));
-    }
-  }
-
-  Future<UspInternetSettingsForm?> _fetchCurrentWanSettings() async {
-    try {
-      final service = UspInternetSettingsService(_svc.usp);
-      final result = await service.fetchSettings();
-      return result.form;
-    } catch (e) {
-      logger.w('[PnP] Failed to fetch WAN settings for prefill: $e');
-      return null;
     }
   }
 
@@ -455,9 +435,10 @@ class PnpNotifier extends Notifier<PnpState> {
   /// After the router is reachable again, because the acknowledge is a USP
   /// OPERATE and would otherwise be sent into the WiFi restart.
   ///
-  /// NOTE: the same acknowledge + saveSelectedNetwork pair lives in
-  /// bypassToDashboard(), but there errors are swallowed; here they propagate
-  /// to the caller so the user stays on the form to retry.
+  /// NOTE: the same acknowledge + saveSelectedNetwork pair lives in PnP's
+  /// troubleshooting ending (`pnp_troubleshooting_ending.dart`), but there errors
+  /// are swallowed; here they propagate to the caller so the user stays on the
+  /// form to retry.
   Future<void> _acknowledgeSetup() async {
     logger
         .d('[PnP] Saving setup completion, serialNumber=${state.serialNumber}');
@@ -774,154 +755,6 @@ class PnpNotifier extends Notifier<PnpState> {
           'showing the WiFi credentials anyway');
     } finally {
       sub.close();
-    }
-  }
-
-  // ─── No Internet Flow ───────────────────────────────────
-
-  /// Retry internet check after modem restart flow.
-  Future<void> retryInternetCheck() async {
-    state = state.copyWith(phase: const AdminCheckingInternet());
-    await _checkInternet();
-  }
-
-  /// Bypass the no-internet page and let the user into the dashboard.
-  ///
-  /// Ports the dev-1.3.0 "Log into router" escape hatch. Unlike 1.3.0 — which
-  /// routed into a trimmed-down setup wizard — the USP flow goes straight to the
-  /// dashboard (the USP wizard is phase-driven and has no forceLogin branch, and
-  /// the dashboard does not depend on internet being up).
-  ///
-  /// We acknowledge PnP completion here so a later redirect through `/` does not
-  /// bounce the user back into PnP (`router_provider._prepare` re-checks
-  /// `needsPnp`; without acknowledging, a full-page reload would kick them out
-  /// again). This mirrors 1.3.0, where a configured router's save already sends
-  /// `SetUserAcknowledgedAutoConfig`. Acknowledge is fire-and-forget and does not
-  /// need WAN, so it succeeds while the router is offline.
-  ///
-  /// The caller performs the actual navigation once this completes.
-  ///
-  /// This never throws: an escape hatch must always let the user through. A
-  /// failed acknowledge / save is logged and swallowed — at worst the router
-  /// stays un-acknowledged and PnP is re-offered on the next `/` redirect, which
-  /// is strictly better than trapping the user on the no-internet page.
-  Future<void> bypassToDashboard() async {
-    final sn = state.serialNumber;
-    if (sn == null || sn.isEmpty) {
-      logger
-          .w('[PnP] bypassToDashboard: no serial number, skipping acknowledge');
-      return;
-    }
-    try {
-      // Same acknowledge + saveSelectedNetwork pair as saveChanges(), but the
-      // error handling is intentionally the opposite: saveChanges() lets errors
-      // propagate (a failed WiFi save should keep the user on the form to
-      // retry), whereas here we swallow them (an escape hatch must never block
-      // navigation). Keep the two in sync when changing this pair.
-      await ref.read(pnpStatusServiceProvider).acknowledge(sn);
-      // Persist selected network for session management, matching saveChanges().
-      await ref.read(sessionProvider.notifier).saveSelectedNetwork(sn, '');
-      logger.i('[PnP] bypassToDashboard: acknowledged, entering dashboard');
-    } catch (e) {
-      // Do not block navigation — see method doc.
-      logger
-          .w('[PnP] bypassToDashboard: acknowledge/save failed (ignored): $e');
-    }
-  }
-
-  // ─── Modem Restart Flow ───────────────────────────────────
-
-  /// Start the modem restart countdown (150s).
-  /// Called when user confirms they plugged the modem back in.
-  Future<void> startModemRestartCountdown() async {
-    const total = 150;
-    for (int s = total; s >= 0; s--) {
-      // Check if user navigated away (phase changed externally)
-      if (state.phase is! ModemRestartCountdown &&
-          state.phase is! NoInternet &&
-          s < total) {
-        return;
-      }
-      state = state.copyWith(
-        phase: ModemRestartCountdown(remainingSeconds: s, totalSeconds: total),
-      );
-      if (s > 0) await Future.delayed(const Duration(seconds: 1));
-    }
-    await _modemRestartCheckInternet();
-  }
-
-  /// Poll internet after modem restart (up to 30 attempts, 5s apart).
-  ///
-  /// A failed read during the poll is expected (the router may be rebooting with
-  /// the modem), so it only moves on to the next attempt. What decides the final
-  /// page is the LAST attempt, the same split [_checkInternet] makes: a router
-  /// that answered "no internet" lands on [NoInternet], a router that could not
-  /// be read lands on [AdminReadFailure] (#1098).
-  Future<void> _modemRestartCheckInternet() async {
-    const maxAttempts = 30;
-    Object? lastReadFailure;
-    for (int i = 1; i <= maxAttempts; i++) {
-      state = state.copyWith(
-        phase: ModemRestartCheckingInternet(
-          attemptCount: i,
-          maxAttempts: maxAttempts,
-        ),
-      );
-      await Future.delayed(const Duration(seconds: 5));
-      try {
-        final hasInternet = await _svc.checkInternetConnected();
-        lastReadFailure = null;
-        if (hasInternet) {
-          state = state.copyWith(phase: const AdminInternetConnected());
-          await _initWizard();
-          return;
-        }
-      } catch (e) {
-        lastReadFailure = e;
-      }
-    }
-    final failure = lastReadFailure;
-    if (failure != null) {
-      logger.e('[PnP] Modem restart check read failure: $failure');
-      state = state.copyWith(
-        phase: AdminReadFailure(
-          code: failure is ServiceError ? failure.code : null,
-          detail: '$failure',
-        ),
-      );
-      return;
-    }
-    state = state.copyWith(phase: const NoInternet());
-  }
-
-  // ─── ISP Save with Progress ───────────────────────────────
-
-  /// Save ISP settings with multi-step progress indication.
-  Future<void> saveIspWithProgress(PnpIspConfig config) async {
-    try {
-      state = state.copyWith(
-        phase: const IspSaving(step: IspSaveStep.saving),
-      );
-      await ref.read(uspMutationLockProvider).withLock(() async {
-        await _svc.saveIspSettings(config);
-      });
-
-      state = state.copyWith(
-        phase: const IspSaving(step: IspSaveStep.checkingSettings),
-      );
-      await Future.delayed(const Duration(seconds: 3));
-
-      state = state.copyWith(
-        phase: const IspSaving(step: IspSaveStep.checkingInternet),
-      );
-      await Future.delayed(const Duration(seconds: 5));
-      await _checkInternet();
-    } catch (e) {
-      logger.e('[PnP] ISP save failed: $e');
-      state = state.copyWith(
-        phase: const NoInternet(),
-        errorMessage: '$e',
-      );
     }
   }
 

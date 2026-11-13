@@ -855,12 +855,15 @@ void main() {
         unpinned,
         const ['pnp_isp_settings', 'pnp_unplug_modem', 'pnp_modem_lights_off'],
         reason:
-            'these three read no `pnpProvider` state on the path this sweep '
-            'measures — the ISP hub watches it only while `_dhcpSaving`, and the '
-            'two modem-restart steps are plain StatelessWidgets. Any *other* page '
-            'appearing here is a phase that stopped being pinned, and the page it '
-            'then renders is whatever `PnpState.initial()` selects: '
-            '`AdminCheckingInternet`, which is a spinner on most of this flow.',
+            'these three read no flow state on the path this sweep measures — '
+            'the ISP hub watches the troubleshooting run only while '
+            '`_dhcpSaving`, and the two modem-restart steps are plain '
+            'StatelessWidgets. Any *other* page appearing here is a phase that '
+            'stopped being pinned: on the entry and the wizard, the page then '
+            'renders whatever `PnpState.initial()` selects, '
+            '`AdminCheckingInternet`, a spinner; on the troubleshooting pages '
+            '(since #1511 P1 pinned through `internetTroubleshootingOverrides`), '
+            'the real run reaches a USP service the fixture does not have.',
       );
       expect(pinned, hasLength(6));
     });
