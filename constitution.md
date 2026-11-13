@@ -36,7 +36,7 @@ Where this document and another document in the repository disagree, this one wi
 
 ### 1.1 Layers
 
-Dependencies point down.
+Code sits in three layers. Article I checks two directions between them: a presentation file does not use the data layer (1.2), and `lib/core/` does not import `lib/page/` (1.3). Other dependencies are not rules. In particular, 11 files in `lib/core/` import `lib/providers/`, mostly for login and connectivity state; `RouterRepository` reads `authProvider`, for one.
 
 ```
 Presentation   lib/page/**, outside the directories named below
@@ -51,9 +51,13 @@ Core           lib/core/
                  lib/core/jnap/command/                        JNAP commands
                  lib/core/http/                                HTTP clients
                  lib/core/cloud/linksys_cloud_repository.dart  cloudRepositoryProvider
+                 lib/core/cloud/linksys_device_cloud_service.dart  deviceCloudServiceProvider
 ```
 
-A **presentation file** is any Dart file under `lib/page/` that is not inside a directory named `providers`, `service`, `services`, `data`, `models` or `model`.
+A **presentation file** is any Dart file under `lib/page/` that either:
+
+- is not inside a directory named `providers`, `service`, `services`, `data`, `models` or `model`; or
+- builds UI wherever it sits: it declares a class that extends `StatelessWidget`, `StatefulWidget`, `ConsumerWidget`, `ConsumerStatefulWidget`, `State` or `ConsumerState`, or it uses `WidgetRef`. The PnP steps in `lib/page/instant_setup/model/` and `lib/page/health_check/providers/speed_test_display.dart` are presentation files for this reason.
 
 The rest of `lib/` is outside these layers, and the test in 1.5 does not check it: `lib/route/`, `lib/util/`, `lib/constants/`, `app.dart` and the other top-level files. For example, `RouterNotifier` in `lib/route/router_provider.dart` sends `getDeviceInfo` through `RouterRepository` in `_prepareLocal`.
 
@@ -61,8 +65,8 @@ The rest of `lib/` is outside these layers, and the test in 1.5 does not check i
 
 A presentation file does not:
 
-- import `lib/core/jnap/router_repository.dart`, any file under `lib/core/jnap/command/`, any file under `lib/core/http/`, or `lib/core/cloud/linksys_cloud_repository.dart`;
-- read `routerRepositoryProvider` or `cloudRepositoryProvider`.
+- import `lib/core/jnap/router_repository.dart`, any file under `lib/core/jnap/command/`, any file under `lib/core/http/`, `lib/core/cloud/linksys_cloud_repository.dart` or `lib/core/cloud/linksys_device_cloud_service.dart`;
+- read `routerRepositoryProvider`, `cloudRepositoryProvider` or `deviceCloudServiceProvider`.
 
 A view that needs the router calls a method on its feature's notifier, and the notifier calls `RouterRepository`. Relative imports count the same as `package:` imports.
 
@@ -109,7 +113,7 @@ The test cannot tell a new row from an old one: a PR that adds a violation and i
 
 A row covers a dependency, not each use of it. A listed file can add more calls through a provider it already reads, and the test stays green; review catches that.
 
-The test reads source text; it does not parse Dart. A provider name in a string, or in a comment that follows code on the same line, counts as a read. Reword or remove it rather than adding a row.
+The test parses each file with `package:analyzer`. It reads imports and exports, conditional URIs included, as Dart does, and a name in a string or a comment is not a read.
 
 ---
 
@@ -120,6 +124,8 @@ The test reads source text; it does not parse Dart. A provider name in a string,
 JNAP calls go through `RouterRepository`: `send`, `transaction` and `scheduledCommand`. Nothing else builds a JNAP request or posts to the router.
 
 Exception: `manualFirmwareUpdate` in `lib/core/jnap/providers/firmware_update_provider.dart` uploads the firmware file itself. It posts `X-JNAP-Action: updatefirmware` with the admin credential to `https://<local IP>/jcgi/` through `LinksysHttpClient`, as a multipart upload. Since `RouterRepository`'s access check never sees that request, the method calls `enforceAccess` itself.
+
+Exception: `HttpAiSessionService` in `lib/core/ai_session/ai_session_service.dart` posts JSON, including the admin password on login, to `/cgi-bin/ai-session.cgi` on the app's origin, which is the router when the router serves the app. It does this through its own `http.Client`, and it does not call `enforceAccess`.
 
 **Enforced by**: Review. Article I keeps presentation files away from `RouterRepository`, but no test checks how application code reaches the router.
 
@@ -133,7 +139,7 @@ Whether an action needs the admin credential is decided by the `[noauth]` attrib
 The `auth:` parameter of `send`, `scheduledCommand` and `JNAPTransactionBuilder` defaults to `false`. A call site with no `auth:` is therefore no evidence that the action needs no credential. Check the spec, not the neighbouring call sites:
 
 ```bash
-gh api repos/linksys/JNAP/contents/openwrt-jnap/src/spec/core.hsl --jq .content | base64 -d | grep -n noauth
+gh api "repos/linksys/JNAP/contents/openwrt-jnap/src/spec/core.hsl?ref=<pinned commit>" --jq .content | base64 -d | grep -n noauth
 ```
 
 Read the spec at the JNAP commit the firmware pins, not at `main`. An action can be `[noauth]` on the pinned commit and absent from `main`; `GetAutoMasterStatus` was, in 2026-08.
@@ -146,13 +152,16 @@ A missing `auth: true` is easy to miss when testing on a router. Only the `behin
 
 ## Article III: Testing
 
-### 3.1 Tests run through `run_tests.sh`
+### 3.1 Test runs leave out `golden` and `loc`
 
-`./run_tests.sh <reportDir>` runs the suite with `--exclude-tags="golden||loc"` and writes `tests.json` and an HTML report into `<reportDir>`. Run tests only this way, also when you are checking a single file: read that file's results from `tests.json` instead of running `flutter test <file>`.
+`golden` and `loc` tests compare each screen with a golden image, and the repository keeps none: `test/**/goldens/*` is gitignored. In a test run they can only fail. `run_generate_loc_snapshots.sh` runs them with `--update-goldens` to write the images (see `docs/screenshot_testing_guide.md`); that is screenshot generation, not a pass/fail run.
 
-`golden` and `loc` tests compare pixels, and pixels depend on the machine's fonts and renderer, so they never run as part of a test run on a dev machine. `run_generate_loc_snapshots.sh` produces screenshots with `--update-goldens` (see `docs/screenshot_testing_guide.md`). That is screenshot generation, not a pass/fail run.
+So every test run passes `--exclude-tags="golden||loc"`:
 
-**Enforced by**: Review. CI runs the same script once #1802 P1 lands.
+- `./run_tests.sh <reportDir>` runs the whole suite that way and writes `tests.json` and an HTML report into `<reportDir>`. Run it before you push.
+- While you work, `flutter test <file or directory> --exclude-tags="golden||loc"` is fine, with any `--dart-define` the file needs.
+
+**Enforced by**: Test for `run_tests.sh`: `test/constitution/run_tests_script_test.dart` fails if the script stops excluding the tags. Review for other runs. CI runs the script once #1802 P1 lands.
 
 ### 3.2 Provider and model changes ship unit tests
 
@@ -176,9 +185,9 @@ The overflow sweep cannot see this: adding `maxLines: 1` turns every overflowing
 
 ### 3.5 Screenshot tests
 
-A page's screenshot test is a `testLocalizations` case, from `test/common/test_responsive_widget.dart`:
+A page's screenshot test is a `testLocalizations` case, from `test/common/test_responsive_widget.dart`. These rules cover `test/`, the directory `flutter test` runs:
 
-- `testLocalizations` tags the case `loc`, so `run_tests.sh` skips it (3.1). No other file makes a golden check, with `matchesGoldenFile` or with `golden_toolkit`'s `screenMatchesGolden` and `multiScreenGolden`. A golden check in a plain `testWidgets` would run in the unit suite.
+- `testLocalizations` tags the case `loc`, so test runs leave it out (3.1). No code outside the body of `testLocalizations` makes a golden check, with `matchesGoldenFile` or with `golden_toolkit`'s `screenMatchesGolden` and `multiScreenGolden`. A golden check in a plain `testWidgets` would run in the unit suite.
 - The case lives in a `localizations/` directory beside the feature's other tests, such as `test/page/dashboard/localizations/dashboard_home_view_test.dart`.
 - The case replaces the page's providers with `overrideWith`, using the mocks in `test/mocks/` (3.6) and the data in `test/test_data/`.
 
@@ -190,7 +199,7 @@ A page's screenshot test is a `testLocalizations` case, from `test/common/test_r
 | `test/page/components/pwa/install_prompt_banner_test.dart` | `testLocalizations` |
 <!-- screenshot-exceptions:end -->
 
-**Enforced by**: Test, for the first point and for the `localizations/` directory in the second. `test/constitution/screenshot_placement_test.dart` fails when a file other than the helper makes a golden check, or when a file outside a `localizations/` directory calls `testLocalizations`, and the table above has no row for it. It also fails when a row no longer matches. Review for where the `localizations/` directory sits, and for the third point.
+**Enforced by**: Test, for the first point and for the `localizations/` directory in the second. `test/constitution/screenshot_placement_test.dart` fails when code outside the body of `testLocalizations` makes a golden check, or when a file outside a `localizations/` directory calls `testLocalizations`, and the table above has no row for it. It also fails when a row no longer matches. Review for where the `localizations/` directory sits, and for the third point.
 
 ### 3.6 Mocks
 
@@ -213,6 +222,13 @@ A page's screenshot test is a `testLocalizations` case, from `test/common/test_r
   The same applies to `AsyncNotifier` and `AutoDisposeNotifier`. Any other mock keeps the generated class line.
 - When a mocked class gains or changes a method, rerun `build_runner` and copy the mock again. A copy that predates the method returns null from it.
 - A mock is `Mock[ClassName]`.
+
+Exceptions:
+
+- These five extend the real notifier and mix in `Mock`, so that a test can fix part of its behaviour: `MockSimpleAuthNotifier` in `test/mocks/mock_auth_notifier.dart`; `SearchingMockAddNodesNotifier` and `OnboardingMockAddNodesNotifier` in `test/page/nodes/views/localizations/add_nodes_view_test.dart`; `SimpleAddWiredNodesNotifier` in `test/page/instant_topology/localizations/add_wired_node_view_test.dart`; and `MockHealthCheckSuccessProvider` in `test/page/health_check/views/localizations/speed_test_view_test.dart`. None of the five is named `Mock[ClassName]`.
+- `test/mocks/mockito_specs/vpn_notifier_spec.dart` uses `@GenerateMocks`, not `@GenerateNiceMocks`.
+
+A `Fake`, a hand-written stand-in that extends `Fake` (11 in `test/`), is not a mock under this section.
 
 **Enforced by**: Review.
 
@@ -241,7 +257,7 @@ Exceptions: `PnpTroubleshooterState`, `SelectNetworkState`, `InstantTopologyStat
 ### 5.1 Files
 
 - Dart files are `snake_case.dart`. The analyzer's `file_names` lint reports a breach as an info, which no check fails on.
-- A page is `*_view.dart`. #1802's roster finds pages by this suffix, so a page named otherwise escapes the layout gate.
+- A page is `*_view.dart`. #1802's roster finds pages by this suffix, so a page named otherwise escapes the layout gate. Exceptions, each a page that `lib/route/` builds: `lib/page/vpn/views/vpn_settings_page.dart`, `lib/page/otp_flow/views/otp_add_phone.dart`, `lib/page/otp_flow/views/otp_code_input.dart`, `lib/page/health_check/views/speed_test_external.dart` and `lib/page/health_check/views/speed_test_selection.dart`.
 - A file that defines a notifier provider is `*_provider.dart`. Exceptions: `lib/page/vpn/providers/vpn_notifier.dart`, `lib/page/auto_ipoe/providers/auto_ipoe_notifier.dart`, `lib/core/pwa/pwa_install_service.dart`.
 - A test of one source file is `<source>_test.dart`. A test that splits one source's tests by scenario is `<source>_<scenario>_test.dart`. A test that covers no single source file is named after what it checks, like `architecture_boundary_test.dart`.
 

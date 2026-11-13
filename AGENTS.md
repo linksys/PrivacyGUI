@@ -11,10 +11,10 @@ This is the 1.x line of PrivacyGUI. Its rules, and how each one is enforced, are
 3. `flutter gen-l10n`
 4. `dart run build_runner build --delete-conflicting-outputs`
 
-Rerun steps 3 and 4 after pulling.
+Rerun all four after pulling: a pull can move the `plugins/widgets` pointer or change `pubspec.yaml`.
 
 Use the Flutter version in `.fvmrc`. `run_tests.sh` runs the `flutter` it finds on `PATH`, and a shell alias such as one for fvm does not reach inside the script, so put that version's `bin/` first on `PATH`.
 
 ## Run tests
 
-Run `./run_tests.sh <reportDir>` and read the results in `<reportDir>/tests.json`, including when you only care about one file (constitution 3.1).
+Every test run passes `--exclude-tags="golden||loc"` (constitution 3.1). Run the whole suite with `./run_tests.sh <reportDir>` before you push; while you work, run `flutter test <file or directory> --exclude-tags="golden||loc"`.
