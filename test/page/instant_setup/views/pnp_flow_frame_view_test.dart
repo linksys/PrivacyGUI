@@ -12,12 +12,14 @@
 // also records why the two guards read different predicates); this file measures
 // the half that lives in the page.
 //
-// Deliberately untagged, for the same reason the sibling `pnp_setup_view_test.dart`
+// Since #1511 P4 these screens are drawn by `PnpFlowFrameView`, over the step Save
+// was pressed on; they were `PnpSetupView`'s.
+//
+// Deliberately untagged, for the same reason the sibling `pnp_step_views_test.dart`
 // is: `run_tests.sh` excludes `golden||loc||ui`, so a `ui` tag would keep these out
 // of the set a PR cannot merge past. A wizard that offers a Done button mid-flash
 // sends a user to a dashboard whose router is rebooting.
 
-import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -27,11 +29,15 @@ import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.da
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_install_phase_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_update_warning_note.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
-import 'package:privacy_gui/page/instant_setup/views/pnp_setup_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_flow_frame_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_your_network_step_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../layout_gate/collector.dart';
+import '../../../layout_gate/surface.dart';
+import '../../../util/dashboard/text_readability_probe.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import '../../../layout_gate/families/page_surface_family.dart';
 import '../../../mocks/provider_overrides/mock_firmware_update.dart';
 import '../../../mocks/provider_overrides/mock_pnp.dart';
@@ -51,12 +57,23 @@ void main() {
   /// "no affordances" assertion below for a reason that is not a defect.
   const installing = gatePnpFirmwareInstallingState;
 
+  /// The frame on Your Network — the step Save is pressed on — at [phase], with
+  /// the plan of a router with a guest SSID (#1511 P4). The step is underneath
+  /// every status screen, so "no button to press" below also proves it hidden.
   Widget host(PnpPhase phase, {FirmwareUpdateState firmware = installing}) =>
       pageSurfaceHost(
-        view: const PnpSetupView(),
+        view: const PnpFlowFrameView(
+          stepId: 'network',
+          child: PnpYourNetworkStepView(),
+        ),
         locale: const Locale('en'),
         overrides: [
-          ...pnpOverrides(PnpState(phase: phase, serialNumber: 'SN-TEST')),
+          ...pnpOverrides(PnpState(
+            phase: phase,
+            plan: pnpPlanWithGuest,
+            meshNodes: pnpMeshNodes,
+            serialNumber: 'SN-TEST',
+          )),
           // The firmware phase watches `firmwareUpdateNotifierProvider` and hands
           // the state straight to W5's card, so without this the card renders
           // whatever a real notifier's `build()` returns — and its `loadBanks`
@@ -90,9 +107,8 @@ void main() {
 
   group('#1553 REQ-B0 — the firmware stage is not a step', () {
     testWidgets('the form still has exactly three steps', (tester) async {
-      // The widest configuration the wizard has: main Wi-Fi + guest + a mesh
-      // network. `_buildStepperForm` computes `1 + guest + mesh`, so three is the
-      // maximum, and a firmware step would make it four.
+      // The widest plan the wizard has: main Wi-Fi, guest and Your Network, so
+      // three is the maximum, and a firmware step would make it four.
       await pump(tester, pnpWizardConfiguringState.phase);
 
       final stepper = tester.widget<AppStepper>(find.byType(AppStepper));
@@ -100,7 +116,7 @@ void main() {
           reason:
               'REQ-B0: the firmware update runs after the form is saved, so '
               'it must not appear as a step. A fourth entry here means someone '
-              'added it to `_buildStepperForm` instead of to the phase machine.');
+              'added it to the plan instead of to the phase machine.');
     });
 
     testWidgets('the firmware phase renders no stepper at all', (tester) async {
@@ -201,7 +217,7 @@ void main() {
       await runWithOverflowCollection((_) async {
         enlargeSurface(tester);
         await tester.pumpWidget(pageSurfaceHost(
-          view: const PnpSetupView(),
+          view: const PnpFlowFrameView(stepId: null, child: SizedBox.shrink()),
           locale: const Locale('en'),
           overrides: [
             ...pnpOverrides(
@@ -228,7 +244,7 @@ void main() {
       expect(find.text('MyWiFi'), findsOneWidget);
       expect(find.text('MyPass1234'), findsOneWidget);
 
-      final context = tester.element(find.byType(PnpSetupView));
+      final context = tester.element(find.byType(PnpFlowFrameView));
       await tester.tap(find.widgetWithText(AppButton, loc(context).done));
       // Settled, not a single frame: `go_router` resolves a location through an
       // async parser, so one zero-duration pump does not render the destination even
@@ -237,5 +253,123 @@ void main() {
 
       expect(find.text('DASHBOARD'), findsOneWidget);
     });
+  });
+
+  /// Bounded pump — the frame's spinners never settle.
+  Future<void> settle(WidgetTester tester) async {
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+  }
+
+  testWidgets(
+      'the reconnect screen says the router is restarting, and lays out at '
+      '320px in every locale', (tester) async {
+    // The copy is new (the old line said "connect your devices to your new WiFi"
+    // while that network was not on the air yet), and the reconnect screen is in
+    // no layout-gate case — so this is the only thing that renders it per locale.
+    // 320px is the product floor and overflow is monotonic in width.
+    final overflows = <String>[];
+    for (final locale in AppLocalizations.supportedLocales) {
+      await setLayoutSurface(tester, const Size(320, 1600));
+      final errors = await runWithOverflowCollection((sink) async {
+        await tester.pumpWidget(KeyedSubtree(
+          key: ValueKey(locale.toString()),
+          child: pageSurfaceHost(
+            view:
+                const PnpFlowFrameView(stepId: null, child: SizedBox.shrink()),
+            locale: locale,
+            overrides: pnpOverrides(pnpWizardNeedsReconnectState),
+          ),
+        ));
+        await settle(tester);
+        return sink;
+      });
+      if (errors.isNotEmpty) overflows.add('$locale: $errors');
+
+      final copy = lookupAppLocalizations(locale).pnpReconnectWiFiRestarting;
+      expect(find.text(copy), findsOneWidget, reason: '$locale');
+    }
+
+    expect(overflows, isEmpty, reason: overflows.join('\n'));
+  });
+
+  testWidgets(
+      'neither completion-screen action button clips its label at 320px, in any '
+      'locale', (tester) async {
+    // **The assertion the layout gate structurally cannot make here, and the
+    // second thing #1602's fix needs pinned.** That fix turned the `Print` /
+    // `Done` `Row` into a `Wrap`, which removes the `RenderFlex` overflow the gate
+    // was reading. It does not remove the failure mode: `RenderWrap` hands each
+    // child the line's width as a *constraint*, so a button that wants more room
+    // than the line has does not overflow — it **shrinks, and squeezes its
+    // label**. Green gate, unreadable button.
+    //
+    // A first draft of this test asserted `buttonWidth <= wrap.constraints
+    // .maxWidth` and was **inert**: mutation-checked by wrapping the `Wrap` in a
+    // `SizedBox(width: 100)`, it stayed green, because that inequality is what
+    // `RenderWrap` already guarantees. The oracle has to be the label, not the box.
+    //
+    // Measured 2026-09-21 at 320px, all 26 locales: the line is **174.0px**, the
+    // widest button is `nl` at **146.0px** (`el` 143.1, `fr`/`fr_CA` 136.7), and
+    // every locale's `Wrap` lays out **two runs** (104.0px tall) — so the
+    // degradation really happens rather than the pair merely fitting, and no
+    // label is squeezed: tightest headroom **28.0px**, ~19% of the button.
+    //
+    // 320px is the product floor (`kMinSupportedScreenWidth`) and overflow is
+    // monotonic in width, so one width is the whole claim.
+    final offenders = <String>[];
+    for (final locale in AppLocalizations.supportedLocales) {
+      await setLayoutSurface(tester, const Size(320, 1600));
+      await tester.pumpWidget(KeyedSubtree(
+        // A fresh subtree per locale, the same reason the gate's runner keys its
+        // cell hosts: reused render objects would measure the first locale's
+        // layout 26 times.
+        key: ValueKey(locale.toString()),
+        child: pageSurfaceHost(
+          view: const PnpFlowFrameView(stepId: null, child: SizedBox.shrink()),
+          locale: locale,
+          overrides: pnpOverrides(pnpWizardWifiReadyUnifiedState),
+        ),
+      ));
+      await settle(tester);
+
+      // The unified completion screen builds exactly one `Wrap`. If a second ever
+      // appears this throws rather than silently measuring the wrong one.
+      final buttons = find.descendant(
+          of: find.byType(Wrap), matching: find.byType(AppButton));
+      expect(buttons, findsNWidgets(2),
+          reason: 'the action Wrap should hold Print and Done');
+
+      for (var i = 0; i < 2; i++) {
+        final label =
+            find.descendant(of: buttons.at(i), matching: find.byType(Text));
+        if (label.evaluate().length != 1) continue;
+        final paragraph = tester.paragraphOf(label);
+        final text = paragraph.text.toPlainText();
+        // Both verdicts, in the order rule 4 of the gate skill puts them: neither
+        // subsumes the other. An ellipsis leaves every surviving token fitting, and
+        // a mid-word break drops nothing, so `didExceedMaxLines` stays false.
+        if (tester.isTextClipped(label)) {
+          offenders.add('$locale: "$text" is truncated inside its button — '
+              'granted ${paragraph.size.width.toStringAsFixed(1)}px');
+        } else if (!kLocalesWithoutWordSpaces.contains(locale.toString()) &&
+            tester.hasSplitToken(label)) {
+          offenders.add('$locale: "$text" broke mid-word inside its button — '
+              'granted ${paragraph.size.width.toStringAsFixed(1)}px, widest token '
+              '${tester.widestTokenWidth(label).toStringAsFixed(1)}px');
+        }
+      }
+    }
+
+    expect(
+      offenders,
+      isEmpty,
+      reason:
+          'a `Wrap` constrains its children to the line, so a button with too '
+          'little room squeezes its label instead of overflowing — invisible to '
+          'every one of the 234 cells in page.pnp_setup_complete_unified:\n'
+          '${offenders.join('\n')}',
+    );
   });
 }

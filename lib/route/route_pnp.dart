@@ -5,60 +5,105 @@ final _pnpRouteConfig = LinksysRouteConfig(
   noNaviRail: true,
 );
 
-/// Refuses to leave the setup wizard while the firmware stage owns it (REQ-B2).
+/// Whether the user may leave the setup wizard — `/pnp/pnpConfig`'s `onExit`.
 ///
-/// **This is the whole lock, and the only one.** `PnpSetupView` renders with
-/// `appBarStyle: UiKitAppBarStyle.none`, and `UiKitPageView._buildAppBarConfig()`
-/// returns null for that style before it reaches the one line that consumes
-/// `onBackTap` — so the page's `onBackTap` closure never runs, and a phase check
-/// added there would be dead code. What makes the phase unleavable is this guard
-/// (browser Back and any `go`, both of which consult `onExit`) plus the fact that
-/// `_buildFirmwareUpdate` renders no button at all.
+/// It fires only when the user leaves the **whole** wizard: `pnpConfig` stays
+/// matched while the steps under it change (spike S1). Where the user is going
+/// is the shell's back policy's to judge (`pnpBackPolicy`, which sees the
+/// destination); this guard, which does not, decides by the flow's phase:
 ///
-/// **Two phases, not one.** `WizardUpdatingFirmware` is the flash. The reason
-/// `WizardCheckingFirmware` is here too is a race rather than a screen: a pop
-/// during the check lands on `PnpEntryView`, whose `initState` calls
-/// `startPostLoginFlow()` and overwrites `state.phase` — while `_checkFirmware` is
-/// still awaiting an answer that may be "an update is available", at which point it
-/// writes `WizardUpdatingFirmware` over that flow and dispatches a flash. Two
-/// writers, one phase, and a router being written to with the locked screen never
-/// shown. The window is bounded by `pnpFirmwareCheckDeadlineProvider` (15 s) and
-/// the phase renders a spinner with nothing to press, so what is being refused is
-/// a Back press during a wait the user cannot shorten either way.
+/// - **The firmware stage — locked (REQ-B2).** `WizardUpdatingFirmware` is the
+///   flash. `WizardCheckingFirmware` is here for a race rather than a screen:
+///   leaving during the check would end the flow while `_checkFirmware` may
+///   still be about to dispatch a flash. Keyed on the PnP phase, not on
+///   `firmwareUpdateNotifierProvider.isUpdating` like `_firmwareExitGuard`: an
+///   update the user started on the dashboard before entering setup must not
+///   lock the wizard.
+/// - **In flight — refused** (`WizardSaving`, `WizardSaved`,
+///   `WizardTestingReconnect`): a write or a reconnect is out, and leaving now
+///   would end the flow under it (D7).
+/// - **Editing — leaving the setup is logging out** (#1511 P4; Austin,
+///   2026-11-13). Back from the first step lands here. It asks; on "Log out"
+///   the drafts are reverted — the flow-level dirty guard's revert — and the
+///   user is signed out and sent to the login page.
+/// - **Anything else** — the completion screen's Done above all — leaves, and
+///   then the flow-level dirty guard (`preservableProvider`) asks only if a
+///   draft is still dirty, which after a save that landed none is.
 ///
-/// **No `loggedOut` escape, unlike `_firmwareExitGuard`.** That guard releases on
-/// a sign-out because the router's `redirect` `go`es a signed-out user to the login
-/// page and the leaving match is a `/usp*` one. Nothing does that here, measured
-/// twice: `redirect` returns `state.uri.toString()` for every `/pnp*` location — the
-/// wizard is not auth-gated — and the only wiring of `listenForCoreSessionExit` is
-/// in `usp_dashboard_shell.dart`, so while the wizard is on screen a
-/// core-reported session exit is not even carried out. The same condition written
-/// here would be a check that never fires, which is the mistake this file's
-/// `onBackTap` note already records once.
-///
-/// Keyed on the **PnP phase**, not on `firmwareUpdateNotifierProvider.isUpdating`
-/// like `_firmwareExitGuard` is. The two answer different questions: the firmware
-/// pages ask "is an install running", whereas this asks "is this wizard the thing
-/// running it" — an update the user started on the dashboard before entering setup
-/// must not lock the wizard, and `isUpdating` cannot tell the two apart.
-Future<bool> _pnpFirmwareExitGuard(
+/// **No `loggedOut` escape for the lock**, unlike `_firmwareExitGuard`: the
+/// `/pnp*` redirect passes every location through, and the only wiring of
+/// `listenForCoreSessionExit` is in `usp_dashboard_shell.dart`, so nothing signs
+/// a user out from under the firmware stage. The editing branch has one, for
+/// its own logout's navigation.
+Future<bool> _pnpWizardExitGuard(
     BuildContext context, GoRouterState state) async {
-  final phase = ProviderScope.containerOf(context).read(pnpProvider).phase;
-  return phase is! WizardUpdatingFirmware && phase is! WizardCheckingFirmware;
+  final container = ProviderScope.containerOf(context);
+  switch (container.read(pnpProvider).phase) {
+    case WizardUpdatingFirmware() || WizardCheckingFirmware():
+      return false;
+    case WizardSaving() || WizardSaved() || WizardTestingReconnect():
+      return false;
+    case WizardConfiguring():
+      return _leaveSetupByLoggingOut(context, container);
+    default:
+      return true;
+  }
 }
+
+/// The editing branch of [_pnpWizardExitGuard]: ask, and on "Log out" sign the
+/// user out to the login page.
+///
+/// Always refuses the navigation it was asked about and goes to the login page
+/// itself, after this one has been settled: a `go` started while go_router is
+/// still waiting on this guard would race it. That `go` passes back through
+/// here signed out, which is the one way through.
+Future<bool> _leaveSetupByLoggingOut(
+  BuildContext context,
+  ProviderContainer container,
+) async {
+  if (container.read(authProvider).value?.isLoggedIn != true) return true;
+  final logOut = await showPnpLeaveSetupAlert(context);
+  if (logOut != true) return false;
+  container.read(pnpWizardDraftsProvider).revert();
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    await container
+        .read(authProvider.notifier)
+        .logout(cause: EndCause.userRequested);
+    container.read(routerProvider).go(RoutePath.localLoginPassword);
+  });
+  return false;
+}
+
+/// The shell's `redirect`: the back policy, [pnpBackPolicy], over every
+/// navigation into the `/pnp` tree.
+///
+/// Reads the flow each time, because every destination in the tree needs it —
+/// even the entry, which is closed once Save has been pressed. A read before
+/// the shell watches the flow creates an instance Riverpod may then drop
+/// (spike S3); that is harmless because `PnpNotifier.build()` is side-effect
+/// free.
+String? _pnpShellRedirect(BuildContext context, GoRouterState state) =>
+    pnpBackPolicy(
+      ProviderScope.containerOf(context).read(pnpProvider),
+      state.uri,
+    );
 
 /// One shell over the PnP flow (#1511 P2) — the `/pnp` tree, and only it.
 ///
-/// [PnpFlowShell] owns the flow's phase→page mapping, and a shell's widget is not
-/// rebuilt while the user moves between its children, so it sees every phase
-/// change for as long as the user is in the flow. The no-internet troubleshooting
-/// tree ([pnpNoInternetRoute]) is deliberately outside it: it has state of its own
+/// [PnpFlowShell] owns the flow's phase→page mapping, its lifetime (#1511 P3)
+/// and the frame around its pages — top bar, stepper, status screens (P4) —
+/// and its `redirect` is the back policy. A shell's widget is not rebuilt while
+/// the user moves between its children, so it sees every phase change for as
+/// long as the user is in the flow. The no-internet troubleshooting tree
+/// ([pnpNoInternetRoute]) is deliberately outside it: it has state of its own
 /// and more than one caller (#1511 P1).
 ///
-/// No `navigatorKey`, unlike `uspDashboardRoute`: nothing pushes onto this
-/// navigator from outside, so go_router's own key is enough.
+/// No `navigatorKey`, unlike `uspDashboardRoute`: what is pushed over the
+/// wizard (adding nodes) goes to the root navigator.
 final pnpShellRoute = ShellRoute(
-  builder: (context, state, child) => PnpFlowShell(child: child),
+  redirect: _pnpShellRedirect,
+  builder: (context, state, child) =>
+      PnpFlowShell(location: state.uri, child: child),
   routes: [pnpRoute],
 );
 
@@ -68,21 +113,46 @@ final pnpRoute = LinksysRoute(
   config: _pnpRouteConfig,
   builder: (context, state) => const PnpEntryView(),
   routes: [
+    // The wizard: the steps are its children, so it stays matched while they
+    // change, and its `onExit` fires only when the user leaves the wizard
+    // (spike S1). Its own page is an empty placeholder under the steps — go_router
+    // asserts that a route with `onExit` builds one, and its builder runs again
+    // on every move between steps.
     LinksysRoute(
       name: RouteNamed.pnpConfig,
       path: RoutePath.pnpConfig,
       config: _pnpRouteConfig,
-      builder: (context, state) => const PnpSetupView(),
-      onExit: _pnpFirmwareExitGuard,
+      builder: (context, state) => const SizedBox.shrink(),
+      onExit: _pnpWizardExitGuard,
+      preservableProvider: pnpWizardDraftsProvider,
       routes: [
-        // A child of the wizard, so it is pushed over it and pops back to the
-        // step it was opened from (#1734). Named pnpAddNodes, which
-        // idleCheckWhiteList exempts: a session can outlast the idle window.
+        // The setting steps, from the step list (#1511 P4): a step added there
+        // gets its route here without an edit.
+        for (final page in pnpSettingStepPages)
+          LinksysRoute(
+            name: RouteNamed.pnpStep(page.id),
+            path: page.id,
+            config: _pnpRouteConfig,
+            builder: (context, state) => page.view(),
+          ),
         LinksysRoute(
-          name: RouteNamed.pnpAddNodes,
-          path: RoutePath.pnpAddNodes,
+          name: RouteNamed.pnpStep(PnpFlowPlan.yourNetworkStepId),
+          path: PnpFlowPlan.yourNetworkStepId,
           config: _pnpRouteConfig,
-          builder: (context, state) => const PnpAddNodesView(),
+          builder: (context, state) => const PnpYourNetworkStepView(),
+          routes: [
+            // Pushed over the whole shell, onto the root navigator, and pops
+            // back to Your Network (#1734). Named pnpAddNodes, which
+            // idleCheckWhiteList exempts: a session can outlast the idle
+            // window.
+            LinksysRoute(
+              name: RouteNamed.pnpAddNodes,
+              path: RoutePath.pnpAddNodes,
+              parentNavigatorKey: routerKey,
+              config: _pnpRouteConfig,
+              builder: (context, state) => const PnpAddNodesView(),
+            ),
+          ],
         ),
       ],
     ),

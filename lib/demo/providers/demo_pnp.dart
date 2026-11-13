@@ -1,9 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_settings.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_notifier.dart';
 
-/// The phase the demo launcher asked the next PnP run to start at, or `null`
-/// for a real run from the internet check.
+/// Where the demo launcher asked the next PnP run to start: at the wizard's
+/// steps on [wizard]'s router data, or at [phase].
+class DemoPnpStart {
+  const DemoPnpStart.wizard(PnpWizardData this.wizard) : phase = null;
+  const DemoPnpStart.phase(PnpPhase this.phase) : wizard = null;
+
+  final PnpWizardData? wizard;
+  final PnpPhase? phase;
+}
+
+/// Where the demo launcher asked the next PnP run to start, or `null` for a
+/// real run from the internet check.
 ///
 /// The launcher writes it and then navigates into `/pnp`; the flow reads it
 /// from its own entry (#1511 P3). Before, the launcher set the phase on
@@ -14,18 +25,21 @@ import 'package:privacy_gui/page/instant_setup/providers/pnp_notifier.dart';
 ///
 /// Not `autoDispose`: it has to outlive the launcher page, which is gone by the
 /// time the entry reads it.
-final demoPnpStartPhaseProvider = StateProvider<PnpPhase?>((ref) => null);
+final demoPnpStartProvider = StateProvider<DemoPnpStart?>((ref) => null);
 
-/// The demo's PnP flow: a real [PnpNotifier] whose entry starts at the phase
-/// the launcher picked, if it picked one.
+/// The demo's PnP flow: a real [PnpNotifier] whose entry starts where the
+/// launcher picked, if it picked anywhere.
 ///
 /// Consumed once, so leaving PnP and coming back runs the real flow again.
+/// A start at the steps goes through the same plan and drafts as a real run
+/// (`setDemoWizard`), so the wizard it opens is the real one.
 class DemoPnpNotifier extends PnpNotifier {
   @override
   Future<void> startPostLoginFlow() async {
-    final start = ref.read(demoPnpStartPhaseProvider);
+    final start = ref.read(demoPnpStartProvider);
     if (start == null) return super.startPostLoginFlow();
-    ref.read(demoPnpStartPhaseProvider.notifier).state = null;
-    setDemoPhase(start);
+    ref.read(demoPnpStartProvider.notifier).state = null;
+    if (start.wizard case final router?) setDemoWizard(router);
+    if (start.phase case final phase?) setDemoPhase(phase);
   }
 }

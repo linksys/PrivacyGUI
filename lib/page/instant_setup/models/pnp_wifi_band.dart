@@ -1,9 +1,13 @@
 import 'package:equatable/equatable.dart';
 
-/// Per-band WiFi configuration for PnP wizard (split SSID mode).
+/// One band of a split-SSID network in the PnP wizard.
 ///
-/// Each band (2.4GHz, 5GHz, 6GHz) can have its own SSID/password.
-/// Used when router ships with split SSIDs per band (e.g. Du ISP routers).
+/// Each band (2.4GHz, 5GHz, 6GHz) can have its own SSID/password. Used when
+/// the router ships with split SSIDs per band (e.g. Du ISP routers).
+///
+/// No "original" values of its own since #1511 P4: the band sits inside a
+/// step's draft, and the draft's `Preservable` holds the band as the router
+/// had it — matched by [ssidInstancePath].
 class PnpWifiBand extends Equatable {
   /// Human-readable band name (e.g. "2.4 GHz", "5 GHz", "6 GHz").
   final String bandName;
@@ -11,17 +15,11 @@ class PnpWifiBand extends Equatable {
   /// Operating frequency (e.g. "2.4GHz", "5GHz", "6GHz") for display/sorting.
   final String frequency;
 
-  /// Current SSID value (editable).
+  /// SSID (editable).
   final String ssid;
 
-  /// Current password value (editable).
+  /// Password (editable).
   final String password;
-
-  /// Original SSID from router (for dirty detection).
-  final String originalSsid;
-
-  /// Original password from router (for dirty detection).
-  final String originalPassword;
 
   /// TR-181 instance path for WiFi.SSID object.
   final String ssidInstancePath;
@@ -37,16 +35,10 @@ class PnpWifiBand extends Equatable {
     required this.frequency,
     required this.ssid,
     required this.password,
-    required this.originalSsid,
-    required this.originalPassword,
     required this.ssidInstancePath,
     required this.accessPointInstancePath,
     required this.radioPath,
   });
-
-  bool get isSsidChanged => ssid != originalSsid;
-  bool get isPasswordChanged => password != originalPassword;
-  bool get isDirty => isSsidChanged || isPasswordChanged;
 
   PnpWifiBand copyWith({
     String? ssid,
@@ -57,8 +49,6 @@ class PnpWifiBand extends Equatable {
       frequency: frequency,
       ssid: ssid ?? this.ssid,
       password: password ?? this.password,
-      originalSsid: originalSsid,
-      originalPassword: originalPassword,
       ssidInstancePath: ssidInstancePath,
       accessPointInstancePath: accessPointInstancePath,
       radioPath: radioPath,
@@ -71,13 +61,22 @@ class PnpWifiBand extends Equatable {
         frequency,
         ssid,
         password,
-        originalSsid,
-        originalPassword,
         ssidInstancePath,
         accessPointInstancePath,
         radioPath,
       ];
 }
+
+/// [band] as [original] holds it — the same SSID row before the edits — or
+/// [band] itself when [original] has no such row.
+///
+/// Bands are never added or removed by an edit, so the fallback only answers
+/// a caller that pairs the wrong lists, and then answers "unchanged".
+PnpWifiBand bandAsRead(List<PnpWifiBand> original, PnpWifiBand band) =>
+    original.firstWhere(
+      (b) => b.ssidInstancePath == band.ssidInstancePath,
+      orElse: () => band,
+    );
 
 /// Determines the display band name from the radio's OperatingFrequencyBand.
 String bandNameFromFrequency(String operatingFrequencyBand) {

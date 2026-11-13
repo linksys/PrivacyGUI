@@ -12,16 +12,21 @@ import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
+import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
+import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
-import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_settings.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_write.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_notifier.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_setting_steps.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_wifi_drafts.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -58,7 +63,7 @@ class SpySessionNotifier extends Notifier<SessionState>
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class FakePnpWifiConfig extends Fake implements PnpWifiConfig {}
+class FakePnpWifiWrite extends Fake implements PnpWifiWrite {}
 
 /// Stands in for the re-login [PnpNotifier.testReconnect] does before asking the
 /// router anything. The real one needs a WASM session and token storage.
@@ -203,6 +208,9 @@ class StaleFirmwareBanksDataNotifier extends FirmwareBanksDataNotifier {
 /// something watches it. Here nothing does, so without this a flow read with
 /// `container.read` is disposed between the awaits of the transition under
 /// test, and the next `state =` lands on a dead notifier.
+///
+/// The steps' drafts need nothing of the kind: the flow holds the ones it
+/// begins (#1511 P4).
 ProviderContainer _holdingTheFlow(ProviderContainer container) {
   container.listen(pnpProvider, (_, __) {});
   return container;
@@ -210,7 +218,7 @@ ProviderContainer _holdingTheFlow(ProviderContainer container) {
 
 void main() {
   setUpAll(() {
-    registerFallbackValue(FakePnpWifiConfig());
+    registerFallbackValue(FakePnpWifiWrite());
   });
   late MockUspClient mockUsp;
   late MockPnpService mockPnpService;
@@ -222,16 +230,30 @@ void main() {
     modelName: 'M60TB',
   );
 
-  const testWifiConfig = PnpWifiConfig(
+  const testMain = PnpMainWifiSettings(
     ssid: 'TestSSID',
     password: 'TestPass123',
-    originalSsid: 'TestSSID',
-    originalPassword: 'TestPass123',
     ssidInstancePaths: ['Device.WiFi.SSID.1.'],
     accessPointInstancePaths: ['Device.WiFi.AccessPoint.1.'],
   );
 
-  final testWizardResult = PnpWizardFetchResult(wifiConfig: testWifiConfig);
+  const testWizardData = PnpWizardData(main: testMain);
+
+  /// Stubs an entry that finds internet and reads [router] and [nodes], so
+  /// `startPostLoginFlow()` reaches the steps.
+  void stubWizardEntry({
+    PnpWizardData router = testWizardData,
+    List<NodeEntity> nodes = const [],
+  }) {
+    when(() => mockPnpService.checkFactoryDefault())
+        .thenAnswer((_) async => testFactoryResult);
+    when(() => mockPnpService.checkInternetConnected())
+        .thenAnswer((_) async => true);
+    when(() => mockPnpService.fetchWizardData())
+        .thenAnswer((_) async => router);
+    when(() => mockPnpService.fetchMeshTopology()).thenAnswer(
+        (_) async => MeshTopologyInfo(nodes: nodes, clientToNodeMap: const {}));
+  }
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -271,7 +293,7 @@ void main() {
       when(() => mockPnpService.checkInternetConnected())
           .thenAnswer((_) async => true);
       when(() => mockPnpService.fetchWizardData())
-          .thenAnswer((_) async => testWizardResult);
+          .thenAnswer((_) async => testWizardData);
       when(() => mockPnpService.fetchMeshTopology())
           .thenAnswer((_) async => MeshTopologyInfo.empty);
 
@@ -368,52 +390,86 @@ void main() {
     });
   });
 
-  group('PnpNotifier — WiFi form updates', () {
-    test('updateWifiSsid updates ssid in WizardConfiguring', () async {
-      when(() => mockPnpService.checkFactoryDefault())
-          .thenAnswer((_) async => testFactoryResult);
-      when(() => mockPnpService.checkInternetConnected())
-          .thenAnswer((_) async => true);
-      when(() => mockPnpService.fetchWizardData())
-          .thenAnswer((_) async => testWizardResult);
-      when(() => mockPnpService.fetchMeshTopology())
-          .thenAnswer((_) async => MeshTopologyInfo.empty);
+  group('PnpNotifier — the flow plan (#1511 P4)', () {
+    const guest = PnpGuestWifiSettings(
+      enabled: true,
+      ssid: 'TestSSID-guest',
+      password: 'GuestPass123',
+      ssidInstancePaths: ['Device.WiFi.SSID.3.'],
+      accessPointInstancePaths: ['Device.WiFi.AccessPoint.3.'],
+    );
 
+    Future<ProviderContainer> enterWizard(PnpWizardData router) async {
+      stubWizardEntry(router: router);
       final container = createContainer();
-      final notifier = container.read(pnpProvider.notifier);
+      addTearDown(container.dispose);
+      await container.read(pnpProvider.notifier).startPostLoginFlow();
+      return container;
+    }
 
-      await notifier.startPostLoginFlow();
-      notifier.updateWifiSsid('NewSSID');
+    test('a router with a guest SSID gets a guest step, before Your Network',
+        () async {
+      final container =
+          await enterWizard(const PnpWizardData(main: testMain, guest: guest));
 
-      final state = container.read(pnpProvider);
-      expect(state.phase, isA<WizardConfiguring>());
-      final config = (state.phase as WizardConfiguring).wifiConfig;
-      expect(config.ssid, 'NewSSID');
-      expect(config.isSsidChanged, isTrue);
-      container.dispose();
+      final plan = container.read(pnpProvider).plan!;
+      expect(plan.stepIds, ['wifi', 'guest', 'network']);
+      expect(plan.saveStepId, 'network',
+          reason: 'Save stays on Your Network until #1511 P5');
     });
 
-    test('updateWifiPassword updates password in WizardConfiguring', () async {
-      when(() => mockPnpService.checkFactoryDefault())
-          .thenAnswer((_) async => testFactoryResult);
-      when(() => mockPnpService.checkInternetConnected())
-          .thenAnswer((_) async => true);
-      when(() => mockPnpService.fetchWizardData())
-          .thenAnswer((_) async => testWizardResult);
-      when(() => mockPnpService.fetchMeshTopology())
-          .thenAnswer((_) async => MeshTopologyInfo.empty);
+    test('a router without one has no guest step', () async {
+      final container = await enterWizard(testWizardData);
 
-      final container = createContainer();
-      final notifier = container.read(pnpProvider.notifier);
+      expect(container.read(pnpProvider).plan!.stepIds, ['wifi', 'network']);
+    });
 
-      await notifier.startPostLoginFlow();
-      notifier.updateWifiPassword('NewPassword');
+    test(
+        'the plan is built once: the entry running again reads nothing and '
+        'changes nothing', () async {
+      final container =
+          await enterWizard(const PnpWizardData(main: testMain, guest: guest));
+      final before = container.read(pnpProvider);
 
-      final state = container.read(pnpProvider);
-      final config = (state.phase as WizardConfiguring).wifiConfig;
-      expect(config.password, 'NewPassword');
-      expect(config.isPasswordChanged, isTrue);
-      container.dispose();
+      await container.read(pnpProvider.notifier).startPostLoginFlow();
+
+      verify(() => mockPnpService.fetchWizardData()).called(1);
+      expect(container.read(pnpProvider), same(before));
+    });
+
+    test('the drafts begin at what the wizard read', () async {
+      final container =
+          await enterWizard(const PnpWizardData(main: testMain, guest: guest));
+
+      expect(container.read(pnpMainWifiDraftProvider).current, testMain);
+      expect(container.read(pnpGuestWifiDraftProvider).current, guest);
+    });
+
+    test('a draft lives as long as the flow, not as long as its page',
+        () async {
+      // In the app the step's page is gone as soon as the user presses Next,
+      // and nothing else on screen watches its draft: the flow holding it is
+      // what keeps the edit. Letting the event loop turn is what gives an
+      // unwatched `autoDispose` draft the chance to be dropped.
+      final container = await enterWizard(testWizardData);
+      container.read(pnpMainWifiDraftProvider.notifier).setSsid('Typed');
+
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(pnpMainWifiDraftProvider).current.ssid, 'Typed');
+    });
+
+    test('an edit goes to its draft and leaves the flow state alone', () async {
+      // What lets a new step be added without a field here: the flow holds
+      // where the user is, never what they typed.
+      final container = await enterWizard(testWizardData);
+      final before = container.read(pnpProvider);
+
+      container.read(pnpMainWifiDraftProvider.notifier).setSsid('NewSSID');
+
+      expect(container.read(pnpProvider), same(before));
+      expect(container.read(pnpMainWifiDraftProvider.notifier).isDirty(), true);
     });
   });
 
@@ -426,40 +482,29 @@ void main() {
     );
 
     /// The wizard on the Your Network step, showing the controller only.
-    Future<PnpNotifier> onYourNetwork(
-      ProviderContainer container, {
-      PnpWifiConfig wifiConfig = testWifiConfig,
-      ServiceError? saveError,
-    }) async {
-      when(() => mockPnpService.checkFactoryDefault())
-          .thenAnswer((_) async => testFactoryResult);
-      when(() => mockPnpService.checkInternetConnected())
-          .thenAnswer((_) async => false);
-      when(() => mockPnpService.fetchCurrentSsid())
-          .thenAnswer((_) async => 'OldHome');
+    Future<PnpNotifier> onYourNetwork(ProviderContainer container) async {
+      stubWizardEntry(nodes: [controller]);
       final notifier = container.read(pnpProvider.notifier);
       await notifier.startPostLoginFlow();
-      notifier.setDemoPhase(WizardConfiguring(
-        wifiConfig: wifiConfig,
-        meshNodes: [controller],
-        saveError: saveError,
-      ));
       return notifier;
     }
 
+    PnpMainWifiDraftNotifier mainDraft(ProviderContainer container) =>
+        container.read(pnpMainWifiDraftProvider.notifier);
+
     test('replaces the nodes and keeps the Wi-Fi the customer typed', () async {
-      when(() => mockPnpService.fetchMeshTopology())
-          .thenAnswer((_) async => topology);
       final container = createContainer();
       final notifier = await onYourNetwork(container);
-      notifier.updateWifiSsid('Typed but not saved');
+      when(() => mockPnpService.fetchMeshTopology())
+          .thenAnswer((_) async => topology);
+      mainDraft(container).setSsid('Typed but not saved');
 
       await notifier.refreshMeshNodes();
 
-      final phase = container.read(pnpProvider).phase as WizardConfiguring;
-      expect(phase.meshNodes, [controller, joined]);
-      expect(phase.wifiConfig.ssid, 'Typed but not saved');
-      expect(phase.wifiConfig.isSsidChanged, isTrue);
+      expect(container.read(pnpProvider).meshNodes, [controller, joined]);
+      expect(container.read(pnpMainWifiDraftProvider).current.ssid,
+          'Typed but not saved');
+      expect(mainDraft(container).isDirty(), isTrue);
       container.dispose();
     });
 
@@ -467,80 +512,71 @@ void main() {
         () async {
       // Back to the Wi-Fi step and typing is open to them as soon as the
       // add-nodes page pops, with the re-read still out.
+      final container = createContainer();
+      final notifier = await onYourNetwork(container);
       final answer = Completer<MeshTopologyInfo>();
       when(() => mockPnpService.fetchMeshTopology())
           .thenAnswer((_) => answer.future);
-      final container = createContainer();
-      final notifier = await onYourNetwork(container);
 
       final refresh = notifier.refreshMeshNodes();
-      notifier.updateWifiSsid('Typed during the read');
+      mainDraft(container).setSsid('Typed during the read');
       answer.complete(topology);
       await refresh;
 
-      final phase = container.read(pnpProvider).phase as WizardConfiguring;
-      expect(phase.wifiConfig.ssid, 'Typed during the read');
-      expect(phase.meshNodes, [controller, joined]);
+      expect(container.read(pnpMainWifiDraftProvider).current.ssid,
+          'Typed during the read');
+      expect(container.read(pnpProvider).meshNodes, [controller, joined]);
       container.dispose();
     });
 
     test('an empty answer keeps the list the step showed', () async {
       // fetchMeshTopology answers a failed read with an empty topology, and the
       // controller is always one of its own nodes: none is a read that failed.
+      final container = createContainer();
+      final notifier = await onYourNetwork(container);
       when(() => mockPnpService.fetchMeshTopology())
           .thenAnswer((_) async => MeshTopologyInfo.empty);
-      final container = createContainer();
-      final notifier = await onYourNetwork(container);
 
       await notifier.refreshMeshNodes();
 
-      final phase = container.read(pnpProvider).phase as WizardConfiguring;
-      expect(phase.meshNodes, [controller]);
+      expect(container.read(pnpProvider).meshNodes, [controller]);
       container.dispose();
     });
 
-    test('does nothing outside the form, and reads nothing', () async {
+    test('an answer that lands during a save leaves the save alone', () async {
+      // The nodes are flow data, not part of the phase (#1511 P4), so a re-read
+      // can no longer overwrite the phase a Save pressed in the meantime owns.
       final container = createContainer();
       final notifier = await onYourNetwork(container);
-      notifier.setDemoPhase(const WizardSaving());
-
-      await notifier.refreshMeshNodes();
-
-      expect(container.read(pnpProvider).phase, isA<WizardSaving>());
-      verifyNever(() => mockPnpService.fetchMeshTopology());
-      container.dispose();
-    });
-
-    test('drops its answer if the phase moved on while it read', () async {
       final answer = Completer<MeshTopologyInfo>();
       when(() => mockPnpService.fetchMeshTopology())
           .thenAnswer((_) => answer.future);
-      final container = createContainer();
-      final notifier = await onYourNetwork(container);
 
       final refresh = notifier.refreshMeshNodes();
-      // Save pressed while the nodes were still being read.
       notifier.setDemoPhase(const WizardSaving());
       answer.complete(topology);
       await refresh;
 
       expect(container.read(pnpProvider).phase, isA<WizardSaving>());
+      expect(container.read(pnpProvider).meshNodes, [controller, joined]);
       container.dispose();
     });
 
-    test('a save error already shown is not carried over', () async {
-      // The view shows a WizardConfiguring with a saveError as a SnackBar, so a
-      // refresh that kept it would show the same failure a second time.
+    test('a save error already shown is not shown again', () async {
+      // The shell shows a WizardConfiguring with a saveError as a SnackBar when
+      // the phase changes to it. A refresh leaves the phase as it is, so it
+      // cannot show the same failure a second time.
+      final container = createContainer();
+      final notifier = await onYourNetwork(container);
       when(() => mockPnpService.fetchMeshTopology())
           .thenAnswer((_) async => topology);
-      final container = createContainer();
-      final notifier =
-          await onYourNetwork(container, saveError: const UnexpectedError());
+      notifier
+          .setDemoPhase(const WizardConfiguring(saveError: UnexpectedError()));
+      final shown = container.read(pnpProvider).phase;
 
       await notifier.refreshMeshNodes();
 
-      final phase = container.read(pnpProvider).phase as WizardConfiguring;
-      expect(phase.saveError, isNull);
+      expect(container.read(pnpProvider).phase, same(shown));
       container.dispose();
     });
   });
@@ -550,29 +586,55 @@ void main() {
   // Here we test the acknowledge call is made correctly via PnpStatusService unit tests.;
 
   group('PnpNotifier — WiFi save (#1000 / #1490 / #1491)', () {
-    /// The PnP form as #1000's reporter fills it: main renamed and re-passworded,
-    /// guest turned on, renamed and passworded.
-    const editedConfig = PnpWifiConfig(
-      ssid: 'NewHome',
-      password: 'NewPass123',
-      originalSsid: 'OldHome',
-      originalPassword: 'OldPass123',
+    /// The router before #1000's reporter touched the form.
+    const oldMain = PnpMainWifiSettings(
+      ssid: 'OldHome',
+      password: 'OldPass123',
       ssidInstancePaths: ['Device.WiFi.SSID.1.', 'Device.WiFi.SSID.2.'],
       accessPointInstancePaths: [
         'Device.WiFi.AccessPoint.1.',
         'Device.WiFi.AccessPoint.2.',
       ],
-      guestEnabled: true,
-      guestSsid: 'NewHome-guest',
-      guestPassword: 'GuestPass123',
-      originalGuestSsid: 'OldHome-guest',
-      originalGuestPassword: 'OldGuest123',
-      guestSsidInstancePaths: ['Device.WiFi.SSID.3.', 'Device.WiFi.SSID.4.'],
-      guestAccessPointInstancePaths: [
+    );
+    const oldGuest = PnpGuestWifiSettings(
+      enabled: false,
+      ssid: 'OldHome-guest',
+      password: 'OldGuest123',
+      ssidInstancePaths: ['Device.WiFi.SSID.3.', 'Device.WiFi.SSID.4.'],
+      accessPointInstancePaths: [
         'Device.WiFi.AccessPoint.3.',
         'Device.WiFi.AccessPoint.4.',
       ],
     );
+    const oldRouter = PnpWizardData(main: oldMain, guest: oldGuest);
+
+    /// The PnP form as #1000's reporter fills it: main renamed and re-passworded,
+    /// guest turned on, renamed and passworded.
+    final editedWrite = PnpWifiWrite(
+      main: Preservable(
+        original: oldMain,
+        current: oldMain.copyWith(ssid: 'NewHome', password: 'NewPass123'),
+      ),
+      guest: Preservable(
+        original: oldGuest,
+        current: oldGuest.copyWith(
+          enabled: true,
+          ssid: 'NewHome-guest',
+          password: 'GuestPass123',
+        ),
+      ),
+    );
+
+    /// Types [editedWrite] into the two steps' drafts.
+    void fillTheForm(ProviderContainer container) {
+      container.read(pnpMainWifiDraftProvider.notifier)
+        ..setSsid('NewHome')
+        ..setPassword('NewPass123');
+      container.read(pnpGuestWifiDraftProvider.notifier)
+        ..setEnabled(true)
+        ..setSsid('NewHome-guest')
+        ..setPassword('GuestPass123');
+    }
 
     late _CountingAuthCoordinator auth;
 
@@ -619,30 +681,22 @@ void main() {
     }
 
     /// Logs in the way the app does, so the state carries the serial number
-    /// that the reconnect compares and the acknowledge is keyed on — then pins
-    /// the phase under test.
+    /// that the reconnect compares and the acknowledge is keyed on, enters the
+    /// wizard on [oldRouter] and fills the form — then pins [phase], if given.
     Future<PnpNotifier> loggedIn(
-      ProviderContainer container,
-      PnpPhase phase,
-    ) async {
-      when(() => mockPnpService.checkFactoryDefault())
-          .thenAnswer((_) async => testFactoryResult);
-      when(() => mockPnpService.checkInternetConnected())
-          .thenAnswer((_) async => false);
-      when(() => mockPnpService.fetchCurrentSsid())
-          .thenAnswer((_) async => 'OldHome');
+      ProviderContainer container, [
+      PnpPhase? phase,
+    ]) async {
+      stubWizardEntry(router: oldRouter);
       final notifier = container.read(pnpProvider.notifier);
       await notifier.startPostLoginFlow();
-      notifier.setDemoPhase(phase);
+      fillTheForm(container);
+      if (phase != null) notifier.setDemoPhase(phase);
       return notifier;
     }
 
-    Future<PnpNotifier> saveFrom(
-      ProviderContainer container, {
-      PnpWifiConfig config = editedConfig,
-    }) async {
-      final notifier =
-          await loggedIn(container, WizardConfiguring(wifiConfig: config));
+    Future<PnpNotifier> saveFrom(ProviderContainer container) async {
+      final notifier = await loggedIn(container);
       await notifier.saveChanges();
       return notifier;
     }
@@ -654,7 +708,7 @@ void main() {
 
       await saveFrom(container);
 
-      verify(() => mockPnpService.saveWifi(editedConfig)).called(1);
+      verify(() => mockPnpService.saveWifi(editedWrite)).called(1);
       expect(container.read(pnpProvider).phase, isA<WizardWifiReady>());
       container.dispose();
     });
@@ -693,7 +747,7 @@ void main() {
       expect(polls, 3);
       expect(phases.whereType<WizardNeedsReconnect>(), isEmpty);
       expect(container.read(pnpProvider).phase, isA<WizardWifiReady>());
-      verify(() => mockPnpService.isWifiApplied(editedConfig)).called(1);
+      verify(() => mockPnpService.isWifiApplied(editedWrite)).called(1);
       container.dispose();
     });
 
@@ -710,7 +764,7 @@ void main() {
       await saveFrom(container);
 
       expect(container.read(pnpProvider).phase, isA<WizardWifiReady>());
-      verify(() => mockPnpService.isWifiApplied(editedConfig)).called(1);
+      verify(() => mockPnpService.isWifiApplied(editedWrite)).called(1);
       expect(container.read(uspMutationLockProvider).isLocked, isFalse,
           reason: 'the firmware stage takes this lock and gives up after 15 s; '
               'a write that may never answer must not keep holding it');
@@ -780,28 +834,49 @@ void main() {
           isA<UspCompleteFailureError>(),
           reason: 'returning to the form with nothing said is the defect: the '
               'reporter saw the guest page "shown twice"');
-      expect(phase.wifiConfig, editedConfig);
+      expect(
+          container.read(pnpMainWifiDraftProvider).settings, editedWrite.main,
+          reason: 'what was typed is still there to send again');
+      expect(container.read(pnpGuestWifiDraftProvider).settings,
+          editedWrite.guest);
+      expect(container.read(pnpWizardDraftsProvider).isDirty(), isTrue);
       container.dispose();
     });
 
-    test('an edit after a failed save clears the error', () async {
+    test('an edit after a failed save does not show the error again', () async {
+      // The edit goes to a draft (#1511 P4); the phase carrying the error is
+      // left as it is, so the shell's listener — which fires when the phase
+      // changes — cannot show it a second time.
       when(() => mockPnpService.saveWifi(any())).thenThrow(
           const UspCompleteFailureError(summary: 'refused', failures: []));
       final container = createSaveContainer();
+      await saveFrom(container);
+      final shown = container.read(pnpProvider).phase;
 
-      final notifier = await saveFrom(container);
-      notifier.updateWifiSsid('Edited');
+      container.read(pnpMainWifiDraftProvider.notifier).setSsid('Edited');
 
-      final phase = container.read(pnpProvider).phase as WizardConfiguring;
-      expect(phase.saveError, isNull);
+      expect(container.read(pnpProvider).phase, same(shown));
+      container.dispose();
+    });
+
+    test('a save that landed leaves every draft clean, holding what it wrote',
+        () async {
+      // So leaving the completion screen does not ask about unsaved changes.
+      final container = createSaveContainer();
+
+      await saveFrom(container);
+
+      expect(container.read(pnpWizardDraftsProvider).isDirty(), isFalse);
+      expect(container.read(pnpMainWifiDraftProvider).current,
+          editedWrite.main.current);
       container.dispose();
     });
 
     group('the reconnect step', () {
-      const unanswered = WizardNeedsReconnect(
+      final unanswered = WizardNeedsReconnect(
         newSsid: 'NewHome',
         newPassword: 'NewPass123',
-        wifiConfig: editedConfig,
+        write: editedWrite,
         writeUnanswered: true,
       );
 
@@ -832,16 +907,16 @@ void main() {
         final container = await nextFrom(unanswered);
 
         expect(container.read(pnpProvider).phase, isA<WizardWifiReady>());
-        verify(() => mockPnpService.isWifiApplied(editedConfig)).called(1);
+        verify(() => mockPnpService.isWifiApplied(editedWrite)).called(1);
         verify(() => mockPnpStatusService.acknowledge('SN123')).called(1);
         container.dispose();
       });
 
       test('a confirmed write is not asked about again', () async {
-        final container = await nextFrom(const WizardNeedsReconnect(
+        final container = await nextFrom(WizardNeedsReconnect(
           newSsid: 'NewHome',
           newPassword: 'NewPass123',
-          wifiConfig: editedConfig,
+          write: editedWrite,
         ));
 
         verifyNever(() => mockPnpService.isWifiApplied(any()));
@@ -882,13 +957,13 @@ void main() {
     /// goes straight to the firmware stage. The reconnect arm is the other entry
     /// point and has its own case; driving it here would mean five real
     /// `Future.delayed` backoffs — up to 62 seconds — per test.
-    const savedConfig = PnpWifiConfig(
-      ssid: 'ConfiguredSSID',
-      password: 'ConfiguredPass123',
-      originalSsid: 'ConfiguredSSID',
-      originalPassword: 'ConfiguredPass123',
-      ssidInstancePaths: ['Device.WiFi.SSID.1.'],
-      accessPointInstancePaths: ['Device.WiFi.AccessPoint.1.'],
+    const savedRouter = PnpWizardData(
+      main: PnpMainWifiSettings(
+        ssid: 'ConfiguredSSID',
+        password: 'ConfiguredPass123',
+        ssidInstancePaths: ['Device.WiFi.SSID.1.'],
+        accessPointInstancePaths: ['Device.WiFi.AccessPoint.1.'],
+      ),
     );
 
     setUp(() {
@@ -896,6 +971,10 @@ void main() {
 
       when(() => mockPnpService.saveWifi(any()))
           .thenAnswer((_) async => PnpWifiWriteOutcome.confirmed);
+      // The stage is entered through the real entry since #1511 P4, so the
+      // state carries a serial and the save acknowledges.
+      when(() => mockPnpStatusService.acknowledge(any()))
+          .thenAnswer((_) async {});
     });
 
     /// The reboot deadline defaults to 200 ms rather than the production six
@@ -914,7 +993,7 @@ void main() {
           pnpServiceProvider.overrideWithValue(mockPnpService),
           pnpStatusServiceProvider.overrideWithValue(mockPnpStatusService),
           uspMutationLockProvider.overrideWithValue(UspMutationLock()),
-          sessionProvider.overrideWith(() => mockSessionNotifier),
+          sessionProvider.overrideWith(() => SpySessionNotifier()),
           firmwareUpdateNotifierProvider.overrideWith(() => firmware),
           appConnectionStateProvider.overrideWith(() => connection),
           banks ??
@@ -944,10 +1023,11 @@ void main() {
     }
 
     /// Enters the wizard at the form, saves, and returns every phase published on
-    /// the way — the intermediate ones matter as much as the last.
+    /// the way — the intermediate ones matter as much as the last. [rename], if
+    /// given, is typed into the Wi-Fi step first.
     Future<List<PnpPhase>> runStage(
       ProviderContainer container, {
-      PnpWifiConfig config = savedConfig,
+      String? rename,
     }) async {
       final published = <PnpPhase>[];
       container.listen(
@@ -955,8 +1035,12 @@ void main() {
         (_, next) => published.add(next.phase),
         fireImmediately: false,
       );
+      stubWizardEntry(router: savedRouter);
       final notifier = container.read(pnpProvider.notifier);
-      notifier.setDemoPhase(WizardConfiguring(wifiConfig: config));
+      await notifier.startPostLoginFlow();
+      if (rename != null) {
+        container.read(pnpMainWifiDraftProvider.notifier).setSsid(rename);
+      }
       published.clear();
       await notifier.saveChanges();
       return published;
@@ -1279,10 +1363,7 @@ void main() {
       );
       final container = createFirmwareContainer(firmware);
 
-      await runStage(
-        container,
-        config: savedConfig.copyWith(ssid: 'RenamedSSID'),
-      );
+      await runStage(container, rename: 'RenamedSSID');
 
       expect(container.read(pnpProvider).phase, isA<WizardNeedsReconnect>());
       expect(firmware.checkCalls, 0);

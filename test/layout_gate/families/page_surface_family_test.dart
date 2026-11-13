@@ -182,19 +182,22 @@ void main() {
           'pnp_unplug_modem',
           'pnp_modem_lights_off',
           'pnp_waiting_modem',
-          'pnp_setup',
+          // `pnp_setup` and its three siblings until #1511 P4, which moved all four
+          // onto `PnpFlowFrameView` — renamed where they stand, so the list still
+          // reads as the record it is.
+          'pnp_flow_frame',
           // #1554 §4: the same view file's firmware stage. Beside its sibling rather
           // than appended, which is the placement #1489 established for the five tab
           // cases — this list stopped being strictly onboarding-ordered then, and
           // declaration locality is the more useful of the two orders for a reader
           // asking "what else sweeps this page".
-          'pnp_setup_firmware',
+          'pnp_flow_frame_firmware',
           // #1602: the same view file again, its two `WizardWifiReady` branches.
           // Beside their siblings for the reason the firmware case is — four cases
           // now measure one page view file, and a reader asking "what else sweeps
           // this page" wants all four in one screenful.
-          'pnp_setup_complete_split',
-          'pnp_setup_complete_unified',
+          'pnp_flow_frame_complete_split',
+          'pnp_flow_frame_complete_unified',
           'home',
           'login_local',
           'local_router_recovery',
@@ -270,6 +273,12 @@ void main() {
           // #641: Advanced Settings → DDNS, a page view file arriving the same
           // way.
           'ddns',
+          // #1511 P4: the PnP wizard's three steps, page view files of their own
+          // since the steps became routes — the 52nd to 54th, arriving with the
+          // `lib/` change that made them.
+          'pnp_wifi_step',
+          'pnp_guest_step',
+          'pnp_your_network_step',
         ],
         // Updated by #1377, #1378, #1379 and #1380, and the wording is the point of
         // the test.
@@ -548,14 +557,15 @@ void main() {
       // a *kind* of screen; it would not have been evidence of anything if the second
       // entry had arrived with a fixture excuse.
       //
-      // Note it is two *cases*, not two views: `pnp_setup` — the same view file in its
-      // form phase — still forbids the loader, because there a spinner really is the
-      // stand-in this rule is about.
+      // Note it is two *cases*, not two views: `pnp_flow_frame` — the same view file
+      // on the wizard's form — still forbids the loader, because there a spinner
+      // really is the stand-in this rule is about. (Both were `pnp_setup*` until
+      // #1511 P4 moved the wizard's screens onto `PnpFlowFrameView`.)
       //
       // **The third entry (#1602) held the bar, and the case that did not is the more
       // useful half of the story.** `unified_diagnostics_manual_tools` is exempt because
       // `_buildPingResult` ends in a determinate linear `AppLoader` whose `value` is the
-      // success rate — the bar's width *is* the number, which is `pnp_setup_firmware`'s
+      // success rate — the bar's width *is* the number, which is the PnP firmware screen's
       // sentence verbatim. What was drafted as the third entry was
       // `unified_diagnostics_running`, on the grounds that the running view paints a
       // 12x12 spinner in whichever step `isCurrent`; that argued a *new* kind of
@@ -572,10 +582,11 @@ void main() {
       expect(
         kPagesWhoseLoaderIsContent,
         const {
-          'pnp_setup_firmware',
+          'pnp_flow_frame_firmware',
           'unified_diagnostics_manual_tools',
         },
-        reason: 'pnp_setup_firmware exists to say "we are installing firmware, '
+        reason:
+            'pnp_flow_frame_firmware exists to say "we are installing firmware, '
             'do not unplug the router" — the progress bar is the subject of the '
             'screen — and unified_diagnostics_manual_tools is a determinate bar '
             'whose value is the success rate it reports. A third entry needs that '
@@ -847,7 +858,7 @@ void main() {
         kPnpUnplugModemPageCase,
         kPnpModemLightsOffPageCase,
         kPnpWaitingModemPageCase,
-        kPnpSetupPageCase,
+        kPnpFlowFramePageCase,
       ]) {
         (page.overrides().isEmpty ? unpinned : pinned).add(page.id);
       }
@@ -868,22 +879,20 @@ void main() {
       expect(pinned, hasLength(6));
     });
 
-    test('page.pnp_setup requires the widget that was blocking it', () {
+    test('page.pnp_flow_frame requires the widget that was blocking it', () {
       expect(
-        kPnpSetupPageCase.requires,
+        kPnpFlowFramePageCase.requires,
         containsAll(<Type>[AppStepper, AppTextField, AppPasswordInput]),
         reason:
             'AppStepper is doing two jobs here that no other premise in this '
-            'file does. It pins that the wizard has more than one step — '
-            '`_buildStepperForm` renders no stepper at all when `totalSteps == 1`, '
-            'which is the single-step fixture #1378 forbade as a way to make this '
-            'page lay out clean — and it keeps the regression test for '
-            'linksys/privacyGUI-UI-kit#70 in the gate, since that defect was in '
-            'the stepper and nowhere else. The two field types pin the *step*: only '
-            'step 0 is measured (advancing `_currentStep` needs a tap per cell), '
-            'and step 0 is the only one with a form on it, three bands deep because '
-            'the fixture is split-mode. Dropping them would leave this premise '
-            'holding against a wizard whose step content had gone missing.',
+            'file does. It pins that the frame is on a step of a multi-step plan '
+            '— the case\'s fixture carries one — and it keeps the regression test '
+            'for linksys/privacyGUI-UI-kit#70 in the gate, since that defect was '
+            'in the stepper and nowhere else. Since #1511 P4 the frame is the only '
+            'page that draws the stepper (this was page.pnp_setup until the '
+            'wizard\'s steps became routes); a step page pumped alone shows none. '
+            'The two field types pin that the Wi-Fi step under it is laid out '
+            'too, three bands deep because the fixture is split-mode.',
       );
     });
 

@@ -55,7 +55,8 @@ void main() {
           builder: (_, __) => const Text('OUTSIDE'),
         ),
         ShellRoute(
-          builder: (_, __, child) => PnpFlowShell(child: child),
+          builder: (_, state, child) =>
+              PnpFlowShell(location: state.uri, child: child),
           routes: [
             GoRoute(
               name: RouteNamed.pnp,

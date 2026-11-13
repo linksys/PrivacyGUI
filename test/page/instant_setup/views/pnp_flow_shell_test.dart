@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_flow_plan.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
-import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_entry_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_flow_shell.dart';
@@ -14,6 +15,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../mocks/provider_overrides/mock_common.dart';
 import '../../../mocks/provider_overrides/mock_pnp.dart';
+import '../../../mocks/test_data/scenes/pnp_scene_data.dart';
 
 /// A pinned flow the test can move, the way `PnpNotifier` moves it.
 class _DrivenPnp extends FixedPnpNotifier {
@@ -22,12 +24,7 @@ class _DrivenPnp extends FixedPnpNotifier {
   void moveTo(PnpPhase phase) => state = state.copyWith(phase: phase);
 }
 
-const _config = PnpWifiConfig(
-  ssid: 'MyWiFi',
-  password: 'MyPass1234',
-  originalSsid: 'Linksys00123',
-  originalPassword: 'factory',
-);
+const _plan = PnpFlowPlan(settingStepIds: ['wifi']);
 
 /// A pinned flow whose entry check finds internet, the way the real one does
 /// once troubleshooting has brought it back. Counts the checks.
@@ -42,7 +39,7 @@ class _RecoveringPnp extends FixedPnpNotifier {
     state = state.copyWith(phase: const AdminCheckingInternet());
     state = state.copyWith(phase: const AdminInternetConnected());
     state = state.copyWith(phase: const WizardInitializing());
-    state = state.copyWith(phase: const WizardConfiguring(wifiConfig: _config));
+    setDemoWizard(pnpNoGuestRouter);
   }
 }
 
@@ -67,39 +64,38 @@ const _phasesThatStay = <PnpPhase>[
 /// (#1511 P2).
 void main() {
   group('pnpFlowDestination — the one phase→page mapping', () {
-    test('the wizard is opened once the flow reaches the form', () {
-      for (final previous in <PnpPhase?>[
+    const before = PnpState(phase: WizardInitializing());
+    const editing = PnpState(phase: WizardConfiguring(), plan: _plan);
+
+    test('the wizard is opened when the flow gets its plan', () {
+      for (final previous in <PnpState?>[
         null,
-        const AdminInternetConnected(),
-        const WizardInitializing(),
+        const PnpState(phase: AdminInternetConnected()),
+        before,
       ]) {
-        expect(
-          pnpFlowDestination(
-              previous, const WizardConfiguring(wifiConfig: _config)),
-          PnpFlowDestination.wizard,
-          reason: 'from $previous',
-        );
+        expect(pnpFlowDestination(previous, editing), PnpFlowDestination.wizard,
+            reason: 'from $previous');
       }
     });
 
     test('a failed save stays on the step where Save was pressed', () {
-      // Re-navigating would rebuild the wizard and reset its step to 0 — the
-      // patch #1511 P4 removes once the step is in the URL.
+      // The step is in the URL (#1511 P4), so returning to the form needs no
+      // navigation — and must not have one, which would land on the first step.
       expect(
         pnpFlowDestination(
-          const WizardSaving(),
-          const WizardConfiguring(wifiConfig: _config),
+          const PnpState(phase: WizardSaving(), plan: _plan),
+          const PnpState(
+            phase: WizardConfiguring(saveError: UnexpectedError()),
+            plan: _plan,
+          ),
         ),
         isNull,
       );
     });
 
-    test('an edit on the form is not a navigation', () {
+    test('a re-read of the nodes is not a navigation', () {
       expect(
-        pnpFlowDestination(
-          const WizardConfiguring(wifiConfig: _config),
-          const WizardConfiguring(wifiConfig: _config, meshNodes: []),
-        ),
+        pnpFlowDestination(editing, editing.copyWith(meshNodes: const [])),
         isNull,
       );
     });
@@ -107,7 +103,10 @@ void main() {
     test('no internet hands the user to troubleshooting, from anywhere', () {
       for (final previous in <PnpPhase?>[null, ..._phasesThatStay]) {
         expect(
-          pnpFlowDestination(previous, const NoInternet()),
+          pnpFlowDestination(
+            previous == null ? null : PnpState(phase: previous),
+            const PnpState(phase: NoInternet()),
+          ),
           PnpFlowDestination.troubleshooting,
           reason: 'from $previous',
         );
@@ -116,7 +115,8 @@ void main() {
 
     test('every other phase stays where it is', () {
       for (final next in _phasesThatStay) {
-        expect(pnpFlowDestination(const AdminCheckingInternet(), next), isNull,
+        expect(pnpFlowDestination(PnpState.initial(), PnpState(phase: next)),
+            isNull,
             reason: '$next');
       }
     });
@@ -169,7 +169,14 @@ void main() {
             GoRoute(
               name: RouteNamed.pnpConfig,
               path: RoutePath.pnpConfig,
-              builder: (_, __) => const Text('WIZARD'),
+              builder: (_, __) => const SizedBox.shrink(),
+              routes: [
+                GoRoute(
+                  name: RouteNamed.pnpStep('wifi'),
+                  path: 'wifi',
+                  builder: (_, __) => const Text('WIZARD'),
+                ),
+              ],
             ),
           ],
         );
@@ -178,25 +185,27 @@ void main() {
         (tester) async {
       final router = await pump(tester, [
         ShellRoute(
-          builder: (_, __, child) => PnpFlowShell(child: child),
+          builder: (_, state, child) =>
+              PnpFlowShell(location: state.uri, child: child),
           routes: [pnpTree()],
         ),
         ...destinations(),
       ]);
 
       pnp.moveTo(const AdminInternetConnected());
-      pnp.moveTo(const WizardConfiguring(wifiConfig: _config));
+      pnp.setDemoWizard(pnpNoGuestRouter);
       await tester.pump();
       await tester.pump();
 
-      expect(location(router), '${RoutePath.pnp}/${RoutePath.pnpConfig}');
+      expect(location(router), '${RoutePath.pnp}/${RoutePath.pnpConfig}/wifi');
     });
 
     testWidgets('under the shell, no internet goes to troubleshooting as PnP',
         (tester) async {
       final router = await pump(tester, [
         ShellRoute(
-          builder: (_, __, child) => PnpFlowShell(child: child),
+          builder: (_, state, child) =>
+              PnpFlowShell(location: state.uri, child: child),
           routes: [pnpTree()],
         ),
         ...destinations(),
@@ -223,7 +232,8 @@ void main() {
             '/pnpNoInternetConnection/${TroubleshootingCaller.pnp}',
         routes: [
           ShellRoute(
-            builder: (_, __, child) => PnpFlowShell(child: child),
+            builder: (_, state, child) =>
+                PnpFlowShell(location: state.uri, child: child),
             routes: [pnpTree()],
           ),
           ...destinations(),
@@ -253,7 +263,7 @@ void main() {
         await tester.pump();
       }
 
-      expect(location(router), '${RoutePath.pnp}/${RoutePath.pnpConfig}');
+      expect(location(router), '${RoutePath.pnp}/${RoutePath.pnpConfig}/wifi');
       expect(recovering.starts, 1);
     });
 
@@ -263,7 +273,7 @@ void main() {
       final router = await pump(tester, [pnpTree(), ...destinations()]);
 
       pnp.moveTo(const AdminInternetConnected());
-      pnp.moveTo(const WizardConfiguring(wifiConfig: _config));
+      pnp.setDemoWizard(pnpNoGuestRouter);
       await tester.pump();
       pnp.moveTo(const NoInternet());
       await tester.pump();

@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/demo/providers/demo_pnp.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
-import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_settings.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -21,15 +21,21 @@ import 'package:ui_kit_library/ui_kit.dart';
 class PnpDemoLauncher extends ConsumerWidget {
   const PnpDemoLauncher({super.key});
 
-  static const _mockWifiConfig = PnpWifiConfig(
-    ssid: 'Linksys-Demo',
-    password: 'DemoPass123',
-    originalSsid: 'Linksys00166',
-    originalPassword: 'factory-pw',
-    ssidInstancePaths: ['Device.WiFi.SSID.1'],
-    accessPointInstancePaths: ['Device.WiFi.AccessPoint.1'],
-    guestSsidInstancePaths: ['Device.WiFi.SSID.3'],
-    guestAccessPointInstancePaths: ['Device.WiFi.AccessPoint.3'],
+  /// A router with a guest SSID, so the wizard has all three steps.
+  static const _mockRouter = PnpWizardData(
+    main: PnpMainWifiSettings(
+      ssid: 'Linksys-Demo',
+      password: 'DemoPass123',
+      ssidInstancePaths: ['Device.WiFi.SSID.1'],
+      accessPointInstancePaths: ['Device.WiFi.AccessPoint.1'],
+    ),
+    guest: PnpGuestWifiSettings(
+      enabled: false,
+      ssid: 'Linksys-Demo-Guest',
+      password: 'DemoGuest123',
+      ssidInstancePaths: ['Device.WiFi.SSID.3'],
+      accessPointInstancePaths: ['Device.WiFi.AccessPoint.3'],
+    ),
   );
 
   @override
@@ -85,16 +91,14 @@ class PnpDemoLauncher extends ConsumerWidget {
   };
 
   List<_DemoEntry> _buildEntries(BuildContext context, WidgetRef ref) {
-    /// Starts the next run at [phase] and enters the flow at [location]. The
-    /// wizard's own screens are all drawn by the wizard page, so a phase past
-    /// the form enters there directly; the form itself enters at `/pnp`, whose
-    /// shell opens the wizard when the flow reaches it.
-    void startAt(PnpPhase phase, String location) {
-      ref.read(demoPnpStartPhaseProvider.notifier).state = phase;
-      context.go(location);
+    /// Starts the next run at [start] and enters the flow. Always at `/pnp`:
+    /// the shell opens the wizard when the flow gets its plan, and draws every
+    /// other screen — saving, reconnect, completion — over whatever page is
+    /// there (#1511 P4).
+    void startAt(DemoPnpStart start) {
+      ref.read(demoPnpStartProvider.notifier).state = start;
+      context.go(RoutePath.pnp);
     }
-
-    const wizard = '${RoutePath.pnp}/${RoutePath.pnpConfig}';
 
     return [
       _DemoEntry(
@@ -116,22 +120,16 @@ class PnpDemoLauncher extends ConsumerWidget {
         icon: Icons.wifi,
         title: 'WiFi Wizard',
         subtitle: 'WiFi name & password setup',
-        onTap: () => startAt(
-          const WizardConfiguring(wifiConfig: _mockWifiConfig),
-          RoutePath.pnp,
-        ),
+        onTap: () => startAt(const DemoPnpStart.wizard(_mockRouter)),
       ),
       _DemoEntry(
         icon: Icons.qr_code,
         title: 'WiFi Ready (QR)',
         subtitle: 'Completion page + QR code',
-        onTap: () => startAt(
-          WizardWifiReady(
-            ssid: _mockWifiConfig.ssid,
-            password: _mockWifiConfig.password,
-          ),
-          wizard,
-        ),
+        onTap: () => startAt(DemoPnpStart.phase(WizardWifiReady(
+          ssid: _mockRouter.main.ssid,
+          password: _mockRouter.main.password,
+        ))),
       ),
       _DemoEntry(
         icon: Icons.wifi_off,
@@ -166,13 +164,10 @@ class PnpDemoLauncher extends ConsumerWidget {
         icon: Icons.sync,
         title: 'Reconnect',
         subtitle: 'WiFi reconnection waiting',
-        onTap: () => startAt(
-          WizardNeedsReconnect(
-            newSsid: _mockWifiConfig.ssid,
-            newPassword: _mockWifiConfig.password,
-          ),
-          wizard,
-        ),
+        onTap: () => startAt(DemoPnpStart.phase(WizardNeedsReconnect(
+          newSsid: _mockRouter.main.ssid,
+          newPassword: _mockRouter.main.password,
+        ))),
       ),
     ];
   }

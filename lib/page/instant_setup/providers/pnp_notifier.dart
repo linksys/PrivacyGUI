@@ -14,8 +14,11 @@ import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.da
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notifier.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
-import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_settings.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_write.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_setting_steps.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_wifi_drafts.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
 
@@ -41,7 +44,16 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   ///
   /// User is already authenticated (login handled by LoginLocalView).
   /// This method fetches device info and checks internet connectivity.
+  ///
+  /// Once the wizard has a plan this does nothing: the plan is built once per
+  /// flow and never recomputed (#1511 P4, D2), and a flow that has one is past
+  /// its entry. A new run is a new flow — leaving `/pnp` ends this one.
   Future<void> startPostLoginFlow() async {
+    if (state.plan != null) {
+      logger.w('[PnP] startPostLoginFlow on a flow already in the wizard — '
+          'ignored');
+      return;
+    }
     state = state.copyWith(phase: const AdminCheckingInternet());
 
     try {
@@ -97,7 +109,13 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   // Wizard Phase
   // ══════════════════════════════════════════════════════════
 
-  /// Fetch current WiFi config + mesh nodes and enter WizardConfiguring.
+  /// Read the router's Wi-Fi and mesh nodes, build the plan, and enter the
+  /// steps.
+  ///
+  /// **The plan is built here, once, and nothing recomputes it** (#1511 P4,
+  /// D2): which setting steps the wizard has is decided by what this read
+  /// returned, against each step's inclusion condition (`kPnpSettingSteps`).
+  /// The drafts begin at the same read.
   Future<void> _initWizard() async {
     state = state.copyWith(phase: const WizardInitializing());
 
@@ -106,14 +124,9 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
         _svc.fetchWizardData(),
         _svc.fetchMeshTopology(),
       ]);
-      final data = results[0] as PnpWizardFetchResult;
+      final router = results[0] as PnpWizardData;
       final mesh = results[1] as MeshTopologyInfo;
-      state = state.copyWith(
-        phase: WizardConfiguring(
-          wifiConfig: data.wifiConfig,
-          meshNodes: mesh.nodes,
-        ),
-      );
+      _enterSteps(router, mesh.nodes);
     } catch (e) {
       logger.e('[PnP] Wizard init failed: $e');
       state = state.copyWith(
@@ -122,149 +135,46 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
     }
   }
 
+  /// Builds the plan for [router], begins the drafts of its steps, and enters
+  /// them.
+  ///
+  /// The flow **listens** to each draft it begins, which is what keeps the
+  /// drafts alive: they are `autoDispose`, and a step's page is unmounted when
+  /// the user moves on. So a draft lives exactly as long as the flow, and only
+  /// the plan's steps have one.
+  void _enterSteps(PnpWizardData router, List<NodeEntity> meshNodes) {
+    final plan = buildPnpFlowPlan(router);
+    for (final id in plan.settingStepIds) {
+      final draft = pnpSettingStep(id).draft;
+      ref.listen(draft, (_, __) {});
+      ref.read(draft).begin(router);
+    }
+    state = state.copyWith(
+      plan: plan,
+      meshNodes: meshNodes,
+      phase: const WizardConfiguring(),
+    );
+  }
+
   /// Reads the mesh nodes again, for the Your Network step after an add (#1734).
   ///
-  /// Replaces [WizardConfiguring.meshNodes] and nothing else: the Wi-Fi the
-  /// customer has typed stays in the form. The phase stays [WizardConfiguring],
-  /// which [PnpEntryView] does not navigate on, so the stepper keeps its step.
+  /// Replaces [PnpState.meshNodes] and nothing else. Since #1511 P4 the nodes
+  /// are flow data rather than part of the phase, so this cannot clobber a save
+  /// pressed while the read was out, and needs no phase check: what the user
+  /// typed is in the drafts, and the step is in the URL.
   ///
   /// An empty answer keeps the list it had. The controller is always a row of
   /// its own DataElements, so a network that had nodes and reads none has not
   /// lost them: [PnpService.fetchMeshTopology] answers a failed read with an
   /// empty topology rather than throwing.
-  ///
-  /// Does nothing outside [WizardConfiguring], and drops its answer if the
-  /// phase moved on while the read was out — a Save pressed in the meantime
-  /// owns the phase.
   Future<void> refreshMeshNodes() async {
-    if (state.phase is! WizardConfiguring) return;
     final mesh = await _svc.fetchMeshTopology();
-    final phase = state.phase;
-    if (phase is! WizardConfiguring) return;
     if (mesh.nodes.isEmpty) {
       logger.w('[PnP] Mesh re-read returned no nodes; keeping the '
-          '${phase.meshNodes.length} the step showed');
+          '${state.meshNodes.length} the step showed');
       return;
     }
-    // A new phase without saveError, like every edit: an error the customer
-    // already saw must not be shown again by the view's listener.
-    state = state.copyWith(
-      phase: WizardConfiguring(
-        wifiConfig: phase.wifiConfig,
-        meshNodes: mesh.nodes,
-      ),
-    );
-  }
-
-  // ─── Form Updates ────────────────────────────────────────
-
-  void updateWifiSsid(String ssid) {
-    final phase = state.phase;
-    if (phase is! WizardConfiguring) return;
-    state = state.copyWith(
-      phase: WizardConfiguring(
-        wifiConfig: phase.wifiConfig.copyWith(ssid: ssid),
-        meshNodes: phase.meshNodes,
-      ),
-    );
-  }
-
-  void updateWifiPassword(String password) {
-    final phase = state.phase;
-    if (phase is! WizardConfiguring) return;
-    state = state.copyWith(
-      phase: WizardConfiguring(
-        wifiConfig: phase.wifiConfig.copyWith(password: password),
-        meshNodes: phase.meshNodes,
-      ),
-    );
-  }
-
-  void updateGuestEnabled(bool enabled) {
-    final phase = state.phase;
-    if (phase is! WizardConfiguring) return;
-    state = state.copyWith(
-      phase: WizardConfiguring(
-        wifiConfig: phase.wifiConfig.copyWith(guestEnabled: enabled),
-        meshNodes: phase.meshNodes,
-      ),
-    );
-  }
-
-  void updateGuestSsid(String ssid) {
-    final phase = state.phase;
-    if (phase is! WizardConfiguring) return;
-    state = state.copyWith(
-      phase: WizardConfiguring(
-        wifiConfig: phase.wifiConfig.copyWith(guestSsid: ssid),
-        meshNodes: phase.meshNodes,
-      ),
-    );
-  }
-
-  void updateGuestPassword(String password) {
-    final phase = state.phase;
-    if (phase is! WizardConfiguring) return;
-    state = state.copyWith(
-      phase: WizardConfiguring(
-        wifiConfig: phase.wifiConfig.copyWith(guestPassword: password),
-        meshNodes: phase.meshNodes,
-      ),
-    );
-  }
-
-  // ─── Split Mode Updates ──────────────────────────────────
-
-  /// Update a specific band's SSID in split mode (main WiFi).
-  void updateMainBandSsid(String ssidInstancePath, String ssid) {
-    final phase = state.phase;
-    if (phase is! WizardConfiguring) return;
-    state = state.copyWith(
-      phase: WizardConfiguring(
-        wifiConfig:
-            phase.wifiConfig.updateMainBand(ssidInstancePath, ssid: ssid),
-        meshNodes: phase.meshNodes,
-      ),
-    );
-  }
-
-  /// Update a specific band's password in split mode (main WiFi).
-  void updateMainBandPassword(String ssidInstancePath, String password) {
-    final phase = state.phase;
-    if (phase is! WizardConfiguring) return;
-    state = state.copyWith(
-      phase: WizardConfiguring(
-        wifiConfig: phase.wifiConfig
-            .updateMainBand(ssidInstancePath, password: password),
-        meshNodes: phase.meshNodes,
-      ),
-    );
-  }
-
-  /// Update a specific band's SSID in split mode (guest WiFi).
-  void updateGuestBandSsid(String ssidInstancePath, String ssid) {
-    final phase = state.phase;
-    if (phase is! WizardConfiguring) return;
-    state = state.copyWith(
-      phase: WizardConfiguring(
-        wifiConfig:
-            phase.wifiConfig.updateGuestBand(ssidInstancePath, ssid: ssid),
-        meshNodes: phase.meshNodes,
-      ),
-    );
-  }
-
-  /// Update a specific band's password in split mode (guest WiFi).
-  void updateGuestBandPassword(String ssidInstancePath, String password) {
-    final phase = state.phase;
-    if (phase is! WizardConfiguring) return;
-    state = state.copyWith(
-      phase: WizardConfiguring(
-        wifiConfig: phase.wifiConfig
-            .updateGuestBand(ssidInstancePath, password: password),
-        meshNodes: phase.meshNodes,
-      ),
-    );
+    state = state.copyWith(meshNodes: mesh.nodes);
   }
 
   // ─── Save ────────────────────────────────────────────────
@@ -291,32 +201,38 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   /// write that outlasted [pnpWifiAnswerWindowProvider].
   ///
   /// **The form is never re-entered silently.** A refusal lands on
-  /// [WizardConfiguring] with its `saveError` set, which the view shows — before
-  /// this, the error went into a field no view read, which is what the #1000
-  /// report describes as the guest page "appearing twice".
+  /// [WizardConfiguring] with its `saveError` set, which the shell shows —
+  /// before this, the error went into a field no view read, which is what the
+  /// #1000 report describes as the guest page "appearing twice". The drafts keep
+  /// what was typed, and the URL keeps the step Save was pressed on.
+  ///
+  /// **One save at a time.** The phase check below is the only one left of the
+  /// twelve this notifier had (#1511 P4 AC 7): the other eleven guarded the
+  /// field writers and the node re-read against the editing window, and the
+  /// writers are the drafts' now. This one guards the write itself — a second
+  /// call while the first is out must not send a second SET.
   Future<void> saveChanges() async {
-    final phase = state.phase;
-    if (phase is! WizardConfiguring) return;
-    final config = phase.wifiConfig;
+    if (state.phase is! WizardConfiguring) return;
+    final write = _collectWrite();
 
     state = state.copyWith(phase: const WizardSaving());
     final sinceWrite = Stopwatch()..start();
 
     final PnpWifiWriteOutcome outcome;
     try {
-      outcome = await _writeWifi(config);
+      outcome = await _writeWifi(write);
     } on ServiceError catch (e) {
       logger.e('[PnP] Save failed: $e');
-      _returnToForm(config, phase.meshNodes, e);
+      _returnToForm(e);
       return;
     }
 
     if (outcome == PnpWifiWriteOutcome.unanswered) {
-      final reached = await _pollUntilApplied(config, sinceWrite);
+      final reached = await _pollUntilApplied(write, sinceWrite);
       if (reached == _PollResult.notApplied) {
         logger.w('[PnP] router is back but never took the WiFi change — '
             'back to the form');
-        _returnToForm(config, phase.meshNodes, const UnexpectedError());
+        _returnToForm(const UnexpectedError());
         return;
       }
       if (reached == _PollResult.unreachable) {
@@ -324,10 +240,9 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
             'the user to reconnect');
         state = state.copyWith(
           phase: WizardNeedsReconnect(
-            newSsid: config.reconnectSsid,
-            newPassword: config.reconnectPassword,
-            wifiConfig: config,
-            meshNodes: phase.meshNodes,
+            newSsid: write.reconnectSsid,
+            newPassword: write.reconnectPassword,
+            write: write,
             writeUnanswered: true,
           ),
         );
@@ -336,12 +251,23 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
     }
 
     try {
-      await _finishSave(config);
+      await _finishSave(write);
     } on ServiceError catch (e) {
       logger.e('[PnP] Save failed after the WiFi write: $e');
-      _returnToForm(config, phase.meshNodes, e);
+      _returnToForm(e);
     }
   }
+
+  /// What the steps' drafts hold, as one write.
+  ///
+  /// Naming the two Wi-Fi drafts is the save's one step-specific line: both go
+  /// out in one Wi-Fi SET (see `kPnpSettingSteps`).
+  PnpWifiWrite _collectWrite() => PnpWifiWrite(
+        main: ref.read(pnpMainWifiDraftProvider).settings,
+        guest: state.plan?.settingStepIds.contains('guest') == true
+            ? ref.read(pnpGuestWifiDraftProvider).settings
+            : null,
+      );
 
   /// The WiFi write, with "no answer in time" folded into
   /// [PnpWifiWriteOutcome.unanswered] rather than thrown.
@@ -351,10 +277,10 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   /// the lock does for any hung call. Holding it for the request's full lifetime
   /// (up to 288 s measured) would starve the firmware stage that follows: its
   /// check takes this lock and gives up after 15 s.
-  Future<PnpWifiWriteOutcome> _writeWifi(PnpWifiConfig config) async {
+  Future<PnpWifiWriteOutcome> _writeWifi(PnpWifiWrite write) async {
     try {
       return await ref.read(uspMutationLockProvider).withLock(
-            () => _svc.saveWifi(config),
+            () => _svc.saveWifi(write),
             timeout: ref.read(pnpWifiAnswerWindowProvider),
           );
     } on TimeoutException {
@@ -364,10 +290,10 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
     }
   }
 
-  /// Polls until the router answers and reads back [config], or the save
+  /// Polls until the router answers and reads back [write], or the save
   /// deadline — counted from the write, [sinceWrite] — runs out.
   Future<_PollResult> _pollUntilApplied(
-    PnpWifiConfig config,
+    PnpWifiWrite write,
     Stopwatch sinceWrite,
   ) async {
     final interval = ref.read(pnpReconnectPollIntervalProvider);
@@ -375,7 +301,7 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
     var last = _PollResult.unreachable;
     while (true) {
       if (await _routerIsBack()) {
-        if (await _isWifiApplied(config)) return _PollResult.applied;
+        if (await _isWifiApplied(write)) return _PollResult.applied;
         last = _PollResult.notApplied;
       } else {
         last = _PollResult.unreachable;
@@ -388,9 +314,9 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   /// [PnpService.isWifiApplied], with a failed read as "not yet": the router
   /// that just answered a poll can still drop the next request while its WiFi
   /// settles.
-  Future<bool> _isWifiApplied(PnpWifiConfig config) async {
+  Future<bool> _isWifiApplied(PnpWifiWrite write) async {
     try {
-      return await _svc.isWifiApplied(config);
+      return await _svc.isWifiApplied(write);
     } on ServiceError catch (e) {
       logger.d('[PnP] could not read the WiFi back yet: $e');
       return false;
@@ -422,16 +348,19 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
     }
   }
 
-  /// With the WiFi written and the router reachable: acknowledge setup, then run
-  /// the firmware stage.
-  Future<void> _finishSave(PnpWifiConfig config) async {
+  /// With the WiFi written and the router reachable: acknowledge setup, mark
+  /// the drafts saved, then run the firmware stage.
+  ///
+  /// The drafts are marked saved only here, once the write is known to have
+  /// landed: a save that comes back to the form — refused, never applied, or
+  /// lost across the reconnect — leaves them holding the edits to send again.
+  Future<void> _finishSave(PnpWifiWrite write) async {
     await _acknowledgeSetup();
     state = state.copyWith(phase: const WizardSaved());
-    await _checkFirmware(
-      ssid: config.reconnectSsid,
-      password: config.reconnectPassword,
-      wifiConfig: config,
-    );
+    for (final id in state.plan?.settingStepIds ?? const <String>[]) {
+      ref.read(pnpSettingStep(id).draft).markAsSaved();
+    }
+    await _checkFirmware(WizardWifiReady.fromWrite(write));
   }
 
   /// Acknowledge PnP completion and save serial number.
@@ -456,25 +385,18 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
         .saveSelectedNetwork(state.serialNumber!, '');
   }
 
-  /// Back to the form with [error] for the view to show.
+  /// Back to the form with [error] for the shell to show.
+  ///
+  /// The drafts still hold what was typed and the URL still names the step Save
+  /// was pressed on, so nothing else has to be carried back.
   ///
   /// A write found not to have landed comes here with a bare [UnexpectedError]:
   /// the alternative is a completion screen naming a network the router is not
   /// broadcasting. No `detail` on it — `localizeServiceError` shows an
   /// [UnexpectedError]'s detail verbatim, which would put an English sentence in
   /// front of every locale. The reason is in the log.
-  void _returnToForm(
-    PnpWifiConfig config,
-    List<NodeEntity> meshNodes,
-    ServiceError error,
-  ) {
-    state = state.copyWith(
-      phase: WizardConfiguring(
-        wifiConfig: config,
-        meshNodes: meshNodes,
-        saveError: error,
-      ),
-    );
+  void _returnToForm(ServiceError error) {
+    state = state.copyWith(phase: WizardConfiguring(saveError: error));
   }
 
   // ─── Reconnection ────────────────────────────────────────
@@ -498,25 +420,27 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
       await Future.delayed(backoff(attempt));
       if (!await _routerIsBack()) continue;
 
-      final config = phase.wifiConfig;
-      if (config == null) {
-        // Only the demo launcher builds this phase without a config.
+      final write = phase.write;
+      if (write == null) {
+        // Only the demo launcher builds this phase without a write.
         state = state.copyWith(phase: const WizardSaved());
-        await _checkFirmware(ssid: phase.newSsid, password: phase.newPassword);
+        await _checkFirmware(
+          WizardWifiReady(ssid: phase.newSsid, password: phase.newPassword),
+        );
         return;
       }
-      if (phase.writeUnanswered && !await _isWifiApplied(config)) {
+      if (phase.writeUnanswered && !await _isWifiApplied(write)) {
         // Reached the router, and it is not on the new settings: the write was
         // lost, not merely its answer. The form is where it is resent from.
         logger.w('[PnP] WiFi write did not land — back to the form');
-        _returnToForm(config, phase.meshNodes, const UnexpectedError());
+        _returnToForm(const UnexpectedError());
         return;
       }
       try {
-        await _finishSave(config);
+        await _finishSave(write);
       } on ServiceError catch (e) {
         logger.e('[PnP] Save failed after the router came back: $e');
-        _returnToForm(config, phase.meshNodes, e);
+        _returnToForm(e);
       }
       return;
     }
@@ -533,8 +457,8 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   ///
   /// **A flow stage, not a form step (REQ-B0).** It runs after `saveWifi` has been
   /// committed — from `saveChanges()` when the main WiFi did not change, and from
-  /// [testReconnect] when it did — so `_buildStepperForm`'s step count is untouched
-  /// by any of this. A user who reaches here has a configured router whatever
+  /// [testReconnect] when it did — so the plan's step count is untouched by any of
+  /// this. A user who reaches here has a configured router whatever
   /// happens next, which is what lets every failure below end in
   /// [WizardWifiReady].
   ///
@@ -561,20 +485,11 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   /// verification that failed for a benign reason — a slow TR-181 table, a router
   /// that published no `Version` — would paint "Update Failed" over a setup that
   /// worked. Reporting on an update belongs to the page that exists for it.
-  Future<void> _checkFirmware({
-    required String ssid,
-    required String password,
-    PnpWifiConfig? wifiConfig,
-  }) async {
-    final ready = WizardWifiReady.fromWifiConfig(
-      ssid: ssid,
-      password: password,
-      wifiConfig: wifiConfig,
-    );
+  Future<void> _checkFirmware(WizardWifiReady ready) async {
     // REQ-B4 is satisfied by `ready` itself outliving the reboot, and it is built
-    // here — before the stage — for the reason a persisted copy used to be written
-    // here: after the flash is dispatched there may be no session left to build it
-    // from. What the router reboot cannot touch is this object: it is a router
+    // before the stage — by the caller, from the write — for the reason a persisted
+    // copy used to be written here: after the flash is dispatched there may be no
+    // session left to build it from. What the router reboot cannot touch is this object: it is a router
     // restart, not a page reload, so the container is still the same one, and
     // `pnpProvider` — `autoDispose` since #1511 P3 — is still alive because
     // `PnpFlowShell` is still on screen watching it: the wizard is locked for the
@@ -772,6 +687,11 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   }
 
   // ─── Demo ─────────────────────────────────────────────────
+
+  /// Demo only: enter the steps on [router] without asking the router, the way
+  /// the wizard does once its read comes back. `DemoPnpNotifier` starts the
+  /// launcher's "WiFi Wizard" run with it.
+  void setDemoWizard(PnpWizardData router) => _enterSteps(router, const []);
 
   /// Demo only: directly set phase for UI testing — `DemoPnpNotifier` starts a
   /// run at the phase the demo launcher picked with it. Tests use it to pin a
