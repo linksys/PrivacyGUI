@@ -9,6 +9,7 @@ import '../../../mocks/test_data/local_network_test_data.dart';
 import '../../../util/usp_param_templates.dart';
 
 import '../../../mocks/test_data/usp_add_refusal_test_data.dart';
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -528,18 +529,16 @@ void main() {
     });
 
     test('immediateToggle throws on firmware failure', () async {
-      when(() => mockUsp.set(any())).thenAnswer((_) async => {
-            'success': false,
-            'result': {
-              'data': <String, dynamic>{},
-              'error': {
-                'path.1.Enable': {
-                  'errorCode': 7004,
-                  'errorMessage': 'Parameter not writable'
-                }
-              }
-            },
-          });
+      when(() => mockUsp.set(any()))
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'path.1.Enable': (
+                    code: 7004,
+                    message: 'Parameter not writable',
+                  ),
+                },
+                success: false,
+              ));
 
       expect(
         () => service.immediateToggle('path.1.', false),
@@ -564,18 +563,16 @@ void main() {
     });
 
     test('immediateAdd throws on firmware failure', () async {
-      when(() => mockUsp.add(any())).thenAnswer((_) async => {
-            'success': false,
-            'result': {
-              'data': <String, dynamic>{},
-              'error': {
-                'Device.DHCPv4.Server.Pool.1.StaticAddress.': {
-                  'errorCode': 7001,
-                  'errorMessage': 'Duplicate MAC address'
-                }
-              }
-            },
-          });
+      when(() => mockUsp.add(any()))
+          .thenAnswer((_) async => UspEnvelopeTestData.pathErrors(
+                {
+                  'Device.DHCPv4.Server.Pool.1.StaticAddress.': (
+                    code: 7001,
+                    message: 'Duplicate MAC address',
+                  ),
+                },
+                success: false,
+              ));
 
       expect(
         () =>
@@ -596,18 +593,11 @@ void main() {
     });
 
     test('immediateDelete throws on firmware failure', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-            'success': false,
-            'result': {
-              'data': <String, dynamic>{},
-              'error': {
-                'path.1.': {
-                  'errorCode': 7003,
-                  'errorMessage': 'Object not found'
-                }
-              }
-            },
-          });
+      when(() => mockUsp.delete(any()))
+          .thenAnswer((_) async => UspEnvelopeTestData.pathErrors(
+                {'path.1.': (code: 7003, message: 'Object not found')},
+                success: false,
+              ));
 
       expect(
         () => service.immediateDelete('path.1.'),
@@ -651,18 +641,11 @@ void main() {
     });
 
     test('saveBatch throws on complete failure', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-            'success': false,
-            'result': {
-              'data': <String, dynamic>{},
-              'error': {
-                'path.1.': {
-                  'errorCode': 7003,
-                  'errorMessage': 'Object not found'
-                }
-              }
-            },
-          });
+      when(() => mockUsp.delete(any()))
+          .thenAnswer((_) async => UspEnvelopeTestData.pathErrors(
+                {'path.1.': (code: 7003, message: 'Object not found')},
+                success: false,
+              ));
 
       final original = [
         DhcpReservationUIModel(
@@ -686,18 +669,15 @@ void main() {
     test('saveBatch fails as partial when an Add answers a partial success',
         () async {
       // Partial success: one succeeds, one fails
-      when(() => mockUsp.add(any())).thenAnswer((_) async => {
-            'success': true,
-            'result': {
-              'data': {
-                'affectedCount': 1,
-                'instances': ['path.1.']
-              },
-              'error': {
-                'path.2.': {'errorCode': 7001, 'errorMessage': 'Duplicate'}
-              }
-            },
-          });
+      when(() => mockUsp.add(any()))
+          .thenAnswer((_) async => UspEnvelopeTestData.pathErrors(
+                {'path.2.': (code: 7001, message: 'Duplicate')},
+                success: true,
+                data: {
+                  'affectedCount': 1,
+                  'instances': ['path.1.']
+                },
+              ));
 
       final current = [
         DhcpReservationUIModel(

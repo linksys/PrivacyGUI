@@ -7,6 +7,8 @@ import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_refusal_reason.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
+
 void main() {
   group('parseUspError', () {
     test('parses Protocol error with fault code 7026', () {
@@ -382,28 +384,19 @@ void main() {
         String? raw;
         const command = 'Device.X_LINKSYS_AutoIPoE.Apply()';
         try {
-          // Both members, as usp-client 0.16.0 resolves them
+          // The `errors` entry usp-client 0.16.0 resolves for it
           // (test/web/usp_operate_test.mjs checks the fixture against it).
-          UspClient.extractOperateResult({
-            'success': false,
-            'result': {
-              'data': <String, dynamic>{},
-              'error': {
-                command: {
-                  'errorCode': fixture['errorCode'],
-                  'errorMessage': fixture['errorMessage'],
-                },
-              },
-              'errors': [
-                {
-                  'kind': fixture['errorKind'],
-                  'path': command,
-                  'errorCode': fixture['errorCode'],
-                  'errorMessage': fixture['errorMessage'],
-                },
-              ],
-            },
-          });
+          UspClient.extractOperateResult(UspEnvelopeTestData.envelope(
+            success: false,
+            errors: [
+              (
+                kind: fixture['errorKind'] as String,
+                path: command,
+                errorCode: fixture['errorCode'],
+                errorMessage: fixture['errorMessage'] as String,
+              ),
+            ],
+          ));
         } catch (error) {
           raw = error as String;
         }

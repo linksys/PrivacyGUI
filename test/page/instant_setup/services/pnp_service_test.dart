@@ -772,34 +772,25 @@ void main() {
   group('PnpService — WiFi save (#1000 / #1490 / #1491)', () {
     // The router's own reply when the request never reached it: the browser lost
     // the network the write restarted. Shape taken from #1490's log.
-    Map<String, dynamic> transportLost(Map<String, dynamic> params) => {
-          'success': false,
-          'result': {
-            'data': <String, dynamic>{},
-            'error': {
-              for (final path in params.keys)
-                path: {
-                  'errorCode': 9999,
-                  'errorMessage': 'Transport error: Transport error: HTTP '
-                      'error: error sending request: TypeError: Failed to fetch',
-                },
-            },
-          },
-        };
+    Map<String, dynamic> transportLost(Map<String, dynamic> params) =>
+        UspEnvelopeTestData.failedAsAWhole(
+          params.keys.toList(),
+          errorCode: 9999,
+          errorMessage: 'Transport error: Transport error: HTTP '
+              'error: error sending request: TypeError: Failed to fetch',
+        );
 
-    Map<String, dynamic> refused(Map<String, dynamic> params) => {
-          'success': false,
-          'result': {
-            'data': <String, dynamic>{},
-            'error': {
-              for (final path in params.keys)
-                path: {
-                  'errorCode': 7002,
-                  'errorMessage': 'An instance with ssid already present.',
-                },
-            },
+    Map<String, dynamic> refused(Map<String, dynamic> params) =>
+        UspEnvelopeTestData.parameterErrors(
+          {
+            for (final path in params.keys)
+              path: (
+                code: 7002,
+                message: 'An instance with ssid already present.',
+              ),
           },
-        };
+          success: false,
+        );
 
     /// What the broker sends back for an atomic SET across the SSID and
     /// AccessPoint tables (FLWRT 2.0.2, bench log of 2026-10-05): the router

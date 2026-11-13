@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/ipv6_port_service/services/usp_ipv6_port_servic
 
 import '../../../mocks/test_data/usp_refusal_test_data.dart';
 import '../../../mocks/test_data/usp_add_refusal_test_data.dart';
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -30,26 +31,18 @@ Map<String, dynamic> _added(String instance) => {
 /// A refusal as the WASM client resolves it: it never throws on one.
 Map<String, dynamic> _refused(String errorMessage,
         {String path = 'Device.Firewall.Chain.3.Rule.'}) =>
-    {
-      'success': false,
-      'result': {
-        'data': <String, dynamic>{},
-        'error': {
-          path: {'errorCode': 9007, 'errorMessage': errorMessage},
-        },
-      },
-    };
+    UspEnvelopeTestData.pathErrors(
+      {path: (code: 9007, message: errorMessage)},
+      success: false,
+    );
 
 /// A Set the router applied in part: some paths written, one refused.
-Map<String, dynamic> _partlyRefused(String path, String errorMessage) => {
-      'success': true,
-      'result': {
-        'data': {'Device.Firewall.Chain.3.Rule.26.Enable': 'true'},
-        'error': {
-          path: {'errorCode': 9007, 'errorMessage': errorMessage},
-        },
-      },
-    };
+Map<String, dynamic> _partlyRefused(String path, String errorMessage) =>
+    UspEnvelopeTestData.parameterErrors(
+      {path: (code: 9007, message: errorMessage)},
+      success: true,
+      data: {'Device.Firewall.Chain.3.Rule.26.Enable': 'true'},
+    );
 
 Ipv6PortServiceRuleUIModel _ui({
   String? instancePath = 'Device.Firewall.Chain.3.Rule.26.',

@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/port_forwarding/services/usp_port_forwarding_se
 
 import '../../../mocks/test_data/usp_refusal_test_data.dart';
 import '../../../mocks/test_data/usp_add_refusal_test_data.dart';
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -37,18 +38,10 @@ Map<String, dynamic> uspFailure(
         {String path = 'bulk_operation',
         int errorCode = 7004,
         String errorMessage = 'Operation failed'}) =>
-    {
-      'success': false,
-      'result': {
-        'data': <String, dynamic>{},
-        'error': {
-          path: {
-            'errorCode': errorCode,
-            'errorMessage': errorMessage,
-          }
-        },
-      },
-    };
+    UspEnvelopeTestData.pathErrors(
+      {path: (code: errorCode, message: errorMessage)},
+      success: false,
+    );
 
 void main() {
   late MockUspClient mockUsp;

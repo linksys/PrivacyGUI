@@ -165,6 +165,35 @@ class UspSuccessDetail {
   String toString() => 'UspSuccessDetail($requestedPath)';
 }
 
+/// What one entry of a usp-client `errors` list says failed (usp-client
+/// 0.16.0). The client reads it from the structure of the answer, never from
+/// the shape of a path.
+enum UspErrorKind {
+  /// The call as a whole: the client's own transport (9999), decode (9998) or
+  /// validation (9997) failure, or the router refusing the whole request (a
+  /// USP `Error`, with the router's code).
+  request,
+
+  /// One requested path: an object the router did not write, create or
+  /// delete, a Get path it does not have, a command it refused.
+  path,
+
+  /// The object was written or created, but the router refused this
+  /// parameter of it.
+  parameter,
+
+  /// A failure the app makes itself, or a kind this client does not name.
+  unknown;
+
+  /// The kind an `errors` entry's `kind` member names.
+  static UspErrorKind fromWire(Object? kind) => switch (kind) {
+        'request' => request,
+        'path' => path,
+        'parameter' => parameter,
+        _ => unknown,
+      };
+}
+
 /// 失敗操作的詳細資訊
 class UspErrorDetail {
   final String requestedPath;
@@ -179,11 +208,18 @@ class UspErrorDetail {
   /// it is for failures the app makes itself.
   final UspRefusalReason refusalReason;
 
+  /// What failed, as the response's `errors` entry said ([UspErrorKind]).
+  ///
+  /// Carried for the log and for diagnosis; no write decides anything by it.
+  /// The plain constructor leaves it [UspErrorKind.unknown].
+  final UspErrorKind kind;
+
   const UspErrorDetail({
     required this.requestedPath,
     required this.errorCode,
     required this.errorMessage,
     this.refusalReason = UspRefusalReason.unknown,
+    this.kind = UspErrorKind.unknown,
   });
 
   /// A failure as a response reported it (the router's, or the WASM
@@ -192,21 +228,15 @@ class UspErrorDetail {
     required String requestedPath,
     required int errorCode,
     required String errorMessage,
+    required UspErrorKind kind,
   }) =>
       UspErrorDetail(
         requestedPath: requestedPath,
         errorCode: errorCode,
         errorMessage: errorMessage,
         refusalReason: UspRefusalReason.fromErrorMessage(errorMessage),
+        kind: kind,
       );
-
-  factory UspErrorDetail.fromMap(Map<String, dynamic> map) {
-    return UspErrorDetail.fromResponse(
-      requestedPath: map['requestedPath'] as String,
-      errorCode: map['errorCode'] as int? ?? -1,
-      errorMessage: map['errorMessage'] as String? ?? 'Unknown error',
-    );
-  }
 
   /// 檢查是否為特定類型的錯誤
   bool isErrorCode(int code) => errorCode == code;
@@ -230,7 +260,7 @@ class UspErrorDetail {
 
   @override
   String toString() =>
-      'UspErrorDetail($requestedPath: $errorCode - $errorMessage)';
+      'UspErrorDetail(${kind.name} $requestedPath: $errorCode - $errorMessage)';
 }
 
 // =============================================================================
@@ -313,6 +343,14 @@ typedef UspOperateResult = UspOperationResult<Map<String, dynamic>>;
 // =============================================================================
 
 /// 從 WASM 回傳的 Map 解析 USP 操作結果
+///
+/// A write's failures are read from the envelope's `errors` list (usp-client
+/// 0.16.0), never from the deprecated `error` map, which the next minor
+/// release of the client drops. The two carry the same entries; the list also
+/// keeps a second entry under a path the map would overwrite, and says each
+/// entry's [UspErrorKind]. Whether a write succeeded, partly succeeded or
+/// failed is still `success` plus whether any entry is there; `kind` decides
+/// nothing here.
 class UspResultParser {
   static const _tag = '[USP][Parser]:';
 
@@ -337,20 +375,18 @@ class UspResultParser {
     final success = map['success'] as bool? ?? false;
     final resultMap = map['result'] as Map<String, dynamic>? ?? {};
     final data = resultMap['data'] as Map<String, dynamic>? ?? {};
-    final error = resultMap['error'] as Map<String, dynamic>?;
+    final failures = _errorDetails(resultMap['errors']);
 
     if (!success) {
-      final failures = <UspErrorDetail>[];
-      if (error != null) {
-        failures.addAll(_errorDetails(error));
-      } else {
-        failures.add(const UspErrorDetail(
-          requestedPath: 'add_operation',
-          errorCode: -1,
-          errorMessage: 'Add operation failed',
-        ));
-      }
-      return UspFailure<List<String>>(failures);
+      return UspFailure<List<String>>(failures.isNotEmpty
+          ? failures
+          : const [
+              UspErrorDetail(
+                requestedPath: 'add_operation',
+                errorCode: -1,
+                errorMessage: 'Add operation failed',
+              ),
+            ]);
     }
 
     // Extract instances array → UspCreatedInstance list
@@ -371,8 +407,8 @@ class UspResultParser {
       ),
     ];
 
-    if (error != null && error.isNotEmpty) {
-      return UspPartialSuccess<List<String>>(successes, _errorDetails(error));
+    if (failures.isNotEmpty) {
+      return UspPartialSuccess<List<String>>(successes, failures);
     }
 
     return UspSuccess<List<String>>(successes);
@@ -392,26 +428,25 @@ class UspResultParser {
     return result;
   }
 
-  /// 解析 WASM v0.11.0 格式：{success, result: {data, error?}}
+  /// 解析 unified 格式：{success, result: {data, errors?}}
   static UspOperationResult<T> _parseGenericResult<T>(
       Map<String, dynamic> map) {
     final success = map['success'] as bool? ?? false;
     final result = map['result'] as Map<String, dynamic>? ?? {};
     final data = result['data'] as Map<String, dynamic>? ?? {};
-    final error = result['error'] as Map<String, dynamic>?;
+    final failures = _errorDetails(result['errors']);
 
     final successes = <UspSuccessDetail>[];
-    final failures = <UspErrorDetail>[];
 
-    if (success && error == null) {
-      // All success: success=true, no error field
+    if (success && failures.isEmpty) {
+      // All success: success=true, no errors
       successes.add(UspSuccessDetail(
         requestedPath: 'bulk_operation',
         retrievedParams: data,
       ));
       return UspSuccess<T>(successes);
-    } else if (success && error != null) {
-      // Partial success: success=true, but has error field
+    } else if (success) {
+      // Partial success: success=true, but errors has entries
       if (data.isNotEmpty) {
         successes.add(UspSuccessDetail(
           requestedPath: 'bulk_operation',
@@ -419,34 +454,38 @@ class UspResultParser {
         ));
       }
 
-      failures.addAll(_errorDetails(error));
-
       return UspPartialSuccess<T>(successes, failures);
     } else {
-      // All failure: success=false
-      if (error != null) {
-        failures.addAll(_errorDetails(error));
-      } else {
-        // No specific error info, create generic failure
-        failures.add(const UspErrorDetail(
-          requestedPath: 'bulk_operation',
-          errorCode: -1,
-          errorMessage: 'Operation failed',
-        ));
-      }
-
-      return UspFailure<T>(failures);
+      // All failure: success=false. No specific error info → generic failure
+      return UspFailure<T>(failures.isNotEmpty
+          ? failures
+          : const [
+              UspErrorDetail(
+                requestedPath: 'bulk_operation',
+                errorCode: -1,
+                errorMessage: 'Operation failed',
+              ),
+            ]);
     }
   }
 
-  /// The envelope's `error` member, one entry per path, each with the reason
-  /// its message names ([UspErrorDetail.fromResponse]).
-  static List<UspErrorDetail> _errorDetails(Map<String, dynamic> error) => [
-        for (final entry in error.entries)
-          UspErrorDetail.fromMap({
-            ...entry.value as Map<String, dynamic>,
-            'requestedPath': entry.key,
-          }),
+  /// The envelope's `errors` list, one detail per entry, in the order the
+  /// answer gives them, each with the reason its message names
+  /// ([UspErrorDetail.fromResponse]).
+  ///
+  /// An entry that names no path (a 9997 for input the client could not read)
+  /// is keyed `''`, as the `error` map keys it.
+  static List<UspErrorDetail> _errorDetails(Object? errors) => [
+        if (errors is List)
+          for (final entry in errors)
+            if (entry is Map)
+              UspErrorDetail.fromResponse(
+                requestedPath: entry['path'] as String? ?? '',
+                errorCode: entry['errorCode'] as int? ?? -1,
+                errorMessage:
+                    entry['errorMessage'] as String? ?? 'Unknown error',
+                kind: UspErrorKind.fromWire(entry['kind']),
+              ),
       ];
 
   /// 創建空的成功結果（當沒有參數需要操作時）
@@ -468,6 +507,11 @@ class UspResultParser {
     ]);
   }
 
+  /// `<path>=<code> (<kind>)`, so a bench log tells a request the router
+  /// refused as a whole from one parameter it refused.
+  static String _logEntry(UspErrorDetail f) =>
+      '${f.requestedPath}=${f.errorCode} (${f.kind.name})';
+
   static void _logResult<T>(String op, UspOperationResult<T> result) {
     switch (result) {
       case UspSuccess(details: final details):
@@ -478,11 +522,10 @@ class UspResultParser {
         ):
         logger.w('$_tag $op → UspPartialSuccess '
             '(${successes.length} successes, ${failures.length} failures: '
-            '${failures.map((f) => '${f.requestedPath}=${f.errorCode}').join(', ')})');
+            '${failures.map(_logEntry).join(', ')})');
       case UspFailure(errors: final errors):
         logger.w('$_tag $op → UspFailure '
-            '(${errors.length} errors: '
-            '${errors.map((e) => '${e.requestedPath}=${e.errorCode}').join(', ')})');
+            '(${errors.length} errors: ${errors.map(_logEntry).join(', ')})');
     }
   }
 }
