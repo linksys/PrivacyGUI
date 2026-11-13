@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -45,8 +44,7 @@ class _PnpIspSettingsViewState extends ConsumerState<PnpIspSettingsView> {
 
     final phase = ref.read(internetTroubleshootingProvider);
     if (phase is TroubleshootingNoInternet && phase.saveError != null) {
-      showFailedSnackBar(
-          context, localizeServiceError(context, phase.saveError!));
+      showSaveErrorSnackBar(context, phase.saveError!);
     }
   }
 

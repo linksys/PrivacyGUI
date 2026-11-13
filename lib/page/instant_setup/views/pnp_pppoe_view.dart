@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -26,24 +25,27 @@ class _PnpPppoeViewState extends ConsumerState<PnpPppoeView> {
   final _vlanIdController = TextEditingController();
   bool _showVlan = false;
 
-  /// Prefill from the router's WAN once it has been read — which the hub started
-  /// when it opened, so it is normally here already. Once only: a read that
-  /// lands later (after a save, say) must not overwrite what the user typed.
+  /// Prefill from the first WAN read that completes — which the hub started
+  /// when it opened, so it is normally done already. Once only, whatever that
+  /// read found: a read that lands later (after a save, say) must not overwrite
+  /// what the user typed, including into a form that opened empty.
   bool _prefilled = false;
 
   @override
   void initState() {
     super.initState();
     ref.listenManual(troubleshootingWanPrefillProvider, (_, next) {
-      final wan = next.valueOrNull;
-      if (wan != null && !_prefilled) setState(() => _prefill(wan));
+      if (!_prefilled && !next.isLoading) {
+        setState(() => _prefill(next.valueOrNull));
+      }
     });
-    final wan = ref.read(troubleshootingWanPrefillProvider).valueOrNull;
-    if (wan != null) _prefill(wan);
+    final now = ref.read(troubleshootingWanPrefillProvider);
+    if (!now.isLoading) _prefill(now.valueOrNull);
   }
 
-  void _prefill(UspInternetSettingsForm wan) {
+  void _prefill(UspInternetSettingsForm? wan) {
     _prefilled = true;
+    if (wan == null) return;
     _usernameController.text = wan.pppUsername;
     _passwordController.text = wan.pppPassword;
     if (wan.vlanEnabled) {
@@ -69,8 +71,7 @@ class _PnpPppoeViewState extends ConsumerState<PnpPppoeView> {
       if (prev is IspSaving &&
           next is TroubleshootingNoInternet &&
           next.saveError != null) {
-        showFailedSnackBar(
-            context, localizeServiceError(context, next.saveError!));
+        showSaveErrorSnackBar(context, next.saveError!);
       }
     });
 
