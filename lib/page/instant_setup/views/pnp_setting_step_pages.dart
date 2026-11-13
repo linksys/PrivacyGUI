@@ -3,6 +3,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_flow_plan.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_guest_step_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_wifi_step_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/probe/pnp_probe_step_view.dart';
 
 /// A PnP setting step's page side: its stepper label and its view (#1511 P4).
 ///
@@ -34,6 +35,12 @@ final pnpSettingStepPages = <PnpSettingStepPage>[
     id: PnpGuestStepView.stepId,
     label: (context) => loc(context).guestWifi,
     view: () => const PnpGuestStepView(),
+  ),
+  // #1511 P6's probe — test-only.
+  PnpSettingStepPage(
+    id: PnpProbeStepView.stepId,
+    label: (context) => loc(context).settings,
+    view: () => const PnpProbeStepView(),
   ),
 ];
 

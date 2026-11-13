@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import 'pnp_probe_settings.dart';
 import 'pnp_wifi_band.dart';
 
 /// The main Wi-Fi, as the PnP wizard's Wi-Fi step edits it (#1511 P4).
@@ -149,15 +150,19 @@ class PnpGuestWifiSettings extends Equatable {
 /// The router's Wi-Fi as the wizard read it when it started: what the setting
 /// steps' drafts begin from, and what decides whether there is a guest step.
 class PnpWizardData extends Equatable {
-  const PnpWizardData({required this.main, this.guest});
+  const PnpWizardData({required this.main, this.guest, this.probe});
 
   final PnpMainWifiSettings main;
 
   /// `null` when the router has no guest SSID.
   final PnpGuestWifiSettings? guest;
 
+  /// **#1511 P6's probe — test-only.** `null` on every real router: the read
+  /// never fills it.
+  final PnpProbeSettings? probe;
+
   @override
-  List<Object?> get props => [main, guest];
+  List<Object?> get props => [main, guest, probe];
 }
 
 List<PnpWifiBand> _editBand(

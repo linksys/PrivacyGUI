@@ -16,6 +16,7 @@ import 'package:privacy_gui/page/firmware_update/providers/firmware_update_notif
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_settings.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_write.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_probe_draft_provider.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_setting_steps_provider.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_wifi_draft_provider.dart';
@@ -274,6 +275,10 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
         main: ref.read(pnpMainWifiDraftProvider).settings,
         guest: state.plan?.settingStepIds.contains('guest') == true
             ? ref.read(pnpGuestWifiDraftProvider).settings
+            : null,
+        // #1511 P6's probe — test-only.
+        probe: state.plan?.settingStepIds.contains('probe') == true
+            ? ref.read(pnpProbeDraftProvider)
             : null,
       );
 
