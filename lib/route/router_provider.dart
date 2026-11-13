@@ -26,7 +26,6 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/mode/session_entry.dart';
 import 'package:privacy_gui/page/landing/_landing.dart';
 import 'package:privacy_gui/page/login/views/_views.dart';
-import 'package:privacy_gui/page/login/auto_parent/views/auto_parent_first_login_view.dart';
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/route/route_model.dart';
@@ -114,13 +113,6 @@ part 'route_usp_dashboard.dart';
 part 'route_pnp.dart';
 part 'route_remote_assistance.dart';
 
-// init path enum
-enum LocalWhereToGo {
-  login,
-  firstTimeLogin,
-  ;
-}
-
 /// The routes every surface registers.
 ///
 /// **Not the whole table.** `remoteAssistanceRoute` is not here: since #1497 the
@@ -131,7 +123,6 @@ enum LocalWhereToGo {
 /// that mode's surface.
 final sharedAppRoutes = [
   localLoginRoute,
-  autoParentFirstLoginRoute,
   homeRoute,
   uspDashboardRoute,
   pnpRoute,
@@ -214,12 +205,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         // is. Belongs on #1498's ticket, not in it.
         router.autoConfigurationLogic(state);
         return router.redirectLogic(state);
-      } else if (state.matchedLocation.startsWith('/autoParentFirstLogin')) {
-        // bypass auto parent first login page
-        return state.uri.toString();
-      } else if (state.matchedLocation.startsWith('/pnp') ||
-          state.matchedLocation.startsWith('/pnpNoInternetConnection')) {
-        // PnP routes — no auth required, pass through.
+      } else if (state.matchedLocation.startsWith('/pnp')) {
+        // PnP routes — no auth required, pass through. This prefix also covers
+        // the `/pnpNoInternetConnection` tree.
         return state.uri.toString();
       } else if (state.matchedLocation.startsWith('/remoteAssistance')) {
         // Remote Assistance routes — no normal auth required, pass through.
@@ -363,24 +351,13 @@ class RouterNotifier extends ChangeNotifier {
     }
     // Cache refs before async _prepare — same pattern as authCheck.
     final session = _ref.read(sessionProvider.notifier);
-    final autoParentLogin = _ref.read(autoParentFirstLoginStateProvider);
-    final autoParentLoginNotifier =
-        _ref.read(autoParentFirstLoginStateProvider.notifier);
     final cachedDeviceInfo = _ref.read(sessionProvider).deviceInfo;
     return _prepare(
       state,
       loginType: loginType,
       session: session,
-      autoParentLogin: autoParentLogin,
-      autoParentLoginNotifier: autoParentLoginNotifier,
       cachedDeviceInfo: cachedDeviceInfo,
     ).then((_) => null);
-  }
-
-  FutureOr<String?> goFirstTimeLogin(GoRouterState state) {
-    logger.i('[Route]: Mark First Time Login');
-    _ref.read(autoParentFirstLoginStateProvider.notifier).state = true;
-    return authCheck(state);
   }
 
   Future<String?> authCheck(GoRouterState state) {
@@ -390,9 +367,6 @@ class RouterNotifier extends ChangeNotifier {
     // "Cannot use ref functions after the dependency of a provider changed
     // but before the provider rebuilt"
     final session = _ref.read(sessionProvider.notifier);
-    final autoParentLogin = _ref.read(autoParentFirstLoginStateProvider);
-    final autoParentLoginNotifier =
-        _ref.read(autoParentFirstLoginStateProvider.notifier);
     final cachedDeviceInfo = _ref.read(sessionProvider).deviceInfo;
 
     return _ref.read(authProvider.notifier).init().then((authState) async {
@@ -407,8 +381,6 @@ class RouterNotifier extends ChangeNotifier {
             goToPath: RoutePath.uspDashboard,
             loginType: type,
             session: session,
-            autoParentLogin: autoParentLogin,
-            autoParentLoginNotifier: autoParentLoginNotifier,
             cachedDeviceInfo: cachedDeviceInfo,
           ).then((path) => path ?? RoutePath.uspDashboard),
         _ => _home(state.uri.query),
@@ -425,8 +397,6 @@ class RouterNotifier extends ChangeNotifier {
     String? goToPath,
     LoginType? loginType,
     required SessionNotifier session,
-    required bool autoParentLogin,
-    required StateController<bool> autoParentLoginNotifier,
     NodeDeviceInfo? cachedDeviceInfo,
   }) async {
     logger.d('[Prepare]: prepare data. Go to path: $goToPath');
@@ -439,21 +409,13 @@ class RouterNotifier extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     String? serialNumber = prefs.getString(pCurrentSN);
-    String? naviPath;
 
     if (loginType == LoginType.local) {
-      naviPath = await _prepareLocal(
+      await _prepareLocal(
         serialNumber,
         session: session,
-        autoParentLogin: autoParentLogin,
-        autoParentLoginNotifier: autoParentLoginNotifier,
         cachedDeviceInfo: cachedDeviceInfo,
       );
-    }
-    //
-    if (naviPath != null) {
-      logger.i('[Prepare]: naviPath - $naviPath');
-      return naviPath;
     }
     logger.d('[Prepare]: device info check - $serialNumber');
     final nodeDeviceInfo = await session
@@ -487,22 +449,14 @@ class RouterNotifier extends ChangeNotifier {
     }
   }
 
-  Future<String?> _prepareLocal(
+  Future<void> _prepareLocal(
     String? serialNumber, {
     required SessionNotifier session,
-    required bool autoParentLogin,
-    required StateController<bool> autoParentLoginNotifier,
     NodeDeviceInfo? cachedDeviceInfo,
   }) async {
     logger.i('[Prepare]: local - $serialNumber');
-    // If auto parent first login, then go to auto parent first login page
-    if (autoParentLogin) {
-      logger.i('[Prepare]: autoParentFirstLogin');
-      autoParentLoginNotifier.state = false;
-      return RoutePath.autoParentFirstLogin;
-    }
     if (isSerialNumberChanged(serialNumber, cachedDeviceInfo)) {
-      return null;
+      return;
     }
 
     try {
@@ -510,7 +464,7 @@ class RouterNotifier extends ChangeNotifier {
       final newSerialNumber = deviceInfo.serialNumber;
 
       if (serialNumber == newSerialNumber) {
-        return null;
+        return;
       }
 
       // Save serial number if serial number changed
@@ -518,15 +472,9 @@ class RouterNotifier extends ChangeNotifier {
     } catch (e) {
       logger.w('[Prepare]: forceFetchDeviceInfo failed in _prepareLocal: $e');
     }
-
-    return null;
   }
 
   bool isSerialNumberChanged(
           String? serialNumber, NodeDeviceInfo? cachedDeviceInfo) =>
       serialNumber != null && serialNumber == cachedDeviceInfo?.serialNumber;
 }
-
-final autoParentFirstLoginStateProvider = StateProvider<bool>((ref) {
-  return false;
-});

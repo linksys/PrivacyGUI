@@ -41,12 +41,10 @@ final pnpServiceProvider = Provider<PnpService>((ref) {
 
 /// Result of factory-default detection.
 class FactoryDefaultCheckResult {
-  final bool isFactoryDefault;
   final String serialNumber;
   final String modelName;
 
   const FactoryDefaultCheckResult({
-    required this.isFactoryDefault,
     required this.serialNumber,
     required this.modelName,
   });
@@ -98,7 +96,6 @@ class PnpService {
     try {
       final info = await SystemInfo.fetch(_usp);
       return FactoryDefaultCheckResult(
-        isFactoryDefault: false,
         serialNumber: info.serialNumber,
         modelName: info.modelName,
       );

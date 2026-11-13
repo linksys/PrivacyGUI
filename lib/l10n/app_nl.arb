@@ -223,8 +223,6 @@
   "passwwordUpdated": "Routerwachtwoord bijgewerkt",
   "ping": "Ping",
   "pnpErrorForStaticIpAndDhcp": "Kan geen verbinding tot stand brengen. Controleer uw gegevens en probeer het opnieuw.",
-  "pnpFwUpdateDesc": "Wacht even terwijl we de update downloaden en start uw apparaat opnieuw op. De led wordt helderwit wanneer het proces is voltooid.",
-  "pnpFwUpdateTitle": "Uw configuratie opslaan en controleren op software-updates...",
   "pnpIspTypeSelectionDhcpDesc": "Dynamic Host Configuration Protocol (DHCP) wijst automatisch IP-adressen toe aan apparaten die zijn aangesloten op het netwerk.",
   "pnpIspTypeSelectionPppoeDesc": "Point-to-Point Protocol over Ethernet wordt gebruikt om meerdere computergebruikers op een lokaal LAN-netwerk te verbinden met een externe site.",
   "pnpIspTypeSelectionStaticDesc": "Een vast internetprotocoladres (IP-adres) is een onveranderlijk nummer dat door een internetprovider aan een netwerk is toegewezen.",

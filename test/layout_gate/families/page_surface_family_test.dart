@@ -97,12 +97,12 @@ void main() {
     expect(kAutoIPoEPageCase.forbids, contains(AppLoader));
   });
 
-  // "Cases" and not "pages", corrected by #1489: this list is seventy-three cases over
-  // fifty pages (recounted at #641's merge), because several of those pages are swept
-  // more than once. The two counts were equal for the whole of #1369 and the group
-  // title read "pages"
+  // "Cases" and not "pages", corrected by #1489: this list is seventy-two cases over
+  // forty-nine pages (recounted at #1511 P0, which deleted one page and its one case),
+  // because several of those pages are swept more than once. The two counts were equal
+  // for the whole of #1369 and the group title read "pages"
   // throughout, which is exactly the kind of coincidence a name should not be built on
-  // — `kPageViewCount` is 52, a third quantity again (page view *files*, which no case
+  // — `kPageViewCount` is 51, a third quantity again (page view *files*, which no case
   // can move), and it is equal to neither.
   //
   // **Two counts drifted before #1554 re-measured them, and only in the prose.** The
@@ -143,11 +143,11 @@ void main() {
   // an assertion that does not read it is the failure mode, and copying it to a fifth
   // place is how it becomes hard to notice.
   group(
-      'the gate declares seventy-three cases over fifty pages, and which '
-      'seventy-three is a decision', () {
+      'the gate declares seventy-two cases over forty-nine pages, and which '
+      'seventy-two is a decision', () {
     test(
         'kPageSurfaceCases holds the pilot two, wave 1\'s five, wave 2\'s nine, '
-        'wave 3\'s six, wave 4\'s twenty-one, #1489\'s five non-default tabs, '
+        'wave 3\'s five, wave 4\'s twenty-one, #1489\'s five non-default tabs, '
         '#1549\'s split page, #1554\'s two fixture states, #1602\'s two '
         'completion branches plus eight diagnostics screens, #1580\'s '
         'remote-only page, #1636\'s third Wi-Fi tab, #1611\'s three '
@@ -200,7 +200,6 @@ void main() {
           'local_router_recovery',
           'local_reset_router_password',
           'menu',
-          'auto_parent_first_login',
           'advanced_settings',
           'remote_assistance',
           'support',
@@ -329,10 +328,10 @@ void main() {
         // What the wave did cost is fixtures: five of the six need one, and
         // `login_local` needs a `sessionProvider` that does not reach a USP service
         // (its `initState` throws otherwise, so that cell fails rather than
-        // under-measures). `auto_parent_first_login` is the roster's 45th file, the
-        // one page #1370 could not measure, and the family's only loader-is-content
-        // page — declared, not excluded, with its exemption pinned in
-        // `kPagesWhoseLoaderIsContent` below.
+        // under-measures). The sixth, `auto_parent_first_login`, was the roster's
+        // 45th file, the one page #1370 could not measure and the family's first
+        // loader-is-content page. #1511 P0 deleted it as dead code, so wave 3 now
+        // contributes five ids here.
         //
         // **Wave 4's twenty-one (#1380)**: everything left, which is what makes this
         // the wave with a different shape from the three before it — the earlier waves
@@ -533,8 +532,8 @@ void main() {
     }
 
     test(
-        'exactly three pages are exempt from the loader rule, and all three are '
-        'named', () {
+        'exactly two pages are exempt from the loader rule, and both are named',
+        () {
       // The membership pin. The two-branch test above is satisfied by *any*
       // exemption set — including one that grew an entry because a fixture was hard
       // to write, which is the failure mode `kPagesWhoseLoaderIsContent`'s own doc
@@ -566,19 +565,21 @@ void main() {
       // arrived is the one whose loader a *cell* can see, and the rule still names one
       // kind of screen. A `requires` naming a conditional widget is a claim about the
       // fixture, and reading the source cannot settle it.
+      //
+      // **#1511 P0 removed the first entry**, `auto_parent_first_login`, by deleting
+      // its page as dead code — not by un-exempting it. The two that remain still make
+      // its argument.
       expect(
         kPagesWhoseLoaderIsContent,
         const {
-          'auto_parent_first_login',
           'pnp_setup_firmware',
           'unified_diagnostics_manual_tools',
         },
-        reason: 'auto_parent_first_login exists to say "we are installing '
-            'firmware, do not unplug the router" — the spinner is the subject of '
-            'the screen — pnp_setup_firmware is the setup wizard saying it, and '
-            'unified_diagnostics_manual_tools is a determinate bar whose value is '
-            'the success rate it reports. A fourth entry needs that same argument '
-            'made in the case doc, not just a passing sweep.',
+        reason: 'pnp_setup_firmware exists to say "we are installing firmware, '
+            'do not unplug the router" — the progress bar is the subject of the '
+            'screen — and unified_diagnostics_manual_tools is a determinate bar '
+            'whose value is the success rate it reports. A third entry needs that '
+            'same argument made in the case doc, not just a passing sweep.',
       );
       expect(
         kPageSurfaceCases.map((c) => c.id),
@@ -889,8 +890,9 @@ void main() {
     // whole guard. `local_router_recovery`, `local_reset_router_password` and
     // `usp_menu_view` render no loader anywhere in the file; `home_view`'s
     // `AppFullScreenLoader` sits behind `final bool _isLoading = false`, i.e. dead
-    // code; and `auto_parent_first_login`'s loader is the content. Only
-    // `login_local_view` has a live one (`loading:`, and `data:` while `_p != null`).
+    // code; and `auto_parent_first_login`'s loader was the content (#1511 P0 deleted
+    // that page). Only `login_local_view` has a live one (`loading:`, and `data:`
+    // while `_p != null`).
     //
     // That is the case #1366 made in general, arriving here as five pages at once: a
     // premise that is only a loader-forbid is a premise that cannot fail. Two of the
@@ -975,27 +977,6 @@ void main() {
             'render, and two title rows are quietly a badge narrower — in all 234 '
             'cells, with nothing failing. `AppMenuCard` alone cannot see that; '
             '`AppBadge` is what makes it a failure.',
-      );
-    });
-
-    test(
-        'page.auto_parent_first_login requires more than the spinner it is '
-        'exempt for', () {
-      // The loader half is pinned by the exemption branch above. This is the other
-      // half: `requires: [AppLoader]` on its own would hold against *any* centred
-      // spinner — including the `Center(child: AppLoader())` the loader-only control
-      // below pumps deliberately — so the one page allowed to show a loader is the
-      // page that most needs a second premise.
-      expect(
-        kAutoParentFirstLoginPageCase.requires,
-        contains(AppCard),
-        reason:
-            'the two localized paragraphs beside the loader have no type of '
-            'their own, so the card is what a cell that lost this page would '
-            'lack. And losing it is live rather than theoretical: the real '
-            '`checkAndAutoInstallFirmware()` returns false, which makes the view '
-            'call `goNamed(RouteNamed.dashboardHome)` — a route this family\'s '
-            'single-route host does not have.',
       );
     });
 

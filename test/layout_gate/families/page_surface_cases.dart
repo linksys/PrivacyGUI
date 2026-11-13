@@ -142,7 +142,6 @@ import 'package:privacy_gui/page/internet_settings/views/usp_internet_settings_v
 import 'package:privacy_gui/page/ipv6_port_service/views/usp_ipv6_port_service_view.dart';
 import 'package:privacy_gui/page/local_network/views/usp_local_network_view.dart';
 import 'package:privacy_gui/page/landing/views/home_view.dart';
-import 'package:privacy_gui/page/login/auto_parent/views/auto_parent_first_login_view.dart';
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
 import 'package:privacy_gui/page/login/views/local_router_recovery_view.dart';
 import 'package:privacy_gui/page/login/views/login_local_view.dart';
@@ -931,7 +930,7 @@ final kPnpSetupPageCase = PageSurfaceCase(
 /// ## `AppLoader` is this page's *content*, which makes it the exemption's second entry
 ///
 /// [kPagesWhoseLoaderIsContent] was a one-element set, and its own doc names the
-/// argument a second entry has to make: `auto_parent_first_login` is exempt because it
+/// argument a second entry has to make: `auto_parent_first_login` was exempt because it
 /// "exists to say 'we are installing firmware, do not unplug the router' — the spinner
 /// is the subject of the screen". **This page is that sentence, in the wizard.** It
 /// draws `FirmwareInstallPhaseCard`, whose linear `AppLoader` carries the percentage —
@@ -1072,9 +1071,9 @@ final kPnpSetupCompleteUnifiedPageCase = PageSurfaceCase(
 // there is a session: the landing page, the three local-login pages, the menu the
 // dashboard hands off to, and the first-login firmware screen. What they have in
 // common is that four of the six read a provider that is a **USP-mode stub** —
-// `routerPasswordProvider` and `autoParentFirstLoginProvider` return hardcoded
-// values today — so a fixture here pins a *branch* rather than a payload, and two of
-// the four pages have no loading state at all.
+// `routerPasswordProvider` and the since-deleted `autoParentFirstLoginProvider`
+// returned hardcoded values — so a fixture here pins a *branch* rather than a
+// payload, and two of the four pages have no loading state at all.
 //
 // **The prediction #1379 was filed on was falsified, and that is the wave's main
 // finding.** #1370's inventory said to expect finds here, on the grounds that login
@@ -1084,11 +1083,12 @@ final kPnpSetupCompleteUnifiedPageCase = PageSurfaceCase(
 // is five declarations and one fixture, and the cost of a wave is not predictable
 // from how form-like its pages look.
 //
-// **The sixth is the 45th file.** `auto_parent_first_login_view.dart` sits one
-// directory deeper than the roster's other login pages and was the one page #1370
-// could not measure. It needed the wave's only new *behavioural* fixture and it is
-// the one page in the whole family whose loader is content — see
-// [kAutoParentFirstLoginPageCase] and [kPagesWhoseLoaderIsContent].
+// **The sixth is gone.** `auto_parent_first_login_view.dart` sat one directory
+// deeper than the roster's other login pages and was the one page #1370 could not
+// measure. It needed the wave's only new *behavioural* fixture and was the first page
+// in the family whose loader is content. #1511 P0 deleted it as dead code — no
+// in-app entry reached it, and its only exit named a route nothing registers — so
+// wave 3 is five cases below, and [kPagesWhoseLoaderIsContent] lost its first entry.
 
 /// `page.home` — the landing page, and the cheapest page in the family
 /// (13.8ms/cell, #1370).
@@ -1235,38 +1235,6 @@ final kMenuPageCase = PageSurfaceCase(
       lanInfo: dhcp.testLanInfo, privacyMode: MacFilterMode.allow),
   requires: const [AppMenuCard, AppBadge],
   forbids: const [AppLoader],
-);
-
-/// `page.auto_parent_first_login` — the firmware-check screen, and the roster's 45th
-/// file.
-///
-/// The one page #1370 could not measure, for two reasons it recorded as one. It is a
-/// directory deeper than the other login views, so the inventory's glob found it and
-/// its `-` in the roster meant *no fixture gets this past its opening state*. And the
-/// opening state is the only state: this screen exists to say "we are installing
-/// firmware, do not unplug the router".
-///
-/// **So this is the family's one loader-is-content page**, and the exemption it takes
-/// from the blanket `forbids: [AppLoader]` rule is declared in
-/// [kPagesWhoseLoaderIsContent] rather than by omitting an entry here. [AppLoader] is
-/// in `requires` instead, which is the same fact stated in the direction that can
-/// fail: on this page a spinner is not the sign that a fixture went thin, it is the
-/// page.
-///
-/// [AppCard] is the premise that does the work. The two localized paragraphs beside
-/// the loader have no type of their own, and the card is what a cell that lost this
-/// page would lack — which is a live risk here rather than a theoretical one. The
-/// real `checkAndAutoInstallFirmware()` returns **false**, and false makes the view
-/// call `finishFirstTimeLogin` and then `context.goNamed(RouteNamed.dashboardHome)`,
-/// a route this family's single-route host does not have. `firmwareAvailable: true`
-/// is what keeps the page mounted; `mock_login.dart` argues why that is the honest
-/// branch and not merely the convenient one.
-final kAutoParentFirstLoginPageCase = PageSurfaceCase(
-  id: 'auto_parent_first_login',
-  view: () => const AutoParentFirstLoginView(),
-  overrides: () => autoParentFirstLoginOverrides(firmwareAvailable: true),
-  requires: const [AppLoader, AppCard],
-  forbids: const [],
 );
 
 // ## Wave 4 (#1380): the last twenty-one, and what "the last" cost
@@ -2284,9 +2252,11 @@ final kInternetSettingsPageCase = PageSurfaceCase(
 /// the evidence the paragraph below asks for: twenty-one more pages, every one of them
 /// forbidding its loader.
 ///
-/// It cannot hold for `auto_parent_first_login`, whose loader is the subject of the
-/// screen rather than a stand-in for it. The exemption is a set here, and not an
-/// omitted `forbids` entry there, so that:
+/// It cannot hold for a page whose loader is the subject of the screen rather than a
+/// stand-in for it. The first such page was `auto_parent_first_login`, a "we are
+/// installing firmware, do not unplug the router" screen; #1511 P0 deleted it with its
+/// dead route, so the two entries below are what is left. The exemption is a set here,
+/// and not an omitted `forbids` entry there, so that:
 ///
 /// 1. the oracle drives **both** branches off one value — an exempt case must *require*
 ///    [AppLoader], which is the claim "the loader is this page's content" written as
@@ -2299,11 +2269,11 @@ final kInternetSettingsPageCase = PageSurfaceCase(
 /// usually a fixture that has not been written yet, which is what a `-` in
 /// `test/fixtures/page_roster.tsv` is for.
 ///
-/// **The second entry arrived on 2026-09-16 (#1554 §4), and it makes the same
+/// **The second entry arrived on 2026-09-16 (#1554 §4), and it made the same
 /// argument as the first rather than a new one.** `pnp_setup_firmware` is the setup
-/// wizard's firmware stage — literally the sentence this doc uses to justify
+/// wizard's firmware stage — literally the sentence this doc used to justify
 /// `auto_parent_first_login`, "we are installing firmware, do not unplug the router",
-/// on the other of the two screens that says it. Both draw a progress bar as their
+/// on the other of the two screens that said it. Both draw a progress bar as their
 /// subject; neither has a loaded state behind it to wait for. The test that fails a
 /// fixture is `requires: [AppLoader]` in both cases, which is why the set is worth
 /// having rather than merely counting: the pair now names *why* an entry is here, and
@@ -2527,9 +2497,8 @@ final kDiagnosticsCompletedPageCase = PageSurfaceCase(
 );
 
 const kPagesWhoseLoaderIsContent = <String>{
-  'auto_parent_first_login',
   'pnp_setup_firmware',
-  // #1602's third entry, and it makes the other two's argument rather than a new one:
+  // #1602's entry, and it makes `pnp_setup_firmware`'s argument rather than a new one:
   // the manual ping result ends in a determinate linear `AppLoader` whose `value` is
   // the success rate, so the bar's width is the number being reported. Same claim as
   // `pnp_setup_firmware`'s percentage bar. Note which case this is *not*:
@@ -3018,15 +2987,14 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kPnpSetupCompleteSplitPageCase,
   kPnpSetupCompleteUnifiedPageCase,
   // Wave 3 (#1379), in the order a user meets them: the landing page, then the three
-  // local-login pages, then the menu, then the first-login firmware screen. Unlike
-  // wave 2 this order is also the onboarding order — none of the six waited on
-  // anything — so the two readings of this list agree here.
+  // local-login pages, then the menu. Unlike wave 2 this order is also the onboarding
+  // order — none of the six waited on anything — so the two readings of this list
+  // agree here. The sixth, the first-login firmware screen, was deleted by #1511 P0.
   kHomePageCase,
   kLoginLocalPageCase,
   kLocalRouterRecoveryPageCase,
   kLocalResetRouterPasswordPageCase,
   kMenuPageCase,
-  kAutoParentFirstLoginPageCase,
   // Wave 4 (#1380), the epic's last twenty-one. Onboarding order again, and here that
   // is the order the two slices ran in: slice A is the seven pages whose
   // `List<Override>` builder already reached the view, and they came first because five

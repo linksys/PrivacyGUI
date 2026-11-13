@@ -8,7 +8,6 @@ class RoutePath {
   static const localLoginPassword = '/localLoginPassword';
   static const localRouterRecovery = 'localRouterRecovery';
   static const localPasswordReset = 'localPasswordReset';
-  static const autoParentFirstLogin = '/autoParentFirstLogin';
 
   /// dashboard
   static const dashboardHome = '/dashboardHome';
@@ -156,7 +155,6 @@ class RoutePath {
   static const pnpPPPOE = 'pnpPPPOE';
   static const pnpIspTypeSelection = 'pnpIspTypeSelection';
   static const pnpStaticIp = 'pnpStaticIp';
-  static const pnpIspAuth = 'pnpIspAuth';
   static const pnpAddNodes = 'pnpAddNodes';
 
   /// Safe Browsing
@@ -191,7 +189,6 @@ class RouteNamed {
   static const localLoginPassword = 'localLoginPassword';
   static const localRouterRecovery = 'localRouterRecovery';
   static const localPasswordReset = 'localPasswordReset';
-  static const autoParentFirstLogin = 'autoParentFirstLogin';
 
   /// dashboard
   static const dashboardMenu = 'dashboardMenu';
@@ -326,7 +323,6 @@ class RouteNamed {
   static const pnpPPPOE = 'pnpPPPOE';
   static const pnpIspTypeSelection = 'pnpIspTypeSelection';
   static const pnpStaticIp = 'pnpStaticIp';
-  static const pnpIspAuth = 'pnpIspAuth';
   static const pnpAddNodes = 'pnpAddNodes';
 
   /// Support

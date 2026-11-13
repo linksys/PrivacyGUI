@@ -315,8 +315,8 @@ void main() {
   // session. All six arrived at zero, so no widget fix landed with this wave; the
   // prediction it was filed on ("expect finds in narrow-column login forms") is
   // falsified in `page_surface_cases.dart`'s wave 3 header. Five needed only a
-  // declaration; `auto_parent_first_login` needed the wave's one new fixture, and it
-  // is the family's only loader-is-content page.
+  // declaration; the sixth, `auto_parent_first_login`, needed the wave's one new
+  // fixture, and #1511 P0 deleted it as dead code.
   runOverflowSweep(
     family: PageSurfaceFamily(kHomePageCase),
     expectedCellCount: 234,
@@ -339,11 +339,6 @@ void main() {
 
   runOverflowSweep(
     family: PageSurfaceFamily(kMenuPageCase),
-    expectedCellCount: 234,
-  );
-
-  runOverflowSweep(
-    family: PageSurfaceFamily(kAutoParentFirstLoginPageCase),
     expectedCellCount: 234,
   );
 

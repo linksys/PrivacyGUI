@@ -48,9 +48,6 @@ class PnpNotifier extends Notifier<PnpState> {
       state = state.copyWith(
         serialNumber: result.serialNumber,
         modelName: result.modelName,
-        flowMode: result.isFactoryDefault
-            ? PnpFlowMode.unconfigured
-            : PnpFlowMode.configured,
       );
 
       await _checkInternet();

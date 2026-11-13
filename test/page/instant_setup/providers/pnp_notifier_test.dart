@@ -212,7 +212,6 @@ void main() {
   late MockSessionNotifier mockSessionNotifier;
 
   const testFactoryResult = FactoryDefaultCheckResult(
-    isFactoryDefault: false,
     serialNumber: 'SN123',
     modelName: 'M60TB',
   );

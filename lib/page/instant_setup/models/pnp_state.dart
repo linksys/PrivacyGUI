@@ -5,20 +5,15 @@ import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_
 import 'pnp_wifi_config.dart';
 import 'pnp_wifi_ready_band.dart';
 
-/// Whether this is a factory-default first-time setup or a reconfigure.
-enum PnpFlowMode { unconfigured, configured }
-
 /// Top-level PnP state — holds the current phase + shared context.
 class PnpState extends Equatable {
   final PnpPhase phase;
-  final PnpFlowMode flowMode;
   final String? serialNumber;
   final String? modelName;
   final String? errorMessage;
 
   const PnpState({
     required this.phase,
-    this.flowMode = PnpFlowMode.unconfigured,
     this.serialNumber,
     this.modelName,
     this.errorMessage,
@@ -28,7 +23,6 @@ class PnpState extends Equatable {
 
   PnpState copyWith({
     PnpPhase? phase,
-    PnpFlowMode? flowMode,
     String? serialNumber,
     String? modelName,
     String? errorMessage,
@@ -36,7 +30,6 @@ class PnpState extends Equatable {
   }) {
     return PnpState(
       phase: phase ?? this.phase,
-      flowMode: flowMode ?? this.flowMode,
       serialNumber: serialNumber ?? this.serialNumber,
       modelName: modelName ?? this.modelName,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
@@ -44,8 +37,7 @@ class PnpState extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [phase, flowMode, serialNumber, modelName, errorMessage];
+  List<Object?> get props => [phase, serialNumber, modelName, errorMessage];
 }
 
 // ═══════════════════════════════════════════════════════════════
