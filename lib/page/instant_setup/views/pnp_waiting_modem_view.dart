@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/customs/circular_countdown_widget.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/instant_setup/models/internet_troubleshooting_phase.dart';
+import 'package:privacy_gui/page/instant_setup/models/troubleshooting_phase.dart';
 import 'package:privacy_gui/page/instant_setup/providers/internet_troubleshooting_provider.dart';
 import 'package:privacy_gui/page/instant_setup/views/components/troubleshooting_navigation.dart';
 import 'package:privacy_gui/route/constants.dart';

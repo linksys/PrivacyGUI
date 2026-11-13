@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/page/instant_setup/models/internet_troubleshooting_phase.dart';
+import 'package:privacy_gui/page/instant_setup/models/troubleshooting_phase.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/services/internet_troubleshooting_service.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
@@ -10,8 +10,9 @@ import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_
 /// The no-internet troubleshooting flow's state (#1511 P1).
 ///
 /// `autoDispose`: a run lives while its pages do. The hub sits under every other
-/// troubleshooting page in the navigator stack and watches this, so the run lasts
-/// from entering the hub to leaving the tree, and the next entry starts clean.
+/// troubleshooting page in the navigator stack and listens to this, so the run
+/// lasts from entering the hub to leaving the tree, and the next entry starts
+/// clean.
 final internetTroubleshootingProvider = NotifierProvider.autoDispose<
     InternetTroubleshootingNotifier,
     TroubleshootingPhase>(InternetTroubleshootingNotifier.new);
@@ -68,10 +69,11 @@ class InternetTroubleshootingNotifier
       // unreachable / USP GET returned empty). This is distinct from the router
       // confirming "no internet" (which returns false above, no throw), so we
       // must not collapse it into no internet.
-      logger.e('[PnP] Internet check read failure: $e (code=${e.code})');
+      logger.e(
+          '[Troubleshooting] Internet check read failure: $e (code=${e.code})');
       _set(TroubleshootingReadFailure(code: e.code, detail: '$e'));
     } catch (e) {
-      logger.e('[PnP] Internet check unexpected error: $e');
+      logger.e('[Troubleshooting] Internet check unexpected error: $e');
       _set(TroubleshootingReadFailure(detail: '$e'));
     }
   }
@@ -84,7 +86,8 @@ class InternetTroubleshootingNotifier
     const total = 150;
     for (int s = total; s >= 0; s--) {
       if (_disposed) return;
-      // Check if user navigated away (phase changed externally)
+      // Leaving the tree disposes the run (checked above); this catches the
+      // phase being moved by something else meanwhile, such as an ISP save.
       if (state is! ModemRestartCountdown &&
           state is! TroubleshootingNoInternet &&
           s < total) {
@@ -127,7 +130,7 @@ class InternetTroubleshootingNotifier
     }
     final failure = lastReadFailure;
     if (failure != null) {
-      logger.e('[PnP] Modem restart check read failure: $failure');
+      logger.e('[Troubleshooting] Modem restart check read failure: $failure');
       _set(TroubleshootingReadFailure(
         code: failure is ServiceError ? failure.code : null,
         detail: '$failure',
@@ -155,10 +158,19 @@ class InternetTroubleshootingNotifier
       await Future.delayed(const Duration(seconds: 5));
       _refreshPrefill();
       await _checkInternet();
-    } catch (e) {
-      logger.e('[PnP] ISP save failed: $e');
+    } on ServiceError catch (e) {
+      logger.e('[Troubleshooting] ISP save failed: $e');
       _refreshPrefill();
-      _set(TroubleshootingNoInternet(errorMessage: '$e'));
+      _set(TroubleshootingNoInternet(saveError: e));
+    } catch (e) {
+      // Not only `ServiceError`, unlike constitution §13.4's pattern, and on
+      // purpose: `UspMutationLock.withLock` times out with a bare
+      // `TimeoutException`, and anything left uncaught here strands the form on
+      // its progress screen. Typed on the way into state all the same.
+      logger.e('[Troubleshooting] ISP save failed: $e');
+      _refreshPrefill();
+      _set(TroubleshootingNoInternet(
+          saveError: UnexpectedError(originalError: e)));
     }
   }
 

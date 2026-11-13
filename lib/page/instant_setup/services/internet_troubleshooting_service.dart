@@ -47,7 +47,8 @@ class InternetTroubleshootingService {
     try {
       return (await _internetSettings.fetchSettings()).form;
     } catch (e) {
-      logger.w('[PnP] Failed to fetch WAN settings for prefill: $e');
+      logger
+          .w('[Troubleshooting] Failed to fetch WAN settings for prefill: $e');
       return null;
     }
   }

@@ -6,7 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/models/device_info.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
-import 'package:privacy_gui/page/instant_setup/models/internet_troubleshooting_phase.dart';
+import 'package:privacy_gui/page/instant_setup/models/troubleshooting_phase.dart';
 import 'package:privacy_gui/page/instant_setup/providers/internet_troubleshooting_provider.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
 import 'package:privacy_gui/route/constants.dart';

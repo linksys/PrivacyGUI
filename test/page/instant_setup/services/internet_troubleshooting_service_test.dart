@@ -194,6 +194,28 @@ void main() {
     );
   });
 
+  group('InternetTroubleshootingService.fetchCurrentWanSettings', () {
+    test('reads the router\'s WAN for the forms to prefill', () async {
+      setupFetchMocks(
+        pppResponse: pppExistingResponse,
+        vlanResponse: vlanExistingResponse,
+      );
+
+      final form = await service.fetchCurrentWanSettings();
+
+      expect(form, isNotNull);
+      expect(form!.pppUsername, 'existinguser');
+    });
+
+    test('a WAN that cannot be read is no prefill, not a failure', () async {
+      // An empty form is still usable; the troubleshooting run must not stop
+      // over it.
+      when(() => mockUsp.get(any())).thenThrow(const ConnectivityError());
+
+      expect(await service.fetchCurrentWanSettings(), isNull);
+    });
+  });
+
   group(
       'InternetTroubleshootingService.saveIspSettings — integration with '
       'UspInternetSettingsService', () {

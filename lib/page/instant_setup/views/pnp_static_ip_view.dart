@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/instant_setup/models/internet_troubleshooting_phase.dart';
+import 'package:privacy_gui/page/instant_setup/models/troubleshooting_phase.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/providers/internet_troubleshooting_provider.dart';
 import 'package:privacy_gui/page/instant_setup/views/components/pnp_isp_saving_progress.dart';
@@ -73,8 +74,9 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
     ref.listen(internetTroubleshootingProvider, (prev, next) {
       if (prev is IspSaving &&
           next is TroubleshootingNoInternet &&
-          next.errorMessage != null) {
-        showFailedSnackBar(context, next.errorMessage!);
+          next.saveError != null) {
+        showFailedSnackBar(
+            context, localizeServiceError(context, next.saveError!));
       }
     });
 

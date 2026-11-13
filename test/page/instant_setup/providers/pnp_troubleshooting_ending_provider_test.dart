@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/models/device_info.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_troubleshooting_ending.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_troubleshooting_ending_provider.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
 import 'package:privacy_gui/route/constants.dart';
 

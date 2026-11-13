@@ -357,10 +357,6 @@ void main() {
     });
   });
 
-  // #1098, the same split on the modem-restart path. The poll used to swallow
-  // every failed read and end on NoInternet, so a router that could not be read
-  // for all 30 attempts was shown as "no internet". Only the LAST attempt
-  // decides: earlier failures are expected while the router comes back.
   group('PnpNotifier — WiFi form updates', () {
     test('updateWifiSsid updates ssid in WizardConfiguring', () async {
       when(() => mockPnpService.checkFactoryDefault())

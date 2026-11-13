@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 
 /// Where a run of the no-internet troubleshooting flow is (#1511 P1).
 ///
@@ -16,13 +17,15 @@ sealed class TroubleshootingPhase extends Equatable {
 
 /// The router answered and has no internet: the hub and its forms.
 ///
-/// [errorMessage] is why the last ISP save failed, for the form to show once. Any
+/// [saveError] is why the last ISP save failed, for the form to show once. Any
 /// later transition builds a new phase without it, so it cannot be shown twice.
+/// Typed, not `'$e'` (constitution §13.4): the form localizes it, as the
+/// wizard's `WizardConfiguring.saveError` is localized.
 class TroubleshootingNoInternet extends TroubleshootingPhase {
-  final String? errorMessage;
-  const TroubleshootingNoInternet({this.errorMessage});
+  final ServiceError? saveError;
+  const TroubleshootingNoInternet({this.saveError});
   @override
-  List<Object?> get props => [errorMessage];
+  List<Object?> get props => [saveError];
 }
 
 // ─── Modem Restart ──────────────────────────────────────────

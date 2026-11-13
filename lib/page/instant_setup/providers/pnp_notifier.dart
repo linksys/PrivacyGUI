@@ -436,7 +436,7 @@ class PnpNotifier extends Notifier<PnpState> {
   /// OPERATE and would otherwise be sent into the WiFi restart.
   ///
   /// NOTE: the same acknowledge + saveSelectedNetwork pair lives in PnP's
-  /// troubleshooting ending (`pnp_troubleshooting_ending.dart`), but there errors
+  /// troubleshooting ending (`pnp_troubleshooting_ending_provider.dart`), but there errors
   /// are swallowed; here they propagate to the caller so the user stays on the
   /// form to retry.
   Future<void> _acknowledgeSetup() async {

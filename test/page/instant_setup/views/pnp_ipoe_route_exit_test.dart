@@ -97,7 +97,9 @@ class _ExitAuth extends AuthNotifier {
   }
 }
 
-GoRouter _router() {
+/// [caller] is the troubleshooting caller the URL names; the route builds
+/// Auto-IPoE with that caller's ending (#1511 P1).
+GoRouter _router({String caller = TroubleshootingCaller.pnp}) {
   final picker = pnpNoInternetRoute.routes.whereType<GoRoute>().singleWhere(
         (route) => route.name == RouteNamed.pnpIspTypeSelection,
       );
@@ -108,8 +110,7 @@ GoRouter _router() {
   return GoRouter(
     // The caller in the path, as in production: the route builds Auto-IPoE with
     // the ending its `:caller` names (#1511 P1).
-    initialLocation:
-        '/wan/${TroubleshootingCaller.pnp}/${RoutePath.pnpAutoIPoE}',
+    initialLocation: '/wan/$caller/${RoutePath.pnpAutoIPoE}',
     routes: [
       GoRoute(
         path: '/wan/:${TroubleshootingCaller.param}',
@@ -123,6 +124,9 @@ GoRouter _router() {
       GoRoute(
           path: RoutePath.pnp,
           builder: (_, __) => const Text('Next setup step')),
+      GoRoute(
+          path: RoutePath.uspDashboard,
+          builder: (_, __) => const Text('Dashboard')),
     ],
   );
 }
@@ -503,41 +507,50 @@ void _pnpTests() {
     });
   }
 
-  testWidgets(
-      'verified forward completion saves the draft without resetting WAN',
-      (tester) async {
-    final initial = AutoIPoETestData.snapshot();
-    final data = _ExitData(initial);
-    final page = _ExitPage(initial, dirty: true);
-    final router = _router();
-    addTearDown(router.dispose);
-    final container = await _pump(tester, router, data, page);
-    final guard = container.read(autoIPoEPnpExitGuardProvider);
-    page.onSave = () async {
-      container.read(autoIPoESubmissionProvider.notifier).state =
-          const AutoIPoESubmission(AutoIPoETestData.id, reset: false);
-      final completed = AutoIPoETestData.snapshot(
-        requestId: AutoIPoETestData.id,
-        exitCode: 0,
-        verified: true,
+  // Each caller's ending decides where a verified "continue" lands (#1511 P1):
+  // PnP's goes on to the next setup step at `/pnp`, the dashboard's back to the
+  // dashboard. The exit guard is the same for both — it never reads the caller.
+  for (final (caller, landing) in [
+    (TroubleshootingCaller.pnp, 'Next setup step'),
+    (TroubleshootingCaller.dashboard, 'Dashboard'),
+  ]) {
+    testWidgets(
+        'verified forward completion saves the draft without resetting WAN '
+        '(caller: $caller)', (tester) async {
+      final initial = AutoIPoETestData.snapshot();
+      final data = _ExitData(initial);
+      final page = _ExitPage(initial, dirty: true);
+      final router = _router(caller: caller);
+      addTearDown(router.dispose);
+      final container = await _pump(tester, router, data, page);
+      final guard = container.read(autoIPoEPnpExitGuardProvider);
+      page.onSave = () async {
+        container.read(autoIPoESubmissionProvider.notifier).state =
+            const AutoIPoESubmission(AutoIPoETestData.id, reset: false);
+        final completed = AutoIPoETestData.snapshot(
+          requestId: AutoIPoETestData.id,
+          exitCode: 0,
+          verified: true,
+        );
+        data.publish(completed);
+        page.publish(completed);
+      };
+      expect(page.isDirty(), isTrue);
+      final execute = find.byWidgetPredicate(
+        (widget) =>
+            widget is AppButton &&
+            widget.identifier == 'auto-ipoe-pnp-continue',
       );
-      data.publish(completed);
-      page.publish(completed);
-    };
-    expect(page.isDirty(), isTrue);
-    final execute = find.byWidgetPredicate(
-      (widget) =>
-          widget is AppButton && widget.identifier == 'auto-ipoe-pnp-continue',
-    );
-    tester.widget<AppButton>(execute).onTap!();
-    for (var i = 0; i < 8; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    expect(find.text('Next setup step'), findsOneWidget);
-    expect(find.byType(AlertDialog), findsNothing);
-    expect(page.saves, 1);
-    expect(data.exits, 0);
-    expect(guard.onExit, isNull);
-    expect(tester.takeException(), isNull);
-  });
+      tester.widget<AppButton>(execute).onTap!();
+      for (var i = 0; i < 8; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.text(landing), findsOneWidget);
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(page.saves, 1);
+      expect(data.exits, 0);
+      expect(guard.onExit, isNull);
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

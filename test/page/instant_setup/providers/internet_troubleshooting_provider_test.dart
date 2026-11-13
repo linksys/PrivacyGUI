@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/page/instant_setup/models/internet_troubleshooting_phase.dart';
+import 'package:privacy_gui/page/instant_setup/models/troubleshooting_phase.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/providers/internet_troubleshooting_provider.dart';
 import 'package:privacy_gui/page/instant_setup/services/internet_troubleshooting_service.dart';
@@ -73,6 +73,10 @@ void main() {
     });
   });
 
+  // #1098, the same split on the modem-restart path. The poll used to swallow
+  // every failed read and end on "no internet", so a router that could not be
+  // read for all 30 attempts was shown as "no internet". Only the LAST attempt
+  // decides: earlier failures are expected while the router comes back.
   group('modem restart poll (#1098)', () {
     /// Runs the 150 s countdown and the 30 × 5 s poll to the end.
     TroubleshootingPhase runModemRestart(ProviderContainer container) {
@@ -194,10 +198,13 @@ void main() {
       container.dispose();
     });
 
+    // The error is carried typed since the move — `PnpState.errorMessage` held
+    // `'$e'`, which the forms showed verbatim — so the form can localize it
+    // (constitution §13.4).
     test('ISP save failure transitions back to no internet with error',
         () async {
-      when(() => mockService.saveIspSettings(any()))
-          .thenThrow(Exception('WAN save failed'));
+      const failure = ConnectivityError(detail: 'WAN save failed');
+      when(() => mockService.saveIspSettings(any())).thenThrow(failure);
 
       final container = createContainer();
       final notifier = container.read(internetTroubleshootingProvider.notifier);
@@ -212,8 +219,51 @@ void main() {
 
       final phase = container.read(internetTroubleshootingProvider);
       expect(phase, isA<TroubleshootingNoInternet>());
-      expect((phase as TroubleshootingNoInternet).errorMessage,
-          contains('WAN save failed'));
+      expect((phase as TroubleshootingNoInternet).saveError, same(failure));
+      container.dispose();
+    });
+
+    test('a save that fails outside the service is still typed, not stranded',
+        () async {
+      // The mutation lock times out with a bare TimeoutException; the form must
+      // leave its progress screen with something it can localize.
+      final failure = Exception('lock timed out');
+      when(() => mockService.saveIspSettings(any())).thenThrow(failure);
+
+      final container = createContainer();
+      await container
+          .read(internetTroubleshootingProvider.notifier)
+          .saveIspWithProgress(
+              const PnpIspConfig(type: IspConnectionType.dhcp));
+
+      final phase = container.read(internetTroubleshootingProvider)
+          as TroubleshootingNoInternet;
+      expect(phase.saveError, isA<UnexpectedError>());
+      expect(
+          (phase.saveError! as UnexpectedError).originalError, same(failure));
+      container.dispose();
+    });
+
+    test('the WAN the forms prefill from is read again after a save', () async {
+      // The router's WAN is not what the hub read once a save has been sent.
+      when(() => mockService.fetchCurrentWanSettings())
+          .thenAnswer((_) async => null);
+      when(() => mockService.saveIspSettings(any())).thenAnswer((_) async {});
+      when(() => mockService.checkInternetConnected())
+          .thenAnswer((_) async => false);
+
+      final container = createContainer();
+      container.listen(troubleshootingWanPrefillProvider, (_, __) {});
+      await container.read(troubleshootingWanPrefillProvider.future);
+      verify(() => mockService.fetchCurrentWanSettings()).called(1);
+
+      await container
+          .read(internetTroubleshootingProvider.notifier)
+          .saveIspWithProgress(
+              const PnpIspConfig(type: IspConnectionType.dhcp));
+      await container.read(troubleshootingWanPrefillProvider.future);
+
+      verify(() => mockService.fetchCurrentWanSettings()).called(1);
       container.dispose();
     });
 
@@ -263,7 +313,7 @@ void main() {
     // internet check READ fails (USP GET returned empty). This must land on a
     // read failure, NOT no internet — distinct from a genuine no-internet
     // (checkInternetConnected returns false) and from a save write failure
-    // (which stays on no internet + errorMessage, tested above).
+    // (which stays on no internet + saveError, tested above).
     test('ISP save success but check read failure → read failure', () async {
       when(() => mockService.saveIspSettings(any())).thenAnswer((_) async {});
       when(() => mockService.checkInternetConnected())
