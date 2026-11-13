@@ -47,68 +47,77 @@ class PnpYourNetworkStepView extends ConsumerWidget {
     return UiKitPageView.innerPage(
       scrollable: true,
       useMainPadding: false,
-      child: (context, constraints) => AppCard(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              AppText.titleMedium(loc(context).pnpYourNetworkTitle),
-              AppGap.sm(),
-              AppText.bodyMedium(loc(context).pnpYourNetworkDesc),
-              AppGap.xl(),
-              // Empty only when the mesh read failed, which the service answers
-              // with no nodes rather than an error: the step still shows, so an
-              // empty block would be a frame with nothing in it.
-              if (nodes.isNotEmpty)
-                LayoutBlock(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: Column(
-                    children: [
-                      for (final (i, node) in nodes.indexed) ...[
-                        AppNodeListCard(
-                          leading: DeviceImageHelper.getRouterImage(
-                            routerIconTestByModel(modelNumber: node.model),
-                          ),
-                          title: node.model.isNotEmpty
-                              ? node.model
-                              : node.deviceId,
-                          // The node's own role, not its place in the list: the
-                          // nodes keep DataElements order, which does not promise
-                          // the controller first. The topology's words for the
-                          // two roles.
-                          description: node.isMaster
-                              ? loc(context).master
-                              : loc(context).slave,
-                          trailing: AppIcon.font(
-                            Icons.check_circle,
-                            color: Theme.of(context).colorScheme.primary,
-                            size: 20,
-                          ),
-                        ),
-                        if (i < nodes.length - 1)
-                          const Divider(height: AppSpacing.md),
-                      ],
-                    ],
-                  ),
-                ),
-              if (openAddNodes != null) ...[
-                AppGap.md(),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: AppButton.text(
-                    label: loc(context).addNodes,
-                    icon: AppIcon.font(Icons.add_circle_outline),
-                    identifier: kPnpAddNodesIdentifier,
-                    onTap: openAddNodes,
-                  ),
-                ),
-              ],
-              AppGap.xxxl(),
-              const PnpStepFooter(stepId: PnpFlowPlan.yourNetworkStepId),
-            ],
-          ),
-        ),
+      child: (context, constraints) => Column(
+        // In a Column so the card wraps its content: as the page's own child
+        // it took the scroll view's minimum height and ran to the bottom of
+        // the screen (bench, 2026-11-13).
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppCard(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  AppText.titleMedium(loc(context).pnpYourNetworkTitle),
+                  AppGap.sm(),
+                  AppText.bodyMedium(loc(context).pnpYourNetworkDesc),
+                  AppGap.xl(),
+                  // Empty only when the mesh read failed, which the service answers
+                  // with no nodes rather than an error: the step still shows, so an
+                  // empty block would be a frame with nothing in it.
+                  if (nodes.isNotEmpty)
+                    LayoutBlock(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: Column(
+                        children: [
+                          for (final (i, node) in nodes.indexed) ...[
+                            AppNodeListCard(
+                              leading: DeviceImageHelper.getRouterImage(
+                                routerIconTestByModel(modelNumber: node.model),
+                              ),
+                              title: node.model.isNotEmpty
+                                  ? node.model
+                                  : node.deviceId,
+                              // The node's own role, not its place in the list: the
+                              // nodes keep DataElements order, which does not promise
+                              // the controller first. The topology's words for the
+                              // two roles.
+                              description: node.isMaster
+                                  ? loc(context).master
+                                  : loc(context).slave,
+                              trailing: AppIcon.font(
+                                Icons.check_circle,
+                                color: Theme.of(context).colorScheme.primary,
+                                size: 20,
+                              ),
+                            ),
+                            if (i < nodes.length - 1)
+                              const Divider(height: AppSpacing.md),
+                          ],
+                        ],
+                      ),
+                    ),
+                  if (openAddNodes != null) ...[
+                    AppGap.md(),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: AppButton.text(
+                        label: loc(context).addNodes,
+                        icon: AppIcon.font(Icons.add_circle_outline),
+                        identifier: kPnpAddNodesIdentifier,
+                        onTap: openAddNodes,
+                      ),
+                    ),
+                  ],
+                  AppGap.xxxl(),
+                  const PnpStepFooter(stepId: PnpFlowPlan.yourNetworkStepId),
+                ],
+              ),
+            ),
+          )
+        ],
       ),
     );
   }

@@ -83,7 +83,7 @@ class DemoProviders {
       appModeProvider.overrideWithValue(AppMode.demo),
 
       // 11. PnP: the real flow, whose entry can start at the phase the demo
-      // launcher picked (`demoPnpStartPhaseProvider`, #1511 P3).
+      // launcher picked (`demoPnpStartProvider`, #1511 P3).
       pnpProvider.overrideWith(DemoPnpNotifier.new),
     ];
   }

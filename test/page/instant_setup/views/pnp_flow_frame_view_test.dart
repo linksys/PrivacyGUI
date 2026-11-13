@@ -20,7 +20,6 @@
 // of the set a PR cannot merge past. A wizard that offers a Done button mid-flash
 // sends a user to a dashboard whose router is rebooting.
 
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';

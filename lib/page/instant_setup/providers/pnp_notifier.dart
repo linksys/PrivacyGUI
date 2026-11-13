@@ -493,7 +493,7 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
     // restart, not a page reload, so the container is still the same one, and
     // `pnpProvider` — `autoDispose` since #1511 P3 — is still alive because
     // `PnpFlowShell` is still on screen watching it: the wizard is locked for the
-    // whole stage (`_pnpFirmwareExitGuard`), so nothing can take the user out of
+    // whole stage (`_pnpWizardExitGuard`), so nothing can take the user out of
     // the shell while the router is away. Before #1511 P3 it was the provider not
     // being `autoDispose` that kept it; verified on hardware 2026-09-16 — `..15 →
     // ..16` from PnP, and the completion screen showed the SSID and passphrase

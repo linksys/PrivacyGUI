@@ -390,38 +390,48 @@ class PnpService {
     final expectedSsidEnable = <String, bool>{};
     final expectedApEnable = <String, bool>{};
 
-    void expectNames(
-      ({
-        String ssid,
-        List<String> paths,
-        List<PnpWifiBand> bands,
-        bool split
-      }) was,
-      ({
-        String ssid,
-        List<String> paths,
-        List<PnpWifiBand> bands,
-        bool split
-      }) now,
-    ) {
-      if (now.split) {
-        for (final band in now.bands) {
-          if (band.ssid != bandAsRead(was.bands, band).ssid) {
+    /// The SSID names a write that renamed a network expects back: per band
+    /// in split mode, every path in unified mode.
+    void expectNames({
+      required bool split,
+      required String ssid,
+      required String ssidWas,
+      required List<String> paths,
+      required List<PnpWifiBand> bands,
+      required List<PnpWifiBand> bandsWas,
+    }) {
+      if (split) {
+        for (final band in bands) {
+          if (band.ssid != bandAsRead(bandsWas, band).ssid) {
             expectedSsid[band.ssidInstancePath] = band.ssid;
           }
         }
-      } else if (now.ssid != was.ssid) {
-        for (final path in now.paths) {
-          expectedSsid[path] = now.ssid;
+      } else if (ssid != ssidWas) {
+        for (final path in paths) {
+          expectedSsid[path] = ssid;
         }
       }
     }
 
     final main = write.main;
-    expectNames(_names(main.original), _names(main.current));
+    expectNames(
+      split: main.current.splitMode,
+      ssid: main.current.ssid,
+      ssidWas: main.original.ssid,
+      paths: main.current.ssidInstancePaths,
+      bands: main.current.bands,
+      bandsWas: main.original.bands,
+    );
     if (write.guest case final guest?) {
       final now = guest.current;
-      expectNames(_guestNames(guest.original), _guestNames(now));
+      expectNames(
+        split: now.splitMode,
+        ssid: now.ssid,
+        ssidWas: guest.original.ssid,
+        paths: now.ssidInstancePaths,
+        bands: now.bands,
+        bandsWas: guest.original.bands,
+      );
       if (now.enabled != guest.original.enabled) {
         final ssidPaths = now.splitMode
             ? now.bands.map((b) => b.ssidInstancePath)
@@ -472,22 +482,6 @@ class PnpService {
             .every((e) => ssids[e.key]?.enable == e.value) &&
         expectedApEnable.entries.every((e) => aps[e.key]?.enable == e.value);
   }
-
-  ({String ssid, List<String> paths, List<PnpWifiBand> bands, bool split})
-      _names(PnpMainWifiSettings s) => (
-            ssid: s.ssid,
-            paths: s.ssidInstancePaths,
-            bands: s.bands,
-            split: s.splitMode,
-          );
-
-  ({String ssid, List<String> paths, List<PnpWifiBand> bands, bool split})
-      _guestNames(PnpGuestWifiSettings s) => (
-            ssid: s.ssid,
-            paths: s.ssidInstancePaths,
-            bands: s.bands,
-            split: s.splitMode,
-          );
 
   /// The main network's part of the one SET: what [main] changed since it was
   /// read, and nothing else.

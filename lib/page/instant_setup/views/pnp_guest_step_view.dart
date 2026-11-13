@@ -69,61 +69,77 @@ class _PnpGuestStepViewState extends ConsumerState<PnpGuestStepView> {
     return UiKitPageView.innerPage(
       scrollable: true,
       useMainPadding: false,
-      child: (context, constraints) => AppCard(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              AppText.titleMedium(loc(context).guestWifi),
-              AppGap.xl(),
-              LayoutBlock(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: AppText.labelLarge(loc(context).guestNetwork),
+      child: (context, constraints) => Column(
+        // In a Column so the card wraps its content: as the page's own child
+        // it took the scroll view's minimum height and ran to the bottom of
+        // the screen (bench, 2026-11-13).
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppCard(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  AppText.titleMedium(loc(context).guestWifi),
+                  AppGap.xl(),
+                  LayoutBlock(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: AppText.labelLarge(loc(context).guestNetwork),
+                        ),
+                        AppGap.md(),
+                        AppSwitch(
+                          value: draft.enabled,
+                          identifier: 'pnp-guest-enabled',
+                          onChanged: edit.setEnabled,
+                        ),
+                      ],
                     ),
-                    AppGap.md(),
-                    AppSwitch(value: draft.enabled, onChanged: edit.setEnabled),
-                  ],
-                ),
-              ),
-              if (draft.enabled) ...[
-                AppGap.md(),
-                if (draft.splitMode)
-                  for (final (i, band) in draft.bands.indexed) ...[
-                    if (i > 0) AppGap.md(),
-                    PnpWifiFields(
-                      bandName: band.bandName,
-                      ssidController: _bandSsid[band.ssidInstancePath]!,
-                      passwordController: _bandPassword[band.ssidInstancePath]!,
-                      onSsidChanged: (v) =>
-                          edit.setBandSsid(band.ssidInstancePath, v),
-                      onPasswordChanged: (v) {
-                        edit.setBandPassword(band.ssidInstancePath, v);
-                        setState(() {}); // the rule indicators
-                      },
-                    ),
-                  ]
-                else
-                  PnpWifiFields(
-                    ssidController: _ssid,
-                    passwordController: _password,
-                    onSsidChanged: edit.setSsid,
-                    onPasswordChanged: (v) {
-                      edit.setPassword(v);
-                      setState(() {}); // the rule indicators
-                    },
                   ),
-              ],
-              AppGap.xxxl(),
-              PnpStepFooter(
-                stepId: PnpGuestStepView.stepId,
-                canContinue: valid,
+                  if (draft.enabled) ...[
+                    AppGap.md(),
+                    if (draft.splitMode)
+                      for (final (i, band) in draft.bands.indexed) ...[
+                        if (i > 0) AppGap.md(),
+                        PnpWifiFields(
+                          guest: true,
+                          band: band,
+                          ssidController: _bandSsid[band.ssidInstancePath]!,
+                          passwordController:
+                              _bandPassword[band.ssidInstancePath]!,
+                          onSsidChanged: (v) =>
+                              edit.setBandSsid(band.ssidInstancePath, v),
+                          onPasswordChanged: (v) {
+                            edit.setBandPassword(band.ssidInstancePath, v);
+                            setState(() {}); // the rule indicators
+                          },
+                        ),
+                      ]
+                    else
+                      PnpWifiFields(
+                        guest: true,
+                        ssidController: _ssid,
+                        passwordController: _password,
+                        onSsidChanged: edit.setSsid,
+                        onPasswordChanged: (v) {
+                          edit.setPassword(v);
+                          setState(() {}); // the rule indicators
+                        },
+                      ),
+                  ],
+                  AppGap.xxxl(),
+                  PnpStepFooter(
+                    stepId: PnpGuestStepView.stepId,
+                    canContinue: valid,
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          )
+        ],
       ),
     );
   }

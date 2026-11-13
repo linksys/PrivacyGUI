@@ -154,6 +154,25 @@ void main() {
     expect(find.text(pnpUnifiedRouter.main.password), findsOneWidget);
   });
 
+  group('a step\'s card wraps its content (bench, 2026-11-13)', () {
+    // The card was the inner page's own child, so it took the scroll view's
+    // minimum height and ran to the bottom of a 2400px surface. No overflow,
+    // so the layout gate could not see it; the bench screenshot did.
+    for (final entry in <String, Widget>{
+      'Wi-Fi': const PnpWifiStepView(),
+      'guest': const PnpGuestStepView(),
+      'Your Network': const PnpYourNetworkStepView(),
+    }.entries) {
+      testWidgets(entry.key, (tester) async {
+        await pumpStep(tester, entry.value);
+
+        expect(
+            tester.getSize(find.byType(AppCard).first).height, lessThan(1200),
+            reason: 'the surface is 2400px tall and no step is half that');
+      });
+    }
+  });
+
   testWidgets('a split network has a block per band', (tester) async {
     await pumpStep(tester, const PnpWifiStepView(), router: pnpSplitRouter);
 

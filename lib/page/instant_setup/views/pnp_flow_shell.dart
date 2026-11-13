@@ -74,7 +74,7 @@ bool _inPnpTree(Uri location) =>
 /// |---|---|---|---|
 /// | no plan yet | open | → the entry | → the entry |
 /// | editing | open (`/pnp/pnpConfig`'s exit asks to log out) | open | → the first step |
-/// | past editing | → the save step | → the save step, unless it is the save step | → the save step |
+/// | past editing | → the save step | → the save step, unless it is the save step itself | → the save step |
 ///
 /// "Past editing" is every phase after Save is pressed: in flight (saving,
 /// reconnect testing, the firmware stage) or past the irreversible point
@@ -82,7 +82,8 @@ bool _inPnpTree(Uri location) =>
 /// go_router re-reports the current URL (spike S2).
 ///
 /// Adding nodes is part of Your Network: `.../network/pnpAddNodes` is judged as
-/// `network`.
+/// `network` while editing, and refused past editing, where only the save step
+/// itself is open.
 String? pnpBackPolicy(PnpState flow, Uri target) {
   if (!_inPnpTree(target)) return null;
   final atEntry = target.pathSegments.length == 1;
@@ -98,7 +99,11 @@ String? pnpBackPolicy(PnpState flow, Uri target) {
         : pnpStepLocation(plan.firstStepId);
   }
 
-  return stepId == plan.saveStepId ? null : pnpStepLocation(plan.saveStepId);
+  // The save step itself, and nothing under it: adding nodes is not open while
+  // a save is out or after it.
+  final atSaveStep =
+      stepId == plan.saveStepId && target.pathSegments.length == 3;
+  return atSaveStep ? null : pnpStepLocation(plan.saveStepId);
 }
 
 /// The `ShellRoute` body over the `/pnp` tree (#1511 P2).

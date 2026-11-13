@@ -34,29 +34,29 @@ abstract interface class PnpStepDraft {
 /// `PnpNotifier` listens to every draft in its plan, so a draft lives exactly
 /// as long as the flow does. A step's own page is unmounted as soon as the user
 /// moves to the next step, and its edits must not go with it.
-final pnpMainWifiDraftProvider =
-    NotifierProvider.autoDispose<PnpMainWifiDraftNotifier, PnpMainWifiDraft>(
+final pnpMainWifiDraftProvider = NotifierProvider.autoDispose<
+    PnpMainWifiDraftNotifier, PnpMainWifiDraftState>(
   PnpMainWifiDraftNotifier.new,
 );
 
 /// The guest step's draft. Built only when the plan has a guest step.
-final pnpGuestWifiDraftProvider =
-    NotifierProvider.autoDispose<PnpGuestWifiDraftNotifier, PnpGuestWifiDraft>(
+final pnpGuestWifiDraftProvider = NotifierProvider.autoDispose<
+    PnpGuestWifiDraftNotifier, PnpGuestWifiDraftState>(
   PnpGuestWifiDraftNotifier.new,
 );
 
 const _noMain = PnpMainWifiSettings(ssid: '', password: '');
 const _noGuest = PnpGuestWifiSettings(enabled: false, ssid: '', password: '');
 
-class PnpMainWifiDraftNotifier extends AutoDisposeNotifier<PnpMainWifiDraft>
-    implements PnpStepDraft {
+class PnpMainWifiDraftNotifier
+    extends AutoDisposeNotifier<PnpMainWifiDraftState> implements PnpStepDraft {
   /// Empty until the flow begins it.
   @override
-  PnpMainWifiDraft build() => PnpMainWifiDraft.from(_noMain);
+  PnpMainWifiDraftState build() => PnpMainWifiDraftState.from(_noMain);
 
   @override
   void begin(PnpWizardData router) =>
-      state = PnpMainWifiDraft.from(router.main);
+      state = PnpMainWifiDraftState.from(router.main);
 
   @override
   bool isDirty() => state.isDirty;
@@ -86,17 +86,18 @@ class PnpMainWifiDraftNotifier extends AutoDisposeNotifier<PnpMainWifiDraft>
       );
 }
 
-class PnpGuestWifiDraftNotifier extends AutoDisposeNotifier<PnpGuestWifiDraft>
+class PnpGuestWifiDraftNotifier
+    extends AutoDisposeNotifier<PnpGuestWifiDraftState>
     implements PnpStepDraft {
   /// Empty until the flow begins it.
   @override
-  PnpGuestWifiDraft build() => PnpGuestWifiDraft.from(_noGuest);
+  PnpGuestWifiDraftState build() => PnpGuestWifiDraftState.from(_noGuest);
 
   /// Begins at the router's guest network. Only the plan's steps are begun, so
   /// a router without one never reaches here.
   @override
   void begin(PnpWizardData router) =>
-      state = PnpGuestWifiDraft.from(router.guest ?? _noGuest);
+      state = PnpGuestWifiDraftState.from(router.guest ?? _noGuest);
 
   @override
   bool isDirty() => state.isDirty;

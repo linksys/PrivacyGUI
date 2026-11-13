@@ -71,7 +71,7 @@ class FixedMainWifiDraft extends PnpMainWifiDraftNotifier {
   final PnpMainWifiSettings _read;
 
   @override
-  PnpMainWifiDraft build() => PnpMainWifiDraft.from(_read);
+  PnpMainWifiDraftState build() => PnpMainWifiDraftState.from(_read);
 }
 
 /// See [FixedMainWifiDraft].
@@ -80,7 +80,7 @@ class FixedGuestWifiDraft extends PnpGuestWifiDraftNotifier {
   final PnpGuestWifiSettings _read;
 
   @override
-  PnpGuestWifiDraft build() => PnpGuestWifiDraft.from(_read);
+  PnpGuestWifiDraftState build() => PnpGuestWifiDraftState.from(_read);
 }
 
 /// Returns provider overrides pinning the PnP state machine to [state].

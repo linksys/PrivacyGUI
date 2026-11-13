@@ -102,8 +102,24 @@ void main() {
 
       test('${phase.runtimeType}: everything else goes back to the save step',
           () {
-        for (final target in [entry, config, step('wifi'), step('guest')]) {
+        for (final target in [
+          entry,
+          config,
+          step('wifi'),
+          step('guest'),
+          // Adding nodes is Your Network's, and not while a save is out or
+          // after it: only the step itself stays open.
+          addNodes,
+        ]) {
           expect(policy(flow, target), step('network'), reason: target);
+        }
+      });
+
+      test('${phase.runtimeType}: the same with no guest step', () {
+        final noGuestFlow = PnpState(phase: phase, plan: noGuest);
+        expect(policy(noGuestFlow, step('network')), isNull);
+        for (final target in [step('wifi'), step('guest'), addNodes]) {
+          expect(policy(noGuestFlow, target), step('network'), reason: target);
         }
       });
     }

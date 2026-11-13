@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/capability/capability_provider.dart';
 import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -12,6 +15,7 @@ import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_wifi_drafts.dart';
+import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_guest_step_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_wifi_step_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_your_network_step_view.dart';
@@ -31,6 +35,8 @@ class _DrivenPnp extends FixedPnpNotifier {
 
   void moveTo(PnpPhase phase) => state = state.copyWith(phase: phase);
 }
+
+class _MockPnpService extends Mock implements PnpService {}
 
 /// Signed in, and records the logout.
 class _Auth extends AuthNotifier {
@@ -320,5 +326,49 @@ void main() {
     await pumpApp(tester, initial: '/pnp/pnpConfig/guest');
 
     expect(location(), RoutePath.pnp);
+  });
+
+  testWidgets(
+      'the real flow under the real shell: going in from outside starts it '
+      'once, from the entry', (tester) async {
+    // #1511 P3's reviewer pin, with nothing stubbed between the router and
+    // `PnpNotifier`: the shell's redirect runs before the shell exists, and
+    // whatever reads the flow first creates it. Only the entry may start the
+    // flow, so the router is asked exactly once — a side effect in `build()`,
+    // or a redirect that created a throwaway flow which then started, would
+    // make it twice.
+    final service = _MockPnpService();
+    final never = Completer<FactoryDefaultCheckResult>();
+    when(() => service.checkFactoryDefault()).thenAnswer((_) => never.future);
+    router = GoRouter(
+      navigatorKey: routerKey,
+      initialLocation: '/outside',
+      routes: [
+        GoRoute(path: '/outside', builder: (_, __) => const Text('OUTSIDE')),
+        pnpShellRoute,
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        ...commonOverrides(),
+        pnpServiceProvider.overrideWithValue(service),
+      ],
+      child: MaterialApp.router(
+        theme: AppTheme.create(brightness: Brightness.light),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: router,
+      ),
+    ));
+    await settle(tester);
+
+    router.go(RoutePath.pnp);
+    await settle(tester);
+
+    expect(location(), RoutePath.pnp);
+    verify(() => service.checkFactoryDefault()).called(1);
+    expect(container(tester).read(pnpProvider).phase,
+        isA<AdminCheckingInternet>());
   });
 }

@@ -33,11 +33,11 @@ class PnpStepFooter extends ConsumerWidget {
     if (plan == null) return const SizedBox.shrink();
     final before = plan.stepBefore(stepId);
     final after = plan.stepAfter(stepId);
-    final saves = stepId == plan.saveStepId;
+    final isSaveStep = stepId == plan.saveStepId;
 
     final VoidCallback? primary = !canContinue
         ? null
-        : saves
+        : isSaveStep
             ? () => ref.read(pnpProvider.notifier).saveChanges()
             : after == null
                 ? null
@@ -63,7 +63,7 @@ class PnpStepFooter extends ConsumerWidget {
           ),
         // One footer on screen at a time — the step pages replace each other —
         // so the two hooks are singletons.
-        if (saves)
+        if (isSaveStep)
           AppButton(
             label: loc(context).save,
             identifier: 'pnp-step-save',

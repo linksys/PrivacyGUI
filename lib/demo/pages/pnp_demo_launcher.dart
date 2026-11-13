@@ -12,7 +12,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 ///
 /// Displays a grid of cards, each representing a different PnP entry point.
 /// Tapping a card picks the [PnpPhase] the next run starts at and navigates
-/// into the flow, whose entry applies it (`demoPnpStartPhaseProvider`), so
+/// into the flow, whose entry applies it (`demoPnpStartProvider`), so
 /// testers can jump directly to any stage.
 ///
 /// The launcher never touches `pnpProvider` itself (#1511 P3): it is

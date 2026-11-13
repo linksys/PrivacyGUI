@@ -38,6 +38,8 @@ final _pnpRouteConfig = LinksysRouteConfig(
 Future<bool> _pnpWizardExitGuard(
     BuildContext context, GoRouterState state) async {
   final container = ProviderScope.containerOf(context);
+  // Exhaustive on purpose: a phase added later must be decided here, not let
+  // out by a `default`.
   switch (container.read(pnpProvider).phase) {
     case WizardUpdatingFirmware() || WizardCheckingFirmware():
       return false;
@@ -45,7 +47,14 @@ Future<bool> _pnpWizardExitGuard(
       return false;
     case WizardConfiguring():
       return _leaveSetupByLoggingOut(context, container);
-    default:
+    case AdminCheckingInternet() ||
+          AdminInternetConnected() ||
+          AdminReadFailure() ||
+          NoInternet() ||
+          WizardInitializing() ||
+          WizardNeedsReconnect() ||
+          WizardWifiReady() ||
+          WizardError():
       return true;
   }
 }
@@ -77,16 +86,17 @@ Future<bool> _leaveSetupByLoggingOut(
 /// The shell's `redirect`: the back policy, [pnpBackPolicy], over every
 /// navigation into the `/pnp` tree.
 ///
-/// Reads the flow each time, because every destination in the tree needs it —
-/// even the entry, which is closed once Save has been pressed. A read before
-/// the shell watches the flow creates an instance Riverpod may then drop
-/// (spike S3); that is harmless because `PnpNotifier.build()` is side-effect
-/// free.
-String? _pnpShellRedirect(BuildContext context, GoRouterState state) =>
-    pnpBackPolicy(
-      ProviderScope.containerOf(context).read(pnpProvider),
-      state.uri,
-    );
+/// Reads the flow only when there is one (spike S3). With none, the answer is
+/// the policy's "no plan yet" row, and reading the `autoDispose` provider just
+/// to find that out would create an instance Riverpod then drops — harmless
+/// while `PnpNotifier.build()` stays side-effect free, but nothing to rely on.
+String? _pnpShellRedirect(BuildContext context, GoRouterState state) {
+  final container = ProviderScope.containerOf(context);
+  final flow = container.exists(pnpProvider)
+      ? container.read(pnpProvider)
+      : PnpState.initial();
+  return pnpBackPolicy(flow, state.uri);
+}
 
 /// One shell over the PnP flow (#1511 P2) — the `/pnp` tree, and only it.
 ///

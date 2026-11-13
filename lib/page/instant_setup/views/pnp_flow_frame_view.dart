@@ -40,7 +40,9 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// A page view by the layout gate's rule (`views/*_view.dart`) although it is
 /// not a route's page: the gate pumps it around a step's page to sweep the
 /// stepper and the status screens, which a step's page pumped alone does not
-/// show. The logic — navigation, the save-error message — is `PnpFlowShell`'s.
+/// show. The flow's own logic — phase-driven navigation, the save-error message —
+/// is `PnpFlowShell`'s; the frame's status screens only carry their buttons (the
+/// reconnect step's Next, Try again, the completion screen's Print and Done).
 class PnpFlowFrameView extends ConsumerWidget {
   const PnpFlowFrameView({
     super.key,

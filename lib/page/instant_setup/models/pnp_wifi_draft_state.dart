@@ -5,20 +5,22 @@ import 'package:privacy_gui/framework/preservable.dart';
 import 'pnp_wifi_settings.dart';
 
 /// The PnP Wi-Fi step's draft: the main network as read and as edited.
-class PnpMainWifiDraft extends FeatureState<PnpMainWifiSettings, EmptyStatus> {
-  const PnpMainWifiDraft(
+class PnpMainWifiDraftState
+    extends FeatureState<PnpMainWifiSettings, EmptyStatus> {
+  const PnpMainWifiDraftState(
       {required super.settings, super.status = const EmptyStatus()});
 
   /// A draft that begins at [read] — what the wizard read from the router.
-  factory PnpMainWifiDraft.from(PnpMainWifiSettings read) =>
-      PnpMainWifiDraft(settings: Preservable(original: read, current: read));
+  factory PnpMainWifiDraftState.from(PnpMainWifiSettings read) =>
+      PnpMainWifiDraftState(
+          settings: Preservable(original: read, current: read));
 
   @override
-  PnpMainWifiDraft copyWith({
+  PnpMainWifiDraftState copyWith({
     Preservable<PnpMainWifiSettings>? settings,
     EmptyStatus? status,
   }) =>
-      PnpMainWifiDraft(
+      PnpMainWifiDraftState(
         settings: settings ?? this.settings,
         status: status ?? this.status,
       );
@@ -29,21 +31,22 @@ class PnpMainWifiDraft extends FeatureState<PnpMainWifiSettings, EmptyStatus> {
 }
 
 /// The PnP guest step's draft: the guest network as read and as edited.
-class PnpGuestWifiDraft
+class PnpGuestWifiDraftState
     extends FeatureState<PnpGuestWifiSettings, EmptyStatus> {
-  const PnpGuestWifiDraft(
+  const PnpGuestWifiDraftState(
       {required super.settings, super.status = const EmptyStatus()});
 
   /// A draft that begins at [read] — what the wizard read from the router.
-  factory PnpGuestWifiDraft.from(PnpGuestWifiSettings read) =>
-      PnpGuestWifiDraft(settings: Preservable(original: read, current: read));
+  factory PnpGuestWifiDraftState.from(PnpGuestWifiSettings read) =>
+      PnpGuestWifiDraftState(
+          settings: Preservable(original: read, current: read));
 
   @override
-  PnpGuestWifiDraft copyWith({
+  PnpGuestWifiDraftState copyWith({
     Preservable<PnpGuestWifiSettings>? settings,
     EmptyStatus? status,
   }) =>
-      PnpGuestWifiDraft(
+      PnpGuestWifiDraftState(
         settings: settings ?? this.settings,
         status: status ?? this.status,
       );

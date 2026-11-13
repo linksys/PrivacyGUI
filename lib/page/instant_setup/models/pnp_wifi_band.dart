@@ -78,6 +78,22 @@ PnpWifiBand bandAsRead(List<PnpWifiBand> original, PnpWifiBand band) =>
       orElse: () => band,
     );
 
+/// The stable key of [band] in an E2E identifier (constitution Article XVI
+/// §16.3): its frequency, slugged — `2.4GHz` → `2-4ghz` — or, with no
+/// frequency, the SSID row's instance number, or `unnamed`. Derived from the
+/// band's data, never from its position in the list. `all` for a unified
+/// network, which has one set of fields for every band.
+String pnpBandIdentifierKey(PnpWifiBand? band) {
+  if (band == null) return 'all';
+  final slug = band.frequency
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+      .replaceAll(RegExp(r'^-+|-+$'), '');
+  if (slug.isNotEmpty) return slug;
+  final instance = RegExp(r'(\d+)\.?$').firstMatch(band.ssidInstancePath);
+  return instance?.group(1) ?? 'unnamed';
+}
+
 /// Determines the display band name from the radio's OperatingFrequencyBand.
 String bandNameFromFrequency(String operatingFrequencyBand) {
   final freq = operatingFrequencyBand.toLowerCase();
