@@ -3,7 +3,6 @@ import 'package:privacy_gui/framework/empty_status.dart';
 import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_flow_plan.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_settings.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_probe_draft_provider.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_wifi_draft_provider.dart';
 
@@ -51,12 +50,6 @@ final kPnpSettingSteps = <PnpSettingStep>[
     // No guest SSID on the router, no guest step.
     includedFor: (router) => router.guest != null,
     draft: pnpGuestWifiDraftProvider.notifier,
-  ),
-  // #1511 P6's probe — test-only: no real router reports it.
-  PnpSettingStep(
-    id: 'probe',
-    includedFor: (router) => router.probe != null,
-    draft: pnpProbeDraftProvider.notifier,
   ),
 ];
 

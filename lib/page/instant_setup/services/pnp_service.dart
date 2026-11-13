@@ -356,9 +356,6 @@ class PnpService {
     final params = {
       if (write.guest case final guest?) ..._guestParams(guest),
       ..._mainParams(write.main),
-      // #1511 P6's probe — test-only.
-      if (write.probe case final probe? when probe.isDirty)
-        'Device.X_LINKSYS_PnpProbe.Enable': probe.current.enabled,
     };
     if (params.isEmpty) return PnpWifiWriteOutcome.confirmed;
 

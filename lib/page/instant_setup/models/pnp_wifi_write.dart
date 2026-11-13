@@ -1,7 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/framework/preservable.dart';
 
-import 'pnp_probe_settings.dart';
 import 'pnp_wifi_band.dart';
 import 'pnp_wifi_settings.dart';
 
@@ -12,13 +11,10 @@ import 'pnp_wifi_settings.dart';
 /// write restarts every radio. [guest] is `null` when the flow has no guest
 /// step.
 class PnpWifiWrite extends Equatable {
-  const PnpWifiWrite({required this.main, this.guest, this.probe});
+  const PnpWifiWrite({required this.main, this.guest});
 
   final Preservable<PnpMainWifiSettings> main;
   final Preservable<PnpGuestWifiSettings>? guest;
-
-  /// **#1511 P6's probe — test-only.**
-  final Preservable<PnpProbeSettings>? probe;
 
   /// The name the reconnect step and the completion screen show.
   ///
@@ -40,5 +36,5 @@ class PnpWifiWrite extends Equatable {
   }
 
   @override
-  List<Object?> get props => [main, guest, probe];
+  List<Object?> get props => [main, guest];
 }
