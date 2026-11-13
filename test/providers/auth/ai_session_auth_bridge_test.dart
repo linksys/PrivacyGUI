@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -5,7 +7,9 @@ import 'package:privacy_gui/constants/build_config.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/constants/jnap_const.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/core/ai_session/ai_session_service.dart';
+import 'package:privacy_gui/core/ai_session/router_ai_loader.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/components/layouts/root_container.dart';
@@ -246,4 +250,178 @@ void main() {
       });
     }
   }, skip: BuildConfig.enableRouterAi ? false : _needsRouterAi);
+
+  // The widget (chat bubble, sidebar, manual-login card) must never be on the
+  // login screen. It is shown only after the router login AND the AI session
+  // bootstrap have both succeeded.
+  group('Router AI widget is shown only after login', () {
+    late int widgetLoads;
+    late int widgetDisarms;
+    late MockRouterRepository router;
+
+    setUp(() {
+      FlutterSecureStorage.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({});
+      widgetLoads = 0;
+      widgetDisarms = 0;
+      router = MockRouterRepository();
+      stubLogin(router, jnapResultOk);
+    });
+
+    ProviderContainer containerWith(AiSessionService aiSession) {
+      final container = ProviderContainer(overrides: [
+        routerRepositoryProvider.overrideWithValue(router),
+        aiSessionServiceProvider.overrideWithValue(aiSession),
+        routerAiLoaderProvider.overrideWithValue(() {
+          widgetLoads++;
+          return true;
+        }),
+        routerAiDisarmProvider.overrideWithValue(() {
+          widgetDisarms++;
+        }),
+      ]);
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('startup on the login screen never shows the widget', () async {
+      final container = containerWith(_RecordingAiSessionService());
+
+      await container.read(authProvider.future);
+      final auth = container.read(authProvider.notifier);
+      await Future.wait([auth.init(), auth.init()]);
+      await auth.init();
+      await pumpEventQueue();
+
+      expect(widgetLoads, 0);
+    });
+
+    test('a rejected router password never shows the widget', () async {
+      stubLogin(router, errorInvalidAdminPassword);
+      final aiSession = _RecordingAiSessionService();
+      final container = containerWith(aiSession);
+
+      await container.read(authProvider.future);
+      await container.read(authProvider.notifier).init();
+      await container.read(authProvider.notifier).localLogin('WrongSecret!');
+      await pumpEventQueue();
+
+      expect(aiSession.bootstraps, isEmpty);
+      expect(widgetLoads, 0);
+    });
+
+    test('a successful login shows the widget once the AI session is up',
+        () async {
+      final container = containerWith(_RecordingAiSessionService());
+
+      await container.read(authProvider.future);
+      await container.read(authProvider.notifier).init();
+      expect(widgetLoads, 0);
+      await container
+          .read(authProvider.notifier)
+          .localLogin('CandidateSecret!');
+      await pumpEventQueue();
+
+      expect(widgetLoads, 1);
+    });
+
+    test('an AI bootstrap outage after login does not show the widget',
+        () async {
+      final container =
+          containerWith(_RecordingAiSessionService(result: false));
+
+      await container.read(authProvider.future);
+      await container
+          .read(authProvider.notifier)
+          .localLogin('CandidateSecret!');
+      await pumpEventQueue();
+
+      expect(container.read(authProvider).value?.loginType, LoginType.local);
+      expect(widgetLoads, 0);
+    });
+
+    test('a restored login shows the widget after its bootstrap', () async {
+      FlutterSecureStorage.setMockInitialValues(
+          {pLocalPassword: 'CandidateSecret!'});
+      final container = containerWith(_RecordingAiSessionService());
+
+      await container.read(authProvider.future);
+      final auth = container.read(authProvider.notifier);
+      await Future.wait([auth.init(), auth.init()]);
+      await auth.init();
+      await pumpEventQueue();
+
+      expect(widgetLoads, 1);
+    });
+
+    test('a logout while the bootstrap is in flight never shows the widget',
+        () async {
+      final aiSession = _HeldAiSessionService();
+      final container = containerWith(aiSession);
+
+      await container.read(authProvider.future);
+      final auth = container.read(authProvider.notifier);
+      await auth.localLogin('CandidateSecret!');
+      expect(aiSession.held, isNotNull);
+
+      await auth.logout();
+      aiSession.held!.complete(true); // late success after the logout
+      await pumpEventQueue();
+
+      expect(container.read(authProvider).value?.loginType, LoginType.none);
+      expect(widgetLoads, 0);
+    });
+
+    test('every logout disarms a widget bundle that may still be loading',
+        () async {
+      final container = containerWith(_RecordingAiSessionService());
+
+      await container.read(authProvider.future);
+      final auth = container.read(authProvider.notifier);
+      await auth.init();
+      expect(widgetDisarms, 0, reason: 'startup has nothing to disarm');
+      await auth.localLogin('CandidateSecret!');
+      await pumpEventQueue();
+      await auth.logout();
+      expect(widgetDisarms, 1);
+      await auth.localLogin('CandidateSecret!');
+      await pumpEventQueue();
+      await container.read(idleLogoutProvider)();
+      expect(widgetDisarms, 2, reason: 'idle logout uses the same path');
+    });
+
+    test('logging in again in the same tab shows the widget again', () async {
+      final container = containerWith(_RecordingAiSessionService());
+
+      await container.read(authProvider.future);
+      final auth = container.read(authProvider.notifier);
+      await auth.localLogin('CandidateSecret!');
+      await pumpEventQueue();
+      await auth.logout();
+      await pumpEventQueue();
+      expect(widgetLoads, 1, reason: 'logout itself must not show it');
+
+      await auth.localLogin('CandidateSecret!');
+      await pumpEventQueue();
+      expect(widgetLoads, 2);
+    });
+  }, skip: BuildConfig.enableRouterAi ? false : _needsRouterAi);
+}
+
+/// A bootstrap the test answers by hand, to land a response after a logout.
+/// Unlike the real service, a logout does not cancel it.
+class _HeldAiSessionService implements AiSessionService {
+  Completer<bool>? held;
+
+  @override
+  Future<bool> bootstrap(String adminPassword) {
+    held = Completer<bool>();
+    return held!.future;
+  }
+
+  @override
+  Future<void> logout() async {}
+
+  @override
+  void close() {}
 }

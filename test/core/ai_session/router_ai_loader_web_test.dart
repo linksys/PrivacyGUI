@@ -2,6 +2,7 @@
 library;
 
 import 'dart:html' as html;
+import 'dart:js_util' as js_util;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -52,5 +53,82 @@ void main() {
         .append(html.ScriptElement()..src = '/ai/linksys-ai.js?v=2#retry');
     expect(injectRouterAiBundle(routerAiBundlePath), isFalse);
     expect(_aiScripts(), hasLength(1));
+  });
+
+  // A stand-in for the real widget bundle: like linksys-ai.js it wraps
+  // window.removeSplashFromWeb as its "GUI ready" signal and listens for
+  // linksys-ai-session-ended.
+  group('widget ready hook', () {
+    late Object guiSplashRemover;
+    var tag = 0;
+
+    setUp(() {
+      resetRouterAiLoaderForTest();
+      guiSplashRemover = js_util.allowInterop(() {});
+      js_util.setProperty(html.window, 'removeSplashFromWeb', guiSplashRemover);
+      tag++;
+      js_util.setProperty(html.window, '__aiReady$tag', 0);
+      js_util.setProperty(html.window, '__aiEnded$tag', 0);
+    });
+
+    // Each test's stand-in counts into its own globals: listeners added by an
+    // earlier test's script stay on the window and would otherwise be counted.
+    String fakeWidgetUrl() => html.Url.createObjectUrlFromBlob(html.Blob([
+          '(function(){var orig=window.removeSplashFromWeb;'
+              'window.removeSplashFromWeb=function(){if(orig)orig();window.__aiReady$tag++;};'
+              'window.addEventListener("linksys-ai-session-ended",function(){window.__aiEnded$tag++;});'
+              '})();'
+        ], 'text/javascript'));
+
+    Future<void> loaded(String src) async {
+      final script = html.document
+          .querySelectorAll('script[src]')
+          .whereType<html.ScriptElement>()
+          .lastWhere((s) => s.src == src);
+      await script.onLoad.first;
+      await Future<void>.delayed(Duration.zero);
+    }
+
+    int counter(String name) =>
+        js_util.getProperty<int>(html.window, '$name$tag');
+
+    test('after login the widget is armed once and redirects never re-arm it',
+        () async {
+      final src = fakeWidgetUrl();
+      expect(injectRouterAiBundle(src), isTrue);
+      await loaded(src);
+
+      expect(counter('__aiReady'), 1);
+      expect(
+          identical(
+              js_util.getProperty<Object?>(html.window, 'removeSplashFromWeb'),
+              guiSplashRemover),
+          isTrue,
+          reason: 'the GUI gets its own splash remover back');
+      js_util.callMethod<void>(html.window, 'removeSplashFromWeb', const []);
+      expect(counter('__aiReady'), 1, reason: 'a route redirect must not re-arm');
+    });
+
+    test('a logout while the bundle downloads never arms the widget', () async {
+      final src = fakeWidgetUrl();
+      expect(injectRouterAiBundle(src), isTrue);
+      disarmInjectedRouterAiBundle(); // logout before the bundle has run
+      await loaded(src);
+
+      expect(counter('__aiReady'), 0);
+      expect(counter('__aiEnded'), 1,
+          reason: 'the missed session-ended event is replayed');
+    });
+
+    test('a login after that logout arms the already-loaded widget', () async {
+      final src = fakeWidgetUrl();
+      injectRouterAiBundle(src);
+      disarmInjectedRouterAiBundle();
+      await loaded(src);
+      expect(counter('__aiReady'), 0);
+
+      expect(injectRouterAiBundle(src), isFalse);
+      expect(counter('__aiReady'), 1);
+    });
   });
 }
