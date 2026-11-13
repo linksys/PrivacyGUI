@@ -544,6 +544,15 @@
       }
     }
   },
+  "channelUtilizationValue": "Channel utilization: {percent}%",
+  "@channelUtilizationValue": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "channelUtilizationUnavailable": "Channel utilization: —",
   "speed": "Speed",
   "speedTest": "Speed Test",
   "ssid": "SSID",

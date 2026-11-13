@@ -1077,6 +1077,8 @@
   "slowHops": "وثبات بطيئة",
   "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
+  "channelUtilizationValue": "استخدام القناة: {percent}%",
+  "channelUtilizationUnavailable": "استخدام القناة: —",
   "sourceRestriction": "تقييد المصدر",
   "specificDeviceConnectionProblems": "جهاز محدد يواجه مشكلات في الاتصال",
   "speedTestComplete": "اكتمل اختبار السرعة",

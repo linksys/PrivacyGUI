@@ -1077,6 +1077,8 @@
   "slowHops": "Yavaş Atlamalar",
   "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
+  "channelUtilizationValue": "Kanal kullanımı: %{percent}",
+  "channelUtilizationUnavailable": "Kanal kullanımı: —",
   "sourceRestriction": "Kaynak Kısıtlaması",
   "specificDeviceConnectionProblems": "Belirli bir cihazda bağlantı sorunları var",
   "speedTestComplete": "Hız Testi Tamamlandı",

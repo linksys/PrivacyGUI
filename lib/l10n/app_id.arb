@@ -1077,6 +1077,8 @@
   "slowHops": "Hop Lambat",
   "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
+  "channelUtilizationValue": "Penggunaan kanal: {percent}%",
+  "channelUtilizationUnavailable": "Penggunaan kanal: —",
   "sourceRestriction": "Pembatasan Sumber",
   "specificDeviceConnectionProblems": "Perangkat tertentu memiliki masalah koneksi",
   "speedTestComplete": "Tes Kecepatan Selesai",

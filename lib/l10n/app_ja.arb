@@ -1077,6 +1077,8 @@
   "slowHops": "遅いホップ",
   "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
+  "channelUtilizationValue": "チャネル使用率: {percent}%",
+  "channelUtilizationUnavailable": "チャネル使用率: —",
   "sourceRestriction": "ソース制限",
   "specificDeviceConnectionProblems": "特定のデバイスに接続の問題がある",
   "speedTestComplete": "速度テスト完了",

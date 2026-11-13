@@ -1077,6 +1077,8 @@
   "slowHops": "Αργά άλματα",
   "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
+  "channelUtilizationValue": "Χρήση καναλιού: {percent}%",
+  "channelUtilizationUnavailable": "Χρήση καναλιού: —",
   "sourceRestriction": "Περιορισμός πηγής",
   "specificDeviceConnectionProblems": "Συγκεκριμένη συσκευή έχει προβλήματα σύνδεσης",
   "speedTestComplete": "Το τεστ ταχύτητας ολοκληρώθηκε",

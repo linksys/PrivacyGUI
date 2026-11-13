@@ -1077,6 +1077,8 @@
   "slowHops": "Hitaat hypyt",
   "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
+  "channelUtilizationValue": "Kanavan käyttöaste: {percent} %",
+  "channelUtilizationUnavailable": "Kanavan käyttöaste: —",
   "sourceRestriction": "Lähteen rajoitus",
   "specificDeviceConnectionProblems": "Tietyllä laitteella on yhteysongelmia",
   "speedTestComplete": "Nopeustesti valmis",

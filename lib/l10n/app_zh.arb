@@ -1077,6 +1077,8 @@
   "slowHops": "慢速跳点",
   "snrUnavailable": "SNR: —",
   "snrValue": "SNR：{value} dB",
+  "channelUtilizationValue": "信道利用率：{percent}%",
+  "channelUtilizationUnavailable": "信道利用率：—",
   "sourceRestriction": "来源限制",
   "specificDeviceConnectionProblems": "特定设备存在连接问题",
   "speedTestComplete": "速度测试完成",

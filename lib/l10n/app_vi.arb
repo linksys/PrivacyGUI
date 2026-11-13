@@ -1077,6 +1077,8 @@
   "slowHops": "Bước nhảy chậm",
   "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
+  "channelUtilizationValue": "Mức sử dụng kênh: {percent}%",
+  "channelUtilizationUnavailable": "Mức sử dụng kênh: —",
   "sourceRestriction": "Giới hạn nguồn",
   "specificDeviceConnectionProblems": "Một thiết bị cụ thể gặp sự cố kết nối",
   "speedTestComplete": "Kiểm tra tốc độ hoàn tất",

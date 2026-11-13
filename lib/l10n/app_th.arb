@@ -1077,6 +1077,8 @@
   "slowHops": "Hops ที่ช้า",
   "snrUnavailable": "SNR: —",
   "snrValue": "SNR: {value} dB",
+  "channelUtilizationValue": "การใช้งานช่องสัญญาณ: {percent}%",
+  "channelUtilizationUnavailable": "การใช้งานช่องสัญญาณ: —",
   "sourceRestriction": "การจำกัดแหล่งที่มา",
   "specificDeviceConnectionProblems": "อุปกรณ์ที่เฉพาะเจาะจงมีปัญหาการเชื่อมต่อ",
   "speedTestComplete": "การทดสอบความเร็วเสร็จสมบูรณ์",
