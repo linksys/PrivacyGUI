@@ -519,12 +519,24 @@ abstract class UspWidgetSpecRegistry {
   static const firewallOverview = WidgetSpec(
     id: 'firewall_overview',
     displayName: 'Firewall Overview',
+    // Measured floor (#1130): the narrowest width at which every row reads in
+    // all 26 locales. The binding string is a DMZ host given by MAC,
+    // `AA:BB:CC:DD:EE:FF`, which cannot break and needs 139.5px of a value line
+    // that 272px is the first width to give it. Without a MAC host the full form
+    // reads from 235px (`sv`). Below this the compact form drops `(i)` and the
+    // flag column, and cuts what still does not fit with an ellipsis whose
+    // tooltip shows the whole text, so nothing breaks mid-word down to
+    // `kPopupBelow`.
+    // `usp_firewall_overview_card_readability_test.dart` holds both floors.
+    normalAbove: 272,
     constraints: {
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 3,
         maxColumns: 8,
         preferredColumns: 6,
-        heightStrategy: HeightStrategy.strict(4),
+        // Three rows: the tallest state, the SPI warning row over the three
+        // rows, still fits, and four left the default state half empty (#1130).
+        heightStrategy: HeightStrategy.strict(3),
         minHeightRows: 3,
         maxHeightRows: 6,
       ),

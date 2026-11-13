@@ -187,7 +187,7 @@ List<LayoutItem> _essentialLayout() => [
 /// y=9:  LanInfo (6×3)             | EthernetPorts (6×3)
 /// y=12: SystemStatus (6×5)        | TrafficAnalysis (6×5)
 /// y=17: ConnectedDevices (6×4)    | WiFiNetworks (6×6)
-/// y=23: TimeSettings (6×3)        | FirewallOverview (6×4)
+/// y=23: TimeSettings (6×3)        | FirewallOverview (6×3)
 /// ```
 List<LayoutItem> _standardLayout() => [
       _item('stats_panel', x: 0, y: 0, w: 12, h: 1),
@@ -201,7 +201,7 @@ List<LayoutItem> _standardLayout() => [
       _item('connected_devices', x: 0, y: 17, w: 6, h: 4),
       _item('wifi_networks', x: 6, y: 17, w: 6, h: 4),
       _item('time_settings', x: 0, y: 23, w: 6, h: 3),
-      _item('firewall_overview', x: 6, y: 23, w: 6, h: 4),
+      _item('firewall_overview', x: 6, y: 23, w: 6, h: 3),
     ];
 
 /// Professional: all 18 cards — full feature set.
@@ -214,7 +214,7 @@ List<LayoutItem> _standardLayout() => [
 /// y=14: EthernetPorts (6×3)       | ConnectedDevices (6×4)
 /// y=18: Topology (6×5)            | DeviceAnalytics (6×5)
 /// y=23: WiFiStatus (6×4)          | WiFiPerformance (6×5)
-/// y=28: WiFiNetworks (6×4)        | FirewallOverview (6×4)
+/// y=28: WiFiNetworks (6×4)        | FirewallOverview (6×3)
 /// y=32: TimeSettings (6×3)        | DhcpReservations (6×4)
 /// y=36: PortForwarding (6×4)
 /// ```
@@ -233,7 +233,7 @@ List<LayoutItem> _professionalLayout() => [
       _item('wifi_status', x: 0, y: 23, w: 6, h: 4),
       _item('wifi_performance', x: 6, y: 23, w: 6, h: 5),
       _item('wifi_networks', x: 0, y: 28, w: 6, h: 4),
-      _item('firewall_overview', x: 6, y: 28, w: 6, h: 4),
+      _item('firewall_overview', x: 6, y: 28, w: 6, h: 3),
       _item('time_settings', x: 0, y: 32, w: 6, h: 3),
       _item('dhcp_reservations', x: 6, y: 32, w: 6, h: 4),
       _item('port_forwarding', x: 0, y: 36, w: 6, h: 4),
@@ -246,7 +246,7 @@ List<LayoutItem> _professionalLayout() => [
 /// y=1:  TrafficAnalysis (12×5)
 /// y=6:  NetworkHealth (6×4)       | SystemStatus (6×5)
 /// y=11: DeviceAnalytics (6×5)     | WiFiPerformance (6×5)
-/// y=16: FirewallOverview (6×4)    | EthernetPorts (6×3)
+/// y=16: FirewallOverview (6×3)    | EthernetPorts (6×3)
 /// ```
 List<LayoutItem> _monitoringLayout() => [
       _item('stats_panel', x: 0, y: 0, w: 12, h: 1),
@@ -255,7 +255,7 @@ List<LayoutItem> _monitoringLayout() => [
       _item('system_status', x: 6, y: 6, w: 6, h: 5),
       _item('device_analytics', x: 0, y: 11, w: 6, h: 5),
       _item('wifi_performance', x: 6, y: 11, w: 6, h: 5),
-      _item('firewall_overview', x: 0, y: 16, w: 6, h: 4),
+      _item('firewall_overview', x: 0, y: 16, w: 6, h: 3),
       _item('ethernet_ports', x: 6, y: 16, w: 6, h: 3),
     ];
 

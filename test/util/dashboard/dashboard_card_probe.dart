@@ -550,7 +550,6 @@ double? cardContentScrollShortfall(WidgetTester tester) {
 /// definition and **validated at runtime** by `tab count matches registry` in
 /// the gate — if a card gains/loses a tab, that meta-test fails and points here.
 const Map<String, int> kTabbedCardTabCounts = {
-  'firewall_overview': 2,
   'network_health': 3,
   'wifi_performance': 3,
   'device_analytics': 4,
