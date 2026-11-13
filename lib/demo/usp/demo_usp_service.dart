@@ -12,7 +12,7 @@
 /// - `get` returns the RAW `Map<String, String>` (no coercion here) — the real
 ///   [UspClient] coerces. The old demo `_coerce` duplicated UspClient's logic
 ///   and is gone.
-/// - `set`/`add`/`delete`/`operate` return the WASM v0.11.0 **unified** result
+/// - `set`/`add`/`delete`/`operate` return the usp-client **unified** result
 ///   shape `{success, result: {data, errors?}}` — byte-identical to the real
 ///   WASM client — so [UspResultParser] and the service layer treat demo
 ///   results exactly like production. (The old demo `{overallSuccess, results}`
