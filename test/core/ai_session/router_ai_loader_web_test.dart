@@ -60,19 +60,23 @@ void main() {
   // linksys-ai-session-ended.
   group('widget ready hook', () {
     late Object guiSplashRemover;
+    var tag = 0;
 
     setUp(() {
       resetRouterAiLoaderForTest();
       guiSplashRemover = js_util.allowInterop(() {});
       js_util.setProperty(html.window, 'removeSplashFromWeb', guiSplashRemover);
-      js_util.setProperty(html.window, '__aiReady', 0);
-      js_util.setProperty(html.window, '__aiEnded', 0);
+      tag++;
+      js_util.setProperty(html.window, '__aiReady$tag', 0);
+      js_util.setProperty(html.window, '__aiEnded$tag', 0);
     });
 
+    // Each test's stand-in counts into its own globals: listeners added by an
+    // earlier test's script stay on the window and would otherwise be counted.
     String fakeWidgetUrl() => html.Url.createObjectUrlFromBlob(html.Blob([
           '(function(){var orig=window.removeSplashFromWeb;'
-              'window.removeSplashFromWeb=function(){if(orig)orig();window.__aiReady++;};'
-              'window.addEventListener("linksys-ai-session-ended",function(){window.__aiEnded++;});'
+              'window.removeSplashFromWeb=function(){if(orig)orig();window.__aiReady$tag++;};'
+              'window.addEventListener("linksys-ai-session-ended",function(){window.__aiEnded$tag++;});'
               '})();'
         ], 'text/javascript'));
 
@@ -85,7 +89,8 @@ void main() {
       await Future<void>.delayed(Duration.zero);
     }
 
-    int counter(String name) => js_util.getProperty<int>(html.window, name);
+    int counter(String name) =>
+        js_util.getProperty<int>(html.window, '$name$tag');
 
     test('after login the widget is armed once and redirects never re-arm it',
         () async {
