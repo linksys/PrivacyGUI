@@ -8,9 +8,11 @@ import 'package:privacy_gui/page/internet_settings/models/internet_settings_sett
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_status.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
+import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_notifier.dart';
 import 'package:privacy_gui/page/internet_settings/views/sections/usp_ipv4_section.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import '../../../../mocks/provider_overrides/mock_internet_settings.dart';
 import '../../../../mocks/test_data/scenes/internet_settings_scene_data.dart';
 
 final _testTheme = AppTheme.create(
@@ -50,8 +52,65 @@ Future<void> _pump(WidgetTester tester, UspInternetSettingsForm form,
   await tester.pumpAndSettle();
 }
 
+/// [FixedInternetSettingsNotifier] with a live [updateField], so a tap on a
+/// switch flows back into the state the section is rebuilt from.
+class _EditableInternetSettingsNotifier extends FixedInternetSettingsNotifier {
+  _EditableInternetSettingsNotifier(InternetSettingsFeatureState initialState)
+      : super(initialState);
+
+  @override
+  void updateField(
+      UspInternetSettingsForm Function(UspInternetSettingsForm) updater) {
+    state = state.copyWith(
+      settings: state.settings.update(
+        InternetSettingsSettings(form: updater(state.edited)),
+      ),
+    );
+  }
+}
+
+/// Hosts the section the way the real view does, reading its state off the
+/// provider, so an edit rebuilds it.
+Future<ProviderContainer> _pumpLive(
+    WidgetTester tester, UspInternetSettingsForm form) async {
+  await tester.pumpWidget(ProviderScope(
+    overrides: [
+      uspInternetSettingsProvider
+          .overrideWith(() => _EditableInternetSettingsNotifier(_state(form))),
+    ],
+    child: MaterialApp(
+      theme: _testTheme,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: Consumer(builder: (context, ref, _) {
+            final state = ref.watch(uspInternetSettingsProvider);
+            return UspIpv4Section(state: state, isEditing: state.isEditing);
+          }),
+        ),
+      ),
+    ),
+  ));
+  await tester.pumpAndSettle();
+  return ProviderScope.containerOf(tester.element(find.byType(UspIpv4Section)));
+}
+
 Finder _field(String label) =>
     find.byWidgetPredicate((w) => w is AppTextFormField && w.label == label);
+
+Finder get _vlanSwitch => find.descendant(
+      of: find
+          .ancestor(of: find.text('VLAN Tagging'), matching: find.byType(Row))
+          .first,
+      matching: find.byType(AppSwitch),
+    );
+
+Future<void> _tapVlanSwitch(WidgetTester tester) async {
+  await tester.ensureVisible(_vlanSwitch);
+  await tester.tap(_vlanSwitch);
+  await tester.pumpAndSettle();
+}
 
 String? _errorOf(WidgetTester tester, String label) =>
     tester.widget<AppTextFormField>(_field(label)).externalErrorText;
@@ -145,6 +204,37 @@ void main() {
     expect(_errorOf(tester, 'Default Gateway'), 'Invalid gateway IP address');
     expect(_errorOf(tester, 'DNS 2 (optional)'),
         'Reserved IP address is not allowed');
+  });
+
+  // #1072: an ID typed while VLAN was on must not be saved once it is off.
+  group('UspIpv4Section — VLAN switch (#1072)', () {
+    for (final type in [
+      UspWanConnectionType.pppoe,
+      UspWanConnectionType.pptp
+    ]) {
+      testWidgets('${type.name}: turning VLAN off puts the router ID back',
+          (tester) async {
+        final container = await _pumpLive(
+            tester,
+            _pptp.copyWith(
+                connectionType: type, vlanEnabled: false, vlanId: 1));
+
+        await _tapVlanSwitch(tester);
+        await tester.enterText(
+            find.descendant(
+                of: _field('VLAN ID (optional)'),
+                matching: find.byType(EditableText)),
+            '200');
+        await tester.pumpAndSettle();
+        expect(container.read(uspInternetSettingsProvider).edited.vlanId, 200);
+        await _tapVlanSwitch(tester);
+
+        final state = container.read(uspInternetSettingsProvider);
+        expect(state.edited.vlanEnabled, isFalse);
+        expect(state.edited.vlanId, 1);
+        expect(state.isDirty, isFalse);
+      });
+    }
   });
 
   testWidgets('a user name over 255 characters is refused', (tester) async {

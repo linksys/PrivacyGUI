@@ -454,6 +454,19 @@ class UspInternetSettingsNotifier
     );
   }
 
+  /// Turn WAN VLAN tagging on or off.
+  ///
+  /// Turning it off puts back the router's VLAN ID, dropping any ID typed while
+  /// it was on: the save would otherwise write that ID with VLAN off, and an
+  /// emptied field holds 0, which FW 2.0.4 refuses (#1072).
+  void setVlanEnabled(bool enabled) {
+    final routerVlanId = state.original.vlanId;
+    updateField((f) => f.copyWith(
+          vlanEnabled: enabled,
+          vlanId: enabled ? f.vlanId : routerVlanId,
+        ));
+  }
+
   /// Update connection type with appropriate field resets.
   void updateConnectionType(UspWanConnectionType type) {
     if (_savingIPoE || state.status.isSaving) return;

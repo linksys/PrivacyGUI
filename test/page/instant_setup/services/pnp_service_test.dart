@@ -71,6 +71,27 @@ void main() {
     'Device.Ethernet.VLANTermination.1.VLANID': '100',
   };
 
+  // #1072: what FW 2.0.4 holds right after a factory reset (measured on M60-EU
+  // 2.0.4.26102917): the PPP row unset, and the WAN VLAN row off with VLAN ID 1.
+  // That firmware refuses a VLAN ID of 0 (7012, range 1-4094).
+  final pppFactoryResponse = <String, dynamic>{
+    ...pppExistingResponse,
+    'Device.PPP.Interface.1.Username': '',
+    'Device.PPP.Interface.1.Password': '',
+    'Device.PPP.Interface.1.LowerLayers': '',
+    'Device.PPP.Interface.1.ConnectionStatus': 'Disconnected',
+  };
+  final vlanShippedResponse = <String, dynamic>{
+    ...vlanExistingResponse,
+    'Device.Ethernet.VLANTermination.1.Enable': false,
+    'Device.Ethernet.VLANTermination.1.VLANID': '1',
+  };
+  final writesVlanId = predicate<Map<String, dynamic>>(
+      (params) => params.keys.any((k) =>
+          k.startsWith('Device.Ethernet.VLANTermination.') &&
+          k.endsWith('.VLANID')),
+      'a SET that writes a VLAN ID');
+
   // Alias resolution response for WanSettings and Ipv6Settings _resolveInstance()
   const ipAliasResolutionResponse = <String, dynamic>{
     'Device.IP.Interface.1.Alias': 'lan',
@@ -458,9 +479,10 @@ void main() {
       final setCaptures = verify(() => mockUsp.set(captureAny())).captured;
       final vlanSet = setCaptures.whereType<Map<String, dynamic>>().where(
           (params) => params.keys.any((k) => k.contains('VLANTermination')));
-      expect(vlanSet, isNotEmpty);
+      // Enable alone: the VLAN ID field is closed, so its 0 is not the user's
+      // and FW 2.0.4 refuses it (#1072).
       expect(
-          vlanSet.first['Device.Ethernet.VLANTermination.1.Enable'], isFalse);
+          vlanSet.single, {'Device.Ethernet.VLANTermination.1.Enable': false});
 
       // Verify no DELETE was called
       verifyNever(() => mockUsp.delete(any()));
@@ -540,6 +562,51 @@ void main() {
 
       // Verify no ADD was called
       verifyNever(() => mockUsp.add(any()));
+    });
+
+    // The user never opened the VLAN field, so no VLAN ID is theirs to write;
+    // a 0 written to the shipped row fails the whole save (#1072).
+    test('PPPoE without VLAN writes no VLAN ID to the shipped VLAN row (#1072)',
+        () async {
+      setupFetchMocks(
+          pppResponse: pppFactoryResponse, vlanResponse: vlanShippedResponse);
+      setupSetMocks();
+
+      // What the PPPoE step submits with the VLAN field closed.
+      const config = PnpIspConfig(
+        type: IspConnectionType.pppoe,
+        pppUsername: 'userrr',
+        pppPassword: 'passsss',
+        vlanEnabled: false,
+        vlanId: 0,
+      );
+
+      await service.saveIspSettings(config);
+
+      verifyNever(() => mockUsp.set(any(that: writesVlanId)));
+    });
+
+    // The Static IP step has no VLAN field, so its config carries the default
+    // VLAN ID 0, which the shipped row refuses just the same (#1072).
+    test('Static IP writes no VLAN ID to the shipped VLAN row (#1072)',
+        () async {
+      setupFetchMocks(
+          pppResponse: pppFactoryResponse, vlanResponse: vlanShippedResponse);
+      setupSetMocks();
+
+      // What the Static IP step submits.
+      const config = PnpIspConfig(
+        type: IspConnectionType.staticIp,
+        staticIpAddress: '192.168.1.100',
+        subnetMask: '255.255.255.0',
+        defaultGateway: '192.168.1.1',
+        dnsServer1: '8.8.8.8',
+        dnsServer2: '8.8.4.4',
+      );
+
+      await service.saveIspSettings(config);
+
+      verifyNever(() => mockUsp.set(any(that: writesVlanId)));
     });
   });
 
