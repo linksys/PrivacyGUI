@@ -1595,6 +1595,7 @@ void main() {
         ssid: 'Home-Guest',
         password: '',
         securityMode: 'None',
+        hasOpenNetwork: true,
         supportedSecurityModes: [],
       );
 
@@ -1652,6 +1653,7 @@ void main() {
         ssid: 'Home',
         password: '',
         securityMode: 'WPA2-Personal',
+        hasOpenNetwork: false,
         supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal'],
       );
 
@@ -1704,6 +1706,7 @@ void main() {
         ssid: 'Home',
         password: '',
         securityMode: 'WPA2-Personal',
+        hasOpenNetwork: false,
         supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal'],
       );
       final original = WifiSettingsSettings(
@@ -1759,6 +1762,7 @@ void main() {
         ssid: 'Home',
         password: '',
         securityMode: 'WPA2-Personal',
+        hasOpenNetwork: false,
         supportedSecurityModes: ['WPA2-Personal'],
       );
       late WifiSettingsSettings original;
@@ -1926,6 +1930,7 @@ void main() {
         ssid: 'Home',
         password: '',
         securityMode: 'WPA2-Personal',
+        hasOpenNetwork: false,
         supportedSecurityModes: ['None', 'WPA2-Personal'],
       );
 
@@ -2034,6 +2039,7 @@ void main() {
         ssid: 'Home',
         password: '',
         securityMode: 'WPA3-Personal-Transition',
+        hasOpenNetwork: false,
         supportedSecurityModes: [
           'None',
           'WPA2-Personal',

@@ -436,6 +436,145 @@ void main() {
     });
 
     // -----------------------------------------------------------------------
+    // Quick Setup: does a mode change ask for a password? (#1720)
+    // -----------------------------------------------------------------------
+
+    group('a Quick Setup mode change', () {
+      // createNetworks(): main 2.4 GHz WPA2, main 5 GHz WPA3, guest WPA2.
+      List<WifiNetworkUIModel> withMain5GhzOpen() => [
+            for (final n in WifiSettingsTestData.createNetworks())
+              !n.isGuest && n.band == '5GHz'
+                  ? n.copyWith(securityMode: 'None')
+                  : n,
+          ];
+
+      /// Loads [networks] with the main card showing the first network's mode
+      /// (WPA2), as `buildQuickSetupNetworks` does.
+      Future<ProviderContainer> load(
+        List<WifiNetworkUIModel> networks, {
+        required bool quickSetupOnLoad,
+        WifiDataNotifier Function()? wifiNotifier,
+      }) async {
+        when(() => mockService.buildWifiNetworks(
+              ssids: any(named: 'ssids'),
+              accessPoints: any(named: 'accessPoints'),
+              radios: any(named: 'radios'),
+            )).thenReturn(networks);
+        when(() => mockService.buildQuickSetupNetworks(any())).thenReturn((
+          main: WifiSettingsTestData.createQuickSetupAggregate(
+            supportedSecurityModes: const [
+              'None',
+              'WPA2-Personal',
+              'WPA3-Personal',
+            ],
+          ),
+          guest: null,
+          isQuickSetup: quickSetupOnLoad,
+        ));
+        final container = createContainer(wifiNotifier: wifiNotifier);
+        await Future.delayed(Duration.zero);
+        await Future.delayed(Duration.zero);
+        return container;
+      }
+
+      bool canSaveAfterSwitchingToWpa3(ProviderContainer container) {
+        container.read(uspWifiSettingsProvider.notifier).updateQuickSetupField(
+            isGuest: false, securityMode: 'WPA3-Personal');
+        return container.read(uspWifiSettingsProvider).canSave;
+      }
+
+      test('saves without a password when every main band has one', () async {
+        final container = await load(WifiSettingsTestData.createNetworks(),
+            quickSetupOnLoad: false);
+        container
+            .read(uspWifiSettingsProvider.notifier)
+            .setQuickSetupEnabled(true);
+
+        expect(canSaveAfterSwitchingToWpa3(container), isTrue);
+        container.dispose();
+      });
+
+      test(
+          'asks for a password when a main band is open, though the card shows '
+          'WPA2 (Quick Setup switched on)', () async {
+        final container =
+            await load(withMain5GhzOpen(), quickSetupOnLoad: false);
+        container
+            .read(uspWifiSettingsProvider.notifier)
+            .setQuickSetupEnabled(true);
+
+        expect(canSaveAfterSwitchingToWpa3(container), isFalse);
+        container.dispose();
+      });
+
+      test(
+          'asks for a password when a main band is open, though the card shows '
+          'WPA2 (Quick Setup on from the load)', () async {
+        final container =
+            await load(withMain5GhzOpen(), quickSetupOnLoad: true);
+
+        expect(canSaveAfterSwitchingToWpa3(container), isFalse);
+        container.dispose();
+      });
+
+      test(
+          'asks for a password after a save to open whose read-back failed: '
+          'the page keeps what was written, flag and all', () async {
+        when(() => mockService.saveQuickSetup(
+              original: any(named: 'original'),
+              current: any(named: 'current'),
+              status: any(named: 'status'),
+            )).thenReturn(confirmedPlan());
+        final refresh = _ThrowOnRefresh();
+        final container = await load(WifiSettingsTestData.createNetworks(),
+            quickSetupOnLoad: true, wifiNotifier: () => refresh);
+        final notifier = container.read(uspWifiSettingsProvider.notifier);
+
+        notifier.updateQuickSetupField(isGuest: false, securityMode: 'None');
+        await notifier.save();
+        refresh.failNext = true;
+        await expectLater(notifier.readBackAfterRecovery(),
+            throwsA(isA<SavedButUnconfirmedError>()));
+        expect(refresh.failures, greaterThan(0),
+            reason: 'the read-back must actually have failed');
+        expect(
+            container
+                .read(uspWifiSettingsProvider)
+                .settings
+                .original
+                .quickSetupMain!
+                .securityMode,
+            'None',
+            reason: 'the premise: what was written is the new baseline');
+
+        notifier.updateQuickSetupField(
+            isGuest: false, securityMode: 'WPA2-Personal');
+        expect(container.read(uspWifiSettingsProvider).canSave, isFalse);
+        container.dispose();
+      });
+
+      test('a band without an AccessPoint does not count as open', () async {
+        // An SSID row with no AccessPoint reads its mode as '' — and Save
+        // writes no AccessPoint for it.
+        final networks = [
+          ...WifiSettingsTestData.createNetworks(),
+          WifiSettingsTestData.createNetworkUIModel(
+            ssidInstancePath: 'Device.WiFi.SSID.9.',
+            accessPointInstancePath: null,
+            radioInstancePath: 'Device.WiFi.Radio.2.',
+            ssid: 'Home',
+            band: '5GHz',
+            securityMode: '',
+          ),
+        ];
+        final container = await load(networks, quickSetupOnLoad: true);
+
+        expect(canSaveAfterSwitchingToWpa3(container), isTrue);
+        container.dispose();
+      });
+    });
+
+    // -----------------------------------------------------------------------
     // performSave
     // -----------------------------------------------------------------------
 

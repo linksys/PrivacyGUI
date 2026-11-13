@@ -1,3 +1,4 @@
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import '../mascot_config.dart';
 import 'mascot_trigger.dart';
@@ -16,12 +17,14 @@ import 'mascot_trigger.dart';
 /// `FirmwareHealthDimension`, DMZ via `SecurityHealthDimension`. Writing the
 /// evaluators would have said the same thing twice — and `firmwareAvailable`
 /// specifically belongs to the firmware notification work, not here.
+///
+/// Each takes the strings for the app's locale, so an alert is in the user's
+/// language (#1312).
 abstract final class TriggerDefinitions {
   /// WAN connection lost — critical priority.
-  static MascotTrigger wanDown() => const MascotTrigger(
+  static MascotTrigger wanDown(AppLocalizations l10n) => MascotTrigger(
         id: 'wan_down',
-        message:
-            'Internet connection lost. Check your WAN cable or contact your ISP.',
+        message: l10n.mascotEventWanDown,
         priority: TriggerPriority.critical,
         cooldown: TriggerCooldowns.wanDown,
         animation: MascotAnimationKey.sad,
@@ -30,9 +33,9 @@ abstract final class TriggerDefinitions {
       );
 
   /// WAN connection restored.
-  static MascotTrigger wanRestored() => const MascotTrigger(
+  static MascotTrigger wanRestored(AppLocalizations l10n) => MascotTrigger(
         id: 'wan_restored',
-        message: 'Internet connection restored!',
+        message: l10n.mascotEventWanRestored,
         priority: TriggerPriority.high,
         cooldown: TriggerCooldowns.wanRestored,
         animation: MascotAnimationKey.celebrate,
@@ -41,9 +44,13 @@ abstract final class TriggerDefinitions {
       );
 
   /// New device joined the network.
-  static MascotTrigger newDeviceJoined(String deviceName) => MascotTrigger(
+  static MascotTrigger newDeviceJoined(
+    AppLocalizations l10n,
+    String deviceName,
+  ) =>
+      MascotTrigger(
         id: 'new_device_joined',
-        message: 'New device "$deviceName" joined the network.',
+        message: l10n.mascotEventNewDevice(deviceName),
         priority: TriggerPriority.medium,
         cooldown: TriggerCooldowns.newDevice,
         animation: MascotAnimationKey.greet,
@@ -52,9 +59,10 @@ abstract final class TriggerDefinitions {
       );
 
   /// WiFi radio disabled.
-  static MascotTrigger wifiRadioDisabled(String band) => MascotTrigger(
+  static MascotTrigger wifiRadioDisabled(AppLocalizations l10n, String band) =>
+      MascotTrigger(
         id: 'wifi_radio_disabled_$band',
-        message: '$band WiFi radio has been disabled.',
+        message: l10n.mascotEventRadioDisabled(band),
         priority: TriggerPriority.medium,
         cooldown: TriggerCooldowns.wifiRadioDisabled,
         animation: MascotAnimationKey.sad,
@@ -63,9 +71,9 @@ abstract final class TriggerDefinitions {
       );
 
   /// Firewall disabled.
-  static MascotTrigger firewallDisabled() => const MascotTrigger(
+  static MascotTrigger firewallDisabled(AppLocalizations l10n) => MascotTrigger(
         id: 'firewall_disabled',
-        message: 'Firewall has been disabled. Your network may be vulnerable.',
+        message: l10n.mascotEventFirewallDisabled,
         priority: TriggerPriority.high,
         cooldown: TriggerCooldowns.firewallDisabled,
         animation: MascotAnimationKey.sad,

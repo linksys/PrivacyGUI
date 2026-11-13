@@ -7,6 +7,9 @@ import 'package:privacy_gui/page/dashboard/mascot/health/dimensions/system_dimen
 import 'package:privacy_gui/page/dashboard/mascot/health/health_dimension.dart';
 
 void main() {
+  // English, so these assertions also pin the copy the keys replaced (#1312).
+  final en = lookupAppLocalizations(const Locale('en'));
+
   group('SystemHealthDimension', () {
     late SystemHealthDimension dimension;
 
@@ -132,7 +135,7 @@ void main() {
       test('returns loading state when systemInfo is null', () {
         const context = HealthEvaluationContext();
 
-        final summary = dimension.getSummary(context);
+        final summary = dimension.getSummary(context, en);
 
         expect(summary.status, 'Loading...');
       });
@@ -146,7 +149,7 @@ void main() {
           ),
         );
 
-        final summary = dimension.getSummary(context);
+        final summary = dimension.getSummary(context, en);
 
         expect(summary.status, 'Healthy');
         expect(summary.items.any((i) => i.label == 'CPU'), true);
@@ -158,7 +161,7 @@ void main() {
           systemInfo: createSystemInfo(cpuUsage: 90),
         );
 
-        final summary = dimension.getSummary(context);
+        final summary = dimension.getSummary(context, en);
 
         expect(summary.status, 'High Load');
       });

@@ -1005,4 +1005,20 @@ void main() {
       });
     });
   });
+
+  group('the toolbar names its card (#1312)', () {
+    testWidgets('in the user language, not the registry English',
+        (tester) async {
+      final container = await pumpGrid(tester, locale: const Locale('ja'));
+      await select(tester, container, 'topology');
+
+      final semantics = tester.widget<Semantics>(find.byWidgetPredicate((w) =>
+          w is Semantics && w.properties.identifier == 'card-form-toolbar'));
+      // `app_ja.arb`: cardFormForNamed is "{name} のカード形式", and the card's
+      // own title key, networkTopology, is "ネットワークトポロジー".
+      expect(semantics.properties.label, 'ネットワークトポロジー のカード形式',
+          reason: 'A localized frame around the English "Network Topology" is '
+              'the half-translated sentence #1312 removes.');
+    });
+  });
 }
