@@ -120,19 +120,29 @@ void main() {
   });
 
   group('on Your Network (#1511 P5)', () {
-    const onYourNetwork =
-        PnpState(phase: WizardYourNetwork(ready: ready), plan: withGuest);
+    for (final plan in [withGuest, noGuest]) {
+      final onYourNetwork =
+          PnpState(phase: const WizardYourNetwork(ready: ready), plan: plan);
+      final steps = plan.stepIds.join(' → ');
 
-    test('Your Network and adding nodes are open', () {
-      expect(policy(onYourNetwork, step('network')), isNull);
-      expect(policy(onYourNetwork, addNodes), isNull);
-    });
+      test('$steps: Your Network and adding nodes are open', () {
+        expect(policy(onYourNetwork, step('network')), isNull);
+        expect(policy(onYourNetwork, addNodes), isNull);
+      });
 
-    test('Back to a setting step is refused: the save is behind the user', () {
-      for (final target in [entry, config, step('wifi'), step('guest')]) {
-        expect(policy(onYourNetwork, target), step('network'), reason: target);
-      }
-    });
+      test(
+          '$steps: Back to a setting step is refused — the save is behind '
+          'the user', () {
+        for (final target in [
+          entry,
+          config,
+          ...plan.settingStepIds.map(step),
+        ]) {
+          expect(policy(onYourNetwork, target), step('network'),
+              reason: target);
+        }
+      });
+    }
   });
 
   group('after Your Network: the firmware stage and the completion screen', () {
@@ -143,22 +153,24 @@ void main() {
     ];
 
     for (final phase in finishing) {
-      final flow = PnpState(phase: phase, plan: withGuest);
+      for (final plan in [withGuest, noGuest]) {
+        final flow = PnpState(phase: phase, plan: plan);
 
-      test('${phase.runtimeType}: Your Network stays open, and nothing else',
-          () {
-        expect(policy(flow, step('network')), isNull);
-        for (final target in [
-          entry,
-          config,
-          step('wifi'),
-          step('guest'),
-          // Adding nodes ended with Your Network's Done.
-          addNodes,
-        ]) {
-          expect(policy(flow, target), step('network'), reason: target);
-        }
-      });
+        test(
+            '${phase.runtimeType}, ${plan.stepIds.join(' → ')}: Your Network '
+            'stays open, and nothing else', () {
+          expect(policy(flow, step('network')), isNull);
+          for (final target in [
+            entry,
+            config,
+            ...plan.settingStepIds.map(step),
+            // Adding nodes ended with Your Network's Done.
+            addNodes,
+          ]) {
+            expect(policy(flow, target), step('network'), reason: target);
+          }
+        });
+      }
     }
   });
 

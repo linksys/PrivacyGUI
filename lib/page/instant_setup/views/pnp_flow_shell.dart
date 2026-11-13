@@ -106,12 +106,19 @@ String? pnpBackPolicy(PnpState flow, Uri target) {
   if (!_inPnpTree(target)) return null;
   final atEntry = target.pathSegments.length == 1;
   final stepId = pnpStepIdOf(target);
-  // The step itself, and nothing under it — adding nodes is under Your Network.
+  // The step itself, not a page under it — adding nodes is under Your Network.
   final atStepItself = target.pathSegments.length == 3;
 
   final plan = flow.plan;
   if (plan == null) return atEntry ? null : RoutePath.pnp;
   const yourNetwork = PnpFlowPlan.yourNetworkStepId;
+
+  /// Open at [step] — and under it if [orUnder] — and back to it from
+  /// anywhere else.
+  String? onlyAt(String step, {bool orUnder = false}) =>
+      stepId == step && (orUnder || atStepItself)
+          ? null
+          : pnpStepLocation(step);
 
   switch (flow.phase) {
     case WizardConfiguring():
@@ -123,17 +130,13 @@ String? pnpBackPolicy(PnpState flow, Uri target) {
           WizardSaved() ||
           WizardNeedsReconnect() ||
           WizardTestingReconnect():
-      return stepId == plan.saveStepId && atStepItself
-          ? null
-          : pnpStepLocation(plan.saveStepId);
+      return onlyAt(plan.saveStepId);
     case WizardYourNetwork():
-      return stepId == yourNetwork ? null : pnpStepLocation(yourNetwork);
+      return onlyAt(yourNetwork, orUnder: true);
     case WizardCheckingFirmware() ||
           WizardUpdatingFirmware() ||
           WizardWifiReady():
-      return stepId == yourNetwork && atStepItself
-          ? null
-          : pnpStepLocation(yourNetwork);
+      return onlyAt(yourNetwork);
     case AdminCheckingInternet() ||
           AdminInternetConnected() ||
           AdminReadFailure() ||

@@ -25,6 +25,28 @@ void main() {
     });
   });
 
+  group('WizardYourNetwork.ready (#1511 P5)', () {
+    test('two saves that wrote different credentials are different phases', () {
+      // `ready` is what the completion screen shows after the firmware stage,
+      // carried from the save. A `props` without it would make Your Network
+      // after one save equal to Your Network after another, and Riverpod only
+      // notifies a listener of a phase that is not `==` the last.
+      const first = WizardYourNetwork(
+        ready: WizardWifiReady(ssid: 'Home', password: 'Pass1234'),
+      );
+      const second = WizardYourNetwork(
+        ready: WizardWifiReady(ssid: 'Home', password: 'Other5678'),
+      );
+
+      expect(second, isNot(first));
+      expect(
+          first,
+          const WizardYourNetwork(
+            ready: WizardWifiReady(ssid: 'Home', password: 'Pass1234'),
+          ));
+    });
+  });
+
   group('WizardNeedsReconnect.writeUnanswered', () {
     test('defaults to false — a confirmed write has nothing left to verify',
         () {

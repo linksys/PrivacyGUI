@@ -48,8 +48,8 @@ state WizardPhase {
     WizardConfiguring --> WizardSaving : notifier.saveChanges()\n(Save, on the last setting step)
 
     WizardSaving : Save WiFi settings\nAcknowledge PnP completion
-    WizardSaving --> WizardNeedsReconnect : Main SSID changed\n(connection will drop)
-    WizardSaving --> WizardSaved : No SSID change
+    WizardSaving --> WizardNeedsReconnect : Router not back by the\nsave deadline (a rename)
+    WizardSaving --> WizardSaved : Write answered, or the router\ncame back with it applied
     WizardSaving --> WizardConfiguring : Save error\n(show error, retry)
 
     WizardSaved --> WizardYourNetwork : Auto transition\n(shell opens Your Network)
@@ -100,7 +100,7 @@ WizardWifiReady --> DashboardRoute <<end>> : User taps Done\nNavigate to /usp/da
 | `WizardConfiguring` | User on the steps. Carries only a failed save's `saveError`: the form is in the steps' drafts, the nodes on `PnpState.meshNodes`. | Fetch success |
 | `WizardSaving` | Saving WiFi changes to router. | `saveChanges()`, the last setting step's Save |
 | `WizardSaved` | Save complete and acknowledged; passes straight to `WizardYourNetwork`. | Save success, directly or after the reconnect |
-| `WizardNeedsReconnect` | Main WiFi SSID changed. Connection dropped. | Save success (SSID changed) |
+| `WizardNeedsReconnect` | The router did not come back by the save deadline — usually a main-Wi-Fi rename the browser cannot rejoin. | The write was not answered, and polling ran out |
 | `WizardTestingReconnect` | Polling router after reconnect. | `testReconnect()` |
 | `WizardYourNetwork` | On Your Network, after the save (#1511 P5): the mesh nodes, Add nodes; carries the completion screen's credentials. | Save complete |
 | `WizardCheckingFirmware` | The router's OTA check, bounded at 15 s; every outcome but "update available" finishes setup. | `finishWizard()`, Your Network's Done |

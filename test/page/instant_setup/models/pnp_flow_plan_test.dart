@@ -19,24 +19,24 @@ void main() {
   });
 
   test('Next moves between setting steps, and stops at the one that saves', () {
-    expect(withGuest.stepAfter('wifi'), 'guest');
-    expect(withGuest.stepAfter('guest'), isNull,
+    expect(withGuest.nextFrom('wifi'), 'guest');
+    expect(withGuest.nextFrom('guest'), isNull,
         reason:
             'the save step saves; the flow, not a Next, opens Your Network');
-    expect(noGuest.stepAfter('wifi'), isNull);
-    expect(withGuest.stepAfter('network'), isNull);
+    expect(noGuest.nextFrom('wifi'), isNull);
+    expect(withGuest.nextFrom('network'), isNull);
   });
 
   test('Back moves between setting steps, and never across Save', () {
-    expect(withGuest.stepBefore('guest'), 'wifi');
-    expect(withGuest.stepBefore('wifi'), isNull);
-    expect(withGuest.stepBefore('network'), isNull,
+    expect(withGuest.backFrom('guest'), 'wifi');
+    expect(withGuest.backFrom('wifi'), isNull);
+    expect(withGuest.backFrom('network'), isNull,
         reason: 'Your Network is past the irreversible point (D7)');
-    expect(noGuest.stepBefore('network'), isNull);
+    expect(noGuest.backFrom('network'), isNull);
   });
 
   test('a step the plan does not have has no neighbours', () {
-    expect(noGuest.stepAfter('guest'), isNull);
-    expect(noGuest.stepBefore('guest'), isNull);
+    expect(noGuest.nextFrom('guest'), isNull);
+    expect(noGuest.backFrom('guest'), isNull);
   });
 }

@@ -31,7 +31,7 @@ class PnpFlowPlan extends Equatable {
   /// The step Next goes to from [stepId], or `null` where the step's button is
   /// not Next: on the save step, which saves — the flow then opens Your
   /// Network itself — and on Your Network.
-  String? stepAfter(String stepId) {
+  String? nextFrom(String stepId) {
     final i = settingStepIds.indexOf(stepId);
     return i < 0 || i == settingStepIds.length - 1
         ? null
@@ -41,7 +41,7 @@ class PnpFlowPlan extends Equatable {
   /// The step Back goes to from [stepId], or `null` where there is no Back: on
   /// the first step, and on Your Network, which is past the save. **Back never
   /// crosses Save** (D7).
-  String? stepBefore(String stepId) {
+  String? backFrom(String stepId) {
     final i = settingStepIds.indexOf(stepId);
     return i <= 0 ? null : settingStepIds[i - 1];
   }
