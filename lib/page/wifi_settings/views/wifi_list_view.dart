@@ -123,8 +123,6 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
           children: [
             _wifiDescription(wifiBands),
             const AppGap.medium(),
-            _quickSetupSwitch(state.isSimpleMode),
-            const AppGap.medium(),
             // The printed QR codes encode the WiFi name, password and security
             // mode, so the moment one is edited those codes are about to stop
             // working - say so before the user saves, not after.
@@ -132,6 +130,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
               WiFiQRWarningCard(message: loc(context).wifiListQRWarning),
               const AppGap.medium(),
             ],
+            _quickSetupSwitch(state.isSimpleMode),
+            const AppGap.medium(),
             Expanded(
               child: state.isSimpleMode
                   ? SimpleModeView(
