@@ -42,13 +42,17 @@ class FirewallTestData {
 
   static DmzUIModel createDmzUIModel({
     bool isEnabled = false,
+    DmzDestinationType destinationType = DmzDestinationType.ip,
     String destIp = '',
+    String destMac = '',
     DmzSourceType sourceType = DmzSourceType.any,
     String sourcePrefix = '',
   }) =>
       DmzUIModel(
         isEnabled: isEnabled,
+        destinationType: destinationType,
         destIp: destIp,
+        destMac: destMac,
         sourceType: sourceType,
         sourcePrefix: sourcePrefix,
       );

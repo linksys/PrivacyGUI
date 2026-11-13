@@ -17,4 +17,6 @@ const Set<String> kCardsWithoutDetailEntry = {
   'device_analytics',
   'network_health',
   'wifi_performance',
+  // Its rows open four different pages, so no one page is its detail (#1130).
+  'firewall_overview',
 };

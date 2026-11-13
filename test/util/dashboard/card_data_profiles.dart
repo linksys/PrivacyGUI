@@ -175,6 +175,42 @@ final sixRadioProfile = CardDataProfile(
   markers: const ['197 (Auto)'],
 );
 
+/// The Firewall card at its longest (#1130): the SPI warning row with both
+/// firewalls off, DMZ on by MAC, and port rules where some are off, so every row
+/// carries its longest value and the rows are indented under the flags.
+final firewallAllOpenProfile = CardDataProfile(
+  key: 'firewall_open',
+  description: 'both SPI firewalls off, DMZ on by MAC, 2 of 3 port rules on '
+      '(testFirewallAllOpenData)',
+  overrides: () => cardOverrides(
+    firewallData: testFirewallAllOpenData,
+    portForwardingData: testPortForwardingData,
+    portTriggeringData: testPortTriggeringEmptyData,
+    upnpEnabled: true,
+    ipv6PortServiceRules: const [],
+  ),
+  // One per row the default fixture cannot produce: the SPI row's value, the
+  // DMZ host, and the port count's "on of total" form.
+  markers: const ['IPv4 and IPv6 off', 'AA:BB:CC:DD:EE:FF', '2 of 3 on'],
+);
+
+/// The Firewall card on a new router (#1130): no port rules, so its top
+/// sentence shows, and its tallest text block is a localized sentence rather
+/// than a value.
+final firewallNewRouterProfile = CardDataProfile(
+  key: 'firewall_new_router',
+  description: 'SPI on, DMZ off, no port rules: the "nothing opened" sentence '
+      '(testFirewallNewRouterData)',
+  overrides: () => cardOverrides(
+    firewallData: testFirewallNewRouterData,
+    portForwardingData: testPortForwardingEmptyData,
+    portTriggeringData: testPortTriggeringEmptyData,
+    upnpEnabled: true,
+    ipv6PortServiceRules: const [],
+  ),
+  markers: const ["You haven't opened any device to the internet"],
+);
+
 /// Content the **default** fixture renders only behind a condition, and the card
 /// coordinate it has to reach (#1321).
 ///
@@ -247,5 +283,17 @@ final kCardDataProfileSweeps = <CardDataProfileSweep>[
     cardId: 'wifi_performance',
     tabs: const [2],
     profile: triBandProfile,
+  ),
+  // The default fixture is the Firewall card's middle state (SPI on, DMZ off,
+  // some rules on). These are its two ends (#1130).
+  CardDataProfileSweep(
+    cardId: 'firewall_overview',
+    tabs: const [0],
+    profile: firewallAllOpenProfile,
+  ),
+  CardDataProfileSweep(
+    cardId: 'firewall_overview',
+    tabs: const [0],
+    profile: firewallNewRouterProfile,
   ),
 ];
