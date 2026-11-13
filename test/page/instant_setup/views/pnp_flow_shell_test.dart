@@ -29,6 +29,23 @@ const _config = PnpWifiConfig(
   originalPassword: 'factory',
 );
 
+/// A pinned flow whose entry check finds internet, the way the real one does
+/// once troubleshooting has brought it back. Counts the checks.
+class _RecoveringPnp extends FixedPnpNotifier {
+  _RecoveringPnp() : super(const PnpState(phase: NoInternet()));
+
+  int starts = 0;
+
+  @override
+  Future<void> startPostLoginFlow() async {
+    starts++;
+    state = state.copyWith(phase: const AdminCheckingInternet());
+    state = state.copyWith(phase: const AdminInternetConnected());
+    state = state.copyWith(phase: const WizardInitializing());
+    state = state.copyWith(phase: const WizardConfiguring(wifiConfig: _config));
+  }
+}
+
 /// Every [PnpPhase] but the two the flow navigates on — [WizardConfiguring] and
 /// [NoInternet] — one instance each.
 const _phasesThatStay = <PnpPhase>[
@@ -191,6 +208,53 @@ void main() {
 
       expect(location(router),
           '/pnpNoInternetConnection/${TroubleshootingCaller.pnp}');
+    });
+
+    testWidgets(
+        'a recovered troubleshooting run comes back to /pnp, whose entry '
+        'restarts the flow into the wizard — once', (tester) async {
+      // The link the Auto-IPoE "continue" relies on since #1511 P1 dropped its
+      // own startPostLoginFlow(): PnP's troubleshooting ending only goes to
+      // `/pnp`, and the entry's check is what reaches the wizard. The flow is
+      // still on the `NoInternet` it handed off with.
+      final recovering = _RecoveringPnp();
+      final router = GoRouter(
+        initialLocation:
+            '/pnpNoInternetConnection/${TroubleshootingCaller.pnp}',
+        routes: [
+          ShellRoute(
+            builder: (_, __, child) => PnpFlowShell(child: child),
+            routes: [pnpTree()],
+          ),
+          ...destinations(),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          ...commonOverrides(),
+          pnpProvider.overrideWith(() => recovering),
+        ],
+        child: MaterialApp.router(
+          theme: AppTheme.create(brightness: Brightness.light),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: true),
+            child: child ?? const SizedBox.shrink(),
+          ),
+          routerConfig: router,
+        ),
+      ));
+      await tester.pump();
+
+      router.go(RoutePath.pnp); // PnP's troubleshooting ending
+      for (var i = 0; i < 4; i++) {
+        await tester.pump();
+      }
+
+      expect(location(router), '${RoutePath.pnp}/${RoutePath.pnpConfig}');
+      expect(recovering.starts, 1);
     });
 
     testWidgets('the entry page alone no longer navigates', (tester) async {
