@@ -119,15 +119,20 @@ String? _localizeRefusalReason(AppLocalizations l, UspRefusalReason reason) =>
 ///   refused. Reached via `_mapOperationError`, not `_mapProtocolError`, which is
 ///   the one asymmetry in the "mirrors" rule above; see PrivacyGUI#1533.
 /// - 9999 (WASM client transport failure — never reached the router) → network
+/// - 9997 (input the WASM client refused before sending) → invalid input, as
+///   `mapUspErrorToServiceError` reads a `Validation error:`
+/// - 9998 (an answer the WASM client could not decode) → generic, named so the
+///   mirror of `_mapProtocolError`'s 9998 arm is visible (#1787)
 /// - anything else → generic fallback (firmware vendor codes are an open set;
 ///   we deliberately do NOT surface the raw firmware `errorMessage` here).
 String _localizeFaultCode(BuildContext context, int code) {
   final l = loc(context);
   return switch (code) {
-    7004 || 7005 || 7006 || 9008 => l.errorInvalidInput,
+    7004 || 7005 || 7006 || 9008 || 9997 => l.errorInvalidInput,
     7016 || 7026 || 7027 || 9005 || 9007 => l.errorResourceNotFound,
     7022 => l.errorCommandRefused,
     9001 => l.errorUnauthorized,
+    9998 => l.errorUnexpected,
     9999 => l.errorNetwork,
     _ => l.errorUnexpected,
   };

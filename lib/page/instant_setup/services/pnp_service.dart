@@ -363,9 +363,9 @@ class PnpService {
   /// Returns [PnpWifiWriteOutcome.unanswered] when the response was lost to the
   /// restart — the ordinary outcome when the browser is on the WiFi it changed.
   /// A refusal from the router throws, because a router that answered applied
-  /// nothing — and the two cannot be told apart by `errorCode`: the WASM client
-  /// stamps `9999` on both, and only the message says whether the router
-  /// answered (see [isUnansweredTransportFailure]).
+  /// nothing. The message says whether the router answered (see
+  /// [isUnansweredTransportFailure]); up to usp-client 0.14.0 the WASM client
+  /// stamped `9999` on both, so the `errorCode` could not.
   Future<PnpWifiWriteOutcome> saveWifi(PnpWifiConfig config) async {
     final params = {..._guestParams(config), ..._mainParams(config)};
     if (params.isEmpty) return PnpWifiWriteOutcome.confirmed;

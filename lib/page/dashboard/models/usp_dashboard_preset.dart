@@ -63,26 +63,8 @@ extension UspDashboardPresetX on UspDashboardPreset {
         UspDashboardPreset.remote => false,
       };
 
-  String get displayName => switch (this) {
-        UspDashboardPreset.essential => 'Essential',
-        UspDashboardPreset.standard => 'Standard',
-        UspDashboardPreset.professional => 'Professional',
-        UspDashboardPreset.monitoring => 'Monitoring',
-        UspDashboardPreset.remote => 'Remote Support',
-      };
-
-  String get description => switch (this) {
-        UspDashboardPreset.essential =>
-          'Core network info — ideal for everyday users',
-        UspDashboardPreset.standard =>
-          'Common features at a glance — recommended',
-        UspDashboardPreset.professional =>
-          'All cards enabled — for power users',
-        UspDashboardPreset.monitoring =>
-          'Performance & analytics focused — for network admins',
-        UspDashboardPreset.remote =>
-          'View-only mode for remote assistance sessions',
-      };
+  // The name and description are resolved in the user's language at the render
+  // site — see `UspDashboardPresetName` in `card_and_preset_names.dart` (#1312).
 
   IconData get icon => switch (this) {
         UspDashboardPreset.essential => Icons.dashboard_outlined,

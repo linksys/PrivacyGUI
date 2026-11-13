@@ -2348,11 +2348,12 @@ Gate **1644 → 1698** (54 = 26 locales × 2 widths + 2 meta guards), and
    with a different legend. What *would* earn the space is the one thing this tab
    cannot currently say: airtime utilization, or how many neighbouring networks
    share the channel. TR-181 has `Device.WiFi.DataElements.Network.Device.{i}.`
-   `Radio.{i}.Utilization`, no provider fetches it and `WifiRadioUIModel` has no
-   field for it, so that is a follow-up ticket and not a layout fix — filed as
-   #1295 and then **deferred** (no new feature work for now), which makes the
-   blank space the intended interim state rather than an unfinished one: the case
-   for removing the chart never depended on something replacing it. The tab's
+   `Radio.{i}.Utilization`, no provider fetched it and `WifiRadioUIModel` had no
+   field for it, so that was a follow-up ticket and not a layout fix — #1295,
+   which landed it as one text line per radio block under the SNR line
+   ("Channel utilization: 18%", or "—" when it is unknown), not as a chart in
+   the donut's place. The case for removing the chart never depended on
+   something replacing it. The tab's
    linear `AppLoader` went with the donut, for the narrower version of the same
    reason: an unlabelled bar drawn at `snr / 50` restates the number printed
    beside it, and removing it removed an `Expanded`/`Spacer` pair and the

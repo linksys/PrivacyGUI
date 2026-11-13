@@ -689,7 +689,10 @@ class _CorrelationView extends StatelessWidget {
             AppChartLegendEntry.seriesName(
               mark: const ChartMark.line(dashed: true, dot: true),
               color: colorScheme.tertiary,
-              label: loc(context).trafficRate,
+              // Names its unit: this series is read against the right-hand
+              // axis, and the legend draws both axes' series with the same ink
+              // (#1324, kit #30).
+              label: loc(context).trafficRateBytesPerSec,
             ),
           ],
         ),

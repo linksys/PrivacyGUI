@@ -170,6 +170,16 @@ void main() {
               ),
               _wifiPerformanceTab(_channelsTab),
             ]),
+        // Channel utilization (#1295): the 5 GHz radio reports none, so its
+        // row reads "Channel utilization: —" under a 2.4 GHz row that reports
+        // a percent. (`channels_tab` above has a reading on both.)
+        'channels_tab_utilization_unknown': (overrides) => overrides.addAll([
+              ...cardOverrides(
+                wifiData: testWifiUtilizationUnknownData,
+                devicesData: testDevicesData,
+              ),
+              _wifiPerformanceTab(_channelsTab),
+            ]),
       },
     ),
   );

@@ -28,8 +28,15 @@ import 'package:privacy_gui/core/usp/models/usp_operation_result.dart'
 /// }
 /// ```
 sealed class ServiceError implements Exception {
-  /// Diagnostic raw fault code (firmware 7xxx/9xxx, WASM 9999, codegen 9998…).
-  /// For logging/debugging only — `null` when there is no code.
+  /// Diagnostic raw fault code (firmware 7xxx/9xxx, WASM client 9997–9999,
+  /// codegen 9998/9996…). For logging/debugging only — `null` when there is no
+  /// code.
+  ///
+  /// 9998 has two sources: the WASM client (an answer it could not decode,
+  /// usp-client 0.15.0) and codegen (a required leaf missing from a read). The
+  /// error's category tells them apart, not the code: the client's is mapped
+  /// as `Protocol error:`, codegen's as `Validation error:` (see
+  /// `mapUspErrorToServiceError`).
   final int? code;
 
   /// Raw technical message (firmware text / WASM string / error identifier).

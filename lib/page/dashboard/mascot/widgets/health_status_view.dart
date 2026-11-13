@@ -103,7 +103,7 @@ class HealthStatusView extends ConsumerWidget {
     // Build summary text
     final summaryParts = <String>[];
     for (final dim in dimensions) {
-      final summary = dim.getSummary(evalContext);
+      final summary = dim.getSummary(evalContext, loc(context));
       if (summary.items.isNotEmpty) {
         final firstItem = summary.items.first;
         summaryParts.add(firstItem.value);
@@ -120,7 +120,7 @@ class HealthStatusView extends ConsumerWidget {
             const SizedBox(width: 8),
             Expanded(
               child: AppText.titleSmall(
-                'All systems healthy',
+                loc(context).mascotAllSystemsHealthy,
                 color: textColor,
               ),
             ),
@@ -159,7 +159,7 @@ class HealthStatusView extends ConsumerWidget {
               context,
               dim,
               state[dim.type],
-              dim.getSummary(evalContext),
+              dim.getSummary(evalContext, loc(context)),
             )),
 
         if (healthy.isNotEmpty) ...[
@@ -197,7 +197,7 @@ class HealthStatusView extends ConsumerWidget {
               Icon(icon, color: tierColor, size: 18),
               const SizedBox(width: 8),
               AppText.labelLarge(
-                dimension.displayName,
+                dimension.resolveName(loc(context)),
                 color: tierColor,
               ),
               const SizedBox(width: 8),
@@ -250,7 +250,7 @@ class HealthStatusView extends ConsumerWidget {
                 ),
                 const SizedBox(width: 4),
                 AppText.labelSmall(
-                  dim.displayName,
+                  dim.resolveName(loc(context)),
                   color: textColor.withValues(alpha: 0.8),
                 ),
               ],

@@ -72,16 +72,13 @@ class StatsPacketLossSection extends ConsumerWidget {
           ),
         ),
         AppGap.sm(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            StatsLegendDot(color: colorScheme.error),
-            AppGap.xs(),
-            AppText.labelSmall(
-              'Avg: ${avgLoss.toStringAsFixed(3)}%'
+        // A value-bearing label, so `.statistic` (never clipped). The mark is
+        // the chart's filled stroke; `showDots` is at its default (#1324).
+        AppChartLegendEntry.statistic(
+          mark: const ChartMark.lineFilled(dot: true),
+          color: colorScheme.error,
+          label: 'Avg: ${avgLoss.toStringAsFixed(3)}%'
               '  Peak: ${peakLoss.toStringAsFixed(3)}%',
-            ),
-          ],
         ),
       ],
     );

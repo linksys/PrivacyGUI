@@ -25,6 +25,14 @@ class WifiRadioUIModel extends Equatable with DiagnosticLoggable {
   final String channelBandwidth;
   final String supportedStandards;
 
+  /// How much of the channel's airtime is in use, as DataElements reports it
+  /// for this radio (`Device.WiFi.DataElements.Network.Device.{i}.Radio.{j}.`
+  /// `Utilization`): 0–255, where 255 is 100 %, this radio's own traffic and
+  /// its neighbours' alike. Null when it is unknown — no DataElements radio
+  /// carries this radio's MAC, or the read failed — and an unknown one is
+  /// shown as unknown, never as 0 (#1295).
+  final int? utilization;
+
   /// Manually-selectable channels for this radio's band, sorted ascending.
   ///
   /// Sourced from `Device.WiFi.Radio.{i}.PossibleChannels` during the
@@ -60,6 +68,7 @@ class WifiRadioUIModel extends Equatable with DiagnosticLoggable {
     required this.autoChannelEnable,
     required this.channelBandwidth,
     required this.supportedStandards,
+    this.utilization,
     this.possibleChannels = const [],
     this.isDfsEnabled = false,
     this.accessPoints = const [],
@@ -75,6 +84,31 @@ class WifiRadioUIModel extends Equatable with DiagnosticLoggable {
   /// number when [channelInUse] is unknown.
   String get channelInUseDisplay =>
       '${channelInUse ?? '--'}${autoChannelEnable ? ' (Auto)' : ''}';
+
+  /// [utilization] as a whole percent of the channel's airtime, or null when
+  /// it is unknown.
+  int? get utilizationPercent =>
+      utilization == null ? null : (utilization! * 100 / 255).round();
+
+  /// This radio with [utilization] replaced — null makes it unknown — and
+  /// everything else as it was: the Channels tab's refresh re-reads only that
+  /// (#1295).
+  WifiRadioUIModel withUtilization(int? utilization) => WifiRadioUIModel(
+        instancePath: instancePath,
+        band: band,
+        enable: enable,
+        transmitPower: transmitPower,
+        maxBitRate: maxBitRate,
+        channel: channel,
+        channelInUse: channelInUse,
+        autoChannelEnable: autoChannelEnable,
+        channelBandwidth: channelBandwidth,
+        supportedStandards: supportedStandards,
+        utilization: utilization,
+        possibleChannels: possibleChannels,
+        isDfsEnabled: isDfsEnabled,
+        accessPoints: accessPoints,
+      );
 
   /// Bit rate normalized to 0–100 scale based on band max.
   double get bitRateNormalized {
@@ -101,6 +135,7 @@ class WifiRadioUIModel extends Equatable with DiagnosticLoggable {
         'autoChannelEnable': autoChannelEnable,
         'channelBandwidth': channelBandwidth,
         'supportedStandards': supportedStandards,
+        'utilization': utilization,
         'possibleChannels': possibleChannels,
         'isDfsEnabled': isDfsEnabled,
         'accessPoints': accessPoints,

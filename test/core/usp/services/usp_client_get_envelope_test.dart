@@ -3,7 +3,9 @@
 //
 // THE DEFECT. The WASM client never rejects a GET on a transport failure: it
 // resolves with `{success: false, result: {data: {}, error: {<path>: {errorCode:
-// 9999, …}}}}` (measured from Node against the vendored client, 2026-10-07).
+// 9999, …}}}}` (measured from Node against the vendored client, 2026-10-07;
+// since usp-client 0.16.0 also an `errors` list whose `kind` says what failed,
+// #1787).
 // The old `UspClientWeb.get` kept `result.data` and dropped the rest, so a lost
 // connection reached every model as an empty map — a required-leaf model threw
 // 9998 and the user read "the value entered is not valid"; a table read as "no
@@ -22,19 +24,15 @@ import 'package:privacy_gui/core/usp/services/sse_operation_strategy.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/usp/transport/usp_transport.dart';
 
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
+
 class _MockTransport extends Mock implements UspTransport {}
 
 const _path = 'Device.Firewall.DMZ.';
 
-Map<String, dynamic> _transportFailure(String message) => {
-      'success': false,
-      'result': {
-        'data': <String, dynamic>{},
-        'error': {
-          _path: {'errorCode': 9999, 'errorMessage': message},
-        },
-      },
-    };
+Map<String, dynamic> _transportFailure(String message) =>
+    UspEnvelopeTestData.failedAsAWhole([_path],
+        errorCode: 9999, errorMessage: message);
 
 void main() {
   late _MockTransport transport;
@@ -48,8 +46,7 @@ void main() {
   group('UspClient.get — a failure in the envelope', () {
     test('a 9999 transport failure throws, and maps to NetworkError', () async {
       when(() => transport.get(any())).thenAnswer((_) async =>
-          _transportFailure(
-              'Transport error: Transport error: HTTP error: HTTP 503'));
+          _transportFailure('Transport error: HTTP error: HTTP 503'));
 
       Object? thrown;
       try {
@@ -68,8 +65,8 @@ void main() {
       client.throttler = BridgeRequestThrottler();
       var failing = true;
       when(() => transport.get(any())).thenAnswer((_) async => failing
-          ? _transportFailure(
-              'Transport error: Transport error: Failed to fetch')
+          ? _transportFailure('Transport error: HTTP error: error sending '
+              'request: JsValue(TypeError: Failed to fetch)')
           : {
               'success': true,
               'result': {
@@ -87,8 +84,7 @@ void main() {
   });
 
   group('UspClient.get — a 401 in the envelope', () {
-    const unauthorized =
-        'Transport error: Transport error: HTTP error: HTTP 401';
+    const unauthorized = 'Transport error: HTTP error: HTTP 401';
 
     test('local: refreshes the token and reads again', () async {
       var expired = true;
@@ -135,21 +131,17 @@ void main() {
   group('UspClient.get — a path the router does not have', () {
     const missing = 'Device.X_LINKSYS_AutoIPoE.APIVersion';
     const present = 'Device.Firewall.MACFilterMode';
-    const notInSchema = {
-      'errorCode': 7026,
-      'errorMessage': 'CheckPathProperties: Path (Device.X_LINKSYS_AutoIPoE.'
+    const notInSchema = (
+      code: 7026,
+      message: 'CheckPathProperties: Path (Device.X_LINKSYS_AutoIPoE.'
           'APIVersion) does not exist in the schema',
-    };
+    );
 
     test('read with others: the others come back, the missing one is absent',
         () async {
-      when(() => transport.get(any())).thenAnswer((_) async => {
-            'success': true,
-            'result': {
-              'data': {present: 'Disabled'},
-              'error': {missing: notInSchema},
-            },
-          });
+      when(() => transport.get(any())).thenAnswer((_) async =>
+          UspEnvelopeTestData.pathErrors({missing: notInSchema},
+              success: true, data: {present: 'Disabled'}));
 
       final result = await client.get([missing, present]);
 
@@ -158,13 +150,9 @@ void main() {
 
     test('read alone: success is false, and it still reads as absent',
         () async {
-      when(() => transport.get(any())).thenAnswer((_) async => {
-            'success': false,
-            'result': {
-              'data': <String, dynamic>{},
-              'error': {missing: notInSchema},
-            },
-          });
+      when(() => transport.get(any())).thenAnswer((_) async =>
+          UspEnvelopeTestData.pathErrors({missing: notInSchema},
+              success: false));
 
       final result = await client.get([missing]);
 
@@ -173,12 +161,9 @@ void main() {
 
     test('a lone 7026 whose envelope omits `data` still reads as absent',
         () async {
-      when(() => transport.get(any())).thenAnswer((_) async => {
-            'success': false,
-            'result': {
-              'error': {missing: notInSchema},
-            },
-          });
+      when(() => transport.get(any())).thenAnswer((_) async =>
+          UspEnvelopeTestData.pathErrors({missing: notInSchema},
+              success: false, data: null));
 
       expect(await client.get([missing]), isEmpty);
     });
@@ -188,6 +173,79 @@ void main() {
             'success': true,
             'result': {'data': <String, dynamic>{}},
           });
+
+      expect(await client.get([_path]), isEmpty);
+    });
+  });
+
+  // usp-client 0.15.0 stopped reporting every failure of a call as a whole as
+  // 9999, and 0.16.0 says which entries are one in `kind` (#1787). Messages
+  // are the vendored client's, measured from Node.
+  group('UspClient.get — a read that failed as a whole (kind: request)', () {
+    Future<Object> thrownBy(Map<String, dynamic> envelope) async {
+      when(() => transport.get(any())).thenAnswer((_) async => envelope);
+      try {
+        await client.get([_path]);
+      } catch (e) {
+        return e;
+      }
+      fail('a read that failed as a whole must not read as an answer');
+    }
+
+    test(
+        '9998, an answer that does not decode, throws instead of reading empty',
+        () async {
+      final thrown = await thrownBy(UspEnvelopeTestData.failedAsAWhole(
+        [_path],
+        errorCode: 9998,
+        errorMessage: 'Protocol error: Decoding error: Empty response data',
+      ));
+
+      final mapped = mapUspErrorToServiceError(thrown);
+      expect(mapped, isA<UnexpectedError>());
+      expect(mapped.code, 9998);
+      expect(mapped.detail, isNull,
+          reason: "the decoder's English is not shown to the user");
+    });
+
+    test('9997, input the client refused, throws instead of reading empty',
+        () async {
+      final thrown = await thrownBy(UspEnvelopeTestData.failedAsAWhole(
+        [_path],
+        errorCode: 9997,
+        errorMessage: "Validation error: Path must start with 'Device.'",
+      ));
+
+      final mapped = mapUspErrorToServiceError(thrown);
+      expect(mapped, isA<InvalidInputError>());
+      expect(mapped.code, 9997);
+    });
+
+    test('the router refusing the whole Get throws with its own code',
+        () async {
+      final thrown = await thrownBy(UspEnvelopeTestData.failedAsAWhole(
+        [_path],
+        errorCode: 7006,
+        errorMessage: 'Permission denied',
+      ));
+
+      expect(
+          thrown,
+          'Get failed: Protocol error: Permission denied '
+          '(code: 7006)');
+      final mapped = mapUspErrorToServiceError(thrown);
+      expect(mapped, isA<InvalidInputError>(),
+          reason: 'the router answered: not a network error');
+      expect(mapped.code, 7006);
+    });
+
+    test('a lone 7026 carries a router code on every path too, and is absent',
+        () async {
+      // The same `error` map a refused one-path Get gives; only `kind` differs.
+      when(() => transport.get(any())).thenAnswer((_) async =>
+          UspEnvelopeTestData.pathErrors(
+              {_path: (code: 7006, message: 'Permission denied')},
+              success: false));
 
       expect(await client.get([_path]), isEmpty);
     });

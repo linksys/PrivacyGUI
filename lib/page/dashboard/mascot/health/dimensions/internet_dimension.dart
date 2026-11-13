@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -20,7 +21,7 @@ class InternetHealthDimension extends HealthDimension {
   HealthDimensionType get type => HealthDimensionType.internet;
 
   @override
-  String get displayName => 'Internet';
+  String resolveName(AppLocalizations l10n) => l10n.internet;
 
   @override
   IconData get icon => Icons.public;
@@ -43,12 +44,14 @@ class InternetHealthDimension extends HealthDimension {
   }
 
   @override
-  DimensionSummary getSummary(HealthEvaluationContext context) {
+  DimensionSummary getSummary(
+    HealthEvaluationContext context,
+    AppLocalizations l10n,
+  ) {
     final wan = context.wan;
     if (wan == null) {
-      return const DimensionSummary(
-        status: 'Loading...',
-        hint: 'Tap for actions',
+      return DimensionSummary(
+        status: l10n.loadingEllipsis,
       );
     }
 
@@ -57,19 +60,18 @@ class InternetHealthDimension extends HealthDimension {
     final items = <SummaryItem>[];
 
     if (model.ipAddress.isNotEmpty) {
-      items.add(SummaryItem('IP', model.ipAddress));
+      items.add(SummaryItem(l10n.ipColumn, model.ipAddress));
     }
     if (model.gateway.isNotEmpty) {
-      items.add(SummaryItem('Gateway', model.gateway));
+      items.add(SummaryItem(l10n.gateway, model.gateway));
     }
     if (model.addressingType.isNotEmpty) {
-      items.add(SummaryItem('Type', model.addressingType));
+      items.add(SummaryItem(l10n.type, model.addressingType));
     }
 
     return DimensionSummary(
-      status: isUp ? 'Connected' : 'Disconnected',
+      status: isUp ? l10n.connected : l10n.disconnected,
       items: items,
-      hint: 'Tap for actions',
     );
   }
 
