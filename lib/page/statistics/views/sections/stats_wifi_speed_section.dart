@@ -71,23 +71,24 @@ class StatsWifiSpeedSection extends ConsumerWidget {
     final ulData =
         clients.map((c) => c.client.lastDataUplinkRate / 1000).toList();
     final xLabels = clients.map((c) => c.displayName).toList();
+    final series = [
+      AppChartSeries(
+        label: loc(context).downlink,
+        data: dlData,
+        color: colorScheme.primary,
+      ),
+      AppChartSeries(
+        label: loc(context).uplink,
+        data: ulData,
+        color: colorScheme.secondary,
+      ),
+    ];
 
     return Column(
       children: [
         Expanded(
           child: AppBarChart(
-            series: [
-              AppChartSeries(
-                label: loc(context).downlink,
-                data: dlData,
-                color: colorScheme.primary,
-              ),
-              AppChartSeries(
-                label: loc(context).uplink,
-                data: ulData,
-                color: colorScheme.secondary,
-              ),
-            ],
+            series: series,
             xLabels: xLabels,
             yLabelFormatter: (v) => '${v.toInt()} Mbps',
             showValueLabels: clients.length <= 4,
@@ -96,18 +97,8 @@ class StatsWifiSpeedSection extends ConsumerWidget {
           ),
         ),
         AppGap.sm(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            StatsLegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).downlink),
-            AppGap.lg(),
-            StatsLegendDot(color: colorScheme.secondary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).uplink),
-          ],
-        ),
+        // The legend is derived from the same list the chart drew (#1324).
+        AppChartLegend.bar(series: series),
       ],
     );
   }

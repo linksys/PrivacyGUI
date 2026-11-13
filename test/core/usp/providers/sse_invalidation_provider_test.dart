@@ -355,6 +355,32 @@ void main() {
           isEmpty);
     });
 
+    // What an update moves: the client's Status and LastError, and its host
+    // name's Status and LastUpdate (PrivacyGUI#641).
+    test('a DDNS client status → dynamicDns', () async {
+      await sendAndExpect(
+        'Device.DynamicDNS.Client.1.Status',
+        InvalidationDomain.dynamicDns,
+      );
+    });
+
+    test('a DDNS host name status → dynamicDns', () async {
+      await sendAndExpect(
+        'Device.DynamicDNS.Client.1.Hostname.1.Status',
+        InvalidationDomain.dynamicDns,
+      );
+    });
+
+    test('the app subscribes the DDNS client table', () {
+      // The page's status follows an update only through this ValueChange; it
+      // covers the host names, which are rows of the client table.
+      expect(
+        coreSubscriptions.where((s) =>
+            s.$2 == 'ValueChange' && s.$3 == 'Device.DynamicDNS.Client.'),
+        hasLength(1),
+      );
+    });
+
     test('path with .Stats. → filtered out (null)', () async {
       await sendAndExpectEmpty(
           'Device.WiFi.SSID.2.Stats.UnicastPacketsReceived');

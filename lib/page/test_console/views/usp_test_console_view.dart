@@ -539,9 +539,13 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
         'GET non-existent path (expect fault 9005)',
         () => _service!.get(['Device.Bogus.NonExistent.Path']),
       ),
+      // DynamicDNS is served since FW 2.0.4-RC2 (#641), so the module is no
+      // longer a 9005 probe. An instance it does not have is refused: obuspa
+      // answers `Invalid instance numbers in path` (2.0.4.26110110); the fault
+      // code the bridge returns for it is what this probe captures.
       (
-        'GET unimplemented module: DynamicDNS (expect fault 9005)',
-        () => _service!.get(['Device.DynamicDNS.']),
+        'GET non-existent instance: DynamicDNS.Client.99 (expect a fault)',
+        () => _service!.get(['Device.DynamicDNS.Client.99.']),
       ),
       (
         'GET unimplemented module: UPnP (expect fault 9005)',

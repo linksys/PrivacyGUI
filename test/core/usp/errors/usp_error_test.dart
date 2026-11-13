@@ -380,17 +380,28 @@ void main() {
       final fixture = entry as Map<String, dynamic>;
       test(fixture['name'] as String, () {
         String? raw;
+        const command = 'Device.X_LINKSYS_AutoIPoE.Apply()';
         try {
+          // Both members, as usp-client 0.16.0 resolves them
+          // (test/web/usp_operate_test.mjs checks the fixture against it).
           UspClient.extractOperateResult({
             'success': false,
             'result': {
               'data': <String, dynamic>{},
               'error': {
-                'Device.X_LINKSYS_AutoIPoE.Apply()': {
+                command: {
                   'errorCode': fixture['errorCode'],
                   'errorMessage': fixture['errorMessage'],
                 },
               },
+              'errors': [
+                {
+                  'kind': fixture['errorKind'],
+                  'path': command,
+                  'errorCode': fixture['errorCode'],
+                  'errorMessage': fixture['errorMessage'],
+                },
+              ],
             },
           });
         } catch (error) {
@@ -415,9 +426,11 @@ void main() {
   });
 
   group('isUnansweredTransportFailure', () {
-    // Both messages are the per-path `errorMessage` the WASM client returned on
-    // FLWRT 2.0.2 (2026-10-05). Both carry `errorCode: 9999`, which is why the
-    // message has to decide.
+    // The first two messages are the per-path `errorMessage` the WASM client
+    // returned on FLWRT 2.0.2 (2026-10-05), both under `errorCode: 9999`, which
+    // is why the message has to decide. The last two are the same failures as
+    // usp-client 0.15.0 reports them: one transport prefix, and the router's
+    // own message for the refusal, its code in `errorCode` (#1787).
     test('is true when the browser never got an answer', () {
       expect(
         isUnansweredTransportFailure(
@@ -434,6 +447,33 @@ void main() {
           'Transport error: Protocol error: Decoding error: Received error '
           'response: ProcessSet_AllowPartialFalse: Allow partial=false not '
           'supported across more than one USP Service (code: 7005)',
+        ),
+        isFalse,
+      );
+    });
+
+    test('is true for a lost answer on usp-client 0.15.0', () {
+      expect(
+        isUnansweredTransportFailure(
+          'Transport error: HTTP error: error sending request: '
+          'JsValue(TypeError: Failed to fetch\nTypeError: Failed to fetch)',
+        ),
+        isTrue,
+      );
+    });
+
+    test('is false for a refusal on usp-client 0.15.0', () {
+      expect(
+        isUnansweredTransportFailure(
+          'ProcessSet_AllowPartialFalse: Allow partial=false not supported '
+          'across more than one USP Service',
+        ),
+        isFalse,
+      );
+      expect(
+        isUnansweredWifiWrite(
+          'ProcessSet_AllowPartialFalse: Allow partial=false not supported '
+          'across more than one USP Service',
         ),
         isFalse,
       );

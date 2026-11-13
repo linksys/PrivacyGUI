@@ -11,15 +11,40 @@ Files in this repo that are built or generated from `linksys/usp_framework` and 
 
 ## Manifest
 
-**Last updated**: 2026-11-09 (usp-client 0.14.0, linksys/usp_framework#114; see below). Before that 2026-10-27 (all of `lib/generated` on usp-codegen 0.19.0, from `usp_framework` `main` @ `3d0bbef`, #1654; see below)
+**Last updated**: 2026-11-11 (usp-client 0.16.0, linksys/usp_framework#61 and #118, #1787; see below). Before that 2026-11-09 (usp-client 0.14.0, linksys/usp_framework#114). Before that 2026-10-27 (all of `lib/generated` on usp-codegen 0.19.0, from `usp_framework` `main` @ `3d0bbef`, #1654; see below)
 
 The web package records reviewed `usp_framework` commit
-`d5604633785091f94d93c9a992f3848ece7fb6e8`, the commit CI built the 0.14.0
-package from (run 42589938930, artifact
-`usp-client-wasm-d5604633…`). It reached `main` as `381d69f` (PR #116,
-linksys/usp_framework#114), and the `pkg/` files there match the artifact
-manifest's SHA-256 digests. It was built with both the `wasm` and `websocket`
+`7902af856a08f324009b533cd2b26bbdc1741b70`, the commit CI built the 0.16.0
+package from (run 42764973857, artifact `usp-client-wasm-7902af85…`, whose
+`artifact-manifest.json` binds the bytes to that commit). It reached `main` as
+`dba763c` (PR #121, linksys/usp_framework#118), and the `pkg/` files there are
+byte-identical to the artifact: the three files match its SHA-256 digests and
+upstream's git blobs. It was built with both the `wasm` and `websocket`
 features.
+
+**0.15.0 and 0.16.0 change how a failed call reads (#1787).** 0.15.0 (PR #119,
+linksys/usp_framework#61): a request the router refuses as a whole (a USP
+`Error`) keeps the router's code and message, where it used to be a 9999
+wrapping `Protocol error: … Received error response: … (code: N)`; an answer
+the client cannot decode is 9998 (`Protocol error: …`) and input it refuses is
+9997 (`Validation error: …`), both 9999 before; a transport failure has one
+`Transport error: ` prefix instead of two. 0.16.0 (PR #121,
+linksys/usp_framework#118) adds `result.errors`, a list of
+`{ kind, path?, errorCode, errorMessage }` next to the `error` map, which is
+deprecated and goes in the next minor release. `UspClient` reads a Get and an
+Operate by it: an entry of `kind: request` is the call failing as a whole, and
+throws; `kind: path` is one path (a Get's 7026, a command the router refused).
+A router code under `kind: request` is rethrown as `Protocol error: … (code: N)`,
+the shape 0.14.0 gave it, so `mapUspErrorToServiceError` maps it as before: a
+7016 for a mesh node that has left is still `ResourceNotFoundError`. Writes
+still read the `error` map (`UspResultParser`), and a refused atomic write now
+carries the router's code there. `test/web/usp_operate_test.mjs` runs the
+vendored client from Node against `test/web/usp_operate_errors.json`, the same
+fixture the Dart mapping tests read.
+
+0.14.0 was built from `d5604633785091f94d93c9a992f3848ece7fb6e8` (run
+42589938930), and reached `main` as `381d69f` (PR #116,
+linksys/usp_framework#114).
 
 **0.14.0 changes what a refused Add returns.** An agent that creates an object
 but refuses some of its parameters reports each one in AddResp's
@@ -69,9 +94,9 @@ without review.
 | # | Artifact | Version | Checked-in path | Upstream source |
 |---|----------|---------|-----------------|-----------------|
 | 1 | `usp-codegen` (Mach-O arm64) | **0.19.0** | `tools/usp-codegen` | `usp-codegen/bin/usp-codegen` (built from `src/` via `Makefile.standalone`) |
-| 2 | `usp_client.js` | **0.14.0** | `web/usp_client.js` | `usp-client/pkg/usp_client.js` |
-| 3 | `usp_client_bg.wasm` | **0.14.0** | `web/usp_client_bg.wasm` | `usp-client/pkg/usp_client_bg.wasm` |
-| 4 | `usp_client.d.ts` | **0.14.0** | `web/usp_client.d.ts` | `usp-client/pkg/usp_client.d.ts` |
+| 2 | `usp_client.js` | **0.16.0** | `web/usp_client.js` | `usp-client/pkg/usp_client.js` |
+| 3 | `usp_client_bg.wasm` | **0.16.0** | `web/usp_client_bg.wasm` | `usp-client/pkg/usp_client_bg.wasm` |
+| 4 | `usp_client.d.ts` | **0.16.0** | `web/usp_client.d.ts` | `usp-client/pkg/usp_client.d.ts` |
 
 ## Derived (generated locally, not copied)
 
@@ -102,7 +127,9 @@ The YAML definitions are **not vendored** into this repo and individual definiti
 
 **`system_info.g.dart` carries `hostName` (#1751).** It is 0.19.0 output from `usp_framework` `main` @ `4eabb53`, the merge of linksys/usp_framework#108: `system_info.yaml` 2.4.0 adds `hostName` on `.HostName`, read-only and optional, which the controller's name falls back to before its model (`MeshNetworkBuilder`, master branch). `lan_network_info.yaml` already reads the same leaf and keeps the write. It was first generated contract first from #108's branch (`5ccebaa`, on `a19b9d5`, the merge of PR #105); #107 was the same commit from a fork, closed because CI does not run on fork PRs there. **Recheck after #108 merged:** ~~regenerate `system_info.g.dart` from merged `main` and diff it against the contract-first output.~~ **Done 2026-11-02** at `4eabb53`: byte-identical, and every other file the command writes is unchanged, `gre_tunnels.g.dart`, `l2tp_tunnels.g.dart` and `wan_settings.g.dart` included, so the checked-in output of PR #105's head agrees with merged `main` too; `index.dart` comes out in a different order with the same exports and is left as checked in.
 
-**`mac_filter_network.g.dart` and `subscriptions.g.dart` carry the MAC filter mode subscription (#1755).** They are 0.19.0 output from `usp_framework` `main` @ `4eabb53` with `mac_filter_network.yaml` replaced by its 1.1.0 from linksys/usp_framework#112, which has since merged as `298af0d`. The 1.1.0 file adds a ValueChange subscription, `mac-filter-mode-valuechange`, on `Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode` alone. The two files differ from `4eabb53`'s output only by that subscription: a `subscribe()` method the app does not call, and one `coreSubscriptions` row, which a session registers only on firmware with `wifiMacFilter` (`coreSubscriptionsFor`). Every other file the same command writes is unchanged, and with the base YAML the command reproduces both checked-in files byte for byte. They are not generated from `main` because `main` has since gained `dynamic_dns.yaml` (#641), whose `ddns-valuechange` would enter `coreSubscriptions` with no consumer here. **Recheck after #112 merged:** ~~regenerate the two files from merged `main` and diff them against these.~~ **Done 2026-11-05** at `298af0d`, the merge of linksys/usp_framework#112: `mac_filter_network.g.dart` is byte-identical, and `subscriptions.g.dart` differs only by the `ddns-valuechange` row, which stays out until #641 consumes it. Until then, regenerate `subscriptions.g.dart` with `network/dynamic_dns.yaml` left out of the definitions directory, so the row does not come back; never delete it from the output by hand.
+**`mac_filter_network.g.dart` and `subscriptions.g.dart` carry the MAC filter mode subscription (#1755).** They are 0.19.0 output from `usp_framework` `main` @ `4eabb53` with `mac_filter_network.yaml` replaced by its 1.1.0 from linksys/usp_framework#112, which has since merged as `298af0d`. The 1.1.0 file adds a ValueChange subscription, `mac-filter-mode-valuechange`, on `Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode` alone. The two files differ from `4eabb53`'s output only by that subscription: a `subscribe()` method the app does not call, and one `coreSubscriptions` row, which a session registers only on firmware with `wifiMacFilter` (`coreSubscriptionsFor`). Every other file the same command writes is unchanged, and with the base YAML the command reproduces both checked-in files byte for byte. They are not generated from `main` because `main` has since gained `dynamic_dns.yaml` (#641), whose `ddns-valuechange` would enter `coreSubscriptions` with no consumer here. **Recheck after #112 merged:** ~~regenerate the two files from merged `main` and diff them against these.~~ **Done 2026-11-05** at `298af0d`, the merge of linksys/usp_framework#112: `mac_filter_network.g.dart` is byte-identical, and `subscriptions.g.dart` differs only by the `ddns-valuechange` row, which stays out until #641 consumes it. Until then, regenerate `subscriptions.g.dart` with `network/dynamic_dns.yaml` left out of the definitions directory, so the row does not come back; never delete it from the output by hand. **#641 now consumes it** (below), so this exclusion no longer applies.
+
+**`dynamic_dns.g.dart` and `subscriptions.g.dart` carry Dynamic DNS (#641).** They are 0.19.0 output from `usp_framework` `main` @ `dba763c`, taken with `git archive upstream/main usp-definitions` as #1782 did, which holds `network/dynamic_dns.yaml` 1.0.0 from linksys/usp_framework#111 (merged 2026-11-04). Only these two files are taken, and `index.dart` gets the `dynamic_dns.g.dart` export by hand. `subscriptions.g.dart` differs from the checked-in file only by the `ddns-valuechange` row — ValueChange on `Device.DynamicDNS.Client.` — which the DDNS page's status now reads through `InvalidationDomain.dynamicDns`. The same command still rewrites `data_elements_network.g.dart`, `data_elements_network_info.g.dart`, `data_elements_network_operations.g.dart` and `device_operations.g.dart` (linksys/usp_framework#113, which belongs to #1777) and reorders `index.dart`; those stay as checked in, as #1782 left them. From here on `subscriptions.g.dart` is generated **with** `dynamic_dns.yaml`. PR #111's merge gate was a bench read, recorded here because the PR merged without one: on an M60-US at 2.0.4.26110110 (2026-11-11), `obuspa -c get Device.DynamicDNS.` serves all 14 paths of the definition with the shipped rows — `Server.1` DynDNS and `Server.2` No-IP enabled, `Client.1` and `Client.1.Hostname.1` disabled, `Client.1.Password` `""`, `Client.1.Interface` `""` (present, not absent), `Hostname.1.LastUpdate` `0001-01-01T00:00:00Z`. `Client.Server` and `Client.Interface` accept a path with or without the trailing dot and read back without it; the page writes the dotless form. A Set of `Client.Server` to `""` is refused (`This Server object has no ServiceName`, 7002), which the page never sends: "Disabled" writes `Enable` alone. The push the subscription relies on, which #111's review left unverified, holds on the same bench: with a ValueChange subscription on `Device.DynamicDNS.Client.`, the agent sends a Notify for `Client.1.Status`, `Client.1.LastError` and `Client.1.Hostname.1.Status` each time the updater moves them, and none for `Password`. Saving No-IP with a made-up account read `Connecting` / `NO_ERROR` / `Updating`, then within 4 s `Error` / `CONNECTION_ERROR` / `UpdateNeeded`, the WAN address being private (`192.168.200.118`); with `ddnsmngr.global.upd_privateip` set to `1` for the test it read `Error` / `AUTHENTICATION_ERROR` / `Error` within 7 s. `Enable` false then read `Disabled` and kept `Username`. Everything was put back to the shipped rows afterwards.
 
 **`wi_fi_radios.g.dart` carries `channelsInUse` (#1782).** It is 0.19.0 output from `usp_framework` `main` @ `5292301`, which contains linksys/usp_framework#120 (merged 2026-11-11 as `5887110`): `wi_fi_radios.yaml` 1.2.0 adds `channelsInUse` on `.ChannelsInUse`, read-only, a required `string`, and says `channel` is the configured channel. Generated with `network/dynamic_dns.yaml` left out, as above, from `git archive upstream/main usp-definitions` rather than from the fork clone's checkout. Only this file is taken. The same command also rewrites `data_elements_network.g.dart`, `data_elements_network_info.g.dart`, `data_elements_network_operations.g.dart` and `device_operations.g.dart`; that is linksys/usp_framework#113 (Architecture#195, whole-network `X_LINKSYS_RebootAll()` / `X_LINKSYS_FactoryResetAll()`, the action-status leaves, and `Device.Reboot()` / `Device.FactoryReset()` described as this node only), which belongs to #1777 and is left as checked in. With the definitions of `298af0d` the command reproduces every checked-in file byte for byte except `index.dart`'s order. Because the new leaf is required, a radio row without it fails `WiFiRadios.fetch()` with 9998; demo mode and the E2E runs read the canonical fixture in linksys/PrivacyGUI-USP-E2E, whose radios gain it in linksys/PrivacyGUI-USP-E2E#179.
 
@@ -136,15 +163,23 @@ Make sure that clone's `main` is up to date with `upstream` (`github.com/linksys
    the newest language version, switches to the 3.7 "tall" style, and turns a
    3-file change into a 46-file diff of pure noise.
 
-3. **Web client assets**
+3. **Web client assets** — copy CI's bytes, never a local build.
+   `usp-client/pkg/` on `usp_framework` `main` already is CI's output (each
+   release vendors it from the producer artifact). A local `wasm-pack build`
+   does not reproduce it: measured for #1787, a local `usp_client_bg.wasm` is
+   570427 bytes where CI's 0.16.0 is 562086.
    ```bash
-   cd linksys/usp/usp_framework/usp-client
-   wasm-pack build --release --target web --out-dir pkg --features wasm,websocket
-   cd -
-   cp linksys/usp/usp_framework/usp-client/pkg/usp_client.js      web/usp_client.js
-   cp linksys/usp/usp_framework/usp-client/pkg/usp_client_bg.wasm web/usp_client_bg.wasm
-   cp linksys/usp/usp_framework/usp-client/pkg/usp_client.d.ts    web/usp_client.d.ts
+   S=<full usp_framework commit on main>
+   for f in usp_client.js usp_client_bg.wasm usp_client.d.ts; do
+     gh api -H "Accept: application/vnd.github.raw" \
+       "repos/linksys/usp_framework/contents/usp-client/pkg/$f?ref=$S" > web/$f
+   done
    ```
+   Then compare `git hash-object web/<file>` with upstream's blob for each
+   file, and `shasum -a 256` with the producer artifact's
+   `artifact-manifest.json` (`gh run download <run> -R linksys/usp_framework
+   -n usp-client-wasm-<commit>`). The upstream commit to record is that
+   manifest's `commit`, the one CI built from, not the merge on `main`.
 
 4. **Update `web/usp-artifacts.json` and the version table above** in the same
    commit as the artifact change. Use the full upstream commit SHA and hashes
@@ -152,7 +187,8 @@ Make sure that clone's `main` is up to date with `upstream` (`github.com/linksys
 
 5. **Sanity checks**
    - `python3 tools/usp_boundary/verify_artifacts.py --manifest web/usp-artifacts.json --root .`
-   - `python3 tools/usp_boundary/check_boundary.py --help`
+   - `python3 tools/usp_boundary/check_boundary.py --dts web/usp_client.d.ts --dart-root lib/core/usp/web --policy tools/usp_boundary/policy.json --root .`
+   - `node --test test/web/usp_operate_test.mjs` — the vendored client against the shared error fixture
    - `flutter analyze lib/generated` — no new errors
    - `flutter analyze lib/page lib/core` — no new errors
    - Grep for removed APIs when bumping `usp-client` (e.g. `setOrderedWithOptions` was removed in 0.9.0)

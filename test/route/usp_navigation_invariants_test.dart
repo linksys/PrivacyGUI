@@ -361,6 +361,7 @@ const _fallbackRoutes = <String>[
   RouteNamed.uspLocalNetwork,
   RouteNamed.uspFirewall,
   RouteNamed.uspPortForwardingDetail,
+  RouteNamed.uspDdns,
   RouteNamed.uspStaticRouting,
   RouteNamed.uspIpv6PortService,
   RouteNamed.uspDmz,
@@ -470,6 +471,7 @@ void main() {
         RouteNamed.uspAdministration: '/uspAdvancedSettings/uspAdministration',
         RouteNamed.uspPortForwardingDetail:
             '/uspAdvancedSettings/uspPortForwardingDetail',
+        RouteNamed.uspDdns: '/uspAdvancedSettings/uspDdns',
         RouteNamed.uspStaticRouting: '/uspAdvancedSettings/uspStaticRouting',
         RouteNamed.uspIpv6PortService:
             '/uspAdvancedSettings/uspIpv6PortService',
@@ -553,6 +555,7 @@ void main() {
             RouteNamed.uspLocalNetwork: RouteNamed.uspAdvancedSettings,
             RouteNamed.uspFirewall: RouteNamed.uspAdvancedSettings,
             RouteNamed.uspPortForwardingDetail: RouteNamed.uspAdvancedSettings,
+            RouteNamed.uspDdns: RouteNamed.uspAdvancedSettings,
             RouteNamed.uspStaticRouting: RouteNamed.uspAdvancedSettings,
             RouteNamed.uspIpv6PortService: RouteNamed.uspFirewall,
             RouteNamed.uspDmz: RouteNamed.uspAdvancedSettings,

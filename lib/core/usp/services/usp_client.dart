@@ -4,7 +4,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart'
-    show unwrapUspClientError;
+    show isUspClientFaultCode, unwrapUspClientError;
 import 'package:privacy_gui/core/usp/models/usp_operation_result.dart';
 import 'package:privacy_gui/core/usp/transport/usp_transport.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -1062,8 +1062,8 @@ class UspClient {
           : await _client.operate(command, args: args);
       sw.stop();
 
-      // usp-client 0.13.0 unified format:
-      // { success, result: { data: { commandKey, requestPath, outputArgs }, error? } }
+      // usp-client unified format (0.13.0; `errors` since 0.16.0):
+      // { success, result: { data: { commandKey, requestPath, outputArgs }, error?, errors? } }
       // Throws when the agent refused the command — see extractOperateResult.
       final response = extractOperateResult(rawResponse);
       final label = _idLabel(id);
@@ -1083,46 +1083,43 @@ class UspClient {
   }
 
   /// Decodes a GET's unified envelope into the flat path→value map, and
-  /// **throws when the read never reached the router**.
+  /// **throws when the read failed as a whole**.
   ///
   /// The WASM client resolves a lost connection, a 401 and a 5xx alike as
-  /// `success: false` with a per-path `9999` (#1212, measured from Node against
-  /// the vendored client). Reading `data` alone turned each of them into an
-  /// empty answer: a required-leaf model threw 9998 ("invalid input"), a table
-  /// read as "no rows", an optional leaf as "the firmware does not have it".
+  /// `success: false` (#1212, measured from Node against the vendored client).
+  /// Reading `data` alone turned each of them into an empty answer: a
+  /// required-leaf model threw 9998 ("invalid input"), a table read as
+  /// "no rows", an optional leaf as "the firmware does not have it".
   ///
-  /// **Only `9999` throws, and `success` is not the test.** A path the router
-  /// does not have comes back as a per-path `7026`, with `success: true` when
-  /// other paths were read and `success: false` when it was the only one
-  /// (measured on FW 2.0.3, 2026-10-13). Both are an answer — that path is
-  /// absent — so the paths that were read are returned and the missing one is
-  /// left out, as before. Throwing on `success == false` would turn "this
-  /// router has no RIP" into a network error.
+  /// **Only an `errors` entry of `kind: request` throws, and `success` is not
+  /// the test** (usp-client 0.16.0, #1787). `request` is the call as a whole:
+  /// the client's own transport (9999), decode (9998) or validation (9997)
+  /// failure, or the router refusing the whole Get (a USP `Error`, with the
+  /// router's code). A path the router does not have is `kind: path`, a
+  /// per-path `7026`, with `success: true` when other paths were read and
+  /// `success: false` when it was the only one (measured on FW 2.0.3,
+  /// 2026-10-13). That is an answer — the path is absent — so the paths that
+  /// were read are returned and the missing one is left out. Throwing on
+  /// `success == false`, or on every requested path carrying an error, would
+  /// turn "this router has no RIP" into a failure; only `kind` tells a lone
+  /// 7026 from a refused Get, since both carry a router code on every
+  /// requested path.
   ///
   /// It throws a string in the USP layer's own shape, as
-  /// [extractOperateResult] does, with the category the client put inside its
-  /// `Transport error: ` wrapper restored by [unwrapUspClientError] — so a 401
-  /// still reads `HTTP 401` to [_isAuthError] and the usual
-  /// `mapUspErrorToServiceError` classifies the rest.
+  /// [extractOperateResult] does (see [_failedAsAWhole]), so a 401 still reads
+  /// `HTTP 401` to [_isAuthError] and the usual `mapUspErrorToServiceError`
+  /// classifies the rest.
   @visibleForTesting
   static Map<String, String> extractGetResult(Map<String, dynamic> raw) {
     final result = raw['result'];
-    final errors = result is Map ? result['error'] : null;
-    if (errors is Map) {
-      for (final detail in errors.values) {
-        if (detail is! Map) continue;
-        final code = detail['errorCode'];
-        if (code != 9999 && code != '9999') continue;
-        final message = detail['errorMessage']?.toString() ?? 'Request failed';
-        throw 'Get failed: ${unwrapUspClientError(message)}';
-      }
-    }
+    final failure = _requestFailureIn(result);
+    if (failure != null) throw _failedAsAWhole('Get', failure);
 
-    // No 9999, so the router answered. A lone per-path error (7026) was
-    // measured with an empty `data`; whether the client can also omit `data`
-    // there is not settled from its source (PR #1716 review), and either way
-    // it is an answer with nothing in it — so a missing `data` reads as no
-    // rows, never as a protocol failure that would make "absent" an error.
+    // Nothing failed as a whole, so the router answered. A lone per-path error
+    // (7026) was measured with an empty `data`; whether the client can also
+    // omit `data` there is not settled from its source (PR #1716 review), and
+    // either way it is an answer with nothing in it — so a missing `data` reads
+    // as no rows, never as a protocol failure that would make "absent" an error.
     final data = result is Map ? result['data'] : null;
     if (data is! Map) return const {};
     return {
@@ -1166,7 +1163,13 @@ class UspClient {
     // rather than against. Four lines, and being wrong the other way means this
     // PR's own bug comes back silently.
     if (raw['success'] == false) {
-      throw _operateRefusal((raw['result'] as Map?)?['error']);
+      final result = raw['result'];
+      // A failure of the call as a whole (usp-client 0.16.0 `kind: request`):
+      // the client's own 9997–9999, or the router refusing the request, which
+      // is not the command failing (#1787).
+      final failure = _requestFailureIn(result);
+      if (failure != null) throw _failedAsAWhole('Operate', failure);
+      throw _operateRefusal(result is Map ? result['errors'] : null);
     }
 
     final result = raw['result'] as Map?;
@@ -1194,35 +1197,87 @@ class UspClient {
     return output;
   }
 
-  /// Builds the refusal string from the unified response's `error` member.
+  /// The first entry of a unified result's `errors` list whose `kind` is
+  /// `request`, or null when the call did not fail as a whole.
   ///
-  /// The member is keyed by the path that failed, each entry carrying
-  /// `errorCode` / `errorMessage`. Everything is optional on purpose: a
-  /// `success: false` with no readable detail must still throw, because a caller
-  /// handed `{}` cannot tell a refusal from a success.
-  static String _operateRefusal(Object? error) {
+  /// usp-client 0.16.0 reads `kind` from the structure of the answer, never
+  /// from the shape of a path: `request` is the call as a whole (a USP
+  /// `Error`, or a transport, decode, validation or session failure), `path`
+  /// one requested path (a Get's 7026, an Operate's command failure).
+  static Map<Object?, Object?>? _requestFailureIn(Object? result) {
+    final errors = result is Map ? result['errors'] : null;
+    if (errors is! List) return null;
+    for (final entry in errors) {
+      if (entry is Map && entry['kind'] == 'request') return entry;
+    }
+    return null;
+  }
+
+  /// What a Get or an Operate that failed as a whole throws, in the USP
+  /// layer's own shape, so `mapUspErrorToServiceError` classifies it as it did
+  /// before usp-client 0.15.0 (#1787).
+  ///
+  /// - 9999, the transport sentinel: the client's message with its category
+  ///   restored by [unwrapUspClientError] and nothing appended, so a 401 still
+  ///   reads `HTTP 401` to [_isAuthError] and the transport arm.
+  /// - 9998 and 9997, the client's decode and validation failures: the same,
+  ///   with the code appended for the protocol and validation arms.
+  /// - Any other code is the router refusing the request as a whole. Up to
+  ///   0.14.0 the client wrapped that in a 9999 whose message was
+  ///   `Protocol error: … (code: N)`; it is rebuilt in that shape so it keeps
+  ///   reaching `_mapProtocolError` by the router's code. That is what keeps a
+  ///   7016 for a mesh node that has left reading as `ResourceNotFoundError`
+  ///   (`node_action_flow.dart`), not as a command the router refused.
+  static String _failedAsAWhole(String operation, Map<Object?, Object?> entry) {
+    final code = _integerCode(entry['errorCode']);
+    final message = entry['errorMessage']?.toString() ?? '';
+    final clientMessage =
+        unwrapUspClientError(message.isEmpty ? 'Request failed' : message);
+    if (code == 9999) return '$operation failed: $clientMessage';
+    if (code != null && isUspClientFaultCode(code)) {
+      return '$operation failed: $clientMessage (code: $code)';
+    }
+    final why =
+        message.isEmpty ? 'the router gave no reason' : _requoteCodes(message);
+    final suffix = code == null ? '' : ' (code: $code)';
+    return '$operation failed: Protocol error: $why$suffix';
+  }
+
+  /// An `errorCode` as an integer, or null when it is not one. It arrives
+  /// untyped from a JS object, and an integral JS number can cross the interop
+  /// boundary as a Dart `double` (see [_operateRefusal]).
+  static int? _integerCode(Object? code) => switch (code) {
+        final num n when n.isFinite && n == n.truncateToDouble() => n.toInt(),
+        final String s => int.tryParse(s),
+        _ => null,
+      };
+
+  /// [message] with every `(code: N)` in it requoted as `[code: N]`, so the
+  /// only parenthesised code in a thrown string is the one this file appends
+  /// (see [_operateRefusal]).
+  static String _requoteCodes(String message) => message.replaceAllMapped(
+        RegExp(r'\(code:\s*(\d+)\)'),
+        (m) => '[code: ${m.group(1)}]',
+      );
+
+  /// Builds the refusal string for a command the router refused, from the
+  /// unified response's `errors` list (usp-client 0.16.0, `kind: path`).
+  ///
+  /// Each entry carries the `path` that failed, `errorCode` and `errorMessage`.
+  /// Everything is optional on purpose: a `success: false` with no readable
+  /// detail must still throw, because a caller handed `{}` cannot tell a
+  /// refusal from a success. A failure of the call as a whole never reaches
+  /// here: [extractOperateResult] throws it through [_failedAsAWhole] first.
+  static String _operateRefusal(Object? errors) {
     String? path;
     Object? code;
     String? message;
 
-    if (error is Map && error.isNotEmpty) {
-      final first = error.entries.first;
-      path = first.key.toString();
-      final detail = first.value;
-      if (detail is Map) {
-        code = detail['errorCode'];
-        message = detail['errorMessage']?.toString();
-      } else if (detail != null) {
-        message = detail.toString();
-      }
-    }
-
-    // Client failures retain their category so services can distinguish an
-    // expired session or lost response from a command the agent refused.
-    if (code == 9999 &&
-        message != null &&
-        message.startsWith('Transport error: ')) {
-      return 'Operate failed: ${unwrapUspClientError(message)}';
+    final first = errors is List && errors.isNotEmpty ? errors.first : null;
+    if (first is Map) {
+      path = first['path']?.toString();
+      code = first['errorCode'];
+      message = first['errorMessage']?.toString();
     }
 
     final what = path ?? 'the command';
@@ -1245,10 +1300,7 @@ class UspClient {
     //
     // Square brackets keep every character of what the router said while leaving
     // exactly one parenthesised code in the string — ours.
-    final quoted = message?.replaceAllMapped(
-      RegExp(r'\(code:\s*(\d+)\)'),
-      (m) => '[code: ${m.group(1)}]',
-    );
+    final quoted = message == null ? null : _requoteCodes(message);
     final why = (quoted == null || quoted.isEmpty)
         ? 'the router gave no reason'
         : quoted;

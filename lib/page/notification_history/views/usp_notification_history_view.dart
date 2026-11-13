@@ -319,8 +319,8 @@ class _SessionStateCard extends StatelessWidget {
 /// named as `AppDropdown` there — a bare generic resolves to
 /// `AppDropdown<dynamic>` and matches nothing. This class is what
 /// `kNotificationHistoryPageCase` names to prove a cell rendered the list rather
-/// than the empty state, the same way `StatsLegendDot` and `WifiNetworkCard` are
-/// named for their pages.
+/// than the empty state, the same way `AppChartLegendEntry` and `WifiNetworkCard`
+/// are named for their pages.
 class NotificationHistoryTypeFilter extends ConsumerWidget {
   /// The sentinel for "no filter". `AppDropdown` wants a non-null value, and an
   /// empty string cannot collide with a stored `notificationType`.

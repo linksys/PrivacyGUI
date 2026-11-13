@@ -95,16 +95,38 @@ Map<String, dynamic> _buildAccessPointsResponse() => {
       'Device.WiFi.AccessPoint.3.SSIDReference': 'Device.WiFi.SSID.3.',
     };
 
+/// DataElements radios as FW 2.0.4.26103108 numbers them (#1295, bench
+/// 2026-11-09): `Radio.1` is the 5 GHz radio and `Radio.2` the 2.4 GHz one —
+/// the reverse of `Device.WiFi.Radio` — and each `ID` is that radio's MAC in
+/// lower case, equal to its primary SSID's `BSSID` ([_buildSsidsResponse]).
+Map<String, dynamic> _buildDataElementsRadiosResponse() => {
+      'Device.WiFi.DataElements.Network.Device.1.Radio.1.ID':
+          'aa:bb:cc:dd:ee:02',
+      'Device.WiFi.DataElements.Network.Device.1.Radio.1.Utilization': '11',
+      'Device.WiFi.DataElements.Network.Device.1.Radio.2.ID':
+          'aa:bb:cc:dd:ee:01',
+      'Device.WiFi.DataElements.Network.Device.1.Radio.2.Utilization': '46',
+    };
+
 /// Stubs `mockUsp.get()` to return the right response based on the requested
 /// paths. Each codegen `.fetch()` requests distinct base paths, so we can
 /// dispatch based on the first path element. [radios] replaces the radio
-/// table.
-void _stubAllFetches(MockUspClient mockUsp, {Map<String, dynamic>? radios}) {
+/// table and [dataElements] the DataElements radio leaves;
+/// [dataElementsFails] makes the DataElements read throw instead.
+void _stubAllFetches(
+  MockUspClient mockUsp, {
+  Map<String, dynamic>? radios,
+  Map<String, dynamic>? dataElements,
+  bool dataElementsFails = false,
+}) {
   when(() => mockUsp.get(any(), priority: any(named: 'priority')))
       .thenAnswer((invocation) async {
     final paths = invocation.positionalArguments[0] as List<String>;
     final first = paths.isNotEmpty ? paths.first : '';
-    if (first.startsWith('Device.WiFi.Radio.')) {
+    if (first.startsWith('Device.WiFi.DataElements.')) {
+      if (dataElementsFails) throw Exception('USP timeout');
+      return dataElements ?? _buildDataElementsRadiosResponse();
+    } else if (first.startsWith('Device.WiFi.Radio.')) {
       return radios ?? _buildRadiosResponse();
     } else if (first.startsWith('Device.WiFi.SSID.')) {
       return _buildSsidsResponse();
@@ -287,6 +309,73 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
+  // fetchUtilizationByRadioPath — the Channels tab's refresh (#1295)
+  // -------------------------------------------------------------------------
+
+  group('fetchUtilizationByRadioPath', () {
+    test(
+        'returns each radio\'s new reading by its instance path, matched by '
+        'MAC', () async {
+      _stubAllFetches(mockUsp);
+      final context = (await svc.fetch()).codegenContext;
+      _stubAllFetches(mockUsp, dataElements: {
+        ..._buildDataElementsRadiosResponse(),
+        'Device.WiFi.DataElements.Network.Device.1.Radio.2.Utilization': '58',
+      });
+
+      expect(await svc.fetchUtilizationByRadioPath(context), {
+        'Device.WiFi.Radio.1.': 58,
+        'Device.WiFi.Radio.2.': 11,
+      });
+    });
+
+    test('a failed read is a ServiceError, not "nothing reported"', () async {
+      // The caller keeps the readings it has on a failure; an empty map would
+      // tell it every radio reported none and wipe them to unknown.
+      _stubAllFetches(mockUsp);
+      final context = (await svc.fetch()).codegenContext;
+      _stubAllFetches(mockUsp, dataElementsFails: true);
+
+      await expectLater(svc.fetchUtilizationByRadioPath(context),
+          throwsA(isA<ServiceError>()));
+    });
+
+    test(
+        'a read that returns no DataElements radio at all is a ServiceError '
+        'too', () async {
+      // A path the router does not answer reads as absent, not as an error
+      // (#1212), and DataElements may come back empty while prplMesh restarts
+      // (inferred, not measured). Taking that as "every radio reported none"
+      // would wipe every reading to unknown for a minute; as with an empty
+      // Wi-Fi table in `fetch`, it is a failed read, and the caller keeps what
+      // it has (PR #1796 review).
+      _stubAllFetches(mockUsp);
+      final context = (await svc.fetch()).codegenContext;
+      _stubAllFetches(mockUsp, dataElements: const {});
+
+      await expectLater(svc.fetchUtilizationByRadioPath(context),
+          throwsA(isA<ServiceError>()));
+    });
+
+    test(
+        'radios that are present but report no usable value are not a failed '
+        'read: each of them is unknown', () async {
+      // What FW was asked to send for an unmeasured radio (#1295): the leaf,
+      // empty. Taking that as a failed read would keep the last readings on
+      // screen for as long as FW sends it (PR #1796 review, round 2).
+      _stubAllFetches(mockUsp);
+      final context = (await svc.fetch()).codegenContext;
+      _stubAllFetches(mockUsp, dataElements: {
+        ..._buildDataElementsRadiosResponse(),
+        'Device.WiFi.DataElements.Network.Device.1.Radio.1.Utilization': '',
+        'Device.WiFi.DataElements.Network.Device.1.Radio.2.Utilization': '',
+      });
+
+      expect(await svc.fetchUtilizationByRadioPath(context), isEmpty);
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // radio UI models — radio-AP cross-reference
   // -------------------------------------------------------------------------
 
@@ -358,6 +447,83 @@ void main() {
 
       expect(radios[0].channelInUse, isNull);
       expect(radios[1].channelInUse, isNull);
+    });
+
+    // #1295: DataElements numbers its radios the other way round from
+    // `Device.WiFi.Radio`, so a match by instance number would give each radio
+    // the other one's utilization.
+    test('utilization is matched to its radio by MAC, not by instance number',
+        () async {
+      _stubAllFetches(mockUsp);
+
+      final radios = (await svc.fetch()).radioModels;
+
+      expect(radios[0].band, '2.4GHz');
+      expect(radios[0].utilization, 46);
+      expect(radios[1].band, '5GHz');
+      expect(radios[1].utilization, 11);
+    });
+
+    test('a radio no DataElements radio carries the MAC of is unknown',
+        () async {
+      // Only the 5 GHz radio, plus a satellite's radio whose MAC no local SSID
+      // has: the satellite's reading must not land on the unmatched radio.
+      _stubAllFetches(mockUsp, dataElements: {
+        'Device.WiFi.DataElements.Network.Device.1.Radio.1.ID':
+            'aa:bb:cc:dd:ee:02',
+        'Device.WiFi.DataElements.Network.Device.1.Radio.1.Utilization': '11',
+        'Device.WiFi.DataElements.Network.Device.2.Radio.1.ID':
+            'aa:bb:cc:dd:ee:99',
+        'Device.WiFi.DataElements.Network.Device.2.Radio.1.Utilization': '200',
+      });
+
+      final radios = (await svc.fetch()).radioModels;
+
+      expect(radios[0].utilization, isNull);
+      expect(radios[1].utilization, 11);
+    });
+
+    test('a reading outside 0–255 is unknown, not over 100 % or negative',
+        () async {
+      // TR-181 types `Utilization` as unsignedInt[:255].
+      _stubAllFetches(mockUsp, dataElements: {
+        ..._buildDataElementsRadiosResponse(),
+        'Device.WiFi.DataElements.Network.Device.1.Radio.1.Utilization': '300',
+        'Device.WiFi.DataElements.Network.Device.1.Radio.2.Utilization': '-1',
+      });
+
+      final radios = (await svc.fetch()).radioModels;
+
+      expect(radios.map((r) => r.utilization), [null, null]);
+    });
+
+    test('a reported 0 is a reading of 0, not unknown', () async {
+      // FW 2.0.4 reports 0 on every DataElements radio metric for hours after
+      // a boot (bench 2026-11-11). Whether that means "not measured" is FW's to
+      // say; until it does, the app shows what the router reports.
+      _stubAllFetches(mockUsp, dataElements: {
+        ..._buildDataElementsRadiosResponse(),
+        'Device.WiFi.DataElements.Network.Device.1.Radio.1.Utilization': '0',
+      });
+
+      final radios = (await svc.fetch()).radioModels;
+
+      expect(radios[1].utilization, 0);
+    });
+
+    test(
+        'a failed DataElements read leaves utilization unknown and the rest of '
+        'the WiFi data as it was', () async {
+      _stubAllFetches(mockUsp);
+      final healthy = await svc.fetch();
+      _stubAllFetches(mockUsp, dataElementsFails: true);
+
+      final radios = (await svc.fetch()).radioModels;
+
+      expect(radios.map((r) => r.utilization), [null, null]);
+      expect(radios.map((r) => r.band), healthy.radioModels.map((r) => r.band));
+      expect(radios.map((r) => r.accessPoints.length),
+          healthy.radioModels.map((r) => r.accessPoints.length));
     });
 
     test('threads IEEE80211hEnabled into radio model isDfsEnabled', () async {
