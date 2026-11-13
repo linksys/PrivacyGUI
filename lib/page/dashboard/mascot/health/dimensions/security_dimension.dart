@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/firewall/models/firewall_verdict.dart';
+import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 
 import '../health_dimension.dart';
@@ -22,7 +25,7 @@ class SecurityHealthDimension extends HealthDimension {
   HealthDimensionType get type => HealthDimensionType.security;
 
   @override
-  String get displayName => 'Security';
+  String resolveName(AppLocalizations l10n) => l10n.security;
 
   @override
   IconData get icon => Icons.security;
@@ -38,25 +41,30 @@ class SecurityHealthDimension extends HealthDimension {
     final firewall = context.firewall;
     if (firewall == null) return 100;
 
-    final ipv4On = firewall.firewallModel.isIPv4FirewallEnabled;
-    final ipv6On = firewall.firewallModel.isIPv6FirewallEnabled;
-    final dmzOn = firewall.dmzModel.isEnabled;
-
-    if (!ipv4On) return 30; // Critical: no firewall
-
-    if (dmzOn) return 50; // Warning: DMZ exposes device
-
-    if (ipv4On && ipv6On) return 100;
-    return 80; // IPv4 only
+    return switch (_verdictOf(firewall)) {
+      FirewallVerdict.atRisk => 30, // Critical: no firewall
+      FirewallVerdict.dmzActive => 50, // Warning: DMZ exposes device
+      FirewallVerdict.protected => 100,
+      FirewallVerdict.basic => 80, // IPv4 only
+    };
   }
 
+  /// The same verdict the Firewall card's badge shows (#1130).
+  FirewallVerdict _verdictOf(FirewallData firewall) => FirewallVerdict.of(
+        ipv4SpiOn: firewall.firewallModel.isIPv4FirewallEnabled,
+        ipv6SpiOn: firewall.firewallModel.isIPv6FirewallEnabled,
+        dmzOn: firewall.dmzModel.isEnabled,
+      );
+
   @override
-  DimensionSummary getSummary(HealthEvaluationContext context) {
+  DimensionSummary getSummary(
+    HealthEvaluationContext context,
+    AppLocalizations l10n,
+  ) {
     final firewall = context.firewall;
     if (firewall == null) {
-      return const DimensionSummary(
-        status: 'Loading...',
-        hint: 'Tap for actions',
+      return DimensionSummary(
+        status: l10n.loadingEllipsis,
       );
     }
 
@@ -64,27 +72,22 @@ class SecurityHealthDimension extends HealthDimension {
     final ipv6On = firewall.firewallModel.isIPv6FirewallEnabled;
     final dmzOn = firewall.dmzModel.isEnabled;
 
-    String status;
-    if (!ipv4On) {
-      status = 'At Risk';
-    } else if (dmzOn) {
-      status = 'DMZ Active';
-    } else if (ipv4On && ipv6On) {
-      status = 'Protected';
-    } else {
-      status = 'Basic';
-    }
+    final status = switch (_verdictOf(firewall)) {
+      FirewallVerdict.atRisk => l10n.mascotSecurityAtRisk,
+      FirewallVerdict.dmzActive => l10n.mascotSecurityDmzActive,
+      FirewallVerdict.protected => l10n.mascotSecurityProtected,
+      FirewallVerdict.basic => l10n.mascotSecurityBasic,
+    };
 
     final items = <SummaryItem>[
-      SummaryItem('IPv4 Firewall', ipv4On ? 'On' : 'Off'),
-      SummaryItem('IPv6 Firewall', ipv6On ? 'On' : 'Off'),
-      SummaryItem('DMZ', dmzOn ? 'Enabled' : 'Disabled'),
+      SummaryItem(l10n.ipv4Firewall, ipv4On ? l10n.on : l10n.off),
+      SummaryItem(l10n.ipv6Firewall, ipv6On ? l10n.on : l10n.off),
+      SummaryItem(l10n.dmz, dmzOn ? l10n.enabled : l10n.disabled),
     ];
 
     return DimensionSummary(
       status: status,
       items: items,
-      hint: 'Tap for actions',
     );
   }
 

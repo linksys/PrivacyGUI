@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_page_data.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
+import 'package:privacy_gui/page/ipv6_port_service/providers/ipv6_port_service_data_provider.dart';
 import 'package:privacy_gui/page/ipv6_port_service/providers/usp_ipv6_port_service_notifier.dart';
 import 'package:privacy_gui/page/ipv6_port_service/services/usp_ipv6_port_service_service.dart';
 
@@ -116,6 +117,66 @@ void main() {
             current: any(named: 'current'),
           )).called(1);
       container.dispose();
+    });
+
+    // The dashboard's Firewall card reads these rules to decide whether it can
+    // say nothing is opened (#1130), and the router pushes nothing it hears for
+    // them, so a save re-reads them — a refused one too, which may have written
+    // part of the batch.
+    group('a save re-reads the rules the Firewall card shows', () {
+      ProviderContainer countingCardReads(void Function() onRead) {
+        final container = ProviderContainer(overrides: [
+          uspIpv6PortServiceServiceProvider.overrideWithValue(mockService),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          ipv6PortServiceDataProvider.overrideWith((ref) async {
+            onRead();
+            return const [];
+          }),
+        ]);
+        addTearDown(container.dispose);
+        container.listen(uspIpv6PortServiceProvider, (_, __) {});
+        container.listen(ipv6PortServiceDataProvider, (_, __) {});
+        return container;
+      }
+
+      test('when it lands', () async {
+        when(() => mockService.fetchPage())
+            .thenAnswer((_) async => _page([rule1]));
+        when(() => mockService.saveBatch(
+              original: any(named: 'original'),
+              current: any(named: 'current'),
+            )).thenAnswer((_) async => (added: 1, updated: 0, deleted: 0));
+        var reads = 0;
+        final container = countingCardReads(() => reads++);
+        await Future.delayed(Duration.zero);
+        expect(reads, 1);
+
+        final notifier = container.read(uspIpv6PortServiceProvider.notifier);
+        notifier.addRule(rule2);
+        await notifier.save();
+        await Future.delayed(Duration.zero);
+
+        expect(reads, 2);
+      });
+
+      test('when the router refuses it', () async {
+        when(() => mockService.fetchPage())
+            .thenAnswer((_) async => _page([rule1]));
+        when(() => mockService.saveBatch(
+              original: any(named: 'original'),
+              current: any(named: 'current'),
+            )).thenThrow(const NetworkError(detail: 'refused'));
+        var reads = 0;
+        final container = countingCardReads(() => reads++);
+        await Future.delayed(Duration.zero);
+
+        final notifier = container.read(uspIpv6PortServiceProvider.notifier);
+        notifier.addRule(rule2);
+        await expectLater(notifier.save(), throwsA(isA<ServiceError>()));
+        await Future.delayed(Duration.zero);
+
+        expect(reads, 2);
+      });
     });
 
     test('addRule appends to list', () async {

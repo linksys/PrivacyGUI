@@ -3,13 +3,10 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/demo/providers/demo_ui_provider.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/pdf_report_provider.dart';
-import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_state.dart';
-import 'package:privacy_gui/page/unified_diagnostics/providers/unified_diagnostics_notifier.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 import 'package:privacy_gui/page/support/faq_data.dart';
 import 'package:privacy_gui/localization/supported_locales_provider.dart';
@@ -19,7 +16,6 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 import 'package:privacy_gui/page/ai_assistant/views/router_assistant_view.dart';
 
-import 'dashboard_dialog_provider.dart';
 import 'health_dialog_provider.dart';
 import 'mascot_config.dart';
 import 'mascot_hero_widget.dart';
@@ -33,31 +29,6 @@ final mascotControllerProvider = Provider.autoDispose<MascotController>((ref) {
   ref.onDispose(controller.dispose);
   return controller;
 });
-
-/// Provider for the mascot dialog provider.
-///
-/// Depends on localization context, so must be accessed within a widget tree.
-final mascotDialogProvider =
-    Provider.autoDispose.family<DashboardDialogProvider, BuildContext>(
-  (ref, context) {
-    final locale = ref.watch(activeLocaleProvider);
-    final controller = ref.watch(mascotControllerProvider);
-
-    return DashboardDialogProvider(
-      controller: controller,
-      onRunFullDiagnostics: () => _runFullDiagnostics(ref),
-      onRunFlowDiagnostics: (flow) => _runFlowDiagnostics(ref, flow),
-      onPrintReport: () => _printReport(ref),
-      onOpenThemeStudio: () => _openThemeStudio(ref),
-      onOpenAiAssistant: () => openAiAssistantWithTransition(context),
-      getLocale: () => locale,
-      getFaqCategoryTitle: (category) => category.displayString(context),
-      getFaqItemTitle: (item) => item.displayString(context),
-      isThemeStudioEnabled: GlobalConfig.feature.enableThemeStudio,
-      getRouterTime: () => _getRouterTime(ref),
-    );
-  },
-);
 
 /// Arguments for creating [HealthDialogProvider].
 ///
@@ -92,8 +63,6 @@ final mascotHealthDialogProvider =
     return HealthDialogProvider(
       ref: args.widgetRef,
       controller: controller,
-      onRunFullDiagnostics: () => _runFullDiagnostics(ref),
-      onRunFlowDiagnostics: (flow) => _runFlowDiagnostics(ref, flow),
       onPrintReport: () => _printReport(ref),
       onOpenThemeStudio: () => _openThemeStudio(ref),
       onNavigate: args.onNavigate,
@@ -103,79 +72,10 @@ final mascotHealthDialogProvider =
       getFaqItemTitle: args.getFaqItemTitle,
       isThemeStudioEnabled: BuildConfig.enableThemeStudio,
       getRouterTime: () => _getRouterTime(ref),
+      l10n: ref.watch(appLocalizationsProvider),
     );
   },
 );
-
-/// Run full diagnostic using the unified diagnostics system.
-Future<DiagnosticsResult> _runFullDiagnostics(Ref ref) async {
-  final notifier = ref.read(unifiedDiagnosticsProvider.notifier);
-
-  await notifier.runFullDiagnostic();
-
-  return _buildResultFromState(ref);
-}
-
-/// Run a specific diagnostic flow.
-Future<DiagnosticsResult> _runFlowDiagnostics(
-  Ref ref,
-  DiagnosticFlow flow,
-) async {
-  final notifier = ref.read(unifiedDiagnosticsProvider.notifier);
-
-  await notifier.selectFlow(flow);
-
-  return _buildResultFromState(ref);
-}
-
-/// Build a simplified result from the diagnostics state.
-DiagnosticsResult _buildResultFromState(Ref ref) {
-  final state = ref.read(unifiedDiagnosticsProvider);
-
-  final hasErrors = state.results.any((r) => r.isError);
-  final hasWarnings = state.results.any((r) => r.isWarning);
-  final recommendations = state.recommendations;
-
-  String message;
-  bool hasIssues;
-
-  if (hasErrors) {
-    hasIssues = true;
-    final errorCount = state.results.where((r) => r.isError).length;
-    message = 'Found $errorCount issue${errorCount > 1 ? 's' : ''}.';
-    if (recommendations.isNotEmpty) {
-      message += '\n\nTop recommendation:\n${recommendations.first.titleKey}';
-    }
-  } else if (hasWarnings) {
-    hasIssues = true;
-    final warningCount = state.results.where((r) => r.isWarning).length;
-    message = 'Found $warningCount warning${warningCount > 1 ? 's' : ''}.';
-    if (recommendations.isNotEmpty) {
-      message += '\n\nSuggestion:\n${recommendations.first.titleKey}';
-    }
-  } else {
-    hasIssues = false;
-    message = 'All checks passed!';
-
-    // Add speed test results if available
-    final speedTest = state.speedTest;
-    if (speedTest != null) {
-      message +=
-          '\n\nDownload: ${speedTest.downloadMbps.toStringAsFixed(1)} Mbps';
-      if (speedTest.hasUpload) {
-        message += '\nUpload: ${speedTest.uploadMbps.toStringAsFixed(1)} Mbps';
-      }
-    }
-  }
-
-  // Reset diagnostics state for next run
-  ref.read(unifiedDiagnosticsProvider.notifier).cancel();
-
-  return DiagnosticsResult(
-    message: message,
-    hasIssues: hasIssues,
-  );
-}
 
 /// Generate and open PDF report.
 Future<void> _printReport(Ref ref) async {

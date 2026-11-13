@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/dashboard/providers/all_widget_specs_provider.d
 import 'package:privacy_gui/page/_shared/providers/card_forms_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/selected_card_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
+import 'package:privacy_gui/page/dashboard/views/components/card_and_preset_names.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -251,7 +252,7 @@ class _CardFormToolbarState extends ConsumerState<CardFormToolbar> {
     return Semantics(
       container: true,
       identifier: 'card-form-toolbar',
-      label: loc(context).cardFormForNamed(_displayName(cardId)),
+      label: loc(context).cardFormForNamed(_displayName(context, cardId)),
       // Opaque so the whole surface — chips, padding and the gaps between them —
       // stops the hit test here. Without it a press that lands between two chips
       // would fall through to `DashboardOverlay`, which on desktop arms a drag on
@@ -311,13 +312,14 @@ class _CardFormToolbarState extends ConsumerState<CardFormToolbar> {
   CardDensity _pickedForm(String cardId) =>
       ref.watch(cardFormsProvider).densityFor(cardId) ?? CardDensity.normal;
 
-  /// The card's name, for the toolbar's screen-reader label.
+  /// The card's name in the user's language, for the toolbar's screen-reader
+  /// label.
   ///
   /// Read from [allWidgetSpecsProvider] rather than [UspWidgetSpecs] so a package
   /// widget is named too, and falling back to the id so the label is never empty.
-  String _displayName(String cardId) {
+  String _displayName(BuildContext context, String cardId) {
     for (final spec in ref.read(allWidgetSpecsProvider)) {
-      if (spec.id == cardId) return spec.displayName;
+      if (spec.id == cardId) return spec.resolveName(loc(context));
     }
     return cardId;
   }

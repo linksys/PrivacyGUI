@@ -38,8 +38,6 @@ lib/page/dashboard/mascot/
 └── widgets/
     ├── health_status_view.dart        # Problem-first health display
     ├── dimension_detail_view.dart     # Dimension detail with actions
-    ├── dimension_tooltip_content.dart # Tooltip summary
-    ├── dimension_actions_builder.dart # Action list builder
     └── mascot_toolbar.dart            # Utility toolbar
 ```
 

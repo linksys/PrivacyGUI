@@ -47,6 +47,20 @@ final activeLocaleProvider = Provider<Locale>((ref) {
   );
 });
 
+/// The app's strings in [activeLocaleProvider]'s locale, for code that holds a
+/// `Ref` but no `BuildContext` (#1312).
+///
+/// The mascot's dialog provider, its speech bubbles and its event alerts build
+/// their text away from any widget. A widget reads `loc(context)` instead; the
+/// two agree because `MaterialApp.locale` is [activeLocaleProvider] too.
+///
+/// [lookupAppLocalizations] throws for a locale this build did not ship, which
+/// cannot reach it: [activeLocaleProvider] is already normalized against
+/// [supportedLocalesProvider].
+final appLocalizationsProvider = Provider<AppLocalizations>(
+  (ref) => lookupAppLocalizations(ref.watch(activeLocaleProvider)),
+);
+
 /// [wanted] if [supported] ships it, otherwise English.
 ///
 /// A locale the user picked before a build stripped its language pack is no

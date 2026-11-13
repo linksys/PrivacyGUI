@@ -561,7 +561,7 @@ void main() {
   // Which cards get a control at all
   // ---------------------------------------------------------------------------
   group('selectableForms', () {
-    test('offers compact only to the seven cards that read it', () {
+    test('offers compact only to the eight cards that read it', () {
       final withCompact = UspWidgetSpecs.all
           .map((spec) => spec.id)
           .where((id) =>
@@ -578,10 +578,12 @@ void main() {
           'time_settings',
           'dhcp_reservations',
           'network_health',
+          // #1130: drops (i), the chevron and the flag column.
+          'firewall_overview',
         ],
         reason: 'A compact entry on a card that ignores the density renders '
             'exactly the normal form — a control that visibly does nothing. '
-            'Building compact forms for the other eleven is #1288-#1291-scale '
+            'Building compact forms for the other ten is #1288-#1291-scale '
             'card-own design work and out of scope.',
       );
     });

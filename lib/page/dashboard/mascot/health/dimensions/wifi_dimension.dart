@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -20,7 +21,7 @@ class WifiHealthDimension extends HealthDimension {
   HealthDimensionType get type => HealthDimensionType.wifi;
 
   @override
-  String get displayName => 'WiFi';
+  String resolveName(AppLocalizations l10n) => l10n.wifi;
 
   @override
   IconData get icon => Icons.wifi;
@@ -49,20 +50,21 @@ class WifiHealthDimension extends HealthDimension {
   }
 
   @override
-  DimensionSummary getSummary(HealthEvaluationContext context) {
+  DimensionSummary getSummary(
+    HealthEvaluationContext context,
+    AppLocalizations l10n,
+  ) {
     final wifi = context.wifi;
     if (wifi == null) {
-      return const DimensionSummary(
-        status: 'Loading...',
-        hint: 'Tap for actions',
+      return DimensionSummary(
+        status: l10n.loadingEllipsis,
       );
     }
 
     final radios = wifi.radioModels;
     if (radios.isEmpty) {
-      return const DimensionSummary(
-        status: 'No radios',
-        hint: 'Tap for actions',
+      return DimensionSummary(
+        status: l10n.mascotWifiNoRadios,
       );
     }
 
@@ -71,26 +73,28 @@ class WifiHealthDimension extends HealthDimension {
 
     String status;
     if (enabledCount == totalCount) {
-      status = 'All Active';
+      status = l10n.mascotWifiAllActive;
     } else if (enabledCount == 0) {
-      status = 'All Disabled';
+      status = l10n.mascotWifiAllDisabled;
     } else {
-      status = 'Partial';
+      status = l10n.mascotWifiPartial;
     }
 
     final items = <SummaryItem>[
-      SummaryItem('Radios', '$enabledCount/$totalCount enabled'),
+      SummaryItem(
+        l10n.radios,
+        l10n.mascotWifiRadiosEnabled(enabledCount, totalCount),
+      ),
     ];
 
     for (final radio in radios) {
-      final state = radio.enable ? 'On' : 'Off';
+      final state = radio.enable ? l10n.on : l10n.off;
       items.add(SummaryItem(radio.band, state));
     }
 
     return DimensionSummary(
       status: status,
       items: items,
-      hint: 'Tap for actions',
     );
   }
 

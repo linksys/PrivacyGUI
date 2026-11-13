@@ -7,6 +7,7 @@ import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_feat
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_rule_list.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_status.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
+import 'package:privacy_gui/page/ipv6_port_service/providers/ipv6_port_service_data_provider.dart';
 import 'package:privacy_gui/page/ipv6_port_service/services/usp_ipv6_port_service_service.dart';
 
 // ---------------------------------------------------------------------------
@@ -115,6 +116,10 @@ class UspIpv6PortServiceNotifier
       state = state.copyWith(
         status: state.status.copyWith(isSaving: false),
       );
+      // The dashboard's Firewall card decides from these rules whether it can
+      // say nothing is opened (#1130). A refused batch may have written part
+      // of itself, so it is read again either way.
+      ref.invalidate(ipv6PortServiceDataProvider);
     }
   }
 

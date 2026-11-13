@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/capability/capability_provider.dart';
 import 'package:privacy_gui/page/_shared/utils/usp_subscriptions.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/page/administration/providers/upnp_data_provider.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
@@ -19,6 +20,7 @@ import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_data_provider.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
+import 'package:privacy_gui/page/ipv6_port_service/providers/ipv6_port_service_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_auto_update_data_provider.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
@@ -93,7 +95,13 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
   /// `macFilter` is the menu's Instant Privacy badge (#1755). It has a push, but a
   /// hardware privacy switch move made while the router is off is applied at
   /// boot, before the app is back to hear it.
-  static final _allDomainProviders = [
+  ///
+  /// `upnp` is the Firewall card's UPnP row and `ipv6PortService` the rules that
+  /// decide its "nothing opened" sentence (#1130). Nothing the app hears is
+  /// pushed for either, so these re-reads and their own page's save are the
+  /// only ones they get.
+  static final List<(String, ProviderBase<AsyncValue<Object?>>)>
+      _allDomainProviders = [
     ('systemInfo', systemInfoDataProvider),
     ('devices', devicesDataProvider),
     ('ethernet', ethernetDataProvider),
@@ -108,6 +116,8 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
     ('firmwareBanks', firmwareBanksDataProvider),
     ('firmwareAutoUpdate', firmwareAutoUpdateDataProvider),
     ('macFilter', macFilterDataProvider),
+    ('upnp', upnpDataProvider),
+    ('ipv6PortService', ipv6PortServiceDataProvider),
   ];
 
   @override
