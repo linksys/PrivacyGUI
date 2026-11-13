@@ -81,14 +81,8 @@ class UspIpv6PortServiceNotifier
   /// `saveBatch` reports "wrote some" as a [UspPartialFailureError], so the
   /// error type alone tells the two apart.
   @override
-  Future<Ipv6PortServiceFeatureState> save() async {
-    try {
-      return await super.save();
-    } on UspPartialFailureError {
-      await fetch(forceRemote: true);
-      rethrow;
-    }
-  }
+  Future<Ipv6PortServiceFeatureState> save() =>
+      saveReadingBackAfterPartialWrite(super.save);
 
   // ---------------------------------------------------------------------------
   // performSave — diff original vs current, batch API calls

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/usp_device_analytics_card.dart';
 import 'package:privacy_gui/page/dashboard/views/components/usp_network_health_card.dart';
 import 'package:privacy_gui/page/dashboard/views/components/usp_stats_panel.dart';
@@ -11,6 +13,12 @@ import '../../../../golden_framework/golden_runner.dart';
 import '../../../../golden_framework/golden_test_config.dart';
 import '../../../../../mocks/provider_overrides/mock_dashboard_cards.dart';
 import '../../../../../mocks/test_data/scenes/cards_scene_data.dart';
+
+/// The WiFi Performance card's tabs are Signal, Speed, Channels.
+const _channelsTab = 2;
+
+Override _wifiPerformanceTab(int index) =>
+    cardTabIndexProvider('wifi_performance').overrideWith((ref) => index);
 
 void main() {
   // ─────────────────────────────────────────────────────────────────────────
@@ -144,6 +152,33 @@ void main() {
                 devicesData: testDevicesEmptyData,
               ),
             ),
+        // The Channels tab, which prints each radio's channel in use (#1782).
+        // The tab is provider state, so it is pinned rather than tapped.
+        'channels_tab': (overrides) => overrides.addAll([
+              ...cardOverrides(
+                wifiData: testWifiData,
+                devicesData: testDevicesData,
+              ),
+              _wifiPerformanceTab(_channelsTab),
+            ]),
+        // No channel in use read: "Channel --", never the configured one.
+        'channels_tab_in_use_unknown': (overrides) => overrides.addAll([
+              ...cardOverrides(
+                wifiData: testWifiChannelInUseUnknownData,
+                devicesData: testDevicesData,
+              ),
+              _wifiPerformanceTab(_channelsTab),
+            ]),
+        // Channel utilization (#1295): the 5 GHz radio reports none, so its
+        // row reads "Channel utilization: —" under a 2.4 GHz row that reports
+        // a percent. (`channels_tab` above has a reading on both.)
+        'channels_tab_utilization_unknown': (overrides) => overrides.addAll([
+              ...cardOverrides(
+                wifiData: testWifiUtilizationUnknownData,
+                devicesData: testDevicesData,
+              ),
+              _wifiPerformanceTab(_channelsTab),
+            ]),
       },
     ),
   );

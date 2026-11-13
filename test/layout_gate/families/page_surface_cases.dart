@@ -106,8 +106,11 @@ import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_reservations_det
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_server_info_card.dart';
 import 'package:privacy_gui/page/dhcp/views/usp_dhcp_detail_view.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart'
-    show DmzSourceType;
+    show DmzDestinationType, DmzSourceType;
 import 'package:privacy_gui/page/dmz/views/usp_dmz_view.dart';
+import 'package:privacy_gui/page/ddns/views/components/ddns_status_card.dart';
+import 'package:privacy_gui/page/ddns/views/usp_ddns_view.dart';
+import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
 import 'package:privacy_gui/page/firewall/views/usp_firewall_view.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_install_phase_card.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_update_warning_note.dart';
@@ -190,6 +193,7 @@ import 'package:ui_kit_library/ui_kit.dart'
         AppBadge,
         AppButton,
         AppCard,
+        AppChartLegendEntry,
         AppDropdown,
         AppExpansionPanel,
         AppIconButton,
@@ -198,6 +202,7 @@ import 'package:ui_kit_library/ui_kit.dart'
         AppPasswordInput,
         AppPinInput,
         AppRadioList,
+        AppSelectAutoComplete,
         AppSliverTimeline,
         AppStepper,
         AppSwitch,
@@ -213,6 +218,7 @@ import '../../mocks/provider_overrides/mock_auto_ipoe.dart';
 import '../../mocks/provider_overrides/mock_dashboard_page.dart';
 import '../../mocks/provider_overrides/mock_devices.dart';
 import '../../mocks/provider_overrides/mock_dhcp.dart';
+import '../../mocks/provider_overrides/mock_ddns.dart';
 import '../../mocks/provider_overrides/mock_dmz.dart';
 import '../../mocks/provider_overrides/mock_firewall.dart';
 import '../../mocks/provider_overrides/mock_firmware_update.dart';
@@ -245,6 +251,7 @@ import '../../mocks/test_data/scenes/dhcp_scene_data.dart' as dhcp;
 import '../../mocks/test_data/scenes/login_scene_data.dart';
 import '../../mocks/test_data/scenes/pnp_scene_data.dart';
 import '../../mocks/test_data/scenes/port_forwarding_scene_data.dart' as pf;
+import '../../mocks/test_data/scenes/dmz_scene_data.dart' as dmz;
 import '../../mocks/test_data/scenes/ipv6_port_service_scene_data.dart' as ipv6;
 import '../../mocks/test_data/scenes/topology_scene_data.dart';
 import '../../mocks/test_data/scenes/unified_diagnostics_scene_data.dart';
@@ -1946,22 +1953,26 @@ final kAppsPageCase = PageSurfaceCase(
   forbids: const [AppLoader],
 );
 
-/// `usp_dmz_view` — one switch, one IPv4 field and a two-option radio list, in three
-/// cards that appear as the switch is turned on.
+/// `usp_dmz_view` — one switch and two two-option radio lists (the DMZ host by IP or
+/// by MAC since #1775, then the source), in three cards that appear as the switch is
+/// turned on.
 ///
 /// **The first Type A form page in this family that is not a `pnp` step**, and what it
 /// adds over wave 2's forms is a field whose width is fixed in logical pixels rather
-/// than granted by the layout. `AppIpv4TextField` is four boxes and three separators;
-/// the CIDR field under the radio list is an `AppTextFormField` inside a
-/// `BoxConstraints(maxWidth: 429)` (`usp_dmz_view.dart:276`). At 320px the content box
+/// than granted by the layout. Until #1775 the destination was an `AppIpv4TextField`,
+/// four boxes and three separators; it is now an `AppTextFormField` under an
+/// [AppSelectAutoComplete]. The CIDR field under the source list is an
+/// `AppTextFormField` inside a
+/// `BoxConstraints(maxWidth: 429)` (`_buildSourceCard` in `usp_dmz_view.dart`). At 320px the content box
 /// is 288px, so the constraint is inert and the field takes what it is given — but both
 /// sit inside `LayoutBlock`s inside `AppCard`s with `AppSpacing.md` padding twice over,
 /// which is 24px of the 288 gone before the field starts. That stack is what these
 /// cells measure and what no `pnp` page has.
 ///
-/// The premise is three widgets and each one is a card: [AppSwitch] is the enable card,
-/// [AppIpv4TextField] the destination card, [AppRadioList] the source card. Naming all
-/// three is not belt-and-braces here — the last two render only
+/// The premise is one widget per card: [AppSwitch] is the enable card,
+/// `AppRadioList<DmzDestinationType>` and its [AppSelectAutoComplete] the destination
+/// card, `AppRadioList<DmzSourceType>` the source card. Naming them all
+/// is not belt-and-braces here — the last two render only
 /// `if (pending.isEnabled)`, so a fixture that lost `isEnabled` would still satisfy a
 /// premise that named the switch alone, and 234 cells would measure a page with
 /// two-thirds of its content absent and nothing to overflow. The radio list is named at
@@ -1985,7 +1996,39 @@ final kDmzPageCase = PageSurfaceCase(
   requires: const [
     UspTopBar,
     AppSwitch,
-    AppIpv4TextField,
+    AppRadioList<DmzDestinationType>,
+    AppSelectAutoComplete,
+    AppRadioList<DmzSourceType>,
+  ],
+  forbids: const [AppLoader, ServiceErrorView],
+);
+
+/// [kDmzPageCase] with the DMZ host given by MAC (#1775).
+///
+/// Since #1775 the destination card is a second radio list, IP address or MAC
+/// address (FWDEV#204's `X_LINKSYS_DestMACAddress`), whose selected item expands
+/// into an [AppSelectAutoComplete] over an `AppTextFormField`; it replaced the
+/// `AppIpv4TextField` the default case used to require. What MAC mode adds is
+/// text, not widgets: the radio list's selected item moves to the second row, and
+/// the field's hint — `macAddressHint`, "MAC Address (e.g. AA:BB:CC:DD:EE:FF)" —
+/// is the longest string the card renders, which is why the scene leaves the
+/// field empty.
+///
+/// **The premise cannot tell the two modes apart, and says so.** Both build the
+/// same types, so a fixture that drifted back to IP mode would satisfy these
+/// `requires` and sweep its sibling's tree twice. The scene pins the mode
+/// (`gateDmzMacState`, `destinationType: mac`) and nothing here re-checks it.
+/// Not a tab case, so no `sharesTabWith`; it pairs the way `firmware_failed` and
+/// `ipv6_port_service_full` do.
+final kDmzMacPageCase = PageSurfaceCase(
+  id: 'dmz_mac',
+  view: () => const UspDmzView(),
+  overrides: () => dmzOverrides(dmz.gateDmzMacState),
+  requires: const [
+    UspTopBar,
+    AppSwitch,
+    AppRadioList<DmzDestinationType>,
+    AppSelectAutoComplete,
     AppRadioList<DmzSourceType>,
   ],
   forbids: const [AppLoader, ServiceErrorView],
@@ -2021,6 +2064,45 @@ final kAdministrationPageCase = PageSurfaceCase(
     UspSipAlgCard,
     UspManagementWifiCard,
     AppSwitch,
+  ],
+  forbids: const [AppLoader, ServiceErrorView],
+);
+
+/// `usp_ddns_view` — Advanced Settings → DDNS (#641): a provider card and a status
+/// card, side by side from the desktop breakpoint and stacked below it, as 1.x laid
+/// them out.
+///
+/// The provider card is an [AppDropdown] over the router's `Server` rows and, once a
+/// provider is chosen, three fields: user name and host name as [AppTextFormField]s
+/// and the password as an [AppPasswordInput], whose reveal toggle is a fixed-width
+/// suffix. All three show their errors as a line of text under the field
+/// (`AppErrorDisplayMode.text`), so an error adds height rather than an icon. The
+/// status card is a title beside a refresh [AppIconButton], then two [UspInfoRow]s —
+/// `internetIPAddress` and the status — and, on a connection failure behind a
+/// private address, a note under them (`ddnsWanAddressPrivate`, the longest text on
+/// the page). It arrived with the `lib/` change that created it, straight to
+/// `swept`.
+///
+/// The scene is the page at its fullest, which no single moment of a real flow is:
+/// see `ddns_scene_data.dart`. The premise names one widget per part of it.
+/// [AppPasswordInput] and [AppTextFormField] render only while a provider is
+/// chosen, and [UspInfoRow] only while the router's client is not disabled — the
+/// card returns an empty box then — so a fixture that lost either half would fail
+/// its premise rather than sweep a page with half its content gone. [AppDropdown]
+/// is named at its instantiation, `AppDropdown<String>`, for the reason
+/// [kDmzPageCase] gives about `AppRadioList`. The loader and the
+/// [ServiceErrorView] are the page's other two arms.
+final kDdnsPageCase = PageSurfaceCase(
+  id: 'ddns',
+  view: () => const UspDdnsView(),
+  overrides: () => ddnsOverrides(),
+  requires: const [
+    UspTopBar,
+    AppDropdown<String>,
+    AppTextFormField,
+    AppPasswordInput,
+    DdnsStatusCard,
+    UspInfoRow,
   ],
   forbids: const [AppLoader, ServiceErrorView],
 );
@@ -2647,12 +2729,14 @@ final kStaticRoutingPageCase = PageSurfaceCase(
 ///    that belongs to another tab is absent from the element tree, which makes "which
 ///    tab is this" a `find.byType` away. Every other tabbed case in this family states
 ///    its tab in prose; these three assert it, once per cell.
-/// 4. [StatsLegendDot] — the entry that proves the fixture, not the layout. Every
+/// 4. [AppChartLegendEntry] — the entry that proves the fixture, not the layout. Every
 ///    section renders its placeholder *inside* its [StatsSectionCard] (`state.current ==
 ///    null ? Center(waitingForDeviceData) : _buildChart(...)`), so entries 2 and 3
 ///    survive a scene thinned down to placeholders — and a placeholder has no legend
-///    row, which is precisely the widget #1488's 35 red cells lived in. The dot is
-///    rendered only on the populated path, by sections on all three tabs, so requiring
+///    row, which is precisely the widget #1488's 35 red cells lived in. The kit legend
+///    entry (the page's legend since #1324 replaced the hand-rolled dot) is rendered
+///    only on the populated path — by each tab's first section, the one entry 3
+///    names — so requiring
 ///    it turns "someone dropped a provider from `gateStatisticsOverrides()`" from a
 ///    silent narrowing into 234 red cells. `mock_statistics.dart` says which providers
 ///    those are.
@@ -2664,7 +2748,7 @@ final kStatisticsPageCase = PageSurfaceCase(
     UspTopBar,
     StatsSectionCard,
     StatsTrafficMonitorSection,
-    StatsLegendDot,
+    AppChartLegendEntry,
   ],
   forbids: const [AppLoader, ServiceErrorView],
 );
@@ -2726,7 +2810,7 @@ final kStatisticsDevicesPageCase = PageSurfaceCase(
     UspTopBar,
     StatsSectionCard,
     StatsDeviceDistributionSection,
-    StatsLegendDot,
+    AppChartLegendEntry,
   ],
   forbids: const [AppLoader, ServiceErrorView],
 );
@@ -2762,7 +2846,7 @@ final kStatisticsSystemPageCase = PageSurfaceCase(
     UspTopBar,
     StatsSectionCard,
     StatsSystemGaugesSection,
-    StatsLegendDot,
+    AppChartLegendEntry,
   ],
   forbids: const [AppLoader, ServiceErrorView],
 );
@@ -2986,6 +3070,7 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kAdminPageCase,
   kAppsPageCase,
   kDmzPageCase,
+  kDmzMacPageCase,
   kFirewallPageCase,
   kInstantPrivacyPageCase,
   kInstantSafetyPageCase,
@@ -3009,4 +3094,7 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   kAutoIPoEPageCase,
   kAddNodesPageCase,
   kPnpAddNodesPageCase,
+  // #641: Advanced Settings → DDNS, arriving with the `lib/` change that
+  // creates it.
+  kDdnsPageCase,
 ];

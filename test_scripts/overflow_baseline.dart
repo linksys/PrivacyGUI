@@ -2079,9 +2079,12 @@ String _headCommit() {
 /// the ref moves rows exactly as directly as editing `lib/` does, and a baseline
 /// that called such a tree clean would promise a reproduction it cannot deliver.
 ///
-/// Not `pubspec.lock`: it is gitignored in this repo, so `git status` cannot
-/// report it whatever we pass, and listing it would only look like cover for a
-/// resolved-version drift no stamp here can see.
+/// `pubspec.lock` is here for the same reason one level down: it records the
+/// resolved version of every package those widgets are drawn with —
+/// `flutter_svg` and `vector_graphics` among them — so a local `pub upgrade`
+/// moves rows without touching `pubspec.yaml`. It was left off while it was
+/// gitignored, because `git status` cannot report an ignored path; #1414 started
+/// tracking it.
 ///
 /// Not `assets/fonts` either — but not because fonts are irrelevant here. They
 /// decide every measurement in this dataset, which is why all five sweeps call
@@ -2095,7 +2098,12 @@ String _headCommit() {
 /// Mirrored in `tool/overflow_baseline.sh`, which computes the same stamp for
 /// the wrapped path; `overflow_baseline_test.dart` holds the two to the same
 /// list.
-const List<String> kBaselineMeasuredPaths = ['lib', 'test', 'pubspec.yaml'];
+const List<String> kBaselineMeasuredPaths = [
+  'lib',
+  'test',
+  'pubspec.yaml',
+  'pubspec.lock',
+];
 
 /// Whether the trees a baseline is a measurement of carry uncommitted work.
 ///

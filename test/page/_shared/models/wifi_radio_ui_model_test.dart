@@ -11,6 +11,7 @@ void main() {
         transmitPower: 80,
         maxBitRate: 300,
         channel: 6,
+        channelInUse: 6,
         autoChannelEnable: true,
         channelBandwidth: '20MHz',
         supportedStandards: 'ax',
@@ -22,6 +23,7 @@ void main() {
       expect(model.transmitPower, 80);
       expect(model.maxBitRate, 300);
       expect(model.channel, 6);
+      expect(model.channelInUse, 6);
       expect(model.autoChannelEnable, true);
       expect(model.channelBandwidth, '20MHz');
       expect(model.supportedStandards, 'ax');
@@ -36,6 +38,7 @@ void main() {
         transmitPower: 80,
         maxBitRate: 300,
         channel: 6,
+        channelInUse: 6,
         autoChannelEnable: true,
         channelBandwidth: '20MHz',
         supportedStandards: 'ax',
@@ -55,6 +58,75 @@ void main() {
       expect(model1, isNot(equals(model3)));
     });
 
+    // The radio can move without its configured channel changing (#1782), so
+    // a model that differs only in the channel in use must not compare equal,
+    // or a provider holding it would not rebuild the cards that print it.
+    test('channelInUse is included in equality', () {
+      expect(_createRadio(channel: 40, channelInUse: 36),
+          isNot(equals(_createRadio(channel: 40, channelInUse: 40))));
+    });
+
+    // Utilization changes about once a minute with nothing else on the radio
+    // changing (#1295), so it must count for equality: a re-read that brings
+    // only a new reading must still rebuild the Channels tab.
+    test('utilization is included in equality', () {
+      expect(_createRadio(utilization: 46),
+          isNot(equals(_createRadio(utilization: 58))));
+    });
+
+    // A field `withUtilization` failed to copy would come back at its default
+    // (PR #1796 review). Every field here is off its default, so equality
+    // catches one that was dropped.
+    test('withUtilization replaces utilization and copies every other field',
+        () {
+      const radio = WifiRadioUIModel(
+        instancePath: 'Device.WiFi.Radio.2.',
+        band: '5GHz',
+        enable: false,
+        transmitPower: 75,
+        maxBitRate: 4804,
+        channel: 40,
+        channelInUse: 36,
+        autoChannelEnable: false,
+        channelBandwidth: '80MHz',
+        supportedStandards: 'a,n,ac,ax',
+        utilization: 46,
+        possibleChannels: [36, 40, 44, 48],
+        isDfsEnabled: true,
+        accessPoints: [
+          WifiAccessPointUIModel(
+            enable: true,
+            ssidName: 'Home',
+            securityMode: 'WPA3-Personal',
+            encryptionMode: 'AES',
+            isGuest: true,
+            accessPointInstancePath: 'Device.WiFi.AccessPoint.2.',
+            ssidInstancePath: 'Device.WiFi.SSID.2.',
+          ),
+        ],
+      );
+
+      expect(radio.withUtilization(46), radio);
+      expect(radio.withUtilization(11).utilization, 11);
+      expect(radio.withUtilization(11).withUtilization(46), radio);
+      expect(radio.withUtilization(null).utilization, isNull);
+    });
+
+    group('utilizationPercent', () {
+      // DataElements reports 0–255, where 255 is 100 %. The readings are the
+      // bench's (FW 2.0.4.26103108, 2026-11-09): 46 on 2.4 GHz, 11 on 5 GHz.
+      test('converts the 0–255 reading to a whole percent', () {
+        expect(_createRadio(utilization: 46).utilizationPercent, 18);
+        expect(_createRadio(utilization: 11).utilizationPercent, 4);
+        expect(_createRadio(utilization: 255).utilizationPercent, 100);
+        expect(_createRadio(utilization: 0).utilizationPercent, 0);
+      });
+
+      test('an unknown utilization is null, never 0', () {
+        expect(_createRadio(utilization: null).utilizationPercent, isNull);
+      });
+    });
+
     test('accessPoints defaults to empty list', () {
       final model = WifiRadioUIModel(
         instancePath: 'Device.WiFi.Radio.1.',
@@ -63,6 +135,7 @@ void main() {
         transmitPower: 100,
         maxBitRate: 1200,
         channel: 36,
+        channelInUse: 36,
         autoChannelEnable: false,
         channelBandwidth: '80MHz',
         supportedStandards: 'ax',
@@ -103,15 +176,39 @@ void main() {
       });
     });
 
-    group('channelDisplay', () {
+    group('channelInUseDisplay', () {
       test('includes "(Auto)" when autoChannelEnable is true', () {
-        final model = _createRadio(channel: 6, autoChannelEnable: true);
-        expect(model.channelDisplay, '6 (Auto)');
+        final model =
+            _createRadio(channel: 6, channelInUse: 6, autoChannelEnable: true);
+        expect(model.channelInUseDisplay, '6 (Auto)');
       });
 
       test('shows only channel number when autoChannelEnable is false', () {
-        final model = _createRadio(channel: 36, autoChannelEnable: false);
-        expect(model.channelDisplay, '36');
+        final model = _createRadio(
+            channel: 36, channelInUse: 36, autoChannelEnable: false);
+        expect(model.channelInUseDisplay, '36');
+      });
+
+      // #1782: set to 40, hostapd's 20/40 MHz coexistence check moved the
+      // radio to 36 (bench 2.0.4.26103108, #1295). The radio is on 36.
+      test('shows the channel the radio is on, not the configured one', () {
+        final model = _createRadio(
+            channel: 40, channelInUse: 36, autoChannelEnable: false);
+        expect(model.channelInUseDisplay, '36');
+      });
+
+      test('an unknown channel in use shows "--", never 0 or the configured',
+          () {
+        expect(
+            _createRadio(
+                    channel: 40, channelInUse: null, autoChannelEnable: false)
+                .channelInUseDisplay,
+            '--');
+        expect(
+            _createRadio(
+                    channel: 40, channelInUse: null, autoChannelEnable: true)
+                .channelInUseDisplay,
+            '-- (Auto)');
       });
     });
 
@@ -220,9 +317,11 @@ WifiRadioUIModel _createRadio({
   int transmitPower = 80,
   int maxBitRate = 300,
   int channel = 6,
+  int? channelInUse = 6,
   bool autoChannelEnable = true,
   String channelBandwidth = '20MHz',
   String supportedStandards = 'ax',
+  int? utilization,
   List<int> possibleChannels = const [],
   List<WifiAccessPointUIModel> accessPoints = const [],
 }) {
@@ -233,9 +332,11 @@ WifiRadioUIModel _createRadio({
     transmitPower: transmitPower,
     maxBitRate: maxBitRate,
     channel: channel,
+    channelInUse: channelInUse,
     autoChannelEnable: autoChannelEnable,
     channelBandwidth: channelBandwidth,
     supportedStandards: supportedStandards,
+    utilization: utilization,
     possibleChannels: possibleChannels,
     accessPoints: accessPoints,
   );

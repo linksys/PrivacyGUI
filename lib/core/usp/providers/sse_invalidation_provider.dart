@@ -159,6 +159,9 @@ InvalidationDomain? _mapToDomain(
   if (path == 'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode') {
     return InvalidationDomain.macFilter;
   }
+  if (path.startsWith('Device.DynamicDNS.')) {
+    return InvalidationDomain.dynamicDns;
+  }
   if (wanPath != null && path.startsWith(wanPath)) {
     return InvalidationDomain.wanStatus;
   }

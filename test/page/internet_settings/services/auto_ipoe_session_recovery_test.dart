@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/internet_settings/services/auto_ipoe_service.da
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../mocks/test_data/auto_ipoe_test_data.dart';
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
 
 class MockGetTransport extends Mock implements UspTransport {}
 
@@ -37,19 +38,11 @@ void _supportedDeviceTests() {
       if (expired) {
         // What the WASM client really does with a 401 or a 503: it resolves
         // with a 9999 in the envelope, it does not throw (#1212).
-        return {
-          'success': false,
-          'result': {
-            'data': <String, dynamic>{},
-            'error': {
-              '${AutoIPoEService.object}APIVersion': {
-                'errorCode': 9999,
-                'errorMessage': 'Transport error: Transport error: HTTP error: '
-                    'HTTP $status',
-              },
-            },
-          },
-        };
+        return UspEnvelopeTestData.failedAsAWhole(
+          ['${AutoIPoEService.object}APIVersion'],
+          errorCode: 9999,
+          errorMessage: 'Transport error: HTTP error: HTTP $status',
+        );
       }
       final completed = AutoIPoETestData.snapshot(
           requestId: AutoIPoETestData.id, exitCode: 0, verified: true);

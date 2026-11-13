@@ -126,6 +126,9 @@ const testWanOnline = WanStatusUIModel(
   gateway: '203.0.113.1',
   ipv6Enabled: true,
   ipv6Addresses: ['2001:db8::1'],
+  // Two resolvers, so the layout gate measures the DNS row (#1702) at its
+  // common width rather than not at all.
+  dnsServers: ['203.0.113.53', '198.51.100.53'],
 );
 
 const testWanOffline = WanStatusUIModel(
@@ -479,9 +482,13 @@ const testRadios = [
     transmitPower: -1,
     maxBitRate: 574,
     channel: 6,
+    channelInUse: 6,
     autoChannelEnable: false,
     channelBandwidth: '40MHz',
     supportedStandards: '802.11b/g/n/ax',
+    // The bench's 2.4 GHz reading (FW 2.0.4.26103108, 2026-11-09, #1295):
+    // 46 of 255, printed as 18 %.
+    utilization: 46,
     accessPoints: [
       WifiAccessPointUIModel(
         enable: true,
@@ -505,9 +512,12 @@ const testRadios = [
     transmitPower: -1,
     maxBitRate: 4804,
     channel: 36,
+    channelInUse: 36,
     autoChannelEnable: true,
     channelBandwidth: '160MHz',
     supportedStandards: '802.11a/n/ac/ax',
+    // The bench's 5 GHz reading, same capture: 11 of 255, printed as 4 %.
+    utilization: 11,
     accessPoints: [
       WifiAccessPointUIModel(
         enable: true,
@@ -602,8 +612,8 @@ final testWifiEmptyData = WifiData(
 /// widest thing a shipping router can put in the band/channel string:
 ///
 ///  - `channel: 233` with `autoChannelEnable` — 3 digits *plus* the ` (Auto)`
-///    suffix `channelDisplay` appends, which is the longest form that getter can
-///    produce ([WifiRadioUIModel.channelDisplay]).
+///    suffix `channelInUseDisplay` appends, which is the longest form that getter can
+///    produce ([WifiRadioUIModel.channelInUseDisplay]).
 ///  - `channelBandwidth: '320MHz'` — 6GHz-only, and one glyph wider than the
 ///    `160MHz` this fixture's other radios cap out at.
 ///  - a third radio at all, which is what multiplies the tab's per-radio blocks
@@ -611,6 +621,9 @@ final testWifiEmptyData = WifiData(
 ///    band-distribution donut below them into ~40px and it painted over the
 ///    block above; #1267 removed the donut, so what a third radio costs now is
 ///    just its own block.
+///  - no `utilization`, so its channel utilization line is the unknown form
+///    (#1295) — the only profile the gate sweeps that renders it, and in most
+///    locales it is the longer of the two.
 ///
 /// Spliced onto [testRadios] rather than restating it: the two profiles must
 /// differ in exactly the third radio, or a later edit to the shared two makes the
@@ -624,6 +637,7 @@ final testRadiosTriBand = [
     transmitPower: -1,
     maxBitRate: 11529,
     channel: 233,
+    channelInUse: 233,
     autoChannelEnable: true,
     channelBandwidth: '320MHz',
     supportedStandards: '802.11a/n/ac/ax/be',
@@ -662,16 +676,19 @@ final testWifiDataTriBand = WifiData(
 /// #1267 made that tab scroll, so content taller than the card has somewhere to
 /// go instead of being painted over the text above it. A mechanism with no load
 /// on it is untested, and after the donut was removed nothing in the repo could
-/// supply the load: three radio blocks leave roughly 120px of slack at the
-/// narrowest card, so [testRadiosTriBand] now *fits*, and the test that used to
+/// supply the load: three radio blocks fit the narrowest card with room to spare
+/// (figures below), so [testRadiosTriBand] *fits*, and the test that used to
 /// overflow is green for a reason that has nothing to do with scrolling.
 ///
 /// Shipping hardware reaches four (2.4GHz + two 5GHz + 6GHz) and five with a
 /// dedicated backhaul radio, so the honest description of this fixture is "one
-/// past today's maximum". Five is the first count that overflows, and only by
-/// ~7px — close enough to the gate's 2.0px tolerance that a font-metric change
-/// could flip it, which is no basis for an assertion. Six clears the viewport by
-/// ~80px, so the test measures the mechanism rather than the margin.
+/// past today's maximum". Measured 2026-11-11 for #1295 (`tr`, the 261px card,
+/// real fonts), after each radio block gained its channel utilization line:
+/// three radios leave 57px, four already scroll by 61px, five by 167px and six
+/// by 273px. Six stays the load because it is one past what ships, not because
+/// a smaller count would fit. (The #1267 figures this paragraph used to carry —
+/// five the first count to overflow, by ~7px, and six by ~80px — had already
+/// drifted to 87px and 177px before #1295, with four fitting by 15px.)
 ///
 /// It is deliberately **not** in the gate's sweep list (`card_data_profiles.dart`):
 /// coordinates recorded against a router nobody sells would be permanent
@@ -697,6 +714,7 @@ final testRadiosSixRadio = [
       transmitPower: -1,
       maxBitRate: 11529,
       channel: spec.channel,
+      channelInUse: spec.channel,
       autoChannelEnable: true,
       channelBandwidth: spec.bandwidth,
       supportedStandards: '802.11a/n/ac/ax/be',
@@ -727,6 +745,7 @@ const testRadiosOneDisabled = [
     transmitPower: -1,
     maxBitRate: 574,
     channel: 6,
+    channelInUse: 6,
     autoChannelEnable: false,
     channelBandwidth: '40MHz',
     supportedStandards: '802.11b/g/n/ax',
@@ -746,6 +765,7 @@ const testRadiosOneDisabled = [
     transmitPower: -1,
     maxBitRate: 4804,
     channel: 36,
+    channelInUse: 36,
     autoChannelEnable: true,
     channelBandwidth: '160MHz',
     supportedStandards: '802.11a/n/ac/ax',
@@ -763,6 +783,99 @@ const testRadiosOneDisabled = [
 final testWifiOneDisabledData = WifiData(
   codegenContext: WifiCodegenContext.empty,
   radioModels: testRadiosOneDisabled,
+  wifiClientMap: testWifiClients,
+  connectionDetailMap: testConnectionDetails,
+);
+
+// ─── Channel in use (#1782) ─────────────────────────────────────────────────
+
+/// Radios whose channel dialog has channels to offer: 2.4 GHz on auto, and
+/// 5 GHz set to 40, which hostapd's 20/40 MHz coexistence check moved to 36
+/// (FW 2.0.4.26103108, #1295). [testRadios] list no PossibleChannels, so their
+/// dialog only says there is nothing to choose.
+List<WifiRadioUIModel> _radiosWithChannelChoices({
+  required int? channelInUse24,
+  required int? channelInUse5,
+}) =>
+    [
+      WifiRadioUIModel(
+        instancePath: 'Device.WiFi.Radio.1.',
+        band: '2.4GHz',
+        enable: true,
+        transmitPower: -1,
+        maxBitRate: 574,
+        channel: 6,
+        channelInUse: channelInUse24,
+        autoChannelEnable: true,
+        channelBandwidth: '40MHz',
+        supportedStandards: '802.11b/g/n/ax',
+        possibleChannels: const [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+        accessPoints: testRadios[0].accessPoints,
+      ),
+      WifiRadioUIModel(
+        instancePath: 'Device.WiFi.Radio.2.',
+        band: '5GHz',
+        enable: true,
+        transmitPower: -1,
+        maxBitRate: 4804,
+        channel: 40,
+        channelInUse: channelInUse5,
+        autoChannelEnable: false,
+        channelBandwidth: '80MHz',
+        supportedStandards: '802.11a/n/ac/ax',
+        possibleChannels: const [
+          36, 40, 44, 48, 52, 56, 60, 64, //
+          100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144,
+          149, 153, 157, 161, 165,
+        ],
+        isDfsEnabled: true,
+        accessPoints: testRadios[1].accessPoints,
+      ),
+    ];
+
+/// The 5 GHz row prints 36, the channel the radio is on; its dialog selects
+/// 40, the configured one, and says it is using 36.
+final testWifiWithChannelChoicesData = WifiData(
+  codegenContext: WifiCodegenContext.empty,
+  radioModels: _radiosWithChannelChoices(channelInUse24: 6, channelInUse5: 36),
+  wifiClientMap: testWifiClients,
+  connectionDetailMap: testConnectionDetails,
+);
+
+/// [testWifiWithChannelChoicesData] with no channel in use on either radio, as
+/// a failed driver read leaves `ChannelsInUse` empty. The rows print "--" and
+/// "-- (Auto)", never the configured channel, and the dialog leaves out its
+/// "Currently using" line.
+final testWifiChannelInUseUnknownData = WifiData(
+  codegenContext: WifiCodegenContext.empty,
+  radioModels:
+      _radiosWithChannelChoices(channelInUse24: null, channelInUse5: null),
+  wifiClientMap: testWifiClients,
+  connectionDetailMap: testConnectionDetails,
+);
+
+/// [testWifiData] with no channel utilization on its 5 GHz radio (#1295): no
+/// DataElements radio carries that radio's MAC, or the read failed. Its row
+/// reads "Channel utilization: —", never "0%", under a 2.4 GHz row that has a
+/// reading. Two radios, so both forms fit one screenshot without scrolling.
+final testWifiUtilizationUnknownData = WifiData(
+  codegenContext: WifiCodegenContext.empty,
+  radioModels: [
+    testRadios[0],
+    WifiRadioUIModel(
+      instancePath: testRadios[1].instancePath,
+      band: testRadios[1].band,
+      enable: testRadios[1].enable,
+      transmitPower: testRadios[1].transmitPower,
+      maxBitRate: testRadios[1].maxBitRate,
+      channel: testRadios[1].channel,
+      channelInUse: testRadios[1].channelInUse,
+      autoChannelEnable: testRadios[1].autoChannelEnable,
+      channelBandwidth: testRadios[1].channelBandwidth,
+      supportedStandards: testRadios[1].supportedStandards,
+      accessPoints: testRadios[1].accessPoints,
+    ),
+  ],
   wifiClientMap: testWifiClients,
   connectionDetailMap: testConnectionDetails,
 );

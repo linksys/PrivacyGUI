@@ -88,21 +88,17 @@ class StatsResourceTrendsSection extends ConsumerWidget {
           spacing: AppSpacing.lg,
           runSpacing: AppSpacing.xs,
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                StatsLegendDot(color: colorScheme.primary),
-                AppGap.xs(),
-                AppText.labelSmall(loc(context).avgPeak(avgCpu, peakCpu)),
-              ],
+            // `.statistic` entries (#1324): never clipped. The marks are the
+            // chart's strokes — filled CPU, plain memory — with point markers.
+            AppChartLegendEntry.statistic(
+              mark: const ChartMark.lineFilled(dot: true),
+              color: colorScheme.primary,
+              label: loc(context).avgPeak(avgCpu, peakCpu),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                StatsLegendDot(color: colorScheme.secondary),
-                AppGap.xs(),
-                AppText.labelSmall(loc(context).avg(avgMem)),
-              ],
+            AppChartLegendEntry.statistic(
+              mark: const ChartMark.line(dot: true),
+              color: colorScheme.secondary,
+              label: loc(context).avg(avgMem),
             ),
           ],
         ),

@@ -111,7 +111,10 @@ function reply(kind, id, command, faultCode = 7004) {
 }
 
 async function operate(kind, {name = 'Apply', token = true, faultCode, status} = {}) {
-  const command = `Device.X_LINKSYS_AutoIPoE.${name}()`;
+  // `validation`: a command path the client refuses before sending (9997).
+  const command = kind === 'validation'
+    ? `Device.X_LINKSYS_AutoIPoE.${name}`
+    : `Device.X_LINKSYS_AutoIPoE.${name}()`;
   const args = {...fixture.args};
   if (name === 'Apply') args.Settings = JSON.stringify({password: secret});
   let calls = 0;
@@ -145,7 +148,8 @@ async function operate(kind, {name = 'Apply', token = true, faultCode, status} =
   const client = builder.build();
   try {
     const response = await client.operate(command, args);
-    assert.equal(calls, 1, 'a mutation is never dispatched twice');
+    if (kind === 'validation') assert.equal(calls, 0, 'refused input is never sent');
+    else assert.equal(calls, 1, 'a mutation is never dispatched twice');
     return {response, command, sentCommandKey};
   } finally {
     client.free();
@@ -203,7 +207,7 @@ for (const [kind, options, pattern] of [
   ['network', {}, /Failed to fetch/],
   ['timeout', {}, /Synthetic timeout/],
   ['body', {}, /Body read interrupted/],
-  ['protocol', {faultCode: 7004}, /Synthetic refusal.*7004/],
+  ['protocol', {faultCode: 7004}, /^Synthetic refusal$/],
 ]) {
   test(`${kind} ${options.status ?? ''} preserves the shared failure response`, async () => {
     const {response, command} = await operate(kind, options);
@@ -222,6 +226,13 @@ for (const fixture of errorCases) {
     const error = response.result.error[command];
     assert.equal(error.errorCode, fixture.errorCode);
     assert.ok(error.errorMessage.startsWith(fixture.errorMessage), fixture.name);
+    // The Dart test builds `errors` from the same fixture: one entry, its
+    // `kind` the one UspClient decides by (usp-client 0.16.0, #1787).
+    assert.equal(response.result.errors.length, 1);
+    const [entry] = response.result.errors;
+    assert.deepEqual(
+      {kind: entry.kind, path: entry.path, errorCode: entry.errorCode, errorMessage: entry.errorMessage},
+      {kind: fixture.errorKind, path: command, ...error});
   });
 }
 

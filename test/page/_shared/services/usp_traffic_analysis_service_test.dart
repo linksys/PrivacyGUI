@@ -6,6 +6,8 @@ import 'package:privacy_gui/core/usp/transport/usp_transport.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/services/usp_traffic_analysis_service.dart';
 
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 class _MockTransport extends Mock implements UspTransport {}
@@ -191,20 +193,9 @@ void main() {
             },
           };
         }
-        return {
-          'success': false,
-          'result': {
-            'data': <String, dynamic>{},
-            'error': {
-              for (final p in paths)
-                p: {
-                  'errorCode': 9999,
-                  'errorMessage':
-                      'Transport error: Transport error: HTTP error: HTTP 503',
-                },
-            },
-          },
-        };
+        return UspEnvelopeTestData.failedAsAWhole(paths,
+            errorCode: 9999,
+            errorMessage: 'Transport error: HTTP error: HTTP 503');
       });
 
       final real =

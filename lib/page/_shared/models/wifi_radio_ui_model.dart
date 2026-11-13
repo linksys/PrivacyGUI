@@ -8,10 +8,30 @@ class WifiRadioUIModel extends Equatable with DiagnosticLoggable {
   final bool enable;
   final int transmitPower; // -1 means max
   final int maxBitRate; // Mbps
+
+  /// The configured channel (`Device.WiFi.Radio.{i}.Channel`): what the
+  /// channel dialog selects and returns, and what a save's read-back compares
+  /// with the value written. On FL-WRT 2.0 a fixed channel keeps this value
+  /// when hostapd's 20/40 MHz coexistence check moves the radio, so it is not
+  /// the channel the radio is on; that is [channelInUse].
   final int channel;
+
+  /// The channel the radio is on (`Device.WiFi.Radio.{i}.ChannelsInUse`, read
+  /// from the driver), or null when that is unknown (#1782). Every place that
+  /// shows the channel a radio is on prints this, never [channel], and an
+  /// unknown one is shown as unknown rather than as 0 or as [channel].
+  final int? channelInUse;
   final bool autoChannelEnable;
   final String channelBandwidth;
   final String supportedStandards;
+
+  /// How much of the channel's airtime is in use, as DataElements reports it
+  /// for this radio (`Device.WiFi.DataElements.Network.Device.{i}.Radio.{j}.`
+  /// `Utilization`): 0–255, where 255 is 100 %, this radio's own traffic and
+  /// its neighbours' alike. Null when it is unknown — no DataElements radio
+  /// carries this radio's MAC, or the read failed — and an unknown one is
+  /// shown as unknown, never as 0 (#1295).
+  final int? utilization;
 
   /// Manually-selectable channels for this radio's band, sorted ascending.
   ///
@@ -44,9 +64,11 @@ class WifiRadioUIModel extends Equatable with DiagnosticLoggable {
     required this.transmitPower,
     required this.maxBitRate,
     required this.channel,
+    required this.channelInUse,
     required this.autoChannelEnable,
     required this.channelBandwidth,
     required this.supportedStandards,
+    this.utilization,
     this.possibleChannels = const [],
     this.isDfsEnabled = false,
     this.accessPoints = const [],
@@ -58,8 +80,35 @@ class WifiRadioUIModel extends Equatable with DiagnosticLoggable {
 
   String get txPowerDisplay => transmitPower == -1 ? 'Max' : '$txPowerPercent%';
 
-  /// Channel display: "6 (Auto)" or "6".
-  String get channelDisplay => '$channel${autoChannelEnable ? ' (Auto)' : ''}';
+  /// The channel the radio is on: "6 (Auto)" or "6", and "--" in place of the
+  /// number when [channelInUse] is unknown.
+  String get channelInUseDisplay =>
+      '${channelInUse ?? '--'}${autoChannelEnable ? ' (Auto)' : ''}';
+
+  /// [utilization] as a whole percent of the channel's airtime, or null when
+  /// it is unknown.
+  int? get utilizationPercent =>
+      utilization == null ? null : (utilization! * 100 / 255).round();
+
+  /// This radio with [utilization] replaced — null makes it unknown — and
+  /// everything else as it was: the Channels tab's refresh re-reads only that
+  /// (#1295).
+  WifiRadioUIModel withUtilization(int? utilization) => WifiRadioUIModel(
+        instancePath: instancePath,
+        band: band,
+        enable: enable,
+        transmitPower: transmitPower,
+        maxBitRate: maxBitRate,
+        channel: channel,
+        channelInUse: channelInUse,
+        autoChannelEnable: autoChannelEnable,
+        channelBandwidth: channelBandwidth,
+        supportedStandards: supportedStandards,
+        utilization: utilization,
+        possibleChannels: possibleChannels,
+        isDfsEnabled: isDfsEnabled,
+        accessPoints: accessPoints,
+      );
 
   /// Bit rate normalized to 0–100 scale based on band max.
   double get bitRateNormalized {
@@ -82,9 +131,11 @@ class WifiRadioUIModel extends Equatable with DiagnosticLoggable {
         'transmitPower': transmitPower,
         'maxBitRate': maxBitRate,
         'channel': channel,
+        'channelInUse': channelInUse,
         'autoChannelEnable': autoChannelEnable,
         'channelBandwidth': channelBandwidth,
         'supportedStandards': supportedStandards,
+        'utilization': utilization,
         'possibleChannels': possibleChannels,
         'isDfsEnabled': isDfsEnabled,
         'accessPoints': accessPoints,

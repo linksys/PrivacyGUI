@@ -1,13 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 import 'package:privacy_gui/page/_shared/utils/lan_dhcp_pool_pick.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
+import 'package:privacy_gui/page/_shared/services/batch_tally.dart';
+import 'package:privacy_gui/page/_shared/services/refused_add_service.dart';
 
 final uspDhcpServiceProvider = Provider<UspDhcpService>(
   (ref) => UspDhcpService(ref.read(uspClientProvider)!),
@@ -35,12 +36,41 @@ class UspDhcpService {
                 mac: r.chaddr,
                 ip: r.yiaddr,
                 enable: r.enable,
+                name: r.name ?? '',
               ))
           .toList();
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
   }
+
+  /// The name to write for a reservation, or null to leave the leaf out.
+  ///
+  /// `''` is never sent: dhcpmngr counts it as a name in its uniqueness check
+  /// (linksys/feed_usp#54, usp_framework#89), so it is refused on every Add,
+  /// and on a Set whenever another reservation has no name either.
+  static String? _nameToSend(String name) => name.isEmpty ? null : name;
+
+  /// A refusal that carries one of dhcpmngr's messages, as an
+  /// [InvalidInputError] whose `field` is that message, so the page can show
+  /// the check FW applied. Null for any other failure.
+  static InvalidInputError? _refusalOf(List<UspErrorDetail> failures) {
+    final refusal = refusalNameIn(failures, DhcpReservationRefusalNames.all);
+    if (refusal == null) return null;
+    return InvalidInputError(
+      field: refusal.name,
+      code: refusal.detail.errorCode,
+      detail: refusal.detail.errorMessage,
+    );
+  }
+
+  /// [error], or the named refusal it carries ([_refusalOf]).
+  static ServiceError _named(ServiceError error) => switch (error) {
+        UspCompleteFailureError(:final failures) ||
+        UspPartialFailureError(:final failures) =>
+          _refusalOf(failures) ?? error,
+        _ => error,
+      };
 
   /// The LAN pool's reservation table, or null when the router lists none.
   static DhcpReservationPool? _lanPool(DhcpReservations reservations) =>
@@ -98,6 +128,7 @@ class UspDhcpService {
     required String mac,
     required String ip,
     bool enable = true,
+    String name = '',
   }) async {
     try {
       final result = await DhcpReservations.addStaticAddresses(_usp, [
@@ -106,9 +137,11 @@ class UspDhcpService {
           enable: enable,
           chaddr: mac,
           yiaddr: ip,
+          name: _nameToSend(name),
         ),
       ]);
-      final parsed = UspResultParser.parseAddResult(result);
+      final parsed =
+          await parseAddRemovingRefusedRows(_usp, result, tag: '[DHCP]');
       switch (parsed) {
         case UspSuccess():
           break;
@@ -129,7 +162,7 @@ class UspDhcpService {
           );
       }
     } catch (e) {
-      if (e is ServiceError) rethrow;
+      if (e is ServiceError) throw _named(e);
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -171,13 +204,26 @@ class UspDhcpService {
 
   /// Batch save: diff original vs current, execute delete/add/update.
   ///
-  /// Lenient mode: partial success is acceptable for batch operations,
-  /// only log warnings. Complete failure still throws.
+  /// Every step is sent and recorded in a [BatchTally], which throws at the
+  /// end: a [UspCompleteFailureError] when no step wrote anything, and a
+  /// [UspPartialFailureError] when one did. A failure carrying one of
+  /// dhcpmngr's messages ([DhcpReservationRefusalNames], linksys/FWDEV#211)
+  /// is thrown instead as an [InvalidInputError] whose `field` is that
+  /// message ([_named]). The notifier's `save` reads the router again either
+  /// way.
+  ///
+  /// This used to be lenient: a partial result without a name was only logged
+  /// and the save read as saved. Since usp-client 0.14.0 a refused reservation
+  /// Add answers a partial success (linksys/usp_framework#114), so that
+  /// leniency would have reported a refusal as saved, and a complete failure
+  /// thrown mid-batch would have hidden a Delete that had already landed.
   Future<({int added, int updated, int deleted})> saveBatch({
     required List<DhcpReservationUIModel> original,
     required List<DhcpReservationUIModel> current,
   }) async {
     try {
+      final tally = BatchTally('[DHCP]');
+
       // 1. Delete (in original, not in current)
       final currentPaths = <String>{
         for (final r in current)
@@ -192,20 +238,7 @@ class UspDhcpService {
       for (final r in toDelete.reversed) {
         final result = await DhcpReservations.deleteStaticAddresses(
             _usp, [r.instancePath!]);
-        final parsed = UspResultParser.parseDeleteResult(result);
-        switch (parsed) {
-          case UspSuccess():
-            break;
-          case UspPartialSuccess(:final successes, :final failures):
-            logger.w(
-                '[DHCP]: Batch delete partial: ${successes.length} ok, ${failures.length} failed');
-            break;
-          case UspFailure(:final errorSummary, :final errors):
-            throw UspCompleteFailureError(
-              summary: 'DHCP batch delete failed: $errorSummary',
-              failures: errors,
-            );
-        }
+        tally.record('Delete', UspResultParser.parseDeleteResult(result));
       }
 
       // 2. Add
@@ -220,23 +253,11 @@ class UspDhcpService {
                     enable: r.enable,
                     chaddr: r.mac,
                     yiaddr: r.ip,
+                    name: _nameToSend(r.name),
                   ))
               .toList(),
         );
-        final parsed = UspResultParser.parseAddResult(result);
-        switch (parsed) {
-          case UspSuccess():
-            break;
-          case UspPartialSuccess(:final successes, :final failures):
-            logger.w(
-                '[DHCP]: Batch add partial: ${successes.length} ok, ${failures.length} failed');
-            break;
-          case UspFailure(:final errorSummary, :final errors):
-            throw UspCompleteFailureError(
-              summary: 'DHCP batch add failed: $errorSummary',
-              failures: errors,
-            );
-        }
+        await tally.recordAdd(_usp, 'Add', result);
       }
 
       // 3. Update (same path, different content)
@@ -256,6 +277,9 @@ class UspDhcpService {
             enable: cur.enable,
             chaddr: cur.mac,
             yiaddr: cur.ip,
+            // Only a changed, non-empty name: an unchanged one is not
+            // re-checked against FW's uniqueness rule, and '' is never sent.
+            name: cur.name == orig.name ? null : _nameToSend(cur.name),
           ));
         }
       }
@@ -263,21 +287,10 @@ class UspDhcpService {
       if (toUpdate.isNotEmpty) {
         final result =
             await DhcpReservations.updateStaticAddresses(_usp, toUpdate);
-        final parsed = UspResultParser.parseSetResult(result);
-        switch (parsed) {
-          case UspSuccess():
-            break;
-          case UspPartialSuccess(:final successes, :final failures):
-            logger.w(
-                '[DHCP]: Batch update partial: ${successes.length} ok, ${failures.length} failed');
-            break;
-          case UspFailure(:final errorSummary, :final errors):
-            throw UspCompleteFailureError(
-              summary: 'DHCP batch update failed: $errorSummary',
-              failures: errors,
-            );
-        }
+        tally.record('Update', UspResultParser.parseSetResult(result));
       }
+
+      tally.throwIfAnyFailed();
 
       return (
         added: toAdd.length,
@@ -285,7 +298,7 @@ class UspDhcpService {
         deleted: toDelete.length,
       );
     } catch (e) {
-      if (e is ServiceError) rethrow;
+      if (e is ServiceError) throw _named(e);
       throw mapUspErrorToServiceError(e);
     }
   }

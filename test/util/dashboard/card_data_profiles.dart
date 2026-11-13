@@ -146,7 +146,7 @@ final triBandProfile = CardDataProfile(
       '(testWifiDataTriBand)',
   overrides: () => cardOverrides(wifiData: testWifiDataTriBand),
   // The third radio's channel string, which only this profile can produce:
-  // `channelDisplay` appends ` (Auto)` unlocalized, and no default fixture has a
+  // `channelInUseDisplay` appends ` (Auto)` unlocalized, and no default fixture has a
   // 320MHz radio. Both halves are checked because either alone could survive a
   // partially-applied override.
   markers: const ['233 (Auto)', '320MHz'],
@@ -158,7 +158,8 @@ final triBandProfile = CardDataProfile(
 /// #1267 gave that tab a scrolling content region so content taller than the card
 /// has somewhere to go. Once the band-distribution donut was removed, no realistic
 /// fixture in the repo is tall enough to exercise it — [triBandProfile] fits with
-/// ~120px to spare — so the mechanism would have shipped untested. This supplies
+/// 57px to spare (#1295's figures, at [testRadiosSixRadio]) — so the mechanism
+/// would have shipped untested. This supplies
 /// the load; see [testRadiosSixRadio] for why six and not five, and why a router
 /// nobody sells is the honest fixture for a net rather than for a sweep.
 ///

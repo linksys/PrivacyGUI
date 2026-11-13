@@ -14,14 +14,17 @@ final uspMutationLoadingProvider = StateProvider<String?>((ref) => null);
 ///
 /// On failure the caught error is localized via [localizeServiceError] (the
 /// same central mapper used by feature views) — so callers do NOT need to
-/// localize themselves; just pass the mutation. Note [successMessage] is shown
-/// as-is, so callers should pass an already-localized string.
+/// localize themselves; just pass the mutation. A feature whose router names
+/// its refusals passes [localizeError] to read them. Note [successMessage] is
+/// shown as-is, so callers should pass an already-localized string.
 Future<void> performUspMutation(
   BuildContext context,
   WidgetRef ref, {
   required String loadingKey,
   required Future<void> Function() mutation,
   String? successMessage,
+  String Function(BuildContext context, Object error) localizeError =
+      localizeServiceError,
 }) async {
   ref.read(uspMutationLoadingProvider.notifier).state = loadingKey;
   try {
@@ -31,7 +34,7 @@ Future<void> performUspMutation(
     }
   } catch (e) {
     if (context.mounted) {
-      showFailedSnackBar(context, localizeServiceError(context, e));
+      showFailedSnackBar(context, localizeError(context, e));
     }
   } finally {
     ref.read(uspMutationLoadingProvider.notifier).state = null;

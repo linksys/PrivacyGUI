@@ -19,22 +19,13 @@ import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/generated/wan_settings.g.dart';
 import 'package:privacy_gui/page/dmz/services/usp_dmz_service.dart';
 
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
+
 class _MockTransport extends Mock implements UspTransport {}
 
-Map<String, dynamic> _lostConnection(List<String> paths) => {
-      'success': false,
-      'result': {
-        'data': <String, dynamic>{},
-        'error': {
-          for (final p in paths)
-            p: {
-              'errorCode': 9999,
-              'errorMessage':
-                  'Transport error: Transport error: HTTP error: HTTP 503',
-            },
-        },
-      },
-    };
+Map<String, dynamic> _lostConnection(List<String> paths) =>
+    UspEnvelopeTestData.failedAsAWhole(paths,
+        errorCode: 9999, errorMessage: 'Transport error: HTTP error: HTTP 503');
 
 Map<String, dynamic> _answered(Map<String, String> data) => {
       'success': true,
@@ -135,19 +126,15 @@ void main() {
     test('a router without DataElements still reads controllerId: null',
         () async {
       const path = 'Device.WiFi.DataElements.Network.ControllerID';
-      when(() => transport.get(any())).thenAnswer((_) async => {
-            'success': false,
-            'result': {
-              'data': <String, dynamic>{},
-              'error': {
-                path: {
-                  'errorCode': 7026,
-                  'errorMessage': 'CheckPathProperties: Path ($path) does not '
-                      'exist in the schema',
-                },
-              },
-            },
-          });
+      when(() => transport.get(any()))
+          .thenAnswer((_) async => UspEnvelopeTestData.pathErrors({
+                path: (
+                  code: 7026,
+                  message:
+                      'CheckPathProperties: Path ($path) does not exist in '
+                          'the schema',
+                ),
+              }, success: false));
 
       final info = await DataElementsNetworkInfo.fetch(client);
 

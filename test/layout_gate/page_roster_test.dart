@@ -570,8 +570,10 @@ void main() {
       // Administration, the UPnP switch — and it arrives the same way again.
       // The 47th is #879's `add_nodes_view.dart`, the same way once more, and the
       // 48th #1734's `pnp_add_nodes_view.dart`, the same flow in the wizard's frame.
+      // The 50th is #641's `usp_ddns_view.dart`, Advanced Settings → DDNS, the
+      // same way.
       expect(
-          roster.withDisposition(PageRosterDisposition.swept), hasLength(49));
+          roster.withDisposition(PageRosterDisposition.swept), hasLength(50));
       expect(
         roster.withDisposition(PageRosterDisposition.queued).map((r) => r.path),
         isEmpty,
@@ -713,6 +715,7 @@ void main() {
         'lib/page/apps/views/usp_apps_view.dart',
         'lib/page/dashboard/views/usp_dashboard_view.dart',
         'lib/page/dashboard/views/usp_sliver_dashboard_view.dart',
+        'lib/page/ddns/views/usp_ddns_view.dart',
         'lib/page/devices/views/usp_device_detail_view.dart',
         'lib/page/devices/views/usp_device_list_view.dart',
         'lib/page/dhcp/views/usp_dhcp_detail_view.dart',
