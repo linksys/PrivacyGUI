@@ -11,7 +11,8 @@ import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_m
 
 /// Also read by the dashboard's Firewall card through
 /// `ipv6PortServiceDataProvider` (#1130), so a missing client is a
-/// [ServiceError], as for the other services the dashboard reads.
+/// [ServiceError], as for the firewall and port forwarding services the
+/// dashboard reads.
 final uspIpv6PortServiceServiceProvider =
     Provider<UspIpv6PortServiceService>((ref) {
   final usp = ref.read(uspClientProvider);

@@ -50,8 +50,8 @@ void main() {
   });
 
   test('with no USP client it is a ServiceError, not a null check', () async {
-    // The dashboard reads this provider, as it reads the other L1 caches,
-    // whose services all fail this way when there is no client.
+    // The dashboard reads this provider, so with no client it fails with a
+    // ServiceError, as the firewall and port forwarding caches beside it do.
     final container = ProviderContainer();
     addTearDown(container.dispose);
     container.listen(ipv6PortServiceDataProvider, (_, __) {});
