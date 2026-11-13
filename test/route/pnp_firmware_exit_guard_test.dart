@@ -103,13 +103,15 @@ bool? _blocksPop(PnpPhase phase) => switch (phase) {
       WizardConfiguring() => null,
 
       // Everything else. The completion screen leads out of the wizard, and the
-      // phases before it are the entry's.
+      // phases before it are the entry's. Your Network is past the save and the
+      // acknowledge (#1511 P5): leaving it skips only the firmware offer.
       AdminCheckingInternet() => false,
       AdminInternetConnected() => false,
       AdminReadFailure() => false,
       NoInternet() => false,
       WizardInitializing() => false,
       WizardNeedsReconnect() => false,
+      WizardYourNetwork() => false,
       WizardWifiReady() => false,
       WizardError() => false,
     };
@@ -126,6 +128,8 @@ const _phases = <PnpPhase>[
   WizardSaved(),
   WizardNeedsReconnect(newSsid: 'MyWiFi', newPassword: 'MyPass1234'),
   WizardTestingReconnect(attemptCount: 1, maxAttempts: 5),
+  WizardYourNetwork(
+      ready: WizardWifiReady(ssid: 'MyWiFi', password: 'MyPass1234')),
   WizardCheckingFirmware(),
   WizardUpdatingFirmware(version: '1.0.17.220118'),
   WizardWifiReady(ssid: 'MyWiFi', password: 'MyPass1234'),

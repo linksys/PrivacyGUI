@@ -93,15 +93,16 @@ When no internet connection is detected, this flow provides solutions.
 
 Multi-step wizard for WiFi configuration:
 
-*   **Steps**: Wi-Fi, guest Wi-Fi (only when the router has a guest SSID), Your
-    Network (mesh node confirmation, holds Save). Which steps, in which order, is a
-    plan built once when the wizard reads the router; each setting step edits a
-    draft of its own. See `pnp-flow.md` for the plan, the back policy and leaving.
+*   **Steps**: Wi-Fi, guest Wi-Fi (only when the router has a guest SSID) — the
+    last of these holds Save — then Your Network (mesh nodes, Add nodes), after the
+    save (#1511 P5). Which steps, in which order, is a plan built once when the
+    wizard reads the router; each setting step edits a draft of its own. See
+    `pnp-flow.md` for the plan, the back policy and leaving.
 *   **Save Flow**:
-    1. `WizardSaving` → save WiFi settings
-    2. `PnpStatusService.acknowledge(serialNumber)` → mark PnP complete
-    3. If SSID changed → `WizardNeedsReconnect` → user reconnects to new WiFi
-    4. `WizardTestingReconnect` → poll router with exponential backoff
+    1. `WizardSaving` → save WiFi settings (Save, on the last setting step)
+    2. If the router does not answer in time → poll it; still away → `WizardNeedsReconnect` → user reconnects to new WiFi → `WizardTestingReconnect` polls with exponential backoff
+    3. `PnpStatusService.acknowledge(serialNumber)` → mark PnP complete
+    4. `WizardYourNetwork` → Your Network: add nodes, which join with the new WiFi; Done
     5. `WizardCheckingFirmware` → the router's OTA check; `WizardUpdatingFirmware` while an update installs (locked)
     6. `WizardWifiReady` → show new credentials + QR code → Done
 
@@ -115,6 +116,7 @@ Multi-step wizard for WiFi configuration:
     - `WizardConfiguring`: User on the steps (the form itself is in the drafts)
     - `WizardSaving` / `WizardSaved`: Save in progress / complete
     - `WizardNeedsReconnect` / `WizardTestingReconnect`: WiFi SSID changed, reconnecting
+    - `WizardYourNetwork`: On Your Network, after the save
     - `WizardWifiReady`: Setup complete
 
 ## 5. Session Restore Scenarios

@@ -5,7 +5,9 @@ import 'package:privacy_gui/page/instant_setup/views/pnp_flow_shell.dart';
 
 /// The PnP shell's back policy (#1511 P4 AC 5): one pure function from the
 /// flow and a destination inside the shell to "let it through" or "go here
-/// instead", over every (state, target) pair the plan allows.
+/// instead", over every (state, target) pair the plan allows. Since #1511 P5
+/// Save is on the last setting step and Your Network comes after it, so the
+/// table has a row for each side of the save.
 void main() {
   const entry = '/pnp';
   const config = '/pnp/pnpConfig';
@@ -17,6 +19,7 @@ void main() {
 
   const withGuest = PnpFlowPlan(settingStepIds: ['wifi', 'guest']);
   const noGuest = PnpFlowPlan(settingStepIds: ['wifi']);
+  const ready = WizardWifiReady(ssid: 'n', password: 'p');
 
   group('no wizard yet', () {
     // A reload on a step, or a step's URL typed in: nothing restarts the flow
@@ -43,12 +46,16 @@ void main() {
   group('editing', () {
     const editing = PnpState(phase: WizardConfiguring(), plan: withGuest);
 
-    test('every step in the plan is open, in either direction', () {
-      for (final id in withGuest.stepIds) {
+    test('every setting step in the plan is open, in either direction', () {
+      for (final id in withGuest.settingStepIds) {
         expect(policy(editing, step(id)), isNull, reason: id);
       }
-      expect(policy(editing, addNodes), isNull,
-          reason: 'adding nodes is part of Your Network');
+    });
+
+    test('Your Network is not open yet: it comes after Save (#1511 P5)', () {
+      expect(policy(editing, step('network')), step('wifi'));
+      expect(policy(editing, addNodes), step('wifi'),
+          reason: 'adding nodes is Your Network\'s');
     });
 
     test('the entry is open: leaving the wizard is config\'s exit to decide',
@@ -75,60 +82,90 @@ void main() {
         phase: WizardConfiguring(saveError: null),
         plan: withGuest,
       );
-      expect(policy(failed, step('guest')), isNull);
+      expect(policy(failed, step('wifi')), isNull);
     });
   });
 
-  group('past editing', () {
-    // In flight (saving, reconnect testing, the firmware stage) or past the
-    // irreversible point (reconnect, done): the user stays where Save was
-    // pressed — Your Network, until #1511 P5 moves Save.
-    const pastEditing = <PnpPhase>[
+  group('saving: the user stays where Save was pressed', () {
+    // In flight, up to Your Network: the write, the reconnect it may need, and
+    // the moment between the acknowledge and Your Network. The URL is the save
+    // step's — the last setting step's.
+    const inFlight = <PnpPhase>[
       WizardSaving(),
       WizardSaved(),
       WizardNeedsReconnect(newSsid: 'n', newPassword: 'p'),
       WizardTestingReconnect(attemptCount: 1, maxAttempts: 5),
-      WizardCheckingFirmware(),
-      WizardUpdatingFirmware(),
-      WizardWifiReady(ssid: 'n', password: 'p'),
     ];
 
-    for (final phase in pastEditing) {
+    for (final phase in inFlight) {
+      for (final plan in [withGuest, noGuest]) {
+        final flow = PnpState(phase: phase, plan: plan);
+        final saveStep = step(plan.saveStepId);
+
+        test(
+            '${phase.runtimeType}, ${plan.stepIds.join(' → ')}: the save '
+            'step stays open, and everything else goes back to it', () {
+          expect(policy(flow, saveStep), isNull);
+          for (final target in {
+            entry,
+            config,
+            ...plan.stepIds.map(step),
+            addNodes,
+          }..remove(saveStep)) {
+            expect(policy(flow, target), saveStep, reason: target);
+          }
+        });
+      }
+    }
+  });
+
+  group('on Your Network (#1511 P5)', () {
+    const onYourNetwork =
+        PnpState(phase: WizardYourNetwork(ready: ready), plan: withGuest);
+
+    test('Your Network and adding nodes are open', () {
+      expect(policy(onYourNetwork, step('network')), isNull);
+      expect(policy(onYourNetwork, addNodes), isNull);
+    });
+
+    test('Back to a setting step is refused: the save is behind the user', () {
+      for (final target in [entry, config, step('wifi'), step('guest')]) {
+        expect(policy(onYourNetwork, target), step('network'), reason: target);
+      }
+    });
+  });
+
+  group('after Your Network: the firmware stage and the completion screen', () {
+    const finishing = <PnpPhase>[
+      WizardCheckingFirmware(),
+      WizardUpdatingFirmware(),
+      ready,
+    ];
+
+    for (final phase in finishing) {
       final flow = PnpState(phase: phase, plan: withGuest);
 
-      test('${phase.runtimeType}: the save step stays open', () {
-        expect(policy(flow, step('network')), isNull);
-      });
-
-      test('${phase.runtimeType}: everything else goes back to the save step',
+      test('${phase.runtimeType}: Your Network stays open, and nothing else',
           () {
+        expect(policy(flow, step('network')), isNull);
         for (final target in [
           entry,
           config,
           step('wifi'),
           step('guest'),
-          // Adding nodes is Your Network's, and not while a save is out or
-          // after it: only the step itself stays open.
+          // Adding nodes ended with Your Network's Done.
           addNodes,
         ]) {
           expect(policy(flow, target), step('network'), reason: target);
-        }
-      });
-
-      test('${phase.runtimeType}: the same with no guest step', () {
-        final noGuestFlow = PnpState(phase: phase, plan: noGuest);
-        expect(policy(noGuestFlow, step('network')), isNull);
-        for (final target in [step('wifi'), step('guest'), addNodes]) {
-          expect(policy(noGuestFlow, target), step('network'), reason: target);
         }
       });
     }
   });
 
   test('a location outside the PnP tree is not the policy\'s', () {
-    const editing = PnpState(phase: WizardSaving(), plan: withGuest);
+    const saving = PnpState(phase: WizardSaving(), plan: withGuest);
 
-    expect(policy(editing, '/uspDashboard'), isNull);
-    expect(policy(editing, '/pnpNoInternetConnection/pnp'), isNull);
+    expect(policy(saving, '/uspDashboard'), isNull);
+    expect(policy(saving, '/pnpNoInternetConnection/pnp'), isNull);
   });
 }

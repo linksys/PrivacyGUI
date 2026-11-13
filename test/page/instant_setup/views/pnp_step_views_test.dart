@@ -53,7 +53,8 @@ void main() {
 
   final en = lookupAppLocalizations(const Locale('en'));
 
-  /// The flow on its steps, with the plan of a router with a guest SSID.
+  /// The flow on its setting steps, with the plan of a router with a guest
+  /// SSID.
   PnpState onTheSteps({
     PnpFlowPlan plan = pnpPlanWithGuest,
     List<NodeEntity>? nodes,
@@ -63,6 +64,17 @@ void main() {
         plan: plan,
         meshNodes: nodes ?? [pnpMeshNodes.first],
         serialNumber: 'SN-TEST',
+      );
+
+  /// The flow on Your Network — after the save (#1511 P5).
+  PnpState onYourNetwork({
+    PnpFlowPlan plan = pnpPlanWithGuest,
+    List<NodeEntity>? nodes,
+  }) =>
+      onTheSteps(plan: plan, nodes: nodes).copyWith(
+        phase: const WizardYourNetwork(
+          ready: WizardWifiReady(ssid: 'Home', password: 'pass1234'),
+        ),
       );
 
   void enlargeSurface(WidgetTester tester) {
@@ -180,27 +192,25 @@ void main() {
         findsNWidgets(pnpSplitRouter.main.bands.length));
   });
 
-  group('Save is where the plan puts it', () {
-    testWidgets('the Wi-Fi and guest steps end in Next', (tester) async {
+  group('Save is where the plan puts it: the last setting step (#1511 P5)', () {
+    testWidgets('a setting step before it ends in Next, with no Save',
+        (tester) async {
       await pumpStep(tester, const PnpWifiStepView());
       expect(buttonLabelled(en.next), findsOneWidget);
       expect(buttonLabelled(en.save), findsNothing);
-
-      await pumpStep(tester, const PnpGuestStepView());
-      expect(buttonLabelled(en.next), findsOneWidget);
-      expect(buttonLabelled(en.back), findsOneWidget);
-      expect(buttonLabelled(en.save), findsNothing);
+      expect(buttonLabelled(en.back), findsNothing, reason: 'the first step');
     });
 
-    for (final plan in const [
-      pnpPlanWithGuest,
-      PnpFlowPlan(settingStepIds: ['wifi']),
+    for (final (plan, view) in const [
+      (pnpPlanWithGuest, PnpGuestStepView()),
+      (PnpFlowPlan(settingStepIds: ['wifi']), PnpWifiStepView()),
     ]) {
-      testWidgets('Your Network holds Save: ${plan.stepIds.join(' → ')}',
+      testWidgets(
+          'the last setting step holds Save: ${plan.stepIds.join(' → ')}',
           (tester) async {
         final notifier = await pumpStep(
           tester,
-          const PnpYourNetworkStepView(),
+          view,
           state: onTheSteps(plan: plan),
         );
         expect(buttonLabelled(en.save), findsOneWidget);
@@ -210,26 +220,48 @@ void main() {
         await settle(tester);
         expect(notifier.saves, 1);
       });
+
+      testWidgets(
+          'Your Network ends in Done, with no Back: '
+          '${plan.stepIds.join(' → ')}', (tester) async {
+        // 1.x's Your Network did the same (`canBack(false)`, `done`): it is
+        // past the save, so there is nothing to go back to edit (D7).
+        final notifier = await pumpStep(
+          tester,
+          const PnpYourNetworkStepView(),
+          state: onYourNetwork(plan: plan),
+        );
+        expect(buttonLabelled(en.done), findsOneWidget);
+        expect(buttonLabelled(en.save), findsNothing);
+        expect(buttonLabelled(en.back), findsNothing);
+
+        await tester.tap(buttonLabelled(en.done));
+        await settle(tester);
+        expect(notifier.finishes, 1);
+        expect(notifier.saves, 0);
+      });
     }
   });
 
   testWidgets(
-      'Back and Save on Your Network keep their labels whole at 320px, in every '
-      'locale', (tester) async {
+      'Back and Save on the save step keep their labels whole at 320px, in '
+      'every locale', (tester) async {
     // The footer is a `Wrap` because Back beside Save overflowed `el` by 17px at
-    // 320px on this step's first sweep (#1511 P4). A `Wrap` constrains each
-    // button to the line, so a button with too little room squeezes its label
-    // instead of overflowing — invisible to the layout gate's 234 cells. Both
-    // verdicts, in the gate skill's rule 4 order: neither subsumes the other.
+    // 320px on Your Network's first sweep (#1511 P4), when Save was there. A
+    // `Wrap` constrains each button to the line, so a button with too little
+    // room squeezes its label instead of overflowing — invisible to the layout
+    // gate's 234 cells. Since #1511 P5 the pair is on the last setting step,
+    // the guest step in this plan. Both verdicts, in the gate skill's rule 4
+    // order: neither subsumes the other.
     final offenders = <String>[];
     for (final locale in AppLocalizations.supportedLocales) {
       await setLayoutSurface(tester, const Size(320, 1600));
       await tester.pumpWidget(KeyedSubtree(
         key: ValueKey(locale.toString()),
         child: pageSurfaceHost(
-          view: const PnpYourNetworkStepView(),
+          view: const PnpGuestStepView(),
           locale: locale,
-          overrides: pnpOverrides(onTheSteps(nodes: pnpMeshNodes)),
+          overrides: pnpOverrides(onTheSteps(), router: pnpUnifiedRouter),
         ),
       ));
       await settle(tester);
@@ -266,7 +298,7 @@ void main() {
       await pumpStep(
         tester,
         const PnpYourNetworkStepView(),
-        state: onTheSteps(nodes: pnpMeshNodes.reversed.toList()),
+        state: onYourNetwork(nodes: pnpMeshNodes.reversed.toList()),
       );
 
       String descriptionOf(String model) => tester
@@ -281,7 +313,8 @@ void main() {
         'Add nodes opens the add-nodes page, and the nodes are read again '
         'once it pops', (tester) async {
       final handle = tester.ensureSemantics();
-      final notifier = await pumpStep(tester, const PnpYourNetworkStepView());
+      final notifier = await pumpStep(tester, const PnpYourNetworkStepView(),
+          state: onYourNetwork());
 
       expect(
           find.bySemanticsIdentifier(kPnpAddNodesIdentifier), findsOneWidget);
@@ -298,7 +331,7 @@ void main() {
         await settleIgnoringAnimations(tester);
       });
 
-      expect(buttonLabelled(en.save), findsOneWidget,
+      expect(buttonLabelled(en.done), findsOneWidget,
           reason: 'back on the step it was opened from');
       expect(notifier.meshRefreshes, 1);
       handle.dispose();
@@ -308,9 +341,9 @@ void main() {
         (tester) async {
       final handle = tester.ensureSemantics();
       await pumpStep(tester, const PnpYourNetworkStepView(),
-          capabilities: DeviceCapabilities.empty);
+          state: onYourNetwork(), capabilities: DeviceCapabilities.empty);
 
-      expect(buttonLabelled(en.save), findsOneWidget);
+      expect(buttonLabelled(en.done), findsOneWidget);
       expect(find.bySemanticsIdentifier(kPnpAddNodesIdentifier), findsNothing);
       handle.dispose();
     });
@@ -318,9 +351,9 @@ void main() {
     testWidgets('remote assistance offers no Add nodes', (tester) async {
       final handle = tester.ensureSemantics();
       await pumpStep(tester, const PnpYourNetworkStepView(),
-          profile: const RemoteModeProfile());
+          state: onYourNetwork(), profile: const RemoteModeProfile());
 
-      expect(buttonLabelled(en.save), findsOneWidget);
+      expect(buttonLabelled(en.done), findsOneWidget);
       expect(find.bySemanticsIdentifier(kPnpAddNodesIdentifier), findsNothing);
       handle.dispose();
     });
@@ -328,7 +361,7 @@ void main() {
     testWidgets('a mesh read that found nothing shows no empty list',
         (tester) async {
       await pumpStep(tester, const PnpYourNetworkStepView(),
-          state: onTheSteps(nodes: const []));
+          state: onYourNetwork(nodes: const []));
 
       expect(find.byType(AppNodeListCard), findsNothing);
       expect(find.byType(LayoutBlock), findsNothing,
@@ -344,7 +377,7 @@ void main() {
       const zhTw = Locale.fromSubtags(languageCode: 'zh', countryCode: 'TW');
       final words = lookupAppLocalizations(zhTw);
       await pumpStep(tester, const PnpYourNetworkStepView(),
-          state: onTheSteps(nodes: pnpMeshNodes), locale: zhTw);
+          state: onYourNetwork(nodes: pnpMeshNodes), locale: zhTw);
 
       final descriptions = tester
           .widgetList<AppNodeListCard>(find.byType(AppNodeListCard))

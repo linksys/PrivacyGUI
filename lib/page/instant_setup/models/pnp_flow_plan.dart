@@ -15,7 +15,9 @@ class PnpFlowPlan extends Equatable {
 
   /// Your Network: always after the setting steps, with one node as with
   /// several (#1734) — it is where nodes are added, and a single router is the
-  /// case that most needs to (REQ-16).
+  /// case that most needs to (REQ-16). **After Save** since #1511 P5 (D3): a
+  /// node added there joins with the Wi-Fi the user has just set, and nothing
+  /// past the save edits the Wi-Fi.
   static const yourNetworkStepId = 'network';
 
   /// Every step the stepper shows, in order.
@@ -23,20 +25,25 @@ class PnpFlowPlan extends Equatable {
 
   String get firstStepId => stepIds.first;
 
-  /// The step whose button saves. Your Network, until #1511 P5 moves Save to the
-  /// last setting step.
-  String get saveStepId => yourNetworkStepId;
+  /// The step whose button saves: the last setting step (#1511 P5).
+  String get saveStepId => settingStepIds.last;
 
-  /// The step after [stepId], or `null` on the last one.
+  /// The step Next goes to from [stepId], or `null` where the step's button is
+  /// not Next: on the save step, which saves — the flow then opens Your
+  /// Network itself — and on Your Network.
   String? stepAfter(String stepId) {
-    final i = stepIds.indexOf(stepId);
-    return i < 0 || i == stepIds.length - 1 ? null : stepIds[i + 1];
+    final i = settingStepIds.indexOf(stepId);
+    return i < 0 || i == settingStepIds.length - 1
+        ? null
+        : settingStepIds[i + 1];
   }
 
-  /// The step before [stepId], or `null` on the first one.
+  /// The step Back goes to from [stepId], or `null` where there is no Back: on
+  /// the first step, and on Your Network, which is past the save. **Back never
+  /// crosses Save** (D7).
   String? stepBefore(String stepId) {
-    final i = stepIds.indexOf(stepId);
-    return i <= 0 ? null : stepIds[i - 1];
+    final i = settingStepIds.indexOf(stepId);
+    return i <= 0 ? null : settingStepIds[i - 1];
   }
 
   @override

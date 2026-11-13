@@ -25,8 +25,10 @@ const String kPnpAddNodesIdentifier = 'pnp-add-nodes';
 ///
 /// Always in the plan, after the setting steps, with one node as with several:
 /// it is where nodes are added, and a single router is the case that most
-/// needs to (REQ-16). It holds Save until #1511 P5 — which button its footer
-/// shows is the plan's `saveStepId`, not this page's.
+/// needs to (REQ-16). **After the save** since #1511 P5: the flow opens it once
+/// the Wi-Fi write has landed, so a node added here joins with the Wi-Fi the
+/// user has just set. Its footer — Done, and no Back — is the plan's, not this
+/// page's.
 class PnpYourNetworkStepView extends ConsumerWidget {
   const PnpYourNetworkStepView({super.key});
 

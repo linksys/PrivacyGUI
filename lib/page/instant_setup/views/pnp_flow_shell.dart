@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_flow_plan.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_flow_frame_view.dart';
@@ -12,6 +13,10 @@ import 'package:privacy_gui/route/constants.dart';
 enum PnpFlowDestination {
   /// The setup wizard's first step, `/pnp/pnpConfig/<first step>`.
   wizard,
+
+  /// Your Network, `/pnp/pnpConfig/network`, once the save has landed
+  /// (#1511 P5).
+  yourNetwork,
 
   /// The no-internet troubleshooting flow, entered as its PnP caller.
   troubleshooting,
@@ -30,9 +35,17 @@ enum PnpFlowDestination {
 /// re-navigate, because the step the user is on is in the URL. The rule before
 /// P4 had to name the save (`previous is! WizardSaving`), because re-navigating
 /// rebuilt the one wizard page and reset its step to the first.
+///
+/// The one other step the flow opens itself is Your Network, when the save has
+/// landed (#1511 P5): it is after the commit, so no Next reaches it — the save
+/// step's button saves, and the user is moved on when the save is done.
 PnpFlowDestination? pnpFlowDestination(PnpState? previous, PnpState next) {
   if (next.plan != null && previous?.plan == null) {
     return PnpFlowDestination.wizard;
+  }
+  if (next.phase is WizardYourNetwork &&
+      previous?.phase is! WizardYourNetwork) {
+    return PnpFlowDestination.yourNetwork;
   }
   if (next.phase is NoInternet && previous?.phase is! NoInternet) {
     return PnpFlowDestination.troubleshooting;
@@ -67,43 +80,70 @@ bool _inPnpTree(Uri location) =>
 /// **The back policy, and the only one.** The shell's `redirect` calls it for
 /// every navigation into the `/pnp` tree — browser Back, a typed URL, a reload,
 /// a `go` — because `redirect` sees the destination and `onExit` does not. It
-/// reads the flow's phase and its plan, never a step by name, so the table
-/// below holds for whatever steps the plan has:
+/// reads the flow's phase and its plan, never a setting step by name, so the
+/// table below holds for whatever setting steps the plan has:
 ///
-/// | flow | the entry | a step in the plan | anything else in the wizard |
-/// |---|---|---|---|
-/// | no plan yet | open | → the entry | → the entry |
-/// | editing | open (`/pnp/pnpConfig`'s exit asks to log out) | open | → the first step |
-/// | past editing | → the save step | → the save step, unless it is the save step itself | → the save step |
+/// | flow | open | everything else in the tree goes to |
+/// |---|---|---|
+/// | no plan yet | the entry | the entry |
+/// | editing | the entry (`/pnp/pnpConfig`'s exit asks to log out), the setting steps | the first step |
+/// | saving | the save step | the save step |
+/// | on Your Network | Your Network, adding nodes | Your Network |
+/// | after Your Network | Your Network | Your Network |
 ///
-/// "Past editing" is every phase after Save is pressed: in flight (saving,
-/// reconnect testing, the firmware stage) or past the irreversible point
-/// (reconnect, done). A refused Back costs one extra browser-history entry —
-/// go_router re-reports the current URL (spike S2).
+/// The save step is the last setting step, and Your Network comes after it
+/// (#1511 P5, D3) — so Your Network is not open while editing, and once the
+/// user is on it Back cannot reach a setting step again: the save is behind
+/// them (D7). "Saving" is the write and what it may need before Your Network
+/// (the reconnect step, its polling, the moment after the acknowledge); "after
+/// Your Network" is the firmware stage and the completion screen, drawn over
+/// it. A refused Back costs one extra browser-history entry — go_router
+/// re-reports the current URL (spike S2).
 ///
-/// Adding nodes is part of Your Network: `.../network/pnpAddNodes` is judged as
-/// `network` while editing, and refused past editing, where only the save step
-/// itself is open.
+/// Exhaustive over the phase on purpose: a phase added later must be placed
+/// in this table, not let through by a default.
 String? pnpBackPolicy(PnpState flow, Uri target) {
   if (!_inPnpTree(target)) return null;
   final atEntry = target.pathSegments.length == 1;
   final stepId = pnpStepIdOf(target);
+  // The step itself, and nothing under it — adding nodes is under Your Network.
+  final atStepItself = target.pathSegments.length == 3;
 
   final plan = flow.plan;
   if (plan == null) return atEntry ? null : RoutePath.pnp;
+  const yourNetwork = PnpFlowPlan.yourNetworkStepId;
 
-  if (flow.phase is WizardConfiguring) {
-    if (atEntry) return null;
-    return plan.stepIds.contains(stepId)
-        ? null
-        : pnpStepLocation(plan.firstStepId);
+  switch (flow.phase) {
+    case WizardConfiguring():
+      if (atEntry) return null;
+      return plan.settingStepIds.contains(stepId)
+          ? null
+          : pnpStepLocation(plan.firstStepId);
+    case WizardSaving() ||
+          WizardSaved() ||
+          WizardNeedsReconnect() ||
+          WizardTestingReconnect():
+      return stepId == plan.saveStepId && atStepItself
+          ? null
+          : pnpStepLocation(plan.saveStepId);
+    case WizardYourNetwork():
+      return stepId == yourNetwork ? null : pnpStepLocation(yourNetwork);
+    case WizardCheckingFirmware() ||
+          WizardUpdatingFirmware() ||
+          WizardWifiReady():
+      return stepId == yourNetwork && atStepItself
+          ? null
+          : pnpStepLocation(yourNetwork);
+    case AdminCheckingInternet() ||
+          AdminInternetConnected() ||
+          AdminReadFailure() ||
+          NoInternet() ||
+          WizardInitializing() ||
+          WizardError():
+      // The entry's phases. A flow with a plan is past them; only a demo pins
+      // one on it, and then the entry is where it is drawn.
+      return atEntry ? null : RoutePath.pnp;
   }
-
-  // The save step itself, and nothing under it: adding nodes is not open while
-  // a save is out or after it.
-  final atSaveStep =
-      stepId == plan.saveStepId && target.pathSegments.length == 3;
-  return atSaveStep ? null : pnpStepLocation(plan.saveStepId);
 }
 
 /// The `ShellRoute` body over the `/pnp` tree (#1511 P2).
@@ -139,6 +179,8 @@ class PnpFlowShell extends ConsumerWidget {
       switch (pnpFlowDestination(previous, next)) {
         case PnpFlowDestination.wizard:
           context.goNamed(RouteNamed.pnpStep(next.plan!.firstStepId));
+        case PnpFlowDestination.yourNetwork:
+          context.goNamed(RouteNamed.pnpStep(PnpFlowPlan.yourNetworkStepId));
         case PnpFlowDestination.troubleshooting:
           // Troubleshooting's ending for this caller brings the user back to
           // `/pnp` once the internet is (#1511 P1).

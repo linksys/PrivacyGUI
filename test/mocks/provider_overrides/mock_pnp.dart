@@ -46,12 +46,18 @@ class FixedPnpNotifier extends PnpNotifier {
   @override
   Future<void> startPostLoginFlow() async {}
 
-  // ── Wizard (Your Network's Save) ──
+  // ── Wizard (the save step's Save, Your Network's Done) ──
   /// Times Save was pressed.
   int saves = 0;
 
   @override
   Future<void> saveChanges() async => saves++;
+
+  /// Times Your Network's Done was pressed (#1511 P5).
+  int finishes = 0;
+
+  @override
+  Future<void> finishWizard() async => finishes++;
 
   /// Times the Your Network step asked for the nodes again (#1734), which it
   /// does once the add-nodes page it pushed has popped.

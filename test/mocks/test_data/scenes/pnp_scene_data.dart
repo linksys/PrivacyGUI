@@ -255,6 +255,14 @@ final pnpWizardConfiguringState = PnpState(
   serialNumber: 'SN-TEST',
 );
 
+/// `WizardYourNetwork` — the flow on Your Network, after the save (#1511 P5):
+/// the same plan and nodes as [pnpWizardConfiguringState], one phase later.
+final pnpWizardYourNetworkState = pnpWizardConfiguringState.copyWith(
+  phase: const WizardYourNetwork(
+    ready: WizardWifiReady(ssid: 'Linksys-Home', password: 'home-password'),
+  ),
+);
+
 // ---------------------------------------------------------------------------
 // The flow's status screens (#1554 §4), drawn by `PnpFlowFrameView`
 // ---------------------------------------------------------------------------
@@ -266,24 +274,35 @@ final pnpWizardConfiguringState = PnpState(
 // the missing sweep cell in with the goldens precisely so the firmware phase's
 // fixture is written once and used by both.
 //
-// **`PnpFlowFrameView` draws seven status screens for nine phases** (they were
+// **`PnpFlowFrameView` draws eight status screens for nine phases** (they were
 // `PnpSetupView`'s until #1511 P4), and the mapping is what decides how many
 // scenes belong here rather than how many phases exist:
-// `WizardSaving`, `WizardSaved` and `WizardCheckingFirmware` all reach
-// `_buildSavingOverlay` and are pixel-identical, so one scene stands for three.
+// `WizardSaving` and `WizardSaved` both reach `_buildLoadingCard` with the save's
+// copy and are pixel-identical, so one scene stands for two; `WizardCheckingFirmware`
+// reaches the same card with its own copy since #1511 P5, so it has its own.
 // `WizardWifiReady` is the opposite — one phase, two builders, chosen on
 // `isSplitMode` — so it takes two.
 
-/// `WizardSaving` — the overlay three phases share.
+/// `WizardSaving` — the card two phases share.
 ///
-/// Stands in for `WizardSaved` and `WizardCheckingFirmware` too: all three land on
-/// `_buildSavingOverlay`, which takes no arguments, so the three are the same tree
-/// and the same picture. A scene each would be three identical goldens whose only
-/// difference is a name — and the *reason* they are identical is worth stating
-/// somewhere, because the day one of them grows its own copy is the day this scene
-/// stops covering it.
+/// Stands in for `WizardSaved` too: both land on `_buildLoadingCard` with the
+/// save's copy, so the two are the same tree and the same picture. A scene each
+/// would be two identical goldens whose only difference is a name — and the
+/// *reason* they are identical is worth stating somewhere, because the day one of
+/// them grows its own copy is the day this scene stops covering it. That day came
+/// for `WizardCheckingFirmware`, the third phase this used to stand for: see
+/// [pnpWizardCheckingFirmwareState].
 const pnpWizardSavingState = PnpState(
   phase: WizardSaving(),
+  serialNumber: 'SN-TEST',
+);
+
+/// `WizardCheckingFirmware` — the loading card with the firmware check's copy.
+///
+/// Its own scene since #1511 P5, when the check moved from straight after the
+/// save to after Your Network's Done and stopped sharing the save's copy.
+const pnpWizardCheckingFirmwareState = PnpState(
+  phase: WizardCheckingFirmware(),
   serialNumber: 'SN-TEST',
 );
 

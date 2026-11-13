@@ -61,7 +61,8 @@ class _Auth extends AuthNotifier {
 
 /// The PnP wizard as routes under the production `pnpShellRoute` (#1511 P4):
 /// its back policy, `/pnp/pnpConfig`'s exit guard, and the stepper the shell
-/// keeps on screen across the steps.
+/// keeps on screen across the steps — with Save on the last setting step and
+/// Your Network after it (#1511 P5).
 void main() {
   setUpAll(() async => loadAppFonts());
 
@@ -144,9 +145,19 @@ void main() {
       find.byWidgetPredicate((w) => w is AppButton && w.identifier == id,
           description: 'AppButton#$id');
 
+  const ready = WizardWifiReady(ssid: 'Home', password: 'pass1234');
+
+  /// The save landed: the flow opens Your Network, and the shell goes there.
+  Future<void> saveLands(WidgetTester tester) async {
+    pnp.moveTo(const WizardYourNetwork(ready: ready));
+    await settle(tester);
+    expect(location(), '/pnp/pnpConfig/network');
+  }
+
   group('moving between steps', () {
-    testWidgets('Next and Back follow the plan, and the URL names the step',
-        (tester) async {
+    testWidgets(
+        'Next and Back follow the plan, the URL names the step, and the last '
+        'setting step holds Save (#1511 P5)', (tester) async {
       await pumpApp(tester);
       await enterWizard(tester);
       expect(find.byType(PnpWifiStepView), findsOneWidget);
@@ -155,30 +166,46 @@ void main() {
       await settle(tester);
       expect(location(), '/pnp/pnpConfig/guest');
       expect(find.byType(PnpGuestStepView), findsOneWidget);
+      expect(byId('pnp-step-save'), findsOneWidget);
+      expect(byId('pnp-step-next'), findsNothing);
 
-      await tester.tap(byId('pnp-step-next'));
+      await tester.tap(byId('pnp-step-save'));
       await settle(tester);
-      expect(location(), '/pnp/pnpConfig/network');
-      expect(byId('pnp-step-save'), findsOneWidget,
-          reason: 'Your Network holds Save until #1511 P5');
+      expect(pnp.saves, 1);
+      expect(location(), '/pnp/pnpConfig/guest',
+          reason: 'the save is a phase over the step, not a place');
 
       await tester.tap(byId('pnp-step-back'));
       await settle(tester);
-      expect(location(), '/pnp/pnpConfig/guest');
+      expect(location(), '/pnp/pnpConfig/wifi');
+    });
+
+    testWidgets('Your Network is not open before the save (#1511 P5)',
+        (tester) async {
+      await pumpApp(tester);
+      await enterWizard(tester);
+
+      router.go('/pnp/pnpConfig/network');
+      await settle(tester);
+
+      expect(location(), '/pnp/pnpConfig/wifi');
+      expect(find.byType(PnpYourNetworkStepView), findsNothing);
     });
 
     testWidgets('the stepper is one widget across the steps (AC 3)',
         (tester) async {
       // Drawn by the shell, so moving between steps does not rebuild it: its
-      // State survives, which is what lets its segments animate.
+      // State survives, which is what lets its segments animate — across the
+      // save into Your Network too (D4).
       await pumpApp(tester);
       await enterWizard(tester);
       final first = tester.state(find.byType(AppStepper));
 
       router.go('/pnp/pnpConfig/guest');
       await settle(tester);
-      router.go('/pnp/pnpConfig/network');
+      pnp.moveTo(const WizardSaving());
       await settle(tester);
+      await saveLands(tester);
 
       expect(tester.state(find.byType(AppStepper)), same(first));
       expect(tester.widget<AppStepper>(find.byType(AppStepper)).currentStep, 2);
@@ -208,20 +235,19 @@ void main() {
         'comes back to the step where Save was pressed (AC 4)', (tester) async {
       await pumpApp(tester);
       await enterWizard(tester);
-      router.go('/pnp/pnpConfig/network');
+      router.go('/pnp/pnpConfig/guest');
       await settle(tester);
 
       pnp.moveTo(const WizardSaving());
       await settle(tester);
       expect(find.byType(AppStepper), findsOneWidget, reason: 'D4');
-      expect(find.byType(PnpYourNetworkStepView, skipOffstage: false),
-          findsOneWidget,
+      expect(find.byType(PnpGuestStepView, skipOffstage: false), findsOneWidget,
           reason: 'the step stays mounted under the saving screen');
 
       pnp.moveTo(const WizardConfiguring(saveError: UnexpectedError()));
       await settle(tester);
-      expect(location(), '/pnp/pnpConfig/network');
-      expect(find.byType(PnpYourNetworkStepView), findsOneWidget);
+      expect(location(), '/pnp/pnpConfig/guest');
+      expect(find.byType(PnpGuestStepView), findsOneWidget);
       expect(find.byType(SnackBar), findsOneWidget,
           reason: 'the failure is said, once (#1000)');
     });
@@ -230,7 +256,7 @@ void main() {
         (tester) async {
       await pumpApp(tester);
       await enterWizard(tester);
-      router.go('/pnp/pnpConfig/network');
+      router.go('/pnp/pnpConfig/guest');
       await settle(tester);
       pnp.moveTo(const WizardSaving());
       await settle(tester);
@@ -238,24 +264,103 @@ void main() {
       router.go('/pnp/pnpConfig/wifi');
       await settle(tester);
 
-      expect(location(), '/pnp/pnpConfig/network');
+      expect(location(), '/pnp/pnpConfig/guest');
     });
 
     for (final phase in const <PnpPhase>[
       WizardSaving(),
       WizardSaved(),
       WizardTestingReconnect(attemptCount: 1, maxAttempts: 5),
-      WizardCheckingFirmware(),
-      WizardUpdatingFirmware(version: '1.0.17'),
     ]) {
       testWidgets('${phase.runtimeType}: the wizard cannot be left',
           (tester) async {
         await pumpApp(tester);
         await enterWizard(tester);
-        router.go('/pnp/pnpConfig/network');
+        router.go('/pnp/pnpConfig/guest');
         await settle(tester);
         pnp.moveTo(phase);
         await settle(tester);
+
+        router.go(RoutePath.uspDashboard);
+        await settle(tester);
+
+        expect(location(), '/pnp/pnpConfig/guest');
+        expect(find.text('DASHBOARD'), findsNothing);
+      });
+    }
+  });
+
+  group('Your Network, after the save (#1511 P5)', () {
+    testWidgets(
+        'the save landing opens it, with the stepper, no Back, and Done',
+        (tester) async {
+      await pumpApp(tester);
+      await enterWizard(tester);
+      router.go('/pnp/pnpConfig/guest');
+      await settle(tester);
+
+      await saveLands(tester);
+
+      expect(find.byType(PnpYourNetworkStepView), findsOneWidget);
+      expect(find.byType(AppStepper), findsOneWidget, reason: 'D4');
+      expect(byId('pnp-step-back'), findsNothing,
+          reason: 'Back never crosses the save (D7)');
+      expect(byId('pnp-step-save'), findsNothing);
+
+      await tester.tap(byId('pnp-step-done'));
+      await settle(tester);
+      expect(pnp.finishes, 1, reason: 'Done runs the firmware stage (D6)');
+    });
+
+    testWidgets('Back to a setting step is refused (AC 2)', (tester) async {
+      await pumpApp(tester);
+      await enterWizard(tester);
+      router.go('/pnp/pnpConfig/guest');
+      await settle(tester);
+      await saveLands(tester);
+
+      for (final target in [
+        '/pnp/pnpConfig/guest',
+        '/pnp/pnpConfig/wifi',
+        RoutePath.pnp,
+      ]) {
+        router.go(target);
+        await settle(tester);
+        expect(location(), '/pnp/pnpConfig/network', reason: target);
+      }
+      expect(byId('pnp-leave-setup-log-out'), findsNothing,
+          reason: 'not a way out of the wizard: a refused Back stays in it');
+    });
+
+    testWidgets('it can be left: setup is saved and acknowledged',
+        (tester) async {
+      await pumpApp(tester);
+      await enterWizard(tester);
+      router.go('/pnp/pnpConfig/guest');
+      await settle(tester);
+      await saveLands(tester);
+
+      router.go(RoutePath.uspDashboard);
+      await settle(tester);
+
+      expect(location(), RoutePath.uspDashboard);
+    });
+
+    for (final phase in const <PnpPhase>[
+      WizardCheckingFirmware(),
+      WizardUpdatingFirmware(version: '1.0.17'),
+    ]) {
+      testWidgets(
+          '${phase.runtimeType}: drawn over Your Network, and the wizard '
+          'cannot be left', (tester) async {
+        await pumpApp(tester);
+        await enterWizard(tester);
+        router.go('/pnp/pnpConfig/guest');
+        await settle(tester);
+        await saveLands(tester);
+        pnp.moveTo(phase);
+        await settle(tester);
+        expect(find.byType(AppStepper), findsNothing, reason: 'D4');
 
         router.go(RoutePath.uspDashboard);
         await settle(tester);
@@ -269,9 +374,10 @@ void main() {
         (tester) async {
       await pumpApp(tester);
       await enterWizard(tester);
-      router.go('/pnp/pnpConfig/network');
+      router.go('/pnp/pnpConfig/guest');
       await settle(tester);
-      pnp.moveTo(const WizardWifiReady(ssid: 'Home', password: 'pass1234'));
+      await saveLands(tester);
+      pnp.moveTo(ready);
       await settle(tester);
       expect(find.byType(AppStepper), findsNothing, reason: 'D4');
 

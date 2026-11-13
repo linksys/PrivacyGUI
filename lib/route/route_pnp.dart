@@ -28,7 +28,11 @@ final _pnpRouteConfig = LinksysRouteConfig(
 ///   user is signed out and sent to the login page.
 /// - **Anything else** — the completion screen's Done above all — leaves, and
 ///   then the flow-level dirty guard (`preservableProvider`) asks only if a
-///   draft is still dirty, which after a save that landed none is.
+///   draft is still dirty, which after a save that landed none is. Your
+///   Network is here too (#1511 P5): the save has landed and setup is
+///   acknowledged, so leaving it skips only the firmware offer, as leaving the
+///   completion screen would. Back from it is refused by the back policy, not
+///   here — Back stays inside the wizard.
 ///
 /// **No `loggedOut` escape for the lock**, unlike `_firmwareExitGuard`: the
 /// `/pnp*` redirect passes every location through, and the only wiring of
@@ -54,6 +58,7 @@ Future<bool> _pnpWizardExitGuard(
           NoInternet() ||
           WizardInitializing() ||
           WizardNeedsReconnect() ||
+          WizardYourNetwork() ||
           WizardWifiReady() ||
           WizardError():
       return true;

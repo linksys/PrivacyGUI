@@ -197,6 +197,30 @@ class WizardTestingReconnect extends PnpPhase {
   List<Object?> get props => [attemptCount, maxAttempts];
 }
 
+/// The save has landed and setup is acknowledged; the user is on Your Network,
+/// adding nodes if they want (#1511 P5).
+///
+/// **Its own phase, after the commit (D3).** Before #1511 P5 Your Network was
+/// the last step of [WizardConfiguring] and held Save, so a node joined with the
+/// Wi-Fi it then had and was moved to the new one by the save. Now the save is
+/// on the last setting step and this step comes after it: a node added here
+/// joins with the Wi-Fi the user has just set, and nothing on this step edits
+/// the Wi-Fi. The node re-read after an add belongs to this phase
+/// (`PnpNotifier.refreshMeshNodes`).
+///
+/// Its Done runs the firmware stage and then the completion screen (D6), so
+/// [ready] — what that screen will show, built from the write at the save — is
+/// carried here until then. See [WizardWifiReady] for why it is the
+/// credentials and not the configuration (REQ-B4).
+class WizardYourNetwork extends PnpPhase {
+  final WizardWifiReady ready;
+
+  const WizardYourNetwork({required this.ready});
+
+  @override
+  List<Object?> get props => [ready];
+}
+
 /// Checking for available firmware updates.
 class WizardCheckingFirmware extends PnpPhase {
   const WizardCheckingFirmware();

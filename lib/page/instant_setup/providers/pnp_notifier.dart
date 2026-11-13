@@ -158,16 +158,19 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
 
   /// Reads the mesh nodes again, for the Your Network step after an add (#1734).
   ///
+  /// **Your Network's, and only its** (#1511 P5): nodes are added there, after
+  /// the save, so anywhere else this asks the router nothing.
+  ///
   /// Replaces [PnpState.meshNodes] and nothing else. Since #1511 P4 the nodes
-  /// are flow data rather than part of the phase, so this cannot clobber a save
-  /// pressed while the read was out, and needs no phase check: what the user
-  /// typed is in the drafts, and the step is in the URL.
+  /// are flow data rather than part of the phase, so an answer that lands after
+  /// the user has pressed Done cannot clobber the firmware stage Done started.
   ///
   /// An empty answer keeps the list it had. The controller is always a row of
   /// its own DataElements, so a network that had nodes and reads none has not
   /// lost them: [PnpService.fetchMeshTopology] answers a failed read with an
   /// empty topology rather than throwing.
   Future<void> refreshMeshNodes() async {
+    if (state.phase is! WizardYourNetwork) return;
     final mesh = await _svc.fetchMeshTopology();
     if (mesh.nodes.isEmpty) {
       logger.w('[PnP] Mesh re-read returned no nodes; keeping the '
@@ -180,7 +183,12 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   // ─── Save ────────────────────────────────────────────────
 
   /// Save the WiFi form in one write, wait for the router to be reachable again,
-  /// and finish setup.
+  /// acknowledge setup and open Your Network.
+  ///
+  /// **Pressed on the last setting step** (#1511 P5): Your Network comes after
+  /// it, so a node added there joins with what this writes (D3). The firmware
+  /// stage is not run from here any more but from Your Network's Done,
+  /// [finishWizard] (D6).
   ///
   /// **One write.** Any WiFi write restarts every radio — main network included,
   /// even for a guest-only change (bench, FLWRT 2.0.2) — so only the first of
@@ -349,18 +357,38 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   }
 
   /// With the WiFi written and the router reachable: acknowledge setup, mark
-  /// the drafts saved, then run the firmware stage.
+  /// the drafts saved, then open Your Network.
   ///
   /// The drafts are marked saved only here, once the write is known to have
   /// landed: a save that comes back to the form — refused, never applied, or
   /// lost across the reconnect — leaves them holding the edits to send again.
+  ///
+  /// The completion screen's credentials are built here, from the write, and
+  /// carried by Your Network to the firmware stage: after a flash there may be
+  /// no session left to build them from (REQ-B4).
   Future<void> _finishSave(PnpWifiWrite write) async {
     await _acknowledgeSetup();
     state = state.copyWith(phase: const WizardSaved());
     for (final id in state.plan?.settingStepIds ?? const <String>[]) {
       ref.read(pnpSettingStep(id).draft).markAsSaved();
     }
-    await _checkFirmware(WizardWifiReady.fromWrite(write));
+    _enterYourNetwork(WizardWifiReady.fromWrite(write));
+  }
+
+  /// Opens Your Network, after the commit (#1511 P5): the shell navigates to
+  /// its step when the flow enters this phase (`pnpFlowDestination`).
+  void _enterYourNetwork(WizardWifiReady ready) =>
+      state = state.copyWith(phase: WizardYourNetwork(ready: ready));
+
+  /// Your Network's Done: the user has added the nodes they want, so offer the
+  /// router a newer firmware and finish on the completion screen (D6).
+  ///
+  /// Anywhere but Your Network this does nothing — the stage must run once, and
+  /// a second tap while it runs is not a second stage.
+  Future<void> finishWizard() async {
+    final phase = state.phase;
+    if (phase is! WizardYourNetwork) return;
+    await _checkFirmware(phase.ready);
   }
 
   /// Acknowledge PnP completion and save serial number.
@@ -403,7 +431,7 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
 
   /// The reconnect step's Next: the user says they have joined the network, so
   /// try the router again with exponential backoff (2, 4, 8, 16, 32 s), then
-  /// finish setup as [saveChanges] would have.
+  /// finish the save as [saveChanges] would have — into Your Network.
   Future<void> testReconnect() async {
     const maxAttempts = 5;
     final phase = state.phase;
@@ -424,7 +452,7 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
       if (write == null) {
         // Only the demo launcher builds this phase without a write.
         state = state.copyWith(phase: const WizardSaved());
-        await _checkFirmware(
+        _enterYourNetwork(
           WizardWifiReady(ssid: phase.newSsid, password: phase.newPassword),
         );
         return;
@@ -456,11 +484,11 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   /// either way.
   ///
   /// **A flow stage, not a form step (REQ-B0).** It runs after `saveWifi` has been
-  /// committed — from `saveChanges()` when the main WiFi did not change, and from
-  /// [testReconnect] when it did — so the plan's step count is untouched by any of
-  /// this. A user who reaches here has a configured router whatever
-  /// happens next, which is what lets every failure below end in
-  /// [WizardWifiReady].
+  /// committed and after Your Network — from [finishWizard], that step's Done
+  /// (#1511 P5, D6): one reboot of the whole mesh at the end, after any nodes
+  /// have joined — so the plan's step count is untouched by any of this. A user
+  /// who reaches here has a configured router whatever happens next, which is
+  /// what lets every failure below end in [WizardWifiReady].
   ///
   /// **Every exit is [WizardWifiReady] (REQ-B3).** A read that throws, a router
   /// with no `ota` row, a check that finds nothing, a fifteen-second wait with no
@@ -470,8 +498,8 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   /// **The reboot belongs to the recovery framework, and only to it (REQ-B5).**
   /// PnP has its own reconnect — [testReconnect], with exponential backoff and
   /// `uspAuthCoordinator.restoreSession` — and it is **not** involved here. The two
-  /// are sequential by construction: [testReconnect] has already returned before
-  /// this method is called, and `saveChanges()`'s other arm never enters it. So the
+  /// are sequential by construction: the reconnect ends in Your Network, and only
+  /// Your Network's Done enters this method. So the
   /// flash's reboot is waited out by `enterRecoveryWaiting()` +
   /// [appConnectionStateProvider], which is the path that also parks the SSE
   /// channel and checks the serial fingerprint on the way back. Two reconnect

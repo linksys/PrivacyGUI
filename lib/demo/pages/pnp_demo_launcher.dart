@@ -164,10 +164,14 @@ class PnpDemoLauncher extends ConsumerWidget {
         icon: Icons.sync,
         title: 'Reconnect',
         subtitle: 'WiFi reconnection waiting',
-        onTap: () => startAt(DemoPnpStart.phase(WizardNeedsReconnect(
-          newSsid: _mockRouter.main.ssid,
-          newPassword: _mockRouter.main.password,
-        ))),
+        // In the wizard, because its Next goes on to Your Network.
+        onTap: () => startAt(DemoPnpStart.wizard(
+          _mockRouter,
+          at: WizardNeedsReconnect(
+            newSsid: _mockRouter.main.ssid,
+            newPassword: _mockRouter.main.password,
+          ),
+        )),
       ),
     ];
   }

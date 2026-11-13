@@ -4,9 +4,16 @@ import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_settings.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_notifier.dart';
 
 /// Where the demo launcher asked the next PnP run to start: at the wizard's
-/// steps on [wizard]'s router data, or at [phase].
+/// steps on [wizard]'s router data — and then at [phase], if given — or at
+/// [phase] alone.
+///
+/// A phase after the save goes through the steps first, because only a flow
+/// with a plan can reach Your Network, which comes after the save (#1511 P5):
+/// without one the back policy sends Your Network back to the entry, which for
+/// a flow past its checks draws only a spinner.
 class DemoPnpStart {
-  const DemoPnpStart.wizard(PnpWizardData this.wizard) : phase = null;
+  const DemoPnpStart.wizard(PnpWizardData this.wizard, {PnpPhase? at})
+      : phase = at;
   const DemoPnpStart.phase(PnpPhase this.phase) : wizard = null;
 
   final PnpWizardData? wizard;

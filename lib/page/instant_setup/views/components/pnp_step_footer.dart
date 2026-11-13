@@ -7,15 +7,17 @@ import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-/// A PnP wizard step's Back and Next — or Save, on the plan's save step
-/// (#1511 P4).
+/// A PnP wizard step's Back and Next — or Save, on the plan's save step, or
+/// Done, on the last step (#1511 P4, P5).
 ///
 /// **Save placement is read from the plan, not written by the step.** A step
 /// says only who it is ([stepId]) and whether the user may go on
 /// ([canContinue]); which neighbour Back and Next go to, and whether the
-/// primary button is Next or Save, come from `PnpFlowPlan`. So a step added to
-/// the step list gets the right buttons without editing any other step, and
-/// #1511 P5 moves Save by changing `PnpFlowPlan.saveStepId` alone.
+/// primary button is Next, Save or Done, come from `PnpFlowPlan`. So a step
+/// added to the step list gets the right buttons without editing any other
+/// step. Save is on the last setting step (#1511 P5); Your Network, after it,
+/// has no Back — Back never crosses the save — and its Done finishes the
+/// wizard, as 1.x's Your Network did.
 class PnpStepFooter extends ConsumerWidget {
   const PnpStepFooter({
     super.key,
@@ -35,14 +37,17 @@ class PnpStepFooter extends ConsumerWidget {
     final before = plan.stepBefore(stepId);
     final after = plan.stepAfter(stepId);
     final isSaveStep = stepId == plan.saveStepId;
+    final isLastStep = stepId == plan.stepIds.last;
 
     final VoidCallback? primary = !canContinue
         ? null
         : isSaveStep
             ? () => ref.read(pnpProvider.notifier).saveChanges()
-            : after == null
-                ? null
-                : () => context.goNamed(RouteNamed.pnpStep(after));
+            : isLastStep
+                ? () => ref.read(pnpProvider.notifier).finishWizard()
+                : after == null
+                    ? null
+                    : () => context.goNamed(RouteNamed.pnpStep(after));
 
     // A `Wrap`, not a `Row`: at 320px Back beside Save overflowed in `el` by 17px
     // on Your Network (#1511 P4, the first sweep that step ever had), and the
@@ -72,11 +77,17 @@ class PnpStepFooter extends ConsumerWidget {
             },
           ),
         // One footer on screen at a time — the step pages replace each other —
-        // so the two hooks are singletons.
+        // so the three hooks are singletons.
         if (isSaveStep)
           AppButton(
             label: loc(context).save,
             identifier: 'pnp-step-save',
+            onTap: primary,
+          )
+        else if (isLastStep)
+          AppButton(
+            label: loc(context).done,
+            identifier: 'pnp-step-done',
             onTap: primary,
           )
         else
