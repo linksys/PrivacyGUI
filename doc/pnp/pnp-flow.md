@@ -113,6 +113,17 @@ wizard on `WizardConfiguring` (not after a failed save, not on an edit) and hand
 `NoInternet` to troubleshooting. The views render phases; none of them navigates
 on one.
 
+### How long the flow lives
+
+Since #1511 P3 `pnpProvider` is `autoDispose`, and `PnpFlowShell`'s subscription
+is what holds it: the flow lives exactly while the user is in the `/pnp` tree.
+Leaving it ends the flow — for the dashboard after the completion screen, or for
+troubleshooting before the wizard — and the next visit starts a new one at
+`AdminCheckingInternet`; nothing has to `invalidate` it. The firmware stage's
+reboot does not end it, because the wizard is locked while the stage runs, so
+the shell stays on screen. `PnpNotifier.build()` must stay side-effect free:
+the flow is started by the entry (`startPostLoginFlow()`), never by being read.
+
 ### Troubleshooting phases (`TroubleshootingPhase`, not `PnpPhase`)
 
 Since #1511 P1 the no-internet troubleshooting flow is a sub-flow with state of

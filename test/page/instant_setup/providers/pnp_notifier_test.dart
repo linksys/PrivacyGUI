@@ -197,6 +197,17 @@ class StaleFirmwareBanksDataNotifier extends FirmwareBanksDataNotifier {
   }
 }
 
+/// [container], holding the flow the way `PnpFlowShell` does in the app.
+///
+/// `pnpProvider` is `autoDispose` since #1511 P3, and alive only while
+/// something watches it. Here nothing does, so without this a flow read with
+/// `container.read` is disposed between the awaits of the transition under
+/// test, and the next `state =` lands on a dead notifier.
+ProviderContainer _holdingTheFlow(ProviderContainer container) {
+  container.listen(pnpProvider, (_, __) {});
+  return container;
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(FakePnpWifiConfig());
@@ -233,7 +244,7 @@ void main() {
   });
 
   ProviderContainer createContainer() {
-    return ProviderContainer(
+    return _holdingTheFlow(ProviderContainer(
       overrides: [
         uspClientProvider.overrideWithValue(mockUsp),
         pnpServiceProvider.overrideWithValue(mockPnpService),
@@ -241,7 +252,7 @@ void main() {
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
         sessionProvider.overrideWith(() => mockSessionNotifier),
       ],
-    );
+    ));
   }
 
   group('PnpNotifier — startPostLoginFlow', () {
@@ -584,7 +595,7 @@ void main() {
     }) {
       when(() => mockPnpStatusService.acknowledge(any()))
           .thenAnswer((_) async {});
-      return ProviderContainer(
+      return _holdingTheFlow(ProviderContainer(
         overrides: [
           uspClientProvider.overrideWithValue(mockUsp),
           pnpServiceProvider.overrideWithValue(mockPnpService),
@@ -604,7 +615,7 @@ void main() {
                     readsBanksOnCheck: false,
                   )),
         ],
-      );
+      ));
     }
 
     /// Logs in the way the app does, so the state carries the serial number
@@ -897,7 +908,7 @@ void main() {
       Duration checkDeadline = const Duration(seconds: 15),
       Duration rebootDeadline = const Duration(milliseconds: 200),
     }) {
-      final container = ProviderContainer(
+      final container = _holdingTheFlow(ProviderContainer(
         overrides: [
           uspClientProvider.overrideWithValue(mockUsp),
           pnpServiceProvider.overrideWithValue(mockPnpService),
@@ -920,7 +931,7 @@ void main() {
           pnpSaveDeadlineProvider
               .overrideWithValue(const Duration(milliseconds: 50)),
         ],
-      );
+      ));
       // Mounts the connection notifier. [SpyAppConnectionStateNotifier.publish] is
       // a state write, and a `Notifier` nothing has read yet has no element to
       // write to — it throws `LateInitializationError`, which `_checkFirmware`

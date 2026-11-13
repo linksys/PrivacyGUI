@@ -21,11 +21,15 @@ import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart'
 
 /// PnP state machine notifier.
 ///
-/// Uses [Notifier] (not AsyncNotifier) because the flow has discrete
-/// phase transitions rather than a single async build().
-class PnpNotifier extends Notifier<PnpState> {
+/// Uses a synchronous notifier (not AsyncNotifier) because the flow has
+/// discrete phase transitions rather than a single async build().
+///
+/// `autoDispose`, alive while `PnpFlowShell` watches it — see [pnpProvider].
+class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   PnpService get _svc => ref.read(pnpServiceProvider);
 
+  /// Side-effect free on purpose: the flow is started by its entry, never by
+  /// being read (see [pnpProvider]).
   @override
   PnpState build() => PnpState.initial();
 
@@ -571,10 +575,14 @@ class PnpNotifier extends Notifier<PnpState> {
     // here — before the stage — for the reason a persisted copy used to be written
     // here: after the flash is dispatched there may be no session left to build it
     // from. What the router reboot cannot touch is this object: it is a router
-    // restart, not a page reload, so the container and `pnpProvider` (not
-    // `autoDispose`) are still the same ones. Verified on hardware 2026-09-16 —
-    // `..15 → ..16` from PnP, and the completion screen showed the SSID and
-    // passphrase that had just been configured.
+    // restart, not a page reload, so the container is still the same one, and
+    // `pnpProvider` — `autoDispose` since #1511 P3 — is still alive because
+    // `PnpFlowShell` is still on screen watching it: the wizard is locked for the
+    // whole stage (`_pnpFirmwareExitGuard`), so nothing can take the user out of
+    // the shell while the router is away. Before #1511 P3 it was the provider not
+    // being `autoDispose` that kept it; verified on hardware 2026-09-16 — `..15 →
+    // ..16` from PnP, and the completion screen showed the SSID and passphrase
+    // that had just been configured.
     state = state.copyWith(phase: const WizardCheckingFirmware());
 
     // Everything from here to the `finally` is inside the try, not just
@@ -596,6 +604,11 @@ class PnpNotifier extends Notifier<PnpState> {
       // starts watching when the phase below is published. A listener whose
       // callback does nothing is the keep-alive: what it is for is the
       // subscription, not the notifications.
+      //
+      // Kept through #1511 P3 on purpose: the shell keeps *this* flow alive, not
+      // the firmware page's notifier, and PnP's view only watches that one while
+      // `WizardUpdatingFirmware` is on screen — the check before it runs with
+      // nothing else holding it.
       keepAlive = ref.listen(firmwareUpdateNotifierProvider, (_, __) {});
       final firmware = ref.read(firmwareUpdateNotifierProvider.notifier);
       try {
@@ -760,7 +773,9 @@ class PnpNotifier extends Notifier<PnpState> {
 
   // ─── Demo ─────────────────────────────────────────────────
 
-  /// Demo only: directly set phase for UI testing.
+  /// Demo only: directly set phase for UI testing — `DemoPnpNotifier` starts a
+  /// run at the phase the demo launcher picked with it. Tests use it to pin a
+  /// phase too.
   void setDemoPhase(PnpPhase phase) {
     state = state.copyWith(phase: phase);
   }

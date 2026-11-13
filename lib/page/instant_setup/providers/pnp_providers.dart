@@ -2,7 +2,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_notifier.dart';
 
-final pnpProvider = NotifierProvider<PnpNotifier, PnpState>(
+/// The PnP flow: where the user is, from the entry checks to the completion
+/// screen.
+///
+/// `autoDispose`, and kept alive by `PnpFlowShell` watching it (#1511 P3) —
+/// so its lifetime is exactly "the user is in the `/pnp` tree". Leaving the
+/// tree ends the flow, whether for the dashboard after completion or for
+/// troubleshooting before the wizard; coming back starts a new one, and no call
+/// site has to `invalidate` it. Before, it was a plain `NotifierProvider`: an
+/// L2 working copy on an L1 lifetime, so a second run inherited the last run's
+/// phase.
+///
+/// **`PnpNotifier.build()` must stay side-effect free.** Whatever reads the
+/// flow first creates it, and a read with no one watching yet can create an
+/// instance Riverpod then drops; that is harmless only because `build()` just
+/// returns [PnpState.initial]. The flow is started by its entry,
+/// `startPostLoginFlow()`, never by `build()`.
+final pnpProvider = NotifierProvider.autoDispose<PnpNotifier, PnpState>(
   PnpNotifier.new,
 );
 

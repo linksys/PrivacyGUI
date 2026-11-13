@@ -242,7 +242,8 @@ troubleshooting's now — they listen to `internetTroubleshootingProvider`, not 
 (#18) hands a finished run over, to its caller's ending — and #17's two navigations moved into `PnpFlowShell`
 (`pnp_flow_shell.dart`), the one listener on `pnpProvider` that navigates
 (`test/architecture/pnp_phase_navigation_owner_test.dart`). `retryInternetCheck()` below is troubleshooting's too.
-Re-measure before reusing these rows for #1512.
+And since #1511 P3 `pnpProvider` is `NotifierProvider.autoDispose`, not the `NotifierProvider` the population
+table lists. Re-measure before reusing these rows for #1512.
 
 Producer note, corrected during this audit: a consecutive-equal `PnpState` **is** reachable in production —
 `retryInternetCheck()` (`pnp_notifier.dart:404`) assigns `const AdminCheckingInternet()`, so a double-tap on

@@ -39,11 +39,13 @@ PnpFlowDestination? pnpFlowDestination(PnpPhase? previous, PnpPhase next) {
 
 /// The `ShellRoute` body over the `/pnp` tree (#1511 P2).
 ///
-/// It owns the flow's phase→page mapping, [pnpFlowDestination], and nothing
-/// else yet: the stepper and the flow's lifetime move here in later phases of
-/// #1511. A shell's own widget is not rebuilt while the user moves between its
-/// child routes, so it is the one place that sees every phase change for as long
-/// as the user is in the flow.
+/// It owns two things. The flow's phase→page mapping, [pnpFlowDestination]. And
+/// since #1511 P3 the flow's **lifetime**: `pnpProvider` is `autoDispose`, and
+/// the subscription below is what holds it, so the flow lives exactly while the
+/// user is in the `/pnp` tree and a second visit starts a new one. A shell's own
+/// widget is not rebuilt while the user moves between its child routes, so it is
+/// the one place that sees every phase change for as long as the user is in the
+/// flow. The stepper moves here in a later phase of #1511.
 ///
 /// Not named `*_view.dart` on purpose: it is not a page, and the layout gate's
 /// roster counts every `views/*_view.dart` as one.
@@ -55,6 +57,8 @@ class PnpFlowShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // This subscription is also the flow's keep-alive (#1511 P3): it is the one
+    // thing holding `pnpProvider` for as long as this shell is mounted.
     ref.listen(pnpProvider, (previous, next) {
       switch (pnpFlowDestination(previous?.phase, next.phase)) {
         case PnpFlowDestination.wizard:

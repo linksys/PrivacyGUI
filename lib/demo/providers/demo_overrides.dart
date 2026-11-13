@@ -21,6 +21,8 @@ import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_token_storage.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/package_widget_loader.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
+import 'demo_pnp.dart';
 import 'demo_router_provider.dart';
 import 'demo_package_widget_loader.dart';
 
@@ -79,6 +81,10 @@ class DemoProviders {
       // this line the exhaustive `switch` in `appModeProfileProvider` — the guard
       // the whole of #1474 rests on — would carry an arm nothing could produce.
       appModeProvider.overrideWithValue(AppMode.demo),
+
+      // 11. PnP: the real flow, whose entry can start at the phase the demo
+      // launcher picked (`demoPnpStartPhaseProvider`, #1511 P3).
+      pnpProvider.overrideWith(DemoPnpNotifier.new),
     ];
   }
 }
