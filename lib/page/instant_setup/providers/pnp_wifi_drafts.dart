@@ -15,7 +15,8 @@ import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_settings.dart';
 /// any notifier using the mixin. The last three methods below are one line
 /// each on the draft's `Preservable`. What the route guards with is the
 /// flow-level guard over the drafts, `pnpWizardDraftsProvider`, a
-/// `PreservableContract`.
+/// `PreservableContract`. Constitution Article IV §4.2 records this as the
+/// exception for the steps of a flow that saves once.
 ///
 /// **The flow begins the drafts; a draft never reads the flow.** The flow reads
 /// the drafts when it saves, so a draft that also read the flow would be a

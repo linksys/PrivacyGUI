@@ -4,7 +4,7 @@
 **Status:** Active
 **Context:** Source of Truth for Architectural Discipline
 **Ratified:** 2025-12-09
-**Last Amended:** 2026-11-11
+**Last Amended:** 2026-11-13
 
 ## Preamble
 This document establishes the immutable principles governing the development process of the Linksys Flutter application. It serves as the architectural DNA of the system, ensuring consistency, simplicity, and quality across all implementations.
@@ -478,6 +478,9 @@ involved, so this does not bend Rule 2 below, which governs L2 notifiers reading
 - State MUST extend `FeatureState<TSettings, TStatus>`
 - Implement `performFetch()` and `performSave()` template methods
 - Pass the notifier provider's `.notifier` to the route — the mixin already makes the notifier a `PreservableContract`, so no second provider is needed
+- **Exception — the steps of a flow that saves once.** When a multi-step flow writes every step together, from the flow, in one save (the PnP wizard), each step keeps its working copy in an `AutoDispose` notifier whose state still extends `FeatureState<TSettings, TStatus>` over a `Preservable`, but **without** `PreservableAutoDisposeNotifierMixin`: a step never reads or writes the router on its own, so the mixin's `performFetch`/`performSave` template has nothing to run, and `has_service_error_roster_test.dart` rightly refuses a mixin user whose status can carry no read error. Each step implements `isDirty()`/`revert()`/`markAsSaved()` on its `Preservable`, and the route's guard is one `PreservableContract` over the steps — the `_WifiPageDirtyProxy` shape (`pnpWizardDraftsProvider`). A page whose notifier fetches or saves is not this case.
+
+*Amended 2026-11-13 (#1511 P4): the exception was added. Rationale: the PnP wizard's steps became one draft each, and the flow — not a step — reads the router once when the wizard starts and writes every step in one SET, because any Wi-Fi write restarts every radio. Taking the mixin meant two template methods that throw and a status with a fake error field to satisfy the roster test. Backwards compatible: it adds an exception and narrows nothing; no existing page changes, and the roster test still binds every notifier that uses the mixin.*
 
 **Route Configuration**:
 ```dart
