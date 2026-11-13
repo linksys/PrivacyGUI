@@ -39,7 +39,7 @@ class WiFiQRWarningCard extends StatelessWidget {
           const AppGap.medium(),
           AppIconButton.noPadding(
             icon: LinksysIcons.help,
-            semanticLabel: 'info',
+            semanticLabel: 'help',
             color: Theme.of(context).colorScheme.primary,
             onTap: () => showWiFiQRInfoModal(context),
           ),

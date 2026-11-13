@@ -18,6 +18,7 @@ import 'package:privacy_gui/page/instant_setup/widgets/wifi_ssid_widget.dart';
 import 'package:privacy_gui/page/components/widgets/wifi_qr/wifi_qr_warning_card.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 import '../../common/di.dart';
 import '../../common/testable_router.dart';
 import '../../common/theme_data.dart';
@@ -101,6 +102,12 @@ void main() async {
       find.textContaining('Personalizing your WiFi is optional');
   final reminder = find.textContaining('Keep in mind');
   final warning = find.textContaining('will stop the QR codes');
+  final warningCard = find.byType(WiFiQRWarningCard);
+  // The whole card a band's fields sit in, not just its title inside the
+  // card's padding.
+  final firstBandCard = find
+      .ancestor(of: find.text('2.4 GHz'), matching: find.byType(AppCard))
+      .first;
 
   // Read top to bottom: [above] ends before [below] starts.
   void expectAbove(WidgetTester tester, Finder above, Finder below) {
@@ -156,8 +163,8 @@ void main() async {
 
     await tester.enterText(ssidField, 'MyHomeWiFi');
     await tester.pumpAndSettle();
-    expectAbove(tester, optionalNotice, warning);
-    expectAbove(tester, warning, find.byType(WiFiSSIDField));
+    expectAbove(tester, optionalNotice, warningCard);
+    expectAbove(tester, warningCard, find.byType(WiFiSSIDField));
   });
 
   // With per-band names, the fields sit in one card per band - the reminder,
@@ -191,12 +198,12 @@ void main() async {
     await pumpPersonalizeStep(tester, const Size(1280, 1600));
 
     expectAbove(tester, optionalNotice, reminder);
-    expectAbove(tester, reminder, find.text('2.4 GHz'));
+    expectAbove(tester, reminder, firstBandCard);
 
     await tester.enterText(ssidField.first, 'MyHomeWiFi');
     await tester.pumpAndSettle();
-    expectAbove(tester, optionalNotice, warning);
-    expectAbove(tester, warning, find.text('2.4 GHz'));
+    expectAbove(tester, optionalNotice, warningCard);
+    expectAbove(tester, warningCard, firstBandCard);
   });
 
   // The QR warning must track the fields, not the visit: keeping the shipped
@@ -220,6 +227,17 @@ void main() async {
     await tester.pumpAndSettle();
     expect(warning, findsNothing);
     expect(reminder, findsOneWidget);
+  });
+
+  // A screen reader announces the button as the help icon it shows, both on
+  // the reminder and on the warning card that replaces it.
+  testWidgets('the explain button is announced as help', (tester) async {
+    await pumpPersonalizeStep(tester, const Size(1280, 1200));
+    expect(find.bySemanticsLabel('help'), findsOneWidget);
+
+    await tester.enterText(ssidField, 'MyHomeWiFi');
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('help'), findsOneWidget);
   });
 
   // The warning is about the printed QR codes, so its help button explains

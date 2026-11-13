@@ -16,6 +16,7 @@ import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../common/_index.dart';
@@ -128,13 +129,20 @@ void main() {
       (tester) async {
     await pumpWiFiList(tester, edited: simple(ssid: 'MyNewWiFi'));
 
+    // Whole cards, not the text inside their padding, so an overlap fails too.
+    Finder cardWith(Finder text) =>
+        find.ancestor(of: text, matching: find.byType(AppCard)).first;
+    final warningCard = find.byType(WiFiQRWarningCard);
     expect(
-      tester.getBottomLeft(find.textContaining('Easily customize')).dy,
-      lessThanOrEqualTo(tester.getTopLeft(warning).dy),
+      tester
+          .getBottomLeft(cardWith(find.textContaining('Easily customize')))
+          .dy,
+      lessThanOrEqualTo(tester.getTopLeft(warningCard).dy),
     );
     expect(
-      tester.getBottomLeft(warning).dy,
-      lessThanOrEqualTo(tester.getTopLeft(find.text('Quick Setup')).dy),
+      tester.getBottomLeft(warningCard).dy,
+      lessThanOrEqualTo(
+          tester.getTopLeft(cardWith(find.text('Quick Setup'))).dy),
     );
   });
 
@@ -144,6 +152,14 @@ void main() {
       (tester) async {
     await pumpWiFiList(tester, edited: simple(ssid: 'MyNewWiFi'));
 
+    // Announced as the help icon it shows, too.
+    expect(
+      find.descendant(
+        of: find.byType(WiFiQRWarningCard),
+        matching: find.bySemanticsLabel('help'),
+      ),
+      findsOneWidget,
+    );
     await tester.tap(find.descendant(
       of: find.byType(WiFiQRWarningCard),
       matching: find.byIcon(LinksysIcons.help),

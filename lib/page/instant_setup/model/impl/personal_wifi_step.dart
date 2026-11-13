@@ -254,7 +254,7 @@ class PersonalWiFiStep extends PnpStep {
   Widget _buildInfoButton(BuildContext context) {
     return AppIconButton.noPadding(
       icon: LinksysIcons.help,
-      semanticLabel: 'info',
+      semanticLabel: 'help',
       color: Theme.of(context).colorScheme.primary,
       onTap: () {
         _showDefaultsInfoModal(context);
