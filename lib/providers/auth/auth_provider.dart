@@ -444,6 +444,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       // this revocation.
       _aiStartupReconciled = true;
       _aiLogoutCount++;
+      // A widget bundle still downloading must not re-arm itself on the login
+      // screen when it finishes.
+      ref.read(routerAiDisarmProvider)();
       // Optional server revocation must not delay native logout or retain the
       // previous authenticated state while the endpoint is unavailable.
       unawaited(_logoutAiSession());

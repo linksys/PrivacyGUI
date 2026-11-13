@@ -28,7 +28,19 @@ bool loadRouterAiBundle() {
   return impl.injectRouterAiBundle(routerAiBundlePath);
 }
 
+/// Disarms the widget on logout. The bundle downloads asynchronously, so a
+/// logout can land before it has run; without this its load callback would
+/// re-arm the widget on the login screen.
+void disarmRouterAiBundle() {
+  if (!BuildConfig.enableRouterAi) return;
+  impl.disarmInjectedRouterAiBundle();
+}
+
 /// Indirection so tests can observe when, and whether, AuthNotifier shows the
 /// widget without a browser.
 final routerAiLoaderProvider =
     Provider<bool Function()>((ref) => loadRouterAiBundle);
+
+/// Indirection so tests can observe that logout disarms the widget.
+final routerAiDisarmProvider =
+    Provider<void Function()>((ref) => disarmRouterAiBundle);

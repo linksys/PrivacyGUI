@@ -256,12 +256,14 @@ void main() {
   // bootstrap have both succeeded.
   group('Router AI widget is shown only after login', () {
     late int widgetLoads;
+    late int widgetDisarms;
     late MockRouterRepository router;
 
     setUp(() {
       FlutterSecureStorage.setMockInitialValues({});
       SharedPreferences.setMockInitialValues({});
       widgetLoads = 0;
+      widgetDisarms = 0;
       router = MockRouterRepository();
       stubLogin(router, jnapResultOk);
     });
@@ -273,6 +275,9 @@ void main() {
         routerAiLoaderProvider.overrideWithValue(() {
           widgetLoads++;
           return true;
+        }),
+        routerAiDisarmProvider.overrideWithValue(() {
+          widgetDisarms++;
         }),
       ]);
       addTearDown(container.dispose);
@@ -365,6 +370,24 @@ void main() {
 
       expect(container.read(authProvider).value?.loginType, LoginType.none);
       expect(widgetLoads, 0);
+    });
+
+    test('every logout disarms a widget bundle that may still be loading',
+        () async {
+      final container = containerWith(_RecordingAiSessionService());
+
+      await container.read(authProvider.future);
+      final auth = container.read(authProvider.notifier);
+      await auth.init();
+      expect(widgetDisarms, 0, reason: 'startup has nothing to disarm');
+      await auth.localLogin('CandidateSecret!');
+      await pumpEventQueue();
+      await auth.logout();
+      expect(widgetDisarms, 1);
+      await auth.localLogin('CandidateSecret!');
+      await pumpEventQueue();
+      await container.read(idleLogoutProvider)();
+      expect(widgetDisarms, 2, reason: 'idle logout uses the same path');
     });
 
     test('logging in again in the same tab shows the widget again', () async {
