@@ -38,14 +38,18 @@ class _DrivenPnp extends FixedPnpNotifier {
 
 class _MockPnpService extends Mock implements PnpService {}
 
-/// Signed in, and records the logout.
+/// Signed in unless told otherwise, and records the logout.
 class _Auth extends AuthNotifier {
+  _Auth({this.signedIn = true});
+
+  final bool signedIn;
   int logouts = 0;
   EndCause? cause;
 
   @override
-  Future<AuthState> build() async =>
-      const AuthState(loginType: LoginType.local);
+  Future<AuthState> build() async => signedIn
+      ? const AuthState(loginType: LoginType.local)
+      : AuthState.empty();
 
   @override
   Future<void> logout({EndCause cause = EndCause.sessionLost}) async {
@@ -74,12 +78,16 @@ void main() {
   }
 
   /// The app at [initial] with a fresh flow.
-  Future<void> pumpApp(WidgetTester tester, {String initial = '/pnp'}) async {
+  Future<void> pumpApp(
+    WidgetTester tester, {
+    String initial = '/pnp',
+    bool signedIn = true,
+  }) async {
     tester.view.physicalSize = const Size(1280, 2000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
     pnp = _DrivenPnp();
-    auth = _Auth();
+    auth = _Auth(signedIn: signedIn);
     router = GoRouter(
       navigatorKey: routerKey,
       initialLocation: initial,
@@ -295,6 +303,25 @@ void main() {
           container(tester).read(pnpMainWifiDraftProvider.notifier).isDirty(),
           isTrue);
       expect(auth.logouts, 0);
+    });
+
+    testWidgets('asks even when the session is already gone', (tester) async {
+      // Found in a real browser on the demo build, whose auth reads signed
+      // out: Back from the first step went straight to the entry, which only
+      // shows a spinner for a flow past its checks. Signed in or not, leaving
+      // the setup goes through the prompt and ends on the login page.
+      await pumpApp(tester, signedIn: false);
+      await enterWizard(tester);
+
+      router.go(RoutePath.pnp);
+      await settle(tester);
+
+      expect(byId('pnp-leave-setup-log-out'), findsOneWidget);
+      expect(location(), isNot(RoutePath.pnp));
+
+      await tester.tap(byId('pnp-leave-setup-log-out'));
+      await settle(tester);
+      expect(location(), RoutePath.localLoginPassword);
     });
 
     testWidgets(

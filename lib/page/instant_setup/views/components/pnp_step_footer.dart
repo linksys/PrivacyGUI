@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/utils/browser_history/browser_history.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -59,7 +60,16 @@ class PnpStepFooter extends ConsumerWidget {
           AppButton.text(
             label: loc(context).back,
             identifier: 'pnp-step-back',
-            onTap: () => context.goNamed(RouteNamed.pnpStep(before)),
+            onTap: () {
+              // The browser's own Back on web, so this Back and the browser's
+              // are one action and history does not grow (see
+              // `browserHistoryBack`). Safe here: a step with a Back is only
+              // reached by Next from the step before it, so the previous
+              // history entry is that step.
+              if (!browserHistoryBack()) {
+                context.goNamed(RouteNamed.pnpStep(before));
+              }
+            },
           ),
         // One footer on screen at a time — the step pages replace each other —
         // so the two hooks are singletons.

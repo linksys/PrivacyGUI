@@ -33,8 +33,9 @@ final _pnpRouteConfig = LinksysRouteConfig(
 /// **No `loggedOut` escape for the lock**, unlike `_firmwareExitGuard`: the
 /// `/pnp*` redirect passes every location through, and the only wiring of
 /// `listenForCoreSessionExit` is in `usp_dashboard_shell.dart`, so nothing signs
-/// a user out from under the firmware stage. The editing branch has one, for
-/// its own logout's navigation.
+/// a user out from under the firmware stage. The editing branch lets one
+/// navigation through without asking, its own to the login page
+/// ([_pnpLeavingForLoginProvider]).
 Future<bool> _pnpWizardExitGuard(
     BuildContext context, GoRouterState state) async {
   final container = ProviderScope.containerOf(context);
@@ -59,18 +60,31 @@ Future<bool> _pnpWizardExitGuard(
   }
 }
 
+/// Set just before the editing branch's own `go` to the login page, and taken
+/// back by the guard that lets it through.
+///
+/// A flag rather than "signed out": the session can be gone before the user
+/// leaves (the demo build's auth always reads signed out), and a Back from the
+/// first step then went straight to the entry, which shows only a spinner for a
+/// flow past its checks (real browser, 2026-11-13).
+final _pnpLeavingForLoginProvider = StateProvider<bool>((ref) => false);
+
 /// The editing branch of [_pnpWizardExitGuard]: ask, and on "Log out" sign the
 /// user out to the login page.
 ///
 /// Always refuses the navigation it was asked about and goes to the login page
 /// itself, after this one has been settled: a `go` started while go_router is
-/// still waiting on this guard would race it. That `go` passes back through
-/// here signed out, which is the one way through.
+/// still waiting on this guard would race it. That `go` comes back through
+/// here, and [_pnpLeavingForLoginProvider] is what lets it pass.
 Future<bool> _leaveSetupByLoggingOut(
   BuildContext context,
   ProviderContainer container,
 ) async {
-  if (container.read(authProvider).value?.isLoggedIn != true) return true;
+  final leaving = container.read(_pnpLeavingForLoginProvider.notifier);
+  if (leaving.state) {
+    leaving.state = false;
+    return true;
+  }
   final logOut = await showPnpLeaveSetupAlert(context);
   if (logOut != true) return false;
   container.read(pnpWizardDraftsProvider).revert();
@@ -78,6 +92,7 @@ Future<bool> _leaveSetupByLoggingOut(
     await container
         .read(authProvider.notifier)
         .logout(cause: EndCause.userRequested);
+    leaving.state = true;
     container.read(routerProvider).go(RoutePath.localLoginPassword);
   });
   return false;
