@@ -225,3 +225,25 @@ class _MyFeatureViewState extends ConsumerState<MyFeatureView> with SingleTicker
     );
   }
 }
+
+#### **Exception: the steps of a flow that saves once (#1511 P4)**
+
+The five steps above are for a page whose notifier reads the router and saves
+itself. A multi-step flow that writes every step **together, from the flow**,
+is different — the PnP wizard (`lib/page/instant_setup/`) reads the router once
+when it starts and writes all its steps in one SET, because any Wi-Fi write
+restarts every radio. Its steps therefore:
+
+- keep their working copy in an `AutoDispose` notifier whose state is still a
+  `FeatureState` over a `Preservable` (`PnpMainWifiDraftState`), **without**
+  `PreservableAutoDisposeNotifierMixin` — there is no fetch or save for its
+  template to run, and `has_service_error_roster_test.dart` refuses a mixin user
+  whose status can carry no read error;
+- implement `isDirty()`, `revert()` and `markAsSaved()` directly on that
+  `Preservable` (one line each; see `PnpStepDraft` in
+  `providers/pnp_wifi_draft_provider.dart`);
+- are begun and held by the flow, and guarded on the route by one
+  `PreservableContract` over all of them (`pnpWizardDraftsProvider`), the same
+  shape as the Wi-Fi page's `_WifiPageDirtyProxy`.
+
+Constitution Article IV §4.2 records the exception.

@@ -1,4 +1,5 @@
-import 'package:privacy_gui/page/instant_setup/views/pnp_setup_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_flow_frame_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_wifi_step_view.dart';
 
 import '../../../golden_framework/golden_runner.dart';
 import '../../../golden_framework/golden_test_config.dart';
@@ -6,6 +7,13 @@ import '../../../../mocks/provider_overrides/mock_firmware_update.dart';
 import '../../../../mocks/provider_overrides/mock_pnp.dart';
 import '../../../../mocks/test_data/scenes/pnp_scene_data.dart';
 
+// **Since #1511 P4 this suite photographs `PnpFlowFrameView`** — the PnP shell's
+// top bar, stepper and status screens — around the Wi-Fi step, because
+// `PnpSetupView` is gone: its steps became pages and its status screens moved to the
+// frame. The analysis below was written for that view and still holds, with the
+// frame's `_status` switch standing where its phase switch stood; `viewName` moved
+// with the view, so golden-ci starts this suite's baselines fresh.
+//
 // The setup wizard's first golden suite (#1554 §4), and the first for `instant_setup`
 // at all: before this file, `test/golden_test/` held 31 suites and none of them pumped
 // a PnP view. The ticket was written believing `pnp_setup` already had one and only
@@ -34,15 +42,11 @@ import '../../../../mocks/test_data/scenes/pnp_scene_data.dart';
 //     the ISP forms). A picture of a centred spinner in 26 languages is a picture of a
 //     spinner, so it is left out.
 //
-// ## `configuring` is photographed at step 0 only
+// ## `configuring` is photographed on the Wi-Fi step only
 //
-// The stepper's other two steps are behind taps. That is a real limit and not one this
-// file works around with an `Interaction`: the wizard's steps mutate provider state
-// through `PnpNotifier`, and `FixedPnpNotifier` pins the phase — so a tap that
-// "advanced" the stepper would be photographing a widget's internal `_currentStep`
-// against a state that never moved. The layout gate has the same limit for the same
-// reason, and its case doc records it. What step 0 does carry is the widest form the
-// view has: split mode, three bands, guest bands, and a three-label `AppStepper`.
+// The other steps are other pages since #1511 P4, and the layout gate sweeps each of
+// them; what this one carries is the widest form there is — split mode, three bands —
+// under the three-label `AppStepper`.
 //
 // ## `height: 1600`
 //
@@ -69,7 +73,7 @@ import '../../../../mocks/test_data/scenes/pnp_scene_data.dart';
 //
 // ## What 1600 costs the other seven states, since the argument against 2000 applies
 //
-// `configuring` is the only top-aligned state here; `_buildStepperForm` is a Column and
+// `configuring` is the only top-aligned state here; the Wi-Fi step under the stepper is a Column and
 // every other builder returns `Center(...)`. Measured extents at 480px: `complete_split`
 // 1195, `needs_reconnect` 1032, `updating_firmware` 1022, `error` 992. So seven of the
 // eight states carry 400–600px of ground, split above and below the card because they
@@ -102,9 +106,12 @@ import '../../../../mocks/test_data/scenes/pnp_scene_data.dart';
 void main() {
   runViewGoldenTests(
     GoldenTestConfig(
-      viewName: 'pnp_setup',
-      view: () => const PnpSetupView(),
-      // The view builds its own `UiKitPageView` (the plain constructor, not
+      viewName: 'pnp_flow_frame',
+      view: () => const PnpFlowFrameView(
+        stepId: 'wifi',
+        child: PnpWifiStepView(),
+      ),
+      // The frame builds its own `UiKitPageView` (the plain constructor, not
       // `.withSliver` — unlike both firmware pages) with
       // `appBarStyle: UiKitAppBarStyle.none`: the wizard deliberately has no back
       // affordance in its chrome, which is half of REQ-B2's lock. Wrapping it in
@@ -112,10 +119,10 @@ void main() {
       shell: ShellType.custom,
       height: 1600,
       states: {
-        // Step 0 of the three-step form — the only phase this view renders a form in,
-        // and the fixture the layout gate sweeps.
+        // The Wi-Fi step of the three-step wizard, split mode, its draft begun at
+        // the split router — the fixture the layout gate sweeps.
         'configuring': (overrides) => overrides.addAll(
-              pnpOverrides(pnpWizardConfiguringState),
+              pnpOverrides(pnpWizardConfiguringState, router: pnpSplitRouter),
             ),
         // `_buildSavingOverlay`, standing for `WizardSaving`, `WizardSaved` and
         // `WizardCheckingFirmware`.

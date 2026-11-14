@@ -1,16 +1,14 @@
-// The PnP wizard's exit guard, behind linksys/PrivacyGUI#1553 (REQ-B2).
+// The PnP wizard's exit guard — `/pnp/pnpConfig`'s `onExit` — by phase. It began
+// as #1553's firmware lock (REQ-B2) and since #1511 P4 also refuses to leave
+// while a save is in flight, and asks to log out while editing.
 //
 // A first-connection firmware update is locked: the router is being flashed and
 // the wizard has not finished, so there is nowhere to go back to and nothing to
-// go forward to. Two things enforce that, and this file measures one of them. The
-// other is not a second guard: `_buildFirmwareUpdate` renders no button, so there
-// is no affordance in the page to decline. (`PnpSetupView` does pass an `onBackTap`
-// closure, but it passes `appBarStyle: UiKitAppBarStyle.none` too, and
-// `UiKitPageView._buildAppBarConfig()` returns null for that style before reaching
-// the only line that consumes the callback — so a phase check written there would
-// never run. That was measured rather than assumed, after a first attempt put one
-// there.)
-//
+// go forward to. Three things enforce that, and this file measures one of them.
+// The others: the shell's back policy (`pnpBackPolicy`), which turns a Back into
+// a redirect to the step that saved, and `PnpFlowFrameView`'s firmware screen,
+// which renders no button.
+
 // THE CLOSURE UNDER TEST IS THE PRODUCTION ONE, the same arrangement as the
 // sibling `usp_firmware_exit_guard_test.dart`: the route is pulled out of the
 // real `pnpRoute` and re-hosted with a stub body, so `onExit` is the object
@@ -26,22 +24,20 @@
 // an install running" versus "is this wizard the thing running it" — so the PnP one
 // keys on the PnP phase.
 //
-// WHY TWO PHASES BLOCK AND NOT ONE. `WizardUpdatingFirmware` is the flash, and is
-// what REQ-B2 names. `WizardCheckingFirmware` is here for a race rather than for a
-// screen: popping during the check lands on `PnpEntryView`, whose `initState` calls
-// `startPostLoginFlow()` and overwrites the phase, while `_checkFirmware` is still
-// waiting for an answer that may be "yes" — and then writes
-// `WizardUpdatingFirmware` over that flow and dispatches a flash. The cost of
-// refusing is a dead Back press during a spinner bounded at fifteen seconds; the
-// cost of allowing it is a router being written to with the locked screen never
-// shown. This was a review finding, not the first design.
+// WHY TWO FIRMWARE PHASES BLOCK AND NOT ONE. `WizardUpdatingFirmware` is the
+// flash, and is what REQ-B2 names. `WizardCheckingFirmware` is here for a race
+// rather than for a screen: leaving during the check would end the flow while
+// `_checkFirmware` may still be about to write `WizardUpdatingFirmware` and
+// dispatch a flash. The cost of refusing is a dead Back press during a spinner
+// bounded at fifteen seconds; the cost of allowing it is a router being written
+// to with the locked screen never shown. This was a review finding, not the first
+// design.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
-import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 
@@ -65,7 +61,7 @@ GoRoute _realRoute(String name) {
 /// [route]'s own guard, re-hosted over a stub body.
 ///
 /// `onExit` is passed through by reference. Everything else is replaced, so this
-/// cannot start depending on the page — `PnpSetupView` has its own tests, and
+/// cannot start depending on the page — `PnpFlowFrameView` has its own tests, and
 /// pumping it here would let a provider change red a routing suite.
 GoRoute _guardOnly(GoRoute route) => GoRoute(
       name: route.name,
@@ -87,7 +83,11 @@ GoRoute _guardOnly(GoRoute route) => GoRoute(
 /// added without a decision being recorded here — the compiler refuses. What it
 /// does not force is a matching entry in [_phases] below, so a new phase can be
 /// silently *untested*; it cannot be silently *decided*.
-bool _blocksPop(PnpPhase phase) => switch (phase) {
+///
+/// `null` for the one phase that asks instead of deciding: editing, where
+/// leaving the setup is logging out (#1511 P4) — measured with the whole shell
+/// in `pnp_wizard_route_test.dart`.
+bool? _blocksPop(PnpPhase phase) => switch (phase) {
       // The router is mid-flash.
       WizardUpdatingFirmware() => true,
 
@@ -95,30 +95,24 @@ bool _blocksPop(PnpPhase phase) => switch (phase) {
       // header. This one is a race, not a screen.
       WizardCheckingFirmware() => true,
 
-      // Everything else. The wizard is a flow a user is allowed to leave — the
-      // troubleshooter branches off it, and the completion screen leads out of it.
+      // In flight (#1511 P4, D7): a write or a reconnect is out, and leaving
+      // would end the flow under it.
+      WizardSaving() => true,
+      WizardSaved() => true,
+      WizardTestingReconnect() => true,
+      WizardConfiguring() => null,
+
+      // Everything else. The completion screen leads out of the wizard, and the
+      // phases before it are the entry's.
       AdminCheckingInternet() => false,
       AdminInternetConnected() => false,
       AdminReadFailure() => false,
       NoInternet() => false,
       WizardInitializing() => false,
-      WizardConfiguring() => false,
-      WizardSaving() => false,
-      WizardSaved() => false,
       WizardNeedsReconnect() => false,
-      WizardTestingReconnect() => false,
       WizardWifiReady() => false,
       WizardError() => false,
     };
-
-/// A config with no bands and nothing dirty. The guard never reads it — what is
-/// being measured is which phase the wizard is in, not what is in the form.
-const _emptyConfig = PnpWifiConfig(
-  ssid: '',
-  password: '',
-  originalSsid: '',
-  originalPassword: '',
-);
 
 /// One instance per phase, for the cases to run over.
 const _phases = <PnpPhase>[
@@ -127,7 +121,7 @@ const _phases = <PnpPhase>[
   AdminReadFailure(code: 9998, detail: 'missing'),
   NoInternet(ssid: 'Linksys00123'),
   WizardInitializing(),
-  WizardConfiguring(wifiConfig: _emptyConfig),
+  WizardConfiguring(),
   WizardSaving(),
   WizardSaved(),
   WizardNeedsReconnect(newSsid: 'MyWiFi', newPassword: 'MyPass1234'),
@@ -190,9 +184,9 @@ void main() {
       // other half — that [_phases] holds one distinct phase per entry, so a
       // duplicate cannot stand in for a missing one.
       expect(_phases.map((p) => p.runtimeType).toSet().length, _phases.length);
-      expect(_phases.where(_blocksPop), hasLength(2),
-          reason:
-              'the flash and the check that commits to it, and nothing else');
+      expect(_phases.where((p) => _blocksPop(p) == true), hasLength(5),
+          reason: 'the flash, the check that commits to it, and the three '
+              'in-flight phases of the save (#1511 P4)');
     });
 
     testWidgets('refuses to be popped while the router is being flashed',
@@ -206,12 +200,11 @@ void main() {
       expect(find.text('PAGE:root'), findsNothing);
     });
 
-    testWidgets('pops normally from the form', (tester) async {
+    testWidgets('pops normally from the completion screen', (tester) async {
       // The ordinary case, and the one that makes the guard a guard rather than a
-      // trap: the wizard's own back arrow steps back through the form and then
-      // out of it.
-      final router = await pushWizard(
-          tester, const WizardConfiguring(wifiConfig: _emptyConfig));
+      // trap: the wizard is a flow the user leaves when it is done.
+      final router = await pushWizard(tester,
+          const WizardWifiReady(ssid: 'MyWiFi', password: 'MyPass1234'));
 
       expect(await popLeavesWizard(tester, router), isTrue);
       expect(find.text('PAGE:root'), findsOneWidget);
@@ -220,6 +213,7 @@ void main() {
     group('every phase', () {
       for (final phase in _phases) {
         final blocks = _blocksPop(phase);
+        if (blocks == null) continue;
         testWidgets(
             '${phase.runtimeType} ${blocks ? 'blocks' : 'allows'} a pop',
             (tester) async {

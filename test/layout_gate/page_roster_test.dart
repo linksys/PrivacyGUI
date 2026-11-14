@@ -378,12 +378,17 @@ void main() {
       // (`linksys/privacyGUI-UI-kit#70` → `936c1da6` → v2.40.2), and the figure is
       // #1378's own measurement, unchanged by the bump: what moved is the verdict on
       // those cells, not their cost.
-      expect(byPath['$pnp/pnp_setup_view.dart']!.msPerCell, 34.3);
+      //
+      // `pnp_setup_view.dart` itself is gone since #1511 P4 — its 34.3 went with the
+      // file — and its first case lives on as the frame's: `pnp_flow_frame`, the
+      // stepper over the Wi-Fi step, measured on this column's basis.
+      expect(byPath['$pnp/pnp_flow_frame_view.dart']!.msPerCell, 30.6);
       expect(
-        byPath['$pnp/pnp_setup_view.dart']!.disposition,
+        byPath['$pnp/pnp_flow_frame_view.dart']!.disposition,
         PageRosterDisposition.swept,
         reason:
-            'this row read `queued` for one day. If it reads `queued` again, a '
+            'the stepper\'s row, and the stepper read `queued` for one day once '
+            '(linksys/privacyGUI-UI-kit#70). If this reads `queued` again, a '
             'page left the gate — which is a deletion from kPageSurfaceCases that '
             'assertion 3 below would also catch, and one nobody should be able to '
             'make quietly.',
@@ -481,8 +486,10 @@ void main() {
         'lib/page/instant_setup/views/pnp_waiting_modem_view.dart',
         // The subtler one: queued for a day, so it was *sweep* debt, never fixture
         // debt — its fixture got all 208 cells past the loader on the first
-        // attempt and a ui_kit defect is what held it.
-        'lib/page/instant_setup/views/pnp_setup_view.dart',
+        // attempt and a ui_kit defect is what held it. It was
+        // `pnp_setup_view.dart` until #1511 P4; the stepper that debt was about is
+        // the frame's now, and so is the row.
+        'lib/page/instant_setup/views/pnp_flow_frame_view.dart',
         // #1377 counted this page as fixture-free because `statisticsOverrides()`
         // exists. It was debt anyway: the populated state lived in
         // `test/golden_test/`, which #1361 forbids importing from here, and the
@@ -520,7 +527,7 @@ void main() {
       );
     });
 
-    test('the register reads 49 swept, 0 queued, 2 excluded', () {
+    test('the register reads 52 swept, 0 queued, 2 excluded', () {
       // 2/41/2 when #1382 shipped it; wave 1 (#1377) moved five from queued to
       // swept, wave 2 (#1378) nine — eight on the day, and `pnp_setup` the day
       // after, when ui_kit v2.40.2 unblocked it — wave 3 (#1379) six, and wave 4
@@ -562,8 +569,13 @@ void main() {
       // `auto_parent_first_login_view.dart`, a wave 3 page, as dead code — its route
       // was reachable only by typing the URL, and its only exit named a route
       // nothing registers. 50 → 49, with the file, not by un-sweeping it.
+      //
+      // Then #1511 P4 split `pnp_setup_view.dart` — every step and every status
+      // screen of the wizard — into the frame the PnP shell draws and the three
+      // steps, each a route: one row went, four came, straight to `swept` with the
+      // `lib/` change that made them. 49 → 52.
       expect(
-          roster.withDisposition(PageRosterDisposition.swept), hasLength(49));
+          roster.withDisposition(PageRosterDisposition.swept), hasLength(52));
       expect(
         roster.withDisposition(PageRosterDisposition.queued).map((r) => r.path),
         isEmpty,
@@ -658,7 +670,7 @@ void main() {
       );
     });
 
-    test('47 of 49 pages are swept and two are excluded', () {
+    test('52 of 54 pages are swept and two are excluded', () {
       // Written out rather than counted, and that is the point of the test. This is
       // the roster half of the join assertion 3 checks both directions of, so a
       // length check would pass against 43 rows that are not these 43.
@@ -720,7 +732,11 @@ void main() {
         'lib/page/instant_setup/views/pnp_modem_lights_off_view.dart',
         'lib/page/instant_setup/views/pnp_no_internet_view.dart',
         'lib/page/instant_setup/views/pnp_pppoe_view.dart',
-        'lib/page/instant_setup/views/pnp_setup_view.dart',
+        // #1511 P4: `pnp_setup_view.dart` became these four.
+        'lib/page/instant_setup/views/pnp_flow_frame_view.dart',
+        'lib/page/instant_setup/views/pnp_wifi_step_view.dart',
+        'lib/page/instant_setup/views/pnp_guest_step_view.dart',
+        'lib/page/instant_setup/views/pnp_your_network_step_view.dart',
         'lib/page/instant_setup/views/pnp_static_ip_view.dart',
         'lib/page/instant_setup/views/pnp_unplug_modem_view.dart',
         'lib/page/instant_setup/views/pnp_waiting_modem_view.dart',

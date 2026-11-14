@@ -95,7 +95,11 @@ const String kPageViewRoot = 'lib/page';
 /// 52 → 51 at #1511 P0, the first downward move: the app lost
 /// `auto_parent_first_login_view.dart`, dead code deleted with its route. The walk is
 /// unchanged and one row went with the file.
-const int kPageViewCount = 51;
+/// 51 → 54 at #1511 P4: the PnP wizard's steps became routes, so
+/// `pnp_setup_view.dart` went and four page views came — the frame drawn around the
+/// steps (`pnp_flow_frame_view.dart`) and the three steps. The walk is unchanged;
+/// one row went and four came with the files.
+const int kPageViewCount = 54;
 
 /// The marker for a column with no value, spelled as the overflow baselines spell
 /// it (`page.tsv` writes `-` for every absent `px`, `side`, `site` and `widget`).

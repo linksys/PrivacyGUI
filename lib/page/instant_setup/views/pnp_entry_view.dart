@@ -31,8 +31,8 @@ class _PnpEntryViewState extends ConsumerState<PnpEntryView> {
     // (`pnpFlowDestination`, #1511 P2).
     final pnpState = ref.watch(pnpProvider);
 
-    return UiKitPageView(
-      appBarStyle: UiKitAppBarStyle.none,
+    // An inner page: the PnP shell's frame draws the top bar (#1511 P4).
+    return UiKitPageView.innerPage(
       scrollable: true,
       child: (context, constraints) => Center(
         child: ConstrainedBox(

@@ -22,7 +22,11 @@ This feature adopts a State-Driven architecture, with responsibilities clearly d
 
 *   **View Layer**: 
     - `PnpEntryView`: Lightweight flow entry point (internet check only)
-    - `PnpSetupView`: Setup wizard main body
+    - `PnpWifiStepView`, `PnpGuestStepView`, `PnpYourNetworkStepView`: the wizard's
+      steps, one route each (#1511 P4)
+    - `PnpFlowShell` + `PnpFlowFrameView`: the shell over `/pnp` — navigation, the
+      top bar, the stepper and the status screens (saving, reconnect, firmware,
+      completion)
 *   **Logic Layer (Notifier)**: `PnpNotifier` acts as the brain, executing business logic, making API calls, and managing state.
 *   **Data Layer (State)**: `PnpState` stores all flow state using sealed class phases.
 *   **Service Layer**: 
@@ -85,11 +89,14 @@ When no internet connection is detected, this flow provides solutions.
     `:caller` segment of every troubleshooting URL (`pnp` or `dashboard`), turned
     into a `TroubleshootingEnding` by the route layer; see `pnp-flow.md`.
 
-### 3.4. Setup Wizard Flow (`PnpSetupView`)
+### 3.4. Setup Wizard Flow (the steps under `/pnp/pnpConfig`)
 
 Multi-step wizard for WiFi configuration:
 
-*   **Steps**: `PersonalWiFiStep`, `GuestWiFiStep`, `YourNetworkStep` (mesh node confirmation)
+*   **Steps**: Wi-Fi, guest Wi-Fi (only when the router has a guest SSID), Your
+    Network (mesh node confirmation, holds Save). Which steps, in which order, is a
+    plan built once when the wizard reads the router; each setting step edits a
+    draft of its own. See `pnp-flow.md` for the plan, the back policy and leaving.
 *   **Save Flow**:
     1. `WizardSaving` → save WiFi settings
     2. `PnpStatusService.acknowledge(serialNumber)` → mark PnP complete
@@ -105,7 +112,7 @@ Multi-step wizard for WiFi configuration:
     - `AdminCheckingInternet`: Entry point, checking WAN status
     - `AdminInternetConnected`: Ready to proceed to wizard
     - `NoInternet`: Route to troubleshooter
-    - `WizardConfiguring`: User editing WiFi settings
+    - `WizardConfiguring`: User on the steps (the form itself is in the drafts)
     - `WizardSaving` / `WizardSaved`: Save in progress / complete
     - `WizardNeedsReconnect` / `WizardTestingReconnect`: WiFi SSID changed, reconnecting
     - `WizardWifiReady`: Setup complete
@@ -125,18 +132,27 @@ Multi-step wizard for WiFi configuration:
 lib/page/instant_setup/
 ├── models/
 │   ├── pnp_state.dart           # PnpState + PnpPhase sealed classes
-│   ├── pnp_wifi_config.dart     # WiFi form data model
+│   ├── pnp_flow_plan.dart       # Which steps, in which order — built once
+│   ├── pnp_wifi_settings.dart   # Main / guest Wi-Fi as a step edits it
+│   ├── pnp_wifi_write.dart      # What one save writes (both drafts)
 │   ├── pnp_isp_config.dart      # ISP settings model
 │   └── pnp_trigger_result.dart  # PnpStatusService check result
 ├── providers/
 │   ├── pnp_providers.dart       # Provider exports
-│   └── pnp_notifier.dart        # State machine logic
+│   ├── pnp_notifier.dart        # State machine logic
+│   ├── pnp_setting_steps_provider.dart  # The step list + the flow-level dirty guard
+│   └── pnp_wifi_draft_provider.dart     # One Preservable draft per setting step
 ├── services/
 │   ├── pnp_service.dart         # USP operations
 │   └── pnp_status_service.dart  # PnP completion tracking
 └── views/
     ├── pnp_entry_view.dart      # Flow entry (internet check)
-    ├── pnp_setup_view.dart      # Wizard main body
+    ├── pnp_flow_shell.dart      # The shell: navigation, back policy
+    ├── pnp_flow_frame_view.dart # Top bar, stepper, status screens
+    ├── pnp_setting_step_pages.dart # The step list's page side
+    ├── pnp_wifi_step_view.dart
+    ├── pnp_guest_step_view.dart
+    ├── pnp_your_network_step_view.dart
     ├── pnp_no_internet_view.dart
     ├── pnp_isp_settings_view.dart
     ├── pnp_pppoe_view.dart

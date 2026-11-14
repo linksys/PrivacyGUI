@@ -3,8 +3,10 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
+import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_band.dart';
-import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_settings.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_write.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
 import 'package:privacy_gui/page/internet_settings/services/auto_ipoe_service.dart';
 
@@ -206,19 +208,18 @@ void main() {
       stubWifiFetches();
 
       final result = await service.fetchWizardData();
-      final config = result.wifiConfig;
 
       // Main network built from the non-guest SSIDs.
-      expect(config.ssid, 'MyHome');
+      expect(result.main.ssid, 'MyHome');
       // Guest network built from the -guest alias SSIDs.
-      expect(config.guestSsid, 'MyHome-Guest');
-      expect(config.guestEnabled, isFalse);
+      expect(result.guest!.ssid, 'MyHome-Guest');
+      expect(result.guest!.enabled, isFalse);
       expect(
-          config.guestAccessPointInstancePaths,
+          result.guest!.accessPointInstancePaths,
           containsAll(
               ['Device.WiFi.AccessPoint.3.', 'Device.WiFi.AccessPoint.4.']));
       // Guest AP paths must not leak into the main path list.
-      expect(config.accessPointInstancePaths,
+      expect(result.main.accessPointInstancePaths,
           isNot(contains('Device.WiFi.AccessPoint.3.')));
     });
   });
@@ -291,12 +292,15 @@ void main() {
         return <String, dynamic>{};
       });
 
-      final config = (await service.fetchWizardData()).wifiConfig;
+      final result = await service.fetchWizardData();
 
-      expect(config.isSplitMode, isFalse);
-      expect(config.ssid, 'MyHome');
-      expect(config.ssidInstancePaths, isNot(contains('Device.WiFi.SSID.1.')),
+      expect(result.main.splitMode, isFalse);
+      expect(result.main.ssid, 'MyHome');
+      expect(
+          result.main.ssidInstancePaths, isNot(contains('Device.WiFi.SSID.1.')),
           reason: 'a save must never write to the blank row');
+      expect(result.guest, isNull,
+          reason: 'no -guest alias SSID, so no guest step');
     });
 
     test('a blank mesh node row is no node', () async {
@@ -360,28 +364,41 @@ void main() {
               'supported across more than one USP Service',
         );
 
-    /// #1000's form: main renamed and re-passworded, guest turned on, renamed
-    /// and passworded.
-    const unifiedConfig = PnpWifiConfig(
-      ssid: 'NewHome',
-      password: 'NewPass123',
-      originalSsid: 'OldHome',
-      originalPassword: 'OldPass123',
+    const oldMain = PnpMainWifiSettings(
+      ssid: 'OldHome',
+      password: 'OldPass123',
       ssidInstancePaths: ['Device.WiFi.SSID.1.', 'Device.WiFi.SSID.2.'],
       accessPointInstancePaths: [
         'Device.WiFi.AccessPoint.1.',
         'Device.WiFi.AccessPoint.2.',
       ],
-      guestEnabled: true,
-      guestSsid: 'NewHome-guest',
-      guestPassword: 'GuestPass123',
-      originalGuestSsid: 'OldHome-guest',
-      originalGuestPassword: 'OldGuest123',
-      guestSsidInstancePaths: ['Device.WiFi.SSID.3.', 'Device.WiFi.SSID.4.'],
-      guestAccessPointInstancePaths: [
+    );
+    const oldGuest = PnpGuestWifiSettings(
+      enabled: false,
+      ssid: 'OldHome-guest',
+      password: 'OldGuest123',
+      ssidInstancePaths: ['Device.WiFi.SSID.3.', 'Device.WiFi.SSID.4.'],
+      accessPointInstancePaths: [
         'Device.WiFi.AccessPoint.3.',
         'Device.WiFi.AccessPoint.4.',
       ],
+    );
+
+    /// #1000's form: main renamed and re-passworded, guest turned on, renamed
+    /// and passworded.
+    final unifiedWrite = PnpWifiWrite(
+      main: Preservable(
+        original: oldMain,
+        current: oldMain.copyWith(ssid: 'NewHome', password: 'NewPass123'),
+      ),
+      guest: Preservable(
+        original: oldGuest,
+        current: oldGuest.copyWith(
+          enabled: true,
+          ssid: 'NewHome-guest',
+          password: 'GuestPass123',
+        ),
+      ),
     );
 
     /// The one write, asserting it went out with `allowPartial: true`: `false`
@@ -397,7 +414,7 @@ void main() {
     test('saveWifi writes guest and main in a single SET', () async {
       setupSetMocks();
 
-      final outcome = await service.saveWifi(unifiedConfig);
+      final outcome = await service.saveWifi(unifiedWrite);
 
       expect(outcome, PnpWifiWriteOutcome.confirmed);
       expect(theOneWrite(), {
@@ -420,15 +437,25 @@ void main() {
     test('saveWifi sends only what changed', () async {
       setupSetMocks();
 
-      await service.saveWifi(const PnpWifiConfig(
+      const main = PnpMainWifiSettings(
         ssid: 'OldHome',
-        password: 'NewPass123',
-        originalSsid: 'OldHome',
-        originalPassword: 'OldPass123',
+        password: 'OldPass123',
         ssidInstancePaths: ['Device.WiFi.SSID.1.'],
         accessPointInstancePaths: ['Device.WiFi.AccessPoint.1.'],
-        guestSsidInstancePaths: ['Device.WiFi.SSID.3.'],
-        guestAccessPointInstancePaths: ['Device.WiFi.AccessPoint.3.'],
+      );
+      const guest = PnpGuestWifiSettings(
+        enabled: false,
+        ssid: '',
+        password: '',
+        ssidInstancePaths: ['Device.WiFi.SSID.3.'],
+        accessPointInstancePaths: ['Device.WiFi.AccessPoint.3.'],
+      );
+      await service.saveWifi(PnpWifiWrite(
+        main: Preservable(
+          original: main,
+          current: main.copyWith(password: 'NewPass123'),
+        ),
+        guest: const Preservable(original: guest, current: guest),
       ));
 
       expect(theOneWrite().keys,
@@ -438,12 +465,13 @@ void main() {
     test('saveWifi with nothing to write sends nothing', () async {
       setupSetMocks();
 
-      final outcome = await service.saveWifi(const PnpWifiConfig(
+      const main = PnpMainWifiSettings(
         ssid: 'OldHome',
         password: 'OldPass123',
-        originalSsid: 'OldHome',
-        originalPassword: 'OldPass123',
         ssidInstancePaths: ['Device.WiFi.SSID.1.'],
+      );
+      final outcome = await service.saveWifi(const PnpWifiWrite(
+        main: Preservable(original: main, current: main),
       ));
 
       expect(outcome, PnpWifiWriteOutcome.confirmed);
@@ -458,7 +486,7 @@ void main() {
           .thenAnswer((inv) async => transportLost(
               inv.positionalArguments[0] as Map<String, dynamic>));
 
-      final outcome = await service.saveWifi(unifiedConfig);
+      final outcome = await service.saveWifi(unifiedWrite);
 
       expect(outcome, PnpWifiWriteOutcome.unanswered);
     });
@@ -471,7 +499,7 @@ void main() {
               inv.positionalArguments[0] as Map<String, dynamic>));
 
       await expectLater(
-        service.saveWifi(unifiedConfig),
+        service.saveWifi(unifiedWrite),
         throwsA(isA<UspCompleteFailureError>()),
       );
     });
@@ -482,7 +510,7 @@ void main() {
               refused(inv.positionalArguments[0] as Map<String, dynamic>));
 
       await expectLater(
-        service.saveWifi(unifiedConfig),
+        service.saveWifi(unifiedWrite),
         throwsA(isA<UspCompleteFailureError>()),
       );
     });
@@ -496,32 +524,42 @@ void main() {
             frequency: freq,
             ssid: ssid,
             password: pass,
-            originalSsid: ssid,
-            originalPassword: pass,
             ssidInstancePath: 'Device.WiFi.SSID.$n.',
             accessPointInstancePath: 'Device.WiFi.AccessPoint.$n.',
             radioPath: 'Device.WiFi.Radio.${n.isOdd ? 1 : 2}.',
           );
-      final config = PnpWifiConfig(
+      final main = PnpMainWifiSettings(
         ssid: 'Home-2G',
         password: 'pass-2g',
-        originalSsid: 'Home-2G',
-        originalPassword: 'pass-2g',
-        mainBands: [
-          band(1, '2.4GHz', 'Home-2G', 'pass-2g').copyWith(ssid: 'Renamed-2G'),
-          band(2, '5GHz', 'Home-5G', 'pass-5g')
-              .copyWith(password: 'newpass-5g'),
+        bands: [
+          band(1, '2.4GHz', 'Home-2G', 'pass-2g'),
+          band(2, '5GHz', 'Home-5G', 'pass-5g'),
         ],
-        guestEnabled: true,
-        guestBands: [
+        splitMode: true,
+      );
+      final guest = PnpGuestWifiSettings(
+        enabled: false,
+        ssid: 'Guest-2G',
+        password: 'gpass',
+        bands: [
           band(3, '2.4GHz', 'Guest-2G', 'gpass'),
           band(4, '5GHz', 'Guest-5G', 'gpass'),
         ],
+        splitMode: true,
       );
-      expect(config.isSplitMode, isTrue);
-      expect(config.isGuestSplitMode, isTrue);
 
-      await service.saveWifi(config);
+      await service.saveWifi(PnpWifiWrite(
+        main: Preservable(
+          original: main,
+          current: main
+              .withBand('Device.WiFi.SSID.1.', ssid: 'Renamed-2G')
+              .withBand('Device.WiFi.SSID.2.', password: 'newpass-5g'),
+        ),
+        guest: Preservable(
+          original: guest,
+          current: guest.copyWith(enabled: true),
+        ),
+      ));
 
       expect(theOneWrite(), {
         'Device.WiFi.SSID.3.Enable': true,
@@ -582,7 +620,7 @@ void main() {
       test('is true when main and guest read back as written', () async {
         routerReads(ssids: applied, apEnable: apsOn);
 
-        expect(await service.isWifiApplied(unifiedConfig), isTrue);
+        expect(await service.isWifiApplied(unifiedWrite), isTrue);
       });
 
       test('is false when the main network is still on the old name', () async {
@@ -591,7 +629,7 @@ void main() {
           'Device.WiFi.SSID.2.': (ssid: 'OldHome', enable: true),
         }, apEnable: apsOn);
 
-        expect(await service.isWifiApplied(unifiedConfig), isFalse);
+        expect(await service.isWifiApplied(unifiedWrite), isFalse);
       });
 
       test('is false when the guest network did not turn on', () async {
@@ -602,16 +640,20 @@ void main() {
           'Device.WiFi.AccessPoint.4.': false,
         });
 
-        expect(await service.isWifiApplied(unifiedConfig), isFalse);
+        expect(await service.isWifiApplied(unifiedWrite), isFalse);
       });
 
       test('reads nothing when only passwords changed', () async {
-        final applied = await service.isWifiApplied(const PnpWifiConfig(
+        const main = PnpMainWifiSettings(
           ssid: 'OldHome',
-          password: 'NewPass123',
-          originalSsid: 'OldHome',
-          originalPassword: 'OldPass123',
+          password: 'OldPass123',
           ssidInstancePaths: ['Device.WiFi.SSID.1.'],
+        );
+        final applied = await service.isWifiApplied(PnpWifiWrite(
+          main: Preservable(
+            original: main,
+            current: main.copyWith(password: 'NewPass123'),
+          ),
         ));
 
         expect(applied, isTrue);

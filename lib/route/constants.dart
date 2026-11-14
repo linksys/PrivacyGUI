@@ -332,6 +332,11 @@ class RouteNamed {
   static const pnpStaticIp = 'pnpStaticIp';
   static const pnpAddNodes = 'pnpAddNodes';
 
+  /// The route of the PnP wizard step [stepId] (#1511 P4), whose path is the
+  /// id itself under `/pnp/pnpConfig`. Derived rather than declared so that a
+  /// step added to the step list needs no constant here.
+  static String pnpStep(String stepId) => 'pnpStep_$stepId';
+
   /// Support
   static const faqList = 'faqList';
   static const callSupportMainRegion = 'callSupportMainRegion';

@@ -276,9 +276,11 @@ void main() {
   // of its cells failed — and v2.40.2 fixed it. The tripwire that pinned the
   // arithmetic (`test/page/instant_setup/views/pnp_setup_view_test.dart`) went red
   // with an empty incident list on the bump and was deleted, which is the order §8's
-  // graduation rule asks for: fix to zero, then declare, then capture.
+  // graduation rule asks for: fix to zero, then declare, then capture. It was
+  // `page.pnp_setup` until #1511 P4; it and the three below now sweep
+  // `PnpFlowFrameView`, which is what draws the stepper and the status screens.
   runOverflowSweep(
-    family: PageSurfaceFamily(kPnpSetupPageCase),
+    family: PageSurfaceFamily(kPnpFlowFramePageCase),
     expectedCellCount: 234,
   );
 
@@ -290,7 +292,7 @@ void main() {
   // in the same screenful. `page_surface_cases.dart` carries why it is a second case
   // rather than a relaxed first one, and why it is the loader exemption's second entry.
   runOverflowSweep(
-    family: PageSurfaceFamily(kPnpSetupFirmwarePageCase),
+    family: PageSurfaceFamily(kPnpFlowFrameFirmwarePageCase),
     expectedCellCount: 234,
   );
 
@@ -303,11 +305,11 @@ void main() {
   // why `isSplitMode` being derived is what makes `LayoutBlock` / `QrImageView` the only
   // honest discriminators.
   runOverflowSweep(
-    family: PageSurfaceFamily(kPnpSetupCompleteSplitPageCase),
+    family: PageSurfaceFamily(kPnpFlowFrameCompleteSplitPageCase),
     expectedCellCount: 234,
   );
   runOverflowSweep(
-    family: PageSurfaceFamily(kPnpSetupCompleteUnifiedPageCase),
+    family: PageSurfaceFamily(kPnpFlowFrameCompleteUnifiedPageCase),
     expectedCellCount: 234,
   );
 
@@ -476,6 +478,23 @@ void main() {
   // `kDdnsPageCase`.
   runOverflowSweep(
     family: PageSurfaceFamily(kDdnsPageCase),
+    expectedCellCount: 234,
+  );
+
+  // #1511 P4: the PnP wizard's steps as pages of their own. `pnp_setup` swept the
+  // Wi-Fi step under the stepper; since the steps became routes the frame and the
+  // step are separate page views, and Your Network is swept for the first time —
+  // it was the wizard's third step, behind two taps per cell.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPnpWifiStepPageCase),
+    expectedCellCount: 234,
+  );
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPnpGuestStepPageCase),
+    expectedCellCount: 234,
+  );
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPnpYourNetworkStepPageCase),
     expectedCellCount: 234,
   );
 

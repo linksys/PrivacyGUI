@@ -495,14 +495,36 @@
 # added ms/cell 35.3 / 35.6 / 35.0; median 35.3. The PnP ready fixture has no log widget.
 # removed auto_parent_first_login_view (#1511 P0, 2026-11-13): dead code, deleted with its route.
 # removed Its swept row (19.9) went with the file; the figures above that cite it are history.
+# removed pnp_setup_view (#1511 P4, 2026-11-13): the PnP wizard's steps became routes inside the PnP
+# removed shell. Its row (34.3) went with the file; the second-state figures above that cite it are
+# removed history. Its four cases moved with what they measure, renamed where they stood:
+# removed pnp_setup -> pnp_flow_frame (the frame's stepper over the Wi-Fi step), pnp_setup_firmware ->
+# removed pnp_flow_frame_firmware, pnp_setup_complete_{split,unified} -> pnp_flow_frame_complete_*.
+# added pnp_flow_frame_view, pnp_wifi_step_view, pnp_guest_step_view, pnp_your_network_step_view
+# added (#1511 P4, 2026-11-13), straight to swept with the lib/ change that made them. Figures on this
+# added column's basis (--plain-name 'page.<id> screen_px', --reporter json, nine coordinate tests
+# added summed / 234, three runs, median):
+# added   pnp_flow_frame_view.dart          row 30.6 (30.9 / 30.5 / 30.6)   the stepper over the Wi-Fi step
+# added   pnp_wifi_step_view.dart           row 23.8 (25.1 / 23.8 / 23.8)
+# added   pnp_guest_step_view.dart          row 20.6 (20.7 / 20.6 / 19.8)
+# added   pnp_your_network_step_view.dart   row 10.0 (10.0 /  8.9 / 10.7)
+# added and the frame's other three cases, which the row has no column for (see `# second-state`):
+# added   pnp_flow_frame_firmware 11.0 (11.1 / 10.8 / 11.0), pnp_flow_frame_complete_split 13.0
+# added   (14.0 / 12.6 / 13.0), pnp_flow_frame_complete_unified 13.5 (13.5 / 13.1 / 13.8).
+# added Frame + Wi-Fi step is 54.4ms/cell between its two cases against pnp_setup's 34.3 for one: the
+# added form is now measured twice, once under the stepper and once alone, which is the price of
+# added the stepper having a case of its own.
+# added Your Network had never been swept: on pnp_setup it was the wizard's third step, behind two
+# added taps per cell. Its first sweep found Back beside Save over by 17.0px at 320px in el, fixed in
+# added lib/ (the step footer is a Wrap) before the case was declared.
 # rows sorted by path, so adding a page is a one-line diff
 # reader test/layout_gate/page_roster.dart
 # oracle test/layout_gate/page_roster_test.dart
 # doc doc/testing/overflow_gate_architecture.md section 11.5; the onboarding queue is section 11.6
-# pages 51
-# swept 49
+# pages 54
+# swept 52
 # queued 0
-# measured 49
+# measured 52
 # needs_fixture 0
 # excluded 2
 # columns path	disposition	ms_per_cell
@@ -527,15 +549,18 @@ lib/page/instant_safety/views/instant_safety_view.dart	swept	14.5
 lib/page/instant_setup/views/pnp_add_nodes_view.dart	swept	12.3
 lib/page/instant_setup/views/pnp_complete_view.dart	excluded:not reachable; no route builds it and nothing under lib/ constructs it (#1370)	-
 lib/page/instant_setup/views/pnp_entry_view.dart	swept	11.6
+lib/page/instant_setup/views/pnp_flow_frame_view.dart	swept	30.6
+lib/page/instant_setup/views/pnp_guest_step_view.dart	swept	20.6
 lib/page/instant_setup/views/pnp_ipoe_view.dart	swept	35.3
 lib/page/instant_setup/views/pnp_isp_settings_view.dart	swept	12.7
 lib/page/instant_setup/views/pnp_modem_lights_off_view.dart	swept	12.9
 lib/page/instant_setup/views/pnp_no_internet_view.dart	swept	14.7
 lib/page/instant_setup/views/pnp_pppoe_view.dart	swept	20.8
-lib/page/instant_setup/views/pnp_setup_view.dart	swept	34.3
 lib/page/instant_setup/views/pnp_static_ip_view.dart	swept	59.6
 lib/page/instant_setup/views/pnp_unplug_modem_view.dart	swept	13.5
 lib/page/instant_setup/views/pnp_waiting_modem_view.dart	swept	11.7
+lib/page/instant_setup/views/pnp_wifi_step_view.dart	swept	23.8
+lib/page/instant_setup/views/pnp_your_network_step_view.dart	swept	10.0
 lib/page/internet_settings/views/usp_internet_settings_view.dart	swept	36.1
 lib/page/ipv6_port_service/views/usp_ipv6_port_service_view.dart	swept	19.6
 lib/page/landing/views/home_view.dart	swept	11.0
