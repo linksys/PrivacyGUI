@@ -56,9 +56,10 @@ void main() {
   /// "no affordances" assertion below for a reason that is not a defect.
   const installing = gatePnpFirmwareInstallingState;
 
-  /// The frame on Your Network — the step Save is pressed on — at [phase], with
-  /// the plan of a router with a guest SSID (#1511 P4). The step is underneath
-  /// every status screen, so "no button to press" below also proves it hidden.
+  /// The frame on Your Network — the step the firmware stage and the completion
+  /// screen are drawn over since #1511 P5 — at [phase], with the plan of a
+  /// router with a guest SSID (#1511 P4). The step is underneath every status
+  /// screen, so "no button to press" below also proves it hidden.
   Widget host(PnpPhase phase, {FirmwareUpdateState firmware = installing}) =>
       pageSurfaceHost(
         view: const PnpFlowFrameView(
@@ -291,6 +292,56 @@ void main() {
     }
 
     expect(overflows, isEmpty, reason: overflows.join('\n'));
+  });
+
+  testWidgets(
+      'the firmware check says it is checking for firmware, not that the Wi-Fi '
+      'is restarting — and lays out at 320px in every locale (#1511 P5)',
+      (tester) async {
+    // Until #1511 P5 the check ran straight after the save and shared its
+    // screen, whose copy is about the Wi-Fi going off and on. Now it runs on
+    // Your Network's Done, after the user has been on a step of their own, and
+    // that copy would describe a save nobody just pressed. Like the reconnect
+    // screen, this one is in no layout-gate case (a loader is not content), so
+    // this is the only thing that renders it per locale.
+    final overflows = <String>[];
+    for (final locale in AppLocalizations.supportedLocales) {
+      final words = lookupAppLocalizations(locale);
+      await setLayoutSurface(tester, const Size(320, 1600));
+      final errors = await runWithOverflowCollection((sink) async {
+        await tester.pumpWidget(KeyedSubtree(
+          key: ValueKey(locale.toString()),
+          child: pageSurfaceHost(
+            view: const PnpFlowFrameView(
+              stepId: 'network',
+              child: PnpYourNetworkStepView(),
+            ),
+            locale: locale,
+            overrides: pnpOverrides(PnpState(
+              phase: const WizardCheckingFirmware(),
+              plan: pnpPlanWithGuest,
+              meshNodes: pnpMeshNodes,
+            )),
+          ),
+        ));
+        await settle(tester);
+        return sink;
+      });
+      if (errors.isNotEmpty) overflows.add('$locale: $errors');
+
+      expect(find.text(words.checkingForNewFirmware), findsOneWidget,
+          reason: '$locale');
+      expect(find.text(words.pnpSavingChangesDesc), findsNothing,
+          reason: '$locale');
+    }
+    expect(overflows, isEmpty, reason: overflows.join('\n'));
+
+    // The save keeps its own copy.
+    await pump(tester, const WizardSaving());
+    expect(
+        find.text(
+            lookupAppLocalizations(const Locale('en')).pnpSavingChangesDesc),
+        findsOneWidget);
   });
 
   testWidgets(

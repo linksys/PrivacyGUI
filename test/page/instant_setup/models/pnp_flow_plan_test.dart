@@ -2,34 +2,41 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_flow_plan.dart';
 
 /// The plan's own reading of its steps — what Next, Back and Save placement are
-/// derived from (#1511 P4).
+/// derived from (#1511 P4), with Save before Your Network (#1511 P5).
 void main() {
   const withGuest = PnpFlowPlan(settingStepIds: ['wifi', 'guest']);
   const noGuest = PnpFlowPlan(settingStepIds: ['wifi']);
 
-  test('Your Network follows the setting steps, and holds Save', () {
+  test('Your Network follows the setting steps', () {
     expect(withGuest.stepIds, ['wifi', 'guest', 'network']);
     expect(withGuest.firstStepId, 'wifi');
-    expect(withGuest.saveStepId, 'network');
     expect(noGuest.stepIds, ['wifi', 'network']);
   });
 
-  test('Next goes to the step after, and the last step has none', () {
-    expect(withGuest.stepAfter('wifi'), 'guest');
-    expect(withGuest.stepAfter('guest'), 'network');
-    expect(withGuest.stepAfter('network'), isNull);
-    expect(noGuest.stepAfter('wifi'), 'network');
+  test('the last setting step holds Save, whichever it is (#1511 P5)', () {
+    expect(withGuest.saveStepId, 'guest');
+    expect(noGuest.saveStepId, 'wifi');
   });
 
-  test('Back goes to the step before, and the first step has none', () {
-    expect(withGuest.stepBefore('network'), 'guest');
-    expect(withGuest.stepBefore('guest'), 'wifi');
-    expect(withGuest.stepBefore('wifi'), isNull);
-    expect(noGuest.stepBefore('network'), 'wifi');
+  test('Next moves between setting steps, and stops at the one that saves', () {
+    expect(withGuest.nextFrom('wifi'), 'guest');
+    expect(withGuest.nextFrom('guest'), isNull,
+        reason:
+            'the save step saves; the flow, not a Next, opens Your Network');
+    expect(noGuest.nextFrom('wifi'), isNull);
+    expect(withGuest.nextFrom('network'), isNull);
+  });
+
+  test('Back moves between setting steps, and never across Save', () {
+    expect(withGuest.backFrom('guest'), 'wifi');
+    expect(withGuest.backFrom('wifi'), isNull);
+    expect(withGuest.backFrom('network'), isNull,
+        reason: 'Your Network is past the irreversible point (D7)');
+    expect(noGuest.backFrom('network'), isNull);
   });
 
   test('a step the plan does not have has no neighbours', () {
-    expect(noGuest.stepAfter('guest'), isNull);
-    expect(noGuest.stepBefore('guest'), isNull);
+    expect(noGuest.nextFrom('guest'), isNull);
+    expect(noGuest.backFrom('guest'), isNull);
   });
 }

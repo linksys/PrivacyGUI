@@ -26,16 +26,18 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// change fades the page (`app.dart`'s `FadePageTransitionsBuilder`): drawn by
 /// a step's page, the stepper would fade on every step, and its segments would
 /// not animate because its `State` would not survive. It shows from the first
-/// setting step to Your Network, including while saving and reconnecting
-/// (D4), and not on the entry checks, the firmware stage or the completion
-/// screen. Its segments, their order and their labels come from the plan.
+/// setting step to Your Network, including while saving and reconnecting and
+/// across the save into Your Network (D4, #1511 P5), and not on the entry
+/// checks, the firmware stage or the completion screen. Its segments, their
+/// order and their labels come from the plan.
 ///
 /// **The status screens are drawn over the page, and have no URL.** Saving,
 /// reconnecting, the firmware stage, the completion screen and a wizard that
 /// could not start are phases of the flow, not places: [child] — the step
-/// where Save was pressed — stays mounted underneath, hidden, so a save that
-/// comes back to the form shows that step as the user left it, and Back can
-/// never land on "Saving".
+/// where Save was pressed, or Your Network for the firmware stage and the
+/// completion screen (#1511 P5) — stays mounted underneath, hidden, so a save
+/// that comes back to the form shows that step as the user left it, and Back
+/// can never land on "Saving".
 ///
 /// A page view by the layout gate's rule (`views/*_view.dart`) although it is
 /// not a route's page: the gate pumps it around a step's page to sweep the
@@ -70,7 +72,8 @@ class PnpFlowFrameView extends ConsumerWidget {
           WizardSaving() ||
           WizardSaved() ||
           WizardNeedsReconnect() ||
-          WizardTestingReconnect() =>
+          WizardTestingReconnect() ||
+          WizardYourNetwork() =>
             true,
           _ => false,
         };
@@ -135,9 +138,13 @@ class PnpFlowFrameView extends ConsumerWidget {
   Widget? _status(BuildContext context, WidgetRef ref, PnpPhase phase) =>
       switch (phase) {
         WizardSaving() ||
-        WizardSaved() ||
+        WizardSaved() =>
+          _buildLoadingCard(context, loc(context).pnpSavingChangesDesc),
+        // Its own line since #1511 P5: the check now follows Your Network's
+        // Done, not the save, so the save's copy — the Wi-Fi going off and on —
+        // would describe something nobody just did.
         WizardCheckingFirmware() =>
-          _buildSavingOverlay(context),
+          _buildLoadingCard(context, loc(context).checkingForNewFirmware),
         WizardNeedsReconnect(newSsid: final ssid) =>
           _buildReconnectView(context, ref, ssid),
         WizardTestingReconnect(
@@ -151,9 +158,9 @@ class PnpFlowFrameView extends ConsumerWidget {
         _ => null,
       };
 
-  // ── Saving / Loading ──────────────────────────────────────
+  // ── Saving / Checking firmware ────────────────────────────
 
-  Widget _buildSavingOverlay(BuildContext context) {
+  Widget _buildLoadingCard(BuildContext context, String message) {
     return Center(
       child: AppCard(
         child: Padding(
@@ -163,10 +170,7 @@ class PnpFlowFrameView extends ConsumerWidget {
             children: [
               const AppLoader(),
               AppGap.lg(),
-              AppText.bodyMedium(
-                loc(context).pnpSavingChangesDesc,
-                textAlign: TextAlign.center,
-              ),
+              AppText.bodyMedium(message, textAlign: TextAlign.center),
             ],
           ),
         ),

@@ -2932,17 +2932,19 @@ final kPnpGuestStepPageCase = PageSurfaceCase(
 );
 
 /// `page.pnp_your_network_step` (#1511 P4): Your Network — the mesh nodes, Add
-/// nodes, and Save.
+/// nodes, and Done.
 ///
 /// Never swept before #1511 P4: on `pnp_setup` it was the third step, behind two
 /// taps per cell. Two nodes, so a list with a divider and both role labels, and
 /// the onboarding capability is on in the case's fixture so the Add nodes button
-/// is in the row — [AppNodeListCard] and [AppButton] are the two premises.
+/// is in the row — [AppNodeListCard] and [AppButton] are the two premises. On
+/// the flow's Your Network phase since #1511 P5, when the step moved after the
+/// save: its footer is Done alone, where it was Back beside Save.
 final kPnpYourNetworkStepPageCase = PageSurfaceCase(
   id: 'pnp_your_network_step',
   view: () => const PnpYourNetworkStepView(),
   overrides: () => [
-    ...pnpOverrides(pnpWizardConfiguringState),
+    ...pnpOverrides(pnpWizardYourNetworkState),
     deviceCapabilitiesProvider.overrideWithValue(
         DeviceCapabilities(const {DeviceCapability.bleOnboarding})),
   ],

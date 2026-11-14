@@ -29,11 +29,13 @@ import '../../../../mocks/test_data/scenes/pnp_scene_data.dart';
 // key here names a phase, and the count of keys is decided by the phase→builder map
 // rather than by the number of phases:
 //
-//   * **Nine phases reach seven builders.** `WizardSaving`, `WizardSaved` and
-//     `WizardCheckingFirmware` all reach `_buildSavingOverlay`, which takes no
-//     arguments — three phases, one tree, one picture. `saving` below stands for all
-//     three, and `pnpWizardSavingState`'s doc says so, because the day one of them
-//     grows its own copy is the day this key stops covering it.
+//   * **Nine phases reach eight pictures.** `WizardSaving` and `WizardSaved` reach
+//     `_buildLoadingCard` with the save's copy — two phases, one tree, one picture;
+//     `saving` below stands for both, and `pnpWizardSavingState`'s doc says so.
+//     `WizardCheckingFirmware` used to be a third: it grew its own copy in #1511 P5,
+//     when the check moved after Your Network, so it has a key of its own,
+//     `checking_firmware`. (`WizardYourNetwork` draws no status screen: the step
+//     page is the picture, and the layout gate sweeps it.)
 //   * **One phase reaches two builders.** `WizardWifiReady` branches on `isSplitMode`
 //     — `bands.length > 1`, derived rather than stored — into two structurally
 //     different completion screens. Hence two keys.
@@ -124,10 +126,14 @@ void main() {
         'configuring': (overrides) => overrides.addAll(
               pnpOverrides(pnpWizardConfiguringState, router: pnpSplitRouter),
             ),
-        // `_buildSavingOverlay`, standing for `WizardSaving`, `WizardSaved` and
-        // `WizardCheckingFirmware`.
+        // `_buildLoadingCard` with the save's copy, standing for `WizardSaving` and
+        // `WizardSaved`.
         'saving': (overrides) => overrides.addAll(
               pnpOverrides(pnpWizardSavingState),
+            ),
+        // The same card with the firmware check's copy (#1511 P5).
+        'checking_firmware': (overrides) => overrides.addAll(
+              pnpOverrides(pnpWizardCheckingFirmwareState),
             ),
         // The only screen that asks the user to leave the app and join a different
         // network — so the SSID it prints is the thing to check per language.

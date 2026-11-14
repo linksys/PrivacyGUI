@@ -43,8 +43,8 @@ class _RecoveringPnp extends FixedPnpNotifier {
   }
 }
 
-/// Every [PnpPhase] but the two the flow navigates on — [WizardConfiguring] and
-/// [NoInternet] — one instance each.
+/// Every [PnpPhase] but the three the flow navigates on — [WizardConfiguring],
+/// [WizardYourNetwork] and [NoInternet] — one instance each.
 const _phasesThatStay = <PnpPhase>[
   AdminCheckingInternet(),
   AdminInternetConnected(),
@@ -91,6 +91,32 @@ void main() {
         ),
         isNull,
       );
+    });
+
+    test('Your Network is opened when the save lands (#1511 P5)', () {
+      // The save is pressed on the last setting step, and the URL stays there
+      // while it is out; Your Network is a step the flow moves the user to, not
+      // one a Next reaches.
+      const ready = WizardWifiReady(ssid: 'n', password: 'p');
+      const onYourNetwork =
+          PnpState(phase: WizardYourNetwork(ready: ready), plan: _plan);
+
+      for (final previous in const <PnpPhase>[
+        WizardSaved(),
+        WizardTestingReconnect(attemptCount: 1, maxAttempts: 5),
+      ]) {
+        expect(
+          pnpFlowDestination(
+              PnpState(phase: previous, plan: _plan), onYourNetwork),
+          PnpFlowDestination.yourNetwork,
+          reason: 'from $previous',
+        );
+      }
+      expect(
+          pnpFlowDestination(
+              onYourNetwork, onYourNetwork.copyWith(meshNodes: const [])),
+          isNull,
+          reason: 'a re-read of the nodes on Your Network is not a navigation');
     });
 
     test('a re-read of the nodes is not a navigation', () {

@@ -45,14 +45,17 @@ state WizardPhase {
     WizardInitializing --> WizardError : Fetch fail
 
     WizardConfiguring : User edits WiFi\nSSID, password, guest
-    WizardConfiguring --> WizardSaving : notifier.saveChanges()
+    WizardConfiguring --> WizardSaving : notifier.saveChanges()\n(Save, on the last setting step)
 
     WizardSaving : Save WiFi settings\nAcknowledge PnP completion
-    WizardSaving --> WizardNeedsReconnect : Main SSID changed\n(connection will drop)
-    WizardSaving --> WizardSaved : No SSID change
+    WizardSaving --> WizardNeedsReconnect : Router not back by the\nsave deadline (a rename)
+    WizardSaving --> WizardSaved : Write answered, or the router\ncame back with it applied
     WizardSaving --> WizardConfiguring : Save error\n(show error, retry)
 
-    WizardSaved --> WizardCheckingFirmware : Auto transition
+    WizardSaved --> WizardYourNetwork : Auto transition\n(shell opens Your Network)
+
+    WizardYourNetwork : Show mesh nodes\nAdd nodes (re-read after each)
+    WizardYourNetwork --> WizardCheckingFirmware : notifier.finishWizard()\n(Your Network's Done)
 
     WizardNeedsReconnect : Show new SSID/password\nUser reconnects manually
     WizardNeedsReconnect --> WizardTestingReconnect : notifier.testReconnect()
@@ -95,11 +98,12 @@ WizardWifiReady --> DashboardRoute <<end>> : User taps Done\nNavigate to /usp/da
 |-------|-------------|----------|
 | `WizardInitializing` | Fetching WiFi SSIDs, APs, mesh topology. | Enter from `AdminInternetConnected` |
 | `WizardConfiguring` | User on the steps. Carries only a failed save's `saveError`: the form is in the steps' drafts, the nodes on `PnpState.meshNodes`. | Fetch success |
-| `WizardSaving` | Saving WiFi changes to router. | `saveChanges()` |
-| `WizardSaved` | Save complete, no SSID change. | Save success (no reconnect needed) |
-| `WizardNeedsReconnect` | Main WiFi SSID changed. Connection dropped. | Save success (SSID changed) |
+| `WizardSaving` | Saving WiFi changes to router. | `saveChanges()`, the last setting step's Save |
+| `WizardSaved` | Save complete and acknowledged; passes straight to `WizardYourNetwork`. | Save success, directly or after the reconnect |
+| `WizardNeedsReconnect` | The router did not come back by the save deadline — usually a main-Wi-Fi rename the browser cannot rejoin. | The write was not answered, and polling ran out |
 | `WizardTestingReconnect` | Polling router after reconnect. | `testReconnect()` |
-| `WizardCheckingFirmware` | The router's OTA check, bounded at 15 s; every outcome but "update available" finishes setup. | After save/reconnect complete |
+| `WizardYourNetwork` | On Your Network, after the save (#1511 P5): the mesh nodes, Add nodes; carries the completion screen's credentials. | Save complete |
+| `WizardCheckingFirmware` | The router's OTA check, bounded at 15 s; every outcome but "update available" finishes setup. | `finishWizard()`, Your Network's Done |
 | `WizardUpdatingFirmware` | The router is installing a newer firmware; the route refuses to be left. | The check found an update |
 | `WizardWifiReady` | Setup complete. Show credentials + QR. | No FW update needed |
 | `WizardError` | Recoverable error during wizard. | Exception in wizard operations |
@@ -109,8 +113,9 @@ WizardWifiReady --> DashboardRoute <<end>> : User taps Done\nNavigate to /usp/da
 Since #1511 P2 the `/pnp` tree sits under one `ShellRoute` whose body,
 `PnpFlowShell` (`lib/page/instant_setup/views/pnp_flow_shell.dart`), is the only
 place a `PnpPhase` becomes a page: `pnpFlowDestination(previous, next)` opens the
-wizard's first step when the flow gets its plan — once per flow — and hands
-`NoInternet` to troubleshooting. The views render phases; none of them navigates
+wizard's first step when the flow gets its plan — once per flow — opens Your
+Network when the save has landed (#1511 P5), and hands `NoInternet` to
+troubleshooting. The views render phases; none of them navigates
 on one. Next and Back are user gestures, and go where the plan says.
 
 ### The steps, the plan and the drafts (#1511 P4)
@@ -121,7 +126,7 @@ ShellRoute  (PnpFlowShell → PnpFlowFrameView: top bar, stepper, status screens
 │   └── pnpConfig                     empty placeholder; onExit = the wizard's exit guard
 │       ├── wifi                      PnpWifiStepView
 │       ├── guest                     PnpGuestStepView (only if the router has a guest SSID)
-│       └── network                   PnpYourNetworkStepView — holds Save until #1511 P5
+│       └── network                   PnpYourNetworkStepView — after the save (#1511 P5)
 │           └── pnpAddNodes           pushed onto the root navigator, over the shell
 ```
 
@@ -129,7 +134,10 @@ ShellRoute  (PnpFlowShell → PnpFlowFrameView: top bar, stepper, status screens
   reads the router, from the step list (`kPnpSettingSteps` and, for the page side,
   `pnpSettingStepPages`) and each step's inclusion condition. Nothing recomputes
   it; `startPostLoginFlow()` does nothing once there is one. The stepper's
-  segments, Next/Back, which step holds Save, and the back policy all read it.
+  segments, Next/Back, which step holds Save — the last setting step, since
+  #1511 P5 — and the back policy all read it. Your Network comes after Save:
+  no Next reaches it (the flow opens it when the save has landed), it has no
+  Back, and its Done runs the firmware stage and then the completion screen.
 - **The drafts** — one `Preservable` notifier per setting step
   (`pnpMainWifiDraftProvider`, `pnpGuestWifiDraftProvider`) — hold what the user
   types. The flow begins each one at the router read and holds it, so a draft
@@ -145,17 +153,23 @@ ShellRoute  (PnpFlowShell → PnpFlowFrameView: top bar, stepper, status screens
 
 The shell's `redirect` is the back policy, `pnpBackPolicy(flow, target)`:
 
-| flow | the entry | a step in the plan | anything else in the wizard |
-|---|---|---|---|
-| no plan yet | open | → the entry | → the entry |
-| editing | open (the exit guard asks to log out) | open | → the first step |
-| past editing | → the save step | → the save step, unless it is it | → the save step |
+| flow | open | everything else in the tree goes to |
+|---|---|---|
+| no plan yet | the entry | the entry |
+| editing | the entry (the exit guard asks to log out), the setting steps | the first step |
+| saving (incl. reconnect) | the save step | the save step |
+| on Your Network | Your Network, adding nodes | Your Network |
+| after Your Network (firmware, done) | Your Network | Your Network |
+
+So Back never crosses the save (#1511 P5): once on Your Network, the setting
+steps are behind the user.
 
 `pnpConfig`'s `onExit` decides by phase: the firmware stage and an in-flight save
 (`WizardSaving`, `WizardSaved`, `WizardTestingReconnect`) refuse; **editing asks
 whether to log out** — Back from the first step lands here — and on "Log out"
-reverts the drafts, signs out and goes to the login page; anything else leaves,
-with the drafts' dirty guard asking only if something is still unsaved.
+reverts the drafts, signs out and goes to the login page; anything else —
+Your Network, whose setup is saved and acknowledged, and the completion screen —
+leaves, with the drafts' dirty guard asking only if something is still unsaved.
 
 ### How long the flow lives
 
