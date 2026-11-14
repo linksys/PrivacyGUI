@@ -38,30 +38,6 @@ class PnpStepFooter extends ConsumerWidget {
     final before = plan.backFrom(stepId);
     final after = plan.nextFrom(stepId);
 
-    // The primary button, decided once: Save on the save step, Done on Your
-    // Network, Next everywhere else. One footer is on screen at a time — the
-    // step pages replace each other — so the three hooks are singletons.
-    final (String label, String identifier, VoidCallback? action) =
-        stepId == plan.saveStepId
-            ? (
-                loc(context).save,
-                'pnp-step-save',
-                () => ref.read(pnpProvider.notifier).saveChanges(),
-              )
-            : stepId == PnpFlowPlan.yourNetworkStepId
-                ? (
-                    loc(context).done,
-                    'pnp-step-done',
-                    () => ref.read(pnpProvider.notifier).finishWizard(),
-                  )
-                : (
-                    loc(context).next,
-                    'pnp-step-next',
-                    after == null
-                        ? null
-                        : () => context.goNamed(RouteNamed.pnpStep(after)),
-                  );
-
     // A `Wrap`, not a `Row`: at 320px Back beside Save overflowed in `el` by 17px
     // on Your Network when it held Save (#1511 P4, the first sweep that step ever
     // had; the pair is on the last setting step since P5), and the honest
@@ -90,11 +66,37 @@ class PnpStepFooter extends ConsumerWidget {
               }
             },
           ),
-        AppButton(
-          label: label,
-          identifier: identifier,
-          onTap: canContinue ? action : null,
-        ),
+        // The primary button: Save on the save step, Done on Your Network,
+        // Next everywhere else. One footer is on screen at a time — the step
+        // pages replace each other — so the three hooks are singletons.
+        //
+        // Each `identifier:` is a literal at its own site, on purpose: the E2E
+        // repo builds its identifier map from this source text and skips a
+        // value chosen anywhere else (Art. XVI §16.4).
+        if (stepId == plan.saveStepId)
+          AppButton(
+            label: loc(context).save,
+            identifier: 'pnp-step-save',
+            onTap: canContinue
+                ? () => ref.read(pnpProvider.notifier).saveChanges()
+                : null,
+          )
+        else if (stepId == PnpFlowPlan.yourNetworkStepId)
+          AppButton(
+            label: loc(context).done,
+            identifier: 'pnp-step-done',
+            onTap: canContinue
+                ? () => ref.read(pnpProvider.notifier).finishWizard()
+                : null,
+          )
+        else
+          AppButton(
+            label: loc(context).next,
+            identifier: 'pnp-step-next',
+            onTap: canContinue && after != null
+                ? () => context.goNamed(RouteNamed.pnpStep(after))
+                : null,
+          ),
       ],
     );
   }
