@@ -176,6 +176,7 @@ final pnpRoute = LinksysRoute(
               parentNavigatorKey: routerKey,
               config: _pnpRouteConfig,
               builder: (context, state) => const PnpAddNodesView(),
+              onExit: _pnpAddNodesExit,
             ),
           ],
         ),
@@ -183,6 +184,22 @@ final pnpRoute = LinksysRoute(
     ),
   ],
 );
+
+/// Leaving add nodes, however it is left: Your Network, under it, reads the
+/// nodes again so it shows the ones that joined (#1734).
+///
+/// Here rather than after Your Network's `push`. On web, Done is the browser's
+/// Back (`browserHistoryBack`), and so is the browser's own button: the step's
+/// URL comes in as a new route list, which drops the pushed page without
+/// completing its push future (go_router 17.5.0, `setNewRoutePath`), so a
+/// re-read waiting on that future never ran. `onExit` runs both on a pop and
+/// on that replacement. The read is not awaited: leaving never waits on it.
+bool _pnpAddNodesExit(BuildContext context, GoRouterState state) {
+  unawaited(ProviderScope.containerOf(context)
+      .read(pnpProvider.notifier)
+      .refreshMeshNodes());
+  return true;
+}
 
 /// The dashboard's ending: back to the dashboard, and no "continue without
 /// internet" — there is no setup to acknowledge (#1511 P1).

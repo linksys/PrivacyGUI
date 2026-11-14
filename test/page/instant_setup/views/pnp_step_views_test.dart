@@ -108,7 +108,7 @@ void main() {
             builder: (context, state) => Scaffold(
               body: Center(
                 child: TextButton(
-                  // GoRouter's pop, as PnpAddNodesView's Done is.
+                  // GoRouter's pop, as PnpAddNodesView's Done is off the web.
                   onPressed: () => context.pop(),
                   child: const Text('add nodes page'),
                 ),
@@ -277,11 +277,15 @@ void main() {
       expect(descriptionOf('MX2000'), 'Slave');
     });
 
+    // Reading the nodes again on the way back is the add-nodes route's
+    // `onExit`, not this step's, so it is tested against the production route
+    // in `test/route/pnp_wizard_route_test.dart`; this harness's stub route has
+    // none.
     testWidgets(
-        'Add nodes opens the add-nodes page, and the nodes are read again '
-        'once it pops', (tester) async {
+        'Add nodes opens the add-nodes page, and closing it comes back to the '
+        'step', (tester) async {
       final handle = tester.ensureSemantics();
-      final notifier = await pumpStep(tester, const PnpYourNetworkStepView());
+      await pumpStep(tester, const PnpYourNetworkStepView());
 
       expect(
           find.bySemanticsIdentifier(kPnpAddNodesIdentifier), findsOneWidget);
@@ -290,8 +294,6 @@ void main() {
         await settleIgnoringAnimations(tester);
       });
       expect(find.text('add nodes page'), findsOneWidget);
-      expect(notifier.meshRefreshes, 0,
-          reason: 'not before the page has closed');
 
       await runWithOverflowCollection((_) async {
         await tester.tap(find.text('add nodes page'));
@@ -300,7 +302,6 @@ void main() {
 
       expect(buttonLabelled(en.save), findsOneWidget,
           reason: 'back on the step it was opened from');
-      expect(notifier.meshRefreshes, 1);
       handle.dispose();
     });
 

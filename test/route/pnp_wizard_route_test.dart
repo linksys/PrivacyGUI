@@ -12,6 +12,7 @@ import 'package:privacy_gui/core/mode/app_mode_profile.dart';
 import 'package:privacy_gui/core/mode/local_mode_profile.dart';
 import 'package:privacy_gui/framework/mode/session_end.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/page/add_nodes/providers/add_nodes_state.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_wifi_draft_provider.dart';
@@ -24,6 +25,7 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import '../mocks/provider_overrides/mock_add_nodes.dart';
 import '../mocks/provider_overrides/mock_common.dart';
 import '../mocks/provider_overrides/mock_pnp.dart';
 import '../mocks/test_data/scenes/pnp_scene_data.dart';
@@ -118,6 +120,7 @@ void main() {
         appModeProfileProvider.overrideWithValue(const LocalModeProfile()),
         deviceCapabilitiesProvider.overrideWithValue(
             DeviceCapabilities(const {DeviceCapability.bleOnboarding})),
+        ...addNodesOverrides(const AddNodesState()),
       ],
       child: MaterialApp.router(
         theme: AppTheme.create(brightness: Brightness.light),
@@ -279,6 +282,52 @@ void main() {
       await settle(tester);
 
       expect(location(), RoutePath.uspDashboard);
+    });
+  });
+
+  group('leaving add nodes reads the nodes again (#1734)', () {
+    const network = '/pnp/pnpConfig/network';
+
+    // The page on top. A push leaves the route list's URI at the step under it
+    // (go_router 17.5.0, `optionURLReflectsImperativeAPIs` off).
+    String top() =>
+        router.routerDelegate.currentConfiguration.last.matchedLocation;
+
+    /// Your Network, with the add-nodes page opened from its button.
+    Future<void> openAddNodes(WidgetTester tester) async {
+      await pumpApp(tester);
+      await enterWizard(tester);
+      router.go(network);
+      await settle(tester);
+      await tester.tap(byId(kPnpAddNodesIdentifier));
+      await settle(tester);
+      expect(top(), '$network/${RoutePath.pnpAddNodes}');
+      expect(pnp.meshRefreshes, 0, reason: 'not before the page is left');
+    }
+
+    testWidgets('when Done pops it', (tester) async {
+      await openAddNodes(tester);
+
+      router.pop();
+      await settle(tester);
+
+      expect(top(), network);
+      expect(pnp.meshRefreshes, 1);
+    });
+
+    testWidgets('when the browser goes back to the step', (tester) async {
+      // On web, Done is the browser's Back, as is the browser's own button: the
+      // step's URL comes in as a new route list, which drops the pushed page
+      // without completing its push future (go_router 17.5.0,
+      // `setNewRoutePath`). A re-read waiting on that future never ran (PR
+      // #1817's review, W1).
+      await openAddNodes(tester);
+
+      router.go(network);
+      await settle(tester);
+
+      expect(top(), network);
+      expect(pnp.meshRefreshes, 1);
     });
   });
 

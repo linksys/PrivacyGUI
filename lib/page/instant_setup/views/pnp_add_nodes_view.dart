@@ -19,7 +19,8 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// so the wizard keeps its step and its drafts. Done is the browser's Back on
 /// web, so it and the browser's own Back are one path; the notifier,
 /// page-scoped, stops a session it started when it is disposed. Either way the
-/// step reads the nodes again on return.
+/// route's `onExit` has the step read the nodes again (`_pnpAddNodesExit` in
+/// `route_pnp.dart`).
 ///
 /// The route is [RouteNamed.pnpAddNodes], which the idle checker exempts as it
 /// does [RouteNamed.addNodes]: a full session can outlast the idle window.

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -41,7 +43,7 @@ class PnpYourNetworkStepView extends ConsumerWidget {
             )
         ? ref
             .watch(surfaceStrategyProvider)
-            .addNodesEntry(() => _openAddNodes(context, ref))
+            .addNodesEntry(() => _openAddNodes(context))
         : null;
 
     return UiKitPageView.innerPage(
@@ -122,15 +124,13 @@ class PnpYourNetworkStepView extends ConsumerWidget {
     );
   }
 
-  /// Opens the add-nodes flow over the wizard, then reads the nodes again so
-  /// the step shows the ones that joined (#1734).
+  /// Opens the add-nodes flow over the wizard (#1734).
   ///
   /// Pushed, onto the root navigator over the whole PnP shell, so the wizard
   /// stays mounted under it with its drafts and its step. Going to `/pnp`
-  /// instead would leave the wizard.
-  Future<void> _openAddNodes(BuildContext context, WidgetRef ref) async {
-    await context.pushNamed(RouteNamed.pnpAddNodes);
-    if (!context.mounted) return;
-    await ref.read(pnpProvider.notifier).refreshMeshNodes();
-  }
+  /// instead would leave the wizard. Leaving add nodes reads the nodes again —
+  /// the add-nodes route's `onExit` does, not this push's future, which on web
+  /// never completes (`_pnpAddNodesExit` in `route_pnp.dart`).
+  void _openAddNodes(BuildContext context) =>
+      unawaited(context.pushNamed(RouteNamed.pnpAddNodes));
 }
