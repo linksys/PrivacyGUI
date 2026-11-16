@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_flow_plan.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_flow_shell.dart';
@@ -79,7 +80,7 @@ void main() {
 
     test('a failed save is still editing', () {
       const failed = PnpState(
-        phase: WizardConfiguring(saveError: null),
+        phase: WizardConfiguring(saveError: UnexpectedError()),
         plan: withGuest,
       );
       expect(policy(failed, step('wifi')), isNull);

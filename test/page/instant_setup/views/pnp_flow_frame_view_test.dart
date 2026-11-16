@@ -23,6 +23,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_install_phase_card.dart';
@@ -197,6 +199,25 @@ void main() {
           const WizardWifiReady(ssid: 'MyWiFi', password: 'MyPass1234'));
 
       expect(find.byType(AppButton), findsWidgets);
+    });
+  });
+
+  group('the wizard\'s read failure (#1816 review)', () {
+    testWidgets(
+        'is the shared error view, localized, and never shows the '
+        'diagnostic', (tester) async {
+      // Constitution §13.6: a read failure renders `ServiceErrorView`, which
+      // localizes the error; `code` and `detail` are for the log. The screen
+      // used to print `'$e'`.
+      const diagnostic = 'USP GET Device.WiFi.SSID. timed out';
+      await pump(
+          tester,
+          const WizardError(
+              error: NetworkError(code: 7003, detail: diagnostic)));
+
+      expect(find.byType(ServiceErrorView), findsOneWidget);
+      expect(find.textContaining(diagnostic), findsNothing);
+      expect(find.textContaining('7003'), findsNothing);
     });
   });
 

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/views/service_error_view.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
@@ -11,6 +12,7 @@ import 'package:privacy_gui/page/firmware_update/views/components/firmware_insta
 import 'package:privacy_gui/page/firmware_update/views/components/firmware_update_warning_note.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
+import 'package:privacy_gui/page/instant_setup/views/components/pnp_log_out_of_setup.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_setting_step_pages.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/qr_code.dart';
@@ -154,7 +156,16 @@ class PnpFlowFrameView extends ConsumerWidget {
           _buildTestingReconnect(context, count, max),
         WizardUpdatingFirmware() => _buildFirmwareUpdate(context, ref, phase),
         WizardWifiReady() => _buildComplete(context, phase),
-        WizardError(message: final msg) => _buildError(context, ref, msg),
+        // A read failure: the shared view localizes the error (§13.6), and its
+        // retry starts the entry over — there is no plan yet to keep. Log out
+        // is the way out when retrying fails every time.
+        WizardError(error: final error) => ServiceErrorView(
+            error: error,
+            title: loc(context).failedToLoadSettings,
+            onRetry: () => ref.read(pnpProvider.notifier).startPostLoginFlow(),
+            secondaryLabel: loc(context).logout,
+            onSecondary: () => logOutOfSetup(context, ref),
+          ),
         _ => null,
       };
 
@@ -518,35 +529,6 @@ class PnpFlowFrameView extends ConsumerWidget {
           child: AppIcon.font(Icons.copy, size: 16),
         ),
       ],
-    );
-  }
-
-  // ── Error ─────────────────────────────────────────────────
-
-  Widget _buildError(BuildContext context, WidgetRef ref, String message) {
-    return Center(
-      child: AppCard(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppIcon.font(Icons.error_outline, size: 48, color: Colors.red),
-              AppGap.lg(),
-              AppText.bodyMedium(
-                message,
-                textAlign: TextAlign.center,
-              ),
-              AppGap.xl(),
-              AppButton.text(
-                label: loc(context).tryAgain,
-                onTap: () =>
-                    ref.read(pnpProvider.notifier).startPostLoginFlow(),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

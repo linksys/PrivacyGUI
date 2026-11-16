@@ -70,7 +70,7 @@ class InternetTroubleshootingNotifier
       // must not collapse it into no internet.
       logger.e(
           '[Troubleshooting] Internet check read failure: $e (code=${e.code})');
-      _set(TroubleshootingReadFailure(code: e.code, detail: '$e'));
+      _set(const TroubleshootingReadFailure());
     }
   }
 
@@ -122,12 +122,23 @@ class InternetTroubleshootingNotifier
         }
       } on ServiceError catch (e) {
         lastReadFailure = e;
+      } catch (e, stack) {
+        // Constitution §13.4.3: the checking screen has no button. Not a read
+        // that may succeed next time but a bug of ours, so it ends the poll on
+        // the page a router that cannot be read ends on.
+        logger.e(
+            '[Troubleshooting] Modem restart check failed outside the '
+            'service',
+            error: e,
+            stackTrace: stack);
+        _set(const TroubleshootingReadFailure());
+        return;
       }
     }
     final failure = lastReadFailure;
     if (failure != null) {
       logger.e('[Troubleshooting] Modem restart check read failure: $failure');
-      _set(TroubleshootingReadFailure(code: failure.code, detail: '$failure'));
+      _set(const TroubleshootingReadFailure());
       return;
     }
     _set(const TroubleshootingNoInternet());
@@ -151,11 +162,20 @@ class InternetTroubleshootingNotifier
       await _checkInternet();
     } on ServiceError catch (e) {
       // The service throws only `ServiceError` — the mutation lock's timeout
-      // included, typed where it starts — so this is the only catch the
-      // constitution allows here (§13.4).
+      // included, typed where it starts — so every answer from the router
+      // lands here (§13.4).
       logger.e('[Troubleshooting] ISP save failed: $e');
       _refreshPrefill();
       _set(TroubleshootingNoInternet(saveError: e));
+    } catch (e, stack) {
+      // Constitution §13.4.3: the progress screen has no button, so what is
+      // not a ServiceError — a bug of ours, not the router's answer — goes
+      // back to the form typed, as a refused save does.
+      logger.e('[Troubleshooting] ISP save failed outside the service',
+          error: e, stackTrace: stack);
+      _refreshPrefill();
+      _set(TroubleshootingNoInternet(
+          saveError: UnexpectedError(originalError: e)));
     }
   }
 

@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_flow_plan.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
@@ -202,8 +201,7 @@ class PnpFlowShell extends ConsumerWidget {
     // stays on the phase until the next save, and rebuilds must not repeat it.
     ref.listen(pnpProvider.select((s) => s.phase), (_, next) {
       if (next is WizardConfiguring && next.saveError != null) {
-        showFailedSnackBar(
-            context, localizeServiceError(context, next.saveError!));
+        showSaveErrorSnackBar(context, next.saveError!);
       }
     });
     return PnpFlowFrameView(stepId: pnpStepIdOf(location), child: child);

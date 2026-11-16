@@ -71,12 +71,27 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
       state = state.copyWith(
         phase: AdminReadFailure(code: e.code, detail: '$e'),
       );
-    } catch (e) {
-      logger.e('[PnP] startPostLoginFlow error: $e');
-      state = state.copyWith(
-        phase: AdminReadFailure(detail: '$e'),
-      );
+    } catch (e, stack) {
+      // Constitution §13.4.3: the checking screen has no button. The services
+      // type every answer from the router, so this is a bug of ours — the
+      // read-failure card says so and offers Try again and Log out.
+      logger.e('[PnP] The entry check failed outside the services',
+          error: e, stackTrace: stack);
+      state = state.copyWith(phase: const AdminReadFailure());
     }
+  }
+
+  /// Constitution §13.4.3: what a method that set a phase with no way out lets
+  /// escape, typed for the failure phase it lands on.
+  ///
+  /// A `ServiceError` stays what it is. Anything else is not the router's answer
+  /// — the services type all of those — but a bug of ours, so it is logged with
+  /// its stack and becomes an `UnexpectedError`.
+  ServiceError _typed(String what, Object error, StackTrace stack) {
+    if (error is ServiceError) return error;
+    logger.e('[PnP] $what failed outside the services',
+        error: error, stackTrace: stack);
+    return UnexpectedError(originalError: error);
   }
 
   Future<void> _checkInternet() async {
@@ -87,8 +102,7 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
         await _initWizard();
       } else {
         // Hand off. The troubleshooting flow reads the WAN for its own forms.
-        final ssid = await _svc.fetchCurrentSsid();
-        state = state.copyWith(phase: NoInternet(ssid: ssid));
+        state = state.copyWith(phase: const NoInternet());
       }
     } on ServiceError catch (e) {
       // The WAN read threw — we could NOT determine the WAN state (router
@@ -99,9 +113,6 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
       state = state.copyWith(
         phase: AdminReadFailure(code: e.code, detail: '$e'),
       );
-    } catch (e) {
-      logger.e('[PnP] Internet check unexpected error: $e');
-      state = state.copyWith(phase: AdminReadFailure(detail: '$e'));
     }
   }
 
@@ -127,11 +138,14 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
       final router = results[0] as PnpWizardData;
       final mesh = results[1] as MeshTopologyInfo;
       _enterSteps(router, mesh.nodes);
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.e('[PnP] Wizard init failed: $e');
+      state = state.copyWith(phase: WizardError(error: e));
+    } catch (e, stack) {
+      // Constitution §13.4.3: the spinner has no button — building the plan or
+      // a draft is code of ours, not a service's.
       state = state.copyWith(
-        phase: WizardError(message: '$e'),
-      );
+          phase: WizardError(error: _typed('Wizard init', e, stack)));
     }
   }
 
@@ -224,6 +238,18 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
     final write = _collectWrite();
 
     state = state.copyWith(phase: const WizardSaving());
+    try {
+      await _save(write);
+    } catch (e, stack) {
+      // Constitution §13.4.3: the saving screen has no button, so what `_save`
+      // lets escape goes back to the form, as a refused write does.
+      _returnToForm(_typed('Save', e, stack));
+    }
+  }
+
+  /// [saveChanges] once the saving screen is up: write, wait for the answer or
+  /// for the router, and finish into Your Network — or go back to the form.
+  Future<void> _save(PnpWifiWrite write) async {
     final sinceWrite = Stopwatch()..start();
 
     final PnpWifiWriteOutcome outcome;
@@ -351,6 +377,10 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
       logger.i('[PnP] Router reconnected, SN=$sn');
       return true;
     } catch (e) {
+      // One `catch`, not `on ServiceError`: the re-login is the auth
+      // coordinator's, not a service's, so what it throws while the browser is
+      // still off the network is not typed — and every failure here, typed or
+      // not, means the same "not back yet".
       logger.d('[PnP] router not reachable yet: $e');
       return false;
     }
@@ -433,9 +463,20 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   /// try the router again with exponential backoff (2, 4, 8, 16, 32 s), then
   /// finish the save as [saveChanges] would have — into Your Network.
   Future<void> testReconnect() async {
-    const maxAttempts = 5;
     final phase = state.phase;
     if (phase is! WizardNeedsReconnect) return;
+    try {
+      await _reconnect(phase);
+    } catch (e, stack) {
+      // Constitution §13.4.3: the reconnecting screen has no button, so what
+      // `_reconnect` lets escape goes back to the form, as a failed save does.
+      _returnToForm(_typed('Reconnect', e, stack));
+    }
+  }
+
+  /// [testReconnect]'s attempts, from [phase] — the reconnect step it left.
+  Future<void> _reconnect(WizardNeedsReconnect phase) async {
+    const maxAttempts = 5;
     final backoff = ref.read(pnpReconnectBackoffProvider);
 
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {

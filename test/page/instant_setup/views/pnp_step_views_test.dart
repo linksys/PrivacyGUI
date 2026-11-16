@@ -320,8 +320,7 @@ void main() {
       await pumpStep(tester, const PnpYourNetworkStepView(),
           state: onYourNetwork());
 
-      expect(
-          find.bySemanticsIdentifier(kPnpAddNodesIdentifier), findsOneWidget);
+      expect(find.bySemanticsIdentifier('pnp-add-nodes'), findsOneWidget);
       await runWithOverflowCollection((_) async {
         await tester.tap(buttonLabelled(en.addNodes));
         await settleIgnoringAnimations(tester);
@@ -345,7 +344,7 @@ void main() {
           state: onYourNetwork(), capabilities: DeviceCapabilities.empty);
 
       expect(buttonLabelled(en.done), findsOneWidget);
-      expect(find.bySemanticsIdentifier(kPnpAddNodesIdentifier), findsNothing);
+      expect(find.bySemanticsIdentifier('pnp-add-nodes'), findsNothing);
       handle.dispose();
     });
 
@@ -355,7 +354,7 @@ void main() {
           state: onYourNetwork(), profile: const RemoteModeProfile());
 
       expect(buttonLabelled(en.done), findsOneWidget);
-      expect(find.bySemanticsIdentifier(kPnpAddNodesIdentifier), findsNothing);
+      expect(find.bySemanticsIdentifier('pnp-add-nodes'), findsNothing);
       handle.dispose();
     });
 

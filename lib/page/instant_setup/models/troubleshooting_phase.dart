@@ -80,11 +80,10 @@ class TroubleshootingRecovered extends TroubleshootingPhase {
 /// Distinct from [TroubleshootingNoInternet] (#1098): the router did not confirm
 /// "no internet", so the troubleshooting options are not the answer. The caller's
 /// ending takes over — PnP's entry re-runs its check and shows its read-failure
-/// card. [code] / [detail] are for the log only.
+/// card. It carries nothing: the error is logged where it is caught, and no
+/// page shows it.
 class TroubleshootingReadFailure extends TroubleshootingPhase {
-  final int? code;
-  final String? detail;
-  const TroubleshootingReadFailure({this.code, this.detail});
+  const TroubleshootingReadFailure();
   @override
-  List<Object?> get props => [code, detail];
+  List<Object?> get props => [];
 }

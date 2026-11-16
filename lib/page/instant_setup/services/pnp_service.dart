@@ -147,17 +147,23 @@ class PnpService {
   /// Supports both unified mode (all bands share SSID) and split mode
   /// (each band has different SSID, e.g. Du ISP routers).
   Future<PnpWizardData> fetchWizardData() async {
-    final List<Object> results;
     try {
-      results = await Future.wait([
+      return _wizardDataFrom(await Future.wait([
         WiFiSsids.fetch(_usp),
         WiFiAccessPoints.fetch(_usp),
         WiFiRadios.fetch(_usp),
-      ]);
+      ]));
+    } on ServiceError {
+      rethrow;
     } catch (e) {
+      // A fault in the read or in reading its answer: either way the wizard
+      // cannot start, and the notifier is handed a ServiceError (§13.3).
       throw mapUspErrorToServiceError(e);
     }
+  }
 
+  /// [fetchWizardData]'s answer, read into the wizard's two networks.
+  PnpWizardData _wizardDataFrom(List<Object> results) {
     // A row with every value blank is none of these (usp-codegen 0.17 dropped
     // it), so it is never a band and never written to.
     final ssids = WiFiSsids(
@@ -630,19 +636,6 @@ class PnpService {
     logger.d('[PnP] Mesh nodes: ${result.nodes.length}, '
         'client→node mappings: ${result.clientToNodeMap.length}');
     return result;
-  }
-
-  // ─── Utility ────────────────────────────────────────────
-
-  /// Fetch the primary WiFi SSID name (for display in no-internet view).
-  Future<String?> fetchCurrentSsid() async {
-    try {
-      final ssids =
-          (await WiFiSsids.fetch(_usp)).items.where((s) => !isEmptyWiFiSsid(s));
-      return ssids.firstOrNull?.ssid;
-    } catch (_) {
-      return null;
-    }
   }
 
   // ─── Reboot & Reconnect ──────────────────────────────────

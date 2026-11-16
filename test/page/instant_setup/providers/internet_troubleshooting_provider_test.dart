@@ -99,8 +99,23 @@ void main() {
       expect(phase, isA<TroubleshootingReadFailure>(),
           reason:
               'a router that never answered is not a confirmed no-internet');
-      expect((phase as TroubleshootingReadFailure).code, 9998);
       verify(() => mockService.checkInternetConnected()).called(30);
+      container.dispose();
+    });
+
+    test(
+        'a check that fails on something not a ServiceError ends the poll on '
+        'a read failure (§13.4.3)', () {
+      // A bug of ours, not a read that may succeed next time: the checking
+      // screen has no button, so the poll stops on its first attempt.
+      when(() => mockService.checkInternetConnected())
+          .thenThrow(StateError('a bug in the check'));
+      final container = createContainer();
+
+      final phase = runModemRestart(container);
+
+      expect(phase, isA<TroubleshootingReadFailure>());
+      verify(() => mockService.checkInternetConnected()).called(1);
       container.dispose();
     });
 
@@ -219,6 +234,30 @@ void main() {
       container.dispose();
     });
 
+    test(
+        'an ISP save that fails on something not a ServiceError returns to '
+        'the form, typed (§13.4.3)', () async {
+      // The progress screen has no button, so the save must not stay on it.
+      final bug = StateError('a bug in the save');
+      when(() => mockService.saveIspSettings(any())).thenThrow(bug);
+
+      final container = createContainer();
+      await container
+          .read(internetTroubleshootingProvider.notifier)
+          .saveIspWithProgress(const PnpIspConfig(
+            type: IspConnectionType.pppoe,
+            pppUsername: 'user',
+            pppPassword: 'pass',
+          ));
+
+      final phase = container.read(internetTroubleshootingProvider);
+      expect(phase, isA<TroubleshootingNoInternet>());
+      final error = (phase as TroubleshootingNoInternet).saveError;
+      expect(error, isA<UnexpectedError>());
+      expect((error as UnexpectedError).originalError, same(bug));
+      container.dispose();
+    });
+
     test('the WAN the forms prefill from is read again after a save', () async {
       // The router's WAN is not what the hub read once a save has been sent.
       when(() => mockService.fetchCurrentWanSettings())
@@ -309,7 +348,6 @@ void main() {
       verify(() => mockService.saveIspSettings(any())).called(1);
       final phase = container.read(internetTroubleshootingProvider);
       expect(phase, isA<TroubleshootingReadFailure>());
-      expect((phase as TroubleshootingReadFailure).code, 9998);
       container.dispose();
     });
   });

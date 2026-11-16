@@ -26,6 +26,12 @@ final _pnpRouteConfig = LinksysRouteConfig(
 ///   2026-11-13). Back from the first step lands here. It asks; on "Log out"
 ///   the drafts are reverted — the flow-level dirty guard's revert — and the
 ///   user is signed out and sent to the login page.
+/// - **Waiting for the user to reconnect — leaves, without asking**
+///   (`WizardNeedsReconnect`). The write is out but not confirmed, so the drafts
+///   are still dirty; the guard drops them itself, because "unsaved changes"
+///   would be wrong about a write the router may already have. Back cannot get
+///   here (the back policy keeps it on the save step); a jump in the browser's
+///   history to a page before the wizard can.
 /// - **Anything else** — the completion screen's Done above all — leaves, and
 ///   then the flow-level dirty guard (`preservableProvider`) asks only if a
 ///   draft is still dirty, which after a save that landed none is. Your
@@ -52,12 +58,19 @@ Future<bool> _pnpWizardExitGuard(
       return false;
     case WizardConfiguring():
       return _leaveSetupByLoggingOut(context, container);
+    case WizardNeedsReconnect():
+      // The write is out and only the reconnect can tell whether it landed, so
+      // the drafts are not marked saved yet — and the route's dirty guard would
+      // call them "unsaved changes" and offer to discard what the router may
+      // already have. Leaving ends the flow, the drafts with it: drop them
+      // here, and let the user go without that question.
+      container.read(pnpWizardDraftsProvider).revert();
+      return true;
     case AdminCheckingInternet() ||
           AdminInternetConnected() ||
           AdminReadFailure() ||
           NoInternet() ||
           WizardInitializing() ||
-          WizardNeedsReconnect() ||
           WizardYourNetwork() ||
           WizardWifiReady() ||
           WizardError():

@@ -18,10 +18,6 @@ import 'package:privacy_gui/page/instant_setup/views/components/pnp_step_footer.
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-/// E2E hook for the Your Network step's "Add nodes" button (#1734). Singleton:
-/// the step has one.
-const String kPnpAddNodesIdentifier = 'pnp-add-nodes';
-
 /// The PnP wizard's Your Network step: the mesh nodes, and the way in to add
 /// more (#1734, #1511 P4).
 ///
@@ -110,7 +106,9 @@ class PnpYourNetworkStepView extends ConsumerWidget {
                       child: AppButton.text(
                         label: loc(context).addNodes,
                         icon: AppIcon.font(Icons.add_circle_outline),
-                        identifier: kPnpAddNodesIdentifier,
+                        // A literal, so the E2E generator harvests it
+                        // (Art. XVI §16.4; pnp_step_footer_hooks_test.dart).
+                        identifier: 'pnp-add-nodes',
                         onTap: openAddNodes,
                       ),
                     ),

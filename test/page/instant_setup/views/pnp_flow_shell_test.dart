@@ -57,7 +57,7 @@ const _phasesThatStay = <PnpPhase>[
   WizardCheckingFirmware(),
   WizardUpdatingFirmware(version: '1.0.17'),
   WizardWifiReady(ssid: 'MyWiFi', password: 'MyPass1234'),
-  WizardError(message: 'boom'),
+  WizardError(error: UnexpectedError()),
 ];
 
 /// One shell over the PnP flow, and one place that maps its phase to a page

@@ -4,7 +4,7 @@
 **Status:** Active
 **Context:** Source of Truth for Architectural Discipline
 **Ratified:** 2025-12-09
-**Last Amended:** 2026-11-13
+**Last Amended:** 2026-11-16
 
 ## Preamble
 This document establishes the immutable principles governing the development process of the Linksys Flutter application. It serves as the architectural DNA of the system, ensuring consistency, simplicity, and quality across all implementations.
@@ -491,7 +491,7 @@ LinksysRoute(
 )
 ```
 
-Passing `preservableProvider` **is** what turns the guard on; there is no separate flag. Write a provider of your own only when one page's dirty state spans more than one notifier — the Wi-Fi page's `preservableUspWifiPageProvider` combines two tabs through `_WifiPageDirtyProxy` and is the one example.
+Passing `preservableProvider` **is** what turns the guard on; there is no separate flag. Write a provider of your own only when one page's dirty state spans more than one notifier — there are two: the Wi-Fi page's `preservableUspWifiPageProvider` combines two tabs through `_WifiPageDirtyProxy`, and the PnP wizard's `pnpWizardDraftsProvider` combines its steps' drafts the same way (the §4.2 exception above).
 
 Reference implementation: `lib/page/dmz/providers/usp_dmz_notifier.dart`
 Detailed Guide: `doc/dirty_guard/dirty_guard_framework_guide.md`
@@ -1158,7 +1158,7 @@ Future<WifiState> fetchSettings() async {
 
 **Section 13.4: Provider Layer Error Handling**
 
-**Responsibility**: The Provider layer only handles `ServiceError` types. MUST NOT catch generic exceptions or underlying error types.
+**Responsibility**: The Provider layer only handles `ServiceError` types. MUST NOT catch generic exceptions or underlying error types — the one exception is Section 13.4.3.
 
 **13.4.1: AsyncNotifier Pattern (Type C pages)**
 
@@ -1241,6 +1241,36 @@ Future<void> performSave() async {
   }
 }
 ```
+
+**13.4.3: Phase-Machine Notifiers**
+
+"Unknown errors should bubble up" relies on something above the provider turning a thrown error into a state: `AsyncNotifier` makes it `AsyncError`, and the mixin's `fetch()`/`save()` handle what `performFetch()`/`performSave()` rethrow. A notifier whose state is a phase it sets itself — a `Notifier` over a sealed phase class, such as `PnpNotifier` — has nothing above it. An error that escapes leaves the phase where it was, and where that phase is a spinner or a progress screen with no button, the user is stuck with no way out.
+
+So a method that sets such a phase MUST end on a phase the user can leave, whatever is thrown:
+- catch `ServiceError` as Section 13.4 requires;
+- then catch what is left, log it with its stack, wrap it as `UnexpectedError(originalError: e)`, and land on the same failure phase a `ServiceError` would;
+- never store `'$e'`, and never turn the error into success.
+
+```dart
+// lib/page/instant_setup/providers/pnp_notifier.dart
+state = state.copyWith(phase: const WizardInitializing()); // a spinner, no button
+try {
+  _enterSteps(await _svc.fetchWizardData());
+} on ServiceError catch (e) {
+  state = state.copyWith(phase: WizardError(error: e));
+} catch (e, stack) {
+  // ✅ Section 13.4.3: not the router's answer but a bug of ours, and the
+  // spinner has no way out — typed, then the same failure phase.
+  logger.e('[PnP] Wizard init failed outside the services',
+      error: e, stackTrace: stack);
+  state = state.copyWith(
+      phase: WizardError(error: UnexpectedError(originalError: e)));
+}
+```
+
+This is not the "Wrong Example" above: that one catches everything and swallows it, so the user is told nothing; this one types what it catches and shows the user the failure. It does not apply to a method whose phase still has a way out, such as a retry that leaves the user on a page with its buttons.
+
+*Amended 2026-11-16 (#1816 review): this section was added. Rationale: the review narrowed `PnpNotifier`'s catches to `on ServiceError` by Section 13.4's text, and that left the wizard's spinner, the save and reconnect screens, and the troubleshooting flow's ISP-save and modem-check screens with no way out on any error that is not a `ServiceError`. The services already type every failure from the router, so what is left is a bug in our own code, which is rare — but this is the first-run setup, where a dead end is the worst outcome, and the global handler only logs. Backwards compatible: it allows one catch in one kind of notifier and requires nothing of a page built on `AsyncNotifier` or the Preservable mixin.*
 
 ---
 

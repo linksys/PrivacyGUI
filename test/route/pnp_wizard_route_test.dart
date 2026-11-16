@@ -291,6 +291,59 @@ void main() {
         expect(find.text('DASHBOARD'), findsNothing);
       });
     }
+
+    testWidgets(
+        'the stepper and the step stay through the reconnect, into Your '
+        'Network (AC 3)', (tester) async {
+      await pumpApp(tester);
+      await enterWizard(tester);
+      router.go('/pnp/pnpConfig/guest');
+      await settle(tester);
+      final stepper = tester.state(find.byType(AppStepper));
+
+      for (final phase in const <PnpPhase>[
+        WizardSaving(),
+        WizardNeedsReconnect(newSsid: 'Home', newPassword: 'pass1234'),
+        WizardTestingReconnect(attemptCount: 1, maxAttempts: 5),
+      ]) {
+        pnp.moveTo(phase);
+        await settle(tester);
+        final name = phase.runtimeType.toString();
+        expect(location(), '/pnp/pnpConfig/guest', reason: name);
+        expect(tester.state(find.byType(AppStepper)), same(stepper),
+            reason: '$name: the stepper is not rebuilt (D4)');
+        expect(
+            find.byType(PnpGuestStepView, skipOffstage: false), findsOneWidget,
+            reason: '$name: the step stays mounted under its screen');
+      }
+
+      await saveLands(tester);
+      expect(tester.state(find.byType(AppStepper)), same(stepper));
+    });
+
+    testWidgets(
+        'WizardNeedsReconnect: the wizard can be left, and nothing calls the '
+        'sent write unsaved', (tester) async {
+      // The write is out and not confirmed, so the drafts are still dirty. The
+      // route's dirty guard would ask about "unsaved changes" the router may
+      // already have, and hold the navigation on that question.
+      await pumpApp(tester);
+      await enterWizard(tester);
+      container(tester)
+          .read(pnpMainWifiDraftProvider.notifier)
+          .setSsid('Sent, not confirmed');
+      router.go('/pnp/pnpConfig/guest');
+      await settle(tester);
+      pnp.moveTo(const WizardNeedsReconnect(
+          newSsid: 'Sent, not confirmed', newPassword: 'pass1234'));
+      await settle(tester);
+
+      router.go(RoutePath.uspDashboard);
+      await settle(tester);
+
+      expect(byId('unsaved-discard'), findsNothing);
+      expect(location(), RoutePath.uspDashboard);
+    });
   });
 
   group('Your Network, after the save (#1511 P5)', () {
@@ -407,7 +460,7 @@ void main() {
       router.go('/pnp/pnpConfig/guest');
       await settle(tester);
       await saveLands(tester);
-      await tester.tap(byId(kPnpAddNodesIdentifier));
+      await tester.tap(byId('pnp-add-nodes'));
       await settle(tester);
       expect(top(), '$network/${RoutePath.pnpAddNodes}');
       expect(pnp.meshRefreshes, 0, reason: 'not before the page is left');
@@ -437,6 +490,31 @@ void main() {
       expect(top(), network);
       expect(pnp.meshRefreshes, 1);
     });
+  });
+
+  group('the failure screens before the wizard: Log out (#1816 review)', () {
+    // Try again repeats a failure that happens every time, and before the
+    // wizard there is nowhere else in the setup to go.
+    for (final failure in const <PnpPhase>[
+      AdminReadFailure(),
+      WizardError(error: UnexpectedError()),
+    ]) {
+      testWidgets(
+          '${failure.runtimeType}: Log out signs out, to the login page',
+          (tester) async {
+        await pumpApp(tester);
+        pnp.moveTo(failure);
+        await settle(tester);
+        expect(location(), RoutePath.pnp);
+
+        await tester.tap(find.widgetWithText(AppButton, 'Log out'));
+        await settle(tester);
+
+        expect(auth.logouts, 1);
+        expect(auth.cause, EndCause.userRequested);
+        expect(location(), RoutePath.localLoginPassword);
+      });
+    }
   });
 
   group('leaving from the first step: log out (#1511 P4)', () {

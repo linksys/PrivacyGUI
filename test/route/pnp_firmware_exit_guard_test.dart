@@ -37,6 +37,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/router_provider.dart';
@@ -121,7 +122,7 @@ const _phases = <PnpPhase>[
   AdminCheckingInternet(),
   AdminInternetConnected(),
   AdminReadFailure(code: 9998, detail: 'missing'),
-  NoInternet(ssid: 'Linksys00123'),
+  NoInternet(),
   WizardInitializing(),
   WizardConfiguring(),
   WizardSaving(),
@@ -133,7 +134,7 @@ const _phases = <PnpPhase>[
   WizardCheckingFirmware(),
   WizardUpdatingFirmware(version: '1.0.17.220118'),
   WizardWifiReady(ssid: 'MyWiFi', password: 'MyPass1234'),
-  WizardError(message: 'boom'),
+  WizardError(error: UnexpectedError()),
 ];
 
 void main() {

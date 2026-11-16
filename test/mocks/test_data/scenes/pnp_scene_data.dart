@@ -23,6 +23,7 @@
 // that branch is the widest one the view has — the same rule
 // `page_surface_cases.dart` applies to every other page's fixture.
 
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
@@ -410,15 +411,10 @@ const pnpWizardWifiReadySplitState = PnpState(
   serialNumber: 'SN-TEST',
 );
 
-/// `WizardError` — the recoverable failure, with the message the view prints.
-///
-/// A `ServiceError`-shaped sentence rather than a placeholder: this phase's `message`
-/// reaches the screen verbatim, so a fixture saying `'error'` would photograph a
-/// layout no real failure produces.
+/// `WizardError` — the wizard's Wi-Fi read failed, the way a read most often
+/// does: the router did not answer. The screen localizes the error itself.
 const pnpWizardErrorState = PnpState(
-  phase: WizardError(
-    message: 'The router did not respond while saving your Wi-Fi settings.',
-  ),
+  phase: WizardError(error: NetworkError()),
   serialNumber: 'SN-TEST',
 );
 

@@ -133,7 +133,7 @@ void main() {
         (tester) async {
       final router = await pumpTree(tester, hub);
 
-      run.end(const TroubleshootingReadFailure(code: 9998));
+      run.end(const TroubleshootingReadFailure());
       await _settle(tester);
 
       expect(location(router), RoutePath.uspDashboard);

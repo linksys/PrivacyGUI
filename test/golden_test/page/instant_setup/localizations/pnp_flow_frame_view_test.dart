@@ -177,8 +177,7 @@ void main() {
         'complete_split': (overrides) => overrides.addAll(
               pnpOverrides(pnpWizardWifiReadySplitState),
             ),
-        // The recoverable failure. `message` reaches the screen verbatim, so the
-        // fixture carries a real sentence — see `pnpWizardErrorState`.
+        // The wizard's Wi-Fi read failed: the shared error view, localized.
         'error': (overrides) => overrides.addAll(
               pnpOverrides(pnpWizardErrorState),
             ),

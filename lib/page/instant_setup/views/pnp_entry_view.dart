@@ -4,6 +4,7 @@ import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
+import 'package:privacy_gui/page/instant_setup/views/components/pnp_log_out_of_setup.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// PnP entry point — starts the flow and shows its entry checks.
@@ -95,6 +96,12 @@ class _PnpEntryViewState extends ConsumerState<PnpEntryView> {
             AppButton.text(
               label: loc(context).tryAgain,
               onTap: () => ref.read(pnpProvider.notifier).startPostLoginFlow(),
+            ),
+            AppGap.md(),
+            AppButton.text(
+              label: loc(context).logout,
+              identifier: 'pnp-read-failure-log-out',
+              onTap: () => logOutOfSetup(context, ref),
             ),
           ],
         ),

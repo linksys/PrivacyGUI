@@ -14,7 +14,6 @@ class PnpState extends Equatable {
   final PnpPhase phase;
   final String? serialNumber;
   final String? modelName;
-  final String? errorMessage;
 
   /// The wizard's steps, decided once when it initializes; `null` before.
   final PnpFlowPlan? plan;
@@ -27,7 +26,6 @@ class PnpState extends Equatable {
     required this.phase,
     this.serialNumber,
     this.modelName,
-    this.errorMessage,
     this.plan,
     this.meshNodes = const [],
   });
@@ -38,8 +36,6 @@ class PnpState extends Equatable {
     PnpPhase? phase,
     String? serialNumber,
     String? modelName,
-    String? errorMessage,
-    bool clearError = false,
     PnpFlowPlan? plan,
     List<NodeEntity>? meshNodes,
   }) {
@@ -47,7 +43,6 @@ class PnpState extends Equatable {
       phase: phase ?? this.phase,
       serialNumber: serialNumber ?? this.serialNumber,
       modelName: modelName ?? this.modelName,
-      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       plan: plan ?? this.plan,
       meshNodes: meshNodes ?? this.meshNodes,
     );
@@ -58,7 +53,6 @@ class PnpState extends Equatable {
         phase,
         serialNumber,
         modelName,
-        errorMessage,
         plan,
         meshNodes,
       ];
@@ -113,11 +107,13 @@ class AdminReadFailure extends PnpPhase {
 /// ISP settings are the troubleshooting flow's, with state of its own, and it
 /// reads the WAN for its forms itself. Internet back means `/pnp` again, which
 /// re-runs this check.
+///
+/// It carries nothing: the hand-off is the whole of it, so PnP asks the router
+/// nothing more once the check has said "no internet".
 class NoInternet extends PnpPhase {
-  final String? ssid;
-  const NoInternet({this.ssid});
+  const NoInternet();
   @override
-  List<Object?> get props => [ssid];
+  List<Object?> get props => [];
 }
 
 // ─── Wizard Phase ──────────────────────────────────────────
@@ -321,10 +317,13 @@ class WizardWifiReady extends PnpPhase {
   List<Object?> get props => [ssid, password, bands];
 }
 
-/// Recoverable error during wizard phase.
+/// The wizard could not read the router's Wi-Fi when it started.
+///
+/// [error] is typed, not `'$e'` (constitution §13.4): the screen localizes it
+/// through `ServiceErrorView`, as a read failure is shown everywhere else.
 class WizardError extends PnpPhase {
-  final String message;
-  const WizardError({required this.message});
+  final ServiceError error;
+  const WizardError({required this.error});
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [error];
 }

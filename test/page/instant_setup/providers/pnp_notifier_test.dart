@@ -310,44 +310,24 @@ void main() {
       container.dispose();
     });
 
-    test('no internet transitions to NoInternet phase', () async {
-      when(() => mockPnpService.checkFactoryDefault())
-          .thenAnswer((_) async => testFactoryResult);
-      when(() => mockPnpService.checkInternetConnected())
-          .thenAnswer((_) async => false);
-      when(() => mockPnpService.fetchCurrentSsid())
-          .thenAnswer((_) async => 'CurrentSSID');
-
-      final container = createContainer();
-      final notifier = container.read(pnpProvider.notifier);
-
-      await notifier.startPostLoginFlow();
-
-      final state = container.read(pnpProvider);
-      expect(state.phase, isA<NoInternet>());
-      expect((state.phase as NoInternet).ssid, 'CurrentSSID');
-      container.dispose();
-    });
-
-    test('no internet hands off to troubleshooting without reading the WAN',
+    test('no internet hands off to troubleshooting and reads nothing more',
         () async {
       // #1511 P1: the WAN prefill belongs to the troubleshooting flow, which
       // reads it itself, so PnP's entry check stops at the hand-off — one
-      // question asked of the router, and the WAN settings left alone.
+      // question asked of the router, and the WAN settings left alone. Nor the
+      // Wi-Fi name: the hand-off carries nothing, and no page read it.
       when(() => mockPnpService.checkFactoryDefault())
           .thenAnswer((_) async => testFactoryResult);
       when(() => mockPnpService.checkInternetConnected())
           .thenAnswer((_) async => false);
-      when(() => mockPnpService.fetchCurrentSsid())
-          .thenAnswer((_) async => 'CurrentSSID');
 
       final container = createContainer();
       await container.read(pnpProvider.notifier).startPostLoginFlow();
 
-      expect(container.read(pnpProvider).phase,
-          const NoInternet(ssid: 'CurrentSSID'));
+      expect(container.read(pnpProvider).phase, const NoInternet());
+      verify(() => mockPnpService.checkFactoryDefault()).called(1);
       verify(() => mockPnpService.checkInternetConnected()).called(1);
-      verifyNever(() => mockPnpService.usp);
+      verifyNoMoreInteractions(mockPnpService);
       container.dispose();
     });
 
@@ -386,6 +366,58 @@ void main() {
       final state = container.read(pnpProvider);
       expect(state.phase, isA<AdminReadFailure>());
       expect((state.phase as AdminReadFailure).code, 9998);
+      container.dispose();
+    });
+
+    test('a Wi-Fi read that fails carries its ServiceError, not its text',
+        () async {
+      // Constitution §13.4/§13.6: the screen localizes the error itself, so the
+      // phase holds the typed error — `'$e'` reached the screen verbatim.
+      stubWizardEntry();
+      const failure = NetworkError(detail: 'USP GET timed out');
+      when(() => mockPnpService.fetchWizardData()).thenThrow(failure);
+
+      final container = createContainer();
+      await container.read(pnpProvider.notifier).startPostLoginFlow();
+
+      expect(
+          container.read(pnpProvider).phase, const WizardError(error: failure));
+      expect(container.read(pnpProvider).plan, isNull,
+          reason: 'no plan, so Try again starts the entry over');
+      container.dispose();
+    });
+
+    test(
+        'a wizard init that fails on something not a ServiceError ends on '
+        'the error screen, typed (§13.4.3)', () async {
+      // A bug of ours, not the router's answer. The spinner has no button, so
+      // the init must not stay on it.
+      stubWizardEntry();
+      final bug = StateError('a bug in building the plan');
+      when(() => mockPnpService.fetchWizardData()).thenThrow(bug);
+
+      final container = createContainer();
+      await container.read(pnpProvider.notifier).startPostLoginFlow();
+
+      final phase = container.read(pnpProvider).phase;
+      expect(phase, isA<WizardError>());
+      final error = (phase as WizardError).error;
+      expect(error, isA<UnexpectedError>());
+      expect((error as UnexpectedError).originalError, same(bug));
+      container.dispose();
+    });
+
+    test(
+        'an entry check that fails on something not a ServiceError ends on '
+        'the read-failure card (§13.4.3)', () async {
+      // The checking screen has no button.
+      when(() => mockPnpService.checkFactoryDefault())
+          .thenThrow(StateError('a bug in the entry check'));
+
+      final container = createContainer();
+      await container.read(pnpProvider.notifier).startPostLoginFlow();
+
+      expect(container.read(pnpProvider).phase, const AdminReadFailure());
       container.dispose();
     });
   });
@@ -899,6 +931,27 @@ void main() {
       container.dispose();
     });
 
+    test(
+        'a save that fails on something not a ServiceError still returns to '
+        'the form (§13.4.3)', () async {
+      // A bug of ours, not the router's answer: the saving screen has no
+      // button, so the save must not stay on it.
+      final bug = StateError('a bug in the save');
+      when(() => mockPnpService.saveWifi(any())).thenThrow(bug);
+      final container = createSaveContainer();
+
+      await saveFrom(container);
+
+      final phase = container.read(pnpProvider).phase;
+      expect(phase, isA<WizardConfiguring>());
+      final error = (phase as WizardConfiguring).saveError;
+      expect(error, isA<UnexpectedError>());
+      expect((error as UnexpectedError).originalError, same(bug));
+      expect(container.read(pnpWizardDraftsProvider).isDirty(), isTrue,
+          reason: 'what was typed is still there to send again');
+      container.dispose();
+    });
+
     test('an edit after a failed save does not show the error again', () async {
       // The edit goes to a draft (#1511 P4); the phase carrying the error is
       // left as it is, so the shell's listener — which fires when the phase
@@ -978,6 +1031,22 @@ void main() {
 
         verifyNever(() => mockPnpService.isWifiApplied(any()));
         expect(container.read(pnpProvider).phase, isA<WizardYourNetwork>());
+        container.dispose();
+      });
+
+      test(
+          'a reconnect that fails on something not a ServiceError returns to '
+          'the form (§13.4.3)', () async {
+        // The reconnecting screen has no button either.
+        when(() => mockPnpService.isWifiApplied(any()))
+            .thenThrow(StateError('a bug in the read-back'));
+
+        final container = await nextFrom(unanswered);
+
+        final phase = container.read(pnpProvider).phase;
+        expect(phase, isA<WizardConfiguring>());
+        expect((phase as WizardConfiguring).saveError, isA<UnexpectedError>());
+        verifyNever(() => mockPnpStatusService.acknowledge(any()));
         container.dispose();
       });
 
@@ -1134,7 +1203,6 @@ void main() {
 
       final state = container.read(pnpProvider);
       expect(state.phase, isA<WizardWifiReady>());
-      expect(state.errorMessage, isNull);
       expect(firmware.installedOtaInstances, isEmpty);
       expect(firmware.recoveryCalls, 0);
       container.dispose();
@@ -1155,7 +1223,6 @@ void main() {
 
       final state = container.read(pnpProvider);
       expect(state.phase, isA<WizardWifiReady>());
-      expect(state.errorMessage, isNull);
       expect(firmware.checkCalls, 1);
       expect(firmware.installedOtaInstances, isEmpty);
       container.dispose();
@@ -1236,9 +1303,6 @@ void main() {
 
       final state = container.read(pnpProvider);
       expect(state.phase, isA<WizardWifiReady>());
-      // Not recorded as an error: the firmware update is the bonus, a configured
-      // network is the requirement, and the completion screen has no error slot.
-      expect(state.errorMessage, isNull);
       expect(firmware.installedOtaInstances, isEmpty);
       container.dispose();
     });
@@ -1385,7 +1449,6 @@ void main() {
       final state = container.read(pnpProvider);
       expect(state.phase, isA<WizardWifiReady>());
       expect((state.phase as WizardWifiReady).ssid, 'ConfiguredSSID');
-      expect(state.errorMessage, isNull);
       container.dispose();
     });
 

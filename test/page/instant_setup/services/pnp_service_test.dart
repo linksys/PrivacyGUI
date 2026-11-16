@@ -247,15 +247,6 @@ void main() {
           'Device.WiFi.SSID.$i.Alias': alias,
         };
 
-    test('fetchCurrentSsid skips a blank first row', () async {
-      when(() => mockUsp.get(any())).thenAnswer((_) async => {
-            ...blankSsid,
-            ...ssid(3, 'MyHome', 'Device.WiFi.Radio.1.', 'wifi-2g'),
-          });
-
-      expect(await service.fetchCurrentSsid(), 'MyHome');
-    });
-
     test('a blank SSID is no main band, so the wizard stays unified', () async {
       when(() => mockUsp.get(any(), priority: any(named: 'priority')))
           .thenAnswer((invocation) async {

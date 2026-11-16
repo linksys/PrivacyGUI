@@ -75,4 +75,18 @@ void main() {
       expect(unanswered, isNot(confirmed));
     });
   });
+
+  group('WizardError.error', () {
+    test('keeps the error typed, for the screen to localize (§13.6)', () {
+      const error = NetworkError(detail: 'USP GET timed out');
+
+      expect(const WizardError(error: error).error, same(error));
+    });
+
+    test('a different failure is a different phase', () {
+      // A retry that fails differently must reach the screen.
+      expect(const WizardError(error: NetworkError()),
+          isNot(const WizardError(error: TimeoutError())));
+    });
+  });
 }
