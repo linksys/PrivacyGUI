@@ -135,6 +135,8 @@ class PersonalWiFiStep extends PnpStep {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildOptionalNotice(context),
+        _buildInfoSection(context),
+        const AppGap.large2(),
         WiFiSSIDField(
           controller: _ssidEditController,
           label: loc(context).wifiName,
@@ -153,8 +155,6 @@ class PersonalWiFiStep extends PnpStep {
           },
         ),
         const AppGap.large5(),
-        _buildInfoSection(context),
-        const AppGap.large5(),
       ],
     );
   }
@@ -165,6 +165,8 @@ class PersonalWiFiStep extends PnpStep {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildOptionalNotice(context),
+        _buildInfoSection(context),
+        const AppGap.large2(),
         for (final radio in _wifiSettings!.radios) ...[
           AppCard(
             child: Column(
@@ -195,8 +197,6 @@ class PersonalWiFiStep extends PnpStep {
           ),
           const AppGap.medium(),
         ],
-        const AppGap.small2(),
-        _buildInfoSection(context),
         const AppGap.large5(),
       ],
     );
@@ -243,16 +243,18 @@ class PersonalWiFiStep extends PnpStep {
     );
   }
 
-  // The same card WiFi Settings shows, so its info button explains the printed
+  // The same card WiFi Settings shows, so its help button explains the printed
   // QR codes in the same words.
   Widget _buildQRWarningCard(BuildContext context) {
     return WiFiQRWarningCard(message: loc(context).pnpPersonalizeQRWarning);
   }
 
+  // The same help icon the QR warning card uses, so the button keeps its look
+  // when the reminder turns into the card.
   Widget _buildInfoButton(BuildContext context) {
     return AppIconButton.noPadding(
-      icon: LinksysIcons.infoCircle,
-      semanticLabel: 'info',
+      icon: LinksysIcons.help,
+      semanticLabel: 'help',
       color: Theme.of(context).colorScheme.primary,
       onTap: () {
         _showDefaultsInfoModal(context);
