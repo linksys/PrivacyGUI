@@ -18,10 +18,11 @@ import 'package:privacy_gui/page/static_routing/views/dialogs/static_route_dialo
 /// never assigns `_errors` mid-edit — the same focus-loss pattern already used
 /// by port_forwarding_dialog / usp_local_network_view / dhcp_reservation_edit.
 ///
-/// The dialog surfaces validation errors via each field's `errorText`. Those
-/// render inline OR as a focus tooltip depending on layout/focus state, so
-/// these tests assert on the widget's `errorText` property (the source of
-/// truth) rather than a rendered string.
+/// The dialog surfaces validation errors via each field's `errorText`, and
+/// every field renders it as inline text (`AppErrorDisplayMode.text`; see the
+/// dialog's class doc for why not a tooltip). These tests assert on the
+/// widget's `errorText` property (the source of truth) rather than a rendered
+/// string.
 final _testTheme = AppTheme.create(
   brightness: Brightness.light,
   seedColor: Colors.blue,
@@ -134,6 +135,27 @@ void main() {
   setUp(() async {
     final loc = await AppLocalizations.delegate.load(const Locale('en'));
     addLabel = loc.add;
+  });
+
+  testWidgets('every field shows its error as text, not as a tooltip',
+      (tester) async {
+    // A tooltip-mode field loses focus on web the moment it is focused with
+    // an error shown (flutter/flutter#195289, ui_kit v3.6.10). The blur only
+    // happens in a browser, so this guards the setting that avoids it.
+    await _pumpAndOpen(tester);
+
+    // 13 AppTextFields: the name, plus four octet boxes inside each IPv4
+    // field. Each AppIpv4TextField carries its own errorDisplayMode.
+    expect(find.byType(AppTextField), findsNWidgets(1 + 3 * 4));
+    expect(find.byType(AppIpv4TextField), findsNWidgets(3));
+    expect(_nameField().errorDisplayMode, AppErrorDisplayMode.text,
+        reason: 'name');
+    expect(_destField().errorDisplayMode, AppErrorDisplayMode.text,
+        reason: 'destination IP');
+    expect(_subnetField().errorDisplayMode, AppErrorDisplayMode.text,
+        reason: 'subnet mask');
+    expect(_gatewayField().errorDisplayMode, AppErrorDisplayMode.text,
+        reason: 'gateway');
   });
 
   group('StaticRouteDialog #1332 focus-loss validation', () {

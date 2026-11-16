@@ -28,6 +28,14 @@ class StaticRouteDialogResult {
 /// Pass [lanIp] and [lanSubnetMask] to enable gateway subnet validation.
 /// [otherNames] is the name of every other route on the page, unsaved ones
 /// included, which a name may not repeat (FWDEV#213).
+///
+/// Every field shows its error as text (`AppErrorDisplayMode.text`), not as a
+/// tooltip. On web, opening a tooltip inserts a semantics node above the
+/// focused field and the browser drops its focus (flutter/flutter#195289,
+/// open; linksys/privacyGUI-UI-kit#100). ui_kit v3.6.10 mounts the tooltip's
+/// overlay only while it is open (linksys/privacyGUI-UI-kit#115), so a field
+/// that already shows an error would lose focus the moment it is focused.
+/// `static_route_dialog_test.dart` holds all four fields to text mode.
 class StaticRouteDialog extends StatefulWidget {
   final StaticRouteUIModel? route;
   final String? lanIp;
@@ -155,13 +163,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
               identifier: 'static-route-name',
               hintText: loc(context).routeName,
               errorText: _localizeError(_errors['name']),
-              // Errors as text, not as a tooltip, in every field of this
-              // dialog. On web, opening a tooltip inserts a semantics node
-              // above the focused field and the browser drops its focus
-              // (flutter/flutter#195289, open; linksys/privacyGUI-UI-kit#100).
-              // ui_kit v3.6.10 mounts the tooltip's overlay only while it is
-              // open (linksys/privacyGUI-UI-kit#115), so a field that already
-              // shows an error now loses focus the moment it is focused.
+              // Text, not tooltip: see the class doc.
               errorDisplayMode: AppErrorDisplayMode.text,
               onChanged: (_) => _onInputChanged(),
             ),

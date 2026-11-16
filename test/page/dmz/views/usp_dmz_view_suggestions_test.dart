@@ -84,4 +84,30 @@ void main() {
         reason: 'the device with MAC AA:BB:CC:00:00:22 is suggested by name');
     expect(find.text('Phone'), findsNothing);
   });
+
+  // A tooltip-mode field loses focus on web the moment it is focused with an
+  // error shown (flutter/flutter#195289, ui_kit v3.6.10; E2E P13). The blur
+  // only happens in a browser, so this guards the setting that avoids it.
+  for (final (type, state) in [
+    ('IP', gateDmzState),
+    ('MAC', gateDmzMacState),
+  ]) {
+    testWidgets('the $type destination field shows its error as text',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(host(state));
+      await settle(tester);
+
+      final field = find.descendant(
+        of: find.byType(AppSelectAutoComplete),
+        matching: find.byType(AppTextFormField),
+      );
+      expect(field, findsOneWidget);
+      expect(tester.widget<AppTextFormField>(field).errorDisplayMode,
+          AppErrorDisplayMode.text);
+    });
+  }
 }
