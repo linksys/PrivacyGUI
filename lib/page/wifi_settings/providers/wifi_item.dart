@@ -214,6 +214,15 @@ enum WifiRadioBand {
   }
 
   String get bandName => value.replaceFirst('RADIO_', '');
+
+  /// The security type this band is saved with when simple mode pushes
+  /// [securityType] onto every band: 6 GHz only takes WPA3 or Enhanced Open.
+  WifiSecurityType simpleModeSecurityType(WifiSecurityType securityType) {
+    if (this != WifiRadioBand.radio_6) return securityType;
+    return securityType.isOpenVariant
+        ? WifiSecurityType.enhancedOpenOnly
+        : WifiSecurityType.wpa3Personal;
+  }
 }
 
 enum WifiSecurityType {

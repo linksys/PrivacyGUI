@@ -22,9 +22,20 @@ import 'package:pdf/pdf.dart';
 // }
 
 Future<Uint8List> createWiFiQRCode(WiFiCredential wifiCredential) async {
-  final qrCode = QrCode(4, QrErrorCorrectLevel.L)
-    ..addData(wifiCredential.generate());
-  final qrImage = QrImage(qrCode);
+  final data = wifiCredential.generate();
+  QrImage qrImage;
+  try {
+    // Version 4 keeps every code that fits it printing and downloading as it
+    // always has.
+    qrImage = QrImage(QrCode(4, QrErrorCorrectLevel.L)..addData(data));
+  } on InputTooLongException {
+    // Version 4 holds 78 bytes, so a long name and password need a bigger
+    // code - picked to fit rather than failing the Print / Download.
+    qrImage = QrImage(QrCode.fromData(
+      data: data,
+      errorCorrectLevel: QrErrorCorrectLevel.L,
+    ));
+  }
   return createQRCodeBytes(qrImage);
 }
 

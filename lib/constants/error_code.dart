@@ -20,6 +20,7 @@ const errorInvalidCredentials = 'invalid_credentials';
 // JNAP Error
 const errorJNAPUnauthorized = '_ErrorUnauthorized';
 const errorAdminAccountLocked = 'ErrorAdminAccountLocked';
+const errorAlreadyMaster = 'ErrorAlreadyMaster';
 const errorInvalidResetCode = 'ErrorInvalidResetCode';
 const errorConsecutiveInvalidResetCodeEntered =
     'ErrorConsecutiveInvalidResetCodeEntered';

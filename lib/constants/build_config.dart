@@ -89,6 +89,14 @@ class BuildConfig {
   static const bool remoteReadOnly =
       bool.fromEnvironment('remote_read_only', defaultValue: false);
 
+  // Gates every Router AI (Instant AI) client path: loading the router-hosted
+  // widget bundle, bootstrapping the AI session after a local login, and
+  // revoking it on logout or at startup. Off by default, so a build that does
+  // not ask makes no AI requests and keeps today's login/logout behaviour.
+  // Kept `const` so dart2js drops the guarded code from a default build.
+  static const bool enableRouterAi =
+      bool.fromEnvironment('enable_router_ai', defaultValue: false);
+
   @pragma('vm:entry-point')
   static load() async {
     logger.d('load build configuration');

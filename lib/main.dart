@@ -25,6 +25,9 @@ void main() async {
   //   usePathUrlStrategy();
   // }
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  // The Router AI widget is not loaded here: it must never appear before the
+  // router login. AuthNotifier loads it only after the AI session is
+  // authenticated (see lib/core/ai_session/router_ai_loader.dart).
 
   // TODO Revisit again until Flutter SDK 3.27.x
   // https://github.com/flutter/engine/commit/35af5fe80e0212caff4b34b583232d833b5a2596

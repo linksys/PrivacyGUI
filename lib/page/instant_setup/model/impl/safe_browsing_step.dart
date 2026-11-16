@@ -45,7 +45,7 @@ class SafeBrowsingStep extends PnpStep {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const AppText.bodyLarge(
-              'Block malicious content such as phishing using DNS security. This will apply to all devices connected to your Wi-Fi.'),
+              'Block malicious content such as phishing using DNS security. This will apply to all devices connected to your WiFi.'),
           const AppGap.small2(),
           AppSwitch.withIcon(
             value: isEnabled,

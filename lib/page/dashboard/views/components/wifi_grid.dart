@@ -14,7 +14,6 @@ import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/qr_code.dart';
-import 'package:privacy_gui/util/wifi_credential.dart';
 import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -248,13 +247,7 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
         color: Colors.white,
         height: 200,
         width: 200,
-        child: QrImageView(
-          data: WiFiCredential(
-            ssid: widget.item.ssid,
-            password: widget.item.password,
-            type: SecurityType.wpa,
-          ).generate(),
-        ),
+        child: QrImageView(data: widget.item.qrCredential.generate()),
       ),
       child: MouseRegion(
         onHover: (e) async {
@@ -391,6 +384,7 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
           child: WiFiShareDetailView(
             ssid: widget.item.ssid,
             password: widget.item.password,
+            credential: widget.item.qrCredential,
           ),
         ),
         actions: [
@@ -398,11 +392,7 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
             context.pop();
           }, color: Theme.of(context).colorScheme.onSurface),
           AppTextButton(loc(context).downloadQR, onTap: () async {
-            createWiFiQRCode(WiFiCredential(
-                    ssid: widget.item.ssid,
-                    password: widget.item.password,
-                    type: SecurityType.wpa))
-                .then((imageBytes) {
+            createWiFiQRCode(widget.item.qrCredential).then((imageBytes) {
               exportFileFromBytes(
                   fileName: 'share_wifi_${widget.item.ssid}.png',
                   utf8Bytes: imageBytes);

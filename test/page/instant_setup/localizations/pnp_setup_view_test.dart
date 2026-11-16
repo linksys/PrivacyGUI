@@ -24,6 +24,7 @@ import 'package:privacy_gui/page/instant_setup/data/pnp_wifi_settings.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_setup_view.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/pnp_auto_master_waiting_view.dart';
+import 'package:privacy_gui/page/instant_setup/widgets/wifi_ssid_widget.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -139,6 +140,37 @@ void main() async {
     await tester.pumpAndSettle();
   });
 
+  testLocalizations(
+      'Instant Setup - PnP: Personalize your wifi (edited, QR warning)',
+      (tester, locale) async {
+    final view = testableSingleRoute(
+      child: PnpSetupView(),
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 6, centered: true),
+        noNaviRail: true,
+      ),
+      locale: locale,
+      overrides: [pnpProvider.overrideWith(() => mockPnpNotifier)],
+    );
+    await tester.pumpWidget(view);
+    await tester.pump(const Duration(seconds: 3));
+    // Trick - setState to trigger build
+    final state =
+        tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
+    state.setState(() {});
+    await tester.pumpAndSettle();
+    // Editing the shipped SSID is what escalates the reminder into the warning
+    // that the printed QR codes will stop working.
+    await tester.enterText(
+      find.descendant(
+        of: find.byType(WiFiSSIDField),
+        matching: find.byType(TextField),
+      ),
+      'MyHomeWiFi',
+    );
+    await tester.pumpAndSettle();
+  });
+
   testLocalizations('Instant Setup - PnP: Personalize your wifi (split SSID)',
       (tester, locale) async {
     when(mockPnpNotifier.getDefaultWiFiSettings()).thenReturn(
@@ -210,8 +242,7 @@ void main() async {
         tester.state<ConsumerState<PnpSetupView>>(find.byType(PnpSetupView));
     state.setState(() {});
     await tester.pumpAndSettle();
-    final btnFinder = find.byIcon(LinksysIcons.infoCircle);
-    await tester.tap(btnFinder.last);
+    await tester.tap(find.byIcon(LinksysIcons.help));
     await tester.pumpAndSettle();
   });
 
@@ -961,8 +992,7 @@ void main() async {
     // timeout branch, which setStates without a mounted guard -> crash. An open
     // StreamController is fine in a widget test (unlike a dangling Timer).
     final poll = StreamController<AutoMasterStatus?>();
-    when(mockPnpNotifier.pollAutoMasterStatus())
-        .thenAnswer((_) => poll.stream);
+    when(mockPnpNotifier.pollAutoMasterStatus()).thenAnswer((_) => poll.stream);
 
     await pumpSetup(tester);
     await driveToSave(tester);
@@ -1021,7 +1051,8 @@ void main() async {
     // delivered and the flow falls through to save(). We must NOT pumpAndSettle
     // here: the failed path calls setState(saving), whose _loadingSpinner runs
     // an endless AppSpinner animation that would time out pumpAndSettle.
-    await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
+    await tester
+        .runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
     await tester.pump();
 
     verify(mockPnpNotifier.save()).called(1);
@@ -1089,8 +1120,7 @@ void main() async {
   // save() itself 401s: Auto Master completed in the narrow window between the
   // pre-check and the write. The JNAP unauthorized error is unwrapped and the
   // user is routed to the pnp entry (re-login) rather than shown a raw error.
-  testWidgets(
-      'Instant Setup - PnP: Unauthorized during save redirects to pnp',
+  testWidgets('Instant Setup - PnP: Unauthorized during save redirects to pnp',
       (tester) async {
     useLargeScreen(tester);
     // Unconfigured so the save whenComplete tail takes the stepContinue branch

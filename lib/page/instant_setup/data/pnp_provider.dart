@@ -608,6 +608,42 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
 
   @override
   Future save() async {
+    try {
+      await _saveOnce();
+    } on ExceptionSavingChanges catch (error) {
+      final innerError = error.error;
+      if (!state.isRouterUnConfigured ||
+          innerError is! JNAPError ||
+          innerError.result != errorAlreadyMaster) {
+        rethrow;
+      }
+      // #1748: firmware rejected `SetDeviceMode Master` because the router is
+      // already Master — Auto Master made it so after PnP read the mode.
+      // Nothing was written: firmware aborts the actions after a failing one
+      // and commits the transaction only when every action succeeded
+      // (linksys/JNAP openwrt-jnap/src/cgi/jnap_cgi.c,
+      // `ServerContext_Free(ctx, fHandled && !fError)`). Every mode-dependent
+      // part of the save (SetDeviceMode, the closing command, the admin
+      // password, the acknowledgement) was built from the stale value, so
+      // re-read the mode and rebuild the save once from it. Only when the
+      // router itself no longer answers Unconfigured: a failed or
+      // still-Unconfigured re-read keeps the original error instead of
+      // guessing.
+      logger.w('[PnP]: Router is already Master, re-reading the device mode');
+      final isConfigured = await checkRouterConfigured()
+          .then((_) => !state.isRouterUnConfigured)
+          .onError((e, _) {
+        logger.w('[PnP]: Re-reading device mode failed: $e');
+        return false;
+      });
+      if (!isConfigured) rethrow;
+      logger.i(
+          '[PnP]: Device mode is no longer Unconfigured, saving again without SetDeviceMode');
+      await _saveOnce();
+    }
+  }
+
+  Future _saveOnce() async {
     // store current configured SN
     final deviceInfo = state.deviceInfo;
     final prefs = await SharedPreferences.getInstance();

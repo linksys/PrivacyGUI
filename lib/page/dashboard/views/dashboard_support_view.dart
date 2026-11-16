@@ -169,7 +169,7 @@ class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
       mainAxisSize: MainAxisSize.min,
       children: [
         AppText.labelLarge(
-            'A Linksys support agent has remote access to your Linksys Smart Wi-Fi account and your home network.'),
+            'A Linksys support agent has remote access to your Linksys Smart WiFi account and your home network.'),
         AppText.labelLarge(counting),
         const AppGap.medium(),
         AppFilledButton(
@@ -211,11 +211,11 @@ class _DashboardSupportViewState extends ConsumerState<DashboardSupportView> {
               AppText.bodyMedium(
                   'You may end remote assistance at any time by clicking the orange End Session button on your screen.'),
               AppText.bodyMedium(
-                  'Only the support agent to who whom you provided the PIN will have access to your Linksys Smart Wi-Fi account and home network.'),
+                  'Only the support agent to who whom you provided the PIN will have access to your Linksys Smart WiFi account and home network.'),
               AppText.bodyMedium(
                   'The support agent will be able to view your home network and troubleshoot any support issues.'),
               AppText.bodyMedium(
-                  'Your remote assistance session is open only until you end it. No one will have access to your Linksys Smart Wi-Fi account or home network after you end the session.'),
+                  'Your remote assistance session is open only until you end it. No one will have access to your Linksys Smart WiFi account or home network after you end the session.'),
               AppText.bodyMedium(
                   'The support agent should never ask for your password.'),
             ]),

@@ -32,10 +32,16 @@ enum ShareWifiOption {
 class WiFiShareDetailView extends ConsumerStatefulWidget {
   final String ssid;
   final String password;
+
+  /// What the QR code encodes. Without one the code is a WPA code for [ssid]
+  /// and [password].
+  final WiFiCredential? credential;
+
   const WiFiShareDetailView({
     Key? key,
     required this.ssid,
     required this.password,
+    this.credential,
   }) : super(key: key);
 
   @override
@@ -90,12 +96,13 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView>
               height: ResponsiveLayout.isMobileLayout(context) ? 240 : 200,
               width: ResponsiveLayout.isMobileLayout(context) ? 240 : 200,
               child: QrImageView(
-                data: WiFiCredential(
-                  ssid: widget.ssid,
-                  password: widget.password,
-                  type: SecurityType
-                      .wpa, //TODO: The security type is fixed for now
-                ).generate(),
+                data: (widget.credential ??
+                        WiFiCredential(
+                          ssid: widget.ssid,
+                          password: widget.password,
+                          type: SecurityType.wpa,
+                        ))
+                    .generate(),
               ),
             ),
           ),
