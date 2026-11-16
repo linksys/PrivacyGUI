@@ -310,6 +310,10 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
                     : loc(context).macAddressHint,
                 externalErrorText:
                     _fieldError(context, errors[byIp ? 'destIp' : 'destMac']),
+                // Text, not tooltip: on web, opening the error tooltip of a
+                // focused field drops its focus (flutter/flutter#195289;
+                // linksys/privacyGUI-UI-kit#100, #115).
+                errorDisplayMode: AppErrorDisplayMode.text,
                 onChanged: write,
               ),
             ),
