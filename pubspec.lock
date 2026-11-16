@@ -619,8 +619,8 @@ packages:
     dependency: transitive
     description:
       path: gen_ui_contracts
-      ref: "5a5d76f4e48de767b13284885cf27c104d322b4c"
-      resolved-ref: "5a5d76f4e48de767b13284885cf27c104d322b4c"
+      ref: "98948d9bc7a1b5f5b7105c3fbac8493240a5c9ee"
+      resolved-ref: "98948d9bc7a1b5f5b7105c3fbac8493240a5c9ee"
       url: "https://github.com/linksys/privacyGUI-UI-kit.git"
     source: git
     version: "1.0.0"
@@ -628,8 +628,8 @@ packages:
     dependency: "direct main"
     description:
       path: generative_ui
-      ref: "v3.6.9"
-      resolved-ref: "5a5d76f4e48de767b13284885cf27c104d322b4c"
+      ref: "v3.6.10"
+      resolved-ref: "98948d9bc7a1b5f5b7105c3fbac8493240a5c9ee"
       url: "https://github.com/linksys/privacyGUI-UI-kit.git"
     source: git
     version: "1.0.0"
@@ -1463,11 +1463,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v3.6.9"
-      resolved-ref: "5a5d76f4e48de767b13284885cf27c104d322b4c"
+      ref: "v3.6.10"
+      resolved-ref: "98948d9bc7a1b5f5b7105c3fbac8493240a5c9ee"
       url: "https://github.com/linksys/privacyGUI-UI-kit.git"
     source: git
-    version: "3.6.9"
+    version: "3.6.10"
   universal_io:
     dependency: transitive
     description:
