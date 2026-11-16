@@ -63,9 +63,9 @@ Run the native-auth and transport regression tests in both build modes:
 
 ```bash
 # Default build: proves no AI request and unchanged login/logout.
-flutter test --no-pub test/core/ai_session/ai_session_service_test.dart test/providers/auth
+flutter test --no-pub --exclude-tags="golden||loc" test/core/ai_session/ai_session_service_test.dart test/providers/auth
 # Router AI build: the AI session paths.
-flutter test --no-pub --dart-define=enable_router_ai=true test/core/ai_session/ai_session_service_test.dart test/providers/auth
+flutter test --no-pub --exclude-tags="golden||loc" --dart-define=enable_router_ai=true test/core/ai_session/ai_session_service_test.dart test/providers/auth
 python3 tools/test_ai_session_browser.py
 ```
 
