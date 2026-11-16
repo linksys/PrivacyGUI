@@ -310,6 +310,8 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
                     : loc(context).macAddressHint,
                 externalErrorText:
                     _fieldError(context, errors[byIp ? 'destIp' : 'destMac']),
+                // Text, not tooltip: see the note in static_route_dialog.dart.
+                errorDisplayMode: AppErrorDisplayMode.text,
                 onChanged: write,
               ),
             ),

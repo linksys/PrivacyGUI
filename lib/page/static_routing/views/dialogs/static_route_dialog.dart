@@ -155,6 +155,14 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
               identifier: 'static-route-name',
               hintText: loc(context).routeName,
               errorText: _localizeError(_errors['name']),
+              // Errors as text, not as a tooltip, in every field of this
+              // dialog. On web, opening a tooltip inserts a semantics node
+              // above the focused field and the browser drops its focus
+              // (flutter/flutter#195289, open; linksys/privacyGUI-UI-kit#100).
+              // ui_kit v3.6.10 mounts the tooltip's overlay only while it is
+              // open (linksys/privacyGUI-UI-kit#115), so a field that already
+              // shows an error now loses focus the moment it is focused.
+              errorDisplayMode: AppErrorDisplayMode.text,
               onChanged: (_) => _onInputChanged(),
             ),
             AppGap.lg(),
@@ -163,6 +171,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
               identifier: 'static-route-dest-ip',
               label: loc(context).destinationIp,
               errorText: _localizeError(_errors['destIp']),
+              errorDisplayMode: AppErrorDisplayMode.text,
               onChanged: (_) => _onInputChanged(),
               onFocusChanged: _onIpv4FocusChanged,
             ),
@@ -172,6 +181,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
               identifier: 'static-route-subnet-mask',
               label: loc(context).subnetMask,
               errorText: _localizeError(_errors['subnetMask']),
+              errorDisplayMode: AppErrorDisplayMode.text,
               onChanged: (_) => _onInputChanged(),
               onFocusChanged: _onIpv4FocusChanged,
             ),
@@ -181,6 +191,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
               identifier: 'static-route-gateway',
               label: loc(context).gatewayIp,
               errorText: _localizeError(_errors['gateway']),
+              errorDisplayMode: AppErrorDisplayMode.text,
               onChanged: (_) => _onInputChanged(),
               onFocusChanged: _onIpv4FocusChanged,
             ),
