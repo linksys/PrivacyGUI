@@ -223,8 +223,6 @@
   "passwwordUpdated": "Mise à jour du mot de passe du routeur",
   "ping": "Ping",
   "pnpErrorForStaticIpAndDhcp": "Connexion impossible Veuillez vérifier vos informations et réessayer.",
-  "pnpFwUpdateDesc": "Veuillez patienter pendant le téléchargement de la mise à jour et le redémarrage de votre appareil. Le voyant lumineux deviendra blanc lorsque le processus sera terminé.",
-  "pnpFwUpdateTitle": "Enregistrement de votre configuration et vérification des mises à jour logicielles...",
   "pnpIspTypeSelectionDhcpDesc": "Le protocole de configuration dynamique des hôtes (DHCP) attribue automatiquement des adresses IP aux appareils connectés au réseau.",
   "pnpIspTypeSelectionPppoeDesc": "Le protocole PPPoE est une spécification permettant de connecter plusieurs utilisateurs d'ordinateurs sur un réseau local Ethernet à un site distant.",
   "pnpIspTypeSelectionStaticDesc": "Une adresse IP (Internet Protocol) statique (adresse IP statique) est un numéro permanent attribué à un réseau par un fournisseur de service Internet (FSI).",

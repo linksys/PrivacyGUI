@@ -221,8 +221,6 @@
   "passwwordUpdated": "Zaktualizowano hasło routera",
   "ping": "Pinguj",
   "pnpErrorForStaticIpAndDhcp": "Nie można nawiązać połączenia. Sprawdź swoje dane i spróbuj ponownie.",
-  "pnpFwUpdateDesc": "Poczekaj na pobranie i ponowne uruchomienie urządzenia. Kontrolka LED zaświeci jasnym białym światłem po zakończeniu procesu. WiFi routera może na krótko wyłączyć się i włączyć ponownie. Jeśli utracisz połączenie, połącz się ponownie z WiFi routera, aby uzyskać dostęp do Internetu.",
-  "pnpFwUpdateTitle": "Zapisywanie konfiguracji i sprawdzanie aktualizacji oprogramowania...",
   "pnpIspTypeSelectionDhcpDesc": "Protokół dynamicznej konfiguracji hosta (DHCP) automatycznie przypisuje adresy IP urządzeniom podłączonym do sieci.",
   "pnpIspTypeSelectionPppoeDesc": "Point-to-Point Protocol over Ethernet to protokół używany przy łączeniu wielu użytkowników w lokalnej sieci Ethernet z lokalizacją zewnętrzną.",
   "pnpIspTypeSelectionStaticDesc": "Statyczny adres protokołu internetowego (IP) (statyczny adres IP) to stały numer przypisany do sieci przez dostawcę usług internetowych (ISP).",
