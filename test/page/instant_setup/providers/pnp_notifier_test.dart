@@ -1007,8 +1007,53 @@ void main() {
         final phase = container.read(pnpProvider).phase;
         expect(phase, isA<WizardConfiguring>());
         expect((phase as WizardConfiguring).saveError, isNotNull);
+        verify(() => mockPnpService.isWifiApplied(any())).called(5);
         // Setup is not finished: the router never took the change.
         verifyNever(() => mockPnpStatusService.acknowledge(any()));
+        container.dispose();
+      });
+
+      test(
+          'a read-back that does not show the write yet is asked again, not '
+          'taken for a lost write (#1816 review)', () async {
+        // Right after a Wi-Fi reload the first GET can come back empty or with
+        // the wrong table (#1499), or fail outright. One such read used to send
+        // the user back to the form, where Save sends a second SET and every
+        // radio restarts again.
+        final answers = <Future<bool> Function()>[
+          () async => throw const NetworkError(detail: 'still settling'),
+          () async => false,
+          () async => true,
+        ];
+        var call = 0;
+        when(() => mockPnpService.isWifiApplied(any()))
+            .thenAnswer((_) => answers[call++]());
+
+        final container = await nextFrom(unanswered);
+
+        expect(container.read(pnpProvider).phase, isA<WizardYourNetwork>());
+        verify(() => mockPnpService.isWifiApplied(any())).called(3);
+        verify(() => mockPnpStatusService.acknowledge('SN123')).called(1);
+        container.dispose();
+      });
+
+      test(
+          'a router that answered without the write and then went away keeps '
+          'the step', () async {
+        // The last attempt decides, as in the save's own poll: a router still
+        // restarting is not one that lost the write.
+        var call = 0;
+        when(() => mockPnpService.checkRouterIsBack()).thenAnswer((_) async {
+          if (call++ == 0) return 'SN123';
+          throw const NetworkError(detail: 'gone again');
+        });
+        when(() => mockPnpService.isWifiApplied(any()))
+            .thenAnswer((_) async => false);
+
+        final container = await nextFrom(unanswered);
+
+        expect(container.read(pnpProvider).phase, unanswered,
+            reason: 'the next Next must still verify the write');
         container.dispose();
       });
 

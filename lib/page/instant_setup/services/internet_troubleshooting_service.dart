@@ -72,6 +72,11 @@ class InternetTroubleshootingService {
   /// `TimeoutException`, which is folded into [TimeoutError] here, where it
   /// starts, so the provider above handles `ServiceError` alone (constitution
   /// §13.4).
+  ///
+  /// **Takes the lock itself**, so a caller must not wrap it in another
+  /// `withLock`: the lock is not re-entrant, and the inner call would wait on
+  /// the outer one until it timed out. PnP's Wi-Fi save is the opposite shape
+  /// — see `PnpService.saveWifi`.
   Future<void> saveIspSettings(PnpIspConfig config) async {
     try {
       await _mutationLock.withLock(() => _writeIspSettings(config));

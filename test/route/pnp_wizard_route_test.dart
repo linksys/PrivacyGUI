@@ -48,6 +48,10 @@ class _Auth extends AuthNotifier {
   int logouts = 0;
   EndCause? cause;
 
+  /// When set, the teardown waits on it, so a test can see what happens while
+  /// a real one — session end, SSE, credentials — is still running.
+  Completer<void>? teardown;
+
   @override
   Future<AuthState> build() async => signedIn
       ? const AuthState(loginType: LoginType.local)
@@ -57,6 +61,7 @@ class _Auth extends AuthNotifier {
   Future<void> logout({EndCause cause = EndCause.sessionLost}) async {
     logouts++;
     this.cause = cause;
+    await teardown?.future;
     state = AsyncData(AuthState.empty());
   }
 }
@@ -500,18 +505,26 @@ void main() {
       WizardError(error: UnexpectedError()),
     ]) {
       testWidgets(
-          '${failure.runtimeType}: Log out signs out, to the login page',
-          (tester) async {
+          '${failure.runtimeType}: Log out signs out, then goes to the login '
+          'page', (tester) async {
         await pumpApp(tester);
         pnp.moveTo(failure);
         await settle(tester);
         expect(location(), RoutePath.pnp);
+        auth.teardown = Completer<void>();
 
         await tester.tap(find.widgetWithText(AppButton, 'Log out'));
         await settle(tester);
 
         expect(auth.logouts, 1);
         expect(auth.cause, EndCause.userRequested);
+        expect(location(), RoutePath.pnp,
+            reason: 'not before the teardown ends: a quick re-login would have '
+                'its credentials cleared by the old one (#1816 review)');
+
+        auth.teardown!.complete();
+        await settle(tester);
+
         expect(location(), RoutePath.localLoginPassword);
       });
     }

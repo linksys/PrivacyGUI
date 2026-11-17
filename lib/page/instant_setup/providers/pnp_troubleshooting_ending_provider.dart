@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_setup/models/troubleshooting_ending.dart';
-import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/route/constants.dart';
 
 /// How PnP ends a run of the no-internet troubleshooting flow (#1511 P1).
@@ -51,14 +51,10 @@ Future<void> _acknowledgeWithoutInternet(Ref ref) async {
     return;
   }
   try {
-    // Same acknowledge + saveSelectedNetwork pair as PnpNotifier's save, but the
-    // error handling is intentionally the opposite: the save lets errors
-    // propagate (a failed WiFi save should keep the user on the form to retry),
-    // whereas here we swallow them (an escape hatch must never block
-    // navigation). Keep the two in sync when changing this pair.
-    await ref.read(pnpStatusServiceProvider).acknowledge(sn);
-    // Persist selected network for session management, matching the save.
-    await ref.read(sessionProvider.notifier).saveSelectedNetwork(sn, '');
+    // The wizard's save runs the same pair and lets what it throws keep the
+    // user on the form to retry; here it is swallowed — an escape hatch must
+    // never block navigation.
+    await acknowledgeSetupFinished(ref, sn);
     logger.i('[PnP] continue without internet: acknowledged, entering '
         'dashboard');
   } catch (e) {

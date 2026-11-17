@@ -302,10 +302,6 @@ const _commandCallSites = <String, List<String>>{
     'FirmwareOperations.download',
     'FirmwareOperations.download',
   ],
-  'lib/page/instant_setup/services/pnp_service.dart': [
-    'DeviceOperations.reboot',
-    'NetworkDiagnostics.ping',
-  ],
   'lib/page/instant_setup/services/pnp_status_service.dart': [
     'SetupOperations.setUserAcknowledgedAutoConfig',
   ],
@@ -315,32 +311,25 @@ const _commandCallSites = <String, List<String>>{
   ],
 };
 
-/// The one call site in [_commandCallSites] with no seam above it, and why.
+/// Call sites in [_commandCallSites] with no seam above them, and why — none
+/// since #1816's review.
 ///
-/// `PnpService.reboot()` wraps `DeviceOperations.reboot` and **has no caller** —
-/// measured: the only occurrence of `.reboot()` under `lib/page/instant_setup/`
-/// is the declaration itself. A guard on a method nothing calls is a guard that
-/// can never be wrong and never be right, so it was left alone rather than
-/// decorated for the sake of a green census.
+/// Its one member was `PnpService.reboot()`, which wrapped
+/// `DeviceOperations.reboot` and **had no caller**. A guard on a method nothing
+/// calls can never be wrong and never be right, so it was waived here rather
+/// than decorated for the sake of a green census. The review removed the dead
+/// method, and the waiver with it.
 ///
-/// It is named here instead of quietly omitted because the day it acquires a
-/// caller is the day it needs a seam, and its class is not obvious: PnP runs
-/// against a factory-fresh router over the local link, so `transientRestart` is
-/// right for the flow that exists today and wrong the moment anything reaches it
-/// from Remote Assistance.
+/// The set stays as the place for the next such site. A command with no caller
+/// is named here instead of quietly omitted, because the day it acquires a
+/// caller is the day it needs a seam.
 ///
 /// Keyed on `(file, command)` and not on the file. A per-file exemption is an
-/// exemption for everything that file ever comes to do: `pnp_service.dart` also
-/// holds the PnP `NetworkDiagnostics` call and is where a
-/// factory reset would most plausibly be added next, and a file-shaped waiver
-/// would have covered it silently. This shape makes an added command in an
-/// exempt file fall out of the exemption and into the reachability test.
-const _unguardedByDesign = <({String file, String command})>{
-  (
-    file: 'lib/page/instant_setup/services/pnp_service.dart',
-    command: 'DeviceOperations.reboot',
-  ),
-};
+/// exemption for everything that file ever comes to do, and a file-shaped
+/// waiver would cover an added command silently. This shape makes an added
+/// command in an exempt file fall out of the exemption and into the
+/// reachability test.
+const _unguardedByDesign = <({String file, String command})>{};
 
 /// Operate call sites that are live and need no seam, because the command itself
 /// costs the session nothing. Measured 2026-09-09.
@@ -351,11 +340,12 @@ const _unguardedByDesign = <({String file, String command})>{
 /// **what they do** and would need one only if that changed. Collapsing them
 /// would leave a reader unable to tell which question a waiver had answered.
 ///
-/// * `NetworkDiagnostics.ping` — an ICMP echo to `8.8.8.8`. The four members of
-///   that class that *would* matter — `downloadDiagnostic`, `uploadDiagnostic`,
+/// * `NetworkDiagnostics` has no call site left: its one, `ping` from
+///   `PnpService.pingTest()` — an ICMP echo to `8.8.8.8`, waived here — went with
+///   that dead method in #1816's review. The class stays censused, because the
+///   members that *would* matter — `downloadDiagnostic`, `uploadDiagnostic`,
 ///   `udpEchoDiagnostic`, `serverSelectionDiagnostic` — are declared by codegen
-///   and called from nowhere, which is why the class is censused and its one live
-///   member waived rather than the class excluded.
+///   and would reach the router through it.
 /// * `WanOperations.renewDhcpLease` / `.renewDhcpv6Lease` — the likeliest waiver
 ///   here to go wrong, because a renew *does* drop the WAN address and the WAN is
 ///   the RA path. Waived because it costs at most `transientRestart`: the router
@@ -388,10 +378,6 @@ const _notDestructive = <({String file, String command})>{
   (
     file: 'lib/page/add_nodes/services/add_nodes_service.dart',
     command: 'BleOnboardingOperations.stop',
-  ),
-  (
-    file: 'lib/page/instant_setup/services/pnp_service.dart',
-    command: 'NetworkDiagnostics.ping',
   ),
   (
     file: 'lib/page/instant_setup/services/pnp_status_service.dart',
@@ -640,7 +626,7 @@ void main() {
             'a DisruptionClass unless somebody chose one. Add the call site here '
             'and give the operation a seam in _seams — or, if it genuinely has '
             'no caller and therefore no seam, add it to _unguardedByDesign with '
-            'the reason, which is what PnpService.reboot did.',
+            'the reason, as PnpService.reboot was until #1816 removed it.',
       );
     });
 

@@ -13,7 +13,13 @@ import 'package:privacy_gui/route/constants.dart';
 /// local login page directly, as leaving the wizard by logging out does
 /// (`route_pnp.dart`): the setup runs on a local session. Neither failure
 /// screen is under the wizard's exit guard — both come before its first step.
-void logOutOfSetup(BuildContext context, WidgetRef ref) {
-  ref.read(authProvider.notifier).logout(cause: EndCause.userRequested);
+///
+/// **The sign-out finishes first** (#1816 review), as it does there. The
+/// teardown ends the session, disconnects SSE and clears the credentials; a
+/// login page opened before it ends lets a quick re-login have its new
+/// credentials cleared by the old teardown's tail.
+Future<void> logOutOfSetup(BuildContext context, WidgetRef ref) async {
+  await ref.read(authProvider.notifier).logout(cause: EndCause.userRequested);
+  if (!context.mounted) return;
   context.go(RoutePath.localLoginPassword);
 }

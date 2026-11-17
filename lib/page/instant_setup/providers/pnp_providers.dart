@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/session/providers/session_provider.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_notifier.dart';
+import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
 
 /// The PnP flow: where the user is, from the entry checks to the completion
 /// screen.
@@ -97,3 +99,20 @@ final pnpFirmwareCheckDeadlineProvider = Provider<Duration>(
 final pnpFirmwareRebootDeadlineProvider = Provider<Duration>(
   (ref) => const Duration(minutes: 6),
 );
+
+/// Records that the router's first-run setup is finished: the router is told,
+/// and the session remembers the network.
+///
+/// The one pair both of setup's endings run — the wizard's save and
+/// troubleshooting's "Log into router" — so it is written once. What a failure
+/// means is each caller's: the save goes back to the form, the escape hatch
+/// lets the user through. Only `saveSelectedNetwork` can throw:
+/// `PnpStatusService.acknowledge` swallows its own failure, because a router
+/// that did not record completion only offers the wizard again on the next
+/// login.
+Future<void> acknowledgeSetupFinished(Ref ref, String serialNumber) async {
+  await ref.read(pnpStatusServiceProvider).acknowledge(serialNumber);
+  await ref
+      .read(sessionProvider.notifier)
+      .saveSelectedNetwork(serialNumber, '');
+}

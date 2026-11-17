@@ -6,7 +6,6 @@ import 'package:privacy_gui/core/connection/providers/app_connection_state_provi
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/core/session/providers/session_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
@@ -20,7 +19,6 @@ import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_setting_steps_provider.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_wifi_draft_provider.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
-import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
 
 /// PnP state machine notifier.
 ///
@@ -94,6 +92,11 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
     return UnexpectedError(originalError: error);
   }
 
+  /// The entry's internet check, then the wizard or the hand-off.
+  ///
+  /// Catches `ServiceError` only. That is complete because its one caller,
+  /// [startPostLoginFlow], ends in the §13.4.3 catch: a second caller must
+  /// bring one of its own, or the checking screen has no way out again.
   Future<void> _checkInternet() async {
     try {
       final hasInternet = await _svc.checkInternetConnected();
@@ -426,21 +429,15 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   /// After the router is reachable again, because the acknowledge is a USP
   /// OPERATE and would otherwise be sent into the WiFi restart.
   ///
-  /// NOTE: the same acknowledge + saveSelectedNetwork pair lives in PnP's
-  /// troubleshooting ending (`pnp_troubleshooting_ending_provider.dart`), but there errors
-  /// are swallowed; here they propagate to the caller so the user stays on the
-  /// form to retry.
+  /// The pair is [acknowledgeSetupFinished], shared with troubleshooting's
+  /// ending. Here what it throws — only `saveSelectedNetwork` can — propagates,
+  /// so the user stays on the form to retry; the ending swallows it.
   Future<void> _acknowledgeSetup() async {
     logger
         .d('[PnP] Saving setup completion, serialNumber=${state.serialNumber}');
-    if (state.serialNumber == null) return;
-    // Acknowledge via PnpStatusService (SharedPreferences now, TR-181 future)
-    await ref.read(pnpStatusServiceProvider).acknowledge(state.serialNumber!);
-
-    // Save selected network for session management
-    await ref
-        .read(sessionProvider.notifier)
-        .saveSelectedNetwork(state.serialNumber!, '');
+    final serialNumber = state.serialNumber;
+    if (serialNumber == null) return;
+    await acknowledgeSetupFinished(ref, serialNumber);
   }
 
   /// Back to the form with [error] for the shell to show.
@@ -475,9 +472,19 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   }
 
   /// [testReconnect]'s attempts, from [phase] — the reconnect step it left.
+  ///
+  /// **One read-back is not enough to call the write lost** (#1816 review).
+  /// Right after a Wi-Fi reload the router's first GET can come back empty or
+  /// with the wrong table (#1499), and a read can fail outright while its Wi-Fi
+  /// settles. So an attempt that reaches the router but does not see the write
+  /// is a "not yet", as it is in the save's own poll ([_pollUntilApplied]):
+  /// only when the attempts run out with the router answering and never on the
+  /// new settings does the user go back to the form — where Save would send a
+  /// second SET and restart every radio again.
   Future<void> _reconnect(WizardNeedsReconnect phase) async {
     const maxAttempts = 5;
     final backoff = ref.read(pnpReconnectBackoffProvider);
+    var last = _PollResult.unreachable;
 
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
       state = state.copyWith(
@@ -487,7 +494,10 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
         ),
       );
       await Future.delayed(backoff(attempt));
-      if (!await _routerIsBack()) continue;
+      if (!await _routerIsBack()) {
+        last = _PollResult.unreachable;
+        continue;
+      }
 
       final write = phase.write;
       if (write == null) {
@@ -499,11 +509,11 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
         return;
       }
       if (phase.writeUnanswered && !await _isWifiApplied(write)) {
-        // Reached the router, and it is not on the new settings: the write was
-        // lost, not merely its answer. The form is where it is resent from.
-        logger.w('[PnP] WiFi write did not land — back to the form');
-        _returnToForm(const UnexpectedError());
-        return;
+        // Reached the router, but it does not show the write yet — see above.
+        logger.d('[PnP] router is back but not on the new WiFi yet '
+            '(attempt $attempt of $maxAttempts)');
+        last = _PollResult.notApplied;
+        continue;
       }
       try {
         await _finishSave(write);
@@ -514,8 +524,15 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
       return;
     }
 
-    // All attempts exhausted — back to the step, which keeps what the next Next
-    // still has to verify.
+    if (last == _PollResult.notApplied) {
+      // The router answered and never showed the new settings: the write was
+      // lost, not merely its answer. The form is where it is resent from.
+      logger.w('[PnP] WiFi write did not land — back to the form');
+      _returnToForm(const UnexpectedError());
+      return;
+    }
+    // The router is still away — back to the step, which keeps what the next
+    // Next still has to verify.
     state = state.copyWith(phase: phase);
   }
 
@@ -614,12 +631,17 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
         // poison a later update the user starts themselves.
         firmware.cancel();
       }
-    } catch (e) {
+    } catch (e, stack) {
       // One `catch`, not `on ServiceError`, because `UspMutationLock` throws a bare
       // `TimeoutException` and `.timeout()` below throws another — neither is a
-      // `ServiceError`, and all of them mean the same thing here.
-      logger.w('[PnP] the firmware stage did not complete ($e) — '
-          'finishing setup without an update');
+      // `ServiceError`, and all of them mean the same thing here. Anything else
+      // too, by constitution §13.4.3: the checking and updating screens have no
+      // button, and this stage's failure phase is the completion screen (REQ-B3).
+      logger.w(
+          '[PnP] the firmware stage did not complete — finishing setup '
+          'without an update',
+          error: e,
+          stackTrace: stack);
     } finally {
       keepAlive?.close();
       // REQ-B3, structurally: the credentials screen is the landing for every

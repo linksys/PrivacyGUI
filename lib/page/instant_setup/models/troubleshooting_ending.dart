@@ -4,6 +4,10 @@
 /// Troubleshooting never asks who its caller is. The caller is a segment of every
 /// troubleshooting URL — so a reload keeps it — and the route layer turns that
 /// segment into one of these and hands it to each page that can end the run.
+///
+/// Not `Equatable`, on purpose: it carries a closure, and two closures are
+/// never equal, so value equality would only look like it worked. Nothing
+/// compares two endings.
 class TroubleshootingEnding {
   const TroubleshootingEnding({
     required this.exitLocation,

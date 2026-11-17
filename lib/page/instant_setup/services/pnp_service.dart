@@ -8,8 +8,6 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/generated/data_elements_network_info.g.dart';
-import 'package:privacy_gui/generated/device_operations.g.dart';
-import 'package:privacy_gui/generated/network_diagnostics.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
@@ -124,16 +122,6 @@ class PnpService {
       rethrow;
     } catch (e) {
       throw mapUspErrorToServiceError(e);
-    }
-  }
-
-  /// Ping 8.8.8.8 to verify actual internet connectivity.
-  Future<bool> pingTest() async {
-    try {
-      await NetworkDiagnostics.ping(_usp, host: '8.8.8.8');
-      return true;
-    } catch (_) {
-      return checkInternetConnected();
     }
   }
 
@@ -358,6 +346,14 @@ class PnpService {
   /// nothing. The message says whether the router answered (see
   /// [isUnansweredTransportFailure]); up to usp-client 0.14.0 the WASM client
   /// stamped `9999` on both, so the `errorCode` could not.
+  ///
+  /// **Takes no lock: the caller holds `uspMutationLockProvider`**
+  /// (`PnpNotifier._writeWifi`), and turns the lock's timeout into
+  /// [PnpWifiWriteOutcome.unanswered] — a write that outlasts the answer window
+  /// is read back later, not failed. Troubleshooting's ISP save is the opposite
+  /// shape (`InternetTroubleshootingService.saveIspSettings` takes the lock
+  /// itself); the lock is not re-entrant, so neither may be wrapped in another
+  /// `withLock`.
   Future<PnpWifiWriteOutcome> saveWifi(PnpWifiWrite write) async {
     final params = {
       if (write.guest case final guest?) ..._guestParams(guest),
@@ -638,16 +634,7 @@ class PnpService {
     return result;
   }
 
-  // ─── Reboot & Reconnect ──────────────────────────────────
-
-  /// Reboot the router. Connection will be lost.
-  Future<void> reboot() async {
-    try {
-      await DeviceOperations.reboot(_usp);
-    } catch (e) {
-      throw mapUspErrorToServiceError(e);
-    }
-  }
+  // ─── Reconnect ───────────────────────────────────────────
 
   /// Check if the router is back by fetching SystemInfo.
   /// Returns serial number on success, throws on failure.
