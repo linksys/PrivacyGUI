@@ -61,9 +61,9 @@ const _allowed = <String, String>{
 };
 
 /// An import of a file under a `services/` directory: a feature's at any depth
-/// (`login/auto_parent/services/`) or `lib/core/`'s (`core/usp/services/`),
-/// absolute or relative, including into another feature (`../../other/services/`).
-/// Either quote. `[a-z0-9_/]` because directories carry digits
+/// (`support/shared_widgets/faq_agent/services/`) or `lib/core/`'s
+/// (`core/usp/services/`), absolute or relative, including into another feature
+/// (`../../other/services/`). Either quote. `[a-z0-9_/]` because directories carry digits
 /// (`ipv6_port_service`) and nest.
 final _serviceImport = RegExp(
   r"""^\s*import\s+['"](package:privacy_gui/(page|core)/([a-z0-9_]+/)*services/|(\.\./)+([a-z0-9_]+/)*services/)[^'"]*['"]""",

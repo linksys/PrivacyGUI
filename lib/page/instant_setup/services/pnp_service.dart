@@ -8,8 +8,6 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/generated/data_elements_network_info.g.dart';
-import 'package:privacy_gui/generated/device_operations.g.dart';
-import 'package:privacy_gui/generated/network_diagnostics.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
@@ -19,15 +17,13 @@ import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_topology_builder.dart';
 import 'package:privacy_gui/page/_shared/utils/wifi_guest_detection.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
-import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
+import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_band.dart';
-import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_settings.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_write.dart';
 import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_models.dart';
 import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_snapshot.dart';
-import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
-import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 import 'package:privacy_gui/page/internet_settings/services/auto_ipoe_service.dart';
-import 'package:privacy_gui/page/internet_settings/services/usp_internet_settings_service.dart';
 
 final pnpServiceProvider = Provider<PnpService>((ref) {
   final supportsAutoIPoE =
@@ -41,22 +37,13 @@ final pnpServiceProvider = Provider<PnpService>((ref) {
 
 /// Result of factory-default detection.
 class FactoryDefaultCheckResult {
-  final bool isFactoryDefault;
   final String serialNumber;
   final String modelName;
 
   const FactoryDefaultCheckResult({
-    required this.isFactoryDefault,
     required this.serialNumber,
     required this.modelName,
   });
-}
-
-/// Result of fetching current WiFi config for the wizard.
-class PnpWizardFetchResult {
-  final PnpWifiConfig wifiConfig;
-
-  const PnpWizardFetchResult({required this.wifiConfig});
 }
 
 /// What the router said about the WiFi write.
@@ -98,7 +85,6 @@ class PnpService {
     try {
       final info = await SystemInfo.fetch(_usp);
       return FactoryDefaultCheckResult(
-        isFactoryDefault: false,
         serialNumber: info.serialNumber,
         modelName: info.modelName,
       );
@@ -139,16 +125,6 @@ class PnpService {
     }
   }
 
-  /// Ping 8.8.8.8 to verify actual internet connectivity.
-  Future<bool> pingTest() async {
-    try {
-      await NetworkDiagnostics.ping(_usp, host: '8.8.8.8');
-      return true;
-    } catch (_) {
-      return checkInternetConnected();
-    }
-  }
-
   // ─── Wizard Fetch ────────────────────────────────────────
 
   /// Fetch current WiFi SSIDs + Access Points and return structured results.
@@ -158,18 +134,24 @@ class PnpService {
   ///
   /// Supports both unified mode (all bands share SSID) and split mode
   /// (each band has different SSID, e.g. Du ISP routers).
-  Future<PnpWizardFetchResult> fetchWizardData() async {
-    final List<Object> results;
+  Future<PnpWizardData> fetchWizardData() async {
     try {
-      results = await Future.wait([
+      return _wizardDataFrom(await Future.wait([
         WiFiSsids.fetch(_usp),
         WiFiAccessPoints.fetch(_usp),
         WiFiRadios.fetch(_usp),
-      ]);
+      ]));
+    } on ServiceError {
+      rethrow;
     } catch (e) {
+      // A fault in the read or in reading its answer: either way the wizard
+      // cannot start, and the notifier is handed a ServiceError (§13.3).
       throw mapUspErrorToServiceError(e);
     }
+  }
 
+  /// [fetchWizardData]'s answer, read into the wizard's two networks.
+  PnpWizardData _wizardDataFrom(List<Object> results) {
     // A row with every value blank is none of these (usp-codegen 0.17 dropped
     // it), so it is never a band and never written to.
     final ssids = WiFiSsids(
@@ -260,8 +242,6 @@ class PnpService {
         frequency: freq,
         ssid: ssid.ssid,
         password: ap?.keyPassphrase ?? '',
-        originalSsid: ssid.ssid,
-        originalPassword: ap?.keyPassphrase ?? '',
         ssidInstancePath: ssid.instancePath,
         accessPointInstancePath: ap?.instancePath ?? '',
         radioPath: ssid.lowerLayers,
@@ -291,8 +271,6 @@ class PnpService {
         frequency: freq,
         ssid: ssid.ssid,
         password: ap?.keyPassphrase ?? '',
-        originalSsid: ssid.ssid,
-        originalPassword: ap?.keyPassphrase ?? '',
         ssidInstancePath: ssid.instancePath,
         accessPointInstancePath: ap?.instancePath ?? '',
         radioPath: ssid.lowerLayers,
@@ -301,31 +279,33 @@ class PnpService {
       ..sort((a, b) => frequencySortKey(a.frequency)
           .compareTo(frequencySortKey(b.frequency)));
 
-    final wifiConfig = PnpWifiConfig(
-      // Unified mode fields
-      ssid: primarySsid.ssid,
-      password: primaryAp?.keyPassphrase ?? '',
-      originalSsid: primarySsid.ssid,
-      originalPassword: primaryAp?.keyPassphrase ?? '',
-      ssidInstancePaths: ssidPaths,
-      accessPointInstancePaths: apPaths,
-      // Split mode fields
-      mainBands: mainBands,
-      // Guest unified mode fields
-      guestEnabled: guestSsid?.enable ?? false,
-      guestSsid: guestSsid?.ssid ?? '',
-      guestPassword: guestAp?.keyPassphrase ?? '',
-      originalGuestEnabled: guestSsid?.enable ?? false,
-      originalGuestSsid: guestSsid?.ssid ?? '',
-      originalGuestPassword: guestAp?.keyPassphrase ?? '',
-      guestSsidInstancePaths: guestSsidPaths,
-      guestAccessPointInstancePaths: guestApPaths,
-      // Guest split mode fields
-      guestBands: guestBands,
+    return PnpWizardData(
+      main: PnpMainWifiSettings(
+        ssid: primarySsid.ssid,
+        password: primaryAp?.keyPassphrase ?? '',
+        ssidInstancePaths: ssidPaths,
+        accessPointInstancePaths: apPaths,
+        bands: mainBands,
+        splitMode: _namesDiffer(mainBands),
+      ),
+      // No guest SSID, no guest step (#1511 P4's inclusion condition).
+      guest: guestSsid == null
+          ? null
+          : PnpGuestWifiSettings(
+              enabled: guestSsid.enable,
+              ssid: guestSsid.ssid,
+              password: guestAp?.keyPassphrase ?? '',
+              ssidInstancePaths: guestSsidPaths,
+              accessPointInstancePaths: guestApPaths,
+              bands: guestBands,
+              splitMode: _namesDiffer(guestBands),
+            ),
     );
-
-    return PnpWizardFetchResult(wifiConfig: wifiConfig);
   }
+
+  /// Split mode: more than one band, and not every band carries the same name.
+  bool _namesDiffer(List<PnpWifiBand> bands) =>
+      bands.length > 1 && bands.any((b) => b.ssid != bands.first.ssid);
 
   // ─── Wizard Save ─────────────────────────────────────────
 
@@ -366,8 +346,19 @@ class PnpService {
   /// nothing. The message says whether the router answered (see
   /// [isUnansweredTransportFailure]); up to usp-client 0.14.0 the WASM client
   /// stamped `9999` on both, so the `errorCode` could not.
-  Future<PnpWifiWriteOutcome> saveWifi(PnpWifiConfig config) async {
-    final params = {..._guestParams(config), ..._mainParams(config)};
+  ///
+  /// **Takes no lock: the caller holds `uspMutationLockProvider`**
+  /// (`PnpNotifier._writeWifi`), and turns the lock's timeout into
+  /// [PnpWifiWriteOutcome.unanswered] — a write that outlasts the answer window
+  /// is read back later, not failed. Troubleshooting's ISP save is the opposite
+  /// shape (`InternetTroubleshootingService.saveIspSettings` takes the lock
+  /// itself); the lock is not re-entrant, so neither may be wrapped in another
+  /// `withLock`.
+  Future<PnpWifiWriteOutcome> saveWifi(PnpWifiWrite write) async {
+    final params = {
+      if (write.guest case final guest?) ..._guestParams(guest),
+      ..._mainParams(write.main),
+    };
     if (params.isEmpty) return PnpWifiWriteOutcome.confirmed;
 
     try {
@@ -388,7 +379,7 @@ class PnpService {
     }
   }
 
-  /// Whether the router now carries what [config] asked for.
+  /// Whether the router now carries what [write] asked for.
   ///
   /// Read once the router answers again, for a write whose own answer never
   /// arrived. It compares what the router reads back: main and guest SSID names,
@@ -396,43 +387,68 @@ class PnpService {
   /// passphrases are not compared — they went out in the same SET as the rest,
   /// so the rest landing means they did. A save with nothing readable to compare
   /// reads as applied.
-  Future<bool> isWifiApplied(PnpWifiConfig config) async {
+  Future<bool> isWifiApplied(PnpWifiWrite write) async {
     final expectedSsid = <String, String>{};
     final expectedSsidEnable = <String, bool>{};
     final expectedApEnable = <String, bool>{};
 
-    if (config.isSplitMode) {
-      for (final band in config.mainBands) {
-        if (band.isSsidChanged) expectedSsid[band.ssidInstancePath] = band.ssid;
-      }
-    } else if (config.isSsidChanged) {
-      for (final path in config.ssidInstancePaths) {
-        expectedSsid[path] = config.ssid;
+    /// The SSID names a write that renamed a network expects back: per band
+    /// in split mode, every path in unified mode.
+    void expectNames({
+      required bool split,
+      required String ssid,
+      required String ssidWas,
+      required List<String> paths,
+      required List<PnpWifiBand> bands,
+      required List<PnpWifiBand> bandsWas,
+    }) {
+      if (split) {
+        for (final band in bands) {
+          if (band.ssid != bandAsRead(bandsWas, band).ssid) {
+            expectedSsid[band.ssidInstancePath] = band.ssid;
+          }
+        }
+      } else if (ssid != ssidWas) {
+        for (final path in paths) {
+          expectedSsid[path] = ssid;
+        }
       }
     }
-    if (config.isGuestSplitMode) {
-      for (final band in config.guestBands) {
-        if (band.isSsidChanged) expectedSsid[band.ssidInstancePath] = band.ssid;
-      }
-    } else if (config.isGuestSsidChanged) {
-      for (final path in config.guestSsidInstancePaths) {
-        expectedSsid[path] = config.guestSsid;
-      }
-    }
-    if (config.isGuestEnabledChanged) {
-      final ssidPaths = config.isGuestSplitMode
-          ? config.guestBands.map((b) => b.ssidInstancePath)
-          : config.guestSsidInstancePaths;
-      final apPaths = config.isGuestSplitMode
-          ? config.guestBands
-              .map((b) => b.accessPointInstancePath)
-              .where((p) => p.isNotEmpty)
-          : config.guestAccessPointInstancePaths;
-      for (final path in ssidPaths) {
-        expectedSsidEnable[path] = config.guestEnabled;
-      }
-      for (final path in apPaths) {
-        expectedApEnable[path] = config.guestEnabled;
+
+    final main = write.main;
+    expectNames(
+      split: main.current.splitMode,
+      ssid: main.current.ssid,
+      ssidWas: main.original.ssid,
+      paths: main.current.ssidInstancePaths,
+      bands: main.current.bands,
+      bandsWas: main.original.bands,
+    );
+    if (write.guest case final guest?) {
+      final now = guest.current;
+      expectNames(
+        split: now.splitMode,
+        ssid: now.ssid,
+        ssidWas: guest.original.ssid,
+        paths: now.ssidInstancePaths,
+        bands: now.bands,
+        bandsWas: guest.original.bands,
+      );
+      if (now.enabled != guest.original.enabled) {
+        final ssidPaths = now.splitMode
+            ? now.bands.map((b) => b.ssidInstancePath)
+            : now.ssidInstancePaths;
+        final apPaths = now.splitMode
+            ? now.bands
+                .map((b) => b.accessPointInstancePath)
+                .where((p) => p.isNotEmpty)
+            : now.accessPointInstancePaths;
+        for (final path in ssidPaths) {
+          expectedSsidEnable[path] = now.enabled;
+        }
+        for (final path in apPaths) {
+          expectedApEnable[path] = now.enabled;
+        }
       }
     }
     if (expectedSsid.isEmpty &&
@@ -469,50 +485,66 @@ class PnpService {
         expectedApEnable.entries.every((e) => aps[e.key]?.enable == e.value);
   }
 
-  Map<String, dynamic> _mainParams(PnpWifiConfig config) {
+  /// The main network's part of the one SET: what [main] changed since it was
+  /// read, and nothing else.
+  Map<String, dynamic> _mainParams(Preservable<PnpMainWifiSettings> main) {
     final params = <String, dynamic>{};
-    if (config.isSplitMode) {
-      for (final band in config.mainBands) {
-        if (band.isSsidChanged) {
+    final was = main.original;
+    final now = main.current;
+    if (now.splitMode) {
+      for (final band in now.bands) {
+        final before = bandAsRead(was.bands, band);
+        if (band.ssid != before.ssid) {
           params['${band.ssidInstancePath}SSID'] = band.ssid;
         }
-        if (band.isPasswordChanged && band.accessPointInstancePath.isNotEmpty) {
+        if (band.password != before.password &&
+            band.accessPointInstancePath.isNotEmpty) {
           params['${band.accessPointInstancePath}Security.KeyPassphrase'] =
               band.password;
         }
       }
     } else {
-      if (config.isSsidChanged) {
-        for (final path in config.ssidInstancePaths) {
-          params['${path}SSID'] = config.ssid;
+      if (now.ssid != was.ssid) {
+        for (final path in now.ssidInstancePaths) {
+          params['${path}SSID'] = now.ssid;
         }
       }
-      if (config.isPasswordChanged) {
-        for (final path in config.accessPointInstancePaths) {
-          params['${path}Security.KeyPassphrase'] = config.password;
+      if (now.password != was.password) {
+        for (final path in now.accessPointInstancePaths) {
+          params['${path}Security.KeyPassphrase'] = now.password;
         }
       }
     }
     return params;
   }
 
-  Map<String, dynamic> _guestParams(PnpWifiConfig config) {
+  /// The guest network's part of the one SET.
+  ///
+  /// `Enable` goes on both the SSID and the AccessPoint row because
+  /// `SSID.Enable` alone does not stop the AP broadcasting (#972). In unified
+  /// mode a rename or an on/off writes the name and `Enable` on every guest
+  /// SSID together, as it always has.
+  Map<String, dynamic> _guestParams(Preservable<PnpGuestWifiSettings> guest) {
     final params = <String, dynamic>{};
-    if (!config.isGuestDirty) return params;
+    if (!guest.isDirty) return params;
+    final was = guest.original;
+    final now = guest.current;
+    final enabledChanged = now.enabled != was.enabled;
 
-    if (config.isGuestSplitMode) {
-      for (final band in config.guestBands) {
-        if (band.isSsidChanged) {
+    if (now.splitMode) {
+      for (final band in now.bands) {
+        final before = bandAsRead(was.bands, band);
+        if (band.ssid != before.ssid) {
           params['${band.ssidInstancePath}SSID'] = band.ssid;
         }
-        if (config.isGuestEnabledChanged) {
-          params['${band.ssidInstancePath}Enable'] = config.guestEnabled;
+        if (enabledChanged) {
+          params['${band.ssidInstancePath}Enable'] = now.enabled;
           if (band.accessPointInstancePath.isNotEmpty) {
-            params['${band.accessPointInstancePath}Enable'] =
-                config.guestEnabled;
+            params['${band.accessPointInstancePath}Enable'] = now.enabled;
           }
         }
-        if (band.isPasswordChanged && band.accessPointInstancePath.isNotEmpty) {
+        if (band.password != before.password &&
+            band.accessPointInstancePath.isNotEmpty) {
           params['${band.accessPointInstancePath}Security.KeyPassphrase'] =
               band.password;
         }
@@ -520,89 +552,24 @@ class PnpService {
       return params;
     }
 
-    if (config.guestSsidInstancePaths.isEmpty) return params;
-    if (config.isGuestSsidChanged || config.isGuestEnabledChanged) {
-      for (final path in config.guestSsidInstancePaths) {
-        params['${path}SSID'] = config.guestSsid;
-        params['${path}Enable'] = config.guestEnabled;
+    if (now.ssidInstancePaths.isEmpty) return params;
+    if (now.ssid != was.ssid || enabledChanged) {
+      for (final path in now.ssidInstancePaths) {
+        params['${path}SSID'] = now.ssid;
+        params['${path}Enable'] = now.enabled;
       }
     }
-    if (config.isGuestEnabledChanged) {
-      for (final path in config.guestAccessPointInstancePaths) {
-        params['${path}Enable'] = config.guestEnabled;
+    if (enabledChanged) {
+      for (final path in now.accessPointInstancePaths) {
+        params['${path}Enable'] = now.enabled;
       }
     }
-    if (config.isGuestPasswordChanged) {
-      for (final path in config.guestAccessPointInstancePaths) {
-        params['${path}Security.KeyPassphrase'] = config.guestPassword;
+    if (now.password != was.password) {
+      for (final path in now.accessPointInstancePaths) {
+        params['${path}Security.KeyPassphrase'] = now.password;
       }
     }
     return params;
-  }
-
-  // ─── ISP/WAN Save ───────────────────────────────────────
-
-  /// Save ISP settings by delegating to [UspInternetSettingsService].
-  ///
-  /// This ensures PNP uses the same save logic as Advanced Settings,
-  /// including PPP/VLAN instance lifecycle, result validation, and
-  /// allowPartial handling.
-  Future<void> saveIspSettings(PnpIspConfig config) async {
-    final internetSettingsService = UspInternetSettingsService(_usp);
-    if (config.type == IspConnectionType.dhcp) {
-      await internetSettingsService.renewDhcpLease();
-      return;
-    }
-
-    final fetchResult = await internetSettingsService.fetchSettings();
-
-    final original = fetchResult.form;
-    final edited = _applyIspConfigToForm(config, original);
-
-    await internetSettingsService.saveAll(
-      original,
-      edited,
-      pppInstancePath: fetchResult.pppInstancePath,
-      vlanInstancePath: fetchResult.vlanInstancePath,
-    );
-  }
-
-  /// Map [PnpIspConfig] to [UspInternetSettingsForm].
-  ///
-  /// UI pre-fills fields from router's current settings, so submitted values
-  /// represent the user's final intent — no need to preserve original on empty.
-  /// The VLAN ID is the exception: it counts only while VLAN is on.
-  UspInternetSettingsForm _applyIspConfigToForm(
-    PnpIspConfig config,
-    UspInternetSettingsForm original,
-  ) {
-    final vlanEnabled = config.type == IspConnectionType.pppoeVlan;
-    // dnsServer3 intentionally omitted — PNP has no UI for it, preserve original
-    return original.copyWith(
-      connectionType: _mapConnectionType(config.type),
-      staticIpAddress: config.staticIpAddress,
-      subnetMask: config.subnetMask,
-      defaultGateway: config.defaultGateway,
-      dnsServer1: config.dnsServer1,
-      dnsServer2: config.dnsServer2,
-      pppUsername: config.pppUsername,
-      pppPassword: config.pppPassword,
-      vlanEnabled: vlanEnabled,
-      // With VLAN off, config.vlanId is not the user's: Static IP has no VLAN
-      // field, and PPPoE's hidden field holds whatever was last typed or
-      // pre-filled, or 0 when empty. Keep the router's ID: FW 2.0.4 ships the
-      // WAN VLAN row with ID 1 and refuses 0 (#1072).
-      vlanId: vlanEnabled ? config.vlanId : original.vlanId,
-    );
-  }
-
-  UspWanConnectionType _mapConnectionType(IspConnectionType type) {
-    return switch (type) {
-      IspConnectionType.dhcp => UspWanConnectionType.dhcp,
-      IspConnectionType.pppoe => UspWanConnectionType.pppoe,
-      IspConnectionType.pppoeVlan => UspWanConnectionType.pppoe,
-      IspConnectionType.staticIp => UspWanConnectionType.staticIp,
-    };
   }
 
   // ─── Mesh ──────────────────────────────────────────────
@@ -667,29 +634,7 @@ class PnpService {
     return result;
   }
 
-  // ─── Utility ────────────────────────────────────────────
-
-  /// Fetch the primary WiFi SSID name (for display in no-internet view).
-  Future<String?> fetchCurrentSsid() async {
-    try {
-      final ssids =
-          (await WiFiSsids.fetch(_usp)).items.where((s) => !isEmptyWiFiSsid(s));
-      return ssids.firstOrNull?.ssid;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  // ─── Reboot & Reconnect ──────────────────────────────────
-
-  /// Reboot the router. Connection will be lost.
-  Future<void> reboot() async {
-    try {
-      await DeviceOperations.reboot(_usp);
-    } catch (e) {
-      throw mapUspErrorToServiceError(e);
-    }
-  }
+  // ─── Reconnect ───────────────────────────────────────────
 
   /// Check if the router is back by fetching SystemInfo.
   /// Returns serial number on success, throws on failure.

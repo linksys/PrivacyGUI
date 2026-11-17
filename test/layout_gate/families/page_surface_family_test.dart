@@ -97,12 +97,12 @@ void main() {
     expect(kAutoIPoEPageCase.forbids, contains(AppLoader));
   });
 
-  // "Cases" and not "pages", corrected by #1489: this list is seventy-three cases over
-  // fifty pages (recounted at #641's merge), because several of those pages are swept
-  // more than once. The two counts were equal for the whole of #1369 and the group
-  // title read "pages"
+  // "Cases" and not "pages", corrected by #1489: this list is seventy-two cases over
+  // forty-nine pages (recounted at #1511 P0, which deleted one page and its one case),
+  // because several of those pages are swept more than once. The two counts were equal
+  // for the whole of #1369 and the group title read "pages"
   // throughout, which is exactly the kind of coincidence a name should not be built on
-  // — `kPageViewCount` is 52, a third quantity again (page view *files*, which no case
+  // — `kPageViewCount` is 51, a third quantity again (page view *files*, which no case
   // can move), and it is equal to neither.
   //
   // **Two counts drifted before #1554 re-measured them, and only in the prose.** The
@@ -143,11 +143,11 @@ void main() {
   // an assertion that does not read it is the failure mode, and copying it to a fifth
   // place is how it becomes hard to notice.
   group(
-      'the gate declares seventy-three cases over fifty pages, and which '
-      'seventy-three is a decision', () {
+      'the gate declares seventy-two cases over forty-nine pages, and which '
+      'seventy-two is a decision', () {
     test(
         'kPageSurfaceCases holds the pilot two, wave 1\'s five, wave 2\'s nine, '
-        'wave 3\'s six, wave 4\'s twenty-one, #1489\'s five non-default tabs, '
+        'wave 3\'s five, wave 4\'s twenty-one, #1489\'s five non-default tabs, '
         '#1549\'s split page, #1554\'s two fixture states, #1602\'s two '
         'completion branches plus eight diagnostics screens, #1580\'s '
         'remote-only page, #1636\'s third Wi-Fi tab, #1611\'s three '
@@ -182,25 +182,27 @@ void main() {
           'pnp_unplug_modem',
           'pnp_modem_lights_off',
           'pnp_waiting_modem',
-          'pnp_setup',
+          // `pnp_setup` and its three siblings until #1511 P4, which moved all four
+          // onto `PnpFlowFrameView` — renamed where they stand, so the list still
+          // reads as the record it is.
+          'pnp_flow_frame',
           // #1554 §4: the same view file's firmware stage. Beside its sibling rather
           // than appended, which is the placement #1489 established for the five tab
           // cases — this list stopped being strictly onboarding-ordered then, and
           // declaration locality is the more useful of the two orders for a reader
           // asking "what else sweeps this page".
-          'pnp_setup_firmware',
+          'pnp_flow_frame_firmware',
           // #1602: the same view file again, its two `WizardWifiReady` branches.
           // Beside their siblings for the reason the firmware case is — four cases
           // now measure one page view file, and a reader asking "what else sweeps
           // this page" wants all four in one screenful.
-          'pnp_setup_complete_split',
-          'pnp_setup_complete_unified',
+          'pnp_flow_frame_complete_split',
+          'pnp_flow_frame_complete_unified',
           'home',
           'login_local',
           'local_router_recovery',
           'local_reset_router_password',
           'menu',
-          'auto_parent_first_login',
           'advanced_settings',
           'remote_assistance',
           'support',
@@ -271,6 +273,12 @@ void main() {
           // #641: Advanced Settings → DDNS, a page view file arriving the same
           // way.
           'ddns',
+          // #1511 P4: the PnP wizard's three steps, page view files of their own
+          // since the steps became routes — the 52nd to 54th, arriving with the
+          // `lib/` change that made them.
+          'pnp_wifi_step',
+          'pnp_guest_step',
+          'pnp_your_network_step',
         ],
         // Updated by #1377, #1378, #1379 and #1380, and the wording is the point of
         // the test.
@@ -329,10 +337,10 @@ void main() {
         // What the wave did cost is fixtures: five of the six need one, and
         // `login_local` needs a `sessionProvider` that does not reach a USP service
         // (its `initState` throws otherwise, so that cell fails rather than
-        // under-measures). `auto_parent_first_login` is the roster's 45th file, the
-        // one page #1370 could not measure, and the family's only loader-is-content
-        // page — declared, not excluded, with its exemption pinned in
-        // `kPagesWhoseLoaderIsContent` below.
+        // under-measures). The sixth, `auto_parent_first_login`, was the roster's
+        // 45th file, the one page #1370 could not measure and the family's first
+        // loader-is-content page. #1511 P0 deleted it as dead code, so wave 3 now
+        // contributes five ids here.
         //
         // **Wave 4's twenty-one (#1380)**: everything left, which is what makes this
         // the wave with a different shape from the three before it — the earlier waves
@@ -533,8 +541,8 @@ void main() {
     }
 
     test(
-        'exactly three pages are exempt from the loader rule, and all three are '
-        'named', () {
+        'exactly two pages are exempt from the loader rule, and both are named',
+        () {
       // The membership pin. The two-branch test above is satisfied by *any*
       // exemption set — including one that grew an entry because a fixture was hard
       // to write, which is the failure mode `kPagesWhoseLoaderIsContent`'s own doc
@@ -549,14 +557,15 @@ void main() {
       // a *kind* of screen; it would not have been evidence of anything if the second
       // entry had arrived with a fixture excuse.
       //
-      // Note it is two *cases*, not two views: `pnp_setup` — the same view file in its
-      // form phase — still forbids the loader, because there a spinner really is the
-      // stand-in this rule is about.
+      // Note it is two *cases*, not two views: `pnp_flow_frame` — the same view file
+      // on the wizard's form — still forbids the loader, because there a spinner
+      // really is the stand-in this rule is about. (Both were `pnp_setup*` until
+      // #1511 P4 moved the wizard's screens onto `PnpFlowFrameView`.)
       //
       // **The third entry (#1602) held the bar, and the case that did not is the more
       // useful half of the story.** `unified_diagnostics_manual_tools` is exempt because
       // `_buildPingResult` ends in a determinate linear `AppLoader` whose `value` is the
-      // success rate — the bar's width *is* the number, which is `pnp_setup_firmware`'s
+      // success rate — the bar's width *is* the number, which is the PnP firmware screen's
       // sentence verbatim. What was drafted as the third entry was
       // `unified_diagnostics_running`, on the grounds that the running view paints a
       // 12x12 spinner in whichever step `isCurrent`; that argued a *new* kind of
@@ -566,19 +575,22 @@ void main() {
       // arrived is the one whose loader a *cell* can see, and the rule still names one
       // kind of screen. A `requires` naming a conditional widget is a claim about the
       // fixture, and reading the source cannot settle it.
+      //
+      // **#1511 P0 removed the first entry**, `auto_parent_first_login`, by deleting
+      // its page as dead code — not by un-exempting it. The two that remain still make
+      // its argument.
       expect(
         kPagesWhoseLoaderIsContent,
         const {
-          'auto_parent_first_login',
-          'pnp_setup_firmware',
+          'pnp_flow_frame_firmware',
           'unified_diagnostics_manual_tools',
         },
-        reason: 'auto_parent_first_login exists to say "we are installing '
-            'firmware, do not unplug the router" — the spinner is the subject of '
-            'the screen — pnp_setup_firmware is the setup wizard saying it, and '
-            'unified_diagnostics_manual_tools is a determinate bar whose value is '
-            'the success rate it reports. A fourth entry needs that same argument '
-            'made in the case doc, not just a passing sweep.',
+        reason:
+            'pnp_flow_frame_firmware exists to say "we are installing firmware, '
+            'do not unplug the router" — the progress bar is the subject of the '
+            'screen — and unified_diagnostics_manual_tools is a determinate bar '
+            'whose value is the success rate it reports. A third entry needs that '
+            'same argument made in the case doc, not just a passing sweep.',
       );
       expect(
         kPageSurfaceCases.map((c) => c.id),
@@ -846,7 +858,7 @@ void main() {
         kPnpUnplugModemPageCase,
         kPnpModemLightsOffPageCase,
         kPnpWaitingModemPageCase,
-        kPnpSetupPageCase,
+        kPnpFlowFramePageCase,
       ]) {
         (page.overrides().isEmpty ? unpinned : pinned).add(page.id);
       }
@@ -854,32 +866,33 @@ void main() {
         unpinned,
         const ['pnp_isp_settings', 'pnp_unplug_modem', 'pnp_modem_lights_off'],
         reason:
-            'these three read no `pnpProvider` state on the path this sweep '
-            'measures — the ISP hub watches it only while `_dhcpSaving`, and the '
-            'two modem-restart steps are plain StatelessWidgets. Any *other* page '
-            'appearing here is a phase that stopped being pinned, and the page it '
-            'then renders is whatever `PnpState.initial()` selects: '
-            '`AdminCheckingInternet`, which is a spinner on most of this flow.',
+            'these three read no flow state on the path this sweep measures — '
+            'the ISP hub watches the troubleshooting run only while '
+            '`_dhcpSaving`, and the two modem-restart steps are plain '
+            'StatelessWidgets. Any *other* page appearing here is a phase that '
+            'stopped being pinned: on the entry and the wizard, the page then '
+            'renders whatever `PnpState.initial()` selects, '
+            '`AdminCheckingInternet`, a spinner; on the troubleshooting pages '
+            '(since #1511 P1 pinned through `internetTroubleshootingOverrides`), '
+            'the real run reaches a USP service the fixture does not have.',
       );
       expect(pinned, hasLength(6));
     });
 
-    test('page.pnp_setup requires the widget that was blocking it', () {
+    test('page.pnp_flow_frame requires the widget that was blocking it', () {
       expect(
-        kPnpSetupPageCase.requires,
+        kPnpFlowFramePageCase.requires,
         containsAll(<Type>[AppStepper, AppTextField, AppPasswordInput]),
         reason:
             'AppStepper is doing two jobs here that no other premise in this '
-            'file does. It pins that the wizard has more than one step — '
-            '`_buildStepperForm` renders no stepper at all when `totalSteps == 1`, '
-            'which is the single-step fixture #1378 forbade as a way to make this '
-            'page lay out clean — and it keeps the regression test for '
-            'linksys/privacyGUI-UI-kit#70 in the gate, since that defect was in '
-            'the stepper and nowhere else. The two field types pin the *step*: only '
-            'step 0 is measured (advancing `_currentStep` needs a tap per cell), '
-            'and step 0 is the only one with a form on it, three bands deep because '
-            'the fixture is split-mode. Dropping them would leave this premise '
-            'holding against a wizard whose step content had gone missing.',
+            'file does. It pins that the frame is on a step of a multi-step plan '
+            '— the case\'s fixture carries one — and it keeps the regression test '
+            'for linksys/privacyGUI-UI-kit#70 in the gate, since that defect was '
+            'in the stepper and nowhere else. Since #1511 P4 the frame is the only '
+            'page that draws the stepper (this was page.pnp_setup until the '
+            'wizard\'s steps became routes); a step page pumped alone shows none. '
+            'The two field types pin that the Wi-Fi step under it is laid out '
+            'too, three bands deep because the fixture is split-mode.',
       );
     });
 
@@ -889,8 +902,9 @@ void main() {
     // whole guard. `local_router_recovery`, `local_reset_router_password` and
     // `usp_menu_view` render no loader anywhere in the file; `home_view`'s
     // `AppFullScreenLoader` sits behind `final bool _isLoading = false`, i.e. dead
-    // code; and `auto_parent_first_login`'s loader is the content. Only
-    // `login_local_view` has a live one (`loading:`, and `data:` while `_p != null`).
+    // code; and `auto_parent_first_login`'s loader was the content (#1511 P0 deleted
+    // that page). Only `login_local_view` has a live one (`loading:`, and `data:`
+    // while `_p != null`).
     //
     // That is the case #1366 made in general, arriving here as five pages at once: a
     // premise that is only a loader-forbid is a premise that cannot fail. Two of the
@@ -975,27 +989,6 @@ void main() {
             'render, and two title rows are quietly a badge narrower — in all 234 '
             'cells, with nothing failing. `AppMenuCard` alone cannot see that; '
             '`AppBadge` is what makes it a failure.',
-      );
-    });
-
-    test(
-        'page.auto_parent_first_login requires more than the spinner it is '
-        'exempt for', () {
-      // The loader half is pinned by the exemption branch above. This is the other
-      // half: `requires: [AppLoader]` on its own would hold against *any* centred
-      // spinner — including the `Center(child: AppLoader())` the loader-only control
-      // below pumps deliberately — so the one page allowed to show a loader is the
-      // page that most needs a second premise.
-      expect(
-        kAutoParentFirstLoginPageCase.requires,
-        contains(AppCard),
-        reason:
-            'the two localized paragraphs beside the loader have no type of '
-            'their own, so the card is what a cell that lost this page would '
-            'lack. And losing it is live rather than theoretical: the real '
-            '`checkAndAutoInstallFirmware()` returns false, which makes the view '
-            'call `goNamed(RouteNamed.dashboardHome)` — a route this family\'s '
-            'single-route host does not have.',
       );
     });
 

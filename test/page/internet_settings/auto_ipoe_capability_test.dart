@@ -60,9 +60,14 @@ void main() {
           .singleWhere((route) => route.name == RouteNamed.pnpAutoIPoE);
       late BuildContext routeContext;
       late GoRouterState routeState;
-      final router = GoRouter(routes: [
+      // The probe sits under a `:caller` like every troubleshooting page, so the
+      // redirect it is handed has the caller to forward (#1511 P1).
+      const callerParameters = {
+        TroubleshootingCaller.param: TroubleshootingCaller.pnp,
+      };
+      final router = GoRouter(initialLocation: '/probe/pnp', routes: [
         GoRoute(
-            path: '/',
+            path: '/probe/:${TroubleshootingCaller.param}',
             builder: (context, state) {
               routeContext = context;
               routeState = state;
@@ -86,7 +91,8 @@ void main() {
           await ipoeRoute.redirect!(routeContext, routeState),
           supported
               ? null
-              : router.namedLocation(RouteNamed.pnpIspTypeSelection));
+              : router.namedLocation(RouteNamed.pnpIspTypeSelection,
+                  pathParameters: callerParameters));
       if (!supported)
         expect(await ipoeRoute.onExit!(routeContext, routeState), isTrue);
       expect(tester.takeException(), isNull);

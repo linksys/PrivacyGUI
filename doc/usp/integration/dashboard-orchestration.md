@@ -218,8 +218,6 @@ All `_ref.read()` calls are cached **before** the async `init()` call:
 Future<String?> authCheck(GoRouterState state) {
   // Cache BEFORE init() — init changes authProvider → invalidates our ref
   final session = _ref.read(sessionProvider.notifier);
-  final autoParentLogin = _ref.read(autoParentFirstLoginStateProvider);
-  final autoParentLoginNotifier = _ref.read(autoParentFirstLoginStateProvider.notifier);
   final cachedDeviceInfo = _ref.read(sessionProvider).deviceInfo;
 
   return _ref.read(authProvider.notifier).init().then((authState) async {

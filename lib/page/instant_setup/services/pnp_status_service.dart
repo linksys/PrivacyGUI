@@ -102,9 +102,7 @@ class Tr181PnpStatusService implements PnpStatusService {
       if (state.userAcknowledgedAutoConfig) {
         return PnpTriggerResult.notNeeded();
       }
-      return PnpTriggerResult.needed(
-        method: _parseMethod(state.autoConfigurationMethod),
-      );
+      return PnpTriggerResult.needed();
     } catch (e) {
       logger.w('[PnP] tr181 check failed, treating as notNeeded: $e');
       return PnpTriggerResult.notNeeded();
@@ -123,17 +121,6 @@ class Tr181PnpStatusService implements PnpStatusService {
           '[PnP] tr181 acknowledge: SetUserAcknowledgedAutoConfig() invoked');
     } catch (e) {
       logger.w('[PnP] tr181 acknowledge failed (ignored): $e');
-    }
-  }
-
-  AutoConfigurationMethod _parseMethod(String value) {
-    switch (value) {
-      case 'AutoParent':
-        return AutoConfigurationMethod.autoParent;
-      case 'PreConfigured':
-        return AutoConfigurationMethod.preConfigured;
-      default:
-        return AutoConfigurationMethod.none;
     }
   }
 }

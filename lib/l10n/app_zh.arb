@@ -224,8 +224,6 @@
   "passwwordUpdated": "路由器密码已更新",
   "ping": "Ping",
   "pnpErrorForStaticIpAndDhcp": "无法建立连接。请检查您的信息，然后重试。",
-  "pnpFwUpdateDesc": "请等待我们下载更新并重启您的设备。完成后，指示灯将变为亮白色。",
-  "pnpFwUpdateTitle": "正在保存您的配置并检查软件更新...",
   "pnpIspTypeSelectionDhcpDesc": "动态主机配置协议（DHCP）会自动为连接到网络的设备分配IP地址。",
   "pnpIspTypeSelectionPppoeDesc": "以太网点对点协议（PPPoE）是用于将一个以太网局域网中多个计算机用户连接至远程站点的协议规范。",
   "pnpIspTypeSelectionStaticDesc": "静态互联网协议（IP）地址（静态IP地址）是由互联网服务提供商（ISP）分配给网络的永久性数字地址。",

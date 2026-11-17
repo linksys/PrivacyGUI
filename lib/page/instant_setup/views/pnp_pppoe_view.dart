@@ -4,11 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/instant_setup/models/troubleshooting_phase.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
-import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
+import 'package:privacy_gui/page/instant_setup/providers/internet_troubleshooting_provider.dart';
 import 'package:privacy_gui/page/instant_setup/views/components/pnp_isp_saving_progress.dart';
-import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// PPPoE configuration form (with optional VLAN ID toggle).
@@ -25,22 +25,32 @@ class _PnpPppoeViewState extends ConsumerState<PnpPppoeView> {
   final _vlanIdController = TextEditingController();
   bool _showVlan = false;
 
+  /// Prefill from the first WAN read that completes — which the hub started
+  /// when it opened, so it is normally done already. Once only, whatever that
+  /// read found: a read that lands later (after a save, say) must not overwrite
+  /// what the user typed, including into a form that opened empty.
+  bool _prefilled = false;
+
   @override
   void initState() {
     super.initState();
-    _prefillFromCurrentSettings();
+    ref.listenManual(troubleshootingWanPrefillProvider, (_, next) {
+      if (!_prefilled && !next.isLoading) {
+        setState(() => _prefill(next.valueOrNull));
+      }
+    });
+    final now = ref.read(troubleshootingWanPrefillProvider);
+    if (!now.isLoading) _prefill(now.valueOrNull);
   }
 
-  void _prefillFromCurrentSettings() {
-    final phase = ref.read(pnpProvider).phase;
-    if (phase is NoInternet && phase.currentWanSettings != null) {
-      final wan = phase.currentWanSettings!;
-      _usernameController.text = wan.pppUsername;
-      _passwordController.text = wan.pppPassword;
-      if (wan.vlanEnabled) {
-        _showVlan = true;
-        _vlanIdController.text = wan.vlanId.toString();
-      }
+  void _prefill(UspInternetSettingsForm? wan) {
+    _prefilled = true;
+    if (wan == null) return;
+    _usernameController.text = wan.pppUsername;
+    _passwordController.text = wan.pppPassword;
+    if (wan.vlanEnabled) {
+      _showVlan = true;
+      _vlanIdController.text = wan.vlanId.toString();
     }
   }
 
@@ -54,23 +64,18 @@ class _PnpPppoeViewState extends ConsumerState<PnpPppoeView> {
 
   @override
   Widget build(BuildContext context) {
-    // Listen for internet recovery, save success, or save failure.
-    ref.listen(pnpProvider, (prev, next) {
-      if (next.phase is WizardConfiguring || next.phase is WizardInitializing) {
-        context.go(RoutePath.pnp);
-      } else if (next.phase is AdminReadFailure) {
-        // Save succeeded but the trailing internet check could not read router
-        // state. Route back to the entry view, which re-runs the flow (implicit
-        // retry) and renders the read-failure card if it still fails.
-        context.go(RoutePath.pnp);
-      } else if (prev?.phase is IspSaving &&
-          next.phase is NoInternet &&
-          next.errorMessage != null) {
-        showFailedSnackBar(context, next.errorMessage!);
+    // A failed save, said once. A save that brings the internet back, or ends on
+    // a router that cannot be read, is handed over by the hub underneath this
+    // page (#1511 P1).
+    ref.listen(internetTroubleshootingProvider, (prev, next) {
+      if (prev is IspSaving &&
+          next is TroubleshootingNoInternet &&
+          next.saveError != null) {
+        showSaveErrorSnackBar(context, next.saveError!);
       }
     });
 
-    final phase = ref.watch(pnpProvider).phase;
+    final phase = ref.watch(internetTroubleshootingProvider);
     final canSave = _usernameController.text.isNotEmpty &&
         _passwordController.text.isNotEmpty;
 
@@ -171,6 +176,8 @@ class _PnpPppoeViewState extends ConsumerState<PnpPppoeView> {
       vlanEnabled: _showVlan,
       vlanId: vlanId,
     );
-    ref.read(pnpProvider.notifier).saveIspWithProgress(config);
+    ref
+        .read(internetTroubleshootingProvider.notifier)
+        .saveIspWithProgress(config);
   }
 }

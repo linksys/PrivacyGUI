@@ -1,51 +1,61 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
-import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
-import 'pnp_wifi_config.dart';
+import 'pnp_flow_plan.dart';
 import 'pnp_wifi_ready_band.dart';
+import 'pnp_wifi_write.dart';
 
-/// Whether this is a factory-default first-time setup or a reconfigure.
-enum PnpFlowMode { unconfigured, configured }
-
-/// Top-level PnP state — holds the current phase + shared context.
+/// Top-level PnP state — where the flow is, plus what it learned on the way.
+///
+/// Since #1511 P4 it holds **no form**: what the user types lives in the
+/// setting steps' drafts (`pnp_wifi_draft_provider.dart`), so an edit never changes
+/// this state and adding a step never adds a field here.
 class PnpState extends Equatable {
   final PnpPhase phase;
-  final PnpFlowMode flowMode;
   final String? serialNumber;
   final String? modelName;
-  final String? errorMessage;
+
+  /// The wizard's steps, decided once when it initializes; `null` before.
+  final PnpFlowPlan? plan;
+
+  /// The mesh nodes Your Network lists. Read with the Wi-Fi when the wizard
+  /// initializes, and again after nodes are added (#1734).
+  final List<NodeEntity> meshNodes;
 
   const PnpState({
     required this.phase,
-    this.flowMode = PnpFlowMode.unconfigured,
     this.serialNumber,
     this.modelName,
-    this.errorMessage,
+    this.plan,
+    this.meshNodes = const [],
   });
 
   factory PnpState.initial() => const PnpState(phase: AdminCheckingInternet());
 
   PnpState copyWith({
     PnpPhase? phase,
-    PnpFlowMode? flowMode,
     String? serialNumber,
     String? modelName,
-    String? errorMessage,
-    bool clearError = false,
+    PnpFlowPlan? plan,
+    List<NodeEntity>? meshNodes,
   }) {
     return PnpState(
       phase: phase ?? this.phase,
-      flowMode: flowMode ?? this.flowMode,
       serialNumber: serialNumber ?? this.serialNumber,
       modelName: modelName ?? this.modelName,
-      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      plan: plan ?? this.plan,
+      meshNodes: meshNodes ?? this.meshNodes,
     );
   }
 
   @override
-  List<Object?> get props =>
-      [phase, flowMode, serialNumber, modelName, errorMessage];
+  List<Object?> get props => [
+        phase,
+        serialNumber,
+        modelName,
+        plan,
+        meshNodes,
+      ];
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -91,51 +101,19 @@ class AdminReadFailure extends PnpPhase {
   List<Object?> get props => [code, detail];
 }
 
-/// No internet detected — route to troubleshooter.
+/// No internet detected — PnP hands the user to the troubleshooting flow.
+///
+/// PnP's part ends here (#1511 P1): retrying, restarting the modem and entering
+/// ISP settings are the troubleshooting flow's, with state of its own, and it
+/// reads the WAN for its forms itself. Internet back means `/pnp` again, which
+/// re-runs this check.
+///
+/// It carries nothing: the hand-off is the whole of it, so PnP asks the router
+/// nothing more once the check has said "no internet".
 class NoInternet extends PnpPhase {
-  final String? ssid;
-  final UspInternetSettingsForm? currentWanSettings;
-  const NoInternet({this.ssid, this.currentWanSettings});
+  const NoInternet();
   @override
-  List<Object?> get props => [ssid, currentWanSettings];
-}
-
-// ─── Modem Restart Phase ────────────────────────────────────
-
-/// Modem restart countdown running (150s → 0s).
-class ModemRestartCountdown extends PnpPhase {
-  final int remainingSeconds;
-  final int totalSeconds;
-  const ModemRestartCountdown({
-    required this.remainingSeconds,
-    this.totalSeconds = 150,
-  });
-  @override
-  List<Object?> get props => [remainingSeconds, totalSeconds];
-}
-
-/// Modem restart: checking internet (polling up to maxAttempts).
-class ModemRestartCheckingInternet extends PnpPhase {
-  final int attemptCount;
-  final int maxAttempts;
-  const ModemRestartCheckingInternet({
-    required this.attemptCount,
-    this.maxAttempts = 30,
-  });
-  @override
-  List<Object?> get props => [attemptCount, maxAttempts];
-}
-
-// ─── ISP Save Progress Phase ────────────────────────────────
-
-enum IspSaveStep { saving, checkingSettings, checkingInternet }
-
-/// ISP settings save is in progress, with multi-step display.
-class IspSaving extends PnpPhase {
-  final IspSaveStep step;
-  const IspSaving({required this.step});
-  @override
-  List<Object?> get props => [step];
+  List<Object?> get props => [];
 }
 
 // ─── Wizard Phase ──────────────────────────────────────────
@@ -147,27 +125,22 @@ class WizardInitializing extends PnpPhase {
   List<Object?> get props => [];
 }
 
-/// User is editing WiFi name / password / guest WiFi.
+/// The user is on the wizard's steps, editing.
+///
+/// What they edit is not here: it is in the steps' drafts (#1511 P4).
 class WizardConfiguring extends PnpPhase {
-  final PnpWifiConfig wifiConfig;
-  final List<NodeEntity> meshNodes;
-
-  /// Why the last save sent the user back here, for the view to show once.
+  /// Why the last save sent the user back here, for the shell to show once.
   ///
-  /// On the phase rather than on [PnpState] so that it cannot outlive the form:
-  /// every edit builds a new [WizardConfiguring] without it. A failed save used
-  /// to put its error in a state field no view read, which is the "guest page
+  /// On the phase rather than on [PnpState] so that it cannot outlive the
+  /// return: the next save builds a new phase without it. A failed save used to
+  /// put its error in a state field no view read, which is the "guest page
   /// shown twice" of #1000 — the user was sent back with nothing said.
   final ServiceError? saveError;
 
-  const WizardConfiguring({
-    required this.wifiConfig,
-    this.meshNodes = const [],
-    this.saveError,
-  });
+  const WizardConfiguring({this.saveError});
 
   @override
-  List<Object?> get props => [wifiConfig, meshNodes, saveError];
+  List<Object?> get props => [saveError];
 }
 
 /// Writing changes to router.
@@ -188,27 +161,24 @@ class WizardSaved extends PnpPhase {
 class WizardNeedsReconnect extends PnpPhase {
   final String newSsid;
   final String newPassword;
-  final PnpWifiConfig? wifiConfig;
 
-  /// Carried through the reconnect so that a write found not to have landed can
-  /// return to the same form it left.
-  final List<NodeEntity> meshNodes;
+  /// What the save wrote, so that the router can be asked whether it took it
+  /// once the user is back. `null` only from the demo launcher.
+  final PnpWifiWrite? write;
 
   /// The WiFi write was sent but its answer never came, so whether the router
   /// applied it is asked after the reconnect. On FLWRT 2.0 this is the usual
-  /// case, not a fault — see [PnpWifiWriteOutcome].
+  /// case, not a fault — see `PnpWifiWriteOutcome`.
   final bool writeUnanswered;
 
   const WizardNeedsReconnect({
     required this.newSsid,
     required this.newPassword,
-    this.wifiConfig,
-    this.meshNodes = const [],
+    this.write,
     this.writeUnanswered = false,
   });
   @override
-  List<Object?> get props =>
-      [newSsid, newPassword, wifiConfig, meshNodes, writeUnanswered];
+  List<Object?> get props => [newSsid, newPassword, write, writeUnanswered];
 }
 
 /// Polling for router after reconnect.
@@ -221,6 +191,30 @@ class WizardTestingReconnect extends PnpPhase {
   });
   @override
   List<Object?> get props => [attemptCount, maxAttempts];
+}
+
+/// The save has landed and setup is acknowledged; the user is on Your Network,
+/// adding nodes if they want (#1511 P5).
+///
+/// **Its own phase, after the commit (D3).** Before #1511 P5 Your Network was
+/// the last step of [WizardConfiguring] and held Save, so a node joined with the
+/// Wi-Fi it then had and was moved to the new one by the save. Now the save is
+/// on the last setting step and this step comes after it: a node added here
+/// joins with the Wi-Fi the user has just set, and nothing on this step edits
+/// the Wi-Fi. The node re-read after an add belongs to this phase
+/// (`PnpNotifier.refreshMeshNodes`).
+///
+/// Its Done runs the firmware stage and then the completion screen (D6), so
+/// [ready] — what that screen will show, built from the write at the save — is
+/// carried here until then. See [WizardWifiReady] for why it is the
+/// credentials and not the configuration (REQ-B4).
+class WizardYourNetwork extends PnpPhase {
+  final WizardWifiReady ready;
+
+  const WizardYourNetwork({required this.ready});
+
+  @override
+  List<Object?> get props => [ready];
 }
 
 /// Checking for available firmware updates.
@@ -263,8 +257,8 @@ class WizardUpdatingFirmware extends PnpPhase {
 /// **It carries credentials rather than the configuration they came from, and
 /// that is REQ-B4.** A firmware update sits between [WizardSaved] and this phase
 /// and reboots the router once, so these three-or-more strings are the one part of
-/// the wizard that has to outlive it — see [PnpWifiReadyBand] for why carrying a
-/// [PnpWifiConfig] would be a worse answer.
+/// the wizard that has to outlive it — see [PnpWifiReadyBand] for why carrying the
+/// whole configuration would be a worse answer.
 ///
 /// **They are not persisted, and that is the decision rather than an omission**
 /// (Austin, 2026-09-16). REQ-B4's implementation note used to require a durable
@@ -292,23 +286,19 @@ class WizardWifiReady extends PnpPhase {
     this.bands = const [],
   });
 
-  /// The phase for a wizard that has just written [wifiConfig].
+  /// The phase for a wizard that has just written [write].
   ///
-  /// The split-mode decision is made **here, once**, off the real configuration:
-  /// [PnpWifiConfig.isSplitMode] compares the bands' `originalSsid` values, which
-  /// only the configuration knows. Leaving it to the view would mean re-deciding
-  /// it from a restored snapshot that no longer has those values.
-  factory WizardWifiReady.fromWifiConfig({
-    required String ssid,
-    required String password,
-    PnpWifiConfig? wifiConfig,
-  }) {
-    final split = wifiConfig?.isSplitMode ?? false;
+  /// The split-mode decision is made **here, once**, off what was written:
+  /// [PnpMainWifiSettings.splitMode] is decided by the router read, which only
+  /// the write still carries. Leaving it to the view would mean re-deciding it
+  /// from a snapshot that no longer has it.
+  factory WizardWifiReady.fromWrite(PnpWifiWrite write) {
+    final main = write.main.current;
     return WizardWifiReady(
-      ssid: ssid,
-      password: password,
-      bands: split
-          ? wifiConfig!.mainBands
+      ssid: write.reconnectSsid,
+      password: write.reconnectPassword,
+      bands: main.splitMode
+          ? main.bands
               .map((b) => PnpWifiReadyBand(
                     bandName: b.bandName,
                     ssid: b.ssid,
@@ -327,10 +317,13 @@ class WizardWifiReady extends PnpPhase {
   List<Object?> get props => [ssid, password, bands];
 }
 
-/// Recoverable error during wizard phase.
+/// The wizard could not read the router's Wi-Fi when it started.
+///
+/// [error] is typed, not `'$e'` (constitution §13.4): the screen localizes it
+/// through `ServiceErrorView`, as a read failure is shown everywhere else.
 class WizardError extends PnpPhase {
-  final String message;
-  const WizardError({required this.message});
+  final ServiceError error;
+  const WizardError({required this.error});
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [error];
 }
