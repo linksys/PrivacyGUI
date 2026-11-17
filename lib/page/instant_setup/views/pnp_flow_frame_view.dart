@@ -116,7 +116,14 @@ class PnpFlowFrameView extends ConsumerWidget {
                     visible: status == null,
                     maintainState: true,
                     maintainAnimation: true,
-                    child: child,
+                    // Its own semantics container (#1841). In the app [child]
+                    // is the shell's nested Navigator, and each step is a
+                    // ModalRoute whose ModalBarrier is a BlockSemantics: it
+                    // drops the semantics of everything painted before it in
+                    // the same container — here the stepper above. Fenced in,
+                    // the barrier can only block what is inside the routed
+                    // page, and the page's own semantics stay as they were.
+                    child: Semantics(container: true, child: child),
                   ),
                   if (status != null)
                     LayoutBuilder(
