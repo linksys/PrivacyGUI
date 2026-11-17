@@ -2,8 +2,8 @@
 
 **Document Version**: 1.0  
 **Last Verified**: 2026-01-19  
-**Total Specifications**: 19  
-**Functional Requirements**: 155+ FR
+**Total Specifications**: 18  
+**Functional Requirements**: 147+ FR
 
 ---
 
@@ -15,7 +15,7 @@ This document consolidates all PrivacyGUI Service Layer refactoring specificatio
 
 | Audit Document | Verification Item | Spec Coverage | Status |
 |----------------|-------------------|---------------|--------|
-| [architecture-analysis.md](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/doc/audit/architecture-analysis.md) | 4-Layer Architecture | 19/19 specs | ✅ Compliant |
+| [architecture-analysis.md](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/doc/audit/architecture-analysis.md) | 4-Layer Architecture | 18/18 specs | ✅ Compliant |
 | [architecture-violations-detail.md](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/doc/audit/architecture-violations-detail.md) | 14 Violations Fixed | All resolved by specs | ✅ Compliant |
 | [service-decoupling-audit.md](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/doc/audit/service-decoupling-audit.md) | Service Layer Establishment | 53 Service files | ✅ Compliant |
 
@@ -68,27 +68,6 @@ This document consolidates all PrivacyGUI Service Layer refactoring specificatio
 > **architecture-violations-detail.md**:
 > - ✅ Resolved `pnp_no_internet_connection_view.dart` direct `isLoggedIn()` usage violation
 > - ✅ Resolved Provider layer direct RouterRepository call violations
-
----
-
-### 1.2 001-auto-parent-login-service
-
-**Created**: 2026-01-07  
-**Service File**: [auto_parent_first_login_service.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/login/auto_parent/services/auto_parent_first_login_service.dart)  
-**Test File**: `test/page/login/auto_parent/services/auto_parent_first_login_service_test.dart`
-
-#### Functional Requirements
-
-| ID | Requirement | Verified |
-|----|-------------|----------|
-| FR-001 | Create AutoParentFirstLoginService in services/ directory | ✅ |
-| FR-002 | Implement setUserAcknowledgedAutoConfiguration() | ✅ |
-| FR-003 | Implement setFirmwareUpdatePolicy() | ✅ |
-| FR-004 | Implement checkInternetConnection() | ✅ |
-| FR-005 | Convert JNAPError to ServiceError subtypes | ✅ |
-| FR-006 | Refactor AutoParentFirstLoginNotifier to delegate | ✅ |
-| FR-007 | Create autoParentFirstLoginServiceProvider | ✅ |
-| FR-008 | Maintain existing behavior | ✅ |
 
 ---
 
@@ -425,14 +404,14 @@ This document consolidates all PrivacyGUI Service Layer refactoring specificatio
 
 | Category | Specs | FR Count | Verification |
 |----------|-------|----------|--------------|
-| Authentication | 2 | 24 | ✅ 100% |
+| Authentication | 1 | 16 | ✅ 100% |
 | Dashboard | 3 | 18 | ✅ 100% |
 | Node Management | 3 | 43 | ✅ 100% |
 | Network Settings | 3 | 15 | ✅ 100% |
 | Instant Features | 4 | 25 | ✅ 100% |
 | Core Services | 3 | 25 | ✅ 100% |
 | Test Refactoring | 1 | 5 | ✅ 100% |
-| **Total** | **19** | **155** | **✅ 100%** |
+| **Total** | **18** | **147** | **✅ 100%** |
 
 ### Audit Compliance
 

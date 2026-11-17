@@ -223,8 +223,6 @@
   "passwwordUpdated": "Password del router aggiornata",
   "ping": "Ping",
   "pnpErrorForStaticIpAndDhcp": "Impossibile stabilire una connessione. Verifica la connessione e riprova.",
-  "pnpFwUpdateDesc": "Attendere mentre scarichiamo e riavviamo il dispositivo. Il LED diventerà bianco brillante quando il processo sarà completato. Il WiFi del Router potrebbe spegnersi brevemente e poi riaccendersi. Se perdi la connessione, riconnettiti al WiFi del Router per accedere a Internet.",
-  "pnpFwUpdateTitle": "Salvataggio della configurazione e verifica degli aggiornamenti software...",
   "pnpIspTypeSelectionDhcpDesc": "Il Dynamic Host Configuration Protocol (DHCP) assegna automaticamente gli indirizzi IP ai dispositivi collegati alla rete.",
   "pnpIspTypeSelectionPppoeDesc": "Il protocollo Point-to-Point Protocol over Ethernet (PPPoE) è una specifica per la connessione di più utenti a un sito remoto mediante una LAN Ethernet.",
   "pnpIspTypeSelectionStaticDesc": "Un indirizzo IP statico è un numero sempre uguale assegnato a una rete da un fornitore di servizi Internet (ISP).",

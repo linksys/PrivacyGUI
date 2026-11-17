@@ -221,8 +221,6 @@
   "passwwordUpdated": "Yönlendirici parolası güncellendi",
   "ping": "Ping",
   "pnpErrorForStaticIpAndDhcp": "Bağlantı kurulamadı. Lütfen bilgilerinizi kontrol edip yeniden deneyin.",
-  "pnpFwUpdateDesc": "Cihazınızı indirip yeniden başlatırken lütfen bekleyin. İşlem tamamlandığında LED parlak beyaz renkte yanacaktır. Yönlendiricinizin WiFi'ı kısa süreliğine kapanıp tekrar açılabilir. Bağlantıyı kaybederseniz internete erişmek için Yönlendiricinizin WiFi'ına yeniden bağlanın.",
-  "pnpFwUpdateTitle": "Yapılandırmanız kaydediliyor ve yazılım güncellemeleri kontrol ediliyor...",
   "pnpIspTypeSelectionDhcpDesc": "Dinamik Ana Bilgisayar Yapılandırma Protokolü (DHCP) ağa bağlı cihazlara otomatik olarak IP adresleri atar.",
   "pnpIspTypeSelectionPppoeDesc": "Ethernet Üzerinden Noktadan Noktaya Protokolü bir ethernet yerel alan ağı üzerindeki birden fazla bilgisayar kullanıcısını uzak bir siteye bağlamak için kullanılan bir özelliktir.",
   "pnpIspTypeSelectionStaticDesc": "Statik İnternet Protokolü (IP) adresi (statik IP adresi), bir internet servis sağlayıcısı (İSS) tarafından ağa atanan kalıcı bir numaradır.",

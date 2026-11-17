@@ -1,43 +1,48 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
-import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
 
 /// The two fields #1000 added to the wizard phases, and the one property each
 /// is relied on for.
 ///
-/// Both ride on `props`, and that is the point: the setup view shows the save
-/// error from a `ref.listen` on the phase, and Riverpod only notifies a listener
-/// when the new phase is not `==` the old one. A failed save that returns to the
-/// *same* form — same config, same nodes — differs from it only by `saveError`,
-/// so a `props` that left the field out would make the error invisible again,
-/// which is the defect #1000 reported.
+/// Both ride on `props`, and that is the point: the shell shows the save error
+/// from a `ref.listen` on the phase, and Riverpod only notifies a listener when
+/// the new phase is not `==` the old one. A failed save that returns to the form
+/// differs from it only by `saveError`, so a `props` that left the field out
+/// would make the error invisible again, which is the defect #1000 reported.
 void main() {
-  const config = PnpWifiConfig(
-    ssid: 'Home',
-    password: 'Pass1234',
-    originalSsid: 'Home',
-    originalPassword: 'Pass1234',
-  );
-
   group('WizardConfiguring.saveError', () {
     test('is null unless given', () {
-      expect(const WizardConfiguring(wifiConfig: config).saveError, isNull);
+      expect(const WizardConfiguring().saveError, isNull);
     });
 
-    test('the same form with an error is a different phase', () {
-      const form = WizardConfiguring(wifiConfig: config);
-      const failed = WizardConfiguring(
-        wifiConfig: config,
-        saveError: TimeoutError(),
-      );
+    test('the form with an error is a different phase', () {
+      const form = WizardConfiguring();
+      const failed = WizardConfiguring(saveError: TimeoutError());
 
       expect(failed, isNot(form));
+      expect(failed, const WizardConfiguring(saveError: TimeoutError()));
+    });
+  });
+
+  group('WizardYourNetwork.ready (#1511 P5)', () {
+    test('two saves that wrote different credentials are different phases', () {
+      // `ready` is what the completion screen shows after the firmware stage,
+      // carried from the save. A `props` without it would make Your Network
+      // after one save equal to Your Network after another, and Riverpod only
+      // notifies a listener of a phase that is not `==` the last.
+      const first = WizardYourNetwork(
+        ready: WizardWifiReady(ssid: 'Home', password: 'Pass1234'),
+      );
+      const second = WizardYourNetwork(
+        ready: WizardWifiReady(ssid: 'Home', password: 'Other5678'),
+      );
+
+      expect(second, isNot(first));
       expect(
-          failed,
-          const WizardConfiguring(
-            wifiConfig: config,
-            saveError: TimeoutError(),
+          first,
+          const WizardYourNetwork(
+            ready: WizardWifiReady(ssid: 'Home', password: 'Pass1234'),
           ));
     });
   });
@@ -51,7 +56,7 @@ void main() {
       );
 
       expect(phase.writeUnanswered, isFalse);
-      expect(phase.meshNodes, isEmpty);
+      expect(phase.write, isNull);
     });
 
     test('a write still to be verified is a different phase', () {
@@ -60,16 +65,28 @@ void main() {
       const confirmed = WizardNeedsReconnect(
         newSsid: 'Home',
         newPassword: 'Pass1234',
-        wifiConfig: config,
       );
       const unanswered = WizardNeedsReconnect(
         newSsid: 'Home',
         newPassword: 'Pass1234',
-        wifiConfig: config,
         writeUnanswered: true,
       );
 
       expect(unanswered, isNot(confirmed));
+    });
+  });
+
+  group('WizardError.error', () {
+    test('keeps the error typed, for the screen to localize (§13.6)', () {
+      const error = NetworkError(detail: 'USP GET timed out');
+
+      expect(const WizardError(error: error).error, same(error));
+    });
+
+    test('a different failure is a different phase', () {
+      // A retry that fails differently must reach the screen.
+      expect(const WizardError(error: NetworkError()),
+          isNot(const WizardError(error: TimeoutError())));
     });
   });
 }

@@ -2984,6 +2984,13 @@ waves.
    | directly inside a `views/` dir, any depth | **45** | correct; what `discoverPageViews` implements |
    | `find -path '*/views/*_view.dart'` | 49 | **too wide** — `*` crosses `/` in `find` |
 
+   **Since #1511 P0 the first two rows find the same set**: that PR deleted
+   `auto_parent_first_login_view.dart` as dead code, and it was the only page view
+   deeper than `lib/page/<feature>/views/`. The rule keeps its any-depth clause, so
+   the next nested page view is counted rather than missed; the oracle's test for
+   the nested page was deleted, not rewritten, because with no nested page left any
+   rewrite passes under the correct rule and a narrowed one alike.
+
    The four false positives are all composed widgets in
    `lib/page/unified_diagnostics/views/widgets/` (`diagnostic_start_view`,
    `diagnostic_running_view`, `diagnostic_results_view`,

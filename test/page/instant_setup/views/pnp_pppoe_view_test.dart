@@ -8,7 +8,7 @@ import 'package:privacy_gui/page/instant_setup/views/pnp_pppoe_view.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../mocks/provider_overrides/mock_common.dart';
-import '../../../mocks/provider_overrides/mock_pnp.dart';
+import '../../../mocks/provider_overrides/mock_internet_troubleshooting.dart';
 import '../../../mocks/test_data/scenes/pnp_scene_data.dart';
 
 final _testTheme = AppTheme.create(
@@ -23,7 +23,10 @@ Future<void> _pump(WidgetTester tester) async {
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(ProviderScope(
-    overrides: [...commonOverrides(), ...pnpOverrides(pnpNoInternetState)],
+    overrides: [
+      ...commonOverrides(),
+      ...internetTroubleshootingOverrides(wanPrefill: pnpCurrentWanSettings),
+    ],
     child: MaterialApp.router(
       theme: _testTheme,
       localizationsDelegates: AppLocalizations.localizationsDelegates,

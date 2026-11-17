@@ -223,8 +223,6 @@
   "passwwordUpdated": "Senha do roteador atualizada",
   "ping": "Ping",
   "pnpErrorForStaticIpAndDhcp": "Não foi possível estabelecer uma conexão Verifique suas informações e tente novamente",
-  "pnpFwUpdateDesc": "Aguarde enquanto baixamos e reiniciamos seu dispositivo. O LED ficará branco brilhante quando o processo estiver concluído. O WiFi do seu Roteador pode desligar brevemente e depois ligar novamente. Se você perder a conexão, reconecte-se ao WiFi do Roteador para acessar a Internet.",
-  "pnpFwUpdateTitle": "Salvando sua configuração e verificando se há atualizações de software...",
   "pnpIspTypeSelectionDhcpDesc": "O Dynamic Host Configuration Protocol (DHCP) atribui automaticamente endereços IP aos dispositivos conectados à rede.",
   "pnpIspTypeSelectionPppoeDesc": "Protocolo de ponto a ponto pela ethernet é uma especificação para a conexão de vários usuários de computador em uma rede local de ethernet para um local remoto.",
   "pnpIspTypeSelectionStaticDesc": "Um endereço estático (static IP address) de Protocolo de Internet (IP) é um número permanente atribuído a uma rede por um provedor de serviço de internet (ISP).",

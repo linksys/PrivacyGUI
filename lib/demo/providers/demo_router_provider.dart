@@ -60,11 +60,9 @@ final demoRouterProvider = Provider<GoRouter>((ref) {
       } else if (state.matchedLocation == RoutePath.localLoginPassword) {
         router.autoConfigurationLogic(state);
         return router.redirectLogic(state);
-      } else if (state.matchedLocation.startsWith('/autoParentFirstLogin')) {
-        return state.uri.toString();
-      } else if (state.matchedLocation.startsWith('/pnp') ||
-          state.matchedLocation.startsWith('/pnpNoInternetConnection')) {
-        // PnP routes — no auth required, pass through.
+      } else if (state.matchedLocation.startsWith('/pnp')) {
+        // PnP routes — no auth required, pass through. This prefix also covers
+        // the `/pnpNoInternetConnection` tree.
         return state.uri.toString();
       } else if (state.matchedLocation.startsWith('/usp')) {
         return state.uri.toString();
