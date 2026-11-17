@@ -1,39 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/customs/circular_countdown_widget.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
+import 'package:privacy_gui/page/instant_setup/models/troubleshooting_phase.dart';
+import 'package:privacy_gui/page/instant_setup/providers/internet_troubleshooting_provider.dart';
+import 'package:privacy_gui/page/instant_setup/views/components/troubleshooting_navigation.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Step 3 of modem restart flow — plug back in, countdown, check internet.
 ///
-/// Three stages driven by PnpPhase:
+/// Three stages driven by [TroubleshootingPhase]:
 /// 1. Initial: "Plug back in" instruction + confirm button
 /// 2. ModemRestartCountdown: Circular countdown timer (150s)
 /// 3. ModemRestartCheckingInternet: Spinner with attempt counter
+///
+/// A poll that ends with the internet back, or on a router that cannot be read,
+/// is handed over by the hub underneath this page (#1511 P1); this page only
+/// goes back to the hub when the router answered "still no internet".
 class PnpWaitingModemView extends ConsumerWidget {
   const PnpWaitingModemView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(pnpProvider);
-    final phase = state.phase;
+    final phase = ref.watch(internetTroubleshootingProvider);
 
-    // Navigate on success or failure
-    ref.listen(pnpProvider, (prev, next) {
-      if (next.phase is WizardConfiguring || next.phase is WizardInitializing) {
-        context.go(RoutePath.pnp);
-      } else if (next.phase is NoInternet && prev?.phase is! NoInternet) {
-        context.go(RoutePath.pnpNoInternetConnection);
-      } else if (next.phase is AdminReadFailure) {
-        // The poll ended on a read failure rather than a confirmed no-internet.
-        // Same as the no-internet page: the entry view renders the read-failure
-        // card and its retry.
-        context.go(RoutePath.pnp);
+    // The poll ended with the router still answering "no internet": back to the
+    // hub's options.
+    ref.listen(internetTroubleshootingProvider, (prev, next) {
+      if (next is TroubleshootingNoInternet &&
+          prev is! TroubleshootingNoInternet) {
+        context.goWithinTroubleshooting(RouteNamed.pnpNoInternetConnection);
       }
     });
 
@@ -60,7 +58,8 @@ class PnpWaitingModemView extends ConsumerWidget {
     return UiKitPageView.withSliver(
       scrollable: true,
       appBarStyle: UiKitAppBarStyle.none,
-      onBackTap: () => context.go(RoutePath.pnpNoInternetConnection),
+      onBackTap: () =>
+          context.goWithinTroubleshooting(RouteNamed.pnpNoInternetConnection),
       child: (context, constraints) => Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
@@ -86,8 +85,9 @@ class PnpWaitingModemView extends ConsumerWidget {
         AppGap.xxxl(),
         AppButton.primary(
           label: loc(context).pnpWaitingModemPluggedIn,
-          onTap: () =>
-              ref.read(pnpProvider.notifier).startModemRestartCountdown(),
+          onTap: () => ref
+              .read(internetTroubleshootingProvider.notifier)
+              .startModemRestartCountdown(),
         ),
       ],
     );

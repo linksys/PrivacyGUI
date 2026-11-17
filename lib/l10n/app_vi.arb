@@ -221,8 +221,6 @@
   "passwwordUpdated": "Đã cập nhật mật khẩu",
   "ping": "Ping",
   "pnpErrorForStaticIpAndDhcp": "Không thể thiết lập kết nối. Vui lòng kiểm tra thông tin của bạn và thử lại.",
-  "pnpFwUpdateDesc": "Cập nhật phần mềm điều khiển của bạn lên phiên bản mới nhất",
-  "pnpFwUpdateTitle": "Cập nhật phần mềm điều khiển",
   "pnpIspTypeSelectionDhcpDesc": "DHCP là phương thức phổ biến nhất để kết nối với Internet. Nếu bạn không chắc chắn, hãy chọn tùy chọn này.",
   "pnpIspTypeSelectionPppoeDesc": "Giao thức Điểm nối Điểm qua Ethernet là tiêu chuẩn cho kết nối nhiều người dùng máy tính trên mạng cục bộ Ethernet tới một trang từ xa.",
   "pnpIspTypeSelectionStaticDesc": "Địa chỉ Giao thức Internet (IP) tĩnh (địa chỉ IP tĩnh) là một số cố định được nhà cung cấp dịch vụ Internet (ISP) gán cho mạng.",

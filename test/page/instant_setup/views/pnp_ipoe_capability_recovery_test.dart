@@ -41,10 +41,12 @@ Future<void> _pumpPicker(WidgetTester tester, _Service service) async {
         (route) => route.name == RouteNamed.pnpIspTypeSelection,
       );
   final router = GoRouter(
-    initialLocation: '/wan',
+    // The caller in the path, as in production: the picker's child routes build
+    // their pages with the ending its `:caller` names (#1511 P1).
+    initialLocation: '/wan/${TroubleshootingCaller.pnp}',
     routes: [
       GoRoute(
-        path: '/wan',
+        path: '/wan/:${TroubleshootingCaller.param}',
         name: RouteNamed.pnpIspTypeSelection,
         builder: (_, __) => const PnpIspSettingsView(),
         routes: picker.routes,

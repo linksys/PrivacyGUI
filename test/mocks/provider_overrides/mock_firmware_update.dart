@@ -247,7 +247,7 @@ const gateFirmwareNoUpdateFoundState = FirmwareUpdateState(
 ///
 /// One fixture read by three carriers, which is why it is here rather than in any of
 /// them: the wizard's golden state, its layout-gate cell, and the screen-shape tests
-/// in `pnp_setup_view_firmware_test.dart`. Three copies of a phase-plus-progress pair
+/// in `pnp_flow_frame_view_test.dart`. Three copies of a phase-plus-progress pair
 /// is three chances for one of them to drift onto a phase the others do not render.
 ///
 /// **`installing` is a choice, and the only safe one for the tests that assert

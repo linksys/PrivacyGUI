@@ -26,6 +26,22 @@ off the diff of the re-capture). 234 are `page.dmz_mac`, the DMZ page with the h
 swept without re-capturing**, the same drift as `page.pnp_ipoe` above, recorded here for the same
 reason.
 
+**#1511 P0's**: 16,848 → **16,848** (−234 / +234, every added row `clean`, read off the diff of the
+re-capture). The 234 removed are `page.auto_parent_first_login`: P0 deleted that page as dead code,
+so its group left `# groups` with it — the first group this dataset has lost to a deleted page
+rather than to a narrowed sweep. **The 234 added are `page.ddns`, which #641 (`4154ffd37`) declared
+and swept without re-capturing**, the same drift as the two above. The two moves cancel, so the
+`# cells` header does not move; read the diff, not the count.
+
+**#1511 P4's**: 16,848 → **17,550** (−936 / +1,638, every added row `clean`, read off the diff of
+the re-capture; no other group changed). `pnp_setup_view.dart` became the PnP shell's frame and
+the wizard's three steps, each a page view. The four removed groups are `page.pnp_setup`,
+`page.pnp_setup_firmware` and `page.pnp_setup_complete_{split,unified}`; they come back as
+`page.pnp_flow_frame*`, the same four screens now drawn by `PnpFlowFrameView`. The three new ones
+are the steps — `page.pnp_wifi_step`, `page.pnp_guest_step` and `page.pnp_your_network_step`, the
+last swept for the first time (it was the wizard's third step, behind two taps per cell). Its first
+sweep found one overflow, fixed in `lib/` before the case was declared, so every row is `clean`.
+
 Every port in epic #1335 is signed off by one claim: *the ported sweep measures
 the same cells and reaches the same verdicts as before*. The main card sweep
 measures 1,917 coordinates. Nobody can check that by reading output, so this

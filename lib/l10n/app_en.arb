@@ -418,8 +418,6 @@
   "passwwordUpdated": "Router password updated",
   "ping": "Ping",
   "pnpErrorForStaticIpAndDhcp": "Couldn't establish a connection. Please check your info and try again.",
-  "pnpFwUpdateDesc": "Please wait as we download and reboot your device. The LED will turn bright white when the process is complete. Your Router's WiFi might briefly turn off and then on again. If you lose connection, reconnect to your Router's WiFi to access Internet.",
-  "pnpFwUpdateTitle": "Saving your configuration and checking for software updates...",
   "checkingForInternet": "Checking for internet...",
   "pnpIspSaveStepSaving": "Saving settings...",
   "pnpIspSaveStepVerifying": "Verifying settings...",

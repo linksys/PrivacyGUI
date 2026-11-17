@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/instant_setup/views/components/troubleshooting_navigation.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -33,7 +34,8 @@ class PnpUnplugModemView extends StatelessWidget {
                 AppGap.xxxl(),
                 AppButton.primary(
                   label: loc(context).next,
-                  onTap: () => context.goNamed(RouteNamed.pnpModemLightsOff),
+                  onTap: () => context
+                      .goWithinTroubleshooting(RouteNamed.pnpModemLightsOff),
                 ),
               ],
             ),

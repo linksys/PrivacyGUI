@@ -42,7 +42,7 @@ void main() {
   });
 
   /// Hosted through the layout gate's [pageSurfaceHost] for the reason
-  /// `pnp_setup_view_test.dart` records: `UspTopBar` inside `UiKitPageView`
+  /// the PnP setup view's test first recorded (#1378): `UspTopBar` inside `UiKitPageView`
   /// reaches `GoRouter.of(context)` unguarded, so a plain `MaterialApp` throws
   /// before the page is reached.
   ///

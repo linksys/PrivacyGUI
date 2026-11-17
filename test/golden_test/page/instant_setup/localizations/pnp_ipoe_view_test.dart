@@ -4,12 +4,13 @@ import '../../../golden_framework/golden_runner.dart';
 import '../../../golden_framework/golden_test_config.dart';
 import '../../../../mocks/provider_overrides/mock_auto_ipoe.dart';
 import '../../../../mocks/test_data/scenes/auto_ipoe_scene_data.dart';
+import '../../../../mocks/test_data/scenes/pnp_scene_data.dart';
 
 void main() {
   runViewGoldenTests(
     GoldenTestConfig(
       viewName: 'pnp_ipoe',
-      view: () => const PnpIPoEView(),
+      view: () => const PnpIPoEView(ending: pnpTroubleshootingEndingScene),
       shell: ShellType.custom,
       states: {
         'ready': (overrides) => overrides.addAll(

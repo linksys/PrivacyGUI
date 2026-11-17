@@ -72,8 +72,10 @@ library;
 // against ui_kit first, and a bare material import would quietly change which
 // `AppText`-adjacent name a future `requires` entry means.
 import 'package:flutter/material.dart'
-    show GridView, LinearProgressIndicator, SelectionArea;
+    show GridView, LinearProgressIndicator, SelectionArea, SizedBox;
 import 'package:flutter_svg/flutter_svg.dart' show SvgPicture;
+import 'package:privacy_gui/core/capability/capability_provider.dart';
+import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/components/composed/app_node_list_card.dart';
 import 'package:privacy_gui/components/customs/circular_countdown_widget.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/app_menu_card.dart';
@@ -129,7 +131,10 @@ import 'package:privacy_gui/page/instant_setup/views/pnp_modem_lights_off_view.d
 import 'package:privacy_gui/page/instant_setup/views/pnp_no_internet_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_pppoe_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_add_nodes_view.dart';
-import 'package:privacy_gui/page/instant_setup/views/pnp_setup_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_flow_frame_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_guest_step_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_wifi_step_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_your_network_step_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_static_ip_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_unplug_modem_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_waiting_modem_view.dart';
@@ -142,7 +147,6 @@ import 'package:privacy_gui/page/internet_settings/views/usp_internet_settings_v
 import 'package:privacy_gui/page/ipv6_port_service/views/usp_ipv6_port_service_view.dart';
 import 'package:privacy_gui/page/local_network/views/usp_local_network_view.dart';
 import 'package:privacy_gui/page/landing/views/home_view.dart';
-import 'package:privacy_gui/page/login/auto_parent/views/auto_parent_first_login_view.dart';
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
 import 'package:privacy_gui/page/login/views/local_router_recovery_view.dart';
 import 'package:privacy_gui/page/login/views/login_local_view.dart';
@@ -232,6 +236,7 @@ import '../../mocks/provider_overrides/mock_static_routing.dart';
 import '../../mocks/provider_overrides/mock_statistics.dart';
 import '../../mocks/provider_overrides/mock_notification_history.dart';
 import '../../mocks/provider_overrides/mock_system_log.dart';
+import '../../mocks/provider_overrides/mock_internet_troubleshooting.dart';
 import '../../mocks/provider_overrides/mock_login.dart';
 import '../../mocks/provider_overrides/mock_menu.dart';
 import '../../mocks/provider_overrides/mock_pnp.dart';
@@ -740,9 +745,9 @@ final kPnpEntryPageCase = PageSurfaceCase(
 ///
 /// One of the three pages in this wave that needs **no** fixture, and the case
 /// says so with an empty override list rather than pinning a phase it does not
-/// read. `build` watches `pnpProvider` only inside `_dhcpSaving ? … : null`, so at
-/// rest this page is provider-independent — the real `PnpNotifier.build()` returns
-/// `PnpState.initial()` and touches no service.
+/// read. `build` watches the troubleshooting run's phase only inside
+/// `_dhcpSaving ? … : null` (`pnpProvider` until #1511 P1), so at rest this page
+/// is independent of it.
 ///
 /// [PnpIspSavingProgress] is forbidden for that reason: it is the one tree that
 /// replaces the whole page, and its absence is what makes "at rest" a checked
@@ -757,19 +762,21 @@ final kPnpIspSettingsPageCase = PageSurfaceCase(
 
 /// `page.pnp_no_internet` — the troubleshooter hub.
 ///
-/// The tree does not depend on the phase, so pinning `NoInternet` is not what gets
-/// the page to render — it is what makes the branch a *decision*. Unpinned, this
-/// page renders the same thing because `AdminCheckingInternet` happens to fail the
-/// two `is` checks in `ref.listen`, and a fixture that is right by coincidence is
-/// one nobody notices going wrong.
+/// The tree does not depend on the phase, so pinning `TroubleshootingNoInternet`
+/// is not what gets the page to render — it is what makes the branch a
+/// *decision*, and it keeps the hub's listener from handing the run over. What
+/// the tree does depend on since #1511 P1 is the caller's ending: PnP's supplies a
+/// "continue without internet", which is the hub's "Log into router" button, so
+/// the case is handed PnP's.
 ///
 /// Both required widgets are here because they are on opposite sides of the page:
 /// [AppCard] is the two option cards and [AppButton] is the two text buttons
 /// beneath them, so a `Column` that lost its tail would still satisfy the first.
 final kPnpNoInternetPageCase = PageSurfaceCase(
   id: 'pnp_no_internet',
-  view: () => const PnpNoInternetView(),
-  overrides: () => pnpOverrides(pnpNoInternetState),
+  view: () => const PnpNoInternetView(ending: pnpTroubleshootingEndingScene),
+  overrides: () =>
+      internetTroubleshootingOverrides(wanPrefill: pnpCurrentWanSettings),
   requires: const [AppCard, AppButton],
   forbids: const [AppLoader],
 );
@@ -777,8 +784,9 @@ final kPnpNoInternetPageCase = PageSurfaceCase(
 /// `page.pnp_pppoe` — the PPPoE form, prefilled and with its VLAN row open.
 ///
 /// This is the page where the fixture changes what is measured rather than whether
-/// anything is. `_prefillFromCurrentSettings` runs in `initState` and reads **only**
-/// `NoInternet.currentWanSettings`; without it every field renders empty, and
+/// anything is. `_prefill` runs in `initState` and reads **only** the run's WAN
+/// prefill (`NoInternet.currentWanSettings` until #1511 P1); without it every
+/// field renders empty, and
 /// `vlanEnabled` is what flips `_showVlan` and adds the VLAN label and field at
 /// all. An unpinned fixture would sweep 234 cells of a shorter form than any real
 /// user sees — the same under-measurement `kDhcpPageCase` warns about with its
@@ -790,7 +798,8 @@ final kPnpNoInternetPageCase = PageSurfaceCase(
 final kPnpPppoePageCase = PageSurfaceCase(
   id: 'pnp_pppoe',
   view: () => const PnpPppoeView(),
-  overrides: () => pnpOverrides(pnpNoInternetState),
+  overrides: () =>
+      internetTroubleshootingOverrides(wanPrefill: pnpCurrentWanSettings),
   requires: const [AppTextField, AppPasswordInput, AppButton],
   forbids: const [AppLoader, PnpIspSavingProgress],
 );
@@ -804,7 +813,8 @@ final kPnpPppoePageCase = PageSurfaceCase(
 final kPnpStaticIpPageCase = PageSurfaceCase(
   id: 'pnp_static_ip',
   view: () => const PnpStaticIpView(),
-  overrides: () => pnpOverrides(pnpNoInternetState),
+  overrides: () =>
+      internetTroubleshootingOverrides(wanPrefill: pnpCurrentWanSettings),
   requires: const [AppIpv4TextField, AppButton],
   forbids: const [AppLoader, PnpIspSavingProgress],
 );
@@ -844,8 +854,9 @@ final kPnpModemLightsOffPageCase = PageSurfaceCase(
 
 /// `page.pnp_waiting_modem` — step 3, at its instruction stage.
 ///
-/// Three stages share this view and the phase picks between them: `NoInternet`
-/// renders the plug-back-in instruction, `ModemRestartCountdown` a
+/// Three stages share this view and the phase picks between them:
+/// `TroubleshootingNoInternet` renders the plug-back-in instruction,
+/// `ModemRestartCountdown` a
 /// [CircularCountdownWidget] and `ModemRestartCheckingInternet` a spinner. Only the
 /// first is a page-shaped tree; the other two are centred fixed-size boxes.
 ///
@@ -857,109 +868,74 @@ final kPnpModemLightsOffPageCase = PageSurfaceCase(
 final kPnpWaitingModemPageCase = PageSurfaceCase(
   id: 'pnp_waiting_modem',
   view: () => const PnpWaitingModemView(),
-  overrides: () => pnpOverrides(pnpNoInternetState),
+  overrides: () => internetTroubleshootingOverrides(),
   requires: const [AppButton],
   forbids: const [AppLoader, CircularCountdownWidget],
 );
 
-/// `page.pnp_setup` — the wizard, at step 0 of its three-step split-mode form.
+/// `page.pnp_flow_frame` — the PnP wizard's frame around its Wi-Fi step: the
+/// three-step stepper over the split-mode form.
 ///
-/// Wave 2's ninth, declared a day after the other eight and for a reason worth
-/// keeping: it was never fixture debt. `pnpWizardConfiguringState` got this view
-/// past its loader from the first attempt, and #1378 swept all 208 cells through it
-/// — all 208 red at +12.0px, on a defect in ui_kit's `AppStepper` rather than in
-/// anything this repo can edit (`linksys/privacyGUI-UI-kit#70`, fixed by `936c1da6`
-/// in v2.40.2). §8's graduation rule is what kept the page out in the meantime: a
-/// whole page of debt cannot enter the gate, and the one fixture that laid out clean
-/// was a single-step wizard, i.e. one rendering no `AppStepper` at all.
+/// **This was `page.pnp_setup` until #1511 P4**, when `PnpSetupView` — one page for
+/// every step and every status screen — became step pages inside the PnP shell,
+/// with the top bar, the stepper and the status screens drawn by
+/// `PnpFlowFrameView`. The four cases that swept `pnp_setup_view.dart` moved with
+/// what they measure: this one and the three below to the frame, which is the only
+/// thing that draws the stepper, and the form itself to [kPnpWifiStepPageCase]. A
+/// step page pumped alone shows no stepper, so without this case the stepper — the
+/// widget `linksys/privacyGUI-UI-kit#70` overflowed by `stepCount × 4` at every
+/// width in every locale — would leave the gate.
 ///
-/// [AppStepper] is therefore the premise that matters most here, and it is doing two
-/// jobs. It pins that the wizard has **more than one step** — `_buildStepperForm`
-/// renders no stepper when `totalSteps == 1` — which is the fixture workaround this
-/// page was explicitly forbidden from taking, and it puts the regression test for
-/// #70 in the gate: 234 cells of the widget that was over by `stepCount × 4` at
-/// every one of them.
-///
-/// The two field types are the other half, and they pin the *step*. Only step 0 is
-/// measured (`_currentStep` is widget state, and advancing it needs a tap per cell —
-/// the same second axis `kWifiSettingsPageCase` declines), and step 0 is the only
-/// one that renders a form: [AppTextField] and [AppPasswordInput] per band, three
-/// bands deep because `pnpSplitWifiConfig` is split-mode. A premise naming only
-/// `AppStepper` would hold against a wizard whose step content had gone missing.
-final kPnpSetupPageCase = PageSurfaceCase(
-  id: 'pnp_setup',
-  view: () => const PnpSetupView(),
-  overrides: () => pnpOverrides(pnpWizardConfiguringState),
+/// [AppStepper] is the premise that matters most here, as it was on `pnp_setup`:
+/// it pins that the frame is on a step of a multi-step plan
+/// (`pnpWizardConfiguringState` carries the plan of a router with a guest SSID),
+/// and it keeps #70's regression test in the gate. The two field types pin that the
+/// step underneath is laid out too — the frame and the widest form, three bands
+/// deep because [pnpSplitRouter] is split-mode.
+final kPnpFlowFramePageCase = PageSurfaceCase(
+  id: 'pnp_flow_frame',
+  view: () => const PnpFlowFrameView(stepId: 'wifi', child: PnpWifiStepView()),
+  overrides: () =>
+      pnpOverrides(pnpWizardConfiguringState, router: pnpSplitRouter),
   requires: const [AppStepper, AppTextField, AppPasswordInput],
   forbids: const [AppLoader],
 );
 
-/// `pnp_setup_view` again, in its **firmware stage** — the family's first second case
-/// for one page that is not a tab (#1554 §4, folded in from #1561 §2).
+/// The frame again, in the wizard's **firmware stage** (#1554 §4, folded in from
+/// #1561 §2; `page.pnp_setup_firmware` until #1511 P4).
 ///
-/// The wizard installs a newer firmware on first connection (#1553, REQ-B2), and that
-/// stage is a full-screen phase of `PnpSetupView` with nothing in common with the form
-/// the case above sweeps: no stepper, no fields, and a progress card where the form
-/// was. So it could not be reached by re-pointing that case's fixture — it fails both
-/// of its lists — and until now it had no width sweep at all. Its only coverage was
-/// `test/page/instant_setup/views/pnp_setup_view_firmware_test.dart`: nine cases at
-/// one surface (1200×2400) in `en`, which catches a `RenderFlex` at that size and says
-/// nothing about 320px or about the other 25 locales.
+/// The wizard installs a newer firmware on first connection (#1553, REQ-B2), and
+/// that stage is a status screen the frame draws over Your Network: no stepper, no
+/// fields, a progress card. It fails both of the case above's lists, so it is a
+/// case of its own — and since #1489 a second case on one view needs no second
+/// roster row: `page_roster_test.dart` joins cases to rows through
+/// `view().runtimeType`, which is `PnpFlowFrameView` for all four frame cases.
 ///
-/// ## Why a second case rather than a relaxed first one
+/// ## `AppLoader` is this page's *content*
 ///
-/// #1554 §4 posed the mechanism as a choice between letting the roster admit a second
-/// row per view file and letting `kPnpSetupPageCase`'s `forbids` admit a determinate
-/// loader. **Neither turned out to be the cost**, and the reason is worth keeping:
-///
-///   * **The roster needs no new row, and could not take one.** `PageRoster`'s
-///     `_rejectDuplicates` refuses a second row for one path, and it does not have to
-///     allow one — `page_roster_test.dart`'s third assertion joins cases to rows
-///     through `view().runtimeType`, which is `PnpSetupView` for both cases, so one
-///     `swept` row already accounts for both. #1489 established this shape with eight
-///     cases over three rows.
-///   * **`forbids` was never the obstacle either.** The lists are per case, so this
-///     case declares its own; the first one keeps `forbids: [AppLoader]` untouched.
-///
-/// What the second case *does* cost is the roster's `ms_per_cell` column, which has no
-/// slot for a second figure — see that file's `# tabs` and `# second-state` blocks. The
-/// figure is measured and recorded there in prose, exactly as the five tab cases are,
-/// because `page_sweep_suites_test.dart`'s "no suite weight is guessed" resolves this
-/// case through the same roster path and would otherwise hand it its sibling's number
-/// while reading as measured.
-///
-/// ## `AppLoader` is this page's *content*, which makes it the exemption's second entry
-///
-/// [kPagesWhoseLoaderIsContent] was a one-element set, and its own doc names the
-/// argument a second entry has to make: `auto_parent_first_login` is exempt because it
-/// "exists to say 'we are installing firmware, do not unplug the router' — the spinner
-/// is the subject of the screen". **This page is that sentence, in the wizard.** It
-/// draws `FirmwareInstallPhaseCard`, whose linear `AppLoader` carries the percentage —
-/// a real `LinearProgressIndicator` since ui_kit 3.3.2 — beside the version being
-/// installed and the shared do-not-power-off note. There is no loaded state behind it
-/// to wait for: the progress bar *is* the loaded state.
-///
-/// So `requires` names `AppLoader` rather than `forbids` naming it, which is the
-/// direction that can fail — a fixture that drifted off this phase would render the
-/// wizard's own `_ =>` spinner or the form, and either way lose the card.
+/// [kPagesWhoseLoaderIsContent] holds this case for the reason its doc gives: the
+/// screen is a router being flashed with the user told not to unplug it, and
+/// `FirmwareInstallPhaseCard`'s linear `AppLoader` carries the percentage — a real
+/// `LinearProgressIndicator` since ui_kit 3.3.2. So `requires` names `AppLoader`
+/// rather than `forbids` naming it, which is the direction that can fail.
 ///
 /// ## `forbids: [AppStepper]` is the sibling guard
 ///
-/// The mirror of the case above's `requires: [AppStepper]`, and the reason this case
-/// cannot silently sweep its sibling's tree: `WizardConfiguring` is the phase a
-/// `FixedPnpNotifier` would land on if this fixture lost its override, and it renders
-/// the three-step form. REQ-B0 is the same assertion from the other side — the flash is
-/// not a fourth step — but that belongs to the widget test, which can say *three* where
-/// a `forbids` list can only say *none*.
+/// `WizardConfiguring` is the phase a fixture that lost its override would land on,
+/// and the frame draws the stepper there. REQ-B0 says the same from the other side —
+/// the flash is not a fourth step — and its widget test can say *three* where a
+/// `forbids` list can only say *none*.
 ///
-/// **Not `AppButton`, though it is absent and REQ-B2 requires it to be.** `forbids`
-/// reports as "this cell measured the loading or error path rather than the page", so a
-/// button legitimately added here would fail 234 cells with a diagnosis about fixtures.
-/// The lock has its own test, with its own reason string, in
-/// `pnp_setup_view_firmware_test.dart`.
-final kPnpSetupFirmwarePageCase = PageSurfaceCase(
-  id: 'pnp_setup_firmware',
-  view: () => const PnpSetupView(),
+/// **Not `AppButton`, though none is on screen and REQ-B2 requires that.** `forbids`
+/// reports as "this cell measured the loading or error path rather than the page",
+/// so a button legitimately added would fail 234 cells with a diagnosis about
+/// fixtures. The lock has its own test in `pnp_flow_frame_view_test.dart`.
+final kPnpFlowFrameFirmwarePageCase = PageSurfaceCase(
+  id: 'pnp_flow_frame_firmware',
+  view: () => const PnpFlowFrameView(
+    stepId: 'network',
+    child: PnpYourNetworkStepView(),
+  ),
   // Two overrides, and the second is not optional: the phase hands
   // `firmwareUpdateNotifierProvider`'s state straight to W5's card, so without it a
   // real notifier's `build()` runs and its `loadBanks` reaches the USP client — 234
@@ -995,69 +971,44 @@ final kPnpSetupFirmwarePageCase = PageSurfaceCase(
   forbids: const [AppStepper],
 );
 
-/// `pnp_setup_view` a third and fourth time — the wizard's **completion screens**,
-/// the two branches of `WizardWifiReady` (#1602).
+/// The frame's **completion screens**, the two branches of `WizardWifiReady`
+/// (#1602; `page.pnp_setup_complete_*` until #1511 P4).
 ///
-/// ## Why they were missing, which is the finding worth keeping
-///
-/// This view is a state machine: nine phases reach seven builders, and the gate's unit
-/// is `(page, one fixture)`. So `pnp_setup_view.dart`'s roster row read `swept` on the
-/// strength of two cases — the three-step form and the firmware stage — while six of
-/// the seven builders had **no cell at any width in any locale**. The register was not
-/// lying; it has no column for "which phase". [kPnpSetupPageCase]'s
-/// `requires: [AppStepper, AppTextField, AppPasswordInput]` made it worse in the
-/// helpful direction: that case cannot drift onto another phase, so no fixture
-/// accident would ever have stumbled into these two.
-///
-/// What found it was the nightly golden report — #1586 gave this view its first golden
-/// suite, whose eight state keys are an enumeration of exactly the thing the gate had
-/// two of. **Joining the two enumerations is the cheap instrument**: `gate cases` vs
-/// `golden states:`, per view.
-///
-/// ## What a 480px golden could not say
-///
-/// Golden shoots `phone480` and `desktop1280`, and reported three cells — `el` +4.6 to
-/// +13.0, `fr_CA` +44 to +53 — which reads as long-translation overflow at narrow
-/// width. Swept here at nine widths it is not: at **320px all 26 locales overflow in
-/// both branches** (`en` +101 split, +68 unified; `fr_CA` +213), and unified has a
-/// **second site golden never saw** — the Print/Done action `Row`, 26 of 26 locales.
-/// 601px and above are clean. Structural one width below the narrowest golden device.
+/// They were missing because the gate's unit is `(page, one fixture)` and the view
+/// was a state machine: the roster read `swept` on the strength of two cases while
+/// most of its builders had no cell at any width. Joining the gate's case list
+/// against the golden suite's `states:` keys is what found them. Swept at nine
+/// widths, 320px overflowed in all 26 locales in both branches, and unified had a
+/// second site — the Print/Done action `Row` — that a 480px golden never saw.
 ///
 /// ## The premises pin the *branch*, not just the phase
 ///
-/// `isSplitMode` is `bands.length > 1` — derived, not stored — so the two fixtures
-/// differ only in a list, and a case that named `[AppCard, AppButton]` would hold
-/// against either branch. Each therefore requires the widget the other cannot build
-/// and forbids the widget the other must:
+/// `isSplitMode` is `bands.length > 1`, so the two fixtures differ only in a list.
+/// Each case therefore requires the widget the other cannot build and forbids the
+/// widget the other must: [LayoutBlock] is the split branch's per-band wrapper,
+/// [QrImageView] the unified branch's QR code. That also covers the `bands.isEmpty`
+/// fallback inside the split builder, which returns the *unified* tree.
 ///
-///   * [LayoutBlock] is the split branch's per-band wrapper; the unified branch has
-///     none.
-///   * [QrImageView] is the unified branch's QR code; the split branch has none.
-///
-/// That also covers the `bands.isEmpty` fallback inside `_buildCompleteSplitMode`,
-/// which returns the *unified* tree — a split fixture that lost its bands would fail
-/// on `LayoutBlock` rather than sweep its sibling and report 234 green cells.
-///
-/// `forbids: [AppStepper]` is the sibling guard the firmware case also carries:
-/// `WizardConfiguring` is where a fixture that lost its override lands, and it renders
-/// the three-step form.
-final kPnpSetupCompleteSplitPageCase = PageSurfaceCase(
-  id: 'pnp_setup_complete_split',
-  view: () => const PnpSetupView(),
+/// `forbids: [AppStepper]` is the sibling guard the firmware case carries too. The
+/// child is an empty box: the completion screen covers whatever page is under it,
+/// and an empty one keeps this case measuring the screen.
+final kPnpFlowFrameCompleteSplitPageCase = PageSurfaceCase(
+  id: 'pnp_flow_frame_complete_split',
+  view: () => const PnpFlowFrameView(stepId: null, child: SizedBox.shrink()),
   overrides: () => pnpOverrides(pnpWizardWifiReadySplitState),
   requires: const [LayoutBlock, AppButton],
   forbids: const [AppLoader, AppStepper, QrImageView],
 );
 
-/// `page.pnp_setup_complete_unified` — the other branch of `WizardWifiReady`.
+/// `page.pnp_flow_frame_complete_unified` — the other branch of `WizardWifiReady`.
 ///
-/// See [kPnpSetupCompleteSplitPageCase] for why both branches exist as cases and what
-/// the premises pin. The one thing this case carries alone: it is the branch with the
-/// **action row** (`Print` beside `Done`), which is the second overflow site #1602's
-/// golden report could not see, because it only goes over at 320px.
-final kPnpSetupCompleteUnifiedPageCase = PageSurfaceCase(
-  id: 'pnp_setup_complete_unified',
-  view: () => const PnpSetupView(),
+/// See [kPnpFlowFrameCompleteSplitPageCase]. The one thing this case carries alone:
+/// it is the branch with the **action row** (`Print` beside `Done`), the second
+/// overflow site #1602's golden report could not see, because it only goes over at
+/// 320px.
+final kPnpFlowFrameCompleteUnifiedPageCase = PageSurfaceCase(
+  id: 'pnp_flow_frame_complete_unified',
+  view: () => const PnpFlowFrameView(stepId: null, child: SizedBox.shrink()),
   overrides: () => pnpOverrides(pnpWizardWifiReadyUnifiedState),
   requires: const [QrImageView, AppButton],
   forbids: const [AppLoader, AppStepper, LayoutBlock],
@@ -1072,9 +1023,9 @@ final kPnpSetupCompleteUnifiedPageCase = PageSurfaceCase(
 // there is a session: the landing page, the three local-login pages, the menu the
 // dashboard hands off to, and the first-login firmware screen. What they have in
 // common is that four of the six read a provider that is a **USP-mode stub** —
-// `routerPasswordProvider` and `autoParentFirstLoginProvider` return hardcoded
-// values today — so a fixture here pins a *branch* rather than a payload, and two of
-// the four pages have no loading state at all.
+// `routerPasswordProvider` and the since-deleted `autoParentFirstLoginProvider`
+// returned hardcoded values — so a fixture here pins a *branch* rather than a
+// payload, and two of the four pages have no loading state at all.
 //
 // **The prediction #1379 was filed on was falsified, and that is the wave's main
 // finding.** #1370's inventory said to expect finds here, on the grounds that login
@@ -1084,11 +1035,12 @@ final kPnpSetupCompleteUnifiedPageCase = PageSurfaceCase(
 // is five declarations and one fixture, and the cost of a wave is not predictable
 // from how form-like its pages look.
 //
-// **The sixth is the 45th file.** `auto_parent_first_login_view.dart` sits one
-// directory deeper than the roster's other login pages and was the one page #1370
-// could not measure. It needed the wave's only new *behavioural* fixture and it is
-// the one page in the whole family whose loader is content — see
-// [kAutoParentFirstLoginPageCase] and [kPagesWhoseLoaderIsContent].
+// **The sixth is gone.** `auto_parent_first_login_view.dart` sat one directory
+// deeper than the roster's other login pages and was the one page #1370 could not
+// measure. It needed the wave's only new *behavioural* fixture and was the first page
+// in the family whose loader is content. #1511 P0 deleted it as dead code — no
+// in-app entry reached it, and its only exit named a route nothing registers — so
+// wave 3 is five cases below, and [kPagesWhoseLoaderIsContent] lost its first entry.
 
 /// `page.home` — the landing page, and the cheapest page in the family
 /// (13.8ms/cell, #1370).
@@ -1235,38 +1187,6 @@ final kMenuPageCase = PageSurfaceCase(
       lanInfo: dhcp.testLanInfo, privacyMode: MacFilterMode.allow),
   requires: const [AppMenuCard, AppBadge],
   forbids: const [AppLoader],
-);
-
-/// `page.auto_parent_first_login` — the firmware-check screen, and the roster's 45th
-/// file.
-///
-/// The one page #1370 could not measure, for two reasons it recorded as one. It is a
-/// directory deeper than the other login views, so the inventory's glob found it and
-/// its `-` in the roster meant *no fixture gets this past its opening state*. And the
-/// opening state is the only state: this screen exists to say "we are installing
-/// firmware, do not unplug the router".
-///
-/// **So this is the family's one loader-is-content page**, and the exemption it takes
-/// from the blanket `forbids: [AppLoader]` rule is declared in
-/// [kPagesWhoseLoaderIsContent] rather than by omitting an entry here. [AppLoader] is
-/// in `requires` instead, which is the same fact stated in the direction that can
-/// fail: on this page a spinner is not the sign that a fixture went thin, it is the
-/// page.
-///
-/// [AppCard] is the premise that does the work. The two localized paragraphs beside
-/// the loader have no type of their own, and the card is what a cell that lost this
-/// page would lack — which is a live risk here rather than a theoretical one. The
-/// real `checkAndAutoInstallFirmware()` returns **false**, and false makes the view
-/// call `finishFirstTimeLogin` and then `context.goNamed(RouteNamed.dashboardHome)`,
-/// a route this family's single-route host does not have. `firmwareAvailable: true`
-/// is what keeps the page mounted; `mock_login.dart` argues why that is the honest
-/// branch and not merely the convenient one.
-final kAutoParentFirstLoginPageCase = PageSurfaceCase(
-  id: 'auto_parent_first_login',
-  view: () => const AutoParentFirstLoginView(),
-  overrides: () => autoParentFirstLoginOverrides(firmwareAvailable: true),
-  requires: const [AppLoader, AppCard],
-  forbids: const [],
 );
 
 // ## Wave 4 (#1380): the last twenty-one, and what "the last" cost
@@ -2284,9 +2204,11 @@ final kInternetSettingsPageCase = PageSurfaceCase(
 /// the evidence the paragraph below asks for: twenty-one more pages, every one of them
 /// forbidding its loader.
 ///
-/// It cannot hold for `auto_parent_first_login`, whose loader is the subject of the
-/// screen rather than a stand-in for it. The exemption is a set here, and not an
-/// omitted `forbids` entry there, so that:
+/// It cannot hold for a page whose loader is the subject of the screen rather than a
+/// stand-in for it. The first such page was `auto_parent_first_login`, a "we are
+/// installing firmware, do not unplug the router" screen; #1511 P0 deleted it with its
+/// dead route, so the two entries below are what is left. The exemption is a set here,
+/// and not an omitted `forbids` entry there, so that:
 ///
 /// 1. the oracle drives **both** branches off one value — an exempt case must *require*
 ///    [AppLoader], which is the claim "the loader is this page's content" written as
@@ -2299,11 +2221,11 @@ final kInternetSettingsPageCase = PageSurfaceCase(
 /// usually a fixture that has not been written yet, which is what a `-` in
 /// `test/fixtures/page_roster.tsv` is for.
 ///
-/// **The second entry arrived on 2026-09-16 (#1554 §4), and it makes the same
+/// **The second entry arrived on 2026-09-16 (#1554 §4), and it made the same
 /// argument as the first rather than a new one.** `pnp_setup_firmware` is the setup
-/// wizard's firmware stage — literally the sentence this doc uses to justify
+/// wizard's firmware stage — literally the sentence this doc used to justify
 /// `auto_parent_first_login`, "we are installing firmware, do not unplug the router",
-/// on the other of the two screens that says it. Both draw a progress bar as their
+/// on the other of the two screens that said it. Both draw a progress bar as their
 /// subject; neither has a loaded state behind it to wait for. The test that fails a
 /// fixture is `requires: [AppLoader]` in both cases, which is why the set is worth
 /// having rather than merely counting: the pair now names *why* an entry is here, and
@@ -2527,12 +2449,13 @@ final kDiagnosticsCompletedPageCase = PageSurfaceCase(
 );
 
 const kPagesWhoseLoaderIsContent = <String>{
-  'auto_parent_first_login',
-  'pnp_setup_firmware',
-  // #1602's third entry, and it makes the other two's argument rather than a new one:
+  // `pnp_setup_firmware` until #1511 P4 moved the firmware screen to the frame.
+  'pnp_flow_frame_firmware',
+  // #1602's entry, and it makes `pnp_flow_frame_firmware`'s argument rather than a
+  // new one:
   // the manual ping result ends in a determinate linear `AppLoader` whose `value` is
   // the success rate, so the bar's width is the number being reported. Same claim as
-  // `pnp_setup_firmware`'s percentage bar. Note which case this is *not*:
+  // the PnP firmware screen's percentage bar. Note which case this is *not*:
   // `unified_diagnostics_running` was drafted as the third entry, on a spinner the
   // source contains but the swept fixture never builds — see
   // [kDiagnosticsRunningPageCase].
@@ -2932,7 +2855,7 @@ final kNotificationHistoryPageCase = PageSurfaceCase(
 // The PnP ready state must show the supported mode controls and Execute action.
 final kAutoIPoEPageCase = PageSurfaceCase(
   id: 'pnp_ipoe',
-  view: () => const PnpIPoEView(),
+  view: () => const PnpIPoEView(ending: pnpTroubleshootingEndingScene),
   overrides: autoIPoEOverrides,
   requires: const [AutoIPoESection, AppDropdown<AutoIPoEMode>, AppButton],
   forbids: const [AppLoader, ServiceErrorView],
@@ -2965,19 +2888,68 @@ final kAddNodesPageCase = PageSurfaceCase(
 /// the wizard's 9-column route and no app bar here, the topology's top bar
 /// there — so one state across both is what makes the frame the only variable.
 ///
-/// What this case does not reach is the step that opens it. Your Network is the
-/// wizard's last step, and `kPnpSetupPageCase` measures step 0 only, for the
-/// reason it gives: `_currentStep` is widget state, and reaching another step
-/// needs a tap per cell. Its content is a node list of [AppNodeListCard] rows,
-/// swept here and on the topology, an "Add nodes" text button, whose label is
-/// this page's own title, and Back / Save. Sweeping it would mean the wizard
-/// taking an initial step, the way #1489 gave the tabbed pages `initialTab`.
+/// The step that opens it is a page of its own since #1511 P4 and has its own case,
+/// [kPnpYourNetworkStepPageCase].
 final kPnpAddNodesPageCase = PageSurfaceCase(
   id: 'pnp_add_nodes',
   view: () => const PnpAddNodesView(),
   overrides: () => addNodesOverrides(addNodesPartialState),
   requires: const [AddNodesPhaseContent, AppNodeListCard],
   forbids: const [AppLoader],
+);
+
+/// `page.pnp_wifi_step` (#1511 P4): the PnP wizard's Wi-Fi step, a page of its own
+/// inside the PnP shell — what `page.pnp_setup` measured under its stepper until
+/// the wizard's steps became routes.
+///
+/// Split mode, three bands, so one [LayoutBlock] per band each with an
+/// [AppTextField] and an [AppPasswordInput] and its rule list: the widest form a
+/// step has, for the reason [pnpSplitRouter] gives. Pumped alone it shows no
+/// stepper — the frame draws that, [kPnpFlowFramePageCase] — so its premise is the
+/// form and the footer's button.
+final kPnpWifiStepPageCase = PageSurfaceCase(
+  id: 'pnp_wifi_step',
+  view: () => const PnpWifiStepView(),
+  overrides: () =>
+      pnpOverrides(pnpWizardConfiguringState, router: pnpSplitRouter),
+  requires: const [AppTextField, AppPasswordInput, AppButton],
+  forbids: const [AppLoader, AppStepper],
+);
+
+/// `page.pnp_guest_step` (#1511 P4): the guest step — the switch, and with the
+/// guest network on, a name and password per band.
+///
+/// [pnpSplitRouter]'s guest network is on and split across two bands, so this is
+/// the step's widest tree; [AppSwitch] pins the step and [AppPasswordInput] pins
+/// that the guest network's form is open, which the switch hides when it is off.
+final kPnpGuestStepPageCase = PageSurfaceCase(
+  id: 'pnp_guest_step',
+  view: () => const PnpGuestStepView(),
+  overrides: () =>
+      pnpOverrides(pnpWizardConfiguringState, router: pnpSplitRouter),
+  requires: const [AppSwitch, AppPasswordInput, AppButton],
+  forbids: const [AppLoader, AppStepper],
+);
+
+/// `page.pnp_your_network_step` (#1511 P4): Your Network — the mesh nodes, Add
+/// nodes, and Done.
+///
+/// Never swept before #1511 P4: on `pnp_setup` it was the third step, behind two
+/// taps per cell. Two nodes, so a list with a divider and both role labels, and
+/// the onboarding capability is on in the case's fixture so the Add nodes button
+/// is in the row — [AppNodeListCard] and [AppButton] are the two premises. On
+/// the flow's Your Network phase since #1511 P5, when the step moved after the
+/// save: its footer is Done alone, where it was Back beside Save.
+final kPnpYourNetworkStepPageCase = PageSurfaceCase(
+  id: 'pnp_your_network_step',
+  view: () => const PnpYourNetworkStepView(),
+  overrides: () => [
+    ...pnpOverrides(pnpWizardYourNetworkState),
+    deviceCapabilitiesProvider.overrideWithValue(
+        DeviceCapabilities(const {DeviceCapability.bleOnboarding})),
+  ],
+  requires: const [AppNodeListCard, AppButton],
+  forbids: const [AppLoader, AppStepper],
 );
 
 final kPageSurfaceCases = <PageSurfaceCase>[
@@ -3011,22 +2983,25 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   // onboarding order the oracle pins. Moving it to its flow position would make the
   // list read as though wave 2 had declared nine pages in one go, which is the one
   // thing the record of this page should not say.
-  kPnpSetupPageCase,
-  kPnpSetupFirmwarePageCase,
+  //
+  // `pnp_setup` until #1511 P4, which moved it and the three after it onto
+  // `PnpFlowFrameView`, in place: renamed where they stand, so the onboarding
+  // order still reads true.
+  kPnpFlowFramePageCase,
+  kPnpFlowFrameFirmwarePageCase,
   // #1602's two, appended for the same reason the ninth was: onboarding order, not
   // flow order. In flow order they are this wizard's last screen.
-  kPnpSetupCompleteSplitPageCase,
-  kPnpSetupCompleteUnifiedPageCase,
+  kPnpFlowFrameCompleteSplitPageCase,
+  kPnpFlowFrameCompleteUnifiedPageCase,
   // Wave 3 (#1379), in the order a user meets them: the landing page, then the three
-  // local-login pages, then the menu, then the first-login firmware screen. Unlike
-  // wave 2 this order is also the onboarding order — none of the six waited on
-  // anything — so the two readings of this list agree here.
+  // local-login pages, then the menu. Unlike wave 2 this order is also the onboarding
+  // order — none of the six waited on anything — so the two readings of this list
+  // agree here. The sixth, the first-login firmware screen, was deleted by #1511 P0.
   kHomePageCase,
   kLoginLocalPageCase,
   kLocalRouterRecoveryPageCase,
   kLocalResetRouterPasswordPageCase,
   kMenuPageCase,
-  kAutoParentFirstLoginPageCase,
   // Wave 4 (#1380), the epic's last twenty-one. Onboarding order again, and here that
   // is the order the two slices ran in: slice A is the seven pages whose
   // `List<Override>` builder already reached the view, and they came first because five
@@ -3097,4 +3072,9 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   // #641: Advanced Settings → DDNS, arriving with the `lib/` change that
   // creates it.
   kDdnsPageCase,
+  // #1511 P4: the PnP wizard's steps as pages of their own, arriving with the
+  // `lib/` change that made them.
+  kPnpWifiStepPageCase,
+  kPnpGuestStepPageCase,
+  kPnpYourNetworkStepPageCase,
 ];
