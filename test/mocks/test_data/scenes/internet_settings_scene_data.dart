@@ -124,6 +124,11 @@ final staticIpValidationErrorForm = staticIpForm.copyWith(
 final pptpDhcpUnderlayForm =
     pptpStaticUnderlayForm.copyWith(underlayStatic: false);
 
+/// PPTP with no server: where a DHCP → PPTP save leaves the router when the
+/// tunnel step is refused after the WAN row and the PPP link have landed, and
+/// so what the page shows once it reads the router back (issue #1711).
+final pptpWithoutServerForm = pptpDhcpUnderlayForm.copyWith(serverAddress: '');
+
 /// L2TP on Keep Alive, read-only.
 final l2tpKeepAliveForm = l2tpOnDemandForm.copyWith(
     connectionTrigger: 'AlwaysOn', lcpEchoInterval: 60);

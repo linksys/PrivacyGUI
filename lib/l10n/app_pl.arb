@@ -695,6 +695,7 @@
   "errorCommandRefused": "Router odrzucił to polecenie. Spróbuj ponownie za chwilę.",
   "errorSavedButUnconfirmed": "Ustawienia zostały zapisane, ale nie udało się ich ponownie odczytać z routera. Spróbuj odświeżyć stronę, aby je zobaczyć.",
   "errorSaveDiscardedForRouterRows": "Nic nie zostało zapisane. Strona została ponownie wczytana z routera; wprowadź zmianę jeszcze raz.",
+  "errorSavePartlyApplied": "Część zmian została już zastosowana. Sprawdź ustawienia, zanim zapiszesz ponownie.",
   "errors": "Błędy",
   "estimatedTimeRemaining": "Szacowany pozostały czas: {time}",
   "ethernetPorts": "Porty Ethernet",

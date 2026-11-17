@@ -695,6 +695,7 @@
   "errorCommandRefused": "Router menolak perintah ini. Silakan coba lagi sebentar lagi.",
   "errorSavedButUnconfirmed": "Setelan Anda telah disimpan, tetapi tidak dapat dibaca kembali dari router. Coba segarkan halaman untuk melihatnya.",
   "errorSaveDiscardedForRouterRows": "Tidak ada yang disimpan. Halaman dimuat ulang dari router; silakan lakukan perubahan Anda lagi.",
+  "errorSavePartlyApplied": "Sebagian perubahan Anda sudah diterapkan. Periksa setelan sebelum menyimpan lagi.",
   "errors": "Kesalahan",
   "estimatedTimeRemaining": "Perkiraan waktu tersisa: {time}",
   "ethernetPorts": "Port Ethernet",

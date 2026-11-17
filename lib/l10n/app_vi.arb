@@ -695,6 +695,7 @@
   "errorCommandRefused": "Bộ định tuyến đã từ chối lệnh này. Vui lòng thử lại sau một lát.",
   "errorSavedButUnconfirmed": "Đã lưu cài đặt của bạn, nhưng không thể đọc lại từ bộ định tuyến. Hãy thử làm mới trang để xem cài đặt.",
   "errorSaveDiscardedForRouterRows": "Chưa lưu gì cả. Trang đã được tải lại từ bộ định tuyến; vui lòng thực hiện lại thay đổi của bạn.",
+  "errorSavePartlyApplied": "Một số thay đổi của bạn đã được áp dụng. Hãy kiểm tra cài đặt trước khi lưu lại.",
   "errors": "Lỗi",
   "estimatedTimeRemaining": "Thời gian còn lại ước tính: {time}",
   "ethernetPorts": "Cổng Ethernet",

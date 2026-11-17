@@ -107,6 +107,14 @@ void main() {
                     readOnlyInfo: pppoeReadOnlyInfo),
               ),
             ),
+        // The router's values after a save it applied in part: out of edit
+        // mode, the server the tunnel step refused left empty (issue #1711).
+        'pptp_without_server': (overrides) => overrides.addAll(
+              internetSettingsOverrides(
+                dataState(pptpWithoutServerForm,
+                    readOnlyInfo: pppoeReadOnlyInfo),
+              ),
+            ),
         'pptp_dhcp_underlay_editing': (overrides) => overrides.addAll(
               internetSettingsOverrides(
                 dataState(

@@ -698,6 +698,7 @@
   "errorCommandRefused": "ルーターがこのコマンドを拒否しました。しばらくしてからもう一度お試しください。",
   "errorSavedButUnconfirmed": "設定は保存されましたが、ルーターから読み戻せませんでした。ページを更新して確認してください。",
   "errorSaveDiscardedForRouterRows": "保存されていません。ルーターからページを再読み込みしました。もう一度変更してください。",
+  "errorSavePartlyApplied": "一部の変更はすでに適用されています。もう一度保存する前に設定を確認してください。",
   "errors": "エラー",
   "estimatedTimeRemaining": "推定残り時間: {time}",
   "ethernetPorts": "イーサネットポート",

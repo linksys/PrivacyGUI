@@ -357,6 +357,42 @@ class UspInternetSettingsNotifier
     return _saveOrdinary();
   }
 
+  /// [performSave], reading the router back when it fails.
+  ///
+  /// The router applies a WAN save one step at a time, so a save that fails
+  /// can leave part of itself applied (issue #1711). The read-back is
+  /// [saveReadingBackAfterFailure]: the page moves onto the router's values
+  /// when they differ from what it loaded, and keeps the user's edits when they
+  /// do not or when the read fails. The error reaches the page either way.
+  ///
+  /// On the router's values nothing the user typed is left to save, so the
+  /// page leaves edit mode: the user sees what was applied, and enters edit
+  /// mode again to fill in the rest. Kept edits keep edit mode, since leaving
+  /// it would discard them. The dashboard's WAN card is refreshed for the
+  /// same reason the page is read.
+  ///
+  /// Only the write is read back after: a write that landed and whose own
+  /// read-back failed is already a [SavedButUnconfirmedError], and reading
+  /// again would only make the user wait for a second timeout.
+  ///
+  /// This is not the detection constitution Article IV Rule 2 keeps for
+  /// `Preservable` (a device changed by someone else mid-edit): it runs only
+  /// after this page's own save failed, and asks what that save applied.
+  Future<void> _performSaveReadingBack() async {
+    try {
+      await saveReadingBackAfterFailure(() async {
+        await performSave();
+        return state;
+      });
+    } on ServiceError {
+      ref.invalidate(wanDataProvider);
+      if (!_disposed && !isDirty()) {
+        state = state.copyWith(status: state.status.copyWith(isEditing: false));
+      }
+      rethrow;
+    }
+  }
+
   Future<InternetSettingsFeatureState> _saveOrdinary() async {
     // Detect the entering-bridge transition BEFORE saving: `original` is the
     // baseline type, `edited` is what the user just chose. markAsSaved() below
@@ -365,7 +401,7 @@ class UspInternetSettingsNotifier
         state.original.connectionType != UspWanConnectionType.bridge &&
             state.edited.connectionType == UspWanConnectionType.bridge;
 
-    await performSave();
+    await _performSaveReadingBack();
     // A successful ordinary Save also discards an unapplied IPoE draft.
     if (ref.exists(autoIPoEPageProvider)) {
       ref.read(autoIPoEPageProvider.notifier).revert();

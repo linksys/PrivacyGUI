@@ -669,6 +669,41 @@ void main() {
       expect(dhcpv6['Device.DHCPv6.Client.1.Enable'], isFalse);
     });
 
+    test('steps with nothing to write do not make a later fault partly applied',
+        () async {
+      // PPPoE On Demand with the credentials, the connection mode and the VLAN
+      // unchanged: the PPP link, PPP fields and VLAN steps have nothing to
+      // write, and the generated update answers each without sending. The
+      // IPv6 Set is the save's first write, so its fault leaves the router as
+      // it was, and the error says only why (issue #1711).
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'Device.IP.Interface.2.IPv6Enable': (
+                    code: 7004,
+                    message: 'Parameter not writable',
+                  ),
+                },
+                success: false,
+              ));
+      const original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.pppoe,
+        connectionTrigger: 'OnDemand',
+        idleDisconnectTime: 15,
+        ipv6Enabled: true,
+      );
+      final edited = original.copyWith(ipv6Enabled: false);
+
+      await expectLater(
+        service.saveAll(original, edited,
+            pppInstancePath: 'Device.PPP.Interface.1.',
+            vlanInstancePath: 'Device.Ethernet.VLANTermination.1.'),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+      verify(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .called(1);
+    });
+
     test('adds PPP instance when switching to PPPoE without existing instance',
         () async {
       when(() => mockUsp.add(any())).thenAnswer((_) async => {
@@ -2326,6 +2361,12 @@ void main() {
         });
       }
 
+      /// The tunnel Set comes after the WAN row and the PPP link have landed,
+      /// so its refusal reaches the page as part of a save already applied in
+      /// part (issue #1711), with the check it names kept inside.
+      Matcher partlyApplied(Matcher cause) =>
+          isA<SavePartlyAppliedError>().having((e) => e.cause, 'cause', cause);
+
       for (final (leaf, message) in [
         ('RemoteEndpoints', 'Invalid server'),
         ('X_LINKSYS_UnderlayIPAddress', 'Invalid IP address'),
@@ -2341,9 +2382,9 @@ void main() {
                     connectionType: UspWanConnectionType.dhcp, mtu: 1460),
                 pptpStatic,
                 pppInstancePath: pppPath),
-            throwsA(isA<InvalidInputError>()
+            throwsA(partlyApplied(isA<InvalidInputError>()
                 .having((e) => e.field, 'field', message)
-                .having((e) => e.code, 'code', 7012)),
+                .having((e) => e.code, 'code', 7012))),
           );
         });
       }
@@ -2357,8 +2398,8 @@ void main() {
                   connectionType: UspWanConnectionType.dhcp, mtu: 1460),
               pptpStatic,
               pppInstancePath: pppPath),
-          throwsA(isA<InvalidInputError>()
-              .having((e) => e.field, 'field', 'Invalid DNS server')),
+          throwsA(partlyApplied(isA<InvalidInputError>()
+              .having((e) => e.field, 'field', 'Invalid DNS server'))),
         );
       });
 
@@ -2371,7 +2412,7 @@ void main() {
                   connectionType: UspWanConnectionType.dhcp, mtu: 1460),
               pptpStatic,
               pppInstancePath: pppPath),
-          throwsA(isA<UspCompleteFailureError>()),
+          throwsA(partlyApplied(isA<UspCompleteFailureError>())),
         );
       });
     });
@@ -2623,8 +2664,7 @@ void main() {
       );
     });
 
-    test('saveAll throws UspPartialFailureError on SET partial failure',
-        () async {
+    test('a SET that lands in part is a save applied in part', () async {
       // Mock for _resolveInstance()
       when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       // Unified format: success=true but errors has entries
@@ -2646,9 +2686,12 @@ void main() {
       );
       final edited = original.copyWith(mtu: 1400);
 
+      // MaxMTUSize landed though the Set failed: the router holds part of the
+      // save even with no step before it (issue #1711).
       expect(
         () => service.saveAll(original, edited),
-        throwsA(isA<UspPartialFailureError>()),
+        throwsA(isA<SavePartlyAppliedError>()
+            .having((e) => e.cause, 'cause', isA<UspPartialFailureError>())),
       );
     });
 
@@ -2684,7 +2727,8 @@ void main() {
       }
     });
 
-    test('UspPartialFailureError contains success and failure paths', () async {
+    test('a SET that lands in part keeps its success and failure paths',
+        () async {
       // Mock for _resolveInstance()
       when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
@@ -2707,8 +2751,9 @@ void main() {
 
       try {
         await service.saveAll(original, edited);
-        fail('Expected UspPartialFailureError');
-      } on UspPartialFailureError catch (e) {
+        fail('Expected SavePartlyAppliedError');
+      } on SavePartlyAppliedError catch (partly) {
+        final e = partly.cause as UspPartialFailureError;
         expect(e.summary, contains('WAN update partial failure'));
         expect(e.summary, contains('Parameter does not exist'));
         expect(e.successPaths, isNotEmpty);

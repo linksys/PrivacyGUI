@@ -21,6 +21,8 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 ///   user sees a concrete, actionable message (not a vague "N items failed").
 /// - [UnexpectedError] is the one fallback type with no type-specific meaning,
 ///   so its `detail` is surfaced when present.
+/// - [SavePartlyAppliedError] reads as its cause, then
+///   [withPartlyAppliedLine]'s second line.
 ///
 /// The `switch` is exhaustive over the sealed hierarchy — adding a new
 /// [ServiceError] subtype will produce a compile-time warning here, forcing a
@@ -42,6 +44,8 @@ String localizeServiceError(BuildContext context, Object error) {
     TimeoutError() => l.errorTimeout,
     SavedButUnconfirmedError() => l.errorSavedButUnconfirmed,
     SaveDiscardedForRouterRowsError() => l.errorSaveDiscardedForRouterRows,
+    SavePartlyAppliedError(:final cause) =>
+      withPartlyAppliedLine(context, localizeServiceError(context, cause)),
     ServiceNotInitializedError() => l.errorServiceNotReady,
     // Batch: show the first failure's concrete message (actionable).
     UspPartialFailureError(:final failures) =>
@@ -57,6 +61,15 @@ String localizeServiceError(BuildContext context, Object error) {
     OperationCancelledError() => l.errorUnexpected,
   };
 }
+
+/// [reason], then the line that says part of the save was applied: the message
+/// for a [SavePartlyAppliedError] whose cause reads as [reason].
+///
+/// The two are separate lines, not one sentence, so each reads as translated
+/// in every locale: a reason may be a short label with no full stop ("Invalid
+/// IP address") or a whole sentence ending in one.
+String withPartlyAppliedLine(BuildContext context, String reason) =>
+    '$reason\n${loc(context).errorSavePartlyApplied}';
 
 /// Localizes a batch failure: by the reason the router named, else by the
 /// FIRST entry's fault code.

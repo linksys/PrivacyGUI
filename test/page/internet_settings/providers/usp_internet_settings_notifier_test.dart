@@ -13,7 +13,10 @@ import 'package:privacy_gui/page/internet_settings/models/internet_settings_read
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_notifier.dart';
+import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/internet_settings/services/usp_internet_settings_service.dart';
+
+import '../../../mocks/provider_overrides/mock_wan_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -54,9 +57,11 @@ void main() {
     when(() => mockSseManager.disconnect()).thenAnswer((_) async {});
   });
 
-  ProviderContainer createContainer({Duration? bridgeSettleDelay}) {
+  ProviderContainer createContainer(
+      {Duration? bridgeSettleDelay, List<Override> overrides = const []}) {
     final container = ProviderContainer(
       overrides: [
+        ...overrides,
         if (bridgeSettleDelay != null)
           bridgeSettleDelayProvider.overrideWithValue(bridgeSettleDelay),
         uspClientProvider.overrideWithValue(mockUsp),
@@ -528,6 +533,129 @@ void main() {
       container.dispose();
     });
 
+    // The router applies a save one step at a time, so a failed save can leave
+    // part of it applied (issue #1711). The read-back itself is
+    // saveReadingBackAfterFailure's, tested in
+    // test/framework/preservable_partial_write_test.dart; these pin what this
+    // page adds to it.
+    group('a failed save', () {
+      // What a DHCP → PPTP save leaves on the router when the tunnel step is
+      // refused after the WAN row and the PPP link have landed.
+      final pptpOnRouter = InternetSettingsFetchResult(
+        form: testForm.copyWith(
+          connectionType: UspWanConnectionType.pptp,
+          pppUsername: 'user',
+        ),
+        readOnlyInfo: const InternetSettingsReadOnlyInfo(),
+      );
+      const refusedAfterTheWanRow = SavePartlyAppliedError(
+          InvalidInputError(field: 'Invalid server', code: 7012));
+
+      void editToPptp(UspInternetSettingsNotifier notifier) {
+        notifier.enterEditMode();
+        notifier.updateField((f) => f.copyWith(
+              connectionType: UspWanConnectionType.pptp,
+              serverAddress: '203.0.113.10',
+              pppUsername: 'user',
+              pppPassword: 'pass',
+            ));
+      }
+
+      test('that changed the router shows what it holds, out of edit mode',
+          () async {
+        final reads = [testFetchResult, pptpOnRouter];
+        when(() => mockService.fetchSettings())
+            .thenAnswer((_) async => reads.removeAt(0));
+        when(() => mockService.saveAll(any(), any()))
+            .thenThrow(refusedAfterTheWanRow);
+
+        final container = createContainer();
+        await Future.delayed(Duration.zero);
+        final notifier = container.read(uspInternetSettingsProvider.notifier);
+        editToPptp(notifier);
+
+        await expectLater(
+            notifier.save(), throwsA(same(refusedAfterTheWanRow)));
+
+        final state = container.read(uspInternetSettingsProvider);
+        expect(state.settings.current.form, pptpOnRouter.form);
+        expect(state.settings.original.form, pptpOnRouter.form);
+        expect(state.status.isEditing, isFalse);
+        container.dispose();
+      });
+
+      test('that left the router as it was keeps the edits, still editing',
+          () async {
+        when(() => mockService.fetchSettings())
+            .thenAnswer((_) async => testFetchResult);
+        when(() => mockService.saveAll(any(), any()))
+            .thenThrow(const NetworkError(detail: 'timed out'));
+
+        final container = createContainer();
+        await Future.delayed(Duration.zero);
+        final notifier = container.read(uspInternetSettingsProvider.notifier);
+        editToPptp(notifier);
+        final edited = container.read(uspInternetSettingsProvider).edited;
+
+        await expectLater(notifier.save(), throwsA(isA<NetworkError>()));
+
+        final state = container.read(uspInternetSettingsProvider);
+        expect(state.edited, edited);
+        expect(state.settings.original.form, testForm);
+        expect(state.status.isEditing, isTrue);
+        container.dispose();
+      });
+
+      test('refreshes the dashboard\'s WAN data', () async {
+        when(() => mockService.fetchSettings())
+            .thenAnswer((_) async => testFetchResult);
+        when(() => mockService.saveAll(any(), any()))
+            .thenThrow(refusedAfterTheWanRow);
+        var wanReads = 0;
+        final container = createContainer(overrides: [
+          wanDataProvider.overrideWith(() => _CountedWan(() => wanReads++)),
+        ]);
+        container.listen(wanDataProvider, (_, __) {});
+        await container.read(wanDataProvider.future);
+        await Future.delayed(Duration.zero);
+        final notifier = container.read(uspInternetSettingsProvider.notifier);
+        editToPptp(notifier);
+
+        await expectLater(
+            notifier.save(), throwsA(same(refusedAfterTheWanRow)));
+        await container.read(wanDataProvider.future);
+
+        expect(wanReads, 2,
+            reason: 'read once on start, and again after the failed save');
+        container.dispose();
+      });
+    });
+
+    // A write that landed and whose own read-back failed already says so
+    // (SavedButUnconfirmedError). Reading again would only make the user wait
+    // for a second timeout, as when leaving Bridge makes the router briefly
+    // unreachable.
+    test('a save that landed and could not be read back reads only once',
+        () async {
+      var reads = 0;
+      when(() => mockService.fetchSettings()).thenAnswer((_) async {
+        if (++reads == 1) return testFetchResult;
+        throw const NetworkError(detail: 'router unreachable');
+      });
+      when(() => mockService.saveAll(any(), any())).thenAnswer((_) async {});
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspInternetSettingsProvider.notifier);
+      notifier.enterEditMode();
+      notifier.updateField((f) => f.copyWith(mtu: 9000));
+
+      await expectLater(
+          notifier.save(), throwsA(isA<SavedButUnconfirmedError>()));
+      expect(reads, 2, reason: 'the page load, then the one read-back');
+      container.dispose();
+    });
+
     // Regression: issue #1119. The provider must NOT gate its fetch on the raw
     // usp.isAuthenticated flag — in Remote Assistance that flag stays false by
     // design (authToken bypass), yet the data layer serves fine. Auth is
@@ -626,4 +754,17 @@ void main() {
       container.dispose();
     });
   });
+}
+
+/// A WAN that counts its reads, so a test sees the page refresh it.
+class _CountedWan extends FixedWan {
+  final void Function() onRead;
+
+  _CountedWan(this.onRead) : super(wanUpModel);
+
+  @override
+  Future<WanData> build() {
+    onRead();
+    return super.build();
+  }
 }

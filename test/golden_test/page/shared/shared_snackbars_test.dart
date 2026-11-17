@@ -235,6 +235,22 @@ final _rows = <_Row>[
   _Row.failed('error_wan_invalid_mtu',
       (c) => _wanRefusal(c, WanRefusalNames.invalidMtu)),
 
+  // --- WAN save applied in part (issue #1711): the reason, then on its own
+  // line that part of the save landed. A refused field, and the full sentence
+  // a step that times out gives, the longer of the two kinds of first line ---
+  _Row.failed(
+    'error_wan_partly_applied_invalid_server',
+    (c) => localizeWanSaveError(
+        c,
+        const SavePartlyAppliedError(InvalidInputError(
+            field: WanRefusalNames.invalidServer, code: 7012))),
+  ),
+  _Row.failed(
+    'error_wan_partly_applied_network',
+    (c) =>
+        localizeWanSaveError(c, const SavePartlyAppliedError(NetworkError())),
+  ),
+
   // --- Firewall / NAT save refusals: the message each reason the router names
   // gets (linksys/FWDEV#204, #1775). Shown through `showSaveErrorSnackBar`,
   // which uses the failure style for these. ---
