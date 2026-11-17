@@ -24,8 +24,8 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// IPv4 connection settings section.
 ///
 /// Displays connection type selector and conditional fields based on type:
-/// - DHCP: no extra fields
-/// - Static IP: IP, subnet, gateway, DNS 1-3
+/// - DHCP: VLAN
+/// - Static IP: IP, subnet, gateway, DNS 1-3, VLAN
 /// - PPPoE: username, password, service name, connection mode, VLAN
 /// - Bridge: warning message
 class UspIpv4Section extends ConsumerStatefulWidget {
@@ -233,10 +233,24 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
     );
   }
 
+  /// The selected type's own fields, then WAN VLAN tagging on every type that
+  /// offers it ([UspWanConnectionType.supportsVlan]).
   List<Widget> _buildTypeSpecificFields(
     UspInternetSettingsForm form,
     bool isEditing,
   ) {
+    final fields = _buildTypeFields(form, isEditing);
+    if (!form.connectionType.supportsVlan) return fields;
+    if (!isEditing) return [...fields, ..._vlanInfoRows(form)];
+    final vlan = _vlanFields(form);
+    return [
+      ...fields,
+      if (fields.isNotEmpty && vlan.isNotEmpty) AppGap.md(),
+      ...vlan,
+    ];
+  }
+
+  List<Widget> _buildTypeFields(UspInternetSettingsForm form, bool isEditing) {
     switch (form.connectionType) {
       case UspWanConnectionType.ipoe:
         final page = ref.watch(autoIPoEPageProvider);
@@ -346,8 +360,6 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
         UspInfoRow(label: l.serviceName, value: form.pppoeServiceName),
         UspInfoRow(label: l.connectionMode, value: form.connectionTrigger),
         UspInfoRow(label: l.pppStatus, value: widget.state.pppConnectionStatus),
-        if (form.vlanEnabled)
-          UspInfoRow(label: l.vlanIdOptional, value: '${form.vlanId}'),
       ];
     }
     return [
@@ -360,30 +372,6 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
       ),
       AppGap.lg(),
       ..._connectionModeFields(form),
-      // VLAN
-      AppGap.md(),
-      Row(
-        children: [
-          AppText.labelLarge(l.vlanTagging),
-          const Spacer(),
-          AppSwitch(
-            value: form.vlanEnabled,
-            onChanged: (v) => ref
-                .read(uspInternetSettingsProvider.notifier)
-                .setVlanEnabled(v),
-          ),
-        ],
-      ),
-      if (form.vlanEnabled) ...[
-        AppGap.md(),
-        AppTextFormField(
-          controller: _vlanIdController,
-          label: l.vlanIdOptional,
-          keyboardType: TextInputType.number,
-          onChanged: (v) =>
-              _updateField((f) => f.copyWith(vlanId: int.tryParse(v) ?? 0)),
-        ),
-      ],
     ];
   }
 
@@ -400,8 +388,6 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
         UspInfoRow(label: l.username, value: form.pppUsername),
         UspInfoRow(label: l.connectionMode, value: form.connectionTrigger),
         UspInfoRow(label: l.pppStatus, value: widget.state.pppConnectionStatus),
-        if (form.vlanEnabled)
-          UspInfoRow(label: l.vlanIdOptional, value: '${form.vlanId}'),
       ];
     }
     return [
@@ -423,13 +409,22 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
       ..._credentialFields(form),
       AppGap.lg(),
       ..._connectionModeFields(form),
-      // VLAN
-      AppGap.md(),
+    ];
+  }
+
+  /// WAN VLAN tagging (linksys/FWDEV issue #231): the switch, and while it is
+  /// on the ID and the priority. Offered only when the router lists the WAN's
+  /// VLAN row, since a change without one would not be saved (issue #1754).
+  List<Widget> _vlanFields(UspInternetSettingsForm form) {
+    if (widget.state.status.vlanInstancePath == null) return const [];
+    final l = loc(context);
+    return [
       Row(
         children: [
           AppText.labelLarge(l.vlanTagging),
           const Spacer(),
           AppSwitch(
+            identifier: 'internet-vlan-tagging',
             value: form.vlanEnabled,
             onChanged: (v) => ref
                 .read(uspInternetSettingsProvider.notifier)
@@ -441,14 +436,62 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
         AppGap.md(),
         AppTextFormField(
           controller: _vlanIdController,
-          label: l.vlanIdOptional,
+          identifier: 'internet-vlan-id',
+          label: l.vlanId,
           keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          // Text, not a tooltip: the field opens in error over the shipped ID
+          // 1, and on web a tooltip opening on focus drops the field's focus,
+          // so nothing could be typed into it (PR #1826).
+          errorDisplayMode: AppErrorDisplayMode.text,
+          externalErrorText: wanFieldErrorText(
+              context, validateVlanId(form.vlanId),
+              min: kVlanIdMin, max: kVlanIdMax),
           onChanged: (v) =>
               _updateField((f) => f.copyWith(vlanId: int.tryParse(v) ?? 0)),
+        ),
+        AppGap.md(),
+        // AppDropdown's label is only its semantics, so the visible one is
+        // drawn here, as AppTextFormField draws the ID field's above.
+        Padding(
+          padding:
+              const EdgeInsets.only(left: AppSpacing.xs, bottom: AppSpacing.sm),
+          child: AppText.labelMedium(l.vlanPriority),
+        ),
+        AppDropdown<int>(
+          identifier: 'internet-vlan-priority',
+          label: l.vlanPriority,
+          items: [
+            kVlanPriorityNone,
+            for (var p = 0; p <= kVlanPriorityMax; p++) p,
+          ],
+          value: form.vlanPriority,
+          itemAsString: (p) => _vlanPriorityLabel(p),
+          itemIdentifier: (p) => 'internet-vlan-priority-'
+              '${p == kVlanPriorityNone ? 'none' : p}',
+          onChanged: (p) {
+            if (p != null) {
+              _updateField((f) => f.copyWith(vlanPriority: p));
+            }
+          },
         ),
       ],
     ];
   }
+
+  /// The read-only VLAN ID and priority of a tagged WAN.
+  List<Widget> _vlanInfoRows(UspInternetSettingsForm form) {
+    if (!form.vlanEnabled) return const [];
+    final l = loc(context);
+    return [
+      UspInfoRow(label: l.vlanId, value: '${form.vlanId}'),
+      UspInfoRow(
+          label: l.vlanPriority, value: _vlanPriorityLabel(form.vlanPriority)),
+    ];
+  }
+
+  String _vlanPriorityLabel(int priority) =>
+      priority == kVlanPriorityNone ? loc(context).none : '$priority';
 
   /// The PPP user name and password, each at most 255 characters.
   List<Widget> _credentialFields(UspInternetSettingsForm form) {

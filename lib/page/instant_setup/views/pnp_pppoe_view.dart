@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
@@ -8,10 +9,13 @@ import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/views/components/pnp_isp_saving_progress.dart';
+import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
+import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_form_validator.dart';
+import 'package:privacy_gui/page/internet_settings/views/helpers/wan_field_error_localization.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-/// PPPoE configuration form (with optional VLAN ID toggle).
+/// PPPoE configuration form, with a toggle for the WAN VLAN ID.
 class PnpPppoeView extends ConsumerStatefulWidget {
   const PnpPppoeView({super.key});
 
@@ -52,6 +56,12 @@ class _PnpPppoeViewState extends ConsumerState<PnpPppoeView> {
     super.dispose();
   }
 
+  /// While VLAN is on, the ID Internet Settings takes (issue #1754); an empty field
+  /// reads as 0 and fails, so the ID is required.
+  String? get _vlanIdError => _showVlan
+      ? validateVlanId(int.tryParse(_vlanIdController.text) ?? 0)
+      : null;
+
   @override
   Widget build(BuildContext context) {
     // Listen for internet recovery, save success, or save failure.
@@ -72,7 +82,8 @@ class _PnpPppoeViewState extends ConsumerState<PnpPppoeView> {
 
     final phase = ref.watch(pnpProvider).phase;
     final canSave = _usernameController.text.isNotEmpty &&
-        _passwordController.text.isNotEmpty;
+        _passwordController.text.isNotEmpty &&
+        _vlanIdError == null;
 
     if (phase is IspSaving) {
       return UiKitPageView(
@@ -142,12 +153,23 @@ class _PnpPppoeViewState extends ConsumerState<PnpPppoeView> {
         ),
         if (_showVlan) ...[
           AppGap.lg(),
-          AppText.labelMedium('VLAN ID'),
+          AppText.labelMedium(loc(context).vlanId),
           AppGap.xs(),
           AppTextField(
-            hintText: 'VLAN ID',
+            identifier: 'pnp-pppoe-vlan-id',
+            hintText: loc(context).vlanId,
             controller: _vlanIdController,
             keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            // Text, not a tooltip: on web a tooltip opening on focus drops the
+            // field's focus, so nothing could be typed into it (PR #1826).
+            errorDisplayMode: AppErrorDisplayMode.text,
+            // Empty only holds Save, as an empty user name or password does.
+            errorText: _vlanIdController.text.isEmpty
+                ? null
+                : wanFieldErrorText(context, _vlanIdError,
+                    min: kVlanIdMin, max: kVlanIdMax),
+            onChanged: (_) => setState(() {}),
           ),
         ],
         AppGap.xxxl(),

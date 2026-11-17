@@ -811,5 +811,92 @@ void main() {
         expect(validateForm(form), isFalse);
       });
     });
+
+    group('WAN VLAN (issue #1754)', () {
+      // One valid form per type that offers VLAN tagging.
+      const offering = {
+        UspWanConnectionType.dhcp: UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.dhcp,
+          mtu: 1500,
+        ),
+        UspWanConnectionType.staticIp: UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.staticIp,
+          staticIpAddress: '203.0.113.10',
+          subnetMask: '255.255.255.0',
+          defaultGateway: '203.0.113.1',
+          dnsServer1: '8.8.8.8',
+          mtu: 1500,
+        ),
+        UspWanConnectionType.pppoe: UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.pppoe,
+          pppUsername: 'user',
+          pppPassword: 'pass',
+          mtu: 1492,
+        ),
+        UspWanConnectionType.pptp: UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.pptp,
+          serverAddress: '203.0.113.10',
+          pppUsername: 'user',
+          pppPassword: 'pass',
+          mtu: 1460,
+        ),
+        UspWanConnectionType.l2tp: UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.l2tp,
+          serverAddress: '203.0.113.20',
+          pppUsername: 'user',
+          pppPassword: 'pass',
+          mtu: 1460,
+        ),
+      };
+
+      test(
+          'every type that offers VLAN takes an ID of 3 to 4094 while it is on',
+          () {
+        for (final MapEntry(key: type, value: form) in offering.entries) {
+          bool valid(int id) =>
+              validateForm(form.copyWith(vlanEnabled: true, vlanId: id));
+          expect(valid(2), isFalse, reason: '${type.name} VLAN ID 2');
+          expect(valid(3), isTrue, reason: '${type.name} VLAN ID 3');
+          expect(valid(4094), isTrue, reason: '${type.name} VLAN ID 4094');
+          expect(valid(4095), isFalse, reason: '${type.name} VLAN ID 4095');
+        }
+      });
+
+      test('an emptied ID field, which holds 0, blocks the save', () {
+        final dhcp = offering[UspWanConnectionType.dhcp]!;
+        expect(
+            validateForm(dhcp.copyWith(vlanEnabled: true, vlanId: 0)), isFalse);
+      });
+
+      test('the ID is not checked while VLAN is off', () {
+        // The shipped WAN row: disabled, VLAN ID 1.
+        for (final MapEntry(key: type, value: form) in offering.entries) {
+          expect(validateForm(form.copyWith(vlanEnabled: false, vlanId: 1)),
+              isTrue,
+              reason: type.name);
+        }
+      });
+
+      test('bridge does not check an ID it offers no field for', () {
+        const bridge = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.bridge,
+          vlanEnabled: true,
+          vlanId: 1,
+          mtu: 1500,
+        );
+        expect(validateForm(bridge), isTrue);
+      });
+    });
+
+    group('validateVlanId', () {
+      test('3 to 4094, the GUI rule; the firmware takes 1 to 4094', () {
+        expect(validateVlanId(0), WanFieldErrors.outOfRange);
+        expect(validateVlanId(1), WanFieldErrors.outOfRange);
+        expect(validateVlanId(2), WanFieldErrors.outOfRange);
+        expect(validateVlanId(3), isNull);
+        expect(validateVlanId(4094), isNull);
+        expect(validateVlanId(4095), WanFieldErrors.outOfRange);
+      });
+    });
   });
 }

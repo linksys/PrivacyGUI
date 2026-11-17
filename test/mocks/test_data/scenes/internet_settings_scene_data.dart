@@ -128,6 +128,10 @@ final pptpDhcpUnderlayForm =
 final l2tpKeepAliveForm = l2tpOnDemandForm.copyWith(
     connectionTrigger: 'AlwaysOn', lcpEchoInterval: 60);
 
+/// DHCP with WAN VLAN tagging switched on over the shipped row: the field holds
+/// its ID 1, which the page refuses (issue #1754), so the ID shows its error.
+final dhcpVlanShippedIdForm = dhcpForm.copyWith(vlanEnabled: true, vlanId: 1);
+
 /// PPTP with WAN VLAN tagging on, which the tunnel block draws as a field.
 final pptpVlanForm =
     pptpDhcpUnderlayForm.copyWith(vlanEnabled: true, vlanId: 100);
@@ -205,16 +209,23 @@ const ipv6ReadOnlyInfo = InternetSettingsReadOnlyInfo(
 // State builders
 // =============================================================================
 
+/// The one VLAN row FW 2.0.4 ships, the WAN's (issue #1754 bench, 2.0.4.26111203).
+const wanVlanRow = 'Device.Ethernet.VLANTermination.1.';
+
 /// [mtuModeSupported] defaults to true — the device reported
 /// `X_LINKSYS_MTUMode`, which every shipping FLWRT2 does, so an editing scene
 /// draws the Auto MTU toggle. Pass false for the pre-`feed_bbf#128` shape.
+///
+/// [vlanInstancePath] defaults to [wanVlanRow], which every FLWRT2 router on
+/// 2.0.4 has, so a scene draws its VLAN switch. Pass null for a router without
+/// one, which draws none.
 InternetSettingsFeatureState dataState(
   UspInternetSettingsForm form, {
   InternetSettingsReadOnlyInfo readOnlyInfo =
       const InternetSettingsReadOnlyInfo(),
   bool isEditing = false,
   String? pppInstancePath,
-  String? vlanInstancePath,
+  String? vlanInstancePath = wanVlanRow,
   bool mtuModeSupported = true,
 }) {
   final settings = InternetSettingsSettings(form: form);
@@ -254,6 +265,7 @@ InternetSettingsFeatureState dirtyState({
       isEditing: true,
       activeMutation: isSaving ? 'save' : null,
       readOnlyInfo: defaultReadOnlyInfo,
+      vlanInstancePath: wanVlanRow,
       mtuModeSupported: true,
     ),
   );
@@ -283,7 +295,9 @@ InternetSettingsFeatureState get errorState => InternetSettingsFeatureState(
 ///   name, connection mode and PPP status, against `dhcp`'s zero and `staticIp`'s four.
 ///   `bridge` is the opposite extreme and would also flip the optional section to a
 ///   one-row `auto` and disable both renew buttons.
-/// - **`vlanEnabled`** adds the fifth PPPoE row, which renders only under it.
+/// - **`vlanEnabled`** adds the fifth and sixth PPPoE rows, VLAN ID and VLAN
+///   priority, which render only under it. The priority is left at none, whose
+///   localized word is longer than a digit.
 /// - **`ipv6rdEnabled`** adds the three 6rd rows — prefix, prefix length, border relay
 ///   — which render only under it, and the prefix is the page's longest value string.
 /// - The two IPv6 switches and the DUID row render unconditionally; setting both

@@ -48,6 +48,9 @@ class UspInternetSettingsForm extends Equatable {
   final bool vlanEnabled;
   final int vlanId;
 
+  /// TR-181 `VLANPriority`: 0–7, or [kVlanPriorityNone] for none.
+  final int vlanPriority;
+
   // === MTU ===
   /// Effective MTU in bytes. Always a real value the device reported or the
   /// user typed — never a sentinel. `0` only occurs before the first fetch.
@@ -95,6 +98,7 @@ class UspInternetSettingsForm extends Equatable {
     this.underlayDns3 = '',
     this.vlanEnabled = false,
     this.vlanId = 0,
+    this.vlanPriority = kVlanPriorityNone,
     this.mtu = 0,
     this.mtuAuto = false,
     this.wanMacAddress = '',
@@ -130,6 +134,7 @@ class UspInternetSettingsForm extends Equatable {
     String? underlayDns3,
     bool? vlanEnabled,
     int? vlanId,
+    int? vlanPriority,
     int? mtu,
     bool? mtuAuto,
     String? wanMacAddress,
@@ -164,6 +169,7 @@ class UspInternetSettingsForm extends Equatable {
       underlayDns3: underlayDns3 ?? this.underlayDns3,
       vlanEnabled: vlanEnabled ?? this.vlanEnabled,
       vlanId: vlanId ?? this.vlanId,
+      vlanPriority: vlanPriority ?? this.vlanPriority,
       mtu: mtu ?? this.mtu,
       mtuAuto: mtuAuto ?? this.mtuAuto,
       wanMacAddress: wanMacAddress ?? this.wanMacAddress,
@@ -201,6 +207,7 @@ class UspInternetSettingsForm extends Equatable {
         underlayDns3,
         vlanEnabled,
         vlanId,
+        vlanPriority,
         mtu,
         mtuAuto,
         wanMacAddress,
