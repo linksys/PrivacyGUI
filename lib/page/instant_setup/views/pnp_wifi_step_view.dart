@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_setting_steps_provider.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_wifi_draft_provider.dart';
 import 'package:privacy_gui/page/instant_setup/views/components/pnp_step_footer.dart';
 import 'package:privacy_gui/page/instant_setup/views/components/pnp_wifi_fields.dart';
@@ -18,7 +19,7 @@ class PnpWifiStepView extends ConsumerStatefulWidget {
   const PnpWifiStepView({super.key});
 
   /// This step's id in the plan.
-  static const stepId = 'wifi';
+  static const stepId = kPnpWifiStepId;
 
   @override
   ConsumerState<PnpWifiStepView> createState() => _PnpWifiStepViewState();
@@ -60,10 +61,9 @@ class _PnpWifiStepViewState extends ConsumerState<PnpWifiStepView> {
   Widget build(BuildContext context) {
     final draft = ref.watch(pnpMainWifiDraftProvider).current;
     final edit = ref.read(pnpMainWifiDraftProvider.notifier);
-    final valid = draft.splitMode
-        ? _bandPassword.values
-            .every((c) => pnpWifiPasswordValid(context, c.text))
-        : pnpWifiPasswordValid(context, _password.text);
+    // The draft's own check, so this page and the flow — which asks it at
+    // Save and before letting a later step open — cannot disagree.
+    final valid = draft.passwordsAccepted;
 
     return UiKitPageView.innerPage(
       scrollable: true,

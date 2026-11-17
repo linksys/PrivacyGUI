@@ -1,3 +1,4 @@
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/core/capability/device_capability.dart';
 import 'package:privacy_gui/core/capability/capability_provider.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_ipoe_view.dart';

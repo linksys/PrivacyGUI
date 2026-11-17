@@ -31,6 +31,14 @@ class PnpSettingStep {
   final ProviderListenable<PnpStepDraft> draft;
 }
 
+/// The Wi-Fi step's id — also its stepper segment's identifier, and its path.
+const kPnpWifiStepId = 'wifi';
+
+/// The guest step's id. Named once: the save asks the plan for it to decide
+/// whether to send the guest draft, and a rename here that the save did not
+/// follow would leave guest edits unsent with no error (#1816 review).
+const kPnpGuestStepId = 'guest';
+
 /// **The setting steps, in the order the wizard shows them.** A plain list:
 /// adding a step before Save — Night Mode is the next one — is one entry here,
 /// one in `pnpSettingStepPages`, its draft and its view, and nothing in the
@@ -41,12 +49,12 @@ class PnpSettingStep {
 /// or is written before it is #1511's open spike S5.)
 final kPnpSettingSteps = <PnpSettingStep>[
   PnpSettingStep(
-    id: 'wifi',
+    id: kPnpWifiStepId,
     includedFor: (_) => true,
     draft: pnpMainWifiDraftProvider.notifier,
   ),
   PnpSettingStep(
-    id: 'guest',
+    id: kPnpGuestStepId,
     // No guest SSID on the router, no guest step.
     includedFor: (router) => router.guest != null,
     draft: pnpGuestWifiDraftProvider.notifier,
@@ -65,6 +73,22 @@ PnpFlowPlan buildPnpFlowPlan(PnpWizardData router) => PnpFlowPlan(
 /// The step [id] names in [kPnpSettingSteps].
 PnpSettingStep pnpSettingStep(String id) =>
     kPnpSettingSteps.firstWhere((step) => step.id == id);
+
+/// The first of [plan]'s setting steps whose draft cannot be saved, or `null`
+/// when every one can (#1816 review).
+///
+/// What both the back policy and the save ask: a step after this one opens
+/// only once it is fixed, and nothing is written until it is. [draftOf] reads
+/// a step's draft — `ref.read` in the flow, `container.read` in the route.
+String? pnpFirstUnfinishedStepId(
+  PnpFlowPlan plan,
+  PnpStepDraft Function(ProviderListenable<PnpStepDraft> draft) draftOf,
+) {
+  for (final id in plan.settingStepIds) {
+    if (!draftOf(pnpSettingStep(id).draft).isValid()) return id;
+  }
+  return null;
+}
 
 /// The flow-level guard on `/pnp/pnpConfig`: the drafts of every setting step
 /// in the plan, taken together (#1511 P4).

@@ -85,7 +85,7 @@ bool _inPnpTree(Uri location) =>
 /// | flow | open | everything else in the tree goes to |
 /// |---|---|---|
 /// | no plan yet | the entry | the entry |
-/// | editing | the entry (`/pnp/pnpConfig`'s exit asks to log out), the setting steps | the first step |
+/// | editing | the entry (`/pnp/pnpConfig`'s exit asks to log out), the setting steps up to the first one that cannot be saved | that step, or the first step |
 /// | saving | the save step | the save step |
 /// | on Your Network | Your Network, adding nodes | Your Network |
 /// | after Your Network | Your Network | Your Network |
@@ -99,9 +99,21 @@ bool _inPnpTree(Uri location) =>
 /// it. A refused Back costs one extra browser-history entry — go_router
 /// re-reports the current URL (spike S2).
 ///
+/// **While editing, a step after one that cannot be saved does not open**
+/// (#1816 review). A step is a route, so it can be reached without the Next
+/// that its predecessor disables — the browser's Forward after a Back, or a
+/// typed URL — and Save on the last step would then write a draft its own page
+/// refused. [firstUnfinishedStepId] is that step (`pnpFirstUnfinishedStepId`),
+/// read by the shell's `redirect`; the policy stays a function of what it is
+/// given. Going back to an earlier step is always open.
+///
 /// Exhaustive over the phase on purpose: a phase added later must be placed
 /// in this table, not let through by a default.
-String? pnpBackPolicy(PnpState flow, Uri target) {
+String? pnpBackPolicy(
+  PnpState flow,
+  Uri target, {
+  String? firstUnfinishedStepId,
+}) {
   if (!_inPnpTree(target)) return null;
   final atEntry = target.pathSegments.length == 1;
   final stepId = pnpStepIdOf(target);
@@ -122,9 +134,17 @@ String? pnpBackPolicy(PnpState flow, Uri target) {
   switch (flow.phase) {
     case WizardConfiguring():
       if (atEntry) return null;
-      return plan.settingStepIds.contains(stepId)
-          ? null
-          : pnpStepLocation(plan.firstStepId);
+      // The step itself: `/pnp/pnpConfig/wifi/x` matches no route (#1816
+      // review), so it goes where everything else in the tree does.
+      if (!atStepItself || !plan.settingStepIds.contains(stepId)) {
+        return pnpStepLocation(plan.firstStepId);
+      }
+      final unfinished = firstUnfinishedStepId;
+      return unfinished != null &&
+              plan.settingStepIds.indexOf(stepId!) >
+                  plan.settingStepIds.indexOf(unfinished)
+          ? pnpStepLocation(unfinished)
+          : null;
     case WizardSaving() ||
           WizardSaved() ||
           WizardNeedsReconnect() ||

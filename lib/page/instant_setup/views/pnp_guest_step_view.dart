@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_setting_steps_provider.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_wifi_draft_provider.dart';
 import 'package:privacy_gui/page/instant_setup/views/components/pnp_step_footer.dart';
 import 'package:privacy_gui/page/instant_setup/views/components/pnp_wifi_fields.dart';
@@ -17,7 +18,7 @@ class PnpGuestStepView extends ConsumerStatefulWidget {
   const PnpGuestStepView({super.key});
 
   /// This step's id in the plan.
-  static const stepId = 'guest';
+  static const stepId = kPnpGuestStepId;
 
   @override
   ConsumerState<PnpGuestStepView> createState() => _PnpGuestStepViewState();
@@ -59,12 +60,9 @@ class _PnpGuestStepViewState extends ConsumerState<PnpGuestStepView> {
   Widget build(BuildContext context) {
     final draft = ref.watch(pnpGuestWifiDraftProvider).current;
     final edit = ref.read(pnpGuestWifiDraftProvider.notifier);
-    // A guest network that is off has no password to check.
-    final valid = !draft.enabled ||
-        (draft.splitMode
-            ? _bandPassword.values
-                .every((c) => pnpWifiPasswordValid(context, c.text))
-            : pnpWifiPasswordValid(context, _password.text));
+    // The draft's own check (off has no password to check), so this page and
+    // the flow cannot disagree.
+    final valid = draft.passwordsAccepted;
 
     return UiKitPageView.innerPage(
       scrollable: true,

@@ -952,6 +952,43 @@ void main() {
       container.dispose();
     });
 
+    test(
+        'Save writes nothing while a step holds what its page refuses '
+        '(#1816 review)', () async {
+      // The back policy keeps the user off a later step, and the step's own
+      // Save is disabled; this is the last line behind both.
+      final container = createSaveContainer();
+      final notifier = await loggedIn(container);
+      container.read(pnpMainWifiDraftProvider.notifier).setPassword('abc');
+
+      await notifier.saveChanges();
+
+      verifyNever(() => mockPnpService.saveWifi(any()));
+      expect(container.read(pnpProvider).phase, isA<WizardConfiguring>());
+      container.dispose();
+    });
+
+    test(
+        'a second Save while the first write is out sends no second SET '
+        '(P4 AC 7)', () async {
+      // The one phase guard saveChanges() keeps. A second SET would restart
+      // every radio again under the first.
+      final answer = Completer<PnpWifiWriteOutcome>();
+      when(() => mockPnpService.saveWifi(any()))
+          .thenAnswer((_) => answer.future);
+      final container = createSaveContainer();
+      final notifier = await loggedIn(container);
+
+      final first = notifier.saveChanges();
+      expect(container.read(pnpProvider).phase, isA<WizardSaving>());
+      await notifier.saveChanges();
+      answer.complete(PnpWifiWriteOutcome.confirmed);
+      await first;
+
+      verify(() => mockPnpService.saveWifi(any())).called(1);
+      container.dispose();
+    });
+
     test('an edit after a failed save does not show the error again', () async {
       // The edit goes to a draft (#1511 P4); the phase carrying the error is
       // left as it is, so the shell's listener — which fires when the phase

@@ -43,12 +43,22 @@ final _pnpRouteConfig = LinksysRouteConfig(
 /// **No `loggedOut` escape for the lock**, unlike `_firmwareExitGuard`: the
 /// `/pnp*` redirect passes every location through, and the only wiring of
 /// `listenForCoreSessionExit` is in `usp_dashboard_shell.dart`, so nothing signs
-/// a user out from under the firmware stage. The editing branch lets one
-/// navigation through without asking, its own to the login page
-/// ([_pnpLeavingForLoginProvider]).
+/// a user out from under the firmware stage. The guard lets one navigation
+/// through without asking, before it reads the phase: the editing branch's own
+/// to the login page ([_pnpLeavingForLoginProvider]).
 Future<bool> _pnpWizardExitGuard(
     BuildContext context, GoRouterState state) async {
   final container = ProviderScope.containerOf(context);
+  // The editing branch's own way to the login page passes once, whatever the
+  // phase is by then. Taken here, before the phase is read, so the flag cannot
+  // outlive that one navigation: read only in the editing branch, it stayed
+  // set when the flow had moved on, and the next run's Back from the first
+  // step left without asking (#1816 review).
+  final leaving = container.read(_pnpLeavingForLoginProvider.notifier);
+  if (leaving.state) {
+    leaving.state = false;
+    return true;
+  }
   // Exhaustive on purpose: a phase added later must be decided here, not let
   // out by a `default`.
   switch (container.read(pnpProvider).phase) {
@@ -93,24 +103,32 @@ final _pnpLeavingForLoginProvider = StateProvider<bool>((ref) => false);
 /// Always refuses the navigation it was asked about and goes to the login page
 /// itself, after this one has been settled: a `go` started while go_router is
 /// still waiting on this guard would race it. That `go` comes back through
-/// here, and [_pnpLeavingForLoginProvider] is what lets it pass.
+/// the guard, and [_pnpLeavingForLoginProvider] is what lets it pass.
+///
+/// **The sign-out runs behind a spinner** (#1816 review). The teardown takes a
+/// moment, and the wizard used to stay usable under it: a Save there would send
+/// the drafts just reverted — nothing — and acknowledge setup on the user's way
+/// out, and a flow that moved on took the flag past the branch that clears it.
 Future<bool> _leaveSetupByLoggingOut(
   BuildContext context,
   ProviderContainer container,
 ) async {
-  final leaving = container.read(_pnpLeavingForLoginProvider.notifier);
-  if (leaving.state) {
-    leaving.state = false;
-    return true;
-  }
-  final logOut = await showPnpLeaveSetupAlert(context);
+  final logOut = await showPnpLeaveSetupAlert(
+    context,
+    unsaved: container.read(pnpWizardDraftsProvider).isDirty(),
+  );
   if (logOut != true) return false;
   container.read(pnpWizardDraftsProvider).revert();
   WidgetsBinding.instance.addPostFrameCallback((_) async {
-    await container
+    final signOut = container
         .read(authProvider.notifier)
         .logout(cause: EndCause.userRequested);
-    leaving.state = true;
+    if (context.mounted) {
+      await doSomethingWithSpinner(context, signOut);
+    } else {
+      await signOut;
+    }
+    container.read(_pnpLeavingForLoginProvider.notifier).state = true;
     container.read(routerProvider).go(RoutePath.localLoginPassword);
   });
   return false;
@@ -128,7 +146,17 @@ String? _pnpShellRedirect(BuildContext context, GoRouterState state) {
   final flow = container.exists(pnpProvider)
       ? container.read(pnpProvider)
       : PnpState.initial();
-  return pnpBackPolicy(flow, state.uri);
+  final plan = flow.plan;
+  return pnpBackPolicy(
+    flow,
+    state.uri,
+    // While editing only: the drafts are alive then, held by the flow that
+    // began them, and it is only then that a step can be reached past one
+    // that cannot be saved (#1816 review).
+    firstUnfinishedStepId: plan != null && flow.phase is WizardConfiguring
+        ? pnpFirstUnfinishedStepId(plan, container.read)
+        : null,
+  );
 }
 
 /// One shell over the PnP flow (#1511 P2) — the `/pnp` tree, and only it.

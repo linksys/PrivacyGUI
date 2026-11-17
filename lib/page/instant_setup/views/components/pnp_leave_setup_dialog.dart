@@ -12,12 +12,19 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// not where an unfinished setup belongs. Returns `true` to log out.
 ///
 /// Existing strings only: the title is the app's "Log out", and the message is
-/// the unsaved-changes one, which says exactly what leaving costs.
-Future<bool?> showPnpLeaveSetupAlert(BuildContext context) {
-  return showMessageAppDialog<bool>(
+/// the unsaved-changes one, which says exactly what leaving costs — shown only
+/// when there is something to lose, [unsaved]. With nothing edited it said
+/// there were unsaved changes when there were none (#1816 review); the title
+/// and the two buttons say all there is.
+Future<bool?> showPnpLeaveSetupAlert(
+  BuildContext context, {
+  required bool unsaved,
+}) {
+  return showSimpleAppDialog<bool>(
     context,
     title: loc(context).logout,
-    message: loc(context).unsavedChangesDesc,
+    content:
+        unsaved ? AppText.bodyMedium(loc(context).unsavedChangesDesc) : null,
     actions: [
       AppButton.text(
         label: loc(context).cancel,

@@ -2,39 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_band.dart';
-import 'package:privacy_gui/validator_rules/rules.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_settings.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-/// The Wi-Fi password rules the PnP steps show under a password field.
+/// The Wi-Fi password rules the PnP steps show under a password field — the
+/// labels for [PnpWifiPasswordRule]'s checks, which are also what a draft must
+/// pass to be saved (`pnpWifiPasswordAccepted`).
 ///
 /// The hex rule is shown only for a 64-character entry, which is a PSK.
 List<AppPasswordRule> pnpWifiPasswordRules(BuildContext context, String text) =>
     [
       AppPasswordRule(
         label: loc(context).wifiPasswordLimit, // "8 - 64 characters"
-        validate: (text) => LengthRule(min: 8, max: 64).validate(text),
+        validate: PnpWifiPasswordRule.length,
       ),
       AppPasswordRule(
         label: loc(context).routerPasswordRuleStartEndWithSpace,
-        validate: (text) =>
-            text.isEmpty || NoSurroundWhitespaceRule().validate(text),
+        validate: PnpWifiPasswordRule.noSurroundingSpace,
       ),
       AppPasswordRule(
         label: loc(context).routerPasswordRuleUnsupportSpecialChar,
-        validate: (text) => text.isEmpty || AsciiRule().validate(text),
+        validate: PnpWifiPasswordRule.ascii,
       ),
       if (text.length == 64)
         AppPasswordRule(
           label: loc(context).wifiPasswordRuleHex,
-          validate: (text) => WiFiPSKRule().validate(text),
+          validate: PnpWifiPasswordRule.hexWhenPsk,
         ),
     ];
-
-/// Whether [text] passes every rule [pnpWifiPasswordRules] shows. An empty
-/// password never does.
-bool pnpWifiPasswordValid(BuildContext context, String text) =>
-    text.isNotEmpty &&
-    pnpWifiPasswordRules(context, text).every((r) => r.validate(text));
 
 /// One network's name and password, in a [LayoutBlock] — the form of both
 /// PnP Wi-Fi steps, once for a unified network or once per band of a split one.

@@ -24,6 +24,17 @@ import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_settings.dart';
 abstract interface class PnpStepDraft {
   /// Starts the draft at its part of [router], unedited.
   void begin(PnpWizardData router);
+
+  /// Whether what the step holds can be saved — what its page asks before it
+  /// enables Next or Save.
+  ///
+  /// On the draft, not only on the page (#1816 review): a step is a route, so a
+  /// later step can be reached without this one's Next — the browser's Forward
+  /// after a Back, or a typed URL — and the flow must not write a step whose
+  /// page would have refused it. The back policy sends the user to the first
+  /// step that is not, and `saveChanges()` refuses to write while one is not.
+  bool isValid();
+
   bool isDirty();
   void revert();
   void markAsSaved();
@@ -58,6 +69,9 @@ class PnpMainWifiDraftNotifier
   @override
   void begin(PnpWizardData router) =>
       state = PnpMainWifiDraftState.from(router.main);
+
+  @override
+  bool isValid() => state.current.passwordsAccepted;
 
   @override
   bool isDirty() => state.isDirty;
@@ -99,6 +113,9 @@ class PnpGuestWifiDraftNotifier
   @override
   void begin(PnpWizardData router) =>
       state = PnpGuestWifiDraftState.from(router.guest ?? _noGuest);
+
+  @override
+  bool isValid() => state.current.passwordsAccepted;
 
   @override
   bool isDirty() => state.isDirty;

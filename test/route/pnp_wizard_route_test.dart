@@ -122,7 +122,9 @@ void main() {
         ...commonOverrides(),
         authProvider.overrideWith(() => auth),
         routerProvider.overrideWithValue(router),
-        pnpProvider.overrideWith(() => pnp),
+        // A new flow each time the shell creates one, as in the app: a flow
+        // left and entered again is a second notifier. [pnp] is the latest.
+        pnpProvider.overrideWith(() => pnp = _DrivenPnp()),
         appModeProfileProvider.overrideWithValue(const LocalModeProfile()),
         deviceCapabilitiesProvider.overrideWithValue(
             DeviceCapabilities(const {DeviceCapability.bleOnboarding})),
@@ -217,6 +219,33 @@ void main() {
 
       expect(tester.state(find.byType(AppStepper)), same(first));
       expect(tester.widget<AppStepper>(find.byType(AppStepper)).currentStep, 2);
+    });
+
+    testWidgets(
+        'a step past one that cannot be saved does not open: Forward or a '
+        'typed URL lands back on it (#1816 review)', (tester) async {
+      // Hank's path: Next to guest, Back to Wi-Fi, a password the Wi-Fi step
+      // refuses — then the browser's Forward to guest, whose Save used to
+      // write it as the main KeyPassphrase.
+      await pumpApp(tester);
+      await enterWizard(tester);
+      await tester.tap(byId('pnp-step-next'));
+      await settle(tester);
+      router.go('/pnp/pnpConfig/wifi');
+      await settle(tester);
+      container(tester)
+          .read(pnpMainWifiDraftProvider.notifier)
+          .setPassword('abc');
+      await settle(tester);
+      expect(tester.widget<AppButton>(byId('pnp-step-next')).onTap, isNull,
+          reason: 'the Wi-Fi step refuses it');
+
+      router.go('/pnp/pnpConfig/guest'); // what Forward, or a typed URL, does
+      await settle(tester);
+
+      expect(location(), '/pnp/pnpConfig/wifi');
+      expect(byId('pnp-step-save'), findsNothing);
+      expect(pnp.saves, 0);
     });
 
     testWidgets('an edit survives leaving its step and coming back',
@@ -592,6 +621,86 @@ void main() {
       expect(location(), RoutePath.localLoginPassword);
       expect(c.read(pnpMainWifiDraftProvider).current, pnpUnifiedRouter.main,
           reason: 'the flow-level guard reverted what was typed');
+    });
+
+    testWidgets(
+        'the wizard cannot be used while the sign-out runs (#1816 review)',
+        (tester) async {
+      // A Save under the teardown sent the just-reverted drafts — nothing —
+      // and acknowledged setup on the user's way out.
+      await pumpApp(tester);
+      await enterWizard(tester);
+      auth.teardown = Completer<void>();
+
+      router.go(RoutePath.pnp);
+      await settle(tester);
+      await tester.tap(byId('pnp-leave-setup-log-out'));
+      await settle(tester);
+
+      expect(auth.logouts, 1);
+      expect(find.byType(AppLoader), findsOneWidget,
+          reason: 'a spinner over the wizard while the teardown runs');
+      await tester.tap(byId('pnp-step-next'), warnIfMissed: false);
+      await settle(tester);
+      expect(location(), '/pnp/pnpConfig/wifi',
+          reason: 'the barrier takes the tap');
+
+      auth.teardown!.complete();
+      await settle(tester);
+
+      expect(find.byType(AppLoader), findsNothing);
+      expect(location(), RoutePath.localLoginPassword);
+    });
+
+    testWidgets(
+        'the way to the login page passes once, whatever the phase by then '
+        '(#1816 review)', (tester) async {
+      // The flag that lets the sign-out's own navigation through used to be
+      // cleared only by the editing branch, so a flow that had moved on took it
+      // into the next run, whose Back from the first step left without asking.
+      await pumpApp(tester);
+      await enterWizard(tester);
+      auth.teardown = Completer<void>();
+      router.go(RoutePath.pnp);
+      await settle(tester);
+      await tester.tap(byId('pnp-leave-setup-log-out'));
+      await settle(tester);
+      pnp.moveTo(const WizardYourNetwork(ready: ready));
+      auth.teardown!.complete();
+      await settle(tester);
+      expect(location(), RoutePath.localLoginPassword);
+
+      // The next run, in the same session.
+      router.go(RoutePath.pnp);
+      await settle(tester);
+      await enterWizard(tester);
+      router.go(RoutePath.pnp); // Back from the first step
+      await settle(tester);
+
+      expect(byId('pnp-leave-setup-log-out'), findsOneWidget,
+          reason: 'it asks again');
+    });
+
+    testWidgets(
+        'the prompt says inputs will be lost only when there are some '
+        '(#1816 review)', (tester) async {
+      const unsaved = 'Navigating away from this page will discard any inputs.';
+      await pumpApp(tester);
+      await enterWizard(tester);
+
+      router.go(RoutePath.pnp);
+      await settle(tester);
+      expect(byId('pnp-leave-setup-log-out'), findsOneWidget);
+      expect(find.text(unsaved), findsNothing, reason: 'nothing was edited');
+      await tester.tap(byId('pnp-leave-setup-cancel'));
+      await settle(tester);
+
+      container(tester)
+          .read(pnpMainWifiDraftProvider.notifier)
+          .setSsid('Typed, not saved');
+      router.go(RoutePath.pnp);
+      await settle(tester);
+      expect(find.text(unsaved), findsOneWidget);
     });
   });
 

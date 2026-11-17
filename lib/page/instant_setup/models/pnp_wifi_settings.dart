@@ -1,6 +1,39 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/validator_rules/rules.dart';
 
 import 'pnp_wifi_band.dart';
+
+/// The PnP Wi-Fi password rules, one check each — the ones the steps list under
+/// a password field (`pnpWifiPasswordRules`), and the ones a draft must pass
+/// to be saved (#1816 review).
+///
+/// Here, without a `BuildContext`, so that the flow can ask a draft whether it
+/// can be saved without a step's page on screen: a step is a route since
+/// #1511 P4, and the page of the step being judged may not be mounted.
+abstract final class PnpWifiPasswordRule {
+  /// 8 to 64 characters.
+  static bool length(String text) => LengthRule(min: 8, max: 64).validate(text);
+
+  /// No space at either end.
+  static bool noSurroundingSpace(String text) =>
+      text.isEmpty || NoSurroundWhitespaceRule().validate(text);
+
+  /// ASCII only.
+  static bool ascii(String text) => text.isEmpty || AsciiRule().validate(text);
+
+  /// A 64-character entry is a PSK, so it must be hex.
+  static bool hexWhenPsk(String text) =>
+      text.length != 64 || WiFiPSKRule().validate(text);
+}
+
+/// Whether [password] passes every [PnpWifiPasswordRule]. An empty password
+/// never does.
+bool pnpWifiPasswordAccepted(String password) =>
+    password.isNotEmpty &&
+    PnpWifiPasswordRule.length(password) &&
+    PnpWifiPasswordRule.noSurroundingSpace(password) &&
+    PnpWifiPasswordRule.ascii(password) &&
+    PnpWifiPasswordRule.hexWhenPsk(password);
 
 /// The main Wi-Fi, as the PnP wizard's Wi-Fi step edits it (#1511 P4).
 ///
@@ -41,6 +74,12 @@ class PnpMainWifiSettings extends Equatable {
   /// Decided once, by the read, and never by an edit: a user who types the same
   /// name into every band of a split network is still editing a split network.
   final bool splitMode;
+
+  /// Whether every password this network would be saved with is accepted —
+  /// each band's in split mode, the one password otherwise.
+  bool get passwordsAccepted => splitMode
+      ? bands.every((b) => pnpWifiPasswordAccepted(b.password))
+      : pnpWifiPasswordAccepted(password);
 
   PnpMainWifiSettings copyWith({String? ssid, String? password}) =>
       PnpMainWifiSettings(
@@ -102,6 +141,14 @@ class PnpGuestWifiSettings extends Equatable {
 
   /// See [PnpMainWifiSettings.splitMode].
   final bool splitMode;
+
+  /// As [PnpMainWifiSettings.passwordsAccepted]; a guest network that is off
+  /// has no password to check.
+  bool get passwordsAccepted =>
+      !enabled ||
+      (splitMode
+          ? bands.every((b) => pnpWifiPasswordAccepted(b.password))
+          : pnpWifiPasswordAccepted(password));
 
   PnpGuestWifiSettings copyWith({
     bool? enabled,

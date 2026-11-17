@@ -238,6 +238,16 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   /// call while the first is out must not send a second SET.
   Future<void> saveChanges() async {
     if (state.phase is! WizardConfiguring) return;
+    final plan = state.plan;
+    final unfinished =
+        plan == null ? null : pnpFirstUnfinishedStepId(plan, ref.read);
+    if (unfinished != null) {
+      // The back policy keeps the user off any step after it, and a step's
+      // own Save is disabled while it is not ready. This is the last line:
+      // nothing writes a draft its page refused (#1816 review).
+      logger.w('[PnP] Save refused: the $unfinished step cannot be saved');
+      return;
+    }
     final write = _collectWrite();
 
     state = state.copyWith(phase: const WizardSaving());
@@ -301,7 +311,7 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   /// out in one Wi-Fi SET (see `kPnpSettingSteps`).
   PnpWifiWrite _collectWrite() => PnpWifiWrite(
         main: ref.read(pnpMainWifiDraftProvider).settings,
-        guest: state.plan?.settingStepIds.contains('guest') == true
+        guest: state.plan?.settingStepIds.contains(kPnpGuestStepId) == true
             ? ref.read(pnpGuestWifiDraftProvider).settings
             : null,
       );
@@ -590,12 +600,12 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
     // `_runFirmwareStage`. REQ-B3's acceptance criterion is that setup completes
     // whatever the router does, and a narrower try only covers the throw the
     // requirement happens to name: with the `ref.listen`, the `ref.read` and the
-    // cleanup outside it, a throw from any of those escapes into the caller — where
-    // `saveChanges()`'s catch reverts to the form with an error banner, and
-    // `testReconnect()`'s catch treats it as a failed attempt and runs the whole
-    // stage again, dispatching a second install at a router already flashing. So the
-    // landing is set in the `finally` and there is exactly one way out of this
-    // method.
+    // cleanup outside it, a throw from any of those would escape into the caller.
+    // Since #1511 P5 that is `finishWizard()` alone, which has no catch, so the
+    // user would be left on the checking spinner with no way out — the dead end
+    // §13.4.3 forbids. (It used to be the save and the reconnect, whose catches
+    // reverted to the form or ran the stage a second time.) So the landing is set
+    // in the `finally` and there is exactly one way out of this method.
     ProviderSubscription<FirmwareUpdateState>? keepAlive;
     try {
       // `firmwareUpdateNotifierProvider` is `autoDispose` and `ref.read` registers

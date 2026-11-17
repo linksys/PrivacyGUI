@@ -116,6 +116,58 @@ void main() {
     });
   });
 
+  group('pnpWifiPasswordAccepted — what a draft must pass to be saved', () {
+    test('8 to 64 ASCII characters with no space at either end', () {
+      expect(pnpWifiPasswordAccepted('Abcd1234'), isTrue);
+      expect(pnpWifiPasswordAccepted('a' * 63), isTrue);
+    });
+
+    test('refuses what the step lists as broken rules', () {
+      expect(pnpWifiPasswordAccepted(''), isFalse, reason: 'empty');
+      expect(pnpWifiPasswordAccepted('abc'), isFalse, reason: 'too short');
+      expect(pnpWifiPasswordAccepted('a' * 65), isFalse, reason: 'too long');
+      expect(pnpWifiPasswordAccepted(' Abcd1234'), isFalse,
+          reason: 'leading space');
+      expect(pnpWifiPasswordAccepted('Abcd1234 '), isFalse,
+          reason: 'trailing space');
+      expect(pnpWifiPasswordAccepted('Abcd1234é'), isFalse,
+          reason: 'not ASCII');
+    });
+
+    test('a 64-character entry is a PSK, so only hex passes', () {
+      expect(pnpWifiPasswordAccepted('a1' * 32), isTrue);
+      expect(pnpWifiPasswordAccepted('z' * 64), isFalse);
+    });
+  });
+
+  group('passwordsAccepted', () {
+    test('a unified network asks its one password', () {
+      const main = PnpMainWifiSettings(ssid: 'Home', password: 'abc');
+
+      expect(main.passwordsAccepted, isFalse);
+      expect(main.copyWith(password: 'Abcd1234').passwordsAccepted, isTrue);
+    });
+
+    test('a split network asks every band, and not the unified field', () {
+      expect(splitMain.passwordsAccepted, isTrue);
+      expect(
+          splitMain
+              .withBand('Device.WiFi.SSID.2.', password: 'abc')
+              .passwordsAccepted,
+          isFalse);
+      expect(splitMain.copyWith(password: '').passwordsAccepted, isTrue,
+          reason: 'split mode writes the bands, not the unified field');
+    });
+
+    test('a guest network that is off has no password to check', () {
+      const off = PnpGuestWifiSettings(
+          enabled: false, ssid: 'Home-guest', password: '');
+
+      expect(off.passwordsAccepted, isTrue);
+      expect(off.copyWith(enabled: true).passwordsAccepted, isFalse);
+    });
+  });
+
   group('PnpWizardData', () {
     test('a router with no guest SSID has no guest network', () {
       final read = PnpWizardData(main: splitMain);

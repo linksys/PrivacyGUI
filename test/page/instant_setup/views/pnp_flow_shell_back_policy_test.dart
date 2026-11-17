@@ -78,6 +78,35 @@ void main() {
       expect(policy(editing, config), step('wifi'));
     });
 
+    test('a URL below a setting step goes to the first step (#1816 review)',
+        () {
+      // It matches no route; letting it through landed on go_router's error
+      // page.
+      expect(policy(editing, '${step('wifi')}/x'), step('wifi'));
+      expect(policy(editing, '${step('guest')}/x'), step('wifi'));
+    });
+
+    group('a step after one that cannot be saved does not open (#1816 review)',
+        () {
+      String? withUnfinished(String unfinished, String target) =>
+          pnpBackPolicy(editing, Uri.parse(target),
+              firstUnfinishedStepId: unfinished);
+
+      test('a later step goes back to the unfinished one', () {
+        // The browser's Forward after a Back, or a typed URL: the Next that
+        // would have stopped the user was never pressed, and Save on the
+        // later step would write what the unfinished one refused.
+        expect(withUnfinished('wifi', step('guest')), step('wifi'));
+      });
+
+      test('the unfinished step itself, and every step before it, are open',
+          () {
+        expect(withUnfinished('wifi', step('wifi')), isNull);
+        expect(withUnfinished('guest', step('guest')), isNull);
+        expect(withUnfinished('guest', step('wifi')), isNull);
+      });
+    });
+
     test('a failed save is still editing', () {
       const failed = PnpState(
         phase: WizardConfiguring(saveError: UnexpectedError()),
