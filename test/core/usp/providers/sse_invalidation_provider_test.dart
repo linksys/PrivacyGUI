@@ -373,6 +373,14 @@ void main() {
       );
     });
 
+    test('a node row without the trailing dot is still meshNodes', () async {
+      await sendAndExpect(
+        'Device.WiFi.DataElements.Network.Device.5',
+        InvalidationDomain.meshNodes,
+        type: 'ObjectDeletion',
+      );
+    });
+
     test('an object event on a row nested under a node is not meshNodes',
         () async {
       await sendAndExpectEmpty(

@@ -189,6 +189,13 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       if (domain == InvalidationDomain.connectedDevices) {
         _debouncedInvalidate();
       } else if (domain == InvalidationDomain.meshNodes) {
+        // A read sent before the node change may answer as if it had not happened:
+        // the USP client caches a GET for 5 s, and a new read would join one still
+        // in flight. Drop them as the change arrives, so every read sent after it
+        // goes to the router: this push's own mesh read, a device read's within the
+        // debounce, and a rebuild's, which cancels this push's read if it starts
+        // within the debounce.
+        ref.read(uspDevicesDataServiceProvider).dropSharedReads();
         _debouncedMeshRefresh();
       }
     });
@@ -415,13 +422,6 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       radios: wifiCodegen.radios,
     );
 
-    // A push's read answers "what changed", so it must not be served from the USP
-    // client's shared reads: a device read's mesh read up to 5 s earlier is cached,
-    // and one still in flight would be joined. Either holds the topology from before
-    // the node joined or left, and would publish it under this read's newer number.
-    // A device read's mesh read keeps the shared reads, as every other read does: a
-    // node change is always followed by a push's read, which takes a higher number.
-    if (isPushRead) svc.dropSharedReads();
     final meshTopology = await svc.fetchMeshTopology(
       bssidToBandMap: bssidToBandMap,
     );

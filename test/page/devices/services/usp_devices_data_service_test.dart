@@ -714,7 +714,6 @@ void main() {
     });
   });
 
-  // The detail page names a client and picks its icon (#1691): the name is
   group('UspDevicesDataService — dropSharedReads', () {
     test('drops the client\'s shared reads (#1828)', () {
       svc.dropSharedReads();
@@ -722,6 +721,7 @@ void main() {
     });
   });
 
+  // The detail page names a client and picks its icon (#1691): the name is
   // X_LINKSYS_UserDeviceLocation, the icon the app's own code in
   // X_LINKSYS_UserDeviceType, both on the client's Hosts.Host row.
   group('UspDevicesDataService — updateIdentity', () {

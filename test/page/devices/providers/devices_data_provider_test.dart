@@ -989,37 +989,73 @@ void main() {
       });
     });
 
+    // A cached or in-flight read from before the node change would answer a read
+    // after it with the old topology. The service calls are logged in the order
+    // they are made.
+    List<String> logCalls() {
+      final calls = <String>[];
+      when(() => mockDevicesSvc.dropSharedReads())
+          .thenAnswer((_) => calls.add('drop'));
+      return calls;
+    }
+
+    Future<MeshTopologyInfo> Function() loggedRead(
+            List<String> calls, MeshTopologyInfo topology) =>
+        () async {
+          calls.add('read');
+          return topology;
+        };
+
     test(
-        'a push\'s read drops the shared reads right before it reads; a device '
-        'read\'s does not', () {
+        'a meshNodes push drops the shared reads as it arrives; a Hosts push '
+        'does not', () {
       fakeAsync((async) {
-        // A cached or in-flight read from before the node change would answer
-        // the push's read with the old topology. The service calls are logged in
-        // the order they are made.
-        final calls = <String>[];
-        when(() => mockDevicesSvc.dropSharedReads())
-            .thenAnswer((_) => calls.add('drop'));
-        Future<MeshTopologyInfo> Function() read(MeshTopologyInfo topology) =>
-            () async {
-              calls.add('read');
-              return topology;
-            };
+        final calls = logCalls();
         stubMeshReads([
-          read(withAgent), // build()'s background read
-          read(withAgent), // after the Hosts push's device read
-          read(controllerOnly), // the meshNodes push's read
+          loggedRead(calls, withAgent), // build()'s background read
+          loggedRead(calls, withAgent), // after the Hosts push's device read
+          loggedRead(calls, controllerOnly), // the meshNodes push's read
         ]);
 
         final container = start(async);
 
         sse.add((domain: InvalidationDomain.connectedDevices, seq: 0));
         pastDebounce(async);
-        expect(calls, ['read', 'read'],
-            reason: 'a device read\'s mesh read keeps the shared reads');
+        expect(calls, ['read', 'read']);
 
         sse.add((domain: InvalidationDomain.meshNodes, seq: 1));
+        async.flushMicrotasks();
+        expect(calls, ['read', 'read', 'drop'],
+            reason: 'dropped as the push arrives, before the debounce');
+
         pastDebounce(async);
         expect(calls, ['read', 'read', 'drop', 'read']);
+        expect(topologyOf(container), controllerOnly);
+        container.dispose();
+      });
+    });
+
+    test(
+        'a rebuild that cancels a pending push reads the mesh after the shared '
+        'reads were dropped', () {
+      fakeAsync((async) {
+        // The push's own read never runs; the rebuild's mesh read stands in for
+        // it, and must not be answered from before the node change either.
+        final calls = logCalls();
+        stubMeshReads([
+          loggedRead(calls, withAgent), // build()'s background read
+          loggedRead(calls, controllerOnly), // the rebuild's own read
+        ]);
+
+        final container = start(async);
+
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+        async.elapse(const Duration(milliseconds: 100));
+        container.refresh(devicesDataProvider);
+        async.flushMicrotasks();
+        pastDebounce(async);
+
+        expect(calls, ['read', 'drop', 'read']);
         expect(topologyOf(container), controllerOnly);
         container.dispose();
       });

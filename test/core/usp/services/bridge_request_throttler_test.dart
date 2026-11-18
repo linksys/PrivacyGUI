@@ -542,7 +542,9 @@ void main() {
 
       throttler.dropSharedReads();
 
-      // The read the change prompts: sent again rather than joined.
+      // The read the change prompts: sent again rather than joined. Checked
+      // before awaiting it: joined, it would wait on `before`, which completes
+      // only below, and the test would hang instead of failing.
       final fAfter = throttler.enqueue(
         cacheKey: 'mesh',
         action: () async {
@@ -550,8 +552,9 @@ void main() {
           return 'after the change';
         },
       );
-      expect(await fAfter, 'after the change');
-      expect(callCount, 2);
+      await Future.delayed(Duration(milliseconds: 10));
+      expect(callCount, 2, reason: 'sent again, not joined');
+      expect(await fAfter.timeout(Duration(seconds: 1)), 'after the change');
 
       before.complete('before the change');
       expect(await fBefore, 'before the change',
