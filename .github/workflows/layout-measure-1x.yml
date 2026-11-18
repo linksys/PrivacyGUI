@@ -59,10 +59,6 @@ jobs:
           submodules: true
       - uses: ./.github/actions/setup-1x
 
-      # One locale per job also keeps each suite's process to a few hundred
-      # variants. Run locally with all 26 locales at once, one suite stopped
-      # after about 2,200 variants and reported the rest "did not complete".
-      #
       # Only the suites that declare testLocalizations cases, so the run does
       # not compile the unit suite to select none of it. `|| true`: a failing
       # test is reported, it does not stop the measurement. A run that

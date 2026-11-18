@@ -334,16 +334,28 @@ final _testFonts = <String, String>{
 };
 
 ///
-/// To load custom fonts for testing use.
+/// Loads the app fonts and the test fonts above, once per test process.
+///
+/// A font the engine has registered stays registered for the rest of the
+/// process, so a later call returns at once. Registering them again on every
+/// test kept every copy: about 25 MB per test, and a process running some
+/// 2,300 tests was killed by the OS (#1802).
+///
+/// The flag is a bool, not the first call's Future: that Future belongs to the
+/// first test's fake-async zone, and a later test that awaits it never resumes.
 ///
 Future<void> loadTestFonts() async {
+  if (_fontsLoaded) return;
   await loadAppFonts();
 
   // Load custom fonts
   for (final font in _testFonts.entries) {
     await _loadFont(font.value, font.key);
   }
+  _fontsLoaded = true;
 }
+
+bool _fontsLoaded = false;
 
 Future<void> _loadFont(String path, String fontFamily) async {
   File file = File(path);
