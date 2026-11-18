@@ -354,6 +354,23 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString(pRedirection), isNull);
     });
+
+    test('reads the saved redirection while the router is in bridge mode',
+        () async {
+      SharedPreferences.setMockInitialValues(
+          {pRedirection: 'https://www.myrouter.info'});
+      routerWan({
+        'wanType': 'Bridge',
+        'mtu': 0,
+        'bridgeSettings': {'useStaticSettings': false},
+      });
+
+      final fetched = await notifier.fetch();
+
+      expect(fetched.ipv4Setting.ipv4ConnectionType, 'Bridge');
+      expect(fetched.ipv4Setting.redirection, 'https://www.myrouter.info');
+      expect(page().ipv4Setting.redirection, 'https://www.myrouter.info');
+    });
   });
 
   group('saveInternetSettings', () {
