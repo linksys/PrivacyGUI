@@ -275,6 +275,11 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
               label: loc(context).ipAddress,
               hintText: loc(context).ipAddressHint,
               externalErrorText: _errors['internalClient'],
+              // Text, not tooltip: on web (Flutter 3.47.2), a tooltip-mode
+              // field showing an error stops taking keys once it is clicked
+              // again (linksys/privacyGUI-UI-kit#100; #1829). Held by
+              // autocomplete_error_text_mode_test.dart.
+              errorDisplayMode: AppErrorDisplayMode.text,
               onChanged: (_) => _onInputChanged(),
             ),
           ),
