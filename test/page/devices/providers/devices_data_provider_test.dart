@@ -886,15 +886,11 @@ void main() {
 
     tearDown(() => sse.close());
 
-    ProviderContainer createSseContainer({
-      WifiDataNotifier Function()? wifi,
-    }) =>
-        ProviderContainer(
+    ProviderContainer createSseContainer() => ProviderContainer(
           overrides: [
             uspClientProvider.overrideWithValue(mockUsp),
             uspDevicesDataServiceProvider.overrideWithValue(mockDevicesSvc),
-            wifiDataProvider
-                .overrideWith(wifi ?? () => _TestWifiDataNotifier()),
+            wifiDataProvider.overrideWith(() => _TestWifiDataNotifier()),
             systemInfoDataProvider.overrideWith(
               () => _TestSystemInfoDataNotifier(null),
             ),
@@ -947,8 +943,7 @@ void main() {
         async.flushMicrotasks();
         clearInteractions(mockDevicesSvc);
 
-        // A parent node leaving takes the nodes behind it out too: one deletion each,
-        // all inside the debounce window.
+        // Several node events inside the debounce window.
         sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
         sse.add((domain: InvalidationDomain.meshNodes, seq: 1));
         async.elapse(const Duration(milliseconds: 200));
@@ -1049,10 +1044,12 @@ void main() {
       expect(data.slaves, isEmpty);
     });
 
-    test('a device read that starts during a mesh re-read replaces it',
+    test(
+        'a held mesh re-read does not replace a newer mesh a device read published',
         () async {
       // The push's mesh read is held, holding the node; a Hosts push then reads the
-      // devices and the mesh again, which returns first without the node.
+      // devices and the mesh again, which starts later, returns first without the node,
+      // and publishes. The push's read, the older of the two, returns last.
       final pushRead = Completer<MeshTopologyInfo>();
       stubMeshReads([
         () async => withAgent, // build()'s background read
@@ -1078,7 +1075,7 @@ void main() {
 
       expect(container.read(devicesDataProvider).value!.meshTopology,
           controllerOnly,
-          reason: 'the superseded mesh re-read must not publish');
+          reason: 'the older mesh read must not publish over the newer');
     });
 
     test('a rebuild cancels a pending push', () {
@@ -1144,6 +1141,9 @@ void main() {
       expect(container.read(devicesDataProvider).value!.meshTopology,
           controllerOnly,
           reason: 'the newer device read\'s mesh must publish');
+      // build()'s and the Hosts push's. A third would be the superseded rebuild
+      // reading the mesh it can only drop.
+      verifyMeshReads(2);
     });
 
     test('a newer mesh read that fails does not stop an older one', () async {
@@ -1216,44 +1216,133 @@ void main() {
           reason: 'the first pass must not put the departed node back');
     });
 
+    // The push's read belongs to no device read. A device read that starts while it is
+    // in flight and ends without a topology must not take the node change down with it.
     test(
-        'a mesh re-read is kept when a device read starts while it waits for '
-        'Wi-Fi data and then fails', () async {
-      // The push's read awaits the Wi-Fi data; a Hosts push starts a device read in the
-      // meantime, whose fetch then fails before it reads the mesh. Had the push's read
-      // held the device generation from before its await, it would step aside for that
-      // read and the node change would not show.
-      final gate = _WifiGate();
+        'a mesh re-read is kept when a device read that starts meanwhile fails',
+        () async {
+      final pushRead = Completer<MeshTopologyInfo>();
       stubDeviceReads([
         () async => _tagged('build'),
         () => Future.error(Exception('fetch failed')), // the Hosts push
       ]);
       stubMeshReads([
         () async => withAgent, // build()'s background read
-        () async => controllerOnly, // the meshNodes push's read
+        () => pushRead.future, // the meshNodes push's read
       ]);
 
-      final container =
-          createSseContainer(wifi: () => _GatedWifiDataNotifier(gate));
+      final container = createSseContainer();
       addTearDown(container.dispose);
       container.listen(devicesDataProvider, (_, __) {});
       await container.read(devicesDataProvider.future);
       await pumpEventQueue();
-
-      // The Wi-Fi data reloads and is held, so every enrichment read waits on it.
-      gate.hold = Completer<void>();
-      container.invalidate(wifiDataProvider);
 
       sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
       await Future.delayed(const Duration(milliseconds: 600));
       sse.add((domain: InvalidationDomain.connectedDevices, seq: 1));
       await Future.delayed(const Duration(milliseconds: 600));
 
-      gate.hold!.complete();
+      pushRead.complete(controllerOnly);
       await pumpEventQueue();
 
       expect(container.read(devicesDataProvider).value!.meshTopology,
           controllerOnly);
+    });
+
+    test('a mesh re-read is kept when a newer device read\'s mesh read faults',
+        () async {
+      final pushRead = Completer<MeshTopologyInfo>();
+      stubMeshReads([
+        () async => withAgent, // build()'s background read
+        () => pushRead.future, // the meshNodes push's read
+        () async => MeshTopologyInfo.empty, // the Hosts push's read, faulted
+      ]);
+
+      final container = createSseContainer();
+      addTearDown(container.dispose);
+      container.listen(devicesDataProvider, (_, __) {});
+      await container.read(devicesDataProvider.future);
+      await pumpEventQueue();
+
+      sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+      await Future.delayed(const Duration(milliseconds: 600));
+      sse.add((domain: InvalidationDomain.connectedDevices, seq: 1));
+      await Future.delayed(const Duration(milliseconds: 600));
+
+      pushRead.complete(controllerOnly);
+      await pumpEventQueue();
+
+      expect(container.read(devicesDataProvider).value!.meshTopology,
+          controllerOnly);
+    });
+
+    test('a mesh re-read does not publish while a rebuild is loading',
+        () async {
+      // Publishing would end the pull-to-refresh early with the devices from before
+      // it. The rebuild reads the mesh itself after its fetch.
+      final rebuildFetch = Completer<DevicesDataFetchResult>();
+      stubDeviceReads([
+        () async => _tagged('build'),
+        () => rebuildFetch.future, // the pull-to-refresh
+      ]);
+      stubMeshReads([
+        () async => withAgent, // build()'s background read
+        () async => controllerOnly, // the meshNodes push's read
+        () async => controllerOnly, // the rebuild's own read
+      ]);
+
+      final container = createSseContainer();
+      addTearDown(container.dispose);
+      container.listen(devicesDataProvider, (_, __) {});
+      await container.read(devicesDataProvider.future);
+      await pumpEventQueue();
+
+      container.refresh(devicesDataProvider);
+      await pumpEventQueue();
+      sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+      await Future.delayed(const Duration(milliseconds: 600));
+
+      final during = container.read(devicesDataProvider);
+      expect(during.isLoading, isTrue,
+          reason: 'the push read must not end the rebuild\'s loading');
+      expect(during.value!.meshTopology, withAgent);
+
+      rebuildFetch.complete(_tagged('rebuild'));
+      await pumpEventQueue();
+
+      final data = container.read(devicesDataProvider).value!;
+      expect(data.hostNameByMac, {'TAG': 'rebuild'});
+      expect(data.meshTopology, controllerOnly);
+    });
+
+    test('a mesh re-read does not replace a failed rebuild\'s error', () async {
+      // The Retry view shows the error; the old list must not come back over it.
+      final pushRead = Completer<MeshTopologyInfo>();
+      stubDeviceReads([
+        () async => _tagged('build'),
+        () => Future.error(Exception('fetch failed')), // the pull-to-refresh
+      ]);
+      stubMeshReads([
+        () async => withAgent, // build()'s background read
+        () => pushRead.future, // the meshNodes push's read
+      ]);
+
+      final container = createSseContainer();
+      addTearDown(container.dispose);
+      container.listen(devicesDataProvider, (_, __) {});
+      await container.read(devicesDataProvider.future);
+      await pumpEventQueue();
+
+      sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+      await Future.delayed(const Duration(milliseconds: 600));
+      container.refresh(devicesDataProvider);
+      await pumpEventQueue();
+      expect(container.read(devicesDataProvider).hasError, isTrue);
+
+      pushRead.complete(controllerOnly);
+      await pumpEventQueue();
+
+      expect(container.read(devicesDataProvider).hasError, isTrue);
     });
   });
 }
@@ -1278,26 +1367,6 @@ class _TestWifiDataNotifier extends WifiDataNotifier {
   @override
   Future<WifiData> build() async {
     if (shouldThrow) throw Exception('wifi fetch failed');
-    return const WifiData.empty();
-  }
-}
-
-/// Lets a test hold the next Wi-Fi data load open.
-class _WifiGate {
-  Completer<void>? hold;
-}
-
-/// Test override for WifiDataNotifier whose load waits on [_WifiGate.hold] while it is
-/// set, so a test can keep every read of `wifiDataProvider.future` pending.
-class _GatedWifiDataNotifier extends WifiDataNotifier {
-  final _WifiGate gate;
-
-  _GatedWifiDataNotifier(this.gate);
-
-  @override
-  Future<WifiData> build() async {
-    final hold = gate.hold;
-    if (hold != null) await hold.future;
     return const WifiData.empty();
   }
 }
