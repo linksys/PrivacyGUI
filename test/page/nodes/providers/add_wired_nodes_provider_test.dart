@@ -234,6 +234,19 @@ void main() {
       expect(polling.forced, 1);
     });
 
+    testWidgets(
+        'reports a start the router refuses, and still resumes the idle '
+        'checker', (tester) async {
+      await openApp(tester);
+      router.refuses(JNAPAction.setWiredAutoOnboardingSettings);
+
+      await expectLater(
+          notifier().startAutoOnboarding(context), throwsA(isA<JNAPError>()));
+
+      expect(idleCheckerPaused, [true, false]);
+      expect(page().isLoading, isFalse);
+    });
+
     testWidgets('ends without the nodes when the router cannot list them',
         (tester) async {
       await openApp(tester);

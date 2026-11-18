@@ -51,28 +51,36 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
     );
     // Pause the idle checker
     ref.read(idleCheckerPauseProvider.notifier).state = true;
-    // Set router auto onboarding to true
-    await setAutoOnboardingSettings(true);
-    // Get backhaul info
-    final backhaulList = ref.read(deviceManagerProvider).backhaulInfoData;
-    state = state.copyWith(backhaulSnapshot: backhaulList);
+    try {
+      // Set router auto onboarding to true
+      await setAutoOnboardingSettings(true);
+      // Get backhaul info
+      final backhaulList = ref.read(deviceManagerProvider).backhaulInfoData;
+      state = state.copyWith(backhaulSnapshot: backhaulList);
 
-    // logger.d('[AddWiredNode]: polling connect status');
-    // await _startPollingConnectStatus();
-    // state = state.copyWith(loadingMessage: loc(context).addNodesOnboardingNodes);
+      // logger.d('[AddWiredNode]: polling connect status');
+      // await _startPollingConnectStatus();
+      // state = state.copyWith(loadingMessage: loc(context).addNodesOnboardingNodes);
 
-    logger.d('[AddWiredNode]: check backhaul changes');
-    await _checkBackhaulChanges(context);
-    // Set router auto onboarding to false
-    await stopAutoOnboarding();
-    // Fetch latest status
-    logger.d('[AddWiredNode]: fetch nodes');
-    final nodes = await _fetchNodes();
-    state = state.copyWith(nodes: nodes);
-    stopCheckingBackhaul(context);
-    await ref.read(pollingProvider.notifier).forcePolling();
-    // Resume the idle checker
-    ref.read(idleCheckerPauseProvider.notifier).state = false;
+      logger.d('[AddWiredNode]: check backhaul changes');
+      await _checkBackhaulChanges(context);
+      // Set router auto onboarding to false
+      await stopAutoOnboarding();
+      // Fetch latest status
+      logger.d('[AddWiredNode]: fetch nodes');
+      final nodes = await _fetchNodes();
+      state = state.copyWith(nodes: nodes);
+      stopCheckingBackhaul(context);
+      await ref.read(pollingProvider.notifier).forcePolling();
+    } finally {
+      // A run that fails part way must not leave the idle logout off for the
+      // rest of the session, nor the dialog loading.
+      if (state.isLoading) {
+        state = state.copyWith(isLoading: false, forceStop: false);
+      }
+      // Resume the idle checker
+      ref.read(idleCheckerPauseProvider.notifier).state = false;
+    }
     final delta = log.end();
     logger.d('[AddWiredNode]: end auto onboarding, cost time: ${delta}ms');
   }
