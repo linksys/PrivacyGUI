@@ -1,8 +1,0 @@
-{
-    "name": "Dashboard Menu",
-    "target": "integration_test/menu_test.dart",
-    "description": "Click all cards and buttons on the dashboard menu",
-    "setUp":  ["skip_setup"],
-    "tearDown": [],
-    "tags": ["dashboard", "menu"]
-}
