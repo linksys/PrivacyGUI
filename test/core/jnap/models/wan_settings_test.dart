@@ -94,6 +94,15 @@ const _outputs = <String, Map<String, dynamic>>{
       'manualSettings': {'aftrURL': 'aftr.isp.example'},
     },
   },
+  // router.hsl: struct AFTRSettings { string aftrURL; IPv6Address aftrAddress }
+  'DS-Lite with an AFTR address': {
+    'wanType': 'DSLite',
+    'mtu': 0,
+    'dsliteSettings': {
+      'useManualSettings': true,
+      'manualSettings': {'aftrAddress': '2001:db8::1'},
+    },
+  },
   'Wireless bridge': {
     'wanType': 'WirelessBridge',
     'mtu': 0,
