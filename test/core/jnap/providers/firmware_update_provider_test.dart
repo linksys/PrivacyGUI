@@ -452,6 +452,27 @@ void main() {
       expect(scheduledActions, isEmpty);
     });
 
+    test('rides out the status reads that fail while the router restarts',
+        () async {
+      start({JNAPAction.getFirmwareUpdateStatus: _ok(_status(update: true))});
+      scheduledAnswers = [
+        [
+          _ok(_status(update: true, progress: 90)),
+          // The router is rebooting into the new firmware.
+          const JNAPError(result: 'ClientException'),
+          _ok(_status()),
+        ],
+        [_ok(_status())],
+      ];
+
+      await notifier().updateFirmware();
+      await settle();
+
+      expect(page().isUpdating, isFalse);
+      expect(page().isRetryMaxReached, isFalse);
+      expect(polling.started, 1);
+    });
+
     test('leaves the update page once the router refuses the install',
         () async {
       start({JNAPAction.getFirmwareUpdateStatus: _ok(_status(update: true))});

@@ -215,11 +215,17 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
           });
         }
       },
-    ).listen((statusList) {
-      // The updated list here will be continuously rendered on different screens
-      // No need to examine the node status number
-      state = state.copyWith(nodesStatus: statusList);
-    });
+    ).listen(
+      (statusList) {
+        // The updated list here will be continuously rendered on different screens
+        // No need to examine the node status number
+        state = state.copyWith(nodesStatus: statusList);
+      },
+      // A status read fails while the router restarts into the new firmware.
+      // The stop condition has already logged it and the checks go on, so it
+      // is not an error of the update.
+      onError: (_) {},
+    );
   }
 
   Future finishFirmwareUpdate() {
