@@ -13,6 +13,10 @@ import 'coverage_summary.dart' show summarize;
 /// The committed floor, a percentage of lib/'s lines.
 const floorPath = 'coverage_floor.txt';
 
+/// A percentage as the floor is written: up to three digits, and at most two
+/// decimals, the precision [checkFloor] compares to.
+final _floorNumber = RegExp(r'^\d{1,3}(\.\d{1,2})?$');
+
 /// The floor in [text]: the one line that is neither blank nor a `#` comment.
 double readFloor(String text) {
   final values = [
@@ -24,8 +28,15 @@ double readFloor(String text) {
     throw FormatException(
         '$floorPath should hold one number, not ${values.length}.', text);
   }
-  final floor = double.parse(values.single);
-  if (floor < 0 || floor > 100) {
+  final value = values.single;
+  if (!_floorNumber.hasMatch(value)) {
+    throw FormatException(
+        '$floorPath should hold a percentage with at most two decimals, '
+        'such as 46.2, not "$value".',
+        text);
+  }
+  final floor = double.parse(value);
+  if (floor > 100) {
     throw FormatException('$floorPath holds $floor, not a percentage.', text);
   }
   return floor;
@@ -39,6 +50,14 @@ double readFloor(String text) {
   required int lines,
   required double floor,
 }) {
+  if (lines == 0) {
+    return (
+      passes: false,
+      message: '**No lines were measured**, so the total cannot be checked '
+          'against the floor of $floor% (`$floorPath`). Check that the run '
+          'wrote coverage/lcov.info.',
+    );
+  }
   final passes = covered * 10000 >= (floor * 100).round() * lines;
   final total = (100 * covered / lines).toStringAsFixed(2);
   return passes
