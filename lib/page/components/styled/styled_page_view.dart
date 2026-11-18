@@ -336,10 +336,15 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                   useContentMainPadding: useMainPadding,
                   isOverlayVisible: showColumnOverlay,
                   child: (context, constraints) {
-                    // PROTOTYPE #1864 option B: [minHeight] is what is left of
+                    // PROTOTYPE #1864 option B: [fitHeight] is what is left of
                     // a scrolling page under the app bar. A Row does not pass
-                    // it on, so the page content is fitted to it here.
-                    Widget body(double minHeight) {
+                    // it on, so the page content is fitted to it here. A page
+                    // that does not scroll (null) lays its content out as it
+                    // always did.
+                    Widget body(double? fitHeight) {
+                      final content =
+                          widget.child?.call(context, constraints) ??
+                              SizedBox.shrink();
                       final views = [
                         if (!ResponsiveLayout.isMobileLayout(context) &&
                             hasMenu()) ...[
@@ -352,11 +357,9 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                           const AppGap.gutter(),
                         ],
                         Expanded(
-                            child: FitOrGrow(
-                          height: minHeight,
-                          child: widget.child?.call(context, constraints) ??
-                              SizedBox.shrink(),
-                        )),
+                            child: fitHeight == null
+                                ? content
+                                : FitOrGrow(height: fitHeight, child: content)),
                       ];
                       return SizedBox(
                         height: widget.pageContentType == PageContentType.fit
@@ -393,7 +396,7 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         if (appBar != null) appBar,
-                        Expanded(child: body(0)),
+                        Expanded(child: body(null)),
                       ],
                     );
                   },
