@@ -37,6 +37,14 @@ class AutoParentFirstLoginView extends ArgumentsConsumerStatefulView {
 
 class _AutoParentFirstLoginViewState
     extends ConsumerState<AutoParentFirstLoginView> {
+  /// Whether the router accepted the install. Until it has, `isUpdating`
+  /// going from true to false is a refused install. [_doFirmwareUpdateCheck]
+  /// ends the first login for that one, as a failed check.
+  bool _installStarted = false;
+
+  /// The first login ends once, whichever way it gets there.
+  bool _finishing = false;
+
   @override
   void initState() {
     super.initState();
@@ -55,7 +63,9 @@ class _AutoParentFirstLoginViewState
         showRouterNotFoundAlert(context, ref, onComplete: () async {
           _finishFirstTimeLogin();
         });
-      } else if (prev?.isUpdating == true && next.isUpdating == false) {
+      } else if (_installStarted &&
+          prev?.isUpdating == true &&
+          next.isUpdating == false) {
         logger.d('[FirstTime]: FW update finish go to dashboard!');
         _finishFirstTimeLogin();
       }
@@ -104,6 +114,7 @@ class _AutoParentFirstLoginViewState
       return false;
     });
     if (isNewFwAvailable) {
+      _installStarted = true;
       logger.i('[FirstTime]: Firmware Updateing...');
     } else {
       logger.i(
@@ -113,11 +124,13 @@ class _AutoParentFirstLoginViewState
   }
 
   void _finishFirstTimeLogin([bool failCheck = false]) async {
+    if (_finishing) return;
+    _finishing = true;
     await ref
         .read(autoParentFirstLoginProvider.notifier)
         .finishFirstTimeLogin(failCheck);
-    Future.doWhile(() => !mounted).then((_) {
-      context.goNamed(RouteNamed.dashboardHome);
-    });
+    // A page that is gone has nothing to navigate from.
+    if (!mounted) return;
+    context.goNamed(RouteNamed.dashboardHome);
   }
 }
