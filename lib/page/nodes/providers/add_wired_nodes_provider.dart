@@ -141,8 +141,10 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
     final pollBackhaul = pollBackhaulInfo(context, refreshing);
 
     await for (final result in pollBackhaul) {
+      // A read that fails, such as one that times out while a node joins,
+      // does not end the watch: the poll's condition keeps going too.
       if (result is! JNAPSuccess) {
-        return;
+        continue;
       }
       state = state.copyWith(onboardingProceed: true);
     }

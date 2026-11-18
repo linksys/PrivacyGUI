@@ -234,6 +234,29 @@ void main() {
       expect(polling.forced, 1);
     });
 
+    testWidgets('keeps watching the backhaul after a read fails',
+        (tester) async {
+      await openApp(tester);
+      router.holdsInTurn(JNAPAction.getBackhaulInfo, [
+        {
+          'backhaulDevices': [_hallRefreshed],
+        },
+        const JNAPError(result: 'ErrorUnknown'),
+        {
+          'backhaulDevices': [
+            _hallRefreshed,
+            _backhaul('den', at: '2026-01-05T09:10:00Z'),
+          ],
+        },
+      ]);
+
+      await notifier().startAutoOnboarding(context);
+
+      expect(router.payloadsOf(JNAPAction.getBackhaulInfo), hasLength(60));
+      expect(page().anyOnboarded, isTrue);
+      expect(page().loadingMessage, '1 child node has just come online.');
+    });
+
     testWidgets(
         'reports a start the router refuses, and still resumes the idle '
         'checker', (tester) async {
