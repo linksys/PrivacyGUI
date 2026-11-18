@@ -451,6 +451,19 @@ void main() {
       expect(polling.stopped, 0);
       expect(scheduledActions, isEmpty);
     });
+
+    test('leaves the update page once the router refuses the install',
+        () async {
+      start({JNAPAction.getFirmwareUpdateStatus: _ok(_status(update: true))});
+      router.refuses(JNAPAction.updateFirmwareNow);
+
+      await notifier().updateFirmware().catchError((_) {});
+
+      expect(page().isUpdating, isFalse);
+      // Nothing was installed, so there are no nodes to wait for.
+      expect(container.read(firmwareUpdateCandidateProvider), isNull);
+      expect(page().nodesStatus!.single.availableUpdate, isNotNull);
+    });
   });
 
   group('getIDStatusRecords', () {
