@@ -30,7 +30,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_state.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
@@ -53,6 +52,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../core/usp/mocks.dart';
 import '../../mocks/provider_overrides/mock_common.dart';
+import '../../mocks/test_data/remote_assistance_test_data.dart';
 
 class _FixedConnectionState extends AppConnectionStateNotifier {
   @override
@@ -75,20 +75,11 @@ class _SilentMascotCoordinator extends MascotCoordinatorNotifier {
 
 class _MockConnection extends Mock implements SseConnectionManager {}
 
-/// A Remote Assistance session waiting for the agent: the one state in which
-/// `RemoteAssistanceBanner` draws anything.
-const _pendingSession = RemoteClientState(
-  sessionInfo: GRASessionInfo(
-    id: 'session-1844',
-    serialNumber: 'SN1844',
-    modelNumber: 'M1844',
-    status: GRASessionStatus.pending,
-    expiredIn: 300,
-    createdAt: 0,
-    statusChangedAt: 0,
-    currentTime: 0,
-  ),
-  pin: '184418',
+/// A Remote Assistance session waiting for the agent, with its PIN: the one
+/// state in which `RemoteAssistanceBanner` draws anything.
+final _pendingSession = RemoteClientState(
+  sessionInfo: RemoteAssistanceTestData.pendingSession(),
+  pin: RemoteAssistanceTestData.testPin,
   expiredCountdown: 300,
 );
 
@@ -228,8 +219,9 @@ void main() {
     await pumpShell(tester, remoteClient: _pendingSession);
     await pumpFrames(tester);
 
-    expect(find.text('184418'), findsOneWidget);
-    expect(find.bySemanticsLabel(RegExp('184418')), findsOneWidget,
+    const pin = RemoteAssistanceTestData.testPin;
+    expect(find.text(pin), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(pin)), findsOneWidget,
         reason: 'the PIN must be in the semantics tree (#1844)');
     expect(find.bySemanticsLabel(RegExp('Remote Assistance')), findsOneWidget,
         reason: 'the banner\'s title must be in the semantics tree (#1844)');
