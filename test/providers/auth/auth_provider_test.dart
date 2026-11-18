@@ -364,6 +364,18 @@ void main() {
       expect(polling.stopped, 0);
     });
 
+    test('keeps a stored token when the message names no token', () async {
+      start(secure: {pSessionToken: _token(), pSessionTokenTs: _now()});
+
+      await cloudSays(const ErrorResponse(
+          status: 401,
+          code: 'INVALID_SESSION_TOKEN',
+          errorMessage: 'Invalid session token'));
+
+      expect(await stored(pSessionToken), isNotNull);
+      expect(polling.stopped, 0);
+    });
+
     test('logs out when the router turns down a login with no token', () async {
       start(secure: {pLocalPassword: 'Linksys123!'});
 
