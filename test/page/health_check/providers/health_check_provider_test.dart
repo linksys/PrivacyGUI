@@ -230,7 +230,8 @@ void main() {
       expect(page().error, isA<JNAPError>());
     });
 
-    testWidgets('stops following when a status cannot be read', (tester) async {
+    testWidgets('ends in an error when a status cannot be read',
+        (tester) async {
       router.holdsInTurn(JNAPAction.getHealthCheckStatus, [
         _status(),
         const JNAPError(result: 'ErrorUnknown'),
@@ -240,7 +241,10 @@ void main() {
       await finish(tester);
 
       expect(router.payloadsOf(JNAPAction.getHealthCheckStatus), hasLength(2));
-      expect(page().error, isA<JNAPError>());
+      expect((page().step, page().status), ('error', 'COMPLETE'));
+      expect(page().error?.result, 'ErrorUnknown');
+      // This run has no result to show, so none is fetched.
+      expect(router.payloadsOf(JNAPAction.getHealthCheckResults), isEmpty);
     });
   });
 

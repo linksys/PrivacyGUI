@@ -79,6 +79,8 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
         return;
       }
       _streamSubscription?.cancel();
+      // A status the router could not give ends the run, as an error.
+      JNAPError? statusError;
       _streamSubscription = repo
           .scheduledCommand(
               action: JNAPAction.getHealthCheckStatus,
@@ -87,12 +89,22 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
               retryDelayInMilliSec: 100,
               maxRetry: -1,
               condition: (result) {
+                if (result is JNAPError) {
+                  statusError = result;
+                  return true;
+                }
                 return result is JNAPSuccess &&
-                        result.output['speedTestResult']['exitCode'] !=
-                            'Unavailable' ||
-                    result is JNAPError;
+                    result.output['speedTestResult']['exitCode'] !=
+                        'Unavailable';
               },
               onCompleted: (_) async {
+                // This run has no result of its own; asking for the latest
+                // one would show an earlier run's as a success.
+                if (statusError != null) {
+                  state = state.copyWith(
+                      step: 'error', status: 'COMPLETE', error: statusError);
+                  return;
+                }
                 final resultId = state.result.firstOrNull?.resultID;
                 // Get health check result with resultId
                 final result = await getHealthCheckResults(module, 1, resultId);
