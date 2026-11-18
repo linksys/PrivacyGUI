@@ -1,0 +1,115 @@
+name: Layout measure (1.x)
+
+# #1802 P2. Measures every testLocalizations case for RenderFlex overflow at
+# the candidate sizes, one job per locale, and writes one report. It gates
+# nothing: an overflow, and any other failure, is a result to report.
+#
+# It runs on a push to a `measure/1802-*` branch, not on workflow_dispatch:
+# GitHub dispatches only a workflow that is on the default branch, and 1.x's
+# `main` gets this file only when 1.3.6 ships. To run it:
+#
+#   git push origin HEAD:measure/1802-<name>
+on:
+  push:
+    branches: ["measure/1802-*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The candidate sizes in #1802 P2: the narrowest content box of every
+  # layout state and the widest, 360 (measured, not a gate width), and a
+  # short desktop viewport.
+  SCREENS: 360,480,600,601,904,905,906,1240,1241,1441,1920,1280x420
+
+jobs:
+  locales:
+    name: List locales
+    runs-on: ubuntu-latest
+    outputs:
+      locales: ${{ steps.list.outputs.locales }}
+    steps:
+      - uses: actions/checkout@v4
+      # app_es_ar.arb becomes es-AR: `--dart-define=locales=` matches
+      # Locale.toLanguageTag(), whose region is upper case.
+      - id: list
+        run: |
+          locales=$(ls lib/l10n/app_*.arb \
+            | sed -E 's#.*/app_(.*)\.arb#\1#' \
+            | awk -F_ '{ print ($2 == "" ? $1 : $1 "-" toupper($2)) }' \
+            | jq -R . | jq -sc .)
+          echo "locales=$locales" >> "$GITHUB_OUTPUT"
+
+  measure:
+    name: Measure ${{ matrix.locale }}
+    needs: locales
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        locale: ${{ fromJSON(needs.locales.outputs.locales) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ./.github/actions/setup-1x
+
+      # One locale per job also keeps each suite's process to a few hundred
+      # variants. Run locally with all 26 locales at once, one suite stopped
+      # after about 2,200 variants and reported the rest "did not complete".
+      #
+      # Only the suites that declare testLocalizations cases, so the run does
+      # not compile the unit suite to select none of it. `|| true`: a failing
+      # test is reported, it does not stop the measurement. A run that
+      # measured nothing is a broken run, e.g. a SCREENS value that fails to
+      # parse, so it fails the job instead of reaching the report as green.
+      - name: Measure
+        run: |
+          mkdir -p reports
+          suites=$(git grep -l -E '^[[:space:]]*testLocalizations\(' -- test \
+            | grep -v '^test/common/')
+          flutter test $suites \
+            --tags layout-measure --exclude-tags="golden||loc" \
+            --dart-define=layoutMeasure=true \
+            --dart-define=locales=${{ matrix.locale }} \
+            --dart-define=screens=$SCREENS \
+            --file-reporter json:reports/tests.json || true
+          if ! grep -q 'layout-measure\] ' reports/tests.json; then
+            echo "::error::No variant was measured for ${{ matrix.locale }}."
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: layout-measure-${{ matrix.locale }}
+          path: reports/tests.json
+
+  report:
+    name: Report
+    needs: measure
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ./.github/actions/setup-1x
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: layout-measure-*
+          path: measured
+      - name: Report
+        run: |
+          dart test_scripts/layout_measure_report.dart measured/*/tests.json \
+            > layout-measure-report.md
+          cat layout-measure-report.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: layout-measure-report
+          path: layout-measure-report.md
