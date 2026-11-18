@@ -18,6 +18,12 @@ typedef DhcpReservationDialogResult = ({
 ///
 /// Pass [reservation] to pre-fill for editing; omit for adding.
 /// Returns a [DhcpReservationDialogResult] on submit, or null on cancel.
+///
+/// The MAC and IP fields show their errors as text
+/// (`AppErrorDisplayMode.text`), not as a tooltip. On web, on Flutter 3.47.2,
+/// a tooltip-mode field showing an error stops taking keys once it is clicked
+/// again (linksys/privacyGUI-UI-kit#100; #1829).
+/// `autocomplete_error_text_mode_test.dart` holds both fields to text mode.
 class DhcpReservationEditDialog extends StatefulWidget {
   final DhcpReservationUIModel? reservation;
   final List<AppAutoCompleteOption> macDeviceOptions;
@@ -203,6 +209,8 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
               identifier: 'dhcp-reservation-mac',
               hintText: loc(context).macAddressHint,
               errorText: _localizeError(_errors['mac']),
+              // Text, not tooltip: see the class doc.
+              errorDisplayMode: AppErrorDisplayMode.text,
             ),
           ),
           AppGap.lg(),
@@ -224,6 +232,8 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
               identifier: 'dhcp-reservation-ip',
               hintText: loc(context).ipAddressHint,
               errorText: _localizeError(_errors['ip']),
+              // Text, not tooltip: see the class doc.
+              errorDisplayMode: AppErrorDisplayMode.text,
             ),
           ),
           AppGap.lg(),

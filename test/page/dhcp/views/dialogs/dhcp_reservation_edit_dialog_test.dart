@@ -13,11 +13,12 @@ import 'package:privacy_gui/page/dhcp/views/dialogs/dhcp_reservation_edit_dialog
 /// reservation whose MAC or IP already exists among the current reservations,
 /// while still allowing the reservation being edited to keep its own address.
 ///
-/// The dialog surfaces validation errors via the two [AppTextField]s'
-/// `errorText`. AppTextField renders that error inline OR as a focus tooltip
-/// depending on layout/focus state, so these tests assert on the widget's
-/// `errorText` property (the source of truth) rather than a rendered string,
-/// which is both more robust and independent of ui_kit rendering internals.
+/// The dialog surfaces these errors via the MAC and IP [AppTextField]s'
+/// `errorText`, which each renders as a line of text under the field
+/// (`AppErrorDisplayMode.text`; the dialog's class doc says why not a
+/// tooltip). These tests assert on the widget's `errorText` property (the
+/// source of truth) rather than a rendered string, which is both more robust
+/// and independent of ui_kit rendering internals.
 final _testTheme = AppTheme.create(
   brightness: Brightness.light,
   seedColor: Colors.blue,
