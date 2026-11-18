@@ -47,13 +47,28 @@ jobs:
           submodules: true
       - uses: ./.github/actions/setup-1x
 
-      # The same command a developer runs before pushing (constitution 3.1). It
-      # leaves out `golden` and `loc`, and exits 1 when a test fails.
-      # `bash`, because run_tests.sh has no shebang line.
-      - name: Unit tests
+      # The tests a developer runs before pushing (constitution 3.1), with
+      # coverage measured as #1803 describes (#1803 Q1). run_coverage.sh runs
+      # run_tests.sh with --coverage, so it still leaves out `golden` and
+      # `loc`, and exits 1 when a test fails. Run locally, it gives the same
+      # figure.
+      - name: Unit tests, with coverage
         run: |
           mkdir -p reports
-          bash run_tests.sh reports
+          bash run_coverage.sh reports
+
+      # #1803's table: all of lib/, then logic and UI. Written when the tests
+      # fail too, as long as the run got as far as lcov.info.
+      - name: Write the coverage to the job summary
+        if: ${{ !cancelled() && hashFiles('reports/coverage.md') != '' }}
+        run: cat reports/coverage.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the coverage
+        if: ${{ !cancelled() && hashFiles('coverage/lcov.info') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: 1.x-coverage
+          path: coverage/lcov.info
 
       # The JSON reporter's output. run_tests.sh writes no HTML report: the
       # parser's HTML step is commented out. A failing test also prints in the
