@@ -132,7 +132,8 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
             ],
             _quickSetupSwitch(state.isSimpleMode),
             const AppGap.medium(),
-            Expanded(
+            // PROTOTYPE #1864 option B: the mode views take their own height.
+            SizedBox(
               child: state.isSimpleMode
                   ? SimpleModeView(
                       onWifiNameEdited: (value) {

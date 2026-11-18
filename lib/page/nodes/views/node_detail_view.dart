@@ -212,7 +212,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
         _detailSection(state),
         const AppGap.small2(),
         _lightCard(state),
-        const Spacer(),
+        // PROTOTYPE #1864 option B: a trailing Spacer in a min Column did nothing.
       ],
     );
   }

@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:privacygui_widgets/widgets/page/layout/fill_column.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
@@ -182,9 +183,11 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
     final bool isGoEnabled =
         !_loadingServers && (!isSelectionRequired || selectedServer != null);
 
+    // PROTOTYPE #1864 option B: the background fills the Stack instead of sizing it.
     return Stack(
+      fit: StackFit.passthrough,
       children: [
-        background,
+        Positioned.fill(child: background),
         Container(
           alignment: Alignment.center,
           child: Column(
@@ -311,11 +314,15 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
           ),
         ],
       ),
-      mobile: Column(
+      // PROTOTYPE #1864 option B: the empty fill slot does what the Spacer did,
+      // in a page whose height is unbounded.
+      mobile: FillColumn(
+        fillIndex: 2,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _meterView(state.step, bandwidth.value, bandwidth.unit, latency),
           const AppGap.medium(),
-          const Spacer(),
+          const SizedBox.shrink(),
           _infoView(state),
           const AppGap.medium(),
         ],

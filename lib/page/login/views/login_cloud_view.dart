@@ -196,7 +196,8 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
                               });
                             },
                           )),
-                  const Spacer(),
+                  // PROTOTYPE #1864 option B: a Spacer needs a bounded height.
+                  const AppGap.large3(),
                   AppFilledButton(
                     'Save',
                     onTap: () async {

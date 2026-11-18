@@ -136,7 +136,8 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
                   errorCodeHelper(context, _errorCode) ?? '',
                 ),
               ),
-            const Spacer(),
+            // PROTOTYPE #1864 option B: a Spacer needs a bounded height.
+            const AppGap.large3(),
             AppFilledButton.fillWidth(
               'Next',
               onTap: _otpController.text.length >= 6

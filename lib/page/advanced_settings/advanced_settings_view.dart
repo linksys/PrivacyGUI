@@ -38,8 +38,8 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
       scrollable: true,
       child: (context, constraints) => Column(
         children: [
-          Expanded(
-            child: ResponsiveLayout(
+          // PROTOTYPE #1864 option B: both layouts already have a fixed height.
+          ResponsiveLayout(
                 desktop: SizedBox(
                   height: (advancedSettings.length / 2) * 56,
                   child: GridView.builder(
@@ -71,7 +71,6 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
                     },
                   ),
                 )),
-          ),
         ],
       ),
     );

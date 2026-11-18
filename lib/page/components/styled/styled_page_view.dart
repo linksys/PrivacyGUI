@@ -12,6 +12,7 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/base_page_view.dart';
+import 'package:privacygui_widgets/widgets/page/layout/fill_column.dart';
 import 'package:collection/collection.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 
@@ -335,43 +336,64 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                   useContentMainPadding: useMainPadding,
                   isOverlayVisible: showColumnOverlay,
                   child: (context, constraints) {
-                    final views = [
-                      if (!ResponsiveLayout.isMobileLayout(context) &&
-                          hasMenu()) ...[
-                        SizedBox(
-                          width: widget.largeMenu ? 4.col : 3.col,
-                          child: AppCard(
-                            child: _createMenuWidget(context),
+                    // PROTOTYPE #1864 option B: [minHeight] is what is left of
+                    // a scrolling page under the app bar. A Row does not pass a
+                    // minimum height on, so the page content gets it here.
+                    Widget body(double minHeight) {
+                      final views = [
+                        if (!ResponsiveLayout.isMobileLayout(context) &&
+                            hasMenu()) ...[
+                          SizedBox(
+                            width: widget.largeMenu ? 4.col : 3.col,
+                            child: AppCard(
+                              child: _createMenuWidget(context),
+                            ),
                           ),
-                        ),
-                        const AppGap.gutter(),
-                      ],
-                      Expanded(
+                          const AppGap.gutter(),
+                        ],
+                        Expanded(
+                            child: ConstrainedBox(
+                          constraints: BoxConstraints(minHeight: minHeight),
                           child: widget.child?.call(context, constraints) ??
-                              SizedBox.shrink()),
-                    ];
-                    final body = SizedBox(
-                      height: widget.pageContentType == PageContentType.fit
-                          ? constraints.maxHeight
-                          : null,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children:
-                            widget.menuOnRight ? views.reversed.toList() : views,
-                      ),
-                    );
+                              SizedBox.shrink(),
+                        )),
+                      ];
+                      return SizedBox(
+                        height: widget.pageContentType == PageContentType.fit
+                            ? constraints.maxHeight
+                            : null,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: widget.menuOnRight
+                              ? views.reversed.toList()
+                              : views,
+                        ),
+                      );
+                    }
+
+                    final appBar = widget.appBarStyle != AppBarStyle.none
+                        ? _buildAppBar(context, ref) ?? SizedBox(height: 0)
+                        : null;
                     // PROTOTYPE #1864 option B: a scrolling page has an
-                    // unbounded height, where Expanded cannot work.
-                    final scrolls = widget.scrollable ?? false;
+                    // unbounded height, where Expanded cannot work; FillColumn
+                    // gives the body the rest of the page instead.
+                    if (widget.scrollable ?? false) {
+                      return FillColumn(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        fillIndex: appBar != null ? 1 : 0,
+                        children: [
+                          if (appBar != null) appBar,
+                          LayoutBuilder(
+                              builder: (context, c) => body(c.minHeight)),
+                        ],
+                      );
+                    }
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
-                      mainAxisSize:
-                          scrolls ? MainAxisSize.min : MainAxisSize.max,
                       children: [
-                        if (widget.appBarStyle != AppBarStyle.none)
-                          _buildAppBar(context, ref) ?? SizedBox(height: 0),
-                        if (scrolls) body else Expanded(child: body),
+                        if (appBar != null) appBar,
+                        Expanded(child: body(0)),
                       ],
                     );
                   },

@@ -74,7 +74,8 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: _buildMenuGridView(createMenuItems())),
+          // PROTOTYPE #1864 option B: the grid already has a fixed height.
+          _buildMenuGridView(createMenuItems()),
           const AppGap.large2(),
           // const Spacer(),
           // AppTextButton.noPadding('About Linksys', onTap: () {}),
