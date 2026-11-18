@@ -156,6 +156,12 @@ InvalidationDomain? _mapToDomain(
   if (path.startsWith('Device.Ethernet.Interface.')) {
     return InvalidationDomain.ethernetInterfaces;
   }
+  // A node joining or leaving the mesh (PrivacyGUI#1828). Only object events on
+  // the node table are subscribed, so the path is `Network.Device.{i}.`. The MAC
+  // filter mode leaf sits on `Network.` itself, outside this prefix.
+  if (path.startsWith('Device.WiFi.DataElements.Network.Device.')) {
+    return InvalidationDomain.meshNodes;
+  }
   if (path == 'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode') {
     return InvalidationDomain.macFilter;
   }

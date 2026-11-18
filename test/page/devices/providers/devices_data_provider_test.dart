@@ -840,6 +840,257 @@ void main() {
           reason: 'the rebuild wins; the superseded push must not republish');
     });
   });
+
+  // -------------------------------------------------------------------------
+  // #1828: a node joining or leaving DataElements re-reads the mesh on its own.
+  // Before it, a departed node stayed on screen until an unrelated Hosts push.
+  // -------------------------------------------------------------------------
+  group('DevicesDataNotifier — meshNodes push (#1828)', () {
+    final controller = MasterNode(deviceId: 'GATEWAY', model: 'M60TB');
+    final agent = SlaveNode(
+      deviceId: 'AA:BB:CC:DD:EE:09',
+      model: 'M60',
+      backhaul: const BackhaulInfo(linkType: 'Wi-Fi'),
+    );
+    final withAgent = MeshTopologyInfo(
+      nodes: [controller, agent],
+      clientToNodeMap: const {},
+    );
+    final controllerOnly = MeshTopologyInfo(
+      nodes: [controller],
+      clientToNodeMap: const {},
+    );
+
+    late StreamController<InvalidationEvent> sse;
+
+    setUp(() {
+      sse = StreamController<InvalidationEvent>.broadcast();
+      // Each topology rebuilds into the network it describes, so a test can read
+      // the agent's presence off the published value.
+      when(() => mockDevicesSvc.rebuildWithMesh(
+            context: any(named: 'context'),
+            wifiClientMap: any(named: 'wifiClientMap'),
+            connectionDetailMap: any(named: 'connectionDetailMap'),
+            meshTopology: any(named: 'meshTopology'),
+            gatewayName: any(named: 'gatewayName'),
+            systemInfo: any(named: 'systemInfo'),
+          )).thenAnswer((invocation) {
+        final topology =
+            invocation.namedArguments[#meshTopology] as MeshTopologyInfo;
+        return MeshNetwork(
+          master: controller,
+          slaves: topology.nodes.whereType<SlaveNode>().toList(),
+        );
+      });
+    });
+
+    tearDown(() => sse.close());
+
+    ProviderContainer createSseContainer() => ProviderContainer(
+          overrides: [
+            uspClientProvider.overrideWithValue(mockUsp),
+            uspDevicesDataServiceProvider.overrideWithValue(mockDevicesSvc),
+            wifiDataProvider.overrideWith(() => _TestWifiDataNotifier()),
+            systemInfoDataProvider.overrideWith(
+              () => _TestSystemInfoDataNotifier(null),
+            ),
+            sseInvalidationProvider.overrideWith((ref) => sse.stream),
+          ],
+        );
+
+    void stubMeshReads(List<Future<MeshTopologyInfo> Function()> reads) {
+      var call = 0;
+      when(() => mockDevicesSvc.fetchMeshTopology(
+            bssidToBandMap: any(named: 'bssidToBandMap'),
+          )).thenAnswer((_) => reads[call++]());
+    }
+
+    void verifyMeshReads(int count) {
+      verify(() => mockDevicesSvc.fetchMeshTopology(
+            bssidToBandMap: any(named: 'bssidToBandMap'),
+          )).called(count);
+    }
+
+    void verifyNoDeviceRead() {
+      verifyNever(() => mockDevicesSvc.fetch(
+            wifiClientMap: any(named: 'wifiClientMap'),
+            connectionDetailMap: any(named: 'connectionDetailMap'),
+            gatewayName: any(named: 'gatewayName'),
+            systemInfo: any(named: 'systemInfo'),
+          ));
+    }
+
+    test('a burst of pushes re-reads DataElements once, and not the devices',
+        () {
+      fakeAsync((async) {
+        when(() => mockDevicesSvc.fetchMeshTopology(
+              bssidToBandMap: any(named: 'bssidToBandMap'),
+            )).thenAnswer((_) async => withAgent);
+
+        final container = createSseContainer();
+        container.listen(devicesDataProvider, (_, __) {});
+        async.flushMicrotasks();
+        clearInteractions(mockDevicesSvc);
+
+        // A parent node leaving takes the nodes behind it out too: one deletion each,
+        // all inside the debounce window.
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 1));
+        async.elapse(const Duration(milliseconds: 200));
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 2));
+        async.flushMicrotasks();
+        verifyNever(() => mockDevicesSvc.fetchMeshTopology(
+              bssidToBandMap: any(named: 'bssidToBandMap'),
+            ));
+
+        async.elapse(const Duration(milliseconds: 500));
+        async.flushMicrotasks();
+
+        verifyMeshReads(1);
+        verifyNoDeviceRead();
+        container.dispose();
+      });
+    });
+
+    test('a node DataElements dropped leaves the topology', () async {
+      stubMeshReads([
+        () async => withAgent, // build()'s background read
+        () async => controllerOnly, // the push's read
+      ]);
+
+      final container = createSseContainer();
+      addTearDown(container.dispose);
+      container.listen(devicesDataProvider, (_, __) {});
+      await container.read(devicesDataProvider.future);
+      await pumpEventQueue();
+      expect(container.read(devicesDataProvider).value!.slaves, hasLength(1));
+      clearInteractions(mockDevicesSvc);
+
+      sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+      await Future.delayed(const Duration(milliseconds: 600));
+
+      final data = container.read(devicesDataProvider).value!;
+      expect(data.slaves, isEmpty);
+      expect(data.meshTopology, controllerOnly);
+      verifyNoDeviceRead();
+    });
+
+    test('a node DataElements added appears in the topology', () async {
+      stubMeshReads([
+        () async => controllerOnly,
+        () async => withAgent,
+      ]);
+
+      final container = createSseContainer();
+      addTearDown(container.dispose);
+      container.listen(devicesDataProvider, (_, __) {});
+      await container.read(devicesDataProvider.future);
+      await pumpEventQueue();
+      expect(container.read(devicesDataProvider).value!.slaves, isEmpty);
+
+      sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+      await Future.delayed(const Duration(milliseconds: 600));
+
+      final data = container.read(devicesDataProvider).value!;
+      expect(data.slaves.map((s) => s.deviceId), ['AA:BB:CC:DD:EE:09']);
+      expect(data.meshTopology, withAgent);
+    });
+
+    test('an older mesh read finishing last does not replace a newer one',
+        () async {
+      // The case the mesh number exists for. A Hosts push's mesh read starts first
+      // and is held; the node then leaves, its push's read starts second and returns
+      // first. The first read, still holding the node, returns last.
+      final older = Completer<MeshTopologyInfo>();
+      final newer = Completer<MeshTopologyInfo>();
+      stubMeshReads([
+        () async => withAgent, // build()'s background read
+        () => older.future, // after the Hosts push's device read
+        () => newer.future, // the meshNodes push's read
+      ]);
+
+      final container = createSseContainer();
+      addTearDown(container.dispose);
+      container.listen(devicesDataProvider, (_, __) {});
+      await container.read(devicesDataProvider.future);
+      await pumpEventQueue();
+
+      sse.add((domain: InvalidationDomain.connectedDevices, seq: 0));
+      await Future.delayed(const Duration(milliseconds: 600));
+      sse.add((domain: InvalidationDomain.meshNodes, seq: 1));
+      await Future.delayed(const Duration(milliseconds: 600));
+
+      newer.complete(controllerOnly);
+      await pumpEventQueue();
+      expect(container.read(devicesDataProvider).value!.slaves, isEmpty);
+
+      older.complete(withAgent);
+      await pumpEventQueue();
+
+      final data = container.read(devicesDataProvider).value!;
+      expect(data.meshTopology, controllerOnly,
+          reason:
+              'the read that started first must not publish over the newer');
+      expect(data.slaves, isEmpty);
+    });
+
+    test('a device read that starts during a mesh re-read replaces it',
+        () async {
+      // The push's mesh read is held, holding the node; a Hosts push then reads the
+      // devices and the mesh again, which returns first without the node.
+      final pushRead = Completer<MeshTopologyInfo>();
+      stubMeshReads([
+        () async => withAgent, // build()'s background read
+        () => pushRead.future, // the meshNodes push's read
+        () async => controllerOnly, // after the Hosts push's device read
+      ]);
+
+      final container = createSseContainer();
+      addTearDown(container.dispose);
+      container.listen(devicesDataProvider, (_, __) {});
+      await container.read(devicesDataProvider.future);
+      await pumpEventQueue();
+
+      sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+      await Future.delayed(const Duration(milliseconds: 600));
+      sse.add((domain: InvalidationDomain.connectedDevices, seq: 1));
+      await Future.delayed(const Duration(milliseconds: 600));
+      expect(container.read(devicesDataProvider).value!.meshTopology,
+          controllerOnly);
+
+      pushRead.complete(withAgent);
+      await pumpEventQueue();
+
+      expect(container.read(devicesDataProvider).value!.meshTopology,
+          controllerOnly,
+          reason: 'the superseded mesh re-read must not publish');
+    });
+
+    test('a rebuild cancels a pending push', () {
+      fakeAsync((async) {
+        when(() => mockDevicesSvc.fetchMeshTopology(
+              bssidToBandMap: any(named: 'bssidToBandMap'),
+            )).thenAnswer((_) async => withAgent);
+
+        final container = createSseContainer();
+        container.listen(devicesDataProvider, (_, __) {});
+        async.flushMicrotasks();
+
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+        async.elapse(const Duration(milliseconds: 100));
+        clearInteractions(mockDevicesSvc);
+
+        // A pull-to-refresh inside the window: the rebuild reads the mesh itself.
+        container.refresh(devicesDataProvider);
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 600));
+        async.flushMicrotasks();
+
+        verifyMeshReads(1);
+        container.dispose();
+      });
+    });
+  });
 }
 
 /// A fetch result carrying nothing but a label, so a test can say WHICH read a published

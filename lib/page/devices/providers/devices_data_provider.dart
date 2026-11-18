@@ -109,7 +109,13 @@ final devicesDataProvider =
 // ---------------------------------------------------------------------------
 
 class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
+  /// Merges a burst of [InvalidationDomain.connectedDevices] pushes into one device read.
   Timer? _debounce;
+
+  /// Merges a burst of [InvalidationDomain.meshNodes] pushes into one mesh read, apart
+  /// from [_debounce] because the two start different reads. A parent node leaving takes
+  /// every node behind it out of DataElements at once, one deletion each.
+  Timer? _meshDebounce;
 
   /// Which refresh is allowed to publish.
   ///
@@ -132,22 +138,42 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
   /// always been here rather than being introduced by removing that call.
   int _refreshGeneration = 0;
 
+  /// Which DataElements read is allowed to publish (#1828).
+  ///
+  /// TWO PATHS READ THE MESH: the background read that follows every device read
+  /// ([_fetchMeshAndUpdate]), and the read a [InvalidationDomain.meshNodes] push starts on
+  /// its own ([_refreshMesh]). Both go through [_fetchMeshAndUpdateInner], which takes a
+  /// number here when it starts reading and publishes only if it is still the newest. So a
+  /// read that started earlier and finished later, holding the topology from before a node
+  /// left or joined, cannot replace a newer one.
+  ///
+  /// SEPARATE FROM [_refreshGeneration] because a mesh read is not a device read. Bumping
+  /// that counter for a mesh read would make a device read already in flight drop its
+  /// result, and with it the `Hosts` change it was fetched for. A mesh read checks both:
+  /// [_refreshGeneration] to step aside for a newer device read, which reads the mesh
+  /// again afterwards anyway, and this one to step aside for a newer mesh read.
+  int _meshGeneration = 0;
+
   @override
   Future<DevicesData> build() async {
     // A REBUILD SUPERSEDES ANY REFRESH IN FLIGHT, so it bumps the same counter. A save or
     // a pull-to-refresh calls `ref.invalidate`/`ref.refresh`, and without this bump a push
     // already awaiting its fetch would finish afterwards and publish pre-rebuild data.
     //
-    // Cancelling the debounce here too: a timer armed before the rebuild would otherwise
-    // fire afterwards and re-fetch data the rebuild just read.
+    // Cancelling both debounces here too: a timer armed before the rebuild would otherwise
+    // fire afterwards and re-fetch data the rebuild just read, the mesh included.
     final generation = ++_refreshGeneration;
     _debounce?.cancel();
+    _meshDebounce?.cancel();
 
-    // SSE: listen for device domain changes → debounce → re-fetch
+    // SSE: a Hosts change re-reads the devices and then the mesh; a node joining or
+    // leaving DataElements re-reads the mesh alone (#1828).
     ref.listen(sseInvalidationProvider, (prev, next) {
       final domain = next.valueOrNull?.domain;
       if (domain == InvalidationDomain.connectedDevices) {
         _debouncedInvalidate();
+      } else if (domain == InvalidationDomain.meshNodes) {
+        _debouncedMeshRefresh();
       }
     });
 
@@ -201,7 +227,10 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       state = AsyncData(cur.copyWith(meshNetwork: meshNetwork));
     });
 
-    ref.onDispose(() => _debounce?.cancel());
+    ref.onDispose(() {
+      _debounce?.cancel();
+      _meshDebounce?.cancel();
+    });
 
     return _fetch(generation);
   }
@@ -296,8 +325,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
 
     // Fire-and-forget: fetch mesh topology in background, then update state. Carries the
     // generation captured at the top of this method — see there for why not the current one.
-    _fetchMeshAndUpdate(
-        svc, wifiData, gatewayName, sysData, result, generation);
+    _fetchMeshAndUpdate(svc, wifiData, gatewayName, sysData, generation);
 
     return DevicesData(
       codegenContext: result.codegenContext,
@@ -319,7 +347,6 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     WifiData wifiData,
     String gatewayName,
     SystemInfoData? sysData,
-    DevicesDataFetchResult fetchResult,
     int generation,
   ) {
     // `void`, so nothing can await this and nothing can catch what it throws — an error
@@ -332,7 +359,6 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       wifiData,
       gatewayName,
       sysData,
-      fetchResult,
       generation,
     ).catchError((Object e, StackTrace st) {
       logger.w(
@@ -343,14 +369,21 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     }));
   }
 
+  /// Reads DataElements and rebuilds the devices already held against it.
+  ///
+  /// Shared by the read that follows a device read and the one a
+  /// [InvalidationDomain.meshNodes] push starts. [generation] is the device read this
+  /// belongs to; the mesh read takes its own number from [_meshGeneration] as it starts.
+  /// It publishes only while both are still the newest.
   Future<void> _fetchMeshAndUpdateInner(
     UspDevicesDataService svc,
     WifiData wifiData,
     String gatewayName,
     SystemInfoData? sysData,
-    DevicesDataFetchResult fetchResult,
     int generation,
   ) async {
+    final meshGeneration = ++_meshGeneration;
+
     // Build BSSID → band mapping for slave client band resolution
     final wifiCodegen = wifiData.codegenContext.raw;
     final bssidToBandMap = UspWifiDataService.buildBssidToBandMap(
@@ -379,8 +412,10 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
         'meshNodes: ${meshTopology.nodes.length}, '
         'clients: ${meshNetwork.totalClientCount}');
 
-    // Superseded while the mesh fetch was awaiting — see [generation].
+    // Superseded while the mesh fetch was awaiting: by a newer device read or rebuild
+    // ([generation]), or by a mesh read that started after this one ([_meshGeneration]).
     if (generation != _refreshGeneration) return;
+    if (meshGeneration != _meshGeneration) return;
 
     state = AsyncData(cur.copyWith(
       meshTopology: meshTopology,
@@ -393,6 +428,46 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     _debounce = Timer(const Duration(milliseconds: 500), () {
       _refetchPreservingMesh();
     });
+  }
+
+  void _debouncedMeshRefresh() {
+    _meshDebounce?.cancel();
+    _meshDebounce = Timer(const Duration(milliseconds: 500), () {
+      _refreshMesh();
+    });
+  }
+
+  /// Re-reads DataElements alone after a node joined or left it (#1828).
+  ///
+  /// NOT A DEVICE READ, so it neither reads `Hosts` nor publishes in two passes. The
+  /// device read publishes first against the mesh it already holds, which during a rejoin
+  /// lists the returning node's own `Hosts` row as a client until its mesh read lands.
+  /// This rebuilds the devices already held against the new mesh in one write.
+  ///
+  /// It joins the device read that is current when the mesh read starts, rather than
+  /// starting a new one: a device read that starts after it reads the mesh again itself,
+  /// so this one steps aside for it.
+  ///
+  /// READ [_refreshGeneration] AS THE MESH READ STARTS, NOT AS THE PUSH ARRIVES. A device
+  /// read that started in between may already have its own mesh read in flight. Starting
+  /// this one takes a newer [_meshGeneration] number and so retires that read; belonging
+  /// to the same device read is what lets this one publish in its place. Holding the
+  /// number from before the await would retire both.
+  Future<void> _refreshMesh() async {
+    try {
+      final svc = ref.read(uspDevicesDataServiceProvider);
+      final (wifiData, sysData, gatewayName) = await _readEnrichment();
+      logger.t('[USP][DevicesData]: Mesh re-read (meshNodes push)');
+      await _fetchMeshAndUpdateInner(
+          svc, wifiData, gatewayName, sysData, _refreshGeneration);
+    } catch (e, st) {
+      // Called bare from a Timer callback, as `_refetchPreservingMesh` is: a failure keeps
+      // the topology already shown rather than surfacing as an unhandled error.
+      logger.w(
+          '[USP][DevicesData]: push-triggered mesh re-read failed, keeping previous value',
+          error: e,
+          stackTrace: st);
+    }
   }
 
   /// Writes the name and icon the user gave a client (#1691), then reads the
@@ -497,7 +572,6 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     // It inherits THIS refresh's generation rather than taking a fresh one, because it is
     // a continuation of this refresh and not a new one. Taking a new number would let a
     // superseded refresh's mesh fetch publish on top of a newer device read.
-    _fetchMeshAndUpdate(
-        svc, wifiData, gatewayName, sysData, result, generation);
+    _fetchMeshAndUpdate(svc, wifiData, gatewayName, sysData, generation);
   }
 }
