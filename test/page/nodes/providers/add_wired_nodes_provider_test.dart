@@ -257,6 +257,27 @@ void main() {
       expect(page().loadingMessage, '1 child node has just come online.');
     });
 
+    testWidgets('turns wired onboarding off even when the watch fails',
+        (tester) async {
+      await openApp(tester);
+      // An entry the app cannot read makes the poll's condition throw.
+      router.holds(JNAPAction.getBackhaulInfo, {
+        'backhaulDevices': [
+          {'deviceUUID': 'den'},
+        ],
+      });
+
+      await expectLater(
+          notifier().startAutoOnboarding(context), throwsA(anything));
+
+      expect(router.payloadsOf(JNAPAction.setWiredAutoOnboardingSettings), [
+        {'isAutoOnboardingEnabled': true},
+        {'isAutoOnboardingEnabled': false},
+      ]);
+      expect(idleCheckerPaused.last, isFalse);
+      expect(page().isLoading, isFalse);
+    });
+
     testWidgets(
         'reports a start the router refuses, and still resumes the idle '
         'checker', (tester) async {

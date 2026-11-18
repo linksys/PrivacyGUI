@@ -51,9 +51,13 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
     );
     // Pause the idle checker
     ref.read(idleCheckerPauseProvider.notifier).state = true;
+    // Whether the router's wired onboarding is on, so that a run that fails
+    // part way still turns it off.
+    var onboardingOn = false;
     try {
       // Set router auto onboarding to true
       await setAutoOnboardingSettings(true);
+      onboardingOn = true;
       // Get backhaul info
       final backhaulList = ref.read(deviceManagerProvider).backhaulInfoData;
       state = state.copyWith(backhaulSnapshot: backhaulList);
@@ -66,6 +70,7 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
       await _checkBackhaulChanges(context);
       // Set router auto onboarding to false
       await stopAutoOnboarding();
+      onboardingOn = false;
       // Fetch latest status
       logger.d('[AddWiredNode]: fetch nodes');
       final nodes = await _fetchNodes();
@@ -73,8 +78,15 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
       stopCheckingBackhaul(context);
       await ref.read(pollingProvider.notifier).forcePolling();
     } finally {
-      // A run that fails part way must not leave the idle logout off for the
-      // rest of the session, nor the dialog loading.
+      // A run that fails part way must not leave wired onboarding on at the
+      // router, the idle logout off for the rest of the session, nor the
+      // dialog loading.
+      if (onboardingOn) {
+        await setAutoOnboardingSettings(false).catchError((Object error) {
+          logger
+              .e('[AddWiredNode]: could not turn wired onboarding off: $error');
+        });
+      }
       if (state.isLoading) {
         state = state.copyWith(isLoading: false, forceStop: false);
       }
