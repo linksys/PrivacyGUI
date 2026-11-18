@@ -102,4 +102,138 @@ void main() {
       expect(guestRadioSettingsMap['radios'][1]['canEnableRadio'], true);
     });
   });
+
+  /// `GetGuestRadioSettings` output with every optional field the router may
+  /// send.
+  const fullOutput = <String, dynamic>{
+    'isGuestNetworkACaptivePortal': false,
+    'isGuestNetworkEnabled': true,
+    'maxSimultaneousGuests': 50,
+    'maxSimultaneousGuestsLimit': 128,
+    'guestPasswordRestrictions': {
+      'minLength': 8,
+      'maxLength': 63,
+      'allowedCharacters': [
+        {'lowCodepoint': 32, 'highCodepoint': 126},
+      ],
+    },
+    'radios': [
+      {
+        'radioID': 'RADIO_2.4GHz',
+        'isEnabled': true,
+        'broadcastGuestSSID': true,
+        'guestSSID': 'Guest',
+        'guestPassword': 'legacy1',
+        'guestWPAPassphrase': 'BeMyGuest',
+        'canEnableRadio': true,
+      },
+    ],
+  };
+
+  group('GuestRadioSettings, every field', () {
+    test('reads the router output and writes it back unchanged', () {
+      expect(GuestRadioSettings.fromMap(fullOutput).toMap(), fullOutput);
+    });
+
+    test('survives a trip through JSON text', () {
+      final settings = GuestRadioSettings.fromMap(fullOutput);
+
+      expect(GuestRadioSettings.fromJson(settings.toJson()), settings);
+    });
+
+    test('copyWith changes only what it names', () {
+      final settings = GuestRadioSettings.fromMap(fullOutput);
+
+      final off = settings.copyWith(isGuestNetworkEnabled: false);
+
+      expect(off.isGuestNetworkEnabled, isFalse);
+      expect(off.copyWith(isGuestNetworkEnabled: true), settings);
+    });
+
+    test('reads the password rules', () {
+      final rules =
+          GuestRadioSettings.fromMap(fullOutput).guestPasswordRestrictions!;
+
+      expect(rules.minLength, 8);
+      expect(rules.allowedCharacters.single,
+          const UnicodeRange(lowCodepoint: 32, highCodepoint: 126));
+    });
+  });
+
+  group('SetGuestRadioSettings', () {
+    test('writes back what the router reported, less the read-only fields', () {
+      final settings = SetGuestRadioSettings.fromGuestRadioSettings(
+          GuestRadioSettings.fromMap(fullOutput));
+
+      expect(settings.toMap(), {
+        'isGuestNetworkEnabled': true,
+        'maxSimultaneousGuests': 50,
+        'radios': fullOutput['radios'],
+      });
+    });
+
+    test('copyWith changes only what it names', () {
+      final settings = SetGuestRadioSettings.fromGuestRadioSettings(
+          GuestRadioSettings.fromMap(fullOutput));
+
+      final off = settings.copyWith(isGuestNetworkEnabled: false);
+
+      expect(off.isGuestNetworkEnabled, isFalse);
+      expect(off.radios, settings.radios);
+      expect(off.copyWith(isGuestNetworkEnabled: true), settings);
+    });
+  });
+
+  group('GuestRadioInfo', () {
+    final radio = GuestRadioInfo.fromMap(
+        (fullOutput['radios'] as List).first as Map<String, dynamic>);
+
+    test('survives a trip through JSON text', () {
+      expect(GuestRadioInfo.fromJson(radio.toJson()), radio);
+    });
+
+    test('leaves out the fields it has no value for', () {
+      const bare = GuestRadioInfo(
+        radioID: 'RADIO_5GHz',
+        isEnabled: false,
+        broadcastGuestSSID: false,
+        guestSSID: 'Guest',
+      );
+
+      expect(bare.toMap(), {
+        'radioID': 'RADIO_5GHz',
+        'isEnabled': false,
+        'broadcastGuestSSID': false,
+        'guestSSID': 'Guest',
+      });
+    });
+
+    test('copyWith changes only what it names', () {
+      final renamed = radio.copyWith(guestSSID: 'Visitors');
+
+      expect(renamed.guestSSID, 'Visitors');
+      expect(renamed.copyWith(guestSSID: 'Guest'), radio);
+    });
+  });
+
+  group('GuestPasswordRestriction and UnicodeRange', () {
+    final rules = GuestPasswordRestriction.fromMap(
+        fullOutput['guestPasswordRestrictions'] as Map<String, dynamic>);
+
+    test('survive a trip through JSON text', () {
+      expect(GuestPasswordRestriction.fromJson(rules.toJson()), rules);
+      const range = UnicodeRange(lowCodepoint: 48, highCodepoint: 57);
+      expect(UnicodeRange.fromJson(range.toJson()), range);
+    });
+
+    test('copyWith changes only what it names', () {
+      expect(rules.copyWith(maxLength: 32).maxLength, 32);
+      expect(rules.copyWith(maxLength: 32).minLength, 8);
+      expect(
+        const UnicodeRange(lowCodepoint: 48, highCodepoint: 57)
+            .copyWith(highCodepoint: 70),
+        const UnicodeRange(lowCodepoint: 48, highCodepoint: 70),
+      );
+    });
+  });
 }
