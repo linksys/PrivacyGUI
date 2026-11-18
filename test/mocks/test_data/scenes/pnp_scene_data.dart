@@ -220,6 +220,15 @@ const pnpCurrentWanSettings = UspInternetSettingsForm(
   dnsServer2: '203.0.113.11',
 );
 
+/// [pnpCurrentWanSettings] with WAN VLAN tagging off: the PPPoE form opens with
+/// its VLAN row collapsed to "Add VLAN ID".
+final pnpWanWithoutVlan = pnpCurrentWanSettings.copyWith(vlanEnabled: false);
+
+/// [pnpCurrentWanSettings] tagged with VLAN 1, which the firmware takes and the
+/// GUI's 3–4094 rule does not (issue #1754): the PPPoE form opens with the VLAN
+/// ID in error and Save held.
+final pnpWanVlanIdOutOfRange = pnpCurrentWanSettings.copyWith(vlanId: 1);
+
 // ---------------------------------------------------------------------------
 // Composed PnpStates — one per branch the gate measures
 // ---------------------------------------------------------------------------
