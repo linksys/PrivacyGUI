@@ -116,20 +116,20 @@ void main() {
 
     test('maskJsonValue: username case', () async {
       final actual = Utils.maskJsonValue(sensitiveUsername, ['username']);
-      expect(actual.indexOf('austin.chang@gmail.com'), -1);
+      expect(actual.indexOf('user@example.com'), -1);
     });
 
     test('maskJsonValue: password case', () async {
       final actual = Utils.maskJsonValue(sensitivePassword, ['password']);
-      expect(actual.indexOf('Linksys123!'), -1);
+      expect(actual.indexOf('TestAdmin1!'), -1);
     });
 
     test('maskUsernamePasswordBodyValue', () async {
       final actual = Utils.maskUsernamePasswordBodyValue(
           cloudLoginWithUsernamePasswordRequest);
       print(actual);
-      expect(actual.indexOf('hank.yu%40linksys.com'), -1);
-      expect(actual.indexOf('Linksys123%21'), -1);
+      expect(actual.indexOf('user%40example.com'), -1);
+      expect(actual.indexOf('TestAdmin1%21'), -1);
     });
 
     test(
@@ -1064,8 +1064,8 @@ void main() {
       // Arrange
       FernetManager().updateKeyFromSerial('a-test-serial');
       const rawLog =
-          'Some log line... X-JNAP-Authorization: Basic YWRtaW46VmVsb3BAMTIzNA== ... some other log';
-      const originalPassword = 'YWRtaW46VmVsb3BAMTIzNA==';
+          'Some log line... X-JNAP-Authorization: Basic YWRtaW46VGVzdEFkbWluMSE= ... some other log';
+      const originalPassword = 'YWRtaW46VGVzdEFkbWluMSE=';
 
       // Act
       final processedLog = Utils.encryptJNAPAuth(rawLog);
@@ -1083,7 +1083,7 @@ void main() {
       // Arrange
       // Key is not set, because of setUp call
       const rawLog =
-          'Another log... X-JNAP-Authorization: Basic YWRtaW46VmVsb3BAMTIzNA== ... end of log';
+          'Another log... X-JNAP-Authorization: Basic YWRtaW46VGVzdEFkbWluMSE= ... end of log';
       const expectedLog =
           'Another log... X-JNAP-Authorization: Basic ************ ... end of log';
 

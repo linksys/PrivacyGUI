@@ -547,7 +547,7 @@ void main() async {
       stepStateList: const {
         0: PnpStepState(
           status: StepViewStatus.data,
-          data: {"ssid": "Linksys03056", "password": "8kRnxa257@"},
+          data: {"ssid": "Linksys03056", "password": "FakeWiFi2@"},
         ),
         1: PnpStepState(status: StepViewStatus.data, data: {}),
         2: PnpStepState(status: StepViewStatus.data, data: {}),
@@ -605,13 +605,13 @@ void main() async {
             "perBandSettings": {
               "2.4GHz": {
                 "ssid": "DULinksys12294-2.4GHz",
-                "password": "8kRnxa257@"
+                "password": "FakeWiFi2@"
               },
-              "5GHz": {"ssid": "DULinksys12294-5GHz", "password": "8kRnxa257@"},
-              "6GHz": {"ssid": "DULinksys12294-6GHz", "password": "8kRnxa257@"},
+              "5GHz": {"ssid": "DULinksys12294-5GHz", "password": "FakeWiFi2@"},
+              "6GHz": {"ssid": "DULinksys12294-6GHz", "password": "FakeWiFi2@"},
             },
             "ssid": "DULinksys12294-2.4GHz",
-            "password": "8kRnxa257@",
+            "password": "FakeWiFi2@",
           },
         ),
         1: PnpStepState(status: StepViewStatus.data, data: {}),

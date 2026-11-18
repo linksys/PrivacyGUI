@@ -57,7 +57,7 @@ const deviceManagerCherry7TestState = {
         "channelWidth": "Auto",
         "channel": 0,
         "security": "WPA2/WPA3-Mixed-Personal",
-        "wpaPersonalSettings": {"passphrase": "7sVzt65hf@"}
+        "wpaPersonalSettings": {"passphrase": "FakeWiFi1@"}
       }
     },
     "RADIO_5GHz": {
@@ -172,7 +172,7 @@ const deviceManagerCherry7TestState = {
         "channelWidth": "Auto",
         "channel": 0,
         "security": "WPA2/WPA3-Mixed-Personal",
-        "wpaPersonalSettings": {"passphrase": "7sVzt65hf@"}
+        "wpaPersonalSettings": {"passphrase": "FakeWiFi1@"}
       }
     }
   },

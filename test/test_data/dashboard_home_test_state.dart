@@ -11,7 +11,7 @@ const dashboardHomeCherry7TestState = {
   "wifis": [
     {
       "ssid": "Linksys03041",
-      "password": "7sVzt65hf@",
+      "password": "FakeWiFi1@",
       "radios": ["RADIO_2.4GHz"],
       "isGuest": false,
       "isEnabled": true,
@@ -19,7 +19,7 @@ const dashboardHomeCherry7TestState = {
     },
     {
       "ssid": "Linksys03041",
-      "password": "7sVzt65hf@",
+      "password": "FakeWiFi1@",
       "radios": ["RADIO_5GHz"],
       "isGuest": false,
       "isEnabled": true,

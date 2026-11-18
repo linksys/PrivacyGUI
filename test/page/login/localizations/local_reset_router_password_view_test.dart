@@ -133,8 +133,8 @@ void main() {
     await tester.pumpAndSettle();
     // Input new password
     final passwordFinder = find.byType(AppPasswordField);
-    await tester.enterText(passwordFinder.first, 'Linksys123!');
-    await tester.enterText(passwordFinder.last, 'Linksys123!');
+    await tester.enterText(passwordFinder.first, 'TestAdmin1!');
+    await tester.enterText(passwordFinder.last, 'TestAdmin1!');
     await tester.pumpAndSettle();
     // scroll until button visible
     final saveFinder = find.byType(AppFilledButton);

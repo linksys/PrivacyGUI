@@ -139,7 +139,7 @@ void main() {
       expect(bands, hasLength(1));
       expect(
         bands.single.credential.generate(),
-        'WIFI:S:Linksys03041;P:7sVzt65hf@;T:WPA;H:false;;',
+        'WIFI:S:Linksys03041;P:FakeWiFi1@;T:WPA;H:false;;',
       );
     });
 
@@ -176,7 +176,7 @@ void main() {
 
       expect(
         wifiQRBandsFor(hidden).single.credential.generate(),
-        'WIFI:S:Linksys03041;P:7sVzt65hf@;T:WPA;H:true;;',
+        'WIFI:S:Linksys03041;P:FakeWiFi1@;T:WPA;H:true;;',
       );
     });
   });

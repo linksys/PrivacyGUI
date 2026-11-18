@@ -388,7 +388,7 @@ const rawCoreTransaction = '''
 "channel": 0,
 "security": "WPA2-Personal",
 "wpaPersonalSettings": {
-"passphrase": "Belkin123!"
+"passphrase": "TestWifi1!"
 }
 }
 },
@@ -447,7 +447,7 @@ const rawCoreTransaction = '''
 "channel": 0,
 "security": "WPA2-Personal",
 "wpaPersonalSettings": {
-"passphrase": "Belkin123!"
+"passphrase": "TestWifi1!"
 }
 }
 },
@@ -508,7 +508,7 @@ const rawCoreTransaction = '''
 "channel": 0,
 "security": "WPA2-Personal",
 "wpaPersonalSettings": {
-"passphrase": "Belkin123!"
+"passphrase": "TestWifi1!"
 }
 }
 }
@@ -526,7 +526,7 @@ const rawCoreTransaction = '''
 "isEnabled": true,
 "broadcastGuestSSID": true,
 "guestSSID": "fee_guest_qa_velop",
-"guestWPAPassphrase": "Belkin123!",
+"guestWPAPassphrase": "TestWifi1!",
 "canEnableRadio": true
 },
 {
@@ -534,7 +534,7 @@ const rawCoreTransaction = '''
 "isEnabled": true,
 "broadcastGuestSSID": true,
 "guestSSID": "fee_guest_qa_velop",
-"guestWPAPassphrase": "Belkin123!",
+"guestWPAPassphrase": "TestWifi1!",
 "canEnableRadio": true
 }
 ]
