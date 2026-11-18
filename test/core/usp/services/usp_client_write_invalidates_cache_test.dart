@@ -193,4 +193,23 @@ void main() {
       expect(await read(), true);
     });
   });
+
+  // A change the router reports outside a write, such as a mesh node leaving
+  // (#1828): the read it prompts must reach the router too.
+  group('UspClient - dropSharedReads', () {
+    test('a read after it reaches the router', () async {
+      await read();
+      router.value = '1';
+
+      client.dropSharedReads();
+
+      expect(await read(), true);
+      expect(router.gets, 2);
+    });
+
+    test('without a throttler there is nothing to drop', () {
+      final bare = UspClient.withTransport(router, baseUrl: 'https://router');
+      expect(bare.dropSharedReads, returnsNormally);
+    });
+  });
 }

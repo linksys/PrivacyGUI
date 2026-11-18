@@ -127,6 +127,28 @@ class BridgeRequestThrottler {
       logger.d('[Throttler]: Connection replaced — dropping '
           '${_cache.length} cached and ${_inFlight.length} in-flight entries');
     }
+    dropSharedReads();
+  }
+
+  /// Drops every shared result: the cached ones and the in-flight requests a new
+  /// caller would join, so the next request for any key is sent.
+  ///
+  /// For a change the router reports outside a write, such as a mesh node joining
+  /// or leaving (#1828). A result cached before the change, or a request sent
+  /// before it, would otherwise answer the read the change prompts as if nothing
+  /// had happened. [clearCache] alone is not enough for that: a request still in
+  /// flight would be joined.
+  ///
+  /// Every key goes, not only the USP reads: the throttler also carries the
+  /// package widgets' `cgi:` and `http:` requests, so one repeated while its first
+  /// is still in flight is sent again. [invalidateSession] has always done the
+  /// same.
+  ///
+  /// As in [invalidateSession], which calls this, nothing is cancelled: callers
+  /// already waiting on an in-flight request get its result, it is just neither
+  /// shared nor cached once it lands ([_isCurrent]). Queued requests are kept;
+  /// they are sent after the change.
+  void dropSharedReads() {
     _cache.clear();
     _inFlight.clear();
   }
@@ -191,9 +213,10 @@ class BridgeRequestThrottler {
         }
 
         // Cache the result — unless this request has been retired. Without the
-        // check, a request that was in flight when [invalidateSession] ran
-        // reinstates its own answer the moment it lands, and the previous
-        // connection's value is served for a further [cacheTtl].
+        // check, a request that was in flight when [dropSharedReads] ran (on its
+        // own, or from [invalidateSession]) reinstates its own answer the moment it
+        // lands, and the answer from before the change, or from the previous
+        // connection, is served for a further [cacheTtl].
         if (_isCurrent(pending)) {
           _cache[pending.cacheKey] = _CacheEntry(
             future: pending.completer.future,
@@ -218,8 +241,8 @@ class BridgeRequestThrottler {
       } finally {
         _active--;
         // Only clear the slot if it is still ours. An unconditional remove would
-        // evict the *replacement* registered under the same key after an
-        // [invalidateSession], leaving a live in-flight request that nothing can
+        // evict the *replacement* registered under the same key after a
+        // [dropSharedReads], leaving a live in-flight request that nothing can
         // dedup onto.
         if (_isCurrent(pending)) {
           _inFlight.remove(pending.cacheKey);
@@ -235,10 +258,10 @@ class BridgeRequestThrottler {
 
   /// Whether [pending] still owns its in-flight slot.
   ///
-  /// False once [invalidateSession] has retired it — either the slot is empty or
-  /// a request issued on the new connection has taken it. Both readings mean the
-  /// same thing here: this result must not be published to anyone but the caller
-  /// who asked for it.
+  /// False once [dropSharedReads] has retired it, on its own or from
+  /// [invalidateSession] — either the slot is empty or a request issued after the
+  /// drop has taken it. Both readings mean the same thing here: this result must
+  /// not be published to anyone but the caller who asked for it.
   bool _isCurrent(_PendingRequest<dynamic> pending) =>
       identical(_inFlight[pending.cacheKey], pending);
 

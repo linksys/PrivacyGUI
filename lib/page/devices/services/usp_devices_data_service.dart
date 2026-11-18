@@ -124,6 +124,11 @@ class UspDevicesDataService {
     );
   }
 
+  /// Makes every read sent after it, [fetchMeshTopology] included, go to the router
+  /// rather than to a result read before a mesh node joined or left (#1828); see
+  /// [UspClient.dropSharedReads]. Call it when the app learns of the change.
+  void dropSharedReads() => _usp.dropSharedReads();
+
   /// Fetches mesh topology via DataElements (fire-and-forget from provider).
   ///
   /// Delegates nested multi-instance parsing

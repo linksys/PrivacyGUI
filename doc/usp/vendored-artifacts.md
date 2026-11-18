@@ -146,6 +146,20 @@ The YAML definitions are **not vendored** into this repo and individual definiti
 5. With the browser connected through an agent: the status read fails when that agent goes down, and the wait counts down from that failure. Record whether the probe then finds the controller still up, before its own turn.
 6. ~~On firmware without the leaf — 2.0.4.26110110 already, no new image needed: one Reboot from the Administration page still sends `Device.Reboot()`. That rests on usp-client 0.16.0 reading the router's answer to a Get of one unknown path as `kind: path`, a per-path 7026, which is what FW 2.0.3 sent before 0.16.0 (measured 2026-10-13). If the router refused that Get as a whole instead (`kind: request`), the press would send nothing.~~ **Done 2026-11-12** on `2.0.4.26110110`: the router answered the press-time Get of the leaf as not in the schema, and `Device.Reboot()` went out in the same second.
 
+**`data_elements_network.g.dart` and `subscriptions.g.dart` carry the mesh node subscriptions (#1828).**
+- **Source:** 0.19.0 output from `usp_framework` `main` @ `bb9feda`, the merge of linksys/usp_framework#123 (2026-11-18), taken with `git archive bb9feda usp-definitions`.
+- **What the definition adds:** `data_elements_network.yaml` 2.3.0 adds two subscriptions on its `multiInstance`, `Device.WiFi.DataElements.Network.Device.`: `mesh-nodes-objectcreation` (ObjectCreation) and `mesh-nodes-objectdeletion` (ObjectDeletion).
+- **What the two files gain:**
+  - `data_elements_network.g.dart` gains `subscribeObjectCreation()`, `subscribeObjectDeletion()` and `subscribeAll()`, which the app does not call.
+  - `subscriptions.g.dart` gains the two `coreSubscriptions` rows. Every session registers them, with no capability gate.
+- **Consumer:** `sseInvalidationProvider` maps the pushes to `InvalidationDomain.meshNodes`, and `DevicesDataNotifier` re-reads DataElements on it.
+- **The rest of the output:** every other file the command writes is unchanged. `index.dart` comes out in a different order with the same exports and is left as checked in.
+- **Firmware side,** measured on 2.0.4.26111122 before #123 merged (#1828):
+  - the controller sends each event in the same second as `DeviceNumberOfEntries` changes;
+  - a phone's station removed from and added to a controller BSS sends neither; stations on an agent's BSS and MLO stations were not tried;
+  - a local session receives both.
+  - Remote Assistance was not tried.
+
 Make sure that clone's `main` is up to date with `upstream` (`github.com/linksys/usp_framework`), not just with `origin`. Generating from a stale fork `main` silently reproduces the bug #1555 fixed: the fork's `data_elements_network.yaml` was the 2026-08-05 revision and had no `data_elements_network_info.yaml`.
 
 ## Update procedure
