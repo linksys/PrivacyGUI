@@ -350,26 +350,28 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                           child: widget.child?.call(context, constraints) ??
                               SizedBox.shrink()),
                     ];
+                    final body = SizedBox(
+                      height: widget.pageContentType == PageContentType.fit
+                          ? constraints.maxHeight
+                          : null,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children:
+                            widget.menuOnRight ? views.reversed.toList() : views,
+                      ),
+                    );
+                    // PROTOTYPE #1864 option B: a scrolling page has an
+                    // unbounded height, where Expanded cannot work.
+                    final scrolls = widget.scrollable ?? false;
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize:
+                          scrolls ? MainAxisSize.min : MainAxisSize.max,
                       children: [
                         if (widget.appBarStyle != AppBarStyle.none)
                           _buildAppBar(context, ref) ?? SizedBox(height: 0),
-                        Expanded(
-                          child: SizedBox(
-                            height:
-                                widget.pageContentType == PageContentType.fit
-                                    ? constraints.maxHeight
-                                    : null,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: widget.menuOnRight
-                                  ? views.reversed.toList()
-                                  : views,
-                            ),
-                          ),
-                        ),
+                        if (scrolls) body else Expanded(child: body),
                       ],
                     );
                   },
