@@ -236,9 +236,12 @@ class _AutoIPoEOptionalPaneState extends ConsumerState<AutoIPoEOptionalPane> {
           Container(
             key: const ValueKey('autoIpoeLogOutput'),
             width: double.infinity,
-            constraints: isPnpProgress
-                ? const BoxConstraints(minHeight: 160, maxHeight: 200)
-                : const BoxConstraints(minHeight: 260, maxHeight: 420),
+            // A fixed height, the one the expanding field always took: a
+            // Column gives it unbounded height, so it filled the old maxHeight.
+            // With a range, it reported its minHeight as its intrinsic height,
+            // and a scrollable page sized by that overflowed a short window
+            // (#1802).
+            height: isPnpProgress ? 200 : 420,
             padding: const EdgeInsets.all(Spacing.small3),
             decoration: BoxDecoration(
               color: logBackgroundColor,
