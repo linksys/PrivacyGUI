@@ -172,6 +172,14 @@ void main() {
       });
     });
 
+    test('reads back the input it writes', () {
+      final settings = SetGuestRadioSettings.fromGuestRadioSettings(
+          GuestRadioSettings.fromMap(fullOutput));
+
+      expect(SetGuestRadioSettings.fromMap(settings.toMap()), settings);
+      expect(SetGuestRadioSettings.fromJson(settings.toJson()), settings);
+    });
+
     test('copyWith changes only what it names', () {
       final settings = SetGuestRadioSettings.fromGuestRadioSettings(
           GuestRadioSettings.fromMap(fullOutput));
