@@ -53,13 +53,18 @@ void main() {
   late List<String> log;
 
   // The queue is a singleton. It is built here, on the real clock, so that
-  // its cache does its file work outside the tests' fake clock.
+  // its cache starts its file work outside the tests' fake clock.
   setUpAll(() async {
     queue = CommandQueue();
     await pumpEventQueue();
   });
 
-  setUp(() => log = []);
+  setUp(() {
+    log = [];
+    // A test that fails while the queue is paused must not leave the next
+    // tests paused too.
+    queue.pause = false;
+  });
 
   _Outcome enqueue(String action, {Future<JNAPResult> Function()? answer}) {
     final outcome = _Outcome();
@@ -94,8 +99,14 @@ void main() {
     final failed = enqueue('failing',
         answer: () async => throw const JNAPError(result: 'ErrorUnknown'));
 
+    final next = enqueue('next');
+
     await tester.pump(_tick);
     expect(failed.error, isA<JNAPError>());
+    // The queue goes on to the next command.
+    await tester.pump(_tick);
+    expect(log, ['failing', 'next']);
+    expect(next.value, _ok);
 
     await idle(tester);
   });

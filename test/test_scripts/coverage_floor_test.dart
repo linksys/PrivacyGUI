@@ -17,6 +17,15 @@ void main() {
 
     test('turns down a number outside 0 to 100', () {
       expect(() => readFloor('451\n'), throwsFormatException);
+      expect(() => readFloor('-5\n'), throwsFormatException);
+      expect(readFloor('0\n'), 0);
+      expect(readFloor('100\n'), 100);
+    });
+
+    test('turns down a number written with a leading zero', () {
+      expect(() => readFloor('05\n'), throwsFormatException);
+      expect(() => readFloor('007.5\n'), throwsFormatException);
+      expect(readFloor('0.5\n'), 0.5);
     });
 
     test('turns down what is not a plain number, saying what it found', () {

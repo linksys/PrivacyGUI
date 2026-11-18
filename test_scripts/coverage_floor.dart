@@ -13,9 +13,9 @@ import 'coverage_summary.dart' show summarize;
 /// The committed floor, a percentage of lib/'s lines.
 const floorPath = 'coverage_floor.txt';
 
-/// A percentage as the floor is written: up to three digits, and at most two
-/// decimals, the precision [checkFloor] compares to.
-final _floorNumber = RegExp(r'^\d{1,3}(\.\d{1,2})?$');
+/// A percentage as the floor is written: up to three digits with no leading
+/// zero, and at most two decimals, the precision [checkFloor] compares to.
+final _floorNumber = RegExp(r'^(0|[1-9]\d{0,2})(\.\d{1,2})?$');
 
 /// The floor in [text]: the one line that is neither blank nor a `#` comment.
 double readFloor(String text) {
