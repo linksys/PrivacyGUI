@@ -11,9 +11,14 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
+if [ -z "$ROUTER_SSH_PASSWORD" ]; then
+    echo "Set ROUTER_SSH_PASSWORD to the router's root SSH password." >&2
+    exit 1
+fi
+
 COMMAND="$1"
 ROUTER_IP="192.168.1.1"
-PASSWORD="7qW19st5m@"
+PASSWORD="$ROUTER_SSH_PASSWORD"
 
 EXP_FILE=$(mktemp)
 cat << 'EOF' > "$EXP_FILE"
