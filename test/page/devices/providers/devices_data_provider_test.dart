@@ -1344,6 +1344,80 @@ void main() {
 
       expect(container.read(devicesDataProvider).hasError, isTrue);
     });
+
+    // A push's read that lands during a rebuild waits for it rather than leaving the node
+    // change to the rebuild's own mesh read, which the rebuild may not have.
+    test(
+        'a mesh re-read that lands during a rebuild publishes after it when the '
+        'rebuild\'s mesh read faults', () async {
+      final rebuildFetch = Completer<DevicesDataFetchResult>();
+      stubDeviceReads([
+        () async => _tagged('build'),
+        () => rebuildFetch.future, // the pull-to-refresh
+      ]);
+      stubMeshReads([
+        () async => withAgent, // build()'s background read
+        () async => controllerOnly, // the meshNodes push's read
+        () async => MeshTopologyInfo.empty, // the rebuild's own read, faulted
+      ]);
+
+      final container = createSseContainer();
+      addTearDown(container.dispose);
+      container.listen(devicesDataProvider, (_, __) {});
+      await container.read(devicesDataProvider.future);
+      await pumpEventQueue();
+
+      container.refresh(devicesDataProvider);
+      await pumpEventQueue();
+      sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+      await Future.delayed(const Duration(milliseconds: 600));
+      expect(container.read(devicesDataProvider).isLoading, isTrue);
+
+      rebuildFetch.complete(_tagged('rebuild'));
+      await pumpEventQueue();
+
+      final data = container.read(devicesDataProvider).value!;
+      expect(data.hostNameByMac, {'TAG': 'rebuild'});
+      expect(data.meshTopology, controllerOnly);
+    });
+
+    test(
+        'a mesh re-read that lands during a rebuild publishes after it when a '
+        'device read supersedes the rebuild and fails', () async {
+      // The superseded rebuild does not read the mesh, and the device read that
+      // superseded it fails before it does.
+      final rebuildFetch = Completer<DevicesDataFetchResult>();
+      stubDeviceReads([
+        () async => _tagged('build'),
+        () => rebuildFetch.future, // the pull-to-refresh
+        () => Future.error(Exception('fetch failed')), // the Hosts push
+      ]);
+      stubMeshReads([
+        () async => withAgent, // build()'s background read
+        () async => controllerOnly, // the meshNodes push's read
+      ]);
+
+      final container = createSseContainer();
+      addTearDown(container.dispose);
+      container.listen(devicesDataProvider, (_, __) {});
+      await container.read(devicesDataProvider.future);
+      await pumpEventQueue();
+
+      container.refresh(devicesDataProvider);
+      await pumpEventQueue();
+      sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+      await Future.delayed(const Duration(milliseconds: 600));
+      sse.add((domain: InvalidationDomain.connectedDevices, seq: 1));
+      await Future.delayed(const Duration(milliseconds: 600));
+
+      rebuildFetch.complete(_tagged('rebuild'));
+      await pumpEventQueue();
+
+      expect(container.read(devicesDataProvider).value!.meshTopology,
+          controllerOnly);
+      // build()'s and the push's: the superseded rebuild does not read the mesh.
+      verifyMeshReads(2);
+    });
   });
 }
 
