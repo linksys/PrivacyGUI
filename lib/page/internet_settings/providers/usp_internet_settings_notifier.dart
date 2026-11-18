@@ -385,6 +385,9 @@ class UspInternetSettingsNotifier
   /// `Preservable` (a device changed by someone else mid-edit): it runs only
   /// after this page's own save failed, and asks what that save applied.
   Future<void> _performSaveReadingBack() async {
+    // What the page loaded, to tell after the read-back whether it moved the
+    // page onto the router's values (it replaces both sides when it does).
+    final loaded = state.settings.original;
     try {
       await saveReadingBackAfterFailure(() async {
         try {
@@ -403,6 +406,14 @@ class UspInternetSettingsNotifier
     } on ServiceError {
       if (!_disposed) {
         ref.invalidate(wanDataProvider);
+        // On the router's values nothing the user typed is left to save, an
+        // Auto-IPoE draft picked earlier in the edit included, so it goes as
+        // after a successful save. A page that kept its edits keeps the draft
+        // for the retry.
+        final movedOntoRouter = state.settings.original != loaded;
+        if (movedOntoRouter && ref.exists(autoIPoEPageProvider)) {
+          ref.read(autoIPoEPageProvider.notifier).revert();
+        }
         state = state.copyWith(
           status: state.status.copyWith(
             isSaving: false,

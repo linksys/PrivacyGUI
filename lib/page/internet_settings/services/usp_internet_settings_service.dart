@@ -727,7 +727,18 @@ class UspInternetSettingsService {
     ];
     // Nothing to write is not sent, so it never counts as applied.
     if (PppInterface.updateParams(updates).isEmpty) return;
-    _handleSetResult(progress, await PppInterface.update(_usp, updates));
+    // Keep Alive sends its echo values on every save, so this Set lands even
+    // when the user changed nothing here. It counts as applied only when it
+    // changes what the page loaded: otherwise a later refusal would say part
+    // of the save landed while none of the user's changes did (issue #1711).
+    // A router holding an out-of-range LCPEcho, which reads as the same 30,
+    // is the one write this leaves uncounted.
+    final changesWhatLoaded = update.pppoeServiceName != null ||
+        update.connectionTrigger != null ||
+        update.idleDisconnectTime != null ||
+        (!onDemand && original.lcpEchoInterval != edited.lcpEchoInterval);
+    _handleSetResult(progress, await PppInterface.update(_usp, updates),
+        applies: changesWhatLoaded);
   }
 
   // ---------------------------------------------------------------------------
@@ -1047,12 +1058,14 @@ class UspInternetSettingsService {
   ///
   /// WAN settings are critical — any failure (including partial) should be
   /// reported to the user. A Set that succeeds marks [progress] applied, so a
-  /// later step's failure reports the save as applied in part.
-  void _handleSetResult(_SaveProgress progress, Map<String, dynamic> result) {
+  /// later step's failure reports the save as applied in part; one that only
+  /// rewrites what the page loaded passes [applies] false and marks nothing.
+  void _handleSetResult(_SaveProgress progress, Map<String, dynamic> result,
+      {bool applies = true}) {
     final parsed = UspResultParser.parseSetResult(result);
     switch (parsed) {
       case UspSuccess():
-        progress.applied = true;
+        if (applies) progress.applied = true;
       case UspPartialSuccess(
           :final errorSummary,
           :final successes,
