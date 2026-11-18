@@ -122,15 +122,16 @@ class _FirmwareUpdateDetailViewState
                         child: AppFilledButton(
                           loc(context).updateAll,
                           onTap: () async {
-                            // A refused install puts the page back as it
-                            // was; the error is only logged.
+                            // An install that does not start (the access
+                            // policy or the router refused it) puts the page
+                            // back as it was; the error is only logged.
                             try {
                               await ref
                                   .read(firmwareUpdateProvider.notifier)
                                   .updateFirmware();
                             } catch (error) {
                               logger.e(
-                                  '[FIRMWARE]: The router refused the install: $error');
+                                  '[FIRMWARE]: Could not start the install: $error');
                             }
                           },
                         ),

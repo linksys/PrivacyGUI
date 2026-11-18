@@ -1007,13 +1007,13 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
         });
         if (_hasNewFW) {
           logger.i('[PnP]: New Firmware available!');
-          // A refused install turns `isUpdating` off, and the listener in
-          // build goes on to Wi-Fi Ready from there. The error is only
-          // logged here.
+          // An install the router refuses turns `isUpdating` off, and the
+          // listener in build goes on to Wi-Fi Ready from there. The error,
+          // the router's or the access policy's, is only logged here.
           try {
             await fwUpdate.updateFirmware();
           } catch (error) {
-            logger.e('[PnP]: The router refused the firmware install: $error');
+            logger.e('[PnP]: Could not start the firmware install: $error');
           }
         } else {
           logger.i('[PnP]: No available FW, go WiFi Ready');
