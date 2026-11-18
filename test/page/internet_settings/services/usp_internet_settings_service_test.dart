@@ -1346,9 +1346,12 @@ void main() {
         connectionType: UspWanConnectionType.dhcp,
       );
 
+      // The target mode's AddressingType=DHCP landed before Enable=true was
+      // refused, so the save is applied in part (issue #1711).
       await expectLater(
         service.saveAll(original, edited),
-        throwsA(isA<ServiceError>()),
+        throwsA(isA<SavePartlyAppliedError>()
+            .having((e) => e.cause, 'cause', isA<UspCompleteFailureError>())),
       );
     });
 
@@ -2382,9 +2385,15 @@ void main() {
                     connectionType: UspWanConnectionType.dhcp, mtu: 1460),
                 pptpStatic,
                 pppInstancePath: pppPath),
-            throwsA(partlyApplied(isA<InvalidInputError>()
-                .having((e) => e.field, 'field', message)
-                .having((e) => e.code, 'code', 7012))),
+            throwsA(allOf(
+              partlyApplied(isA<InvalidInputError>()
+                  .having((e) => e.field, 'field', message)
+                  .having((e) => e.code, 'code', 7012)),
+              // The wrapper reads as its cause in a log keyed on the code.
+              isA<SavePartlyAppliedError>()
+                  .having((e) => e.code, 'code', 7012)
+                  .having((e) => e.detail, 'detail', message),
+            )),
           );
         });
       }

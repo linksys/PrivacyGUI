@@ -290,10 +290,20 @@ final class SaveDiscardedForRouterRowsError extends ServiceError {
 /// the failing step itself landed in part. The router now holds some of the
 /// save, so this is not a save that wrote nothing, and the message says so.
 /// [cause] is the failing step's own error: it still says why, including the
-/// field a firmware refusal names.
+/// field a firmware refusal names. A consumer that tells errors apart by type
+/// unwraps [cause] first, as `localizeServiceError` and `localizeWanSaveError`
+/// do.
 final class SavePartlyAppliedError extends ServiceError {
   final ServiceError cause;
-  const SavePartlyAppliedError(this.cause, {super.code, super.detail});
+  const SavePartlyAppliedError(this.cause);
+
+  /// [cause]'s, so a log keyed on the code reads the same as the bare error.
+  @override
+  int? get code => cause.code;
+
+  /// [cause]'s, for the same reason as [code].
+  @override
+  String? get detail => cause.detail;
 
   @override
   String toString() => 'Partly applied: $cause';

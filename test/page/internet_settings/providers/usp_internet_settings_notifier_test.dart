@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -627,6 +629,64 @@ void main() {
 
         expect(wanReads, 2,
             reason: 'read once on start, and again after the failed save');
+        container.dispose();
+      });
+
+      // The read-back is part of the save: a second Save started while it
+      // runs would be overwritten when it lands. The IPoE reset path saves
+      // with no spinner over the page, so Save must stay disabled.
+      test('is still saving while it reads the router back', () async {
+        final readBack = Completer<InternetSettingsFetchResult>();
+        var reads = 0;
+        when(() => mockService.fetchSettings()).thenAnswer((_) =>
+            ++reads == 1 ? Future.value(testFetchResult) : readBack.future);
+        when(() => mockService.saveAll(any(), any()))
+            .thenThrow(refusedAfterTheWanRow);
+
+        final container = createContainer();
+        await Future.delayed(Duration.zero);
+        final notifier = container.read(uspInternetSettingsProvider.notifier);
+        editToPptp(notifier);
+
+        final saving = notifier.save();
+        for (var i = 0; i < 20 && reads < 2; i++) {
+          await Future.delayed(Duration.zero);
+        }
+        expect(reads, 2, reason: 'the read-back has started');
+        expect(container.read(uspInternetSettingsProvider).status.isSaving,
+            isTrue);
+
+        readBack.complete(pptpOnRouter);
+        await expectLater(saving, throwsA(same(refusedAfterTheWanRow)));
+        expect(container.read(uspInternetSettingsProvider).status.isSaving,
+            isFalse);
+        container.dispose();
+      });
+
+      test('whose read-back fails keeps the edits, still editing', () async {
+        var reads = 0;
+        when(() => mockService.fetchSettings()).thenAnswer((_) async {
+          if (++reads == 1) return testFetchResult;
+          throw const NetworkError(detail: 'router unreachable');
+        });
+        when(() => mockService.saveAll(any(), any()))
+            .thenThrow(refusedAfterTheWanRow);
+
+        final container = createContainer();
+        await Future.delayed(Duration.zero);
+        final notifier = container.read(uspInternetSettingsProvider.notifier);
+        editToPptp(notifier);
+        final edited = container.read(uspInternetSettingsProvider).edited;
+
+        await expectLater(
+            notifier.save(), throwsA(same(refusedAfterTheWanRow)));
+
+        final state = container.read(uspInternetSettingsProvider);
+        expect(state.edited, edited);
+        expect(state.settings.original.form, testForm);
+        expect(state.status.isEditing, isTrue);
+        expect(state.status.error, isNull,
+            reason: 'a failed read-back is not a load error on the page');
         container.dispose();
       });
     });

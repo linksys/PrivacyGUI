@@ -634,6 +634,11 @@ class UspInternetSettingsService {
   /// mapped to a validation / resource / partial / auth / unexpected
   /// [ServiceError] — means the SET was rejected. Those propagate so the user
   /// still sees the failure; a real config failure is never hidden.
+  ///
+  /// A disconnect read as success does not mark [progress] applied. That is
+  /// safe only because this is [saveAll]'s last step: no later step can fail
+  /// and need to say this one landed. A step added after it would have to mark
+  /// [progress] in those two cases too.
   Future<void> _setBridgeBoundary(_SaveProgress progress,
       {required bool enable}) async {
     // enable=false enters bridge, enable=true leaves it.

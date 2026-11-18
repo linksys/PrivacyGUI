@@ -375,19 +375,41 @@ class UspInternetSettingsNotifier
   /// read-back failed is already a [SavedButUnconfirmedError], and reading
   /// again would only make the user wait for a second timeout.
   ///
+  /// The read-back is part of the save, so the page stays saving until it
+  /// ends: [performSave] clears `isSaving` when the write fails, and a second
+  /// Save started during the read would be overwritten when it lands. The
+  /// IPoE reset path saves with no spinner over the page, so this is what
+  /// keeps Save disabled there.
+  ///
   /// This is not the detection constitution Article IV Rule 2 keeps for
   /// `Preservable` (a device changed by someone else mid-edit): it runs only
   /// after this page's own save failed, and asks what that save applied.
   Future<void> _performSaveReadingBack() async {
     try {
       await saveReadingBackAfterFailure(() async {
-        await performSave();
+        try {
+          await performSave();
+        } on ServiceError {
+          if (!_disposed) {
+            state = state.copyWith(
+              status:
+                  state.status.copyWith(isSaving: true, activeMutation: 'save'),
+            );
+          }
+          rethrow;
+        }
         return state;
       });
     } on ServiceError {
-      ref.invalidate(wanDataProvider);
-      if (!_disposed && !isDirty()) {
-        state = state.copyWith(status: state.status.copyWith(isEditing: false));
+      if (!_disposed) {
+        ref.invalidate(wanDataProvider);
+        state = state.copyWith(
+          status: state.status.copyWith(
+            isSaving: false,
+            clearActiveMutation: true,
+            isEditing: isDirty() && state.status.isEditing,
+          ),
+        );
       }
       rethrow;
     }
