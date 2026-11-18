@@ -84,6 +84,10 @@ final sseInvalidationProvider = StreamProvider<InvalidationEvent>((ref) {
   return controller.stream;
 });
 
+/// A row of the DataElements node table, `Device.WiFi.DataElements.Network.Device.{i}.`.
+final _meshNodeRow =
+    RegExp(r'^Device\.WiFi\.DataElements\.Network\.Device\.\d+\.$');
+
 /// Maps a notification to an [InvalidationDomain] based on the TR-181 path
 /// in the payload.
 ///
@@ -156,11 +160,14 @@ InvalidationDomain? _mapToDomain(
   if (path.startsWith('Device.Ethernet.Interface.')) {
     return InvalidationDomain.ethernetInterfaces;
   }
-  // A node joining or leaving the mesh (PrivacyGUI#1828). Only object events on
-  // the node table are subscribed, so the path is `Network.Device.{i}.`. The MAC
-  // filter mode leaf sits on `Network.` itself, outside this prefix.
+  // A node joining or leaving the mesh (PrivacyGUI#1828): an event on a row of the
+  // node table itself, `Network.Device.{i}.`. Only an object event names a row; a
+  // value change names a parameter. Anything else under the table (a radio, a BSS
+  // or a station row, or a value) is not a node change, and maps to nothing rather
+  // than re-reading DataElements; nothing subscribes to those today. The MAC filter
+  // mode leaf sits on `Network.` itself, outside this prefix.
   if (path.startsWith('Device.WiFi.DataElements.Network.Device.')) {
-    return InvalidationDomain.meshNodes;
+    return _meshNodeRow.hasMatch(path) ? InvalidationDomain.meshNodes : null;
   }
   if (path == 'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode') {
     return InvalidationDomain.macFilter;

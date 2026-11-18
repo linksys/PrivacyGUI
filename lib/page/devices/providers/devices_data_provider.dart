@@ -415,6 +415,13 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       radios: wifiCodegen.radios,
     );
 
+    // A push's read answers "what changed", so it must not be served from the USP
+    // client's shared reads: a device read's mesh read up to 5 s earlier is cached,
+    // and one still in flight would be joined. Either holds the topology from before
+    // the node joined or left, and would publish it under this read's newer number.
+    // A device read's mesh read keeps the shared reads, as every other read does: a
+    // node change is always followed by a push's read, which takes a higher number.
+    if (isPushRead) svc.dropSharedReads();
     final meshTopology = await svc.fetchMeshTopology(
       bssidToBandMap: bssidToBandMap,
     );

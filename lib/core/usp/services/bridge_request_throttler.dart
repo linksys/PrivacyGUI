@@ -127,6 +127,23 @@ class BridgeRequestThrottler {
       logger.d('[Throttler]: Connection replaced — dropping '
           '${_cache.length} cached and ${_inFlight.length} in-flight entries');
     }
+    dropSharedReads();
+  }
+
+  /// Drops every shared result: the cached ones and the in-flight requests a new
+  /// caller would join, so the next request for any key is sent.
+  ///
+  /// For a change the router reports outside a write, such as a mesh node joining
+  /// or leaving (#1828). A result cached before the change, or a request sent
+  /// before it, would otherwise answer the read the change prompts as if nothing
+  /// had happened. [clearCache] alone is not enough for that: a request still in
+  /// flight would be joined.
+  ///
+  /// As in [invalidateSession], which calls this, nothing is cancelled: callers
+  /// already waiting on an in-flight request get its result, it is just neither
+  /// shared nor cached once it lands ([_isCurrent]). Queued requests are kept;
+  /// they are sent after the change.
+  void dropSharedReads() {
     _cache.clear();
     _inFlight.clear();
   }

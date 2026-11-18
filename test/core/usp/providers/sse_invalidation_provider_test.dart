@@ -373,6 +373,19 @@ void main() {
       );
     });
 
+    test('an object event on a row nested under a node is not meshNodes',
+        () async {
+      await sendAndExpectEmpty(
+        'Device.WiFi.DataElements.Network.Device.1.Radio.1.BSS.2.STA.7.',
+        type: 'ObjectCreation',
+      );
+    });
+
+    test('a value under the node table is not meshNodes', () async {
+      await sendAndExpectEmpty(
+          'Device.WiFi.DataElements.Network.Device.5.MultiAPDevice.Backhaul.LinkType');
+    });
+
     test('the node table prefix does not take the MAC filter mode leaf',
         () async {
       await sendAndExpect(

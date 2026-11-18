@@ -498,4 +498,75 @@ void main() {
       expect(mapResult['key'], 'value');
     });
   });
+
+  // -----------------------------------------------------------------------
+  // dropSharedReads (#1828): a change the router reports outside a write
+  // -----------------------------------------------------------------------
+  group('dropSharedReads', () {
+    test('a cached result is not served afterwards', () async {
+      final throttler = BridgeRequestThrottler(
+        defaultCacheTtl: Duration(seconds: 60),
+      );
+      var callCount = 0;
+      Future<String> action() async => 'v${++callCount}';
+
+      await throttler.enqueue(cacheKey: 'mesh', action: action);
+      throttler.dropSharedReads();
+      final after = await throttler.enqueue(cacheKey: 'mesh', action: action);
+
+      expect(after, 'v2');
+      expect(callCount, 2);
+    });
+
+    test(
+        'a request in flight is not joined afterwards, still answers its own '
+        'callers, and is not cached', () async {
+      final throttler = BridgeRequestThrottler(
+        maxConcurrent: 2,
+        staggerDelay: Duration.zero,
+        defaultCacheTtl: Duration(seconds: 60),
+      );
+      final before = Completer<String>();
+      var callCount = 0;
+
+      // Sent before the change, still in flight when it is reported.
+      final fBefore = throttler.enqueue(
+        cacheKey: 'mesh',
+        action: () {
+          callCount++;
+          return before.future;
+        },
+      );
+      await Future.delayed(Duration(milliseconds: 10));
+      expect(throttler.activeCount, 1);
+
+      throttler.dropSharedReads();
+
+      // The read the change prompts: sent again rather than joined.
+      final fAfter = throttler.enqueue(
+        cacheKey: 'mesh',
+        action: () async {
+          callCount++;
+          return 'after the change';
+        },
+      );
+      expect(await fAfter, 'after the change');
+      expect(callCount, 2);
+
+      before.complete('before the change');
+      expect(await fBefore, 'before the change',
+          reason: 'its own caller still gets an answer');
+
+      // The late answer from before the change must not be cached over the new one.
+      final next = await throttler.enqueue(
+        cacheKey: 'mesh',
+        action: () async {
+          callCount++;
+          return 'unexpected';
+        },
+      );
+      expect(next, 'after the change');
+      expect(callCount, 2);
+    });
+  });
 }
