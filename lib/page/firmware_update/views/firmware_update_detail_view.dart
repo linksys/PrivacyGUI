@@ -121,10 +121,17 @@ class _FirmwareUpdateDetailViewState
                       child: WriteGuard(
                         child: AppFilledButton(
                           loc(context).updateAll,
-                          onTap: () {
-                            ref
-                                .read(firmwareUpdateProvider.notifier)
-                                .updateFirmware();
+                          onTap: () async {
+                            // A refused install puts the page back as it
+                            // was; the error is only logged.
+                            try {
+                              await ref
+                                  .read(firmwareUpdateProvider.notifier)
+                                  .updateFirmware();
+                            } catch (error) {
+                              logger.e(
+                                  '[FIRMWARE]: The router refused the install: $error');
+                            }
                           },
                         ),
                       ),

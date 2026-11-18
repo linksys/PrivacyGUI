@@ -223,8 +223,12 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
       },
       // A status read fails while the router restarts into the new firmware.
       // The stop condition has already logged it and the checks go on, so it
-      // is not an error of the update.
-      onError: (_) {},
+      // is not an error of the update. Anything else, such as a status that
+      // does not parse, is logged here, as nothing else logs it.
+      onError: (Object error) {
+        if (error is JNAPError) return;
+        logger.e('[FIRMWARE]: Update firmware: status check failed: $error');
+      },
     );
   }
 

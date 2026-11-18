@@ -1,3 +1,4 @@
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -120,7 +121,7 @@ class _Pnp extends PnpNotifier {
     checkedPasswords.add(password);
     calls.add('authenticate');
     try {
-    await authenticate?.call(password);
+      await authenticate?.call(password);
     } catch (_) {
       if (clearAuthOnError) {
         (ref.read(authProvider.notifier) as _Auth).clearForPendingLogin();
@@ -146,7 +147,13 @@ class _Pnp extends PnpNotifier {
 }
 
 class _Firmware extends FirmwareUpdateNotifier {
+  /// [refusedInstall]: an update is available, and the router refuses to
+  /// install it.
+  _Firmware({this.refusedInstall = false});
+
+  final bool refusedInstall;
   int checks = 0;
+  int installs = 0;
 
   @override
   FirmwareUpdateState build() => FirmwareUpdateState.empty();
@@ -157,7 +164,17 @@ class _Firmware extends FirmwareUpdateNotifier {
   }
 
   @override
-  int getAvailableUpdateNumber() => 0;
+  int getAvailableUpdateNumber() => refusedInstall ? 1 : 0;
+
+  /// As the real provider takes a refused install: `isUpdating` turns on,
+  /// then off, and the error is rethrown.
+  @override
+  Future updateFirmware() async {
+    installs++;
+    state = state.copyWith(isUpdating: true);
+    state = state.copyWith(isUpdating: false);
+    throw const JNAPError(result: 'ErrorUnknown');
+  }
 }
 
 class _Auth extends AuthNotifier {
@@ -500,7 +517,8 @@ void main() {
       (tester) async {
     final pnp = _Pnp(unconfigured: true)
       ..autoMasterStatus = AutoMasterStatus.complete
-      ..configuredAfterSave = false; // GetDeviceMode still answers Unconfigured.
+      ..configuredAfterSave =
+          false; // GetDeviceMode still answers Unconfigured.
     final firmware = _Firmware();
     await _showSetup(tester, pnp, firmware);
 
@@ -559,4 +577,19 @@ void main() {
       expect(pnp.radioReads, 0);
     });
   }
+
+  testWidgets('a refused firmware install still goes on to Wi-Fi Ready',
+      (tester) async {
+    final pnp = _Pnp();
+    final firmware = _Firmware(refusedInstall: true);
+    await _showSetup(tester, pnp, firmware);
+    pnp.saveResult.complete();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+
+    expect(firmware.installs, 1);
+    expect(find.text('Done').hitTestable(), findsOneWidget);
+    await tester.pump(const Duration(minutes: 2));
+  });
 }
