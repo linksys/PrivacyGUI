@@ -18,11 +18,12 @@ Map<String, dynamic> _status({
   int upload = 0,
   String exitCode = 'Unavailable',
   String running = 'SpeedTest',
+  int resultId = 7,
 }) =>
     {
       'healthCheckModuleCurrentlyRunning': running,
       'speedTestResult': {
-        'resultID': 7,
+        'resultID': resultId,
         'exitCode': exitCode,
         'serverID': '3967',
         'latency': latency,
@@ -156,6 +157,36 @@ void main() {
 
   group('following a speed test', () {
     setUp(() => router.honorsPollDelays = true);
+
+    testWidgets('a run started over ignores what the run before it scheduled',
+        (tester) async {
+      router.holdsInTurn(JNAPAction.getHealthCheckStatus, [
+        for (var i = 0; i < 3; i++) _status(latency: 12),
+        for (var i = 0; i < 12; i++) _status(resultId: 8),
+        _status(
+            latency: 12,
+            download: 317412,
+            upload: 321267,
+            exitCode: 'Success',
+            running: 'None',
+            resultId: 8),
+      ]);
+
+      // The first run polls at 0, 100 and 200 ms, and each poll schedules an
+      // update of the result 400 ms later: at 400, 500 and 600 ms.
+      await notifier().runHealthCheck(Module.speedtest);
+      await tester.pump(const Duration(milliseconds: 250));
+      // The second run starts over at 250 ms. Its own first update is due at
+      // 650 ms.
+      await notifier().runHealthCheck(Module.speedtest);
+
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(page().result, isEmpty);
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(page().result.single.resultID, 8);
+
+      await finish(tester);
+    });
 
     testWidgets('moves through latency, download and upload', (tester) async {
       await notifier().runHealthCheck(Module.speedtest);
