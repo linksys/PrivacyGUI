@@ -18,14 +18,14 @@ fi
 
 COMMAND="$1"
 ROUTER_IP="192.168.1.1"
-PASSWORD="$ROUTER_SSH_PASSWORD"
 
+# The password stays in the environment: an argument would show in `ps`.
 EXP_FILE=$(mktemp)
 cat << 'EOF' > "$EXP_FILE"
 set timeout 20
 set router_ip [lindex $argv 0]
-set password [lindex $argv 1]
-set command [lindex $argv 2]
+set command [lindex $argv 1]
+set password $env(ROUTER_SSH_PASSWORD)
 
 spawn ssh -o StrictHostKeyChecking=no root@$router_ip $command
 expect {
@@ -37,5 +37,5 @@ expect {
 }
 EOF
 
-expect "$EXP_FILE" "$ROUTER_IP" "$PASSWORD" "$COMMAND"
+expect "$EXP_FILE" "$ROUTER_IP" "$COMMAND"
 rm -f "$EXP_FILE"
