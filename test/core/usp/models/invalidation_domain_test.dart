@@ -60,6 +60,7 @@ void main() {
       InvalidationDomain.macFilter:
           'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode',
       InvalidationDomain.dynamicDns: 'Device.DynamicDNS.',
+      InvalidationDomain.meshNodes: 'Device.WiFi.DataElements.Network.Device.',
     };
 
     test('every domain declares the TR-181 subtree it stands for', () {

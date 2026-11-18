@@ -355,6 +355,63 @@ void main() {
           isEmpty);
     });
 
+    // The payloads the controller sends when an agent leaves and rejoins the mesh,
+    // measured on 2.0.4.26111122 (PrivacyGUI#1828).
+    test('a node leaving DataElements (ObjectDeletion) → meshNodes', () async {
+      await sendAndExpect(
+        'Device.WiFi.DataElements.Network.Device.5.',
+        InvalidationDomain.meshNodes,
+        type: 'ObjectDeletion',
+      );
+    });
+
+    test('a node joining DataElements (ObjectCreation) → meshNodes', () async {
+      await sendAndExpect(
+        'Device.WiFi.DataElements.Network.Device.6.',
+        InvalidationDomain.meshNodes,
+        type: 'ObjectCreation',
+      );
+    });
+
+    test('a node row without the trailing dot is still meshNodes', () async {
+      await sendAndExpect(
+        'Device.WiFi.DataElements.Network.Device.5',
+        InvalidationDomain.meshNodes,
+        type: 'ObjectDeletion',
+      );
+    });
+
+    test('an object event on a row nested under a node is not meshNodes',
+        () async {
+      await sendAndExpectEmpty(
+        'Device.WiFi.DataElements.Network.Device.1.Radio.1.BSS.2.STA.7.',
+        type: 'ObjectCreation',
+      );
+    });
+
+    test('a value under the node table is not meshNodes', () async {
+      await sendAndExpectEmpty(
+          'Device.WiFi.DataElements.Network.Device.5.MultiAPDevice.Backhaul.LinkType');
+    });
+
+    test('the node table prefix does not take the MAC filter mode leaf',
+        () async {
+      await sendAndExpect(
+        'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode',
+        InvalidationDomain.macFilter,
+      );
+    });
+
+    test('the app subscribes the node table\'s object events, not its values',
+        () {
+      // The topology learns of a node joining or leaving only from these two. A
+      // ValueChange on the table would push every node metric as it moves.
+      const table = 'Device.WiFi.DataElements.Network.Device.';
+      final onTable = coreSubscriptions.where((s) => s.$3 == table);
+      expect(onTable.map((s) => s.$2),
+          unorderedEquals(['ObjectCreation', 'ObjectDeletion']));
+    });
+
     // What an update moves: the client's Status and LastError, and its host
     // name's Status and LastUpdate (PrivacyGUI#641).
     test('a DDNS client status → dynamicDns', () async {

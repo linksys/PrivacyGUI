@@ -4,6 +4,16 @@
 
 const coreSubscriptions = [
   (
+    'mesh-nodes-objectcreation',
+    'ObjectCreation',
+    'Device.WiFi.DataElements.Network.Device.'
+  ),
+  (
+    'mesh-nodes-objectdeletion',
+    'ObjectDeletion',
+    'Device.WiFi.DataElements.Network.Device.'
+  ),
+  (
     'mac-filter-mode-valuechange',
     'ValueChange',
     'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode'
