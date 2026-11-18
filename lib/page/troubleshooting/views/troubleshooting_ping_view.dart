@@ -87,6 +87,10 @@ class _TroubleshootingPingViewState
                     setState(() {
                       _log = event.pingLog;
                     });
+                  }, onError: (Object error) {
+                    // A status the router cannot give is skipped; the poll
+                    // goes on, and so does the log.
+                    logger.d('[Troubleshooting]: ping status unread: $error');
                   });
                 });
               },
