@@ -178,9 +178,7 @@ void main() {
     testWidgets('reports the result once the test is done', (tester) async {
       await notifier().runHealthCheck(Module.speedtest);
 
-      // The last poll, at 3.6 s, finds the test done. This checks the
-      // result as it lands: 400 ms after the poll before it, a delayed
-      // update still replaces `result` with that in-progress reading.
+      // The last poll, at 3.6 s, finds the test done.
       await tester.pump(const Duration(milliseconds: 3601));
 
       expect((page().step, page().status), ('success', 'COMPLETE'));
@@ -195,7 +193,14 @@ void main() {
       // The results changed the router's own figures; poll them now.
       expect(polling.forced, 1);
 
+      // What the in-progress polls scheduled still fires after this, and
+      // must leave the result alone.
       await finish(tester);
+      final result = page().result.single;
+      expect(result.timestamp, '2026-11-18T12:00:00Z');
+      expect(result.speedTestResult?.exitCode, 'Success');
+      expect(result.speedTestResult?.uploadBandwidth, 321267);
+      expect(page().meterValue, 321267);
     });
 
     testWidgets('reports a test that ended in an error', (tester) async {

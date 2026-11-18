@@ -30,6 +30,13 @@ final healthCheckProvider =
 class HealthCheckProvider extends Notifier<HealthCheckState> {
   StreamSubscription? _streamSubscription;
 
+  /// Counts the runs, so an update a run scheduled can tell it is stale.
+  int _run = 0;
+
+  /// Whether an update scheduled by [run] may still change the state: only
+  /// while that run is the latest and still running.
+  bool _isRunning(int run) => run == _run && state.status == 'RUNNING';
+
   @override
   HealthCheckState build() => HealthCheckState.init();
 
@@ -42,6 +49,7 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
 
   Future<void> runHealthCheck(Module module, {int? serverId}) async {
     if (module == Module.speedtest) {
+      final run = ++_run;
       state = HealthCheckState.init().copyWith(
         servers: state.servers, // Preserve servers
         selectedServer: state.selectedServer,
@@ -153,6 +161,7 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
             meterValue =
                 speedtestTempResult.downloadBandwidth?.toDouble() ?? 0.0;
             Future.delayed(const Duration(milliseconds: 1000), () {
+              if (!_isRunning(run)) return;
               state = state.copyWith(meterValue: 0.0);
             });
           } else {
@@ -165,6 +174,9 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
             randomValue: randomValue,
           );
           Future.delayed(const Duration(milliseconds: 400), () {
+            // Once the run is done, its final result is in; an in-progress
+            // reading scheduled before that must not replace it.
+            if (!_isRunning(run)) return;
             state = state.copyWith(
               result: [
                 HealthCheckResult(
