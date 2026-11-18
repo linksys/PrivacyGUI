@@ -18,12 +18,23 @@ import '../../../common/router_boundary.dart';
 
 /// One entry of `GetBackhaulInfo` output. The times are months in the past
 /// in every time zone.
-Map<String, dynamic> _backhaul(String id, {required String at}) => {
+Map<String, dynamic> _backhaul(String id,
+        {required String at, bool wired = true}) =>
+    {
       'deviceUUID': id,
       'ipAddress': '192.168.1.${id.length}',
       'parentIPAddress': '192.168.1.1',
-      'connectionType': 'Wired',
-      'wirelessConnectionInfo': null,
+      'connectionType': wired ? 'Wired' : 'Wireless',
+      'wirelessConnectionInfo': wired
+          ? null
+          : {
+              'radioID': 'RADIO_5GHz',
+              'channel': 149,
+              'apRSSI': -50,
+              'stationRSSI': -52,
+              'apBSSID': 'AA:00:00:00:00:01',
+              'stationBSSID': 'AA:00:00:00:00:02',
+            },
       'speedMbps': '1000',
       'timestamp': at,
     };
@@ -69,6 +80,8 @@ void main() {
   late ProviderContainer container;
   late BuildContext context;
   late List<bool> idleCheckerPaused;
+  // The backhaul the app last polled, before the run starts.
+  late List<Map<String, dynamic>> snapshot;
 
   AddWiredNodesNotifier notifier() =>
       container.read(addWiredNodesProvider.notifier);
@@ -97,12 +110,12 @@ void main() {
         ],
       });
     polling = RecordingPolling();
+    snapshot = [_hallBefore];
     container = ProviderContainer(overrides: [
       routerRepositoryProvider.overrideWithValue(router.repo),
       pollingProvider.overrideWith(() => polling),
-      deviceManagerProvider.overrideWith(() => _DeviceManagerStub([
-            BackHaulInfoData.fromMap(_hallBefore),
-          ])),
+      deviceManagerProvider.overrideWith(() => _DeviceManagerStub(
+          [for (final entry in snapshot) BackHaulInfoData.fromMap(entry)])),
     ]);
     // The provider disposes itself once nothing listens, as the pairing
     // dialog's watch does.
@@ -179,6 +192,31 @@ void main() {
         'does not count a wired node already there whose backhaul was '
         'refreshed', (tester) async {
       await openApp(tester);
+
+      await notifier().startAutoOnboarding(context);
+
+      expect(page().anyOnboarded, isNull);
+      expect(page().loadingMessage, 'Searching for nodes...');
+    });
+
+    testWidgets('never counts a node that was already in the mesh',
+        (tester) async {
+      await openApp(tester);
+      snapshot = [
+        _backhaul('hall', at: '2026-01-05T11:59:00Z'),
+        _backhaul('attic', at: '2026-01-05T09:00:00Z', wired: false),
+        _backhaul('garage', at: '2026-01-05T09:00:00Z'),
+      ];
+      router.holds(JNAPAction.getBackhaulInfo, {
+        'backhaulDevices': [
+          // Refreshed across noon UTC.
+          _backhaul('hall', at: '2026-01-05T12:00:00Z'),
+          // On a wireless backhaul.
+          _backhaul('attic', at: '2026-01-05T09:10:00Z', wired: false),
+          // Not refreshed since the app last polled.
+          _backhaul('garage', at: '2026-01-05T09:00:00Z'),
+        ],
+      });
 
       await notifier().startAutoOnboarding(context);
 

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/back_haul_info.dart';
@@ -143,7 +142,6 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
 
   Stream pollBackhaulInfo(BuildContext context, [bool refreshing = false]) {
     final repo = ref.read(routerRepositoryProvider);
-    final now = DateTime.now();
     return repo.scheduledCommand(
       action: JNAPAction.getBackhaulInfo,
       auth: true,
@@ -161,33 +159,16 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
         final backhaulInfoList = List.from(
           result.output['backhaulDevices'] ?? [],
         ).map((e) => BackHaulInfoData.fromMap(e)).toList();
-        final foundCounting = backhaulInfoList.fold<int>(0, (value, infoData) {
-          final dateFormat = DateFormat("yyyy-MM-ddThh:mm:ssZ");
-          // find the node which uuid is already exist on backhaul snapshot,
-          // and the connection type is "Wired"
-          // and the timestamp is less than current time
-          // and if the uuid is exist the timestamp is less than snapshot one
-          // if satisfy the above condition, then this is not the new added one.
-          return (state.backhaulSnapshot?.any((e) =>
-                      e.deviceUUID == infoData.deviceUUID &&
-                      infoData.connectionType == 'Wired' &&
-                      now.millisecondsSinceEpoch >
-                          (dateFormat
-                                  .tryParse(infoData.timestamp)
-                                  ?.millisecondsSinceEpoch ??
-                              0) &&
-                      (dateFormat
-                                  .tryParse(e.timestamp)
-                                  ?.millisecondsSinceEpoch ??
-                              0) <
-                          (dateFormat
-                                  .tryParse(infoData.timestamp)
-                                  ?.millisecondsSinceEpoch ??
-                              0)) ==
-                  true)
-              ? value
-              : value + 1;
-        });
+        // A node is new when it was not on the backhaul the app last polled.
+        // A node already in the mesh is never new, however its backhaul
+        // changed: wired or wireless, refreshed or not.
+        final known = {
+          for (final e in state.backhaulSnapshot ?? <BackHaulInfoData>[])
+            e.deviceUUID,
+        };
+        final foundCounting = backhaulInfoList
+            .where((infoData) => !known.contains(infoData.deviceUUID))
+            .length;
         if (foundCounting > 0) {
           state = state.copyWith(
               loadingMessage: loc(context).foundNNodesOnline(foundCounting),
