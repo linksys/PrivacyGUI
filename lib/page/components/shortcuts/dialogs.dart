@@ -433,6 +433,8 @@ Future<T?> showRouterNotFoundAlert<T>(BuildContext context, WidgetRef ref,
   // of the session.
   final dialog = showSimpleAppDialog<T>(context,
       dismissible: false,
+      // Taller than a short window (#1802).
+      scrollable: true,
       title: loc(context).routerNotFound,
       content: Column(
         mainAxisSize: MainAxisSize.min,
