@@ -344,6 +344,31 @@ void main() {
       expect(prefs.getString(pBlinkingNodeId), 'attic');
     });
 
+    test('toggling a node the router will not blink leaves nothing behind',
+        () async {
+      router.refuses(JNAPAction.startBlinkNodeLed);
+
+      await notifier().toggleBlinkNode('hall');
+      await pumpEventQueue();
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString(pBlinkingNodeId), isNull);
+    });
+
+    test('toggling another node starts it even if the first will not stop',
+        () async {
+      SharedPreferences.setMockInitialValues({pBlinkingNodeId: 'hall'});
+      router.refuses(JNAPAction.stopBlinkNodeLed);
+
+      await notifier().toggleBlinkNode('attic');
+      await pumpEventQueue();
+
+      expect(router.actions,
+          [JNAPAction.stopBlinkNodeLed, JNAPAction.startBlinkNodeLed]);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString(pBlinkingNodeId), 'attic');
+    });
+
     test('toggling the node already blinking blinks it again', () async {
       SharedPreferences.setMockInitialValues({pBlinkingNodeId: 'hall'});
 
