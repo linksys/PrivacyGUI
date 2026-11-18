@@ -41,7 +41,8 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
           // PROTOTYPE #1864 option B: both layouts already have a fixed height.
           ResponsiveLayout(
                 desktop: SizedBox(
-                  height: (advancedSettings.length / 2) * 56,
+                  // PROTOTYPE #1864 option B: the grid takes its real height; the old
+                  // height left out the spacing and only worked under Expanded.
                   child: GridView.builder(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
@@ -50,7 +51,7 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
                       childAspectRatio: (430 / 56),
                       mainAxisExtent: 56,
                     ),
-                    physics: const ScrollPhysics(),
+                    physics: const NeverScrollableScrollPhysics(),
                     itemCount: advancedSettings.length,
                     itemBuilder: (context, index) {
                       return _advancedSettingCard(index);
@@ -59,8 +60,9 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
                   ),
                 ),
                 mobile: SizedBox(
-                  height: advancedSettings.length * 56,
+                  // PROTOTYPE #1864 option B: as above, for the list.
                   child: ListView.separated(
+                    physics: const NeverScrollableScrollPhysics(),
                     itemCount: advancedSettings.length,
                     shrinkWrap: true,
                     itemBuilder: (context, index) {

@@ -87,11 +87,9 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   Widget _buildMenuGridView(List<AppSectionItemData> items) {
     return Scrollbar(
       thickness: 0,
+      // PROTOTYPE #1864 option B: the grid takes its real height; the old
+      // height left out the spacing and only worked under Expanded.
       child: SizedBox(
-        height: (items.length /
-                    (ResponsiveLayout.isOverMedimumLayout(context) ? 3 : 1)) *
-                (ResponsiveLayout.isOverMedimumLayout(context) ? 152 : 112) +
-            kDefaultToolbarHeight,
         child: GridView.builder(
           controller: Scrollable.maybeOf(context)?.widget.controller,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(

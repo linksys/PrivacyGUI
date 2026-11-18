@@ -288,7 +288,10 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                     opacity: showConfig ? 1 : 0,
                     child: SizedBox(
                         height: constraints.maxHeight, child: _configView()))),
-            Container(
+            // PROTOTYPE #1864 option B: the overlay fills the Stack, so its Center
+            // centers in a page whose height is unbounded.
+            Positioned.fill(
+                child: Container(
               color: Theme.of(context).colorScheme.background,
               child: switch (_setupStep) {
                 _PnpSetupStep.saving => _loadingSpinner(),
@@ -296,7 +299,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                 _PnpSetupStep.needReconnect => _showNeedReconnect(),
                 _ => SizedBox.square(),
               },
-            )
+            ))
           ],
         ),
     };
