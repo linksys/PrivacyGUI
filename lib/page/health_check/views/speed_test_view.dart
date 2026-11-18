@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/page/layout/fill_column.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -321,10 +322,10 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _meterView(state.step, bandwidth.value, bandwidth.unit, latency),
-          const AppGap.medium(),
+          const SizedBox(height: Spacing.medium),
           const SizedBox.shrink(),
           _infoView(state),
-          const AppGap.medium(),
+          const SizedBox(height: Spacing.medium),
         ],
       ),
     );

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:privacygui_widgets/widgets/page/layout/fill_column.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/error_code.dart';
@@ -288,18 +289,24 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                     opacity: showConfig ? 1 : 0,
                     child: SizedBox(
                         height: constraints.maxHeight, child: _configView()))),
-            // PROTOTYPE #1864 option B: the overlay fills the Stack, so its Center
-            // centers in a page whose height is unbounded.
-            Positioned.fill(
-                child: Container(
-              color: Theme.of(context).colorScheme.background,
-              child: switch (_setupStep) {
+            // PROTOTYPE #1864 option B: a shown overlay is fitted to the config
+            // view's height, as the Stack under an IntrinsicHeight gave it, and
+            // a taller one still grows the page. A hidden one stays empty, or
+            // it would cover the config view.
+            if (showConfig)
+              const SizedBox.shrink()
+            else
+              FitOrGrow(
+                  height: constraints.maxHeight,
+                  child: Container(
+                color: Theme.of(context).colorScheme.background,
+                child: switch (_setupStep) {
                 _PnpSetupStep.saving => _loadingSpinner(),
                 _PnpSetupStep.saved => _showSaved(),
                 _PnpSetupStep.needReconnect => _showNeedReconnect(),
-                _ => SizedBox.square(),
-              },
-            ))
+                  _ => SizedBox.square(),
+                },
+              ))
           ],
         ),
     };

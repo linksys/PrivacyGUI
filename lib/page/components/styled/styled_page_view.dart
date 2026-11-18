@@ -337,8 +337,8 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                   isOverlayVisible: showColumnOverlay,
                   child: (context, constraints) {
                     // PROTOTYPE #1864 option B: [minHeight] is what is left of
-                    // a scrolling page under the app bar. A Row does not pass a
-                    // minimum height on, so the page content gets it here.
+                    // a scrolling page under the app bar. A Row does not pass
+                    // it on, so the page content is fitted to it here.
                     Widget body(double minHeight) {
                       final views = [
                         if (!ResponsiveLayout.isMobileLayout(context) &&
@@ -352,8 +352,8 @@ class _StyledAppPageViewState extends ConsumerState<StyledAppPageView> {
                           const AppGap.gutter(),
                         ],
                         Expanded(
-                            child: ConstrainedBox(
-                          constraints: BoxConstraints(minHeight: minHeight),
+                            child: FitOrGrow(
+                          height: minHeight,
                           child: widget.child?.call(context, constraints) ??
                               SizedBox.shrink(),
                         )),
