@@ -113,8 +113,9 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
   Timer? _debounce;
 
   /// Merges a burst of [InvalidationDomain.meshNodes] pushes into one mesh read, apart
-  /// from [_debounce] because the two start different reads. A parent node leaving takes
-  /// every node behind it out of DataElements at once, one deletion each.
+  /// from [_debounce] because the two start different reads. Each node that leaves or
+  /// joins is one notification, so several nodes going at once, such as the nodes behind
+  /// a parent that leaves, arrive as a burst.
   Timer? _meshDebounce;
 
   /// Which refresh is allowed to publish.
@@ -138,21 +139,31 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
   /// always been here rather than being introduced by removing that call.
   int _refreshGeneration = 0;
 
-  /// Which DataElements read is allowed to publish (#1828).
+  /// The number the next DataElements read takes as it starts (#1828).
   ///
   /// TWO PATHS READ THE MESH: the background read that follows every device read
   /// ([_fetchMeshAndUpdate]), and the read a [InvalidationDomain.meshNodes] push starts on
   /// its own ([_refreshMesh]). Both go through [_fetchMeshAndUpdateInner], which takes a
-  /// number here when it starts reading and publishes only if it is still the newest. So a
-  /// read that started earlier and finished later, holding the topology from before a node
-  /// left or joined, cannot replace a newer one.
+  /// number from here as it starts reading and publishes only if that number is higher
+  /// than [_publishedMeshGeneration]. So a read that started earlier and finished later,
+  /// holding the topology from before a node left or joined, cannot replace a newer one.
+  ///
+  /// HIGHER THAN THE LAST ONE PUBLISHED, NOT THE NEWEST ONE STARTED. A newer read can
+  /// end without publishing: `fetchMeshTopology` turns a faulted DataElements read into an
+  /// empty topology, and a read that belongs to a superseded device read is dropped. If
+  /// starting one retired every older read, such a read would take an older one that
+  /// succeeds down with it, and nothing would publish at all.
   ///
   /// SEPARATE FROM [_refreshGeneration] because a mesh read is not a device read. Bumping
   /// that counter for a mesh read would make a device read already in flight drop its
   /// result, and with it the `Hosts` change it was fetched for. A mesh read checks both:
   /// [_refreshGeneration] to step aside for a newer device read, which reads the mesh
-  /// again afterwards anyway, and this one to step aside for a newer mesh read.
+  /// again after its own fetch, and these two numbers to step aside for a newer mesh read.
   int _meshGeneration = 0;
+
+  /// The number of the DataElements read whose topology is published; see
+  /// [_meshGeneration].
+  int _publishedMeshGeneration = 0;
 
   @override
   Future<DevicesData> build() async {
@@ -374,7 +385,8 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
   /// Shared by the read that follows a device read and the one a
   /// [InvalidationDomain.meshNodes] push starts. [generation] is the device read this
   /// belongs to; the mesh read takes its own number from [_meshGeneration] as it starts.
-  /// It publishes only while both are still the newest.
+  /// It publishes only while [generation] is still the current device read and its own
+  /// number is higher than the last one published.
   Future<void> _fetchMeshAndUpdateInner(
     UspDevicesDataService svc,
     WifiData wifiData,
@@ -382,6 +394,10 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     SystemInfoData? sysData,
     int generation,
   ) async {
+    // A rebuild whose device fetch returned after a newer device read had started belongs
+    // to a superseded generation: its mesh read could only be dropped at the end, so it
+    // does not start one.
+    if (generation != _refreshGeneration) return;
     final meshGeneration = ++_meshGeneration;
 
     // Build BSSID → band mapping for slave client band resolution
@@ -413,10 +429,12 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
         'clients: ${meshNetwork.totalClientCount}');
 
     // Superseded while the mesh fetch was awaiting: by a newer device read or rebuild
-    // ([generation]), or by a mesh read that started after this one ([_meshGeneration]).
+    // ([generation]), or by a mesh read that started after this one and has already
+    // published ([_publishedMeshGeneration]).
     if (generation != _refreshGeneration) return;
-    if (meshGeneration != _meshGeneration) return;
+    if (meshGeneration < _publishedMeshGeneration) return;
 
+    _publishedMeshGeneration = meshGeneration;
     state = AsyncData(cur.copyWith(
       meshTopology: meshTopology,
       meshNetwork: meshNetwork,
@@ -445,14 +463,18 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
   /// This rebuilds the devices already held against the new mesh in one write.
   ///
   /// It joins the device read that is current when the mesh read starts, rather than
-  /// starting a new one: a device read that starts after it reads the mesh again itself,
-  /// so this one steps aside for it.
+  /// starting a new one: a device read that starts after it reads the mesh again after its
+  /// own fetch, so this one steps aside for it.
   ///
   /// READ [_refreshGeneration] AS THE MESH READ STARTS, NOT AS THE PUSH ARRIVES. A device
-  /// read that started in between may already have its own mesh read in flight. Starting
-  /// this one takes a newer [_meshGeneration] number and so retires that read; belonging
-  /// to the same device read is what lets this one publish in its place. Holding the
-  /// number from before the await would retire both.
+  /// read can start while this awaits the Wi-Fi and system info reads. Holding the number
+  /// from before that await would make this read step aside for it, and that device read
+  /// may fail before it reads the mesh, leaving the node change unshown until some other
+  /// push. Joining it keeps this read.
+  ///
+  /// Not covered: this read itself failing, or a device read that starts after it and
+  /// then fails. Either leaves the topology as it was until the next push, as a failed
+  /// device read does.
   Future<void> _refreshMesh() async {
     try {
       final svc = ref.read(uspDevicesDataServiceProvider);
@@ -523,9 +545,6 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
 
   Future<void> _refetchPreservingMeshInner() async {
     final generation = ++_refreshGeneration;
-    final currentState = state.valueOrNull;
-    final existingMesh = currentState?.meshTopology ?? MeshTopologyInfo.empty;
-
     final svc = ref.read(uspDevicesDataServiceProvider);
 
     final (wifiData, sysData, gatewayName) = await _readEnrichment();
@@ -536,6 +555,12 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       gatewayName: gatewayName,
       systemInfo: sysData?.model,
     );
+
+    // Read after the fetch, as `_fetch` does. A mesh read can publish while this one
+    // awaits (#1828); the topology read before the await would put the node it just added
+    // or removed back the other way until this refresh's own mesh read lands.
+    final existingMesh =
+        state.valueOrNull?.meshTopology ?? MeshTopologyInfo.empty;
 
     // Rebuild with existing mesh to preserve slave node visibility.
     final meshNetwork = existingMesh.isEmpty

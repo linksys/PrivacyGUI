@@ -60,8 +60,9 @@ enum InvalidationDomain {
 
   /// Device.WiFi.DataElements.Network.Device. — a mesh node added to or
   /// removed from the controller's DataElements (`mesh-nodes-objectcreation`
-  /// and `mesh-nodes-objectdeletion`, PrivacyGUI#1828). Object events only: a
-  /// station coming and going under a node does not push.
+  /// and `mesh-nodes-objectdeletion`, PrivacyGUI#1828). Object events on the node
+  /// table only. A phone's station removed from and added to a controller BSS
+  /// pushed neither; stations on an agent's BSS and MLO stations were not tried.
   meshNodes,
 }
 

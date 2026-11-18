@@ -156,7 +156,7 @@ The YAML definitions are **not vendored** into this repo and individual definiti
 - **The rest of the output:** every other file the command writes is unchanged. `index.dart` comes out in a different order with the same exports and is left as checked in.
 - **Firmware side,** measured on 2.0.4.26111122 before #123 merged (#1828):
   - the controller sends each event in the same second as `DeviceNumberOfEntries` changes;
-  - a station joining or leaving under a node sends neither;
+  - a phone's station removed from and added to a controller BSS sends neither; stations on an agent's BSS and MLO stations were not tried;
   - a local session receives both.
   - Remote Assistance was not tried.
 
