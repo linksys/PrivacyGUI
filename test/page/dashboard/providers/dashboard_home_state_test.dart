@@ -40,7 +40,7 @@ void main() {
 
       expect(
         item.qrCredential.generate(),
-        'WIFI:S:_VelopSetup4C4;P:9pe0a3rpwc;T:WPA;H:false;;',
+        'WIFI:S:_VelopSetup4C4;P:fakewifi06;T:WPA;H:false;;',
       );
     });
 
@@ -60,7 +60,7 @@ void main() {
 
       expect(
         item.qrCredential.generate(),
-        'WIFI:S:_VelopSetup4C4;P:9pe0a3rpwc;T:WPA;H:true;;',
+        'WIFI:S:_VelopSetup4C4;P:fakewifi06;T:WPA;H:true;;',
       );
     });
 
@@ -73,7 +73,7 @@ void main() {
       expect(item.securityType, isNull);
       expect(
         item.qrCredential.generate(),
-        'WIFI:S:_VelopSetup4C4;P:9pe0a3rpwc;T:WPA;H:false;;',
+        'WIFI:S:_VelopSetup4C4;P:fakewifi06;T:WPA;H:false;;',
       );
     });
 
