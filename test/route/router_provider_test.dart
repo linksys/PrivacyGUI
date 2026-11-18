@@ -344,8 +344,9 @@ void main() {
         (tester) async {
       final goRouter = await open(tester);
 
+      // With no query to carry over, the login path has none either.
       expect(await redirect(tester, goRouter, RoutePath.dashboardHome),
-          startsWith('/localLoginPassword'));
+          '/localLoginPassword');
     });
 
     testWidgets('a setup page before setup has begun goes to its start',
