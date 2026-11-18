@@ -86,6 +86,45 @@ void main() {
       ]);
     });
 
+    // The model gates blink and the child's actions; M63 was missing (#1847).
+    testWidgets('an M63 network gets the same actions', (tester) async {
+      RouterTopologyNode m63(String location, {required bool isMaster}) =>
+          RouterTopologyNode(
+            data: TopologyModel.fromMap(
+                    TopologyTestData.topologyModelJsonTemplate)
+                .copyWith(
+              deviceId: location,
+              location: location,
+              model: 'M63TS-EU',
+              isMaster: isMaster,
+              isWiredConnection: isMaster,
+            ),
+            children: [],
+          );
+      final root = OnlineTopologyNode(
+          data: const TopologyModel(isOnline: true, location: 'Internet'),
+          children: []);
+      final parent = m63('M63 parent', isMaster: true)..parent = root;
+      final child = m63('M63 child', isMaster: false)..parent = parent;
+      root.children.add(parent);
+      parent.children.add(child);
+      when(mockTopologyNotifier.build())
+          .thenReturn(InstantTopologyState(root: root));
+
+      await pump(tester);
+      expect(node(tester, 'M63 parent').actions, [
+        NodeInstantActions.blink,
+        NodeInstantActions.reboot,
+        NodeInstantActions.pair,
+        NodeInstantActions.reset,
+      ]);
+      expect(node(tester, 'M63 child').actions, [
+        NodeInstantActions.blink,
+        NodeInstantActions.reboot,
+        NodeInstantActions.reset,
+      ]);
+    });
+
     testWidgets('pair follows auto-onboarding support', (tester) async {
       when(mockServiceHelper.isSupportAutoOnboarding()).thenReturn(false);
       await pump(tester);

@@ -75,6 +75,14 @@ void main() {
       final result = iconTest(jsonDecode(deviceJson));
       expect(result, 'routerMx6200');
     });
+    test('test iconTest - Pinnacle 2.3', () {
+      // Pinnacle 2.3 is Cherry 7 hardware, so it takes Cherry's icon.
+      const deviceJson = '''
+    {"model": {"deviceType": "Infrastructure", "manufacturer": "Linksys", "modelNumber": "M63TS-EU", "hardwareVersion": "1"}}
+    ''';
+      final result = iconTest(jsonDecode(deviceJson));
+      expect(result, 'routerLn12');
+    });
 
     test('test iconTest - iPhone', () {
       const device = {
@@ -263,6 +271,16 @@ void main() {
       // _iconMapping('routerSpnm62') returns 'routerMx6200'
       final result = routerIconTest(jsonDecode(deviceJson));
       expect(result, 'routerMx6200');
+    });
+
+    test('test routerIconTest - Pinnacle 2.3 (M63)', () {
+      const deviceJson = '''
+      {"model": {"deviceType": "Infrastructure", "manufacturer": "Linksys", "modelNumber": "M63", "hardwareVersion": "1"}}
+      ''';
+      // iconTest finds rule for '^m63' -> 'routerM63'
+      // _iconMapping('routerM63') returns 'routerLn12'
+      final result = routerIconTest(jsonDecode(deviceJson));
+      expect(result, 'routerLn12');
     });
 
     test('test routerIconTest - Velop (WHW03)', () {
