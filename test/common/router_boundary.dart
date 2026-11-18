@@ -18,10 +18,15 @@ typedef SentCommand = MapEntry<JNAPAction, Map<String, dynamic>>;
 /// what was written.
 ///
 /// An action the table does not name answers OK with no output when its name
-/// starts with `set` or `renew`; any other fails the test, naming the action,
-/// so that a provider reading something new cannot pass on an empty answer.
-/// A write named otherwise, such as `updateFirmwareNow`, has to be given an
-/// answer with [holds].
+/// starts with `set` or `renew`. Any other throws a [StateError] naming the
+/// action, so that a provider reading something new cannot pass on an empty
+/// answer. A write named otherwise, such as `updateFirmwareNow`, has to be
+/// given an answer with [holds].
+///
+/// The [StateError] reaches the provider, so a provider that catches
+/// everything a send throws can swallow it and the test still passes. Assert
+/// on what the provider did, such as [actions] or its state, not only that it
+/// did not throw.
 class RouterBoundary {
   RouterBoundary() : repo = MockRouterRepository() {
     when(repo.send(
@@ -124,6 +129,10 @@ class RouterBoundary {
   /// last from then on. An answer is an output map, or a [JNAPError] the
   /// router answers with instead.
   void holdsInTurn(JNAPAction action, List<Object> answers) {
+    if (answers.isEmpty) {
+      throw ArgumentError.value(
+          answers, 'answers', 'needs at least one answer for $action');
+    }
     _answers[action] = [
       for (final answer in answers)
         switch (answer) {
