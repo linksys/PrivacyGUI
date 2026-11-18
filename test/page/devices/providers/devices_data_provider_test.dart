@@ -840,6 +840,657 @@ void main() {
           reason: 'the rebuild wins; the superseded push must not republish');
     });
   });
+
+  // -------------------------------------------------------------------------
+  // #1828: a node joining or leaving DataElements re-reads the mesh on its own.
+  // Before it, a departed node stayed on screen until an unrelated Hosts push.
+  //
+  // Every test runs under fakeAsync: the debounce is a 500 ms Timer, and a
+  // real-time wait just past it races a loaded machine.
+  // -------------------------------------------------------------------------
+  group('DevicesDataNotifier — meshNodes push (#1828)', () {
+    final controller = MasterNode(deviceId: 'GATEWAY', model: 'M60TB');
+    final agent = SlaveNode(
+      deviceId: 'AA:BB:CC:DD:EE:09',
+      model: 'M60',
+      backhaul: const BackhaulInfo(linkType: 'Wi-Fi'),
+    );
+    final withAgent = MeshTopologyInfo(
+      nodes: [controller, agent],
+      clientToNodeMap: const {},
+    );
+    final controllerOnly = MeshTopologyInfo(
+      nodes: [controller],
+      clientToNodeMap: const {},
+    );
+
+    late StreamController<InvalidationEvent> sse;
+
+    setUp(() {
+      sse = StreamController<InvalidationEvent>.broadcast();
+      // Each topology rebuilds into the network it describes, so a test can read
+      // the agent's presence off the published value.
+      when(() => mockDevicesSvc.rebuildWithMesh(
+            context: any(named: 'context'),
+            wifiClientMap: any(named: 'wifiClientMap'),
+            connectionDetailMap: any(named: 'connectionDetailMap'),
+            meshTopology: any(named: 'meshTopology'),
+            gatewayName: any(named: 'gatewayName'),
+            systemInfo: any(named: 'systemInfo'),
+          )).thenAnswer((invocation) {
+        final topology =
+            invocation.namedArguments[#meshTopology] as MeshTopologyInfo;
+        return MeshNetwork(
+          master: controller,
+          slaves: topology.nodes.whereType<SlaveNode>().toList(),
+        );
+      });
+    });
+
+    tearDown(() => sse.close());
+
+    /// Builds the provider and lets build() and its background mesh read land.
+    ProviderContainer start(FakeAsync async) {
+      final container = ProviderContainer(
+        overrides: [
+          uspClientProvider.overrideWithValue(mockUsp),
+          uspDevicesDataServiceProvider.overrideWithValue(mockDevicesSvc),
+          wifiDataProvider.overrideWith(() => _TestWifiDataNotifier()),
+          systemInfoDataProvider.overrideWith(
+            () => _TestSystemInfoDataNotifier(null),
+          ),
+          sseInvalidationProvider.overrideWith((ref) => sse.stream),
+        ],
+      );
+      container.listen(devicesDataProvider, (_, __) {});
+      async.flushMicrotasks();
+      return container;
+    }
+
+    /// Past the 500 ms debounce, with the read it starts allowed to land.
+    void pastDebounce(FakeAsync async) =>
+        async.elapse(const Duration(milliseconds: 600));
+
+    MeshTopologyInfo topologyOf(ProviderContainer container) =>
+        container.read(devicesDataProvider).value!.meshTopology;
+
+    // The answers below are taken in order. A read beyond them throws a
+    // StateError inside the mock, which the provider's own catch turns into a log
+    // line; the tests that care about an extra read count the reads instead.
+    void stubMeshReads(List<Future<MeshTopologyInfo> Function()> reads) {
+      var call = 0;
+      when(() => mockDevicesSvc.fetchMeshTopology(
+            bssidToBandMap: any(named: 'bssidToBandMap'),
+          )).thenAnswer((_) {
+        if (call >= reads.length) {
+          throw StateError('unexpected DataElements read ${call + 1}');
+        }
+        return reads[call++]();
+      });
+    }
+
+    void stubDeviceReads(
+        List<Future<DevicesDataFetchResult> Function()> reads) {
+      var call = 0;
+      when(() => mockDevicesSvc.fetch(
+            wifiClientMap: any(named: 'wifiClientMap'),
+            connectionDetailMap: any(named: 'connectionDetailMap'),
+            gatewayName: any(named: 'gatewayName'),
+            systemInfo: any(named: 'systemInfo'),
+          )).thenAnswer((_) {
+        if (call >= reads.length) {
+          throw StateError('unexpected device read ${call + 1}');
+        }
+        return reads[call++]();
+      });
+    }
+
+    void verifyMeshReads(int count) {
+      verify(() => mockDevicesSvc.fetchMeshTopology(
+            bssidToBandMap: any(named: 'bssidToBandMap'),
+          )).called(count);
+    }
+
+    void verifyNoDeviceRead() {
+      verifyNever(() => mockDevicesSvc.fetch(
+            wifiClientMap: any(named: 'wifiClientMap'),
+            connectionDetailMap: any(named: 'connectionDetailMap'),
+            gatewayName: any(named: 'gatewayName'),
+            systemInfo: any(named: 'systemInfo'),
+          ));
+    }
+
+    test('a burst of pushes re-reads DataElements once, and not the devices',
+        () {
+      fakeAsync((async) {
+        when(() => mockDevicesSvc.fetchMeshTopology(
+              bssidToBandMap: any(named: 'bssidToBandMap'),
+            )).thenAnswer((_) async => withAgent);
+
+        final container = start(async);
+        clearInteractions(mockDevicesSvc);
+
+        // Several node events inside the debounce window.
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 1));
+        async.elapse(const Duration(milliseconds: 200));
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 2));
+        async.flushMicrotasks();
+        verifyNever(() => mockDevicesSvc.fetchMeshTopology(
+              bssidToBandMap: any(named: 'bssidToBandMap'),
+            ));
+
+        async.elapse(const Duration(milliseconds: 500));
+        async.flushMicrotasks();
+
+        verifyMeshReads(1);
+        verifyNoDeviceRead();
+        container.dispose();
+      });
+    });
+
+    // A cached or in-flight read from before the node change would answer a read
+    // after it with the old topology. The service calls are logged in the order
+    // they are made.
+    List<String> logCalls() {
+      final calls = <String>[];
+      when(() => mockDevicesSvc.dropSharedReads())
+          .thenAnswer((_) => calls.add('drop'));
+      return calls;
+    }
+
+    Future<MeshTopologyInfo> Function() loggedRead(
+            List<String> calls, MeshTopologyInfo topology) =>
+        () async {
+          calls.add('read');
+          return topology;
+        };
+
+    test(
+        'a meshNodes push drops the shared reads as it arrives; a Hosts push '
+        'does not', () {
+      fakeAsync((async) {
+        final calls = logCalls();
+        stubMeshReads([
+          loggedRead(calls, withAgent), // build()'s background read
+          loggedRead(calls, withAgent), // after the Hosts push's device read
+          loggedRead(calls, controllerOnly), // the meshNodes push's read
+        ]);
+
+        final container = start(async);
+
+        sse.add((domain: InvalidationDomain.connectedDevices, seq: 0));
+        pastDebounce(async);
+        expect(calls, ['read', 'read']);
+
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 1));
+        async.flushMicrotasks();
+        expect(calls, ['read', 'read', 'drop'],
+            reason: 'dropped as the push arrives, before the debounce');
+
+        pastDebounce(async);
+        expect(calls, ['read', 'read', 'drop', 'read']);
+        expect(topologyOf(container), controllerOnly);
+        container.dispose();
+      });
+    });
+
+    test(
+        'a rebuild that cancels a pending push reads the mesh after the shared '
+        'reads were dropped', () {
+      fakeAsync((async) {
+        // The push's own read never runs; the rebuild's mesh read stands in for
+        // it, and must not be answered from before the node change either.
+        final calls = logCalls();
+        stubMeshReads([
+          loggedRead(calls, withAgent), // build()'s background read
+          loggedRead(calls, controllerOnly), // the rebuild's own read
+        ]);
+
+        final container = start(async);
+
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+        async.elapse(const Duration(milliseconds: 100));
+        container.refresh(devicesDataProvider);
+        async.flushMicrotasks();
+        pastDebounce(async);
+
+        expect(calls, ['read', 'drop', 'read']);
+        expect(topologyOf(container), controllerOnly);
+        container.dispose();
+      });
+    });
+
+    test('a node DataElements dropped leaves the topology', () {
+      fakeAsync((async) {
+        stubMeshReads([
+          () async => withAgent, // build()'s background read
+          () async => controllerOnly, // the push's read
+        ]);
+
+        final container = start(async);
+        expect(container.read(devicesDataProvider).value!.slaves, hasLength(1));
+        clearInteractions(mockDevicesSvc);
+
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+        pastDebounce(async);
+
+        final data = container.read(devicesDataProvider).value!;
+        expect(data.slaves, isEmpty);
+        expect(data.meshTopology, controllerOnly);
+        verifyNoDeviceRead();
+        container.dispose();
+      });
+    });
+
+    test('a node DataElements added appears in the topology', () {
+      fakeAsync((async) {
+        stubMeshReads([
+          () async => controllerOnly,
+          () async => withAgent,
+        ]);
+
+        final container = start(async);
+        expect(container.read(devicesDataProvider).value!.slaves, isEmpty);
+
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+        pastDebounce(async);
+
+        final data = container.read(devicesDataProvider).value!;
+        expect(data.slaves.map((s) => s.deviceId), ['AA:BB:CC:DD:EE:09']);
+        expect(data.meshTopology, withAgent);
+        container.dispose();
+      });
+    });
+
+    test('an older mesh read finishing last does not replace a newer one', () {
+      fakeAsync((async) {
+        // The case the mesh number exists for. A Hosts push's mesh read starts
+        // first and is held; the node then leaves, its push's read starts second
+        // and returns first. The first read, still holding the node, returns last.
+        final older = Completer<MeshTopologyInfo>();
+        final newer = Completer<MeshTopologyInfo>();
+        stubMeshReads([
+          () async => withAgent, // build()'s background read
+          () => older.future, // after the Hosts push's device read
+          () => newer.future, // the meshNodes push's read
+        ]);
+
+        final container = start(async);
+
+        sse.add((domain: InvalidationDomain.connectedDevices, seq: 0));
+        pastDebounce(async);
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 1));
+        pastDebounce(async);
+
+        newer.complete(controllerOnly);
+        async.flushMicrotasks();
+        expect(container.read(devicesDataProvider).value!.slaves, isEmpty);
+
+        older.complete(withAgent);
+        async.flushMicrotasks();
+
+        expect(topologyOf(container), controllerOnly,
+            reason:
+                'the read that started first must not publish over the newer');
+        expect(container.read(devicesDataProvider).value!.slaves, isEmpty);
+        container.dispose();
+      });
+    });
+
+    test(
+        'a held mesh re-read does not replace a newer mesh a device read '
+        'published', () {
+      fakeAsync((async) {
+        // The push's mesh read is held, holding the node; a Hosts push then reads
+        // the devices and the mesh again, which starts later, returns first
+        // without the node, and publishes. The push's read returns last.
+        final pushRead = Completer<MeshTopologyInfo>();
+        stubMeshReads([
+          () async => withAgent, // build()'s background read
+          () => pushRead.future, // the meshNodes push's read
+          () async => controllerOnly, // after the Hosts push's device read
+        ]);
+
+        final container = start(async);
+
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+        pastDebounce(async);
+        sse.add((domain: InvalidationDomain.connectedDevices, seq: 1));
+        pastDebounce(async);
+        expect(topologyOf(container), controllerOnly);
+
+        pushRead.complete(withAgent);
+        async.flushMicrotasks();
+
+        expect(topologyOf(container), controllerOnly,
+            reason: 'the older mesh read must not publish over the newer');
+        container.dispose();
+      });
+    });
+
+    test('a rebuild cancels a pending push', () {
+      fakeAsync((async) {
+        when(() => mockDevicesSvc.fetchMeshTopology(
+              bssidToBandMap: any(named: 'bssidToBandMap'),
+            )).thenAnswer((_) async => withAgent);
+
+        final container = start(async);
+
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+        async.elapse(const Duration(milliseconds: 100));
+        clearInteractions(mockDevicesSvc);
+
+        // A pull-to-refresh inside the window: the rebuild reads the mesh itself.
+        container.refresh(devicesDataProvider);
+        async.flushMicrotasks();
+        pastDebounce(async);
+
+        verifyMeshReads(1);
+        container.dispose();
+      });
+    });
+
+    test(
+        'a rebuild that returns after a newer device read leaves its mesh alone',
+        () {
+      fakeAsync((async) {
+        // A pull-to-refresh whose device fetch is slow, and a Hosts push whose
+        // device read overtakes it. The rebuild belongs to a superseded
+        // generation when it returns; it must not keep the newer device read's
+        // mesh from publishing.
+        final rebuildFetch = Completer<DevicesDataFetchResult>();
+        final pushMesh = Completer<MeshTopologyInfo>();
+        stubDeviceReads([
+          () async => _tagged('build'),
+          () => rebuildFetch.future, // the pull-to-refresh
+          () async => _tagged('push'), // the Hosts push
+        ]);
+        stubMeshReads([
+          () async => withAgent, // build()'s background read
+          () => pushMesh.future, // after the Hosts push's device read
+        ]);
+
+        final container = start(async);
+
+        container.refresh(devicesDataProvider);
+        async.flushMicrotasks();
+        sse.add((domain: InvalidationDomain.connectedDevices, seq: 0));
+        pastDebounce(async);
+
+        rebuildFetch.complete(_tagged('rebuild'));
+        async.flushMicrotasks();
+        pushMesh.complete(controllerOnly);
+        async.flushMicrotasks();
+
+        expect(topologyOf(container), controllerOnly,
+            reason: 'the newer device read\'s mesh must publish');
+        // build()'s and the Hosts push's. A third would be the superseded rebuild
+        // reading the mesh it can only drop.
+        verifyMeshReads(2);
+        container.dispose();
+      });
+    });
+
+    test('a newer mesh read that fails does not stop an older one', () {
+      fakeAsync((async) {
+        // `fetchMeshTopology` turns a faulted read into an empty topology. The
+        // push's read faults; the Hosts push's read, started earlier, still
+        // succeeds and must publish.
+        final older = Completer<MeshTopologyInfo>();
+        stubMeshReads([
+          () async => withAgent, // build()'s background read
+          () => older.future, // after the Hosts push's device read
+          () async => MeshTopologyInfo.empty, // the meshNodes push's, faulted
+        ]);
+
+        final container = start(async);
+
+        sse.add((domain: InvalidationDomain.connectedDevices, seq: 0));
+        pastDebounce(async);
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 1));
+        pastDebounce(async);
+
+        older.complete(controllerOnly);
+        async.flushMicrotasks();
+
+        expect(topologyOf(container), controllerOnly);
+        container.dispose();
+      });
+    });
+
+    test(
+        'a device read keeps the topology a mesh read published while it waited',
+        () {
+      fakeAsync((async) {
+        // The Hosts push's device read is held in its fetch while the meshNodes
+        // push's read publishes the node leaving. The device read's first pass
+        // must build on that topology, not on the one from before it awaited.
+        final pushFetch = Completer<DevicesDataFetchResult>();
+        stubDeviceReads([
+          () async => _tagged('build'),
+          () => pushFetch.future, // the Hosts push
+        ]);
+        stubMeshReads([
+          () async => withAgent, // build()'s background read
+          () async => controllerOnly, // the meshNodes push's read
+          () => Completer<MeshTopologyInfo>().future, // the Hosts push's
+        ]);
+
+        final container = start(async);
+
+        sse.add((domain: InvalidationDomain.connectedDevices, seq: 0));
+        pastDebounce(async);
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 1));
+        pastDebounce(async);
+        expect(topologyOf(container), controllerOnly);
+
+        pushFetch.complete(_tagged('push'));
+        async.flushMicrotasks();
+
+        final data = container.read(devicesDataProvider).value!;
+        expect(data.hostNameByMac, {'TAG': 'push'});
+        expect(data.meshTopology, controllerOnly,
+            reason: 'the first pass must not put the departed node back');
+        container.dispose();
+      });
+    });
+
+    // The push's read belongs to no device read. A device read that starts while
+    // it is in flight and ends without a topology must not take the node change
+    // down with it.
+    test(
+        'a mesh re-read is kept when a device read that starts meanwhile fails',
+        () {
+      fakeAsync((async) {
+        final pushRead = Completer<MeshTopologyInfo>();
+        stubDeviceReads([
+          () async => _tagged('build'),
+          () => Future.error(Exception('fetch failed')), // the Hosts push
+        ]);
+        stubMeshReads([
+          () async => withAgent, // build()'s background read
+          () => pushRead.future, // the meshNodes push's read
+        ]);
+
+        final container = start(async);
+
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+        pastDebounce(async);
+        sse.add((domain: InvalidationDomain.connectedDevices, seq: 1));
+        pastDebounce(async);
+
+        pushRead.complete(controllerOnly);
+        async.flushMicrotasks();
+
+        expect(topologyOf(container), controllerOnly);
+        container.dispose();
+      });
+    });
+
+    test('a mesh re-read is kept when a newer device read\'s mesh read faults',
+        () {
+      fakeAsync((async) {
+        final pushRead = Completer<MeshTopologyInfo>();
+        stubMeshReads([
+          () async => withAgent, // build()'s background read
+          () => pushRead.future, // the meshNodes push's read
+          () async => MeshTopologyInfo.empty, // the Hosts push's, faulted
+        ]);
+
+        final container = start(async);
+
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+        pastDebounce(async);
+        sse.add((domain: InvalidationDomain.connectedDevices, seq: 1));
+        pastDebounce(async);
+
+        pushRead.complete(controllerOnly);
+        async.flushMicrotasks();
+
+        expect(topologyOf(container), controllerOnly);
+        container.dispose();
+      });
+    });
+
+    test('a mesh re-read does not publish while a rebuild is loading', () {
+      fakeAsync((async) {
+        // Publishing would end the pull-to-refresh early with the devices from
+        // before it. The rebuild reads the mesh itself after its fetch.
+        final rebuildFetch = Completer<DevicesDataFetchResult>();
+        stubDeviceReads([
+          () async => _tagged('build'),
+          () => rebuildFetch.future, // the pull-to-refresh
+        ]);
+        stubMeshReads([
+          () async => withAgent, // build()'s background read
+          () async => controllerOnly, // the meshNodes push's read
+          () async => controllerOnly, // the rebuild's own read
+        ]);
+
+        final container = start(async);
+
+        container.refresh(devicesDataProvider);
+        async.flushMicrotasks();
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+        pastDebounce(async);
+
+        final during = container.read(devicesDataProvider);
+        expect(during.isLoading, isTrue,
+            reason: 'the push read must not end the rebuild\'s loading');
+        expect(during.value!.meshTopology, withAgent);
+
+        rebuildFetch.complete(_tagged('rebuild'));
+        async.flushMicrotasks();
+
+        final data = container.read(devicesDataProvider).value!;
+        expect(data.hostNameByMac, {'TAG': 'rebuild'});
+        expect(data.meshTopology, controllerOnly);
+        container.dispose();
+      });
+    });
+
+    test('a mesh re-read does not replace a failed rebuild\'s error', () {
+      fakeAsync((async) {
+        // The Retry view shows the error; the old list must not come back over it.
+        final pushRead = Completer<MeshTopologyInfo>();
+        stubDeviceReads([
+          () async => _tagged('build'),
+          () => Future.error(Exception('fetch failed')), // the pull-to-refresh
+        ]);
+        stubMeshReads([
+          () async => withAgent, // build()'s background read
+          () => pushRead.future, // the meshNodes push's read
+        ]);
+
+        final container = start(async);
+
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+        pastDebounce(async);
+        container.refresh(devicesDataProvider);
+        async.flushMicrotasks();
+        expect(container.read(devicesDataProvider).hasError, isTrue);
+
+        pushRead.complete(controllerOnly);
+        async.flushMicrotasks();
+
+        expect(container.read(devicesDataProvider).hasError, isTrue);
+        container.dispose();
+      });
+    });
+
+    // A push's read that lands during a rebuild waits for it rather than leaving
+    // the node change to the rebuild's own mesh read, which the rebuild may not
+    // have.
+    test(
+        'a mesh re-read that lands during a rebuild publishes after it when the '
+        'rebuild\'s mesh read faults', () {
+      fakeAsync((async) {
+        final rebuildFetch = Completer<DevicesDataFetchResult>();
+        stubDeviceReads([
+          () async => _tagged('build'),
+          () => rebuildFetch.future, // the pull-to-refresh
+        ]);
+        stubMeshReads([
+          () async => withAgent, // build()'s background read
+          () async => controllerOnly, // the meshNodes push's read
+          () async => MeshTopologyInfo.empty, // the rebuild's own, faulted
+        ]);
+
+        final container = start(async);
+
+        container.refresh(devicesDataProvider);
+        async.flushMicrotasks();
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+        pastDebounce(async);
+        expect(container.read(devicesDataProvider).isLoading, isTrue);
+
+        rebuildFetch.complete(_tagged('rebuild'));
+        async.flushMicrotasks();
+
+        final data = container.read(devicesDataProvider).value!;
+        expect(data.hostNameByMac, {'TAG': 'rebuild'});
+        expect(data.meshTopology, controllerOnly);
+        container.dispose();
+      });
+    });
+
+    test(
+        'a mesh re-read that lands during a rebuild publishes after it when a '
+        'device read supersedes the rebuild and fails', () {
+      fakeAsync((async) {
+        // The superseded rebuild does not read the mesh, and the device read that
+        // superseded it fails before it does.
+        final rebuildFetch = Completer<DevicesDataFetchResult>();
+        stubDeviceReads([
+          () async => _tagged('build'),
+          () => rebuildFetch.future, // the pull-to-refresh
+          () => Future.error(Exception('fetch failed')), // the Hosts push
+        ]);
+        stubMeshReads([
+          () async => withAgent, // build()'s background read
+          () async => controllerOnly, // the meshNodes push's read
+        ]);
+
+        final container = start(async);
+
+        container.refresh(devicesDataProvider);
+        async.flushMicrotasks();
+        sse.add((domain: InvalidationDomain.meshNodes, seq: 0));
+        pastDebounce(async);
+        sse.add((domain: InvalidationDomain.connectedDevices, seq: 1));
+        pastDebounce(async);
+
+        rebuildFetch.complete(_tagged('rebuild'));
+        async.flushMicrotasks();
+
+        expect(topologyOf(container), controllerOnly);
+        // build()'s and the push's: the superseded rebuild does not read the mesh.
+        verifyMeshReads(2);
+        container.dispose();
+      });
+    });
+  });
 }
 
 /// A fetch result carrying nothing but a label, so a test can say WHICH read a published

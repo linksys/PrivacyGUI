@@ -668,4 +668,32 @@ class DataElementsNetwork {
     }
     return DataElementsNetwork(items: items);
   }
+
+  static Future<Subscription<DataElementsNetwork>> subscribeObjectCreation(
+      UspClient client) async {
+    return client.subscribe<DataElementsNetwork>(
+      id: 'mesh-nodes-objectcreation',
+      notifType: NotifType.objectCreation,
+      paths: ['Device.WiFi.DataElements.Network.Device.'],
+      parser: DataElementsNetwork._fromResponse,
+    );
+  }
+
+  static Future<Subscription<DataElementsNetwork>> subscribeObjectDeletion(
+      UspClient client) async {
+    return client.subscribe<DataElementsNetwork>(
+      id: 'mesh-nodes-objectdeletion',
+      notifType: NotifType.objectDeletion,
+      paths: ['Device.WiFi.DataElements.Network.Device.'],
+      parser: DataElementsNetwork._fromResponse,
+    );
+  }
+
+  static Future<List<Subscription<DataElementsNetwork>>> subscribeAll(
+      UspClient client) async {
+    return [
+      await subscribeObjectCreation(client),
+      await subscribeObjectDeletion(client),
+    ];
+  }
 }
