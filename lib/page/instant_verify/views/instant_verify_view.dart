@@ -337,28 +337,36 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
               ),
             ),
             _appNoBoarderCard(
-              child: Row(
-                children: [
-                  Expanded(
-                      child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppText.bodySmall(
-                        loc(context).firmwareVersion,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      AppText.labelMedium(
-                        master.unit.firmwareVersion ?? '--',
-                        selectable: true,
-                      ),
-                    ],
-                  )),
-                  SharedWidgets.nodeFirmwareStatusWidget(
-                      context, hasNewFirmware(ref), () {
-                    context.pushNamed(RouteNamed.firmwareUpdateDetail);
-                  }),
-                ],
+              // A Wrap, so the status moves below the version when both do
+              // not fit on one line, instead of running past the card in
+              // Russian (#1802).
+              child: SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AppText.bodySmall(
+                          loc(context).firmwareVersion,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        AppText.labelMedium(
+                          master.unit.firmwareVersion ?? '--',
+                          selectable: true,
+                        ),
+                      ],
+                    ),
+                    SharedWidgets.nodeFirmwareStatusWidget(
+                        context, hasNewFirmware(ref), () {
+                      context.pushNamed(RouteNamed.firmwareUpdateDetail);
+                    }),
+                  ],
+                ),
               ),
             ),
             if (cpuLoad != null)
