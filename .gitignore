@@ -124,4 +124,6 @@ lib/l10n/gen/app_localizations.dart
 
 # Coverage
 coverage/
+# Written by test_scripts/coverage_import_all.dart for each coverage run (#1803).
+test/import_all_for_coverage_test.dart
 lcov.info
