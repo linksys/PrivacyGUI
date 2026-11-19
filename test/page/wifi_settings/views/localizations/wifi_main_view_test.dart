@@ -8,6 +8,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/components/widgets/wifi_qr/wifi_qr_warning_card.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
@@ -1183,9 +1184,12 @@ void main() {
       ]);
     }
 
+    // As the dashboard Wi-Fi card's _showWiFiShareModal opens it, with the
+    // card's item.
     testLocalizations('Incredible-WiFi - share detail view',
         (tester, locale) async {
-      final wifi = WiFiState.fromMap(wifiListTestState).mainWiFi.first;
+      final wifi =
+          DashboardHomeState.fromMap(dashboardHomeCherry7TestState).wifis.first;
       await tester.pumpWidget(testableSingleRoute(
         overrides: overrides(),
         locale: locale,
@@ -1197,8 +1201,17 @@ void main() {
               title: loc(context).shareWiFi,
               content: SingleChildScrollView(
                 child: WiFiShareDetailView(
-                    ssid: wifi.ssid, password: wifi.password),
+                  ssid: wifi.ssid,
+                  password: wifi.password,
+                  credential: wifi.qrCredential,
+                ),
               ),
+              actions: [
+                AppTextButton(loc(context).close,
+                    onTap: () {},
+                    color: Theme.of(context).colorScheme.onSurface),
+                AppTextButton(loc(context).downloadQR, onTap: () {}),
+              ],
             ),
           ),
         ),
