@@ -130,7 +130,10 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         if (error.code == 'INVALID_SESSION_TOKEN') {
           final sessionToken =
               await checkSessionToken().onError(handleSessionTokenError);
-          final invalidToken = error.errorMessage?.split(':')[1].trim() ?? '';
+          // The message reads "...: <token>". One without a colon names no
+          // token, so it cannot match the stored one.
+          final parts = error.errorMessage?.split(':') ?? const <String>[];
+          final invalidToken = parts.length > 1 ? parts[1].trim() : '';
           if (sessionToken == null ||
               sessionToken.accessToken == invalidToken) {
             logger.f(

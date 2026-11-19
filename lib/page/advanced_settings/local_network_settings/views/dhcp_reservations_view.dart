@@ -320,6 +320,8 @@ class _DHCPReservationsContentViewState
             ? loc(context).manuallyAddReservation
             : loc(context).edit,
         positiveLabel: item == null ? loc(context).save : loc(context).update,
+        // Taller than a short window (#1802).
+        scrollable: true,
         contentBuilder: (context, setState, onSubmit) {
           return Column(
             mainAxisSize: MainAxisSize.min,

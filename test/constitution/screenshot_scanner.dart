@@ -11,7 +11,9 @@ Set<String> findScreenshotTestViolations(Map<String, String> sources) {
   sources.forEach((path, source) {
     final unit = parseDart(source);
     final names =
-        path == _helper ? _namesOutsideTestLocalizations(unit) : namesIn(unit);
+        path == testLocalizationsHelper
+            ? _namesOutsideTestLocalizations(unit)
+            : namesIn(unit);
     for (final check in _goldenChecks) {
       if (names.contains(check)) violations.add('$path -> $check');
     }
@@ -23,10 +25,6 @@ Set<String> findScreenshotTestViolations(Map<String, String> sources) {
   });
   return violations;
 }
-
-/// Defines `testLocalizations`, whose body is the one place a golden check is
-/// made.
-const _helper = 'test/common/test_responsive_widget.dart';
 
 /// Flutter's golden matcher, and `golden_toolkit`'s two golden checks.
 const _goldenChecks = [

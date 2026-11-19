@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/layouts/center_or_scroll.dart';
 import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
@@ -212,9 +213,8 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
     return StyledAppPageView(
       appBarStyle: AppBarStyle.none,
       padding: EdgeInsets.zero,
-      scrollable: true,
       child: (context, constraints) => AppBasicLayout(
-        content: Center(
+        content: CenterOrScroll(
           child: SizedBox(
             width: 4.col,
             child: AppCard(

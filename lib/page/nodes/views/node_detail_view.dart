@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -140,7 +141,9 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
               child: deviceTab(
                 state.deviceId,
                 filteredDeviceList,
-                constraint.maxHeight - kDefaultToolbarHeight,
+                // A fixed height even in a window too short for one: this
+                // page scrolls, so an Expanded here would throw (#1864).
+                math.max(0, constraint.maxHeight - kDefaultToolbarHeight),
                 isOnlineFilter,
               ),
             ),
@@ -192,7 +195,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
           child: (context, constraints) => deviceTab(
             state.deviceId,
             filteredDeviceList,
-            0,
+            null,
             isOnlineFilter,
           ),
         ),
@@ -212,13 +215,14 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
         _detailSection(state),
         const AppGap.small2(),
         _lightCard(state),
-        const Spacer(),
       ],
     );
   }
 
+  /// [listHeight] is the device list's height. Null makes the list fill the
+  /// rest of the tab, which only a tab that does not scroll can give it.
   Widget deviceTab(String deviceId, List<DeviceListItem> filteredDeviceList,
-      double listHeight, bool isOnlineFilter) {
+      double? listHeight, bool isOnlineFilter) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -281,12 +285,12 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
           ],
         ),
         const AppGap.medium(),
-        if (listHeight > 0)
+        if (listHeight != null)
           SizedBox(
             height: listHeight,
             child: _deviceList(filteredDeviceList, isOnlineFilter),
-          ),
-        if (listHeight <= 0)
+          )
+        else
           Expanded(
             child: _deviceList(filteredDeviceList, isOnlineFilter),
           ),
@@ -598,27 +602,35 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
   Widget _detailInfoCard(
       {String? title, String? description, Widget? trailing}) {
     return _nodeDetailInfoCard(
-      child: Row(
-        children: [
-          Expanded(
-              child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (title != null)
-                AppText.bodySmall(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              if (description != null)
-                AppText.labelLarge(
-                  description,
-                  selectable: true,
-                ),
-            ],
-          )),
-          if (trailing != null) trailing,
-        ],
+      // A Wrap, so the trailing status moves below when both do not fit on
+      // one line. In a Row it kept its full width and ran past the card in
+      // Russian (#1802).
+      child: SizedBox(
+        width: double.infinity,
+        child: Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (title != null)
+                  AppText.bodySmall(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                if (description != null)
+                  AppText.labelLarge(
+                    description,
+                    selectable: true,
+                  ),
+              ],
+            ),
+            if (trailing != null) trailing,
+          ],
+        ),
       ),
     );
   }
