@@ -353,9 +353,16 @@ Future<void> loadTestFonts() async {
     await _loadFont(font.value, font.key);
   }
   _fontsLoaded = true;
+  _fontLoads++;
 }
 
 bool _fontsLoaded = false;
+int _fontLoads = 0;
+
+/// How many times [loadTestFonts] has loaded the fonts in this process: one,
+/// however many tests call it.
+@visibleForTesting
+int get fontLoadCount => _fontLoads;
 
 Future<void> _loadFont(String path, String fontFamily) async {
   File file = File(path);
