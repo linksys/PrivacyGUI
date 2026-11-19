@@ -22,7 +22,6 @@ const pPnpConfiguredSN = "PnPLinksysSN";
 const pPnpSetup = "PnPSetup";
 
 const pAppSettings = "AppSettings";
-const pRAMode = 'AppRaMode';
 
 const pFWUpdated = 'FwUpdated';
 

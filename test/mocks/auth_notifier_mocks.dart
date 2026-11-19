@@ -200,22 +200,6 @@ class MockAuthNotifier extends _i2.AsyncNotifier<_i3.AuthState>
       ) as bool);
 
   @override
-  _i4.Future<dynamic> raLogin(
-    String? sessionToken,
-    String? networkId,
-    String? serialNumber,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(#raLogin, [
-          sessionToken,
-          networkId,
-          serialNumber,
-        ]),
-        returnValue: _i4.Future<dynamic>.value(),
-        returnValueForMissingStub: _i4.Future<dynamic>.value(),
-      ) as _i4.Future<dynamic>);
-
-  @override
   void listenSelf(
     void Function(
       _i2.AsyncValue<_i3.AuthState>?,

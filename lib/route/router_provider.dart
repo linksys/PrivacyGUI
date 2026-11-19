@@ -54,7 +54,6 @@ import 'package:privacy_gui/page/troubleshooting/_troubleshooting.dart';
 import 'package:privacy_gui/page/vpn/views/vpn_settings_page.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
-import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_logger.dart';
@@ -372,11 +371,6 @@ class RouterNotifier extends ChangeNotifier {
           .read(pollingProvider.notifier)
           .checkAndStartPolling(nodeDeviceInfo.serialNumber != serialNumber);
 
-      // RA mode
-      final raMode = prefs.getBool(pRAMode) ?? false;
-      if (raMode) {
-        _ref.read(raSessionProvider.notifier).startMonitorSession();
-      }
       final naviPath = goToPath ?? state.uri.toString();
       logger.d('[Prepare]: Prepare go to $naviPath');
       return naviPath;

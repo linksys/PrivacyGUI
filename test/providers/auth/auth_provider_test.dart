@@ -27,9 +27,7 @@ import '../../common/recording_polling.dart';
 import '../../common/router_boundary.dart';
 
 // The login as the app keeps it: the router's admin password, and the Guardian
-// session a support agent logs in with. raLogin and the AppRaMode branch of
-// logout are deletion candidates (#1849): nothing has set AppRaMode since the
-// PIN login pages were removed (bde0e5555).
+// session a support agent logs in with.
 
 String _token({
   String accessToken = 'agent-token',

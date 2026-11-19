@@ -12,7 +12,6 @@ import 'package:privacy_gui/core/ai_session/router_ai_loader.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
-import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:privacy_gui/constants/error_code.dart';
@@ -421,16 +420,6 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       await storage.delete(key: pUserPassword);
       await const DeviceTokenStore().clear();
 
-      // RA sessions
-      bool raMode = prefs.getBool(pRAMode) ?? false;
-      if (raMode) {
-        await ref
-            .read(raSessionProvider.notifier)
-            .raLogout()
-            .onError((error, stackTrace) => null);
-        ref.read(raSessionProvider.notifier).stopMonitorSession();
-      }
-
       ref.read(deviceManagerProvider.notifier).init();
       ref.read(pollingProvider.notifier).init();
       return AuthState.empty();
@@ -471,25 +460,4 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   bool isCloudLogin() => state.value?.loginType == LoginType.remote;
-
-  Future raLogin(
-    String sessionToken,
-    String networkId,
-    String serialNumber,
-  ) async {
-    // update selected network id provider
-    // update network id and sn to prefs
-    await ref
-        .read(dashboardManagerProvider.notifier)
-        .saveSelectedNetwork(serialNumber, networkId);
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setBool(pRAMode, true);
-
-    // Update credientials
-    state = AsyncValue.data(await updateCloudCredientials(
-        sessionToken: SessionToken(
-            accessToken: sessionToken,
-            tokenType: 'Bearer',
-            expiresIn: DateTime.now().millisecondsSinceEpoch)));
-  }
 }
