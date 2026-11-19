@@ -303,6 +303,15 @@ class UspClient {
   /// Set by [uspClientProvider] during initialization.
   BridgeRequestThrottler? throttler;
 
+  /// Makes the next [get] of any path go to the router: drops the [throttler]'s
+  /// cached results and the in-flight requests a new [get] would join
+  /// ([BridgeRequestThrottler.dropSharedReads]).
+  ///
+  /// For a change the router announces outside a write, such as a mesh node
+  /// joining or leaving (#1828). A write drops only completed results; see
+  /// [_invalidatingReads]. Without a throttler there is nothing shared to drop.
+  void dropSharedReads() => throttler?.dropSharedReads();
+
   Future<void> login(String password) async {
     await _client.login(password);
   }
