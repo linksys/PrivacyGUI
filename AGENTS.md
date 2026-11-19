@@ -19,4 +19,6 @@ Use the Flutter version in `.fvmrc`. `run_tests.sh` runs the `flutter` it finds 
 
 ## Run tests
 
-Every test run passes `--exclude-tags="golden||loc"` (constitution 3.1). Run the whole suite with `./run_tests.sh <reportDir>` before you push; while you work, run `flutter test <file or directory> --exclude-tags="golden||loc"`. `run_tests.sh` leaves out the layout gate, which the pre-push hook and CI run (constitution 3.5).
+Every test run passes `--exclude-tags="golden||loc"` (constitution 3.1). Run the whole suite with `./run_tests.sh <reportDir>` before you push; while you work, run `flutter test <file or directory> --exclude-tags="golden||loc"`. On a screenshot suite that also runs its layout gate in nine locales; `--exclude-tags="golden||loc||layout-gate"` leaves it out. `run_tests.sh` leaves out the layout gate, which the pre-push hook and CI run (constitution 3.5).
+
+Coverage: `./run_coverage.sh <reportDir>` runs the same suite and writes the table `1.x / Unit Tests` reports to `<reportDir>/coverage.md`. A figure measured any other way leaves out the files no test loads.
