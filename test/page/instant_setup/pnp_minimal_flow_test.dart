@@ -1,3 +1,4 @@
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/auto_master_status.dart';
@@ -120,7 +122,7 @@ class _Pnp extends PnpNotifier {
     checkedPasswords.add(password);
     calls.add('authenticate');
     try {
-    await authenticate?.call(password);
+      await authenticate?.call(password);
     } catch (_) {
       if (clearAuthOnError) {
         (ref.read(authProvider.notifier) as _Auth).clearForPendingLogin();
@@ -145,8 +147,17 @@ class _Pnp extends PnpNotifier {
   }
 }
 
+/// Who refuses the firmware install.
+enum _Refusal { router, accessPolicy }
+
 class _Firmware extends FirmwareUpdateNotifier {
+  /// [refusal]: an update is available, and the install is refused, by the
+  /// router or by the access policy. Without it, no update is available.
+  _Firmware({this.refusal});
+
+  final _Refusal? refusal;
   int checks = 0;
+  int installs = 0;
 
   @override
   FirmwareUpdateState build() => FirmwareUpdateState.empty();
@@ -157,7 +168,23 @@ class _Firmware extends FirmwareUpdateNotifier {
   }
 
   @override
-  int getAvailableUpdateNumber() => 0;
+  int getAvailableUpdateNumber() => refusal == null ? 0 : 1;
+
+  /// As the real provider takes a refused install. The access policy refuses
+  /// before `isUpdating` is set, so it never changes. The router refuses
+  /// after: `isUpdating` turns on, then off, and the error is rethrown.
+  /// firmware_update_access_test and firmware_update_provider_test pin that
+  /// order on the real provider.
+  @override
+  Future updateFirmware() async {
+    installs++;
+    if (refusal == _Refusal.accessPolicy) {
+      throw const ReadOnlyAccessException(JNAPAction.updateFirmwareNow);
+    }
+    state = state.copyWith(isUpdating: true);
+    state = state.copyWith(isUpdating: false);
+    throw const JNAPError(result: 'ErrorUnknown');
+  }
 }
 
 class _Auth extends AuthNotifier {
@@ -500,7 +527,8 @@ void main() {
       (tester) async {
     final pnp = _Pnp(unconfigured: true)
       ..autoMasterStatus = AutoMasterStatus.complete
-      ..configuredAfterSave = false; // GetDeviceMode still answers Unconfigured.
+      ..configuredAfterSave =
+          false; // GetDeviceMode still answers Unconfigured.
     final firmware = _Firmware();
     await _showSetup(tester, pnp, firmware);
 
@@ -557,6 +585,28 @@ void main() {
       await tester.pump(const Duration(minutes: 2));
       expect(pnp.reconnectChecks, 1);
       expect(pnp.radioReads, 0);
+    });
+  }
+
+  for (final (refusal, who) in [
+    (_Refusal.router, 'the router'),
+    (_Refusal.accessPolicy, 'the access policy'),
+  ]) {
+    testWidgets('a firmware install $who refuses still goes on to Wi-Fi Ready',
+        (tester) async {
+      final pnp = _Pnp();
+      final firmware = _Firmware(refusal: refusal);
+      await _showSetup(tester, pnp, firmware);
+      pnp.saveResult.complete();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+
+      expect(firmware.installs, 1);
+      expect(find.text('Done').hitTestable(), findsOneWidget);
+      // Two minutes on, nothing has started the install again.
+      await tester.pump(const Duration(minutes: 2));
+      expect(firmware.installs, 1);
     });
   }
 }
