@@ -116,19 +116,19 @@ void main() {
   group('localLogin', () {
     test('checks the admin password with it as Basic auth, and keeps it',
         () async {
-      await notifier().localLogin('Linksys123!');
+      await notifier().localLogin('TestAdmin1!');
 
       expect(router.payloadsOf(JNAPAction.checkAdminPassword).single,
-          {'adminPassword': 'Linksys123!'});
+          {'adminPassword': 'TestAdmin1!'});
       expect(headersOf(JNAPAction.checkAdminPassword),
-          {'X-JNAP-Authorization': 'Basic YWRtaW46TGlua3N5czEyMyE='});
+          {'X-JNAP-Authorization': 'Basic YWRtaW46VGVzdEFkbWluMSE='});
       expect(auth().value?.loginType, LoginType.local);
-      expect(auth().value?.localPassword, 'Linksys123!');
-      expect(await stored(pLocalPassword), 'Linksys123!');
+      expect(auth().value?.localPassword, 'TestAdmin1!');
+      expect(await stored(pLocalPassword), 'TestAdmin1!');
     });
 
     test('checks it in the body alone during setup', () async {
-      await notifier().localLogin('Linksys123!', pnp: true);
+      await notifier().localLogin('TestAdmin1!', pnp: true);
 
       expect(router.actions, [JNAPAction.pnpCheckAdminPassword]);
       expect(headersOf(JNAPAction.pnpCheckAdminPassword), isEmpty);
@@ -237,12 +237,12 @@ void main() {
 
   group('init, at startup', () {
     test('restores a local login from the stored admin password', () async {
-      start(secure: {pLocalPassword: 'Linksys123!'});
+      start(secure: {pLocalPassword: 'TestAdmin1!'});
 
       final restored = await notifier().init();
 
       expect(restored?.loginType, LoginType.local);
-      expect(restored?.localPassword, 'Linksys123!');
+      expect(restored?.localPassword, 'TestAdmin1!');
     });
 
     test('restores a remote login from a session token within its time',
@@ -260,7 +260,7 @@ void main() {
       start(secure: {
         pSessionToken: _token(expiresIn: 60),
         pSessionTokenTs: _now(ago: const Duration(minutes: 2)),
-        pLocalPassword: 'Linksys123!',
+        pLocalPassword: 'TestAdmin1!',
       });
 
       final restored = await notifier().init();
@@ -279,7 +279,7 @@ void main() {
   group('logout', () {
     test('forgets the login and stops polling', () async {
       start(secure: {
-        pLocalPassword: 'Linksys123!',
+        pLocalPassword: 'TestAdmin1!',
         pSessionToken: _token(),
         pSessionTokenTs: _now(),
         pUsername: 'owner@example.com',
@@ -330,7 +330,7 @@ void main() {
     }
 
     test('logs out on an invalid session token once none is stored', () async {
-      start(secure: {pLocalPassword: 'Linksys123!'});
+      start(secure: {pLocalPassword: 'TestAdmin1!'});
 
       await cloudSays(const ErrorResponse(
           status: 401,
@@ -377,7 +377,7 @@ void main() {
     });
 
     test('logs out when the router turns down a login with no token', () async {
-      start(secure: {pLocalPassword: 'Linksys123!'});
+      start(secure: {pLocalPassword: 'TestAdmin1!'});
 
       await cloudSays(const JNAPError(result: '_ErrorUnauthorized'));
 
@@ -385,12 +385,12 @@ void main() {
     });
 
     test('ignores other errors', () async {
-      start(secure: {pLocalPassword: 'Linksys123!'});
+      start(secure: {pLocalPassword: 'TestAdmin1!'});
 
       await cloudSays(const JNAPError(result: 'ErrorUnknown'));
       await cloudSays(const ErrorResponse(status: 400, code: 'BAD_REQUEST'));
 
-      expect(await stored(pLocalPassword), 'Linksys123!');
+      expect(await stored(pLocalPassword), 'TestAdmin1!');
     });
   });
 
@@ -438,7 +438,7 @@ void main() {
     test('reads a login written out as JSON', () {
       final state = AuthState.fromJson({
         'username': 'u',
-        'localPassword': 'Linksys123!',
+        'localPassword': 'TestAdmin1!',
         'localPasswordHint': 'pet',
         'sessionToken': _token(),
         'loginType': 'remote',
@@ -455,7 +455,7 @@ void main() {
     });
 
     test('isCloudLogin is true for a remote login only', () async {
-      await notifier().localLogin('Linksys123!');
+      await notifier().localLogin('TestAdmin1!');
       expect(notifier().isCloudLogin(), isFalse);
 
       await notifier().cloudLoginAuth(
