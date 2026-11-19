@@ -24,7 +24,7 @@ env:
   # The candidate sizes in #1802 P2: the narrowest content box of every
   # layout state and the widest, 360 (measured, not a gate width), and a
   # short desktop viewport.
-  SCREENS: 360,480,600,601,904,905,906,1240,1241,1441,1920,1280x420
+  SCREENS: 360,480,599,600,904,905,906,1239,1240,1440,1920,1280x420
 
 jobs:
   locales:
