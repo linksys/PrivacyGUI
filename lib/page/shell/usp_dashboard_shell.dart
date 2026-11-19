@@ -207,7 +207,20 @@ class _UspDashboardShellState extends ConsumerState<UspDashboardShell> {
             // gate used to, and the shell holds no condition either way.
             surface.assistanceBanner() ?? const SizedBox.shrink(),
             Expanded(
-              child: BarsVisibilityScrollListener(child: widget.child),
+              child: BarsVisibilityScrollListener(
+                // Its own semantics container (#1844, as #1841 for PnP).
+                // [widget.child] is the `ShellRoute`'s Navigator, and every page
+                // is a ModalRoute whose ModalBarrier is a BlockSemantics: it
+                // drops the semantics of everything painted before it in the
+                // same container — here both banners above. Fenced in, the
+                // barrier can only block what is inside the routed page, and the
+                // page's own semantics stay as they were.
+                //
+                // Unconditional, and it has to stay so: the Navigator is held by
+                // `uspShellNavigatorKey`, and a wrapper that comes and goes with
+                // anything moves it — the crash described at the mascot below.
+                child: Semantics(container: true, child: widget.child),
+              ),
             ),
           ],
         ),
