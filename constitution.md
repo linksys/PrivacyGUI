@@ -256,19 +256,19 @@ The table lists the pages that had no case when the gate landed. #1802 P6 emptie
 
 ### 3.4 A fix that ellipsizes ships a readability guard
 
-A fix that makes text fit by ellipsizing it or capping `maxLines` ships a test at the width that forced the fix. The test asserts the text is still usable. For an IP, MAC, serial number, firmware version or SSID, that means the text is fully shown: `expect(finder, isFullyShown)` passes, from `test/layout_gate/fully_shown.dart`. No `maxLines` or ellipsis cuts the text, it fits its box, and no ancestor clips it, a scroll view included.
+A fix that makes text fit by ellipsizing it or capping `maxLines` ships a test at the width that forced the fix. The test asserts the text is still usable. For an IP, MAC, serial number, firmware version or SSID, that means the text is fully shown: `expect(finder, isFullyShown)` passes, from `test/layout_gate/fully_shown.dart`. No `maxLines` or ellipsis cuts the text, it fits its box, and no ancestor clips it, a scroll view included. It does not check the size the text is drawn at, so a value that a `FittedBox` shrinks passes.
 
 The overflow sweep cannot see this: adding `maxLines: 1` turns every overflowing row green and cuts `192.168.1.100` in the middle.
 
-These guards hold the values that are useless when cut. Each runs in every locale at 480 and 1241, the narrowest mobile and desktop pages, with each value as long as it gets:
+These guards hold the values that are useless when cut, each as long as it gets. `testFullyShown`, in the same file, runs a guard in every locale at the narrowest mobile and desktop pages, 480 and 1241:
 
 | Guard | Values |
 |---|---|
 | `test/page/instant_device/views/device_detail_readability_test.dart` | Device detail: the IPv4 and IPv6 addresses, the MAC address and the SSID |
 | `test/page/nodes/views/node_detail_readability_test.dart` | Node detail: the WAN and LAN IP addresses, the firmware version, the serial number and the MAC address |
 | `test/page/dashboard/views/internet_status_readability_test.dart` | The dashboard's internet status: the router's serial number and firmware version |
-| `test/page/dashboard/views/wifi_grid_readability_test.dart` | The dashboard's Wi-Fi card: the SSID and the device count, at 1241 only, where the card is narrowest |
-| `test/page/wifi_settings/views/wifi_list_readability_test.dart` | Wi-Fi settings: the main and guest SSIDs |
+| `test/page/dashboard/views/wifi_grid_readability_test.dart` | The dashboard's Wi-Fi card: the SSID, at 1241 only, where the card is narrowest. The file also holds the guard for the card's device count, which #1802 fixed. |
+| `test/page/wifi_settings/views/wifi_list_readability_test.dart` | Wi-Fi settings: the main and guest SSIDs, in the advanced and the simple mode |
 
 A guard is proven by a mutation that cuts its value: the guard goes red, and the layout gate stays green. Where the value has room to spare on one line, the mutation caps it at one line in a box narrower than the value.
 

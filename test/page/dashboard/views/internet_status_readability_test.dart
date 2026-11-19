@@ -16,15 +16,11 @@ import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
-import 'package:privacy_gui/page/instant_topology/providers/_providers.dart';
+import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../common/screen.dart';
-import '../../../common/theme_data.dart';
 import '../../../layout_gate/fully_shown.dart';
-import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import '../../../common/di.dart';
-import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
 import '../../../mocks/gelocation_notifier_mocks.dart';
@@ -33,12 +29,9 @@ import '../../../test_data/_index.dart';
 import '../../../test_data/geolocation_test_state.dart';
 
 // Constitution 3.4. The router's serial number and firmware version are
-// useless when cut. They are the topology test data's master node, at the
-// narrowest mobile and desktop page, in every locale. #1802 P4 measured at
-// least 98px to spare on one line for each, so the guard was proven by
-// capping the value at one line in a 60px box: every case went red.
+// useless when cut. Each is as long as it gets.
 const _serial = '65G10M27E03041';
-const _firmware = '1.0.4.216421';
+const _firmware = '1.1.19.215371';
 
 void main() {
   late MockDashboardHomeNotifier mockDashboardHomeNotifier;
@@ -47,7 +40,7 @@ void main() {
   late MockDeviceManagerNotifier mockDeviceManagerNotifier;
   late MockInstantPrivacyNotifier mockInstantPrivacyNotifier;
   late MockInstantTopologyNotifier mockInstantTopologyNotifier;
-  late MockGeolocationNotifier mockGeolocationNotifer;
+  late MockGeolocationNotifier mockGeolocationNotifier;
   late MockPollingNotifier mockPollingNotifier;
   late TopologyTestData topologyTestData;
 
@@ -63,7 +56,7 @@ void main() {
         internetStatusProvider.overrideWith((ref) => InternetStatus.online),
         instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
         instantTopologyProvider.overrideWith(() => mockInstantTopologyNotifier),
-        geolocationProvider.overrideWith(() => mockGeolocationNotifer),
+        geolocationProvider.overrideWith(() => mockGeolocationNotifier),
         pollingProvider.overrideWith(() => mockPollingNotifier),
       ];
 
@@ -76,7 +69,7 @@ void main() {
     mockDeviceManagerNotifier = MockDeviceManagerNotifier();
     mockInstantPrivacyNotifier = MockInstantPrivacyNotifier();
     mockInstantTopologyNotifier = MockInstantTopologyNotifier();
-    mockGeolocationNotifer = MockGeolocationNotifier();
+    mockGeolocationNotifier = MockGeolocationNotifier();
     mockPollingNotifier = MockPollingNotifier();
 
     when(mockDashboardHomeNotifier.build())
@@ -89,9 +82,16 @@ void main() {
         .thenReturn(DeviceManagerState.fromMap(deviceManagerCherry7TestState));
     when(mockInstantPrivacyNotifier.build())
         .thenReturn(InstantPrivacyState.fromMap(instantPrivacyTestState));
-    when(mockInstantTopologyNotifier.build())
-        .thenReturn(topologyTestData.testTopology2SlavesDaisyState);
-    when(mockGeolocationNotifer.build()).thenAnswer(
+    // The internet status shows the first node under the root.
+    final InstantTopologyState topology =
+        topologyTestData.testTopology2SlavesDaisyState;
+    final master = topology.root.children.first;
+    topology.root.children[0] = RouterTopologyNode(
+      data: master.data.copyWith(serialNumber: _serial, fwVersion: _firmware),
+      children: master.children,
+    );
+    when(mockInstantTopologyNotifier.build()).thenReturn(topology);
+    when(mockGeolocationNotifier.build()).thenAnswer(
         (_) async => GeolocationState.fromMap(geolocationTestState));
     when(mockServiceHelper.isSupportLedMode()).thenReturn(true);
     when(mockPollingNotifier.build()).thenReturn(
@@ -102,33 +102,16 @@ void main() {
     topologyTestData.cleanup();
   });
 
-  for (final (name, value) in [
-    ('serial number', find.text(_serial)),
-    ('firmware version', find.text(_firmware)),
-  ]) {
-    for (final screen in const [
-      ScreenSize('480', 480, 900, 1),
-      ScreenSize('1241', 1241, 900, 1),
-    ]) {
-      for (final locale in AppLocalizations.supportedLocales) {
-        testWidgets(
-            'internet status shows the $name in full at ${screen.name} in '
-            '${locale.toLanguageTag()}', (tester) async {
-          await loadTestFonts();
-          await tester.setScreenSize(screen);
-          addTearDown(() => tester.binding.setSurfaceSize(null));
-          await tester.pumpWidget(testableRouteShellWidget(
-            child: const DashboardHomeView(),
-            locale: locale,
-            overrides: overrides(),
-          ));
-          await tester.pumpAndSettle();
-          await tester.ensureVisible(value);
-          await tester.pumpAndSettle();
-
-          expect(value, isFullyShown);
-        });
-      }
-    }
-  }
+  testFullyShown(
+    'internet status',
+    values: {
+      'serial number': find.text(_serial),
+      'firmware version': find.text(_firmware),
+    },
+    pump: (tester, locale) => tester.pumpWidget(testableRouteShellWidget(
+      child: const DashboardHomeView(),
+      locale: locale,
+      overrides: overrides(),
+    )),
+  );
 }

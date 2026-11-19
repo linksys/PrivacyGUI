@@ -83,8 +83,7 @@ void main() {
     expect(find.text(_ip), isNot(isFullyShown));
   });
 
-  testWidgets('a text scrolled out of view is not fully shown',
-      (tester) async {
+  testWidgets('a text scrolled out of view is not fully shown', (tester) async {
     // The viewport is 100px tall. The second sliver starts at 60px, and the
     // text sits 50px into it, at 110px.
     await tester.pumpWidget(_box(
@@ -129,12 +128,14 @@ void main() {
   // RenderEditable instead of a RenderParagraph.
   testWidgets('a selectable text that fits its box is fully shown',
       (tester) async {
-    await tester.pumpWidget(_box(200, const SelectableText(_ip, style: _style)));
+    await tester
+        .pumpWidget(_box(200, const SelectableText(_ip, style: _style)));
 
     expect(find.text(_ip), isFullyShown);
   });
 
-  testWidgets('a one-line selectable text wider than its box is not fully '
+  testWidgets(
+      'a one-line selectable text wider than its box is not fully '
       'shown', (tester) async {
     // It scrolls sideways inside its box instead of wrapping.
     await tester.pumpWidget(
@@ -179,8 +180,38 @@ void main() {
         ),
       ),
     ));
-    expect(failure(find.text(_ip)),
-        contains('"192.168.1.100" is clipped to Rect.fromLTRB(0.0, 0.0, 80.0, '));
+    expect(
+        failure(find.text(_ip)),
+        contains(
+            '"192.168.1.100" is clipped to Rect.fromLTRB(0.0, 0.0, 80.0, '));
+  });
+
+  testWidgets('cutValues names each value that is cut, once scrolled to it',
+      (tester) async {
+    const mac = '8C:3B:AD:FE:EE:DD';
+    await tester.pumpWidget(_box(
+      80,
+      height: 100,
+      ListView(children: const [
+        Text(_ip, style: _style, maxLines: 1, overflow: TextOverflow.ellipsis),
+        // Below the 100px viewport until scrolled to.
+        SizedBox(height: 300),
+        Text(mac, style: _style),
+      ]),
+    ));
+
+    expect(
+      await cutValues(tester, {
+        'IP': find.text(_ip),
+        // A finder skips what is out of view unless told not to.
+        'MAC': find.text(mac, skipOffstage: false),
+        'SSID': find.text('Linksys03041'),
+      }),
+      [
+        'IP: "192.168.1.100" is cut by maxLines or an ellipsis',
+        'SSID: no text is there',
+      ],
+    );
   });
 
   testWidgets('a text that is not there is not fully shown', (tester) async {

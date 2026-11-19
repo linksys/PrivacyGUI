@@ -15,7 +15,6 @@ import 'package:privacygui_widgets/theme/custom_responsive.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
 import '../../../common/di.dart';
-import '../../../common/screen.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../common/theme_data.dart';
@@ -56,7 +55,7 @@ void main() {
       WidgetTester tester, Locale locale, DashboardHomeState state) async {
     when(mockDashboardHomeNotifier.build()).thenReturn(state);
     await loadTestFonts();
-    await tester.setScreenSize(const ScreenSize('1241', 1241, 900, 1));
+    await tester.setScreenSize(narrowestScreens.last);
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(testableSingleRoute(
       locale: locale,

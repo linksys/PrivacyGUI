@@ -1,9 +1,77 @@
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:meta/meta.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 
-/// Matches a [Finder] whose text is fully shown. Constitution 3.4.
+import '../common/screen.dart';
+import '../common/test_responsive_widget.dart';
+import '../common/theme_data.dart';
+import 'gate.dart';
+
+/// Matches a [Finder] whose text is fully shown (constitution 3.4): no
+/// `maxLines` or ellipsis cuts it, it fits its box, and no ancestor clips
+/// it, a scroll view and the screen edge included.
+///
+/// It does not check the size the text is drawn at, so a value a
+/// `FittedBox` shrinks passes however small it gets.
 const Matcher isFullyShown = _FullyShown();
+
+/// The narrowest mobile and desktop pages: the gate's floor, and the first
+/// width past [ResponsiveLayout.large], where the desktop content box is
+/// narrowest ([requiredGateWidths]).
+final List<ScreenSize> narrowestScreens = [
+  for (final width in [gateScreens.first.width, ResponsiveLayout.large + 1])
+    ScreenSize('${width.toInt()}', width, 900, 1),
+];
+
+/// Declares a readability guard (constitution 3.4): a test for every locale
+/// at each of [screens], in which [pump] lays a page out and every one of
+/// [values] is fully shown once scrolled to. A failure names each value that
+/// is cut.
+@isTest
+void testFullyShown(
+  String page, {
+  required Map<String, Finder> values,
+  required Future<void> Function(WidgetTester tester, Locale locale) pump,
+  List<ScreenSize>? screens,
+}) {
+  for (final screen in screens ?? narrowestScreens) {
+    for (final locale in AppLocalizations.supportedLocales) {
+      testWidgets(
+          '$page shows ${values.keys.join(', ')} in full at ${screen.name} '
+          'in ${locale.toLanguageTag()}', (tester) async {
+        await loadTestFonts();
+        await tester.setScreenSize(screen);
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await pump(tester, locale);
+        await tester.pumpAndSettle();
+
+        expect(await cutValues(tester, values), isEmpty);
+      });
+    }
+  }
+}
+
+/// The ones of [values] that are not fully shown once scrolled to, each as
+/// `name: why`. A finder skips what a scroll view holds out of view unless
+/// it is made with `skipOffstage: false`.
+Future<List<String>> cutValues(
+    WidgetTester tester, Map<String, Finder> values) async {
+  final cut = <String>[];
+  for (final MapEntry(key: name, value: finder) in values.entries) {
+    final count = finder.evaluate().length;
+    if (count == 0) cut.add('$name: no text is there');
+    for (var i = 0; i < count; i++) {
+      await tester.ensureVisible(finder.at(i));
+      await tester.pumpAndSettle();
+      final why = _whyCut(finder.at(i).evaluate().single);
+      if (why != null) cut.add('$name: $why');
+    }
+  }
+  return cut;
+}
 
 /// How far a glyph may sit past a side before it counts as cut, for the
 /// rounding in text layout.
@@ -111,17 +179,20 @@ class _TextLayout {
   /// The first text render object at or below [node]: a [RenderParagraph]
   /// for a `Text`, a [RenderEditable] for a `SelectableText`.
   static _TextLayout? find(RenderObject node) {
-    if (node is RenderParagraph) {
-      final plainText = node.text.toPlainText();
-      return _TextLayout(
-          node, plainText, _rects(node.getBoxesForSelection(_all(plainText))),
-          didExceedMaxLines: node.didExceedMaxLines);
-    }
-    if (node is RenderEditable) {
-      final plainText = node.plainText;
-      return _TextLayout(
-          node, plainText, _rects(node.getBoxesForSelection(_all(plainText))),
-          didExceedMaxLines: false);
+    final (plainText, didExceedMaxLines) = switch (node) {
+      RenderParagraph() => (node.text.toPlainText(), node.didExceedMaxLines),
+      RenderEditable() => (node.plainText, false),
+      _ => (null, false),
+    };
+    if (plainText != null) {
+      final all = _all(plainText);
+      final boxes = switch (node) {
+        RenderParagraph() => node.getBoxesForSelection(all),
+        RenderEditable() => node.getBoxesForSelection(all),
+        _ => const <TextBox>[],
+      };
+      return _TextLayout(node as RenderBox, plainText, _rects(boxes),
+          didExceedMaxLines: didExceedMaxLines);
     }
     _TextLayout? found;
     node.visitChildren((child) => found ??= find(child));
