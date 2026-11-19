@@ -80,8 +80,12 @@ class UspInternetSettingsService {
       final ipv6rd = results[6] as Ipv6rdSettings;
 
       final pppInstance = _wanPppRow(ppp.items, wan.lowerLayers);
-      // No leaf ties the WAN to its VLAN row yet (no VLAN row on
-      // 2.0.3.26102008 to read the chain from), so the only row, never a guess.
+      // 2.0.4.26111203 ships one VLAN row, the WAN's (issue #1754 bench). The
+      // WAN's LowerLayers names that row while tagging is on
+      // (Device.Ethernet.VLANTermination.1) and the row's own Ethernet.Link
+      // while it is off, so that leaf can pick the WAN's row if a firmware
+      // ever lists more than one. With one row there is nothing to pick: the
+      // only row, never a guess.
       final vlanInstance = vlan.items.length == 1 ? vlan.items.single : null;
       final ipv4 = wan.ipv4Addresses.firstOrNull;
       final addressingType = ipv4?.addressingType ?? '';
@@ -256,6 +260,7 @@ class UspInternetSettingsService {
       underlayDns3: underlayDns.elementAtOrNull(2) ?? '',
       vlanEnabled: vlan?.enable ?? false,
       vlanId: vlan?.vlanId ?? 0,
+      vlanPriority: vlan?.vlanPriority ?? kVlanPriorityNone,
       mtu: wan.mtu,
       // Firmware without the vendor extension returns null → Manual, which is
       // what the app assumed before X_LINKSYS_MTUMode existed.
@@ -362,8 +367,11 @@ class UspInternetSettingsService {
         await _savePppSettings(original, edited, pppPath);
       }
 
-      // Step 6: VLAN settings (always use SET on existing instance)
-      if (vlanInstancePath != null) {
+      // Step 6: VLAN settings, a SET on the existing row. Only on a type that
+      // offers VLAN: a Bridge save leaves the row as the router holds it,
+      // rather than writing VLAN edits the Bridge form does not show
+      // (issue #1754).
+      if (vlanInstancePath != null && edited.connectionType.supportsVlan) {
         await _saveVlanSettings(original, edited, vlanInstancePath);
       }
 
@@ -846,18 +854,24 @@ class UspInternetSettingsService {
   // VLAN instance save
   // ---------------------------------------------------------------------------
 
+  /// Writes `Enable`, and the ID and priority only while tagging is on: with it
+  /// off they are not the user's, and an emptied ID field holds 0, which the
+  /// firmware refuses (PR #1794 review).
   Future<void> _saveVlanSettings(
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited,
     String instancePath,
   ) async {
+    final tagged = edited.vlanEnabled;
     _handleSetResult(await VlanTermination.update(
       _usp,
       [
         VlanTerminationInstanceUpdate(
           instancePath: instancePath,
           enable: _diff(original.vlanEnabled, edited.vlanEnabled),
-          vlanId: _diff(original.vlanId, edited.vlanId),
+          vlanId: tagged ? _diff(original.vlanId, edited.vlanId) : null,
+          vlanPriority:
+              tagged ? _diff(original.vlanPriority, edited.vlanPriority) : null,
         )
       ],
     ));

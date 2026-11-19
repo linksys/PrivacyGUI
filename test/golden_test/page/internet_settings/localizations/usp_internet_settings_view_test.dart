@@ -50,6 +50,15 @@ void main() {
                 dataState(dhcpForm, readOnlyInfo: defaultReadOnlyInfo),
               ),
             ),
+        'dhcp_vlan_shipped_id_editing': (overrides) => overrides.addAll(
+              internetSettingsOverrides(
+                dataState(
+                  dhcpVlanShippedIdForm,
+                  readOnlyInfo: defaultReadOnlyInfo,
+                  isEditing: true,
+                ),
+              ),
+            ),
         'static_ip': (overrides) => overrides.addAll(
               internetSettingsOverrides(
                 dataState(staticIpForm, readOnlyInfo: defaultReadOnlyInfo),

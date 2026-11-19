@@ -456,14 +456,15 @@ class UspInternetSettingsNotifier
 
   /// Turn WAN VLAN tagging on or off.
   ///
-  /// Turning it off puts back the router's VLAN ID, dropping any ID typed while
-  /// it was on: the save would otherwise write that ID with VLAN off, and an
-  /// emptied field holds 0, which FW 2.0.4 refuses (#1072).
+  /// Turning it off puts back the router's VLAN ID and priority, dropping any
+  /// typed while it was on (issue #1072, issue #1754): the service writes neither with
+  /// VLAN off, so on and then off again leaves nothing to save.
   void setVlanEnabled(bool enabled) {
-    final routerVlanId = state.original.vlanId;
+    final saved = state.original;
     updateField((f) => f.copyWith(
           vlanEnabled: enabled,
-          vlanId: enabled ? f.vlanId : routerVlanId,
+          vlanId: enabled ? f.vlanId : saved.vlanId,
+          vlanPriority: enabled ? f.vlanPriority : saved.vlanPriority,
         ));
   }
 
