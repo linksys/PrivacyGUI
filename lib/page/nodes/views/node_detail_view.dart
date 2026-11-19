@@ -598,27 +598,36 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
   Widget _detailInfoCard(
       {String? title, String? description, Widget? trailing}) {
     return _nodeDetailInfoCard(
-      child: Row(
-        children: [
-          Expanded(
-              child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (title != null)
-                AppText.bodySmall(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              if (description != null)
-                AppText.labelLarge(
-                  description,
-                  selectable: true,
-                ),
-            ],
-          )),
-          if (trailing != null) trailing,
-        ],
+      // A Wrap, so the trailing status moves below when both do not fit on
+      // one line. In a Row it kept its full width and ran past the card in
+      // Russian (#1802). The page sizes itself by intrinsic height, so a
+      // LayoutBuilder cannot cap it instead.
+      child: SizedBox(
+        width: double.infinity,
+        child: Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (title != null)
+                  AppText.bodySmall(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                if (description != null)
+                  AppText.labelLarge(
+                    description,
+                    selectable: true,
+                  ),
+              ],
+            ),
+            if (trailing != null) trailing,
+          ],
+        ),
       ),
     );
   }
