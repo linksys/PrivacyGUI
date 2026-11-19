@@ -371,4 +371,25 @@ void main() {
       ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1240)).toList()
     ],
   );
+
+  // The edit page has a route of its own, dhcpReservationEdit, though
+  // nothing navigates to it now (#1802 P6).
+  testLocalizations(
+    'DHCP reservations - edit view',
+    (tester, locale) async {
+      await tester.pumpWidget(testableSingleRoute(
+        overrides: [
+          localNetworkSettingProvider
+              .overrideWith(() => mockLocalNetworkSettingsNotifier),
+        ],
+        locale: locale,
+        child: const DHCPReservationsEditView(args: {
+          'viewType': 'add',
+          'routerIp': '192.168.1.1',
+          'subnetMask': '255.255.255.0',
+        }),
+      ));
+      await tester.pumpAndSettle();
+    },
+  );
 }

@@ -318,4 +318,22 @@ void main() {
     await tester.tap(textInputFind.first);
     await tester.pumpAndSettle();
   }, screens: [...responsiveMobileScreens]);
+
+  // The cases above open the IPv6 port service tab through FirewallView.
+  // This pumps its page on its own, so the layout-gate roster sees that it
+  // has a case (#1802 P6).
+  testLocalizations('Firewall settings view - IPv6 port service on its own',
+      (tester, locale) async {
+    await tester.pumpWidget(testableSingleRoute(
+      child: const Ipv6PortServiceListView(),
+      locale: locale,
+      overrides: [
+        ipv6PortServiceListProvider
+            .overrideWith(() => mockIpv6PortServiceListNotifier),
+        ipv6PortServiceRuleProvider
+            .overrideWith(() => mockIpv6PortServiceRuleNotifier),
+      ],
+    ));
+    await tester.pumpAndSettle();
+  });
 }
