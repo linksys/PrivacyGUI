@@ -22,7 +22,10 @@ void main() {
     test('rejects a value it cannot read instead of falling back', () {
       // It used to map anything it did not know to 1440, so a run asked for
       // 905 measured 1440 and passed.
-      for (final value in ['', 'abc', '480,', '480x', 'x420', '0', '480x0']) {
+      for (final value in [
+        '', 'abc', '480,', '480x', 'x420', '0', '480x0', //
+        '00', '480x00', // a zero written with more digits
+      ]) {
         expect(() => parseScreens(value), throwsFormatException,
             reason: '"$value"');
       }

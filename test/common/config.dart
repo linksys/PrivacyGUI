@@ -63,15 +63,13 @@ final _requestedScreen = RegExp(r'^d?(\d+)(?:x(\d+))?$');
 List<RequestedScreen> parseScreens(String value) => value.split(',').map((raw) {
       final match = _requestedScreen.firstMatch(raw.trim());
       final width = double.tryParse(match?.group(1) ?? '');
-      final height = match?.group(2);
-      if (width == null || width <= 0 || height == '0') {
+      final heightText = match?.group(2);
+      final height = heightText == null ? null : double.parse(heightText);
+      if (width == null || width <= 0 || (height != null && height <= 0)) {
         throw FormatException(
             'screens: "$raw" is not a width or a <width>x<height>', value);
       }
-      return (
-        width: width,
-        height: height == null ? null : double.parse(height),
-      );
+      return (width: width, height: height);
     }).toList();
 
 bool _localeConfigured = false;
