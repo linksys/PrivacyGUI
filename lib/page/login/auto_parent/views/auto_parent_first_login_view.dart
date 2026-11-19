@@ -40,6 +40,11 @@ class _AutoParentFirstLoginViewState
   /// Whether the router accepted the install. Until it has, `isUpdating`
   /// going from true to false is a refused install. [_doFirmwareUpdateCheck]
   /// ends the first login for that one, as a failed check.
+  ///
+  /// Set when `checkAndAutoInstallFirmware` returns, after the status checks
+  /// have started. That is in time: they end the install only after a status
+  /// read, and the first one waits 3 seconds (`scheduledCommand`'s
+  /// `firstDelayInMilliSec`).
   bool _installStarted = false;
 
   /// The first login ends once, whichever way it gets there.

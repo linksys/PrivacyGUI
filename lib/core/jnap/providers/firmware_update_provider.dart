@@ -157,6 +157,19 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     }
   }
 
+  /// Asks the router to install the available updates, then follows the
+  /// install with status checks until the router is back on the new firmware.
+  ///
+  /// The firmware detail page, PnP's firmware step and the auto-parent first
+  /// login tell how it went from [FirmwareUpdateState.isUpdating], so this
+  /// order is part of the contract:
+  /// - the access policy refuses: [ReadOnlyAccessException] is thrown before
+  ///   `isUpdating` is set, so it never changes;
+  /// - the router refuses: `isUpdating` turns on, then off, and the error is
+  ///   rethrown;
+  /// - the router accepts: this returns with `isUpdating` on. It turns off
+  ///   once the install is done, or once the status checks run out, which
+  ///   sets [FirmwareUpdateState.isRetryMaxReached] first.
   Future updateFirmware() async {
     logger.i('[FIRMWARE]: Update firmware: Start');
     final action = serviceHelper.isSupportNodeFirmwareUpdate()
