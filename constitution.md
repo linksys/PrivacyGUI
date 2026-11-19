@@ -203,11 +203,11 @@ The table lists the pages that have no case. A row whose reason starts "No case 
 | `lib/page/advanced_settings/firewall/views/ipv6_port_service_list_view.dart` | `Ipv6PortServiceListView` | No case yet (#1802 P6). |
 | `lib/page/advanced_settings/local_network_settings/views/dhcp_reservations_edit_view.dart` | `DHCPReservationsEditView` | No case yet (#1802 P6). |
 | `lib/page/advanced_settings/local_network_settings/views/dhcp_server_view.dart` | `DHCPServerView` | No case yet (#1802 P6). |
-| `lib/page/advanced_settings/static_routing/static_routing_list_view.dart` | `StaticRoutingListView` | No case yet (#1802 P6). |
+| `lib/page/advanced_settings/static_routing/static_routing_list_view.dart` | `StaticRoutingListView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/components/customs/network_check_view.dart` | `NetworkCheckView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/components/picker/day_picker_view.dart` | `DayPickerView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/components/picker/number_picker_view.dart` | `NumberPickerView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
-| `lib/page/components/picker/region_picker_view.dart` | `RegionPickerView` | No case yet (#1802 P6). |
+| `lib/page/components/picker/region_picker_view.dart` | `RegionPickerView` | Kept until #1849 deletes it: only the OTP flow opens it. |
 | `lib/page/components/picker/time_picker_view.dart` | `TimePickerView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/components/settings_view/editable_card_list_edit_view.dart` | `EditableCardListEditView` | No case yet (#1802 P6). |
 | `lib/page/components/settings_view/editable_card_list_settings_view.dart` | `EditableCardListsettingsView` | Permanent: a component, not a page. The advanced settings lists (ports, IPv6 port service, static routing) build it, so their cases sweep it. |
@@ -215,23 +215,23 @@ The table lists the pages that have no case. A row whose reason starts "No case 
 | `lib/page/components/styled/styled_tab_page_view.dart` | `StyledAppTabPageView` | Permanent: a layout that `StyledAppPageView` builds for tabbed pages, not a page. |
 | `lib/page/components/views/arguments_view.dart` | `ArgumentsBaseConsumerStatefulView` | Permanent: a base class for views, not a page. |
 | `lib/page/components/views/write_flow_blocked_view.dart` | `WriteFlowBlockedView` | No case yet (#1802 P6). |
-| `lib/page/dashboard/views/dashboard_settings_view.dart` | `DashboardSettingsView` | No case yet (#1802 P6). |
+| `lib/page/dashboard/views/dashboard_settings_view.dart` | `DashboardSettingsView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/dashboard/views/dashboard_support_view.dart` | `DashboardSupportView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/dashboard/views/prepare_dashboard_view.dart` | `PrepareDashboardView` | No case yet (#1802 P6). |
-| `lib/page/firmware_update/views/firmware_update_process_view.dart` | `FirmwareUpdateProcessView` | No case yet (#1802 P6). |
+| `lib/page/firmware_update/views/firmware_update_process_view.dart` | `FirmwareUpdateProcessView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/health_check/views/speed_test_selection.dart` | `SpeedTestSelectionView` | No case yet (#1802 P6). |
-| `lib/page/instant_setup/troubleshooter/views/call_support/call_support_main_region_view.dart` | `CallSupportMainRegionView` | No case yet (#1802 P6). |
-| `lib/page/instant_setup/troubleshooter/views/call_support/call_support_more_region_view.dart` | `CallSupportMoreRegionView` | No case yet (#1802 P6). |
+| `lib/page/instant_setup/troubleshooter/views/call_support/call_support_main_region_view.dart` | `CallSupportMainRegionView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/instant_setup/troubleshooter/views/call_support/call_support_more_region_view.dart` | `CallSupportMoreRegionView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_auth_view.dart` | `PnpIspAuthView` | No case yet (#1802 P6). |
 | `lib/page/landing/views/debug_device_info_view.dart` | `DebugDeviceInfoView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
-| `lib/page/landing/views/home_view.dart` | `HomeView` | No case yet (#1802 P6). |
+| `lib/page/landing/views/home_view.dart` | `HomeView` | Kept until #1849 deletes it: the home page, which never shows. |
 | `lib/page/login/auto_parent/views/auto_parent_first_login_view.dart` | `AutoParentFirstLoginView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/login/views/login_cloud_auth_view.dart` | `LoginCloudAuthView` | No case yet (#1802 P6). |
 | `lib/page/login/views/login_cloud_view.dart` | `LoginCloudView` | Kept until #1849 deletes it: the cloud account login and OTP, which 1.x does not use. |
-| `lib/page/nodes/views/change_node_name_view.dart` | `ChangeNodeNameView` | No case yet (#1802 P6). |
-| `lib/page/nodes/views/node_light_guide_view.dart` | `NodeLightGuideView` | No case yet (#1802 P6). |
-| `lib/page/nodes/views/node_name_edit_view.dart` | `NodeNameEditView` | No case yet (#1802 P6). |
-| `lib/page/nodes/views/node_restart_view.dart` | `NodeRestartView` | No case yet (#1802 P6). |
+| `lib/page/nodes/views/change_node_name_view.dart` | `ChangeNodeNameView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/nodes/views/node_light_guide_view.dart` | `NodeLightGuideView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/nodes/views/node_name_edit_view.dart` | `NodeNameEditView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/nodes/views/node_restart_view.dart` | `NodeRestartView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/otp_flow/views/otp_add_phone.dart` | `OtpAddPhoneView` | Kept until #1849 deletes it: the cloud account login and OTP, which 1.x does not use. |
 | `lib/page/otp_flow/views/otp_code_input.dart` | `OtpCodeInputView` | Kept until #1849 deletes it: the cloud account login and OTP, which 1.x does not use. |
 | `lib/page/otp_flow/views/otp_method_selector_view.dart` | `OTPMethodSelectorView` | Kept until #1849 deletes it: the cloud account login and OTP, which 1.x does not use. |
@@ -244,7 +244,7 @@ The table lists the pages that have no case. A row whose reason starts "No case 
 | `lib/page/wifi_settings/views/wifi_list_advanced_mode_view.dart` | `AdvancedModeView` | No case yet (#1802 P6). |
 | `lib/page/wifi_settings/views/wifi_list_simple_mode_view.dart` | `SimpleModeView` | No case yet (#1802 P6). |
 | `lib/page/wifi_settings/views/wifi_list_view.dart` | `WiFiListView` | No case yet (#1802 P6). |
-| `lib/page/wifi_settings/views/wifi_settings_channel_finder_view.dart` | `WifiSettingsChannelFinderView` | No case yet (#1802 P6). |
+| `lib/page/wifi_settings/views/wifi_settings_channel_finder_view.dart` | `WifiSettingsChannelFinderView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/wifi_settings/views/wifi_share_detail_view.dart` | `WiFiShareDetailView` | No case yet (#1802 P6). |
 <!-- layout-gate-roster:end -->
 
