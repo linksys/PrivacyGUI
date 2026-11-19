@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/error_code.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
@@ -1014,7 +1015,19 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
         });
         if (_hasNewFW) {
           logger.i('[PnP]: New Firmware available!');
-          await fwUpdate.updateFirmware();
+          // An install the router refuses turns `isUpdating` on and off
+          // again, and the listener in build goes on to Wi-Fi Ready from
+          // there, so its error is only logged here. The access policy
+          // refuses before `isUpdating` is set, so nothing in build sees that
+          // one: it goes on from here.
+          try {
+            await fwUpdate.updateFirmware();
+          } on ReadOnlyAccessException catch (error) {
+            logger.e('[PnP]: The firmware install is not allowed: $error');
+            _goWiFiReady();
+          } catch (error) {
+            logger.e('[PnP]: Could not start the firmware install: $error');
+          }
         } else {
           logger.i('[PnP]: No available FW, go WiFi Ready');
           _goWiFiReady();

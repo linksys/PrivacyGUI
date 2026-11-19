@@ -30,6 +30,13 @@ final healthCheckProvider =
 class HealthCheckProvider extends Notifier<HealthCheckState> {
   StreamSubscription? _streamSubscription;
 
+  /// Counts the runs, so an update a run scheduled can tell it is stale.
+  int _run = 0;
+
+  /// Whether an update scheduled by [run] may still change the state: only
+  /// while that run is the latest and still running.
+  bool _isRunning(int run) => run == _run && state.status == 'RUNNING';
+
   @override
   HealthCheckState build() => HealthCheckState.init();
 
@@ -42,6 +49,7 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
 
   Future<void> runHealthCheck(Module module, {int? serverId}) async {
     if (module == Module.speedtest) {
+      final run = ++_run;
       state = HealthCheckState.init().copyWith(
         servers: state.servers, // Preserve servers
         selectedServer: state.selectedServer,
@@ -71,6 +79,8 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
         return;
       }
       _streamSubscription?.cancel();
+      // A status the router could not give ends the run, as an error.
+      JNAPError? statusError;
       _streamSubscription = repo
           .scheduledCommand(
               action: JNAPAction.getHealthCheckStatus,
@@ -79,12 +89,22 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
               retryDelayInMilliSec: 100,
               maxRetry: -1,
               condition: (result) {
+                if (result is JNAPError) {
+                  statusError = result;
+                  return true;
+                }
                 return result is JNAPSuccess &&
-                        result.output['speedTestResult']['exitCode'] !=
-                            'Unavailable' ||
-                    result is JNAPError;
+                    result.output['speedTestResult']['exitCode'] !=
+                        'Unavailable';
               },
               onCompleted: (_) async {
+                // This run has no result of its own; asking for the latest
+                // one would show an earlier run's as a success.
+                if (statusError != null) {
+                  state = state.copyWith(
+                      step: 'error', status: 'COMPLETE', error: statusError);
+                  return;
+                }
                 final resultId = state.result.firstOrNull?.resultID;
                 // Get health check result with resultId
                 final result = await getHealthCheckResults(module, 1, resultId);
@@ -153,6 +173,7 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
             meterValue =
                 speedtestTempResult.downloadBandwidth?.toDouble() ?? 0.0;
             Future.delayed(const Duration(milliseconds: 1000), () {
+              if (!_isRunning(run)) return;
               state = state.copyWith(meterValue: 0.0);
             });
           } else {
@@ -165,6 +186,9 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
             randomValue: randomValue,
           );
           Future.delayed(const Duration(milliseconds: 400), () {
+            // Once the run is done, its final result is in; an in-progress
+            // reading scheduled before that must not replace it.
+            if (!_isRunning(run)) return;
             state = state.copyWith(
               result: [
                 HealthCheckResult(

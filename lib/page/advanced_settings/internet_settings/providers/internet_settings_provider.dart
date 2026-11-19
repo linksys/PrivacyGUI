@@ -171,14 +171,15 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState> {
         }
         break;
       case WanType.bridge:
-        SharedPreferences.getInstance().then((prefs) {
-          final redirection = prefs.getString(pRedirection);
-          newState = newState.copyWith(
-            ipv4Setting: newState.ipv4Setting.copyWith(
-              redirection: () => redirection,
-            ),
-          );
-        });
+        // Awaited: the state below is built from newState, so a read that
+        // lands later would be lost.
+        final prefs = await SharedPreferences.getInstance();
+        final redirection = prefs.getString(pRedirection);
+        newState = newState.copyWith(
+          ipv4Setting: newState.ipv4Setting.copyWith(
+            redirection: () => redirection,
+          ),
+        );
         break;
       default:
         break;
