@@ -69,8 +69,10 @@ jobs:
           path: reports/tests.json
 
   # #1802 P3: every testLocalizations case at 480, 905, 1241 and 1280x420,
-  # failing on an overflow over 2.0px. One job per locale keeps each one near
-  # Decision 4's 5 minutes; the locales are #1802's Decision 7.
+  # failing on an overflow over 2.0px, one job per locale. A PR into a
+  # `dev-1.*` branch runs en only, so its wait stays short (Decision 4). A PR
+  # into main runs every gate locale (Decision 7), as the pre-push hook does.
+  # test/layout_gate/layout_gate_ci_test.dart holds both lists to gateLocales.
   layout-gate-locale:
     name: 1.x / Layout Gate (${{ matrix.locale }})
     runs-on: ubuntu-latest
@@ -78,7 +80,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        locale: [ja, ru, el, nl, de]
+        locale: ${{ fromJSON(github.base_ref == 'main' && '["en","de","fr","es","it","nl","ja","ru","el"]' || '["en"]') }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -86,7 +88,8 @@ jobs:
       - uses: ./.github/actions/setup-1x
 
       # Only the suites that declare testLocalizations cases, so the run does
-      # not compile the rest. `--exclude-tags` as in constitution 3.1.
+      # not compile the rest; layout_gate_ci_test.dart checks that this picks
+      # every suite the roster counts. `--exclude-tags` as in constitution 3.1.
       - name: Layout gate
         run: |
           mkdir -p reports

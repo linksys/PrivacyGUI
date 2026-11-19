@@ -52,22 +52,30 @@ String? pageClassIn(String path, String source) {
   return null;
 }
 
+/// The screenshot suites in [test]: the files that call `testLocalizations`,
+/// as `package:analyzer` sees it, other than [testLocalizationsHelper]. The
+/// roster, the layout gate's pre-push hook, and the check on CI's suite
+/// selection all count suites this way.
+Set<String> screenshotSuites(Map<String, String> test) => {
+      for (final MapEntry(key: path, value: source) in test.entries)
+        if (path != testLocalizationsHelper &&
+            namesIn(parseDart(source)).contains('testLocalizations'))
+          path,
+    };
+
 /// The pages in [lib] that no screenshot suite in [test] constructs, as
 /// `<page file> -> <page class>`, the way constitution 3.3's table lists them.
 ///
-/// A suite is a file that calls `testLocalizations`, other than the file that
-/// defines it. A page counts only where a suite constructs its class: a page
+/// A suite is one of [screenshotSuites]. A page counts only where a suite
+/// constructs its class: a page
 /// that a suite reaches as a parent's tab is not laid out unless that tab is
 /// selected, so it is not covered. A page file without a public widget class
 /// reads `<page file> -> ?`.
 Set<String> findUncoveredPages(
     Map<String, String> lib, Map<String, String> test) {
-  final constructed = <String>{};
-  test.forEach((path, source) {
-    if (path == 'test/common/test_responsive_widget.dart') return;
-    if (!namesIn(parseDart(source)).contains('testLocalizations')) return;
-    constructed.addAll(constructedNamesIn(source));
-  });
+  final constructed = {
+    for (final suite in screenshotSuites(test)) ...constructedNamesIn(test[suite]!),
+  };
   return {
     for (final page in rosterPages(lib.keys))
       if (pageClassIn(page, lib[page]!) case final pageClass)

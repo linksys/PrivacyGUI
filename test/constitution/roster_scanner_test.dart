@@ -51,6 +51,27 @@ class OtpAddPhoneView extends ArgumentsConsumerStatefulView {}
     });
   });
 
+  group('screenshotSuites', () {
+    test('takes the files that call testLocalizations, but not its own file',
+        () {
+      final suites = screenshotSuites({
+        'test/page/a/localizations/a_view_test.dart':
+            "void main() { testLocalizations('A', (t, l) async {}); }",
+        'test/page/b/localizations/b_view_test.dart':
+            "void main() async { await testLocalizations('B', (t, l) async {}); }",
+        'test/page/c/views/c_view_test.dart':
+            "void main() { testWidgets('C', (t) async {}); }",
+        'test/common/test_responsive_widget.dart':
+            'void testLocalizations(String name, Function body) {}',
+      });
+
+      expect(suites, {
+        'test/page/a/localizations/a_view_test.dart',
+        'test/page/b/localizations/b_view_test.dart',
+      });
+    });
+  });
+
   group('findUncoveredPages', () {
     test('lists each page no testLocalizations suite constructs', () {
       final lib = {

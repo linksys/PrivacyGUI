@@ -25,7 +25,7 @@ import 'incident.dart';
 import 'measure_record.dart';
 
 /// `--dart-define=layoutMeasure=true` declares the measuring tests (#1802 P2).
-/// Without it, which is every ordinary run, nothing is declared here.
+/// Without it, which is every ordinary run, only the gate's tests are.
 const bool layoutMeasure = bool.fromEnvironment('layoutMeasure');
 
 /// Declares the layout tests for one case: its gate tests ([_declareGate]), and
@@ -85,13 +85,7 @@ void declareLayoutCases(
       try {
         await runWithOverflowCollection((sink) async {
           incidents = sink;
-          await testMain(tester, current.locale);
-          if (onCompleted != null) {
-            await onCompleted(tester);
-          } else {
-            // The same settling pump the screenshot tests end with.
-            await tester.pump(const Duration(seconds: 5));
-          }
+          await _runAndSettle(tester, current.locale, testMain, onCompleted);
         });
         threw = false;
       } finally {
@@ -149,13 +143,7 @@ void _declareGate(
       await loadTestFonts();
       await tester.setScreenSize(current);
       final incidents = await runWithOverflowCollection((sink) async {
-        await testMain(tester, current.locale);
-        if (onCompleted != null) {
-          await onCompleted(tester);
-        } else {
-          // The same settling pump the screenshot tests end with.
-          await tester.pump(const Duration(seconds: 5));
-        }
+        await _runAndSettle(tester, current.locale, testMain, onCompleted);
         return sink;
       });
       final failures = gateFailures(incidents);
@@ -174,6 +162,22 @@ void _declareGate(
     semanticsEnabled: semanticsEnabled,
     tags: ['layout-gate'],
   );
+}
+
+/// Runs a case's body in [locale], then [onCompleted], or else the settling
+/// pump the screenshot tests end with.
+Future<void> _runAndSettle(
+  WidgetTester tester,
+  Locale locale,
+  FutureOr<void> Function(WidgetTester, Locale) testMain,
+  Future<void> Function(WidgetTester tester)? onCompleted,
+) async {
+  await testMain(tester, locale);
+  if (onCompleted != null) {
+    await onCompleted(tester);
+  } else {
+    await tester.pump(const Duration(seconds: 5));
+  }
 }
 
 /// The sizes to measure a case at, one per [requested] size whose layout the

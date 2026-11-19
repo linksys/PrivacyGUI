@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import 'package:test/test.dart';
+
 import 'roster_scanner.dart';
 import 'source_scan.dart';
 
@@ -13,4 +17,22 @@ void main() {
     fix: "Give the page a testLocalizations case that constructs it, in the "
         "feature's localizations/ directory (constitution 3.5).",
   );
+
+  test('the roster takes the pages constitution 5.1 names without the suffix',
+      () {
+    final rule = File('constitution.md')
+        .readAsLinesSync()
+        .singleWhere((line) => line.startsWith('- A page is `*_view.dart`.'));
+    final named = {
+      for (final m in RegExp(r'`(lib/page/[^`]+\.dart)`').allMatches(rule))
+        m.group(1)!,
+    };
+
+    expect(pagesNamedOtherwise, named,
+        reason: 'pagesNamedOtherwise in roster_scanner.dart has to list the '
+            'pages that constitution 5.1 names.');
+    for (final page in pagesNamedOtherwise) {
+      expect(File(page).existsSync(), isTrue, reason: '$page is gone.');
+    }
+  });
 }
