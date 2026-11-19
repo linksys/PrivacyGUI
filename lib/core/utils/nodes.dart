@@ -379,6 +379,14 @@ const List<Map<String, dynamic>> _velopModelMap = [
     'pattern': '^m62',
   },
   {
+    'model': 'M63',
+    'baseModel': 'M63',
+    'seriesModel': 'M63',
+    'isMeshRouter': false,
+    'isCognitiveMesh': true,
+    'pattern': '^m63',
+  },
+  {
     'model': 'EA9350',
     'hardwareVersions': ['3'],
     'baseModel': 'EA9350',

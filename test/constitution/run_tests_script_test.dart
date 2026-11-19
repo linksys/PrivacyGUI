@@ -11,4 +11,16 @@ void main() {
       contains('--exclude-tags="golden||loc"'),
     );
   });
+
+  // `1.x / Unit Tests` runs run_coverage.sh (#1803 Q1), so it leaves the tags
+  // out only as long as that script goes through run_tests.sh.
+  test('run_coverage.sh runs the tests through run_tests.sh', () {
+    final commands = File('run_coverage.sh')
+        .readAsLinesSync()
+        .where((line) => !line.trimLeft().startsWith('#'))
+        .join('\n');
+
+    expect(commands, contains('bash run_tests.sh'));
+    expect(commands, isNot(contains('flutter test')));
+  });
 }
