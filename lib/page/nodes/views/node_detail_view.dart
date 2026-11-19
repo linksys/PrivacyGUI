@@ -212,7 +212,6 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
         _detailSection(state),
         const AppGap.small2(),
         _lightCard(state),
-        const Spacer(),
       ],
     );
   }
@@ -600,8 +599,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
     return _nodeDetailInfoCard(
       // A Wrap, so the trailing status moves below when both do not fit on
       // one line. In a Row it kept its full width and ran past the card in
-      // Russian (#1802). The page sizes itself by intrinsic height, so a
-      // LayoutBuilder cannot cap it instead.
+      // Russian (#1802).
       child: SizedBox(
         width: double.infinity,
         child: Wrap(

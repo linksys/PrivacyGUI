@@ -36,6 +36,7 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/page/layout/fit_or_grow.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
@@ -288,14 +289,20 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                     opacity: showConfig ? 1 : 0,
                     child: SizedBox(
                         height: constraints.maxHeight, child: _configView()))),
-            Container(
-              color: Theme.of(context).colorScheme.background,
-              child: switch (_setupStep) {
-                _PnpSetupStep.saving => _loadingSpinner(),
-                _PnpSetupStep.saved => _showSaved(),
-                _PnpSetupStep.needReconnect => _showNeedReconnect(),
-                _ => SizedBox.square(),
-              },
+            // The overlay covers the config view and centres in it, as it did
+            // when the page was sized by IntrinsicHeight, and a taller one
+            // still grows the page. Hidden, it stays empty.
+            FitOrGrow(
+              height: constraints.maxHeight,
+              child: Container(
+                color: Theme.of(context).colorScheme.background,
+                child: switch (_setupStep) {
+                  _PnpSetupStep.saving => _loadingSpinner(),
+                  _PnpSetupStep.saved => _showSaved(),
+                  _PnpSetupStep.needReconnect => _showNeedReconnect(),
+                  _ => SizedBox.square(),
+                },
+              ),
             )
           ],
         ),
