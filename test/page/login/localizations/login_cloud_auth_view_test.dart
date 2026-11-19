@@ -1,35 +1,29 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
+import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/login/views/login_cloud_auth_view.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 import '../../../common/di.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
+import '../../../mocks/auth_notifier_mocks.dart';
+import '../../../test_data/gra_session_info_test_data.dart';
 
-/// A Remote Assistance session that the cloud answers for at once.
-class _Auth extends AuthNotifier {
-  @override
-  Future<AuthState> build() async => const AuthState(loginType: LoginType.none);
-
-  @override
-  Future<GRASessionInfo?> testSessionAuthentication(
-          {required String token, required String session}) async =>
-      const GRASessionInfo(
-        id: 'session-1',
-        serialNumber: '65G10M27E03041',
-        modelNumber: 'LN12',
-        status: GRASessionStatus.active,
-        expiredIn: 1800,
-        createdAt: 0,
-        statusChangedAt: 0,
-        currentTime: 0,
-      );
-}
-
-// The page Remote Assistance opens with the session in its query parameters.
+// The page Remote Assistance opens, with the session in its query
+// parameters.
 void main() {
+  late MockAuthNotifier mockAuthNotifier;
+
   mockDependencyRegister();
+
+  setUp(() {
+    mockAuthNotifier = MockAuthNotifier();
+    when(mockAuthNotifier.build())
+        .thenAnswer((_) async => const AuthState(loginType: LoginType.none));
+    when(mockAuthNotifier.testSessionAuthentication(
+            token: anyNamed('token'), session: anyNamed('session')))
+        .thenAnswer((_) async => graSessionInfoActiveTestData);
+  });
 
   for (final (name, args) in [
     ('no session', <String, dynamic>{}),
@@ -38,7 +32,7 @@ void main() {
   ]) {
     testLocalizations('Login cloud auth view - $name', (tester, locale) async {
       await tester.pumpWidget(testableSingleRoute(
-        overrides: [authProvider.overrideWith(_Auth.new)],
+        overrides: [authProvider.overrideWith(() => mockAuthNotifier)],
         locale: locale,
         child: LoginCloudAuthView(args: args),
       ));
