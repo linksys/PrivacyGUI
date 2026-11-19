@@ -2,7 +2,7 @@
 // bridge request lands had zero tests.
 //
 // THE DECISION GUARDED. That the two tables are *disjoint* and that the remote
-// one is session-scoped. `BridgeEndpoints` is interpolated at 8 request sites in
+// one is session-scoped. `BridgeEndpoints` is interpolated at 6 request sites in
 // `usp_bridge_client_web.dart` as `'$_baseUrl${_endpoints.X}'`, so the table and
 // the host have to agree: on-router paths (`/api/v1/...`) only make sense against
 // the router's own origin, Guardian paths only against the Guardian host. Phase 1
@@ -17,7 +17,7 @@
 //      the client string-concatenates, so `'https://host' + 'v1/...'` yields
 //      `https://hostv1/...` and fails as a network error far from the cause.
 //   2. `remote()` losing its session id — it is a factory, not a const, precisely
-//      because all four paths embed the id. A refactor that hoisted it to a
+//      because all three paths embed the id. A refactor that hoisted it to a
 //      `static const` would compile only by dropping the interpolation, and every
 //      agent would then share one subscription namespace on the proxy.
 //
@@ -30,10 +30,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/usp/services/bridge_endpoints.dart';
 
-/// All four fields, so a new one cannot be added without deciding what it means
+/// All three fields, so a new one cannot be added without deciding what it means
 /// in both modes. Used by the disjointness and shape sweeps below.
 List<String> _paths(BridgeEndpoints e) =>
-    [e.notifications, e.subscription, e.health, e.turboPrefix];
+    [e.notifications, e.subscription, e.health];
 
 void main() {
   group('the local table addresses the on-router bridge', () {
@@ -43,7 +43,6 @@ void main() {
       expect(local.notifications, '/api/v1/notifications');
       expect(local.subscription, '/api/v1/subscription');
       expect(local.health, '/api/v1/health');
-      expect(local.turboPrefix, '/api/v1/turbo');
     });
 
     test('is a const singleton', () {
@@ -63,7 +62,6 @@ void main() {
         remote.notifications,
         remote.subscription,
         remote.health,
-        remote.turboPrefix,
       ]) {
         expect(path, contains('/sessions/sess%2F4711%3Fx/'));
       }
@@ -96,12 +94,10 @@ void main() {
       // `RemoteTransportStrategy.isRouterReachable` at it. The expectation below is
       // now an ordinary contract assertion.
       //
-      // `turboPrefix` is a different matter and is still unverified: nothing calls
-      // it remotely and no spec has been seen for it. Left as a declared path
-      // rather than deleted, because deleting a `required` field to express "we
-      // have not checked" would be the mistake `health` just cost a release cycle.
+      // A fourth field, `turboPrefix`, was deleted with the turbo channel it
+      // addressed (#1874): the router removed the endpoint, so the path named
+      // nothing in either mode.
       expect(remote.health, '$base/health');
-      expect(remote.turboPrefix, '$base/turbo');
     });
 
     test('a different session yields a different table', () {
@@ -130,8 +126,8 @@ void main() {
   // RemoteReads — #1580 / epic #1575
   // ═══════════════════════════════════════════════════════════════════════════
   //
-  // THE DECISION GUARDED. That these paths are **optional**, not a fifth, sixth
-  // and seventh `required` field on `BridgeEndpoints`. They are the first group
+  // THE DECISION GUARDED. That these paths are **optional**, not a fourth, fifth
+  // and sixth `required` field on `BridgeEndpoints`. They are the first group
   // of endpoints that exists remotely and has no local counterpart at all — the
   // router keeps no notification store — so giving local a placeholder would
   // repeat exactly the mistake three docstrings spent a year repeating about
@@ -253,8 +249,8 @@ void main() {
               'silently produces https://hostv1/... and surfaces as a network '
               'error nowhere near this table');
       expect(path, isNot(endsWith('/')),
-          reason: 'turboPrefix is joined as \'\$turboPrefix/\$action\' — a '
-              'trailing slash would double it');
+          reason: 'no endpoint in either table ends in a slash; one that does '
+              'is a typo, not a route');
     }
   });
 }

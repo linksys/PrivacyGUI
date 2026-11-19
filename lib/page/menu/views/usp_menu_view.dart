@@ -166,7 +166,7 @@ class UspMenuView extends ConsumerWidget {
         AppSectionItemData(
           identifier: 'menu-usp-console',
           title: loc(context).uspConsole,
-          description: 'Raw USP CRUD, SSE, subscription & turbo debug tool',
+          description: 'Raw USP CRUD, SSE & subscription debug tool',
           iconData: Icons.terminal,
           onTap: () => context.goNamed(RouteNamed.uspTestConsole),
         ),

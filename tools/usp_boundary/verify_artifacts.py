@@ -15,14 +15,10 @@ REQUIRED_PATHS = {
     "web/usp_client_bg.wasm",
     "web/usp_client.d.ts",
 }
-REQUIRED_EXPORTS = (
-    "export class UspClient",
-    "export class UspWsClient",
-    "export function buildGetRecord",
-    "export function buildOperateRecord",
-    "export function buildWebSocketConnect",
-    "export function decodeRecord",
-)
+# The WebSocket exports (`UspWsClient` and its record builders) are no longer
+# required: the only caller, the firmware-upload WebSocket path, was removed
+# with the router's /usp-ws endpoint (PrivacyGUI#1874, Architecture#252).
+REQUIRED_EXPORTS = ("export class UspClient",)
 
 
 def sha256(data):
@@ -56,8 +52,8 @@ def verify_manifest(manifest_path, root, verify_upstream=False, fetcher=fetch_ur
     if not re.fullmatch(r"[0-9a-f]{40}", commit):
         errors.append("upstream commit must be a full 40-character SHA")
     features = set(manifest.get("build", {}).get("features", []))
-    if not {"wasm", "websocket"} <= features:
-        errors.append("build features must include wasm and websocket")
+    if "wasm" not in features:
+        errors.append("build features must include wasm")
 
     artifacts = manifest.get("artifacts", [])
     paths = {artifact.get("path") for artifact in artifacts}

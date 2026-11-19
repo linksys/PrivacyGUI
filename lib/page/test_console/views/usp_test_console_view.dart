@@ -654,34 +654,6 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  // Bridge: Turbo Channel
-  // ════════════════════════════════════════════════════════════════════════════
-
-  Future<void> _doTurbo(String action) async {
-    if (_bridgeClient == null) return;
-    _log('TURBO $action...');
-    try {
-      final Map<String, dynamic> result;
-      switch (action) {
-        case 'start':
-          result = await _bridgeClient!.turboStart();
-        case 'heartbeat':
-          result = await _bridgeClient!.turboHeartbeat();
-        case 'status':
-          result = await _bridgeClient!.turboStatus();
-        case 'release':
-          result = await _bridgeClient!.turboRelease();
-        default:
-          _log('ERROR: unknown turbo action: $action');
-          return;
-      }
-      _log('TURBO $action: ${jsonEncode(result)}');
-    } catch (e) {
-      _log('ERROR turbo $action: $e');
-    }
-  }
-
-  // ════════════════════════════════════════════════════════════════════════════
 
   @override
   void dispose() {
@@ -800,8 +772,6 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
           _buildSseSection(),
           const Divider(height: 32),
           _buildSubscriptionSection(),
-          const Divider(height: 32),
-          _buildTurboSection(),
         ],
       ),
     );
@@ -884,7 +854,7 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
               children: [
                 AppText.headlineSmall('USP Console'),
                 AppText.bodySmall(
-                  'Raw USP CRUD, SSE, subscription & turbo debug tool',
+                  'Raw USP CRUD, SSE & subscription debug tool',
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ],
@@ -1215,28 +1185,6 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
                 label: 'List All', onTap: _doListSubscriptions),
             AppButton.dangerOutline(
                 label: 'Purge All', onTap: _doPurgeSubscriptions),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTurboSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildSectionTitle('Turbo Channel'),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            AppButton.primary(label: 'Start', onTap: () => _doTurbo('start')),
-            AppButton.primaryOutline(
-                label: 'Heartbeat', onTap: () => _doTurbo('heartbeat')),
-            AppButton.primaryOutline(
-                label: 'Status', onTap: () => _doTurbo('status')),
-            AppButton.dangerOutline(
-                label: 'Release', onTap: () => _doTurbo('release')),
           ],
         ),
       ],

@@ -20,7 +20,9 @@ package from (run 42764973857, artifact `usp-client-wasm-7902af85…`, whose
 `dba763c` (PR #121, linksys/usp_framework#118), and the `pkg/` files there are
 byte-identical to the artifact: the three files match its SHA-256 digests and
 upstream's git blobs. It was built with both the `wasm` and `websocket`
-features.
+features. Since #1874 the app needs only `wasm`: nothing calls the WebSocket
+exports, and `tools/usp_boundary/verify_artifacts.py` no longer requires them,
+so a package built without `websocket` passes the gate.
 
 **0.15.0 and 0.16.0 change how a failed call reads (#1787).** 0.15.0 (PR #119,
 linksys/usp_framework#61): a request the router refuses as a whole (a USP

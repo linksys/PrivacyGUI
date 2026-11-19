@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -9,13 +8,8 @@ import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_chunker.dart';
 import 'package:privacy_gui/page/firmware_update/services/firmware_local_upload_service.dart';
-import 'package:privacy_gui/page/firmware_update/models/firmware_upload_method.dart';
-import 'package:privacy_gui/page/firmware_update/services/firmware_upload_strategy.dart';
 
 class MockUspClient extends Mock implements UspClient {}
-
-class MockFirmwareUploadStrategy extends Mock
-    implements FirmwareUploadStrategy {}
 
 void main() {
   late MockUspClient mockUsp;
@@ -192,33 +186,30 @@ void main() {
       );
     });
 
-    test('falls back to HTTP when WebSocket preparation fails', () async {
-      final wsStrategy = MockFirmwareUploadStrategy();
-      when(() => wsStrategy.name).thenReturn('WebSocket');
-      when(() => wsStrategy.isAvailable()).thenAnswer((_) async => true);
-      when(() => wsStrategy.prepare())
-          .thenThrow(const NetworkError(detail: 'handshake failed'));
-      when(() => wsStrategy.finalize()).thenAnswer((_) async {});
+    // The point of PrivacyGUI#1874: with no chunker injected, the HTTP push
+    // slices 192 KiB, and every slice goes out as one Operate. Two full chunks
+    // and a one-byte tail make an off-by-one in either direction visible.
+    test('pushes 192 KiB chunks over HTTP by default', () async {
       when(() => mockUsp.operate(any(), args: any(named: 'args')))
           .thenAnswer((_) async => <String, dynamic>{});
+      final bytes = bytesOf(2 * 196608 + 1);
 
-      service = FirmwareLocalUploadService(
-        mockUsp,
-        lock,
-        chunker: const FirmwareChunker(chunkBytes: 4),
-        wsStrategyFactory: () async => wsStrategy,
-      );
-
-      await service.uploadFile(
-        bytes: bytesOf(4),
+      await FirmwareLocalUploadService(mockUsp, lock).uploadFile(
+        bytes: bytes,
         md5: 'abc',
         commandKey: '123',
       );
 
-      expect(service.lastUsedMethod, UploadMethod.http);
-      verify(() => wsStrategy.prepare()).called(1);
-      verify(() => wsStrategy.finalize()).called(1);
-      verify(() => mockUsp.operate(any(), args: any(named: 'args'))).called(1);
+      final args = verify(
+        () => mockUsp.operate(
+          'Device.LocalAgent.X_LINKSYS_Download()',
+          args: captureAny(named: 'args'),
+        ),
+      ).captured.cast<Map<String, String>>();
+      expect(args.map((a) => base64Decode(a['Content']!).length),
+          [196608, 196608, 1]);
+      expect(args.map((a) => a['TotalFragment']), ['3', '3', '3']);
+      expect(base64Decode(args.last['Content']!), bytes.sublist(2 * 196608));
     });
 
     test('totalFragmentsFor mirrors chunker math', () {
@@ -226,37 +217,6 @@ void main() {
       expect(service.totalFragmentsFor(1), 1);
       expect(service.totalFragmentsFor(4), 1);
       expect(service.totalFragmentsFor(5), 2);
-    });
-
-    // PrivacyGUI#1582 made `SessionService` read the *same* leaf,
-    // `Device.LocalAgent.EndpointID`, and strip its `uuid::` prefix — Guardian's
-    // device APIs take the bare UUID and answer 403 for anything else. **This
-    // file must keep the prefix**: the value here is the USP endpoint identifier
-    // the WebSocket push addresses, not a cloud id. Sharing one helper between
-    // the two is the tempting refactor, and it would break Method 2 in a way the
-    // behavioural tests above cannot see, because they inject `wsStrategyFactory`
-    // and never reach the read. This is that guard.
-    test('the EndpointID read keeps its uuid:: prefix', () {
-      final code = File(
-        'lib/page/firmware_update/services/firmware_local_upload_service.dart',
-      )
-          .readAsStringSync()
-          .split('\n')
-          .where((l) => !l.trimLeft().startsWith('//'))
-          .join('\n');
-
-      expect(code, contains("get(['Device.LocalAgent.EndpointID'])"),
-          reason: 'the read itself must stay here');
-      // Only the prefix literal is banned. An earlier version of this guard also
-      // banned `substring` / `split(` / `replaceFirst` anywhere in the file, which
-      // would go red for any unrelated string handling added later: a census keyed
-      // on a substring polices identifiers, not calls.
-      expect(code.toLowerCase(), isNot(contains('uuid::')),
-          reason: 'stripping the prefix here would break the WebSocket toId');
-      // What this cannot reach is the value actually handed to `toId`: the read is
-      // a private function behind a provider, and the behavioural tests above
-      // inject `wsStrategyFactory`, so nothing here executes it. That is why the
-      // guard is textual rather than behavioural — stated, not hidden.
     });
   });
 }

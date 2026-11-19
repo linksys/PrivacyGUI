@@ -4,13 +4,20 @@ import 'dart:typed_data';
 import 'package:privacy_gui/page/firmware_update/models/firmware_chunk.dart';
 
 class FirmwareChunker {
-  /// Raw bytes per chunk (pre-base64). 65535 is the empirically observed
-  /// transport upper bound — see `doc/usp/integration/firmware_chunk_size_validation.md`.
-  static const int defaultChunkBytes = 65535;
-
-  /// Larger chunk size for WebSocket uploads (192 KB).
-  /// WebSocket bypasses HTTP bridge buffer limits, allowing larger chunks.
-  static const int wsChunkBytes = 196608;
+  /// Raw bytes per chunk, before base64: 192 KiB, so each
+  /// `X_LINKSYS_Download()` Operate carries 256 KiB of base64 `Content`.
+  ///
+  /// This was 65,535 until PrivacyGUI#1874. Per the firmware team that number
+  /// was not a transport limit: HTTP was held there because `usp-bridge`
+  /// dropped data on a partial write to the obuspa socket, fixed in
+  /// feed_uspapi#44. They measured a ~58 MB image on an M60 at 16 s with
+  /// 64 KiB chunks and 11 s with 192 KiB ones, against 10 s for the retired
+  /// WebSocket path, which used this same size.
+  ///
+  /// On firmware without feed_uspapi#44, chunks this size can fail with partial
+  /// writes. The local GUI ships inside the firmware image, so a build with
+  /// this value runs on firmware that has the fix.
+  static const int defaultChunkBytes = 196608;
 
   final int chunkBytes;
 
