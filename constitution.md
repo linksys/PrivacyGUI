@@ -1,7 +1,7 @@
 # The 1.x Constitution
 
-**Version:** 1.0
-**Last amended:** 2026-11-12 (#1804, first version)
+**Version:** 2.0
+**Last amended:** 2026-11-19 (#1864, scrolling pages without `IntrinsicHeight`)
 **Applies to:** the 1.x line of PrivacyGUI: `dev-1.*`, `release-1.*`, and `main` while it ships 1.x. 2.x has its own `constitution.md`; nothing here binds 2.x, and nothing in 2.x's binds 1.x.
 
 ## Preamble
@@ -29,6 +29,7 @@ Where this document and another document in the repository disagree, this one wi
 | VII | Zero analyzer errors; no new warnings | CI (#1802 P1) for errors; review for warnings |
 | VIII | Simplicity; no wrappers around the framework; stay in scope | Review |
 | IX | Amendments state version, date and reason; the team approves them | Team approval |
+| X | A scrolling page's content needs no bounded height | Review; #1802's gate as well for flex children on pages with a case, once it lands |
 
 ---
 
@@ -362,6 +363,27 @@ A PR that amends this constitution:
 The team approves an amendment, not a single reviewer. The PR says where the team approved it.
 
 **Enforced by**: Team approval. The repository's rules let any PR merge with one approval; for an amendment, one approval is not enough.
+
+---
+
+## Article X: Page Layout
+
+### 10.1 A scrolling page's content needs no bounded height
+
+A scrolling page is a `StyledAppPageView` with `scrollable: true`, or a `StyledAppPageView.innerPage`, which scrolls unless it is given `scrollable: false`. It is laid out with no height limit, so it is as tall as its content. Its content is laid out with no height limit as well and, when it comes out shorter than the rest of the window, laid out again with the rest of the window as its maximum (`FitOrGrow`, in `plugins/widgets/lib/widgets/page/layout/`). Nothing above it asks for an intrinsic height: PrivacyGUI-Widgets v1.2.11 removed the `IntrinsicHeight` that did, because a child can report a smaller intrinsic height than it lays out to, and the page then came out too short (#1864).
+
+So in a scrolling page's content, unless a widget in between bounds the height:
+
+- No `Expanded`, `Spacer` or `Flexible` in a `Column` or another vertical `Flex`. Without a height limit they throw in debug. To keep something at the bottom of a short page, give it a `FillColumn` slot, as the mobile layout of `lib/page/health_check/views/speed_test_view.dart` does, and space the `FillColumn`'s own children with `SizedBox`: a `Gap` needs a `Flex`, and `FillColumn` is not one. A list or a grid takes its real height, with `shrinkWrap: true`, instead of a fixed height that only an `Expanded` made work.
+- No `LayoutBuilder` whose tree depends on the height. A short page's content is laid out twice, with two different height limits, so such a builder builds a different tree each time, and the state in it is lost.
+
+A `SizedBox` or a `Container` with a `height`, or a `ConstrainedBox` with a `maxHeight`, bounds what is under it. A dialog or a bottom sheet is not part of the page. A page that does not scroll is not covered: its content has the window's height, and an `Expanded` in it works.
+
+This article has no exceptions. When it was added, every scrolling page under `lib/page/` was checked, and the seven that broke it were fixed in the same change (#1864).
+
+**Enforced by**: Review. Once #1802's gate runs the `testLocalizations` cases (#1802 P3), a breach of the first point on a page with a case throws, and the case fails. The second point throws nothing, so it stays Review.
+
+*Amended 2026-11-19 (#1864): new article. Scrolling pages no longer size their content by `IntrinsicHeight`, and these are the two rules that change brings (#1864, Decision 4). A rule is added, so the major number moves (9.2). The version is this document's own, not the app's line: this is still the 1.x constitution.*
 
 ---
 
