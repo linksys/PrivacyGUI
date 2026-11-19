@@ -1143,7 +1143,7 @@ packages:
       path: "plugins/widgets"
       relative: true
     source: path
-    version: "1.2.10"
+    version: "1.2.11"
   process:
     dependency: transitive
     description:
