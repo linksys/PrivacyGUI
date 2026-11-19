@@ -11,6 +11,7 @@ import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/wan_external_provider.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
@@ -631,8 +632,15 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           AppText.labelMedium(loc(context).internet),
-                          _greenCircle(context,
-                              systemConnectivityState.wanConnection != null)
+                          // Same source as the Dashboard, so the two pages
+                          // agree. Not wanConnection: the router omits it
+                          // while the WAN (e.g. a PPTP session) is still
+                          // connecting, even when GetInternetConnectionStatus
+                          // already reports InternetConnected (#1764).
+                          _greenCircle(
+                              context,
+                              ref.watch(internetStatusProvider) ==
+                                  InternetStatus.online)
                         ],
                       )),
                 ),
@@ -905,6 +913,8 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
     final devicesState = ref.read(deviceManagerProvider);
     final healthCheckState = ref.read(healthCheckProvider);
     final systemConnectivityState = ref.read(instantVerifyProvider);
+    final isInternetOnline =
+        ref.read(internetStatusProvider) == InternetStatus.online;
 
     final uptime = DateFormatUtils.formatDuration(
         Duration(seconds: dashboardState.uptimes), context);
@@ -938,7 +948,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
       pw.Text(loc(context).connectivity),
       // pw.Text('${loc(context).selfTest}... Passed'),
       pw.Text(
-          '${loc(context).internet}... ${systemConnectivityState.wanConnection != null ? 'Passed' : 'Failed'}'),
+          '${loc(context).internet}... ${isInternetOnline ? 'Passed' : 'Failed'}'),
       ...systemConnectivityState.radioInfo.radios.map(
         (e) => pw.Text(
             '${e.band} | ${e.settings.ssid}... ${e.settings.isEnabled ? 'Enabled' : 'Disabled'}'),

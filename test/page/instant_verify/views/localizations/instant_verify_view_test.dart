@@ -209,7 +209,9 @@ void main() {
             firmwareUpdateProvider
                 .overrideWith(() => mockFirmwareUpdateNotifier),
             deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
+            // The Internet indicator follows internetStatusProvider (#1764).
+            internetStatusProvider
+                .overrideWith((ref) => InternetStatus.offline),
             instantPrivacyProvider
                 .overrideWith(() => mockInstantPrivacyNotifier),
             instantTopologyProvider
