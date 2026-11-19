@@ -11,7 +11,9 @@ sh run_generate_loc_snapshots.sh -c true -f test/path/to/test.dart
 
 # Parameters
 # -l : locale (default: en)
-# -s : screen sizes (default: 480,1280)
+# -s : screen sizes (default: 480,1280). A case renders only the sizes it
+#      lists (480, 744, 1080, 1280, 1440), so another width gives no
+#      screenshot; a value that is not a width fails the run.
 # -f : target single test file
 # -c : true = copy instead of move screenshots
 # -v : version number

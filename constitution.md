@@ -1,7 +1,7 @@
 # The 1.x Constitution
 
-**Version:** 1.2
-**Last amended:** 2026-11-18 (#1803, Q5: coverage floor)
+**Version:** 1.3
+**Last amended:** 2026-11-18 (#1802, P2: layout measurement)
 **Applies to:** the 1.x line of PrivacyGUI: `dev-1.*`, `release-1.*`, and `main` while it ships 1.x. 2.x has its own `constitution.md`; nothing here binds 2.x, and nothing in 2.x's binds 1.x.
 
 ## Preamble
@@ -203,6 +203,8 @@ A page's screenshot test is a `testLocalizations` case, from `test/common/test_r
 
 #1802's layout gate reuses these cases, so the case 3.3 asks for is a `testLocalizations` case. How to write, run and debug one is in `docs/screenshot_testing_guide.md`.
 
+`testLocalizations` also hands each case to `declareLayoutCases` in `test/layout_gate/layout_cases.dart`. With `--dart-define=layoutMeasure=true`, that declares more tests from the same case, tagged `layout-measure` and not `loc`. They make no golden check, and they collect overflow reports instead of failing on them (#1802 P2). Without the define, which is every run in 3.1, it declares none.
+
 <!-- screenshot-exceptions:begin -->
 | File | Calls |
 |---|---|
@@ -210,6 +212,8 @@ A page's screenshot test is a `testLocalizations` case, from `test/common/test_r
 <!-- screenshot-exceptions:end -->
 
 **Enforced by**: Test, for the first point and for the `localizations/` directory in the second. `test/constitution/screenshot_placement_test.dart` fails when code outside the body of `testLocalizations` makes a golden check, or when a file outside a `localizations/` directory calls `testLocalizations`, and the table above has no row for it. It also fails when a row no longer matches. Review for where the `localizations/` directory sits, and for the third point.
+
+*Amended 2026-11-18 (#1802): `testLocalizations` also declares #1802 P2's measuring tests, so that P2 measures overflow from the existing cases instead of new ones (#1802, Decision 6).*
 
 ### 3.6 Mocks
 
