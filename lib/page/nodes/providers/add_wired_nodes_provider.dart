@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/back_haul_info.dart';
@@ -52,28 +51,48 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
     );
     // Pause the idle checker
     ref.read(idleCheckerPauseProvider.notifier).state = true;
-    // Set router auto onboarding to true
-    await setAutoOnboardingSettings(true);
-    // Get backhaul info
-    final backhaulList = ref.read(deviceManagerProvider).backhaulInfoData;
-    state = state.copyWith(backhaulSnapshot: backhaulList);
+    // Whether the router's wired onboarding is on, so that a run that fails
+    // part way still turns it off.
+    var onboardingOn = false;
+    try {
+      // Set router auto onboarding to true
+      await setAutoOnboardingSettings(true);
+      onboardingOn = true;
+      // Get backhaul info
+      final backhaulList = ref.read(deviceManagerProvider).backhaulInfoData;
+      state = state.copyWith(backhaulSnapshot: backhaulList);
 
-    // logger.d('[AddWiredNode]: polling connect status');
-    // await _startPollingConnectStatus();
-    // state = state.copyWith(loadingMessage: loc(context).addNodesOnboardingNodes);
+      // logger.d('[AddWiredNode]: polling connect status');
+      // await _startPollingConnectStatus();
+      // state = state.copyWith(loadingMessage: loc(context).addNodesOnboardingNodes);
 
-    logger.d('[AddWiredNode]: check backhaul changes');
-    await _checkBackhaulChanges(context);
-    // Set router auto onboarding to false
-    await stopAutoOnboarding();
-    // Fetch latest status
-    logger.d('[AddWiredNode]: fetch nodes');
-    final nodes = await _fetchNodes();
-    state = state.copyWith(nodes: nodes);
-    stopCheckingBackhaul(context);
-    await ref.read(pollingProvider.notifier).forcePolling();
-    // Resume the idle checker
-    ref.read(idleCheckerPauseProvider.notifier).state = false;
+      logger.d('[AddWiredNode]: check backhaul changes');
+      await _checkBackhaulChanges(context);
+      // Set router auto onboarding to false
+      await stopAutoOnboarding();
+      onboardingOn = false;
+      // Fetch latest status
+      logger.d('[AddWiredNode]: fetch nodes');
+      final nodes = await _fetchNodes();
+      state = state.copyWith(nodes: nodes);
+      stopCheckingBackhaul(context);
+      await ref.read(pollingProvider.notifier).forcePolling();
+    } finally {
+      // A run that fails part way must not leave wired onboarding on at the
+      // router, the idle logout off for the rest of the session, nor the
+      // dialog loading.
+      if (onboardingOn) {
+        await setAutoOnboardingSettings(false).catchError((Object error) {
+          logger
+              .e('[AddWiredNode]: could not turn wired onboarding off: $error');
+        });
+      }
+      if (state.isLoading) {
+        state = state.copyWith(isLoading: false, forceStop: false);
+      }
+      // Resume the idle checker
+      ref.read(idleCheckerPauseProvider.notifier).state = false;
+    }
     final delta = log.end();
     logger.d('[AddWiredNode]: end auto onboarding, cost time: ${delta}ms');
   }
@@ -134,8 +153,10 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
     final pollBackhaul = pollBackhaulInfo(context, refreshing);
 
     await for (final result in pollBackhaul) {
+      // A read that fails, such as one that times out while a node joins,
+      // does not end the watch: the poll's condition keeps going too.
       if (result is! JNAPSuccess) {
-        return;
+        continue;
       }
       state = state.copyWith(onboardingProceed: true);
     }
@@ -143,7 +164,6 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
 
   Stream pollBackhaulInfo(BuildContext context, [bool refreshing = false]) {
     final repo = ref.read(routerRepositoryProvider);
-    final now = DateTime.now();
     return repo.scheduledCommand(
       action: JNAPAction.getBackhaulInfo,
       auth: true,
@@ -161,33 +181,16 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
         final backhaulInfoList = List.from(
           result.output['backhaulDevices'] ?? [],
         ).map((e) => BackHaulInfoData.fromMap(e)).toList();
-        final foundCounting = backhaulInfoList.fold<int>(0, (value, infoData) {
-          final dateFormat = DateFormat("yyyy-MM-ddThh:mm:ssZ");
-          // find the node which uuid is already exist on backhaul snapshot,
-          // and the connection type is "Wired"
-          // and the timestamp is less than current time
-          // and if the uuid is exist the timestamp is less than snapshot one
-          // if satisfy the above condition, then this is not the new added one.
-          return (state.backhaulSnapshot?.any((e) =>
-                      e.deviceUUID == infoData.deviceUUID &&
-                      infoData.connectionType == 'Wired' &&
-                      now.millisecondsSinceEpoch >
-                          (dateFormat
-                                  .tryParse(infoData.timestamp)
-                                  ?.millisecondsSinceEpoch ??
-                              0) &&
-                      (dateFormat
-                                  .tryParse(e.timestamp)
-                                  ?.millisecondsSinceEpoch ??
-                              0) <
-                          (dateFormat
-                                  .tryParse(infoData.timestamp)
-                                  ?.millisecondsSinceEpoch ??
-                              0)) ==
-                  true)
-              ? value
-              : value + 1;
-        });
+        // A node is new when it was not on the backhaul the app last polled.
+        // A node already in the mesh is never new, however its backhaul
+        // changed: wired or wireless, refreshed or not.
+        final known = {
+          for (final e in state.backhaulSnapshot ?? <BackHaulInfoData>[])
+            e.deviceUUID,
+        };
+        final foundCounting = backhaulInfoList
+            .where((infoData) => !known.contains(infoData.deviceUUID))
+            .length;
         if (foundCounting > 0) {
           state = state.copyWith(
               loadingMessage: loc(context).foundNNodesOnline(foundCounting),
