@@ -25,17 +25,21 @@ final _testTheme = AppTheme.create(
 final _pptp = pptpDhcpUnderlayForm;
 
 InternetSettingsFeatureState _state(UspInternetSettingsForm form,
-        {bool editing = true}) =>
+        {bool editing = true, String? vlanInstancePath = wanVlanRow}) =>
     InternetSettingsFeatureState(
       settings: Preservable(
         original: InternetSettingsSettings(form: form),
         current: InternetSettingsSettings(form: form),
       ),
-      status: InternetSettingsStatus(isLoading: false, isEditing: editing),
+      status: InternetSettingsStatus(
+        isLoading: false,
+        isEditing: editing,
+        vlanInstancePath: vlanInstancePath,
+      ),
     );
 
 Future<void> _pump(WidgetTester tester, UspInternetSettingsForm form,
-    {bool editing = true}) async {
+    {bool editing = true, String? vlanInstancePath = wanVlanRow}) async {
   await tester.pumpWidget(ProviderScope(
     child: MaterialApp(
       theme: _testTheme,
@@ -44,7 +48,9 @@ Future<void> _pump(WidgetTester tester, UspInternetSettingsForm form,
       home: Scaffold(
         body: SingleChildScrollView(
           child: UspIpv4Section(
-              state: _state(form, editing: editing), isEditing: editing),
+              state: _state(form,
+                  editing: editing, vlanInstancePath: vlanInstancePath),
+              isEditing: editing),
         ),
       ),
     ),
@@ -222,8 +228,7 @@ void main() {
         await _tapVlanSwitch(tester);
         await tester.enterText(
             find.descendant(
-                of: _field('VLAN ID (optional)'),
-                matching: find.byType(EditableText)),
+                of: _field('VLAN ID'), matching: find.byType(EditableText)),
             '200');
         await tester.pumpAndSettle();
         expect(container.read(uspInternetSettingsProvider).edited.vlanId, 200);
@@ -235,6 +240,99 @@ void main() {
         expect(state.isDirty, isFalse);
       });
     }
+  });
+
+  group('UspIpv4Section — WAN VLAN (issue #1754)', () {
+    const tagged = UspInternetSettingsForm(
+      connectionType: UspWanConnectionType.dhcp,
+      mtu: 1500,
+      vlanEnabled: true,
+      vlanId: 100,
+      vlanPriority: 5,
+    );
+
+    for (final type in [
+      UspWanConnectionType.dhcp,
+      UspWanConnectionType.staticIp,
+      UspWanConnectionType.pppoe,
+      UspWanConnectionType.pptp,
+      UspWanConnectionType.l2tp,
+    ]) {
+      testWidgets('${type.name} offers the VLAN switch', (tester) async {
+        await _pump(
+            tester,
+            _pptp.copyWith(
+                connectionType: type, vlanEnabled: false, vlanId: 1));
+        expect(_vlanSwitch, findsOneWidget);
+      });
+    }
+
+    testWidgets('bridge offers no VLAN switch', (tester) async {
+      await _pump(
+          tester, _pptp.copyWith(connectionType: UspWanConnectionType.bridge));
+      expect(find.text('VLAN Tagging'), findsNothing);
+    });
+
+    testWidgets('a router without a VLAN row gets no switch', (tester) async {
+      // A change there would not be saved.
+      await _pump(tester, tagged.copyWith(vlanEnabled: false),
+          vlanInstancePath: null);
+      expect(find.text('VLAN Tagging'), findsNothing);
+    });
+
+    testWidgets('the ID is required, 3 to 4094, until one is typed',
+        (tester) async {
+      // Switched on over the shipped row, the field holds its ID 1.
+      await _pumpLive(tester, tagged.copyWith(vlanId: 1));
+      final field = tester.widget<AppTextFormField>(_field('VLAN ID'));
+      expect(field.externalErrorText, 'Must be between 3 and 4094');
+      expect(field.errorDisplayMode, AppErrorDisplayMode.text,
+          reason: 'the field opens in error, and on web a tooltip opening on '
+              'focus drops the focus, so nothing could be typed (PR #1826)');
+
+      await tester.enterText(
+          find.descendant(
+              of: _field('VLAN ID'), matching: find.byType(EditableText)),
+          '100');
+      await tester.pumpAndSettle();
+
+      expect(_errorOf(tester, 'VLAN ID'), isNull);
+    });
+
+    testWidgets('the priority offers none and 0 to 7', (tester) async {
+      final container = await _pumpLive(tester, tagged);
+      final priority =
+          tester.widget<AppDropdown<int>>(find.byType(AppDropdown<int>));
+      expect(priority.label, 'VLAN Priority');
+      // AppDropdown.label is its semantics only; the page draws the visible one.
+      expect(find.text('VLAN Priority'), findsOneWidget);
+      expect(priority.items, [-1, 0, 1, 2, 3, 4, 5, 6, 7]);
+      expect(priority.value, 5);
+      expect(priority.itemAsString!(-1), 'None');
+      // E2E picks an option by identifier, not by its localized text.
+      expect(priority.itemIdentifier!(-1), 'internet-vlan-priority-none');
+      expect(priority.itemIdentifier!(5), 'internet-vlan-priority-5');
+
+      priority.onChanged!(-1);
+      await tester.pumpAndSettle();
+
+      expect(
+          container.read(uspInternetSettingsProvider).edited.vlanPriority, -1);
+    });
+
+    testWidgets('read-only, a tagged WAN lists its ID and priority',
+        (tester) async {
+      await _pump(tester, tagged, editing: false);
+      expect(find.text('VLAN ID'), findsOneWidget);
+      expect(find.text('100'), findsOneWidget);
+      expect(find.text('VLAN Priority'), findsOneWidget);
+      expect(find.text('5'), findsOneWidget);
+    });
+
+    testWidgets('read-only, no priority reads None', (tester) async {
+      await _pump(tester, tagged.copyWith(vlanPriority: -1), editing: false);
+      expect(find.text('None'), findsOneWidget);
+    });
   });
 
   testWidgets('a user name over 255 characters is refused', (tester) async {

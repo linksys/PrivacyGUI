@@ -204,6 +204,11 @@ Map<String, dynamic> Function(List<String>) createFetchMockHandler({
   };
 }
 
+/// The last Set that wrote the VLAN row, from `verify(...).captured`.
+Map<String, dynamic> _vlanSetOf(List<dynamic> captured) =>
+    captured.whereType<Map<String, dynamic>>().lastWhere(
+        (params) => params.keys.any((k) => k.contains('VLANTermination')));
+
 void main() {
   late MockUspClient mockUsp;
   late UspInternetSettingsService service;
@@ -347,14 +352,51 @@ void main() {
       expect(result.form.pppPassword, equals(''));
       expect(result.form.connectionTrigger, equals('AlwaysOn'));
       expect(result.form.vlanEnabled, isFalse);
+      expect(result.form.vlanPriority, equals(-1));
       expect(result.pppInstancePath, isNull);
       expect(result.vlanInstancePath, isNull);
     });
 
+    test('reads the shipped WAN VLAN row: off, VLAN ID 1, no priority',
+        () async {
+      // As read on 2.0.4.26111203 (issue #1754).
+      final handler = createFetchMockHandler(vlanResponse: const {
+        'Device.Ethernet.VLANTermination.1.Enable': '0',
+        'Device.Ethernet.VLANTermination.1.VLANID': '1',
+        'Device.Ethernet.VLANTermination.1.VLANPriority': '-1',
+      });
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async =>
+          handler(invocation.positionalArguments[0] as List<String>));
+
+      final result = await service.fetchSettings();
+
+      expect(result.vlanInstancePath,
+          equals('Device.Ethernet.VLANTermination.1.'));
+      expect(result.form.vlanEnabled, isFalse);
+      expect(result.form.vlanId, equals(1));
+      expect(result.form.vlanPriority, equals(-1));
+    });
+
+    test('reads a tagged WAN with its ID and priority', () async {
+      final handler = createFetchMockHandler(vlanResponse: const {
+        'Device.Ethernet.VLANTermination.1.Enable': '1',
+        'Device.Ethernet.VLANTermination.1.VLANID': '100',
+        'Device.Ethernet.VLANTermination.1.VLANPriority': '5',
+      });
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async =>
+          handler(invocation.positionalArguments[0] as List<String>));
+
+      final result = await service.fetchSettings();
+
+      expect(result.form.vlanEnabled, isTrue);
+      expect(result.form.vlanId, equals(100));
+      expect(result.form.vlanPriority, equals(5));
+    });
+
     test('two VLAN terminations read as none: which is the WAN is unknown',
         () async {
-      // No leaf ties the WAN to its VLAN row on 2.0.3.26102008 (it has none
-      // at all), so a second row is not guessed at.
+      // 2.0.4.26111203 ships one row (issue #1754), so a second row is not guessed
+      // at.
       final handler = createFetchMockHandler(vlanResponse: {
         ..._vlanResponse,
         'Device.Ethernet.VLANTermination.3.Enable': true,
@@ -923,6 +965,115 @@ void main() {
         final map = params as Map<String, dynamic>;
         expect(map.keys.any((k) => k.contains('VLANTermination')), isFalse);
       }
+    });
+
+    group('WAN VLAN (issue #1754)', () {
+      // The shipped WAN row on a DHCP WAN: off, VLAN ID 1, no priority.
+      const shipped = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        vlanEnabled: false,
+        vlanId: 1,
+        vlanPriority: -1,
+        mtu: 1500,
+      );
+      const vlanRow = 'Device.Ethernet.VLANTermination.1.';
+
+      test('turning VLAN on sends Enable, the ID and the priority', () async {
+        await service.saveAll(
+          shipped,
+          shipped.copyWith(vlanEnabled: true, vlanId: 100, vlanPriority: 5),
+          vlanInstancePath: vlanRow,
+        );
+
+        final captured = verify(() => mockUsp.set(captureAny())).captured;
+        expect(
+            _vlanSetOf(captured),
+            equals({
+              '${vlanRow}Enable': true,
+              '${vlanRow}VLANID': 100,
+              '${vlanRow}VLANPriority': 5,
+            }));
+      });
+
+      test('a priority of none saves -1', () async {
+        final tagged =
+            shipped.copyWith(vlanEnabled: true, vlanId: 100, vlanPriority: 5);
+
+        await service.saveAll(
+          tagged,
+          tagged.copyWith(vlanPriority: -1),
+          vlanInstancePath: vlanRow,
+        );
+
+        final captured = verify(() => mockUsp.set(captureAny())).captured;
+        expect(_vlanSetOf(captured), equals({'${vlanRow}VLANPriority': -1}));
+      });
+
+      test('turning VLAN off sends Enable alone, whatever the ID and priority',
+          () async {
+        // From the PR #1794 review: a caller may hand over an ID and priority
+        // typed while VLAN was on; with VLAN off they are not the user's.
+        final tagged =
+            shipped.copyWith(vlanEnabled: true, vlanId: 100, vlanPriority: 5);
+
+        await service.saveAll(
+          tagged,
+          tagged.copyWith(vlanEnabled: false, vlanId: 0, vlanPriority: 3),
+          vlanInstancePath: vlanRow,
+        );
+
+        final captured = verify(() => mockUsp.set(captureAny())).captured;
+        expect(_vlanSetOf(captured), equals({'${vlanRow}Enable': false}));
+      });
+
+      test('a type change carries the VLAN edit made with it', () async {
+        const pppoe = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.pppoe,
+          pppUsername: 'user',
+          pppPassword: 'pass',
+          vlanEnabled: false,
+          vlanId: 1,
+          mtu: 1492,
+        );
+
+        await service.saveAll(
+          pppoe,
+          pppoe.copyWith(
+            connectionType: UspWanConnectionType.dhcp,
+            vlanEnabled: true,
+            vlanId: 100,
+            mtu: 1500,
+          ),
+          pppInstancePath: 'Device.PPP.Interface.1.',
+          vlanInstancePath: vlanRow,
+        );
+
+        final captured = verify(() => mockUsp.set(captureAny())).captured;
+        expect(_vlanSetOf(captured),
+            equals({'${vlanRow}Enable': true, '${vlanRow}VLANID': 100}));
+      });
+
+      test('a Bridge save leaves the VLAN row as the router holds it',
+          () async {
+        // VLAN switched on, its ID emptied, then the type changed to Bridge,
+        // which offers no VLAN field: none of it is the user's to save.
+        await service.saveAll(
+          shipped,
+          shipped.copyWith(
+            connectionType: UspWanConnectionType.bridge,
+            vlanEnabled: true,
+            vlanId: 0,
+          ),
+          vlanInstancePath: vlanRow,
+        );
+
+        final captured = verify(() => mockUsp.set(captureAny(),
+            allowPartial: any(named: 'allowPartial'))).captured;
+        expect(
+            captured.whereType<Map<String, dynamic>>().where((params) =>
+                params.keys.any((k) => k.contains('VLANTermination'))),
+            isEmpty);
+      });
     });
 
     test('switching to DHCP sends only AddressingType', () async {

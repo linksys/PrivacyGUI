@@ -864,6 +864,47 @@ void main() {
       expect(notifier.isDirty(), isFalse);
       container.dispose();
     });
+
+    test(
+        'turning VLAN off drops a priority picked while it was on (issue #1754)',
+        () async {
+      final container = await loadPppoeInEditMode();
+      final notifier = container.read(uspInternetSettingsProvider.notifier);
+
+      notifier.setVlanEnabled(true);
+      notifier.updateField((f) => f.copyWith(vlanId: 200, vlanPriority: 5));
+      notifier.setVlanEnabled(false);
+
+      final form =
+          container.read(uspInternetSettingsProvider).settings.current.form;
+      expect(form.vlanPriority, -1);
+      expect(notifier.isDirty(), isFalse,
+          reason: 'on, ID and priority set, then off again leaves nothing to '
+              'save');
+      container.dispose();
+    });
+
+    test('changing the WAN type keeps VLAN, its ID and priority (issue #1754)',
+        () async {
+      final container = await loadPppoeInEditMode();
+      final notifier = container.read(uspInternetSettingsProvider.notifier);
+      notifier.setVlanEnabled(true);
+      notifier.updateField((f) => f.copyWith(vlanId: 200, vlanPriority: 5));
+
+      for (final type in [
+        UspWanConnectionType.dhcp,
+        UspWanConnectionType.staticIp,
+        UspWanConnectionType.pptp,
+      ]) {
+        notifier.updateConnectionType(type);
+        final form =
+            container.read(uspInternetSettingsProvider).settings.current.form;
+        expect(
+            (form.vlanEnabled, form.vlanId, form.vlanPriority), (true, 200, 5),
+            reason: type.name);
+      }
+      container.dispose();
+    });
   });
 }
 

@@ -359,6 +359,30 @@ void main() {
     });
 
     test(
+        'Static IP leaves the VLAN row as the router holds it: the form has no '
+        'VLAN field (issue #1754)', () async {
+      // A WAN tagged with VLAN 100, as Internet Settings can now set on Static.
+      setupFetchMocks(vlanResponse: vlanExistingResponse);
+      setupSetMocks();
+      final writesVlanRow = predicate<Map<String, dynamic>>(
+          (params) => params.keys
+              .any((k) => k.startsWith('Device.Ethernet.VLANTermination.')),
+          'a SET on the VLAN row');
+
+      await service.saveIspSettings(const PnpIspConfig(
+        type: IspConnectionType.staticIp,
+        staticIpAddress: '192.168.1.100',
+        subnetMask: '255.255.255.0',
+        defaultGateway: '192.168.1.1',
+        dnsServer1: '8.8.8.8',
+      ));
+
+      verifyNever(() => mockUsp.set(any(that: writesVlanRow)));
+      verifyNever(() => mockUsp.set(any(that: writesVlanRow),
+          allowPartial: any(named: 'allowPartial')));
+    });
+
+    test(
         'PPPoE (no existing PPP instance): adds a PPP instance, sets IPCP, then '
         'writes LowerLayers and the credentials', () async {
       setupFetchMocks(pppResponse: pppEmptyResponse);
