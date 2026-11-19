@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/error_code.dart';
+import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
@@ -36,6 +37,7 @@ import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacygui_widgets/widgets/page/layout/fit_or_grow.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
@@ -288,14 +290,20 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                     opacity: showConfig ? 1 : 0,
                     child: SizedBox(
                         height: constraints.maxHeight, child: _configView()))),
-            Container(
-              color: Theme.of(context).colorScheme.background,
-              child: switch (_setupStep) {
-                _PnpSetupStep.saving => _loadingSpinner(),
-                _PnpSetupStep.saved => _showSaved(),
-                _PnpSetupStep.needReconnect => _showNeedReconnect(),
-                _ => SizedBox.square(),
-              },
+            // The overlay covers the config view and centres in it, as it did
+            // when the page was sized by IntrinsicHeight, and a taller one
+            // still grows the page. Hidden, it stays empty.
+            FitOrGrow(
+              height: constraints.maxHeight,
+              child: Container(
+                color: Theme.of(context).colorScheme.background,
+                child: switch (_setupStep) {
+                  _PnpSetupStep.saving => _loadingSpinner(),
+                  _PnpSetupStep.saved => _showSaved(),
+                  _PnpSetupStep.needReconnect => _showNeedReconnect(),
+                  _ => SizedBox.square(),
+                },
+              ),
             )
           ],
         ),
@@ -1007,7 +1015,19 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
         });
         if (_hasNewFW) {
           logger.i('[PnP]: New Firmware available!');
-          await fwUpdate.updateFirmware();
+          // An install the router refuses turns `isUpdating` on and off
+          // again, and the listener in build goes on to Wi-Fi Ready from
+          // there, so its error is only logged here. The access policy
+          // refuses before `isUpdating` is set, so nothing in build sees that
+          // one: it goes on from here.
+          try {
+            await fwUpdate.updateFirmware();
+          } on ReadOnlyAccessException catch (error) {
+            logger.e('[PnP]: The firmware install is not allowed: $error');
+            _goWiFiReady();
+          } catch (error) {
+            logger.e('[PnP]: Could not start the firmware install: $error');
+          }
         } else {
           logger.i('[PnP]: No available FW, go WiFi Ready');
           _goWiFiReady();

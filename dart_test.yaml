@@ -1,3 +1,8 @@
 tags:
   golden:
   loc:
+  # Layout measurement (#1802 P2): declared only with --dart-define=layoutMeasure=true.
+  layout-measure:
+  # The layout gate (#1802 P3): declared from every testLocalizations case.
+  # run_tests.sh leaves it out; CI and the pre-push hook run it.
+  layout-gate:

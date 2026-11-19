@@ -1,0 +1,55 @@
+name: Set up the 1.x workspace
+description: >
+  The Flutter SDK that .fvmrc pins, pub packages, generated l10n and generated
+  mocks: AGENTS.md's setup steps after the submodule, which checkout fetches.
+
+# Every job in ci-1x.yml needs the same setup, so it is written once here.
+# A job that skips `gen-l10n` or `build_runner` fails with hundreds of missing
+# getters or missing `*.mocks.dart` files, which look nothing like "a setup step
+# is missing".
+#
+# Checkout is not in here: this file is read from the checkout, so every job
+# checks out first, with `submodules: true` for plugins/widgets.
+
+runs:
+  using: composite
+  steps:
+    # The version comes from .fvmrc, so CI and a developer's fvm cannot drift
+    # apart. `channel: stable` would let the runner pick its own SDK.
+    - name: Read the Flutter version from .fvmrc
+      id: fvmrc
+      shell: bash
+      run: echo "flutter=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+
+    - name: Set up Flutter ${{ steps.fvmrc.outputs.flutter }}
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ steps.fvmrc.outputs.flutter }}
+        cache: true
+
+    # pubspec.lock is committed, so this installs exactly the packages a
+    # developer tested. --enforce-lockfile fails when the lock does not match
+    # pubspec.yaml, instead of resolving afresh: a package released upstream
+    # cannot turn the required checks red with no change in the PR.
+    #
+    # On Flutter 3.27, `flutter pub get --enforce-lockfile` leaves the
+    # synthetic flutter_gen package (pubspec.yaml's `generate: true`) in
+    # package_config.json with no pubspec behind it. `dart run` then uses that
+    # config as it is, and build_runner fails with "Unable to generate package
+    # graph, no `.dart_tool/flutter_gen/pubspec.yaml` found". The dart command
+    # rewrites package_config.json from the same lock, without flutter_gen.
+    - name: Install dependencies
+      shell: bash
+      run: |
+        flutter pub get --enforce-lockfile
+        dart pub get --enforce-lockfile
+
+    # lib/l10n/gen/ is gitignored.
+    - name: Generate l10n
+      shell: bash
+      run: flutter gen-l10n
+
+    # test/**/*.mocks.dart is gitignored.
+    - name: Generate mocks
+      shell: bash
+      run: dart run build_runner build --delete-conflicting-outputs

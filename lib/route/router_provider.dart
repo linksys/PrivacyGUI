@@ -348,9 +348,12 @@ class RouterNotifier extends ChangeNotifier {
   }
 
   String _home([String? query]) {
-    return BuildConfig.forceCommandType == ForceCommand.local
-        ? '${RoutePath.localLoginPassword}?$query'
-        : '${RoutePath.cloudLoginAuth}?$query';
+    final path = BuildConfig.forceCommandType == ForceCommand.local
+        ? RoutePath.localLoginPassword
+        : RoutePath.cloudLoginAuth;
+    // No query, or an empty one, must not put "?null" or a bare "?" in the
+    // address bar.
+    return query == null || query.isEmpty ? path : '$path?$query';
   }
 
   FutureOr<String?> _goPnpPath(GoRouterState state) {

@@ -344,13 +344,12 @@ class SimpleTreeNodeItem extends StatelessWidget {
           : Theme.of(context).colorScheme.surfaceVariant,
       onTap: onTap,
       child: Container(
-        // With an action menu the card is sized by its content: the menu is a
-        // fixed 72 and the info row's own height depends on the text theme, so
-        // a hard maxHeight here just clipped the row (10px on a 480w screen).
-        constraints: BoxConstraints(
-            minWidth: 180,
-            maxWidth: 300,
-            maxHeight: actions.isEmpty ? 92 : double.infinity),
+        // The card is sized by its content: the info row's own height depends
+        // on the text theme, and the menu, when there is one, is a fixed 72. A
+        // hard maxHeight just clipped the row: 10px on a 480w screen with a
+        // menu, and 4px at every width without one, where 92 left 60 of the
+        // 64px image after the padding (#1802).
+        constraints: const BoxConstraints(minWidth: 180, maxWidth: 300),
         padding: node.data.isOnline && actions.isNotEmpty
             ? EdgeInsets.only(
                 top: Spacing.medium,

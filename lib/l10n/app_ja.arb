@@ -553,7 +553,7 @@
   "nAdd": "追加 ({count})",
   "nDNS": "{count, plural, other{DNS 1|2|3} one{DNS 1} two{DNS 1|2}}",
   "nDays": "{count, plural, one{{count}日} other{{count}日}}",
-  "nDevices": "{count, plural, other{{count}デバイス} zero{接続されたデバイスはありません。} one{1デバイス}}",
+  "nDevices": "{count, plural, other{{count}デバイス} zero{デバイスなし} one{1デバイス}}",
   "nDevicesDeleteDevicesDescription": "{count, plural, other{デバイスは、WiFiネットワークに再接続されるとリストに再表示されることがあります。} one{デバイスは、WiFiネットワークに再接続されるとリストに再表示される可能性があります。}}",
   "nDevicesDeleteDevicesTitle": "{count, plural, other{デバイスを削除する。} one{デバイスを削除する。}}",
   "nHours": "{count, plural, one{{count} 時間} other{{count} 時間}}",

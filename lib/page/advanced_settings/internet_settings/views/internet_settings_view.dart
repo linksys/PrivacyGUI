@@ -1982,6 +1982,8 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
       return showSimpleAppOkDialog(
         context,
         title: loc(context).error,
+        // Taller than a short window (#1802).
+        scrollable: true,
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,

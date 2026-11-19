@@ -7,14 +7,18 @@ This is the 1.x line of PrivacyGUI. Its rules, and how each one is enforced, are
 `lib/l10n/gen/` and `test/**/*.mocks.dart` are generated and gitignored, so a fresh checkout does not compile until you run:
 
 1. `git submodule update --init plugins/widgets`
-2. `flutter pub get`
+2. `flutter pub get`. It installs the committed `pubspec.lock`. Upgrade a package in a PR of its own, reviewed as the lock's diff: CI installs the lock with `--enforce-lockfile`. The lock also records the version of `plugins/widgets`, so a PR that moves that pointer commits the lock `flutter pub get` rewrites.
 3. `flutter gen-l10n`
 4. `dart run build_runner build --delete-conflicting-outputs`
 
 Rerun all four after pulling: a pull can move the `plugins/widgets` pointer or change `pubspec.yaml`.
 
+Once per clone, run `git config core.hooksPath .githooks`, so that `git push` runs the layout gate on the pages it changes (constitution 3.1).
+
 Use the Flutter version in `.fvmrc`. `run_tests.sh` runs the `flutter` it finds on `PATH`, and a shell alias such as one for fvm does not reach inside the script, so put that version's `bin/` first on `PATH`.
 
 ## Run tests
 
-Every test run passes `--exclude-tags="golden||loc"` (constitution 3.1). Run the whole suite with `./run_tests.sh <reportDir>` before you push; while you work, run `flutter test <file or directory> --exclude-tags="golden||loc"`.
+Every test run passes `--exclude-tags="golden||loc"` (constitution 3.1). Run the whole suite with `./run_tests.sh <reportDir>` before you push; while you work, run `flutter test <file or directory> --exclude-tags="golden||loc"`. On a screenshot suite that also runs its layout gate in nine locales; `--exclude-tags="golden||loc||layout-gate"` leaves it out. `run_tests.sh` leaves out the layout gate, which the pre-push hook and CI run (constitution 3.5).
+
+Coverage: `./run_coverage.sh <reportDir>` runs the same suite and writes the table `1.x / Unit Tests` reports to `<reportDir>/coverage.md`. A figure measured any other way leaves out the files no test loads. The job fails when the total drops below `coverage_floor.txt`; that file says when to raise the floor.

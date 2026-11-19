@@ -128,6 +128,26 @@ void main() {
     verify(mockNodeLightSettingsNotifier.save()).called(1);
   });
 
+  // M63 was missing from the cognitive mesh model list (#1847,
+  // LinksysWRT#663).
+  testWidgets('an M63 master offers night mode', (tester) async {
+    final root = OnlineTopologyNode(
+        data: const TopologyModel(isOnline: true, location: 'Internet'),
+        children: []);
+    root.children.add(RouterTopologyNode(
+      data: TopologyModel.fromMap(TopologyTestData.topologyModelJsonTemplate)
+          .copyWith(model: 'M63TS-EU'),
+      children: [],
+    )..parent = root);
+    when(mockTopologyNotifier.build())
+        .thenReturn(InstantTopologyState(root: root));
+    await pump(tester);
+
+    final all = switches(tester);
+    expect(all, hasLength(2));
+    expect(all[1].onChanged, isNotNull);
+  });
+
   testWidgets('night mode is not offered without LED mode support',
       (tester) async {
     when(mockServiceHelper.isSupportLedMode()).thenReturn(false);
