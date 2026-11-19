@@ -16,12 +16,9 @@ import 'package:privacy_gui/core/cloud/model/cloud_linkup.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_remote_assistance_info.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
-import 'package:privacy_gui/core/cloud/linksys_requests/authorization_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/device_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/user_service.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_account.dart';
-import 'package:privacy_gui/core/cloud/model/cloud_communication_method.dart';
-import 'package:privacy_gui/core/cloud/model/cloud_network_model.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_session_model.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'
@@ -53,83 +50,11 @@ class LinksysCloudRepository {
   LinksysCloudRepository({required LinksysHttpClient httpClient})
       : _httpClient = httpClient;
 
-  Future<SessionToken> login({required username, required password}) async {
-    return _httpClient
-        .passwordLogin(username: username, password: password)
-        .then((response) => SessionToken.fromJson(jsonDecode(response.body)));
-  }
-
-  Future<SessionToken> refreshToken(String refreshToken) {
-    return _httpClient
-        .refreshToken(token: refreshToken)
-        .then((response) => SessionToken.fromJson(jsonDecode(response.body)));
-  }
-
-  Future<List<NetworkAccountAssociation>> getNetworks([String? token]) async {
-    return loadSessionToken(token).then((token) => _httpClient
-        .getNetworks(token: token)
-        .then((response) =>
-            List.from(jsonDecode(response.body)['networkAccountAssociations'])
-                .map((e) => e['networkAccountAssociation'])
-                .map((e) => NetworkAccountAssociation.fromJson(e))
-                .toList()));
-  }
-
-  Future<List<CommunicationMethod>> getMfaMaskedMethods(
-      {required String username}) async {
-    return _httpClient.getMaskedMfaMethods(username: username).then(
-        (response) => List.from(jsonDecode(response.body))
-            .map((e) => CommunicationMethod.fromJson(e))
-            .toList());
-  }
-
-  Future mfaChallenge({
-    required String verificationToken,
-    required String method,
-  }) {
-    return _httpClient.mfaChallenge(
-      verificationToken: verificationToken,
-      method: method,
-    );
-  }
-
-  Future<String> prepareAddMfa() {
-    return loadSessionToken()
-        .then((token) => _httpClient.prepareAddMfaMethod(token: token))
-        .then((response) => jsonDecode(response.body)['verificationToken']);
-  }
-
   Future<bool> deleteMfaMethod(String mfaID) {
     return loadSessionToken()
         .then(
             (token) => _httpClient.deleteMfaMethod(token: token, mfaID: mfaID))
         .then((response) => response.statusCode == HttpStatus.noContent);
-  }
-
-  Future<CommunicationMethod> mfaValidate({
-    required String otpCode,
-    required String verificationToken,
-  }) {
-    return loadSessionToken()
-        .then((token) => _httpClient.mfaValidate(
-            token: token, verificationToken: verificationToken, code: otpCode))
-        .then((response) =>
-            CommunicationMethod.fromJson(jsonDecode(response.body)));
-  }
-
-  // TODO is there any other response??
-  Future<SessionToken> oAuthMfaValidate({
-    required String otpCode,
-    required String verificationToken,
-    bool rememberUserAgent = false,
-  }) {
-    return _httpClient
-        .oAuthMfaValidate(
-          otpCode: otpCode,
-          verificationToken: verificationToken,
-          rememberUserAgent: rememberUserAgent,
-        )
-        .then((response) => SessionToken.fromJson(jsonDecode(response.body)));
   }
 
   Future<CAUserAccount> getAccount() async {
@@ -139,16 +64,6 @@ class LinksysCloudRepository {
           (response) => CAUserAccount.fromJson(
             jsonDecode(response.body)['account'],
           ),
-        );
-  }
-
-  Future<List<CommunicationMethod>> getMfaMethod() async {
-    return loadSessionToken()
-        .then((token) => _httpClient.getMfaMethods(token: token))
-        .then(
-          (response) => List.from(jsonDecode(response.body))
-              .map((e) => CommunicationMethod.fromJson(e))
-              .toList(),
         );
   }
 

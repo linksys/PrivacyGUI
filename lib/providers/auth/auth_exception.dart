@@ -13,12 +13,6 @@ class NoSessionTokenFoundException extends AuthException {
   NoSessionTokenFoundException() : super(message: 'no session token found');
 }
 
-class NeedToRefreshTokenException extends AuthException {
-  final String refreshToken;
-  NeedToRefreshTokenException(this.refreshToken)
-      : super(message: 'token expired! can be refresh');
-}
-
 class SessionTokenExpiredException extends AuthException {
   SessionTokenExpiredException()
       : super(message: 'token expired! logging out!');

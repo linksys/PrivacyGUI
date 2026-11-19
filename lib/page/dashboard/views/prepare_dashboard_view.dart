@@ -18,7 +18,6 @@ import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
-import 'package:privacy_gui/page/select_network/providers/select_network_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -55,16 +54,14 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
       logger.i('PREPARE LOGIN:: remote');
       if (ref.read(selectedNetworkIdProvider) == null) {
         final networkId = prefs.getString(pSelectedNetworkId);
-
-        ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
         if (networkId == null || serialNumber == null) {
-          router.goNamed(RouteNamed.selectNetwork);
+          // Only the account login, removed in #1849, had networks to pick.
+          router.goNamed(_loginRouteName());
           return;
-        } else {
-          await ref
-              .read(dashboardManagerProvider.notifier)
-              .saveSelectedNetwork(serialNumber, networkId);
         }
+        await ref
+            .read(dashboardManagerProvider.notifier)
+            .saveSelectedNetwork(serialNumber, networkId);
       }
     } else if (loginType == LoginType.local) {
       logger.i('PREPARE LOGIN:: local');
@@ -109,15 +106,23 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
     } else {
       // TODO #LINKSYS Error handling for unable to get deviceinfo
       logger.i('PREPARE :: Error handling for unable to get deviceinfo');
-      // Account login is redirected away for a login that may not write, so
-      // that one goes back to the session login, which shows the error.
+      // A login that can write goes where the router sends a logged-out user
+      // (#1849). One that may not write goes back to the session login, which
+      // shows the error.
       if (ref.read(accessPolicyProvider).canWrite) {
-        router.goNamed(RouteNamed.cloudLoginAccount,
-            extra: {'error': 'Unexpected'});
+        router.goNamed(_loginRouteName(),
+            queryParameters: {'error': 'Unexpected'});
       } else {
         router.goNamed(RouteNamed.cloudLoginAuth,
             queryParameters: {'error': 'Unexpected'});
       }
     }
   }
+
+  /// The login the router's `_home()` picks: the local one on a local build,
+  /// the Guardian one otherwise.
+  String _loginRouteName() =>
+      BuildConfig.forceCommandType == ForceCommand.local
+          ? RouteNamed.localLoginPassword
+          : RouteNamed.cloudLoginAuth;
 }

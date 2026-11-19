@@ -208,7 +208,6 @@ The table lists the pages that had no case when the gate landed. #1802 P6 emptie
 | `lib/page/components/customs/qr_view.dart` | `?` | No case yet (#1802 P6). The file is commented out. |
 | `lib/page/components/picker/day_picker_view.dart` | `DayPickerView` | No case yet (#1802 P6). |
 | `lib/page/components/picker/number_picker_view.dart` | `NumberPickerView` | No case yet (#1802 P6). |
-| `lib/page/components/picker/region_picker_view.dart` | `RegionPickerView` | No case yet (#1802 P6). |
 | `lib/page/components/picker/time_picker_view.dart` | `TimePickerView` | No case yet (#1802 P6). |
 | `lib/page/components/settings_view/editable_card_list_edit_view.dart` | `EditableCardListEditView` | No case yet (#1802 P6). |
 | `lib/page/components/settings_view/editable_card_list_settings_view.dart` | `EditableCardListsettingsView` | No case yet (#1802 P6). |
@@ -224,21 +223,13 @@ The table lists the pages that had no case when the gate landed. #1802 P6 emptie
 | `lib/page/instant_setup/troubleshooter/views/call_support/call_support_main_region_view.dart` | `CallSupportMainRegionView` | No case yet (#1802 P6). |
 | `lib/page/instant_setup/troubleshooter/views/call_support/call_support_more_region_view.dart` | `CallSupportMoreRegionView` | No case yet (#1802 P6). |
 | `lib/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_auth_view.dart` | `PnpIspAuthView` | No case yet (#1802 P6). |
-| `lib/page/landing/views/debug_device_info_view.dart` | `DebugDeviceInfoView` | No case yet (#1802 P6). |
-| `lib/page/landing/views/home_view.dart` | `HomeView` | No case yet (#1802 P6). |
 | `lib/page/login/auto_parent/views/auto_parent_first_login_view.dart` | `AutoParentFirstLoginView` | No case yet (#1802 P6). |
 | `lib/page/login/views/login_cloud_auth_view.dart` | `LoginCloudAuthView` | No case yet (#1802 P6). |
-| `lib/page/login/views/login_cloud_view.dart` | `LoginCloudView` | No case yet (#1802 P6). |
 | `lib/page/nodes/views/change_node_name_view.dart` | `ChangeNodeNameView` | No case yet (#1802 P6). |
 | `lib/page/nodes/views/node_connected_devices_view.dart` | `?` | No case yet (#1802 P6). The file is empty. |
 | `lib/page/nodes/views/node_light_guide_view.dart` | `NodeLightGuideView` | No case yet (#1802 P6). |
 | `lib/page/nodes/views/node_name_edit_view.dart` | `NodeNameEditView` | No case yet (#1802 P6). |
 | `lib/page/nodes/views/node_restart_view.dart` | `NodeRestartView` | No case yet (#1802 P6). |
-| `lib/page/otp_flow/views/otp_add_phone.dart` | `OtpAddPhoneView` | No case yet (#1802 P6). |
-| `lib/page/otp_flow/views/otp_code_input.dart` | `OtpCodeInputView` | No case yet (#1802 P6). |
-| `lib/page/otp_flow/views/otp_method_selector_view.dart` | `OTPMethodSelectorView` | No case yet (#1802 P6). |
-| `lib/page/otp_flow/views/otp_view.dart` | `OtpFlowView` | No case yet (#1802 P6). |
-| `lib/page/select_network/views/select_network_view.dart` | `SelectNetworkView` | No case yet (#1802 P6). |
 | `lib/page/troubleshooting/views/troubleshooting_ping_view.dart` | `TroubleshootingPingView` | No case yet (#1802 P6). |
 | `lib/page/troubleshooting/views/troubleshooting_view.dart` | `TroubleshootingView` | No case yet (#1802 P6). |
 | `lib/page/wifi_settings/views/mac_filtering_view.dart` | `MacFilteringView` | No case yet (#1802 P6). |
@@ -334,7 +325,7 @@ Exception: `RouterNotifier` in `lib/route/router_provider.dart` extends `ChangeN
 
 A `…State` class that a notifier holds extends `Equatable` and lists every field in `props`. States then compare by value, which tests and `ref.listen` callbacks rely on.
 
-Exceptions: `PnpTroubleshooterState`, `SelectNetworkState`, `InstantTopologyState`.
+Exceptions: `PnpTroubleshooterState`, `InstantTopologyState`.
 
 **Enforced by**: Review.
 
@@ -345,7 +336,7 @@ Exceptions: `PnpTroubleshooterState`, `SelectNetworkState`, `InstantTopologyStat
 ### 5.1 Files
 
 - Dart files are `snake_case.dart`. The analyzer's `file_names` lint reports a breach as an info, which no check fails on.
-- A page is `*_view.dart`. #1802's roster finds pages by this suffix, so a page named otherwise escapes the layout gate. Exceptions, each a page that `lib/route/` builds: `lib/page/vpn/views/vpn_settings_page.dart`, `lib/page/otp_flow/views/otp_add_phone.dart`, `lib/page/otp_flow/views/otp_code_input.dart`, `lib/page/health_check/views/speed_test_external.dart` and `lib/page/health_check/views/speed_test_selection.dart`.
+- A page is `*_view.dart`. #1802's roster finds pages by this suffix, so a page named otherwise escapes the layout gate. Exceptions, each a page that `lib/route/` builds: `lib/page/vpn/views/vpn_settings_page.dart`, `lib/page/health_check/views/speed_test_external.dart` and `lib/page/health_check/views/speed_test_selection.dart`.
 - A file that defines a notifier provider is `*_provider.dart`. Exceptions: `lib/page/vpn/providers/vpn_notifier.dart`, `lib/page/auto_ipoe/providers/auto_ipoe_notifier.dart`, `lib/core/pwa/pwa_install_service.dart`.
 - A test of one source file is `<source>_test.dart`. A test that splits one source's tests by scenario is `<source>_<scenario>_test.dart`. A test that covers no single source file is named after what it checks, like `architecture_boundary_test.dart`.
 

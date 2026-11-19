@@ -34,8 +34,7 @@ import '../test_data/device_info_test_data.dart';
 
 // Where the app sends someone as it opens: the router's redirect. Each case
 // fixes what the router and the stored login say, runs the redirect for a
-// location, and checks where it leads. The account login and its select
-// network page are deletion candidates (#1849).
+// location, and checks where it leads.
 
 final _deviceInfo =
     NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']);
@@ -336,6 +335,24 @@ void main() {
           '/cloudLoginAuth?from=test');
       expect(
           await const FlutterSecureStorage().read(key: pSessionToken), isNull);
+    });
+
+    // PnP clears the stored serial number, so a remote login that goes through
+    // it keeps its Guardian session but loses the router it was for.
+    testWidgets('logs out a Guardian login whose router serial number is gone',
+        (tester) async {
+      final goRouter = await open(tester,
+          force: ForceCommand.none,
+          routerType: RouterType.others,
+          secure: guardianLogin(),
+          prefs: {pGRASessionId: 'G1'});
+
+      // It used to go to the account login's network picker (#1849).
+      expect(await redirect(tester, goRouter, '/?from=test'),
+          RoutePath.cloudLoginAuth);
+      expect(
+          await const FlutterSecureStorage().read(key: pSessionToken), isNull);
+      expect(deviceCheck.savedNetworks, isEmpty);
     });
   });
 

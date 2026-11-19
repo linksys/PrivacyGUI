@@ -27,10 +27,9 @@ import '../../common/recording_polling.dart';
 import '../../common/router_boundary.dart';
 
 // The login as the app keeps it: the router's admin password, and the Guardian
-// session a support agent logs in with. The account login (cloudLogin), its
-// token refresh, raLogin and the AppRaMode branch of logout are deletion
-// candidates (#1849): nothing has set AppRaMode since the PIN login pages were
-// removed (bde0e5555).
+// session a support agent logs in with. raLogin and the AppRaMode branch of
+// logout are deletion candidates (#1849): nothing has set AppRaMode since the
+// PIN login pages were removed (bde0e5555).
 
 String _token({
   String accessToken = 'agent-token',
@@ -209,7 +208,7 @@ void main() {
           throwsA(isA<NoSessionTokenFoundException>()));
     });
 
-    test('says an expired token is over when it cannot be refreshed', () async {
+    test('says an expired token is over', () async {
       start(secure: {
         pSessionToken: _token(expiresIn: 60),
         pSessionTokenTs: _now(ago: const Duration(minutes: 2)),
@@ -219,10 +218,19 @@ void main() {
           throwsA(isA<SessionTokenExpiredException>()));
     });
 
-    // A token that carries a refresh token comes only from the account login,
-    // a deletion candidate (#1849), so its refresh path is not tested here.
+    // Only the cloud account login, removed in #1849, stored a refresh token.
+    test('says an expired account login token is over too: nothing refreshes it',
+        () async {
+      start(secure: {
+        pSessionToken: _token(expiresIn: 60, refreshToken: 'refresh'),
+        pSessionTokenTs: _now(ago: const Duration(minutes: 2)),
+      });
 
-    test('handleSessionTokenError settles anything but a refresh as no token',
+      await expectLater(notifier().checkSessionToken(),
+          throwsA(isA<SessionTokenExpiredException>()));
+    });
+
+    test('handleSessionTokenError settles any error as no token',
         () async {
       expect(
           await notifier().handleSessionTokenError(

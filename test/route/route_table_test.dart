@@ -59,8 +59,6 @@ void main() {
     RouteNamed.pnpUnplugModem:
         '${RoutePath.pnpNoInternetConnection}/${RoutePath.pnpUnplugModem}',
     RouteNamed.addNodes: RoutePath.addNodes,
-    RouteNamed.cloudLoginAccount: RoutePath.cloudLoginAccount,
-    RouteNamed.otpStart: '${RoutePath.cloudLoginAccount}/${RoutePath.otpStart}',
     RouteNamed.localRouterRecovery:
         '${RoutePath.localLoginPassword}/${RoutePath.localRouterRecovery}',
     RouteNamed.localPasswordReset: '${RoutePath.localLoginPassword}/'
@@ -86,7 +84,6 @@ void main() {
     RouteNamed.cloudLoginAuth,
     RouteNamed.localLoginPassword,
     RouteNamed.prepareDashboard,
-    RouteNamed.selectNetwork,
   ];
 
   group('write-only flows stay registered', () {

@@ -33,8 +33,6 @@ void main() {
       '${RoutePath.pnp}/${RoutePath.pnpConfig}',
       RoutePath.pnpNoInternetConnection,
       '${RoutePath.pnpNoInternetConnection}/${RoutePath.pnpUnplugModem}',
-      RoutePath.cloudLoginAccount,
-      '${RoutePath.cloudLoginAccount}/${RoutePath.otpStart}',
     ];
     const allowed = [
       '/',
@@ -43,7 +41,6 @@ void main() {
       RoutePath.cloudLoginAuth,
       RoutePath.localLoginPassword,
       RoutePath.prepareDashboard,
-      RoutePath.selectNetwork,
       RoutePath.addNodes,
     ];
 
@@ -87,7 +84,6 @@ void main() {
       for (final location in [
         RoutePath.pnp,
         RoutePath.pnpNoInternetConnection,
-        RoutePath.cloudLoginAccount,
       ]) {
         expect(
             await router.configuration

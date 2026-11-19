@@ -18,7 +18,6 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_rule_view.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_view.dart';
-import 'package:privacy_gui/page/components/picker/region_picker_view.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_edit_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/_ddns.dart';
@@ -28,7 +27,6 @@ import 'package:privacy_gui/page/firmware_update/_firmware_update.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_auth_view.dart';
-import 'package:privacy_gui/page/landing/_landing.dart';
 
 import 'package:privacy_gui/page/login/views/_views.dart';
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
@@ -36,8 +34,6 @@ import 'package:privacy_gui/page/login/views/login_cloud_auth_view.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';
-import 'package:privacy_gui/page/otp_flow/providers/_providers.dart';
-import 'package:privacy_gui/page/otp_flow/views/_views.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_admin_view.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_setup_view.dart';
@@ -51,7 +47,6 @@ import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_unplug_m
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_waiting_modem_view.dart';
 import 'package:privacy_gui/page/instant_safety/views/instant_safety_view.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart';
-import 'package:privacy_gui/page/select_network/_select_network.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_verify_view.dart';
 import 'package:privacy_gui/page/support/faq_list_view.dart';
 import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.dart';
@@ -76,7 +71,6 @@ part 'route_local_login.dart';
 part 'route_dashboard.dart';
 part 'route_settings.dart';
 part 'route_advanced_settings.dart';
-part 'route_otp.dart';
 part 'route_pnp.dart';
 part 'route_add_nodes.dart';
 part 'route_menu.dart';
@@ -92,14 +86,11 @@ enum LocalWhereToGo {
 /// let it through (#1637).
 ///
 /// Covers the flows entered by goNamed or a typed URL that only exist to write:
-/// every PnP route (both trees share the [RoutePath.pnp] prefix), and cloud
-/// account login with its OTP steps, which would swap the remote assistance
-/// session for a full account session. PnP must not be entered at all: it also
-/// logs the user out and flips the login to local, which the JNAP gate cannot
-/// see.
+/// every PnP route (both trees share the [RoutePath.pnp] prefix). PnP must not
+/// be entered at all: it also logs the user out and flips the login to local,
+/// which the JNAP gate cannot see.
 String? writeFlowRedirect(String location) {
-  if (location.startsWith(RoutePath.pnp) ||
-      location.startsWith(RoutePath.cloudLoginAccount)) {
+  if (location.startsWith(RoutePath.pnp)) {
     return RoutePath.dashboardHome;
   }
   return null;
@@ -116,7 +107,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       localLoginRoute,
       cloudLoginAuthRoute,
-      cloudLoginRoute,
       homeRoute,
       // ref.read(otpRouteProvider),
       LinksysRoute(
@@ -126,14 +116,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           column: ColumnGrid(column: 4, centered: true),
         ),
         builder: (context, state) => const PrepareDashboardView(),
-      ),
-      LinksysRoute(
-        name: RouteNamed.selectNetwork,
-        path: RoutePath.selectNetwork,
-        config: const LinksysRouteConfig(
-          noNaviRail: true,
-        ),
-        builder: (context, state) => const SelectNetworkView(),
       ),
       dashboardRoute,
       pnpRoute,
@@ -180,16 +162,7 @@ class RouterNotifier extends ChangeNotifier {
 
   final Ref _ref;
   StreamSubscription? _errorSub;
-  RouterNotifier(this._ref) {
-    // _ref.listen(authProvider, (_, state) {
-    //   if (!state.isLoading && !state.hasError) {
-    //     notifyListeners();
-    //   }
-    // });
-    _ref.listen(otpProvider.select((value) => value.step), (_, __) {
-      notifyListeners();
-    });
-  }
+  RouterNotifier(this._ref);
 
   @override
   void dispose() {
@@ -267,9 +240,7 @@ class RouterNotifier extends ChangeNotifier {
 
     // if no network Id for remote login
     final managedNetworkId = _ref.read(selectedNetworkIdProvider);
-    if (loginType == LoginType.remote &&
-        managedNetworkId == null &&
-        state.matchedLocation != RoutePath.selectNetwork) {
+    if (loginType == LoginType.remote && managedNetworkId == null) {
       FlutterNativeSplash.remove();
       logger.d('[Route]: Remote: there is no managed network ID');
       return _prepare(state);
@@ -375,9 +346,8 @@ class RouterNotifier extends ChangeNotifier {
     String? naviPath;
 
     if (loginType == LoginType.remote) {
-      final networkId = prefs.getString(pSelectedNetworkId);
       final sessionId = prefs.getString(pGRASessionId);
-      naviPath = await _prepareRemote(networkId, serialNumber, sessionId);
+      naviPath = await _prepareRemote(serialNumber, sessionId);
     } else if (loginType == LoginType.local) {
       naviPath = await _prepareLocal(serialNumber);
     }
@@ -462,8 +432,8 @@ class RouterNotifier extends ChangeNotifier {
       error is ClientException || error is TimeoutException;
 
   Future<String?> _prepareRemote(
-      String? networkId, String? serialNumber, String? sessionId) async {
-    logger.i('[Prepare]: remote - $networkId, $serialNumber, $sessionId');
+      String? serialNumber, String? sessionId) async {
+    logger.i('[Prepare]: remote - $serialNumber, $sessionId');
     if (serialNumber != null && sessionId != null) {
       if (isSerialNumberChanged(serialNumber)) {
         return null;
@@ -472,13 +442,11 @@ class RouterNotifier extends ChangeNotifier {
           .read(dashboardManagerProvider.notifier)
           .saveSelectedNetwork(serialNumber, '');
     } else if (_ref.read(selectedNetworkIdProvider) == null) {
-      _ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
-      if (networkId == null || serialNumber == null) {
-        return RoutePath.selectNetwork;
-      }
-      await _ref
-          .read(dashboardManagerProvider.notifier)
-          .saveSelectedNetwork(serialNumber, networkId);
+      // A Guardian login stores both. Without them, and with no network
+      // picked, there is no router to open, and the account login's network
+      // picker is gone (#1849). So log out, as [_authCheck] does.
+      await _ref.read(authProvider.notifier).logout();
+      return _home();
     }
     return null;
   }
