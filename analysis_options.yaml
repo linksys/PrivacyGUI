@@ -8,6 +8,10 @@
 # The following line activates a set of recommended lints for Flutter apps,
 # packages, and plugins designed to encourage good coding practices.
 analyzer:
+  # plugins/widgets is a submodule from its own repository, so its diagnostics
+  # are fixed there, not here (constitution 7.1, #1802).
+  exclude:
+    - plugins/**
   errors:
     prefer_const_constructors: ignore
 include: package:flutter_lints/flutter.yaml
