@@ -1,7 +1,7 @@
 # The 1.x Constitution
 
-**Version:** 1.2
-**Last amended:** 2026-11-18 (#1802, P2: layout measurement)
+**Version:** 1.3
+**Last amended:** 2026-11-19 (#1802, P3: the layout gate)
 **Applies to:** the 1.x line of PrivacyGUI: `dev-1.*`, `release-1.*`, and `main` while it ships 1.x. 2.x has its own `constitution.md`; nothing here binds 2.x, and nothing in 2.x's binds 1.x.
 
 ## Preamble
@@ -13,7 +13,7 @@ They describe the code as it is. Where today's code breaks a rule, the rule name
 Every rule says how it is enforced:
 
 - **Test**: a test in `./run_tests.sh` fails.
-- **CI**: a PR check fails. `.github/workflows/ci-1x.yml` runs two checks on every PR into `main` or a `dev-1.*` branch that carries the file: `1.x / Analyze` and `1.x / Unit Tests`. On the branches that ruleset `required checks (1.x)` lists, a red check blocks the merge. `1.x / Unit Tests` runs `./run_tests.sh`, so a rule enforced by Test fails a PR check too.
+- **CI**: a PR check fails. `.github/workflows/ci-1x.yml` runs three checks on every PR into `main` or a `dev-1.*` branch that carries the file: `1.x / Analyze`, `1.x / Unit Tests` and `1.x / Layout Gate`. On the branches that ruleset `required checks (1.x)` lists, a red check blocks the merge. `1.x / Unit Tests` runs `./run_tests.sh`, so a rule enforced by Test fails a PR check too. It leaves out the `layout-gate` tests, which `1.x / Layout Gate` runs, one job per locale.
 - **Review**: only a reviewer catches it. A rule enforced only by review says so.
 
 Where this document and another document in the repository disagree, this one wins. It changes only through Article IX.
@@ -22,7 +22,7 @@ Where this document and another document in the repository disagree, this one wi
 |---|---|---|
 | I | Presentation files don't use the data layer; `lib/core/` doesn't import `lib/page/` | Test |
 | II | JNAP goes through `RouterRepository`; the HSL spec's `[noauth]` decides `auth:` | Review |
-| III | Tests run through `run_tests.sh`; changes ship tests; screenshot tests and mocks follow one pattern | Test for where screenshot checks live; review for the rest, until #1802's gate and roster and #1803's floor land |
+| III | Tests run through `run_tests.sh`; changes ship tests; screenshot tests and mocks follow one pattern | Test for where screenshot checks live and for the layout gate's roster; CI for the layout gate; review for the rest, until #1803's floor lands |
 | IV | Feature state lives in `Notifier` / `AsyncNotifier`; `…State` classes extend `Equatable` | Review |
 | V | File, class, provider and directory names | Review |
 | VI | User-visible strings come from the ARB files | CI for missing keys; review for hard-coded strings |
@@ -31,6 +31,8 @@ Where this document and another document in the repository disagree, this one wi
 | IX | Amendments state version, date and reason; the team approves them | Team approval |
 
 *Amended 2026-11-18 (#1802): **CI** names the two checks that #1802 P1 added, and VI and VII no longer wait on P1, because 1.x has PR checks now.*
+
+*Amended 2026-11-19 (#1802): **CI** names `1.x / Layout Gate`, which #1802 P3 added, and the summary row for III says what the gate and its roster enforce.*
 
 ---
 
@@ -163,9 +165,11 @@ So every test run passes `--exclude-tags="golden||loc"`:
 - `./run_tests.sh <reportDir>` runs the whole suite that way and writes `tests.json` into `<reportDir>`. Run it before you push.
 - While you work, `flutter test <file or directory> --exclude-tags="golden||loc"` is fine, with any `--dart-define` the file needs.
 
-**Enforced by**: Test for `run_tests.sh`: `test/constitution/run_tests_script_test.dart` fails if the script stops excluding the tags. Review for other runs. `1.x / Unit Tests` runs the script on the PRs that **CI** in the preamble covers.
+**Enforced by**: Test for `run_tests.sh`: `test/constitution/run_tests_script_test.dart` fails if the script stops excluding the tags, with or without `EXTRA_EXCLUDE_TAGS`. Review for other runs. `1.x / Unit Tests` runs the script on the PRs that **CI** in the preamble covers, with `EXTRA_EXCLUDE_TAGS=layout-gate` (3.5).
 
 *Amended 2026-11-18 (#1802): CI runs the script now. The report directory gets `tests.json` only: the script writes no HTML report, though this section said it did.*
+
+*Amended 2026-11-19 (#1802): `1.x / Unit Tests` leaves out the layout gate's tests through `EXTRA_EXCLUDE_TAGS`, because `1.x / Layout Gate` runs them. The test checks that `golden` and `loc` stay excluded either way.*
 
 ### 3.2 Provider and model changes ship unit tests
 
@@ -260,7 +264,10 @@ A page's screenshot test is a `testLocalizations` case, from `test/common/test_r
 
 #1802's layout gate reuses these cases, so the case 3.3 asks for is a `testLocalizations` case. How to write, run and debug one is in `docs/screenshot_testing_guide.md`.
 
-`testLocalizations` also hands each case to `declareLayoutCases` in `test/layout_gate/layout_cases.dart`. With `--dart-define=layoutMeasure=true`, that declares more tests from the same case, tagged `layout-measure` and not `loc`. They make no golden check, and they collect overflow reports instead of failing on them (#1802 P2). Without the define, which is every run in 3.1, it declares none.
+`testLocalizations` also hands each case to `declareLayoutCases` in `test/layout_gate/layout_cases.dart`, which declares more tests from the same case. None of them makes a golden check, and none is tagged `loc`:
+
+- **The layout gate** (#1802 P3), always: one test per size and locale in `test/layout_gate/gate.dart`, tagged `layout-gate`. It fails when the case overflows by more than 2.0px. The runs in 3.1 select these tests, so `./run_tests.sh` runs the gate; `1.x / Unit Tests` leaves them to `1.x / Layout Gate`.
+- **The measurement** (#1802 P2), only with `--dart-define=layoutMeasure=true`: tests tagged `layout-measure`, which collect overflow reports instead of failing on them.
 
 <!-- screenshot-exceptions:begin -->
 | File | Calls |
@@ -271,6 +278,8 @@ A page's screenshot test is a `testLocalizations` case, from `test/common/test_r
 **Enforced by**: Test, for the first point and for the `localizations/` directory in the second. `test/constitution/screenshot_placement_test.dart` fails when code outside the body of `testLocalizations` makes a golden check, or when a file outside a `localizations/` directory calls `testLocalizations`, and the table above has no row for it. It also fails when a row no longer matches. Review for where the `localizations/` directory sits, and for the third point.
 
 *Amended 2026-11-18 (#1802): `testLocalizations` also declares #1802 P2's measuring tests, so that P2 measures overflow from the existing cases instead of new ones (#1802, Decision 6).*
+
+*Amended 2026-11-19 (#1802): `testLocalizations` also declares #1802 P3's gate tests, tagged `layout-gate`, from the same cases.*
 
 ### 3.6 Mocks
 

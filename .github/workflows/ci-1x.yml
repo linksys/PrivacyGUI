@@ -4,8 +4,9 @@ name: CI (1.x)
 # are required on `usp` and `dev-2.*`. This file and its jobs are named
 # differently, so that each line's list of required checks stays its own.
 #
-# Ruleset "required checks (1.x)" requires the two jobs below, by name, on the
-# branches it lists. Keep this trigger a superset of those branches. A required
+# Ruleset "required checks (1.x)" requires `1.x / Analyze`, `1.x / Unit Tests`
+# and `1.x / Layout Gate`, by name, on the branches it lists. It requires the
+# gate's summary job, not its per-locale jobs. Keep this trigger a superset of those branches. A required
 # check that no trigger produces stays "Expected" forever, and the PR can never
 # merge. For the same reason, the ruleset lists branches one by one and not
 # `dev-1.*`: the `dev-1.*` branches cut before `dev-1.3.6` do not carry this file.
@@ -48,9 +49,12 @@ jobs:
       - uses: ./.github/actions/setup-1x
 
       # The same command a developer runs before pushing (constitution 3.1). It
-      # leaves out `golden` and `loc`, and exits 1 when a test fails.
+      # leaves out `golden` and `loc`, and exits 1 when a test fails. Here it
+      # also leaves out `layout-gate`, which the jobs below run.
       # `bash`, because run_tests.sh has no shebang line.
       - name: Unit tests
+        env:
+          EXTRA_EXCLUDE_TAGS: layout-gate
         run: |
           mkdir -p reports
           bash run_tests.sh reports
@@ -65,3 +69,53 @@ jobs:
         with:
           name: 1.x-unit-test-results
           path: reports/tests.json
+
+  # #1802 P3: every testLocalizations case at 480, 905, 1241 and 1280x420,
+  # failing on an overflow over 2.0px. One job per locale keeps each one near
+  # Decision 4's 5 minutes; the locales are #1802's Decision 7.
+  layout-gate-locale:
+    name: 1.x / Layout Gate (${{ matrix.locale }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        locale: [ja, ru, el, nl, de]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ./.github/actions/setup-1x
+
+      # Only the suites that declare testLocalizations cases, so the run does
+      # not compile the rest. `--exclude-tags` as in constitution 3.1.
+      - name: Layout gate
+        run: |
+          mkdir -p reports
+          suites=$(git grep -l -E '^[[:space:]]*testLocalizations\(' -- test \
+            | grep -v '^test/common/')
+          flutter test $suites \
+            --tags layout-gate \
+            --exclude-tags="golden||loc" \
+            --dart-define=locales=${{ matrix.locale }} \
+            --file-reporter json:reports/layout-gate.json
+
+      - name: Upload the gate results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: 1.x-layout-gate-${{ matrix.locale }}
+          path: reports/layout-gate.json
+
+  # The one check the ruleset requires for the gate, so the ruleset need not
+  # list the locales. It fails unless every per-locale job passed.
+  layout-gate:
+    name: 1.x / Layout Gate
+    runs-on: ubuntu-latest
+    needs: layout-gate-locale
+    if: ${{ always() }}
+    steps:
+      - name: Every locale passed
+        run: |
+          echo "The per-locale jobs: ${{ needs.layout-gate-locale.result }}"
+          test "${{ needs.layout-gate-locale.result }}" = success
