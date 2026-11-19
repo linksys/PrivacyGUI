@@ -1,7 +1,7 @@
 # The 1.x Constitution
 
-**Version:** 1.5
-**Last amended:** 2026-11-19 (#1864, scrolling pages without `IntrinsicHeight`)
+**Version:** 1.6
+**Last amended:** 2026-11-19 (#1802, readability guards)
 **Applies to:** the 1.x line of PrivacyGUI: `dev-1.*`, `release-1.*`, and `main` while it ships 1.x. 2.x has its own `constitution.md`; nothing here binds 2.x, and nothing in 2.x's binds 1.x.
 
 ## Preamble
@@ -22,7 +22,7 @@ Where this document and another document in the repository disagree, this one wi
 |---|---|---|
 | I | Presentation files don't use the data layer; `lib/core/` doesn't import `lib/page/` | Test |
 | II | JNAP goes through `RouterRepository`; the HSL spec's `[noauth]` decides `auth:` | Review |
-| III | Tests run through `run_tests.sh`; changes ship tests; screenshot tests and mocks follow one pattern | Test for where screenshot checks live and for the layout gate's roster; CI for #1803's coverage floor and for the layout gate; review for the rest |
+| III | Tests run through `run_tests.sh`; changes ship tests; screenshot tests and mocks follow one pattern | Test for where screenshot checks live, for the layout gate's roster and for the readability guards; CI for #1803's coverage floor and for the layout gate; review for the rest |
 | IV | Feature state lives in `Notifier` / `AsyncNotifier`; `…State` classes extend `Equatable` | Review |
 | V | File, class, provider and directory names | Review |
 | VI | User-visible strings come from the ARB files | CI for missing keys; review for hard-coded strings |
@@ -256,11 +256,25 @@ The table lists the pages that had no case when the gate landed. #1802 P6 emptie
 
 ### 3.4 A fix that ellipsizes ships a readability guard
 
-A fix that makes text fit by ellipsizing it or capping `maxLines` ships a test at the width that forced the fix. The test asserts the text is still usable. For an IP, MAC, serial number, firmware version or SSID, that means `RenderParagraph.didExceedMaxLines` is false.
+A fix that makes text fit by ellipsizing it or capping `maxLines` ships a test at the width that forced the fix. The test asserts the text is still usable. For an IP, MAC, serial number, firmware version or SSID, that means the text is fully shown: `expect(finder, isFullyShown)` passes, from `test/layout_gate/fully_shown.dart`. No `maxLines` or ellipsis cuts the text, it fits its box, and no ancestor clips it, a scroll view included.
 
 The overflow sweep cannot see this: adding `maxLines: 1` turns every overflowing row green and cuts `192.168.1.100` in the middle.
 
-**Enforced by**: Review. #1802 P4 adds the first set of guards.
+These guards hold the values that are useless when cut. Each runs in every locale at 480 and 1241, the narrowest mobile and desktop pages, with each value as long as it gets:
+
+| Guard | Values |
+|---|---|
+| `test/page/instant_device/views/device_detail_readability_test.dart` | Device detail: the IPv4 and IPv6 addresses, the MAC address and the SSID |
+| `test/page/nodes/views/node_detail_readability_test.dart` | Node detail: the WAN and LAN IP addresses, the firmware version, the serial number and the MAC address |
+| `test/page/dashboard/views/internet_status_readability_test.dart` | The dashboard's internet status: the router's serial number and firmware version |
+| `test/page/dashboard/views/wifi_grid_readability_test.dart` | The dashboard's Wi-Fi card: the SSID and the device count, at 1241 only, where the card is narrowest |
+| `test/page/wifi_settings/views/wifi_list_readability_test.dart` | Wi-Fi settings: the main and guest SSIDs |
+
+A guard is proven by a mutation that cuts its value: the guard goes red, and the layout gate stays green. Where the value has room to spare on one line, the mutation caps it at one line in a box narrower than the value.
+
+**Enforced by**: Test for the values above; review for a new fix.
+
+*Amended 2026-11-19 (#1802): #1802 P4 adds the guards above. "Usable" becomes `isFullyShown`, which also fails a `SelectableText` that scrolls its value out of its box and a value an ancestor clips; `didExceedMaxLines` sees neither. The version moves to 1.6, not 2.0, although 9.2 asks a major number for a tightened rule, as #1802's other amendments kept the major number.*
 
 ### 3.5 Screenshot tests
 
