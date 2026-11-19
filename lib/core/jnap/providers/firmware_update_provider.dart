@@ -157,30 +157,53 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     }
   }
 
+  /// Asks the router to install the available updates, then follows the
+  /// install with status checks until the router is back on the new firmware.
+  ///
+  /// The firmware detail page, PnP's firmware step and the auto-parent first
+  /// login tell how it went from [FirmwareUpdateState.isUpdating], so this
+  /// order is part of the contract:
+  /// - the access policy refuses: [ReadOnlyAccessException] is thrown before
+  ///   `isUpdating` is set, so it never changes;
+  /// - the router refuses: `isUpdating` turns on, then off, and the error is
+  ///   rethrown;
+  /// - the router accepts: this returns with `isUpdating` on. It turns off
+  ///   once the install is done, or once the status checks run out, which
+  ///   sets [FirmwareUpdateState.isRetryMaxReached] first.
   Future updateFirmware() async {
     logger.i('[FIRMWARE]: Update firmware: Start');
     final action = serviceHelper.isSupportNodeFirmwareUpdate()
         ? JNAPAction.nodesUpdateFirmwareNow
         : JNAPAction.updateFirmwareNow;
-    // Checked before `isUpdating` is set: nothing below clears it if the send is
-    // refused, which would leave the page on its updating spinner for good.
+    // Checked before `isUpdating` is set, so a refused write never shows the
+    // page its updating spinner.
     enforceAccess(ref, (policy) => policy.checkWrite(action));
     final benchmark = BenchMarkLogger(name: 'FirmwareUpdate');
     benchmark.start();
     state = state.copyWith(isUpdating: true);
     // Save the current status list and their corresponding node objects
     // Note: Before the update process, the nodes should not be null
+    final candidates = ref.read(firmwareUpdateCandidateProvider);
     final statusRecords = getIDStatusRecords();
     ref.read(firmwareUpdateCandidateProvider.notifier).state = statusRecords;
     logger.d('[FIRMWARE]: Saved current status records: $statusRecords');
 
-    await ref.read(routerRepositoryProvider).send(
-          action,
-          data: {'onlyCheck': false},
-          cacheLevel: CacheLevel.noCache,
-          fetchRemote: true,
-          auth: true,
-        );
+    try {
+      await ref.read(routerRepositoryProvider).send(
+            action,
+            data: {'onlyCheck': false},
+            cacheLevel: CacheLevel.noCache,
+            fetchRemote: true,
+            auth: true,
+          );
+    } catch (error) {
+      // The router never started the install, so no status check will end it:
+      // put the page back as it was before the update was asked for.
+      logger.e('[FIRMWARE]: Update firmware: refused: $error');
+      ref.read(firmwareUpdateCandidateProvider.notifier).state = candidates;
+      state = state.copyWith(isUpdating: false);
+      rethrow;
+    }
     _sub?.cancel();
     ref.read(pollingProvider.notifier).stopPolling();
     _sub = _startCheckFirmwareUpdateStatus(
@@ -205,11 +228,22 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
           });
         }
       },
-    ).listen((statusList) {
-      // The updated list here will be continuously rendered on different screens
-      // No need to examine the node status number
-      state = state.copyWith(nodesStatus: statusList);
-    });
+    ).listen(
+      (statusList) {
+        // The updated list here will be continuously rendered on different screens
+        // No need to examine the node status number
+        state = state.copyWith(nodesStatus: statusList);
+      },
+      // A status read fails while the router restarts into the new firmware.
+      // The stop condition has already logged it and the checks go on, so it
+      // is not an error of the update. Anything else, such as a status that
+      // does not parse, is logged here, as nothing else logs it.
+      onError: (Object error, StackTrace stackTrace) {
+        if (error is JNAPError) return;
+        logger.e('[FIRMWARE]: Update firmware: status check failed',
+            error: error, stackTrace: stackTrace);
+      },
+    );
   }
 
   Future finishFirmwareUpdate() {
