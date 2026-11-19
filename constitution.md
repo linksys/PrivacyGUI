@@ -379,7 +379,7 @@ So in a scrolling page's content, unless a widget in between bounds the height:
 
 A `SizedBox` or a `Container` with a `height`, or a `ConstrainedBox` with a `maxHeight`, bounds what is under it. A dialog or a bottom sheet is not part of the page. A page that does not scroll is not covered: its content has the window's height, and an `Expanded` in it works.
 
-This article has no exceptions. When it was added, every scrolling page under `lib/page/` was checked, and the seven that broke it were fixed in the same change (#1864).
+This article has no exceptions. When it was added, the code of every scrolling page under `lib/page/` was read, and the pages with a `testLocalizations` case were also measured by #1802's layout measurement. The seven pages that broke it were fixed in the same change (#1864).
 
 **Enforced by**: Review. Once #1802's gate runs the `testLocalizations` cases (#1802 P3), a breach of the first point on a page with a case throws, and the case fails. The second point throws nothing, so it stays Review.
 
