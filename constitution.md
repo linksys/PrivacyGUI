@@ -1,7 +1,7 @@
 # The 1.x Constitution
 
-**Version:** 1.1
-**Last amended:** 2026-11-18 (#1802, P1: PR checks)
+**Version:** 1.2
+**Last amended:** 2026-11-18 (#1803, Q5: coverage floor)
 **Applies to:** the 1.x line of PrivacyGUI: `dev-1.*`, `release-1.*`, and `main` while it ships 1.x. 2.x has its own `constitution.md`; nothing here binds 2.x, and nothing in 2.x's binds 1.x.
 
 ## Preamble
@@ -13,7 +13,7 @@ They describe the code as it is. Where today's code breaks a rule, the rule name
 Every rule says how it is enforced:
 
 - **Test**: a test in `./run_tests.sh` fails.
-- **CI**: a PR check fails. `.github/workflows/ci-1x.yml` runs two checks on every PR into `main` or a `dev-1.*` branch that carries the file: `1.x / Analyze` and `1.x / Unit Tests`. On the branches that ruleset `required checks (1.x)` lists, a red check blocks the merge. `1.x / Unit Tests` runs `./run_tests.sh`, so a rule enforced by Test fails a PR check too.
+- **CI**: a PR check fails. `.github/workflows/ci-1x.yml` runs two checks on every PR into `main` or a `dev-1.*` branch that carries the file: `1.x / Analyze` and `1.x / Unit Tests`. On the branches that ruleset `required checks (1.x)` lists, a red check blocks the merge. `1.x / Unit Tests` runs `./run_tests.sh`, so a rule enforced by Test fails a PR check too. It also fails when line coverage of `lib/` drops below the floor in `coverage_floor.txt` (3.2).
 - **Review**: only a reviewer catches it. A rule enforced only by review says so.
 
 Where this document and another document in the repository disagree, this one wins. It changes only through Article IX.
@@ -22,7 +22,7 @@ Where this document and another document in the repository disagree, this one wi
 |---|---|---|
 | I | Presentation files don't use the data layer; `lib/core/` doesn't import `lib/page/` | Test |
 | II | JNAP goes through `RouterRepository`; the HSL spec's `[noauth]` decides `auth:` | Review |
-| III | Tests run through `run_tests.sh`; changes ship tests; screenshot tests and mocks follow one pattern | Test for where screenshot checks live; review for the rest, until #1802's gate and roster and #1803's floor land |
+| III | Tests run through `run_tests.sh`; changes ship tests; screenshot tests and mocks follow one pattern | Test for where screenshot checks live; CI for #1803's coverage floor; review for the rest, until #1802's gate and roster land |
 | IV | Feature state lives in `Notifier` / `AsyncNotifier`; `…State` classes extend `Equatable` | Review |
 | V | File, class, provider and directory names | Review |
 | VI | User-visible strings come from the ARB files | CI for missing keys; review for hard-coded strings |
@@ -31,6 +31,8 @@ Where this document and another document in the repository disagree, this one wi
 | IX | Amendments state version, date and reason; the team approves them | Team approval |
 
 *Amended 2026-11-18 (#1802): **CI** names the two checks that #1802 P1 added, and VI and VII no longer wait on P1, because 1.x has PR checks now.*
+
+*Amended 2026-11-18 (#1803): **CI** and III name the coverage floor that #1803 Q5 added, which III waited on.*
 
 ---
 
@@ -171,7 +173,11 @@ So every test run passes `--exclude-tags="golden||loc"`:
 
 A change to a notifier, a service, a `…State` class or a model ships unit tests for the behaviour it changed. A test of one source file sits at the path that mirrors it: `lib/page/wifi_settings/providers/wifi_list_provider.dart` is tested in `test/page/wifi_settings/providers/wifi_list_provider_test.dart`.
 
-**Enforced by**: Review, until #1803's coverage floor lands.
+**Enforced by**:
+- CI, for the total. `1.x / Unit Tests` fails when line coverage of `lib/` drops below `coverage_floor.txt`, measured as `./run_coverage.sh` measures it. So a PR that deletes a tested provider's tests fails. The file says when to raise the floor and when it may go down.
+- Review, for whether a change tests the behaviour it changed. A floor on the total cannot tell.
+
+*Amended 2026-11-18 (#1803): the coverage floor enforces the total, which this section waited on.*
 
 ### 3.3 A new view ships a layout-gate case
 
