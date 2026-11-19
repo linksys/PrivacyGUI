@@ -212,7 +212,7 @@ The table lists the pages that have no case. A row whose reason starts "No case 
 | `lib/page/components/settings_view/editable_card_list_edit_view.dart` | `EditableCardListEditView` | Permanent while unreachable: nothing navigates to its route, `cardListEdit`, and opened without the route's arguments it throws. Give it a case once something does. |
 | `lib/page/components/settings_view/editable_card_list_settings_view.dart` | `EditableCardListsettingsView` | Permanent: a component, not a page. The advanced settings lists (ports, IPv6 port service, static routing) build it, so their cases sweep it. |
 | `lib/page/components/settings_view/editable_table_settings_view.dart` | `AppEditableTableSettingsView` | Permanent: a component, not a page. The advanced settings lists (ports, IPv6 port service, static routing) build it, so their cases sweep it. |
-| `lib/page/components/styled/styled_tab_page_view.dart` | `StyledAppTabPageView` | Permanent: a layout that `StyledAppPageView` builds for tabbed pages, not a page. |
+| `lib/page/components/styled/styled_tab_page_view.dart` | `StyledAppTabPageView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/components/views/arguments_view.dart` | `ArgumentsBaseConsumerStatefulView` | Permanent: a base class for views, not a page. |
 | `lib/page/components/views/write_flow_blocked_view.dart` | `WriteFlowBlockedView` | No case yet (#1802 P6). |
 | `lib/page/dashboard/views/dashboard_settings_view.dart` | `DashboardSettingsView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
