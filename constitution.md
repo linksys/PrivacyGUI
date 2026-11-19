@@ -1,7 +1,7 @@
 # The 1.x Constitution
 
-**Version:** 1.5
-**Last amended:** 2026-11-19 (#1864, scrolling pages without `IntrinsicHeight`)
+**Version:** 1.6
+**Last amended:** 2026-11-19 (#1802, the roster's permanent exemptions)
 **Applies to:** the 1.x line of PrivacyGUI: `dev-1.*`, `release-1.*`, and `main` while it ships 1.x. 2.x has its own `constitution.md`; nothing here binds 2.x, and nothing in 2.x's binds 1.x.
 
 ## Preamble
@@ -251,6 +251,8 @@ The table lists the pages that have no case. A row whose reason starts "No case 
 **Enforced by**: Test. `test/constitution/layout_gate_roster_test.dart` fails when a page has no case and no row in the table above, and when a row's page has a case or is gone.
 
 *Amended 2026-11-19 (#1802): the rule takes effect, with the roster test and a row for each page that has no case yet, so a page cannot be left out of the gate unnoticed. The version moves to 1.4, not 2.0, although 9.2 asks a major number for an added exception or a tightened rule. This section said the rule would take effect with #1802 P3, and the rows are the exceptions it starts with, not exceptions added to a rule already in force. Counting the five pages 5.1 names, and not counting a tab, follow what 5.1 and `TabBarView` already imply. The team decides whether that holds (9.3).*
+
+*Amended 2026-11-19 (#1802): the table may keep a page for good, with the reason it needs no case, where it said #1802 P6 would empty it. #1802 P6 had planned these exemptions, and 30 rows take one: 3 that are not pages, 19 that nothing lets a user open, and 8 that #1849 deletes. A page counts as unreachable when nothing in `lib/` builds it, or its route throws when opened, as a typed URL would open it. The rows of two deleted files go. The version moves to 1.6, not 2.0, although 9.2 asks a major number for an added exception, as #1802's other amendments kept the major number.*
 
 ### 3.4 A fix that ellipsizes ships a readability guard
 
