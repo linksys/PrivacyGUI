@@ -63,4 +63,22 @@ void main() {
     expect(find.text('203.0.113.254'), findsOneWidget);
     expect(find.text('255.255.255.0'), findsOneWidget);
   });
+
+  // #1838: the card's address slots read "-" when there is no address, the
+  // WAN address as the gateway already did.
+  testWidgets('no WAN address reads "-", as a missing gateway does',
+      (tester) async {
+    const noAddress = WanStatusUIModel(
+      isUp: true,
+      ipAddress: '',
+      subnetMask: '255.255.255.0',
+      addressingType: 'DHCP',
+      mtu: 1500,
+      gateway: '',
+    );
+    await pump(tester, noAddress);
+
+    expect(find.text('-'), findsNWidgets(2),
+        reason: 'the WAN address line and the gateway tile');
+  });
 }

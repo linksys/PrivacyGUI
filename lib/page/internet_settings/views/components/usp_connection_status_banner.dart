@@ -7,6 +7,7 @@ import 'package:privacy_gui/page/internet_settings/models/wan_ip_reading.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/internet_settings/views/components/usp_connection_type_label.dart';
 import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/util/network_utils.dart';
 
 /// A prominent banner at the top of the Internet Settings page.
 ///
@@ -118,11 +119,12 @@ class UspConnectionStatusBanner extends ConsumerWidget {
                     connectionType.localizedLabel(context),
                   ),
                   AppGap.xs(),
-                  // '--' means the device said there is no address; `unknown` means we
-                  // could not ask it. Rendering both as '--' was the #1613 defect.
+                  // The placeholder means the device said there is no address;
+                  // `unknown` means we could not ask it. Rendering both as the
+                  // placeholder was the #1613 defect.
                   AppText.bodySmall(switch (reading) {
                     WanIpAddress(:final value) => value,
-                    WanIpNone() => '--',
+                    WanIpNone() => NetworkUtils.noAddress,
                     WanIpUnknown() => loc(context).unknown,
                   }),
                 ],

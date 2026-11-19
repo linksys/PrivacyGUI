@@ -5,6 +5,7 @@ import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_issue.dart';
 import 'package:privacy_gui/page/internet_settings/models/auto_ipoe_models.dart';
+import 'package:privacy_gui/util/network_utils.dart';
 
 class AutoIPoESection extends StatefulWidget {
   const AutoIPoESection({
@@ -467,7 +468,8 @@ class _AutoIPoESectionState extends State<AutoIPoESection> {
       AutoIPoEMode.standardIpip => [
           _infoRow(
             loc(context).autoIpoeIpv6Remote,
-            settings.standardIpipSettings.ipv6Remote ?? '-',
+            NetworkUtils.addressOrPlaceholder(
+                settings.standardIpipSettings.ipv6Remote),
           ),
           _infoRow(
             loc(context).autoIpoeInterfaceId,
@@ -475,13 +477,15 @@ class _AutoIPoESectionState extends State<AutoIPoESection> {
           ),
           _infoRow(
             loc(context).autoIpoeIpv4Address,
-            settings.standardIpipSettings.ipv4Address ?? '-',
+            NetworkUtils.addressOrPlaceholder(
+                settings.standardIpipSettings.ipv4Address),
           ),
         ],
       AutoIPoEMode.v6PlusStaticIp => [
           _infoRow(
             loc(context).autoIpoeBrIpv6Address,
-            settings.v6PlusStaticIpSettings.ipv6Remote ?? '-',
+            NetworkUtils.addressOrPlaceholder(
+                settings.v6PlusStaticIpSettings.ipv6Remote),
           ),
           _infoRow(
             loc(context).autoIpoeInterfaceId,
@@ -489,7 +493,8 @@ class _AutoIPoESectionState extends State<AutoIPoESection> {
           ),
           _infoRow(
             loc(context).autoIpoeIpv4GlobalAddress,
-            settings.v6PlusStaticIpSettings.ipv4Address ?? '-',
+            NetworkUtils.addressOrPlaceholder(
+                settings.v6PlusStaticIpSettings.ipv4Address),
           ),
           _infoRow(
             loc(context).autoIpoeUserId,
@@ -509,7 +514,8 @@ class _AutoIPoESectionState extends State<AutoIPoESection> {
       AutoIPoEMode.transixStaticIp => [
           _infoRow(
             loc(context).autoIpoeIpv6TunnelBr,
-            settings.transixStaticIpSettings.ipv6Remote ?? '-',
+            NetworkUtils.addressOrPlaceholder(
+                settings.transixStaticIpSettings.ipv6Remote),
           ),
           _infoRow(
             loc(context).autoIpoeInterfaceId,
@@ -517,7 +523,8 @@ class _AutoIPoESectionState extends State<AutoIPoESection> {
           ),
           _infoRow(
             loc(context).autoIpoeIpv4GlobalAddress,
-            settings.transixStaticIpSettings.ipv4Address ?? '-',
+            NetworkUtils.addressOrPlaceholder(
+                settings.transixStaticIpSettings.ipv4Address),
           ),
           _infoRow(
             loc(context).autoIpoeUpdateUserId,
@@ -567,11 +574,13 @@ class _AutoIPoESectionState extends State<AutoIPoESection> {
           ),
           _infoRow(
             loc(context).autoIpoeTunnelDestination,
-            settings.xpassStaticIpSettings.ipv6Remote ?? '-',
+            NetworkUtils.addressOrPlaceholder(
+                settings.xpassStaticIpSettings.ipv6Remote),
           ),
           _infoRow(
             loc(context).autoIpoeIpv4GlobalAddress,
-            settings.xpassStaticIpSettings.ipv4Address ?? '-',
+            NetworkUtils.addressOrPlaceholder(
+                settings.xpassStaticIpSettings.ipv4Address),
           ),
         ],
       AutoIPoEMode.ocxHikariV6ixStaticIp => [

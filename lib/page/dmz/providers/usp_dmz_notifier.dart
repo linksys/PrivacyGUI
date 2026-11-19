@@ -8,6 +8,7 @@ import 'package:privacy_gui/page/dmz/models/dmz_settings.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_status.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/dmz/services/usp_dmz_service.dart';
+import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 
 // ---------------------------------------------------------------------------
 // Providers
@@ -86,6 +87,16 @@ class UspDmzNotifier extends AutoDisposeNotifier<DmzFeatureState>
 
   @override
   Future<void> performSave() async {
+    // A host given by IP is checked against the LAN (#1838), so a save reads
+    // the LAN first, as a port-forwarding dialog does before it opens. Awaited
+    // rather than taken from `valueOrNull`: while the LAN is still loading
+    // that would check the host without it. A LAN that cannot be read stops
+    // the save with its error; nothing is written.
+    final pending = state.settings.current.model;
+    if (pending.isEnabled && pending.destinationType == DmzDestinationType.ip) {
+      await ref.read(lanDataProvider.future);
+    }
+
     // The Save button needs no field errors, but those are set on blur, so a
     // save checks again. That keeps a malformed value off the router: a
     // refused first save (an Add) creates the row with the field emptied
@@ -155,9 +166,18 @@ class UspDmzNotifier extends AutoDisposeNotifier<DmzFeatureState>
   /// Trigger validation on current settings.
   ///
   /// Call this on TextField unfocus to avoid unfocus issues on Web.
+  ///
+  /// The LAN check of the host's IP runs once the LAN has been read; until
+  /// then only its format and reserved ranges are checked here, and [save]
+  /// reads the LAN before it checks again.
   void validate() {
     final current = state.settings.current.model;
-    final errors = _svc.validateForm(current);
+    final lan = ref.read(lanDataProvider).valueOrNull?.model;
+    final errors = _svc.validateForm(
+      current,
+      lanIp: lan?.ipAddress,
+      lanSubnetMask: lan?.subnetMask,
+    );
     state = state.copyWith(
       status: state.status.copyWith(fieldErrors: errors),
     );

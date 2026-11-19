@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
+import 'package:privacy_gui/validator_rules/lan_host_ipv4.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// What [DhcpReservationEditDialog] pops with on submit. [name] is `''` when
@@ -39,12 +40,20 @@ class DhcpReservationEditDialog extends StatefulWidget {
   /// empty list explicitly, at the call site, where a reader can see it.
   final List<DhcpReservationUIModel> existingReservations;
 
+  /// The router's LAN address and mask. With both, the address must be a LAN
+  /// host's, as for port forwarding and the DMZ host (#1838): in the LAN
+  /// subnet and not the router's own. Null skips that part of the check.
+  final String? lanIp;
+  final String? lanSubnetMask;
+
   const DhcpReservationEditDialog({
     super.key,
     this.reservation,
     this.macDeviceOptions = const [],
     this.ipDeviceOptions = const [],
     required this.existingReservations,
+    this.lanIp,
+    this.lanSubnetMask,
   });
 
   @override
@@ -54,8 +63,6 @@ class DhcpReservationEditDialog extends StatefulWidget {
 
 class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
   static final _macRule = MACAddressRule();
-  static final _ipRule = IpAddressRule();
-  static final _ipNoReservedRule = IpAddressNoReservedRule();
 
   late TextEditingController _macController;
   late TextEditingController _ipController;
@@ -120,12 +127,11 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
       errors['mac'] = 'invalidMacAddressFormat';
     }
 
+    // The same check as every form that writes a LAN host's address (#1838).
     if (ip.isNotEmpty) {
-      if (!_ipRule.validate(ip)) {
-        errors['ip'] = 'invalidIpv4Format';
-      } else if (!_ipNoReservedRule.validate(ip)) {
-        errors['ip'] = 'reservedIpNotAllowed';
-      }
+      final problem = lanHostIpv4Problem(ip,
+          lanIp: widget.lanIp, lanSubnetMask: widget.lanSubnetMask);
+      if (problem != null) errors['ip'] = problem.messageKey;
     }
 
     // Reject duplicates against existing reservations (excluding the one being
@@ -172,6 +178,7 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
       'invalidMacAddressFormat' => loc(context).invalidMacAddressFormat,
       'invalidIpv4Format' => loc(context).invalidIpv4Format,
       'reservedIpNotAllowed' => loc(context).reservedIpNotAllowed,
+      'invalidIpAddress' => loc(context).invalidIpAddress,
       'duplicateMacAddress' => loc(context).duplicateMacAddress,
       'duplicateIpAddress' => loc(context).duplicateIpAddress,
       DhcpReservationNameErrors.tooLong =>
@@ -198,8 +205,10 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
               final match = widget.macDeviceOptions
                   .where((o) => o.value == value)
                   .firstOrNull;
-              if (match?.subtitle != null) {
-                _ipController.text = match!.subtitle!;
+              // A device with no IPv4 has no subtitle (#1838); picking it
+              // clears the field rather than keeping another device's address.
+              if (match != null) {
+                _ipController.text = match.subtitle ?? '';
               }
               _validate();
             },

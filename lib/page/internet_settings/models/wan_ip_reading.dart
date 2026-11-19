@@ -23,7 +23,7 @@ import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.d
 /// The three cases, and what each means to a user:
 ///
 ///   [WanIpReading.address]  the device reported an address     -> show it
-///   [WanIpReading.none]     the device reported no address     -> show '--'
+///   [WanIpReading.none]     the device reported no address     -> show '-'
 ///   [WanIpReading.unknown]  we could not read the device       -> say so; claim nothing
 ///
 /// ⚠️ THIS TYPE NO LONGER ANSWERS "ARE WE ONLINE" (#1620). It used to carry `isOnline`

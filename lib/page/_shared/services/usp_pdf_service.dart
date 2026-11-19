@@ -13,6 +13,7 @@ import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
+import 'package:privacy_gui/util/network_utils.dart';
 
 /// One `label: value` line in the report.
 class PdfKeyValue {
@@ -294,7 +295,7 @@ class UspPdfService {
     return [
       _sectionTitle('WAN Status'),
       _keyValue('Status', wan.isUp ? 'Up' : 'Down'),
-      _keyValue('IP Address', wan.ipAddress),
+      _keyValue('IP Address', NetworkUtils.addressOrPlaceholder(wan.ipAddress)),
       _keyValue('Subnet Mask', wan.subnetMask),
       if (wan.gateway.isNotEmpty) _keyValue('Gateway', wan.gateway),
       _keyValue('Addressing Type', wan.addressingType),
@@ -313,7 +314,7 @@ class UspPdfService {
     if (lan == null) return [];
     return [
       _sectionTitle('LAN Network'),
-      _keyValue('IP Address', lan.ipAddress),
+      _keyValue('IP Address', NetworkUtils.addressOrPlaceholder(lan.ipAddress)),
       _keyValue('Subnet Mask', lan.subnetMask),
       _keyValue('DHCP', lan.dhcpEnabled ? 'Enabled' : 'Disabled'),
       if (lan.dhcpEnabled) _keyValue('DHCP Range', lan.dhcpRange),
@@ -438,21 +439,34 @@ class UspPdfService {
       cellPadding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
       headers: headers,
-      data: devices.map((d) {
+      data: deviceTableRows(devices, isOnline: isOnline),
+    );
+  }
+
+  /// The device table's rows. A device with no IPv4 prints
+  /// [NetworkUtils.noAddress], as the app shows it (#1838).
+  @visibleForTesting
+  static List<List<String>> deviceTableRows(
+    List<dynamic> devices, {
+    required bool isOnline,
+  }) =>
+      devices.map((d) {
         if (isOnline) {
-          return [
+          return <String>[
             d.displayName,
             d.mac,
-            d.ip,
+            NetworkUtils.addressOrPlaceholder(d.ip),
             d.isWifi ? 'WiFi' : 'Ethernet',
             d.signalStrength != null ? '${d.signalStrength} dBm' : '—',
             d.band ?? '—',
           ];
         }
-        return [d.displayName, d.mac, d.ip];
-      }).toList(),
-    );
-  }
+        return <String>[
+          d.displayName,
+          d.mac,
+          NetworkUtils.addressOrPlaceholder(d.ip),
+        ];
+      }).toList();
 
   static List<pw.Widget> _buildDhcpClients(PdfReportData data) {
     final clients = data.dhcpClients ?? [];

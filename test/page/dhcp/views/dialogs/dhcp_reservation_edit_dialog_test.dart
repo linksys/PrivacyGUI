@@ -39,6 +39,9 @@ Future<({String mac, String ip, bool enable})?> _pumpAndOpen(
   WidgetTester tester, {
   DhcpReservationUIModel? reservation,
   List<DhcpReservationUIModel>? existing,
+  String? lanIp,
+  String? lanSubnetMask,
+  List<AppAutoCompleteOption> macOptions = const [],
 }) async {
   final existingReservations = existing ?? _existing;
   ({String mac, String ip, bool enable})? result;
@@ -58,6 +61,9 @@ Future<({String mac, String ip, bool enable})?> _pumpAndOpen(
                     builder: (_) => DhcpReservationEditDialog(
                       reservation: reservation,
                       existingReservations: existingReservations,
+                      lanIp: lanIp,
+                      lanSubnetMask: lanSubnetMask,
+                      macDeviceOptions: macOptions,
                     ),
                   );
                   popped = true;
@@ -222,5 +228,75 @@ void main() {
       expect(_macField().errorText, isNull);
       expect(_ipField().errorText, isNull);
     });
+  });
+
+  // #1838: the reservation address is checked as every form that writes a
+  // LAN host's address checks it, with the same messages.
+  group('the address, as a LAN host', () {
+    late AppLocalizations l10n;
+    setUp(() async {
+      l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    });
+
+    Future<void> open(WidgetTester tester) => _pumpAndOpen(tester,
+        lanIp: '192.168.1.1', lanSubnetMask: '255.255.255.0');
+
+    testWidgets('0.0.0.0 is refused as reserved', (tester) async {
+      await open(tester);
+      await _enterIp(tester, '0.0.0.0');
+
+      expect(_ipField().errorText, l10n.reservedIpNotAllowed);
+    });
+
+    testWidgets('an address outside the LAN is refused', (tester) async {
+      await open(tester);
+      await _enterIp(tester, '10.0.0.5');
+
+      expect(_ipField().errorText, l10n.invalidIpAddress);
+    });
+
+    testWidgets("the router's own address is refused", (tester) async {
+      await open(tester);
+      await _enterIp(tester, '192.168.1.1');
+
+      expect(_ipField().errorText, l10n.invalidIpAddress);
+    });
+
+    testWidgets('a LAN host is accepted', (tester) async {
+      await open(tester);
+      await _enterIp(tester, '192.168.1.50');
+
+      expect(_ipField().errorText, isNull);
+    });
+  });
+
+  // #1838: a device with no IPv4 is offered by MAC with no subtitle. Picking
+  // it must clear the IP field, not keep the address of the device picked
+  // before it: that would reserve one device's address for another.
+  testWidgets('picking a device with no IPv4 clears the IP field',
+      (tester) async {
+    await _pumpAndOpen(tester, existing: const [], macOptions: const [
+      AppAutoCompleteOption(
+          label: 'With Address',
+          value: 'AA:BB:CC:00:00:0A',
+          subtitle: '192.168.1.10'),
+      AppAutoCompleteOption(label: 'No Address', value: 'AA:BB:CC:00:00:0B'),
+    ]);
+
+    Future<void> pick(String label) async {
+      await tester.enterText(find.byType(TextField).at(0), 'AA:BB:CC');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(label).last);
+      await tester.pumpAndSettle();
+    }
+
+    String ipText() =>
+        tester.widget<TextField>(find.byType(TextField).at(1)).controller!.text;
+
+    await pick('With Address');
+    expect(ipText(), '192.168.1.10');
+
+    await pick('No Address');
+    expect(ipText(), '');
   });
 }

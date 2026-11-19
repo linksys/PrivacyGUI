@@ -25,12 +25,19 @@ enum DmzSourceType {
 
 /// Error keys [UspDmzService.validateForm] returns, by field (`destIp`,
 /// `destMac`, `sourcePrefix`). The view maps each to its l10n string.
+///
+/// The three `destIp` problems after [destIpRequired] are
+/// `LanHostIpv4Problem.messageKey`s: the DMZ host is checked as every form
+/// that writes a LAN host's address checks it (#1838).
 class DmzErrorKeys {
   static const destIpRequired = 'destIpRequired';
+  static const invalidIpv4Format = 'invalidIpv4Format';
+  static const reservedIpNotAllowed = 'reservedIpNotAllowed';
   static const invalidIpAddress = 'invalidIpAddress';
   static const destMacRequired = 'destMacRequired';
   static const invalidMacAddress = 'invalidMacAddress';
   static const cidrRequired = 'cidrRequired';
+  static const invalidCidr = 'invalidCidr';
 }
 
 /// UI-facing representation of the DMZ configuration.

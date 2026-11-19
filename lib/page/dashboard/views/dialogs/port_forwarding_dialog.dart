@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_rule_limits.dart';
-import 'package:privacy_gui/validator_rules/input_validators.dart';
+import 'package:privacy_gui/page/_shared/helpers/lan_host_ipv4_message.dart';
+import 'package:privacy_gui/validator_rules/lan_host_ipv4.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -118,8 +119,6 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
   // Validation
   // ---------------------------------------------------------------------------
 
-  static final _ipAddressRule = IpAddressRule();
-  static final _ipNoReservedRule = IpAddressNoReservedRule();
   static final _noWhitespaceRule = NoSurroundWhitespaceRule();
 
   /// Rebuild to re-evaluate the Add-button enable state (_isFormValid) WITHOUT
@@ -178,17 +177,13 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
       }
     }
 
-    // Internal client (IPv4) — only when non-empty.
+    // Internal client (IPv4) — only when non-empty. The same check as every
+    // form that writes a LAN host's address (#1838).
     if (client.isNotEmpty) {
-      if (!_ipAddressRule.validate(client)) {
-        errors['internalClient'] = loc(context).invalidIpv4Format;
-      } else if (!_ipNoReservedRule.validate(client)) {
-        errors['internalClient'] = loc(context).reservedIpNotAllowed;
-      } else if (widget.lanIp != null &&
-          widget.lanSubnetMask != null &&
-          !IpAddressAsLocalIpValidator(widget.lanIp!, widget.lanSubnetMask!)
-              .validate(client)) {
-        errors['internalClient'] = loc(context).invalidIpAddress;
+      final problem = lanHostIpv4Problem(client,
+          lanIp: widget.lanIp, lanSubnetMask: widget.lanSubnetMask);
+      if (problem != null) {
+        errors['internalClient'] = lanHostIpv4Message(context, problem);
       }
     }
 

@@ -2451,4 +2451,80 @@ void main() {
       });
     });
   });
+
+  // #1838: FL-WRT 2.0 has reported IPAddress 0.0.0.0 with no IPv4 rows, for a
+  // wired client that held an address and for an agent's backhaul station.
+  // That is no address, for clients and nodes alike.
+  group('MeshNetworkBuilder.build — a Hosts IPAddress that is no address', () {
+    MeshNetwork buildWith(List<ConnectedDevice> rows) =>
+        MeshNetworkBuilder.build(
+          connectedDevices: ConnectedDevices(items: rows),
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: MeshTopologyInfo(
+            nodes: [
+              buildMasterNode(deviceId: 'AA:BB:CC:DD:EE:01'),
+              buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:02'),
+            ],
+            clientToNodeMap: const {},
+          ),
+          gatewayName: 'Router',
+        );
+
+    test('a client reporting 0.0.0.0 has no IPv4', () {
+      final result = buildWith([
+        buildConnectedDevice(
+            macAddress: '11:22:33:44:55:01', ipAddress: '0.0.0.0'),
+      ]);
+
+      final client = result.master.connectedClients.single;
+      expect(client.ip, '');
+      expect(client.ipAddress, isNull);
+    });
+
+    test('so does one in another reserved range, or a malformed one', () {
+      for (final ip in ['0.1.2.3', '127.0.0.1', '255.255.255.255', 'n/a']) {
+        final result = buildWith([
+          buildConnectedDevice(macAddress: '11:22:33:44:55:01', ipAddress: ip),
+        ]);
+        expect(result.master.connectedClients.single.ip, '', reason: ip);
+      }
+    });
+
+    test('a host address is kept, trimmed', () {
+      final result = buildWith([
+        buildConnectedDevice(
+            macAddress: '11:22:33:44:55:01', ipAddress: ' 192.168.1.60 '),
+      ]);
+
+      expect(result.master.connectedClients.single.ip, '192.168.1.60');
+    });
+
+    test('an agent whose own row reports 0.0.0.0 has no LAN address', () {
+      final result = buildWith([
+        buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:02', ipAddress: '0.0.0.0'),
+      ]);
+
+      expect(result.slaves.single.ipAddress, isNull);
+    });
+
+    test('the router, if it has a Hosts row reporting 0.0.0.0, has none', () {
+      final result = buildWith([
+        buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:01', ipAddress: '0.0.0.0'),
+      ]);
+
+      expect(result.master.ipAddress, isNull);
+    });
+
+    test('an agent with a host address keeps it', () {
+      final result = buildWith([
+        buildConnectedDevice(
+            macAddress: 'AA:BB:CC:DD:EE:02', ipAddress: '192.168.1.189'),
+      ]);
+
+      expect(result.slaves.single.ipAddress, '192.168.1.189');
+    });
+  });
 }
