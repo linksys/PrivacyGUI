@@ -64,6 +64,9 @@ class _AutoParentFirstLoginViewState
           _finishFirstTimeLogin();
         });
       } else if (_installStarted &&
+          // Status checks that ran out end the install too. The alert above
+          // ends the first login for that one, once the router is back.
+          !next.isRetryMaxReached &&
           prev?.isUpdating == true &&
           next.isUpdating == false) {
         logger.d('[FirstTime]: FW update finish go to dashboard!');

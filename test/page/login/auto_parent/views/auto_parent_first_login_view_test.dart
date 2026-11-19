@@ -51,6 +51,13 @@ class _FirmwareStub extends FirmwareUpdateNotifier {
   }
 
   void finishInstall() => state = state.copyWith(isUpdating: false);
+
+  /// As the real provider ends an install whose status checks run out:
+  /// `isRetryMaxReached` turns on, then `isUpdating` turns off.
+  void runOutOfStatusChecks() {
+    state = state.copyWith(isRetryMaxReached: true);
+    state = state.copyWith(isUpdating: false);
+  }
 }
 
 void main() {
@@ -125,5 +132,21 @@ void main() {
         hasLength(1));
     expect(
         router.payloadsOf(JNAPAction.setFirmwareUpdateSettings), hasLength(1));
+  });
+
+  testWidgets(
+      'an install whose status checks run out leaves the end of the first '
+      'login to the router-not-found alert', (tester) async {
+    await openFirstLogin(tester, refuse: false);
+    await tester.pump();
+    await tester.pump();
+
+    firmware.runOutOfStatusChecks();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.text('Router Not Found'), findsOneWidget);
+    expect(find.text('dashboard'), findsNothing);
+    expect(router.payloadsOf(JNAPAction.setFirmwareUpdateSettings), isEmpty);
   });
 }
