@@ -15,16 +15,38 @@ void main() {
         isNot(contains('/pubspec.lock')));
   });
 
-  test('every pub get in the 1.x setup installs the lock as it is', () {
-    final pubGets = [
+  group('the 1.x setup', () {
+    // The pub commands the setup runs. Comments are skipped: they explain the
+    // commands and are free to name them.
+    final pubCommands = [
       for (final line
           in File('.github/actions/setup-1x/action.yml').readAsLinesSync())
-        if (line.contains('pub get')) line.trim(),
+        if (!line.trimLeft().startsWith('#') &&
+            line.contains(RegExp(r'pub (get|upgrade|downgrade|add)\b')))
+          line.trim(),
     ];
 
-    expect(pubGets, isNotEmpty);
-    for (final pubGet in pubGets) {
-      expect(pubGet, contains('--enforce-lockfile'));
-    }
+    test('installs the lock as it is, and never resolves afresh', () {
+      expect(pubCommands, isNotEmpty);
+      for (final command in pubCommands) {
+        expect(command, contains('pub get'));
+        expect(command, contains('--enforce-lockfile'));
+      }
+    });
+
+    test('runs dart pub get after flutter pub get', () {
+      final flutterPubGet = pubCommands
+          .indexWhere((command) => command.contains('flutter pub get'));
+      final dartPubGet =
+          pubCommands.indexWhere((command) => command.contains('dart pub get'));
+
+      expect(flutterPubGet, isNot(-1));
+      expect(dartPubGet, greaterThan(flutterPubGet),
+          reason: 'On Flutter 3.27, `flutter pub get --enforce-lockfile` '
+              'leaves the synthetic flutter_gen package in '
+              'package_config.json with no pubspec, and build_runner then '
+              'fails to build its package graph. `dart pub get` rewrites '
+              'package_config.json without it.');
+    });
   });
 }
