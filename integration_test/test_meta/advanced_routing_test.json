@@ -1,8 +1,0 @@
-{
-    "name": "Advanced Settings - Advanced Routing",
-    "target": "integration_test/advanced_routing_test.dart",
-    "description": "Test static and dynamic routing management and display error messages",
-    "setUp":  ["factory_reset", "skip_setup"],
-    "tearDown": [],
-    "tags": ["advanced_routing", "advanced_settings", "menu"]
-}
