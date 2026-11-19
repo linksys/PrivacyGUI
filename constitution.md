@@ -162,14 +162,15 @@ A missing `auth: true` is easy to miss when testing on a router. Only the `behin
 
 So every test run passes `--exclude-tags="golden||loc"`:
 
-- `./run_tests.sh <reportDir>` runs the whole suite that way and writes `tests.json` into `<reportDir>`. Run it before you push.
+- `./run_tests.sh <reportDir>` runs the whole suite that way and writes `tests.json` into `<reportDir>`. Run it before you push. It also leaves out `layout-gate`, the layout gate's tests (3.5), which take long enough to run in CI jobs of their own.
+- To run the layout gate yourself, run `flutter test <suite> --tags layout-gate --exclude-tags="golden||loc"` on a case's suite. `1.x / Layout Gate` runs all of it on every PR.
 - While you work, `flutter test <file or directory> --exclude-tags="golden||loc"` is fine, with any `--dart-define` the file needs.
 
-**Enforced by**: Test for `run_tests.sh`: `test/constitution/run_tests_script_test.dart` fails if the script stops excluding the tags, with or without `EXTRA_EXCLUDE_TAGS`. Review for other runs. `1.x / Unit Tests` runs the script on the PRs that **CI** in the preamble covers, with `EXTRA_EXCLUDE_TAGS=layout-gate` (3.5).
+**Enforced by**: Test for `run_tests.sh`: `test/constitution/run_tests_script_test.dart` fails if the script stops excluding the tags, `layout-gate` included. Review for other runs. `1.x / Unit Tests` runs the script on the PRs that **CI** in the preamble covers.
 
 *Amended 2026-11-18 (#1802): CI runs the script now. The report directory gets `tests.json` only: the script writes no HTML report, though this section said it did.*
 
-*Amended 2026-11-19 (#1802): `1.x / Unit Tests` leaves out the layout gate's tests through `EXTRA_EXCLUDE_TAGS`, because `1.x / Layout Gate` runs them. The test checks that `golden` and `loc` stay excluded either way.*
+*Amended 2026-11-19 (#1802): `run_tests.sh` also leaves out the layout gate's tests, which `1.x / Layout Gate` runs, so a local run stays short (#1802, Decision 11).*
 
 ### 3.2 Provider and model changes ship unit tests
 
@@ -244,7 +245,7 @@ The table lists the pages that had no case when the gate landed. #1802 P6 emptie
 
 **Enforced by**: Test. `test/constitution/layout_gate_roster_test.dart` fails when a page has no case and no row in the table above, and when a row's page has a case or is gone.
 
-*Amended 2026-11-19 (#1802 P3): the rule takes effect, with the roster test and a row for each page that has no case yet.*
+*Amended 2026-11-19 (#1802 P3): the rule takes effect, with the roster test and a row for each page that has no case yet. The version moves to 1.3, not 2.0, although 9.2 asks a major number for an added exception: this section said the rule would take effect with P3, and the rows are the exceptions it starts with, not exceptions added to a rule already in force.*
 
 ### 3.4 A fix that ellipsizes ships a readability guard
 
@@ -266,7 +267,7 @@ A page's screenshot test is a `testLocalizations` case, from `test/common/test_r
 
 `testLocalizations` also hands each case to `declareLayoutCases` in `test/layout_gate/layout_cases.dart`, which declares more tests from the same case. None of them makes a golden check, and none is tagged `loc`:
 
-- **The layout gate** (#1802 P3), always: one test per size and locale in `test/layout_gate/gate.dart`, tagged `layout-gate`. It fails when the case overflows by more than 2.0px. The runs in 3.1 select these tests, so `./run_tests.sh` runs the gate; `1.x / Unit Tests` leaves them to `1.x / Layout Gate`.
+- **The layout gate** (#1802 P3), always: one test per size and locale in `test/layout_gate/gate.dart`, tagged `layout-gate`. It fails when the case overflows by more than 2.0px. `./run_tests.sh` leaves these tests out (3.1); `1.x / Layout Gate` runs them on every PR, one job per locale.
 - **The measurement** (#1802 P2), only with `--dart-define=layoutMeasure=true`: tests tagged `layout-measure`, which collect overflow reports instead of failing on them.
 
 <!-- screenshot-exceptions:begin -->

@@ -49,12 +49,10 @@ jobs:
       - uses: ./.github/actions/setup-1x
 
       # The same command a developer runs before pushing (constitution 3.1). It
-      # leaves out `golden` and `loc`, and exits 1 when a test fails. Here it
-      # also leaves out `layout-gate`, which the jobs below run.
+      # leaves out `golden`, `loc` and `layout-gate`, which the jobs below run,
+      # and exits 1 when a test fails.
       # `bash`, because run_tests.sh has no shebang line.
       - name: Unit tests
-        env:
-          EXTRA_EXCLUDE_TAGS: layout-gate
         run: |
           mkdir -p reports
           bash run_tests.sh reports
