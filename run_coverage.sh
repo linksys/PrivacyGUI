@@ -9,10 +9,12 @@
 # Ctrl-C included. It writes:
 # - <reportDir>/tests.json, as run_tests.sh does;
 # - coverage/lcov.info, where `flutter test --coverage` puts it;
-# - <reportDir>/coverage.md, the table #1803 reports, which it also prints.
+# - <reportDir>/coverage.md, the table #1803 reports, with a line on the
+#   floor under it, which it also prints.
 #
 # `1.x / Unit Tests` runs this script, so the figure a PR shows is the one it
-# gives locally. It fails when a test fails, or when the table cannot be made.
+# gives locally. It fails when a test fails, when the table cannot be made, or
+# when the total is below the floor in coverage_floor.txt (#1803 Q5).
 reportPath=$1
 if [ -z "$reportPath" ]; then
   echo 'usage: ./run_coverage.sh <reportDir>'
@@ -27,6 +29,10 @@ bash run_tests.sh "$reportPath" --coverage
 status=$?
 if [ -f coverage/lcov.info ]; then
   if dart test_scripts/coverage_summary.dart coverage/lcov.info "$reportPath/tests.json" >"$reportPath/coverage.md"; then
+    # A blank line first, so the floor's line is a paragraph of its own.
+    if ! { echo; dart test_scripts/coverage_floor.dart coverage/lcov.info; } >>"$reportPath/coverage.md"; then
+      status=1
+    fi
     cat "$reportPath/coverage.md"
   else
     rm -f "$reportPath/coverage.md"

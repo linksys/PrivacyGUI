@@ -70,7 +70,8 @@
 !**/ios/**/default.pbxuser
 !**/ios/**/default.perspectivev3
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
-/pubspec.lock
+# /pubspec.lock is committed on purpose: CI installs it with
+# --enforce-lockfile, so CI and a developer test the same packages (#1802).
 /ios/Podfile.lock
 /plugins/build/
 plugins/connecting_wifi_plugin/example/pubspec.lock
@@ -79,10 +80,6 @@ plugins/sms_receiver_plugin/example/pubspec.lock
 plugins/universal_link_plugin/example/pubspec.lock
 build/app/outputs/*
 packages
-plugins/connecting_wifi_plugin/example/pubspec.lock
-plugins/ios_push_notification_plugin/example/pubspec.lock
-plugins/sms_receiver_plugin/example/pubspec.lock
-plugins/universal_link_plugin/example/pubspec.lock
 artifacts/webApp
 
 # Goldens

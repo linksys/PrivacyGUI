@@ -27,9 +27,22 @@ runs:
         flutter-version: ${{ steps.fvmrc.outputs.flutter }}
         cache: true
 
+    # pubspec.lock is committed, so this installs exactly the packages a
+    # developer tested. --enforce-lockfile fails when the lock does not match
+    # pubspec.yaml, instead of resolving afresh: a package released upstream
+    # cannot turn the required checks red with no change in the PR.
+    #
+    # On Flutter 3.27, `flutter pub get --enforce-lockfile` leaves the
+    # synthetic flutter_gen package (pubspec.yaml's `generate: true`) in
+    # package_config.json with no pubspec behind it. `dart run` then uses that
+    # config as it is, and build_runner fails with "Unable to generate package
+    # graph, no `.dart_tool/flutter_gen/pubspec.yaml` found". The dart command
+    # rewrites package_config.json from the same lock, without flutter_gen.
     - name: Install dependencies
       shell: bash
-      run: flutter pub get
+      run: |
+        flutter pub get --enforce-lockfile
+        dart pub get --enforce-lockfile
 
     # lib/l10n/gen/ is gitignored.
     - name: Generate l10n
