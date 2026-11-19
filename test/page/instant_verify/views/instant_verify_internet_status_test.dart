@@ -62,8 +62,7 @@ void main() {
         .thenReturn(TopologyTestData().testTopology2SlavesDaisyState);
     when(verify.build()).thenReturn(InstantVerifyState.fromMap(hasWanConnection
         ? instantVerifyTestState
-        : (Map<String, dynamic>.from(instantVerifyTestState)
-          ..remove('wanConnection'))));
+        : instantVerifyInternetOffTestState));
     when(dashboardManager.build()).thenReturn(
         DashboardManagerState.fromMap(dashboardManagerChrry7TestState));
 
