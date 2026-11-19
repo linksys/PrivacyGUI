@@ -24,6 +24,8 @@ import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/animated_meter.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:privacygui_widgets/widgets/page/layout/fill_column.dart';
 
 class SpeedTestView extends ArgumentsConsumerStatefulView {
   const SpeedTestView({
@@ -182,9 +184,11 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
     final bool isGoEnabled =
         !_loadingServers && (!isSelectionRequired || selectedServer != null);
 
+    // The background fills what the button sets, rather than sizing the
+    // page: a scrolling page has no height for it to take.
     return Stack(
       children: [
-        background,
+        Positioned.fill(child: background),
         Container(
           alignment: Alignment.center,
           child: Column(
@@ -311,13 +315,18 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
           ),
         ],
       ),
-      mobile: Column(
+      // The empty slot keeps the info at the bottom of a short page, as a
+      // Spacer did. A Spacer needs a bounded height, which a scrolling page
+      // does not have, and a Gap needs a Flex.
+      mobile: FillColumn(
+        fillIndex: 2,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _meterView(state.step, bandwidth.value, bandwidth.unit, latency),
-          const AppGap.medium(),
-          const Spacer(),
+          const SizedBox(height: Spacing.medium),
+          const SizedBox.shrink(),
           _infoView(state),
-          const AppGap.medium(),
+          const SizedBox(height: Spacing.medium),
         ],
       ),
     );
