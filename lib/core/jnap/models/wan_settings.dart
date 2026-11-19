@@ -590,39 +590,39 @@ class WirelessModeSettings extends Equatable {
 
 class AFTRSettings extends Equatable {
   final String? aftrURL;
-  final String? afterAddress;
+  final String? aftrAddress;
 
   const AFTRSettings({
     this.aftrURL,
-    this.afterAddress,
+    this.aftrAddress,
   });
 
   AFTRSettings copyWith({
     String? aftrURL,
-    String? afterAddress,
+    String? aftrAddress,
   }) {
     return AFTRSettings(
       aftrURL: aftrURL ?? this.aftrURL,
-      afterAddress: afterAddress ?? this.afterAddress,
+      aftrAddress: aftrAddress ?? this.aftrAddress,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'aftrURL': aftrURL,
-      'afterAddress': afterAddress,
+      'aftrAddress': aftrAddress,
     }..removeWhere((key, value) => value == null);
   }
 
   factory AFTRSettings.fromJson(Map<String, dynamic> json) {
     return AFTRSettings(
       aftrURL: json['aftrURL'],
-      afterAddress: json['afterAddress'],
+      aftrAddress: json['aftrAddress'],
     );
   }
 
   @override
-  List<Object?> get props => [aftrURL, afterAddress];
+  List<Object?> get props => [aftrURL, aftrAddress];
 }
 
 class SinglePortVLANTaggingSettings {
