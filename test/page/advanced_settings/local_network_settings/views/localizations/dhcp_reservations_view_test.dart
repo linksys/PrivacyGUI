@@ -372,8 +372,9 @@ void main() {
     ],
   );
 
-  // The edit page has a route of its own, dhcpReservationEdit, though
-  // nothing navigates to it now (#1802 P6).
+  // The edit page has a route of its own, dhcpReservationEdit. Nothing
+  // navigates to it now, but a typed URL opens it, so it is reachable
+  // (#1802 P6).
   testLocalizations(
     'DHCP reservations - edit view',
     (tester, locale) async {
