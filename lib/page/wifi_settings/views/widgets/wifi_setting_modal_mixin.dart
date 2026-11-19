@@ -151,6 +151,8 @@ mixin WifiSettingModalMixin<T extends StatefulWidget> on State<T> {
     WifiWirelessMode selected = mode;
     final result = await showSimpleAppDialog<WifiWirelessMode?>(context,
         title: loc(context).wifiMode,
+        // Taller than a short window (#1802).
+        scrollable: true,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,

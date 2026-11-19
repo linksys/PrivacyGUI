@@ -74,6 +74,9 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
               ? loc(context).pnpWaitingModemCheckingInternet
               : loc(context).pnpWaitingModemWaitStartUp
           : loc(context).pnpWaitingModemPlugBack,
+      // The picture and its 104px margins need more height than a short
+      // window has (#1802).
+      scrollable: true,
       child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

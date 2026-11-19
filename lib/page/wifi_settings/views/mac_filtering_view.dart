@@ -80,8 +80,10 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
             .setMacFilteringViewChanged(next != preservedState);
       }
     });
+    // Each layout scrolls its own content. The page's `scrollable: true` sized
+    // the page by its intrinsic height, which the 9-column SizedBox under-reports,
+    // so the desktop content overflowed a short window (#1802).
     return StyledAppPageView(
-      scrollable: true,
       hideTopbar: true,
       appBarStyle: AppBarStyle.none,
       useMainPadding: true,
@@ -102,33 +104,35 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
   Widget _desktopLayout(
       InstantPrivacyState state, List<DeviceListItem> deviceList) {
     return AppBasicLayout(
-      content: SizedBox(
-        width: 9.col,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (preservedState?.settings.mode == MacFilterMode.allow) ...[
-              _warningCard(),
-              const AppGap.small2(),
-            ],
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _enableTile(state),
-                      const AppGap.small2(),
-                      _infoCard(state.settings.mode == MacFilterMode.deny,
-                          deviceList.length),
-                    ],
-                  ),
-                ),
+      content: SingleChildScrollView(
+        child: SizedBox(
+          width: 9.col,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (preservedState?.settings.mode == MacFilterMode.allow) ...[
+                _warningCard(),
+                const AppGap.small2(),
               ],
-            ),
-          ],
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _enableTile(state),
+                        const AppGap.small2(),
+                        _infoCard(state.settings.mode == MacFilterMode.deny,
+                            deviceList.length),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -137,20 +141,22 @@ class _MacFilteringViewState extends ConsumerState<MacFilteringView>
   Widget _mobileLayout(
       InstantPrivacyState state, List<DeviceListItem> deviceList) {
     return AppBasicLayout(
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (preservedState?.settings.mode == MacFilterMode.allow) ...[
-            _warningCard(),
+      content: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (preservedState?.settings.mode == MacFilterMode.allow) ...[
+              _warningCard(),
+              const AppGap.small2(),
+            ],
+            _enableTile(state),
             const AppGap.small2(),
+            _infoCard(
+                state.settings.mode == MacFilterMode.deny, deviceList.length),
+            const AppGap.large2(),
           ],
-          _enableTile(state),
-          const AppGap.small2(),
-          _infoCard(
-              state.settings.mode == MacFilterMode.deny, deviceList.length),
-          const AppGap.large2(),
-        ],
+        ),
       ),
     );
   }

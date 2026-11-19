@@ -65,8 +65,15 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
     final topologyState = ref.watch(instantTopologyProvider);
     treeController.roots = topologyState.root.children;
     treeController.expandAll();
-    const topologyItemHeight = 96.0;
-    const treeViewBaseHeight = 68.0;
+    // One tree entry is its 16px top padding plus the node card, which is
+    // 96px: a 64px image and 16px padding above and below. The base leaves
+    // room for the master card, whose uptime line can make it up to about 8px
+    // taller. The tree cannot be sized by its content: the page is scrollable,
+    // so it is sized by intrinsic height, which a scroll view cannot report.
+    // With 96 per entry and a base of 68, every entry beyond the fifth was
+    // cut off on mobile (#1802); for three nodes both give 356.
+    const topologyItemHeight = 112.0;
+    const treeViewBaseHeight = 20.0;
     final routerLength =
         topologyState.root.children.firstOrNull?.toFlatList().length ?? 1;
     final double nodeTopologyHeight = ResponsiveLayout.isMobileLayout(context)
