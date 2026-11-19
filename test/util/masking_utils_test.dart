@@ -246,8 +246,8 @@ void main() {
         () {
       FernetManager().updateKeyFromSerial('a-test-serial');
       const rawLog =
-          'Some log line... X-JNAP-Authorization: Basic YWRtaW46VmVsb3BAMTIzNA== ... some other log';
-      const originalPassword = 'YWRtaW46VmVsb3BAMTIzNA==';
+          'Some log line... X-JNAP-Authorization: Basic YWRtaW46VGVzdEFkbWluMSE= ... some other log';
+      const originalPassword = 'YWRtaW46VGVzdEFkbWluMSE=';
 
       final processedLog = MaskingUtils.encryptJNAPAuth(rawLog);
 
@@ -260,7 +260,7 @@ void main() {
         'should mask the JNAP authorization password when key is NOT available',
         () {
       const rawLog =
-          'Another log... X-JNAP-Authorization: Basic YWRtaW46VmVsb3BAMTIzNA== ... end of log';
+          'Another log... X-JNAP-Authorization: Basic YWRtaW46VGVzdEFkbWluMSE= ... end of log';
       const expectedLog =
           'Another log... X-JNAP-Authorization: Basic ************ ... end of log';
 
