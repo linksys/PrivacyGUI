@@ -211,6 +211,10 @@ class UspInternetSettingsNotifier
       // service provider itself) still cover the "USP unavailable" case.
       final service = ref.read(uspInternetSettingsServiceProvider);
       final result = await service.fetchSettings();
+      // The page can be gone by the time the router answers (a read-back
+      // after a failed save outlives it, issue #1711). Nothing reads this
+      // result then, and the providers below can no longer be read.
+      if (_disposed) return (null, null);
 
       logger.d('[USP][Network][WAN]: Fetched — '
           'raw addressingType: "${result.debugAddressingType}", '
@@ -410,19 +414,31 @@ class UspInternetSettingsNotifier
         // Auto-IPoE draft picked earlier in the edit included, so it goes as
         // after a successful save. A page that kept its edits keeps the draft
         // for the retry.
-        final movedOntoRouter = state.settings.original != loaded;
-        if (movedOntoRouter && ref.exists(autoIPoEPageProvider)) {
-          ref.read(autoIPoEPageProvider.notifier).revert();
-        }
+        if (state.settings.original != loaded) _dropIPoEDraft();
         state = state.copyWith(
           status: state.status.copyWith(
-            isSaving: false,
-            clearActiveMutation: true,
             isEditing: isDirty() && state.status.isEditing,
           ),
         );
       }
       rethrow;
+    } finally {
+      // Ends the saving set above whatever the read-back threw: an error
+      // outside ServiceError would otherwise leave Save, Cancel and Edit
+      // disabled. A save that landed has already cleared it.
+      if (!_disposed && state.status.isSaving) {
+        state = state.copyWith(
+          status:
+              state.status.copyWith(isSaving: false, clearActiveMutation: true),
+        );
+      }
+    }
+  }
+
+  /// Drops an Auto-IPoE draft the user did not apply, when its page is open.
+  void _dropIPoEDraft() {
+    if (ref.exists(autoIPoEPageProvider)) {
+      ref.read(autoIPoEPageProvider.notifier).revert();
     }
   }
 
@@ -436,9 +452,7 @@ class UspInternetSettingsNotifier
 
     await _performSaveReadingBack();
     // A successful ordinary Save also discards an unapplied IPoE draft.
-    if (ref.exists(autoIPoEPageProvider)) {
-      ref.read(autoIPoEPageProvider.notifier).revert();
-    }
+    _dropIPoEDraft();
     markAsSaved();
 
     if (enteringBridge) {
@@ -482,9 +496,7 @@ class UspInternetSettingsNotifier
   void exitEditMode() {
     if (_savingIPoE || state.status.isSaving) return;
     _connectionTypeEdited = false;
-    if (ref.exists(autoIPoEPageProvider)) {
-      ref.read(autoIPoEPageProvider.notifier).revert();
-    }
+    _dropIPoEDraft();
     // Revert form to original + exit edit mode
     state = state.copyWith(
       settings: state.settings.copyWith(current: state.settings.original),

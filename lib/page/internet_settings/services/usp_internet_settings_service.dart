@@ -731,8 +731,9 @@ class UspInternetSettingsService {
     // when the user changed nothing here. It counts as applied only when it
     // changes what the page loaded: otherwise a later refusal would say part
     // of the save landed while none of the user's changes did (issue #1711).
-    // A router holding an out-of-range LCPEcho, which reads as the same 30,
-    // is the one write this leaves uncounted.
+    // Writes the page cannot see are left uncounted: an out-of-range LCPEcho,
+    // which reads as the same 30, an LCPEchoRetry other than 5, or adaptive
+    // echo left on. The form holds neither of the last two.
     final changesWhatLoaded = update.pppoeServiceName != null ||
         update.connectionTrigger != null ||
         update.idleDisconnectTime != null ||

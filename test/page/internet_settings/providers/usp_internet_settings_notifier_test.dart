@@ -663,6 +663,57 @@ void main() {
         container.dispose();
       });
 
+      // A read-back that throws outside ServiceError (a bug of ours, not the
+      // router's answer) must not leave the page stuck saving, with Save,
+      // Cancel and Edit all disabled.
+      test('is no longer saving when its read-back throws an unexpected error',
+          () async {
+        var reads = 0;
+        when(() => mockService.fetchSettings()).thenAnswer((_) async {
+          if (++reads == 1) return testFetchResult;
+          throw StateError('a bug in the read');
+        });
+        when(() => mockService.saveAll(any(), any()))
+            .thenThrow(refusedAfterTheWanRow);
+
+        final container = createContainer();
+        await Future.delayed(Duration.zero);
+        final notifier = container.read(uspInternetSettingsProvider.notifier);
+        editToPptp(notifier);
+
+        await expectLater(notifier.save(), throwsA(anything));
+
+        final status = container.read(uspInternetSettingsProvider).status;
+        expect(status.isSaving, isFalse);
+        expect(status.activeMutation, isNull);
+        container.dispose();
+      });
+
+      // The user can leave the page while the read-back runs.
+      test('that outlives the page still ends with its own error', () async {
+        final readBack = Completer<InternetSettingsFetchResult>();
+        var reads = 0;
+        when(() => mockService.fetchSettings()).thenAnswer((_) =>
+            ++reads == 1 ? Future.value(testFetchResult) : readBack.future);
+        when(() => mockService.saveAll(any(), any()))
+            .thenThrow(refusedAfterTheWanRow);
+
+        final container = createContainer();
+        await Future.delayed(Duration.zero);
+        final notifier = container.read(uspInternetSettingsProvider.notifier);
+        editToPptp(notifier);
+
+        final saving = notifier.save();
+        for (var i = 0; i < 20 && reads < 2; i++) {
+          await Future.delayed(Duration.zero);
+        }
+        expect(reads, 2, reason: 'the read-back has started');
+        container.dispose();
+        readBack.complete(pptpOnRouter);
+
+        await expectLater(saving, throwsA(same(refusedAfterTheWanRow)));
+      });
+
       test('whose read-back fails keeps the edits, still editing', () async {
         var reads = 0;
         when(() => mockService.fetchSettings()).thenAnswer((_) async {
