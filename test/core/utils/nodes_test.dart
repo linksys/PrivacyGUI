@@ -81,6 +81,25 @@ void main() {
     test('M60-EUCF (Pinnacle EU variant)', () {
       expect(isNodeModel(modelNumber: 'M60-EUCF', hardwareVersion: '1'), true);
     });
+
+    test('M63TS-EU (Pinnacle 2.3)', () {
+      expect(isNodeModel(modelNumber: 'M63TS-EU', hardwareVersion: '1'), true);
+    });
+  });
+
+  group('isCognitiveMeshRouter', () {
+    test('is true for the Pinnacle M series, M63 included', () {
+      for (final model in ['M60', 'M61', 'M62', 'M63', 'M63TS-EU']) {
+        expect(isCognitiveMeshRouter(modelNumber: model, hardwareVersion: '1'),
+            true,
+            reason: model);
+      }
+    });
+
+    test('is false for a mesh router', () {
+      expect(isCognitiveMeshRouter(modelNumber: 'MR9600', hardwareVersion: '1'),
+          false);
+    });
   });
 
   group("treatAsMode Tests", () {
@@ -146,6 +165,7 @@ void main() {
       expect(isNodeModel(modelNumber: 'M60', hardwareVersion: '1'), true);
       expect(isNodeModel(modelNumber: 'M61', hardwareVersion: '1'), true);
       expect(isNodeModel(modelNumber: 'M62', hardwareVersion: '1'), true);
+      expect(isNodeModel(modelNumber: 'M63', hardwareVersion: '1'), true);
     });
 
     test('should handle case-insensitive model numbers', () {

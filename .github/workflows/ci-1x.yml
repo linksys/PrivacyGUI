@@ -1,0 +1,82 @@
+name: CI (1.x)
+
+# PR checks for the 1.x line (#1802 P1). 2.x has its own ci.yml, whose checks
+# are required on `usp` and `dev-2.*`. This file and its jobs are named
+# differently, so that each line's list of required checks stays its own.
+#
+# Ruleset "required checks (1.x)" requires the two jobs below, by name, on the
+# branches it lists. Keep this trigger a superset of those branches. A required
+# check that no trigger produces stays "Expected" forever, and the PR can never
+# merge. For the same reason, the ruleset lists branches one by one and not
+# `dev-1.*`: the `dev-1.*` branches cut before `dev-1.3.6` do not carry this file.
+on:
+  pull_request:
+    branches: [main, "dev-1.*"]
+
+permissions:
+  contents: read
+
+# A new push to a PR cancels that PR's run in progress.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: 1.x / Analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ./.github/actions/setup-1x
+
+      # Errors only (constitution 7.1 and 7.2, #1802 Decision 1). The existing
+      # warnings are cleared in their own PR, after which this can fail on them.
+      - name: Analyze
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+
+  unit-tests:
+    name: 1.x / Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ./.github/actions/setup-1x
+
+      # The tests a developer runs before pushing (constitution 3.1), with
+      # coverage measured as #1803 describes (#1803 Q1). run_coverage.sh runs
+      # run_tests.sh with --coverage, so it still leaves out `golden` and
+      # `loc`, and exits 1 when a test fails. Run locally, it gives the same
+      # figure.
+      - name: Unit tests, with coverage
+        run: |
+          mkdir -p reports
+          bash run_coverage.sh reports
+
+      # #1803's table: all of lib/, then logic and UI. Written when the tests
+      # fail too, as long as the run got as far as lcov.info.
+      - name: Write the coverage to the job summary
+        if: ${{ !cancelled() && hashFiles('reports/coverage.md') != '' }}
+        run: cat reports/coverage.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the coverage
+        if: ${{ !cancelled() && hashFiles('coverage/lcov.info') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: 1.x-coverage
+          path: coverage/lcov.info
+
+      # The JSON reporter's output. run_tests.sh writes no HTML report: the
+      # parser's HTML step is commented out. A failing test also prints in the
+      # log of the step above. Uploaded when the tests fail too, since that is
+      # when it is read.
+      - name: Upload the test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: 1.x-unit-test-results
+          path: reports/tests.json
