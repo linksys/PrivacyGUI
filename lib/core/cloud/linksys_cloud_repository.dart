@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/core/cloud/cloud_host.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/guardians_remote_assistance_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/ping_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/remote_assistance_service.dart';
@@ -16,22 +17,14 @@ import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/jnap/providers/ip_getter/web_get_local_ip.dart';
 
 final cloudRepositoryProvider = Provider((ref) => LinksysCloudRepository(
-      httpClient: LinksysHttpClient(getHost: () {
-        if (BuildConfig.forceCommandType == ForceCommand.local) {
-          var localIP = getLocalIp(ref);
-          localIP = localIP.startsWith('http') ? localIP : 'https://$localIP';
-          return localIP;
-        }
-        final routerType =
-            ref.read(connectivityProvider).connectivityInfo.routerType;
-        if (routerType == RouterType.others) {
-          return null;
-        } else {
-          var localIP = getLocalIp(ref);
-          localIP = localIP.startsWith('http') ? localIP : 'https://$localIP';
-          return localIP;
-        }
-      }),
+      httpClient: LinksysHttpClient(
+        getHost: () => cloudHost(
+          force: BuildConfig.forceCommandType,
+          routerType: () =>
+              ref.read(connectivityProvider).connectivityInfo.routerType,
+          localIp: () => getLocalIp(ref),
+        ),
+      ),
     ));
 
 class LinksysCloudRepository {
