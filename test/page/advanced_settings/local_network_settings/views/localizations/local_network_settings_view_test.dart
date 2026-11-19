@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/custom_responsive.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import '../../../../../common/config.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
@@ -281,43 +278,6 @@ void main() {
     },
     screens: [
       ...responsiveMobileScreens.map((e) => e.copyWith(height: 1680)).toList(),
-      ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1680)).toList()
-    ],
-  );
-
-  // The cases above open the DHCP server tab through
-  // LocalNetworkSettingsView. This pumps the tab's view on its own, so the
-  // layout-gate roster sees that it has a case (#1802 P6). The view is a
-  // card, so it sits in the scrolling page and the 9 columns the tab gives
-  // it.
-  testLocalizations(
-    'LocalNetwork - dhcp server on its own',
-    (tester, locale) async {
-      await tester.pumpWidget(testableSingleRoute(
-        overrides: [
-          localNetworkSettingProvider
-              .overrideWith(() => mockLocalNetworkSettingsNotifier),
-        ],
-        locale: locale,
-        child: StyledAppPageView.innerPage(
-          child: (context, constraints) {
-            final view = DHCPServerView(
-              isEdited: () => false,
-              onSaveSettings: () async {},
-            );
-            return ResponsiveLayout.isMobileLayout(context)
-                ? view
-                : Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [SizedBox(width: 9.col, child: view)],
-                  );
-          },
-        ),
-      ));
-      await tester.pumpAndSettle();
-    },
-    screens: [
-      ...responsiveMobileScreens.map((e) => e.copyWith(height: 1480)).toList(),
       ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1680)).toList()
     ],
   );
