@@ -133,11 +133,12 @@ void _declareGate(
   Future<void> Function(WidgetTester tester)? onCompleted,
 }) {
   final sizes = gateScreensFor(name, screens ?? responsiveAllScreens);
-  final gateLocaleList = gateLocalesFor(locales, configured: hasLocaleConfig);
-  if (sizes.isEmpty || gateLocaleList.isEmpty) return;
+  final caseGateLocales =
+      gateLocalesFor(locales, localesDefined: hasLocaleConfig);
+  if (sizes.isEmpty || caseGateLocales.isEmpty) return;
 
   final variants = ValueVariant({
-    for (final locale in gateLocaleList)
+    for (final locale in caseGateLocales)
       for (final size in sizes)
         LocalizedScreen.fromScreenSize(locale: locale, screen: size),
   });

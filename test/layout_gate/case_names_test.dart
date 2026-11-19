@@ -1,8 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import '../constitution/source_scan.dart';
 import 'case_names.dart';
-import 'gate.dart';
 
 void main() {
   group('caseNamesIn', () {
@@ -44,20 +42,5 @@ void main() {
 
       expect(caseNamesIn(source), isEmpty);
     });
-  });
-
-  test('every case on the short-viewport list exists', () {
-    final names = {
-      for (final source in dartSources('test').values) ...caseNamesIn(source),
-    };
-    final dead = shortViewportSkips.difference(names);
-
-    expect(
-      dead,
-      isEmpty,
-      reason: 'These entries of shortViewportSkips in '
-          'test/layout_gate/gate.dart name no testLocalizations case. '
-          'Delete them:\n${bulletList(dead)}',
-    );
   });
 }

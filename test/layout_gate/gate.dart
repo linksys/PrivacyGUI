@@ -11,8 +11,9 @@ import 'incident.dart';
 import 'layout_cases.dart';
 
 /// The sizes the gate runs a case at (#1802, Decision 7): the narrowest
-/// mobile size the harness renders, the narrowest two desktop content boxes
-/// (905 and 1241, both 841px), and a short desktop window.
+/// mobile size the harness renders, the narrowest content box of each of the
+/// two desktop margins (857px at 905, 841px at 1241), and a short desktop
+/// window.
 const List<RequestedScreen> gateScreens = [
   (width: 480, height: null),
   (width: 905, height: null),
@@ -21,19 +22,25 @@ const List<RequestedScreen> gateScreens = [
 ];
 
 /// The widths the gate has to run at, derived from [ResponsiveLayout]'s
-/// breakpoints (#1802, Method 4): where the desktop content box is narrowest.
-/// That is [ResponsiveLayout.medium], the first desktop width, where the
-/// margin is still 24px, and the first width past [ResponsiveLayout.large],
-/// where the margin jumps to 200px. Both boxes are 841px today.
+/// breakpoints (#1802, Method 4): where a desktop content box is narrowest.
+/// That is [ResponsiveLayout.medium], the first desktop width, with a 24px
+/// margin (857px today), and the first width past [ResponsiveLayout.large],
+/// where the margin jumps to 200px (841px today). These are the desktop
+/// widths Decision 7 gates; the other breakpoints have no gate width.
 Set<double> requiredGateWidths() =>
     {ResponsiveLayout.medium, ResponsiveLayout.large + 1};
 
 /// The short desktop window the gate runs at.
 const RequestedScreen shortViewport = (width: 1280, height: 420);
 
-/// The locales the gate runs a case in when no locale is asked for
-/// (#1802, Decision 7). Together they find every incident the 26 locales do.
-const List<String> gateLocales = ['ja', 'ru', 'el', 'nl', 'de'];
+/// The locales the gate runs a case in when no locale is asked for: the
+/// pre-push hook's and a PR into `main`'s (#1802, Decision 7). English and the
+/// common western European locales, and ja, ru and el, which expose what no
+/// other locale does. In #1802's run 1 they find every incident the 26
+/// locales do. A PR into a `dev-1.*` branch runs `en` only (Decision 4).
+const List<String> gateLocales = [
+  'en', 'de', 'fr', 'es', 'it', 'nl', 'ja', 'ru', 'el', //
+];
 
 /// Cases the gate keeps off [shortViewport] (#1802, Decision 9): at 420px they
 /// tap a widget that is off screen, so they fail before any layout is checked.
@@ -89,11 +96,12 @@ List<ScreenSize> gateScreensFor(String caseName, List<ScreenSize> caseScreens) {
 }
 
 /// The locales the gate runs a case in, out of [caseLocales], those the case
-/// renders: all of them when the `locales` define picked them ([configured]),
-/// as each CI job does, or else the ones among [gateLocales].
+/// renders: all of them when the `locales` define picked them
+/// ([localesDefined]), as each CI job does, or else the ones among
+/// [gateLocales].
 List<Locale> gateLocalesFor(List<Locale> caseLocales,
-    {required bool configured}) {
-  if (configured) return caseLocales;
+    {required bool localesDefined}) {
+  if (localesDefined) return caseLocales;
   final byTag = {for (final l in caseLocales) l.toLanguageTag(): l};
   return [
     for (final tag in gateLocales)

@@ -1,8 +1,12 @@
 import 'dart:ui';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../common/config.dart';
+import '../constitution/source_scan.dart';
+import 'case_names.dart';
+import 'collector.dart';
 import 'gate.dart';
 import 'incident.dart';
 
@@ -32,41 +36,92 @@ void main() {
   });
 
   group('gateLocalesFor', () {
-    test('runs the five gate locales when no locale was asked for', () {
+    test('runs every gate locale when no locale was asked for', () {
+      // English, the common western European locales, and the three that
+      // expose what no other locale does (#1802, Decision 7).
       const all = [
-        Locale('en'), Locale('de'), Locale('el'), Locale('fr'), //
-        Locale('ja'), Locale('nl'), Locale('ru'),
+        Locale('ar'), Locale('de'), Locale('el'), Locale('en'), Locale('es'),
+        Locale('fr'), Locale('it'), Locale('ja'), Locale('nl'), Locale('pt'),
+        Locale('ru'), Locale('zh'),
       ];
 
       expect(
-        gateLocalesFor(all, configured: false).map((l) => l.toLanguageTag()),
-        ['ja', 'ru', 'el', 'nl', 'de'],
+        gateLocalesFor(all, localesDefined: false)
+            .map((l) => l.toLanguageTag()),
+        ['en', 'de', 'fr', 'es', 'it', 'nl', 'ja', 'ru', 'el'],
       );
     });
 
     test('runs only the gate locales a case renders', () {
       expect(
-        gateLocalesFor(const [Locale('en'), Locale('ja')], configured: false)
+        gateLocalesFor(const [Locale('ar'), Locale('ja')],
+                localesDefined: false)
             .map((l) => l.toLanguageTag()),
         ['ja'],
       );
     });
 
     test('runs the locales the locales define asks for', () {
-      // CI runs one job per locale (#1802, Decision 4).
+      // A PR's CI job runs en only (#1802, Decision 4).
       expect(
-        gateLocalesFor(const [Locale('ru')], configured: true)
+        gateLocalesFor(const [Locale('en')], localesDefined: true)
             .map((l) => l.toLanguageTag()),
-        ['ru'],
+        ['en'],
       );
     });
   });
 
+  test('every case on the short-viewport list exists', () {
+    final names = {
+      for (final source in dartSources('test').values) ...caseNamesIn(source),
+    };
+    final dead = shortViewportSkips.difference(names);
+
+    expect(
+      dead,
+      isEmpty,
+      reason: 'These entries of shortViewportSkips in '
+          'test/layout_gate/gate.dart name no testLocalizations case. '
+          'Delete them:\n${bulletList(dead)}',
+    );
+  });
+
+  group('a pumped overflow', () {
+    Future<List<OverflowIncident>> overflowBy(
+        WidgetTester tester, double pixels) {
+      return runWithOverflowCollection((sink) async {
+        await tester.pumpWidget(Directionality(
+          textDirection: TextDirection.ltr,
+          child: Center(
+            // Narrower than the 800px test surface, so the Row gets this width.
+            child: SizedBox(
+              width: 400,
+              child: Row(children: [SizedBox(width: 400 + pixels, height: 1)]),
+            ),
+          ),
+        ));
+        return sink;
+      });
+    }
+
+    testWidgets('fails the gate when it is over the tolerance', (tester) async {
+      final failures = gateFailures(await overflowBy(tester, 19));
+
+      expect(failures, hasLength(1));
+      expect(failures.single.pixels, 19);
+      expect(failures.single.site, startsWith('test/layout_gate/gate_test.dart:'));
+    });
+
+    testWidgets('passes the gate when it is within the tolerance',
+        (tester) async {
+      expect(gateFailures(await overflowBy(tester, 1)), isEmpty);
+    });
+  });
+
   group('the width oracle', () {
-    test('derives 905 and 1241, where the desktop content box is narrowest',
-        () {
-      // #1802's content-box table: 841px at 905, the first desktop width, and
-      // at 1241, the first width with the 200px margin.
+    test('derives 905 and 1241, where a desktop content box is narrowest', () {
+      // 905 is the first desktop width (a 24px margin, 857px since #1855), and
+      // 1241 the first with the 200px margin (841px).
       expect(requiredGateWidths(), {905, 1241});
     });
 
