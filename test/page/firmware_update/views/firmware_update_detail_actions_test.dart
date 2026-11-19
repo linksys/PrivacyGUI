@@ -59,6 +59,9 @@ void main() {
     expect(find.text('Update all'), findsNothing);
   });
 
+  // An error no one catches fails a testWidgets test by itself, so the
+  // binding is the assertion here: without the page's catch, this fails with
+  // "The following JNAPError object was thrown running a test".
   testWidgets('a refused Update All leaves no uncaught error', (tester) async {
     final firmware =
         await pumpDetail(tester, availableUpdates: 1, refuseInstall: true);
