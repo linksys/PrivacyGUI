@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/di.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/components/styled/consts.dart';
+import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/widgets/wifi_qr/wifi_qr_warning_card.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
@@ -12,6 +17,10 @@ import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_view_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/views/mac_filtering_view.dart';
+import 'package:privacy_gui/page/wifi_settings/views/wifi_list_advanced_mode_view.dart';
+import 'package:privacy_gui/page/wifi_settings/views/wifi_list_simple_mode_view.dart';
+import 'package:privacy_gui/page/wifi_settings/views/wifi_list_view.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
@@ -1123,4 +1132,79 @@ void main() {
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
   }, screens: [...responsiveMobileScreens, ...responsiveDesktopScreens]);
+
+  // The cases above open these views through WiFiMainView's tabs and
+  // WiFiListView's mode switch, and the dashboard's Wi-Fi card opens the
+  // share dialog. These pump each view on its own, so the layout-gate roster
+  // sees that it has a case (#1802 P6).
+  group('Incredible-WiFi - each view on its own', () {
+    List<Override> overrides() => [
+          wifiViewProvider.overrideWith(() => mockWiFiViewNotifier),
+          wifiListProvider.overrideWith(() => mockWiFiListNotifier),
+          wifiAdvancedProvider
+              .overrideWith(() => mockWiFiAdvancedSettingsNotifier),
+          instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),
+        ];
+
+    // The two modes are parts of WiFiListView's scrolling page, so they sit
+    // in the same page here.
+    Widget inWiFiListPage(Widget mode) => StyledAppPageView(
+          appBarStyle: AppBarStyle.none,
+          hideTopbar: true,
+          scrollable: true,
+          padding: EdgeInsets.zero,
+          useMainPadding: true,
+          child: (context, constraints) => mode,
+        );
+
+    for (final (name, view) in [
+      ('Wifi list view', const WiFiListView()),
+      ('Advanced settings view', const WifiAdvancedSettingsView()),
+      ('MAC Filtering view', const MacFilteringView()),
+      (
+        'Wifi list view - advanced mode',
+        inWiFiListPage(const AdvancedModeView())
+      ),
+      ('Wifi list view - simple mode', inWiFiListPage(const SimpleModeView())),
+    ]) {
+      testLocalizations('Incredible-WiFi - $name on its own',
+          (tester, locale) async {
+        await tester.pumpWidget(testableSingleRoute(
+          overrides: overrides(),
+          locale: locale,
+          child: view,
+        ));
+        await tester.pumpAndSettle();
+      }, screens: [
+        ...responsiveMobileScreens
+            .map((e) => e.copyWith(height: 1280))
+            .toList(),
+        ...responsiveDesktopScreens
+      ]);
+    }
+
+    testLocalizations('Incredible-WiFi - share detail view',
+        (tester, locale) async {
+      final wifi = WiFiState.fromMap(wifiListTestState).mainWiFi.first;
+      await tester.pumpWidget(testableSingleRoute(
+        overrides: overrides(),
+        locale: locale,
+        child: Builder(
+          builder: (context) => AppFilledButton(
+            'share',
+            onTap: () => showSimpleAppDialog(
+              context,
+              title: loc(context).shareWiFi,
+              content: SingleChildScrollView(
+                child: WiFiShareDetailView(
+                    ssid: wifi.ssid, password: wifi.password),
+              ),
+            ),
+          ),
+        ),
+      ));
+      await tester.tap(find.byType(AppFilledButton));
+      await tester.pumpAndSettle();
+    });
+  });
 }
