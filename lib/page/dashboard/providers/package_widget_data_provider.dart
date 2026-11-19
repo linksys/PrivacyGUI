@@ -1,24 +1,30 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Per-widget USP data store.
+/// Per-widget data cache.
 ///
-/// Keyed by widget ID. Stores a flat `Map<String, dynamic>` where keys
-/// are full USP paths and values are the latest known values.
+/// Keyed by widget ID. Stores a flat `Map<String, dynamic>` whose keys are
+/// full USP paths (USP data source) or mapping keys (HTTP data source), and
+/// whose values are the latest known values.
 ///
-/// Updated by:
-/// - Initial USP GET (populates the full snapshot)
-/// - SSE ValueChange notifications (patch individual paths)
+/// Written by `packageWidgetLiveProvider` (the initial fetch, SSE value
+/// changes, the HTTP poll and the `refresh_data` action) and cleared by the
+/// loader when the widget's package is removed.
 ///
-/// NOT autoDispose — data persists while the widget is on the dashboard.
-final packageWidgetDataProvider = StateNotifierProvider.family<
+/// NOT autoDispose, and `build` does no I/O: the data outlives the card, so a
+/// card that comes back to the dashboard shows its last data at once while the
+/// live notifier refetches, and the loader can clear a removed widget without
+/// starting anything for it.
+final packageWidgetDataProvider = NotifierProvider.family<
     PackageWidgetDataNotifier, Map<String, dynamic>, String>(
-  (ref, widgetId) => PackageWidgetDataNotifier(),
+  PackageWidgetDataNotifier.new,
 );
 
-class PackageWidgetDataNotifier extends StateNotifier<Map<String, dynamic>> {
-  PackageWidgetDataNotifier() : super(const {});
+class PackageWidgetDataNotifier
+    extends FamilyNotifier<Map<String, dynamic>, String> {
+  @override
+  Map<String, dynamic> build(String widgetId) => const {};
 
-  /// Set the full data snapshot (from initial USP GET).
+  /// Set the full data snapshot (from an initial fetch or a refresh).
   void setAll(Map<String, dynamic> data) {
     state = Map.from(data);
   }
