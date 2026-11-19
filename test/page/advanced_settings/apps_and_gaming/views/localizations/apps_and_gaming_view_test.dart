@@ -1815,7 +1815,7 @@ void main() {
       ('DDNS', DDNSSettingsView()),
       ('Single port forwarding', SinglePortForwardingListView()),
       ('Port range forwarding', PortRangeForwardingListView()),
-      ('Port range triggerring', PortRangeTriggeringListView()),
+      ('Port range triggering', PortRangeTriggeringListView()),
     ]) {
       testLocalizations('$name - the tab on its own', (tester, locale) async {
         await tester.pumpWidget(testableSingleRoute(
