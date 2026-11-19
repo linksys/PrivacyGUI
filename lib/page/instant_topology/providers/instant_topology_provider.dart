@@ -267,12 +267,20 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
   Future<void> toggleBlinkNode(String deviceId, [bool stopOnly = false]) async {
     final prefs = await SharedPreferences.getInstance();
     final blinkDevice = prefs.get(pBlinkingNodeId);
+    // The topology view does not await this, so a refusal is logged here
+    // rather than left as an uncaught error.
     if (blinkDevice != null && deviceId != blinkDevice) {
-      stopBlinkNodeLED();
+      // A light that will not stop must not keep the new one from starting.
+      await stopBlinkNodeLED().catchError((Object error) {
+        logger.e('[Topology]: could not stop blinking $blinkDevice: $error');
+      });
     }
-    startBlinkNodeLED(deviceId).then((_) {
-      prefs.setString(pBlinkingNodeId, deviceId);
-    });
+    try {
+      await startBlinkNodeLED(deviceId);
+      await prefs.setString(pBlinkingNodeId, deviceId);
+    } catch (error) {
+      logger.e('[Topology]: could not blink $deviceId: $error');
+    }
   }
 
   Future<dynamic> factoryReset(List<String> deviceUUIDs) {

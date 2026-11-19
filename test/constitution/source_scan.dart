@@ -5,6 +5,11 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:test/test.dart';
 
+/// The file that defines `testLocalizations` (constitution 3.5). The body of
+/// its definition is the one place a golden check is made, and the file is not
+/// itself a screenshot suite.
+const testLocalizationsHelper = 'test/common/test_responsive_widget.dart';
+
 /// Every Dart file under [directory], keyed by its repo-relative path.
 Map<String, String> dartSources(String directory) => {
       for (final file in Directory(directory)

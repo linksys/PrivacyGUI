@@ -74,7 +74,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: _buildMenuGridView(createMenuItems())),
+          _buildMenuGridView(createMenuItems()),
           const AppGap.large2(),
           // const Spacer(),
           // AppTextButton.noPadding('About Linksys', onTap: () {}),
@@ -84,33 +84,28 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   }
 
   Widget _buildMenuGridView(List<AppSectionItemData> items) {
+    // The grid takes its real height, and the page scrolls. The old fixed
+    // height did not count the spacing between rows.
     return Scrollbar(
       thickness: 0,
-      child: SizedBox(
-        height: (items.length /
-                    (ResponsiveLayout.isOverMedimumLayout(context) ? 3 : 1)) *
-                (ResponsiveLayout.isOverMedimumLayout(context) ? 152 : 112) +
-            kDefaultToolbarHeight,
-        child: GridView.builder(
-          controller: Scrollable.maybeOf(context)?.widget.controller,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount:
-                ResponsiveLayout.isOverMedimumLayout(context) ? 3 : 1,
-            mainAxisSpacing: ResponsiveLayout.isOverMedimumLayout(context)
-                ? Spacing.medium
-                : Spacing.small2,
-            crossAxisSpacing: ResponsiveLayout.columnPadding(context),
-            childAspectRatio: (205 / 152),
-            mainAxisExtent:
-                ResponsiveLayout.isOverMedimumLayout(context) ? 152 : 112,
-          ),
-          physics: const NeverScrollableScrollPhysics(),
-          shrinkWrap: true,
-          itemCount: items.length,
-          itemBuilder: (context, index) {
-            return _buildDeviceGridCell(items[index]);
-          },
+      child: GridView.builder(
+        controller: Scrollable.maybeOf(context)?.widget.controller,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: ResponsiveLayout.isOverMedimumLayout(context) ? 3 : 1,
+          mainAxisSpacing: ResponsiveLayout.isOverMedimumLayout(context)
+              ? Spacing.medium
+              : Spacing.small2,
+          crossAxisSpacing: ResponsiveLayout.columnPadding(context),
+          childAspectRatio: (205 / 152),
+          mainAxisExtent:
+              ResponsiveLayout.isOverMedimumLayout(context) ? 152 : 112,
         ),
+        physics: const NeverScrollableScrollPhysics(),
+        shrinkWrap: true,
+        itemCount: items.length,
+        itemBuilder: (context, index) {
+          return _buildDeviceGridCell(items[index]);
+        },
       ),
     );
   }

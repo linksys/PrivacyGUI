@@ -14,6 +14,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacygui_widgets/widgets/page/layout/fill_column.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 import '../providers/_providers.dart';
@@ -93,50 +94,58 @@ class _OtpCodeInputViewState extends ConsumerState<OtpCodeInputView> {
               : loc(context)
                   .otpEnterCodeEmailTitle(state.selectedMethod?.target ?? ''),
         ),
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        // The empty slot keeps Next at the bottom of a short page, as a Spacer
+        // did. A Spacer needs a bounded height, which a scrolling page does not
+        // have.
+        content: FillColumn(
+          fillIndex: 1,
           children: [
-            const AppGap.large3(),
-            AppPinCodeInput(
-              key: const Key('otp_input_view_input_field_code'),
-              semanticLabel: 'pin code input field',
-              onChanged: (String value) {
-                setState(() {
-                  _errorCode = '';
-                });
-              },
-              // onCompleted: (String? value) => _onNext(value, state.token),
-              length: 6,
-              controller: _otpController,
-            ),
-            if (!isAdd)
-              AppCheckbox(
-                value: _rememberMe,
-                text: 'Don\'t challenge on the next 30 days.',
-                onChanged: (_) {
-                  setState(() {
-                    _rememberMe = !_rememberMe;
-                  });
-                },
-              ),
-            const AppGap.medium(),
-            AppTextButton.noPadding(loc(context).resendCode, onTap: () {
-              _setLoading(true);
-              _onSend(state.selectedMethod!, state.token)
-                  .then((_) => _showCodeResentHint())
-                  .onError((error, stackTrace) {
-                logger.e('Error OTP input: $error', stackTrace: stackTrace);
-              });
-              _setLoading(false);
-            }),
-            if (_errorCode.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: AppText.headlineMedium(
-                  errorCodeHelper(context, _errorCode) ?? '',
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const AppGap.large3(),
+                AppPinCodeInput(
+                  key: const Key('otp_input_view_input_field_code'),
+                  semanticLabel: 'pin code input field',
+                  onChanged: (String value) {
+                    setState(() {
+                      _errorCode = '';
+                    });
+                  },
+                  // onCompleted: (String? value) => _onNext(value, state.token),
+                  length: 6,
+                  controller: _otpController,
                 ),
-              ),
-            const Spacer(),
+                if (!isAdd)
+                  AppCheckbox(
+                    value: _rememberMe,
+                    text: 'Don\'t challenge on the next 30 days.',
+                    onChanged: (_) {
+                      setState(() {
+                        _rememberMe = !_rememberMe;
+                      });
+                    },
+                  ),
+                const AppGap.medium(),
+                AppTextButton.noPadding(loc(context).resendCode, onTap: () {
+                  _setLoading(true);
+                  _onSend(state.selectedMethod!, state.token)
+                      .then((_) => _showCodeResentHint())
+                      .onError((error, stackTrace) {
+                    logger.e('Error OTP input: $error', stackTrace: stackTrace);
+                  });
+                  _setLoading(false);
+                }),
+                if (_errorCode.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: AppText.headlineMedium(
+                      errorCodeHelper(context, _errorCode) ?? '',
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox.shrink(),
             AppFilledButton.fillWidth(
               'Next',
               onTap: _otpController.text.length >= 6

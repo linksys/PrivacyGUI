@@ -151,7 +151,7 @@ class SetGuestRadioSettings extends Equatable {
     return SetGuestRadioSettings(
       isGuestNetworkEnabled: map['isGuestNetworkEnabled'] as bool,
       radios: List<GuestRadioInfo>.from(
-        (map['radios'] as List<int>).map<GuestRadioInfo>(
+        (map['radios'] as List).map<GuestRadioInfo>(
           (x) => GuestRadioInfo.fromMap(x as Map<String, dynamic>),
         ),
       ),
