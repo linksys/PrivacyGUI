@@ -7,7 +7,7 @@ This is the 1.x line of PrivacyGUI. Its rules, and how each one is enforced, are
 `lib/l10n/gen/` and `test/**/*.mocks.dart` are generated and gitignored, so a fresh checkout does not compile until you run:
 
 1. `git submodule update --init plugins/widgets`
-2. `flutter pub get`
+2. `flutter pub get`. It installs the committed `pubspec.lock`. Upgrade a package in a PR of its own, reviewed as the lock's diff: CI installs the lock with `--enforce-lockfile`.
 3. `flutter gen-l10n`
 4. `dart run build_runner build --delete-conflicting-outputs`
 

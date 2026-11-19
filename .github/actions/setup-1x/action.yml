@@ -27,9 +27,13 @@ runs:
         flutter-version: ${{ steps.fvmrc.outputs.flutter }}
         cache: true
 
+    # pubspec.lock is committed, so this installs exactly the packages a
+    # developer tested. --enforce-lockfile fails when the lock does not match
+    # pubspec.yaml, instead of resolving afresh: a package released upstream
+    # cannot turn the required checks red with no change in the PR.
     - name: Install dependencies
       shell: bash
-      run: flutter pub get
+      run: flutter pub get --enforce-lockfile
 
     # lib/l10n/gen/ is gitignored.
     - name: Generate l10n
