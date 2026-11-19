@@ -31,11 +31,19 @@ showFailedSnackBar(BuildContext context, String message) {
 /// A [SavedButUnconfirmedError] is a write that landed and could not be read
 /// back (#1212): it is shown neutrally, because the failure style would have
 /// the user press Save again and rewrite what the router already holds. Any
-/// other error is a save that wrote nothing and keeps [showFailedSnackBar] —
-/// [SaveDiscardedForRouterRowsError] included: the page was reloaded instead
-/// of writing, and the user has to make the change again.
-showSaveErrorSnackBar(BuildContext context, Object error) {
-  final message = localizeServiceError(context, error);
+/// other error is a save that failed and keeps [showFailedSnackBar]: one that
+/// wrote nothing, [SaveDiscardedForRouterRowsError] included (the page was
+/// reloaded instead of writing, and the user has to make the change again),
+/// and a [SavePartlyAppliedError] (issue #1711), whose message says which part
+/// of it landed.
+///
+/// [localize] words the message; a page whose save errors read through its own
+/// localizer passes it (Internet Settings names the field the firmware
+/// refused). The style is chosen here either way.
+showSaveErrorSnackBar(BuildContext context, Object error,
+    {String Function(BuildContext context, Object error) localize =
+        localizeServiceError}) {
+  final message = localize(context, error);
   if (error is SavedButUnconfirmedError) {
     showSimpleSnackBar(context, message);
   } else {

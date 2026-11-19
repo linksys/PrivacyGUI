@@ -694,6 +694,7 @@
   "errorCommandRefused": "Reititin hylkäsi tämän komennon. Yritä hetken kuluttua uudelleen.",
   "errorSavedButUnconfirmed": "Asetukset tallennettiin, mutta niitä ei voitu lukea takaisin reitittimestä. Yritä päivittää sivu nähdäksesi ne.",
   "errorSaveDiscardedForRouterRows": "Mitään ei tallennettu. Sivu ladattiin uudelleen reitittimestä; tee muutos uudelleen.",
+  "errorSavePartlyApplied": "Osa muutoksistasi on jo otettu käyttöön. Tarkista asetukset ennen kuin tallennat uudelleen.",
   "errors": "Virheet",
   "estimatedTimeRemaining": "Arvioitu jäljellä oleva aika: {time}",
   "ethernetPorts": "Ethernet-portit",

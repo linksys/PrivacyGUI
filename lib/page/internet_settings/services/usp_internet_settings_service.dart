@@ -330,6 +330,10 @@ class UspInternetSettingsService {
       throw const InvalidInputError(
           detail: 'IPoE requires the Auto-IPoE workflow');
     }
+    // What has landed so far: the router applies each step on its own, so a
+    // fault after one has landed leaves the save applied in part (issue
+    // #1711).
+    final progress = _SaveProgress();
     try {
       final typeChanged = original.connectionType != edited.connectionType;
       final enteringBridge =
@@ -345,6 +349,7 @@ class UspInternetSettingsService {
       // Step 1: PPP lifecycle
       final pppPath = await _handlePppLifecycle(
         edited,
+        progress,
         currentInstancePath: pppInstancePath,
       );
 
@@ -352,19 +357,19 @@ class UspInternetSettingsService {
       // AddressingType=IPCP first lets the firmware sync proto=pptp/l2tp so
       // the tunnel instance becomes valid before its RemoteEndpoints is
       // written.
-      await _saveWanSettings(original, edited);
+      await _saveWanSettings(original, edited, progress);
 
       // Step 3: PPP LowerLayers + credentials
       if (pppPath != null && edited.connectionType.isPppBased) {
-        await _savePppLink(original, edited, pppPath, tunnel: tunnel);
+        await _savePppLink(original, edited, pppPath, progress, tunnel: tunnel);
       }
 
       // Step 4: tunnel RemoteEndpoints (server address) and static underlay
-      if (tunnel != null) await _saveTunnel(original, edited, tunnel);
+      if (tunnel != null) await _saveTunnel(original, edited, tunnel, progress);
 
       // Step 5: PPP instance fields
       if (pppPath != null && edited.connectionType.isPppBased) {
-        await _savePppSettings(original, edited, pppPath);
+        await _savePppSettings(original, edited, pppPath, progress);
       }
 
       // Step 6: VLAN settings, a SET on the existing row. Only on a type that
@@ -372,27 +377,30 @@ class UspInternetSettingsService {
       // rather than writing VLAN edits the Bridge form does not show
       // (issue #1754).
       if (vlanInstancePath != null && edited.connectionType.supportsVlan) {
-        await _saveVlanSettings(original, edited, vlanInstancePath);
+        await _saveVlanSettings(original, edited, vlanInstancePath, progress);
       }
 
       // Step 7: IPv6 fields
-      await _saveIpv6Settings(original, edited);
+      await _saveIpv6Settings(original, edited, progress);
 
       // Step 8: terminal bridge-boundary SET — last, once every other SET has
       // landed. The two are mutually exclusive: one tests the edited type, the
       // other the original.
       if (enteringBridge) {
-        await _enterBridgeMode();
+        await _enterBridgeMode(progress);
       } else if (leavingBridge) {
-        await _exitBridgeMode();
+        await _exitBridgeMode(progress);
       }
     } on UspCompleteFailureError catch (e) {
-      throw _refusalOf(e.failures) ?? e;
+      throw progress.asSaveError(_refusalOf(e.failures) ?? e);
     } on UspPartialFailureError catch (e) {
-      throw _refusalOf(e.failures) ?? e;
+      // The failing Set itself landed in part (an ordered Set whose later
+      // group was refused, say), so the save is applied in part whatever came
+      // before it.
+      throw SavePartlyAppliedError(_refusalOf(e.failures) ?? e);
     } catch (e) {
-      if (e is ServiceError) rethrow;
-      throw mapUspErrorToServiceError(e);
+      throw progress
+          .asSaveError(e is ServiceError ? e : mapUspErrorToServiceError(e));
     }
   }
 
@@ -429,7 +437,8 @@ class UspInternetSettingsService {
   /// Only creates a new instance when switching TO a PPP-based type and none
   /// exists. Never deletes — the instance persists across mode switches.
   Future<String?> _handlePppLifecycle(
-    UspInternetSettingsForm edited, {
+    UspInternetSettingsForm edited,
+    _SaveProgress progress, {
     String? currentInstancePath,
   }) async {
     final isPppBased = edited.connectionType.isPppBased;
@@ -442,6 +451,7 @@ class UspInternetSettingsService {
       if (parsedResult is UspSuccess<List<String>>) {
         final createdInstances = parsedResult.allCreatedInstances;
         if (createdInstances.isNotEmpty) {
+          progress.applied = true;
           return createdInstances.first.affectedPath;
         }
       }
@@ -463,6 +473,7 @@ class UspInternetSettingsService {
   Future<void> _saveWanSettings(
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited,
+    _SaveProgress progress,
   ) async {
     final typeChanged = original.connectionType != edited.connectionType;
 
@@ -471,28 +482,34 @@ class UspInternetSettingsService {
         case UspWanConnectionType.ipoe:
           throw const InvalidInputError();
         case UspWanConnectionType.dhcp:
-          await _updateWanIpv4((path) => WanSettingsIpv4AddressUpdate(
-              instancePath: path, addressingType: 'DHCP'));
+          await _updateWanIpv4(
+              progress,
+              (path) => WanSettingsIpv4AddressUpdate(
+                  instancePath: path, addressingType: 'DHCP'));
 
         case UspWanConnectionType.staticIp:
           final dns = _mergeDns(
               edited.dnsServer1, edited.dnsServer2, edited.dnsServer3);
-          await _updateWanIpv4((path) => WanSettingsIpv4AddressUpdate(
-                instancePath: path,
-                addressingType: 'Static',
-                ipAddress: edited.staticIpAddress,
-                subnetMask: edited.subnetMask,
-                defaultGateway: edited.defaultGateway,
-                dnsServers: dns,
-              ));
+          await _updateWanIpv4(
+              progress,
+              (path) => WanSettingsIpv4AddressUpdate(
+                    instancePath: path,
+                    addressingType: 'Static',
+                    ipAddress: edited.staticIpAddress,
+                    subnetMask: edited.subnetMask,
+                    defaultGateway: edited.defaultGateway,
+                    dnsServers: dns,
+                  ));
 
         case UspWanConnectionType.pppoe:
         case UspWanConnectionType.pptp:
         case UspWanConnectionType.l2tp:
           // AddressingType alone; LowerLayers and the credentials follow as one
           // PPP batch in _savePppLink (#762 comment 5987286082, SET 1 / SET 2).
-          await _updateWanIpv4((path) => WanSettingsIpv4AddressUpdate(
-              instancePath: path, addressingType: 'IPCP'));
+          await _updateWanIpv4(
+              progress,
+              (path) => WanSettingsIpv4AddressUpdate(
+                  instancePath: path, addressingType: 'IPCP'));
 
         case UspWanConnectionType.bridge:
           // Nothing to write for the target mode: entering bridge is the single
@@ -518,13 +535,15 @@ class UspInternetSettingsService {
               subnetMask != null ||
               defaultGateway != null ||
               dnsServers != null) {
-            await _updateWanIpv4((path) => WanSettingsIpv4AddressUpdate(
-                  instancePath: path,
-                  ipAddress: ipAddress,
-                  subnetMask: subnetMask,
-                  defaultGateway: defaultGateway,
-                  dnsServers: dnsServers,
-                ));
+            await _updateWanIpv4(
+                progress,
+                (path) => WanSettingsIpv4AddressUpdate(
+                      instancePath: path,
+                      ipAddress: ipAddress,
+                      subnetMask: subnetMask,
+                      defaultGateway: defaultGateway,
+                      dnsServers: dnsServers,
+                    ));
           }
 
         case UspWanConnectionType.dhcp:
@@ -560,7 +579,7 @@ class UspInternetSettingsService {
             original.mtuAuto ? edited.mtu : _diff(original.mtu, edited.mtu);
       }
       if (mtuArg != null || mtuModeArg != null) {
-        _handleSetResult(
+        _handleSetResult(progress,
             await WanSettings.update(_usp, mtu: mtuArg, mtuMode: mtuModeArg));
       }
     }
@@ -574,6 +593,7 @@ class UspInternetSettingsService {
   /// nothing to write, which is reported as such instead of faulting 9005 on a
   /// fixed `IPv4Address.1` path.
   Future<void> _updateWanIpv4(
+    _SaveProgress progress,
     WanSettingsIpv4AddressUpdate Function(String instancePath) build,
   ) async {
     final wan = await WanSettings.fetch(_usp);
@@ -581,8 +601,10 @@ class UspInternetSettingsService {
     if (row == null) {
       throw _refuse('${wan.instancePath}IPv4Address has no row');
     }
-    _handleSetResult(await WanSettings.updateOrderedIpv4Addresses(
-        _usp, [build(row.instancePath)]));
+    _handleSetResult(
+        progress,
+        await WanSettings.updateOrderedIpv4Addresses(
+            _usp, [build(row.instancePath)]));
   }
 
   // ---------------------------------------------------------------------------
@@ -597,13 +619,15 @@ class UspInternetSettingsService {
   /// used to send — does none of that: on this firmware that set handler only
   /// writes a uci option and never invokes the script, so the router was left
   /// with a dead WAN rather than a bridge.
-  Future<void> _enterBridgeMode() => _setBridgeBoundary(enable: false);
+  Future<void> _enterBridgeMode(_SaveProgress progress) =>
+      _setBridgeBoundary(progress, enable: false);
 
   /// Leaves bridge mode: `Device.IP.Interface.{wan}.Enable = true`.
   ///
   /// Sent after the target mode's own SETs: `bridge-mode-apply.sh exit` ends
   /// with `ifup wan`, which brings the WAN up in the mode `network.wan` holds.
-  Future<void> _exitBridgeMode() => _setBridgeBoundary(enable: true);
+  Future<void> _exitBridgeMode(_SaveProgress progress) =>
+      _setBridgeBoundary(progress, enable: true);
 
   /// Sends the terminal bridge-boundary SET, treating the disconnect it causes
   /// as success.
@@ -618,11 +642,18 @@ class UspInternetSettingsService {
   /// mapped to a validation / resource / partial / auth / unexpected
   /// [ServiceError] — means the SET was rejected. Those propagate so the user
   /// still sees the failure; a real config failure is never hidden.
-  Future<void> _setBridgeBoundary({required bool enable}) async {
+  ///
+  /// A disconnect read as success does not mark [progress] applied. That is
+  /// safe only because this is [saveAll]'s last step: no later step can fail
+  /// and need to say this one landed. A step added after it would have to mark
+  /// [progress] in those two cases too.
+  Future<void> _setBridgeBoundary(_SaveProgress progress,
+      {required bool enable}) async {
     // enable=false enters bridge, enable=true leaves it.
     final direction = enable ? 'exit' : 'enter';
     try {
       _handleSetResult(
+        progress,
         await WanSettings.update(_usp, enable: enable)
             .timeout(_bridgeSetTimeout),
       );
@@ -673,6 +704,7 @@ class UspInternetSettingsService {
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited,
     String instancePath,
+    _SaveProgress progress,
   ) async {
     final onDemand = edited.connectionTrigger == 'OnDemand';
     final idleMinutes = onDemand
@@ -689,21 +721,33 @@ class UspInternetSettingsService {
           _diff(original.connectionTrigger, edited.connectionTrigger),
       idleDisconnectTime: idleMinutes == null ? null : idleMinutes * 60,
     );
-    _handleSetResult(await PppInterface.update(
-      _usp,
-      [
-        !onDemand
-            ? PppInterfaceInstanceUpdate(
-                instancePath: instancePath,
-                pppoeServiceName: update.pppoeServiceName,
-                connectionTrigger: update.connectionTrigger,
-                lcpEcho: edited.lcpEchoInterval,
-                lcpEchoRetry: _keepAliveEchoRetry,
-                lcpEchoAdaptive: false,
-              )
-            : update,
-      ],
-    ));
+    final updates = [
+      !onDemand
+          ? PppInterfaceInstanceUpdate(
+              instancePath: instancePath,
+              pppoeServiceName: update.pppoeServiceName,
+              connectionTrigger: update.connectionTrigger,
+              lcpEcho: edited.lcpEchoInterval,
+              lcpEchoRetry: _keepAliveEchoRetry,
+              lcpEchoAdaptive: false,
+            )
+          : update,
+    ];
+    // Nothing to write is not sent, so it never counts as applied.
+    if (PppInterface.updateParams(updates).isEmpty) return;
+    // Keep Alive sends its echo values on every save, so this Set lands even
+    // when the user changed nothing here. It counts as applied only when it
+    // changes what the page loaded: otherwise a later refusal would say part
+    // of the save landed while none of the user's changes did (issue #1711).
+    // Writes the page cannot see are left uncounted: an out-of-range LCPEcho,
+    // which reads as the same 30, an LCPEchoRetry other than 5, or adaptive
+    // echo left on. The form holds neither of the last two.
+    final changesWhatLoaded = update.pppoeServiceName != null ||
+        update.connectionTrigger != null ||
+        update.idleDisconnectTime != null ||
+        (!onDemand && original.lcpEchoInterval != edited.lcpEchoInterval);
+    _handleSetResult(progress, await PppInterface.update(_usp, updates),
+        applies: changesWhatLoaded);
   }
 
   // ---------------------------------------------------------------------------
@@ -722,7 +766,8 @@ class UspInternetSettingsService {
   Future<void> _savePppLink(
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited,
-    String instancePath, {
+    String instancePath,
+    _SaveProgress progress, {
     required _TunnelRow? tunnel,
   }) async {
     final typeChanged = original.connectionType != edited.connectionType;
@@ -744,7 +789,9 @@ class UspInternetSettingsService {
           ? edited.pppPassword
           : _diff(original.pppPassword, edited.pppPassword),
     );
-    _handleSetResult(await PppInterface.update(_usp, [update]));
+    // Nothing to write is not sent, so it never counts as applied.
+    if (PppInterface.updateParams([update]).isEmpty) return;
+    _handleSetResult(progress, await PppInterface.update(_usp, [update]));
   }
 
   // ---------------------------------------------------------------------------
@@ -790,6 +837,7 @@ class UspInternetSettingsService {
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited,
     _TunnelRow row,
+    _SaveProgress progress,
   ) async {
     final wantStatic = edited.connectionType == UspWanConnectionType.pptp &&
         edited.underlayStatic;
@@ -847,7 +895,7 @@ class UspInternetSettingsService {
     }
     if (send == null) return;
     logger.d('[USP][WAN]: Writing tunnel ${row.instancePath}: $update');
-    _handleSetResult(await send());
+    _handleSetResult(progress, await send());
   }
 
   // ---------------------------------------------------------------------------
@@ -861,20 +909,21 @@ class UspInternetSettingsService {
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited,
     String instancePath,
+    _SaveProgress progress,
   ) async {
     final tagged = edited.vlanEnabled;
-    _handleSetResult(await VlanTermination.update(
-      _usp,
-      [
-        VlanTerminationInstanceUpdate(
-          instancePath: instancePath,
-          enable: _diff(original.vlanEnabled, edited.vlanEnabled),
-          vlanId: tagged ? _diff(original.vlanId, edited.vlanId) : null,
-          vlanPriority:
-              tagged ? _diff(original.vlanPriority, edited.vlanPriority) : null,
-        )
-      ],
-    ));
+    final updates = [
+      VlanTerminationInstanceUpdate(
+        instancePath: instancePath,
+        enable: _diff(original.vlanEnabled, edited.vlanEnabled),
+        vlanId: tagged ? _diff(original.vlanId, edited.vlanId) : null,
+        vlanPriority:
+            tagged ? _diff(original.vlanPriority, edited.vlanPriority) : null,
+      )
+    ];
+    // Nothing to write is not sent, so it never counts as applied.
+    if (VlanTermination.updateParams(updates).isEmpty) return;
+    _handleSetResult(progress, await VlanTermination.update(_usp, updates));
   }
 
   // ---------------------------------------------------------------------------
@@ -884,6 +933,7 @@ class UspInternetSettingsService {
   Future<void> _saveIpv6Settings(
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited,
+    _SaveProgress progress,
   ) async {
     final ipv6Enabled = _diff(original.ipv6Enabled, edited.ipv6Enabled);
     final dhcpv6Enabled = _diff(original.dhcpv6Enabled, edited.dhcpv6Enabled);
@@ -946,7 +996,7 @@ class UspInternetSettingsService {
       if (ipv6rd != null) ...Ipv6rdSettings.updateParams([ipv6rd]),
     };
     if (params.isEmpty) return;
-    _handleSetResult(await _usp.set(params, allowPartial: true));
+    _handleSetResult(progress, await _usp.set(params, allowPartial: true));
   }
 
   // ---------------------------------------------------------------------------
@@ -1022,12 +1072,15 @@ class UspInternetSettingsService {
   /// Parse and validate SET result using standard UspResultParser (Strict mode).
   ///
   /// WAN settings are critical — any failure (including partial) should be
-  /// reported to the user.
-  void _handleSetResult(Map<String, dynamic> result) {
+  /// reported to the user. A Set that succeeds marks [progress] applied, so a
+  /// later step's failure reports the save as applied in part; one that only
+  /// rewrites what the page loaded passes [applies] false and marks nothing.
+  void _handleSetResult(_SaveProgress progress, Map<String, dynamic> result,
+      {bool applies = true}) {
     final parsed = UspResultParser.parseSetResult(result);
     switch (parsed) {
       case UspSuccess():
-        break;
+        if (applies) progress.applied = true;
       case UspPartialSuccess(
           :final errorSummary,
           :final successes,
@@ -1135,4 +1188,20 @@ class _TunnelTable {
         UspWanConnectionType.l2tp => 'Device.L2TPv2.Tunnel',
         _ => 'no tunnel',
       };
+}
+
+/// What one [UspInternetSettingsService.saveAll] has had applied so far.
+///
+/// The router applies each step's Set on its own, so a step that fails after
+/// an earlier one landed leaves the save applied in part (issue #1711). One is
+/// made per save and handed to every step that writes; the service itself
+/// keeps no state.
+class _SaveProgress {
+  /// Whether a write of this save has landed on the router.
+  bool applied = false;
+
+  /// [error] as the page should see it: a [SavePartlyAppliedError] around it
+  /// once something has landed, [error] itself while nothing has.
+  ServiceError asSaveError(ServiceError error) =>
+      applied ? SavePartlyAppliedError(error) : error;
 }

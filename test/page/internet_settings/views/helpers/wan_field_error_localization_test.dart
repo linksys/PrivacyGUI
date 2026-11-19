@@ -44,5 +44,38 @@ void main() {
             isNot(contains('Invalid')));
       });
     });
+
+    // A save the router applied in part (issue #1711): why it failed, then, on
+    // a line of its own, that part of it landed.
+    group('for a save applied in part', () {
+      const appliedLine = 'Some of your changes were already applied. '
+          'Check the settings before you save again.';
+
+      testWidgets('names the refused check, then says part of it landed',
+          (tester) async {
+        await _withContext(tester, (context) {
+          expect(
+            localizeWanSaveError(
+                context,
+                const SavePartlyAppliedError(InvalidInputError(
+                    field: WanRefusalNames.invalidServer, code: 7012))),
+            'Invalid IP address\n$appliedLine',
+          );
+        });
+      });
+
+      testWidgets(
+          'reads any other cause as its own message, then the same line',
+          (tester) async {
+        await _withContext(tester, (context) {
+          expect(
+            localizeWanSaveError(
+                context, const SavePartlyAppliedError(NetworkError())),
+            'Network error. Please check your connection and try again.\n'
+            '$appliedLine',
+          );
+        });
+      });
+    });
   });
 }

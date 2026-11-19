@@ -696,6 +696,7 @@
   "errorCommandRefused": "Routeren afviste denne kommando. Prøv igen om et øjeblik.",
   "errorSavedButUnconfirmed": "Dine indstillinger er gemt, men de kunne ikke læses tilbage fra routeren. Prøv at opdatere siden for at se dem.",
   "errorSaveDiscardedForRouterRows": "Intet blev gemt. Siden blev genindlæst fra routeren; foretag din ændring igen.",
+  "errorSavePartlyApplied": "Nogle af dine ændringer er allerede anvendt. Kontrollér indstillingerne, før du gemmer igen.",
   "errors": "Fejl",
   "estimatedTimeRemaining": "Anslået resterende tid: {time}",
   "ethernetPorts": "Ethernet-porte",

@@ -696,6 +696,7 @@
   "errorCommandRefused": "Routern nekade det här kommandot. Försök igen om en stund.",
   "errorSavedButUnconfirmed": "Dina inställningar har sparats, men de kunde inte läsas tillbaka från routern. Försök att uppdatera sidan för att se dem.",
   "errorSaveDiscardedForRouterRows": "Inget sparades. Sidan lästes in på nytt från routern; gör din ändring igen.",
+  "errorSavePartlyApplied": "Några av dina ändringar har redan tillämpats. Kontrollera inställningarna innan du sparar igen.",
   "errors": "Fel",
   "estimatedTimeRemaining": "Beräknad återstående tid: {time}",
   "ethernetPorts": "Ethernet-portar",
