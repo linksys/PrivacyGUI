@@ -16,44 +16,48 @@ class MacSafariInstallInstructionSheet extends StatelessWidget {
           topRight: Radius.circular(20),
         ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: AppText.titleLarge(
-                  loc(context).pwaMacInstallTitle,
+      // A modal sheet is at most 9/16 of the screen tall, less than this
+      // content in a short window, so the content scrolls (#1802).
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: AppText.titleLarge(
+                    loc(context).pwaMacInstallTitle,
+                  ),
                 ),
-              ),
-              AppIconButton(
-                icon: Icons.close,
-                onTap: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
-          const AppGap.medium(),
-          AppText.bodyMedium(
-            loc(context).pwaMacInstallDescription,
-          ),
-          const AppGap.large2(),
-          _buildStep(
-            context,
-            '1',
-            loc(context).pwaMacStep1,
-            Icons.ios_share, // Updated to match iOS share icon as requested
-          ),
-          const AppGap.medium(),
-          _buildStep(
-            context,
-            '2',
-            loc(context).pwaMacStep2,
-            Icons.dock,
-          ),
-          const AppGap.large3(),
-        ],
+                AppIconButton(
+                  icon: Icons.close,
+                  onTap: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+            const AppGap.medium(),
+            AppText.bodyMedium(
+              loc(context).pwaMacInstallDescription,
+            ),
+            const AppGap.large2(),
+            _buildStep(
+              context,
+              '1',
+              loc(context).pwaMacStep1,
+              Icons.ios_share, // Updated to match iOS share icon as requested
+            ),
+            const AppGap.medium(),
+            _buildStep(
+              context,
+              '2',
+              loc(context).pwaMacStep2,
+              Icons.dock,
+            ),
+            const AppGap.large3(),
+          ],
+        ),
       ),
     );
   }
