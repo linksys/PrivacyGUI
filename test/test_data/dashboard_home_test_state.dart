@@ -11,7 +11,7 @@ const dashboardHomeCherry7TestState = {
   "wifis": [
     {
       "ssid": "Linksys03041",
-      "password": "7sVzt65hf@",
+      "password": "FakeWiFi1@",
       "radios": ["RADIO_2.4GHz"],
       "isGuest": false,
       "isEnabled": true,
@@ -19,7 +19,7 @@ const dashboardHomeCherry7TestState = {
     },
     {
       "ssid": "Linksys03041",
-      "password": "7sVzt65hf@",
+      "password": "FakeWiFi1@",
       "radios": ["RADIO_5GHz"],
       "isGuest": false,
       "isEnabled": true,
@@ -53,7 +53,7 @@ const dashboardHomePinnacleTestState = {
   "wifis": [
     {
       "ssid": "Linksys00005",
-      "password": "Bp2@4gdWRS",
+      "password": "FakeWiFi9@",
       "radios": ["RADIO_2.4GHz"],
       "isGuest": false,
       "isEnabled": true,
@@ -61,7 +61,7 @@ const dashboardHomePinnacleTestState = {
     },
     {
       "ssid": "Linksys00005",
-      "password": "Bp2@4gdWRS",
+      "password": "FakeWiFi9@",
       "radios": ["RADIO_5GHz"],
       "isGuest": false,
       "isEnabled": true,
@@ -94,7 +94,7 @@ const dashboardHomeStateData = {
   "wifis": [
     {
       "ssid": "_VelopSetup4C4",
-      "password": "9pe0a3rpwc",
+      "password": "fakewifi06",
       "radios": ["RADIO_2.4GHz"],
       "isGuest": false,
       "isEnabled": true,
@@ -102,7 +102,7 @@ const dashboardHomeStateData = {
     },
     {
       "ssid": "_VelopSetup4C4",
-      "password": "9pe0a3rpwc",
+      "password": "fakewifi06",
       "radios": ["RADIO_5GHz"],
       "isGuest": false,
       "isEnabled": true,
@@ -110,7 +110,7 @@ const dashboardHomeStateData = {
     },
     {
       "ssid": "_VelopSetup4C4",
-      "password": "9pe0a3rpwc",
+      "password": "fakewifi06",
       "radios": ["RADIO_6GHz"],
       "isGuest": false,
       "isEnabled": true,
@@ -622,7 +622,7 @@ const dashboardHomeOfflineStateData = {
   "wifis": [
     {
       "ssid": "_VelopSetup60E",
-      "password": "05a63mipt3",
+      "password": "fakewifi08",
       "radios": ["RADIO_2.4GHz", "RADIO_5GHz", "RADIO_6GHz"],
       "isGuest": false,
       "isEnabled": true,
@@ -653,7 +653,7 @@ const dashboardHomeStateDataInBridge = {
   "wifis": [
     {
       "ssid": "_VelopSetup4C4",
-      "password": "9pe0a3rpwc",
+      "password": "fakewifi06",
       "radios": ["RADIO_2.4GHz"],
       "isGuest": false,
       "isEnabled": true,
@@ -661,7 +661,7 @@ const dashboardHomeStateDataInBridge = {
     },
     {
       "ssid": "_VelopSetup4C4",
-      "password": "9pe0a3rpwc",
+      "password": "fakewifi06",
       "radios": ["RADIO_5GHz"],
       "isGuest": false,
       "isEnabled": true,
@@ -669,7 +669,7 @@ const dashboardHomeStateDataInBridge = {
     },
     {
       "ssid": "_VelopSetup4C4",
-      "password": "9pe0a3rpwc",
+      "password": "fakewifi06",
       "radios": ["RADIO_6GHz"],
       "isGuest": false,
       "isEnabled": true,

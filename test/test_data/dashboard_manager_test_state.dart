@@ -199,7 +199,7 @@ const dashboardManagerChrry7TestState = {
         "channelWidth": "Auto",
         "channel": 0,
         "security": "WPA2/WPA3-Mixed-Personal",
-        "wpaPersonalSettings": {"passphrase": "7sVzt65hf@"}
+        "wpaPersonalSettings": {"passphrase": "FakeWiFi1@"}
       }
     },
     {
@@ -314,7 +314,7 @@ const dashboardManagerChrry7TestState = {
         "channelWidth": "Auto",
         "channel": 0,
         "security": "WPA2/WPA3-Mixed-Personal",
-        "wpaPersonalSettings": {"passphrase": "7sVzt65hf@"}
+        "wpaPersonalSettings": {"passphrase": "FakeWiFi1@"}
       }
     }
   ],
@@ -548,7 +548,7 @@ const dashboardManagerPinnacleTestState = {
         "channelWidth": "Auto",
         "channel": 0,
         "security": "WPA2/WPA3-Mixed-Personal",
-        "wpaPersonalSettings": {"passphrase": "7sVzt65hf@"}
+        "wpaPersonalSettings": {"passphrase": "FakeWiFi1@"}
       }
     },
     {
@@ -663,7 +663,7 @@ const dashboardManagerPinnacleTestState = {
         "channelWidth": "Auto",
         "channel": 0,
         "security": "WPA2/WPA3-Mixed-Personal",
-        "wpaPersonalSettings": {"passphrase": "7sVzt65hf@"}
+        "wpaPersonalSettings": {"passphrase": "FakeWiFi1@"}
       }
     }
   ],
@@ -895,7 +895,7 @@ const dashboardManagerTestState = {
         "channelWidth": "Auto",
         "channel": 0,
         "security": "WPA2/WPA3-Mixed-Personal",
-        "wpaPersonalSettings": {"passphrase": "9pe0a3rpwc"}
+        "wpaPersonalSettings": {"passphrase": "fakewifi06"}
       }
     },
     {
@@ -942,7 +942,7 @@ const dashboardManagerTestState = {
         "channelWidth": "Auto",
         "channel": 0,
         "security": "WPA2/WPA3-Mixed-Personal",
-        "wpaPersonalSettings": {"passphrase": "9pe0a3rpwc"}
+        "wpaPersonalSettings": {"passphrase": "fakewifi06"}
       }
     },
     {
@@ -1114,7 +1114,7 @@ const dashboardManagerTestState = {
         "channelWidth": "Auto",
         "channel": 0,
         "security": "WPA3-Personal",
-        "wpaPersonalSettings": {"passphrase": "9pe0a3rpwc"}
+        "wpaPersonalSettings": {"passphrase": "fakewifi06"}
       }
     }
   ],
