@@ -72,18 +72,18 @@ List<RequestedScreen> parseScreens(String value) => value.split(',').map((raw) {
       return (width: width, height: height);
     }).toList();
 
-bool _localeConfigured = false;
-bool get hasLocaleConfig => _localeConfigured;
+/// Whether the `locales` define picked the locales. Read from the define, so it
+/// does not depend on [targetLocales] having been read first.
+bool get hasLocaleConfig =>
+    const String.fromEnvironment('locales', defaultValue: 'all') != 'all';
 
 List<Locale> get targetLocales {
   const value = String.fromEnvironment('locales', defaultValue: 'all');
   const allLocales = AppLocalizations.supportedLocales;
   if (value == 'all') {
-    _localeConfigured = false;
     return allLocales;
   } else {
     try {
-      _localeConfigured = true;
       return value
           .split(',')
           .map((e) => allLocales
@@ -91,7 +91,6 @@ List<Locale> get targetLocales {
           .whereNotNull()
           .toList();
     } catch (e) {
-      _localeConfigured = false;
       return allLocales;
     }
   }

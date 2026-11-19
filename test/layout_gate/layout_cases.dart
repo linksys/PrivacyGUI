@@ -3,7 +3,8 @@
 /// `testLocalizations` declares each case's screenshot tests and hands the
 /// same case to [declareLayoutCases]. The screenshot tests are unchanged; the
 /// tests declared here pump the same case, make no golden check, and collect
-/// overflows instead.
+/// overflows instead: the gate's tests always (P3), and the measuring tests
+/// when [layoutMeasure] is on (P2).
 library;
 
 import 'dart:async';
@@ -19,16 +20,19 @@ import '../common/screen.dart';
 import '../common/test_responsive_widget.dart';
 import '../common/theme_data.dart';
 import 'collector.dart';
+import 'gate.dart';
 import 'incident.dart';
 import 'measure_record.dart';
 
 /// `--dart-define=layoutMeasure=true` declares the measuring tests (#1802 P2).
-/// Without it, which is every ordinary run, nothing is declared here.
+/// Without it, which is every ordinary run, only the gate's tests are.
 const bool layoutMeasure = bool.fromEnvironment('layoutMeasure');
 
-/// Declares the measuring tests for one case, when [layoutMeasure] is on.
+/// Declares the layout tests for one case: its gate tests ([_declareGate]), and
+/// its measuring tests when [layoutMeasure] is on.
 ///
-/// One test per locale in [locales] and size from [measuringScreensFor]: the
+/// The measuring tests: one per locale in [locales] and size from
+/// [measuringScreensFor]: the
 /// case's own sizes, or the sizes `--dart-define=screens=` asks for. Each is
 /// tagged `layout-measure`, not `loc`, so a run that leaves out `golden` and
 /// `loc` (constitution 3.1) can select it. Each prints a [MeasureRecord]. An
@@ -44,6 +48,16 @@ void declareLayoutCases(
   bool semanticsEnabled = true,
   Future<void> Function(WidgetTester tester)? onCompleted,
 }) {
+  _declareGate(
+    name,
+    testMain,
+    locales: locales,
+    screens: screens,
+    skip: skip,
+    timeout: timeout,
+    semanticsEnabled: semanticsEnabled,
+    onCompleted: onCompleted,
+  );
   if (!layoutMeasure) return;
   final caseScreens = screens ?? responsiveAllScreens;
   final requested = requestedScreens;
@@ -71,13 +85,7 @@ void declareLayoutCases(
       try {
         await runWithOverflowCollection((sink) async {
           incidents = sink;
-          await testMain(tester, current.locale);
-          if (onCompleted != null) {
-            await onCompleted(tester);
-          } else {
-            // The same settling pump the screenshot tests end with.
-            await tester.pump(const Duration(seconds: 5));
-          }
+          await _runAndSettle(tester, current.locale, testMain, onCompleted);
         });
         threw = false;
       } finally {
@@ -101,6 +109,75 @@ void declareLayoutCases(
     semanticsEnabled: semanticsEnabled,
     tags: ['layout-measure'],
   );
+}
+
+/// Declares the gate's tests for one case (#1802 P3): one per locale from
+/// [gateLocalesFor] and size from [gateScreensFor], tagged `layout-gate`, not
+/// `loc`, so the runs in constitution 3.1 select them. A test fails when the
+/// case overflows by more than the tolerance ([gateFailures]), and on anything
+/// else that fails the case.
+void _declareGate(
+  String name,
+  FutureOr<void> Function(WidgetTester, Locale) testMain, {
+  required List<Locale> locales,
+  List<ScreenSize>? screens,
+  bool? skip,
+  Timeout? timeout,
+  bool semanticsEnabled = true,
+  Future<void> Function(WidgetTester tester)? onCompleted,
+}) {
+  final sizes = gateScreensFor(name, screens ?? responsiveAllScreens);
+  final caseGateLocales =
+      gateLocalesFor(locales, localesDefined: hasLocaleConfig);
+  if (sizes.isEmpty || caseGateLocales.isEmpty) return;
+
+  final variants = ValueVariant({
+    for (final locale in caseGateLocales)
+      for (final size in sizes)
+        LocalizedScreen.fromScreenSize(locale: locale, screen: size),
+  });
+  testWidgets(
+    name,
+    (tester) async {
+      final current = variants.currentValue!;
+      await loadTestFonts();
+      await tester.setScreenSize(current);
+      final incidents = await runWithOverflowCollection((sink) async {
+        await _runAndSettle(tester, current.locale, testMain, onCompleted);
+        return sink;
+      });
+      final failures = gateFailures(incidents);
+      if (failures.isNotEmpty) {
+        fail(describeGateFailures(
+          failures,
+          caseName: name,
+          size: current.name,
+          locale: current.locale.toLanguageTag(),
+        ));
+      }
+    },
+    variant: variants,
+    skip: skip,
+    timeout: timeout,
+    semanticsEnabled: semanticsEnabled,
+    tags: ['layout-gate'],
+  );
+}
+
+/// Runs a case's body in [locale], then [onCompleted], or else the settling
+/// pump the screenshot tests end with.
+Future<void> _runAndSettle(
+  WidgetTester tester,
+  Locale locale,
+  FutureOr<void> Function(WidgetTester, Locale) testMain,
+  Future<void> Function(WidgetTester tester)? onCompleted,
+) async {
+  await testMain(tester, locale);
+  if (onCompleted != null) {
+    await onCompleted(tester);
+  } else {
+    await tester.pump(const Duration(seconds: 5));
+  }
 }
 
 /// The sizes to measure a case at, one per [requested] size whose layout the

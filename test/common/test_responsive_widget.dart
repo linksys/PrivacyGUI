@@ -122,7 +122,8 @@ void testLocalizations(
     semanticsEnabled: semanticsEnabled,
     tags: ['loc'],
   );
-  // The same case, measured for overflow when `layoutMeasure` is on (#1802).
+  // The same case, for the layout gate, and for the measurement when
+  // `layoutMeasure` is on (#1802).
   declareLayoutCases(
     name,
     testMain,

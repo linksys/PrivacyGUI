@@ -1,7 +1,7 @@
 # The 1.x Constitution
 
-**Version:** 1.3
-**Last amended:** 2026-11-18 (#1802, P2: layout measurement)
+**Version:** 1.4
+**Last amended:** 2026-11-19 (#1802, P3: the layout gate)
 **Applies to:** the 1.x line of PrivacyGUI: `dev-1.*`, `release-1.*`, and `main` while it ships 1.x. 2.x has its own `constitution.md`; nothing here binds 2.x, and nothing in 2.x's binds 1.x.
 
 ## Preamble
@@ -13,7 +13,7 @@ They describe the code as it is. Where today's code breaks a rule, the rule name
 Every rule says how it is enforced:
 
 - **Test**: a test in `./run_tests.sh` fails.
-- **CI**: a PR check fails. `.github/workflows/ci-1x.yml` runs two checks on every PR into `main` or a `dev-1.*` branch that carries the file: `1.x / Analyze` and `1.x / Unit Tests`. On the branches that ruleset `required checks (1.x)` lists, a red check blocks the merge. `1.x / Unit Tests` runs `./run_tests.sh`, so a rule enforced by Test fails a PR check too. It also fails when line coverage of `lib/` drops below the floor in `coverage_floor.txt` (3.2).
+- **CI**: a PR check fails. `.github/workflows/ci-1x.yml` runs three checks on every PR into `main` or a `dev-1.*` branch that carries the file: `1.x / Analyze`, `1.x / Unit Tests` and `1.x / Layout Gate`. On the branches that ruleset `required checks (1.x)` lists, a red check blocks the merge. `1.x / Unit Tests` runs `./run_tests.sh`, so a rule enforced by Test fails a PR check too. It also fails when line coverage of `lib/` drops below the floor in `coverage_floor.txt` (3.2). It leaves out the `layout-gate` tests, which `1.x / Layout Gate` runs (3.5).
 - **Review**: only a reviewer catches it. A rule enforced only by review says so.
 
 Where this document and another document in the repository disagree, this one wins. It changes only through Article IX.
@@ -22,7 +22,7 @@ Where this document and another document in the repository disagree, this one wi
 |---|---|---|
 | I | Presentation files don't use the data layer; `lib/core/` doesn't import `lib/page/` | Test |
 | II | JNAP goes through `RouterRepository`; the HSL spec's `[noauth]` decides `auth:` | Review |
-| III | Tests run through `run_tests.sh`; changes ship tests; screenshot tests and mocks follow one pattern | Test for where screenshot checks live; CI for #1803's coverage floor; review for the rest, until #1802's gate and roster land |
+| III | Tests run through `run_tests.sh`; changes ship tests; screenshot tests and mocks follow one pattern | Test for where screenshot checks live and for the layout gate's roster; CI for #1803's coverage floor and for the layout gate; review for the rest |
 | IV | Feature state lives in `Notifier` / `AsyncNotifier`; `…State` classes extend `Equatable` | Review |
 | V | File, class, provider and directory names | Review |
 | VI | User-visible strings come from the ARB files | CI for missing keys; review for hard-coded strings |
@@ -33,6 +33,8 @@ Where this document and another document in the repository disagree, this one wi
 *Amended 2026-11-18 (#1802): **CI** names the two checks that #1802 P1 added, and VI and VII no longer wait on P1, because 1.x has PR checks now.*
 
 *Amended 2026-11-18 (#1803): **CI** and III name the coverage floor that #1803 Q5 added, which III waited on.*
+
+*Amended 2026-11-19 (#1802): **CI** names `1.x / Layout Gate`, which #1802 P3 added so that a PR whose page overflows fails, and the summary row for III says what the gate and its roster enforce.*
 
 ---
 
@@ -162,12 +164,15 @@ A missing `auth: true` is easy to miss when testing on a router. Only the `behin
 
 So every test run passes `--exclude-tags="golden||loc"`:
 
-- `./run_tests.sh <reportDir>` runs the whole suite that way and writes `tests.json` into `<reportDir>`. Run it before you push.
-- While you work, `flutter test <file or directory> --exclude-tags="golden||loc"` is fine, with any `--dart-define` the file needs.
+- `./run_tests.sh <reportDir>` runs the whole suite that way and writes `tests.json` into `<reportDir>`. Run it before you push. It also leaves out `layout-gate`, the layout gate's tests (3.5), which take long enough to run in CI jobs of their own.
+- The layout gate runs before you push through `.githooks/pre-push`, once you install the hooks with `git config core.hooksPath .githooks`. The hook runs the suites a push can affect, in every gate locale (3.5). To run the gate by hand, use `flutter test <suite> --tags layout-gate --exclude-tags="golden||loc"`.
+- While you work, `flutter test <file or directory> --exclude-tags="golden||loc"` is fine, with any `--dart-define` the file needs. On a screenshot suite this also runs its layout gate tests in every gate locale (3.5); `--exclude-tags="golden||loc||layout-gate"` leaves them out.
 
-**Enforced by**: Test for `run_tests.sh`: `test/constitution/run_tests_script_test.dart` fails if the script stops excluding the tags. Review for other runs. `1.x / Unit Tests` runs the script on the PRs that **CI** in the preamble covers.
+**Enforced by**: Test for `run_tests.sh`: `test/constitution/run_tests_script_test.dart` fails if the script stops excluding the tags, `layout-gate` included. Review for other runs. `1.x / Unit Tests` runs the script on the PRs that **CI** in the preamble covers.
 
 *Amended 2026-11-18 (#1802): CI runs the script now. The report directory gets `tests.json` only: the script writes no HTML report, though this section said it did.*
+
+*Amended 2026-11-19 (#1802): `run_tests.sh` also leaves out the layout gate's tests, so a local run stays short (#1802, Decision 11). `1.x / Layout Gate` and the pre-push hook run them instead (Decision 12).*
 
 ### 3.2 Provider and model changes ship unit tests
 
@@ -181,9 +186,72 @@ A change to a notifier, a service, a `…State` class or a model ships unit test
 
 ### 3.3 A new view ships a layout-gate case
 
-A new `lib/page/**/*_view.dart` ships a case in #1802's layout gate, so it is swept for overflow at every layout breakpoint.
+A new `lib/page/**/*_view.dart`, or a new page 5.1 lets go without the suffix, ships a case in #1802's layout gate, so it is swept for overflow at the gate's sizes (3.5).
 
-**Enforced by**: #1802's roster test, once #1802 P3 lands. The rule takes effect then.
+The gate's case is a `testLocalizations` case (3.5). A page has one when a `testLocalizations` suite constructs its class. A page that a case reaches only as a tab of its parent does not count: `TabBarView` lays out the selected tab only.
+
+The table lists the pages that had no case when the gate landed. #1802 P6 empties it. Deleting a row because the page got a case is not an amendment (9.1).
+
+<!-- layout-gate-roster:begin -->
+| Page | Class | Why |
+|---|---|---|
+| `lib/page/advanced_settings/apps_and_gaming/ddns/views/ddns_settings_view.dart` | `DDNSSettingsView` | No case yet (#1802 P6). |
+| `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_forwarding_list_view.dart` | `PortRangeForwardingListView` | No case yet (#1802 P6). |
+| `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_triggering_list_view.dart` | `PortRangeTriggeringListView` | No case yet (#1802 P6). |
+| `lib/page/advanced_settings/apps_and_gaming/ports/views/single_port_forwarding_list_view.dart` | `SinglePortForwardingListView` | No case yet (#1802 P6). |
+| `lib/page/advanced_settings/firewall/views/ipv6_port_service_list_view.dart` | `Ipv6PortServiceListView` | No case yet (#1802 P6). |
+| `lib/page/advanced_settings/local_network_settings/views/dhcp_reservations_edit_view.dart` | `DHCPReservationsEditView` | No case yet (#1802 P6). |
+| `lib/page/advanced_settings/local_network_settings/views/dhcp_server_view.dart` | `DHCPServerView` | No case yet (#1802 P6). |
+| `lib/page/advanced_settings/static_routing/static_routing_list_view.dart` | `StaticRoutingListView` | No case yet (#1802 P6). |
+| `lib/page/components/customs/network_check_view.dart` | `NetworkCheckView` | No case yet (#1802 P6). |
+| `lib/page/components/customs/qr_view.dart` | `?` | No case yet (#1802 P6). The file is commented out. |
+| `lib/page/components/picker/day_picker_view.dart` | `DayPickerView` | No case yet (#1802 P6). |
+| `lib/page/components/picker/number_picker_view.dart` | `NumberPickerView` | No case yet (#1802 P6). |
+| `lib/page/components/picker/region_picker_view.dart` | `RegionPickerView` | No case yet (#1802 P6). |
+| `lib/page/components/picker/time_picker_view.dart` | `TimePickerView` | No case yet (#1802 P6). |
+| `lib/page/components/settings_view/editable_card_list_edit_view.dart` | `EditableCardListEditView` | No case yet (#1802 P6). |
+| `lib/page/components/settings_view/editable_card_list_settings_view.dart` | `EditableCardListsettingsView` | No case yet (#1802 P6). |
+| `lib/page/components/settings_view/editable_table_settings_view.dart` | `AppEditableTableSettingsView` | No case yet (#1802 P6). |
+| `lib/page/components/styled/styled_tab_page_view.dart` | `StyledAppTabPageView` | No case yet (#1802 P6). It is a layout that pages use. |
+| `lib/page/components/views/arguments_view.dart` | `ArgumentsBaseConsumerStatefulView` | No case yet (#1802 P6). It is a base class for views. |
+| `lib/page/components/views/write_flow_blocked_view.dart` | `WriteFlowBlockedView` | No case yet (#1802 P6). |
+| `lib/page/dashboard/views/dashboard_settings_view.dart` | `DashboardSettingsView` | No case yet (#1802 P6). |
+| `lib/page/dashboard/views/dashboard_support_view.dart` | `DashboardSupportView` | No case yet (#1802 P6). |
+| `lib/page/dashboard/views/prepare_dashboard_view.dart` | `PrepareDashboardView` | No case yet (#1802 P6). |
+| `lib/page/firmware_update/views/firmware_update_process_view.dart` | `FirmwareUpdateProcessView` | No case yet (#1802 P6). |
+| `lib/page/health_check/views/speed_test_selection.dart` | `SpeedTestSelectionView` | No case yet (#1802 P6). |
+| `lib/page/instant_setup/troubleshooter/views/call_support/call_support_main_region_view.dart` | `CallSupportMainRegionView` | No case yet (#1802 P6). |
+| `lib/page/instant_setup/troubleshooter/views/call_support/call_support_more_region_view.dart` | `CallSupportMoreRegionView` | No case yet (#1802 P6). |
+| `lib/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_auth_view.dart` | `PnpIspAuthView` | No case yet (#1802 P6). |
+| `lib/page/landing/views/debug_device_info_view.dart` | `DebugDeviceInfoView` | No case yet (#1802 P6). |
+| `lib/page/landing/views/home_view.dart` | `HomeView` | No case yet (#1802 P6). |
+| `lib/page/login/auto_parent/views/auto_parent_first_login_view.dart` | `AutoParentFirstLoginView` | No case yet (#1802 P6). |
+| `lib/page/login/views/login_cloud_auth_view.dart` | `LoginCloudAuthView` | No case yet (#1802 P6). |
+| `lib/page/login/views/login_cloud_view.dart` | `LoginCloudView` | No case yet (#1802 P6). |
+| `lib/page/nodes/views/change_node_name_view.dart` | `ChangeNodeNameView` | No case yet (#1802 P6). |
+| `lib/page/nodes/views/node_connected_devices_view.dart` | `?` | No case yet (#1802 P6). The file is empty. |
+| `lib/page/nodes/views/node_light_guide_view.dart` | `NodeLightGuideView` | No case yet (#1802 P6). |
+| `lib/page/nodes/views/node_name_edit_view.dart` | `NodeNameEditView` | No case yet (#1802 P6). |
+| `lib/page/nodes/views/node_restart_view.dart` | `NodeRestartView` | No case yet (#1802 P6). |
+| `lib/page/otp_flow/views/otp_add_phone.dart` | `OtpAddPhoneView` | No case yet (#1802 P6). |
+| `lib/page/otp_flow/views/otp_code_input.dart` | `OtpCodeInputView` | No case yet (#1802 P6). |
+| `lib/page/otp_flow/views/otp_method_selector_view.dart` | `OTPMethodSelectorView` | No case yet (#1802 P6). |
+| `lib/page/otp_flow/views/otp_view.dart` | `OtpFlowView` | No case yet (#1802 P6). |
+| `lib/page/select_network/views/select_network_view.dart` | `SelectNetworkView` | No case yet (#1802 P6). |
+| `lib/page/troubleshooting/views/troubleshooting_ping_view.dart` | `TroubleshootingPingView` | No case yet (#1802 P6). |
+| `lib/page/troubleshooting/views/troubleshooting_view.dart` | `TroubleshootingView` | No case yet (#1802 P6). |
+| `lib/page/wifi_settings/views/mac_filtering_view.dart` | `MacFilteringView` | No case yet (#1802 P6). |
+| `lib/page/wifi_settings/views/wifi_advanced_settings_view.dart` | `WifiAdvancedSettingsView` | No case yet (#1802 P6). |
+| `lib/page/wifi_settings/views/wifi_list_advanced_mode_view.dart` | `AdvancedModeView` | No case yet (#1802 P6). |
+| `lib/page/wifi_settings/views/wifi_list_simple_mode_view.dart` | `SimpleModeView` | No case yet (#1802 P6). |
+| `lib/page/wifi_settings/views/wifi_list_view.dart` | `WiFiListView` | No case yet (#1802 P6). |
+| `lib/page/wifi_settings/views/wifi_settings_channel_finder_view.dart` | `WifiSettingsChannelFinderView` | No case yet (#1802 P6). |
+| `lib/page/wifi_settings/views/wifi_share_detail_view.dart` | `WiFiShareDetailView` | No case yet (#1802 P6). |
+<!-- layout-gate-roster:end -->
+
+**Enforced by**: Test. `test/constitution/layout_gate_roster_test.dart` fails when a page has no case and no row in the table above, and when a row's page has a case or is gone.
+
+*Amended 2026-11-19 (#1802): the rule takes effect, with the roster test and a row for each page that has no case yet, so a page cannot be left out of the gate unnoticed. The version moves to 1.4, not 2.0, although 9.2 asks a major number for an added exception or a tightened rule. This section said the rule would take effect with #1802 P3, and the rows are the exceptions it starts with, not exceptions added to a rule already in force. Counting the five pages 5.1 names, and not counting a tab, follow what 5.1 and `TabBarView` already imply. The team decides whether that holds (9.3).*
 
 ### 3.4 A fix that ellipsizes ships a readability guard
 
@@ -203,7 +271,10 @@ A page's screenshot test is a `testLocalizations` case, from `test/common/test_r
 
 #1802's layout gate reuses these cases, so the case 3.3 asks for is a `testLocalizations` case. How to write, run and debug one is in `docs/screenshot_testing_guide.md`.
 
-`testLocalizations` also hands each case to `declareLayoutCases` in `test/layout_gate/layout_cases.dart`. With `--dart-define=layoutMeasure=true`, that declares more tests from the same case, tagged `layout-measure` and not `loc`. They make no golden check, and they collect overflow reports instead of failing on them (#1802 P2). Without the define, which is every run in 3.1, it declares none.
+`testLocalizations` also hands each case to `declareLayoutCases` in `test/layout_gate/layout_cases.dart`, which declares more tests from the same case. None of them makes a golden check, and none is tagged `loc`:
+
+- **The layout gate** (#1802 P3), always: one test per size and locale in `test/layout_gate/gate.dart`, tagged `layout-gate`. It fails when the case overflows by more than 2.0px. `./run_tests.sh` leaves these tests out (3.1). `1.x / Layout Gate` runs them in `en` on a PR into a `dev-1.*` branch, and in every gate locale on a PR into `main`. The pre-push hook runs them in every gate locale, for the suites a push can affect.
+- **The measurement** (#1802 P2), only with `--dart-define=layoutMeasure=true`: tests tagged `layout-measure`, which collect overflow reports instead of failing on them.
 
 <!-- screenshot-exceptions:begin -->
 | File | Calls |
@@ -211,9 +282,11 @@ A page's screenshot test is a `testLocalizations` case, from `test/common/test_r
 | `test/page/components/pwa/install_prompt_banner_test.dart` | `testLocalizations` |
 <!-- screenshot-exceptions:end -->
 
-**Enforced by**: Test, for the first point and for the `localizations/` directory in the second. `test/constitution/screenshot_placement_test.dart` fails when code outside the body of `testLocalizations` makes a golden check, or when a file outside a `localizations/` directory calls `testLocalizations`, and the table above has no row for it. It also fails when a row no longer matches. Review for where the `localizations/` directory sits, and for the third point.
+**Enforced by**: Test, for the first point and for the `localizations/` directory in the second. `test/constitution/screenshot_placement_test.dart` fails when code outside the body of `testLocalizations` makes a golden check, or when a file outside a `localizations/` directory calls `testLocalizations`, and the table above has no row for it. It also fails when a row no longer matches. Review for where the `localizations/` directory sits, and for the third point. CI for the layout gate: `1.x / Layout Gate` fails when a case overflows by more than 2.0px at a gate size. `test/layout_gate/layout_gate_ci_test.dart` fails when its locales or the suites it picks drift from the gate's.
 
 *Amended 2026-11-18 (#1802): `testLocalizations` also declares #1802 P2's measuring tests, so that P2 measures overflow from the existing cases instead of new ones (#1802, Decision 6).*
+
+*Amended 2026-11-19 (#1802): `testLocalizations` also declares #1802 P3's gate tests, tagged `layout-gate`, from the same cases, so that the gate sweeps the existing cases instead of new ones (#1802, Decision 6). Which locales run where follows Decisions 4, 7 and 12.*
 
 ### 3.6 Mocks
 
