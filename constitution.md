@@ -175,9 +175,72 @@ A change to a notifier, a service, a `…State` class or a model ships unit test
 
 ### 3.3 A new view ships a layout-gate case
 
-A new `lib/page/**/*_view.dart` ships a case in #1802's layout gate, so it is swept for overflow at every layout breakpoint.
+A new `lib/page/**/*_view.dart`, or a new page 5.1 lets go without the suffix, ships a case in #1802's layout gate, so it is swept for overflow at every layout breakpoint.
 
-**Enforced by**: #1802's roster test, once #1802 P3 lands. The rule takes effect then.
+The gate's case is a `testLocalizations` case (3.5). A page has one when a `testLocalizations` suite constructs its class. A page that a case reaches only as a tab of its parent does not count: `TabBarView` lays out the selected tab only.
+
+The table lists the pages that had no case when the gate landed. #1802 P6 empties it. Deleting a row because the page got a case is not an amendment (9.1).
+
+<!-- layout-gate-roster:begin -->
+| Page | Class | Why |
+|---|---|---|
+| `lib/page/advanced_settings/apps_and_gaming/ddns/views/ddns_settings_view.dart` | `DDNSSettingsView` | No case yet (#1802 P6). |
+| `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_forwarding_list_view.dart` | `PortRangeForwardingListView` | No case yet (#1802 P6). |
+| `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_triggering_list_view.dart` | `PortRangeTriggeringListView` | No case yet (#1802 P6). |
+| `lib/page/advanced_settings/apps_and_gaming/ports/views/single_port_forwarding_list_view.dart` | `SinglePortForwardingListView` | No case yet (#1802 P6). |
+| `lib/page/advanced_settings/firewall/views/ipv6_port_service_list_view.dart` | `Ipv6PortServiceListView` | No case yet (#1802 P6). |
+| `lib/page/advanced_settings/local_network_settings/views/dhcp_reservations_edit_view.dart` | `DHCPReservationsEditView` | No case yet (#1802 P6). |
+| `lib/page/advanced_settings/local_network_settings/views/dhcp_server_view.dart` | `DHCPServerView` | No case yet (#1802 P6). |
+| `lib/page/advanced_settings/static_routing/static_routing_list_view.dart` | `StaticRoutingListView` | No case yet (#1802 P6). |
+| `lib/page/components/customs/network_check_view.dart` | `NetworkCheckView` | No case yet (#1802 P6). |
+| `lib/page/components/customs/qr_view.dart` | `?` | Commented out: the file defines nothing. |
+| `lib/page/components/picker/day_picker_view.dart` | `DayPickerView` | No case yet (#1802 P6). |
+| `lib/page/components/picker/number_picker_view.dart` | `NumberPickerView` | No case yet (#1802 P6). |
+| `lib/page/components/picker/region_picker_view.dart` | `RegionPickerView` | No case yet (#1802 P6). |
+| `lib/page/components/picker/time_picker_view.dart` | `TimePickerView` | No case yet (#1802 P6). |
+| `lib/page/components/settings_view/editable_card_list_edit_view.dart` | `EditableCardListEditView` | No case yet (#1802 P6). |
+| `lib/page/components/settings_view/editable_card_list_settings_view.dart` | `EditableCardListsettingsView` | No case yet (#1802 P6). |
+| `lib/page/components/settings_view/editable_table_settings_view.dart` | `AppEditableTableSettingsView` | No case yet (#1802 P6). |
+| `lib/page/components/styled/styled_tab_page_view.dart` | `StyledAppTabPageView` | A layout that pages use, not a page. |
+| `lib/page/components/views/arguments_view.dart` | `ArgumentsBaseConsumerStatefulView` | A base class for views, not a page. |
+| `lib/page/components/views/write_flow_blocked_view.dart` | `WriteFlowBlockedView` | No case yet (#1802 P6). |
+| `lib/page/dashboard/views/dashboard_settings_view.dart` | `DashboardSettingsView` | No case yet (#1802 P6). |
+| `lib/page/dashboard/views/dashboard_support_view.dart` | `DashboardSupportView` | No case yet (#1802 P6). |
+| `lib/page/dashboard/views/prepare_dashboard_view.dart` | `PrepareDashboardView` | No case yet (#1802 P6). |
+| `lib/page/firmware_update/views/firmware_update_process_view.dart` | `FirmwareUpdateProcessView` | No case yet (#1802 P6). |
+| `lib/page/health_check/views/speed_test_selection.dart` | `SpeedTestSelectionView` | No case yet (#1802 P6). |
+| `lib/page/instant_setup/troubleshooter/views/call_support/call_support_main_region_view.dart` | `CallSupportMainRegionView` | No case yet (#1802 P6). |
+| `lib/page/instant_setup/troubleshooter/views/call_support/call_support_more_region_view.dart` | `CallSupportMoreRegionView` | No case yet (#1802 P6). |
+| `lib/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_auth_view.dart` | `PnpIspAuthView` | No case yet (#1802 P6). |
+| `lib/page/landing/views/debug_device_info_view.dart` | `DebugDeviceInfoView` | No case yet (#1802 P6). |
+| `lib/page/landing/views/home_view.dart` | `HomeView` | No case yet (#1802 P6). |
+| `lib/page/login/auto_parent/views/auto_parent_first_login_view.dart` | `AutoParentFirstLoginView` | No case yet (#1802 P6). |
+| `lib/page/login/views/login_cloud_auth_view.dart` | `LoginCloudAuthView` | No case yet (#1802 P6). |
+| `lib/page/login/views/login_cloud_view.dart` | `LoginCloudView` | No case yet (#1802 P6). |
+| `lib/page/nodes/views/change_node_name_view.dart` | `ChangeNodeNameView` | No case yet (#1802 P6). |
+| `lib/page/nodes/views/node_connected_devices_view.dart` | `?` | Empty file. |
+| `lib/page/nodes/views/node_light_guide_view.dart` | `NodeLightGuideView` | No case yet (#1802 P6). |
+| `lib/page/nodes/views/node_name_edit_view.dart` | `NodeNameEditView` | No case yet (#1802 P6). |
+| `lib/page/nodes/views/node_restart_view.dart` | `NodeRestartView` | No case yet (#1802 P6). |
+| `lib/page/otp_flow/views/otp_add_phone.dart` | `OtpAddPhoneView` | No case yet (#1802 P6). |
+| `lib/page/otp_flow/views/otp_code_input.dart` | `OtpCodeInputView` | No case yet (#1802 P6). |
+| `lib/page/otp_flow/views/otp_method_selector_view.dart` | `OTPMethodSelectorView` | No case yet (#1802 P6). |
+| `lib/page/otp_flow/views/otp_view.dart` | `OtpFlowView` | No case yet (#1802 P6). |
+| `lib/page/select_network/views/select_network_view.dart` | `SelectNetworkView` | No case yet (#1802 P6). |
+| `lib/page/troubleshooting/views/troubleshooting_ping_view.dart` | `TroubleshootingPingView` | No case yet (#1802 P6). |
+| `lib/page/troubleshooting/views/troubleshooting_view.dart` | `TroubleshootingView` | No case yet (#1802 P6). |
+| `lib/page/wifi_settings/views/mac_filtering_view.dart` | `MacFilteringView` | No case yet (#1802 P6). |
+| `lib/page/wifi_settings/views/wifi_advanced_settings_view.dart` | `WifiAdvancedSettingsView` | No case yet (#1802 P6). |
+| `lib/page/wifi_settings/views/wifi_list_advanced_mode_view.dart` | `AdvancedModeView` | No case yet (#1802 P6). |
+| `lib/page/wifi_settings/views/wifi_list_simple_mode_view.dart` | `SimpleModeView` | No case yet (#1802 P6). |
+| `lib/page/wifi_settings/views/wifi_list_view.dart` | `WiFiListView` | No case yet (#1802 P6). |
+| `lib/page/wifi_settings/views/wifi_settings_channel_finder_view.dart` | `WifiSettingsChannelFinderView` | No case yet (#1802 P6). |
+| `lib/page/wifi_settings/views/wifi_share_detail_view.dart` | `WiFiShareDetailView` | No case yet (#1802 P6). |
+<!-- layout-gate-roster:end -->
+
+**Enforced by**: Test. `test/constitution/layout_gate_roster_test.dart` fails when a page has no case and no row in the table above, and when a row's page has a case or is gone.
+
+*Amended 2026-11-19 (#1802 P3): the rule takes effect, with the roster test and a row for each page that has no case yet.*
 
 ### 3.4 A fix that ellipsizes ships a readability guard
 
