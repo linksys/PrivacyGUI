@@ -5,10 +5,12 @@
 #
 # Install it once per clone: git config core.hooksPath .githooks
 # It runs the suites test_scripts/layout_gate_affected.dart picks: those of the
-# features whose pages or tests changed, or all of them when a shared part
-# changed. A push that changes no page runs nothing.
+# features whose pages or tests changed and those that build a changed page,
+# or all of them when a shared part changed. A push that changes no page runs
+# nothing.
 #
 # It uses the flutter on PATH, as run_tests.sh does: put .fvmrc's version first.
+# It tests the working tree, so push from a clean checkout of what you push.
 set -euo pipefail
 
 zero=0000000000000000000000000000000000000000
@@ -20,7 +22,9 @@ while read -r _local_ref local_sha _remote_ref _remote_sha; do
   changed+="$(git log --format= --name-only "$local_sha" --not --remotes)"$'\n'
 done
 
-if [ -z "$(printf '%s' "$changed" | tr -d '[:space:]')" ]; then
+# Only code, tests, the widgets package and assets can move a layout, so a
+# push of docs alone needs no flutter.
+if ! printf '%s\n' "$changed" | grep -qE '^(lib|test|plugins|assets)/'; then
   exit 0
 fi
 

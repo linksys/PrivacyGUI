@@ -106,6 +106,19 @@ void main() {
     });
   });
 
+  group('declaredClassesIn', () {
+    test('lists the public classes a file declares', () {
+      const source = '''
+class FaqListView extends ConsumerWidget {}
+class _FaqListViewState {}
+class FaqItem extends StatelessWidget {}
+mixin FaqMixin {}
+''';
+
+      expect(declaredClassesIn(source), {'FaqListView', 'FaqItem'});
+    });
+  });
+
   group('constructedNamesIn', () {
     test('finds the classes a source constructs, by any form of creation', () {
       const source = '''

@@ -26,7 +26,9 @@ void main() {
       'lib/l10n/app_ja.arb',
       'test/common/config.dart',
       'test/layout_gate/gate.dart',
-      'assets/fonts/NotoSans-Regular.ttf',
+      'test/fonts/NotoSans-Regular.ttf',
+      'test/test_data/wifi_list_test_state.dart',
+      'assets/icons/linksys_icons.ttf',
     ]) {
       expect(affectedGateSuites([shared], suites), suites, reason: shared);
     }
@@ -41,6 +43,26 @@ void main() {
         'test/core/jnap/router_repository_test.dart',
       ], suites),
       isEmpty,
+    );
+  });
+
+  test("runs the suites that construct a changed page, in another feature's "
+      'directory too', () {
+    // lib/page/support has no test/page/support: the dashboard suite is the
+    // one that builds FaqListView.
+    expect(
+      affectedGateSuites(
+        ['lib/page/support/faq_list_view.dart'],
+        suites,
+        declares: {
+          'lib/page/support/faq_list_view.dart': {'FaqListView'},
+        },
+        constructs: {
+          dashboard: {'DashboardHomeView', 'FaqListView'},
+          wifi: {'WiFiMainView'},
+        },
+      ),
+      {dashboard},
     );
   });
 

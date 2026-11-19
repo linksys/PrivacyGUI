@@ -84,6 +84,14 @@ Set<String> findUncoveredPages(
   };
 }
 
+/// The public classes that [source] declares.
+Set<String> declaredClassesIn(String source) => {
+      for (final declaration in parseDart(source).declarations)
+        if (declaration is ClassDeclaration &&
+            !declaration.name.lexeme.startsWith('_'))
+          declaration.name.lexeme,
+    };
+
 /// The classes that [source] constructs: `A()`, `const A()`, `new A()` and
 /// `A.named()`. Without type resolution `A()` parses as a call, so a call to
 /// a capitalised name counts; a type named only as a value, as in

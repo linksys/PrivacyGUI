@@ -164,7 +164,7 @@ So every test run passes `--exclude-tags="golden||loc"`:
 
 - `./run_tests.sh <reportDir>` runs the whole suite that way and writes `tests.json` into `<reportDir>`. Run it before you push. It also leaves out `layout-gate`, the layout gate's tests (3.5), which take long enough to run in CI jobs of their own.
 - The layout gate runs before you push through `.githooks/pre-push`, once you install the hooks with `git config core.hooksPath .githooks`. The hook runs the suites a push can affect, in every gate locale (3.5). To run the gate by hand, use `flutter test <suite> --tags layout-gate --exclude-tags="golden||loc"`.
-- While you work, `flutter test <file or directory> --exclude-tags="golden||loc"` is fine, with any `--dart-define` the file needs.
+- While you work, `flutter test <file or directory> --exclude-tags="golden||loc"` is fine, with any `--dart-define` the file needs. On a screenshot suite this also runs its layout gate tests in every gate locale (3.5); `--exclude-tags="golden||loc||layout-gate"` leaves them out.
 
 **Enforced by**: Test for `run_tests.sh`: `test/constitution/run_tests_script_test.dart` fails if the script stops excluding the tags, `layout-gate` included. Review for other runs. `1.x / Unit Tests` runs the script on the PRs that **CI** in the preamble covers.
 

@@ -18,8 +18,23 @@ void main() {
   for (String? line; (line = stdin.readLineSync()) != null;) {
     if (line!.trim().isNotEmpty) changed.add(line.trim());
   }
-  final suites = screenshotSuites(dartSources('test'));
-  for (final suite in affectedGateSuites(changed, suites).toList()..sort()) {
+  final tests = dartSources('test');
+  final suites = screenshotSuites(tests);
+  final affected = affectedGateSuites(
+    changed,
+    suites,
+    // A changed page's classes, so that a suite in another feature's directory
+    // that constructs it runs too.
+    declares: {
+      for (final path in changed)
+        if (path.endsWith('.dart') && File(path).existsSync())
+          path: declaredClassesIn(File(path).readAsStringSync()),
+    },
+    constructs: {
+      for (final suite in suites) suite: constructedNamesIn(tests[suite]!),
+    },
+  );
+  for (final suite in affected.toList()..sort()) {
     stdout.writeln(suite);
   }
 }
