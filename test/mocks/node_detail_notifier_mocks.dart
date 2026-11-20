@@ -28,13 +28,13 @@ import 'package:privacy_gui/page/nodes/_nodes.dart' as _i3;
 class _FakeNotifierProviderRef_0<T> extends _i1.SmartFake
     implements _i2.NotifierProviderRef<T> {
   _FakeNotifierProviderRef_0(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
+      : super(parent, parentInvocation);
 }
 
 class _FakeNodeDetailState_1 extends _i1.SmartFake
     implements _i3.NodeDetailState {
   _FakeNodeDetailState_1(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
+      : super(parent, parentInvocation);
 }
 
 /// A class which mocks [NodeDetailNotifier].
@@ -44,56 +44,50 @@ class MockNodeDetailNotifier extends _i2.Notifier<_i3.NodeDetailState>
     with _i1.Mock
     implements _i3.NodeDetailNotifier {
   @override
-  _i2.NotifierProviderRef<_i3.NodeDetailState> get ref =>
-      (super.noSuchMethod(
-            Invocation.getter(#ref),
-            returnValue: _FakeNotifierProviderRef_0<_i3.NodeDetailState>(
-              this,
-              Invocation.getter(#ref),
-            ),
-            returnValueForMissingStub:
-                _FakeNotifierProviderRef_0<_i3.NodeDetailState>(
-                  this,
-                  Invocation.getter(#ref),
-                ),
-          )
-          as _i2.NotifierProviderRef<_i3.NodeDetailState>);
+  _i2.NotifierProviderRef<_i3.NodeDetailState> get ref => (super.noSuchMethod(
+        Invocation.getter(#ref),
+        returnValue: _FakeNotifierProviderRef_0<_i3.NodeDetailState>(
+          this,
+          Invocation.getter(#ref),
+        ),
+        returnValueForMissingStub:
+            _FakeNotifierProviderRef_0<_i3.NodeDetailState>(
+          this,
+          Invocation.getter(#ref),
+        ),
+      ) as _i2.NotifierProviderRef<_i3.NodeDetailState>);
 
   @override
-  _i3.NodeDetailState get state =>
-      (super.noSuchMethod(
-            Invocation.getter(#state),
-            returnValue: _FakeNodeDetailState_1(
-              this,
-              Invocation.getter(#state),
-            ),
-            returnValueForMissingStub: _FakeNodeDetailState_1(
-              this,
-              Invocation.getter(#state),
-            ),
-          )
-          as _i3.NodeDetailState);
+  _i3.NodeDetailState get state => (super.noSuchMethod(
+        Invocation.getter(#state),
+        returnValue: _FakeNodeDetailState_1(
+          this,
+          Invocation.getter(#state),
+        ),
+        returnValueForMissingStub: _FakeNodeDetailState_1(
+          this,
+          Invocation.getter(#state),
+        ),
+      ) as _i3.NodeDetailState);
 
   @override
   set state(_i3.NodeDetailState? value) => super.noSuchMethod(
-    Invocation.setter(#state, value),
-    returnValueForMissingStub: null,
-  );
+        Invocation.setter(#state, value),
+        returnValueForMissingStub: null,
+      );
 
   @override
-  _i3.NodeDetailState build() =>
-      (super.noSuchMethod(
-            Invocation.method(#build, []),
-            returnValue: _FakeNodeDetailState_1(
-              this,
-              Invocation.method(#build, []),
-            ),
-            returnValueForMissingStub: _FakeNodeDetailState_1(
-              this,
-              Invocation.method(#build, []),
-            ),
-          )
-          as _i3.NodeDetailState);
+  _i3.NodeDetailState build() => (super.noSuchMethod(
+        Invocation.method(#build, []),
+        returnValue: _FakeNodeDetailState_1(
+          this,
+          Invocation.method(#build, []),
+        ),
+        returnValueForMissingStub: _FakeNodeDetailState_1(
+          this,
+          Invocation.method(#build, []),
+        ),
+      ) as _i3.NodeDetailState);
 
   @override
   _i3.NodeDetailState createState(
@@ -101,62 +95,56 @@ class MockNodeDetailNotifier extends _i2.Notifier<_i3.NodeDetailState>
     String? targetId,
   ) =>
       (super.noSuchMethod(
-            Invocation.method(#createState, [deviceManagerState, targetId]),
-            returnValue: _FakeNodeDetailState_1(
-              this,
-              Invocation.method(#createState, [deviceManagerState, targetId]),
-            ),
-            returnValueForMissingStub: _FakeNodeDetailState_1(
-              this,
-              Invocation.method(#createState, [deviceManagerState, targetId]),
-            ),
-          )
-          as _i3.NodeDetailState);
+        Invocation.method(#createState, [deviceManagerState, targetId]),
+        returnValue: _FakeNodeDetailState_1(
+          this,
+          Invocation.method(#createState, [deviceManagerState, targetId]),
+        ),
+        returnValueForMissingStub: _FakeNodeDetailState_1(
+          this,
+          Invocation.method(#createState, [deviceManagerState, targetId]),
+        ),
+      ) as _i3.NodeDetailState);
 
   @override
   _i5.Future<dynamic> startBlinkNodeLED(String? deviceId) =>
       (super.noSuchMethod(
-            Invocation.method(#startBlinkNodeLED, [deviceId]),
-            returnValue: _i5.Future<dynamic>.value(),
-            returnValueForMissingStub: _i5.Future<dynamic>.value(),
-          )
-          as _i5.Future<dynamic>);
+        Invocation.method(#startBlinkNodeLED, [deviceId]),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
 
   @override
-  _i5.Future<dynamic> stopBlinkNodeLED() =>
-      (super.noSuchMethod(
-            Invocation.method(#stopBlinkNodeLED, []),
-            returnValue: _i5.Future<dynamic>.value(),
-            returnValueForMissingStub: _i5.Future<dynamic>.value(),
-          )
-          as _i5.Future<dynamic>);
+  _i5.Future<dynamic> stopBlinkNodeLED() => (super.noSuchMethod(
+        Invocation.method(#stopBlinkNodeLED, []),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
 
   @override
   _i5.Future<void> toggleBlinkNode([bool? stopOnly = false]) =>
       (super.noSuchMethod(
-            Invocation.method(#toggleBlinkNode, [stopOnly]),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
-          )
-          as _i5.Future<void>);
+        Invocation.method(#toggleBlinkNode, [stopOnly]),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 
   @override
-  _i5.Future<void> updateDeviceName(String? newName) =>
-      (super.noSuchMethod(
-            Invocation.method(#updateDeviceName, [newName]),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
-          )
-          as _i5.Future<void>);
+  _i5.Future<void> updateDeviceName(String? newName) => (super.noSuchMethod(
+        Invocation.method(#updateDeviceName, [newName]),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 
   @override
   void listenSelf(
     void Function(_i3.NodeDetailState?, _i3.NodeDetailState)? listener, {
     void Function(Object, StackTrace)? onError,
-  }) => super.noSuchMethod(
-    Invocation.method(#listenSelf, [listener], {#onError: onError}),
-    returnValueForMissingStub: null,
-  );
+  }) =>
+      super.noSuchMethod(
+        Invocation.method(#listenSelf, [listener], {#onError: onError}),
+        returnValueForMissingStub: null,
+      );
 
   @override
   bool updateShouldNotify(
@@ -164,9 +152,8 @@ class MockNodeDetailNotifier extends _i2.Notifier<_i3.NodeDetailState>
     _i3.NodeDetailState? next,
   ) =>
       (super.noSuchMethod(
-            Invocation.method(#updateShouldNotify, [previous, next]),
-            returnValue: false,
-            returnValueForMissingStub: false,
-          )
-          as bool);
+        Invocation.method(#updateShouldNotify, [previous, next]),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
 }

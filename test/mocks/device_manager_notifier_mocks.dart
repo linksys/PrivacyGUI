@@ -32,13 +32,13 @@ import 'package:privacy_gui/core/utils/icon_device_category.dart' as _i8;
 class _FakeNotifierProviderRef_0<T> extends _i1.SmartFake
     implements _i2.NotifierProviderRef<T> {
   _FakeNotifierProviderRef_0(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
+      : super(parent, parentInvocation);
 }
 
 class _FakeDeviceManagerState_1 extends _i1.SmartFake
     implements _i3.DeviceManagerState {
   _FakeDeviceManagerState_1(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
+      : super(parent, parentInvocation);
 }
 
 /// A class which mocks [DeviceManagerNotifier].
@@ -50,115 +50,103 @@ class MockDeviceManagerNotifier extends _i2.Notifier<_i3.DeviceManagerState>
   @override
   _i2.NotifierProviderRef<_i3.DeviceManagerState> get ref =>
       (super.noSuchMethod(
-            Invocation.getter(#ref),
-            returnValue: _FakeNotifierProviderRef_0<_i3.DeviceManagerState>(
-              this,
-              Invocation.getter(#ref),
-            ),
-            returnValueForMissingStub:
-                _FakeNotifierProviderRef_0<_i3.DeviceManagerState>(
-                  this,
-                  Invocation.getter(#ref),
-                ),
-          )
-          as _i2.NotifierProviderRef<_i3.DeviceManagerState>);
+        Invocation.getter(#ref),
+        returnValue: _FakeNotifierProviderRef_0<_i3.DeviceManagerState>(
+          this,
+          Invocation.getter(#ref),
+        ),
+        returnValueForMissingStub:
+            _FakeNotifierProviderRef_0<_i3.DeviceManagerState>(
+          this,
+          Invocation.getter(#ref),
+        ),
+      ) as _i2.NotifierProviderRef<_i3.DeviceManagerState>);
 
   @override
-  _i3.DeviceManagerState get state =>
-      (super.noSuchMethod(
-            Invocation.getter(#state),
-            returnValue: _FakeDeviceManagerState_1(
-              this,
-              Invocation.getter(#state),
-            ),
-            returnValueForMissingStub: _FakeDeviceManagerState_1(
-              this,
-              Invocation.getter(#state),
-            ),
-          )
-          as _i3.DeviceManagerState);
+  _i3.DeviceManagerState get state => (super.noSuchMethod(
+        Invocation.getter(#state),
+        returnValue: _FakeDeviceManagerState_1(
+          this,
+          Invocation.getter(#state),
+        ),
+        returnValueForMissingStub: _FakeDeviceManagerState_1(
+          this,
+          Invocation.getter(#state),
+        ),
+      ) as _i3.DeviceManagerState);
 
   @override
   set state(_i3.DeviceManagerState? value) => super.noSuchMethod(
-    Invocation.setter(#state, value),
-    returnValueForMissingStub: null,
-  );
+        Invocation.setter(#state, value),
+        returnValueForMissingStub: null,
+      );
 
   @override
-  _i3.DeviceManagerState build() =>
-      (super.noSuchMethod(
-            Invocation.method(#build, []),
-            returnValue: _FakeDeviceManagerState_1(
-              this,
-              Invocation.method(#build, []),
-            ),
-            returnValueForMissingStub: _FakeDeviceManagerState_1(
-              this,
-              Invocation.method(#build, []),
-            ),
-          )
-          as _i3.DeviceManagerState);
+  _i3.DeviceManagerState build() => (super.noSuchMethod(
+        Invocation.method(#build, []),
+        returnValue: _FakeDeviceManagerState_1(
+          this,
+          Invocation.method(#build, []),
+        ),
+        returnValueForMissingStub: _FakeDeviceManagerState_1(
+          this,
+          Invocation.method(#build, []),
+        ),
+      ) as _i3.DeviceManagerState);
 
   @override
   void init() => super.noSuchMethod(
-    Invocation.method(#init, []),
-    returnValueForMissingStub: null,
-  );
+        Invocation.method(#init, []),
+        returnValueForMissingStub: null,
+      );
 
   @override
   _i3.DeviceManagerState createState({
     _i5.CoreTransactionData? pollingResult,
   }) =>
       (super.noSuchMethod(
-            Invocation.method(#createState, [], {
-              #pollingResult: pollingResult,
-            }),
-            returnValue: _FakeDeviceManagerState_1(
-              this,
-              Invocation.method(#createState, [], {
-                #pollingResult: pollingResult,
-              }),
-            ),
-            returnValueForMissingStub: _FakeDeviceManagerState_1(
-              this,
-              Invocation.method(#createState, [], {
-                #pollingResult: pollingResult,
-              }),
-            ),
-          )
-          as _i3.DeviceManagerState);
+        Invocation.method(#createState, [], {
+          #pollingResult: pollingResult,
+        }),
+        returnValue: _FakeDeviceManagerState_1(
+          this,
+          Invocation.method(#createState, [], {
+            #pollingResult: pollingResult,
+          }),
+        ),
+        returnValueForMissingStub: _FakeDeviceManagerState_1(
+          this,
+          Invocation.method(#createState, [], {
+            #pollingResult: pollingResult,
+          }),
+        ),
+      ) as _i3.DeviceManagerState);
 
   @override
-  bool isEmptyState() =>
-      (super.noSuchMethod(
-            Invocation.method(#isEmptyState, []),
-            returnValue: false,
-            returnValueForMissingStub: false,
-          )
-          as bool);
+  bool isEmptyState() => (super.noSuchMethod(
+        Invocation.method(#isEmptyState, []),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
 
   @override
-  String? getSsidConnectedBy(_i3.LinksysDevice? device) =>
-      (super.noSuchMethod(
-            Invocation.method(#getSsidConnectedBy, [device]),
-            returnValueForMissingStub: null,
-          )
-          as String?);
+  String? getSsidConnectedBy(_i3.LinksysDevice? device) => (super.noSuchMethod(
+        Invocation.method(#getSsidConnectedBy, [device]),
+        returnValueForMissingStub: null,
+      ) as String?);
 
   @override
-  String getBandConnectedBy(_i3.LinksysDevice? device) =>
-      (super.noSuchMethod(
-            Invocation.method(#getBandConnectedBy, [device]),
-            returnValue: _i6.dummyValue<String>(
-              this,
-              Invocation.method(#getBandConnectedBy, [device]),
-            ),
-            returnValueForMissingStub: _i6.dummyValue<String>(
-              this,
-              Invocation.method(#getBandConnectedBy, [device]),
-            ),
-          )
-          as String);
+  String getBandConnectedBy(_i3.LinksysDevice? device) => (super.noSuchMethod(
+        Invocation.method(#getBandConnectedBy, [device]),
+        returnValue: _i6.dummyValue<String>(
+          this,
+          Invocation.method(#getBandConnectedBy, [device]),
+        ),
+        returnValueForMissingStub: _i6.dummyValue<String>(
+          this,
+          Invocation.method(#getBandConnectedBy, [device]),
+        ),
+      ) as String);
 
   @override
   _i3.LinksysDevice? findParent(
@@ -166,10 +154,9 @@ class MockDeviceManagerNotifier extends _i2.Notifier<_i3.DeviceManagerState>
     _i3.DeviceManagerState? current,
   ]) =>
       (super.noSuchMethod(
-            Invocation.method(#findParent, [deviceID, current]),
-            returnValueForMissingStub: null,
-          )
-          as _i3.LinksysDevice?);
+        Invocation.method(#findParent, [deviceID, current]),
+        returnValueForMissingStub: null,
+      ) as _i3.LinksysDevice?);
 
   @override
   _i7.Future<void> updateDeviceNameAndIcon({
@@ -179,43 +166,41 @@ class MockDeviceManagerNotifier extends _i2.Notifier<_i3.DeviceManagerState>
     _i8.IconDeviceCategory? icon,
   }) =>
       (super.noSuchMethod(
-            Invocation.method(#updateDeviceNameAndIcon, [], {
-              #targetId: targetId,
-              #newName: newName,
-              #isLocation: isLocation,
-              #icon: icon,
-            }),
-            returnValue: _i7.Future<void>.value(),
-            returnValueForMissingStub: _i7.Future<void>.value(),
-          )
-          as _i7.Future<void>);
+        Invocation.method(#updateDeviceNameAndIcon, [], {
+          #targetId: targetId,
+          #newName: newName,
+          #isLocation: isLocation,
+          #icon: icon,
+        }),
+        returnValue: _i7.Future<void>.value(),
+        returnValueForMissingStub: _i7.Future<void>.value(),
+      ) as _i7.Future<void>);
 
   @override
   _i7.Future<void> deleteDevices({required List<String>? deviceIds}) =>
       (super.noSuchMethod(
-            Invocation.method(#deleteDevices, [], {#deviceIds: deviceIds}),
-            returnValue: _i7.Future<void>.value(),
-            returnValueForMissingStub: _i7.Future<void>.value(),
-          )
-          as _i7.Future<void>);
+        Invocation.method(#deleteDevices, [], {#deviceIds: deviceIds}),
+        returnValue: _i7.Future<void>.value(),
+        returnValueForMissingStub: _i7.Future<void>.value(),
+      ) as _i7.Future<void>);
 
   @override
   _i7.Future<void> deauthClient({required String? macAddress}) =>
       (super.noSuchMethod(
-            Invocation.method(#deauthClient, [], {#macAddress: macAddress}),
-            returnValue: _i7.Future<void>.value(),
-            returnValueForMissingStub: _i7.Future<void>.value(),
-          )
-          as _i7.Future<void>);
+        Invocation.method(#deauthClient, [], {#macAddress: macAddress}),
+        returnValue: _i7.Future<void>.value(),
+        returnValueForMissingStub: _i7.Future<void>.value(),
+      ) as _i7.Future<void>);
 
   @override
   void listenSelf(
     void Function(_i3.DeviceManagerState?, _i3.DeviceManagerState)? listener, {
     void Function(Object, StackTrace)? onError,
-  }) => super.noSuchMethod(
-    Invocation.method(#listenSelf, [listener], {#onError: onError}),
-    returnValueForMissingStub: null,
-  );
+  }) =>
+      super.noSuchMethod(
+        Invocation.method(#listenSelf, [listener], {#onError: onError}),
+        returnValueForMissingStub: null,
+      );
 
   @override
   bool updateShouldNotify(
@@ -223,9 +208,8 @@ class MockDeviceManagerNotifier extends _i2.Notifier<_i3.DeviceManagerState>
     _i3.DeviceManagerState? next,
   ) =>
       (super.noSuchMethod(
-            Invocation.method(#updateShouldNotify, [previous, next]),
-            returnValue: false,
-            returnValueForMissingStub: false,
-          )
-          as bool);
+        Invocation.method(#updateShouldNotify, [previous, next]),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
 }
