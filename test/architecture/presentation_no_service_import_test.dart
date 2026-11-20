@@ -38,13 +38,6 @@ const _layers = [
 /// Empty is the goal. An entry here is a decision, not a fix: it has to say why
 /// the import is the right shape for that file.
 const _allowed = <String, String>{
-  // Reads `awsCredentialsStoreProvider`, a `Provider<AwsCredentialsStore>`, so
-  // the view already reaches the store through a Provider. The page has no
-  // notifier to route it through, and adding one only to hold four calls was
-  // decided against (2026-10-12).
-  'lib/page/ai_assistant/views/router_assistant_view.dart':
-      'reads a service Provider<T>; page has no notifier',
-
   // A developer tool whose job is to talk to USP directly: it builds its own
   // `UspClient` / `UspBridgeClient` against a URL the developer types, so there
   // is no service to route it through that would not be this view again.
