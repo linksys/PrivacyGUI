@@ -191,7 +191,7 @@ A new `lib/page/**/*_view.dart`, or a new page 5.1 lets go without the suffix, s
 
 The gate's case is a `testLocalizations` case (3.5). A page has one when a `testLocalizations` suite constructs its class. A page that a case reaches only as a tab of its parent does not count: `TabBarView` lays out the selected tab only. A view that only another page builds, with no route of its own, is a component instead: it needs no case of its own when that page's cases open it, and its row names them.
 
-The table lists the pages that have no case. A row whose reason starts "No case yet" waits for #1802 P6 to give the page one; every other row says why the page needs none. Deleting a row because the page got a case, or was deleted, is not an amendment (9.1). A row that says nothing in `lib/` builds the page fails the roster test once something does.
+The table lists the pages that have no case. A row whose reason starts "No case yet" waits for #1802 P6 to give the page one; every other row says why the page needs none. Deleting a row because the page got a case, or was deleted, is not an amendment (9.1). A row that says nothing in `lib/` builds the page fails the roster test once something does, and a row that says nothing navigates to its route fails once code outside `lib/route/` names that route.
 
 <!-- layout-gate-roster:begin -->
 | Page | Class | Why |
@@ -247,7 +247,7 @@ The table lists the pages that have no case. A row whose reason starts "No case 
 
 *Amended 2026-11-19 (#1802): the rule takes effect, with the roster test and a row for each page that has no case yet, so a page cannot be left out of the gate unnoticed. The version moves to 1.4, not 2.0, although 9.2 asks a major number for an added exception or a tightened rule. This section said the rule would take effect with #1802 P3, and the rows are the exceptions it starts with, not exceptions added to a rule already in force. Counting the five pages 5.1 names, and not counting a tab, follow what 5.1 and `TabBarView` already imply. The team decides whether that holds (9.3).*
 
-*Amended 2026-11-19 (#1802): the table may keep a page for good, with the reason it needs no case, where it said #1802 P6 would empty it. #1802 P6 had planned these exemptions, and 38 rows take one: 10 that are not pages, 19 that nothing lets a user open, and 9 that #1849 deletes. A component that a page lays out needs no case of its own when that page's cases open it. A page counts as unreachable when nothing in `lib/` builds it, or its route throws when opened, as a typed URL would open it. The rows of two deleted files go. The version moves to 1.6, not 2.0, although 9.2 asks a major number for an added exception, as #1802's other amendments kept the major number.*
+*Amended 2026-11-19 (#1802): the table may keep a page for good, with the reason it needs no case, where it said #1802 P6 would empty it. #1802 P6 had planned these exemptions, and 38 rows take one: 10 that are not pages, 19 that nothing lets a user open, and 9 that #1849 deletes. A component that a page lays out needs no case of its own when that page's cases open it. A page counts as unreachable when nothing in `lib/` builds it, or its route throws when opened, as a typed URL would open it. The rows of two deleted files go. The version moves to 1.6, not 2.0, although 9.2 asks a major number for an added exception, as #1802's other amendments kept the major number. The team approved it in a meeting on 2026-11-20 (9.3).*
 
 ### 3.4 A fix that ellipsizes ships a readability guard
 

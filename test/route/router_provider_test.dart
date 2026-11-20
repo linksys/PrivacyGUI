@@ -194,7 +194,7 @@ void main() {
             ));
   }
 
-  final localLogin = {pLocalPassword: 'Linksys123!'};
+  final localLogin = {pLocalPassword: 'TestAdmin1!'};
   Map<String, String> guardianLogin() => {
         pSessionToken: jsonEncode({
           'access_token': 'agent-token',

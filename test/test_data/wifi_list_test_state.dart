@@ -3,7 +3,7 @@ const wifiListTestState = {
     {
       "radioID": "RADIO_2.4GHz",
       "ssid": "Linksys03041",
-      "password": "7sVzt65hf@",
+      "password": "FakeWiFi1@",
       "securityType": "WPA2/WPA3-Mixed-Personal",
       "wirelessMode": "802.11mixed",
       "defaultMixedMode": "802.11mixed",
@@ -34,7 +34,7 @@ const wifiListTestState = {
     {
       "radioID": "RADIO_5GHz",
       "ssid": "Linksys03041",
-      "password": "7sVzt65hf@",
+      "password": "FakeWiFi1@",
       "securityType": "WPA2/WPA3-Mixed-Personal",
       "wirelessMode": "802.11anacaxbe",
       "defaultMixedMode": "802.11anacaxbe",
@@ -127,7 +127,7 @@ const wifiListTestState = {
   "simpleModeWifi": {
     "radioID": "RADIO_2.4GHz",
     "ssid": "Linksys03041",
-    "password": "7sVzt65hf@",
+    "password": "FakeWiFi1@",
     "securityType": "WPA2/WPA3-Mixed-Personal",
     "wirelessMode": "802.11mixed",
     "defaultMixedMode": "802.11mixed",
@@ -162,7 +162,7 @@ const wifiListGuestEnabledTestState = {
     {
       "radioID": "RADIO_2.4GHz",
       "ssid": "Linksys03041",
-      "password": "7sVzt65hf@",
+      "password": "FakeWiFi1@",
       "securityType": "WPA2/WPA3-Mixed-Personal",
       "wirelessMode": "802.11mixed",
       "defaultMixedMode": "802.11mixed",
@@ -193,7 +193,7 @@ const wifiListGuestEnabledTestState = {
     {
       "radioID": "RADIO_5GHz",
       "ssid": "Linksys03041",
-      "password": "7sVzt65hf@",
+      "password": "FakeWiFi1@",
       "securityType": "WPA2/WPA3-Mixed-Personal",
       "wirelessMode": "802.11anacaxbe",
       "defaultMixedMode": "802.11anacaxbe",
@@ -286,7 +286,7 @@ const wifiListGuestEnabledTestState = {
   "simpleModeWifi": {
     "radioID": "RADIO_2.4GHz",
     "ssid": "Linksys03041",
-    "password": "7sVzt65hf@",
+    "password": "FakeWiFi1@",
     "securityType": "WPA2/WPA3-Mixed-Personal",
     "wirelessMode": "802.11mixed",
     "defaultMixedMode": "802.11mixed",
@@ -321,7 +321,7 @@ const wifiListInvalidWirelessModeTestState = {
     {
       "radioID": "RADIO_2.4GHz",
       "ssid": "Linksys03041",
-      "password": "7sVzt65hf@",
+      "password": "FakeWiFi1@",
       "securityType": "WPA2/WPA3-Mixed-Personal",
       "wirelessMode": "802.11mixed",
       "defaultMixedMode": "802.11mixed",
@@ -352,7 +352,7 @@ const wifiListInvalidWirelessModeTestState = {
     {
       "radioID": "RADIO_5GHz",
       "ssid": "Linksys03041",
-      "password": "7sVzt65hf@",
+      "password": "FakeWiFi1@",
       "securityType": "WPA2/WPA3-Mixed-Personal",
       "wirelessMode": "802.11anacaxbe",
       "defaultMixedMode": "802.11anacaxbe",
@@ -445,7 +445,7 @@ const wifiListInvalidWirelessModeTestState = {
   "simpleModeWifi": {
     "radioID": "RADIO_2.4GHz",
     "ssid": "Linksys03041",
-    "password": "7sVzt65hf@",
+    "password": "FakeWiFi1@",
     "securityType": "WPA2/WPA3-Mixed-Personal",
     "wirelessMode": "802.11mixed",
     "defaultMixedMode": "802.11mixed",
@@ -480,7 +480,7 @@ const wifiListUnavailableChannelWidthTestState = {
     {
       "radioID": "RADIO_2.4GHz",
       "ssid": "Linksys03041",
-      "password": "7sVzt65hf@",
+      "password": "FakeWiFi1@",
       "securityType": "WPA2/WPA3-Mixed-Personal",
       "wirelessMode": "802.11mixed",
       "defaultMixedMode": "802.11mixed",
@@ -511,7 +511,7 @@ const wifiListUnavailableChannelWidthTestState = {
     {
       "radioID": "RADIO_5GHz",
       "ssid": "Linksys03041",
-      "password": "7sVzt65hf@",
+      "password": "FakeWiFi1@",
       "securityType": "WPA2/WPA3-Mixed-Personal",
       "wirelessMode": "802.11a",
       "defaultMixedMode": "802.11a",
@@ -604,7 +604,7 @@ const wifiListUnavailableChannelWidthTestState = {
   "simpleModeWifi": {
     "radioID": "RADIO_2.4GHz",
     "ssid": "Linksys03041",
-    "password": "7sVzt65hf@",
+    "password": "FakeWiFi1@",
     "securityType": "WPA2/WPA3-Mixed-Personal",
     "wirelessMode": "802.11mixed",
     "defaultMixedMode": "802.11mixed",

@@ -1,8 +1,0 @@
-{
-    "name": "Instant Privacy",
-    "target": "integration_test/instant_privacy_test.dart",
-    "description": "Enable the instant privacy function",
-    "setUp":  ["factory_reset", "skip_setup"],
-    "tearDown": [],
-    "tags": ["menu", "instant_privacy"]
-}
