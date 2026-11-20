@@ -18,11 +18,11 @@ import 'gate.dart';
 /// `FittedBox` shrinks passes however small it gets.
 const Matcher isFullyShown = _FullyShown();
 
-/// The narrowest mobile and desktop pages: the gate's floor, and the first
-/// width past [ResponsiveLayout.large], where the desktop content box is
-/// narrowest ([requiredGateWidths]).
+/// The narrowest mobile and desktop pages: the gate's floor, and
+/// [ResponsiveLayout.large], where the desktop content box is narrowest
+/// ([requiredGateWidths]).
 final List<ScreenSize> narrowestScreens = [
-  for (final width in [gateScreens.first.width, ResponsiveLayout.large + 1])
+  for (final width in [gateScreens.first.width, ResponsiveLayout.large])
     ScreenSize('${width.toInt()}', width, 900, 1),
 ];
 

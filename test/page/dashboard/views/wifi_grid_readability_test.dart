@@ -27,7 +27,7 @@ import '../../../test_data/_index.dart';
 // lines since #1802; before, it had no width limit and ran past the card in
 // Japanese. This checks the count still fits its lines in every locale,
 // on the narrowest card the dashboard lays out: two cards side by side in 8
-// columns at 1241, the narrowest desktop page. 0, 1, 2 and 188 cover the
+// columns at 1240, the narrowest desktop page. 0, 1, 2 and 188 cover the
 // plural forms, which differ in length: Japanese's "no devices", the one
 // that overflowed, and Russian's "few" and "many".
 void main() {

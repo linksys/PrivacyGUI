@@ -87,15 +87,6 @@ android {
         versionName flutterVersionName
     }
 
-    signingConfigs {
-        debug {
-            storeFile file("../debug_keystore.keystore")
-            storePassword "Linksys123!"
-            keyAlias "LinksysDebug"
-            keyPassword "Linksys123!"
-        }
-    }
-
     buildTypes {
         release {
             def propsFilePath = '/opt/build/release-signing.properties'
@@ -128,15 +119,6 @@ android {
             //         outputFileName = newName
             //     }
             // }
-        }
-    }
-
-    signingConfigs {
-        debug {
-            storeFile file("../debug_keystore.keystore")
-            storePassword "Linksys123!"
-            keyAlias "LinksysDebug"
-            keyPassword "Linksys123!"
         }
     }
 

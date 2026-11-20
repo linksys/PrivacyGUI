@@ -332,7 +332,7 @@ void main() {
             'channelWidth': 'Auto',
             'channel': 0,
             'security': 'WPA2/WPA3-Mixed-Personal',
-            'wpaPersonalSettings': {'passphrase': '7sVzt65hf@'},
+            'wpaPersonalSettings': {'passphrase': 'FakeWiFi1@'},
           },
         });
         expect((writtenRadio('RADIO_5GHz')['settings'] as Map)['mode'],

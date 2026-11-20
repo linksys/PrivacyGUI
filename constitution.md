@@ -260,14 +260,14 @@ A fix that makes text fit by ellipsizing it or capping `maxLines` ships a test a
 
 The overflow sweep cannot see this: adding `maxLines: 1` turns every overflowing row green and cuts `192.168.1.100` in the middle.
 
-These guards hold the values that are useless when cut, each as long as it gets. `testFullyShown`, in the same file, runs a guard in every locale at the narrowest mobile and desktop pages, 480 and 1241:
+These guards hold the values that are useless when cut, each as long as it gets. `testFullyShown`, in the same file, runs a guard in every locale at the narrowest mobile and desktop pages, 480 and 1240:
 
 | Guard | Values |
 |---|---|
 | `test/page/instant_device/views/device_detail_readability_test.dart` | Device detail: the IPv4 and IPv6 addresses, the MAC address and the SSID |
 | `test/page/nodes/views/node_detail_readability_test.dart` | Node detail: the WAN and LAN IP addresses, the firmware version, the serial number and the MAC address |
 | `test/page/dashboard/views/internet_status_readability_test.dart` | The dashboard's internet status: the router's serial number and firmware version |
-| `test/page/dashboard/views/wifi_grid_readability_test.dart` | The dashboard's Wi-Fi card: the SSID, at 1241 only, where the card is narrowest. The file also holds the guard for the card's device count, which #1802 fixed. |
+| `test/page/dashboard/views/wifi_grid_readability_test.dart` | The dashboard's Wi-Fi card: the SSID, at 1240 only, where the card is narrowest. The file also holds the guard for the card's device count, which #1802 fixed. |
 | `test/page/wifi_settings/views/wifi_list_readability_test.dart` | Wi-Fi settings: the main and guest SSIDs, in the advanced and the simple mode |
 
 A guard is proven by a mutation that cuts its value: the guard goes red, and the layout gate stays green. Where the value has room to spare on one line, the mutation caps it at one line in a box narrower than the value.

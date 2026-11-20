@@ -16,6 +16,7 @@ import '../../../../common/config.dart';
 import '../../../../common/di.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
+import '../../../../common/theme_data.dart';
 import '../../../../mocks/internet_settings_notifier_mocks.dart';
 import '../../../../test_data/internet_settings_state_data.dart';
 
@@ -38,6 +39,9 @@ void main() {
   });
 
   Future<void> openReleaseAndRenewTab(WidgetTester tester) async {
+    // Real fonts: under the test font the title row overflows at 1440, where
+    // the margin is 256px (#1876).
+    await loadTestFonts();
     await tester.setScreenSize(device1440w);
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(testableSingleRoute(
