@@ -1156,10 +1156,10 @@ final kLocalResetRouterPasswordPageCase = PageSurfaceCase(
 /// §11.11 draws the general rule out of it: a queued figure taken without a fixture is
 /// an upper bound on the swept one, never a prediction of it.
 ///
-/// Ten cards, not nine: the tenth is `if (kDebugMode)`'s usp-console item, and
-/// `kDebugMode` is **true** under `flutter test`. So this sweep measures a grid one
-/// row taller than a release build renders, which is the conservative direction and
-/// worth knowing when a cell's height is read off a report.
+/// Nine cards, the same in a debug and a release build. Until #1836 there was a
+/// tenth, the `kDebugMode`-only usp-console item, and since `kDebugMode` is true
+/// under `flutter test` this sweep measured a grid one row taller than a release
+/// build rendered. That item went with the console, so the two grids are now one.
 ///
 /// The grid is the page's width story. `crossAxisCount` is 3 above the mobile
 /// breakpoint and 1 below it, with a fixed `mainAxisExtent` either way — so a card's
@@ -1169,7 +1169,7 @@ final kLocalResetRouterPasswordPageCase = PageSurfaceCase(
 ///
 /// Which is why both providers are overridden. Each feeds one badge and each renders
 /// it only when its own value is non-null; unoverridden, both `build()`s reach a USP
-/// service, land in `AsyncError`, and the page renders ten cards with two of them
+/// service, land in `AsyncError`, and the page renders nine cards with two of them
 /// silently missing an [AppBadge]. [AppBadge] is in `requires` to make that a failure
 /// rather than a slightly narrower measurement — see `mock_menu.dart`.
 final kMenuPageCase = PageSurfaceCase(

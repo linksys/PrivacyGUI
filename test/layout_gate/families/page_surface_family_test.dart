@@ -975,7 +975,7 @@ void main() {
       );
     });
 
-    test('page.menu requires the badge, not just the ten cards', () {
+    test('page.menu requires the badge, not just the nine cards', () {
       expect(
         kMenuPageCase.requires,
         containsAll(<Type>[AppMenuCard, AppBadge]),
@@ -983,7 +983,7 @@ void main() {
             'both of this page\'s overrides exist for the badges alone: each '
             'renders only while its provider has a value, and unoverridden both '
             '`build()`s reach a USP service and land in `AsyncError`, whose '
-            '`valueOrNull` is null. The page still renders, ten cards still '
+            '`valueOrNull` is null. The page still renders, nine cards still '
             'render, and two title rows are quietly a badge narrower — in all 234 '
             'cells, with nothing failing. `AppMenuCard` alone cannot see that; '
             '`AppBadge` is what makes it a failure.',
