@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settin
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/util/network_utils.dart';
 
 class UspNetworkStatusCard extends ConsumerWidget {
   final WanStatusUIModel? wan;
@@ -64,7 +65,9 @@ class UspNetworkStatusCard extends ConsumerWidget {
       // the state when there is no address to show, because an IP on a link
       // that is down reads as working. `offline` is the same string the hero's
       // subtitle uses one screen up.
-      popupValue: isOnline ? wan.ipAddress : loc(context).offline,
+      popupValue: isOnline
+          ? NetworkUtils.addressOrPlaceholder(wan.ipAddress)
+          : loc(context).offline,
       detailRoute: RouteNamed.uspInternetSettings,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,7 +83,8 @@ class UspNetworkStatusCard extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AppText.titleLarge(wan.ipAddress),
+                      AppText.titleLarge(
+                          NetworkUtils.addressOrPlaceholder(wan.ipAddress)),
                       AppGap.xxs(),
                       AppText.bodyMedium(
                         '${isOnline ? loc(context).online : loc(context).offline} - ${wan.addressingType}',
@@ -100,7 +104,7 @@ class UspNetworkStatusCard extends ConsumerWidget {
                 child: MetricTile(
                   icon: Icons.router,
                   label: loc(context).gateway,
-                  value: wan.gateway.isNotEmpty ? wan.gateway : '-',
+                  value: NetworkUtils.addressOrPlaceholder(wan.gateway),
                   color: colorScheme.primary,
                 ),
               ),

@@ -37,15 +37,7 @@ const _layers = [
 ///
 /// Empty is the goal. An entry here is a decision, not a fix: it has to say why
 /// the import is the right shape for that file.
-const _allowed = <String, String>{
-  // A debt left on purpose: the widget holds a whole data layer (USP reads, CGI
-  // calls, SSE subscription, polling) and imports the throttler for one enum.
-  // Moving the enum would make this green and fix nothing, and package widgets
-  // may be removed outright, so the data layer is not moved for now
-  // (2026-10-13). If they stay, it moves to a service and a notifier.
-  'lib/page/dashboard/widgets/package_widget_renderer.dart':
-      'holds its own data layer; package widgets may be removed',
-};
+const _allowed = <String, String>{};
 
 /// An import of a file under a `services/` directory: a feature's at any depth
 /// (`support/shared_widgets/faq_agent/services/`) or `lib/core/`'s

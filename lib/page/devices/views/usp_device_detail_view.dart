@@ -19,7 +19,10 @@ import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/devices/views/dialogs/device_identity_edit_dialog.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
+import 'package:privacy_gui/page/_shared/helpers/lan_host_ipv4_message.dart';
+import 'package:privacy_gui/page/_shared/helpers/read_lan_for_host_check.dart';
 import 'package:privacy_gui/util/network_utils.dart';
+import 'package:privacy_gui/validator_rules/lan_host_ipv4.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -248,11 +251,20 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
           ] else ...[
             DetailInfoBlock(
               children: [
-                DetailCopyableTile(
-                  icon: Icons.language,
-                  label: loc(context).ipAddress,
-                  value: device.ip,
-                ),
+                // No IPv4 (#1838): the slot reads the placeholder, and there is
+                // nothing to copy. The same rule as the reservation card below.
+                if (isUsableHostIpv4(device.ip))
+                  DetailCopyableTile(
+                    icon: Icons.language,
+                    label: loc(context).ipAddress,
+                    value: device.ip,
+                  )
+                else
+                  DetailInfoTile(
+                    icon: Icons.language,
+                    label: loc(context).ipAddress,
+                    value: NetworkUtils.noAddress,
+                  ),
                 if (device.ipv6Addresses.isNotEmpty)
                   _buildIpv6Section(context, device.ipv6Addresses),
                 if (device.parentNodeName != null)
@@ -399,7 +411,8 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AppText.bodySmall(
-                      loc(context).ipLabel(ip),
+                      loc(context)
+                          .ipLabel(NetworkUtils.addressOrPlaceholder(ip)),
                       color: colorScheme.onSurfaceVariant,
                     ),
                     AppText.bodySmall(
@@ -686,7 +699,9 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   Widget _buildDhcpCard(BuildContext context, WidgetRef ref,
       ClientDevice device, DeviceDetailState detail, bool isLoading) {
     final colorScheme = Theme.of(context).colorScheme;
-    final hasValidIpv4 = NetworkUtils.isValidIpAddress(device.ip);
+    // The rule every reservation form uses (#1838): `0.0.0.0` reads as no
+    // IPv4, so the no-IPv4 text shows and Reserve is disabled.
+    final hasValidIpv4 = isUsableHostIpv4(device.ip);
 
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -888,8 +903,19 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
   // DHCP Actions
   // ===========================================================================
 
+  /// Reserves the device's address, after the same LAN-host check the DHCP
+  /// reservation dialog runs (#1838). An address that fails it is not sent;
+  /// the snackbar says why.
   Future<void> _reserveIp(
       BuildContext context, WidgetRef ref, ClientDevice device) async {
+    final lan = await readLanForHostCheck(context, ref);
+    if (lan == null || !context.mounted) return;
+    final problem =
+        lanHostIpv4Problem(device.ip, lanIp: lan.ip, lanSubnetMask: lan.mask);
+    if (problem != null) {
+      showFailedSnackBar(context, lanHostIpv4Message(context, problem));
+      return;
+    }
     await performUspMutation(
       context,
       ref,

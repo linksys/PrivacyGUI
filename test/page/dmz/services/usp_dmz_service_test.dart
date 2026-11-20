@@ -196,8 +196,10 @@ void main() {
 
       final errors = service.validateForm(model);
 
+      // A malformed address is a format problem, as on every form that
+      // writes a LAN host's address (#1838).
       expect(errors, contains('destIp'));
-      expect(errors['destIp'], DmzErrorKeys.invalidIpAddress);
+      expect(errors['destIp'], DmzErrorKeys.invalidIpv4Format);
     });
 
     test('returns no errors for valid enabled configuration', () {
@@ -305,6 +307,108 @@ void main() {
             isEmpty,
             reason: mac);
       }
+    });
+
+    // #1838: the DMZ host's IP is checked as every form that writes a LAN
+    // host's address checks it, with the same three messages.
+    group('the host IP, as a LAN host', () {
+      const lan = (ip: '192.168.1.1', mask: '255.255.255.0');
+      Map<String, String> check(String ip, {bool withLan = true}) =>
+          service.validateForm(form(destIp: ip),
+              lanIp: withLan ? lan.ip : null,
+              lanSubnetMask: withLan ? lan.mask : null);
+
+      test('0.0.0.0 and the other reserved ranges are refused as reserved', () {
+        for (final ip in ['0.0.0.0', '0.1.2.3', '127.0.0.1', '224.0.0.1']) {
+          expect(check(ip), {'destIp': DmzErrorKeys.reservedIpNotAllowed},
+              reason: ip);
+        }
+      });
+
+      test('an address outside the LAN, or the router itself, is refused', () {
+        for (final ip in ['10.0.0.5', '192.168.2.10', '192.168.1.1']) {
+          expect(check(ip), {'destIp': DmzErrorKeys.invalidIpAddress},
+              reason: ip);
+        }
+      });
+
+      test('a LAN host passes', () {
+        expect(check('192.168.1.50'), isEmpty);
+      });
+
+      test('without the LAN, only the format and reserved checks run', () {
+        expect(check('10.0.0.5', withLan: false), isEmpty);
+        expect(check('0.0.0.0', withLan: false),
+            {'destIp': DmzErrorKeys.reservedIpNotAllowed});
+      });
+
+      // A LAN subnet change leaves a host saved on the old subnet. While DMZ
+      // is on it is refused, whatever else the edit changes, because the host
+      // is no longer a LAN host; turning DMZ off is not blocked.
+      test('a host saved on a LAN that has since moved', () {
+        final onOldSubnet = form(destIp: '192.168.2.10');
+
+        expect(
+            service.validateForm(onOldSubnet,
+                lanIp: lan.ip, lanSubnetMask: lan.mask),
+            {'destIp': DmzErrorKeys.invalidIpAddress});
+        expect(
+            service.validateForm(onOldSubnet.copyWith(isEnabled: false),
+                lanIp: lan.ip, lanSubnetMask: lan.mask),
+            isEmpty);
+      });
+
+      test('an empty or malformed LAN is no LAN', () {
+        expect(
+            service.validateForm(form(destIp: '10.0.0.5'),
+                lanIp: '', lanSubnetMask: ''),
+            isEmpty);
+      });
+    });
+
+    // #1838: the source restriction is sent as SourcePrefix, so it must be an
+    // IPv4 CIDR; any other text used to be sent as typed.
+    group('the source CIDR', () {
+      Map<String, String> check(String prefix) =>
+          service.validateForm(DmzUIModel(
+            isEnabled: true,
+            destIp: '192.168.1.50',
+            sourceType: DmzSourceType.cidr,
+            sourcePrefix: prefix,
+          ));
+
+      test('a malformed range is refused', () {
+        for (final prefix in [
+          'abc',
+          '10.0.0.0',
+          '10.0.0.0/',
+          '10.0.0.0/33',
+          '10.0.0/8',
+          '10.0.0.256/8',
+          '10.0.0.0/8/8',
+          ' 10.0.0.0/8',
+        ]) {
+          expect(check(prefix), {'sourcePrefix': DmzErrorKeys.invalidCidr},
+              reason: prefix);
+        }
+      });
+
+      test('a well-formed range passes, host bits included', () {
+        for (final prefix in ['10.0.0.0/8', '203.0.113.7/32', '0.0.0.0/0']) {
+          expect(check(prefix), isEmpty, reason: prefix);
+        }
+      });
+
+      test('"any" does not check the field', () {
+        expect(
+            service.validateForm(const DmzUIModel(
+              isEnabled: true,
+              destIp: '192.168.1.50',
+              sourceType: DmzSourceType.any,
+              sourcePrefix: 'abc',
+            )),
+            isEmpty);
+      });
     });
 
     test('only the field the type names is checked', () {

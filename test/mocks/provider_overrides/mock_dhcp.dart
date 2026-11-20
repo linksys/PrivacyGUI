@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
@@ -51,6 +52,15 @@ class FixedLanDataNotifier extends LanDataNotifier {
   Future<LanData> build() async => _fixedData;
 }
 
+/// A LAN that cannot be read: what `lanDataProvider` holds after a failed
+/// GET. A form that checks an address against the LAN writes nothing then
+/// (#1838).
+class UnreadableLanDataNotifier extends LanDataNotifier {
+  @override
+  Future<LanData> build() async =>
+      throw const NetworkError(detail: 'LAN read failed');
+}
+
 class FixedDhcpDataNotifier extends DhcpDataNotifier {
   final DhcpData _fixedData;
 
@@ -73,15 +83,20 @@ List<Override> dhcpDetailOverrides({
   required DhcpReservationsFeatureState reservationState,
   LanInfoUIModel? lanInfo,
   List<DhcpClientUIModel> clients = const [],
+  bool lanReadable = true,
 }) =>
     [
       uspDhcpReservationsProvider.overrideWith(
         () => FixedDhcpReservationsNotifier(reservationState),
       ),
       lanDataProvider.overrideWith(
-        () => FixedLanDataNotifier(
-          lanInfo != null ? LanData(model: lanInfo) : const LanData.empty(),
-        ),
+        () => lanReadable
+            ? FixedLanDataNotifier(
+                lanInfo != null
+                    ? LanData(model: lanInfo)
+                    : const LanData.empty(),
+              )
+            : UnreadableLanDataNotifier(),
       ),
       dhcpDataProvider.overrideWith(
         () => FixedDhcpDataNotifier(

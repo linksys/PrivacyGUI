@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/_shared/models/wifi_connection_info.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_node_identity.dart';
+import 'package:privacy_gui/validator_rules/lan_host_ipv4.dart';
 
 /// Builds [MeshNetwork] from raw data sources.
 ///
@@ -399,7 +400,7 @@ class MeshNetworkBuilder {
     // absent on FL-WRT 2.0 and take no part in the order (#1693).
     return ClientDevice(
       mac: mac,
-      ip: device.ipAddress,
+      ip: hostIpv4OrEmpty(device.ipAddress),
       hostName: device.hostName,
       friendlyName: nonEmpty(device.linksysFriendlyName),
       detectedName: nonEmpty(device.linksysDetectedName),
@@ -597,7 +598,7 @@ class MeshNetworkBuilder {
       softwareVersion: nonEmpty(systemInfo?.softwareVersion) ??
           nonEmpty(masterMeshInfo?.softwareVersion) ??
           '',
-      ipAddress: masterDevice?.ipAddress,
+      ipAddress: nonEmpty(hostIpv4OrEmpty(masterDevice?.ipAddress)),
       ipv6Addresses: masterDevice?.ipv6Addresses
               .map((e) => e.address)
               .where((a) => a.isNotEmpty)
@@ -655,7 +656,7 @@ class MeshNetworkBuilder {
           '',
       serialNumber: nonEmpty(slaveMeshInfo.serialNumber) ?? '',
       softwareVersion: nonEmpty(slaveMeshInfo.softwareVersion) ?? '',
-      ipAddress: nonEmpty(slaveDevice?.ipAddress),
+      ipAddress: nonEmpty(hostIpv4OrEmpty(slaveDevice?.ipAddress)),
       ipv6Addresses: slaveDevice?.ipv6Addresses
               .map((e) => e.address)
               .where((a) => a.isNotEmpty)

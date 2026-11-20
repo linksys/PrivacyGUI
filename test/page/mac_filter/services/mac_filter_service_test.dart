@@ -101,6 +101,24 @@ void main() {
           ['EE:52:09:F8:2E:95', 'AA:BB:CC:00:00:04']);
     });
 
+    // #1838: a Hosts IPAddress of 0.0.0.0 is no address, here as on every
+    // other page; the picker then shows the device without a subtitle.
+    test('a client reporting 0.0.0.0 is offered with no address', () async {
+      stubHosts({
+        ...host(1, 'ee:52:09:f8:2e:95',
+            layer1: 'Device.WiFi.Radio.2', type: 'Wi-Fi'),
+        'Device.Hosts.Host.1.IPAddress': '0.0.0.0',
+        ...host(2, 'aa:bb:cc:00:00:04', layer1: 'Device.WiFi.Radio.1'),
+      });
+
+      final result = await service.fetchAll();
+
+      expect(result.connectedDevices.map((d) => (d.mac, d.ipAddress)), [
+        ('EE:52:09:F8:2E:95', ''),
+        ('AA:BB:CC:00:00:04', '192.168.1.102'),
+      ]);
+    });
+
     test('an offline Wi-Fi client is not offered', () async {
       stubHosts({
         ...host(1, 'ce:dc:79:1d:0c:ab', layer1: '', type: 'Wi-Fi', active: '0'),

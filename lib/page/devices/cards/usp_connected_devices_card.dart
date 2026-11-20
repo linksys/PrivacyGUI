@@ -16,6 +16,7 @@ import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_in
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
+import 'package:privacy_gui/util/network_utils.dart';
 
 /// Card content width at which the two status counts stop sitting side by side.
 ///
@@ -284,7 +285,7 @@ class UspConnectedDevicesCard extends ConsumerWidget {
         hasMultipleInterfaces: device.hasMultipleInterfaces,
       ),
       title: device.displayName,
-      subtitle: device.ip,
+      subtitle: NetworkUtils.addressOrPlaceholder(device.ip),
       // The compact form keeps only what carries a *reading*, and that is the
       // rest of the 93.1px the address needs — the icon block alone does not get
       // there on the narrowest rows. Both of the things dropped here are demands
