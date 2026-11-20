@@ -938,7 +938,7 @@ final instantVerifyMultiDNSTestState = {
   }
 };
 
-final instantVerifyInternetOffTestState = {
+final instantVerifyNoWanConnectionTestState = {
   "radioInfo": {
     "isBandSteeringSupported": false,
     "radios": [
