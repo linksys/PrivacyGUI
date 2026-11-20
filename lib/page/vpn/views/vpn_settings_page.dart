@@ -212,70 +212,83 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
     final status = state.status.tunnelStatus;
 
     return AppCard(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          vpnStatus(context, status),
-          AppTextButton(
-            key: ValueKey('testAgain'),
-            loc(context).testAgain,
-            onTap: () async {
-              // The test is a diagnostic and runs on a read-only login too.
-              // That login cannot save first, so it tests what the router has,
-              // as if nothing had been edited.
-              bool isChanged = isStateChanged(state.settings) &&
-                  ref.read(accessPolicyProvider).canWrite;
-              bool hasErrors = _hasErrors();
+      // A Wrap, so the button moves below the status when both do not fit on
+      // one line. In a Row they ran past a 360px page in German, French and
+      // Dutch (#1802). A Wrap is only as wide as what it holds, so the SizedBox
+      // makes it span the card, and spaceBetween puts the button at its end,
+      // as the Row did.
+      child: SizedBox(
+        width: double.infinity,
+        child: Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            // vpnStatus is a Row that fills its width; this one keeps it to the
+            // status, so the button can share the line.
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [vpnStatus(context, status)],
+            ),
+            AppTextButton(
+              key: ValueKey('testAgain'),
+              loc(context).testAgain,
+              onTap: () async {
+                // The test is a diagnostic and runs on a read-only login too.
+                // That login cannot save first, so it tests what the router has,
+                // as if nothing had been edited.
+                bool isChanged = isStateChanged(state.settings) &&
+                    ref.read(accessPolicyProvider).canWrite;
+                bool hasErrors = _hasErrors();
 
-              final shouldGo = !isChanged
-                  ? true
-                  : !hasErrors
-                      ? await showMessageAppDialog(context,
-                          title: loc(context).unsavedChangesTitle,
-                          message:
-                              'Your changes is undaved, do you want to save and test it?',
-                          actions: [
-                              AppTextButton(loc(context).cancel, onTap: () {
-                                context.pop(false);
-                              }),
-                              AppTextButton(loc(context).save, onTap: () {
-                                context.pop(true);
-                              }),
-                            ])
-                      : await showMessageAppOkDialog(context,
-                              title: loc(context).alertExclamation,
-                              message:
-                                  'Your changes has errors, please fix them before testing.',
-                              icon: Icon(LinksysIcons.error))
-                          .then((_) => false);
+                final shouldGo = !isChanged
+                    ? true
+                    : !hasErrors
+                        ? await showMessageAppDialog(context,
+                            title: loc(context).unsavedChangesTitle,
+                            message:
+                                'Your changes is undaved, do you want to save and test it?',
+                            actions: [
+                                AppTextButton(loc(context).cancel, onTap: () {
+                                  context.pop(false);
+                                }),
+                                AppTextButton(loc(context).save, onTap: () {
+                                  context.pop(true);
+                                }),
+                              ])
+                        : await showMessageAppOkDialog(context,
+                                title: loc(context).alertExclamation,
+                                message:
+                                    'Your changes has errors, please fix them before testing.',
+                                icon: Icon(LinksysIcons.error))
+                            .then((_) => false);
 
-              if (!shouldGo) {
-                return;
-              }
-              if (isChanged) {
-                await _saveChanges();
-              }
-
-              doSomethingWithSpinner(context, notifier.testVPNConnection())
-                  .then((state) {
-                if (state == null) {
+                if (!shouldGo) {
                   return;
                 }
-                preservedState = state.settings;
-                if (state.status.testResult?.success == true) {
-                  showSuccessSnackBar(
-                    state.status.testResult!.statusMessage,
-                  );
-                } else {
-                  showFailedSnackBar(
-                    state.status.testResult!.statusMessage,
-                  );
+                if (isChanged) {
+                  await _saveChanges();
                 }
-              });
-            },
-          ),
-        ],
+
+                doSomethingWithSpinner(context, notifier.testVPNConnection())
+                    .then((state) {
+                  if (state == null) {
+                    return;
+                  }
+                  preservedState = state.settings;
+                  if (state.status.testResult?.success == true) {
+                    showSuccessSnackBar(
+                      state.status.testResult!.statusMessage,
+                    );
+                  } else {
+                    showFailedSnackBar(
+                      state.status.testResult!.statusMessage,
+                    );
+                  }
+                });
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
