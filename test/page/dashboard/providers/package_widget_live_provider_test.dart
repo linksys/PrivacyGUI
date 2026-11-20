@@ -167,6 +167,60 @@ void main() {
       expect(card.read(), isTrue);
     });
 
+    test('a card that leaves while its GET fails does not subscribe', () {
+      fakeAsync((async) {
+        final answer = Completer<Map<String, dynamic>?>();
+        when(() => service.fetchUspPaths(any()))
+            .thenAnswer((_) => answer.future);
+
+        final card = mount(_uspTemplate());
+        async.flushMicrotasks();
+        card.close();
+        // autoDispose runs on the event queue, not as a microtask.
+        async.elapse(Duration.zero);
+        answer.completeError(const NetworkError());
+        async.flushMicrotasks();
+
+        verifyNever(() => service.subscribeValueChanges(
+              widgetId: any(named: 'widgetId'),
+              subscription: any(named: 'subscription'),
+              onValueChange: any(named: 'onValueChange'),
+            ));
+      });
+    });
+
+    test('two cards of one template share one subscription', () async {
+      // The drag-feedback copy of a card is a second renderer of the same
+      // template. Sharing the live notifier is what stops that copy from
+      // subscribing under the card's SSE id and unregistering it at drag end.
+      var cleanups = 0;
+      when(() => service.fetchUspPaths(any()))
+          .thenAnswer((_) async => {'Device.DeviceInfo.ModelName': 'M60TB'});
+      when(() => service.subscribeValueChanges(
+            widgetId: any(named: 'widgetId'),
+            subscription: any(named: 'subscription'),
+            onValueChange: any(named: 'onValueChange'),
+          )).thenAnswer((_) async => () async => cleanups++);
+
+      final card = mount(_uspTemplate());
+      final dragCopy = mount(_uspTemplate());
+      await container.pump();
+      await pumpEventQueue();
+      dragCopy.close();
+      await container.pump();
+
+      verify(() => service.subscribeValueChanges(
+            widgetId: any(named: 'widgetId'),
+            subscription: any(named: 'subscription'),
+            onValueChange: any(named: 'onValueChange'),
+          )).called(1);
+      expect(cleanups, 0, reason: 'the card is still on the dashboard');
+
+      card.close();
+      await container.pump();
+      expect(cleanups, 1);
+    });
+
     test('with no USP client, neither reads nor subscribes', () async {
       when(() => service.fetchUspPaths(any())).thenAnswer((_) async => null);
 

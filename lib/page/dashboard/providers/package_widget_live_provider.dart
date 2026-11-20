@@ -153,6 +153,9 @@ class PackageWidgetLiveNotifier
       logger.w('[USP][PkgWidget]: Initial GET failed for '
           '${arg.widgetId}: $e');
     }
+    // A card that left during a failed GET subscribes to nothing: the same rule
+    // as the poll timer, which is not started for a card that has left.
+    if (!_active) return;
 
     try {
       _sseCleanup = await service.subscribeValueChanges(
