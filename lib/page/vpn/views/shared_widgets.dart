@@ -23,10 +23,13 @@ Widget vpnStatus(BuildContext context, IPsecStatus status) {
 Widget buildStatRow(String label, String value) {
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 4),
+    // The label is Expanded, so a long one wraps before it reaches the
+    // value instead of running past a narrow page (#1802).
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        AppText.bodyMedium(label),
+        Expanded(child: AppText.bodyMedium(label)),
+        const AppGap.small2(),
         AppText.bodyMedium(value),
       ],
     ),
