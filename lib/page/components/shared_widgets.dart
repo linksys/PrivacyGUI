@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacygui_widgets/hook/icon_hooks.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';

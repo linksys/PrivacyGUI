@@ -161,8 +161,6 @@ class WifiListNotifier extends Notifier<WiFiState> {
           .then((response) => GuestRadioSettings.fromMap(response.output));
       final setGuestRadioSettings =
           SetGuestRadioSettings.fromGuestRadioSettings(guestRadioInfo);
-      final isGuestChanged = state.guestWiFi.isEnabled !=
-          setGuestRadioSettings.isGuestNetworkEnabled;
       final newGuestRadios = setGuestRadioSettings.radios
           .map(
             (e) => e.copyWith(

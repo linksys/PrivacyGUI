@@ -8,6 +8,8 @@ import 'dart:async' as _i4;
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:privacy_gui/core/cloud/model/cloud_session_model.dart' as _i5;
+import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart'
+    as _i6;
 import 'package:privacy_gui/providers/auth/auth_provider.dart' as _i3;
 
 // ignore_for_file: type=lint
@@ -127,20 +129,57 @@ class MockAuthNotifier extends _i2.AsyncNotifier<_i3.AuthState>
       ) as _i4.Future<_i5.SessionToken?>);
 
   @override
-  _i4.Future<_i3.AuthState> updateCloudCredientials(
-          {_i5.SessionToken? sessionToken}) =>
+  _i4.Future<dynamic> cloudLoginAuth({
+    required String? token,
+    required String? sn,
+    required _i6.GRASessionInfo? sessionInfo,
+  }) =>
       (super.noSuchMethod(
-        Invocation.method(#updateCloudCredientials, [], {#sessionToken: sessionToken}),
+        Invocation.method(#cloudLoginAuth, [], {
+          #token: token,
+          #sn: sn,
+          #sessionInfo: sessionInfo,
+        }),
+        returnValue: _i4.Future<dynamic>.value(),
+        returnValueForMissingStub: _i4.Future<dynamic>.value(),
+      ) as _i4.Future<dynamic>);
+
+  @override
+  _i4.Future<_i6.GRASessionInfo?> testSessionAuthentication({
+    required String? token,
+    required String? session,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(#testSessionAuthentication, [], {
+          #token: token,
+          #session: session,
+        }),
+        returnValue: _i4.Future<_i6.GRASessionInfo?>.value(),
+        returnValueForMissingStub: _i4.Future<_i6.GRASessionInfo?>.value(),
+      ) as _i4.Future<_i6.GRASessionInfo?>);
+
+  @override
+  _i4.Future<_i3.AuthState> updateCloudCredientials({
+    _i5.SessionToken? sessionToken,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(#updateCloudCredientials, [], {
+          #sessionToken: sessionToken,
+        }),
         returnValue: _i4.Future<_i3.AuthState>.value(
           _FakeAuthState_2(
             this,
-            Invocation.method(#updateCloudCredientials, [], {#sessionToken: sessionToken}),
+            Invocation.method(#updateCloudCredientials, [], {
+              #sessionToken: sessionToken,
+            }),
           ),
         ),
         returnValueForMissingStub: _i4.Future<_i3.AuthState>.value(
           _FakeAuthState_2(
             this,
-            Invocation.method(#updateCloudCredientials, [], {#sessionToken: sessionToken}),
+            Invocation.method(#updateCloudCredientials, [], {
+              #sessionToken: sessionToken,
+            }),
           ),
         ),
       ) as _i4.Future<_i3.AuthState>);

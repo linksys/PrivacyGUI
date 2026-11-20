@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
-import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_provider.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_state.dart';
 import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';
@@ -21,7 +19,6 @@ import '../../../../mocks/add_nodes_notifier_mocks.dart';
 void main() async {
   late MockAddNodesNotifier mockAddNodesNotifier;
   mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
   setUp(() {
     mockAddNodesNotifier = MockAddNodesNotifier();

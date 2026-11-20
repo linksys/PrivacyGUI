@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/widgets/write_guard.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -578,14 +577,25 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     );
     final speedDesc =
         AppText.labelSmall(loc(context).speedTestExternalTileLabel);
-    final rowHeader = Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(child: speedTitle),
-        infoIcon,
-        speedDesc,
-      ],
+    // A Wrap, so the description moves below the title when both do not fit
+    // on one line. In a Row it ran past a 360px page in Greek (#1802). A Wrap
+    // is only as wide as what it holds, so the SizedBox makes it span the
+    // tile, and spaceBetween keeps the title at the start, as the Row did.
+    final rowHeader = SizedBox(
+      width: double.infinity,
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          speedTitle,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            // Flexible, so a description too long for a line of its own,
+            // as Greek's is at 360, wraps.
+            children: [infoIcon, Flexible(child: speedDesc)],
+          ),
+        ],
+      ),
     );
     final columnHeader = Column(
       mainAxisAlignment: MainAxisAlignment.start,

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 

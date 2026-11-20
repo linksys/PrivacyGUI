@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
-import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
@@ -14,13 +12,11 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import '../../../common/_index.dart';
 import '../../../common/di.dart';
 import '../../../mocks/_index.dart';
-import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../mocks/wifi_view_notifier_mocks.dart';
 import '../../../test_data/_index.dart';
 
 void main() {
   mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
   setUp(() {});
 

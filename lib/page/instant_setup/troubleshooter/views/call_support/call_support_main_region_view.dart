@@ -124,8 +124,6 @@ enum CallSupportRegion {
         return loc(context).australia;
       case newZealand:
         return loc(context).newZealand;
-      default:
-        return '';
     }
   }
 }

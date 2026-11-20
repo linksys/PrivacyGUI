@@ -17,12 +17,13 @@ void main() {
 
     test('runs a case that renders both layouts at every gate size', () {
       expect(names(gateScreensFor('a case', responsiveAllScreens)),
-          ['480', '905', '1240', '1280x420']);
+          ['360', '480', '905', '1240', '1280x420']);
     });
 
     test('runs a mobile case at the mobile size and a desktop one at the rest',
         () {
-      expect(names(gateScreensFor('a case', responsiveMobileScreens)), ['480']);
+      expect(names(gateScreensFor('a case', responsiveMobileScreens)),
+          ['360', '480']);
       expect(names(gateScreensFor('a case', responsiveDesktopScreens)),
           ['905', '1240', '1280x420']);
     });
@@ -31,7 +32,7 @@ void main() {
       final listed = shortViewportSkips.first;
 
       expect(names(gateScreensFor(listed, responsiveAllScreens)),
-          ['480', '905', '1240']);
+          ['360', '480', '905', '1240']);
     });
   });
 

@@ -117,6 +117,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
                   Utils.exportLogFile(context);
                   return;
                 }
+                return null;
               }),
             },
             child: CustomResponsive(

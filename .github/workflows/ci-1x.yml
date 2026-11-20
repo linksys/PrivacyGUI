@@ -33,10 +33,10 @@ jobs:
           submodules: true
       - uses: ./.github/actions/setup-1x
 
-      # Errors only (constitution 7.1 and 7.2, #1802 Decision 1). The existing
-      # warnings are cleared in their own PR, after which this can fail on them.
+      # Errors and warnings fail; infos do not (constitution 7.1 and 7.2,
+      # #1802 Decision 1, which cleared the warnings in their own PR).
       - name: Analyze
-        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+        run: flutter analyze --no-fatal-infos
 
   unit-tests:
     name: 1.x / Unit Tests
@@ -82,7 +82,7 @@ jobs:
           name: 1.x-unit-test-results
           path: reports/tests.json
 
-  # #1802 P3: every testLocalizations case at 480, 905, 1240 and 1280x420,
+  # #1802 P3: every testLocalizations case at 360, 480, 905, 1240 and 1280x420,
   # failing on an overflow over 2.0px, one job per locale. A PR into a
   # `dev-1.*` branch runs en only, so its wait stays short (Decision 4). A PR
   # into main runs every gate locale (Decision 7), as the pre-push hook does.

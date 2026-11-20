@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 
 extension MapExt on Map {
   T getValueByPath<T>(String path) {

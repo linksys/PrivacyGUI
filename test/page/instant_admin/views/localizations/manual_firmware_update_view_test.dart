@@ -1,19 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
-import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/instant_admin/providers/manual_firmware_update_provider.dart';
 import 'package:privacy_gui/page/instant_admin/providers/manual_firmware_update_state.dart';
-import 'package:privacy_gui/route/route_model.dart';
 import 'dart:typed_data';
 
 import '../../../../common/di.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
-import '../../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../../mocks/manual_firmware_update_notifier_mocks.dart';
 import '../../../../test_data/firmware_update_test_state.dart';
 import '../../../../mocks/firmware_update_notifier_mocks.dart';
@@ -23,7 +19,6 @@ void main() {
   late ManualFirmwareUpdateNotifier mockManualFirmwareUpdateNotifier;
 
   mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
   setUp(() {
     mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();
