@@ -9,6 +9,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
+import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_feature_state.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
@@ -239,6 +240,9 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
     final errors = ref.watch(uspDmzProvider).status.fieldErrors;
     final devices =
         ref.watch(devicesDataProvider).valueOrNull?.clientDevices ?? const [];
+    // Read so the host's LAN check (#1838) can run when a field loses focus;
+    // a save awaits it either way.
+    ref.watch(lanDataProvider);
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
@@ -333,7 +337,9 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
           AppAutoCompleteOption(
             label: d.displayName,
             value: byMac ? d.mac : d.ip,
-            subtitle: byMac ? d.ip : d.mac,
+            // A device with no IPv4 gets no subtitle, as in the MAC filter's
+            // picker.
+            subtitle: byMac ? (d.ip.isNotEmpty ? d.ip : null) : d.mac,
             isActive: d.isActive,
           ),
     ];
@@ -343,9 +349,13 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
       switch (key) {
         null => null,
         DmzErrorKeys.destIpRequired => loc(context).ipAddressRequired,
+        DmzErrorKeys.invalidIpv4Format => loc(context).invalidIpv4Format,
+        DmzErrorKeys.reservedIpNotAllowed => loc(context).reservedIpNotAllowed,
         DmzErrorKeys.invalidIpAddress => loc(context).invalidIpAddress,
         DmzErrorKeys.destMacRequired => loc(context).macAddressRequired,
         DmzErrorKeys.invalidMacAddress => loc(context).invalidMACAddress,
+        DmzErrorKeys.cidrRequired => loc(context).cidrRequired,
+        DmzErrorKeys.invalidCidr => loc(context).invalidCidrFormat,
         _ => loc(context).invalidInput,
       };
 
@@ -359,6 +369,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
     UspDmzNotifier notifier,
     bool disabled,
   ) {
+    final errors = ref.watch(uspDmzProvider).status.fieldErrors;
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
@@ -387,7 +398,11 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
                             controller: _cidrController,
                             focusNode: _cidrFocus,
                             identifier: 'dmz-source-cidr-ip',
-                            hintText: 'e.g. 192.168.1.0/24',
+                            hintText: loc(context).cidrHint,
+                            externalErrorText:
+                                _fieldError(context, errors['sourcePrefix']),
+                            // Text, not tooltip, as the host fields: see there.
+                            errorDisplayMode: AppErrorDisplayMode.text,
                             onChanged: (value) {
                               notifier.updateSetting(
                                   (m) => m.copyWith(sourcePrefix: value));
@@ -401,6 +416,8 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
               onChanged: (index, value) {
                 if (value == null || value == pending.sourceType) return;
                 notifier.updateSetting((m) => m.copyWith(sourceType: value));
+                // The CIDR field's error no longer applies to "any".
+                notifier.validate();
               },
             ),
           ),

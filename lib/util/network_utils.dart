@@ -6,6 +6,23 @@ import 'package:privacy_gui/util/uuid.dart';
 
 class NetworkUtils {
   // ===========================================================================
+  // Address display
+  // ===========================================================================
+
+  /// What an IP address slot shows when there is no address (#1838): the
+  /// device list and detail page, the dashboard's device and Internet cards,
+  /// the WAN address on the Internet settings page, DDNS, Auto IPoE and the
+  /// report. A row that is left out when it has no address stays left out,
+  /// and a slot whose address could not be read says so in words instead
+  /// (`loc.unknown`, #1613).
+  static const noAddress = '-';
+
+  /// [address] as an address slot shows it: [noAddress] when it is absent or
+  /// blank.
+  static String addressOrPlaceholder(String? address) =>
+      address == null || address.trim().isEmpty ? noAddress : address;
+
+  // ===========================================================================
   // Speed Formatting (kbps input - TR-181 standard unit)
   // ===========================================================================
 

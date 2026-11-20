@@ -211,6 +211,10 @@ class UspInternetSettingsNotifier
       // service provider itself) still cover the "USP unavailable" case.
       final service = ref.read(uspInternetSettingsServiceProvider);
       final result = await service.fetchSettings();
+      // The page can be gone by the time the router answers (a read-back
+      // after a failed save outlives it, issue #1711). Nothing reads this
+      // result then, and the providers below can no longer be read.
+      if (_disposed) return (null, null);
 
       logger.d('[USP][Network][WAN]: Fetched — '
           'raw addressingType: "${result.debugAddressingType}", '
@@ -357,6 +361,87 @@ class UspInternetSettingsNotifier
     return _saveOrdinary();
   }
 
+  /// [performSave], reading the router back when it fails.
+  ///
+  /// The router applies a WAN save one step at a time, so a save that fails
+  /// can leave part of itself applied (issue #1711). The read-back is
+  /// [saveReadingBackAfterFailure]: the page moves onto the router's values
+  /// when they differ from what it loaded, and keeps the user's edits when they
+  /// do not or when the read fails. The error reaches the page either way.
+  ///
+  /// On the router's values nothing the user typed is left to save, so the
+  /// page leaves edit mode: the user sees what was applied, and enters edit
+  /// mode again to fill in the rest. Kept edits keep edit mode, since leaving
+  /// it would discard them. The dashboard's WAN card is refreshed for the
+  /// same reason the page is read.
+  ///
+  /// Only the write is read back after: a write that landed and whose own
+  /// read-back failed is already a [SavedButUnconfirmedError], and reading
+  /// again would only make the user wait for a second timeout.
+  ///
+  /// The read-back is part of the save, so the page stays saving until it
+  /// ends: [performSave] clears `isSaving` when the write fails, and a second
+  /// Save started during the read would be overwritten when it lands. The
+  /// IPoE reset path saves with no spinner over the page, so this is what
+  /// keeps Save disabled there.
+  ///
+  /// This is not the detection constitution Article IV Rule 2 keeps for
+  /// `Preservable` (a device changed by someone else mid-edit): it runs only
+  /// after this page's own save failed, and asks what that save applied.
+  Future<void> _performSaveReadingBack() async {
+    // What the page loaded, to tell after the read-back whether it moved the
+    // page onto the router's values (it replaces both sides when it does).
+    final loaded = state.settings.original;
+    try {
+      await saveReadingBackAfterFailure(() async {
+        try {
+          await performSave();
+        } on ServiceError {
+          if (!_disposed) {
+            state = state.copyWith(
+              status:
+                  state.status.copyWith(isSaving: true, activeMutation: 'save'),
+            );
+          }
+          rethrow;
+        }
+        return state;
+      });
+    } on ServiceError {
+      if (!_disposed) {
+        ref.invalidate(wanDataProvider);
+        // On the router's values nothing the user typed is left to save, an
+        // Auto-IPoE draft picked earlier in the edit included, so it goes as
+        // after a successful save. A page that kept its edits keeps the draft
+        // for the retry.
+        if (state.settings.original != loaded) _dropIPoEDraft();
+        state = state.copyWith(
+          status: state.status.copyWith(
+            isEditing: isDirty() && state.status.isEditing,
+          ),
+        );
+      }
+      rethrow;
+    } finally {
+      // Ends the saving set above whatever the read-back threw: an error
+      // outside ServiceError would otherwise leave Save, Cancel and Edit
+      // disabled. A save that landed has already cleared it.
+      if (!_disposed && state.status.isSaving) {
+        state = state.copyWith(
+          status:
+              state.status.copyWith(isSaving: false, clearActiveMutation: true),
+        );
+      }
+    }
+  }
+
+  /// Drops an Auto-IPoE draft the user did not apply, when its page is open.
+  void _dropIPoEDraft() {
+    if (ref.exists(autoIPoEPageProvider)) {
+      ref.read(autoIPoEPageProvider.notifier).revert();
+    }
+  }
+
   Future<InternetSettingsFeatureState> _saveOrdinary() async {
     // Detect the entering-bridge transition BEFORE saving: `original` is the
     // baseline type, `edited` is what the user just chose. markAsSaved() below
@@ -365,11 +450,9 @@ class UspInternetSettingsNotifier
         state.original.connectionType != UspWanConnectionType.bridge &&
             state.edited.connectionType == UspWanConnectionType.bridge;
 
-    await performSave();
+    await _performSaveReadingBack();
     // A successful ordinary Save also discards an unapplied IPoE draft.
-    if (ref.exists(autoIPoEPageProvider)) {
-      ref.read(autoIPoEPageProvider.notifier).revert();
-    }
+    _dropIPoEDraft();
     markAsSaved();
 
     if (enteringBridge) {
@@ -413,9 +496,7 @@ class UspInternetSettingsNotifier
   void exitEditMode() {
     if (_savingIPoE || state.status.isSaving) return;
     _connectionTypeEdited = false;
-    if (ref.exists(autoIPoEPageProvider)) {
-      ref.read(autoIPoEPageProvider.notifier).revert();
-    }
+    _dropIPoEDraft();
     // Revert form to original + exit edit mode
     state = state.copyWith(
       settings: state.settings.copyWith(current: state.settings.original),
@@ -456,14 +537,15 @@ class UspInternetSettingsNotifier
 
   /// Turn WAN VLAN tagging on or off.
   ///
-  /// Turning it off puts back the router's VLAN ID, dropping any ID typed while
-  /// it was on: the save would otherwise write that ID with VLAN off, and an
-  /// emptied field holds 0, which FW 2.0.4 refuses (#1072).
+  /// Turning it off puts back the router's VLAN ID and priority, dropping any
+  /// typed while it was on (issue #1072, issue #1754): the service writes neither with
+  /// VLAN off, so on and then off again leaves nothing to save.
   void setVlanEnabled(bool enabled) {
-    final routerVlanId = state.original.vlanId;
+    final saved = state.original;
     updateField((f) => f.copyWith(
           vlanEnabled: enabled,
-          vlanId: enabled ? f.vlanId : routerVlanId,
+          vlanId: enabled ? f.vlanId : saved.vlanId,
+          vlanPriority: enabled ? f.vlanPriority : saved.vlanPriority,
         ));
   }
 

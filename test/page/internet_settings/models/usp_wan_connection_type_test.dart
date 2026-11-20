@@ -211,6 +211,25 @@ void main() {
       });
     });
 
+    group('supportsVlan (issue #1754)', () {
+      test('every type on the WAN port offers VLAN tagging', () {
+        for (final type in [
+          UspWanConnectionType.dhcp,
+          UspWanConnectionType.staticIp,
+          UspWanConnectionType.pppoe,
+          UspWanConnectionType.pptp,
+          UspWanConnectionType.l2tp,
+        ]) {
+          expect(type.supportsVlan, isTrue, reason: type.name);
+        }
+      });
+
+      test('Bridge and Auto-IPoE do not', () {
+        expect(UspWanConnectionType.bridge.supportsVlan, isFalse);
+        expect(UspWanConnectionType.ipoe.supportsVlan, isFalse);
+      });
+    });
+
     group('mtuMax', () {
       test('pppoe reserves 8 bytes (1492)', () {
         expect(UspWanConnectionType.pppoe.mtuMax, 1492);

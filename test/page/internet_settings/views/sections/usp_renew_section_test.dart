@@ -19,7 +19,7 @@ import '../../../../mocks/provider_overrides/mock_wan_data.dart';
 /// WHY THESE EXIST, and why the first attempt at this fix needed them. Round 1 of the
 /// review found that an L1 fetch error rendered as a valid "no address" reading. I fixed
 /// the banner and "fixed" this widget by passing `null` instead of `''` — but
-/// `UspRenewActionCard` rendered both as '--', so **the change altered no pixel and no
+/// `UspRenewActionCard` rendered both as one placeholder, so **the change altered no pixel and no
 /// behaviour**. Round 2 caught that: a comment asserted a distinction the widget tree
 /// erased. With no test for this file, nothing else could have caught it.
 ///
@@ -82,8 +82,8 @@ void main() {
       await t.pumpWidget(_host(wanDataOverride(wanNoAddressModel)));
       await t.pumpAndSettle();
 
-      // Two cards, and IPv6 never gets an address, so '--' appears twice here.
-      expect(find.text('--'), findsNWidgets(2));
+      // Two cards, and IPv6 never gets an address, so '-' appears twice here.
+      expect(find.text('-'), findsNWidgets(2));
     });
   });
 
@@ -92,14 +92,14 @@ void main() {
       await t.pumpWidget(_host(wanDataErrorOverride()));
       await t.pumpAndSettle();
 
-      // THE REGRESSION THIS BLOCKS: passing `null` here instead of `''` rendered '--'
+      // THE REGRESSION THIS BLOCKS: passing `null` here instead of `''` rendered '-'
       // either way, so the previous round's "fix" to this file was a no-op. If someone
-      // reverts `addressLabel`, IPv4 goes back to '--' and this fails.
+      // reverts `addressLabel`, IPv4 goes back to '-' and this fails.
       expect(find.text('Unknown'), findsOneWidget,
           reason: 'IPv4 must say so when L1 could not be read');
-      // IPv6 still shows '--' — it is passed no address at all, which is a separate
+      // IPv6 still shows '-' — it is passed no address at all, which is a separate
       // pre-existing gap and deliberately not changed here.
-      expect(find.text('--'), findsOneWidget);
+      expect(find.text('-'), findsOneWidget);
     });
 
     testWidgets('the first load also renders "unknown"', (t) async {

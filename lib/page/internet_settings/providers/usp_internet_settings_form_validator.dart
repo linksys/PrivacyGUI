@@ -46,6 +46,11 @@ bool validateForm(UspInternetSettingsForm form) {
   if (form.connectionType.isPppBased && !_validatePppFields(form)) {
     return false;
   }
+  if (form.connectionType.supportsVlan &&
+      form.vlanEnabled &&
+      validateVlanId(form.vlanId) != null) {
+    return false;
+  }
   if (!_validateIpv6Fields(form)) return false;
   if (!_validateOptionalFields(form)) return false;
   return true;
@@ -80,6 +85,11 @@ String? validateKeepAliveInterval(int seconds) =>
     seconds < kPppKeepAliveSecondsMin || seconds > kPppKeepAliveSecondsMax
         ? WanFieldErrors.outOfRange
         : null;
+
+/// The WAN VLAN ID, [kVlanIdMin]–[kVlanIdMax], checked only while tagging is
+/// on. An emptied field holds 0 and fails here, which makes the ID required.
+String? validateVlanId(int id) =>
+    id < kVlanIdMin || id > kVlanIdMax ? WanFieldErrors.outOfRange : null;
 
 bool _validateIpv4Fields(UspInternetSettingsForm form) {
   switch (form.connectionType) {

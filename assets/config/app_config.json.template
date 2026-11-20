@@ -4,7 +4,6 @@
   "feature": {
     "_comment": "Feature flags. Omit or set to null to use BuildConfig defaults.",
     "enableThemeStudio": false,
-    "enableTestConsole": false,
     "enableBetaFeatures": false
   },
 

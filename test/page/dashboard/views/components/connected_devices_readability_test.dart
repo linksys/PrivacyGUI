@@ -573,4 +573,17 @@ void main() {
       });
     }
   });
+
+  // #1838: the address slot of a device with no IPv4 reads "-", as in the
+  // device list, rather than going blank.
+  testWidgets('@desktop a device with no IPv4 reads "-" under its name',
+      (tester) async {
+    await pumpDevices(tester, widthCase: desktopCase, devices: [
+      DevicesTestData.createWiredClient(
+          mac: DevicesTestData.clientMac1, hostName: 'NoAddress', ip: ''),
+    ]);
+
+    expect(find.text('NoAddress'), findsOneWidget);
+    expect(find.text('-'), findsOneWidget);
+  });
 }

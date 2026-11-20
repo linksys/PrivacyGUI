@@ -73,4 +73,21 @@ void main() {
     expect(find.text(loc(ctx).errorNetwork), findsOneWidget);
     expect(surfaceColor(tester), danger);
   });
+
+  // A page whose save errors need its own wording (Internet Settings names the
+  // field the firmware refused, issue #1711) passes its localizer. The style
+  // stays this helper's choice, so a landed write still does not read as a
+  // failed save.
+  testWidgets('a page\'s own localizer words the message, the style stays',
+      (tester) async {
+    final ctx = await pump(tester);
+    final danger = Theme.of(ctx).extension<AppColorScheme>()?.semanticDanger;
+
+    showSaveErrorSnackBar(ctx, const SavedButUnconfirmedError(NetworkError()),
+        localize: (_, __) => 'worded by the page');
+    await tester.pump();
+
+    expect(find.text('worded by the page'), findsOneWidget);
+    expect(surfaceColor(tester), isNot(danger));
+  });
 }

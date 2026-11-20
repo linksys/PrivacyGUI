@@ -15,6 +15,7 @@ import 'package:privacy_gui/page/mac_filter/models/mac_filter_device_ui_model.da
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_fetch_result.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_rules.dart';
+import 'package:privacy_gui/validator_rules/lan_host_ipv4.dart';
 
 final uspMacFilterServiceProvider = Provider<UspMacFilterService>(
   (ref) => UspMacFilterService(ref.read(uspClientProvider)!),
@@ -75,7 +76,7 @@ class UspMacFilterService {
                 mac: MacFilterRules.normalizeMac(d.macAddress),
                 displayName: d.hostName.isNotEmpty ? d.hostName : d.macAddress,
                 isPrivateMac: OuiLookup.isRandomizedMac(d.macAddress),
-                ipAddress: d.ipAddress,
+                ipAddress: hostIpv4OrEmpty(d.ipAddress),
               ))
           .toList();
 

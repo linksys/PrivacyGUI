@@ -146,7 +146,7 @@ End-to-end notifications working ✅ (verified Ping OperationComplete via SSE)
 
 ### Previous Workaround (now deprecated)
 
-`UspService.createNotifySubscription()` performed a 5-step OBUSPA workaround (Add + GET-diff + SetMultiple). This is no longer needed for production — bridge handles OBUSPA lifecycle automatically. The method is retained in `UspService` for legacy/debug purposes only.
+`UspService.createNotifySubscription()` performed a 5-step OBUSPA workaround (Add + GET-diff + SetMultiple). This is no longer needed for production — bridge handles OBUSPA lifecycle automatically. The method was kept for debug use until #1836 deleted it with the USP Test Console, its last caller.
 
 ---
 

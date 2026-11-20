@@ -44,7 +44,6 @@ class RoutePath {
   static const uspNotificationHistory = '/uspNotificationHistory';
   static const uspAdvancedSettings = '/uspAdvancedSettings';
   static const uspStatistics = '/uspStatistics';
-  static const uspTestConsole = '/uspTestConsole';
   static const uspWifiSettings = '/uspWifiSettings';
   static const uspApps = '/uspApps';
   static const uspSpeedTest = '/uspSpeedTest';
@@ -230,7 +229,6 @@ class RouteNamed {
   static const uspAdvancedSettings = 'uspAdvancedSettings';
   static const uspIpv6PortService = 'uspIpv6PortService';
   static const uspStatistics = 'uspStatistics';
-  static const uspTestConsole = 'uspTestConsole';
   static const pnpAutoIPoE = 'pnpAutoIPoE';
   static const uspInternetSettings = 'uspInternetSettings';
   static const uspWifiSettings = 'uspWifiSettings';

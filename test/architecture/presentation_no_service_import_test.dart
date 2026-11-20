@@ -17,6 +17,11 @@
 // - `helpers/` and other directories not in [_layers]. `support/shared_widgets/`
 //   is the one UI-named one: its `components/` are scanned, and its only
 //   service imports are in `generators/`, which are logic, not UI.
+//
+// There is no allowlist. #1836 fixed the last three files that had one (the
+// router assistant view, the USP test console, the package widget renderer) and
+// deleted the map with them, under the team's 2026-11-17 no-exceptions policy: an
+// import that breaks this rule is fixed, never exempted.
 
 import 'dart:io';
 
@@ -32,33 +37,6 @@ const _layers = [
   'dialogs',
   'models'
 ];
-
-/// Files allowed to import a service, each with the reason.
-///
-/// Empty is the goal. An entry here is a decision, not a fix: it has to say why
-/// the import is the right shape for that file.
-const _allowed = <String, String>{
-  // Reads `awsCredentialsStoreProvider`, a `Provider<AwsCredentialsStore>`, so
-  // the view already reaches the store through a Provider. The page has no
-  // notifier to route it through, and adding one only to hold four calls was
-  // decided against (2026-10-12).
-  'lib/page/ai_assistant/views/router_assistant_view.dart':
-      'reads a service Provider<T>; page has no notifier',
-
-  // A developer tool whose job is to talk to USP directly: it builds its own
-  // `UspClient` / `UspBridgeClient` against a URL the developer types, so there
-  // is no service to route it through that would not be this view again.
-  'lib/page/test_console/views/usp_test_console_view.dart':
-      'developer USP console; builds its own client by design',
-
-  // A debt left on purpose: the widget holds a whole data layer (USP reads, CGI
-  // calls, SSE subscription, polling) and imports the throttler for one enum.
-  // Moving the enum would make this green and fix nothing, and package widgets
-  // may be removed outright, so the data layer is not moved for now
-  // (2026-10-13). If they stay, it moves to a service and a notifier.
-  'lib/page/dashboard/widgets/package_widget_renderer.dart':
-      'holds its own data layer; package widgets may be removed',
-};
 
 /// An import of a file under a `services/` directory: a feature's at any depth
 /// (`support/shared_widgets/faq_agent/services/`) or `lib/core/`'s
@@ -97,7 +75,6 @@ void main() {
       () {
     final offenders = <String>[];
     for (final f in layerFiles()) {
-      if (_allowed.containsKey(f.path)) continue;
       for (final m in _serviceImport.allMatches(f.readAsStringSync())) {
         offenders.add('${f.path}: ${m.group(0)!.trim()}');
       }
@@ -109,18 +86,9 @@ void main() {
       reason:
           'constitution §5.4: Presentation and models depend downward, never '
           'on services. Move a pure constant, enum, function or UI model into '
-          'models/, or route an I/O call through the page\'s Notifier. Only add '
-          'to _allowed with a reason the import is the right shape.\n'
+          'models/; move a service Provider into providers/; or route an I/O '
+          'call through the page\'s Notifier.\n'
           '${offenders.join('\n')}',
     );
-  });
-
-  test('every allowed exception still imports a service', () {
-    // An entry whose file no longer imports a service is a stale exemption: it
-    // would silently allow the next import added there.
-    final stale = _allowed.keys
-        .where((p) => !_serviceImport.hasMatch(File(p).readAsStringSync()))
-        .toList();
-    expect(stale, isEmpty, reason: 'remove these from _allowed: $stale');
   });
 }

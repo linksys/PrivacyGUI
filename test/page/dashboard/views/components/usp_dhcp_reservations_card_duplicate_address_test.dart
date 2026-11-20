@@ -12,14 +12,15 @@ import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/page/dhcp/views/dialogs/dhcp_reservation_edit_dialog.dart';
 import 'package:privacy_gui/page/local_network/cards/usp_dhcp_reservations_card.dart';
+import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../mocks/provider_overrides/mock_dashboard_cards.dart'
     show cardOverrides;
 import '../../../../mocks/provider_overrides/mock_dhcp.dart'
-    show FixedDhcpReservationsNotifier;
+    show FixedDhcpReservationsNotifier, UnreadableLanDataNotifier;
 import '../../../../mocks/test_data/scenes/cards_scene_data.dart'
-    show testDhcpData, testDhcpReservations;
+    show testDhcpData, testDhcpReservations, testLanData;
 import '../../../../mocks/test_data/scenes/dhcp_scene_data.dart' show dataState;
 
 /// Duplicate-address validation as reached from the **Dashboard** DHCP card
@@ -51,7 +52,7 @@ final _testTheme = AppTheme.create(
 /// production, which is what makes the omission testable from here.
 /// `uspDhcpReservationsProvider` is overridden only so `deviceOptions()` can be
 /// read without a live USP transport.
-Future<void> _pumpCard(WidgetTester tester) async {
+Future<void> _pumpCard(WidgetTester tester, {bool lanReadable = true}) async {
   const surface = Size(800, 900);
   await tester.binding.setSurfaceSize(surface);
   tester.view.physicalSize = surface;
@@ -87,6 +88,8 @@ Future<void> _pumpCard(WidgetTester tester) async {
       overrides: [
         ...cardOverrides(
           dhcpData: testDhcpData,
+          // The card reads the LAN before it opens the dialog (#1838).
+          lanData: lanReadable ? testLanData : null,
           devicesData: DevicesData(
             meshNetwork: MeshNetwork(
               master: MasterNode(deviceId: 'GATEWAY', model: 'Test Router'),
@@ -95,6 +98,8 @@ Future<void> _pumpCard(WidgetTester tester) async {
         ),
         uspDhcpReservationsProvider
             .overrideWith(() => FixedDhcpReservationsNotifier(dataState())),
+        if (!lanReadable)
+          lanDataProvider.overrideWith(() => UnreadableLanDataNotifier()),
       ],
       child: MaterialApp.router(
         theme: _testTheme,
@@ -248,5 +253,30 @@ void main() {
       expect(find.byType(DhcpReservationEditDialog), findsNothing,
           reason: 'a non-duplicate reservation must still be submittable');
     });
+  });
+
+  // #1838: the card reads the LAN before it opens the dialog and passes it
+  // in, so the dialog checks the address as a LAN host.
+  testWidgets('an address outside the LAN is flagged', (tester) async {
+    final loc = await AppLocalizations.delegate.load(const Locale('en'));
+    await _pumpCard(tester);
+    await _openAddDialog(tester);
+
+    await _enterMac(tester, 'AA:BB:CC:DD:EE:99');
+    await _enterIp(tester, '10.0.0.5');
+
+    expect(_ipField(tester).errorText, loc.invalidIpAddress);
+  });
+
+  testWidgets('a LAN that cannot be read opens no dialog', (tester) async {
+    await _pumpCard(tester, lanReadable: false);
+
+    await tester.tap(find.descendant(
+      of: find.byType(UspDhcpReservationsCard),
+      matching: find.byIcon(Icons.add),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DhcpReservationEditDialog), findsNothing);
   });
 }

@@ -99,7 +99,7 @@ const String kPageViewRoot = 'lib/page';
 /// `pnp_setup_view.dart` went and four page views came — the frame drawn around the
 /// steps (`pnp_flow_frame_view.dart`) and the three steps. The walk is unchanged;
 /// one row went and four came with the files.
-const int kPageViewCount = 54;
+const int kPageViewCount = 53;
 
 /// The marker for a column with no value, spelled as the overflow baselines spell
 /// it (`page.tsv` writes `-` for every absent `px`, `side`, `site` and `widget`).

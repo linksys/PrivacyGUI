@@ -1,5 +1,7 @@
 import 'package:privacy_gui/generated/lan_dhcp_pool.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
+import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
+import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 
 import 'internet_settings_test_data.dart';
 
@@ -12,6 +14,26 @@ class LocalNetworkTestData {
   static const lanInterface = InternetSettingsTestData.lanInterface;
   static const lanPool = 'Device.DHCPv4.Server.Pool.4.';
   static const guestPool = 'Device.DHCPv4.Server.Pool.2.';
+
+  // ---------------------------------------------------------------------------
+  // L1 data
+  // ---------------------------------------------------------------------------
+
+  /// What `lanDataProvider` holds for a LAN of [ipAddress]/[subnetMask]: the
+  /// router's address and mask a LAN-host check reads (#1838).
+  static LanData createLanData({
+    String ipAddress = '192.168.1.1',
+    String subnetMask = '255.255.255.0',
+  }) =>
+      LanData(
+        model: LanInfoUIModel(
+          ipAddress: ipAddress,
+          subnetMask: subnetMask,
+          dhcpEnabled: true,
+          minAddress: '192.168.1.100',
+          maxAddress: '192.168.1.200',
+        ),
+      );
 
   // ---------------------------------------------------------------------------
   // Codegen models

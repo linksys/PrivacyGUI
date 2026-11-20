@@ -5,6 +5,7 @@ This workflow provides instructions for AI agents and developers to query, test,
 ## Prerequisites
 - The `tools/router_tr181_tester.sh` script must exist and be executable.
 - The router must be accessible at `192.168.1.1`.
+- `ROUTER_SSH_PASSWORD` must hold the router's root SSH password. The script stops if it is not set.
 
 ## How to use the Tool
 You can use the helper script to execute commands on the router without worrying about SSH password prompts. It automatically handles the connection.

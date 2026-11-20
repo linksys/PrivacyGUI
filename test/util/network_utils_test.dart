@@ -2,6 +2,23 @@ import 'package:privacy_gui/util/network_utils.dart';
 import 'package:test/test.dart';
 
 void main() {
+  // #1838: one placeholder for every address slot that has no address.
+  group('NetworkUtils.addressOrPlaceholder', () {
+    test('the placeholder is a single hyphen', () {
+      expect(NetworkUtils.noAddress, '-');
+    });
+
+    test('an address is shown as it is', () {
+      expect(NetworkUtils.addressOrPlaceholder('192.168.1.60'), '192.168.1.60');
+    });
+
+    test('no address, or a blank one, reads the placeholder', () {
+      for (final a in [null, '', '  ']) {
+        expect(NetworkUtils.addressOrPlaceholder(a), '-', reason: '$a');
+      }
+    });
+  });
+
   group('test ip conveter', () {
     test('test ip to num and convert back #1', () async {
       const ipAddress = '127.0.0.1';

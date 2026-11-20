@@ -53,6 +53,8 @@ Future<_Opened> _open(WidgetTester tester,
                     await showAppDialog<DhcpReservationDialogResult>(
                   context: context,
                   builder: (_) => DhcpReservationEditDialog(
+                    lanIp: null,
+                    lanSubnetMask: null,
                     reservation: reservation,
                     existingReservations: _existing,
                   ),

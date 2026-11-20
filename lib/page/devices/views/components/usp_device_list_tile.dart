@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/devices/views/components/device_icon_with_badge
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:privacy_gui/page/topology/helpers/node_identifier.dart';
 import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/util/network_utils.dart';
 
 /// Visual variant for [UspDeviceListTile].
 enum DeviceListTileVariant {
@@ -99,7 +100,7 @@ class UspDeviceListTile extends StatelessWidget {
                   ),
                   AppGap.sm(),
                   AppText.bodySmall(
-                    device.ip,
+                    NetworkUtils.addressOrPlaceholder(device.ip),
                     color: scheme.onSurfaceVariant,
                   ),
                 ],

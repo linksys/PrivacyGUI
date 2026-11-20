@@ -108,12 +108,22 @@ class InternetTroubleshootingService {
   ///
   /// UI pre-fills fields from router's current settings, so submitted values
   /// represent the user's final intent — no need to preserve original on empty.
-  /// The VLAN ID is the exception: it counts only while VLAN is on.
+  /// VLAN is the exception: only the PPPoE step has a VLAN field, so only it
+  /// changes VLAN, and its VLAN ID counts only while VLAN is on.
   UspInternetSettingsForm _applyIspConfigToForm(
     PnpIspConfig config,
     UspInternetSettingsForm original,
   ) {
-    final vlanEnabled = config.type == IspConnectionType.pppoeVlan;
+    // The PPPoE step turns VLAN on or off. Static IP has no VLAN field, so it
+    // keeps the router's, which Internet Settings can set on Static too (issue
+    // #1754). No step has a priority field, so the router's priority stays.
+    final vlanEnabled = switch (config.type) {
+      IspConnectionType.pppoeVlan => true,
+      IspConnectionType.pppoe => false,
+      IspConnectionType.dhcp ||
+      IspConnectionType.staticIp =>
+        original.vlanEnabled,
+    };
     // dnsServer3 intentionally omitted — no UI for it here, preserve original
     return original.copyWith(
       connectionType: _mapConnectionType(config.type),
@@ -125,11 +135,13 @@ class InternetTroubleshootingService {
       pppUsername: config.pppUsername,
       pppPassword: config.pppPassword,
       vlanEnabled: vlanEnabled,
-      // With VLAN off, config.vlanId is not the user's: Static IP has no VLAN
-      // field, and PPPoE's hidden field holds whatever was last typed or
-      // pre-filled, or 0 when empty. Keep the router's ID: FW 2.0.4 ships the
-      // WAN VLAN row with ID 1 and refuses 0 (#1072).
-      vlanId: vlanEnabled ? config.vlanId : original.vlanId,
+      // Only the PPPoE step's open VLAN field holds the user's ID. Its hidden
+      // field holds whatever was last typed or pre-filled, or 0 when empty, so
+      // every other case keeps the router's ID: FW 2.0.4 ships the WAN VLAN row
+      // with ID 1 and refuses 0 (issue #1072).
+      vlanId: config.type == IspConnectionType.pppoeVlan
+          ? config.vlanId
+          : original.vlanId,
     );
   }
 

@@ -50,6 +50,15 @@ void main() {
                 dataState(dhcpForm, readOnlyInfo: defaultReadOnlyInfo),
               ),
             ),
+        'dhcp_vlan_shipped_id_editing': (overrides) => overrides.addAll(
+              internetSettingsOverrides(
+                dataState(
+                  dhcpVlanShippedIdForm,
+                  readOnlyInfo: defaultReadOnlyInfo,
+                  isEditing: true,
+                ),
+              ),
+            ),
         'static_ip': (overrides) => overrides.addAll(
               internetSettingsOverrides(
                 dataState(staticIpForm, readOnlyInfo: defaultReadOnlyInfo),
@@ -104,6 +113,14 @@ void main() {
         'pptp_dhcp_underlay': (overrides) => overrides.addAll(
               internetSettingsOverrides(
                 dataState(pptpDhcpUnderlayForm,
+                    readOnlyInfo: pppoeReadOnlyInfo),
+              ),
+            ),
+        // The router's values after a save it applied in part: out of edit
+        // mode, the server the tunnel step refused left empty (issue #1711).
+        'pptp_without_server': (overrides) => overrides.addAll(
+              internetSettingsOverrides(
+                dataState(pptpWithoutServerForm,
                     readOnlyInfo: pppoeReadOnlyInfo),
               ),
             ),

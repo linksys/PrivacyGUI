@@ -10,7 +10,8 @@ import 'package:privacy_gui/components/localizations/service_error_localizations
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/ai_assistant/providers/router_command_provider.dart';
-import 'package:privacy_gui/page/ai_assistant/services/aws_credentials_store.dart';
+import 'package:privacy_gui/page/ai_assistant/models/stored_aws_credentials.dart';
+import 'package:privacy_gui/page/ai_assistant/providers/aws_credentials_store_provider.dart';
 import 'package:privacy_gui/page/dashboard/mascot/mascot_hero_widget.dart';
 
 /// Available Bedrock model options.
