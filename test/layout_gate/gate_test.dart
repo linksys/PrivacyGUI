@@ -17,21 +17,21 @@ void main() {
 
     test('runs a case that renders both layouts at every gate size', () {
       expect(names(gateScreensFor('a case', responsiveAllScreens)),
-          ['480', '905', '1241', '1280x420']);
+          ['480', '905', '1240', '1280x420']);
     });
 
     test('runs a mobile case at the mobile size and a desktop one at the rest',
         () {
       expect(names(gateScreensFor('a case', responsiveMobileScreens)), ['480']);
       expect(names(gateScreensFor('a case', responsiveDesktopScreens)),
-          ['905', '1241', '1280x420']);
+          ['905', '1240', '1280x420']);
     });
 
     test('keeps a case on the short-viewport list off 1280x420 only', () {
       final listed = shortViewportSkips.first;
 
       expect(names(gateScreensFor(listed, responsiveAllScreens)),
-          ['480', '905', '1241']);
+          ['480', '905', '1240']);
     });
   });
 
@@ -119,10 +119,10 @@ void main() {
   });
 
   group('the width oracle', () {
-    test('derives 905 and 1241, where a desktop content box is narrowest', () {
+    test('derives 905 and 1240, where a desktop content box is narrowest', () {
       // 905 is the first desktop width (a 24px margin, 857px since #1855), and
-      // 1241 the first with the 200px margin (841px).
-      expect(requiredGateWidths(), {905, 1241});
+      // 1240 the first with the 200px margin (840px since #1876).
+      expect(requiredGateWidths(), {905, 1240});
     });
 
     test('the gate runs at every width derived from ResponsiveLayout', () {

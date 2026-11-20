@@ -330,8 +330,9 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                           const AppGap.small2(),
                         ],
                         // Scaled down when it does not fit, instead of running
-                        // 9px past the card at 905 and 1241 (#1802). Wrapping
-                        // would not do: this tile has a fixed height of 136.
+                        // 9px past the card on the narrowest desktop pages,
+                        // 905 and 1240 (#1802, #1876). Wrapping would not do:
+                        // this tile has a fixed height of 136.
                         FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Row(

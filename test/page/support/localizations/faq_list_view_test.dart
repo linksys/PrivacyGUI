@@ -21,15 +21,14 @@ void main() async {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
   });
-  testLocalizations('Dashboard Support View - default', (tester, locale) async {
+  testLocalizations('FAQ list view - default', (tester, locale) async {
     await tester.pumpWidget(
       testableWidget(locale),
     );
     await tester.pumpAndSettle();
   }, screens: [...responsiveMobileScreens, ...responsiveDesktopScreens]);
 
-  testLocalizations('Dashboard Support View - expended',
-      (tester, locale) async {
+  testLocalizations('FAQ list view - expanded', (tester, locale) async {
     await tester.pumpWidget(
       testableWidget(locale),
     );

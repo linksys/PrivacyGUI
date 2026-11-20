@@ -12,23 +12,24 @@ import 'layout_cases.dart';
 
 /// The sizes the gate runs a case at (#1802, Decision 7): the narrowest
 /// mobile size the harness renders, the narrowest content box of each of the
-/// two desktop margins (857px at 905, 841px at 1241), and a short desktop
+/// two desktop margins (857px at 905, 840px at 1240), and a short desktop
 /// window.
 const List<RequestedScreen> gateScreens = [
   (width: 480, height: null),
   (width: 905, height: null),
-  (width: 1241, height: null),
+  (width: 1240, height: null),
   shortViewport,
 ];
 
 /// The widths the gate has to run at, derived from [ResponsiveLayout]'s
 /// breakpoints (#1802, Method 4): where a desktop content box is narrowest.
-/// That is [ResponsiveLayout.medium], the first desktop width, with a 24px
-/// margin (857px today), and the first width past [ResponsiveLayout.large],
-/// where the margin jumps to 200px (841px today). These are the desktop
-/// widths Decision 7 gates; the other breakpoints have no gate width.
+/// Each breakpoint is the first width of its band (#1876), so these are
+/// [ResponsiveLayout.medium], the first desktop width, with a 24px margin
+/// (857px today), and [ResponsiveLayout.large], where the margin jumps to
+/// 200px (840px today). These are the desktop widths Decision 7 gates; the
+/// other breakpoints have no gate width.
 Set<double> requiredGateWidths() =>
-    {ResponsiveLayout.medium, ResponsiveLayout.large + 1};
+    {ResponsiveLayout.medium, ResponsiveLayout.large};
 
 /// The short desktop window the gate runs at.
 const RequestedScreen shortViewport = (width: 1280, height: 420);
@@ -64,8 +65,8 @@ const Set<String> shortViewportSkips = {
   // advanced_settings/static_routing/views/localizations/static_routing_view_test.dart
   'Static routing view test - NAT enabled add rule - interface dropdown',
   'Static routing view test - NAT enabled add rule - invalid gateway IP',
-  // dashboard/localizations/dashboard_support_view_test.dart
-  'Dashboard Support View - expended',
+  // support/localizations/faq_list_view_test.dart
+  'FAQ list view - expanded',
   // instant_setup/troubleshooter/views/isp_settings/localizations/pnp_static_ip_view_test.dart
   'Troubleshooter - PnP static IP: wrong input formats',
   // instant_topology/localizations/add_wired_node_view_test.dart
