@@ -209,19 +209,14 @@ The table lists the pages that have no case. A row whose reason starts "No case 
 | `lib/page/components/settings_view/editable_table_settings_view.dart` | `AppEditableTableSettingsView` | Permanent: a component, not a page. The advanced settings lists build it; the IPv6 port service and static routing cases sweep it. |
 | `lib/page/components/styled/styled_tab_page_view.dart` | `StyledAppTabPageView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/components/views/arguments_view.dart` | `ArgumentsBaseConsumerStatefulView` | Permanent: a base class for views, not a page. |
-| `lib/page/components/views/write_flow_blocked_view.dart` | `WriteFlowBlockedView` | No case yet (#1802 P6). |
 | `lib/page/dashboard/views/dashboard_settings_view.dart` | `DashboardSettingsView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/dashboard/views/dashboard_support_view.dart` | `DashboardSupportView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
-| `lib/page/dashboard/views/prepare_dashboard_view.dart` | `PrepareDashboardView` | No case yet (#1802 P6). |
 | `lib/page/firmware_update/views/firmware_update_process_view.dart` | `FirmwareUpdateProcessView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
-| `lib/page/health_check/views/speed_test_selection.dart` | `SpeedTestSelectionView` | No case yet (#1802 P6). |
 | `lib/page/instant_setup/troubleshooter/views/call_support/call_support_main_region_view.dart` | `CallSupportMainRegionView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/instant_setup/troubleshooter/views/call_support/call_support_more_region_view.dart` | `CallSupportMoreRegionView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
-| `lib/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_auth_view.dart` | `PnpIspAuthView` | No case yet (#1802 P6). |
 | `lib/page/landing/views/debug_device_info_view.dart` | `DebugDeviceInfoView` | Kept until #1849 deletes it: a debug page that nothing opens. |
 | `lib/page/landing/views/home_view.dart` | `HomeView` | Kept until #1849 deletes it: the home page, which never shows. |
 | `lib/page/login/auto_parent/views/auto_parent_first_login_view.dart` | `AutoParentFirstLoginView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
-| `lib/page/login/views/login_cloud_auth_view.dart` | `LoginCloudAuthView` | No case yet (#1802 P6). |
 | `lib/page/login/views/login_cloud_view.dart` | `LoginCloudView` | Kept until #1849 deletes it: the cloud account login and OTP, which 1.x does not use. |
 | `lib/page/nodes/views/change_node_name_view.dart` | `ChangeNodeNameView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/nodes/views/node_light_guide_view.dart` | `NodeLightGuideView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
@@ -232,8 +227,6 @@ The table lists the pages that have no case. A row whose reason starts "No case 
 | `lib/page/otp_flow/views/otp_method_selector_view.dart` | `OTPMethodSelectorView` | Kept until #1849 deletes it: the cloud account login and OTP, which 1.x does not use. |
 | `lib/page/otp_flow/views/otp_view.dart` | `OtpFlowView` | Kept until #1849 deletes it: the cloud account login and OTP, which 1.x does not use. |
 | `lib/page/select_network/views/select_network_view.dart` | `SelectNetworkView` | Kept until #1849 deletes it: the cloud account's network picker. A remote login with no stored serial number still reaches it (`_prepareRemote` in `router_provider.dart`), and #1849 removes that path. |
-| `lib/page/troubleshooting/views/troubleshooting_ping_view.dart` | `TroubleshootingPingView` | No case yet (#1802 P6). |
-| `lib/page/troubleshooting/views/troubleshooting_view.dart` | `TroubleshootingView` | No case yet (#1802 P6). |
 | `lib/page/wifi_settings/views/mac_filtering_view.dart` | `MacFilteringView` | Permanent: a component, not a page: a tab of `WiFiMainView`, with no route of its own. `WiFiMainView`'s cases open the tab, so they sweep it. |
 | `lib/page/wifi_settings/views/wifi_advanced_settings_view.dart` | `WifiAdvancedSettingsView` | Permanent: a component, not a page: a tab of `WiFiMainView`, with no route of its own. `WiFiMainView`'s cases open the tab, so they sweep it. |
 | `lib/page/wifi_settings/views/wifi_list_advanced_mode_view.dart` | `AdvancedModeView` | Permanent: a component, not a page. `WiFiListView` lays it out in the advanced mode, and the Wi-Fi settings cases in that mode sweep it. |
