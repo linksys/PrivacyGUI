@@ -215,7 +215,6 @@ The table lists the pages that had no case when the gate landed. #1802 P6 emptie
 | `lib/page/components/styled/styled_tab_page_view.dart` | `StyledAppTabPageView` | No case yet (#1802 P6). It is a layout that pages use. |
 | `lib/page/components/views/arguments_view.dart` | `ArgumentsBaseConsumerStatefulView` | No case yet (#1802 P6). It is a base class for views. |
 | `lib/page/components/views/write_flow_blocked_view.dart` | `WriteFlowBlockedView` | No case yet (#1802 P6). |
-| `lib/page/dashboard/views/dashboard_support_view.dart` | `DashboardSupportView` | No case yet (#1802 P6). |
 | `lib/page/dashboard/views/prepare_dashboard_view.dart` | `PrepareDashboardView` | No case yet (#1802 P6). |
 | `lib/page/firmware_update/views/firmware_update_process_view.dart` | `FirmwareUpdateProcessView` | No case yet (#1802 P6). |
 | `lib/page/health_check/views/speed_test_selection.dart` | `SpeedTestSelectionView` | No case yet (#1802 P6). |

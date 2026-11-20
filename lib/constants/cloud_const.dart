@@ -61,18 +61,9 @@ const Map<CloudEnvironment, dynamic> kCloudEnvironmentMap = {
 // Variable replacements
 const kVarRASessionId = '{remoteassistancesessionId}';
 
-// Cloud API Service
-const kRemoteAssistanceService = '/cloud/remote-access-service';
-
 /// Cloud API Endpoint
 // test ping.png
 const kTestPingPng = '/cloud/ping.png';
-
-// Remote assistance
-const kRASessions = '$kRemoteAssistanceService/rest/remoteassistance/sessions';
-const kRASessionInfo =
-    '$kRemoteAssistanceService/rest/remoteassistance/sessions/$kVarRASessionId';
-const kRAPin = '$kRemoteAssistanceService/rest/remoteassistance/sessions/pin';
 
 /// Guardians
 
