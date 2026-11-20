@@ -30,6 +30,7 @@ import 'package:privacy_gui/page/unified_diagnostics/models/device_score.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_probe_ui_models.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_result.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
+import 'package:privacy_gui/page/_shared/services/mesh_node_backhaul.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
 
 final unifiedDiagnosticsServiceProvider =

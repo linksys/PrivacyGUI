@@ -15,7 +15,7 @@ import 'package:privacy_gui/page/wifi_settings/models/wifi_quick_setup_network.d
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart';
 import 'package:privacy_gui/page/wifi_settings/helpers/wifi_channel_bonding.dart';
-import 'package:privacy_gui/page/_shared/utils/wifi_guest_detection.dart';
+import 'package:privacy_gui/page/_shared/services/wifi_guest_detection.dart';
 
 final uspWifiSettingsServiceProvider = Provider<UspWifiSettingsService>(
   (ref) => UspWifiSettingsService(ref.read(uspClientProvider)!),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
+import 'package:privacy_gui/core/utils/usp_formatters.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.dart';
 import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';

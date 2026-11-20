@@ -6,8 +6,9 @@ import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/models/mlo_client_info.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
+import 'package:privacy_gui/page/_shared/services/mesh_node_backhaul.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
-import 'package:privacy_gui/page/_shared/utils/mesh_radio_band.dart';
+import 'package:privacy_gui/page/_shared/services/mesh_radio_band.dart';
 
 /// Builds [MeshTopologyInfo] from DataElements network data.
 ///
