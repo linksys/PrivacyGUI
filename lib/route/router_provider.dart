@@ -107,7 +107,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       localLoginRoute,
       cloudLoginAuthRoute,
       homeRoute,
-      // ref.read(otpRouteProvider),
       LinksysRoute(
         name: RouteNamed.prepareDashboard,
         path: RoutePath.prepareDashboard,

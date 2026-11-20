@@ -274,7 +274,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   Future<AuthState> updateCloudCredientials({
     SessionToken? sessionToken,
   }) async {
-    logger.d('[Auth]: Update cloud credientials: $sessionToken');
+    // Whether there is a token, never the token: in debug builds Equatable's
+    // toString prints every field, the access and refresh tokens among them.
+    logger.d('[Auth]: Update cloud credientials: ${sessionToken != null}');
     const storage = FlutterSecureStorage();
     if (sessionToken != null) {
       await storage.write(
