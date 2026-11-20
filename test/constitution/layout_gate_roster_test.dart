@@ -18,6 +18,17 @@ void main() {
         "feature's localizations/ directory (constitution 3.5).",
   );
 
+  test('nothing in lib/ builds a page the roster calls unreachable', () {
+    final built = builtUnreachablePages(
+        File('constitution.md').readAsStringSync(), dartSources('lib'));
+
+    expect(built, isEmpty,
+        reason: 'These pages have a row that says "$unreachableReason", but '
+            'lib/ builds them now:\n${bulletList(built)}\n'
+            'Give each a testLocalizations case and delete its row '
+            '(constitution 3.3).');
+  });
+
   test('the roster takes the pages constitution 5.1 names without the suffix',
       () {
     final rule = File('constitution.md')
