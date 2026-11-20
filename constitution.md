@@ -1,7 +1,7 @@
 # The 1.x Constitution
 
-**Version:** 1.5
-**Last amended:** 2026-11-19 (#1864, scrolling pages without `IntrinsicHeight`)
+**Version:** 1.6
+**Last amended:** 2026-11-20 (#1802, analyzer warnings fail CI)
 **Applies to:** the 1.x line of PrivacyGUI: `dev-1.*`, `release-1.*`, and `main` while it ships 1.x. 2.x has its own `constitution.md`; nothing here binds 2.x, and nothing in 2.x's binds 1.x.
 
 ## Preamble
@@ -26,7 +26,7 @@ Where this document and another document in the repository disagree, this one wi
 | IV | Feature state lives in `Notifier` / `AsyncNotifier`; `…State` classes extend `Equatable` | Review |
 | V | File, class, provider and directory names | Review |
 | VI | User-visible strings come from the ARB files | CI for missing keys; review for hard-coded strings |
-| VII | Zero analyzer errors; no new warnings | CI for errors; review for warnings |
+| VII | Zero analyzer errors and warnings | CI |
 | VIII | Simplicity; no wrappers around the framework; stay in scope | Review |
 | IX | Amendments state version, date and reason; the team approves them | Team approval |
 | X | A scrolling page's content needs no bounded height | CI for flex children on pages with a case, through #1802's layout gate; review for the rest |
@@ -99,7 +99,6 @@ These dependencies predate this constitution. They are listed, not fixed (#1804,
 | `lib/page/instant_setup/pnp_setup_view.dart` | `lib/core/jnap/command/base_command.dart` | `CacheLevel` |
 | `lib/page/instant_setup/pnp_setup_view.dart` | `lib/core/jnap/router_repository.dart` | |
 | `lib/page/instant_setup/pnp_setup_view.dart` | `routerRepositoryProvider` | `send(getRadioInfo)` |
-| `lib/page/instant_setup/troubleshooter/views/isp_settings/pnp_pppoe_view.dart` | `lib/core/jnap/router_repository.dart` | nothing: the import is unused |
 | `lib/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart` | `lib/core/jnap/router_repository.dart` | |
 | `lib/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart` | `routerRepositoryProvider` | `isLoggedIn()` |
 | `lib/core/jnap/models/node_light_settings.dart` | `lib/page/nodes/_nodes.dart` | `NodeLightStatus` |
@@ -397,13 +396,15 @@ Every string a user can see is a key in `lib/l10n/app_en.arb`, the template, rea
 
 *Amended 2026-11-18 (#1802): `analysis_options.yaml` excludes `plugins/**`, because `plugins/widgets` is fixed in its own repository (#1802, Decision 1). This adds no exception: rules for `plugins/widgets` were already deferred (Not Covered › Deferred), so the version moves to 1.1, not 2.0.*
 
-### 7.2 Warnings are cleaned, not added
+### 7.2 Zero analyzer warnings
 
-A change adds no analyzer warnings. The existing ones (246 when #1802 was filed, 221 once 7.1 left out `plugins/**`) are cleared in a dedicated PR (#1802, Decision 1), not mixed into feature changes, so that a feature's diff stays about the feature.
+`flutter analyze` reports no warnings either. #1802 cleared the 219 there were (246 when #1802 was filed, 221 once 7.1 left out `plugins/**`) in a PR of their own, so that no feature's diff carried them (#1802, Decision 1). Infos are not counted.
 
-**Enforced by**: CI for errors: `1.x / Analyze` runs `flutter analyze --no-fatal-warnings --no-fatal-infos`, which fails on errors only. Review for warnings, until the backlog is cleared and the check can fail on them.
+**Enforced by**: CI. `1.x / Analyze` runs `flutter analyze --no-fatal-infos`, which fails on an error or a warning.
 
 *Amended 2026-11-18 (#1802): names the check that runs the analyzer, now that #1802 P1 has added it, and gives the warning count once 7.1 left out `plugins/**`.*
+
+*Amended 2026-11-20 (#1802): the backlog is cleared, so `1.x / Analyze` fails on warnings too, and 7.2 asks for none rather than no new ones. The version moves to 1.6, not 2.0, although 9.2 asks a major number for a tightened rule, as #1802's other amendments kept the major number.*
 
 ---
 

@@ -36,7 +36,7 @@ jobs:
       # Errors only (constitution 7.1 and 7.2, #1802 Decision 1). The existing
       # warnings are cleared in their own PR, after which this can fail on them.
       - name: Analyze
-        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+        run: flutter analyze --no-fatal-infos
 
   unit-tests:
     name: 1.x / Unit Tests
