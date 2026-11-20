@@ -185,12 +185,16 @@ class _TextLayout {
       _ => (null, false),
     };
     if (plainText != null) {
-      final all = _all(plainText);
-      final boxes = switch (node) {
-        RenderParagraph() => node.getBoxesForSelection(all),
-        RenderEditable() => node.getBoxesForSelection(all),
-        _ => const <TextBox>[],
-      };
+      // Only the runs that are not whitespace: the space a line breaks at
+      // may hang past the box, and a space is not cut.
+      final boxes = [
+        for (final run in _visible(plainText))
+          ...switch (node) {
+            RenderParagraph() => node.getBoxesForSelection(run),
+            RenderEditable() => node.getBoxesForSelection(run),
+            _ => const <TextBox>[],
+          },
+      ];
       return _TextLayout(node as RenderBox, plainText, _rects(boxes),
           didExceedMaxLines: didExceedMaxLines);
     }
@@ -199,8 +203,9 @@ class _TextLayout {
     return found;
   }
 
-  static TextSelection _all(String text) =>
-      TextSelection(baseOffset: 0, extentOffset: text.length);
+  static Iterable<TextSelection> _visible(String text) =>
+      RegExp(r'\S+').allMatches(text).map(
+          (run) => TextSelection(baseOffset: run.start, extentOffset: run.end));
 
   static List<Rect> _rects(List<TextBox> boxes) =>
       boxes.map((box) => box.toRect()).toList();

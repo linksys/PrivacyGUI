@@ -35,6 +35,14 @@ void main() {
     expect(find.text(_ip), isFullyShown);
   });
 
+  testWidgets('a text that wraps at a space is fully shown', (tester) async {
+    // 'aaaa' and 'bbbb' are 40px each and fit a 45px line; the space the
+    // first line ends on runs to 50px, but a space is not cut.
+    await tester.pumpWidget(_box(45, const Text('aaaa bbbb', style: _style)));
+
+    expect(find.text('aaaa bbbb'), isFullyShown);
+  });
+
   testWidgets('an ellipsized text is not fully shown', (tester) async {
     await tester.pumpWidget(_box(
       80,
