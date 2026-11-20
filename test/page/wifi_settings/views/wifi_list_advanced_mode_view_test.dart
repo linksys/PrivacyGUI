@@ -112,6 +112,12 @@ void main() {
 
           expect(cards, hasLength(state.mainWiFi.length + 1));
           for (final card in cards) {
+            // The window, which needs no ResponsiveLayout to work out.
+            expect(
+              card.left >= -0.5 && card.right <= width + 0.5,
+              isTrue,
+              reason: 'A card at $card runs past the window, 0 to $width.',
+            );
             expect(
               card.left >= left - 0.5 && card.right <= right + 0.5,
               isTrue,
