@@ -71,7 +71,8 @@ final _separator = RegExp(r'^\|(\s*:?-{3,}:?\s*\|)+\s*$');
 ///
 /// Throws unless the markers are there exactly once, in order, the table
 /// starts with a header and its `|---|` separator, and every row below them
-/// has backticked first two cells. A row the checks cannot read never goes
+/// has backticked first two cells, which no other row repeats. A row the
+/// checks cannot read, or a second row a set would swallow, never goes
 /// unnoticed.
 Set<String> readExceptionTable(String constitution, String name) {
   final beginMarker = '<!-- $name:begin -->';
@@ -103,7 +104,11 @@ Set<String> readExceptionTable(String constitution, String name) {
           'The "$name" table in constitution.md has a row the checks cannot '
           'read; put its first two cells in backticks:\n$line');
     }
-    rows.add('${row.group(1)} -> ${row.group(2)}');
+    final entry = '${row.group(1)} -> ${row.group(2)}';
+    if (!rows.add(entry)) {
+      throw StateError('The "$name" table in constitution.md has two rows '
+          'for $entry; keep one, with the reason that holds.');
+    }
   }
   return rows;
 }
