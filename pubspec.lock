@@ -1128,7 +1128,7 @@ packages:
       path: "plugins/widgets"
       relative: true
     source: path
-    version: "1.2.11"
+    version: "1.2.12"
   pub_semver:
     dependency: transitive
     description:
