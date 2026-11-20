@@ -738,7 +738,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
           rethrow;
         }
         logger.i(
-          '[PnP]: Existing admin password was not accepted; trying the WiFi password used by factory-default PnP',
+          '[PnP]: The WiFi password set by the save was not accepted; trying the password PnP logged in with',
         );
       }
     }

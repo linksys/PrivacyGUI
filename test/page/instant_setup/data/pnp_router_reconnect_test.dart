@@ -96,14 +96,16 @@ void main() {
     );
   });
 
-  test('factory-default save can reconcile the new WiFi admin password', () {
+  test(
+      'factory-default save tries the new WiFi admin password first, then the old one',
+      () {
     expect(
       pnpPostSaveAdminPasswordCandidates(
         currentPassword: 'old-password',
         wifiPassword: 'new-wifi-password',
         didSetAdminPassword: true,
       ),
-      ['old-password', 'new-wifi-password'],
+      ['new-wifi-password', 'old-password'],
     );
   });
 }
