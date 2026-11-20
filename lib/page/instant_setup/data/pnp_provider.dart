@@ -90,19 +90,26 @@ bool shouldPreserveExistingAdminPassword({
 }) =>
     isRouterUnconfigured && (routerPasswordSet ?? false);
 
+/// The passwords the post-save check tries, in order.
+///
+/// When the save set the admin password to the WiFi password, that one goes
+/// first, and the password PnP logged in with is kept for a save that did not
+/// land. The order matters on core7: after a wrong password, CheckAdminPassword3
+/// refuses every check with ErrorPasswordCheckDelayed until its delay runs out,
+/// the right password included, so a stale first guess can block the right
+/// second one for the whole reconnect window.
 List<String> pnpPostSaveAdminPasswordCandidates({
   required String? currentPassword,
   required String? wifiPassword,
   required bool didSetAdminPassword,
 }) {
   final candidates = <String>[];
-  if (currentPassword?.isNotEmpty == true) {
-    candidates.add(currentPassword!);
-  }
-  if (didSetAdminPassword &&
-      wifiPassword?.isNotEmpty == true &&
-      !candidates.contains(wifiPassword)) {
+  if (didSetAdminPassword && wifiPassword?.isNotEmpty == true) {
     candidates.add(wifiPassword!);
+  }
+  if (currentPassword?.isNotEmpty == true &&
+      !candidates.contains(currentPassword)) {
+    candidates.add(currentPassword!);
   }
   return candidates;
 }
@@ -243,8 +250,13 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
       // logged out anyway.
       state = state.copyWith(autoMasterRotatedSinceLogin: false);
     }).catchError((error) => throw ExceptionInvalidAdminPassword(),
+            // A wrong password, in each action pnpCheckAdminPassword resolves
+            // to: CheckAdminPassword2 answers _ErrorUnauthorized, and
+            // CheckAdminPassword3 (core7) answers ErrorInvalidAdminPassword.
             test: (error) =>
-                error is JNAPError && error.result == errorJNAPUnauthorized);
+                error is JNAPError &&
+                (error.result == errorJNAPUnauthorized ||
+                    error.result == errorInvalidAdminPassword));
   }
 
   /// check internet connection within 30 seconds

@@ -3,9 +3,11 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
@@ -13,6 +15,7 @@ import 'package:privacy_gui/core/jnap/models/auto_master_status.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
@@ -26,6 +29,7 @@ import 'package:privacy_gui/route/route_model.dart';
 
 import '../../common/di.dart';
 import '../../common/testable_router.dart';
+import '../../mocks/router_repository_mocks.dart';
 import '../../test_data/device_info_test_data.dart';
 
 // Keep transport decisions explicit and deterministic. The real widget and
@@ -53,6 +57,9 @@ class _Pnp extends PnpNotifier {
   AutoMasterStatus? autoMasterStatus;
   Future<void> Function()? reconnect;
   Future<void> Function(String?)? authenticate;
+  // When true, the password check is the real one, sent to the router the test
+  // passes to [_showSetup], and [authenticate] is not used.
+  bool checksPasswordOnRouter = false;
 
   @override
   PnpState build() => PnpState(
@@ -121,6 +128,7 @@ class _Pnp extends PnpNotifier {
   Future<void> checkAdminPassword(String? password) async {
     checkedPasswords.add(password);
     calls.add('authenticate');
+    if (checksPasswordOnRouter) return super.checkAdminPassword(password);
     try {
       await authenticate?.call(password);
     } catch (_) {
@@ -196,8 +204,63 @@ class _Auth extends AuthNotifier {
       );
 }
 
+/// The router side of `pnpCheckAdminPassword` on core7 firmware:
+/// CheckAdminPassword3, as linksys/JNAP's core.hsl specifies it. A wrong
+/// password is ErrorInvalidAdminPassword and starts a delay, and every check
+/// during the delay is ErrorPasswordCheckDelayed, the right password included.
+/// On the bench (M63, 2026-11-20) the delay outlasted every probe of the
+/// reconnect window, so this one never ends.
+class _CheckAdminPassword3 {
+  _CheckAdminPassword3({required this.adminPassword}) {
+    when(repository.send(
+      JNAPAction.pnpCheckAdminPassword,
+      data: anyNamed('data'),
+      extraHeaders: anyNamed('extraHeaders'),
+      auth: anyNamed('auth'),
+      type: anyNamed('type'),
+      fetchRemote: anyNamed('fetchRemote'),
+      cacheLevel: anyNamed('cacheLevel'),
+      timeoutMs: anyNamed('timeoutMs'),
+      retries: anyNamed('retries'),
+      sideEffectOverrides: anyNamed('sideEffectOverrides'),
+    )).thenAnswer((invocation) async {
+      final data = invocation.namedArguments[#data] as Map<String, dynamic>;
+      return _check(data['adminPassword'] as String?);
+    });
+  }
+
+  final String adminPassword;
+  final repository = MockRouterRepository();
+
+  /// The result of every check the router refused, in order.
+  final refusals = <String>[];
+
+  JNAPSuccess _check(String? password) {
+    final refusal = refusals.isNotEmpty
+        ? errorPasswordCheckDelayed
+        : password == adminPassword
+            ? null
+            : errorInvalidAdminPassword;
+    if (refusal == null) {
+      return JNAPSuccess(result: 'OK', output: const {'isPasswordValid': true});
+    }
+    refusals.add(refusal);
+    throw JNAPError(result: refusal);
+  }
+}
+
+/// The real localLogin keeps an accepted password in flutter_secure_storage, a
+/// platform channel the test binding does not implement.
+void _stubSecureStorage(WidgetTester tester) {
+  const channel =
+      MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+  final messenger = tester.binding.defaultBinaryMessenger;
+  messenger.setMockMethodCallHandler(channel, (_) async => null);
+  addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+}
+
 Future<void> _showSetup(WidgetTester tester, _Pnp pnp, _Firmware firmware,
-    {bool beginSave = true}) async {
+    {bool beginSave = true, RouterRepository? router}) async {
   tester.view.physicalSize = const Size(1200, 1000);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
@@ -213,6 +276,7 @@ Future<void> _showSetup(WidgetTester tester, _Pnp pnp, _Firmware firmware,
       pnpProvider.overrideWith(() => pnp),
       firmwareUpdateProvider.overrideWith(() => firmware),
       authProvider.overrideWith(_Auth.new),
+      if (router != null) routerRepositoryProvider.overrideWithValue(router),
     ],
   ));
   await tester.pumpAndSettle();
@@ -356,12 +420,14 @@ void main() {
     expect(find.text('Done').hitTestable(), findsOneWidget);
   });
 
-  testWidgets('factory password fallback occurs only after same-router check',
+  testWidgets('login password fallback occurs only after same-router check',
       (tester) async {
+    // The save did not land, so the router still has the password PnP logged
+    // in with.
     final pnp = _Pnp()
       ..changedAdminPassword = true
       ..authenticate = (password) async {
-        if (password == 'TestAdminPassword') {
+        if (password == 'TestWiFiPassword') {
           throw ExceptionInvalidAdminPassword();
         }
       };
@@ -371,10 +437,30 @@ void main() {
     await tester.pump(pnpReconnectInitialDelay);
     await tester.pumpAndSettle();
 
-    expect(pnp.checkedPasswords, ['TestAdminPassword', 'TestWiFiPassword']);
+    expect(pnp.checkedPasswords, ['TestWiFiPassword', 'TestAdminPassword']);
     expect(pnp.calls.take(4),
         ['save', 'same-router', 'authenticate', 'authenticate']);
     expect(pnp.saves, 1);
+    expect(find.text('Done').hitTestable(), findsOneWidget);
+  });
+
+  testWidgets(
+      'factory-default save on CheckAdminPassword3 reaches Done without a refused check',
+      (tester) async {
+    // The save made the WiFi password the admin password, so the default the
+    // app logged in with is now wrong. The real checkAdminPassword runs,
+    // against core7's password check.
+    final router = _CheckAdminPassword3(adminPassword: 'TestWiFiPassword');
+    final pnp = _Pnp()
+      ..changedAdminPassword = true
+      ..checksPasswordOnRouter = true;
+    final firmware = _Firmware();
+    _stubSecureStorage(tester);
+    await _showSetup(tester, pnp, firmware, router: router.repository);
+    await _loseSave(tester, pnp);
+    await _finishReconnectAttempts(tester);
+
+    expect(router.refusals, isEmpty);
     expect(find.text('Done').hitTestable(), findsOneWidget);
   });
 
@@ -453,12 +539,12 @@ void main() {
     await _showSetup(tester, pnp, firmware);
     await _loseSave(tester, pnp);
     await tester.pump(pnpReconnectInitialDelay);
-    expect(pnp.checkedPasswords, ['TestAdminPassword']);
+    expect(pnp.checkedPasswords, ['TestWiFiPassword']);
     await tester.pumpWidget(const SizedBox());
     authentication.completeError(ExceptionInvalidAdminPassword());
     await tester.pump();
     await tester.pump(pnpReconnectRetryDelay);
-    expect(pnp.checkedPasswords, ['TestAdminPassword']);
+    expect(pnp.checkedPasswords, ['TestWiFiPassword']);
     expect(firmware.checks, 0);
     expect(tester.takeException(), isNull);
   });
