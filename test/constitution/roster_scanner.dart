@@ -117,6 +117,15 @@ class _ConstructionCollector extends RecursiveAstVisitor<void> {
     super.visitInstanceCreationExpression(node);
   }
 
+  // A tear-off, `AView.new`: unresolved, it parses as a prefixed identifier.
+  @override
+  void visitPrefixedIdentifier(PrefixedIdentifier node) {
+    if (node.identifier.name == 'new' && _capitalised(node.prefix.name)) {
+      names.add(node.prefix.name);
+    }
+    super.visitPrefixedIdentifier(node);
+  }
+
   @override
   void visitMethodInvocation(MethodInvocation node) {
     final target = node.target;
@@ -138,14 +147,9 @@ const unreachableReason = 'nothing in `lib/` builds it';
 /// reachable now and needs a case.
 Set<String> builtUnreachablePages(
     String constitution, Map<String, String> lib) {
-  final begin = constitution.indexOf('<!-- layout-gate-roster:begin -->');
-  final end = constitution.indexOf('<!-- layout-gate-roster:end -->');
-  final row = RegExp(r'^\|\s*`([^`]+)`\s*\|\s*`([^`]+)`\s*\|(.*)\|\s*$');
   final unreachable = {
-    for (final line in constitution.substring(begin, end).split('\n'))
-      if (row.firstMatch(line) case final match?)
-        if (match.group(3)!.contains(unreachableReason))
-          match.group(1)!: match.group(2)!,
+    for (final row in readExceptionRows(constitution, 'layout-gate-roster'))
+      if (row.rest.contains(unreachableReason)) row.from: row.to,
   };
   final built = {
     for (final MapEntry(key: path, value: source) in lib.entries)

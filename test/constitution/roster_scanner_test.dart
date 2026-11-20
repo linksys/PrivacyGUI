@@ -30,8 +30,10 @@ class WiFiListView extends ArgumentsConsumerStatefulView {}
 class _WiFiListViewState extends ConsumerState<WiFiListView> {}
 ''';
 
-      expect(pageClassIn('lib/page/wifi_settings/views/wifi_list_view.dart',
-          source), 'WiFiListView');
+      expect(
+          pageClassIn(
+              'lib/page/wifi_settings/views/wifi_list_view.dart', source),
+          'WiFiListView');
     });
 
     test('falls back to the first public widget class', () {
@@ -46,8 +48,8 @@ class OtpAddPhoneView extends ArgumentsConsumerStatefulView {}
     });
 
     test('gives null for a file that defines no public widget', () {
-      expect(pageClassIn('lib/page/a/a_view.dart', 'enum AView { one }'),
-          isNull);
+      expect(
+          pageClassIn('lib/page/a/a_view.dart', 'enum AView { one }'), isNull);
     });
   });
 
@@ -75,9 +77,12 @@ class OtpAddPhoneView extends ArgumentsConsumerStatefulView {}
   group('findUncoveredPages', () {
     test('lists each page no testLocalizations suite constructs', () {
       final lib = {
-        'lib/page/a/views/a_view.dart': 'class AView extends StatelessWidget {}',
-        'lib/page/b/views/b_view.dart': 'class BView extends StatelessWidget {}',
-        'lib/page/c/views/c_view.dart': 'class CView extends StatelessWidget {}',
+        'lib/page/a/views/a_view.dart':
+            'class AView extends StatelessWidget {}',
+        'lib/page/b/views/b_view.dart':
+            'class BView extends StatelessWidget {}',
+        'lib/page/c/views/c_view.dart':
+            'class CView extends StatelessWidget {}',
         'lib/page/c/views/widgets/c_card.dart':
             'class CCard extends StatelessWidget {}',
       };
@@ -120,6 +125,11 @@ mixin FaqMixin {}
   });
 
   group('constructedNamesIn', () {
+    test('counts a constructor tear-off as building the class', () {
+      // A route can be given AView.new instead of a closure that calls it.
+      expect(constructedNamesIn('final build = AView.new;'), contains('AView'));
+    });
+
     test('finds the classes a source constructs, by any form of creation', () {
       const source = '''
 void main() {
@@ -132,9 +142,14 @@ void main() {
 }
 ''';
 
-      expect(constructedNamesIn(source),
-          containsAll(['DashboardMenuView', 'NodeDetailView', 'SpeedTestView',
-              'VPNSettingsPage']));
+      expect(
+          constructedNamesIn(source),
+          containsAll([
+            'DashboardMenuView',
+            'NodeDetailView',
+            'SpeedTestView',
+            'VPNSettingsPage'
+          ]));
       expect(constructedNamesIn(source), isNot(contains('WiFiListView')));
       expect(constructedNamesIn(source), isNot(contains('helper')));
     });
@@ -150,6 +165,11 @@ void main() {
 | `lib/page/c/c_view.dart` | `CView` | Permanent: a component, not a page. |
 <!-- layout-gate-roster:end -->
 """;
+
+    test('fails on a roster without its markers, as the other tables do', () {
+      expect(() => builtUnreachablePages('No roster here.', const {}),
+          throwsStateError);
+    });
 
     test('lists an unreachable page that another file in lib/ constructs', () {
       final lib = {

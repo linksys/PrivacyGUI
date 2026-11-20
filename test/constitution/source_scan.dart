@@ -65,16 +65,29 @@ class _NameCollector extends RecursiveAstVisitor<void> {
 final _row = RegExp(r'^\|\s*`([^`]+)`\s*\|\s*`([^`]+)`\s*\|');
 final _separator = RegExp(r'^\|(\s*:?-{3,}:?\s*\|)+\s*$');
 
+/// A row of a `constitution.md` exception table: its first two cells, which
+/// name the exception, and the rest of the row, its reason.
+typedef ExceptionRow = ({String from, String to, String rest});
+
 /// Reads the exception table that `constitution.md` keeps between
 /// `<!-- [name]:begin -->` and `<!-- [name]:end -->`, as `<from> -> <to>`
 /// taken from the first two cells of each row.
+///
+/// Throws as [readExceptionRows] does.
+Set<String> readExceptionTable(String constitution, String name) => {
+      for (final row in readExceptionRows(constitution, name))
+        '${row.from} -> ${row.to}',
+    };
+
+/// The rows of the exception table [readExceptionTable] reads, with the rest
+/// of each row.
 ///
 /// Throws unless the markers are there exactly once, in order, the table
 /// starts with a header and its `|---|` separator, and every row below them
 /// has backticked first two cells, which no other row repeats. A row the
 /// checks cannot read, or a second row a set would swallow, never goes
 /// unnoticed.
-Set<String> readExceptionTable(String constitution, String name) {
+List<ExceptionRow> readExceptionRows(String constitution, String name) {
   final beginMarker = '<!-- $name:begin -->';
   final endMarker = '<!-- $name:end -->';
   final begin = constitution.indexOf(beginMarker);
@@ -96,7 +109,8 @@ Set<String> readExceptionTable(String constitution, String name) {
     throw StateError('The "$name" table in constitution.md must start with a '
         'header row and its |---| separator.');
   }
-  final rows = <String>{};
+  final rows = <ExceptionRow>[];
+  final seen = <String>{};
   for (final line in tableLines.skip(2)) {
     final row = _row.firstMatch(line);
     if (row == null) {
@@ -105,10 +119,15 @@ Set<String> readExceptionTable(String constitution, String name) {
           'read; put its first two cells in backticks:\n$line');
     }
     final entry = '${row.group(1)} -> ${row.group(2)}';
-    if (!rows.add(entry)) {
+    if (!seen.add(entry)) {
       throw StateError('The "$name" table in constitution.md has two rows '
           'for $entry; keep one, with the reason that holds.');
     }
+    rows.add((
+      from: row.group(1)!,
+      to: row.group(2)!,
+      rest: line.substring(row.end),
+    ));
   }
   return rows;
 }
