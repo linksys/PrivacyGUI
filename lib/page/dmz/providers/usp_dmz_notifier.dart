@@ -92,8 +92,8 @@ class UspDmzNotifier extends AutoDisposeNotifier<DmzFeatureState>
     // rather than taken from `valueOrNull`: while the LAN is still loading
     // that would check the host without it. A LAN that cannot be read stops
     // the save with its error; nothing is written.
-    final pending = state.settings.current.model;
-    if (pending.isEnabled && pending.destinationType == DmzDestinationType.ip) {
+    final edit = state.settings.current.model;
+    if (edit.isEnabled && edit.destinationType == DmzDestinationType.ip) {
       await ref.read(lanDataProvider.future);
     }
 

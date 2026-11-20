@@ -43,6 +43,10 @@ class DhcpReservationEditDialog extends StatefulWidget {
   /// The router's LAN address and mask. With both, the address must be a LAN
   /// host's, as for port forwarding and the DMZ host (#1838): in the LAN
   /// subnet and not the router's own. Null skips that part of the check.
+  ///
+  /// Required, though nullable, as [existingReservations] is: a call site that
+  /// left them out would skip the LAN check without anyone seeing it. One that
+  /// genuinely has no LAN passes null explicitly.
   final String? lanIp;
   final String? lanSubnetMask;
 
@@ -52,8 +56,8 @@ class DhcpReservationEditDialog extends StatefulWidget {
     this.macDeviceOptions = const [],
     this.ipDeviceOptions = const [],
     required this.existingReservations,
-    this.lanIp,
-    this.lanSubnetMask,
+    required this.lanIp,
+    required this.lanSubnetMask,
   });
 
   @override

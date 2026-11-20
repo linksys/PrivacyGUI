@@ -76,7 +76,8 @@ List<(String?, AppErrorDisplayMode)> _deviceListFields(WidgetTester tester) =>
 void main() {
   group('the device-list fields show their errors as text', () {
     testWidgets('in the single port forwarding dialog', (tester) async {
-      await _open(tester, const PortForwardingDialog());
+      await _open(
+          tester, const PortForwardingDialog(lanIp: null, lanSubnetMask: null));
 
       expect(_deviceListFields(tester), [
         ('pf-single-internal-ip', AppErrorDisplayMode.text),
@@ -84,7 +85,8 @@ void main() {
     });
 
     testWidgets('in the port range forwarding dialog', (tester) async {
-      await _open(tester, const PortRangeForwardingDialog());
+      await _open(tester,
+          const PortRangeForwardingDialog(lanIp: null, lanSubnetMask: null));
 
       expect(_deviceListFields(tester), [
         ('pf-range-internal-ip', AppErrorDisplayMode.text),
@@ -93,7 +95,9 @@ void main() {
 
     testWidgets('in the DHCP reservation dialog', (tester) async {
       await _open(
-          tester, const DhcpReservationEditDialog(existingReservations: []));
+          tester,
+          const DhcpReservationEditDialog(
+              lanIp: null, lanSubnetMask: null, existingReservations: []));
 
       expect(_deviceListFields(tester), [
         ('dhcp-reservation-mac', AppErrorDisplayMode.text),

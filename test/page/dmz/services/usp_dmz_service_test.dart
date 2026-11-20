@@ -342,6 +342,22 @@ void main() {
             {'destIp': DmzErrorKeys.reservedIpNotAllowed});
       });
 
+      // A LAN subnet change leaves a host saved on the old subnet. While DMZ
+      // is on it is refused, whatever else the edit changes, because the host
+      // is no longer a LAN host; turning DMZ off is not blocked.
+      test('a host saved on a LAN that has since moved', () {
+        final onOldSubnet = form(destIp: '192.168.2.10');
+
+        expect(
+            service.validateForm(onOldSubnet,
+                lanIp: lan.ip, lanSubnetMask: lan.mask),
+            {'destIp': DmzErrorKeys.invalidIpAddress});
+        expect(
+            service.validateForm(onOldSubnet.copyWith(isEnabled: false),
+                lanIp: lan.ip, lanSubnetMask: lan.mask),
+            isEmpty);
+      });
+
       test('an empty or malformed LAN is no LAN', () {
         expect(
             service.validateForm(form(destIp: '10.0.0.5'),

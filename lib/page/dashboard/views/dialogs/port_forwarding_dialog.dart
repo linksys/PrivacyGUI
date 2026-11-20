@@ -41,6 +41,10 @@ class PortForwardingDialog extends StatefulWidget {
   /// The router's LAN address and mask. With both, the destination must be a
   /// LAN host: FW 2.0.3 clears any other destination and still saves the rule.
   /// Null skips that check and keeps the format checks only.
+  ///
+  /// Required, though nullable: a call site that left them out would skip the
+  /// LAN check without anyone seeing it (#1838). One that genuinely has no LAN
+  /// passes null explicitly.
   final String? lanIp;
   final String? lanSubnetMask;
 
@@ -49,8 +53,8 @@ class PortForwardingDialog extends StatefulWidget {
     this.rule,
     this.deviceOptions = const [],
     this.otherRules = const [],
-    this.lanIp,
-    this.lanSubnetMask,
+    required this.lanIp,
+    required this.lanSubnetMask,
   });
 
   @override

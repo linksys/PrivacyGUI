@@ -268,6 +268,28 @@ void main() {
 
       expect(_ipField().errorText, isNull);
     });
+
+    // A LAN subnet change leaves a reservation on the old subnet. Editing it
+    // flags its address, whatever else the edit changes, because it is no
+    // longer a LAN host.
+    testWidgets('a reservation saved on a LAN that has since moved is flagged',
+        (tester) async {
+      final onOldSubnet = DhcpReservationUIModel(
+        instancePath: 'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
+        mac: 'AA:BB:CC:DD:EE:01',
+        ip: '192.168.2.10',
+        enable: true,
+      );
+      await _pumpAndOpen(tester,
+          reservation: onOldSubnet,
+          existing: [onOldSubnet],
+          lanIp: '192.168.1.1',
+          lanSubnetMask: '255.255.255.0');
+      // Edit the MAC only; the dialog checks every field.
+      await _enterMac(tester, 'AA:BB:CC:DD:EE:09');
+
+      expect(_ipField().errorText, l10n.invalidIpAddress);
+    });
   });
 
   // #1838: a device with no IPv4 is offered by MAC with no subtitle. Picking

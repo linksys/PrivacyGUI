@@ -426,7 +426,7 @@ class UspPdfService {
   }
 
   static pw.Widget _deviceTable(
-    List<dynamic> devices, {
+    List<ClientDevice> devices, {
     required bool isOnline,
   }) {
     final headers = isOnline
@@ -447,7 +447,7 @@ class UspPdfService {
   /// [NetworkUtils.noAddress], as the app shows it (#1838).
   @visibleForTesting
   static List<List<String>> deviceTableRows(
-    List<dynamic> devices, {
+    List<ClientDevice> devices, {
     required bool isOnline,
   }) =>
       devices.map((d) {

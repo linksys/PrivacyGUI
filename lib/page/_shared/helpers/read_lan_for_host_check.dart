@@ -13,8 +13,14 @@ import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart'
 /// (#1082): a fast tap while `lanDataProvider` is still loading would otherwise
 /// run the check with the LAN part off. Null when it cannot be read, after
 /// telling the user why; the caller then does not open its dialog or write.
+///
+/// Also null, at once and silently, while an earlier call is still reading:
+/// the button that started it stays enabled during the read, so a second tap
+/// would otherwise open a second dialog or send Reserve twice (#1838).
 Future<({String ip, String mask})?> readLanForHostCheck(
     BuildContext context, WidgetRef ref) async {
+  if (_reading) return null;
+  _reading = true;
   try {
     final lan = await ref.read(lanDataProvider.future);
     return (ip: lan.model.ipAddress, mask: lan.model.subnetMask);
@@ -23,5 +29,13 @@ Future<({String ip, String mask})?> readLanForHostCheck(
       showFailedSnackBar(context, localizeServiceError(context, e));
     }
     return null;
+  } finally {
+    _reading = false;
   }
 }
+
+/// Whether a [readLanForHostCheck] is reading. One flag for every caller, so
+/// any second tap during a read does nothing, on whichever form. The read is
+/// short: the dashboard reads the LAN at sign-in, so it is normally answered
+/// at once.
+bool _reading = false;
