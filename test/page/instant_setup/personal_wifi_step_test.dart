@@ -55,7 +55,7 @@ void main() async {
             radioId: 'RADIO_2.4GHz',
             band: 'RADIO_2.4GHz',
             ssid: 'Linksys1234567',
-            password: 'Linksys123456@',
+            password: 'TestWiFiPwd12@',
             security: 'WPA2/WPA3-Mixed-Personal',
             isEnabled: true,
           ),
@@ -64,7 +64,7 @@ void main() async {
     );
     when(mockPnpNotifier.getDefaultGuestWiFiNameAndPassPhrase()).thenReturn((
       name: 'Guest-Linksys1234567',
-      password: 'GuestLinksys123456@',
+      password: 'GuestTestWiFiPwd12@',
     ));
   });
 
@@ -180,7 +180,7 @@ void main() async {
             radioId: 'RADIO_2.4GHz',
             band: 'RADIO_2.4GHz',
             ssid: 'Linksys1234567',
-            password: 'Linksys123456@',
+            password: 'TestWiFiPwd12@',
             security: 'WPA2/WPA3-Mixed-Personal',
             isEnabled: true,
           ),
@@ -188,7 +188,7 @@ void main() async {
             radioId: 'RADIO_5GHz',
             band: 'RADIO_5GHz',
             ssid: 'Linksys1234567_5GHz',
-            password: 'Linksys123456@',
+            password: 'TestWiFiPwd12@',
             security: 'WPA2/WPA3-Mixed-Personal',
             isEnabled: true,
           ),

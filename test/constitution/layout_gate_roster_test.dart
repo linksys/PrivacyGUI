@@ -29,6 +29,20 @@ void main() {
             '(constitution 3.3).');
   });
 
+  test(
+      'nothing outside lib/route/ names the route of a page the roster calls '
+      'unreachable', () {
+    final navigated = navigatedUnreachablePages(
+        File('constitution.md').readAsStringSync(), dartSources('lib'));
+
+    expect(navigated, isEmpty,
+        reason: 'These pages have a row that says "$unreachableRouteReason", '
+            'but code outside lib/route/ names their route now:\n'
+            '${bulletList(navigated)}\n'
+            'Give each a testLocalizations case and delete its row '
+            '(constitution 3.3).');
+  });
+
   test('the roster takes the pages constitution 5.1 names without the suffix',
       () {
     final rule = File('constitution.md')

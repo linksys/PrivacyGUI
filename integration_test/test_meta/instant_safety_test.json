@@ -1,8 +1,0 @@
-{
-    "name": "Instant Safety",
-    "target": "integration_test/instant_safety_test.dart",
-    "description": "Enable the instant safety function",
-    "setUp":  ["factory_reset", "skip_setup"],
-    "tearDown": [],
-    "tags": ["safety", "menu"]
-}

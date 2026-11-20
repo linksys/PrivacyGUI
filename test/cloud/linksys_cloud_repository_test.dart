@@ -17,7 +17,7 @@ void main() {
       when(mockHttpClient.post(any,
               body: anyNamed('body'), headers: anyNamed('headers')))
           .thenAnswer((_) async => http.Response(
-              '{"access_token":"9F228633C885491BB2141BCE639684D5951A8581AE934FC589B25FB6F3524CFF","token_type":"Bearer","expires_in":86400,"refresh_token":"3CB472364DD148BBB4A267D54DD0DC89FC51A2186E8B4E97878537EDC31F281B"}',
+              '{"access_token":"0000000000000000000000000000000000000000000000000000000000000003","token_type":"Bearer","expires_in":86400,"refresh_token":"0000000000000000000000000000000000000000000000000000000000000004"}',
               200));
       final container = ProviderContainer(overrides: [
         cloudRepositoryProvider.overrideWithValue(

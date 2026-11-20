@@ -88,7 +88,7 @@ void main() async {
             radioId: 'RADIO_2.4GHz',
             band: 'RADIO_2.4GHz',
             ssid: 'Linksys1234567',
-            password: 'Linksys123456@',
+            password: 'TestWiFiPwd12@',
             security: 'WPA2/WPA3-Mixed-Personal',
             isEnabled: true,
           ),
@@ -97,7 +97,7 @@ void main() async {
     );
     when(mockPnpNotifier.getDefaultGuestWiFiNameAndPassPhrase()).thenReturn((
       name: 'Guest-Linksys1234567',
-      password: 'GuestLinksys123456@',
+      password: 'GuestTestWiFiPwd12@',
     ));
   });
 
@@ -181,7 +181,7 @@ void main() async {
             radioId: 'RADIO_2.4GHz',
             band: 'RADIO_2.4GHz',
             ssid: 'DULinksys12294-2.4GHz',
-            password: 'Linksys123456@',
+            password: 'TestWiFiPwd12@',
             security: 'WPA2/WPA3-Mixed-Personal',
             isEnabled: true,
           ),
@@ -189,7 +189,7 @@ void main() async {
             radioId: 'RADIO_5GHz',
             band: 'RADIO_5GHz',
             ssid: 'DULinksys12294-5GHz',
-            password: 'Linksys567890@',
+            password: 'TestWiFiPwd56@',
             security: 'WPA2/WPA3-Mixed-Personal',
             isEnabled: true,
           ),
@@ -197,7 +197,7 @@ void main() async {
             radioId: 'RADIO_6GHz',
             band: 'RADIO_6GHz',
             ssid: 'DULinksys12294-6GHz',
-            password: 'Linksys135790@',
+            password: 'TestWiFiPwd13@',
             security: 'WPA3-Personal',
             isEnabled: true,
           ),
@@ -547,7 +547,7 @@ void main() async {
       stepStateList: const {
         0: PnpStepState(
           status: StepViewStatus.data,
-          data: {"ssid": "Linksys03056", "password": "8kRnxa257@"},
+          data: {"ssid": "Linksys03056", "password": "FakeWiFi2@"},
         ),
         1: PnpStepState(status: StepViewStatus.data, data: {}),
         2: PnpStepState(status: StepViewStatus.data, data: {}),
@@ -605,13 +605,13 @@ void main() async {
             "perBandSettings": {
               "2.4GHz": {
                 "ssid": "DULinksys12294-2.4GHz",
-                "password": "8kRnxa257@"
+                "password": "FakeWiFi2@"
               },
-              "5GHz": {"ssid": "DULinksys12294-5GHz", "password": "8kRnxa257@"},
-              "6GHz": {"ssid": "DULinksys12294-6GHz", "password": "8kRnxa257@"},
+              "5GHz": {"ssid": "DULinksys12294-5GHz", "password": "FakeWiFi2@"},
+              "6GHz": {"ssid": "DULinksys12294-6GHz", "password": "FakeWiFi2@"},
             },
             "ssid": "DULinksys12294-2.4GHz",
-            "password": "8kRnxa257@",
+            "password": "FakeWiFi2@",
           },
         ),
         1: PnpStepState(status: StepViewStatus.data, data: {}),
@@ -1469,7 +1469,7 @@ void main() async {
   /// `_checkPostSaveAdminPassword` throws ExceptionInvalidAdminPassword.
   void stubPostSaveCredentials() {
     when(mockPnpNotifier.didSetAdminPasswordDuringSave).thenReturn(true);
-    when(mockPnpNotifier.checkAdminPassword('Linksys123456@'))
+    when(mockPnpNotifier.checkAdminPassword('TestWiFiPwd12@'))
         .thenAnswer((_) async {});
   }
 

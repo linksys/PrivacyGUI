@@ -32,6 +32,22 @@ void main() {
       );
     });
 
+    test('two rows for the same <from> -> <to> fail, whatever their reasons',
+        () {
+      // A merge that keeps both sides of a conflict leaves a row twice, an old
+      // and a new reason. Read as a set, the two would pass as one (#1802).
+      expect(
+        () => readExceptionTable(
+          _constitution('| `lib/a.dart` | `lib/b.dart` | old reason |\n'
+              '| `lib/c.dart` | `lib/d.dart` | |\n'
+              '| `lib/a.dart` | `lib/b.dart` | new reason |\n'),
+          't',
+        ),
+        throwsA(isA<StateError>().having(
+            (e) => e.message, 'message', contains('lib/a.dart -> lib/b.dart'))),
+      );
+    });
+
     test('markers that appear twice fail', () {
       expect(
         () => readExceptionTable(

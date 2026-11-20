@@ -68,9 +68,9 @@ void main() {
     await tester.tap(find.byKey(const Key('passwordCard')));
     await tester.pumpAndSettle();
     await tester.enterText(
-        find.byKey(const Key('newPasswordField')), 'Linksys123!@#');
+        find.byKey(const Key('newPasswordField')), 'TestAdmin1!@#');
     await tester.enterText(
-        find.byKey(const Key('confirmPasswordField')), 'Linksys123!@#');
+        find.byKey(const Key('confirmPasswordField')), 'TestAdmin1!@#');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Save'));
     await tester.pump(const Duration(seconds: 1));

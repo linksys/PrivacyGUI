@@ -117,6 +117,15 @@ class _ConstructionCollector extends RecursiveAstVisitor<void> {
     super.visitInstanceCreationExpression(node);
   }
 
+  // A tear-off, `AView.new`: unresolved, it parses as a prefixed identifier.
+  @override
+  void visitPrefixedIdentifier(PrefixedIdentifier node) {
+    if (node.identifier.name == 'new' && _capitalised(node.prefix.name)) {
+      names.add(node.prefix.name);
+    }
+    super.visitPrefixedIdentifier(node);
+  }
+
   @override
   void visitMethodInvocation(MethodInvocation node) {
     final target = node.target;
@@ -138,14 +147,9 @@ const unreachableReason = 'nothing in `lib/` builds it';
 /// reachable now and needs a case.
 Set<String> builtUnreachablePages(
     String constitution, Map<String, String> lib) {
-  final begin = constitution.indexOf('<!-- layout-gate-roster:begin -->');
-  final end = constitution.indexOf('<!-- layout-gate-roster:end -->');
-  final row = RegExp(r'^\|\s*`([^`]+)`\s*\|\s*`([^`]+)`\s*\|(.*)\|\s*$');
   final unreachable = {
-    for (final line in constitution.substring(begin, end).split('\n'))
-      if (row.firstMatch(line) case final match?)
-        if (match.group(3)!.contains(unreachableReason))
-          match.group(1)!: match.group(2)!,
+    for (final row in readExceptionRows(constitution, 'layout-gate-roster'))
+      if (row.rest.contains(unreachableReason)) row.from: row.to,
   };
   final built = {
     for (final MapEntry(key: path, value: source) in lib.entries)
@@ -156,4 +160,47 @@ Set<String> builtUnreachablePages(
       if (built.any((b) => b.$2 == pageClass && b.$1 != page))
         '$page -> $pageClass',
   };
+}
+
+/// What a roster row says of a page whose route nothing navigates to; the
+/// route's name follows in backticks.
+const unreachableRouteReason = 'nothing navigates to its route';
+
+/// The rows of the 3.3 roster in [constitution] whose reason says that
+/// nothing navigates to the page's route, but whose route a file in [lib]
+/// outside `lib/route/` names, as `<page> -> <Class>`. Such a page can be
+/// opened now and needs a case.
+Set<String> navigatedUnreachablePages(
+    String constitution, Map<String, String> lib) {
+  final routeIn = RegExp('$unreachableRouteReason, `(\\w+)`');
+  final named = {
+    for (final MapEntry(key: path, value: source) in lib.entries)
+      if (!path.startsWith('lib/route/')) ...routesNamedIn(source),
+  };
+  return {
+    for (final row in readExceptionRows(constitution, 'layout-gate-roster'))
+      if (routeIn.firstMatch(row.rest) case final match?)
+        if (named.contains(match.group(1))) '${row.from} -> ${row.to}',
+  };
+}
+
+/// The routes [source] names as `RouteNamed.<route>` or `RoutePath.<route>`.
+Set<String> routesNamedIn(String source) {
+  final names = <String>{};
+  parseDart(source).accept(_RouteCollector(names));
+  return names;
+}
+
+class _RouteCollector extends RecursiveAstVisitor<void> {
+  _RouteCollector(this.names);
+
+  final Set<String> names;
+
+  @override
+  void visitPrefixedIdentifier(PrefixedIdentifier node) {
+    if (const {'RouteNamed', 'RoutePath'}.contains(node.prefix.name)) {
+      names.add(node.identifier.name);
+    }
+    super.visitPrefixedIdentifier(node);
+  }
 }
