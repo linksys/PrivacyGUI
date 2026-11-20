@@ -596,8 +596,8 @@ ServiceError _mapOperationError(UspError e) {
       // `'Command Failure'` is TR-369's name for **7022 alone** and was being
       // stamped onto 9005 and 7004 refusals; the formatted summary that replaced
       // it is the whole log line, in a field five other construction sites use
-      // for the agent's short message — `usp_test_console_view.dart` renders it
-      // right after `Code ${errorCode}`, so the code appeared twice on one line.
+      // for the agent's short message — the USP test console (deleted in #1836)
+      // rendered it right after `Code ${errorCode}`, so the code appeared twice on one line.
       //
       // The router's own fragment is not recoverable here without re-parsing a
       // format built in `UspClient._operateRefusal`, which this mapper

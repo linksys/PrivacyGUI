@@ -38,12 +38,6 @@ const _layers = [
 /// Empty is the goal. An entry here is a decision, not a fix: it has to say why
 /// the import is the right shape for that file.
 const _allowed = <String, String>{
-  // A developer tool whose job is to talk to USP directly: it builds its own
-  // `UspClient` / `UspBridgeClient` against a URL the developer types, so there
-  // is no service to route it through that would not be this view again.
-  'lib/page/test_console/views/usp_test_console_view.dart':
-      'developer USP console; builds its own client by design',
-
   // A debt left on purpose: the widget holds a whole data layer (USP reads, CGI
   // calls, SSE subscription, polling) and imports the throttler for one enum.
   // Moving the enum would make this green and fix nothing, and package widgets

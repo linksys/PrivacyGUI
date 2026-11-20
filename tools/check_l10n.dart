@@ -482,10 +482,6 @@ final _skipFilePatterns = [
   RegExp(r'_test\.dart$'), // Test files
   RegExp(r'/generated/'), // Generated directory
   RegExp(r'/l10n/'), // Localization directory
-  // USP Console: a developer-only diagnostics page gated behind kDebugMode /
-  // GlobalConfig.feature.enableTestConsole — never shown to end users, so its
-  // strings are intentionally not localized (same rationale as lib/demo/).
-  RegExp(r'/test_console/'),
 ];
 
 CheckResult _checkHardcodedStrings() {
@@ -508,8 +504,6 @@ CheckResult _checkHardcodedStrings() {
   issues.add('| `lib/theme/` | ❌ | Theme config |');
   issues.add('| `lib/ai/` | ❌ | No hardcoded strings |');
   issues.add('| `lib/demo/` | ❌ | Dev-only, no translation needed |');
-  issues.add(
-      '| `lib/page/test_console/` | ❌ | USP Console — dev-only (debug/flag gated) |');
   issues.add('');
 
   // Placeholder for issue count - will be replaced after scanning

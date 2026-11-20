@@ -247,7 +247,7 @@ const double kGateFloorWithoutPagesMs = 149790;
 /// 101 × 68.7 = 6,939. The pump counts are each `widths × locales`, readable in the
 /// guard's own loops: 52 for `dhcp`, `port_forwarding`, `advanced_settings`,
 /// `internet_settings` and `local_network`; 34 for `unified_diagnostics`,
-/// `firmware_ota`, `router_assistant` and `test_console`, which read all 26 locales at
+/// `firmware_ota`, `router_assistant` and `test_console` (deleted in #1836), which read all 26 locales at
 /// 320px and one locale at each of the other eight widths; 78 for `instant_privacy`
 /// and `system_log`; 601 across `admin`'s five tests and 160 across `apps`' four.
 /// (`firmware_ota` was `firmware_update` until #1549 moved the guarded card to a new
@@ -317,6 +317,10 @@ const double kReadabilityGuardWeightMs = 7214;
 /// [pageSweepSuiteWeightMs] — so sixteen tests under one wave-level title would be
 /// unregisterable *and* would bill eleven fixtures as one, while one group per
 /// coordinate would bill `admin`'s fixture three times and `apps`' three times.
+///
+/// #1836 deleted the USP test console, and with it wave 4's `test_console` group:
+/// twelve groups and nineteen tests below now. The per-group weight above is the
+/// thirteen-group derivation and was not re-measured.
 const Map<String, String> kReadabilityGuardPages = {
   'readability at the site the pilot fixed': 'kDhcpPageCase',
   'readability at the site wave 1 fixed': 'kPortForwardingPageCase',
@@ -333,8 +337,6 @@ const Map<String, String> kReadabilityGuardPages = {
       'kFirmwareOtaPageCase',
   'readability at the site wave 4 fixed in router_assistant':
       'kRouterAssistantPageCase',
-  'readability at the site wave 4 fixed in test_console':
-      'kTestConsolePageCase',
   // Two guards, one page: `admin` is where the wave's sixth and seventh fixes both
   // landed, and they are in one group because the register keys on the group name
   // rather than on the test. Splitting them into two groups would say the page had

@@ -527,7 +527,7 @@ void main() {
       );
     });
 
-    test('the register reads 52 swept, 0 queued, 2 excluded', () {
+    test('the register reads 51 swept, 0 queued, 2 excluded', () {
       // 2/41/2 when #1382 shipped it; wave 1 (#1377) moved five from queued to
       // swept, wave 2 (#1378) nine — eight on the day, and `pnp_setup` the day
       // after, when ui_kit v2.40.2 unblocked it — wave 3 (#1379) six, and wave 4
@@ -574,8 +574,14 @@ void main() {
       // screen of the wizard — into the frame the PnP shell draws and the three
       // steps, each a route: one row went, four came, straight to `swept` with the
       // `lib/` change that made them. 49 → 52.
+      //
+      // Then the second row the register lost: #1836 deleted
+      // `usp_test_console_view.dart` with the USP test console it was — a wave 4
+      // page, and one of the four exclusion candidates that wave kept because it was
+      // reachable in every debug build. Its find was fixed in #1380 and its file is
+      // gone, so the row goes with the file. 52 → 51.
       expect(
-          roster.withDisposition(PageRosterDisposition.swept), hasLength(52));
+          roster.withDisposition(PageRosterDisposition.swept), hasLength(51));
       expect(
         roster.withDisposition(PageRosterDisposition.queued).map((r) => r.path),
         isEmpty,
@@ -599,7 +605,8 @@ void main() {
             'because usp_dashboard_view.dart:64 constructs it and so a user '
             'reaches it. Routed and reachable are different questions, which is '
             'why the check that decided these two is named in the reason column. '
-            'usp_test_console_view is the sharpest case: route_usp_dashboard.dart'
+            'usp_test_console_view was the sharpest case (#1836 has since deleted '
+            'the console): route_usp_dashboard.dart'
             ':201 gates it behind `kDebugMode || enableTestConsole`, so it is '
             'absent from a default release build and present in every debug one — '
             'reachable, therefore in, and it carried the epic\'s largest single '
@@ -755,7 +762,6 @@ void main() {
         'lib/page/statistics/views/usp_statistics_view.dart',
         'lib/page/support/views/usp_support_view.dart',
         'lib/page/system_log/views/usp_system_log_view.dart',
-        'lib/page/test_console/views/usp_test_console_view.dart',
         'lib/page/topology/views/usp_node_detail_view.dart',
         'lib/page/topology/views/usp_topology_view.dart',
         'lib/page/unified_diagnostics/views/unified_diagnostics_view.dart',

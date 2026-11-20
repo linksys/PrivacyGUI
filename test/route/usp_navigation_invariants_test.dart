@@ -475,8 +475,6 @@ void main() {
         RouteNamed.uspStaticRouting: '/uspAdvancedSettings/uspStaticRouting',
         RouteNamed.uspIpv6PortService:
             '/uspAdvancedSettings/uspIpv6PortService',
-        // Debug-only, and tests always run in debug.
-        RouteNamed.uspTestConsole: '/uspTestConsole',
         RouteNamed.uspWifiSettings: '/uspWifiSettings',
         RouteNamed.uspApps: '/uspApps',
         RouteNamed.uspAiAssistant: '/uspAiAssistant',

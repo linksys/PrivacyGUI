@@ -1169,7 +1169,6 @@
   "uploadTestNotSupported": "Le test de téléversement n'est pas pris en charge sur ce micrologiciel.",
   "uploadingFirmware": "Téléversement du micrologiciel",
   "used": "Utilisé",
-  "uspConsole": "Console USP",
   "uspDashboard": "Tableau de bord",
   "validatingImage": "Validation de l'image…",
   "validatingSession": "Validation de la session...",

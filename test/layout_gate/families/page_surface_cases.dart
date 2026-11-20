@@ -62,9 +62,7 @@
 /// from being quietly emptied.
 library;
 
-// `SelectionArea` is imported for one `requires` entry, on
-// [kTestConsolePageCase] — see there for why the log pane needs an anchor of its
-// own. No `Scaffold` here: the two dashboard pages that need one set
+// No `Scaffold` here: the two dashboard pages that need one set
 // [PageSurfaceCase.needsMaterialAncestor] and the host builds it — see
 // [kSliverDashboardPageCase] for why those two need it and no other page does, and
 // [PageSurfaceCase.view] for why the wrapper may not live in a `view` closure.
@@ -72,7 +70,7 @@ library;
 // against ui_kit first, and a bare material import would quietly change which
 // `AppText`-adjacent name a future `requires` entry means.
 import 'package:flutter/material.dart'
-    show GridView, LinearProgressIndicator, SelectionArea, SizedBox;
+    show GridView, LinearProgressIndicator, SizedBox;
 import 'package:flutter_svg/flutter_svg.dart' show SvgPicture;
 import 'package:privacy_gui/core/capability/capability_provider.dart';
 import 'package:privacy_gui/core/capability/device_capability.dart';
@@ -172,8 +170,6 @@ import 'package:privacy_gui/page/statistics/views/usp_statistics_view.dart';
 import 'package:privacy_gui/page/notification_history/views/usp_notification_history_view.dart';
 import 'package:privacy_gui/page/system_log/views/usp_system_log_view.dart';
 import 'package:privacy_gui/page/support/views/usp_support_view.dart';
-import 'package:privacy_gui/page/test_console/views/usp_test_console_view.dart';
-import 'package:privacy_gui/page/test_console/widgets/tr181_autocomplete_field.dart';
 import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indicator.dart';
 import 'package:privacy_gui/page/topology/views/components/node_actions_card.dart';
 import 'package:privacy_gui/page/topology/views/usp_node_detail_view.dart';
@@ -1550,57 +1546,6 @@ final kRouterAssistantPageCase = PageSurfaceCase(
   forbids: const [AppLoader],
 );
 
-/// `usp_test_console_view` — the raw USP CRUD / SSE / subscription debug console.
-///
-/// **The one page of 45 that needed no fixture at all.** Not because it reads no
-/// providers — it reads three — but because all three answer null off the web:
-/// `uspClientProvider` returns null when `!kIsWeb`, `sseManagerProvider` returns null
-/// when the client is, and `sseConnectionStateProvider` then hands back
-/// `Stream.value(SseConnectionState.disconnected)`. So `overrides` is empty by
-/// argument rather than by omission, and the state every cell measures is the one a
-/// developer sees when the console cannot find a session: manual connection fields
-/// shown, `Not Connected` badge, `SSE Off` badge, one line in the log.
-///
-/// **Why it is in the gate at all**, which #1380 required a verdict on. It is a debug
-/// tool behind `enableTestConsole`, so "exclude it, nobody ships it" was the obvious
-/// call and it is wrong on two counts. The flag is settable at build time
-/// (`--dart-define=test_console=true`) *and* at runtime from the config JSON, so a QA
-/// build reaches this page; and the defect it was carrying was the worst kind the
-/// gate finds — the only site of #1370's five that breaks in **`en`**, at every
-/// locale, because the cause is a fixed two-pane layout rather than a long
-/// translation. Excluding it would have cost exactly that: 52 found cells on the one
-/// page whose overflow no translator could have caused.
-///
-/// **What the premise pins.** [Tr181AutocompleteField] is the page's own widget and
-/// appears four times in the control pane, so it fails if the pane stops building.
-/// [SelectionArea] is the log pane's only unique widget — the two panes are the page,
-/// and after the fix below the narrow layout stacks them, so a future edit that drops
-/// one pane would otherwise leave a green sweep over half a page. [AppButton] and
-/// [AppTextField] are the ordinary content anchors.
-///
-/// **`forbids: [AppLoader]` is inert here**, the third time in two waves (§11.11):
-/// this page has no loading state to render one in. Kept for the reason
-/// [kPagesWhoseLoaderIsContent] gives.
-///
-/// **The fix that landed with it** is `usp_test_console_view.dart:1147`: **52 of 234
-/// cells**, all 26 locales at 320px by +109px and all 26 at 480px by +29px. The two
-/// panes were `Expanded(flex: 1)` with no narrow layout behind them, so a 320px screen
-/// granted each 159px and the subscription dropdown 127px of the 236px its widest item
-/// asks. The fix stacks them below 600px; the view's `_stackPanesBelow` says why 600
-/// rather than the 537px the measurement strictly needs.
-final kTestConsolePageCase = PageSurfaceCase(
-  id: 'test_console',
-  view: () => const UspTestConsoleView(),
-  overrides: () => const [],
-  requires: const [
-    Tr181AutocompleteField,
-    SelectionArea,
-    AppTextField,
-    AppButton,
-  ],
-  forbids: const [AppLoader],
-);
-
 /// `usp_sliver_dashboard_view` — the dashboard grid itself, and this family's most
 /// expensive page by a factor of ten.
 ///
@@ -2172,9 +2117,10 @@ final kInstantSafetyPageCase = PageSurfaceCase(
 ///   against.
 ///
 /// No [UspTopBar] in the premise, because this page's `UiKitPageView` declares no
-/// `topbar` — one of seven wave-4 views that do not (`remote_assistance`,
-/// `unified_diagnostics`, `router_assistant`, `test_console`, `sliver_dashboard`,
-/// `usp_dashboard` and this one; `usp_dashboard` is the one of the seven that mounts
+/// `topbar` — one of six wave-4 views that do not (`remote_assistance`,
+/// `unified_diagnostics`, `router_assistant`, `sliver_dashboard`,
+/// `usp_dashboard` and this one — seven until #1836 deleted `test_console`;
+/// `usp_dashboard` is the one of the six that mounts
 /// [UspTopBar] itself instead, at `usp_dashboard_view.dart:43`). Being a child route of
 /// `advanced_settings`, which has the bar, is *not* the explanation — `local_network` is
 /// a sibling child route and declares one. So this is the page's own shape, and the
@@ -3036,7 +2982,6 @@ final kPageSurfaceCases = <PageSurfaceCase>[
   // no longer on the page it names.
   kFirmwareOtaPageCase,
   kRouterAssistantPageCase,
-  kTestConsolePageCase,
   // The two dashboard pages, inner first: `sliver_dashboard` is where the fixture was
   // written and `usp_dashboard` is 40 lines of frame around it, so the order is the
   // order they were debugged in and reads as the containment it is.

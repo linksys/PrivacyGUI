@@ -4,18 +4,16 @@ import 'package:privacy_gui/core/capability/capability_provider.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_ipoe_view.dart';
 import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_page_provider.dart';
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-// Both config imports survive #1474 phase 9, and neither is a mode read: this
-// library uses `BuildConfig.skipPnp` in `_prepare()` and
-// `GlobalConfig.feature.enableTestConsole` in the `route_usp_dashboard.dart` part.
-// Those are feature flags. The mode axis is now read only through
+// The config import survives #1474 phase 9, and it is not a mode read: this
+// library uses `BuildConfig.skipPnp` in `_prepare()`, a feature flag. (It also
+// imported `global_config.dart` for the USP test console's feature flag until #1836
+// deleted the console.) The mode axis is now read only through
 // `appModeProfileProvider`, and `test/core/mode/composition_root_test.dart` is what
 // keeps this file at zero.
-import 'package:privacy_gui/config/global_config.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
@@ -71,7 +69,6 @@ import 'package:privacy_gui/page/local_network/views/usp_local_network_view.dart
 import 'package:privacy_gui/page/static_routing/views/usp_static_routing_view.dart';
 import 'package:privacy_gui/page/ipv6_port_service/views/usp_ipv6_port_service_view.dart';
 import 'package:privacy_gui/page/statistics/views/usp_statistics_view.dart';
-import 'package:privacy_gui/page/test_console/views/usp_test_console_view.dart';
 import 'package:privacy_gui/page/dmz/providers/usp_dmz_notifier.dart';
 import 'package:privacy_gui/page/ddns/providers/usp_ddns_notifier.dart';
 import 'package:privacy_gui/page/administration/providers/usp_administration_notifier.dart';

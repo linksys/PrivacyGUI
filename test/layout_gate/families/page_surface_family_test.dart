@@ -26,7 +26,6 @@ import 'package:privacy_gui/page/statistics/views/sections/stats_device_distribu
 import 'package:privacy_gui/page/statistics/views/sections/stats_system_gauges_section.dart';
 import 'package:privacy_gui/page/statistics/views/sections/stats_traffic_monitor_section.dart';
 import 'package:privacy_gui/page/statistics/views/usp_statistics_view.dart';
-import 'package:privacy_gui/page/test_console/widgets/tr181_autocomplete_field.dart';
 import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indicator.dart';
 import 'package:privacy_gui/page/wifi_settings/views/components/wifi_network_card.dart';
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
@@ -227,7 +226,6 @@ void main() {
           'firmware_failed',
           'firmware_ota',
           'router_assistant',
-          'test_console',
           'sliver_dashboard',
           'usp_dashboard',
           'admin',
@@ -376,8 +374,8 @@ void main() {
         // `known_overflows.json` is still `{"tracking": {}, "allowlist": {}}`.
         //
         // The four pages this wave inherited as exclusion candidates
-        // (`sliver_dashboard`, `usp_dashboard`, `test_console`, `router_assistant`) are
-        // all four in this list. `test/fixtures/page_roster.tsv`'s `# verdict` block is
+        // (`sliver_dashboard`, `usp_dashboard`, `test_console`, `router_assistant`) were
+        // all four in this list; three are, since #1836 deleted the USP test console. `test/fixtures/page_roster.tsv`'s `# verdict` block is
         // where each one is argued; the short version is that unreachability is the
         // only reason this epic accepts for an exclusion and none of the four is
         // unreachable.
@@ -1012,9 +1010,9 @@ void main() {
       // Four are pre-session or in-flow screens whose content is static prose and
       // buttons (`pnp_isp_settings`'s form starts empty, `pnp_unplug_modem` and
       // `pnp_modem_lights_off` are instruction screens, `home` is the landing page).
-      // Three arrived with wave 4: `advanced_settings` and `unified_diagnostics` are
-      // link/entry surfaces, and `test_console` is a developer form whose fields start
-      // empty.
+      // Two arrived with wave 4: `advanced_settings` and `unified_diagnostics` are
+      // link/entry surfaces. (`test_console`, a developer form whose fields start empty,
+      // was the third until #1836 deleted it.)
       //
       // Both directions, because each catches a different mistake. Membership catches
       // a page recorded as fixture-free that has since grown a scene — harmless, but
@@ -1030,7 +1028,6 @@ void main() {
         'home',
         'advanced_settings',
         'unified_diagnostics',
-        'test_console',
       };
       for (final id in fixtureFree) {
         final page = kPageSurfaceCases.firstWhere((c) => c.id == id);
@@ -1107,22 +1104,6 @@ void main() {
         reason: 'the inner page has no bar. Requiring one would make the two '
             'cases indistinguishable, and the reason there are two is that the '
             'frame is worth measuring separately.',
-      );
-    });
-
-    test('page.test_console requires the widget at the epic\'s largest find',
-        () {
-      // 52 cells over at usp_test_console_view.dart:1147, worst +109px, and the only
-      // page of the 45 that broke in `en` rather than needing a long locale. The
-      // autocomplete field is what sits at that site, so it is the premise that makes
-      // the fix's 234 green cells mean the fix rather than a console that stopped
-      // rendering its form.
-      expect(
-        kTestConsolePageCase.requires,
-        contains(Tr181AutocompleteField),
-        reason: 'this page was one of the four exclusion candidates and it was '
-            'kept because of what it found. A premise that no longer reaches '
-            'the field would retire that find without retiring the row.',
       );
     });
 
