@@ -404,7 +404,7 @@ Every string a user can see is a key in `lib/l10n/app_en.arb`, the template, rea
 
 *Amended 2026-11-18 (#1802): names the check that runs the analyzer, now that #1802 P1 has added it, and gives the warning count once 7.1 left out `plugins/**`.*
 
-*Amended 2026-11-20 (#1802): the backlog is cleared, so `1.x / Analyze` fails on warnings too, and 7.2 asks for none rather than no new ones. The version moves to 1.6, not 2.0, although 9.2 asks a major number for a tightened rule, as #1802's other amendments kept the major number.*
+*Amended 2026-11-20 (#1802): the backlog is cleared, so `1.x / Analyze` fails on warnings too, and 7.2 asks for none rather than no new ones. The version moves to 1.6, not 2.0, although 9.2 asks a major number for a tightened rule, as #1802's other amendments kept the major number. The team approved it in a meeting on 2026-11-20 (9.3).*
 
 ---
 
