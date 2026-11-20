@@ -1,6 +1,5 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 
@@ -79,79 +78,4 @@ class ErrorResponse extends Equatable {
         errorMessage,
         parameters,
       ];
-}
-
-class ErrorMfaRequired extends Equatable {
-  final String code;
-  final String errorMessage;
-  final String verificationToken;
-  const ErrorMfaRequired({
-    required this.code,
-    required this.errorMessage,
-    required this.verificationToken,
-  });
-
-  ErrorMfaRequired copyWith({
-    String? code,
-    String? errorMessage,
-    String? verificationToken,
-  }) {
-    return ErrorMfaRequired(
-      code: code ?? this.code,
-      errorMessage: errorMessage ?? this.errorMessage,
-      verificationToken: verificationToken ?? this.verificationToken,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'code': code,
-      'errorMessage': errorMessage,
-      'verificationToken': verificationToken,
-    };
-  }
-
-  factory ErrorMfaRequired.fromMap(Map<String, dynamic> map) {
-    return ErrorMfaRequired(
-      code: map['code'] as String,
-      errorMessage: map['errorMessage'] as String,
-      verificationToken: map['verificationToken'] as String,
-    );
-  }
-
-  String toJson() => json.encode(toMap());
-
-  factory ErrorMfaRequired.fromJson(String source) =>
-      ErrorMfaRequired.fromMap(json.decode(source) as Map<String, dynamic>);
-
-  factory ErrorMfaRequired.fromResponse(ErrorResponse response) {
-    String token = '';
-    try {
-      token = response.parameters?[0]['parameter']['value'];
-    } catch (_) {}
-    return ErrorMfaRequired(
-      code: response.code,
-      errorMessage: response.errorMessage ?? '',
-      verificationToken: token,
-    );
-  }
-  @override
-  String toString() =>
-      'ErrorMfaRequired(code: $code, errorMessage: $errorMessage, verificationToken: $verificationToken)';
-
-  @override
-  bool operator ==(covariant ErrorMfaRequired other) {
-    if (identical(this, other)) return true;
-
-    return other.code == code &&
-        other.errorMessage == errorMessage &&
-        other.verificationToken == verificationToken;
-  }
-
-  @override
-  int get hashCode =>
-      code.hashCode ^ errorMessage.hashCode ^ verificationToken.hashCode;
-
-  @override
-  List<Object> get props => [code, errorMessage, verificationToken];
 }

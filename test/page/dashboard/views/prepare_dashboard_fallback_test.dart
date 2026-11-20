@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
@@ -46,11 +47,16 @@ class _NoDeviceInfo extends DashboardManagerNotifier {
       throw Exception('no device info');
 }
 
-// #1637: when preparing the dashboard fails, the page falls back to cloud
-// account login. A login that may not write is redirected away from account
-// login, so it goes back to the session login instead, which shows the error.
+// #1637: when preparing the dashboard fails, the page falls back to a login.
+// One that can write goes where the router sends a logged-out user: the local
+// login on a local build, the Guardian login otherwise (#1849). One that may
+// not write goes back to the session login, which shows the error.
 void main() {
   mockDependencyRegister();
+
+  late ForceCommand buildForce;
+  setUp(() => buildForce = BuildConfig.forceCommandType);
+  tearDown(() => BuildConfig.forceCommandType = buildForce);
 
   // The page loads the device cache through a container of its own, so the
   // cache cannot be overridden; give its file store somewhere to look instead.
@@ -61,12 +67,14 @@ void main() {
     (_) async => Directory.systemTemp.path,
   );
 
-  Future<void> prepareAndFail(WidgetTester tester, AccessPolicy policy) async {
+  Future<void> prepareAndFail(WidgetTester tester, AccessPolicy policy,
+      {ForceCommand force = ForceCommand.local}) async {
+    BuildConfig.forceCommandType = force;
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(testableSingleRoute(
       locale: const Locale('en'),
       overrides: [
-        // Local, so the page skips the remote network selection.
+        // A local login, as PnP leaves it: only PnP opens this page.
         authProvider.overrideWith(() => _Auth(LoginType.local)),
         connectivityProvider.overrideWith(_Connectivity.new),
         dashboardManagerProvider.overrideWith(_NoDeviceInfo.new),
@@ -74,7 +82,7 @@ void main() {
       ],
       extraRoutes: [
         for (final (name, path) in [
-          (RouteNamed.cloudLoginAccount, RoutePath.cloudLoginAccount),
+          (RouteNamed.localLoginPassword, RoutePath.localLoginPassword),
           (RouteNamed.cloudLoginAuth, RoutePath.cloudLoginAuth),
         ])
           LinksysRoute(
@@ -91,10 +99,20 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('falls back to account login with full access', (tester) async {
+  testWidgets('falls back to the local login, with the error, on a local build',
+      (tester) async {
     await prepareAndFail(tester, AccessPolicy.full);
 
-    expect(find.textContaining(RouteNamed.cloudLoginAccount), findsOneWidget);
+    expect(find.text('${RouteNamed.localLoginPassword} Unexpected'),
+        findsOneWidget);
+  });
+
+  testWidgets('falls back to the Guardian login, with the error, otherwise',
+      (tester) async {
+    await prepareAndFail(tester, AccessPolicy.full, force: ForceCommand.none);
+
+    expect(find.text('${RouteNamed.cloudLoginAuth} Unexpected'),
+        findsOneWidget);
   });
 
   testWidgets('falls back to the session login, with the error, on read-only',
@@ -103,6 +121,6 @@ void main() {
 
     expect(find.text('${RouteNamed.cloudLoginAuth} Unexpected'),
         findsOneWidget);
-    expect(find.textContaining(RouteNamed.cloudLoginAccount), findsNothing);
+    expect(find.textContaining(RouteNamed.localLoginPassword), findsNothing);
   });
 }

@@ -12,10 +12,8 @@ import 'package:privacy_gui/core/ai_session/router_ai_loader.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
-import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:privacy_gui/constants/default_country_codes.dart';
 import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/constants/jnap_const.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
@@ -23,7 +21,6 @@ import 'package:privacy_gui/core/cloud/device_token_store.dart';
 import 'package:privacy_gui/core/cloud/linksys_cloud_repository.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_session_model.dart';
 import 'package:privacy_gui/core/cloud/model/error_response.dart';
-import 'package:privacy_gui/core/cloud/model/region_code.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
@@ -234,34 +231,17 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     logger.d(
         '[Auth]: Token session Ts: $ts, expire Ts: $expireTs. Expired: $isExpired');
     if (isExpired) {
-      final refreshToken = session.refreshToken;
-      throw refreshToken == null
-          ? SessionTokenExpiredException()
-          : NeedToRefreshTokenException(refreshToken);
+      throw SessionTokenExpiredException();
     }
 
     return session;
   }
 
+  /// Settles a [checkSessionToken] error as no token. Only the cloud account
+  /// login, removed in #1849, stored a token that could be refreshed.
   Future<SessionToken?> handleSessionTokenError(
       Object error, StackTrace trace) {
-    if (error is NeedToRefreshTokenException) {
-      // logger.e('[Auth]: Start to refresh session token');
-      return refreshToken(error.refreshToken);
-    } else {
-      // not handling at this moment
-      // logger.e('[Auth]: Unhandled session token error: $error');
-      return Future.value(null);
-    }
-  }
-
-  Future<SessionToken?> refreshToken(String refreshToken) {
-    final cloud = ref.read(cloudRepositoryProvider);
-    return cloud.refreshToken(refreshToken).then((value) async {
-      logger.e('[Auth]: Session token refreshed successfully');
-      await updateCloudCredientials(sessionToken: value);
-      return value;
-    });
+    return Future.value(null);
   }
 
   Future cloudLoginAuth(
@@ -291,33 +271,12 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     return cloud.getSessionInfo(token: token, sessionId: session);
   }
 
-  Future cloudLogin({
-    required String username,
-    required String password,
-    SessionToken? sessionToken,
-  }) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      final cloud = ref.read(cloudRepositoryProvider);
-      final newToken = sessionToken ??
-          await cloud.login(username: username, password: password);
-      // Save the new cloud credentials
-      return await updateCloudCredientials(
-        sessionToken: newToken,
-        username: username,
-        password: password,
-      );
-    });
-    logger.d('[Auth]: Cloud login done: authenticated = ${state.hasValue}');
-  }
-
   Future<AuthState> updateCloudCredientials({
     SessionToken? sessionToken,
-    String? username,
-    String? password,
   }) async {
-    logger.d(
-        '[Auth]: Update cloud credientials: $sessionToken, $username, $password');
+    // Whether there is a token, never the token: in debug builds Equatable's
+    // toString prints every field, the access and refresh tokens among them.
+    logger.d('[Auth]: Update cloud credientials: ${sessionToken != null}');
     const storage = FlutterSecureStorage();
     if (sessionToken != null) {
       await storage.write(
@@ -331,18 +290,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         value: '${DateTime.now().millisecondsSinceEpoch}',
       );
     }
-    if (username != null) {}
-    if (password != null) {
-      await storage.write(
-        key: pUserPassword,
-        value: password,
-      );
-    }
     // Update the auth state
     return (state.value ?? AuthState.empty()).copyWith(
       sessionToken: sessionToken,
-      username: username,
-      password: password,
       loginType: LoginType.remote,
     );
   }
@@ -472,16 +422,6 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       await storage.delete(key: pUserPassword);
       await const DeviceTokenStore().clear();
 
-      // RA sessions
-      bool raMode = prefs.getBool(pRAMode) ?? false;
-      if (raMode) {
-        await ref
-            .read(raSessionProvider.notifier)
-            .raLogout()
-            .onError((error, stackTrace) => null);
-        ref.read(raSessionProvider.notifier).stopMonitorSession();
-      }
-
       ref.read(deviceManagerProvider.notifier).init();
       ref.read(pollingProvider.notifier).init();
       return AuthState.empty();
@@ -522,36 +462,4 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   bool isCloudLogin() => state.value?.loginType == LoginType.remote;
-
-  // TODO refactor
-  Future<List<RegionCode>> fetchRegionCodes() async {
-    List<RegionCode> regions = [];
-    var countryCodeJson = defaultCountryCodes;
-    if (countryCodeJson.containsKey('countryCodes')) {
-      final jsonArray = countryCodeJson['countryCodes'] as List<dynamic>;
-      regions = List.from(jsonArray.map((e) => RegionCode.fromJson(e)));
-    }
-    return regions;
-  }
-
-  Future raLogin(
-    String sessionToken,
-    String networkId,
-    String serialNumber,
-  ) async {
-    // update selected network id provider
-    // update network id and sn to prefs
-    await ref
-        .read(dashboardManagerProvider.notifier)
-        .saveSelectedNetwork(serialNumber, networkId);
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setBool(pRAMode, true);
-
-    // Update credientials
-    state = AsyncValue.data(await updateCloudCredientials(
-        sessionToken: SessionToken(
-            accessToken: sessionToken,
-            tokenType: 'Bearer',
-            expiresIn: DateTime.now().millisecondsSinceEpoch)));
-  }
 }

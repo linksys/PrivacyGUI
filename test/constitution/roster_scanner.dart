@@ -12,8 +12,6 @@ import 'source_scan.dart';
 /// would escape it otherwise.
 const Set<String> pagesNamedOtherwise = {
   'lib/page/vpn/views/vpn_settings_page.dart',
-  'lib/page/otp_flow/views/otp_add_phone.dart',
-  'lib/page/otp_flow/views/otp_code_input.dart',
   'lib/page/health_check/views/speed_test_external.dart',
   'lib/page/health_check/views/speed_test_selection.dart',
 };

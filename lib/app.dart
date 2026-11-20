@@ -114,7 +114,6 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
                       !showColumnOverlayNotifier.value),
               ToggleDownloadLogIntent: CallbackAction(onInvoke: (intent) {
                 if (increase()) {
-                  // context.pushNamed(RouteNamed.debug);
                   Utils.exportLogFile(context);
                   return;
                 }
