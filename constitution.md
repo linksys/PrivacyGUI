@@ -196,11 +196,6 @@ The table lists the pages that have no case. A row whose reason starts "No case 
 <!-- layout-gate-roster:begin -->
 | Page | Class | Why |
 |---|---|---|
-| `lib/page/advanced_settings/apps_and_gaming/ddns/views/ddns_settings_view.dart` | `DDNSSettingsView` | No case yet (#1802 P6). |
-| `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_forwarding_list_view.dart` | `PortRangeForwardingListView` | No case yet (#1802 P6). |
-| `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_triggering_list_view.dart` | `PortRangeTriggeringListView` | No case yet (#1802 P6). |
-| `lib/page/advanced_settings/apps_and_gaming/ports/views/single_port_forwarding_list_view.dart` | `SinglePortForwardingListView` | No case yet (#1802 P6). |
-| `lib/page/advanced_settings/firewall/views/ipv6_port_service_list_view.dart` | `Ipv6PortServiceListView` | No case yet (#1802 P6). |
 | `lib/page/advanced_settings/local_network_settings/views/dhcp_reservations_edit_view.dart` | `DHCPReservationsEditView` | Permanent while unreachable: nothing navigates to its route, `dhcpReservationEdit`, and opened without the route's arguments it throws. Give it a case once something does. |
 | `lib/page/advanced_settings/local_network_settings/views/dhcp_server_view.dart` | `DHCPServerView` | Permanent: a component, not a page. `LocalNetworkSettingsView` lays it out in its DHCP server tab, and its cases open the tab, so they sweep it. |
 | `lib/page/advanced_settings/static_routing/static_routing_list_view.dart` | `StaticRoutingListView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
