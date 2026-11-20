@@ -20,6 +20,7 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_info.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_state.dart';
@@ -364,6 +365,37 @@ void main() {
       // With no query to carry over, the login path has none either.
       expect(await redirect(tester, goRouter, RoutePath.dashboardHome),
           '/localLoginPassword');
+    });
+
+    // The cloud account login, removed in #1849, stored a session token with a
+    // refresh token and the network it picked, but no Guardian session. The app
+    // reads the stored login as it starts, so a page opened after that sees a
+    // remote login.
+    testWidgets('a page logs out a stored cloud account login', (tester) async {
+      final goRouter = await open(tester,
+          force: ForceCommand.none,
+          routerType: RouterType.others,
+          secure: {
+            pSessionToken: jsonEncode({
+              'access_token': 'account-token',
+              'token_type': 'Bearer',
+              'expires_in': 3600,
+              'refresh_token': 'account-refresh',
+            }),
+            pSessionTokenTs: '${DateTime.now().millisecondsSinceEpoch}',
+          },
+          prefs: {
+            pCurrentSN: _serial,
+            pSelectedNetworkId: 'N1'
+          });
+      await tester.runAsync(() => container.read(authProvider.notifier).init());
+
+      expect(await redirect(tester, goRouter, RoutePath.dashboardHome),
+          RoutePath.cloudLoginAuth);
+      expect(
+          await const FlutterSecureStorage().read(key: pSessionToken), isNull);
+      // It used to open the dashboard of the network it picked.
+      expect(deviceCheck.savedNetworks, isEmpty);
     });
 
     testWidgets('a setup page before setup has begun goes to its start',
