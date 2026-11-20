@@ -461,7 +461,7 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
     ));
   }
 
-  /// Pushes the previously-picked firmware image to the router via Method 1
+  /// Pushes the previously-picked firmware image to the router via
   /// chunkedPush. Sets uploading phase, drives the progress fields, and
   /// returns once all chunks are accepted. Does NOT trigger the flash —
   /// caller drives [triggerInstall] next so the confirm dialog can sit
@@ -510,12 +510,9 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
             phase: FirmwareUpdatePhase.uploading,
             uploadedChunks: sent,
             totalChunks: t,
-            uploadMethod: _uploader.lastUsedMethod,
           );
         },
       );
-      // Capture final upload method in state
-      _setState(state.copyWith(uploadMethod: _uploader.lastUsedMethod));
     } on OperationCancelledError {
       // Ahead of the ServiceError arm, which would report it as a failure.
       logger.i('[FirmwareUpdate] upload cancelled by user');

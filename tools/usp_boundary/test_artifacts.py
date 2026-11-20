@@ -7,16 +7,9 @@ from pathlib import Path
 from verify_artifacts import verify_manifest
 
 
-EXPORTS = b"\n".join(
-    (
-        b"export class UspClient",
-        b"export class UspWsClient",
-        b"export function buildGetRecord",
-        b"export function buildOperateRecord",
-        b"export function buildWebSocketConnect",
-        b"export function decodeRecord",
-    )
-)
+# The minimum surface the app needs. A package built without the `websocket`
+# feature has no WebSocket exports, and must still pass (PrivacyGUI#1874).
+EXPORTS = b"export class UspClient"
 
 
 class ArtifactTests(unittest.TestCase):
@@ -44,7 +37,7 @@ class ArtifactTests(unittest.TestCase):
                 "repository": "https://github.com/linksys/usp_framework",
                 "commit": "0123456789abcdef0123456789abcdef01234567",
             },
-            "build": {"features": ["wasm", "websocket"]},
+            "build": {"features": ["wasm"]},
             "artifacts": artifacts,
         }
         manifest_path = root / "manifest.json"
@@ -67,6 +60,34 @@ class ArtifactTests(unittest.TestCase):
                 manifest, root, verify_upstream=True, fetcher=fetcher
             )
             self.assertEqual(errors, [])
+
+    def test_missing_wasm_feature_fails(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            manifest, _ = self.make_tree(root)
+            data = json.loads(manifest.read_text(encoding="utf-8"))
+            data["build"]["features"] = ["websocket"]
+            manifest.write_text(json.dumps(data), encoding="utf-8")
+            _, errors = verify_manifest(manifest, root)
+            self.assertIn("build features must include wasm", errors)
+
+    def test_missing_client_export_fails(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            manifest, _ = self.make_tree(root)
+            data = json.loads(manifest.read_text(encoding="utf-8"))
+            for artifact in data["artifacts"]:
+                if artifact["path"] == "web/usp_client.js":
+                    path = root / artifact["path"]
+                    path.write_bytes(b"export function decodeRecord")
+                    artifact["sha256"] = hashlib.sha256(
+                        path.read_bytes()
+                    ).hexdigest()
+            manifest.write_text(json.dumps(data), encoding="utf-8")
+            _, errors = verify_manifest(manifest, root)
+            self.assertTrue(
+                any("missing production exports" in error for error in errors)
+            )
 
     def test_changed_artifact_fails_hash(self):
         with tempfile.TemporaryDirectory() as temp:

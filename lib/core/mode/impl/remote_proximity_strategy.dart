@@ -50,13 +50,12 @@ class RemoteProximityStrategy implements ProximityStrategy {
   /// firmware update is a local-only feature**, decided at product level rather
   /// than derived here. Stated that way deliberately: this arm's first draft
   /// justified the same answer by claiming the upload is aimed at Guardian and
-  /// broken, and that claim is false — `window.location` feeds only the Method-2
-  /// WebSocket URL, and Method 1 pushes `chunkedPush` over the same Guardian-
-  /// proxied `UspClient` that reboot and OTA use, with an automatic fallback to
-  /// it. It would work; it is simply not on offer remotely, and cloud OTA is the
-  /// remote answer for the same need. See `DisruptionClass.transportLoss` for the
-  /// 1,121-round-trip arithmetic that says why nobody should re-litigate this,
-  /// and for the suspected defect the decision retires.
+  /// broken, and that claim is false — the upload pushes `chunkedPush` over the
+  /// same Guardian-proxied `UspClient` that reboot and OTA use. It would work;
+  /// it is simply not on offer remotely, and cloud OTA is the remote answer for
+  /// the same need. See `DisruptionClass.transportLoss` for the round-trip
+  /// arithmetic that says why nobody should re-litigate this, and for the
+  /// suspected defect the decision retired.
   ///
   /// **`transientRestart` — reboot, cloud OTA, install trigger, Wi-Fi change.**
   /// Allowed, and this is the half that is easy to lose. The Guardian path

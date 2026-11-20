@@ -33,8 +33,11 @@ void main() {
       expect(chunker.chunks(Uint8List(0)), isEmpty);
     });
 
-    test('default chunk size matches the validated transport upper bound', () {
-      expect(FirmwareChunker.defaultChunkBytes, 65535);
+    // 192 KiB is what firmware accepts over HTTP since feed_uspapi#44
+    // (PrivacyGUI#1874). It was 65,535 before that fix.
+    test('default chunk size is 192 KiB', () {
+      expect(FirmwareChunker.defaultChunkBytes, 196608);
+      expect(const FirmwareChunker().chunkBytes, 196608);
     });
   });
 }

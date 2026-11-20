@@ -133,9 +133,7 @@ class SessionService {
   }
 
   /// `Device.LocalAgent.EndpointID` reads `uuid::<UUID>`. The prefix is part of
-  /// the USP endpoint identifier and must not reach Guardian — but it must stay
-  /// on the value the firmware WebSocket upload uses as its `toId`, which is why
-  /// that call site keeps its own read.
+  /// the USP endpoint identifier and must not reach Guardian.
   /// Case-insensitive on purpose: this must not depend on [_nonEmptyUpper]
   /// having run first, or one edit there silently changes two properties.
   static String? _stripUuidPrefix(String? value) {

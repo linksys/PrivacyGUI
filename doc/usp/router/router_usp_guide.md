@@ -14,7 +14,7 @@
 3. [SSH 直連 — bbfdm/ubus 操作](#3-ssh-直連--bbfdmubus-操作)
 4. [HTTP API — USP Bridge](#4-http-api--usp-bridge)
 5. [SSE 通知與 Subscribe](#5-sse-通知與-subscribe)
-6. [Turbo Channel（WebSocket 串流）](#6-turbo-channelwebsocket-串流)
+6. [Turbo Channel（WebSocket 串流）— 已移除](#6-turbo-channelwebsocket-串流-已移除)
 7. [Flutter 測試頁面](#7-flutter-測試頁面)
 8. [bbfdm 指令完整參考](#8-bbfdm-指令完整參考)
 9. [除錯技巧](#9-除錯技巧)
@@ -46,10 +46,7 @@ lighttpd (HTTPS :443)
     │                               │  Unix Domain Socket
     │
     ├── /api/v1/notifications ──► usp-bridge ──► SSE stream
-    ├── /api/v1/subscription  ──► usp-bridge ──► Subscribe 管理
-    ├── /api/v1/turbo/*       ──► usp-bridge ──► Streaming channel 控制
-    │
-    └── /usp-ws (WebSocket)   ──► OBUSPA (:9001) ──► 高頻寬資料通道
+    └── /api/v1/subscription  ──► usp-bridge ──► Subscribe 管理
                                 ▼
                             OBUSPA (USP Agent)
                                 │
@@ -72,7 +69,6 @@ lighttpd (HTTPS :443)
 | **SSH + ubus** | 直接除錯、驗證資料 | 文字指令 (JSON) |
 | **HTTP API** | 生產環境 / WASM client（CRUD + Operate） | Protobuf over HTTPS |
 | **SSE** | 即時通知（ValueChange / ObjectCreation / ObjectDeletion） | Server-Sent Events over HTTPS |
-| **WebSocket** | 高頻寬操作（韌體升級、速度測試） | Binary Protobuf over WSS |
 | **Flutter 測試頁** | 整合測試 | WASM → Protobuf → HTTPS |
 
 ---
@@ -450,7 +446,7 @@ ubus call bbfdm.timemngr set '{"path":"Device.Time.NTPServer5","value":"2.openwr
 | Router (usp-bridge) | ✅ 就緒 | SSE heartbeat ✅；OperationComplete 轉發 ✅（2026-05-19 驗證） |
 | WASM Client (JS) | ❌ 未實作 | `web/usp_client.js` 無 subscribe/SSE API |
 | Dart 綁定 | ✅ 就緒 | `UspBridgeClient`（HTTP/SSE helper）+ `UspService.sessionToken` getter |
-| Dart 測試頁面 | ✅ 就緒 | SSE / Subscribe / Turbo / Health UI sections 已實作 |
+| Dart 測試頁面 | ✅ 就緒 | SSE / Subscribe / Health UI sections 已實作 |
 | Codegen | ✅ 就緒 | 已產生 subscribe 方法（呼叫 `client.subscribe()`） |
 
 > **SSE 完整運作（2026-05-19 驗證）：** heartbeat + OperationComplete 通知轉發均正常。
@@ -602,142 +598,18 @@ usp-bridge 收到 OBUSPA 的 USP Notify protobuf message 後，**沒有**：
 
 ---
 
-## 6. Turbo Channel（WebSocket 串流）
+## 6. Turbo Channel（WebSocket 串流）— 已移除
 
-> **驗證日期:** 2026-03-03 — 以下所有指令皆已在 router 上實測通過。
-
-### 6.1 概述
-
-Turbo Channel 是一個**互斥的獨佔串流通道**，用於需要持續、不中斷 Agent 存取的高頻寬操作（如韌體升級、速度測試）。
-
-- **控制面（Control Plane）**：HTTP API，透過 usp-bridge 管理
-- **資料面（Data Plane）**：WebSocket (`wss://<router>/usp-ws`)，**繞過 usp-bridge**，直連 OBUSPA
-
-```
-Client                    usp-bridge              lighttpd           OBUSPA
-  │                           │                      │                  │
-  ├── POST /turbo/start ─────►│  (acquire channel)   │                  │
-  │◄── {"status":"granted"} ──┤                      │                  │
-  │                           │                      │                  │
-  ├── POST /turbo/heartbeat ─►│  (PENDING → IN_USE)  │                  │
-  │◄── {"status":"ok"} ──────┤                      │                  │
-  │                           │                      │                  │
-  ├── WSS /usp-ws ───────────┼──────────────────────►│──► WS proxy ────►│
-  │◄── WebSocket connected ──┼──────────────────────┤◄── :9001 ────────┤
-  │                           │                      │                  │
-  │   (binary protobuf exchange via WebSocket)       │                  │
-  │                           │                      │                  │
-  ├── POST /turbo/release ───►│  (release channel)   │                  │
-  │◄── {"status":"released"} ┤                      │                  │
-```
-
-### 6.2 Channel 狀態機
-
-```
-                 acquire
-  AVAILABLE ──────────────► PENDING
-      ▲                        │
-      │    timeout (6s)        │ heartbeat
-      │◄───────────────────────│
-      │                        ▼
-      │                     IN_USE
-      │                        │
-      │  release / idle (60s)  │
-      │  / max duration (300s) │
-      │◄───────────────────────┘
-```
-
-### 6.3 驗證指令
-
-#### 前置：取得 JWT Token
-
-```bash
-TOKEN=$(curl -sk -X POST https://127.0.0.1/api/v1/auth/login \
-  -H 'Content-Type: application/json' \
-  -d '{"password":"admin"}' | jsonfilter -e '@.token')
-```
-
-#### 6.3.1 查詢 Channel 狀態
-
-```bash
-curl -s http://127.0.0.1:8083/api/v1/turbo/status \
-  -H "Authorization: Bearer $TOKEN"
-# 預期: {"state":"AVAILABLE"}
-```
-
-#### 6.3.2 完整生命週期測試
-
-```bash
-# 1. 取得 channel
-curl -s -X POST http://127.0.0.1:8083/api/v1/turbo/start \
-  -H "Authorization: Bearer $TOKEN"
-# 預期: {"status":"granted","session_id":"<hex>"}
-
-# 2. 發送 heartbeat（PENDING → IN_USE）
-curl -s -X POST http://127.0.0.1:8083/api/v1/turbo/heartbeat \
-  -H "Authorization: Bearer $TOKEN"
-# 預期: {"status":"ok"}
-
-# 3. 確認狀態
-curl -s http://127.0.0.1:8083/api/v1/turbo/status \
-  -H "Authorization: Bearer $TOKEN"
-# 預期: {"state":"IN_USE","owner":"<session_id>","acquired_at":...,"last_heartbeat":...}
-
-# 4. 釋放 channel
-curl -s -X POST http://127.0.0.1:8083/api/v1/turbo/release \
-  -H "Authorization: Bearer $TOKEN"
-# 預期: {"status":"released"}
-
-# 5. 確認恢復可用
-curl -s http://127.0.0.1:8083/api/v1/turbo/status \
-  -H "Authorization: Bearer $TOKEN"
-# 預期: {"state":"AVAILABLE"}
-```
-
-#### 6.3.3 WebSocket 資料面測試
-
-```bash
-# 需要 websocat 工具（或在瀏覽器 DevTools 中測試）
-# 注意：需要先 acquire turbo channel 進入 IN_USE 狀態
-
-# macOS 安裝 websocat
-# brew install websocat
-
-# 連線（需 -k 忽略自簽憑證）
-websocat -k --header "Authorization: Bearer $TOKEN" \
-  --header "Sec-WebSocket-Protocol: v1.usp" \
-  wss://192.168.1.1/usp-ws
-```
-
-> WebSocket 資料面傳輸 binary protobuf，無法用純文字工具測試內容。此指令僅驗證連線是否建立。
-
-### 6.4 Turbo API 參考
-
-| Method | Path | 說明 | 回應 |
-|--------|------|------|------|
-| `POST` | `/api/v1/turbo/start` | 取得獨佔 channel | `{"status":"granted","session_id":"..."}` |
-| `POST` | `/api/v1/turbo/heartbeat` | 維持 channel（PENDING→IN_USE） | `{"status":"ok"}` |
-| `POST` | `/api/v1/turbo/release` | 釋放 channel | `{"status":"released"}` |
-| `GET` | `/api/v1/turbo/status` | 查詢 channel 狀態 | `{"state":"AVAILABLE\|IN_USE"}` |
-
-### 6.5 UCI 設定（`/etc/config/usp-bridge`）
-
-```
-config streaming 'channel'
-    option pending_timeout '6'       # PENDING 狀態逾時（秒）
-    option idle_timeout '60'         # IN_USE 無 heartbeat 逾時（秒）
-    option max_duration '300'        # 最大佔用時間（秒）
-```
-
-### 6.6 WASM Client 實作狀態
-
-| 層級 | 狀態 | 說明 |
-|------|------|------|
-| Router (usp-bridge) | ✅ 就緒 | Turbo 控制面 API 完整 |
-| Router (lighttpd) | ✅ 就緒 | WebSocket proxy 至 OBUSPA :9001 |
-| Router (OBUSPA) | ✅ 就緒 | WebSocket MTP 監聽 :9001 |
-| WASM Client (JS) | ❌ 未實作 | 無 turbo/WebSocket API |
-| Dart 綁定 | ❌ 未實作 | 無對應方法 |
+> **韌體已移除 turbo channel 和 OBUSPA 的 WebSocket MTP**（feed_uspapi#43、feed_usp#86、targets#331，2026-11-18 合併）。
+> 原因是 `/usp-ws` 讓未認證的連線取得 agent 的 Full Access（Architecture#252）。
+> 依韌體團隊在 PrivacyGUI#1874 的回報，移除後 `/api/v1/turbo/status` 回 `{"state":"DISABLED"}`、
+> `/api/v1/turbo/start` 回 503、`/usp-ws` 回 404，port 9001 和 8084 關閉。
+>
+> app 端的 WebSocket 韌體上傳路徑和 turbo 相關程式碼在 PrivacyGUI#1874 一併刪除。
+> 韌體上傳現在只走 HTTP：每塊一個 `Device.LocalAgent.X_LINKSYS_Download()` Operate，每塊 192 KiB
+> （`FirmwareChunker.defaultChunkBytes`）。
+>
+> 這一節原本的內容（2026-03-03 實測的控制面 API、狀態機、UCI 設定）請看 git 歷史。
 
 ---
 
@@ -1307,32 +1179,9 @@ obuspa -s /tmp/usp_cli -c 'get' 'Device.LocalAgent.Subscription.1.'
 obuspa -s /tmp/usp_cli -c 'del' 'Device.LocalAgent.Subscription.1.'
 ```
 
-### 10.6 Turbo Channel 驗證
+### 10.6 Turbo Channel 驗證 — 已移除
 
-> SSH 進入 router 後執行。詳細說明見第 6 節。
-
-```bash
-TOKEN=$(curl -sk -X POST https://127.0.0.1/api/v1/auth/login \
-  -H 'Content-Type: application/json' \
-  -d '{"password":"admin"}' | jsonfilter -e '@.token')
-
-# ✅ 查詢狀態
-curl -s http://127.0.0.1:8083/api/v1/turbo/status -H "Authorization: Bearer $TOKEN"
-# 預期: {"state":"AVAILABLE"}
-
-# ✅ 取得 → heartbeat → 確認 → 釋放
-curl -s -X POST http://127.0.0.1:8083/api/v1/turbo/start -H "Authorization: Bearer $TOKEN"
-# 預期: {"status":"granted",...}
-
-curl -s -X POST http://127.0.0.1:8083/api/v1/turbo/heartbeat -H "Authorization: Bearer $TOKEN"
-# 預期: {"status":"ok"}
-
-curl -s http://127.0.0.1:8083/api/v1/turbo/status -H "Authorization: Bearer $TOKEN"
-# 預期: {"state":"IN_USE",...}
-
-curl -s -X POST http://127.0.0.1:8083/api/v1/turbo/release -H "Authorization: Bearer $TOKEN"
-# 預期: {"status":"released"}
-```
+> 韌體已移除 turbo channel，見第 6 節。
 
 ---
 

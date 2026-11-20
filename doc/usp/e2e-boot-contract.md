@@ -23,9 +23,6 @@ when the JS-interop surface, bridge endpoints, or `E2E_MOCK` behavior change.
 window.__uspClientReady = Promise<true>   // Dart awaits this before using UspClient
 window.UspClient           = <class>       // constructable USP client
 window.UspClientBuilder    = <class>       // remote-assistance builder
-window.UspWsClient         = <class>       // firmware-upload WebSocket client
-window.buildGetRecord / buildOperateRecord / buildWebSocketConnect / decodeRecord
-window.sendWebSocketConnectNative = async fn
 ```
 
 An E2E harness that replaces the client MUST define `window.UspClient`
@@ -70,8 +67,6 @@ The bridge client (`usp_bridge_client_web.dart`, paths in
 | `/api/v1/health` | GET | health check |
 | `/api/v1/notifications` | GET | SSE stream (`text/event-stream`) |
 | `/api/v1/subscription` | POST/GET | register/unregister/list subscriptions |
-| `/api/v1/turbo/{start,heartbeat,release}` | POST | turbo channel lock |
-| `/api/v1/turbo/status` | GET | turbo status |
 | `/api/v1/auth/login` | POST | login (mints session token) |
 | `POST /api/v1/usp` | POST | (WASM-internal) USP protobuf request → response |
 

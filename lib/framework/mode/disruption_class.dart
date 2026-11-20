@@ -39,36 +39,31 @@ enum DisruptionClass {
   /// That ordering matters, because the *technical* argument for the same refusal
   /// was drafted first and was wrong. Phase 6 originally asserted that the upload
   /// is aimed at Guardian under Remote Assistance and therefore simply broken.
-  /// It is not. `firmware_local_upload_service.dart:26` does read
-  /// `window.location`, but that value feeds exactly one line —
-  /// `wsUrl: 'wss://$routerHost/usp-ws'`, the Method-2 WebSocket accelerator. The
-  /// default and always-available Method 1, `FirmwareHttpUploadStrategy`, holds
-  /// nothing but a `UspClient` and pushes through
-  /// `FirmwareOperations.chunkedPush`, i.e. over the same mode-aware transport a
-  /// reboot and a cloud OTA already use, and `uploadFile` falls back to it
-  /// automatically when the WebSocket `prepare()` throws, which under RA it does.
-  /// The upload **would work** remotely. It is refused because the feature is not
-  /// offered there, not because the bytes have nowhere to go.
+  /// It is not. `FirmwareLocalUploadService` holds nothing but a `UspClient` and
+  /// pushes through `FirmwareOperations.chunkedPush`, i.e. over the same
+  /// mode-aware transport a reboot and a cloud OTA already use. The upload
+  /// **would work** remotely. It is refused because the feature is not offered
+  /// there, not because the bytes have nowhere to go.
   ///
   /// What the cost measurement is still good for is explaining *why* the product
   /// constraint is the right one, i.e. why nobody should be tempted to un-refuse
-  /// it: remotely the only working path is the session's own control channel, and
-  /// the upload monopolises it. A 70 MB image at
-  /// `FirmwareChunker.defaultChunkBytes` (65,535) is **1,121 sequential USP
-  /// Operate round trips**, each carrying ~87 KB of base64 across browser →
+  /// it: remotely the only path is the session's own control channel, and the
+  /// upload monopolises it. A 70 MiB image at
+  /// `FirmwareChunker.defaultChunkBytes` (196,608) is **374 sequential USP
+  /// Operate round trips**, each carrying 256 KiB of base64 across browser →
   /// Guardian → agent → router, each taking `UspMutationLock`, awaited one at a
-  /// time. Locally that loop runs over a LAN socket the accelerator can bypass
-  /// entirely. Cloud OTA is the remote answer for the same need, and the router
-  /// fetches over its own uplink.
+  /// time. Locally the same loop runs over the LAN. Cloud OTA is the remote
+  /// answer for the same need, and the router fetches over its own uplink.
   ///
-  /// **One consequence worth recording, because it retires a suspected defect.**
-  /// The Method-2 `wss://` host is derived from `window.location`, which would be
-  /// Guardian's host under RA — filed as a defect while the refusal was still
-  /// being justified technically. With the feature local-only, that code is
-  /// unreachable in the only mode where the host would be wrong, and in local
-  /// mode `window.location.host` *is* the router. It is not a defect. The one
-  /// that survives is unrelated to mode: a push abandoned partway leaves a
-  /// partial image in the router's target bank, locally included.
+  /// **One consequence worth recording, because it retired a suspected defect.**
+  /// The upload's second path, a WebSocket push, derived its `wss://` host from
+  /// `window.location`, which would be Guardian's host under RA — filed as a
+  /// defect while the refusal was still being justified technically. With the
+  /// feature local-only that code was unreachable in the only mode where the
+  /// host would be wrong, and #1874 removed the path altogether when the router
+  /// dropped its `/usp-ws` endpoint. The defect that survives is unrelated to
+  /// mode: a push abandoned partway leaves a partial image in the router's
+  /// target bank, locally included.
   transportLoss,
 
   /// The operation takes the box, or its radios, away and they come back on

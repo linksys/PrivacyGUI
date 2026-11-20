@@ -15,7 +15,7 @@ export 'package:privacy_gui/core/usp/models/sse_notification.dart';
 /// - Per-subscription handlers (matched by exact subscription_id)
 /// - Wildcard handlers (receive ALL notifications regardless of subscription_id)
 ///
-/// Events that are not `notification` type (heartbeat, connected, turbo_channel)
+/// Events that are not `notification` type (heartbeat, connected)
 /// are silently ignored — they are handled by [SseConnectionManager].
 class SseEventRouter {
   /// Called on every SSE heartbeat event. Set by [SseManager] to trigger
@@ -64,10 +64,6 @@ class SseEventRouter {
         onHeartbeat?.call();
         break;
       case 'connected':
-        break;
-      case 'turbo_channel':
-        // Future: route to turbo channel coordinator
-        logger.d('[SSE]: turbo_channel event: ${event.data}');
         break;
       default:
         logger.d('[SSE]: Unknown event type: ${event.event}');

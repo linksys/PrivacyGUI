@@ -21,11 +21,10 @@ flowchart LR
 
         lighttpd -->|"/api/auth/*\n(FastCGI)"| auth
         lighttpd -->|"/api/v1/*\n(reverse proxy)"| bridge
-        lighttpd -->|"/usp-ws\n(WebSocket proxy)"| obuspa
         bridge -->|"UDS\n(protobuf frames)"| obuspa
     end
 
-    client -->|"HTTPS / WSS"| lighttpd
+    client -->|"HTTPS"| lighttpd
     auth -.->|"JWT token\n(via lighttpd)"| client
 ```
 
@@ -129,10 +128,6 @@ The bridge is structured around a central `bridge_context_t` that owns all sub-s
 | `POST` | `/api/v1/usp` | Yes | Forward a USP protobuf message to OBUSPA and return the response |
 | `GET` | `/api/v1/notifications` | Yes | SSE stream — real-time notifications from OBUSPA |
 | `POST` | `/api/v1/subscription` | Yes | Register/unregister notification subscriptions (auto-creates OBUSPA `Subscription.{i}`). Fields: `NotifType` (string), `ReferenceList` (string) |
-| `POST` | `/api/v1/turbo/start` | Yes | Acquire the exclusive streaming channel |
-| `POST` | `/api/v1/turbo/heartbeat` | Yes | Keep the streaming channel alive |
-| `POST` | `/api/v1/turbo/release` | Yes | Release the streaming channel |
-| `GET` | `/api/v1/turbo/status` | Yes | Query streaming channel status |
 
 #### Session validation
 
@@ -167,40 +162,11 @@ When a USP request arrives via HTTP:
 
 Default timeout: **30 s**; extended timeout: **120 s** (for long-running operations).
 
-#### Streaming channel (Turbo) and WebSocket data plane
+#### Streaming channel (Turbo) and WebSocket data plane — removed
 
-The "turbo" channel is a **mutex-like exclusive resource** used for operations that require sustained, uninterrupted agent access (e.g., firmware upgrade, speed test). It has two planes:
+Firmware removed the turbo channel and OBUSPA's WebSocket MTP (feed_uspapi#43, feed_usp#86, targets#331, merged 2026-11-18), because `/usp-ws` gave unauthenticated Full Access to the agent (Architecture#252). Per the firmware team's report in PrivacyGUI#1874, `/api/v1/turbo/status` now returns `{"state":"DISABLED"}`, `/api/v1/turbo/start` returns 503 and `/usp-ws` returns 404.
 
-- **Control plane** (HTTP, through usp-bridge) — acquire, heartbeat, release, status.
-- **Data plane** (WebSocket, **bypassing** usp-bridge) — direct binary USP message exchange with OBUSPA.
-
-##### Channel lifecycle
-
-```mermaid
-stateDiagram-v2
-    [*] --> AVAILABLE
-    AVAILABLE --> PENDING : acquire (/turbo/start)
-    PENDING --> IN_USE : heartbeat (/turbo/heartbeat)
-    PENDING --> AVAILABLE : timeout (6s)
-    IN_USE --> AVAILABLE : release (/turbo/release)
-    IN_USE --> AVAILABLE : idle timeout (60s)
-    IN_USE --> AVAILABLE : max duration (300s)
-```
-
-Only one session may own the channel at a time. All sessions are notified via SSE when the channel becomes available.
-
-##### WebSocket data plane
-
-Once the turbo channel reaches the **IN_USE** state, the client opens a WebSocket connection to the router at the `/usp-ws` endpoint. This connection is **proxied by lighttpd directly to OBUSPA** (listening on `localhost:9001` for WebSocket MTP), completely bypassing usp-bridge for maximum throughput.
-
-Key characteristics:
-- **URL**: `wss://<router>/usp-ws` (TLS terminated by lighttpd)
-- **Subprotocol**: `v1.usp` (set via `Sec-WebSocket-Protocol` header)
-- **Message format**: Binary USP protobuf messages (same encoding as the HTTP path, but sent as WebSocket binary frames instead of HTTP request/response)
-- **Authentication**: The JWT token is passed as a `Bearer` token in the initial WebSocket upgrade request
-- lighttpd enables WebSocket upgrade via `proxy.header = ( "upgrade" => "enable" )` in the proxy configuration
-
-This design separates the low-frequency control concerns (session, locking, timeouts — handled by usp-bridge) from the high-bandwidth data transfer (handled directly by OBUSPA's WebSocket MTP).
+PrivacyGUI removed its WebSocket firmware upload and the turbo client in PrivacyGUI#1874. Firmware upload goes through `/api/v1/usp` like every other request, one `X_LINKSYS_Download()` Operate per 192 KiB chunk. The previous description of the channel's lifecycle and data plane is in git history.
 
 #### Rate limiting
 
@@ -401,36 +367,9 @@ sequenceDiagram
     end
 ```
 
-### 3.4 WebSocket turbo channel (high-bandwidth operations)
+### 3.4 WebSocket turbo channel (high-bandwidth operations) — removed
 
-```mermaid
-sequenceDiagram
-    participant Client as usp-client
-    participant Bridge as usp-bridge
-    participant Lighttpd as lighttpd
-    participant Agent as OBUSPA
-
-    Note over Client, Agent: Control plane (HTTP, via usp-bridge)
-    Client->>Bridge: POST /api/v1/turbo/start (Authorization: Bearer JWT)
-    Bridge-->>Client: 200 { state: "pending" }
-    Client->>Bridge: POST /api/v1/turbo/heartbeat
-    Bridge-->>Client: 200 { state: "in_use" }
-
-    Note over Client, Agent: Data plane (WebSocket, bypasses usp-bridge)
-    Client->>Lighttpd: WSS Upgrade /usp-ws (Sec-WebSocket-Protocol: v1.usp)
-    Lighttpd->>Agent: WS proxy to localhost:9001
-    Agent-->>Client: WebSocket connection established
-
-    loop Binary USP exchange
-        Client->>Agent: Binary protobuf USP request
-        Agent-->>Client: Binary protobuf USP response
-    end
-
-    Note over Client, Agent: Teardown (control plane)
-    Client->>Bridge: POST /api/v1/turbo/release
-    Bridge-->>Client: 200 { state: "available" }
-    Note over Bridge: Broadcast channel_available via SSE
-```
+Removed from firmware; see "Streaming channel (Turbo) and WebSocket data plane — removed" above.
 
 ---
 
@@ -505,14 +444,12 @@ All components run **on the router** itself. The typical deployment looks like:
 4. **All paths are TR-181** — e.g., `Device.WiFi.Radio.1.Channel`. Partial paths ending with `.` return subtrees.
 5. **Notifications** come via SSE on `/api/v1/notifications`. Register interest with `/api/v1/subscription`.
 6. **Tokens expire in 15 minutes** — call `refresh_token()` before expiry or re-authenticate.
-7. **The turbo channel** must be acquired before long-running operations and released afterward. Only one session can hold it at a time.
 
 ### Default endpoints (returned by login)
 
 | Name | Path | Purpose |
 |---|---|---|
 | controller | `/api/v1/usp` | USP message endpoint |
-| turbo | `/api/v1/turbo/start` | Streaming channel acquisition |
 | agent | `/api/v1/llm/query` | LLM proxy (optional) |
 
 ---
