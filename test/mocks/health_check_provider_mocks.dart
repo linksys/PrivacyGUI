@@ -178,16 +178,6 @@ class MockHealthCheckProvider extends _i2.Notifier<_i3.HealthCheckState>
       ) as _i6.Future<_i4.JNAPResult>);
 
   @override
-  _i6.Future<void> stopHealthCheck() => (super.noSuchMethod(
-        Invocation.method(
-          #stopHealthCheck,
-          [],
-        ),
-        returnValue: _i6.Future<void>.value(),
-        returnValueForMissingStub: _i6.Future<void>.value(),
-      ) as _i6.Future<void>);
-
-  @override
   bool updateShouldNotify(
     _i3.HealthCheckState? previous,
     _i3.HealthCheckState? next,

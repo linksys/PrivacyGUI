@@ -115,16 +115,6 @@ class MockAddNodesNotifier extends _i2.AutoDisposeNotifier<_i3.AddNodesState>
       ) as _i3.AddNodesState);
 
   @override
-  _i5.Future<void> setAutoOnboardingSettings() => (super.noSuchMethod(
-        Invocation.method(
-          #setAutoOnboardingSettings,
-          [],
-        ),
-        returnValue: _i5.Future<void>.value(),
-        returnValueForMissingStub: _i5.Future<void>.value(),
-      ) as _i5.Future<void>);
-
-  @override
   _i5.Future<bool> getAutoOnboardingSettings() => (super.noSuchMethod(
         Invocation.method(
           #getAutoOnboardingSettings,
@@ -135,13 +125,10 @@ class MockAddNodesNotifier extends _i2.AutoDisposeNotifier<_i3.AddNodesState>
       ) as _i5.Future<bool>);
 
   @override
-  _i5.Stream<_i6.JNAPResult> pollAutoOnboardingStatus(
-          {bool? oneTake = false}) =>
-      (super.noSuchMethod(
+  _i5.Stream<_i6.JNAPResult> pollAutoOnboardingStatus() => (super.noSuchMethod(
         Invocation.method(
           #pollAutoOnboardingStatus,
           [],
-          {#oneTake: oneTake},
         ),
         returnValue: _i5.Stream<_i6.JNAPResult>.empty(),
         returnValueForMissingStub: _i5.Stream<_i6.JNAPResult>.empty(),
