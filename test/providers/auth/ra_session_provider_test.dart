@@ -139,7 +139,7 @@ void main() {
       final deletion = cloud.requests.last;
       expect(deletion.method, 'DELETE');
       expect(deletion.url.path, endsWith('/S1'));
-      expect(session(), const RASession(sessionId: '', token: ''));
+      expect(session(), const RASession(sessionId: ''));
     });
 
     test('ends the session it already knows without asking for it', () async {

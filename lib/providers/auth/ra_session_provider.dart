@@ -13,7 +13,7 @@ final raSessionProvider =
 class RASessionNotifier extends Notifier<RASession> {
   @override
   RASession build() {
-    return const RASession(sessionId: '', token: '');
+    return const RASession(sessionId: '');
   }
 
   Future<String> raGenPin() async {
@@ -45,7 +45,7 @@ class RASessionNotifier extends Notifier<RASession> {
         ? await cloud.raGetSession(networkId: networkId)
         : state.sessionId;
     await cloud.deleteSession(sessionId: sessionId);
-    state = const RASession(sessionId: '', token: '');
+    state = const RASession(sessionId: '');
   }
 
   Future<CloudRemoteAssistanceInfo> raGetSessionInfo() async {
