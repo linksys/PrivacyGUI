@@ -197,7 +197,7 @@ void main() {
   testLocalizations('Instant-Verify view - Instant-Info view - Internet off',
       (tester, locale) async {
     final testState =
-        InstantVerifyState.fromMap(instantVerifyInternetOffTestState);
+        InstantVerifyState.fromMap(instantVerifyNoWanConnectionTestState);
     when(mockInstantVerifyNotifier.build()).thenReturn(testState);
     await tester.runAsync(() async {
       await tester.pumpWidget(
@@ -209,7 +209,9 @@ void main() {
             firmwareUpdateProvider
                 .overrideWith(() => mockFirmwareUpdateNotifier),
             deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-            internetStatusProvider.overrideWith((ref) => InternetStatus.online),
+            // The Internet indicator follows internetStatusProvider (#1764).
+            internetStatusProvider
+                .overrideWith((ref) => InternetStatus.offline),
             instantPrivacyProvider
                 .overrideWith(() => mockInstantPrivacyNotifier),
             instantTopologyProvider
