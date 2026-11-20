@@ -356,7 +356,7 @@ The existing directories vary:
 - `advanced_settings` holds one directory per settings page, plus a shared `widgets/`. Every page has `providers/`, and all but `static_routing` have `views/`.
 - `instant_setup` keeps its two main views at the top level, its notifier in `data/` and its troubleshooter in its own directory.
 - `support` is two files with no sub-directories.
-- `components`, `firmware_update` and `landing` have no `providers/`, and `login` has one only under `auto_parent/`.
+- `components` and `firmware_update` have no `providers/`, and `login` has one only under `auto_parent/`.
 
 When a feature has a barrel, it is `_<feature>.dart` in the feature's directory, as in `lib/page/nodes/_nodes.dart` and `lib/page/advanced_settings/dmz/_dmz.dart`. Eight directories under `lib/page/` have none: `auto_ipoe`, `components`, `instant_privacy`, `instant_setup`, `instant_verify`, `login`, `support` and `vpn`.
 

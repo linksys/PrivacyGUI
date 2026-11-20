@@ -49,20 +49,9 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
     String? serialNumber = prefs.getString(pCurrentSN);
     final loginType =
         ref.read(authProvider.select((value) => value.value?.loginType));
-    if (loginType == LoginType.remote) {
-      logger.i('PREPARE LOGIN:: remote');
-      if (ref.read(selectedNetworkIdProvider) == null) {
-        final networkId = prefs.getString(pSelectedNetworkId);
-        if (networkId == null || serialNumber == null) {
-          // Only the account login, removed in #1849, had networks to pick.
-          router.goNamed(_loginRouteName());
-          return;
-        }
-        await ref
-            .read(dashboardManagerProvider.notifier)
-            .saveSelectedNetwork(serialNumber, networkId);
-      }
-    } else if (loginType == LoginType.local) {
+    // Only PnP opens this page, once it has logged in locally. The router
+    // prepares a remote login itself (_prepareRemote).
+    if (loginType == LoginType.local) {
       logger.i('PREPARE LOGIN:: local');
       final routerRepository = ref.read(routerRepositoryProvider);
 
@@ -115,8 +104,7 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
 
   /// The login the router's `_home()` picks: the local one on a local build,
   /// the Guardian one otherwise.
-  String _loginRouteName() =>
-      BuildConfig.forceCommandType == ForceCommand.local
-          ? RouteNamed.localLoginPassword
-          : RouteNamed.cloudLoginAuth;
+  String _loginRouteName() => BuildConfig.forceCommandType == ForceCommand.local
+      ? RouteNamed.localLoginPassword
+      : RouteNamed.cloudLoginAuth;
 }

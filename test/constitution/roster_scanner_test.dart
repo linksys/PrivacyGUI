@@ -36,13 +36,13 @@ class _WiFiListViewState extends ConsumerState<WiFiListView> {}
 
     test('falls back to the first public widget class', () {
       const source = '''
-mixin OtpHelpers {}
+mixin VpnHelpers {}
 class _Helper extends StatelessWidget {}
-class OtpAddPhoneView extends ArgumentsConsumerStatefulView {}
+class VPNSettingsPage extends ArgumentsConsumerStatefulView {}
 ''';
 
-      expect(pageClassIn('lib/page/otp_flow/views/otp_add_phone.dart', source),
-          'OtpAddPhoneView');
+      expect(pageClassIn('lib/page/vpn/views/vpn_settings_page.dart', source),
+          'VPNSettingsPage');
     });
 
     test('gives null for a file that defines no public widget', () {
