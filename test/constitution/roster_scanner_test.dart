@@ -186,4 +186,29 @@ void main() {
           {'lib/page/a/a_view.dart -> AView'});
     });
   });
+
+  group('navigatedUnreachablePages', () {
+    const constitution = """
+<!-- layout-gate-roster:begin -->
+| Page | Class | Why |
+|---|---|---|
+| `lib/page/e/e_view.dart` | `EView` | Permanent while unreachable: nothing navigates to its route, `eRoute`, and opened without the route's arguments it throws. |
+| `lib/page/f/f_view.dart` | `FView` | Permanent while unreachable: nothing navigates to its route, `fRoute`, and opened without the route's arguments it throws. |
+<!-- layout-gate-roster:end -->
+""";
+
+    test('lists a page whose route something outside lib/route/ names', () {
+      final lib = {
+        // The route table names both routes; that is not navigating.
+        'lib/route/routes.dart': 'final e = LinksysRoute(name: RouteNamed.eRoute, '
+            'path: RoutePath.eRoute); final f = RouteNamed.fRoute;',
+        // Navigates to eRoute. fRoute is only in a comment.
+        'lib/page/x/x_view.dart': 'void go(c) => c.pushNamed(RouteNamed.eRoute);'
+            ' // c.pushNamed(RouteNamed.fRoute);',
+      };
+
+      expect(navigatedUnreachablePages(constitution, lib),
+          {'lib/page/e/e_view.dart -> EView'});
+    });
+  });
 }
