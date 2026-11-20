@@ -74,7 +74,7 @@ void main() {
     await tester.pumpWidget(testableSingleRoute(
       locale: const Locale('en'),
       overrides: [
-        // Local, so the page skips the remote network selection.
+        // A local login, as PnP leaves it: only PnP opens this page.
         authProvider.overrideWith(() => _Auth(LoginType.local)),
         connectivityProvider.overrideWith(_Connectivity.new),
         dashboardManagerProvider.overrideWith(_NoDeviceInfo.new),

@@ -142,7 +142,7 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                   if (isRemote)
                     Column(
                       children: [
-                        _networkSelect(),
+                        _mainSsid(),
                         if (secondsLeft != null)
                           _sessionExpireCounter(secondsLeft),
                       ],
@@ -174,7 +174,7 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
 
   /// The router's main SSID. It used to open the account login's network
   /// picker, which a Guardian login never had networks for (#1849).
-  Widget _networkSelect() {
+  Widget _mainSsid() {
     final dashboardHomeState = ref.watch(dashboardHomeProvider);
     return Row(
       children: [
