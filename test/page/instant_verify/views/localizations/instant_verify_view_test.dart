@@ -197,7 +197,7 @@ void main() {
   testLocalizations('Instant-Verify view - Instant-Info view - Internet off',
       (tester, locale) async {
     final testState =
-        InstantVerifyState.fromMap(instantVerifyInternetOffTestState);
+        InstantVerifyState.fromMap(instantVerifyNoWanConnectionTestState);
     when(mockInstantVerifyNotifier.build()).thenReturn(testState);
     await tester.runAsync(() async {
       await tester.pumpWidget(
