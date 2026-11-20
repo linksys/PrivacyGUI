@@ -50,14 +50,6 @@ const _allowed = <String, String>{
   // is no service to route it through that would not be this view again.
   'lib/page/test_console/views/usp_test_console_view.dart':
       'developer USP console; builds its own client by design',
-
-  // A debt left on purpose: the widget holds a whole data layer (USP reads, CGI
-  // calls, SSE subscription, polling) and imports the throttler for one enum.
-  // Moving the enum would make this green and fix nothing, and package widgets
-  // may be removed outright, so the data layer is not moved for now
-  // (2026-10-13). If they stay, it moves to a service and a notifier.
-  'lib/page/dashboard/widgets/package_widget_renderer.dart':
-      'holds its own data layer; package widgets may be removed',
 };
 
 /// An import of a file under a `services/` directory: a feature's at any depth

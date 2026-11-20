@@ -1,4 +1,4 @@
-import 'package:privacy_gui/page/dashboard/widgets/package_widget_renderer.dart';
+import 'package:privacy_gui/page/dashboard/services/package_widget_service.dart';
 import 'package:test/test.dart';
 
 void main() {

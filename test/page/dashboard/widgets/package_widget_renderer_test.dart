@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -15,6 +16,8 @@ import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/dashboard/models/package_widget_template.dart';
 import 'package:privacy_gui/page/dashboard/providers/http_client_provider.dart';
+import 'package:privacy_gui/page/dashboard/services/package_widget_service.dart'
+    show applyMapping;
 import 'package:privacy_gui/page/dashboard/widgets/package_widget_renderer.dart';
 
 // =============================================================================
@@ -783,6 +786,63 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(requestMade, false);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Leaving the dashboard and coming back (#1837)
+  // -----------------------------------------------------------------------
+  group('card that comes back', () {
+    testWidgets('shows its last data at once, without the loading state',
+        (tester) async {
+      final mockUsp = MockUspClient();
+      final mockSse = MockSseManager();
+      var reads = 0;
+      when(() => mockUsp.get(any())).thenAnswer((_) {
+        // The first visit answers; the second visit's GET is still out.
+        if (++reads == 1) {
+          return Future.value({'Device.Info.ModelName': 'M60TB'});
+        }
+        return Completer<Map<String, dynamic>>().future;
+      });
+      when(() => mockSse.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            notifType: any(named: 'notifType'),
+            referenceList: any(named: 'referenceList'),
+            onNotification: any(named: 'onNotification'),
+          )).thenAnswer((_) async => () async {});
+      final container = ProviderContainer(overrides: [
+        uspClientProvider.overrideWithValue(mockUsp),
+        sseManagerProvider.overrideWithValue(mockSse),
+        bridgeRequestThrottlerProvider.overrideWithValue(
+            BridgeRequestThrottler(staggerDelay: Duration.zero)),
+      ]);
+      addTearDown(container.dispose);
+      Widget dashboard({required bool withCard}) => UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: _testTheme,
+              home: Scaffold(
+                body: withCard
+                    ? SizedBox.expand(
+                        child: PackageWidgetRenderer(template: _uspTemplate()))
+                    : const SizedBox(),
+              ),
+            ),
+          );
+
+      await tester.pumpWidget(dashboard(withCard: true));
+      await tester.pumpAndSettle();
+      expect(find.text('M60TB'), findsOneWidget, reason: 'the first visit');
+
+      await tester.pumpWidget(dashboard(withCard: false));
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(dashboard(withCard: true));
+      await tester.pump();
+
+      expect(reads, 2, reason: 'the card refetches when it comes back');
+      expect(find.text('M60TB'), findsOneWidget);
+      expect(find.byType(AppLoader), findsNothing);
     });
   });
 
