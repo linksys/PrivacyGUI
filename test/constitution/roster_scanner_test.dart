@@ -139,4 +139,31 @@ void main() {
       expect(constructedNamesIn(source), isNot(contains('helper')));
     });
   });
+
+  group('builtUnreachablePages', () {
+    const constitution = """
+<!-- layout-gate-roster:begin -->
+| Page | Class | Why |
+|---|---|---|
+| `lib/page/a/a_view.dart` | `AView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/b/b_view.dart` | `BView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/c/c_view.dart` | `CView` | Permanent: a component, not a page. |
+<!-- layout-gate-roster:end -->
+""";
+
+    test('lists an unreachable page that another file in lib/ constructs', () {
+      final lib = {
+        'lib/page/a/a_view.dart': 'class AView {} final self = AView();',
+        'lib/page/b/b_view.dart': 'class BView {}',
+        'lib/page/c/c_view.dart': 'class CView {}',
+        // Builds AView, names BView only in a comment, and builds CView, whose
+        // row gives another reason.
+        'lib/route/routes.dart':
+            'final a = AView(); /// [BView] is not built. final c = CView();',
+      };
+
+      expect(builtUnreachablePages(constitution, lib),
+          {'lib/page/a/a_view.dart -> AView'});
+    });
+  });
 }

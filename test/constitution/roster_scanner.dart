@@ -74,7 +74,8 @@ Set<String> screenshotSuites(Map<String, String> test) => {
 Set<String> findUncoveredPages(
     Map<String, String> lib, Map<String, String> test) {
   final constructed = {
-    for (final suite in screenshotSuites(test)) ...constructedNamesIn(test[suite]!),
+    for (final suite in screenshotSuites(test))
+      ...constructedNamesIn(test[suite]!),
   };
   return {
     for (final page in rosterPages(lib.keys))
@@ -126,4 +127,33 @@ class _ConstructionCollector extends RecursiveAstVisitor<void> {
     }
     super.visitMethodInvocation(node);
   }
+}
+
+/// What a roster row says of a page that nothing in `lib/` builds.
+const unreachableReason = 'nothing in `lib/` builds it';
+
+/// The rows of the 3.3 roster in [constitution] whose reason says that
+/// nothing in `lib/` builds the page, but whose class a file in [lib] other
+/// than the page's own constructs, as `<page> -> <Class>`. Such a page is
+/// reachable now and needs a case.
+Set<String> builtUnreachablePages(
+    String constitution, Map<String, String> lib) {
+  final begin = constitution.indexOf('<!-- layout-gate-roster:begin -->');
+  final end = constitution.indexOf('<!-- layout-gate-roster:end -->');
+  final row = RegExp(r'^\|\s*`([^`]+)`\s*\|\s*`([^`]+)`\s*\|(.*)\|\s*$');
+  final unreachable = {
+    for (final line in constitution.substring(begin, end).split('\n'))
+      if (row.firstMatch(line) case final match?)
+        if (match.group(3)!.contains(unreachableReason))
+          match.group(1)!: match.group(2)!,
+  };
+  final built = {
+    for (final MapEntry(key: path, value: source) in lib.entries)
+      for (final name in constructedNamesIn(source)) (path, name),
+  };
+  return {
+    for (final MapEntry(key: page, value: pageClass) in unreachable.entries)
+      if (built.any((b) => b.$2 == pageClass && b.$1 != page))
+        '$page -> $pageClass',
+  };
 }
