@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
-import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
+import 'package:privacy_gui/core/utils/usp_formatters.dart';
 
 /// Presentation Layer Model for a firmware image partition.
 class FirmwareImageUIModel extends Equatable with DiagnosticLoggable {

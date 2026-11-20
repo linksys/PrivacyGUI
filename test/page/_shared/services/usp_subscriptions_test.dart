@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/capability/device_capability.dart';
-import 'package:privacy_gui/page/_shared/utils/usp_subscriptions.dart';
+import 'package:privacy_gui/page/_shared/services/usp_subscriptions.dart';
 
 const _macFilterMode = 'mac-filter-mode-valuechange';
 

@@ -13,7 +13,7 @@ import 'package:privacy_gui/core/utils/tr181_path.dart';
 import 'package:privacy_gui/core/utils/wifi_channel.dart';
 import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
-import 'package:privacy_gui/page/_shared/utils/wifi_guest_detection.dart';
+import 'package:privacy_gui/page/_shared/services/wifi_guest_detection.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 

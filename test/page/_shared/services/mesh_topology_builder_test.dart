@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
-import 'package:privacy_gui/page/_shared/utils/mesh_topology_builder.dart';
+import 'package:privacy_gui/page/_shared/services/mesh_topology_builder.dart';
 
 import '../../../mocks/test_data/data_elements_test_data.dart';
 
