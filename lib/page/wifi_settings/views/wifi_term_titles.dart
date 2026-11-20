@@ -7,8 +7,6 @@ String getWifiTypeTitle(BuildContext context, WifiType type) {
       return 'MAIN';
     case WifiType.guest:
       return 'GUEST';
-    default:
-      return 'MAIN';
   }
 }
 
@@ -22,8 +20,6 @@ String getWifiRadioBandTitle(BuildContext context, WifiRadioBand value) {
       return '5 GHz band';
     case WifiRadioBand.radio_6:
       return '6 GHz band';
-    default:
-      return '2.4 GHz band';
   }
 }
 
@@ -55,8 +51,6 @@ String getWifiSecurityTypeTitle(BuildContext context, WifiSecurityType type) {
       return 'Open and Enhanced Open';
     case WifiSecurityType.enhancedOpenOnly:
       return 'Enhanced Open Only';
-    default:
-      return 'Open';
   }
 }
 
@@ -104,8 +98,6 @@ String getWifiWirelessModeTitle(
     case WifiWirelessMode.axbe:
       return '802.11ax/be Only';
     case WifiWirelessMode.mixed:
-      return 'Mixed';
-    default:
       return 'Mixed';
   }
 }

@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/jnap/models/no_ip_settings.dart';
 import 'package:privacy_gui/core/jnap/models/tzo_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_state.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/views/ddns_settings_view.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/views/dyn_ddns_form.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_state.dart';
@@ -15,9 +16,6 @@ import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/tab_bar/linksys_tab_bar.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
-import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:get_it/get_it.dart';
 
 import '../../../../../common/config.dart';
 import '../../../../../common/test_responsive_widget.dart';
@@ -49,7 +47,6 @@ void main() {
   late MockPortRangeTriggeringRuleNotifier mockPortRangeTriggeringRuleNotifier;
 
   mockDependencyRegister();
-  ServiceHelper mockServiceHelper = GetIt.I.get<ServiceHelper>();
   setUp(() {
     mockAppsAndGamingViewNotifier = MockAppsAndGamingViewNotifier();
     mockDDNSNotifier = MockDDNSNotifier();
@@ -1804,5 +1801,33 @@ void main() {
         ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList()
       ],
     );
+  });
+
+  // The cases above open each tab through AppsGamingSettingsView. These pump
+  // each tab's page on its own, so the layout-gate roster sees that it has a
+  // case (#1802 P6).
+  group('Apps & Gaming - each tab on its own', () {
+    for (final (name, page) in const [
+      ('DDNS', DDNSSettingsView()),
+      ('Single port forwarding', SinglePortForwardingListView()),
+      ('Port range forwarding', PortRangeForwardingListView()),
+      ('Port range triggering', PortRangeTriggeringListView()),
+    ]) {
+      testLocalizations('$name - the tab on its own', (tester, locale) async {
+        await tester.pumpWidget(testableSingleRoute(
+          overrides: [
+            ddnsProvider.overrideWith(() => mockDDNSNotifier),
+            singlePortForwardingListProvider
+                .overrideWith(() => mockSinglePortForwardingListNotifier),
+            portRangeForwardingListProvider
+                .overrideWith(() => mockPortRangeForwardingListNotifier),
+            portRangeTriggeringListProvider
+                .overrideWith(() => mockPortRangeTriggeringListNotifier),
+          ],
+          locale: locale,
+          child: page,
+        ));
+      });
+    }
   });
 }

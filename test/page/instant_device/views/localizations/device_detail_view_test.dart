@@ -6,9 +6,6 @@ import 'package:privacy_gui/page/advanced_settings/local_network_settings/provid
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:get_it/get_it.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/di.dart';
 
 import '../../../../common/config.dart';
 import '../../../../common/test_responsive_widget.dart';
@@ -23,7 +20,6 @@ void main() {
   late MockLocalNetworkSettingsNotifier mockLocalNetworkSettingsNotifier;
 
   mockDependencyRegister();
-  ServiceHelper mockServiceHelper = GetIt.I<ServiceHelper>();
 
   setUp(() {
     mockExternalDeviceDetailNotifier = MockExternalDeviceDetailNotifier();

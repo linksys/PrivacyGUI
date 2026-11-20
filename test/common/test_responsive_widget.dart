@@ -29,6 +29,13 @@ extension ScreenSizeManager on WidgetTester {
     await binding.setSurfaceSize(size);
     view.physicalSize = size;
     view.devicePixelRatio = pixelDensity;
+    // Put the default screen back when the test ends, so the next test in the
+    // file does not start on this one's size (#1802).
+    addTearDown(() async {
+      await binding.setSurfaceSize(null);
+      view.resetPhysicalSize();
+      view.resetDevicePixelRatio();
+    });
   }
 }
 
