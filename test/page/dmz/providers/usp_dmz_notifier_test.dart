@@ -8,6 +8,12 @@ import 'package:privacy_gui/page/dmz/models/dmz_status.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/dmz/providers/usp_dmz_notifier.dart';
 import 'package:privacy_gui/page/dmz/services/usp_dmz_service.dart';
+import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
+
+import '../../../mocks/provider_overrides/mock_dashboard_cards.dart';
+import '../../../mocks/provider_overrides/mock_dhcp.dart'
+    show UnreadableLanDataNotifier;
+import '../../../mocks/test_data/local_network_test_data.dart';
 
 class MockUspDmzService extends Mock implements UspDmzService {}
 
@@ -34,11 +40,14 @@ void main() {
     mockService = MockUspDmzService();
   });
 
-  ProviderContainer createContainer() {
+  ProviderContainer createContainer({bool lanReadable = true}) {
     final container = ProviderContainer(
       overrides: [
         uspDmzServiceProvider.overrideWithValue(mockService),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+        lanDataProvider.overrideWith(() => lanReadable
+            ? FixedLanDataNotifier(LocalNetworkTestData.createLanData())
+            : UnreadableLanDataNotifier()),
       ],
     );
     // Prevent auto-dispose.
@@ -106,7 +115,9 @@ void main() {
           .thenAnswer((_) async => (newSettings, testStatus));
       when(() => mockService.add(model: any(named: 'model')))
           .thenAnswer((_) async {});
-      when(() => mockService.validateForm(any())).thenReturn({});
+      when(() => mockService.validateForm(any(),
+          lanIp: any(named: 'lanIp'),
+          lanSubnetMask: any(named: 'lanSubnetMask'))).thenReturn({});
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -131,7 +142,9 @@ void main() {
             savedType: any(named: 'savedType'),
             model: any(named: 'model'),
           )).thenAnswer((_) async {});
-      when(() => mockService.validateForm(any())).thenReturn({});
+      when(() => mockService.validateForm(any(),
+          lanIp: any(named: 'lanIp'),
+          lanSubnetMask: any(named: 'lanSubnetMask'))).thenReturn({});
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -163,14 +176,18 @@ void main() {
       final state = container.read(uspDmzProvider);
       expect(state.settings.current.model.destIp, '10.0.0.1');
       // updateSetting no longer calls validateForm — validation is separate
-      verifyNever(() => mockService.validateForm(any()));
+      verifyNever(() => mockService.validateForm(any(),
+          lanIp: any(named: 'lanIp'),
+          lanSubnetMask: any(named: 'lanSubnetMask')));
       container.dispose();
     });
 
     test('validate propagates validation errors to status', () async {
       when(() => mockService.fetch())
           .thenAnswer((_) async => (testSettings, testStatus));
-      when(() => mockService.validateForm(any()))
+      when(() => mockService.validateForm(any(),
+              lanIp: any(named: 'lanIp'),
+              lanSubnetMask: any(named: 'lanSubnetMask')))
           .thenReturn({'destIp': 'Invalid IP'});
 
       final container = createContainer();
@@ -197,7 +214,9 @@ void main() {
       );
       when(() => mockService.fetch())
           .thenAnswer((_) async => (disabledNew, testStatus));
-      when(() => mockService.validateForm(any())).thenReturn({});
+      when(() => mockService.validateForm(any(),
+          lanIp: any(named: 'lanIp'),
+          lanSubnetMask: any(named: 'lanSubnetMask'))).thenReturn({});
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -215,7 +234,9 @@ void main() {
     test('isDirty true after mutation, false after fetch', () async {
       when(() => mockService.fetch())
           .thenAnswer((_) async => (testSettings, testStatus));
-      when(() => mockService.validateForm(any())).thenReturn({});
+      when(() => mockService.validateForm(any(),
+          lanIp: any(named: 'lanIp'),
+          lanSubnetMask: any(named: 'lanSubnetMask'))).thenReturn({});
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -239,7 +260,9 @@ void main() {
             savedType: any(named: 'savedType'),
             model: any(named: 'model'),
           )).thenThrow(const NetworkError(detail: 'save failed'));
-      when(() => mockService.validateForm(any())).thenReturn({});
+      when(() => mockService.validateForm(any(),
+          lanIp: any(named: 'lanIp'),
+          lanSubnetMask: any(named: 'lanSubnetMask'))).thenReturn({});
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -269,7 +292,9 @@ void main() {
             savedType: any(named: 'savedType'),
             model: any(named: 'model'),
           )).thenAnswer((_) async {});
-      when(() => mockService.validateForm(any())).thenReturn({});
+      when(() => mockService.validateForm(any(),
+          lanIp: any(named: 'lanIp'),
+          lanSubnetMask: any(named: 'lanSubnetMask'))).thenReturn({});
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -314,7 +339,9 @@ void main() {
             savedType: any(named: 'savedType'),
             model: any(named: 'model'),
           )).thenAnswer((_) async {});
-      when(() => mockService.validateForm(any())).thenReturn({});
+      when(() => mockService.validateForm(any(),
+          lanIp: any(named: 'lanIp'),
+          lanSubnetMask: any(named: 'lanSubnetMask'))).thenReturn({});
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -362,7 +389,9 @@ void main() {
             savedType: any(named: 'savedType'),
             model: any(named: 'model'),
           )).thenAnswer((_) async {});
-      when(() => mockService.validateForm(any())).thenReturn({});
+      when(() => mockService.validateForm(any(),
+          lanIp: any(named: 'lanIp'),
+          lanSubnetMask: any(named: 'lanSubnetMask'))).thenReturn({});
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -390,7 +419,9 @@ void main() {
             const DmzSettings(model: DmzUIModel.disabled()),
             testStatus,
           ));
-      when(() => mockService.validateForm(any()))
+      when(() => mockService.validateForm(any(),
+              lanIp: any(named: 'lanIp'),
+              lanSubnetMask: any(named: 'lanSubnetMask')))
           .thenReturn({'destMac': DmzErrorKeys.invalidMacAddress});
 
       final container = createContainer();
@@ -416,7 +447,9 @@ void main() {
     test('a save that wrote part of a switch re-reads the router', () async {
       when(() => mockService.fetch())
           .thenAnswer((_) async => (testSettings, testStatus));
-      when(() => mockService.validateForm(any())).thenReturn({});
+      when(() => mockService.validateForm(any(),
+          lanIp: any(named: 'lanIp'),
+          lanSubnetMask: any(named: 'lanSubnetMask'))).thenReturn({});
       when(() => mockService.update(
                 instancePath: any(named: 'instancePath'),
                 savedType: any(named: 'savedType'),
@@ -447,7 +480,9 @@ void main() {
             const DmzSettings(model: DmzUIModel.disabled()),
             testStatus,
           ));
-      when(() => mockService.validateForm(any())).thenReturn({});
+      when(() => mockService.validateForm(any(),
+          lanIp: any(named: 'lanIp'),
+          lanSubnetMask: any(named: 'lanSubnetMask'))).thenReturn({});
       when(() => mockService.add(model: any(named: 'model'))).thenThrow(
           const UspPartialFailureError(
               summary: 's', successPaths: [], failures: []));
@@ -467,7 +502,9 @@ void main() {
     test('a save that wrote nothing keeps the edit for a retry', () async {
       when(() => mockService.fetch())
           .thenAnswer((_) async => (testSettings, testStatus));
-      when(() => mockService.validateForm(any())).thenReturn({});
+      when(() => mockService.validateForm(any(),
+          lanIp: any(named: 'lanIp'),
+          lanSubnetMask: any(named: 'lanSubnetMask'))).thenReturn({});
       when(() => mockService.update(
                 instancePath: any(named: 'instancePath'),
                 savedType: any(named: 'savedType'),
@@ -493,7 +530,9 @@ void main() {
     test('revert restores original settings', () async {
       when(() => mockService.fetch())
           .thenAnswer((_) async => (testSettings, testStatus));
-      when(() => mockService.validateForm(any())).thenReturn({});
+      when(() => mockService.validateForm(any(),
+          lanIp: any(named: 'lanIp'),
+          lanSubnetMask: any(named: 'lanSubnetMask'))).thenReturn({});
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -506,6 +545,78 @@ void main() {
       notifier.revert();
       expect(container.read(uspDmzProvider).settings.current.model.destIp,
           '192.168.1.100');
+      container.dispose();
+    });
+  });
+
+  // #1838: the DMZ host is checked against the LAN, as a port-forwarding
+  // target is.
+  group('UspDmzNotifier — the host IP is checked against the LAN', () {
+    DmzSettings newEntry(DmzUIModel model) => DmzSettings(model: model);
+    const byIp = DmzUIModel(
+      isEnabled: true,
+      destIp: '192.168.1.50',
+      sourceType: DmzSourceType.any,
+      sourcePrefix: '',
+    );
+
+    void stubSaves() {
+      when(() => mockService.add(model: any(named: 'model')))
+          .thenAnswer((_) async {});
+      when(() => mockService.validateForm(any(),
+          lanIp: any(named: 'lanIp'),
+          lanSubnetMask: any(named: 'lanSubnetMask'))).thenReturn({});
+    }
+
+    test('a save reads the LAN and checks the host with it', () async {
+      when(() => mockService.fetch())
+          .thenAnswer((_) async => (newEntry(byIp), testStatus));
+      stubSaves();
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      await container.read(uspDmzProvider.notifier).save();
+
+      verify(() => mockService.validateForm(any(),
+          lanIp: '192.168.1.1', lanSubnetMask: '255.255.255.0')).called(1);
+      verify(() => mockService.add(model: any(named: 'model'))).called(1);
+      container.dispose();
+    });
+
+    test('a LAN that cannot be read stops the save; nothing is written',
+        () async {
+      when(() => mockService.fetch())
+          .thenAnswer((_) async => (newEntry(byIp), testStatus));
+      stubSaves();
+
+      final container = createContainer(lanReadable: false);
+      await Future.delayed(Duration.zero);
+
+      await expectLater(container.read(uspDmzProvider.notifier).save(),
+          throwsA(isA<NetworkError>()));
+      verifyNever(() => mockService.add(model: any(named: 'model')));
+      container.dispose();
+    });
+
+    test('a host given by MAC does not need the LAN', () async {
+      when(() => mockService.fetch()).thenAnswer((_) async => (
+            newEntry(const DmzUIModel(
+              isEnabled: true,
+              destinationType: DmzDestinationType.mac,
+              destIp: '',
+              destMac: 'aa:bb:cc:dd:ee:ff',
+              sourceType: DmzSourceType.any,
+              sourcePrefix: '',
+            )),
+            testStatus
+          ));
+      stubSaves();
+
+      final container = createContainer(lanReadable: false);
+      await Future.delayed(Duration.zero);
+      await container.read(uspDmzProvider.notifier).save();
+
+      verify(() => mockService.add(model: any(named: 'model'))).called(1);
       container.dispose();
     });
   });

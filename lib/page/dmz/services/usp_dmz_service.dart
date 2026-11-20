@@ -8,8 +8,8 @@ import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_settings.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_status.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
-import 'package:privacy_gui/util/network_utils.dart';
 import 'package:privacy_gui/page/_shared/services/refused_add_service.dart';
+import 'package:privacy_gui/validator_rules/lan_host_ipv4.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 
 final uspDmzServiceProvider = Provider<UspDmzService>(
@@ -220,21 +220,32 @@ class UspDmzService {
   /// Validate DMZ form fields. Returns field-level [DmzErrorKeys] by field
   /// (empty map = valid).
   ///
+  /// The DMZ host's IP is checked as every form that writes a LAN host's
+  /// address checks it (`lanHostIpv4Problem`, #1838): IPv4 format, not
+  /// reserved, and, with [lanIp] and [lanSubnetMask], in the LAN subnet and not
+  /// the router's own address. The source restriction must be an IPv4 CIDR.
+  ///
   /// Only the field [DmzUIModel.destinationType] names is checked: the other
   /// is not saved. The MAC check also runs before a first save, which is an
   /// Add: a refused Add creates the row with the refused field emptied
   /// (FWDEV#204, bench 2026-10-12). Since usp-client 0.14.0 the reason
   /// arrives and the row is deleted again ([add]); this check saves that
   /// round trip.
-  Map<String, String> validateForm(DmzUIModel model) {
+  Map<String, String> validateForm(
+    DmzUIModel model, {
+    String? lanIp,
+    String? lanSubnetMask,
+  }) {
     final errors = <String, String>{};
     if (!model.isEnabled) return errors;
     switch (model.destinationType) {
       case DmzDestinationType.ip:
         if (model.destIp.isEmpty) {
           errors['destIp'] = DmzErrorKeys.destIpRequired;
-        } else if (!NetworkUtils.isValidIpAddress(model.destIp)) {
-          errors['destIp'] = DmzErrorKeys.invalidIpAddress;
+        } else if (lanHostIpv4Problem(model.destIp,
+                lanIp: lanIp, lanSubnetMask: lanSubnetMask)
+            case final problem?) {
+          errors['destIp'] = problem.messageKey;
         }
       case DmzDestinationType.mac:
         final mac = model.destMac.trim();
@@ -244,8 +255,12 @@ class UspDmzService {
           errors['destMac'] = DmzErrorKeys.invalidMacAddress;
         }
     }
-    if (model.sourceType == DmzSourceType.cidr && model.sourcePrefix.isEmpty) {
-      errors['sourcePrefix'] = DmzErrorKeys.cidrRequired;
+    if (model.sourceType == DmzSourceType.cidr) {
+      if (model.sourcePrefix.isEmpty) {
+        errors['sourcePrefix'] = DmzErrorKeys.cidrRequired;
+      } else if (!Ipv4CidrRule().validate(model.sourcePrefix)) {
+        errors['sourcePrefix'] = DmzErrorKeys.invalidCidr;
+      }
     }
     return errors;
   }

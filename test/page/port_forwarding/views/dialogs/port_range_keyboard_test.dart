@@ -117,7 +117,8 @@ void main() {
     testWidgets('port range forwarding: the external pair', (tester) async {
       await _pumpAndOpen(
         tester,
-        const PortRangeForwardingDialog(deviceOptions: []),
+        const PortRangeForwardingDialog(
+            lanIp: null, lanSubnetMask: null, deviceOptions: []),
       );
 
       expect(find.byType(AppRangeInput), findsOneWidget);

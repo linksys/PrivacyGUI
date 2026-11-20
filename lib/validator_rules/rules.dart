@@ -695,3 +695,21 @@ class IntegerRule extends ValidationRule {
     return false;
   }
 }
+
+/// An IPv4 range in CIDR notation, `a.b.c.d/n` with `n` from 0 to 32: what
+/// the DMZ source restriction takes (`SourcePrefix`, #1838).
+///
+/// The address part is checked with [IpAddressRule]; host bits are not
+/// required to be zero, as nothing measured says the router refuses them.
+class Ipv4CidrRule extends ValidationRule {
+  static final _ipRule = IpAddressRule();
+
+  @override
+  bool validate(String input) {
+    final parts = input.split('/');
+    if (parts.length != 2) return false;
+    if (!_ipRule.validate(parts[0])) return false;
+    if (!RegExp(r'^\d{1,2}$').hasMatch(parts[1])) return false;
+    return int.parse(parts[1]) <= 32;
+  }
+}

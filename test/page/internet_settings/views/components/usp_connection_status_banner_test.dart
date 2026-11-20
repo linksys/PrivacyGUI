@@ -97,11 +97,11 @@ void main() {
           reason: 'no address that is not in a provider may appear on screen');
     });
 
-    testWidgets('a link that is down shows -- and a dim dot', (t) async {
+    testWidgets('a link that is down shows - and a dim dot', (t) async {
       await t.pumpWidget(_host(wanDataOverride(wanNoAddressModel)));
       await t.pumpAndSettle();
 
-      expect(find.text('--'), findsOneWidget);
+      expect(find.text('-'), findsOneWidget);
       final dot = t.widget<UspStatusDot>(find.byType(UspStatusDot));
       // `wanNoAddressModel` is `isUp: false` AND has no address, so both the old
       // address-based reading and the current `isUp` one give a dim dot. The test below
@@ -125,7 +125,7 @@ void main() {
       expect(dot.isActive, isTrue,
           reason:
               'the link is up; an address still arriving is not a disconnection');
-      expect(find.text('--'), findsOneWidget,
+      expect(find.text('-'), findsOneWidget,
           reason:
               'and the address line still says honestly that there is none yet');
     });
@@ -143,11 +143,11 @@ void main() {
       await t.pump();
       await t.pump();
 
-      // The defect this pins: '--' is exactly what a real empty address looks like, so
+      // The defect this pins: '-' is exactly what a real empty address looks like, so
       // showing it for a failed read made the two indistinguishable — and because this
       // provider is not autoDispose and has no retry, it stayed wrong until something
       // else happened to invalidate it.
-      expect(find.text('--'), findsNothing,
+      expect(find.text('-'), findsNothing,
           reason:
               'a failed read must not be displayed as a successful read of ""');
       expect(find.text('100.64.0.10'), findsNothing);
@@ -168,7 +168,7 @@ void main() {
       await t.pumpWidget(_host(wanDataLoadingOverride()));
       await t.pump();
 
-      expect(find.text('--'), findsNothing,
+      expect(find.text('-'), findsNothing,
           reason:
               'nothing has been read yet; claiming "no address" would invent a reading');
       final dot = t.widget<UspStatusDot>(find.byType(UspStatusDot));
