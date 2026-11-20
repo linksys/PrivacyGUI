@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_provider.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
@@ -17,7 +15,6 @@ import '../../../../common/di.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../mocks/_index.dart';
-import '../../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../../test_data/_index.dart';
 import '../../../../test_data/instant_privacy_test_data.dart';
 
@@ -26,7 +23,6 @@ void main() {
   late DeviceListNotifier mockDeviceListNotifier;
 
   mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
   setUp(() {
     // Mock InstantPrivacyNotifier

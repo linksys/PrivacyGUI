@@ -27,6 +27,9 @@ class SpeedTestSelectionView extends ConsumerWidget {
         .isHealthCheckModuleSupported('SpeedTest');
     return StyledAppPageView(
       title: loc(context).speedTest,
+      // The two cards are 164px tall at least, more than a short window has
+      // room for (#1802).
+      scrollable: true,
       child: (context, constraints) => AppBasicLayout(
           content: SizedBox(
         width: 6.col,

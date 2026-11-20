@@ -348,7 +348,6 @@ enum WifiWirelessMode {
       case WifiWirelessMode.b:
       case WifiWirelessMode.g:
       case WifiWirelessMode.bg:
-      default:
         return WifiChannelWidth.wide20;
     }
   }

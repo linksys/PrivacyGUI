@@ -10,11 +10,12 @@ import '../common/screen.dart';
 import 'incident.dart';
 import 'layout_cases.dart';
 
-/// The sizes the gate runs a case at (#1802, Decision 7): the narrowest
-/// mobile size the harness renders, the narrowest content box of each of the
-/// two desktop margins (857px at 905, 840px at 1240), and a short desktop
-/// window.
+/// The sizes the gate runs a case at (#1802, Decisions 5 and 7): 360, the
+/// narrowest phone width it supports, and 480, the narrowest of the mobile
+/// sizes the cases render; the narrowest content box of each of the two
+/// desktop margins (857px at 905, 840px at 1240); and a short desktop window.
 const List<RequestedScreen> gateScreens = [
+  (width: 360, height: null),
   (width: 480, height: null),
   (width: 905, height: null),
   (width: 1240, height: null),
@@ -65,8 +66,8 @@ const Set<String> shortViewportSkips = {
   // advanced_settings/static_routing/views/localizations/static_routing_view_test.dart
   'Static routing view test - NAT enabled add rule - interface dropdown',
   'Static routing view test - NAT enabled add rule - invalid gateway IP',
-  // dashboard/localizations/dashboard_support_view_test.dart
-  'Dashboard Support View - expended',
+  // support/localizations/faq_list_view_test.dart
+  'FAQ list view - expanded',
   // instant_setup/troubleshooter/views/isp_settings/localizations/pnp_static_ip_view_test.dart
   'Troubleshooter - PnP static IP: wrong input formats',
   // instant_topology/localizations/add_wired_node_view_test.dart

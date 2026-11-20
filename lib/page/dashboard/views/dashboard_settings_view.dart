@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/constants/pref_key.dart';
-import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -22,24 +20,19 @@ class DashboardSettingsView extends ConsumerStatefulWidget {
 }
 
 class _DashboardSettingsViewState extends ConsumerState<DashboardSettingsView> {
-  bool _pushEnabled = false;
-
   @override
   void initState() {
     super.initState();
 
     SharedPreferences.getInstance().then((prefs) {
-      setState(() {
-        _pushEnabled = prefs.getString(pDeviceToken) != null;
-      });
+      setState(() {});
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final isFwAutoUpdate = ref.watch(firmwareUpdateProvider
-            .select((value) => value.settings.updatePolicy)) ==
-        FirmwareUpdateSettings.firmwareUpdatePolicyAuto;
+    ref.watch(
+        firmwareUpdateProvider.select((value) => value.settings.updatePolicy));
     return StyledAppPageView(
       scrollable: true,
       child: (context, constraints) => SizedBox(

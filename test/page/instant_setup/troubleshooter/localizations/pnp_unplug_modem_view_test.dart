@@ -8,9 +8,6 @@ import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_unplug_modem_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:get_it/get_it.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/di.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../common/di.dart';
@@ -22,7 +19,6 @@ void main() async {
   late Mock.MockPnpNotifier mockPnpNotifier;
 
   mockDependencyRegister();
-  ServiceHelper mockServiceHelper = GetIt.I<ServiceHelper>();
 
   setUp(() {
     mockPnpNotifier = Mock.MockPnpNotifier();

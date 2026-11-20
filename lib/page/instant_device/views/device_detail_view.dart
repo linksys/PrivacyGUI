@@ -315,43 +315,6 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView>
     );
   }
 
-  Widget _extraInfoSection(ExternalDeviceDetailState state) {
-    return AppCard(
-      child: Column(
-        // crossAxisAlignment: CrossAxisAlignment.start,
-        // mainAxisSize: MainAxisSize.min,
-        children: [
-          AppSettingCard(
-            showBorder: false,
-            padding: const EdgeInsets.fromLTRB(
-              Spacing.small2,
-              0,
-              Spacing.small2,
-              Spacing.small2,
-            ),
-            title: loc(context).manufacturer,
-            description: _formatEmptyValue(state.item.manufacturer),
-          ),
-          const Divider(
-            height: 8,
-            thickness: 1,
-          ),
-          AppSettingCard(
-            showBorder: false,
-            padding: const EdgeInsets.fromLTRB(
-              Spacing.small2,
-              Spacing.small2,
-              Spacing.small2,
-              0,
-            ),
-            title: loc(context).device,
-            description: state.item.model,
-          ),
-        ],
-      ),
-    );
-  }
-
   _showEdidDeviceModal() {
     _deviceNameController.text =
         ref.read(externalDeviceDetailProvider).item.name;

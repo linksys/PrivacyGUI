@@ -28,9 +28,6 @@ import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
-import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'
-    if (dart.library.io) 'package:privacy_gui/core/jnap/providers/ip_getter/mobile_get_local_ip.dart'
-    if (dart.library.html) 'package:privacy_gui/core/jnap/providers/ip_getter/web_get_local_ip.dart';
 
 class LocalNetworkSettingsView extends ArgumentsConsumerStatefulView {
   const LocalNetworkSettingsView({

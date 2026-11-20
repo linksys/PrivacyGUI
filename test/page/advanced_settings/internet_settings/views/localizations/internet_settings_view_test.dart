@@ -9,7 +9,6 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/views/inter
 import 'package:privacy_gui/page/auto_ipoe/models/auto_ipoe_models.dart';
 import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_notifier.dart';
 import 'package:privacy_gui/page/auto_ipoe/providers/auto_ipoe_state.dart';
-import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';

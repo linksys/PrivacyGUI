@@ -8,7 +8,6 @@ import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart'
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/auth/ra_session_provider.dart';

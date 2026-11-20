@@ -21,7 +21,6 @@ import '../../../common/di.dart';
 import '../../../mocks/device_filter_config_notifier_mocks.dart';
 import '../../../mocks/device_manager_notifier_mocks.dart';
 import '../../../mocks/firmware_update_notifier_mocks.dart';
-import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../mocks/wifi_list_notifier_mocks.dart';
 import '../../../test_data/device_filter_config_test_state.dart';
 import '../../../test_data/device_filtered_list_test_data.dart';
