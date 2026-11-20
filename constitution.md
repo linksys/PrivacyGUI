@@ -215,7 +215,6 @@ The table lists the pages that had no case when the gate landed. #1802 P6 emptie
 | `lib/page/components/styled/styled_tab_page_view.dart` | `StyledAppTabPageView` | No case yet (#1802 P6). It is a layout that pages use. |
 | `lib/page/components/views/arguments_view.dart` | `ArgumentsBaseConsumerStatefulView` | No case yet (#1802 P6). It is a base class for views. |
 | `lib/page/components/views/write_flow_blocked_view.dart` | `WriteFlowBlockedView` | No case yet (#1802 P6). |
-| `lib/page/dashboard/views/dashboard_settings_view.dart` | `DashboardSettingsView` | No case yet (#1802 P6). |
 | `lib/page/dashboard/views/dashboard_support_view.dart` | `DashboardSupportView` | No case yet (#1802 P6). |
 | `lib/page/dashboard/views/prepare_dashboard_view.dart` | `PrepareDashboardView` | No case yet (#1802 P6). |
 | `lib/page/firmware_update/views/firmware_update_process_view.dart` | `FirmwareUpdateProcessView` | No case yet (#1802 P6). |
@@ -237,7 +236,6 @@ The table lists the pages that had no case when the gate landed. #1802 P6 emptie
 | `lib/page/wifi_settings/views/wifi_list_advanced_mode_view.dart` | `AdvancedModeView` | No case yet (#1802 P6). |
 | `lib/page/wifi_settings/views/wifi_list_simple_mode_view.dart` | `SimpleModeView` | No case yet (#1802 P6). |
 | `lib/page/wifi_settings/views/wifi_list_view.dart` | `WiFiListView` | No case yet (#1802 P6). |
-| `lib/page/wifi_settings/views/wifi_settings_channel_finder_view.dart` | `WifiSettingsChannelFinderView` | No case yet (#1802 P6). |
 | `lib/page/wifi_settings/views/wifi_share_detail_view.dart` | `WiFiShareDetailView` | No case yet (#1802 P6). |
 <!-- layout-gate-roster:end -->
 
