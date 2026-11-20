@@ -274,7 +274,7 @@ A guard is proven by a mutation that cuts its value: the guard goes red, and the
 
 **Enforced by**: Test for the values above; review for a new fix.
 
-*Amended 2026-11-19 (#1802): #1802 P4 adds the guards above. "Usable" becomes `isFullyShown`, which also fails a `SelectableText` that scrolls its value out of its box and a value an ancestor clips; `didExceedMaxLines` sees neither. The version moves to 1.6, not 2.0, although 9.2 asks a major number for a tightened rule, as #1802's other amendments kept the major number.*
+*Amended 2026-11-19 (#1802): #1802 P4 adds the guards above. "Usable" becomes `isFullyShown`, which also fails a `SelectableText` that scrolls its value out of its box and a value an ancestor clips; `didExceedMaxLines` sees neither. The version moves to 1.6, not 2.0, although 9.2 asks a major number for a tightened rule, as #1802's other amendments kept the major number. The team approved it in a meeting on 2026-11-20 (9.3).*
 
 ### 3.5 Screenshot tests
 
