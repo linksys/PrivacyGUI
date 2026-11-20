@@ -7,8 +7,6 @@ import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/constants/default_country_codes.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_account.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/core/cloud/model/cloud_communication_method.dart';
-import 'package:privacy_gui/core/cloud/model/cloud_phone.dart';
 import 'package:privacy_gui/core/cloud/model/region_code.dart';
 import 'package:privacy_gui/page/components/layouts/basic_header.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
@@ -39,7 +37,6 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
   CAMobile? editPhone;
   bool hasInput = false;
   bool isInputInvalid = false;
-  Map _countryCodes = {};
   RegionCode currentRegion = RegionCode(
     countryCode: 'US',
     countryName: 'United States',
@@ -77,7 +74,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
   Future<void> loadPhoneSamples() async {
     final String jsonText = await rootBundle
         .loadString('assets/resources/phone_number_examples.json');
-    _countryCodes = json.decode(jsonText);
+    json.decode(jsonText);
   }
 
   void _onInputChanged(String text) {
@@ -88,7 +85,7 @@ class _OtpAddPhoneViewState extends ConsumerState<OtpAddPhoneView> {
   }
 
   void _checkPhoneNumber() async {
-    final router = GoRouter.of(context);
+    GoRouter.of(context);
     final userInputPhoneNumber = phoneController.text;
     _setLoading(true);
     try {

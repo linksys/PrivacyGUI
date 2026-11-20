@@ -4,7 +4,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -285,34 +284,6 @@ extension MediaQueryUtils on Utils {
     return getScreenHeight(context) -
         getTopSafeAreaPadding(context) -
         getBottomSafeAreaPadding(context);
-  }
-
-  static Future<Map<String, dynamic>> _deviceInfoMap(
-      DeviceInfoPlugin deviceInfo) async {
-    if (Platform.isIOS) {
-      return _iosDeviceMap(await deviceInfo.iosInfo);
-    } else if (Platform.isAndroid) {
-      return _androidDeviceMap(await deviceInfo.androidInfo);
-    } else {
-      return {};
-    }
-  }
-
-  static Future<Map<String, dynamic>> _androidDeviceMap(
-      AndroidDeviceInfo build) async {
-    return {
-      'osVersion': build.version.release,
-      'mobileManufacturer': build.manufacturer,
-      'mobileModel': build.model,
-    };
-  }
-
-  static Future<Map<String, dynamic>> _iosDeviceMap(IosDeviceInfo data) async {
-    return {
-      'osVersion': data.systemVersion,
-      'mobileModel': data.utsname.machine,
-      'mobileManufacturer': 'Apple'
-    };
   }
 
   // static Future<String> getTimeZone() async {

@@ -15,7 +15,6 @@ import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
 class VPNStatusTile extends ConsumerStatefulWidget {
   const VPNStatusTile({super.key});
@@ -63,13 +62,9 @@ class _VPNStatusTile extends ConsumerState<VPNStatusTile> {
                     const AppGap.small2(),
                     WriteGuard(
                       child: AppSwitch(
-                          value: vpnState.settings.serviceSettings?.enabled ??
-                              false,
+                          value: vpnState.settings.serviceSettings.enabled,
                           onChanged: (value) {
-                            final settings =
-                                vpnState.settings.serviceSettings ??
-                                    VPNServiceSetSettings(
-                                        enabled: false, autoConnect: false);
+                            final settings = vpnState.settings.serviceSettings;
                             final notifier = ref.read(vpnProvider.notifier);
                             notifier.setVPNService(
                                 settings.copyWith(enabled: value));

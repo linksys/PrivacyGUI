@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
@@ -9,7 +8,6 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
-import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
@@ -38,7 +36,6 @@ void main() {
   late DashboardManagerNotifier mockDashboardManagerNotifier;
 
   mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});

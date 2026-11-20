@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
@@ -23,7 +22,6 @@ import '../../../common/di.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
-import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../test_data/device_filter_config_test_state.dart';
 import '../../../test_data/device_filtered_list_test_data.dart';
 import '../../../test_data/device_manager_test_state.dart';

@@ -8,7 +8,6 @@ import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/page/components/views/write_flow_blocked_view.dart';
 
-import 'package:privacy_gui/page/components/styled/top_bar.dart';
 
 ValueNotifier<bool> showColumnOverlayNotifier =
     ValueNotifier(BuildConfig.showColumnOverlay);

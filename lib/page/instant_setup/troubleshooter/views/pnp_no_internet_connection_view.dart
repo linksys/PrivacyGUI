@@ -58,7 +58,7 @@ class _PnpNoInternetConnectionState
   }
 
   Widget _contentView(BuildContext context) {
-    final state = ref.watch(pnpTroubleshooterProvider);
+    ref.watch(pnpTroubleshooterProvider);
     return Center(
       child: AppCard(
         padding: const EdgeInsets.all(Spacing.large3),
@@ -212,7 +212,7 @@ class _PnpNoInternetConnectionState
 
   AppText _titleView(BuildContext context) {
     final titleString = _ssid != null
-        ? loc(context).noInternetConnectionWithSSIDTitle(_ssid!)
+        ? loc(context).noInternetConnectionWithSSIDTitle(_ssid)
         : loc(context).noInternetConnectionTitle;
     return AppText.headlineSmall(titleString);
   }

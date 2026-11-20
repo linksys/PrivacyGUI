@@ -47,6 +47,7 @@ class SinglePortForwardingListNotifier
         routerIp: ipAddress,
         subnetMask: subnetMask,
       );
+      return null;
     }).onError(
       (error, stackTrace) {
         return null;
