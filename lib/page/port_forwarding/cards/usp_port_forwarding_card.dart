@@ -13,7 +13,7 @@ import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_triggering_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/usp_port_forwarding_page_notifier.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_rule_limits.dart';
-import 'package:privacy_gui/page/port_forwarding/views/components/lan_for_rule_dialog.dart';
+import 'package:privacy_gui/page/_shared/helpers/read_lan_for_host_check.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspPortForwardingCard extends ConsumerWidget {
@@ -139,7 +139,7 @@ class UspPortForwardingCard extends ConsumerWidget {
 
   Future<void> _showAddPortForwardingDialog(BuildContext context, WidgetRef ref,
       List<PortForwardingRuleUIModel> rules) async {
-    final lan = await lanForRuleDialog(context, ref);
+    final lan = await readLanForHostCheck(context, ref);
     if (lan == null || !context.mounted) return;
     final result = await showAppDialog<PortForwardingDialogResult>(
       context: context,

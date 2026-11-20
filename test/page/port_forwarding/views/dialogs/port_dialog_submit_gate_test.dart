@@ -220,7 +220,7 @@ void main() {
         'submitted', (tester) async {
       final outcome = await _pumpAndOpen<PortRangeForwardingDialogResult>(
         tester,
-        const PortRangeForwardingDialog(),
+        const PortRangeForwardingDialog(lanIp: null, lanSubnetMask: null),
       );
       await fillValid(tester);
 
@@ -245,7 +245,7 @@ void main() {
     testWidgets('a valid form submits what was typed', (tester) async {
       final outcome = await _pumpAndOpen<PortRangeForwardingDialogResult>(
         tester,
-        const PortRangeForwardingDialog(),
+        const PortRangeForwardingDialog(lanIp: null, lanSubnetMask: null),
       );
       await fillValid(tester);
 
@@ -266,7 +266,7 @@ void main() {
         (tester) async {
       final outcome = await _pumpAndOpen<PortRangeForwardingDialogResult>(
         tester,
-        const PortRangeForwardingDialog(),
+        const PortRangeForwardingDialog(lanIp: null, lanSubnetMask: null),
       );
 
       expect(
@@ -287,6 +287,8 @@ void main() {
       final outcome = await _pumpAndOpen<PortRangeForwardingDialogResult>(
         tester,
         const PortRangeForwardingDialog(
+          lanIp: null,
+          lanSubnetMask: null,
           otherRules: [
             PortForwardingRuleUIModel(
               description: 'Web',
@@ -319,6 +321,8 @@ void main() {
       final outcome = await _pumpAndOpen<PortRangeForwardingDialogResult>(
         tester,
         const PortRangeForwardingDialog(
+          lanIp: null,
+          lanSubnetMask: null,
           otherRules: [
             PortForwardingRuleUIModel(
               description: 'Game',
@@ -392,7 +396,7 @@ void main() {
     testWidgets('a description over 32 bytes is not submitted', (tester) async {
       final outcome = await _pumpAndOpen<PortRangeForwardingDialogResult>(
         tester,
-        const PortRangeForwardingDialog(),
+        const PortRangeForwardingDialog(lanIp: null, lanSubnetMask: null),
       );
       await fillValid(tester);
       await tester.tap(_field('pf-range-description'));
@@ -412,6 +416,8 @@ void main() {
       final outcome = await _pumpAndOpen<PortRangeForwardingDialogResult>(
         tester,
         const PortRangeForwardingDialog(
+          lanIp: null,
+          lanSubnetMask: null,
           rule: PortForwardingRuleUIModel(
             instancePath: 'Device.NAT.PortMapping.1.',
             description: 'Game',
@@ -450,6 +456,8 @@ void main() {
       await _pumpAndOpen<PortRangeForwardingDialogResult>(
         tester,
         PortRangeForwardingDialog(
+          lanIp: null,
+          lanSubnetMask: null,
           rule: PortForwardingRuleUIModel(
             instancePath: 'Device.NAT.PortMapping.1.',
             description: 'x' * 33,

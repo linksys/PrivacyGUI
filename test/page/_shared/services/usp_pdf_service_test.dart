@@ -125,6 +125,29 @@ void main() {
     });
   });
 
+  // #1838: a device with no IPv4 prints the app's placeholder.
+  group('deviceTableRows', () {
+    test('a device with no IPv4 prints "-" in the IP column', () {
+      final rows = UspPdfService.deviceTableRows([
+        DevicesTestData.createWifiClient(mac: DevicesTestData.clientMac1),
+        DevicesTestData.createWifiClient(
+            mac: DevicesTestData.clientMac2, ip: ''),
+      ], isOnline: true);
+
+      expect(rows.map((r) => r[2]).toList(), [DevicesTestData.clientIp1, '-']);
+    });
+
+    test('so does an offline one', () {
+      final rows = UspPdfService.deviceTableRows([
+        DevicesTestData.createWiredClient(
+            mac: DevicesTestData.clientMac2, ip: ''),
+      ], isOnline: false);
+
+      expect(rows.single, hasLength(3));
+      expect(rows.single[2], '-');
+    });
+  });
+
   // #1121: a node's client list holds offline clients too. The PDF printed
   // its length, so the Devices column over-reported against the active-only
   // count the report used before PR #1068.

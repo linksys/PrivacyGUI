@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/ddns/models/ddns_update_status.dart';
 import 'package:privacy_gui/page/ddns/providers/ddns_status_data_provider.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/util/network_utils.dart';
 
 /// The router's Internet IP address and what its last DDNS update came to.
 ///
@@ -65,7 +66,7 @@ class _DdnsStatusCardState extends ConsumerState<DdnsStatusCard> {
           AppGap.md(),
           UspInfoRow(
             label: loc(context).internetIPAddress,
-            value: wanAddress.isEmpty ? '-' : wanAddress,
+            value: NetworkUtils.addressOrPlaceholder(wanAddress),
           ),
           UspInfoRow(
             label: loc(context).status,

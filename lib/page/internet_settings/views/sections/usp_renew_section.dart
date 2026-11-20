@@ -66,7 +66,7 @@ class UspRenewSection extends ConsumerWidget {
             child: UspRenewActionCard(
               protocolLabel: l.ipv4,
               // `addressLabel` carries the unknown state: the card renders `null` and
-              // `''` identically as '--', so the address alone cannot express it.
+              // `''` identically as '-', so the address alone cannot express it.
               // Renew is disabled with it — offering to renew a lease whose current
               // state could not be read is a worse offer than no offer. IPv4 only; an
               // unreadable IPv4 says nothing about the IPv6 lease.

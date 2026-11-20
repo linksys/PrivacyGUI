@@ -3,8 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_rule_limits.dart';
-import 'package:privacy_gui/validator_rules/input_validators.dart';
-import 'package:privacy_gui/validator_rules/rules.dart';
+import 'package:privacy_gui/validator_rules/lan_host_ipv4.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Result returned by [PortRangeForwardingDialog].
@@ -46,6 +45,10 @@ class PortRangeForwardingDialog extends StatefulWidget {
   /// The router's LAN address and mask. With both, the destination must be a
   /// LAN host: FW 2.0.3 clears any other destination and still saves the rule
   /// (FWDEV#204). Null skips that check and keeps the format check only.
+  ///
+  /// Required, though nullable: a call site that left them out would skip the
+  /// LAN check without anyone seeing it (#1838). One that genuinely has no LAN
+  /// passes null explicitly.
   final String? lanIp;
   final String? lanSubnetMask;
 
@@ -54,8 +57,8 @@ class PortRangeForwardingDialog extends StatefulWidget {
     this.rule,
     this.deviceOptions = const [],
     this.otherRules = const [],
-    this.lanIp,
-    this.lanSubnetMask,
+    required this.lanIp,
+    required this.lanSubnetMask,
   });
 
   @override
@@ -64,8 +67,6 @@ class PortRangeForwardingDialog extends StatefulWidget {
 }
 
 class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
-  static final _ipRule = IpAddressRule();
-
   late TextEditingController _descController;
   late TextEditingController _extPortStartController;
   late TextEditingController _extPortEndController;
@@ -190,20 +191,14 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
       }
     }
 
-    if (client.isNotEmpty && !_ipRule.validate(client)) {
-      errors['client'] = 'invalidIpv4Format';
-    } else if (client.isNotEmpty && !_isLanHost(client)) {
-      errors['client'] = 'invalidIpAddress';
+    // The same check as every form that writes a LAN host's address (#1838).
+    if (client.isNotEmpty) {
+      final problem = lanHostIpv4Problem(client,
+          lanIp: widget.lanIp, lanSubnetMask: widget.lanSubnetMask);
+      if (problem != null) errors['client'] = problem.messageKey;
     }
 
     return errors;
-  }
-
-  bool _isLanHost(String ip) {
-    final lanIp = widget.lanIp;
-    final mask = widget.lanSubnetMask;
-    if (lanIp == null || mask == null) return true;
-    return IpAddressAsLocalIpValidator(lanIp, mask).validate(ip);
   }
 
   String? _localizeError(String? key) {
@@ -213,6 +208,7 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
       'portMustBe1To65535' => loc(context).portMustBe1To65535,
       'mustBeGreaterThanStartPort' => loc(context).mustBeGreaterThanStartPort,
       'invalidIpv4Format' => loc(context).invalidIpv4Format,
+      'reservedIpNotAllowed' => loc(context).reservedIpNotAllowed,
       'rulesOverlapError' => loc(context).rulesOverlapError,
       'invalidIpAddress' => loc(context).invalidIpAddress,
       _ => key,

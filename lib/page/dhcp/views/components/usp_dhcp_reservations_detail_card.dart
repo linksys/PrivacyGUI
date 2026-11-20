@@ -8,6 +8,7 @@ import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/page/dhcp/views/dialogs/dhcp_reservation_edit_dialog.dart';
+import 'package:privacy_gui/page/_shared/helpers/read_lan_for_host_check.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Full CRUD card for DHCP reservations on the detail page.
@@ -167,7 +168,8 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
         .map((d) => AppAutoCompleteOption(
               label: d.name,
               value: d.mac,
-              subtitle: d.ip,
+              // No IPv4: no subtitle, as in the MAC filter's picker.
+              subtitle: d.ip.isNotEmpty ? d.ip : null,
               isActive: d.isActive,
             ))
         .toList();
@@ -184,6 +186,8 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
   }
 
   Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
+    final lan = await readLanForHostCheck(context, ref);
+    if (lan == null || !context.mounted) return;
     final options = _buildDeviceOptions(ref);
     final result = await showAppDialog<DhcpReservationDialogResult>(
       context: context,
@@ -191,6 +195,8 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
         macDeviceOptions: options.mac,
         ipDeviceOptions: options.ip,
         existingReservations: reservations,
+        lanIp: lan.ip,
+        lanSubnetMask: lan.mask,
       ),
     );
     if (result == null || !context.mounted) return;
@@ -209,6 +215,8 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
     WidgetRef ref,
     DhcpReservationUIModel reservation,
   ) async {
+    final lan = await readLanForHostCheck(context, ref);
+    if (lan == null || !context.mounted) return;
     final options = _buildDeviceOptions(ref);
     final result = await showAppDialog<DhcpReservationDialogResult>(
       context: context,
@@ -217,6 +225,8 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
         macDeviceOptions: options.mac,
         ipDeviceOptions: options.ip,
         existingReservations: reservations,
+        lanIp: lan.ip,
+        lanSubnetMask: lan.mask,
       ),
     );
     if (result == null || !context.mounted) return;
