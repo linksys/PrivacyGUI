@@ -16,9 +16,6 @@ import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/tab_bar/linksys_tab_bar.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
-import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:get_it/get_it.dart';
 
 import '../../../../../common/config.dart';
 import '../../../../../common/test_responsive_widget.dart';
@@ -50,7 +47,6 @@ void main() {
   late MockPortRangeTriggeringRuleNotifier mockPortRangeTriggeringRuleNotifier;
 
   mockDependencyRegister();
-  ServiceHelper mockServiceHelper = GetIt.I.get<ServiceHelper>();
   setUp(() {
     mockAppsAndGamingViewNotifier = MockAppsAndGamingViewNotifier();
     mockDDNSNotifier = MockDDNSNotifier();

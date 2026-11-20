@@ -322,10 +322,12 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
           if (!mounted) return false;
           _onSaved(state, offerNewQR: offerNewQR);
         });
+        return null;
       }, test: (error) => error is JNAPSideEffectError).onError(
               (error, stackTrace) {
         if (!mounted) return false;
         showErrorMessageSnackBar(error);
+        return null;
       });
     }
     return result;
@@ -471,9 +473,5 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
       ),
     );
     return advanced;
-  }
-
-  WiFiItem _getFirstEnabledWifi(List<WiFiItem> mainWiFi) {
-    return mainWiFi.firstWhereOrNull((e) => e.isEnabled) ?? mainWiFi.first;
   }
 }

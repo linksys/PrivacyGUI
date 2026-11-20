@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/vpn/service/vpn_service.dart';
 import '../models/vpn_models.dart';
 import 'vpn_state.dart';

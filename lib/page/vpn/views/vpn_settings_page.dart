@@ -545,7 +545,7 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
   Widget _buildTunneledUserSection(VPNState state, VPNNotifier notifier) {
     return _buildSection(
       title: loc(context).vpnTunneledUserSection,
-      isEnabled: state.settings.serviceSettings?.enabled ?? false,
+      isEnabled: state.settings.serviceSettings.enabled,
       children: [
         AppIPFormField(
           key: ValueKey('tunneledUser'),
@@ -608,14 +608,12 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
     return AppSettingCard(
       title: loc(context).vpnEnabled,
       trailing: AppSwitch(
-        value: state.settings.serviceSettings?.enabled ?? false,
+        value: state.settings.serviceSettings.enabled,
         onChanged: (value) {
-          if (state.settings.serviceSettings != null) {
-            notifier.setVPNService(
-              state.settings.serviceSettings!.copyWith(enabled: value),
-            );
-            setState(() {});
-          }
+          notifier.setVPNService(
+            state.settings.serviceSettings.copyWith(enabled: value),
+          );
+          setState(() {});
         },
       ),
     );
@@ -625,14 +623,12 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
     return AppSettingCard(
       title: loc(context).vpnAutoConnect,
       trailing: AppSwitch(
-        value: state.settings.serviceSettings?.autoConnect ?? false,
+        value: state.settings.serviceSettings.autoConnect,
         onChanged: (value) {
-          if (state.settings.serviceSettings != null) {
-            notifier.setVPNService(
-              state.settings.serviceSettings!.copyWith(autoConnect: value),
-            );
-            setState(() {});
-          }
+          notifier.setVPNService(
+            state.settings.serviceSettings.copyWith(autoConnect: value),
+          );
+          setState(() {});
         },
       ),
     );

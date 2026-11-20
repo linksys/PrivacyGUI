@@ -18,7 +18,6 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import '../../../../common/_index.dart';
 import '../../../../common/di.dart';
 import '../../../../mocks/_index.dart';
-import '../../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../../mocks/wifi_view_notifier_mocks.dart';
 import '../../../../test_data/_index.dart';
 
