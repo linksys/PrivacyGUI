@@ -65,8 +65,8 @@ const Set<String> shortViewportSkips = {
   // advanced_settings/static_routing/views/localizations/static_routing_view_test.dart
   'Static routing view test - NAT enabled add rule - interface dropdown',
   'Static routing view test - NAT enabled add rule - invalid gateway IP',
-  // dashboard/localizations/dashboard_support_view_test.dart
-  'Dashboard Support View - expended',
+  // support/localizations/faq_list_view_test.dart
+  'FAQ list view - expanded',
   // instant_setup/troubleshooter/views/isp_settings/localizations/pnp_static_ip_view_test.dart
   'Troubleshooter - PnP static IP: wrong input formats',
   // instant_topology/localizations/add_wired_node_view_test.dart
