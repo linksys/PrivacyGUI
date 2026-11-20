@@ -1172,7 +1172,6 @@
   "uploadTestNotSupported": "Η δοκιμή αποστολής δεν υποστηρίζεται σε αυτό το firmware.",
   "uploadingFirmware": "Αποστολή firmware",
   "used": "Σε χρήση",
-  "uspConsole": "Κονσόλα USP",
   "uspDashboard": "Πίνακας ελέγχου",
   "validatingImage": "Επικύρωση εικόνας…",
   "validatingSession": "Επικύρωση συνεδρίας...",

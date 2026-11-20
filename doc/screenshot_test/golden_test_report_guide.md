@@ -100,7 +100,7 @@ Shows total / pass / fail counts with a donut chart.
 
 Displays how many USP views have golden tests. Lists missing views in a collapsible section.
 
-Coverage ignores these features (no golden tests needed): `apps`, `system_log`, `test_console`.
+Coverage ignores these features (no golden tests needed): `apps`, `system_log`.
 
 #### Quick Filter
 

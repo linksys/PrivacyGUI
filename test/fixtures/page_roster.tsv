@@ -109,6 +109,7 @@
 # verdict defect every engineer and every QA build hits at 320px in English. Which way it cuts: the
 # verdict page is 54.2ms/cell, 4.6% of the sweep, so the trade on offer was the epic's biggest find
 # verdict for 4.6% of its runtime. Kept and fixed to zero.
+# verdict #1836 (2026-11-20) then deleted the console itself, and its row with it.
 # verdict 4. router_assistant_view - the AC's question was conditional on it being feature-gated off
 # verdict in shipping configurations, and it is not: route_usp_dashboard.dart:225 registers it
 # verdict unconditionally, with no kDebugMode and no flag. It ships, so the test_console reasoning
@@ -521,10 +522,10 @@
 # reader test/layout_gate/page_roster.dart
 # oracle test/layout_gate/page_roster_test.dart
 # doc doc/testing/overflow_gate_architecture.md section 11.5; the onboarding queue is section 11.6
-# pages 54
-# swept 52
+# pages 53
+# swept 51
 # queued 0
-# measured 52
+# measured 51
 # needs_fixture 0
 # excluded 2
 # columns path	disposition	ms_per_cell
@@ -576,7 +577,6 @@ lib/page/static_routing/views/usp_static_routing_view.dart	swept	17.8
 lib/page/statistics/views/usp_statistics_view.dart	swept	45.3
 lib/page/support/views/usp_support_view.dart	swept	15.1
 lib/page/system_log/views/usp_system_log_view.dart	swept	16.2
-lib/page/test_console/views/usp_test_console_view.dart	swept	54.2
 lib/page/topology/views/usp_node_detail_view.dart	swept	31.6
 lib/page/topology/views/usp_topology_view.dart	swept	25.8
 lib/page/unified_diagnostics/views/speed_test_view.dart	excluded:not reachable; its only route is commented out at lib/route/route_usp_dashboard.dart:223 (#1370)	-

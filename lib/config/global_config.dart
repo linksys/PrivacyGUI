@@ -165,14 +165,10 @@ class FeatureConfig {
   FeatureConfig._();
 
   late bool _enableThemeStudio = BuildConfig.enableThemeStudio;
-  late bool _enableTestConsole = BuildConfig.enableTestConsole;
   late bool _enableBetaFeatures = false;
 
   /// Whether Theme Studio is enabled
   bool get enableThemeStudio => _enableThemeStudio;
-
-  /// Whether test console is enabled
-  bool get enableTestConsole => _enableTestConsole;
 
   /// Whether beta features are enabled
   bool get enableBetaFeatures => _enableBetaFeatures;
@@ -181,8 +177,6 @@ class FeatureConfig {
   void _loadFromJson(Map<String, dynamic> json) {
     _enableThemeStudio =
         json['enableThemeStudio'] as bool? ?? BuildConfig.enableThemeStudio;
-    _enableTestConsole =
-        json['enableTestConsole'] as bool? ?? BuildConfig.enableTestConsole;
     _enableBetaFeatures = json['enableBetaFeatures'] as bool? ?? false;
   }
 }

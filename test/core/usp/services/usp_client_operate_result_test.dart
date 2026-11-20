@@ -274,7 +274,8 @@ void main() {
     test('the failure detail is not labelled with 7022\'s own name', () {
       // `'Command Failure'` is TR-369's name for 7022 alone. Once the arm covered
       // every code it was being stamped onto 9005 and 7004 refusals too — a wrong
-      // label, and a visible one: `usp_test_console_view.dart` renders `failures`.
+      // label, and a visible one: the USP test console rendered `failures` (it was
+      // deleted in #1836).
       //
       // What the field carries *instead* moved once more in round 3 (the formatted
       // summary was too long for a field five other sites use for a short message),
@@ -333,8 +334,9 @@ void main() {
 
     test('the failure detail carries a short label, not the whole log line',
         () {
-      // `usp_test_console_view.dart` prints `errorMessage` immediately after
-      // `Code ${errorCode}`, so the formatted summary put the code on the line twice.
+      // The USP test console (deleted in #1836) printed `errorMessage` immediately
+      // after `Code ${errorCode}`, so the formatted summary put the code on the line
+      // twice.
       final error = mapUspErrorToServiceError(
           _thrownFrom(refused(code: 9005, message: 'no such object')));
 

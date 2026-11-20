@@ -1172,7 +1172,6 @@
   "uploadTestNotSupported": "เฟิร์มแวร์นี้ไม่รองรับการทดสอบอัปโหลด",
   "uploadingFirmware": "กำลังอัปโหลดเฟิร์มแวร์",
   "used": "ใช้ไป",
-  "uspConsole": "USP Console",
   "uspDashboard": "Dashboard",
   "validatingImage": "กำลังตรวจสอบอิมเมจ…",
   "validatingSession": "กำลังตรวจสอบเซสชัน...",

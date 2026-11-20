@@ -14,6 +14,8 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/page/ai_assistant/models/stored_aws_credentials.dart';
+import 'package:privacy_gui/page/ai_assistant/providers/aws_credentials_store_provider.dart';
 import 'package:privacy_gui/page/ai_assistant/services/aws_credentials_store.dart';
 
 /// An [AwsCredentialsStore] that answers immediately and writes nothing.

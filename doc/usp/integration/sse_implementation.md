@@ -80,7 +80,7 @@ Key insight: OBUSPA subscriptions persist on the router even after the browser d
 
 On SSE reconnect, `SseSubscriptionRegistry.resubscribeAll()` re-registers all subscriptions on the bridge. Since the bridge is idempotent by `subscription_id`, this safely handles both scenarios (OBUSPA subs survived or were cleaned up).
 
-**Session expiry caveat:** Bridge session timeout does NOT clean up OBUSPA subscriptions — but subscription IDs from codegen are deterministic, so re-registration reuses existing OBUSPA subs via bridge idempotency. `UspService.purgeAllSubscriptions()` available in Test Console for edge cases (e.g., ID rename across app versions).
+**Session expiry caveat:** Bridge session timeout does NOT clean up OBUSPA subscriptions — but subscription IDs from codegen are deterministic, so re-registration reuses existing OBUSPA subs via bridge idempotency. There is no purge path: `UspService.purgeAllSubscriptions()` existed only for the USP Test Console and was deleted with it in #1836.
 
 ---
 
@@ -370,7 +370,7 @@ The per-subscription handlers in `SseEventRouter._handlers` are technically unus
 
 **Problem:** Browser refresh doesn't trigger `dispose()` on Riverpod providers. OBUSPA subscriptions from the previous session accumulate on the router, causing duplicate notifications.
 
-**Current status:** `UspService.purgeAllSubscriptions()` exists and performs GET-based enumeration + DELETE of all `Device.LocalAgent.Subscription.{i}` instances. However, it is **NOT called automatically during bootstrap**. It is only available via the Test Console for manual cleanup.
+**Current status:** there is no purge. `UspService.purgeAllSubscriptions()` performed GET-based enumeration + DELETE of all `Device.LocalAgent.Subscription.{i}` instances, was **never called automatically during bootstrap**, and was reachable only from the USP Test Console; #1836 deleted both.
 
 **Mitigation:** Bridge subscription API is idempotent by `subscription_id`, so re-registering the same subscription doesn't create duplicates. The main risk is orphaned OBUSPA subscriptions from sessions that used different IDs.
 
@@ -515,7 +515,7 @@ POST /api/v1/subscription
 
 ### Legacy: 5-Step OBUSPA Workaround (deprecated)
 
-`UspService.createNotifySubscription()` previously performed direct OBUSPA manipulation (Add + GET-diff + SetMultiple). This is retained for debug/legacy use only -- bridge now handles this automatically.
+`UspService.createNotifySubscription()` previously performed direct OBUSPA manipulation (Add + GET-diff + SetMultiple). The bridge handles this automatically; the method's last caller was the USP Test Console, and #1836 deleted both.
 
 ---
 
@@ -752,14 +752,9 @@ The awaiter handles subscription creation, wildcard matching, cleanup, and polli
 
 ## 11. Debug Tools
 
-### Test Console
+### Test Console (removed)
 
-The USP Test Console (`lib/page/test_console/views/usp_test_console_view.dart`) provides:
-
-- **SSE Status Badge**: Displays current `SseConnectionState` with color-coded indicator
-- **List All**: Lists bridge-level subscriptions via WASM `listSubscriptions()`
-- **Purge All**: Deletes all OBUSPA subscriptions via GET-based enumeration + DELETE
-- **Subscribe / Unsubscribe**: Manual subscription management for testing
+The USP Test Console (`lib/page/test_console/`), with its SSE status badge, list, purge and manual subscribe/unsubscribe, was deleted in #1836. It had no entry point in a release build.
 
 ### App Lifecycle
 

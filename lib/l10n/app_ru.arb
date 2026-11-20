@@ -1172,7 +1172,6 @@
   "uploadTestNotSupported": "Тест отдачи не поддерживается на этой прошивке.",
   "uploadingFirmware": "Загрузка прошивки",
   "used": "Использовано",
-  "uspConsole": "Консоль USP",
   "uspDashboard": "Панель",
   "validatingImage": "Проверка образа…",
   "validatingSession": "Проверка сеанса...",

@@ -1172,7 +1172,6 @@
   "uploadTestNotSupported": "このファームウェアではアップロードテストはサポートされていません。",
   "uploadingFirmware": "ファームウェアをアップロード中",
   "used": "使用中",
-  "uspConsole": "USP コンソール",
   "uspDashboard": "ダッシュボード",
   "validatingImage": "イメージを検証中…",
   "validatingSession": "セッションを検証中...",

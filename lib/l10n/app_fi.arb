@@ -1172,7 +1172,6 @@
   "uploadTestNotSupported": "Lähetystestiä ei tueta tässä laiteohjelmistossa.",
   "uploadingFirmware": "Lähetetään laiteohjelmistoa",
   "used": "Käytetty",
-  "uspConsole": "USP-konsoli",
   "uspDashboard": "Koontinäyttö",
   "validatingImage": "Vahvistetaan vedosta…",
   "validatingSession": "Vahvistetaan istuntoa...",

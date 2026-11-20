@@ -1172,7 +1172,6 @@
   "uploadTestNotSupported": "La prueba de subida no es compatible con este firmware.",
   "uploadingFirmware": "Subiendo firmware",
   "used": "Usado",
-  "uspConsole": "Consola USP",
   "uspDashboard": "Panel",
   "validatingImage": "Validando imagen…",
   "validatingSession": "Validando sesión...",

@@ -242,7 +242,7 @@ There are also 3 input-validation strings packed directly into 9999: `"Invalid p
 | 9997 | — | none of Rust / lib / test have this code | does not exist, no need to handle |
 | 0 | success sentinel, does not appear in the error block | — | — |
 
-> Evidence (9xxx really is router behavior, not dead code): `usp_test_console_view.dart` marks "expect fault 9005/9008";
+> Evidence (9xxx really is router behavior, not dead code): the USP test console (deleted in #1836) marked "expect fault 9005/9008";
 > `usp_ipv4_section.dart` + `usp_internet_settings_service.dart` comment "bbfdm rejects SET (fault 9001)";
 > `test/core/usp/errors/usp_error_test.dart` has verified the 9001/9005/9008 mappings.
 

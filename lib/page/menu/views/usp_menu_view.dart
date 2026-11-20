@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -162,14 +161,6 @@ class UspMenuView extends ConsumerWidget {
         iconData: Icons.network_check,
         onTap: () => context.goNamed(RouteNamed.uspUnifiedDiagnostics),
       ),
-      if (kDebugMode)
-        AppSectionItemData(
-          identifier: 'menu-usp-console',
-          title: loc(context).uspConsole,
-          description: 'Raw USP CRUD, SSE, subscription & turbo debug tool',
-          iconData: Icons.terminal,
-          onTap: () => context.goNamed(RouteNamed.uspTestConsole),
-        ),
     ];
   }
 

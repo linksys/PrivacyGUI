@@ -1887,7 +1887,6 @@
   "timezone": "Timezone",
   "txPower": "Tx Power",
   "badgeUser": "USER",
-  "uspConsole": "USP Console",
   "uspDashboard": "Dashboard",
   "routerPasswordRuleUpperLower": "Upper and lower case letters",
   "validatingSession": "Validating session...",
