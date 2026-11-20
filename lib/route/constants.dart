@@ -119,9 +119,6 @@ class RoutePath {
   /// DDNS
   static const settingsDDNS = 'ddnsSettings';
 
-  ///Channel Finder
-  static const channelFinderOptimize = 'channelFinderOptimize';
-
   /// Device picker
   static const devicePicker = 'devicePicker';
 
@@ -247,9 +244,6 @@ class RouteNamed {
 
   /// DDNS
   static const settingsDDNS = 'ddnsSettings';
-
-  ///Channel Finder
-  static const channelFinderOptimize = 'channelFinderOptimize';
 
   /// Device picker
   static const devicePicker = 'devicePicker';

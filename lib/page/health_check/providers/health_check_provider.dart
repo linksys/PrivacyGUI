@@ -307,16 +307,6 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
     state = state.copyWith(result: healthCheckResults, timestamp: timestamp);
   }
 
-  Future<void> stopHealthCheck() async {
-    final repo = ref.read(routerRepositoryProvider);
-    await repo.send(
-      JNAPAction.stopHealthCheck,
-      auth: true,
-      fetchRemote: true,
-      cacheLevel: CacheLevel.noCache,
-    );
-  }
-
   bool _getErrorCode(JNAPResult result) {
     if (result.result != "OK") {
       return true;

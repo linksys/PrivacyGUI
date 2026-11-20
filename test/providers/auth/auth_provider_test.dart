@@ -443,7 +443,6 @@ void main() {
   group('AuthState', () {
     test('reads a login written out as JSON', () {
       final state = AuthState.fromJson({
-        'username': 'u',
         'localPassword': 'TestAdmin1!',
         'localPasswordHint': 'pet',
         'sessionToken': _token(),

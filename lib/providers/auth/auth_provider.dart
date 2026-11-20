@@ -35,16 +35,12 @@ import 'package:privacy_gui/utils.dart';
 enum LoginType { none, local, remote }
 
 class AuthState extends Equatable {
-  final String? username;
-  final String? password;
   final String? localPassword;
   final String? localPasswordHint;
   final SessionToken? sessionToken;
   final LoginType loginType;
 
   const AuthState({
-    this.username,
-    this.password,
     this.localPassword,
     this.localPasswordHint,
     this.sessionToken,
@@ -63,8 +59,6 @@ class AuthState extends Equatable {
         LoginType.values.firstWhereOrNull((e) => e.name == json['loginType']) ??
             LoginType.none;
     return AuthState(
-      username: json['username'],
-      password: json['password'],
       localPassword: json['localPassword'],
       localPasswordHint: json['localPasswordHint'],
       sessionToken: sessionToken,
@@ -73,16 +67,12 @@ class AuthState extends Equatable {
   }
 
   AuthState copyWith({
-    String? username,
-    String? password,
     String? localPassword,
     String? localPasswordHint,
     SessionToken? sessionToken,
     LoginType? loginType,
   }) {
     return AuthState(
-      username: username ?? this.username,
-      password: password ?? this.password,
       localPassword: localPassword ?? this.localPassword,
       localPasswordHint: localPasswordHint ?? this.localPasswordHint,
       sessionToken: sessionToken ?? this.sessionToken,
@@ -92,8 +82,6 @@ class AuthState extends Equatable {
 
   @override
   List<Object?> get props => [
-        username,
-        password,
         localPassword,
         localPasswordHint,
         sessionToken,
@@ -172,9 +160,6 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       const storage = FlutterSecureStorage();
       // local password
       final localPassword = await storage.read(key: pLocalPassword);
-      // cloud username and password
-      final username = await storage.read(key: pUsername);
-      final password = await storage.read(key: pUserPassword);
 
       if (sessionToken != null) {
         loginType = LoginType.remote;
@@ -182,13 +167,11 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         loginType = LoginType.local;
       }
       logger.d(
-          '[Auth]: Existence: cloud user name: ${username != null}, cloud pwd: ${password != null}, admin password: ${localPassword != null}. Login type = $loginType');
+          '[Auth]: Existence: admin password: ${localPassword != null}. Login type = $loginType');
       return AuthState(
         localPasswordHint: state.value?.localPasswordHint,
-        username: username ?? '',
         loginType: loginType,
         sessionToken: sessionToken,
-        password: password,
         localPassword: localPassword,
       );
     });
@@ -418,6 +401,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       await storage.delete(key: pSessionToken);
       await storage.delete(key: pSessionTokenTs);
       await storage.delete(key: pLocalPassword);
+      // The account login (#1849) stored these, and nothing writes them now.
+      // Logout still clears what an older install kept.
       await storage.delete(key: pUsername);
       await storage.delete(key: pUserPassword);
       await const DeviceTokenStore().clear();

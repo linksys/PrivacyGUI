@@ -207,8 +207,6 @@ The table lists the pages that have no case, and each row says why the page need
 | `lib/page/components/settings_view/editable_table_settings_view.dart` | `AppEditableTableSettingsView` | Permanent: a component, not a page. The advanced settings lists build it; the IPv6 port service and static routing cases sweep it. |
 | `lib/page/components/styled/styled_tab_page_view.dart` | `StyledAppTabPageView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/components/views/arguments_view.dart` | `ArgumentsBaseConsumerStatefulView` | Permanent: a base class for views, not a page. |
-| `lib/page/dashboard/views/dashboard_settings_view.dart` | `DashboardSettingsView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
-| `lib/page/dashboard/views/dashboard_support_view.dart` | `DashboardSupportView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/firmware_update/views/firmware_update_process_view.dart` | `FirmwareUpdateProcessView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/instant_setup/troubleshooter/views/call_support/call_support_main_region_view.dart` | `CallSupportMainRegionView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/instant_setup/troubleshooter/views/call_support/call_support_more_region_view.dart` | `CallSupportMoreRegionView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
@@ -222,7 +220,6 @@ The table lists the pages that have no case, and each row says why the page need
 | `lib/page/wifi_settings/views/wifi_list_advanced_mode_view.dart` | `AdvancedModeView` | Permanent: a component, not a page. `WiFiListView` lays it out in the advanced mode, and the Wi-Fi settings cases in that mode sweep it. |
 | `lib/page/wifi_settings/views/wifi_list_simple_mode_view.dart` | `SimpleModeView` | Permanent: a component, not a page. `WiFiListView` lays it out in the simple mode, and the Wi-Fi settings cases in that mode sweep it. |
 | `lib/page/wifi_settings/views/wifi_list_view.dart` | `WiFiListView` | Permanent: a component, not a page: a tab of `WiFiMainView`, with no route of its own. `WiFiMainView`'s cases open the tab, so they sweep it. |
-| `lib/page/wifi_settings/views/wifi_settings_channel_finder_view.dart` | `WifiSettingsChannelFinderView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/wifi_settings/views/wifi_share_detail_view.dart` | `WiFiShareDetailView` | Permanent: a component, not a page: the content of the dashboard Wi-Fi card's share dialog. The dashboard's Share WiFi modal cases open the dialog, so they sweep it. |
 <!-- layout-gate-roster:end -->
 
