@@ -189,13 +189,14 @@ A change to a notifier, a service, a `…State` class or a model ships unit test
 
 A new `lib/page/**/*_view.dart`, or a new page 5.1 lets go without the suffix, ships a case in #1802's layout gate, so it is swept for overflow at the gate's sizes (3.5).
 
-The gate's case is a `testLocalizations` case (3.5). A page has one when a `testLocalizations` suite constructs its class. A page that a case reaches only as a tab of its parent does not count: `TabBarView` lays out the selected tab only.
+The gate's case is a `testLocalizations` case (3.5). A page has one when a `testLocalizations` suite constructs its class. A page that a case reaches only as a tab of its parent does not count: `TabBarView` lays out the selected tab only. A view that only another page builds, with no route of its own, is a component instead: it needs no case of its own when that page's cases open it, and its row names them.
 
-The table lists the pages that have no case. A row whose reason starts "No case yet" waits for #1802 P6 to give the page one; every other row says why the page needs none. Deleting a row because the page got a case, or was deleted, is not an amendment (9.1).
+The table lists the pages that have no case. A row whose reason starts "No case yet" waits for #1802 P6 to give the page one; every other row says why the page needs none. Deleting a row because the page got a case, or was deleted, is not an amendment (9.1). A row that says nothing in `lib/` builds the page fails the roster test once something does.
 
 <!-- layout-gate-roster:begin -->
 | Page | Class | Why |
 |---|---|---|
+| `lib/page/advanced_settings/local_network_settings/views/dhcp_reservations_edit_view.dart` | `DHCPReservationsEditView` | Permanent while unreachable: nothing navigates to its route, `dhcpReservationEdit`, and opened without the route's arguments it throws. Give it a case once something does. |
 | `lib/page/advanced_settings/local_network_settings/views/dhcp_server_view.dart` | `DHCPServerView` | Permanent: a component, not a page. `LocalNetworkSettingsView` lays it out in its DHCP server tab, and its cases open the tab, so they sweep it. |
 | `lib/page/advanced_settings/static_routing/static_routing_list_view.dart` | `StaticRoutingListView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/components/customs/network_check_view.dart` | `NetworkCheckView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
@@ -204,8 +205,8 @@ The table lists the pages that have no case. A row whose reason starts "No case 
 | `lib/page/components/picker/region_picker_view.dart` | `RegionPickerView` | Kept until #1849 deletes it: only the OTP flow opens it. |
 | `lib/page/components/picker/time_picker_view.dart` | `TimePickerView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/components/settings_view/editable_card_list_edit_view.dart` | `EditableCardListEditView` | Permanent while unreachable: nothing navigates to its route, `cardListEdit`, and opened without the route's arguments it throws. Give it a case once something does. |
-| `lib/page/components/settings_view/editable_card_list_settings_view.dart` | `EditableCardListsettingsView` | Permanent: a component, not a page. The advanced settings lists (ports, IPv6 port service, static routing) build it, so their cases sweep it. |
-| `lib/page/components/settings_view/editable_table_settings_view.dart` | `AppEditableTableSettingsView` | Permanent: a component, not a page. The advanced settings lists (ports, IPv6 port service, static routing) build it, so their cases sweep it. |
+| `lib/page/components/settings_view/editable_card_list_settings_view.dart` | `EditableCardListsettingsView` | Permanent: a component, not a page. The advanced settings lists build it; the IPv6 port service and static routing cases sweep it. |
+| `lib/page/components/settings_view/editable_table_settings_view.dart` | `AppEditableTableSettingsView` | Permanent: a component, not a page. The advanced settings lists build it; the IPv6 port service and static routing cases sweep it. |
 | `lib/page/components/styled/styled_tab_page_view.dart` | `StyledAppTabPageView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/components/views/arguments_view.dart` | `ArgumentsBaseConsumerStatefulView` | Permanent: a base class for views, not a page. |
 | `lib/page/components/views/write_flow_blocked_view.dart` | `WriteFlowBlockedView` | No case yet (#1802 P6). |
@@ -217,7 +218,7 @@ The table lists the pages that have no case. A row whose reason starts "No case 
 | `lib/page/instant_setup/troubleshooter/views/call_support/call_support_main_region_view.dart` | `CallSupportMainRegionView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/instant_setup/troubleshooter/views/call_support/call_support_more_region_view.dart` | `CallSupportMoreRegionView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_auth_view.dart` | `PnpIspAuthView` | No case yet (#1802 P6). |
-| `lib/page/landing/views/debug_device_info_view.dart` | `DebugDeviceInfoView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/landing/views/debug_device_info_view.dart` | `DebugDeviceInfoView` | Kept until #1849 deletes it: a debug page that nothing opens. |
 | `lib/page/landing/views/home_view.dart` | `HomeView` | Kept until #1849 deletes it: the home page, which never shows. |
 | `lib/page/login/auto_parent/views/auto_parent_first_login_view.dart` | `AutoParentFirstLoginView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/login/views/login_cloud_auth_view.dart` | `LoginCloudAuthView` | No case yet (#1802 P6). |
@@ -230,14 +231,14 @@ The table lists the pages that have no case. A row whose reason starts "No case 
 | `lib/page/otp_flow/views/otp_code_input.dart` | `OtpCodeInputView` | Kept until #1849 deletes it: the cloud account login and OTP, which 1.x does not use. |
 | `lib/page/otp_flow/views/otp_method_selector_view.dart` | `OTPMethodSelectorView` | Kept until #1849 deletes it: the cloud account login and OTP, which 1.x does not use. |
 | `lib/page/otp_flow/views/otp_view.dart` | `OtpFlowView` | Kept until #1849 deletes it: the cloud account login and OTP, which 1.x does not use. |
-| `lib/page/select_network/views/select_network_view.dart` | `SelectNetworkView` | Kept until #1849 deletes it: the cloud account login and OTP, which 1.x does not use. |
+| `lib/page/select_network/views/select_network_view.dart` | `SelectNetworkView` | Kept until #1849 deletes it: the cloud account's network picker. A remote login with no stored serial number still reaches it (`_prepareRemote` in `router_provider.dart`), and #1849 removes that path. |
 | `lib/page/troubleshooting/views/troubleshooting_ping_view.dart` | `TroubleshootingPingView` | No case yet (#1802 P6). |
 | `lib/page/troubleshooting/views/troubleshooting_view.dart` | `TroubleshootingView` | No case yet (#1802 P6). |
-| `lib/page/wifi_settings/views/mac_filtering_view.dart` | `MacFilteringView` | No case yet (#1802 P6). |
-| `lib/page/wifi_settings/views/wifi_advanced_settings_view.dart` | `WifiAdvancedSettingsView` | No case yet (#1802 P6). |
+| `lib/page/wifi_settings/views/mac_filtering_view.dart` | `MacFilteringView` | Permanent: a component, not a page: a tab of `WiFiMainView`, with no route of its own. `WiFiMainView`'s cases open the tab, so they sweep it. |
+| `lib/page/wifi_settings/views/wifi_advanced_settings_view.dart` | `WifiAdvancedSettingsView` | Permanent: a component, not a page: a tab of `WiFiMainView`, with no route of its own. `WiFiMainView`'s cases open the tab, so they sweep it. |
 | `lib/page/wifi_settings/views/wifi_list_advanced_mode_view.dart` | `AdvancedModeView` | Permanent: a component, not a page. `WiFiListView` lays it out in the advanced mode, and the Wi-Fi settings cases in that mode sweep it. |
 | `lib/page/wifi_settings/views/wifi_list_simple_mode_view.dart` | `SimpleModeView` | Permanent: a component, not a page. `WiFiListView` lays it out in the simple mode, and the Wi-Fi settings cases in that mode sweep it. |
-| `lib/page/wifi_settings/views/wifi_list_view.dart` | `WiFiListView` | No case yet (#1802 P6). |
+| `lib/page/wifi_settings/views/wifi_list_view.dart` | `WiFiListView` | Permanent: a component, not a page: a tab of `WiFiMainView`, with no route of its own. `WiFiMainView`'s cases open the tab, so they sweep it. |
 | `lib/page/wifi_settings/views/wifi_settings_channel_finder_view.dart` | `WifiSettingsChannelFinderView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/wifi_settings/views/wifi_share_detail_view.dart` | `WiFiShareDetailView` | Permanent: a component, not a page: the content of the dashboard Wi-Fi card's share dialog. The dashboard's Share WiFi modal cases open the dialog, so they sweep it. |
 <!-- layout-gate-roster:end -->
@@ -246,7 +247,7 @@ The table lists the pages that have no case. A row whose reason starts "No case 
 
 *Amended 2026-11-19 (#1802): the rule takes effect, with the roster test and a row for each page that has no case yet, so a page cannot be left out of the gate unnoticed. The version moves to 1.4, not 2.0, although 9.2 asks a major number for an added exception or a tightened rule. This section said the rule would take effect with #1802 P3, and the rows are the exceptions it starts with, not exceptions added to a rule already in force. Counting the five pages 5.1 names, and not counting a tab, follow what 5.1 and `TabBarView` already imply. The team decides whether that holds (9.3).*
 
-*Amended 2026-11-19 (#1802): the table may keep a page for good, with the reason it needs no case, where it said #1802 P6 would empty it. #1802 P6 had planned these exemptions, and 34 rows take one: 7 that are not pages, 19 that nothing lets a user open, and 8 that #1849 deletes. A component that a page lays out needs no case of its own when that page's cases open it. A page counts as unreachable when nothing in `lib/` builds it, or its route throws when opened, as a typed URL would open it. The rows of two deleted files go. The version moves to 1.6, not 2.0, although 9.2 asks a major number for an added exception, as #1802's other amendments kept the major number.*
+*Amended 2026-11-19 (#1802): the table may keep a page for good, with the reason it needs no case, where it said #1802 P6 would empty it. #1802 P6 had planned these exemptions, and 38 rows take one: 10 that are not pages, 19 that nothing lets a user open, and 9 that #1849 deletes. A component that a page lays out needs no case of its own when that page's cases open it. A page counts as unreachable when nothing in `lib/` builds it, or its route throws when opened, as a typed URL would open it. The rows of two deleted files go. The version moves to 1.6, not 2.0, although 9.2 asks a major number for an added exception, as #1802's other amendments kept the major number.*
 
 ### 3.4 A fix that ellipsizes ships a readability guard
 
