@@ -54,9 +54,8 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
       final devices = _handleDeviceData(results[JNAPAction.getDevices]);
       final dhcpLeases =
           _handleDhcpLeaseData(results[JNAPAction.getDHCPClientLeases]);
-      final backHaulInfo =
-          _handleBackhaulInfoData(results[JNAPAction.getBackhaulInfo]);
-      final nodesWireless = _handleNodesWirelessConnectionData(
+      _handleBackhaulInfoData(results[JNAPAction.getBackhaulInfo]);
+      _handleNodesWirelessConnectionData(
           results[JNAPAction.getNodesWirelessNetworkConnections]);
       final currentTime =
           _handleTimeSettings(results[JNAPAction.getTimeSettings]);

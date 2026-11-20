@@ -49,8 +49,7 @@ class VPNSettings extends Equatable {
           'userCredentials': userCredentials!.toJson(),
         if (gatewaySettings != null)
           'gatewaySettings': gatewaySettings!.toJson(),
-        if (serviceSettings != null)
-          'serviceSettings': serviceSettings!.toJson(),
+        'serviceSettings': serviceSettings.toJson(),
         if (tunneledUserIP != null) 'tunneledUserIP': tunneledUserIP,
       };
 

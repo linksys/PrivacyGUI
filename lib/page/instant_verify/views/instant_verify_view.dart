@@ -404,9 +404,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
 
   Widget _portsCard(BuildContext context, WidgetRef ref) {
     final state = ref.watch(dashboardHomeProvider);
-    final isLoading = ref
-        .watch(deviceManagerProvider.select((value) => value.deviceList))
-        .isEmpty;
+    ref.watch(deviceManagerProvider.select((value) => value.deviceList));
     return Container(
       height: ResponsiveLayout.isMobileLayout(context) ? 224 : 208,
       width: double.infinity,

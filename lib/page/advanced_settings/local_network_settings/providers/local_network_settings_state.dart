@@ -63,7 +63,6 @@ enum LocalNetworkErrorPrompt {
         loc(context).hostNameInvalidCharacters(invalidChars ?? ''),
       LocalNetworkErrorPrompt.hostNameLengthError =>
         loc(context).hostNameLengthError,
-      _ => null,
     };
   }
 

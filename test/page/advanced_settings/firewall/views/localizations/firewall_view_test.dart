@@ -4,14 +4,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:get_it/get_it.dart';
 
 import '../../../../../common/_index.dart';
 import '../../../../../common/test_responsive_widget.dart';
@@ -28,7 +24,6 @@ void main() {
   late MockIpv6PortServiceRuleNotifier mockIpv6PortServiceRuleNotifier;
 
   mockDependencyRegister();
-  ServiceHelper mockServiceHelper = GetIt.I.get<ServiceHelper>();
   setUp(() {
     mockFirewallNotifier = MockFirewallNotifier();
     mockIpv6PortServiceListNotifier = MockIpv6PortServiceListNotifier();

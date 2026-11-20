@@ -36,7 +36,6 @@ import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/lotties/mesh_wired_connection.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 
 class InstantTopologyView extends ArgumentsConsumerStatefulView {
   const InstantTopologyView({super.key, super.args});

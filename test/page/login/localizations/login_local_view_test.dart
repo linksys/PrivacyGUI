@@ -1,10 +1,8 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
-import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/login/views/login_local_view.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
@@ -14,7 +12,6 @@ import '../../../common/di.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
-import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../test_data/device_info_test_data.dart';
 
 void main() async {
@@ -22,7 +19,6 @@ void main() async {
   late MockAuthNotifier mockAuthNotifier;
 
   mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
   setUp(() {
     mockDashboardManagerNotifier = MockDashboardManagerNotifier();

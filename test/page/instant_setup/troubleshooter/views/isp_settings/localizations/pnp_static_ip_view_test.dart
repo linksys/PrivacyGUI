@@ -17,9 +17,6 @@ import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
-import 'package:get_it/get_it.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/di.dart';
 
 import '../../../../../../common/test_responsive_widget.dart';
 import '../../../../../../common/testable_router.dart';
@@ -34,7 +31,6 @@ void main() async {
   late MockInternetSettingsNotifier mockInternetSettingsNotifier;
 
   mockDependencyRegister();
-  ServiceHelper mockServiceHelper = GetIt.I<ServiceHelper>();
 
   setUp(() {
     mockPnpNotifier = Mock.MockPnpNotifier();
