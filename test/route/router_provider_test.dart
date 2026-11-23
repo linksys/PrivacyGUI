@@ -20,6 +20,7 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_info.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_state.dart';
@@ -34,8 +35,7 @@ import '../test_data/device_info_test_data.dart';
 
 // Where the app sends someone as it opens: the router's redirect. Each case
 // fixes what the router and the stored login say, runs the redirect for a
-// location, and checks where it leads. The account login and its select
-// network page are deletion candidates (#1849).
+// location, and checks where it leads.
 
 final _deviceInfo =
     NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']);
@@ -337,6 +337,24 @@ void main() {
       expect(
           await const FlutterSecureStorage().read(key: pSessionToken), isNull);
     });
+
+    // PnP clears the stored serial number, so a remote login that goes through
+    // it keeps its Guardian session but loses the router it was for.
+    testWidgets('logs out a Guardian login whose router serial number is gone',
+        (tester) async {
+      final goRouter = await open(tester,
+          force: ForceCommand.none,
+          routerType: RouterType.others,
+          secure: guardianLogin(),
+          prefs: {pGRASessionId: 'G1'});
+
+      // It used to go to the account login's network picker (#1849).
+      expect(await redirect(tester, goRouter, '/?from=test'),
+          RoutePath.cloudLoginAuth);
+      expect(
+          await const FlutterSecureStorage().read(key: pSessionToken), isNull);
+      expect(deviceCheck.savedNetworks, isEmpty);
+    });
   });
 
   group('going straight to a page', () {
@@ -347,6 +365,37 @@ void main() {
       // With no query to carry over, the login path has none either.
       expect(await redirect(tester, goRouter, RoutePath.dashboardHome),
           '/localLoginPassword');
+    });
+
+    // The cloud account login, removed in #1849, stored a session token with a
+    // refresh token and the network it picked, but no Guardian session. The app
+    // reads the stored login as it starts, so a page opened after that sees a
+    // remote login.
+    testWidgets('a page logs out a stored cloud account login', (tester) async {
+      final goRouter = await open(tester,
+          force: ForceCommand.none,
+          routerType: RouterType.others,
+          secure: {
+            pSessionToken: jsonEncode({
+              'access_token': 'account-token',
+              'token_type': 'Bearer',
+              'expires_in': 3600,
+              'refresh_token': 'account-refresh',
+            }),
+            pSessionTokenTs: '${DateTime.now().millisecondsSinceEpoch}',
+          },
+          prefs: {
+            pCurrentSN: _serial,
+            pSelectedNetworkId: 'N1'
+          });
+      await tester.runAsync(() => container.read(authProvider.notifier).init());
+
+      expect(await redirect(tester, goRouter, RoutePath.dashboardHome),
+          RoutePath.cloudLoginAuth);
+      expect(
+          await const FlutterSecureStorage().read(key: pSessionToken), isNull);
+      // It used to open the dashboard of the network it picked.
+      expect(deviceCheck.savedNetworks, isEmpty);
     });
 
     testWidgets('a setup page before setup has begun goes to its start',

@@ -15,9 +15,7 @@ import '../../common/cloud_boundary.dart';
 
 // The remote assistance session as the router's owner holds it, from the
 // support page: a PIN to hand the support agent, the session's time left, and
-// ending it. raLogin, raSendPin, raPinVerify, isRAMode and the session monitor
-// serve the agent's PIN login, whose pages bde0e5555 removed; they are
-// deletion candidates (#1849).
+// ending it.
 
 const _raSessions =
     '/cloud/remote-access-service/rest/remoteassistance/sessions';
@@ -48,7 +46,7 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues(
-        {pSelectedNetworkId: 'N1', pRAMode: true});
+        {pSelectedNetworkId: 'N1'});
     FlutterSecureStorage.setMockInitialValues({
       pSessionToken: jsonEncode({
         'access_token': 'owner-token',
@@ -132,7 +130,7 @@ void main() {
   });
 
   group('raLogout', () {
-    test('ends the session and leaves remote assistance mode', () async {
+    test('ends the session and forgets it', () async {
       cloud.answers(
           'DELETE', '/cloud/v1/guardians/remote-assistances/sessions/S1');
 
@@ -141,8 +139,6 @@ void main() {
       final deletion = cloud.requests.last;
       expect(deletion.method, 'DELETE');
       expect(deletion.url.path, endsWith('/S1'));
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getBool(pRAMode), isNull);
       expect(session(), const RASession(sessionId: '', token: ''));
     });
 
@@ -158,7 +154,7 @@ void main() {
       expect(cloud.requestsTo(_raSessions), hasLength(1));
     });
 
-    test('stays in remote assistance mode when the session cannot be ended',
+    test('passes on the error when the session cannot be ended',
         () async {
       cloud.answersError(
           'DELETE',
@@ -166,9 +162,6 @@ void main() {
           'SESSION_NOT_FOUND');
 
       await expectLater(notifier().raLogout(), throwsA(isA<ErrorResponse>()));
-
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getBool(pRAMode), isTrue);
     });
   });
 

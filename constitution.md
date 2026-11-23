@@ -201,7 +201,6 @@ The table lists the pages that have no case, and each row says why the page need
 | `lib/page/components/customs/network_check_view.dart` | `NetworkCheckView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/components/picker/day_picker_view.dart` | `DayPickerView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/components/picker/number_picker_view.dart` | `NumberPickerView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
-| `lib/page/components/picker/region_picker_view.dart` | `RegionPickerView` | Kept until #1849 deletes it: only the OTP flow opens it. |
 | `lib/page/components/picker/time_picker_view.dart` | `TimePickerView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/components/settings_view/editable_card_list_edit_view.dart` | `EditableCardListEditView` | Permanent while unreachable: nothing navigates to its route, `cardListEdit`, and opened without the route's arguments it throws. Give it a case once something does. |
 | `lib/page/components/settings_view/editable_card_list_settings_view.dart` | `EditableCardListsettingsView` | Permanent: a component, not a page. The advanced settings lists build it; the IPv6 port service and static routing cases sweep it. |
@@ -213,19 +212,11 @@ The table lists the pages that have no case, and each row says why the page need
 | `lib/page/firmware_update/views/firmware_update_process_view.dart` | `FirmwareUpdateProcessView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/instant_setup/troubleshooter/views/call_support/call_support_main_region_view.dart` | `CallSupportMainRegionView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/instant_setup/troubleshooter/views/call_support/call_support_more_region_view.dart` | `CallSupportMoreRegionView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
-| `lib/page/landing/views/debug_device_info_view.dart` | `DebugDeviceInfoView` | Kept until #1849 deletes it: a debug page that nothing opens. |
-| `lib/page/landing/views/home_view.dart` | `HomeView` | Kept until #1849 deletes it: the home page, which never shows. |
 | `lib/page/login/auto_parent/views/auto_parent_first_login_view.dart` | `AutoParentFirstLoginView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
-| `lib/page/login/views/login_cloud_view.dart` | `LoginCloudView` | Kept until #1849 deletes it: the cloud account login and OTP, which 1.x does not use. |
 | `lib/page/nodes/views/change_node_name_view.dart` | `ChangeNodeNameView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/nodes/views/node_light_guide_view.dart` | `NodeLightGuideView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/nodes/views/node_name_edit_view.dart` | `NodeNameEditView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
 | `lib/page/nodes/views/node_restart_view.dart` | `NodeRestartView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
-| `lib/page/otp_flow/views/otp_add_phone.dart` | `OtpAddPhoneView` | Kept until #1849 deletes it: the cloud account login and OTP, which 1.x does not use. |
-| `lib/page/otp_flow/views/otp_code_input.dart` | `OtpCodeInputView` | Kept until #1849 deletes it: the cloud account login and OTP, which 1.x does not use. |
-| `lib/page/otp_flow/views/otp_method_selector_view.dart` | `OTPMethodSelectorView` | Kept until #1849 deletes it: the cloud account login and OTP, which 1.x does not use. |
-| `lib/page/otp_flow/views/otp_view.dart` | `OtpFlowView` | Kept until #1849 deletes it: the cloud account login and OTP, which 1.x does not use. |
-| `lib/page/select_network/views/select_network_view.dart` | `SelectNetworkView` | Kept until #1849 deletes it: the cloud account's network picker. A remote login with no stored serial number still reaches it (`_prepareRemote` in `router_provider.dart`), and #1849 removes that path. |
 | `lib/page/wifi_settings/views/mac_filtering_view.dart` | `MacFilteringView` | Permanent: a component, not a page: a tab of `WiFiMainView`, with no route of its own. `WiFiMainView`'s cases open the tab, so they sweep it. |
 | `lib/page/wifi_settings/views/wifi_advanced_settings_view.dart` | `WifiAdvancedSettingsView` | Permanent: a component, not a page: a tab of `WiFiMainView`, with no route of its own. `WiFiMainView`'s cases open the tab, so they sweep it. |
 | `lib/page/wifi_settings/views/wifi_list_advanced_mode_view.dart` | `AdvancedModeView` | Permanent: a component, not a page. `WiFiListView` lays it out in the advanced mode, and the Wi-Fi settings cases in that mode sweep it. |
@@ -335,7 +326,7 @@ Exception: `RouterNotifier` in `lib/route/router_provider.dart` extends `ChangeN
 
 A `…State` class that a notifier holds extends `Equatable` and lists every field in `props`. States then compare by value, which tests and `ref.listen` callbacks rely on.
 
-Exceptions: `PnpTroubleshooterState`, `SelectNetworkState`, `InstantTopologyState`.
+Exceptions: `PnpTroubleshooterState`, `InstantTopologyState`.
 
 **Enforced by**: Review.
 
@@ -346,7 +337,7 @@ Exceptions: `PnpTroubleshooterState`, `SelectNetworkState`, `InstantTopologyStat
 ### 5.1 Files
 
 - Dart files are `snake_case.dart`. The analyzer's `file_names` lint reports a breach as an info, which no check fails on.
-- A page is `*_view.dart`. #1802's roster finds pages by this suffix, so a page named otherwise escapes the layout gate. Exceptions, each a page that `lib/route/` builds: `lib/page/vpn/views/vpn_settings_page.dart`, `lib/page/otp_flow/views/otp_add_phone.dart`, `lib/page/otp_flow/views/otp_code_input.dart`, `lib/page/health_check/views/speed_test_external.dart` and `lib/page/health_check/views/speed_test_selection.dart`.
+- A page is `*_view.dart`. #1802's roster finds pages by this suffix, so a page named otherwise escapes the layout gate. Exceptions, each a page that `lib/route/` builds: `lib/page/vpn/views/vpn_settings_page.dart`, `lib/page/health_check/views/speed_test_external.dart` and `lib/page/health_check/views/speed_test_selection.dart`.
 - A file that defines a notifier provider is `*_provider.dart`. Exceptions: `lib/page/vpn/providers/vpn_notifier.dart`, `lib/page/auto_ipoe/providers/auto_ipoe_notifier.dart`, `lib/core/pwa/pwa_install_service.dart`.
 - A test of one source file is `<source>_test.dart`. A test that splits one source's tests by scenario is `<source>_<scenario>_test.dart`. A test that covers no single source file is named after what it checks, like `architecture_boundary_test.dart`.
 
@@ -366,7 +357,7 @@ The existing directories vary:
 - `advanced_settings` holds one directory per settings page, plus a shared `widgets/`. Every page has `providers/`, and all but `static_routing` have `views/`.
 - `instant_setup` keeps its two main views at the top level, its notifier in `data/` and its troubleshooter in its own directory.
 - `support` is two files with no sub-directories.
-- `components`, `firmware_update` and `landing` have no `providers/`, and `login` has one only under `auto_parent/`.
+- `components` and `firmware_update` have no `providers/`, and `login` has one only under `auto_parent/`.
 
 When a feature has a barrel, it is `_<feature>.dart` in the feature's directory, as in `lib/page/nodes/_nodes.dart` and `lib/page/advanced_settings/dmz/_dmz.dart`. Eight directories under `lib/page/` have none: `auto_ipoe`, `components`, `instant_privacy`, `instant_setup`, `instant_verify`, `login`, `support` and `vpn`.
 

@@ -21,9 +21,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/general_settings_widget.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
-import 'package:privacy_gui/page/select_network/_select_network.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
-import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/debug_mixin.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
@@ -66,7 +64,6 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
       child: GestureDetector(
         onTap: () {
           if (increase()) {
-            // context.pushNamed(RouteNamed.debug);
             Utils.exportLogFile(context);
           }
         },
@@ -145,7 +142,7 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                   if (isRemote)
                     Column(
                       children: [
-                        _networkSelect(),
+                        _mainSsid(),
                         if (secondsLeft != null)
                           _sessionExpireCounter(secondsLeft),
                       ],
@@ -175,34 +172,20 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
     );
   }
 
-  Widget _networkSelect() {
+  /// The router's main SSID. It used to open the account login's network
+  /// picker, which a Guardian login never had networks for (#1849).
+  Widget _mainSsid() {
     final dashboardHomeState = ref.watch(dashboardHomeProvider);
-    final hasMultiNetworks =
-        ref.watch(selectNetworkProvider).when(data: (state) {
-      return state.networks.length > 1;
-    }, error: (error, stackTrace) {
-      return false;
-    }, loading: () {
-      return false;
-    });
-    return InkWell(
-      onTap: hasMultiNetworks
-          ? () {
-              ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
-              context.pushNamed(RouteNamed.selectNetwork);
-            }
-          : null,
-      child: Row(
-        children: [
-          AppText.labelLarge(
-            dashboardHomeState.mainSSID,
-            overflow: TextOverflow.fade,
-            color: Color(
-              neutralTonal.get(100),
-            ),
+    return Row(
+      children: [
+        AppText.labelLarge(
+          dashboardHomeState.mainSSID,
+          overflow: TextOverflow.fade,
+          color: Color(
+            neutralTonal.get(100),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

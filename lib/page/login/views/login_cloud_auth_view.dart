@@ -242,10 +242,11 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
 
   Future<void> _cloudLogin(String token, String session) {
     if (_sessionInfo == null) {
-      logger.e('LoginCloudView _cloudLogin: sessionInfo is null');
+      logger.e('LoginCloudAuthView _cloudLogin: sessionInfo is null');
       return Future.value();
     }
-    logger.d('LoginCloudView _cloudLogin: $token, $session');
+    // The session id only: the token is the agent's credential for the router.
+    logger.d('LoginCloudAuthView _cloudLogin: session $session');
     setState(() {
       _isLoading = true;
     });
@@ -258,7 +259,7 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
           sessionInfo: _sessionInfo!,
         )
         .onError((error, stackTrace) {
-      logger.e('LoginCloudView _cloudLogin error: $error');
+      logger.e('LoginCloudAuthView _cloudLogin error: $error');
     }).whenComplete(() {
       setState(() {
         _isLoading = false;
