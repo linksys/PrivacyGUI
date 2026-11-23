@@ -698,37 +698,9 @@ class WifiService {
 
 **Section 5.4.3: Architecture Compliance Check**
 
-After completing the work, execute the following checks:
+`test/architecture/generated_types_only_in_services_test.dart` enforces the generated-model rule on every PR: under `lib/page/`, only a file inside a `services/` directory may import `lib/generated/`. It has no allowlist.
 
-```bash
-# ═══════════════════════════════════════════════════════════════
-# Generated Models Tier Isolation Check
-# ═══════════════════════════════════════════════════════════════
-
-# 1️⃣ Check if generated models are imported in the Provider layer
-grep -r "import.*generated/" lib/page/*/providers/
-# ✅ Should return 0 results (both L1 and L2 providers delegate to Services)
-
-# 2️⃣ Check if generated models are imported in the UI layer
-grep -r "import.*generated/" lib/page/*/views/
-# ✅ Should return 0 results
-
-# 3️⃣ Check if Service layer correctly imports generated models
-grep -r "import.*generated/" lib/page/*/services/
-# ✅ Should have results (Service layer should import generated models)
-
-# ═══════════════════════════════════════════════════════════════
-# Error Handling Tier Isolation Check (Article XIII)
-# ═══════════════════════════════════════════════════════════════
-
-# 4️⃣ Check if Provider layer has ServiceError imports (correct)
-grep -r "import.*core/errors/service_error" lib/page/*/providers/
-# ✅ Should have results when providers handle errors
-
-# 5️⃣ Check if Service layer correctly imports ServiceError
-grep -r "import.*core/errors/service_error" lib/page/*/services/
-# ✅ Should have results (Service layer should import ServiceError)
-```
+*Amended 2026-11-20 (#1833): the five grep commands that stood here were replaced by that test. Rationale: nobody ran them; their directory globs (`lib/page/*/providers/`, `lib/page/*/views/`) missed `_shared/utils/` and nested features, which is how nine files came to import `lib/generated/` outside `services/`; and three of the five only checked that some file somewhere did import something. Backwards compatible: the rule is unchanged, and it is now checked. The two error-handling greps go with them; Article XIII states that rule.*
 
 **Section 5.4.4: UI Model Creation Decision Criteria**
 

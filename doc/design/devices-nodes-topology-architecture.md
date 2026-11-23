@@ -8,7 +8,7 @@
 > its `PhysAddress` equals the node's `ID` (linksys/FWDEV#208), and wired
 > clients are attributed from `Interface.{j}.Neighbor.{k}`. It also still names
 > `DeviceUIModel` / `NodeUIModel`, since deleted. For the current design read
-> the code: `lib/page/_shared/utils/mesh_network_builder.dart`,
+> the code: `lib/page/_shared/services/mesh_network_builder.dart`,
 > `mesh_topology_builder.dart` and `mesh_node_identity.dart`, and their tests.
 
 This document describes the data architecture for connected devices, mesh nodes, and network topology visualization in PrivacyGUI.
@@ -632,7 +632,7 @@ if (device.hasMultipleInterfaces) {
 
 ### Services
 - `lib/page/devices/services/usp_devices_data_service.dart`
-- `lib/page/_shared/utils/mesh_topology_builder.dart`
+- `lib/page/_shared/services/mesh_topology_builder.dart`
 
 ### Providers
 - `lib/page/devices/providers/devices_data_provider.dart`

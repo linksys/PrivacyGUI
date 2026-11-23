@@ -11,7 +11,7 @@ import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/utils/device_classifier.dart';
-import 'package:privacy_gui/page/_shared/utils/mesh_network_builder.dart';
+import 'package:privacy_gui/page/_shared/services/mesh_network_builder.dart';
 
 void main() {
   // ---------------------------------------------------------------------------

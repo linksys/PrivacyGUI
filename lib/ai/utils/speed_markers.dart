@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
+import 'package:privacy_gui/core/utils/usp_formatters.dart';
 
 /// A throughput figure paired with the direction marker that labels it.
 typedef SpeedMarker = ({IconData icon, String text});
