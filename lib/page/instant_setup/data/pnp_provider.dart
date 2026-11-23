@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart';
@@ -96,8 +98,9 @@ bool shouldPreserveExistingAdminPassword({
 /// first, and the password PnP logged in with is kept for a save that did not
 /// land. The order matters on core7: after a wrong password, CheckAdminPassword3
 /// refuses every check with ErrorPasswordCheckDelayed until its delay runs out,
-/// the right password included, so a stale first guess can block the right
-/// second one for the whole reconnect window.
+/// the right password included. The check waits that delay out before the next
+/// candidate, so a wrong first guess costs a failed attempt and the wait, and
+/// the likelier password goes first.
 List<String> pnpPostSaveAdminPasswordCandidates({
   required String? currentPassword,
   required String? wifiPassword,
@@ -249,7 +252,9 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
       // login loop, where CheckAdminPassword returns 200 and the user is
       // logged out anyway.
       state = state.copyWith(autoMasterRotatedSinceLogin: false);
-    }).catchError((error) => throw ExceptionInvalidAdminPassword(),
+    }).catchError(
+            (error) => throw ExceptionInvalidAdminPassword(
+                delayTimeRemaining: _passwordCheckDelay(error as JNAPError)),
             // A wrong password, in each action pnpCheckAdminPassword resolves
             // to: CheckAdminPassword2 answers _ErrorUnauthorized, and
             // CheckAdminPassword3 (core7) answers ErrorInvalidAdminPassword.
@@ -257,6 +262,19 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
                 error is JNAPError &&
                 (error.result == errorJNAPUnauthorized ||
                     error.result == errorInvalidAdminPassword));
+  }
+
+  /// The delay CheckAdminPassword3 reports with a wrong password. JNAPError
+  /// carries the output JSON-encoded in `error`, or the result code when there
+  /// is no output.
+  Duration? _passwordCheckDelay(JNAPError error) {
+    try {
+      final output = jsonDecode(error.error ?? '');
+      final seconds = output is Map ? output['delayTimeRemaining'] : null;
+      return seconds is int && seconds > 0 ? Duration(seconds: seconds) : null;
+    } on FormatException {
+      return null;
+    }
   }
 
   /// check internet connection within 30 seconds

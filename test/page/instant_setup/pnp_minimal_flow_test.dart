@@ -208,10 +208,13 @@ class _Auth extends AuthNotifier {
 /// CheckAdminPassword3, as linksys/JNAP's core.hsl specifies it. A wrong
 /// password is ErrorInvalidAdminPassword and starts a delay, and every check
 /// during the delay is ErrorPasswordCheckDelayed, the right password included.
-/// On the bench (M63, 2026-11-20) the delay outlasted every probe of the
-/// reconnect window, so this one never ends.
 class _CheckAdminPassword3 {
-  _CheckAdminPassword3({required this.adminPassword}) {
+  /// [delay]: how long a wrong password delays the checks after it. The router
+  /// reports it in the refusal as delayTimeRemaining; the M63's firmware starts
+  /// at 5 seconds (`device.lua`, 2026-11-23). Without it, the delay never ends,
+  /// as on the bench on 2026-11-20, where it outlasted every probe of the
+  /// reconnect window.
+  _CheckAdminPassword3({required this.adminPassword, this.delay}) {
     when(repository.send(
       JNAPAction.pnpCheckAdminPassword,
       data: anyNamed('data'),
@@ -230,30 +233,40 @@ class _CheckAdminPassword3 {
   }
 
   final String adminPassword;
+  final Duration? delay;
   final repository = MockRouterRepository();
 
   /// The result of every check the router refused, in order.
   final refusals = <String>[];
 
+  bool _delayed = false;
+
   JNAPSuccess _check(String? password) {
-    final refusal = refusals.isNotEmpty
-        ? errorPasswordCheckDelayed
-        : password == adminPassword
-            ? null
-            : errorInvalidAdminPassword;
-    if (refusal == null) {
+    if (_delayed) {
+      refusals.add(errorPasswordCheckDelayed);
+      throw const JNAPError(result: errorPasswordCheckDelayed);
+    }
+    if (password == adminPassword) {
       return JNAPSuccess(result: 'OK', output: const {'isPasswordValid': true});
     }
-    refusals.add(refusal);
-    throw JNAPError(result: refusal);
+    refusals.add(errorInvalidAdminPassword);
+    _delayed = true;
+    final delay = this.delay;
+    if (delay == null) throw const JNAPError(result: errorInvalidAdminPassword);
+    Timer(delay, () => _delayed = false);
+    // The shape JNAPError.fromJson gives the router's answer.
+    throw JNAPError(
+      result: errorInvalidAdminPassword,
+      error: jsonEncode(
+          {'attemptsRemaining': 4, 'delayTimeRemaining': delay.inSeconds}),
+    );
   }
 }
 
 /// The real localLogin keeps an accepted password in flutter_secure_storage, a
 /// platform channel the test binding does not implement.
 void _stubSecureStorage(WidgetTester tester) {
-  const channel =
-      MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+  const channel = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
   final messenger = tester.binding.defaultBinaryMessenger;
   messenger.setMockMethodCallHandler(channel, (_) async => null);
   addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
@@ -462,6 +475,58 @@ void main() {
 
     expect(router.refusals, isEmpty);
     expect(find.text('Done').hitTestable(), findsOneWidget);
+  });
+
+  testWidgets(
+      'save that did not land on CheckAdminPassword3 waits out the delay before the login password',
+      (tester) async {
+    // The router still has the password PnP logged in with. The WiFi password,
+    // tried first, is refused and starts the delay, and the login password is
+    // accepted only once the delay has run out.
+    final router = _CheckAdminPassword3(
+        adminPassword: 'TestAdminPassword', delay: const Duration(seconds: 5));
+    final pnp = _Pnp()
+      ..changedAdminPassword = true
+      ..checksPasswordOnRouter = true;
+    final firmware = _Firmware();
+    _stubSecureStorage(tester);
+    await _showSetup(tester, pnp, firmware, router: router.repository);
+    await _loseSave(tester, pnp);
+    await _finishReconnectAttempts(tester);
+
+    expect(pnp.checkedPasswords, ['TestWiFiPassword', 'TestAdminPassword']);
+    expect(router.refusals, [errorInvalidAdminPassword]);
+    expect(pnp.saves, 1);
+    expect(find.text('Done').hitTestable(), findsOneWidget);
+  });
+
+  testWidgets(
+      'a long password check delay does not hold Retry past the deadline',
+      (tester) async {
+    final router = _CheckAdminPassword3(
+        adminPassword: 'TestAdminPassword', delay: const Duration(minutes: 5));
+    final pnp = _Pnp()
+      ..changedAdminPassword = true
+      ..checksPasswordOnRouter = true;
+    final firmware = _Firmware();
+    _stubSecureStorage(tester);
+    await _showSetup(tester, pnp, firmware, router: router.repository);
+    await _loseSave(tester, pnp);
+    await tester.pump(pnpReconnectInitialDelay);
+    await tester.pump(pnpReconnectDeadline);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Your router is not ready yet'), findsOneWidget);
+    expect(
+        tester
+            .widget<FilledButton>(find.byType(FilledButton).hitTestable())
+            .onPressed,
+        isNotNull);
+    // Nothing was sent during the delay, where it could only be refused.
+    expect(pnp.checkedPasswords, ['TestWiFiPassword']);
+    expect(router.refusals, [errorInvalidAdminPassword]);
+    // Let the router's delay run out before the test ends.
+    await tester.pump(const Duration(minutes: 5));
   });
 
   testWidgets(

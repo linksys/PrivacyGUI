@@ -732,7 +732,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
       try {
         await pnp.checkAdminPassword(candidates[index]);
         return;
-      } on ExceptionInvalidAdminPassword {
+      } on ExceptionInvalidAdminPassword catch (error) {
         if (!shouldContinue()) throw ExceptionNeedToReconnect();
         if (index + 1 == candidates.length) {
           rethrow;
@@ -740,7 +740,32 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
         logger.i(
           '[PnP]: The WiFi password set by the save was not accepted; trying the password PnP logged in with',
         );
+        // CheckAdminPassword3 refuses every check during the delay a wrong
+        // password starts, the right password included. Sent inside it, the
+        // next candidate could only be refused, and the retry would start over
+        // at the first candidate and spend another attempt.
+        final delay = error.delayTimeRemaining;
+        if (delay != null) {
+          logger.i('[PnP]: Waiting ${delay.inSeconds}s for the router to '
+              'accept password checks again');
+          await _waitOutPasswordCheckDelay(delay, shouldContinue);
+        }
       }
+    }
+  }
+
+  /// Waits out [delay] a second at a time, and stops early once
+  /// [shouldContinue] turns false. The router can report minutes, and the
+  /// reconnect deadline still has to release Retry on time.
+  Future<void> _waitOutPasswordCheckDelay(
+    Duration delay,
+    bool Function() shouldContinue,
+  ) async {
+    const step = Duration(seconds: 1);
+    for (var left = delay;
+        left > Duration.zero && shouldContinue();
+        left -= step) {
+      await Future<void>.delayed(left < step ? left : step);
     }
   }
 

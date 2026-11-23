@@ -6,7 +6,9 @@
 // delayTimeRemaining, where CheckAdminPassword2 answers _ErrorUnauthorized.
 // PnP's callers, the post-save candidate loop among them, recognise a wrong
 // password only as ExceptionInvalidAdminPassword, so checkAdminPassword has to
-// raise that whichever action the firmware runs.
+// raise that whichever action the firmware runs. It also carries the delay the
+// router reported: until it runs out, CheckAdminPassword3 refuses every check,
+// the right password included, so the loop waits before its next candidate.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -59,7 +61,25 @@ void main() {
 
     await expectLater(
       container.read(pnpProvider.notifier).checkAdminPassword('a-wrong-guess'),
-      throwsA(isA<ExceptionInvalidAdminPassword>()),
+      throwsA(isA<ExceptionInvalidAdminPassword>().having(
+          (error) => error.delayTimeRemaining,
+          'delayTimeRemaining',
+          const Duration(seconds: 5))),
+    );
+  });
+
+  test('a wrong password on CheckAdminPassword2 carries no delay', () async {
+    // CheckAdminPassword2 answers with no output, so JNAPError.fromJson puts
+    // the result code in `error`.
+    answerPasswordCheck(const JNAPError(
+      result: errorJNAPUnauthorized,
+      error: errorJNAPUnauthorized,
+    ));
+
+    await expectLater(
+      container.read(pnpProvider.notifier).checkAdminPassword('a-wrong-guess'),
+      throwsA(isA<ExceptionInvalidAdminPassword>().having(
+          (error) => error.delayTimeRemaining, 'delayTimeRemaining', isNull)),
     );
   });
 }
