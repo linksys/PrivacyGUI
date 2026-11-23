@@ -1,7 +1,7 @@
 # The 1.x Constitution
 
-**Version:** 1.5
-**Last amended:** 2026-11-19 (#1864, scrolling pages without `IntrinsicHeight`)
+**Version:** 1.8
+**Last amended:** 2026-11-20 (#1802, readability guards)
 **Applies to:** the 1.x line of PrivacyGUI: `dev-1.*`, `release-1.*`, and `main` while it ships 1.x. 2.x has its own `constitution.md`; nothing here binds 2.x, and nothing in 2.x's binds 1.x.
 
 ## Preamble
@@ -22,11 +22,11 @@ Where this document and another document in the repository disagree, this one wi
 |---|---|---|
 | I | Presentation files don't use the data layer; `lib/core/` doesn't import `lib/page/` | Test |
 | II | JNAP goes through `RouterRepository`; the HSL spec's `[noauth]` decides `auth:` | Review |
-| III | Tests run through `run_tests.sh`; changes ship tests; screenshot tests and mocks follow one pattern | Test for where screenshot checks live and for the layout gate's roster; CI for #1803's coverage floor and for the layout gate; review for the rest |
+| III | Tests run through `run_tests.sh`; changes ship tests; screenshot tests and mocks follow one pattern | Test for where screenshot checks live, for the layout gate's roster and for the readability guards; CI for #1803's coverage floor and for the layout gate; review for the rest |
 | IV | Feature state lives in `Notifier` / `AsyncNotifier`; `…State` classes extend `Equatable` | Review |
 | V | File, class, provider and directory names | Review |
 | VI | User-visible strings come from the ARB files | CI for missing keys; review for hard-coded strings |
-| VII | Zero analyzer errors; no new warnings | CI for errors; review for warnings |
+| VII | Zero analyzer errors and warnings | CI |
 | VIII | Simplicity; no wrappers around the framework; stay in scope | Review |
 | IX | Amendments state version, date and reason; the team approves them | Team approval |
 | X | A scrolling page's content needs no bounded height | CI for flex children on pages with a case, through #1802's layout gate; review for the rest |
@@ -99,7 +99,6 @@ These dependencies predate this constitution. They are listed, not fixed (#1804,
 | `lib/page/instant_setup/pnp_setup_view.dart` | `lib/core/jnap/command/base_command.dart` | `CacheLevel` |
 | `lib/page/instant_setup/pnp_setup_view.dart` | `lib/core/jnap/router_repository.dart` | |
 | `lib/page/instant_setup/pnp_setup_view.dart` | `routerRepositoryProvider` | `send(getRadioInfo)` |
-| `lib/page/instant_setup/troubleshooter/views/isp_settings/pnp_pppoe_view.dart` | `lib/core/jnap/router_repository.dart` | nothing: the import is unused |
 | `lib/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart` | `lib/core/jnap/router_repository.dart` | |
 | `lib/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart` | `routerRepositoryProvider` | `isLoggedIn()` |
 | `lib/core/jnap/models/node_light_settings.dart` | `lib/page/nodes/_nodes.dart` | `NodeLightStatus` |
@@ -189,78 +188,68 @@ A change to a notifier, a service, a `…State` class or a model ships unit test
 
 A new `lib/page/**/*_view.dart`, or a new page 5.1 lets go without the suffix, ships a case in #1802's layout gate, so it is swept for overflow at the gate's sizes (3.5).
 
-The gate's case is a `testLocalizations` case (3.5). A page has one when a `testLocalizations` suite constructs its class. A page that a case reaches only as a tab of its parent does not count: `TabBarView` lays out the selected tab only.
+The gate's case is a `testLocalizations` case (3.5). A page has one when a `testLocalizations` suite constructs its class. A page that a case reaches only as a tab of its parent does not count: `TabBarView` lays out the selected tab only. A view that only another page builds, with no route of its own, is a component instead: it needs no case of its own when that page's cases open it, and its row names them.
 
-The table lists the pages that had no case when the gate landed. #1802 P6 empties it. Deleting a row because the page got a case is not an amendment (9.1).
+The table lists the pages that have no case, and each row says why the page needs none. Deleting a row because the page got a case, or was deleted, is not an amendment (9.1). A row that says nothing in `lib/` builds the page fails the roster test once something does, and a row that says nothing navigates to its route fails once code outside `lib/route/` names that route.
 
 <!-- layout-gate-roster:begin -->
 | Page | Class | Why |
 |---|---|---|
-| `lib/page/advanced_settings/apps_and_gaming/ddns/views/ddns_settings_view.dart` | `DDNSSettingsView` | No case yet (#1802 P6). |
-| `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_forwarding_list_view.dart` | `PortRangeForwardingListView` | No case yet (#1802 P6). |
-| `lib/page/advanced_settings/apps_and_gaming/ports/views/port_range_triggering_list_view.dart` | `PortRangeTriggeringListView` | No case yet (#1802 P6). |
-| `lib/page/advanced_settings/apps_and_gaming/ports/views/single_port_forwarding_list_view.dart` | `SinglePortForwardingListView` | No case yet (#1802 P6). |
-| `lib/page/advanced_settings/firewall/views/ipv6_port_service_list_view.dart` | `Ipv6PortServiceListView` | No case yet (#1802 P6). |
-| `lib/page/advanced_settings/local_network_settings/views/dhcp_reservations_edit_view.dart` | `DHCPReservationsEditView` | No case yet (#1802 P6). |
-| `lib/page/advanced_settings/local_network_settings/views/dhcp_server_view.dart` | `DHCPServerView` | No case yet (#1802 P6). |
-| `lib/page/advanced_settings/static_routing/static_routing_list_view.dart` | `StaticRoutingListView` | No case yet (#1802 P6). |
-| `lib/page/components/customs/network_check_view.dart` | `NetworkCheckView` | No case yet (#1802 P6). |
-| `lib/page/components/customs/qr_view.dart` | `?` | No case yet (#1802 P6). The file is commented out. |
-| `lib/page/components/picker/day_picker_view.dart` | `DayPickerView` | No case yet (#1802 P6). |
-| `lib/page/components/picker/number_picker_view.dart` | `NumberPickerView` | No case yet (#1802 P6). |
-| `lib/page/components/picker/region_picker_view.dart` | `RegionPickerView` | No case yet (#1802 P6). |
-| `lib/page/components/picker/time_picker_view.dart` | `TimePickerView` | No case yet (#1802 P6). |
-| `lib/page/components/settings_view/editable_card_list_edit_view.dart` | `EditableCardListEditView` | No case yet (#1802 P6). |
-| `lib/page/components/settings_view/editable_card_list_settings_view.dart` | `EditableCardListsettingsView` | No case yet (#1802 P6). |
-| `lib/page/components/settings_view/editable_table_settings_view.dart` | `AppEditableTableSettingsView` | No case yet (#1802 P6). |
-| `lib/page/components/styled/styled_tab_page_view.dart` | `StyledAppTabPageView` | No case yet (#1802 P6). It is a layout that pages use. |
-| `lib/page/components/views/arguments_view.dart` | `ArgumentsBaseConsumerStatefulView` | No case yet (#1802 P6). It is a base class for views. |
-| `lib/page/components/views/write_flow_blocked_view.dart` | `WriteFlowBlockedView` | No case yet (#1802 P6). |
-| `lib/page/dashboard/views/dashboard_settings_view.dart` | `DashboardSettingsView` | No case yet (#1802 P6). |
-| `lib/page/dashboard/views/dashboard_support_view.dart` | `DashboardSupportView` | No case yet (#1802 P6). |
-| `lib/page/dashboard/views/prepare_dashboard_view.dart` | `PrepareDashboardView` | No case yet (#1802 P6). |
-| `lib/page/firmware_update/views/firmware_update_process_view.dart` | `FirmwareUpdateProcessView` | No case yet (#1802 P6). |
-| `lib/page/health_check/views/speed_test_selection.dart` | `SpeedTestSelectionView` | No case yet (#1802 P6). |
-| `lib/page/instant_setup/troubleshooter/views/call_support/call_support_main_region_view.dart` | `CallSupportMainRegionView` | No case yet (#1802 P6). |
-| `lib/page/instant_setup/troubleshooter/views/call_support/call_support_more_region_view.dart` | `CallSupportMoreRegionView` | No case yet (#1802 P6). |
-| `lib/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_auth_view.dart` | `PnpIspAuthView` | No case yet (#1802 P6). |
-| `lib/page/landing/views/debug_device_info_view.dart` | `DebugDeviceInfoView` | No case yet (#1802 P6). |
-| `lib/page/landing/views/home_view.dart` | `HomeView` | No case yet (#1802 P6). |
-| `lib/page/login/auto_parent/views/auto_parent_first_login_view.dart` | `AutoParentFirstLoginView` | No case yet (#1802 P6). |
-| `lib/page/login/views/login_cloud_auth_view.dart` | `LoginCloudAuthView` | No case yet (#1802 P6). |
-| `lib/page/login/views/login_cloud_view.dart` | `LoginCloudView` | No case yet (#1802 P6). |
-| `lib/page/nodes/views/change_node_name_view.dart` | `ChangeNodeNameView` | No case yet (#1802 P6). |
-| `lib/page/nodes/views/node_connected_devices_view.dart` | `?` | No case yet (#1802 P6). The file is empty. |
-| `lib/page/nodes/views/node_light_guide_view.dart` | `NodeLightGuideView` | No case yet (#1802 P6). |
-| `lib/page/nodes/views/node_name_edit_view.dart` | `NodeNameEditView` | No case yet (#1802 P6). |
-| `lib/page/nodes/views/node_restart_view.dart` | `NodeRestartView` | No case yet (#1802 P6). |
-| `lib/page/otp_flow/views/otp_add_phone.dart` | `OtpAddPhoneView` | No case yet (#1802 P6). |
-| `lib/page/otp_flow/views/otp_code_input.dart` | `OtpCodeInputView` | No case yet (#1802 P6). |
-| `lib/page/otp_flow/views/otp_method_selector_view.dart` | `OTPMethodSelectorView` | No case yet (#1802 P6). |
-| `lib/page/otp_flow/views/otp_view.dart` | `OtpFlowView` | No case yet (#1802 P6). |
-| `lib/page/select_network/views/select_network_view.dart` | `SelectNetworkView` | No case yet (#1802 P6). |
-| `lib/page/troubleshooting/views/troubleshooting_ping_view.dart` | `TroubleshootingPingView` | No case yet (#1802 P6). |
-| `lib/page/troubleshooting/views/troubleshooting_view.dart` | `TroubleshootingView` | No case yet (#1802 P6). |
-| `lib/page/wifi_settings/views/mac_filtering_view.dart` | `MacFilteringView` | No case yet (#1802 P6). |
-| `lib/page/wifi_settings/views/wifi_advanced_settings_view.dart` | `WifiAdvancedSettingsView` | No case yet (#1802 P6). |
-| `lib/page/wifi_settings/views/wifi_list_advanced_mode_view.dart` | `AdvancedModeView` | No case yet (#1802 P6). |
-| `lib/page/wifi_settings/views/wifi_list_simple_mode_view.dart` | `SimpleModeView` | No case yet (#1802 P6). |
-| `lib/page/wifi_settings/views/wifi_list_view.dart` | `WiFiListView` | No case yet (#1802 P6). |
-| `lib/page/wifi_settings/views/wifi_settings_channel_finder_view.dart` | `WifiSettingsChannelFinderView` | No case yet (#1802 P6). |
-| `lib/page/wifi_settings/views/wifi_share_detail_view.dart` | `WiFiShareDetailView` | No case yet (#1802 P6). |
+| `lib/page/advanced_settings/local_network_settings/views/dhcp_reservations_edit_view.dart` | `DHCPReservationsEditView` | Permanent while unreachable: nothing navigates to its route, `dhcpReservationEdit`, and opened without the route's arguments it throws. Give it a case once something does. |
+| `lib/page/advanced_settings/local_network_settings/views/dhcp_server_view.dart` | `DHCPServerView` | Permanent: a component, not a page. `LocalNetworkSettingsView` lays it out in its DHCP server tab, and its cases open the tab, so they sweep it. |
+| `lib/page/advanced_settings/static_routing/static_routing_list_view.dart` | `StaticRoutingListView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/components/customs/network_check_view.dart` | `NetworkCheckView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/components/picker/day_picker_view.dart` | `DayPickerView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/components/picker/number_picker_view.dart` | `NumberPickerView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/components/picker/time_picker_view.dart` | `TimePickerView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/components/settings_view/editable_card_list_edit_view.dart` | `EditableCardListEditView` | Permanent while unreachable: nothing navigates to its route, `cardListEdit`, and opened without the route's arguments it throws. Give it a case once something does. |
+| `lib/page/components/settings_view/editable_card_list_settings_view.dart` | `EditableCardListsettingsView` | Permanent: a component, not a page. The advanced settings lists build it; the IPv6 port service and static routing cases sweep it. |
+| `lib/page/components/settings_view/editable_table_settings_view.dart` | `AppEditableTableSettingsView` | Permanent: a component, not a page. The advanced settings lists build it; the IPv6 port service and static routing cases sweep it. |
+| `lib/page/components/styled/styled_tab_page_view.dart` | `StyledAppTabPageView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/components/views/arguments_view.dart` | `ArgumentsBaseConsumerStatefulView` | Permanent: a base class for views, not a page. |
+| `lib/page/firmware_update/views/firmware_update_process_view.dart` | `FirmwareUpdateProcessView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/instant_setup/troubleshooter/views/call_support/call_support_main_region_view.dart` | `CallSupportMainRegionView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/instant_setup/troubleshooter/views/call_support/call_support_more_region_view.dart` | `CallSupportMoreRegionView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/login/auto_parent/views/auto_parent_first_login_view.dart` | `AutoParentFirstLoginView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/nodes/views/change_node_name_view.dart` | `ChangeNodeNameView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/nodes/views/node_light_guide_view.dart` | `NodeLightGuideView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/nodes/views/node_name_edit_view.dart` | `NodeNameEditView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/nodes/views/node_restart_view.dart` | `NodeRestartView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/wifi_settings/views/mac_filtering_view.dart` | `MacFilteringView` | Permanent: a component, not a page: a tab of `WiFiMainView`, with no route of its own. `WiFiMainView`'s cases open the tab, so they sweep it. |
+| `lib/page/wifi_settings/views/wifi_advanced_settings_view.dart` | `WifiAdvancedSettingsView` | Permanent: a component, not a page: a tab of `WiFiMainView`, with no route of its own. `WiFiMainView`'s cases open the tab, so they sweep it. |
+| `lib/page/wifi_settings/views/wifi_list_advanced_mode_view.dart` | `AdvancedModeView` | Permanent: a component, not a page. `WiFiListView` lays it out in the advanced mode, and the Wi-Fi settings cases in that mode sweep it. |
+| `lib/page/wifi_settings/views/wifi_list_simple_mode_view.dart` | `SimpleModeView` | Permanent: a component, not a page. `WiFiListView` lays it out in the simple mode, and the Wi-Fi settings cases in that mode sweep it. |
+| `lib/page/wifi_settings/views/wifi_list_view.dart` | `WiFiListView` | Permanent: a component, not a page: a tab of `WiFiMainView`, with no route of its own. `WiFiMainView`'s cases open the tab, so they sweep it. |
+| `lib/page/wifi_settings/views/wifi_share_detail_view.dart` | `WiFiShareDetailView` | Permanent: a component, not a page: the content of the dashboard Wi-Fi card's share dialog. The dashboard's Share WiFi modal cases open the dialog, so they sweep it. |
 <!-- layout-gate-roster:end -->
 
 **Enforced by**: Test. `test/constitution/layout_gate_roster_test.dart` fails when a page has no case and no row in the table above, and when a row's page has a case or is gone.
 
 *Amended 2026-11-19 (#1802): the rule takes effect, with the roster test and a row for each page that has no case yet, so a page cannot be left out of the gate unnoticed. The version moves to 1.4, not 2.0, although 9.2 asks a major number for an added exception or a tightened rule. This section said the rule would take effect with #1802 P3, and the rows are the exceptions it starts with, not exceptions added to a rule already in force. Counting the five pages 5.1 names, and not counting a tab, follow what 5.1 and `TabBarView` already imply. The team decides whether that holds (9.3).*
 
+*Amended 2026-11-19 (#1802): the table may keep a page for good, with the reason it needs no case, where it said #1802 P6 would empty it. #1802 P6 had planned these exemptions, and 38 rows take one: 10 that are not pages, 19 that nothing lets a user open, and 9 that #1849 deletes. A component that a page lays out needs no case of its own when that page's cases open it. A page counts as unreachable when nothing in `lib/` builds it, or its route throws when opened, as a typed URL would open it. The rows of two deleted files go. The version moves to 1.6, not 2.0, although 9.2 asks a major number for an added exception, as #1802's other amendments kept the major number. The team approved it in a meeting on 2026-11-20 (9.3).*
+
 ### 3.4 A fix that ellipsizes ships a readability guard
 
-A fix that makes text fit by ellipsizing it or capping `maxLines` ships a test at the width that forced the fix. The test asserts the text is still usable. For an IP, MAC, serial number, firmware version or SSID, that means `RenderParagraph.didExceedMaxLines` is false.
+A fix that makes text fit by ellipsizing it or capping `maxLines` ships a test at the width that forced the fix. The test asserts the text is still usable. For an IP, MAC, serial number, firmware version or SSID, that means the text is fully shown: `expect(finder, isFullyShown)` passes, from `test/layout_gate/fully_shown.dart`. No `maxLines` or ellipsis cuts the text, it fits its box, and no ancestor clips it, a scroll view included. It does not check the size the text is drawn at, so a value that a `FittedBox` shrinks passes.
 
 The overflow sweep cannot see this: adding `maxLines: 1` turns every overflowing row green and cuts `192.168.1.100` in the middle.
 
-**Enforced by**: Review. #1802 P4 adds the first set of guards.
+These guards hold the values that are useless when cut, each as long as it gets. `testFullyShown`, in the same file, runs a guard in every locale at the narrowest mobile and desktop pages, 360 and 1240:
+
+| Guard | Values |
+|---|---|
+| `test/page/instant_device/views/device_detail_readability_test.dart` | Device detail: the IPv4 and IPv6 addresses, the MAC address and the SSID |
+| `test/page/nodes/views/node_detail_readability_test.dart` | Node detail: the WAN and LAN IP addresses, the firmware version, the serial number and the MAC address |
+| `test/page/dashboard/views/internet_status_readability_test.dart` | The dashboard's internet status: the router's serial number and firmware version |
+| `test/page/dashboard/views/wifi_grid_readability_test.dart` | The dashboard's Wi-Fi card: the SSID, at 1240 only, where the card is narrowest. The file also holds the guard for the card's device count, which #1802 fixed. |
+| `test/page/wifi_settings/views/wifi_list_readability_test.dart` | Wi-Fi settings: the main and guest SSIDs, in the advanced and the simple mode |
+
+A guard is proven by a mutation that cuts its value: the guard goes red, and the layout gate stays green. Where the value has room to spare on one line, the mutation caps it at one line in a box narrower than the value.
+
+**Enforced by**: Test for the values above; review for a new fix.
+
+*Amended 2026-11-19 (#1802): #1802 P4 adds the guards above. "Usable" becomes `isFullyShown`, which also fails a `SelectableText` that scrolls its value out of its box and a value an ancestor clips; `didExceedMaxLines` sees neither. The version moves to 1.8, not 2.0, although 9.2 asks a major number for a tightened rule, as #1802's other amendments kept the major number. The team approved it in a meeting on 2026-11-20 (9.3).*
 
 ### 3.5 Screenshot tests
 
@@ -334,7 +323,7 @@ Exception: `RouterNotifier` in `lib/route/router_provider.dart` extends `ChangeN
 
 A `…State` class that a notifier holds extends `Equatable` and lists every field in `props`. States then compare by value, which tests and `ref.listen` callbacks rely on.
 
-Exceptions: `PnpTroubleshooterState`, `SelectNetworkState`, `InstantTopologyState`.
+Exceptions: `PnpTroubleshooterState`, `InstantTopologyState`.
 
 **Enforced by**: Review.
 
@@ -345,7 +334,7 @@ Exceptions: `PnpTroubleshooterState`, `SelectNetworkState`, `InstantTopologyStat
 ### 5.1 Files
 
 - Dart files are `snake_case.dart`. The analyzer's `file_names` lint reports a breach as an info, which no check fails on.
-- A page is `*_view.dart`. #1802's roster finds pages by this suffix, so a page named otherwise escapes the layout gate. Exceptions, each a page that `lib/route/` builds: `lib/page/vpn/views/vpn_settings_page.dart`, `lib/page/otp_flow/views/otp_add_phone.dart`, `lib/page/otp_flow/views/otp_code_input.dart`, `lib/page/health_check/views/speed_test_external.dart` and `lib/page/health_check/views/speed_test_selection.dart`.
+- A page is `*_view.dart`. #1802's roster finds pages by this suffix, so a page named otherwise escapes the layout gate. Exceptions, each a page that `lib/route/` builds: `lib/page/vpn/views/vpn_settings_page.dart`, `lib/page/health_check/views/speed_test_external.dart` and `lib/page/health_check/views/speed_test_selection.dart`.
 - A file that defines a notifier provider is `*_provider.dart`. Exceptions: `lib/page/vpn/providers/vpn_notifier.dart`, `lib/page/auto_ipoe/providers/auto_ipoe_notifier.dart`, `lib/core/pwa/pwa_install_service.dart`.
 - A test of one source file is `<source>_test.dart`. A test that splits one source's tests by scenario is `<source>_<scenario>_test.dart`. A test that covers no single source file is named after what it checks, like `architecture_boundary_test.dart`.
 
@@ -365,7 +354,7 @@ The existing directories vary:
 - `advanced_settings` holds one directory per settings page, plus a shared `widgets/`. Every page has `providers/`, and all but `static_routing` have `views/`.
 - `instant_setup` keeps its two main views at the top level, its notifier in `data/` and its troubleshooter in its own directory.
 - `support` is two files with no sub-directories.
-- `components`, `firmware_update` and `landing` have no `providers/`, and `login` has one only under `auto_parent/`.
+- `components` and `firmware_update` have no `providers/`, and `login` has one only under `auto_parent/`.
 
 When a feature has a barrel, it is `_<feature>.dart` in the feature's directory, as in `lib/page/nodes/_nodes.dart` and `lib/page/advanced_settings/dmz/_dmz.dart`. Eight directories under `lib/page/` have none: `auto_ipoe`, `components`, `instant_privacy`, `instant_setup`, `instant_verify`, `login`, `support` and `vpn`.
 
@@ -397,13 +386,15 @@ Every string a user can see is a key in `lib/l10n/app_en.arb`, the template, rea
 
 *Amended 2026-11-18 (#1802): `analysis_options.yaml` excludes `plugins/**`, because `plugins/widgets` is fixed in its own repository (#1802, Decision 1). This adds no exception: rules for `plugins/widgets` were already deferred (Not Covered › Deferred), so the version moves to 1.1, not 2.0.*
 
-### 7.2 Warnings are cleaned, not added
+### 7.2 Zero analyzer warnings
 
-A change adds no analyzer warnings. The existing ones (246 when #1802 was filed, 221 once 7.1 left out `plugins/**`) are cleared in a dedicated PR (#1802, Decision 1), not mixed into feature changes, so that a feature's diff stays about the feature.
+`flutter analyze` reports no warnings either. #1802 cleared the 219 there were (246 when #1802 was filed, 221 once 7.1 left out `plugins/**`) in a PR of their own, so that no feature's diff carried them (#1802, Decision 1). Infos are not counted.
 
-**Enforced by**: CI for errors: `1.x / Analyze` runs `flutter analyze --no-fatal-warnings --no-fatal-infos`, which fails on errors only. Review for warnings, until the backlog is cleared and the check can fail on them.
+**Enforced by**: CI. `1.x / Analyze` runs `flutter analyze --no-fatal-infos`, which fails on an error or a warning.
 
 *Amended 2026-11-18 (#1802): names the check that runs the analyzer, now that #1802 P1 has added it, and gives the warning count once 7.1 left out `plugins/**`.*
+
+*Amended 2026-11-20 (#1802): the backlog is cleared, so `1.x / Analyze` fails on warnings too, and 7.2 asks for none rather than no new ones. The version moves to 1.7, not 2.0, although 9.2 asks a major number for a tightened rule, as #1802's other amendments kept the major number. The team approved it in a meeting on 2026-11-20 (9.3).*
 
 ---
 

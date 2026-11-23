@@ -21,15 +21,12 @@ import '../../../../../mocks/static_routing_rule_notifier_mocks.dart';
 import '../../../../../test_data/static_routing_state.dart';
 import '../../../../../mocks/static_routing_notifier_mocks.dart';
 import '../../../../../common/di.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:get_it/get_it.dart';
 
 void main() {
   late MockStaticRoutingNotifier mockStaticRoutingNotifier;
   late MockStaticRoutingRuleNotifier mockStaticRoutingRuleNotifier;
 
   mockDependencyRegister();
-  ServiceHelper mockServiceHelper = GetIt.I.get<ServiceHelper>();
   setUp(() {
     mockStaticRoutingNotifier = MockStaticRoutingNotifier();
     mockStaticRoutingRuleNotifier = MockStaticRoutingRuleNotifier();

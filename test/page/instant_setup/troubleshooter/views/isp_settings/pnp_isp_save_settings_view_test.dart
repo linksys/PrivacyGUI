@@ -18,7 +18,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
@@ -27,7 +26,6 @@ import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/auto_master_status.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';

@@ -118,7 +118,6 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
 
 class _FiltersWidget extends StatelessWidget {
   const _FiltersWidget({
-    super.key,
     required this.widget,
     required this.selectConnection,
     required this.notifier,

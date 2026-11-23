@@ -344,7 +344,6 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
         .externalDevices
         .where((e) => e.isOnline())
         .length;
-    final nodes = state.root.children.firstOrNull?.toFlatList() ?? [];
 
     return _infoTile(
       text:

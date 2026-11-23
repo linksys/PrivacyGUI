@@ -263,10 +263,6 @@ class FillPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = fillColor
-      ..style = PaintingStyle.fill;
-
     final fillHeight = size.height * fillAmount;
     final rect =
         Rect.fromLTWH(0, size.height - fillHeight, size.width, fillHeight);

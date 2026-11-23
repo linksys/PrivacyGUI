@@ -1,26 +1,8 @@
-import 'dart:convert';
-
 import 'package:http/http.dart';
 import 'package:privacy_gui/constants/cloud_const.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
 
 extension Cloud2Service on LinksysHttpClient {
-  Future<Response> associateSmartDevice({
-    required String linksysToken,
-    required String serialNumber,
-    required String fcmToken,
-  }) {
-    final endpoint = combineUrl(kSmartDeviceAssociate);
-    Map<String, String> header = defaultHeader;
-
-    header.addAll({
-      kHeaderLinksysToken: linksysToken,
-      kHeaderSerialNumber: serialNumber,
-    });
-    return this.post(Uri.parse(endpoint),
-        headers: header, body: jsonEncode({'fcmToken': fcmToken}));
-  }
-
   Future<Response> geolocation({
     required String linksysToken,
     required String serialNumber,

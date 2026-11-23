@@ -32,7 +32,6 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
 import '../../../common/di.dart';
 import '../../../mocks/firmware_update_notifier_mocks.dart';
-import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../mocks/pnp_notifier_mocks.dart' as Mock;
 import '../../../mocks/router_repository_mocks.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
