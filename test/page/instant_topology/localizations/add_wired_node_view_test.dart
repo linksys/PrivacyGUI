@@ -14,7 +14,6 @@ import 'package:privacy_gui/page/nodes/providers/add_wired_nodes_state.dart';
 import '../../../common/di.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
-import '../../../mocks/add_wired_nodes_notifier_mocks.dart';
 import '../../../test_data/topology_data.dart';
 import '../../../mocks/instant_topology_notifier_mocks.dart';
 

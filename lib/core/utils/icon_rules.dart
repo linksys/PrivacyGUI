@@ -239,6 +239,17 @@ const List<Map<String, dynamic>> iconRules = [
     'iconClass': 'routerM62',
   },
   {
+    // Pinnacle 2.3 is Cherry 7 hardware, so it maps to Cherry's icon.
+    'description': 'Linksys M63 (M63/Pinnacle 2.3)',
+    'test': {
+      'model': {
+        'manufacturer': 'Linksys',
+        'modelNumber': '^m63',
+      },
+    },
+    'iconClass': 'routerM63',
+  },
+  {
     'description': 'Linksys M60 (M60/Pinnacle 2.0)',
     'test': {
       'model': {
@@ -769,6 +780,7 @@ String _iconMapping(String iconClass, {String? fallback}) {
       return 'routerLn11';
     case 'routerLn12':
     case 'routerLn16':
+    case 'routerM63':
       return 'routerLn12';
     default:
       // do router check

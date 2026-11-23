@@ -1,8 +1,9 @@
+import 'dart:convert';
+
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart';
 import 'package:privacy_gui/constants/_constants.dart';
-import 'package:privacy_gui/core/cloud/linksys_cloud_repository.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
@@ -21,7 +22,6 @@ import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_step_state.dart';
@@ -90,19 +90,27 @@ bool shouldPreserveExistingAdminPassword({
 }) =>
     isRouterUnconfigured && (routerPasswordSet ?? false);
 
+/// The passwords the post-save check tries, in order.
+///
+/// When the save set the admin password to the WiFi password, that one goes
+/// first, and the password PnP logged in with is kept for a save that did not
+/// land. The order matters on core7: after a wrong password, CheckAdminPassword3
+/// refuses every check with ErrorPasswordCheckDelayed until its delay runs out,
+/// the right password included. The check waits that delay out before the next
+/// candidate, so a wrong first guess costs a failed attempt and the wait, and
+/// the likelier password goes first.
 List<String> pnpPostSaveAdminPasswordCandidates({
   required String? currentPassword,
   required String? wifiPassword,
   required bool didSetAdminPassword,
 }) {
   final candidates = <String>[];
-  if (currentPassword?.isNotEmpty == true) {
-    candidates.add(currentPassword!);
-  }
-  if (didSetAdminPassword &&
-      wifiPassword?.isNotEmpty == true &&
-      !candidates.contains(wifiPassword)) {
+  if (didSetAdminPassword && wifiPassword?.isNotEmpty == true) {
     candidates.add(wifiPassword!);
+  }
+  if (currentPassword?.isNotEmpty == true &&
+      !candidates.contains(currentPassword)) {
+    candidates.add(currentPassword!);
   }
   return candidates;
 }
@@ -183,152 +191,6 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   void setAutoMasterStatusOnEntry(AutoMasterStatus? status);
 }
 
-class MockPnpNotifier extends BasePnpNotifier {
-  // Simulate Auto Parent case:
-  // - Router is already Master (isUnconfigured = false)
-  // - Not pre-paired (isPrePaired = false)
-  // - Should show YourNetworkStep for adding nodes
-
-  @override
-  Future checkAdminPassword(String? password) {
-    if (password == 'Linksys123!') {
-      return Future.delayed(const Duration(seconds: 1));
-    }
-    return Future.delayed(const Duration(seconds: 1))
-        .then((value) => throw ExceptionInvalidAdminPassword());
-  }
-
-  @override
-  Future checkInternetConnection([int retries = 1]) {
-    // Auto Parent: internet connected
-    return Future.delayed(const Duration(seconds: 1));
-  }
-
-  @override
-  Future fetchDeviceInfo([bool clearCurrentSN = true]) {
-    // Set mock device info to allow navigation to pnpConfig
-    // Delay state modification to avoid "modify provider while building" error
-    return Future.delayed(const Duration(seconds: 1)).then((_) {
-      state = state.copyWith(
-        deviceInfo: const NodeDeviceInfo(
-          manufacturer: 'Linksys',
-          modelNumber: 'MBE70',
-          hardwareVersion: '1',
-          description: 'Linksys Velop',
-          serialNumber: 'Mock12345678',
-          firmwareVersion: '1.0.0',
-          firmwareDate: '2024-01-01T00:00:00Z',
-          services: [
-            'http://linksys.com/jnap/guestnetwork/GuestNetwork',
-            'http://linksys.com/jnap/routerleds/RouterLEDs4',
-          ],
-        ),
-      );
-    });
-  }
-
-  @override
-  Future<AutoConfigurationSettings?> autoConfigurationCheck() {
-    return Future.delayed(const Duration(seconds: 1))
-        .then((value) => AutoConfigurationSettings(
-              isAutoConfigurationSupported: true,
-              userAcknowledgedAutoConfiguration: false,
-              autoConfigurationMethod: AutoConfigurationMethod.autoParent,
-            ));
-  }
-
-  @override
-  Future<bool> isRouterPasswordSet() {
-    return Future.delayed(const Duration(seconds: 1)).then((value) => true);
-  }
-
-  @override
-  Future fetchData() {
-    // Simulate AutoParent case (not pre-paired)
-    return Future.delayed(const Duration(seconds: 1)).then((_) {
-      state = state.copyWith(isPrePaired: false);
-      logger.d('[PnP Mock]: fetchData - isPrePaired=${state.isPrePaired}');
-    });
-  }
-
-  @override
-  PnpWiFiSettings getDefaultWiFiSettings() {
-    return const PnpWiFiSettings(
-      isSplitMode: false,
-      radios: [
-        PnpWiFiRadio(
-          radioId: 'RADIO_2.4GHz',
-          band: 'RADIO_2.4GHz',
-          ssid: 'Linksys1234567',
-          password: 'Linksys123456@',
-          security: 'WPA2/WPA3-Mixed-Personal',
-          isEnabled: true,
-        ),
-      ],
-    );
-  }
-
-  @override
-  ({String name, String password}) getDefaultGuestWiFiNameAndPassPhrase() {
-    return (
-      name: 'Guest-Linksys1234567',
-      password: 'GuestLinksys123456@',
-    );
-  }
-
-  @override
-  Future save() {
-    return Future.delayed(const Duration(seconds: 5));
-  }
-
-  @override
-  Future checkRouterConfigured() {
-    // Auto Parent: already configured as Master
-    state = state.copyWith(isUnconfigured: false);
-    return Future.delayed(const Duration(seconds: 1));
-  }
-
-  @override
-  Future testConnectionReconnected() {
-    return Future.delayed(const Duration(seconds: 1)).then((value) => true);
-  }
-
-  @override
-  Future fetchDevices() {
-    return Future.delayed(const Duration(seconds: 1)).then((_) {});
-  }
-
-  @override
-  void setAttachedPassword(String? password) {
-    state = state.copyWith(attachedPassword: () => password);
-  }
-
-  @override
-  void setForceLogin(bool force) {
-    state = state.copyWith(forceLogin: force);
-  }
-
-  @override
-  Future<AutoMasterStatus?> checkAutoMasterStatus() {
-    return Future.value(AutoMasterStatus.idle);
-  }
-
-  @override
-  Stream<AutoMasterStatus?> pollAutoMasterStatus() async* {
-    yield AutoMasterStatus.idle;
-  }
-
-  @override
-  Stream<AutoMasterStatus?> pollAutoMasterUntilRunning() async* {
-    yield AutoMasterStatus.idle;
-  }
-
-  @override
-  void setAutoMasterStatusOnEntry(AutoMasterStatus? status) {
-    state = state.copyWith(autoMasterStatusOnEntry: () => status);
-  }
-}
-
 class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   bool _acknowledgementNeededAfterMaster = false;
   bool _acknowledgementCompleted = false;
@@ -388,9 +250,29 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
       // login loop, where CheckAdminPassword returns 200 and the user is
       // logged out anyway.
       state = state.copyWith(autoMasterRotatedSinceLogin: false);
-    }).catchError((error) => throw ExceptionInvalidAdminPassword(),
+    }).catchError(
+            (error) => throw ExceptionInvalidAdminPassword(
+                delayTimeRemaining: _passwordCheckDelay(error as JNAPError)),
+            // A wrong password, in each action pnpCheckAdminPassword resolves
+            // to: CheckAdminPassword2 answers _ErrorUnauthorized, and
+            // CheckAdminPassword3 (core7) answers ErrorInvalidAdminPassword.
             test: (error) =>
-                error is JNAPError && error.result == errorJNAPUnauthorized);
+                error is JNAPError &&
+                (error.result == errorJNAPUnauthorized ||
+                    error.result == errorInvalidAdminPassword));
+  }
+
+  /// The delay CheckAdminPassword3 reports with a wrong password. JNAPError
+  /// carries the output JSON-encoded in `error`, or the result code when there
+  /// is no output.
+  Duration? _passwordCheckDelay(JNAPError error) {
+    try {
+      final output = jsonDecode(error.error ?? '');
+      final seconds = output is Map ? output['delayTimeRemaining'] : null;
+      return seconds is int && seconds > 0 ? Duration(seconds: seconds) : null;
+    } on FormatException {
+      return null;
+    }
   }
 
   /// check internet connection within 30 seconds
@@ -442,7 +324,6 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
       return isConnected;
     }
 
-    Future<bool> testPing() => ref.read(cloudRepositoryProvider).testPingPng();
     final isOnline = await isInternetConnected();
     // final isOnline = await testPing();
     if (!isOnline) {

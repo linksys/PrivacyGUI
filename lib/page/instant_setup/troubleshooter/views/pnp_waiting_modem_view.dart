@@ -7,7 +7,6 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
-import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacygui_widgets/theme/custom_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -74,6 +73,9 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
               ? loc(context).pnpWaitingModemCheckingInternet
               : loc(context).pnpWaitingModemWaitStartUp
           : loc(context).pnpWaitingModemPlugBack,
+      // The picture and its 104px margins need more height than a short
+      // window has (#1802).
+      scrollable: true,
       child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

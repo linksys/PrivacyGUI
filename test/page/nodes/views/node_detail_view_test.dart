@@ -21,7 +21,6 @@ import '../../../common/di.dart';
 import '../../../mocks/device_filter_config_notifier_mocks.dart';
 import '../../../mocks/device_manager_notifier_mocks.dart';
 import '../../../mocks/firmware_update_notifier_mocks.dart';
-import '../../../mocks/jnap_service_supported_mocks.dart';
 import '../../../mocks/wifi_list_notifier_mocks.dart';
 import '../../../test_data/device_filter_config_test_state.dart';
 import '../../../test_data/device_filtered_list_test_data.dart';
@@ -114,4 +113,26 @@ void main() {
         find.image(CustomTheme.of(context).images.devices_xl.routerMx6200);
     expect(routerImageFinder, findsOneWidget);
   }, variants: responsiveDesktopVariants);
+
+  // The node light card shows only on a cognitive mesh master that supports
+  // LED mode. M63 was missing from the model list (#1847, LinksysWRT#663).
+  testWidgets('an M63 master shows the node light card', (tester) async {
+    stubNodeDetailState();
+    when(mockNodeDetailNotifier.build()).thenReturn(
+        NodeDetailState.fromMap(nodeDetailsCherry7TestState)
+            .copyWith(modelNumber: 'M63TS-EU'));
+    when(mockServiceHelper.isSupportLedMode()).thenReturn(true);
+    addTearDown(() => reset(mockServiceHelper));
+    // Tall enough that the card, below the details, is on screen.
+    await tester.setScreenSize(device1440w.copyWith(height: 1600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(testableSingleRoute(
+        locale: const Locale('en'),
+        overrides: nodeDetailOverrides(),
+        child: const NodeDetailView()));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('nodeLightSettings')), findsOneWidget);
+  });
 }

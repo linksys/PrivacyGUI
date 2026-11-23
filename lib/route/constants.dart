@@ -2,12 +2,9 @@ class RoutePath {
   /// top
   static const home = '/';
   static const prepareDashboard = '/prepareDashboard';
-  static const selectNetwork = '/selectNetwork';
 
   /// login
-  static const cloudLoginAccount = '/cloudLoginAccount';
   static const cloudLoginPassword = 'cloudLoginPassword';
-  static const phoneRegionCode = 'phoneRegionCode';
   static const localLoginPassword = '/localLoginPassword';
   static const localRouterRecovery = 'localRouterRecovery';
   static const localPasswordReset = 'localPasswordReset';
@@ -46,12 +43,6 @@ class RoutePath {
   static const settingsStaticRouting = "staticRouting";
   static const settingsStaticRoutingRule = "staticRoutingRule";
   static const settingsVPN = "vpnSettings";
-
-  /// otp
-  static const otpStart = 'otp';
-  static const otpSelectMethods = 'otpSelectMethod';
-  static const otpAddPhone = 'optAddPhone';
-  static const otpInputCode = 'optInputCode';
 
   /// wifi
   static const wifiSettingsReview = 'wifiSettingsReview';
@@ -128,29 +119,21 @@ class RoutePath {
   /// DDNS
   static const settingsDDNS = 'ddnsSettings';
 
-  ///Channel Finder
-  static const channelFinderOptimize = 'channelFinderOptimize';
-
   /// Device picker
   static const devicePicker = 'devicePicker';
 
   /// Card List edit
   static const cardListEdit = 'cardListEdit';
 
-  /// debug
-  static const debug = 'debug';
 }
 
 class RouteNamed {
   /// top
   static const home = 'home';
   static const prepareDashboard = 'prepareDashboard';
-  static const selectNetwork = 'selectNetwork';
 
   /// login
-  static const cloudLoginAccount = 'cloudLoginAccount';
   static const cloudLoginPassword = 'cloudLoginPassword';
-  static const phoneRegionCode = 'phoneRegionCode';
   static const localLoginPassword = 'localLoginPassword';
   static const localRouterRecovery = 'localRouterRecovery';
   static const localPasswordReset = 'localPasswordReset';
@@ -188,12 +171,6 @@ class RouteNamed {
   static const settingsStaticRouting = "staticRouting";
   static const settingsStaticRoutingRule = "staticRoutingRule";
   static const settingsVPN = "vpnSettings";
-
-  /// otp
-  static const otpStart = 'otp';
-  static const otpSelectMethods = 'otpSelectMethod';
-  static const otpAddPhone = 'optAddPhone';
-  static const otpInputCode = 'optInputCode';
 
   /// wifi
   static const wifiSettingsReview = 'wifiSettingsReview';
@@ -268,15 +245,10 @@ class RouteNamed {
   /// DDNS
   static const settingsDDNS = 'ddnsSettings';
 
-  ///Channel Finder
-  static const channelFinderOptimize = 'channelFinderOptimize';
-
   /// Device picker
   static const devicePicker = 'devicePicker';
 
   /// Card List edit
   static const cardListEdit = 'cardListEdit';
 
-  /// debug
-  static const debug = 'debug';
 }

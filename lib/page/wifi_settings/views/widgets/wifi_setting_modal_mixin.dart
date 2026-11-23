@@ -106,7 +106,6 @@ mixin WifiSettingModalMixin<T extends StatefulWidget> on State<T> {
             AppRadioList<WifiSecurityType>(
               initial: type,
               mainAxisSize: MainAxisSize.min,
-              itemHeight: 56,
               items: list
                   .map((e) => AppRadioListItem(
                         title: getWifiSecurityTypeTitle(context, e),
@@ -151,13 +150,14 @@ mixin WifiSettingModalMixin<T extends StatefulWidget> on State<T> {
     WifiWirelessMode selected = mode;
     final result = await showSimpleAppDialog<WifiWirelessMode?>(context,
         title: loc(context).wifiMode,
+        // Taller than a short window (#1802).
+        scrollable: true,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppRadioList<WifiWirelessMode>(
               initial: mode,
-              itemHeight: 56,
               mainAxisSize: MainAxisSize.min,
               items: list
                   .map((e) => AppRadioListItem(
@@ -216,7 +216,6 @@ mixin WifiSettingModalMixin<T extends StatefulWidget> on State<T> {
             children: [
               AppRadioList<int>(
                 initial: channel,
-                itemHeight: 56,
                 mainAxisSize: MainAxisSize.min,
                 items: list
                     .map((e) => AppRadioListItem(
@@ -269,7 +268,6 @@ mixin WifiSettingModalMixin<T extends StatefulWidget> on State<T> {
             children: [
               AppRadioList<WifiChannelWidth>(
                 initial: channelWidth,
-                itemHeight: 56,
                 mainAxisSize: MainAxisSize.min,
                 items: list
                     .map((e) => AppRadioListItem(

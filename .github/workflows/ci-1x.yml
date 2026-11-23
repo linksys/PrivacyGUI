@@ -1,0 +1,136 @@
+name: CI (1.x)
+
+# PR checks for the 1.x line (#1802 P1). 2.x has its own ci.yml, whose checks
+# are required on `usp` and `dev-2.*`. This file and its jobs are named
+# differently, so that each line's list of required checks stays its own.
+#
+# Ruleset "required checks (1.x)" requires `1.x / Analyze`, `1.x / Unit Tests`
+# and `1.x / Layout Gate`, by name, on the branches it lists. It requires the
+# gate's summary job, not its per-locale jobs. Keep this trigger a superset of those branches. A required
+# check that no trigger produces stays "Expected" forever, and the PR can never
+# merge. For the same reason, the ruleset lists branches one by one and not
+# `dev-1.*`: the `dev-1.*` branches cut before `dev-1.3.6` do not carry this file.
+on:
+  pull_request:
+    branches: [main, "dev-1.*"]
+
+permissions:
+  contents: read
+
+# A new push to a PR cancels that PR's run in progress.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: 1.x / Analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ./.github/actions/setup-1x
+
+      # Errors and warnings fail; infos do not (constitution 7.1 and 7.2,
+      # #1802 Decision 1, which cleared the warnings in their own PR).
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+
+  unit-tests:
+    name: 1.x / Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ./.github/actions/setup-1x
+
+      # The tests a developer runs before pushing (constitution 3.1), with
+      # coverage measured as #1803 describes (#1803 Q1). run_coverage.sh runs
+      # run_tests.sh with --coverage, so it still leaves out `golden`, `loc`
+      # and `layout-gate`, which the jobs below run, and exits 1 when a test
+      # fails. Run locally, it gives the same figure.
+      - name: Unit tests, with coverage
+        run: |
+          mkdir -p reports
+          bash run_coverage.sh reports
+
+      # #1803's table: all of lib/, then logic and UI. Written when the tests
+      # fail too, as long as the run got as far as lcov.info.
+      - name: Write the coverage to the job summary
+        if: ${{ !cancelled() && hashFiles('reports/coverage.md') != '' }}
+        run: cat reports/coverage.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the coverage
+        if: ${{ !cancelled() && hashFiles('coverage/lcov.info') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: 1.x-coverage
+          path: coverage/lcov.info
+
+      # The JSON reporter's output. run_tests.sh writes no HTML report: the
+      # parser's HTML step is commented out. A failing test also prints in the
+      # log of the step above. Uploaded when the tests fail too, since that is
+      # when it is read.
+      - name: Upload the test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: 1.x-unit-test-results
+          path: reports/tests.json
+
+  # #1802 P3: every testLocalizations case at 360, 480, 905, 1240 and 1280x420,
+  # failing on an overflow over 2.0px, one job per locale. A PR into a
+  # `dev-1.*` branch runs en only, so its wait stays short (Decision 4). A PR
+  # into main runs every gate locale (Decision 7), as the pre-push hook does.
+  # test/layout_gate/layout_gate_ci_test.dart holds both lists to gateLocales.
+  layout-gate-locale:
+    name: 1.x / Layout Gate (${{ matrix.locale }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        locale: ${{ fromJSON(github.base_ref == 'main' && '["en","de","fr","es","it","nl","ja","ru","el"]' || '["en"]') }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ./.github/actions/setup-1x
+
+      # Only the suites that declare testLocalizations cases, so the run does
+      # not compile the rest; layout_gate_ci_test.dart checks that this picks
+      # every suite the roster counts. `--exclude-tags` as in constitution 3.1.
+      - name: Layout gate
+        run: |
+          mkdir -p reports
+          suites=$(git grep -l -E '^[[:space:]]*testLocalizations\(' -- test \
+            | grep -v '^test/common/')
+          flutter test $suites \
+            --tags layout-gate \
+            --exclude-tags="golden||loc" \
+            --dart-define=locales=${{ matrix.locale }} \
+            --file-reporter json:reports/layout-gate.json
+
+      - name: Upload the gate results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: 1.x-layout-gate-${{ matrix.locale }}
+          path: reports/layout-gate.json
+
+  # The one check the ruleset requires for the gate, so the ruleset need not
+  # list the locales. It fails unless every per-locale job passed.
+  layout-gate:
+    name: 1.x / Layout Gate
+    runs-on: ubuntu-latest
+    needs: layout-gate-locale
+    if: ${{ always() }}
+    steps:
+      - name: Every locale passed
+        run: |
+          echo "The per-locale jobs: ${{ needs.layout-gate-locale.result }}"
+          test "${{ needs.layout-gate-locale.result }}" = success

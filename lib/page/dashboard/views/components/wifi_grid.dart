@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/widgets/write_guard.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -198,30 +197,23 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
               ),
             ),
             const AppGap.small2(),
-            Stack(
-              alignment: Alignment.center,
-              // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Row(
               children: [
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Row(
-                    children: [
-                      const Icon(
-                        LinksysIcons.devices,
-                        semanticLabel: 'devices',
-                      ),
-                      const AppGap.small2(),
-                      AppText.labelLarge(
-                        loc(context)
-                            .nDevices(widget.item.numOfConnectedDevices),
-                        maxLines: 2,
-                      ),
-                    ],
+                const Icon(
+                  LinksysIcons.devices,
+                  semanticLabel: 'devices',
+                ),
+                const AppGap.small2(),
+                // Expanded, so a long count wraps within its two lines
+                // before it reaches the QR code. In a Stack it had no width
+                // limit and ran past the card in Japanese (#1802).
+                Expanded(
+                  child: AppText.labelLarge(
+                    loc(context).nDevices(widget.item.numOfConnectedDevices),
+                    maxLines: 2,
                   ),
                 ),
-                Align(
-                    alignment: AlignmentDirectional.centerEnd,
-                    child: _buildTooltip(context)),
+                _buildTooltip(context),
               ],
             )
           ],

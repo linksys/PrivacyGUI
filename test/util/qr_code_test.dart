@@ -12,11 +12,11 @@ void main() {
     test('a name and password that fit version 4 keep their image', () async {
       final bytes = await createWiFiQRCode(const WiFiCredential(
         ssid: 'Linksys03041',
-        password: '7sVzt65hf@',
+        password: 'FakeWiFi1@',
         type: SecurityType.wpa,
       ));
 
-      expect(md5.convert(bytes).toString(), 'fd10428cf2c9ffde9076f80859bea400');
+      expect(md5.convert(bytes).toString(), '9172faa30623f1288295e56353491d77');
     });
 
     // 32 characters of name and a 64-character key are the longest WiFi

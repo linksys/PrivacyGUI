@@ -1,7 +1,7 @@
 # The 1.x Constitution
 
-**Version:** 1.0
-**Last amended:** 2026-11-12 (#1804, first version)
+**Version:** 1.8
+**Last amended:** 2026-11-20 (#1802, readability guards)
 **Applies to:** the 1.x line of PrivacyGUI: `dev-1.*`, `release-1.*`, and `main` while it ships 1.x. 2.x has its own `constitution.md`; nothing here binds 2.x, and nothing in 2.x's binds 1.x.
 
 ## Preamble
@@ -13,7 +13,7 @@ They describe the code as it is. Where today's code breaks a rule, the rule name
 Every rule says how it is enforced:
 
 - **Test**: a test in `./run_tests.sh` fails.
-- **CI**: a PR check fails. 1.x has no PR checks until #1802 P1 lands. Until then, run the same command locally; the reviewer checks that you did.
+- **CI**: a PR check fails. `.github/workflows/ci-1x.yml` runs three checks on every PR into `main` or a `dev-1.*` branch that carries the file: `1.x / Analyze`, `1.x / Unit Tests` and `1.x / Layout Gate`. On the branches that ruleset `required checks (1.x)` lists, a red check blocks the merge. `1.x / Unit Tests` runs `./run_tests.sh`, so a rule enforced by Test fails a PR check too. It also fails when line coverage of `lib/` drops below the floor in `coverage_floor.txt` (3.2). It leaves out the `layout-gate` tests, which `1.x / Layout Gate` runs (3.5).
 - **Review**: only a reviewer catches it. A rule enforced only by review says so.
 
 Where this document and another document in the repository disagree, this one wins. It changes only through Article IX.
@@ -22,13 +22,20 @@ Where this document and another document in the repository disagree, this one wi
 |---|---|---|
 | I | Presentation files don't use the data layer; `lib/core/` doesn't import `lib/page/` | Test |
 | II | JNAP goes through `RouterRepository`; the HSL spec's `[noauth]` decides `auth:` | Review |
-| III | Tests run through `run_tests.sh`; changes ship tests; screenshot tests and mocks follow one pattern | Test for where screenshot checks live; review for the rest, until #1802's gate and roster and #1803's floor land |
+| III | Tests run through `run_tests.sh`; changes ship tests; screenshot tests and mocks follow one pattern | Test for where screenshot checks live, for the layout gate's roster and for the readability guards; CI for #1803's coverage floor and for the layout gate; review for the rest |
 | IV | Feature state lives in `Notifier` / `AsyncNotifier`; `…State` classes extend `Equatable` | Review |
 | V | File, class, provider and directory names | Review |
-| VI | User-visible strings come from the ARB files | CI (#1802 P1) for missing keys; review for hard-coded strings |
-| VII | Zero analyzer errors; no new warnings | CI (#1802 P1) for errors; review for warnings |
+| VI | User-visible strings come from the ARB files | CI for missing keys; review for hard-coded strings |
+| VII | Zero analyzer errors and warnings | CI |
 | VIII | Simplicity; no wrappers around the framework; stay in scope | Review |
 | IX | Amendments state version, date and reason; the team approves them | Team approval |
+| X | A scrolling page's content needs no bounded height | CI for flex children on pages with a case, through #1802's layout gate; review for the rest |
+
+*Amended 2026-11-18 (#1802): **CI** names the two checks that #1802 P1 added, and VI and VII no longer wait on P1, because 1.x has PR checks now.*
+
+*Amended 2026-11-18 (#1803): **CI** and III name the coverage floor that #1803 Q5 added, which III waited on.*
+
+*Amended 2026-11-19 (#1802): **CI** names `1.x / Layout Gate`, which #1802 P3 added so that a PR whose page overflows fails, and the summary row for III says what the gate and its roster enforce.*
 
 ---
 
@@ -92,7 +99,6 @@ These dependencies predate this constitution. They are listed, not fixed (#1804,
 | `lib/page/instant_setup/pnp_setup_view.dart` | `lib/core/jnap/command/base_command.dart` | `CacheLevel` |
 | `lib/page/instant_setup/pnp_setup_view.dart` | `lib/core/jnap/router_repository.dart` | |
 | `lib/page/instant_setup/pnp_setup_view.dart` | `routerRepositoryProvider` | `send(getRadioInfo)` |
-| `lib/page/instant_setup/troubleshooter/views/isp_settings/pnp_pppoe_view.dart` | `lib/core/jnap/router_repository.dart` | nothing: the import is unused |
 | `lib/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart` | `lib/core/jnap/router_repository.dart` | |
 | `lib/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart` | `routerRepositoryProvider` | `isLoggedIn()` |
 | `lib/core/jnap/models/node_light_settings.dart` | `lib/page/nodes/_nodes.dart` | `NodeLightStatus` |
@@ -158,30 +164,92 @@ A missing `auth: true` is easy to miss when testing on a router. Only the `behin
 
 So every test run passes `--exclude-tags="golden||loc"`:
 
-- `./run_tests.sh <reportDir>` runs the whole suite that way and writes `tests.json` and an HTML report into `<reportDir>`. Run it before you push.
-- While you work, `flutter test <file or directory> --exclude-tags="golden||loc"` is fine, with any `--dart-define` the file needs.
+- `./run_tests.sh <reportDir>` runs the whole suite that way and writes `tests.json` into `<reportDir>`. Run it before you push. It also leaves out `layout-gate`, the layout gate's tests (3.5), which take long enough to run in CI jobs of their own.
+- The layout gate runs before you push through `.githooks/pre-push`, once you install the hooks with `git config core.hooksPath .githooks`. The hook runs the suites a push can affect, in every gate locale (3.5). To run the gate by hand, use `flutter test <suite> --tags layout-gate --exclude-tags="golden||loc"`.
+- While you work, `flutter test <file or directory> --exclude-tags="golden||loc"` is fine, with any `--dart-define` the file needs. On a screenshot suite this also runs its layout gate tests in every gate locale (3.5); `--exclude-tags="golden||loc||layout-gate"` leaves them out.
 
-**Enforced by**: Test for `run_tests.sh`: `test/constitution/run_tests_script_test.dart` fails if the script stops excluding the tags. Review for other runs. CI runs the script once #1802 P1 lands.
+**Enforced by**: Test for `run_tests.sh`: `test/constitution/run_tests_script_test.dart` fails if the script stops excluding the tags, `layout-gate` included. Review for other runs. `1.x / Unit Tests` runs the script on the PRs that **CI** in the preamble covers.
+
+*Amended 2026-11-18 (#1802): CI runs the script now. The report directory gets `tests.json` only: the script writes no HTML report, though this section said it did.*
+
+*Amended 2026-11-19 (#1802): `run_tests.sh` also leaves out the layout gate's tests, so a local run stays short (#1802, Decision 11). `1.x / Layout Gate` and the pre-push hook run them instead (Decision 12).*
 
 ### 3.2 Provider and model changes ship unit tests
 
 A change to a notifier, a service, a `…State` class or a model ships unit tests for the behaviour it changed. A test of one source file sits at the path that mirrors it: `lib/page/wifi_settings/providers/wifi_list_provider.dart` is tested in `test/page/wifi_settings/providers/wifi_list_provider_test.dart`.
 
-**Enforced by**: Review, until #1803's coverage floor lands.
+**Enforced by**:
+- CI, for the total. `1.x / Unit Tests` fails when line coverage of `lib/` drops below `coverage_floor.txt`, measured as `./run_coverage.sh` measures it. So a PR that deletes a tested provider's tests fails. The file says when to raise the floor and when it may go down.
+- Review, for whether a change tests the behaviour it changed. A floor on the total cannot tell.
+
+*Amended 2026-11-18 (#1803): the coverage floor enforces the total, which this section waited on.*
 
 ### 3.3 A new view ships a layout-gate case
 
-A new `lib/page/**/*_view.dart` ships a case in #1802's layout gate, so it is swept for overflow at every layout breakpoint.
+A new `lib/page/**/*_view.dart`, or a new page 5.1 lets go without the suffix, ships a case in #1802's layout gate, so it is swept for overflow at the gate's sizes (3.5).
 
-**Enforced by**: #1802's roster test, once #1802 P3 lands. The rule takes effect then.
+The gate's case is a `testLocalizations` case (3.5). A page has one when a `testLocalizations` suite constructs its class. A page that a case reaches only as a tab of its parent does not count: `TabBarView` lays out the selected tab only. A view that only another page builds, with no route of its own, is a component instead: it needs no case of its own when that page's cases open it, and its row names them.
+
+The table lists the pages that have no case, and each row says why the page needs none. Deleting a row because the page got a case, or was deleted, is not an amendment (9.1). A row that says nothing in `lib/` builds the page fails the roster test once something does, and a row that says nothing navigates to its route fails once code outside `lib/route/` names that route.
+
+<!-- layout-gate-roster:begin -->
+| Page | Class | Why |
+|---|---|---|
+| `lib/page/advanced_settings/local_network_settings/views/dhcp_reservations_edit_view.dart` | `DHCPReservationsEditView` | Permanent while unreachable: nothing navigates to its route, `dhcpReservationEdit`, and opened without the route's arguments it throws. Give it a case once something does. |
+| `lib/page/advanced_settings/local_network_settings/views/dhcp_server_view.dart` | `DHCPServerView` | Permanent: a component, not a page. `LocalNetworkSettingsView` lays it out in its DHCP server tab, and its cases open the tab, so they sweep it. |
+| `lib/page/advanced_settings/static_routing/static_routing_list_view.dart` | `StaticRoutingListView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/components/customs/network_check_view.dart` | `NetworkCheckView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/components/picker/day_picker_view.dart` | `DayPickerView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/components/picker/number_picker_view.dart` | `NumberPickerView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/components/picker/time_picker_view.dart` | `TimePickerView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/components/settings_view/editable_card_list_edit_view.dart` | `EditableCardListEditView` | Permanent while unreachable: nothing navigates to its route, `cardListEdit`, and opened without the route's arguments it throws. Give it a case once something does. |
+| `lib/page/components/settings_view/editable_card_list_settings_view.dart` | `EditableCardListsettingsView` | Permanent: a component, not a page. The advanced settings lists build it; the IPv6 port service and static routing cases sweep it. |
+| `lib/page/components/settings_view/editable_table_settings_view.dart` | `AppEditableTableSettingsView` | Permanent: a component, not a page. The advanced settings lists build it; the IPv6 port service and static routing cases sweep it. |
+| `lib/page/components/styled/styled_tab_page_view.dart` | `StyledAppTabPageView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/components/views/arguments_view.dart` | `ArgumentsBaseConsumerStatefulView` | Permanent: a base class for views, not a page. |
+| `lib/page/firmware_update/views/firmware_update_process_view.dart` | `FirmwareUpdateProcessView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/instant_setup/troubleshooter/views/call_support/call_support_main_region_view.dart` | `CallSupportMainRegionView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/instant_setup/troubleshooter/views/call_support/call_support_more_region_view.dart` | `CallSupportMoreRegionView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/login/auto_parent/views/auto_parent_first_login_view.dart` | `AutoParentFirstLoginView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/nodes/views/change_node_name_view.dart` | `ChangeNodeNameView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/nodes/views/node_light_guide_view.dart` | `NodeLightGuideView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/nodes/views/node_name_edit_view.dart` | `NodeNameEditView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/nodes/views/node_restart_view.dart` | `NodeRestartView` | Permanent while unreachable: nothing in `lib/` builds it. Give it a case once something does. |
+| `lib/page/wifi_settings/views/mac_filtering_view.dart` | `MacFilteringView` | Permanent: a component, not a page: a tab of `WiFiMainView`, with no route of its own. `WiFiMainView`'s cases open the tab, so they sweep it. |
+| `lib/page/wifi_settings/views/wifi_advanced_settings_view.dart` | `WifiAdvancedSettingsView` | Permanent: a component, not a page: a tab of `WiFiMainView`, with no route of its own. `WiFiMainView`'s cases open the tab, so they sweep it. |
+| `lib/page/wifi_settings/views/wifi_list_advanced_mode_view.dart` | `AdvancedModeView` | Permanent: a component, not a page. `WiFiListView` lays it out in the advanced mode, and the Wi-Fi settings cases in that mode sweep it. |
+| `lib/page/wifi_settings/views/wifi_list_simple_mode_view.dart` | `SimpleModeView` | Permanent: a component, not a page. `WiFiListView` lays it out in the simple mode, and the Wi-Fi settings cases in that mode sweep it. |
+| `lib/page/wifi_settings/views/wifi_list_view.dart` | `WiFiListView` | Permanent: a component, not a page: a tab of `WiFiMainView`, with no route of its own. `WiFiMainView`'s cases open the tab, so they sweep it. |
+| `lib/page/wifi_settings/views/wifi_share_detail_view.dart` | `WiFiShareDetailView` | Permanent: a component, not a page: the content of the dashboard Wi-Fi card's share dialog. The dashboard's Share WiFi modal cases open the dialog, so they sweep it. |
+<!-- layout-gate-roster:end -->
+
+**Enforced by**: Test. `test/constitution/layout_gate_roster_test.dart` fails when a page has no case and no row in the table above, and when a row's page has a case or is gone.
+
+*Amended 2026-11-19 (#1802): the rule takes effect, with the roster test and a row for each page that has no case yet, so a page cannot be left out of the gate unnoticed. The version moves to 1.4, not 2.0, although 9.2 asks a major number for an added exception or a tightened rule. This section said the rule would take effect with #1802 P3, and the rows are the exceptions it starts with, not exceptions added to a rule already in force. Counting the five pages 5.1 names, and not counting a tab, follow what 5.1 and `TabBarView` already imply. The team decides whether that holds (9.3).*
+
+*Amended 2026-11-19 (#1802): the table may keep a page for good, with the reason it needs no case, where it said #1802 P6 would empty it. #1802 P6 had planned these exemptions, and 38 rows take one: 10 that are not pages, 19 that nothing lets a user open, and 9 that #1849 deletes. A component that a page lays out needs no case of its own when that page's cases open it. A page counts as unreachable when nothing in `lib/` builds it, or its route throws when opened, as a typed URL would open it. The rows of two deleted files go. The version moves to 1.6, not 2.0, although 9.2 asks a major number for an added exception, as #1802's other amendments kept the major number. The team approved it in a meeting on 2026-11-20 (9.3).*
 
 ### 3.4 A fix that ellipsizes ships a readability guard
 
-A fix that makes text fit by ellipsizing it or capping `maxLines` ships a test at the width that forced the fix. The test asserts the text is still usable. For an IP, MAC, serial number, firmware version or SSID, that means `RenderParagraph.didExceedMaxLines` is false.
+A fix that makes text fit by ellipsizing it or capping `maxLines` ships a test at the width that forced the fix. The test asserts the text is still usable. For an IP, MAC, serial number, firmware version or SSID, that means the text is fully shown: `expect(finder, isFullyShown)` passes, from `test/layout_gate/fully_shown.dart`. No `maxLines` or ellipsis cuts the text, it fits its box, and no ancestor clips it, a scroll view included. It does not check the size the text is drawn at, so a value that a `FittedBox` shrinks passes.
 
 The overflow sweep cannot see this: adding `maxLines: 1` turns every overflowing row green and cuts `192.168.1.100` in the middle.
 
-**Enforced by**: Review. #1802 P4 adds the first set of guards.
+These guards hold the values that are useless when cut, each as long as it gets. `testFullyShown`, in the same file, runs a guard in every locale at the narrowest mobile and desktop pages, 360 and 1240:
+
+| Guard | Values |
+|---|---|
+| `test/page/instant_device/views/device_detail_readability_test.dart` | Device detail: the IPv4 and IPv6 addresses, the MAC address and the SSID |
+| `test/page/nodes/views/node_detail_readability_test.dart` | Node detail: the WAN and LAN IP addresses, the firmware version, the serial number and the MAC address |
+| `test/page/dashboard/views/internet_status_readability_test.dart` | The dashboard's internet status: the router's serial number and firmware version |
+| `test/page/dashboard/views/wifi_grid_readability_test.dart` | The dashboard's Wi-Fi card: the SSID, at 1240 only, where the card is narrowest. The file also holds the guard for the card's device count, which #1802 fixed. |
+| `test/page/wifi_settings/views/wifi_list_readability_test.dart` | Wi-Fi settings: the main and guest SSIDs, in the advanced and the simple mode |
+
+A guard is proven by a mutation that cuts its value: the guard goes red, and the layout gate stays green. Where the value has room to spare on one line, the mutation caps it at one line in a box narrower than the value.
+
+**Enforced by**: Test for the values above; review for a new fix.
+
+*Amended 2026-11-19 (#1802): #1802 P4 adds the guards above. "Usable" becomes `isFullyShown`, which also fails a `SelectableText` that scrolls its value out of its box and a value an ancestor clips; `didExceedMaxLines` sees neither. The version moves to 1.8, not 2.0, although 9.2 asks a major number for a tightened rule, as #1802's other amendments kept the major number. The team approved it in a meeting on 2026-11-20 (9.3).*
 
 ### 3.5 Screenshot tests
 
@@ -193,13 +261,22 @@ A page's screenshot test is a `testLocalizations` case, from `test/common/test_r
 
 #1802's layout gate reuses these cases, so the case 3.3 asks for is a `testLocalizations` case. How to write, run and debug one is in `docs/screenshot_testing_guide.md`.
 
+`testLocalizations` also hands each case to `declareLayoutCases` in `test/layout_gate/layout_cases.dart`, which declares more tests from the same case. None of them makes a golden check, and none is tagged `loc`:
+
+- **The layout gate** (#1802 P3), always: one test per size and locale in `test/layout_gate/gate.dart`, tagged `layout-gate`. It fails when the case overflows by more than 2.0px. `./run_tests.sh` leaves these tests out (3.1). `1.x / Layout Gate` runs them in `en` on a PR into a `dev-1.*` branch, and in every gate locale on a PR into `main`. The pre-push hook runs them in every gate locale, for the suites a push can affect.
+- **The measurement** (#1802 P2), only with `--dart-define=layoutMeasure=true`: tests tagged `layout-measure`, which collect overflow reports instead of failing on them.
+
 <!-- screenshot-exceptions:begin -->
 | File | Calls |
 |---|---|
 | `test/page/components/pwa/install_prompt_banner_test.dart` | `testLocalizations` |
 <!-- screenshot-exceptions:end -->
 
-**Enforced by**: Test, for the first point and for the `localizations/` directory in the second. `test/constitution/screenshot_placement_test.dart` fails when code outside the body of `testLocalizations` makes a golden check, or when a file outside a `localizations/` directory calls `testLocalizations`, and the table above has no row for it. It also fails when a row no longer matches. Review for where the `localizations/` directory sits, and for the third point.
+**Enforced by**: Test, for the first point and for the `localizations/` directory in the second. `test/constitution/screenshot_placement_test.dart` fails when code outside the body of `testLocalizations` makes a golden check, or when a file outside a `localizations/` directory calls `testLocalizations`, and the table above has no row for it. It also fails when a row no longer matches. Review for where the `localizations/` directory sits, and for the third point. CI for the layout gate: `1.x / Layout Gate` fails when a case overflows by more than 2.0px at a gate size. `test/layout_gate/layout_gate_ci_test.dart` fails when its locales or the suites it picks drift from the gate's.
+
+*Amended 2026-11-18 (#1802): `testLocalizations` also declares #1802 P2's measuring tests, so that P2 measures overflow from the existing cases instead of new ones (#1802, Decision 6).*
+
+*Amended 2026-11-19 (#1802): `testLocalizations` also declares #1802 P3's gate tests, tagged `layout-gate`, from the same cases, so that the gate sweeps the existing cases instead of new ones (#1802, Decision 6). Which locales run where follows Decisions 4, 7 and 12.*
 
 ### 3.6 Mocks
 
@@ -246,7 +323,7 @@ Exception: `RouterNotifier` in `lib/route/router_provider.dart` extends `ChangeN
 
 A `…State` class that a notifier holds extends `Equatable` and lists every field in `props`. States then compare by value, which tests and `ref.listen` callbacks rely on.
 
-Exceptions: `PnpTroubleshooterState`, `SelectNetworkState`, `InstantTopologyState`.
+Exceptions: `PnpTroubleshooterState`, `InstantTopologyState`.
 
 **Enforced by**: Review.
 
@@ -257,7 +334,7 @@ Exceptions: `PnpTroubleshooterState`, `SelectNetworkState`, `InstantTopologyStat
 ### 5.1 Files
 
 - Dart files are `snake_case.dart`. The analyzer's `file_names` lint reports a breach as an info, which no check fails on.
-- A page is `*_view.dart`. #1802's roster finds pages by this suffix, so a page named otherwise escapes the layout gate. Exceptions, each a page that `lib/route/` builds: `lib/page/vpn/views/vpn_settings_page.dart`, `lib/page/otp_flow/views/otp_add_phone.dart`, `lib/page/otp_flow/views/otp_code_input.dart`, `lib/page/health_check/views/speed_test_external.dart` and `lib/page/health_check/views/speed_test_selection.dart`.
+- A page is `*_view.dart`. #1802's roster finds pages by this suffix, so a page named otherwise escapes the layout gate. Exceptions, each a page that `lib/route/` builds: `lib/page/vpn/views/vpn_settings_page.dart`, `lib/page/health_check/views/speed_test_external.dart` and `lib/page/health_check/views/speed_test_selection.dart`.
 - A file that defines a notifier provider is `*_provider.dart`. Exceptions: `lib/page/vpn/providers/vpn_notifier.dart`, `lib/page/auto_ipoe/providers/auto_ipoe_notifier.dart`, `lib/core/pwa/pwa_install_service.dart`.
 - A test of one source file is `<source>_test.dart`. A test that splits one source's tests by scenario is `<source>_<scenario>_test.dart`. A test that covers no single source file is named after what it checks, like `architecture_boundary_test.dart`.
 
@@ -277,7 +354,7 @@ The existing directories vary:
 - `advanced_settings` holds one directory per settings page, plus a shared `widgets/`. Every page has `providers/`, and all but `static_routing` have `views/`.
 - `instant_setup` keeps its two main views at the top level, its notifier in `data/` and its troubleshooter in its own directory.
 - `support` is two files with no sub-directories.
-- `components`, `firmware_update` and `landing` have no `providers/`, and `login` has one only under `auto_parent/`.
+- `components` and `firmware_update` have no `providers/`, and `login` has one only under `auto_parent/`.
 
 When a feature has a barrel, it is `_<feature>.dart` in the feature's directory, as in `lib/page/nodes/_nodes.dart` and `lib/page/advanced_settings/dmz/_dmz.dart`. Eight directories under `lib/page/` have none: `auto_ipoe`, `components`, `instant_privacy`, `instant_setup`, `instant_verify`, `login`, `support` and `vpn`.
 
@@ -295,7 +372,9 @@ Every string a user can see is a key in `lib/l10n/app_en.arb`, the template, rea
 
 `lib/l10n/gen/` is generated by `flutter gen-l10n` and is gitignored. Run it after pulling and after editing an ARB file. A stale `gen/` fails to compile wherever a new key is used.
 
-**Enforced by**: CI, for keys: #1802 P1 runs `gen-l10n`, so a key that is used but not defined fails the build. A hard-coded string compiles, so that half is Review.
+**Enforced by**: CI, for keys: both checks run `flutter gen-l10n` during setup, before they analyze or test, so a key that is used but not defined fails `1.x / Analyze` with `undefined_getter`. A hard-coded string compiles, so that half is Review.
+
+*Amended 2026-11-18 (#1802): names the check that fails, now that #1802 P1 has added it.*
 
 ---
 
@@ -303,13 +382,19 @@ Every string a user can see is a key in `lib/l10n/app_en.arb`, the template, rea
 
 ### 7.1 Zero analyzer errors
 
-`flutter analyze` reports no errors. Its rules come from `analysis_options.yaml`: `flutter_lints`, with `prefer_const_constructors` off.
+`flutter analyze` reports no errors. Its rules come from `analysis_options.yaml`: `flutter_lints`, with `prefer_const_constructors` off. It leaves out `plugins/**`: `plugins/widgets` is a submodule from its own repository, `linksys/PrivacyGUI-Widgets`, and its diagnostics are fixed there.
 
-### 7.2 Warnings are cleaned, not added
+*Amended 2026-11-18 (#1802): `analysis_options.yaml` excludes `plugins/**`, because `plugins/widgets` is fixed in its own repository (#1802, Decision 1). This adds no exception: rules for `plugins/widgets` were already deferred (Not Covered › Deferred), so the version moves to 1.1, not 2.0.*
 
-A change adds no analyzer warnings. The existing ones (246 when #1802 was filed) are cleared in a dedicated PR (#1802, Decision 1), not mixed into feature changes, so that a feature's diff stays about the feature.
+### 7.2 Zero analyzer warnings
 
-**Enforced by**: CI for errors: #1802 P1 runs `flutter analyze --no-fatal-warnings --no-fatal-infos`. Review for warnings, until the backlog is cleared and the check can fail on them.
+`flutter analyze` reports no warnings either. #1802 cleared the 219 there were (246 when #1802 was filed, 221 once 7.1 left out `plugins/**`) in a PR of their own, so that no feature's diff carried them (#1802, Decision 1). Infos are not counted.
+
+**Enforced by**: CI. `1.x / Analyze` runs `flutter analyze --no-fatal-infos`, which fails on an error or a warning.
+
+*Amended 2026-11-18 (#1802): names the check that runs the analyzer, now that #1802 P1 has added it, and gives the warning count once 7.1 left out `plugins/**`.*
+
+*Amended 2026-11-20 (#1802): the backlog is cleared, so `1.x / Analyze` fails on warnings too, and 7.2 asks for none rather than no new ones. The version moves to 1.7, not 2.0, although 9.2 asks a major number for a tightened rule, as #1802's other amendments kept the major number. The team approved it in a meeting on 2026-11-20 (9.3).*
 
 ---
 
@@ -362,6 +447,27 @@ A PR that amends this constitution:
 The team approves an amendment, not a single reviewer. The PR says where the team approved it.
 
 **Enforced by**: Team approval. The repository's rules let any PR merge with one approval; for an amendment, one approval is not enough.
+
+---
+
+## Article X: Page Layout
+
+### 10.1 A scrolling page's content needs no bounded height
+
+A scrolling page is a `StyledAppPageView` with `scrollable: true`, or a `StyledAppPageView.innerPage`, which scrolls unless it is given `scrollable: false`. It is laid out with no height limit, so it is as tall as its content. Its content is laid out with no height limit as well and, when it comes out shorter than the rest of the window, laid out again with the rest of the window as its maximum (`FitOrGrow`, in `plugins/widgets/lib/widgets/page/layout/`). Nothing above it asks for an intrinsic height: PrivacyGUI-Widgets v1.2.11 removed the `IntrinsicHeight` that did, because a child can report a smaller intrinsic height than it lays out to, and the page then came out too short (#1864).
+
+So in a scrolling page's content, unless a widget in between bounds the height:
+
+- No `Expanded`, `Spacer` or `Flexible` in a `Column` or another vertical `Flex`. Without a height limit they throw in debug. To keep something at the bottom of a short page, give it a `FillColumn` slot, as the mobile layout of `lib/page/health_check/views/speed_test_view.dart` does, and space the `FillColumn`'s own children with `SizedBox`: a `Gap` needs a `Flex`, and `FillColumn` is not one. A list or a grid takes its real height, with `shrinkWrap: true`, instead of a fixed height that only an `Expanded` made work.
+- No `LayoutBuilder` whose tree depends on the height. A short page's content is laid out twice, with two different height limits, so such a builder builds a different tree each time, and the state in it is lost.
+
+A `SizedBox` or a `Container` with a `height`, or a `ConstrainedBox` with a `maxHeight`, bounds what is under it. A dialog or a bottom sheet is not part of the page. A page that does not scroll is not covered: its content has the window's height, and an `Expanded` in it works.
+
+This article has no exceptions. When it was added, the code of every scrolling page under `lib/page/` was read, and the pages with a `testLocalizations` case were also measured by #1802's layout measurement. The seven pages that broke it were fixed in the same change (#1864).
+
+**Enforced by**: CI for the first point, on a page with a case: `1.x / Layout Gate` runs the `testLocalizations` cases (#1802 P3, 3.5), and a breach there throws, so the case fails. Review for the first point elsewhere, and for the second point, which throws nothing.
+
+*Amended 2026-11-19 (#1864): new article. Scrolling pages no longer size their content by `IntrinsicHeight`, and these are the two rules that change brings (#1864, Decision 4). A rule is added, for which 9.2 asks a major number. The version moves to 1.5 instead, as #1802's amendments kept the major number, so that the 1.x constitution does not read as 2.x. The team approved it in a meeting on 2026-11-19 (9.3).*
 
 ---
 

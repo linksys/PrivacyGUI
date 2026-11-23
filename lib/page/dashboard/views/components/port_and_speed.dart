@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/widgets/write_guard.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -330,27 +329,34 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                           AppText.bodySmall(dateTimeStr),
                           const AppGap.small2(),
                         ],
-                        Row(
-                          spacing: Spacing.medium,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Opacity(
-                              opacity: isLegacy ? 0.6 : 1,
-                              child: _downloadSpeedResult(
-                                  context,
-                                  state.downloadResult?.value ?? '--',
-                                  state.downloadResult?.unit,
-                                  isLegacy),
-                            ),
-                            Opacity(
-                              opacity: isLegacy ? 0.6 : 1,
-                              child: _uploadSpeedResult(
-                                  context,
-                                  state.uploadResult?.value ?? '--',
-                                  state.uploadResult?.unit,
-                                  isLegacy),
-                            )
-                          ],
+                        // Scaled down when it does not fit, instead of running
+                        // 9px past the card on the narrowest desktop pages,
+                        // 905 and 1240 (#1802, #1876). Wrapping would not do:
+                        // this tile has a fixed height of 136.
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            spacing: Spacing.medium,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Opacity(
+                                opacity: isLegacy ? 0.6 : 1,
+                                child: _downloadSpeedResult(
+                                    context,
+                                    state.downloadResult?.value ?? '--',
+                                    state.downloadResult?.unit,
+                                    isLegacy),
+                              ),
+                              Opacity(
+                                opacity: isLegacy ? 0.6 : 1,
+                                child: _uploadSpeedResult(
+                                    context,
+                                    state.uploadResult?.value ?? '--',
+                                    state.uploadResult?.unit,
+                                    isLegacy),
+                              )
+                            ],
+                          ),
                         ),
                         AppGap.medium(),
                         _speedTestButton(context, state)
@@ -571,14 +577,25 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     );
     final speedDesc =
         AppText.labelSmall(loc(context).speedTestExternalTileLabel);
-    final rowHeader = Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(child: speedTitle),
-        infoIcon,
-        speedDesc,
-      ],
+    // A Wrap, so the description moves below the title when both do not fit
+    // on one line. In a Row it ran past a 360px page in Greek (#1802). A Wrap
+    // is only as wide as what it holds, so the SizedBox makes it span the
+    // tile, and spaceBetween keeps the title at the start, as the Row did.
+    final rowHeader = SizedBox(
+      width: double.infinity,
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          speedTitle,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            // Flexible, so a description too long for a line of its own,
+            // as Greek's is at 360, wraps.
+            children: [infoIcon, Flexible(child: speedDesc)],
+          ),
+        ],
+      ),
     );
     final columnHeader = Column(
       mainAxisAlignment: MainAxisAlignment.start,

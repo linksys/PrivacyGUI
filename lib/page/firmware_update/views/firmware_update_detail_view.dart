@@ -121,10 +121,18 @@ class _FirmwareUpdateDetailViewState
                       child: WriteGuard(
                         child: AppFilledButton(
                           loc(context).updateAll,
-                          onTap: () {
-                            ref
-                                .read(firmwareUpdateProvider.notifier)
-                                .updateFirmware();
+                          onTap: () async {
+                            // An install that does not start (the access
+                            // policy or the router refused it) puts the page
+                            // back as it was; the error is only logged.
+                            try {
+                              await ref
+                                  .read(firmwareUpdateProvider.notifier)
+                                  .updateFirmware();
+                            } catch (error) {
+                              logger.e(
+                                  '[FIRMWARE]: Could not start the install: $error');
+                            }
                           },
                         ),
                       ),

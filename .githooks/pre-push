@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# The layout gate (#1802 P3, Decision 12) for what this push changes, in every
+# gate locale. A PR's CI runs the gate in en only, so the other locales are
+# checked here, and in full on the way into main.
+#
+# Install it once per clone: git config core.hooksPath .githooks
+# It runs the suites test_scripts/layout_gate_affected.dart picks: those of the
+# features whose pages or tests changed and those that build a changed page,
+# or all of them when a shared part changed. A push that changes no page runs
+# nothing.
+#
+# It uses the flutter on PATH, as run_tests.sh does: put .fvmrc's version first.
+# It tests the working tree, so push from a clean checkout of what you push.
+set -euo pipefail
+
+zero=0000000000000000000000000000000000000000
+changed=""
+while read -r _local_ref local_sha _remote_ref _remote_sha; do
+  # A deleted branch pushes nothing to check.
+  [ "$local_sha" = "$zero" ] && continue
+  # The files touched by the commits that no remote has yet.
+  changed+="$(git log --format= --name-only "$local_sha" --not --remotes)"$'\n'
+done
+
+# Only code, tests, the widgets package and assets can move a layout, so a
+# push of docs alone needs no flutter.
+if ! printf '%s\n' "$changed" | grep -qE '^(lib|test|plugins|assets)/'; then
+  exit 0
+fi
+
+if ! command -v flutter >/dev/null 2>&1; then
+  echo "pre-push: flutter is not on PATH, so the layout gate cannot run." >&2
+  echo "Put the version in .fvmrc first on PATH, or push with --no-verify." >&2
+  exit 1
+fi
+
+suites=$(printf '%s\n' "$changed" | sort -u | dart run test_scripts/layout_gate_affected.dart)
+if [ -z "$suites" ]; then
+  echo "pre-push: no page changed; the layout gate has nothing to run."
+  exit 0
+fi
+
+count=$(printf '%s\n' "$suites" | wc -l | tr -d ' ')
+echo "pre-push: the layout gate in every gate locale, for $count suite(s)."
+# shellcheck disable=SC2086 # one argument per suite path
+flutter test $suites --tags layout-gate --exclude-tags="golden||loc"

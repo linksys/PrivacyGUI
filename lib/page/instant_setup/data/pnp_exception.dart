@@ -19,7 +19,13 @@ class ExceptionFetchDeviceInfo extends PnpException {
 }
 
 class ExceptionInvalidAdminPassword extends PnpException {
-  ExceptionInvalidAdminPassword() : super(message: 'Invalid admin password');
+  /// How long the router now refuses every password check, the right password
+  /// included. CheckAdminPassword3 reports it with a wrong password;
+  /// CheckAdminPassword2 has no delay, so it is null there.
+  final Duration? delayTimeRemaining;
+
+  ExceptionInvalidAdminPassword({this.delayTimeRemaining})
+      : super(message: 'Invalid admin password');
 }
 
 class ExceptionNoInternetConnection extends PnpException {

@@ -1,0 +1,13 @@
+# The lowest line coverage of lib/ that `1.x / Unit Tests` accepts, as a
+# percentage, measured as run_coverage.sh measures it (#1803 Q5,
+# constitution 3.2).
+#
+# Raise it by hand when a PR raises coverage: take the total that PR's job
+# summary shows, subtract 0.1, and round down to one decimal. The 0.1 keeps a
+# line whose coverage depends on timing from failing the job at random: one
+# such case, the command queue's 50 ms timer, made the total vary between
+# runs until jnap_command_queue_test.dart put it on a fake clock. If a total
+# varies again, find the test that leaves a line to timing and make it
+# deterministic, rather than lower the floor.
+# Lower the floor only with the reason in the PR.
+46.6

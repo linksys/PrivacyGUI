@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
@@ -16,7 +14,6 @@ import '../../../test_data/_index.dart';
 
 void main() {
   mockDependencyRegister();
-  ServiceHelper mockServiceHelper = getIt.get<ServiceHelper>();
 
   late MockRouterPasswordNotifier mockRouterPasswordNotifier;
 
@@ -133,8 +130,8 @@ void main() {
     await tester.pumpAndSettle();
     // Input new password
     final passwordFinder = find.byType(AppPasswordField);
-    await tester.enterText(passwordFinder.first, 'Linksys123!');
-    await tester.enterText(passwordFinder.last, 'Linksys123!');
+    await tester.enterText(passwordFinder.first, 'TestAdmin1!');
+    await tester.enterText(passwordFinder.last, 'TestAdmin1!');
     await tester.pumpAndSettle();
     // scroll until button visible
     final saveFinder = find.byType(AppFilledButton);

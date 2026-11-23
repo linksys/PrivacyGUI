@@ -132,39 +132,37 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
             ],
             _quickSetupSwitch(state.isSimpleMode),
             const AppGap.medium(),
-            Expanded(
-              child: state.isSimpleMode
-                  ? SimpleModeView(
-                      onWifiNameEdited: (value) {
-                        setState(() {
-                          final wifiItem =
-                              state.simpleModeWifi.copyWith(ssid: value);
-                          ref
-                              .read(wifiListProvider.notifier)
-                              .setSimpleModeWifi(wifiItem);
-                        });
-                      },
-                      onWifiPasswordEdited: (value) {
-                        setState(() {
-                          final wifiItem =
-                              state.simpleModeWifi.copyWith(password: value);
-                          ref
-                              .read(wifiListProvider.notifier)
-                              .setSimpleModeWifi(wifiItem);
-                        });
-                      },
-                      onSecurityTypeChanged: (value) {
-                        setState(() {
-                          final wifiItem = state.simpleModeWifi
-                              .copyWith(securityType: value);
-                          ref
-                              .read(wifiListProvider.notifier)
-                              .setSimpleModeWifi(wifiItem);
-                        });
-                      },
-                    )
-                  : const AdvancedModeView(),
-            ),
+            state.isSimpleMode
+                ? SimpleModeView(
+                    onWifiNameEdited: (value) {
+                      setState(() {
+                        final wifiItem =
+                            state.simpleModeWifi.copyWith(ssid: value);
+                        ref
+                            .read(wifiListProvider.notifier)
+                            .setSimpleModeWifi(wifiItem);
+                      });
+                    },
+                    onWifiPasswordEdited: (value) {
+                      setState(() {
+                        final wifiItem =
+                            state.simpleModeWifi.copyWith(password: value);
+                        ref
+                            .read(wifiListProvider.notifier)
+                            .setSimpleModeWifi(wifiItem);
+                      });
+                    },
+                    onSecurityTypeChanged: (value) {
+                      setState(() {
+                        final wifiItem =
+                            state.simpleModeWifi.copyWith(securityType: value);
+                        ref
+                            .read(wifiListProvider.notifier)
+                            .setSimpleModeWifi(wifiItem);
+                      });
+                    },
+                  )
+                : const AdvancedModeView(),
           ],
         );
       },
@@ -324,10 +322,12 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
           if (!mounted) return false;
           _onSaved(state, offerNewQR: offerNewQR);
         });
+        return null;
       }, test: (error) => error is JNAPSideEffectError).onError(
               (error, stackTrace) {
         if (!mounted) return false;
         showErrorMessageSnackBar(error);
+        return null;
       });
     }
     return result;
@@ -473,9 +473,5 @@ class _WiFiListViewState extends ConsumerState<WiFiListView>
       ),
     );
     return advanced;
-  }
-
-  WiFiItem _getFirstEnabledWifi(List<WiFiItem> mainWiFi) {
-    return mainWiFi.firstWhereOrNull((e) => e.isEnabled) ?? mainWiFi.first;
   }
 }

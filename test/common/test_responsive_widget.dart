@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:meta/meta.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 
+import '../layout_gate/layout_cases.dart';
 import 'config.dart';
 import 'screen.dart';
 import 'theme_data.dart';
@@ -28,6 +29,13 @@ extension ScreenSizeManager on WidgetTester {
     await binding.setSurfaceSize(size);
     view.physicalSize = size;
     view.devicePixelRatio = pixelDensity;
+    // Put the default screen back when the test ends, so the next test in the
+    // file does not start on this one's size (#1802).
+    addTearDown(() async {
+      await binding.setSurfaceSize(null);
+      view.resetPhysicalSize();
+      view.resetDevicePixelRatio();
+    });
   }
 }
 
@@ -83,7 +91,7 @@ void testLocalizations(
   Future<void> Function(WidgetTester tester)? onCompleted,
 }) async {
   final envLocales = targetLocales;
-  final envScreens = targetScreens;
+  final envScreens = requestedScreens;
 
   final supportedLocales = (locales ?? AppLocalizations.supportedLocales)
       .toSet()
@@ -91,8 +99,8 @@ void testLocalizations(
       .toList();
   final supportedDevices = (screens ?? responsiveAllScreens)
       .toSet()
-      .where(
-          (element) => envScreens.toSet().any((e) => e.width == element.width))
+      .where((element) =>
+          envScreens == null || envScreens.any((e) => e.width == element.width))
       .toList();
   final isScreenIncluded = supportedDevices.isNotEmpty;
   final set = supportedLocales
@@ -120,5 +128,17 @@ void testLocalizations(
     timeout: timeout,
     semanticsEnabled: semanticsEnabled,
     tags: ['loc'],
+  );
+  // The same case, for the layout gate, and for the measurement when
+  // `layoutMeasure` is on (#1802).
+  declareLayoutCases(
+    name,
+    testMain,
+    locales: supportedLocales,
+    screens: screens,
+    skip: skip,
+    timeout: timeout,
+    semanticsEnabled: semanticsEnabled,
+    onCompleted: onCompleted,
   );
 }

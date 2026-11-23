@@ -45,7 +45,7 @@ final instantVerifyTestState = {
           "channelWidth": "Auto",
           "channel": 0,
           "security": "WPA2/WPA3-Mixed-Personal",
-          "wpaPersonalSettings": {"passphrase": "Linksys123!"}
+          "wpaPersonalSettings": {"passphrase": "TestAdmin1!"}
         }
       },
       {
@@ -92,7 +92,7 @@ final instantVerifyTestState = {
           "channelWidth": "Auto",
           "channel": 0,
           "security": "WPA2/WPA3-Mixed-Personal",
-          "wpaPersonalSettings": {"passphrase": "Linksys123!"}
+          "wpaPersonalSettings": {"passphrase": "TestAdmin1!"}
         }
       },
       {
@@ -430,7 +430,7 @@ final instantVerifyTestState = {
           "channelWidth": "Auto",
           "channel": 0,
           "security": "WPA3-Personal",
-          "wpaPersonalSettings": {"passphrase": "Linksys123!"}
+          "wpaPersonalSettings": {"passphrase": "TestAdmin1!"}
         }
       }
     ]
@@ -516,7 +516,7 @@ final instantVerifyMultiDNSTestState = {
           "channelWidth": "Auto",
           "channel": 0,
           "security": "WPA2/WPA3-Mixed-Personal",
-          "wpaPersonalSettings": {"passphrase": "Linksys123!"}
+          "wpaPersonalSettings": {"passphrase": "TestAdmin1!"}
         }
       },
       {
@@ -563,7 +563,7 @@ final instantVerifyMultiDNSTestState = {
           "channelWidth": "Auto",
           "channel": 0,
           "security": "WPA2/WPA3-Mixed-Personal",
-          "wpaPersonalSettings": {"passphrase": "Linksys123!"}
+          "wpaPersonalSettings": {"passphrase": "TestAdmin1!"}
         }
       },
       {
@@ -901,7 +901,7 @@ final instantVerifyMultiDNSTestState = {
           "channelWidth": "Auto",
           "channel": 0,
           "security": "WPA3-Personal",
-          "wpaPersonalSettings": {"passphrase": "Linksys123!"}
+          "wpaPersonalSettings": {"passphrase": "TestAdmin1!"}
         }
       }
     ]
@@ -938,7 +938,7 @@ final instantVerifyMultiDNSTestState = {
   }
 };
 
-final instantVerifyInternetOffTestState = {
+final instantVerifyNoWanConnectionTestState = {
   "radioInfo": {
     "isBandSteeringSupported": false,
     "radios": [
@@ -976,7 +976,7 @@ final instantVerifyInternetOffTestState = {
           "channelWidth": "Auto",
           "channel": 0,
           "security": "WPA2/WPA3-Mixed-Personal",
-          "wpaPersonalSettings": {"passphrase": "Linksys123!"}
+          "wpaPersonalSettings": {"passphrase": "TestAdmin1!"}
         }
       },
       {
@@ -1023,7 +1023,7 @@ final instantVerifyInternetOffTestState = {
           "channelWidth": "Auto",
           "channel": 0,
           "security": "WPA2/WPA3-Mixed-Personal",
-          "wpaPersonalSettings": {"passphrase": "Linksys123!"}
+          "wpaPersonalSettings": {"passphrase": "TestAdmin1!"}
         }
       },
       {
@@ -1361,7 +1361,7 @@ final instantVerifyInternetOffTestState = {
           "channelWidth": "Auto",
           "channel": 0,
           "security": "WPA3-Personal",
-          "wpaPersonalSettings": {"passphrase": "Linksys123!"}
+          "wpaPersonalSettings": {"passphrase": "TestAdmin1!"}
         }
       }
     ]
@@ -1445,7 +1445,7 @@ final instantVerifyAllWiFiOffTestState = {
           "channelWidth": "Auto",
           "channel": 0,
           "security": "WPA2/WPA3-Mixed-Personal",
-          "wpaPersonalSettings": {"passphrase": "Linksys123!"}
+          "wpaPersonalSettings": {"passphrase": "TestAdmin1!"}
         }
       },
       {
@@ -1492,7 +1492,7 @@ final instantVerifyAllWiFiOffTestState = {
           "channelWidth": "Auto",
           "channel": 0,
           "security": "WPA2/WPA3-Mixed-Personal",
-          "wpaPersonalSettings": {"passphrase": "Linksys123!"}
+          "wpaPersonalSettings": {"passphrase": "TestAdmin1!"}
         }
       },
       {
@@ -1830,7 +1830,7 @@ final instantVerifyAllWiFiOffTestState = {
           "channelWidth": "Auto",
           "channel": 0,
           "security": "WPA3-Personal",
-          "wpaPersonalSettings": {"passphrase": "Linksys123!"}
+          "wpaPersonalSettings": {"passphrase": "TestAdmin1!"}
         }
       }
     ]

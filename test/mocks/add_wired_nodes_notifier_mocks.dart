@@ -128,16 +128,6 @@ class MockAddWiredNodesNotifier
       ) as _i5.Future<void>);
 
   @override
-  _i5.Future<bool> getAutoOnboardingSettings() => (super.noSuchMethod(
-        Invocation.method(
-          #getAutoOnboardingSettings,
-          [],
-        ),
-        returnValue: _i5.Future<bool>.value(false),
-        returnValueForMissingStub: _i5.Future<bool>.value(false),
-      ) as _i5.Future<bool>);
-
-  @override
   _i5.Future<dynamic> startAutoOnboarding(_i6.BuildContext? context) =>
       (super.noSuchMethod(
         Invocation.method(
