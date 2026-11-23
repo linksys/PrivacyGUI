@@ -10,13 +10,10 @@ import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 
 import '../../common/cloud_boundary.dart';
 
-// Remote assistance on the cloud: the account-side sessions and the Guardian
-// sessions a support agent opens. The account login, OTP and the RA calls no
-// code makes are deletion candidates (#1849) and are not tested here.
+// Remote assistance on the cloud: the Guardian sessions a support agent opens,
+// and the cloud ping. The account-side sessions and their PIN went with the
+// support page that used them (#1849).
 
-const _raSessions =
-    '/cloud/remote-access-service/rest/remoteassistance/sessions';
-const _raPin = '$_raSessions/pin';
 const _guardianSessions = '/cloud/v1/guardians/remote-assistances/sessions';
 
 void main() {
@@ -33,89 +30,6 @@ void main() {
     });
     cloud = CloudBoundary();
     repository = LinksysCloudRepository(httpClient: cloud);
-  });
-
-  group('raGetSession', () {
-    test('asks for the network sessions and returns the first', () async {
-      cloud.answers('GET', _raSessions, json: {
-        'remoteAssistanceSessions': [
-          {
-            'remoteAssistanceSession': {
-              'remoteAssistanceSessionId': 'S1',
-              'status': 'PENDING',
-            },
-          },
-          {
-            'remoteAssistanceSession': {'remoteAssistanceSessionId': 'S2'},
-          },
-        ],
-      });
-
-      final sessionId = await repository.raGetSession(networkId: 'N1');
-
-      expect(sessionId, 'S1');
-      final request = cloud.requests.single;
-      expect(request.header('Authorization'),
-          'LinksysUserAuth session_token="stored-token"');
-      expect(request.header('X-Linksys-Network-Id'), 'N1');
-    });
-
-    test('sends an empty token when none is stored', () async {
-      FlutterSecureStorage.setMockInitialValues({});
-      cloud.answers('GET', _raSessions, json: {
-        'remoteAssistanceSessions': [
-          {
-            'remoteAssistanceSession': {'remoteAssistanceSessionId': 'S1'},
-          },
-        ],
-      });
-
-      await repository.raGetSession(networkId: 'N1');
-
-      expect(cloud.requests.single.header('Authorization'),
-          'LinksysUserAuth session_token=""');
-    });
-
-    test('fails when the network has no session', () async {
-      cloud.answers('GET', _raSessions,
-          json: {'remoteAssistanceSessions': <Object>[]});
-
-      await expectLater(
-          repository.raGetSession(networkId: 'N1'), throwsA(isA<StateError>()));
-    });
-
-    test('reports the error the cloud answers with', () async {
-      cloud.answersError('GET', _raSessions, 'INVALID_SESSION_TOKEN');
-
-      await expectLater(
-        repository.raGetSession(networkId: 'N1'),
-        throwsA(isA<ErrorResponse>()
-            .having((e) => e.code, 'code', 'INVALID_SESSION_TOKEN')),
-      );
-    });
-  });
-
-  group('raGetSessionInfo', () {
-    test('reads the session the support agent sees', () async {
-      cloud.answers('GET', '$_raSessions/S1', json: {
-        'remoteAssistanceSession': {
-          'remoteAssistanceSessionId': 'S1',
-          'status': 'ACTIVE',
-          'expiredIn': -1757,
-          'createdAt': 1722240538000,
-          'statusChangedAt': 1722240574000,
-          'currentTime': 1722240580739,
-        },
-      });
-
-      final info =
-          await repository.raGetSessionInfo(networkId: 'N1', sessionId: 'S1');
-
-      expect(info.remoteAssistanceSessionId, 'S1');
-      expect(info.status, 'ACTIVE');
-      expect(info.expiredIn, -1757);
-      expect(cloud.requests.single.header('X-Linksys-Network-Id'), 'N1');
-    });
   });
 
   group('getSessionInfo', () {
@@ -151,37 +65,6 @@ void main() {
       await repository.getSessionInfo(sessionId: 'G1');
 
       expect(cloud.requests.single.header('X-Linksys-Token'), 'stored-token');
-    });
-  });
-
-  group('raGenPin', () {
-    test('asks for a PIN for the session and returns it', () async {
-      cloud.answers('POST', _raPin, json: {
-        'remoteAssistanceSession': {
-          'remoteAssistanceSessionId': 'S1',
-          'pin': '010794',
-          'status': 'PENDING',
-        },
-      });
-
-      final pin = await repository.raGenPin(sessionId: 'S1', networkId: 'N1');
-
-      expect(pin, '010794');
-      final request = cloud.requests.single;
-      expect(request.json, {
-        'remoteAssistanceSession': {'remoteAssistanceSessionId': 'S1'},
-      });
-      expect(request.header('X-Linksys-Network-Id'), 'N1');
-    });
-
-    test('reports a session already in progress', () async {
-      cloud.answersError('POST', _raPin, 'SESSION_IN_PROGRESS');
-
-      await expectLater(
-        repository.raGenPin(sessionId: 'S1', networkId: 'N1'),
-        throwsA(isA<ErrorResponse>()
-            .having((e) => e.code, 'code', 'SESSION_IN_PROGRESS')),
-      );
     });
   });
 

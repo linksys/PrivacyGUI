@@ -59,32 +59,11 @@ const Map<CloudEnvironment, dynamic> kCloudEnvironmentMap = {
 };
 
 // Variable replacements
-const kTicketId = '{ticketId}';
 const kVarRASessionId = '{remoteassistancesessionId}';
-
-// Cloud API Service
-const kAuthorizationService = '/cloud/authorization-service';
-const kUserService = '/cloud/user-service';
-const kDeviceService = '/cloud/device-service';
-const kSmartDeviceService = '/cloud/smart-device-service';
-const kEventService = '/cloud/event-service';
-const kAssetService = '/cloud/asset-service';
-const kStorageService = '/cloud/storage-service';
-const kRemoteAssistanceService = '/cloud/remote-access-service';
 
 /// Cloud API Endpoint
 // test ping.png
 const kTestPingPng = '/cloud/ping.png';
-
-// Remote assistance
-const kRASessions = '$kRemoteAssistanceService/rest/remoteassistance/sessions';
-const kRASessionInfo =
-    '$kRemoteAssistanceService/rest/remoteassistance/sessions/$kVarRASessionId';
-const kRAPin = '$kRemoteAssistanceService/rest/remoteassistance/sessions/pin';
-// Create Ticket
-const kTickets = '/cloud/v1/tickets';
-const kGetTicketDetails = '/cloud/v1/tickets/$kTicketId';
-const kCreateTicketUpload = '/cloud/v1/tickets/$kTicketId/uploads';
 
 /// Guardians
 

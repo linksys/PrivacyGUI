@@ -21,16 +21,6 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
   @override
   AddNodesState build() => const AddNodesState();
 
-  Future<void> setAutoOnboardingSettings() {
-    return ref
-        .read(routerRepositoryProvider)
-        .send(JNAPAction.setBluetoothAutoOnboardingSettings,
-            data: {
-              'isAutoOnboardingEnabled': true,
-            },
-            auth: true);
-  }
-
   Future<bool> getAutoOnboardingSettings() {
     return ref
         .read(routerRepositoryProvider)
@@ -39,16 +29,12 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
             (response) => response.output['isAutoOnboardingEnabled'] ?? false);
   }
 
-  FutureOr getAutoOnboardingStatus() {
-    return pollAutoOnboardingStatus(oneTake: true).first;
-  }
-
-  Stream<JNAPResult> pollAutoOnboardingStatus({bool oneTake = false}) {
+  Stream<JNAPResult> pollAutoOnboardingStatus() {
     return ref.read(routerRepositoryProvider).scheduledCommand(
           action: JNAPAction.getBluetoothAutoOnboardingStatus,
-          maxRetry: oneTake ? 1 : 18,
+          maxRetry: 18,
           retryDelayInMilliSec: 10000,
-          firstDelayInMilliSec: oneTake ? 100 : 3000,
+          firstDelayInMilliSec: 3000,
           condition: (result) {
             if (result is JNAPSuccess) {
               final status = result.output['autoOnboardingStatus'];
