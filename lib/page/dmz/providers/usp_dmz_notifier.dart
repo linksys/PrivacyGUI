@@ -8,6 +8,7 @@ import 'package:privacy_gui/page/dmz/models/dmz_settings.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_status.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/dmz/services/usp_dmz_service.dart';
+import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 
 // ---------------------------------------------------------------------------
@@ -135,8 +136,15 @@ class UspDmzNotifier extends AutoDisposeNotifier<DmzFeatureState>
               'by ${pending.destinationType.name}');
         }
       });
+
+      // The dashboard's Firewall card and the mascot's security dimension read
+      // DMZ from firewallDataProvider, so it re-fetches, as after a Firewall
+      // page save (#1912).
+      ref.invalidate(firewallDataProvider);
     } on ServiceError catch (e) {
       logger.e('[USP][Firewall][DMZ]: Save failed', error: e);
+      // A save that wrote part of itself changed the router's DMZ too.
+      if (e is UspPartialFailureError) ref.invalidate(firewallDataProvider);
       rethrow;
     } finally {
       state = state.copyWith(
