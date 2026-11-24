@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/page/instant_verify/models/diagnostic_thresholds.dart';
 
 /// Represents a single mesh node (router or satellite) parsed from GetDevices3.
 class MeshNodeInfo extends Equatable {
@@ -68,7 +69,9 @@ class MeshNodeInfo extends Equatable {
       backhaulApRssi ?? backhaulRssi;
 
   bool get hasWeakBackhaul =>
-      _effectiveRssi != null && _effectiveRssi! < -70 && !isController;
+      _effectiveRssi != null &&
+      isWeakBackhaulSignal(_effectiveRssi!) &&
+      !isController;
 
   bool get hasWiredBackhaul => backhaulType == 'Wired';
 

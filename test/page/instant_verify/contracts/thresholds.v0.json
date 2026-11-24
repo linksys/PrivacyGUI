@@ -1,0 +1,182 @@
+{
+  "contract": "diagnostic-thresholds/v0",
+  "description": "Draft shared threshold table (#583 roadmap v0.6, Integration architecture 2). Records the cutoff each side applies today for the same finding. 'engine' values AND comparators are verified against this tree by tests/test_diagnostic_thresholds.py: 'op_pattern' captures the shell comparator the script uses, and 'polarity' says whether that comparator tests for the finding ('direct') or for its opposite ('negated', e.g. 'elif -gt -75 then fair', so weak is <= -75). 'instant_test' values are cited from PrivacyGUI feat/instant-test-integration @ 6d7c6aaf and are not machine-checked here; null means no citation yet. 'agreed' is true only when both sides use the same comparator and value. 'decided' records a boundary chosen on #622 that the code does not yet implement everywhere. 'engine_pairs' holds rules the engine itself must apply identically. Nothing reads this table at runtime yet.",
+  "instant_test_ref": "linksys/PrivacyGUI@6d7c6aaf4e31bcb4ea4140876def8191b713bf45",
+  "rules": [
+    {
+      "id": "router.uptime.restart_hint",
+      "unit": "days",
+      "finding": "router has run long enough to suggest a restart",
+      "engine": {
+        "op": ">",
+        "value": 30,
+        "source": "engine/scripts/insight_uptime.sh",
+        "pattern": "\"\\$DAYS\" -gt (-?[0-9]+) \\]; then\\n\\s*echo \"Your router has been running",
+        "op_pattern": "\\\"\\$DAYS\\\" (-[gl][te]) -?[0-9]+ \\]; then\\n\\s*echo \\\"Your router has been running",
+        "polarity": "direct"
+      },
+      "instant_test": {
+        "op": ">=",
+        "value": 30,
+        "source": "lib/page/instant_verify/models/verdict.dart:850"
+      },
+      "agreed": false,
+      "note": "At exactly 30 days the engine says healthy and Instant Test offers a restart.",
+      "decided": {
+        "op": ">",
+        "value": 30,
+        "where": "#622, 5 Nov 2026 (Yarnin): the engine rule; Instant Test changes"
+      }
+    },
+    {
+      "id": "wifi.client_signal.weak",
+      "unit": "dBm",
+      "finding": "client WiFi signal is weak",
+      "engine": {
+        "op": "<=",
+        "value": -75,
+        "source": "engine/scripts/mesh_backend.sh",
+        "pattern": "^MESH_SIGNAL_WEAK_AT=(-?[0-9]+)",
+        "op_pattern": "elif \\[ \"\\$1\" (-[gl][te]) \"\\$MESH_SIGNAL_WEAK_AT\" \\]",
+        "polarity": "negated"
+      },
+      "instant_test": {
+        "op": "<",
+        "value": -75,
+        "source": "lib/page/instant_verify/models/diagnostic_client.dart:96"
+      },
+      "agreed": false,
+      "note": "Engine: not stronger than -75 is weak, so -75 is weak. Instant Test flags below -75 only. Instant Test also scores signal and rate together (models/device_score.dart).",
+      "decided": {
+        "op": "<=",
+        "value": -75,
+        "where": "#622, 5 Nov 2026 (Yarnin): weak at -75 for clients and backhaul"
+      }
+    },
+    {
+      "id": "mesh.backhaul.weak",
+      "unit": "dBm",
+      "finding": "wireless backhaul to a node is weak",
+      "engine": {
+        "op": "<=",
+        "value": -75,
+        "source": "engine/scripts/mesh_backend.sh",
+        "pattern": "^MESH_SIGNAL_WEAK_AT=(-?[0-9]+)",
+        "op_pattern": "elif \\[ \"\\$1\" (-[gl][te]) \"\\$MESH_SIGNAL_WEAK_AT\" \\]",
+        "polarity": "negated"
+      },
+      "instant_test": {
+        "op": "<",
+        "value": -70,
+        "source": "lib/page/instant_verify/models/mesh_node_info.dart:71"
+      },
+      "agreed": false,
+      "note": "Since #648, clients and backhaul share mesh_signal_word: <= -75 is weak. Instant Test still flags below -70.",
+      "decided": {
+        "op": "<=",
+        "value": -75,
+        "where": "#622 pick 2, implemented by #648: weak at -75 for clients and backhaul"
+      }
+    },
+    {
+      "id": "system.memory.high",
+      "unit": "percent",
+      "finding": "router memory use is high",
+      "engine": {
+        "op": ">",
+        "value": 85,
+        "source": "engine/scripts/insight_network_health.sh",
+        "pattern": "\"\\$MEM_PCT\" -gt (-?[0-9]+)",
+        "op_pattern": "\\\"\\$MEM_PCT\\\" (-[gl][te]) -?[0-9]+",
+        "polarity": "direct"
+      },
+      "instant_test": {
+        "op": ">",
+        "value": 85,
+        "source": "lib/page/instant_verify/models/verdict.dart:683"
+      },
+      "agreed": true,
+      "note": "Same cutoff. Instant Test's _parsePct scaling is an open observation in the capability matrix."
+    },
+    {
+      "id": "internet.latency.high",
+      "unit": "ms",
+      "finding": "internet latency is high",
+      "engine": {
+        "op": ">",
+        "value": 100,
+        "source": "engine/scripts/insight_network_health.sh",
+        "pattern": "\"\\$\\{WAN_PING%\\.\\*\\}\" -gt (-?[0-9]+)",
+        "op_pattern": "\\\"\\$\\{WAN_PING%\\.\\*\\}\\\" (-[gl][te]) -?[0-9]+",
+        "polarity": "direct"
+      },
+      "instant_test": {
+        "op": ">",
+        "value": 100,
+        "source": "lib/page/instant_verify/models/verdict.dart:484"
+      },
+      "agreed": true,
+      "note": "Same cutoff, different evidence: the engine pings 8.8.8.8 from the router; Instant Test takes the median of browser samples to Cloudflare. The contract keeps them as two checks."
+    },
+    {
+      "id": "wifi.client_signal.strong",
+      "unit": "dBm",
+      "finding": "client WiFi signal is strong",
+      "engine": {
+        "op": ">=",
+        "value": -65,
+        "source": "engine/scripts/mesh_backend.sh",
+        "pattern": "^MESH_SIGNAL_STRONG_AT=(-?[0-9]+)",
+        "op_pattern": "if \\[ \"\\$1\" (-[gl][te]) \"\\$MESH_SIGNAL_STRONG_AT\" \\]",
+        "polarity": "direct"
+      },
+      "instant_test": null,
+      "agreed": false,
+      "note": "Shared mesh_signal_word: >= -65 is strong/good since #652. Instant Test has no single cutoff cited yet.",
+      "decided": {
+        "op": ">=",
+        "value": -65,
+        "where": "#648 / #652 (Yarnin): -65 is strong for clients and backhaul, implemented by #652"
+      }
+    },
+    {
+      "id": "mesh.backhaul.good",
+      "unit": "dBm",
+      "finding": "wireless backhaul to a node is good",
+      "engine": {
+        "op": ">=",
+        "value": -65,
+        "source": "engine/scripts/mesh_backend.sh",
+        "pattern": "^MESH_SIGNAL_STRONG_AT=(-?[0-9]+)",
+        "op_pattern": "if \\[ \"\\$1\" (-[gl][te]) \"\\$MESH_SIGNAL_STRONG_AT\" \\]",
+        "polarity": "direct"
+      },
+      "instant_test": null,
+      "agreed": false,
+      "note": "Shared mesh_signal_word: >= -65 is strong/good since #652. Instant Test has no single cutoff cited yet.",
+      "decided": {
+        "op": ">=",
+        "value": -65,
+        "where": "#648 / #652 (Yarnin): -65 is strong for clients and backhaul, implemented by #652"
+      }
+    }
+  ],
+  "engine_pairs": [
+    {
+      "rules": [
+        "wifi.client_signal.weak",
+        "mesh.backhaul.weak"
+      ],
+      "agreed": true,
+      "note": "Shared mesh_signal_word since #648; both consumers use the same boundary."
+    },
+    {
+      "rules": [
+        "wifi.client_signal.strong",
+        "mesh.backhaul.good"
+      ],
+      "agreed": true,
+      "note": "Shared mesh_signal_word since #648; both consumers use the same boundary."
+    }
+  ]
+}

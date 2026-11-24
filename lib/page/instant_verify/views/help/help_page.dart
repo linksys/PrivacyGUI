@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/instant_verify/views/help/support_option_card.dart';
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
+import 'package:privacy_gui/page/instant_verify/models/diagnostic_thresholds.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart' show MeshNodeInfo, BackhaulHealth;
 import 'package:privacy_gui/page/instant_verify/providers/instant_test_device_id_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';

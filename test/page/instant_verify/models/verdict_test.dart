@@ -728,13 +728,20 @@ void main() {
   // ── Check 11: Long uptime ────────────────────────────────────────────────
 
   group('VerdictEngine — Check 11: Long uptime', () {
-    test('30+ days → info with restart action', () {
-      final v = _compute(uptimeSeconds: 30 * 86400); // 30 days
+    // Shared table router.uptime.restart_hint: hint only after MORE than 30
+    // days (> 30, decided on linksys-ai-msdm#622), as the engine does.
+    test('31 days → info with restart action', () {
+      final v = _compute(uptimeSeconds: 31 * 86400);
       final finding = v.findings
           .firstWhere((f) => f.headline.contains('running'));
       expect(finding.priority, VerdictPriority.info);
-      expect(finding.headline, contains('30 days'));
+      expect(finding.headline, contains('31 days'));
       expect(finding.actionKey, VerdictEngine.actionRestartRouter);
+    });
+
+    test('exactly 30 days → no finding (boundary)', () {
+      final v = _compute(uptimeSeconds: 30 * 86400);
+      expect(v.findings.where((f) => f.headline.contains('running')), isEmpty);
     });
 
     test('90 days → shows correct count', () {

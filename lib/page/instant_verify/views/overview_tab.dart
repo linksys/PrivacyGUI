@@ -28,6 +28,7 @@ import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_s
 import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_service.dart';
 import 'package:privacy_gui/page/instant_verify/views/restart_helper.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:privacy_gui/page/instant_verify/models/diagnostic_thresholds.dart';
 
 class OverviewTab extends ConsumerStatefulWidget {
   final Widget? leading;
@@ -896,7 +897,8 @@ class _CheckResults extends StatelessWidget {
       ];
 
   static String _deviceTitle(DiagnosticClient client, String name) {
-    final weak = client.signalDecibels != null && client.signalDecibels! < -75;
+    final weak = client.signalDecibels != null &&
+        isWeakClientSignal(client.signalDecibels!);
     return weak
         ? '$name has a weak WiFi signal'
         : '$name has a slow WiFi connection';

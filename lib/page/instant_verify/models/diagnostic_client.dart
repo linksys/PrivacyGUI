@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/page/instant_verify/models/diagnostic_thresholds.dart';
 
 enum SignalStrength { excellent, fair, weak, veryWeak, unknown }
 
@@ -85,15 +86,15 @@ class DiagnosticClient extends Equatable {
   SignalStrength get signalStrength {
     if (!isWireless || signalDecibels == null) return SignalStrength.unknown;
     final s = signalDecibels!;
-    if (s >= -65) return SignalStrength.excellent;
-    if (s >= -75) return SignalStrength.fair;
+    if (isStrongClientSignal(s)) return SignalStrength.excellent;
+    if (!isWeakClientSignal(s)) return SignalStrength.fair;
     if (s >= -85) return SignalStrength.weak;
     return SignalStrength.veryWeak;
   }
 
   bool get isFlagged {
     if (!isWireless) return false;
-    if (signalDecibels != null && signalDecibels! < -75) return true;
+    if (signalDecibels != null && isWeakClientSignal(signalDecibels!)) return true;
     if (txRateMbps != null && txRateMbps! < 10) return true;
     if (rxRateMbps != null && rxRateMbps! < 10) return true;
     return false;
