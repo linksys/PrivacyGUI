@@ -910,6 +910,8 @@
   "noWifiSignalData": "Không có dữ liệu tín hiệu WiFi...",
   "nodeDetail": "Chi tiết nút",
   "nodeNotFound": "Không tìm thấy nút",
+  "nodeOfflineFor": "Đã ngoại tuyến {duration}",
+  "nodeOfflineDurationUnknown": "Không rõ thời gian ngoại tuyến",
   "none": "Không có",
   "notApplicableForEthernetDevices": "Không áp dụng cho thiết bị Ethernet",
   "notAvailable": "Không khả dụng",

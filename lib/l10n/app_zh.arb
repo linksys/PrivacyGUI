@@ -910,6 +910,8 @@
   "noWifiSignalData": "无 WiFi 信号数据…",
   "nodeDetail": "节点详情",
   "nodeNotFound": "未找到节点",
+  "nodeOfflineFor": "已离线 {duration}",
+  "nodeOfflineDurationUnknown": "离线时长未知",
   "none": "无",
   "notApplicableForEthernetDevices": "不适用于以太网设备",
   "notAvailable": "不可用",

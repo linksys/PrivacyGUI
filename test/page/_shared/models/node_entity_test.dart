@@ -298,6 +298,22 @@ void main() {
         );
       });
 
+      // When an offline extender went offline (#1443). Equality has to see
+      // it, or a new stamp would not rebuild the duration on its page.
+      test('carries offlineSince through copyWith and equality', () {
+        final since = DateTime.utc(2026, 11, 23, 9, 10, 8);
+        final offline = DevicesTestData.createOfflineSlave(offlineSince: since);
+
+        expect(offline.copyWith().offlineSince, since);
+        expect(offline,
+            equals(DevicesTestData.createOfflineSlave(offlineSince: since)));
+        expect(
+          offline,
+          isNot(equals(DevicesTestData.createOfflineSlave(
+              offlineSince: since.add(const Duration(minutes: 1))))),
+        );
+      });
+
       test('preserves unchanged fields', () {
         final original = DevicesTestData.createWifiSlave();
         final copied = original.copyWith();

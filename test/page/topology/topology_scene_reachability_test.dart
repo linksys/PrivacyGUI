@@ -46,6 +46,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
@@ -104,6 +105,8 @@ void main() {
     'meshNetworkDevicesData': meshNetworkDevicesData,
     'meshNetworkWithNodeActionsDevicesData':
         meshNetworkWithNodeActionsDevicesData,
+    'meshNetworkWithOfflineExtenderDevicesData':
+        meshNetworkWithOfflineExtenderDevicesData,
   };
 
   final detailScenes = <String, UspNodeDetailState>{
@@ -112,6 +115,9 @@ void main() {
     'masterNodeEmptyDevices': masterNodeEmptyDevices,
     'masterNodeWithHostsAddresses': masterNodeWithHostsAddresses,
     'slaveNodeOffline': slaveNodeOffline,
+    'slaveNodeOfflineFromHosts': slaveNodeOfflineFromHosts,
+    'slaveNodeOfflineNoStamp': slaveNodeOfflineNoStamp,
+    'slaveNodeOfflineForGolden': slaveNodeOfflineForGolden,
     'slaveNodeOnlineWithDevices': slaveNodeOnlineWithDevices,
     'slaveNodeWithBackhaulTiming': slaveNodeWithBackhaulTiming,
     'slaveNodeWithBackhaulRates': slaveNodeWithBackhaulRates,
@@ -156,6 +162,28 @@ void main() {
         expect(
             withActions.slaves[i].copyWith(actions: const {}), base.slaves[i]);
       }
+    });
+
+    // #1443: the offline extender is the shape `MeshNetworkBuilder` builds from
+    // a marked Hosts row, and everything else is the healthy mesh.
+    // An offline node with a backhaul, a DataElements ID or clients is one the
+    // builder cannot produce on FL-WRT 2.0.
+    test(
+        'meshNetworkWithOfflineExtenderDevicesData adds one offline extender '
+        'in the builder\'s shape', () {
+      final base = meshNetworkDevicesData.meshNetwork;
+      final mesh = meshNetworkWithOfflineExtenderDevicesData.meshNetwork;
+
+      expect(mesh.master, base.master);
+      expect(mesh.slaves.take(base.slaves.length), base.slaves);
+      expect(mesh.slaves, hasLength(base.slaves.length + 1));
+
+      final offline = mesh.slaves.last;
+      expect(offline.isOnline, isFalse);
+      expect(offline.dataElementsId, isNull);
+      expect(offline.backhaul, BackhaulInfo.none);
+      expect(offline.connectedClients, isEmpty);
+      expect(offline.offlineSince, isNotNull);
     });
 
     test('meshNetworkDevicesData draws the healthy mesh it documents', () {

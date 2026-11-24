@@ -53,8 +53,15 @@ class MeshNetwork with EquatableMixin, DiagnosticNamed {
   /// Number of offline client devices.
   int get offlineClientCount => allClients.where((c) => !c.isOnline).length;
 
-  /// Whether this is a mesh network (has slave nodes).
-  bool get hasMesh => slaves.isNotEmpty;
+  /// Whether this is a mesh network: at least one extender is online.
+  ///
+  /// An offline extender (#1443) is listed in [slaves] but is not in the
+  /// mesh, so a router whose only extender is offline reads as a single
+  /// router here: its Reboot and Factory Reset copy is the single-router
+  /// one, and its clients are not resolved against extenders. This is also
+  /// what `MeshTopologyBuilder`'s own `hasMesh` says, since DataElements
+  /// lists online nodes only.
+  bool get hasMesh => slaves.any((s) => s.isOnline);
 
   /// Total number of nodes.
   int get nodeCount => 1 + slaves.length;
@@ -79,12 +86,20 @@ class MeshNetwork with EquatableMixin, DiagnosticNamed {
   /// (FWDEV#202), and a node that restarts cuts off everything behind it, so
   /// a caller rebooting or resetting a slave sends one call per node in this
   /// order.
+  ///
+  /// Only online slaves take part (#1443). An offline extender is not in the
+  /// mesh: it reports no parent, so walking it would always raise
+  /// [NodesBehind.mayMissNodes] and put a "may go down with it" warning on
+  /// every node action while it is listed, and it cannot go down with
+  /// anything. Nor is it anyone's parent: a node still naming it reports a
+  /// stale parent, which the walk reads as an unknown chain.
   NodesBehind nodesBehind(String deviceId) {
     final target = findNode(deviceId);
     if (target is! SlaveNode) return const NodesBehind([], mayMissNodes: false);
 
+    final onlineSlaves = slaves.where((s) => s.isOnline).toList();
     final byId = {
-      for (final s in slaves) ...{
+      for (final s in onlineSlaves) ...{
         s.deviceId.toUpperCase(): s,
         if (s.dataElementsId != null) s.dataElementsId!.toUpperCase(): s,
       },
@@ -93,7 +108,7 @@ class MeshNetwork with EquatableMixin, DiagnosticNamed {
 
     final behind = <(int, SlaveNode)>[];
     var mayMissNodes = false;
-    for (final slave in slaves) {
+    for (final slave in onlineSlaves) {
       final visited = <SlaveNode>{};
       SlaveNode? current = slave;
       while (true) {

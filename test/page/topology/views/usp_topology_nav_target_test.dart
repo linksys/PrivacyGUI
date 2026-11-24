@@ -42,22 +42,28 @@ void main() {
       expect(target.queryParameters, {'mac': 'AA:BB:CC:DD:EE:FF'});
     });
 
-    test('offline extender -> null (gate kept until #1465)', () {
+    // #1443: an offline extender opens its Node Detail page, which renders
+    // `node.isOnline` (#1465) and says how long it has been offline.
+    test('offline extender -> uspNodeDetail with its deviceId (#1443)', () {
       final target = topologyNavTargetFor(_node(
         slot: 'secondary',
         status: NodeState.inactive,
         metadata: {'deviceId': 'dev-1'},
       ));
-      expect(target, isNull);
+      expect(target, isNotNull);
+      expect(target!.route, RouteNamed.uspNodeDetail);
+      expect(target.queryParameters, {'deviceId': 'dev-1'});
     });
 
-    test('offline gateway -> null (gate kept until #1465)', () {
+    test('offline gateway -> uspNodeDetail with its deviceId (#1443)', () {
       final target = topologyNavTargetFor(_node(
         slot: 'primary',
         status: NodeState.inactive,
         metadata: {'deviceId': 'dev-0'},
       ));
-      expect(target, isNull);
+      expect(target, isNotNull);
+      expect(target!.route, RouteNamed.uspNodeDetail);
+      expect(target.queryParameters, {'deviceId': 'dev-0'});
     });
 
     test('online extender -> uspNodeDetail with its deviceId', () {
@@ -130,19 +136,25 @@ void main() {
       );
     });
 
-    // Mutation guard: the offline arm for infra nodes must be exercised.
-    // If the `if (status == offline) return null` line is deleted, an offline
-    // extender WITH a deviceId would resolve to uspNodeDetail and this test
-    // would fail.
-    test('mutation guard: deleting the offline gate breaks the extender case',
+    // Mutation guard (#1443): re-adding a liveness gate on mesh nodes makes an
+    // offline extender with a deviceId unreachable again, and this fails. The
+    // only thing that makes a mesh node unreachable is having no deviceId.
+    test('mutation guard: an offline extender with a deviceId is navigable',
         () {
       final offlineExtender = _node(
         slot: 'secondary',
         status: NodeState.inactive,
         metadata: {'deviceId': 'dev-1'},
       );
-      // With the gate present this is null; without it, it would be a target.
-      expect(topologyNavTargetFor(offlineExtender), isNull);
+      expect(topologyNavTargetFor(offlineExtender), isNotNull);
+      expect(
+        topologyNavTargetFor(_node(
+          slot: 'secondary',
+          status: NodeState.inactive,
+          metadata: {'deviceId': ''},
+        )),
+        isNull,
+      );
     });
   });
 

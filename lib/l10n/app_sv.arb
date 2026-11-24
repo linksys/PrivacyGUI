@@ -910,6 +910,8 @@
   "noWifiSignalData": "Inga WiFi-signaldata...",
   "nodeDetail": "Noddetaljer",
   "nodeNotFound": "Noden hittades inte",
+  "nodeOfflineFor": "Offline i {duration}",
+  "nodeOfflineDurationUnknown": "Offlinetid okänd",
   "none": "Ingen",
   "notApplicableForEthernetDevices": "Ej tillämpligt för Ethernet-enheter",
   "notAvailable": "Inte tillgänglig",

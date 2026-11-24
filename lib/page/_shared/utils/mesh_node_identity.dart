@@ -19,6 +19,12 @@
 ///
 /// Replaces `mesh_device_role.dart` (`isMeshNodeRole`), which keyed on the
 /// deleted `DeviceRole` and so recognised no node at all on 2.0.
+///
+/// This is the test for a node DataElements lists. A node that has *left*
+/// DataElements is found by a second fact, firmware's `X_LINKSYS_IsMeshNode`
+/// mark on its row (#1443). That test reads a generated `ConnectedDevice`, so
+/// it lives in `MeshNetworkBuilder` under `services/` rather than here
+/// (constitution §5.4.3).
 library;
 
 /// The normalized MAC set of every node in [nodeIds].

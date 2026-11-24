@@ -97,6 +97,22 @@ void main() {
         final network = DevicesTestData.createMeshNetwork();
         expect(network.hasMesh, isTrue);
       });
+
+      // #1443: an offline extender is listed but is not in the mesh.
+      test('returns false when the only extender is offline', () {
+        final network = DevicesTestData.createSingleNodeNetwork()
+            .copyWith(slaves: [DevicesTestData.createOfflineSlave()]);
+        expect(network.slaves, hasLength(1));
+        expect(network.hasMesh, isFalse);
+      });
+
+      test('returns true when an online and an offline extender exist', () {
+        final network = DevicesTestData.createMeshNetwork().copyWith(slaves: [
+          ...DevicesTestData.createMeshNetwork().slaves,
+          DevicesTestData.createOfflineSlave(deviceId: 'AA:BB:CC:DD:EE:99'),
+        ]);
+        expect(network.hasMesh, isTrue);
+      });
     });
 
     group('nodeCount', () {
@@ -545,6 +561,47 @@ void main() {
 
         expect(network.nodesBehind(DevicesTestData.masterMac).nodes, isEmpty);
         expect(network.nodesBehind('AA:BB:CC:DD:EE:FF').nodes, isEmpty);
+      });
+
+      // #1443: an offline extender reports no parent. Walked like an online
+      // one, it would flag every node action "may miss nodes" for as long as it
+      // is listed (a reset node stays 24 h), and it cannot go down with
+      // anything because it is already down.
+      test('an offline extender does not make a node action may-miss', () {
+        const offline = 'AA:BB:CC:DD:EE:0D';
+        final network = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            slave(a, parent: DevicesTestData.masterMac),
+            DevicesTestData.createOfflineSlave(deviceId: offline),
+          ],
+        );
+
+        final behind = network.nodesBehind(a);
+
+        expect(behind.nodes.map((n) => n.deviceId), [a]);
+        expect(behind.mayMissNodes, isFalse);
+      });
+
+      // A node still naming an offline extender as its parent reports a stale
+      // parent: where it sits is unknown, so the action may miss nodes, and it
+      // is not "behind" the offline node.
+      test('a node naming an offline extender as parent is an unknown chain',
+          () {
+        const offline = 'AA:BB:CC:DD:EE:0D';
+        final network = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            slave(a, parent: DevicesTestData.masterMac),
+            slave(b, parent: offline),
+            DevicesTestData.createOfflineSlave(deviceId: offline),
+          ],
+        );
+
+        final behind = network.nodesBehind(a);
+
+        expect(behind.nodes.map((n) => n.deviceId), [a]);
+        expect(behind.mayMissNodes, isTrue);
       });
     });
 

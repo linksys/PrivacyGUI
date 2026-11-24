@@ -910,6 +910,8 @@
   "noWifiSignalData": "Keine WiFi-Signaldaten...",
   "nodeDetail": "Knotendetails",
   "nodeNotFound": "Knoten nicht gefunden",
+  "nodeOfflineFor": "Offline-Dauer: {duration}",
+  "nodeOfflineDurationUnknown": "Offline-Dauer unbekannt",
   "none": "Keine",
   "notApplicableForEthernetDevices": "Für Ethernet-Geräte nicht zutreffend",
   "notAvailable": "Nicht verfügbar",

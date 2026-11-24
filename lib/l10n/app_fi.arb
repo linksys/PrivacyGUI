@@ -910,6 +910,8 @@
   "noWifiSignalData": "Ei WiFi-signaalitietoja...",
   "nodeDetail": "Solmun tiedot",
   "nodeNotFound": "Solmua ei löytynyt",
+  "nodeOfflineFor": "Offline-aika: {duration}",
+  "nodeOfflineDurationUnknown": "Offline-ajan pituus tuntematon",
   "none": "Ei mitään",
   "notApplicableForEthernetDevices": "Ei koske Ethernet-laitteita",
   "notAvailable": "Ei saatavilla",

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/ai/abstraction/_abstraction.dart';
 import 'package:privacy_gui/ai/providers/usp_command_provider.dart';
+import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/device_analytics_state.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
@@ -413,6 +414,34 @@ void main() {
       container.dispose();
     });
 
+    // #1443: an offline extender is listed in `slaves`, so the model must be
+    // told which extenders are actually up.
+    test('says which extenders are online', () async {
+      final container = ProviderContainer(
+        overrides: [
+          devicesDataProvider.overrideWith(
+            () => _FixedDevicesNotifier(_devicesDataWithOfflineExtender),
+          ),
+        ],
+      );
+      await container.read(devicesDataProvider.future);
+
+      final context = buildRouterContext(container.read);
+      expect(context, contains('- Living Room: online,'));
+      expect(context, contains('- Bedroom: offline,'));
+
+      final result = await container
+          .read(_testUspCommandProvider)
+          .execute('getConnectedDevices', {});
+      final extenders = result.data['extenders'] as List;
+      expect(
+        [for (final e in extenders) (e['name'], e['isOnline'])],
+        [('Living Room', true), ('Bedroom', false)],
+      );
+
+      container.dispose();
+    });
+
     test('handles missing data gracefully', () {
       final container = ProviderContainer(
         overrides: [
@@ -619,6 +648,28 @@ final _testDevicesData = DevicesData(
         ),
       ],
     ),
+  ),
+);
+
+/// A master with one extender in DataElements and one only in Hosts (#1443).
+final _devicesDataWithOfflineExtender = DevicesData(
+  meshNetwork: MeshNetwork(
+    master: MasterNode(deviceId: 'GATEWAY', model: 'MR7500'),
+    slaves: [
+      SlaveNode(
+        deviceId: 'AA:BB:CC:DD:EE:10',
+        dataElementsId: 'AA:BB:CC:DD:EE:10',
+        friendlyName: 'Living Room',
+        model: 'MX4200',
+        backhaul: BackhaulInfo.none,
+      ),
+      SlaveNode(
+        deviceId: 'AA:BB:CC:DD:EE:20',
+        friendlyName: 'Bedroom',
+        model: 'MX4200',
+        backhaul: BackhaulInfo.none,
+      ),
+    ],
   ),
 );
 

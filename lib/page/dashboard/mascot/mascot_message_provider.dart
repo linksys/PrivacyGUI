@@ -105,7 +105,10 @@ class MascotMessageNotifier {
     final devicesData = _ref.read(devicesDataProvider).valueOrNull;
     final onlineDeviceCount = devicesData?.onlineClientCount;
     final totalDeviceCount = devicesData?.totalClientCount;
-    final meshNodeCount = devicesData?.nodes.where((n) => !n.isMaster).length;
+    // Online extenders only: the message says "{count} nodes active", and an
+    // offline extender (#1443) is listed but not active.
+    final meshNodeCount =
+        devicesData?.nodes.where((n) => !n.isMaster && n.isOnline).length;
 
     // WAN
     final wanData = _ref.read(wanDataProvider).valueOrNull;
