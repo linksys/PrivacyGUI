@@ -206,10 +206,12 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
               ]),
             ],
           ),
-          // Internal validation builds (deploy_local.sh sets force=local) get the
-          // mock-failure scenario picker; customer Jenkins builds (force!=local)
-          // do not. Replaces the old kDebugMode guard, which release builds strip.
-          if (BuildConfig.forceCommandType == ForceCommand.local) ...[
+          // The mock-failure scenario picker is for the mock-data preview only.
+          // It was gated on force=local, but every shipping GUI is built with
+          // force=local (docs/pnp-auto-master-cgi-lockout-fix.md), so customers
+          // would have seen it, and its scenarios open /instant-prototype,
+          // which only enable_instant_test_prototype builds register.
+          if (BuildConfig.enableInstantTestPrototype) ...[
             const AppGap.small2(),
             Center(
               child: FilledButton.tonal(

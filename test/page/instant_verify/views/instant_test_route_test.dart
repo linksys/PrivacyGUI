@@ -1,3 +1,4 @@
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -82,6 +83,14 @@ void main() {
     await tapBack(tester);
     expect(find.text('Menu page'), findsOneWidget);
   });
+
+  // The mock "Test scenarios" picker belongs to the preview build only. Run
+  // this file with --dart-define=force=local too: shipping GUIs use force=local.
+  testWidgets('home page has no Test scenarios picker outside the preview build',
+      (tester) async {
+    await open(tester);
+    expect(find.text('Test scenarios'), findsNothing);
+  }, skip: BuildConfig.enableInstantTestPrototype);
 
   // Instant Test ships as a beta (linksys/linksys-ai-msdm#747): the home page
   // and the pages a flow opens carry the Beta mark next to their title.
