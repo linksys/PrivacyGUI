@@ -108,6 +108,26 @@ Map<String, dynamic> _buildDataElementsRadiosResponse() => {
       'Device.WiFi.DataElements.Network.Device.1.Radio.2.Utilization': '46',
     };
 
+/// DataElements radios as FW 2.0.4.26111304 reports them (#1911, bench
+/// 2026-11-23): the 2.4 GHz radio's `ID` is not the BSSID of any SSID on it
+/// (`72:12:13:21:55:03` against the main SSID's `74:12:13:21:55:03`). Only the
+/// BSSes under it carry the BSSIDs that `Device.WiFi.SSID` reports. The 5 GHz
+/// radio's `ID` happens to equal its main BSSID, as it did on 26103108.
+Map<String, dynamic> _buildDataElementsRadiosWithBssResponse() => {
+      'Device.WiFi.DataElements.Network.Device.1.Radio.1.ID':
+          'aa:bb:cc:dd:ee:02',
+      'Device.WiFi.DataElements.Network.Device.1.Radio.1.Utilization': '11',
+      'Device.WiFi.DataElements.Network.Device.1.Radio.1.BSS.1.BSSID':
+          'aa:bb:cc:dd:ee:02',
+      'Device.WiFi.DataElements.Network.Device.1.Radio.2.ID':
+          'a8:bb:cc:dd:ee:01',
+      'Device.WiFi.DataElements.Network.Device.1.Radio.2.Utilization': '46',
+      'Device.WiFi.DataElements.Network.Device.1.Radio.2.BSS.1.BSSID':
+          'aa:bb:cc:dd:ee:01',
+      'Device.WiFi.DataElements.Network.Device.1.Radio.2.BSS.2.BSSID':
+          'aa:bb:cc:dd:ee:03',
+    };
+
 /// Stubs `mockUsp.get()` to return the right response based on the requested
 /// paths. Each codegen `.fetch()` requests distinct base paths, so we can
 /// dispatch based on the first path element. [radios] replaces the radio
@@ -329,6 +349,20 @@ void main() {
       });
     });
 
+    test(
+        'a radio whose ID is not its SSID\'s BSSID is matched through the '
+        'BSSIDs of its BSSes', () async {
+      _stubAllFetches(mockUsp);
+      final context = (await svc.fetch()).codegenContext;
+      _stubAllFetches(mockUsp,
+          dataElements: _buildDataElementsRadiosWithBssResponse());
+
+      expect(await svc.fetchUtilizationByRadioPath(context), {
+        'Device.WiFi.Radio.1.': 46,
+        'Device.WiFi.Radio.2.': 11,
+      });
+    });
+
     test('a failed read is a ServiceError, not "nothing reported"', () async {
       // The caller keeps the readings it has on a failure; an empty map would
       // tell it every radio reported none and wipe them to unknown.
@@ -475,6 +509,43 @@ void main() {
         'Device.WiFi.DataElements.Network.Device.2.Radio.1.ID':
             'aa:bb:cc:dd:ee:99',
         'Device.WiFi.DataElements.Network.Device.2.Radio.1.Utilization': '200',
+      });
+
+      final radios = (await svc.fetch()).radioModels;
+
+      expect(radios[0].utilization, isNull);
+      expect(radios[1].utilization, 11);
+    });
+
+    // #1911: on FW 2.0.4.26111304 the 2.4 GHz radio showed "—" because its
+    // DataElements `ID` is not its main SSID's BSSID.
+    test(
+        'a 2.4 GHz radio whose DataElements ID is not its SSID\'s BSSID gets '
+        'its utilization through a BSS on it', () async {
+      _stubAllFetches(mockUsp,
+          dataElements: _buildDataElementsRadiosWithBssResponse());
+
+      final radios = (await svc.fetch()).radioModels;
+
+      expect(radios[0].band, '2.4GHz');
+      expect(radios[0].utilization, 46);
+      expect(radios[1].band, '5GHz');
+      expect(radios[1].utilization, 11);
+    });
+
+    test('a satellite\'s BSSes do not lend their reading to a local radio',
+        () async {
+      // Only the local 5 GHz radio, plus a satellite radio with BSS rows whose
+      // BSSIDs no local SSID has.
+      _stubAllFetches(mockUsp, dataElements: {
+        'Device.WiFi.DataElements.Network.Device.1.Radio.1.ID':
+            'aa:bb:cc:dd:ee:02',
+        'Device.WiFi.DataElements.Network.Device.1.Radio.1.Utilization': '11',
+        'Device.WiFi.DataElements.Network.Device.2.Radio.1.ID':
+            'aa:bb:cc:dd:ee:99',
+        'Device.WiFi.DataElements.Network.Device.2.Radio.1.Utilization': '200',
+        'Device.WiFi.DataElements.Network.Device.2.Radio.1.BSS.1.BSSID':
+            'aa:bb:cc:dd:ee:98',
       });
 
       final radios = (await svc.fetch()).radioModels;

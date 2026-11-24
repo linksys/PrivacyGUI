@@ -13,7 +13,7 @@ import 'package:privacy_gui/core/utils/tr181_path.dart';
 import 'package:privacy_gui/core/utils/wifi_channel.dart';
 import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
-import 'package:privacy_gui/page/_shared/utils/wifi_guest_detection.dart';
+import 'package:privacy_gui/page/_shared/services/wifi_guest_detection.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 
@@ -305,34 +305,51 @@ class UspWifiDataService {
     return _utilizationByRadioPath(context.raw.ssids, byMac);
   }
 
-  /// Each DataElements radio's `Utilization`, keyed by its `ID` — the radio's
-  /// MAC — in upper case (#1295). A radio that is there but has no usable
-  /// value maps to null, so an empty map means no radio came back at all.
+  /// Each DataElements radio's `Utilization`, keyed in upper case by every MAC
+  /// that names the radio: its `ID`, and the `BSSID` of each BSS on it (#1295,
+  /// #1911). A radio that is there but has no usable value maps to null, so an
+  /// empty map means no radio came back at all.
   ///
-  /// Two leaves rather than `DataElementsNetwork.fetch`, which reads every BSS
-  /// and station of every node to get one number per radio. A value that is
+  /// The BSSIDs are what a `Device.WiFi.SSID` row can be matched by. A radio's
+  /// `ID` is its own identifier, and it is not always the BSSID of any SSID on
+  /// it: on FW 2.0.4.26111304 the 2.4 GHz radio's `ID` is `72:…:03` while its
+  /// main SSID's BSSID is `74:…:03`, which only its `BSS.1.BSSID` carries
+  /// (bench 2026-11-23). The `ID` stays a key for a firmware whose radios
+  /// report no BSS rows.
+  ///
+  /// Three leaves rather than `DataElementsNetwork.fetch`, which reads every
+  /// station of every node to get one number per radio. A value that is
   /// missing, empty, not a number or outside TR-181's 0–255 is no reading
   /// (null), rather than shown as 0, over 100 % or negative.
   Future<Map<String, int?>> _readUtilizationByRadioMac() async {
     final response = await _usp.get([
       '${_dataElementsRadio}ID',
       '${_dataElementsRadio}Utilization',
+      '${_dataElementsRadio}BSS.*.BSSID',
     ]);
-    final result = <String, int?>{};
-    for (final MapEntry(:key, :value) in response.entries) {
-      if (!key.endsWith('.ID')) continue;
-      final radioPath = key.substring(0, key.length - 'ID'.length);
-      final mac = '$value'.trim().toUpperCase();
-      if (mac.isEmpty) continue;
+    int? utilizationOf(String radioPath) {
       final utilization =
           int.tryParse('${response['${radioPath}Utilization'] ?? ''}');
-      result[mac] =
-          utilization != null && utilization >= 0 && utilization <= 255
-              ? utilization
-              : null;
+      return utilization != null && utilization >= 0 && utilization <= 255
+          ? utilization
+          : null;
+    }
+
+    final result = <String, int?>{};
+    for (final MapEntry(:key, :value) in response.entries) {
+      final match = _radioMacKey.firstMatch(key);
+      if (match == null) continue;
+      final mac = '$value'.trim().toUpperCase();
+      if (mac.isEmpty) continue;
+      result.putIfAbsent(mac, () => utilizationOf(match.group(1)!));
     }
     return result;
   }
+
+  /// A DataElements radio's `ID`, or the `BSSID` of a BSS on it. Group 1 is
+  /// the radio's path, with its trailing dot.
+  static final _radioMacKey =
+      RegExp(r'^(.*\.Radio\.\d+\.)(?:ID|BSS\.\d+\.BSSID)$');
 
   /// [_readUtilizationByRadioMac] for [fetch], where it never throws.
   /// Utilization is the one reading on the Channels tab that does not come
@@ -351,12 +368,13 @@ class UspWifiDataService {
 
   /// [utilizationByMac] re-keyed by `Device.WiFi.Radio` instance path.
   ///
-  /// A DataElements radio's `ID` is the `BSSID` of that radio's primary SSID,
-  /// and the SSID's `LowerLayers` names its `Device.WiFi.Radio` row. Matched
-  /// through that, not by instance number: FW 2.0.4 numbers the two tables in
-  /// opposite orders (#1295). A radio no DataElements radio matches — a
-  /// satellite's, or one DataElements does not report — is left out, so it
-  /// reads as unknown, and so is one whose reading is null.
+  /// An SSID's `BSSID` is one of the MACs its DataElements radio is keyed by
+  /// (a BSS on it, or the radio's `ID`), and the SSID's `LowerLayers` names its
+  /// `Device.WiFi.Radio` row. Matched through that, not by instance number: FW
+  /// 2.0.4 numbers the two tables in opposite orders (#1295). A radio no
+  /// DataElements radio matches — a satellite's, or one DataElements does not
+  /// report — is left out, so it reads as unknown, and so is one whose reading
+  /// is null.
   static Map<String, int> _utilizationByRadioPath(
       WiFiSsids ssids, Map<String, int?> utilizationByMac) {
     final result = <String, int>{};

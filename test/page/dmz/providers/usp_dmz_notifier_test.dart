@@ -8,14 +8,27 @@ import 'package:privacy_gui/page/dmz/models/dmz_status.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/dmz/providers/usp_dmz_notifier.dart';
 import 'package:privacy_gui/page/dmz/services/usp_dmz_service.dart';
+import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 
 import '../../../mocks/provider_overrides/mock_dashboard_cards.dart';
 import '../../../mocks/provider_overrides/mock_dhcp.dart'
     show UnreadableLanDataNotifier;
+import '../../../mocks/test_data/firewall_test_data.dart';
 import '../../../mocks/test_data/local_network_test_data.dart';
 
 class MockUspDmzService extends Mock implements UspDmzService {}
+
+/// The Firewall card's source, counting how often it is fetched (#1912).
+class _CountingFirewallDataNotifier extends FirewallDataNotifier {
+  int builds = 0;
+
+  @override
+  Future<FirewallData> build() async {
+    builds++;
+    return FirewallTestData.createFirewallData();
+  }
+}
 
 void main() {
   late MockUspDmzService mockService;
@@ -40,7 +53,10 @@ void main() {
     mockService = MockUspDmzService();
   });
 
-  ProviderContainer createContainer({bool lanReadable = true}) {
+  ProviderContainer createContainer({
+    bool lanReadable = true,
+    _CountingFirewallDataNotifier? firewallData,
+  }) {
     final container = ProviderContainer(
       overrides: [
         uspDmzServiceProvider.overrideWithValue(mockService),
@@ -48,6 +64,8 @@ void main() {
         lanDataProvider.overrideWith(() => lanReadable
             ? FixedLanDataNotifier(LocalNetworkTestData.createLanData())
             : UnreadableLanDataNotifier()),
+        if (firewallData != null)
+          firewallDataProvider.overrideWith(() => firewallData),
       ],
     );
     // Prevent auto-dispose.
@@ -617,6 +635,103 @@ void main() {
       await container.read(uspDmzProvider.notifier).save();
 
       verify(() => mockService.add(model: any(named: 'model'))).called(1);
+      container.dispose();
+    });
+  });
+
+  // #1912: the dashboard's Firewall card read DMZ from firewallDataProvider,
+  // which no DMZ save refreshed, so it kept the old state until Refresh.
+  group('UspDmzNotifier — the Firewall card\'s source after a save', () {
+    late _CountingFirewallDataNotifier firewallData;
+
+    setUp(() {
+      firewallData = _CountingFirewallDataNotifier();
+      when(() => mockService.fetch())
+          .thenAnswer((_) async => (testSettings, testStatus));
+      when(() => mockService.validateForm(any(),
+          lanIp: any(named: 'lanIp'),
+          lanSubnetMask: any(named: 'lanSubnetMask'))).thenReturn({});
+    });
+
+    /// A container whose firewallDataProvider is loaded and kept alive, as the
+    /// dashboard card keeps it, with the DMZ switched off unsaved.
+    Future<ProviderContainer> editedContainer() async {
+      final container = createContainer(firewallData: firewallData);
+      container.listen(firewallDataProvider, (_, __) {});
+      await container.read(firewallDataProvider.future);
+      await Future.delayed(Duration.zero);
+      container
+          .read(uspDmzProvider.notifier)
+          .updateSetting((m) => m.copyWith(isEnabled: false));
+      return container;
+    }
+
+    Future<void> settle(ProviderContainer container) async {
+      await Future.delayed(Duration.zero);
+      await container.read(firewallDataProvider.future);
+    }
+
+    void stubUpdate(Future<void> Function() answer) {
+      when(() => mockService.update(
+            instancePath: any(named: 'instancePath'),
+            savedType: any(named: 'savedType'),
+            model: any(named: 'model'),
+          )).thenAnswer((_) => answer());
+    }
+
+    test('a save re-fetches it', () async {
+      stubUpdate(() async {});
+      final container = await editedContainer();
+
+      await container.read(uspDmzProvider.notifier).save();
+      await settle(container);
+
+      expect(firewallData.builds, 2);
+      container.dispose();
+    });
+
+    test('a save that wrote part of itself re-fetches it too', () async {
+      stubUpdate(() async => throw const UspPartialFailureError(
+          summary: 's', successPaths: [], failures: []));
+      final container = await editedContainer();
+
+      await expectLater(container.read(uspDmzProvider.notifier).save(),
+          throwsA(isA<UspPartialFailureError>()));
+      await settle(container);
+
+      expect(firewallData.builds, 2);
+      container.dispose();
+    });
+
+    test('a save that wrote nothing leaves it alone', () async {
+      stubUpdate(() async =>
+          throw const UspCompleteFailureError(summary: 's', failures: []));
+      final container = await editedContainer();
+
+      await expectLater(container.read(uspDmzProvider.notifier).save(),
+          throwsA(isA<UspCompleteFailureError>()));
+      await settle(container);
+
+      expect(firewallData.builds, 1);
+      container.dispose();
+    });
+
+    test('a save refused before it writes leaves it alone', () async {
+      when(() => mockService.validateForm(any(),
+              lanIp: any(named: 'lanIp'),
+              lanSubnetMask: any(named: 'lanSubnetMask')))
+          .thenReturn({'destIp': 'Invalid IP address'});
+      final container = await editedContainer();
+
+      await expectLater(container.read(uspDmzProvider.notifier).save(),
+          throwsA(isA<InvalidInputError>()));
+      await settle(container);
+
+      expect(firewallData.builds, 1);
+      verifyNever(() => mockService.update(
+          instancePath: any(named: 'instancePath'),
+          savedType: any(named: 'savedType'),
+          model: any(named: 'model')));
       container.dispose();
     });
   });

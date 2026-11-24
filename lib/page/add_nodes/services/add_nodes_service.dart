@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/ble_onboarding.g.dart';
 import 'package:privacy_gui/generated/ble_onboarding_operations.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
+import 'package:privacy_gui/page/_shared/services/mesh_node_backhaul.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_node_identity.dart';
 import 'package:privacy_gui/page/add_nodes/models/add_nodes_ui_models.dart';

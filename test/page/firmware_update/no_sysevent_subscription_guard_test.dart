@@ -29,7 +29,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/page/_shared/utils/usp_subscriptions.dart';
+import 'package:privacy_gui/page/_shared/services/usp_subscriptions.dart';
 
 /// The subtree the router does not notify on.
 ///
