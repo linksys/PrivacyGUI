@@ -24,7 +24,7 @@ external set _jsSseAbort(JSAny? value);
 /// HTTP/SSE client for usp-bridge endpoints that don't use protobuf.
 ///
 /// Uses the JWT session token from [UspClient] for authentication.
-/// Handles: Health, SSE Notifications, Subscription, Turbo Channel.
+/// Handles: Health, SSE Notifications, Subscription.
 ///
 /// All REST endpoints are wrapped with 401 retry logic that delegates
 /// re-authentication to [UspClient.reauth].
@@ -575,51 +575,6 @@ class UspBridgeClient {
           .toList();
     }
     return [];
-  }
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // Turbo Channel
-  // ══════════════════════════════════════════════════════════════════════════
-
-  /// Starts a turbo channel session.
-  Future<Map<String, dynamic>> turboStart() async {
-    return _turboPost('start');
-  }
-
-  /// Sends a heartbeat to keep the turbo channel alive.
-  Future<Map<String, dynamic>> turboHeartbeat({String? sessionId}) async {
-    return _turboPost('heartbeat', sessionId: sessionId);
-  }
-
-  /// Gets the current turbo channel status.
-  Future<Map<String, dynamic>> turboStatus() async {
-    return _withAuthRetry(
-      () => http.get(Uri.parse('$_baseUrl${_endpoints.turboPrefix}/status'),
-          headers: _authHeaders),
-      (r) => jsonDecode(r.body) as Map<String, dynamic>,
-    );
-  }
-
-  /// Releases the turbo channel.
-  Future<Map<String, dynamic>> turboRelease({String? sessionId}) async {
-    return _turboPost('release', sessionId: sessionId);
-  }
-
-  Future<Map<String, dynamic>> _turboPost(String action,
-      {String? sessionId}) async {
-    final body =
-        sessionId != null ? jsonEncode({'session_id': sessionId}) : null;
-    return _withAuthRetry(
-      () => http.post(
-        Uri.parse('$_baseUrl${_endpoints.turboPrefix}/$action'),
-        headers: {
-          ..._authHeaders,
-          'Content-Type': 'application/json',
-        },
-        body: body,
-      ),
-      (r) => jsonDecode(r.body) as Map<String, dynamic>,
-    );
   }
 }
 

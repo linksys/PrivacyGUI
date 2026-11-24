@@ -256,7 +256,7 @@ const _commandCallSites = <String, List<String>>{
     'DataElementsNetworkOperations.factoryResetNode',
     'DataElementsNetworkOperations.rebootNode',
   ],
-  'lib/page/firmware_update/services/firmware_http_upload_strategy.dart': [
+  'lib/page/firmware_update/services/firmware_local_upload_service.dart': [
     'FirmwareOperations.chunkedPush',
   ],
   'lib/page/firmware_update/services/usp_firmware_update_service.dart': [
@@ -722,9 +722,10 @@ void main() {
 /// knob: without it, two files that mention each other's classes — which is
 /// ordinary between a service and its strategy — recurse until the stack ends,
 /// and the failure would read as a crash in a mode test rather than as what it
-/// is. Two is also all the depth the real graph needs: the notifier names
-/// `FirmwareLocalUploadService`, which names `FirmwareHttpUploadStrategy`, which
-/// is what actually pushes the chunks.
+/// is. Two was sized for the firmware upload, whose notifier named
+/// `FirmwareLocalUploadService`, which named the `FirmwareHttpUploadStrategy`
+/// that pushed the chunks. #1874 folded that strategy into the service, so the
+/// chain is one hop now; the bound stays as headroom rather than as a measure.
 ///
 /// Name-matching is not call-graph analysis; a full walk would need a resolved
 /// AST for a claim this test does not make. The primary net is the exact map

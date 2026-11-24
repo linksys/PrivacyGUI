@@ -6,13 +6,11 @@ class BridgeEndpoints {
   final String notifications;
   final String subscription;
   final String health;
-  final String turboPrefix;
 
   const BridgeEndpoints({
     required this.notifications,
     required this.subscription,
     required this.health,
-    required this.turboPrefix,
   });
 
   /// Local usp-bridge endpoints (on-router).
@@ -20,7 +18,6 @@ class BridgeEndpoints {
     notifications: '/api/v1/notifications',
     subscription: '/api/v1/subscription',
     health: '/api/v1/health',
-    turboPrefix: '/api/v1/turbo',
   );
 
   /// Remote Guardian proxy endpoints.
@@ -36,8 +33,6 @@ class BridgeEndpoints {
       subscription:
           '/v1/guardians/remote-assistances/sessions/$session/usp/subscriptions',
       health: '/v1/guardians/remote-assistances/sessions/$session/usp/health',
-      turboPrefix:
-          '/v1/guardians/remote-assistances/sessions/$session/usp/turbo',
     );
   }
 }

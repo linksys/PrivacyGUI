@@ -200,13 +200,6 @@ void main() {
       expect(callCount, 0);
     });
 
-    test('turbo_channel event does not crash', () {
-      expect(
-        () => router.routeEvent(fakeEvent('turbo_channel', '{"port": 8084}')),
-        returnsNormally,
-      );
-    });
-
     test('unknown event type does not crash', () {
       expect(
         () => router.routeEvent(fakeEvent('custom_event', 'data')),
