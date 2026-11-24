@@ -16,12 +16,15 @@ String onlyInput(String service) => 'only: $service';
 /// null where it resolves to none. No service at all gives the seed.
 ///
 /// Each call runs in a new isolate, so it starts from the state the app
-/// starts with: initBetterActions does not clear what an earlier call
-/// mapped, so in one isolate the result would depend on earlier calls (#1923).
+/// starts with, whatever this isolate has resolved before. initBetterActions
+/// did not clear what an earlier call mapped until #1930; the isolate keeps
+/// the snapshot free of any such leak, and better_action_spec_test.dart pins
+/// that one router leaves nothing behind for the next.
 Future<Map<String, String?>> resolveActions(List<String> services) =>
     Isolate.run(() => resolveActionsHere(services));
 
-/// [resolveActions] in this isolate, on top of whatever earlier calls mapped.
+/// [resolveActions] in this isolate, after whatever it resolved before:
+/// better_action_spec_test.dart uses it to check that nothing is left behind.
 ///
 /// It goes through what the app calls: initBetterActions, buildBetterActions
 /// and JNAPAction.actionValue.
