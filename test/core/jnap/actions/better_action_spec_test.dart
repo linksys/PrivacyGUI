@@ -19,12 +19,11 @@
 import 'dart:io';
 import 'dart:isolate';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 
 import 'better_action_resolution.dart';
+import 'service_helper_gates.dart';
 
 const _jnap = 'http://linksys.com/jnap/';
 
@@ -80,45 +79,57 @@ const _wrongService = <JNAPAction, String>{
       'upgraded under Router13, which does not define it (#1906)',
 };
 
-/// The gate of an action that has no URL at the baseline: the ServiceHelper
-/// check its call sites use, and the service it checks.
-typedef _Gate = ({bool Function(List<String>) isOpen, String service});
-
-final _gates = <JNAPAction, _Gate>{
-  JNAPAction.getWANExternal: (
-    isOpen: (services) => ServiceHelper().isSupportWANExternal(services),
-    service: '${_jnap}router/Router13',
-  ),
-  JNAPAction.clientDeauth: (
-    isOpen: (services) => ServiceHelper().isSupportClientDeauth(services),
-    service: '${_jnap}wirelessap/WirelessAP5',
-  ),
+/// The gate of each action that needs one (no URL at the baseline, or a URL
+/// only a newer service defines): the ServiceHelper check its call sites use,
+/// an isServiceSupport gate. Every action that needs a gate is here, in
+/// [_missingGates] or in [_noCaller]; service_helper_gates.dart says which
+/// services each gate checks, and jnap_service_supported_test.dart that it
+/// opens on them.
+const _gateOf = <JNAPAction, String>{
+  JNAPAction.getWANExternal: 'isSupportWANExternal',
+  JNAPAction.clientDeauth: 'isSupportClientDeauth',
+  JNAPAction.reboot2: 'isSupportChildReboot',
+  JNAPAction.factoryReset2: 'isSupportChildFactoryReset',
+  JNAPAction.getCloseHealthCheckServers: 'isSupportHealthCheckManager2',
+  JNAPAction.getSTABSSIDs: 'isSupportGetSTABSSID',
+  JNAPAction.getAutoIPoECapabilities: 'isSupportAutoIPoE',
+  JNAPAction.getAutoIPoESettings: 'isSupportAutoIPoE',
+  JNAPAction.setAutoIPoESettings: 'isSupportAutoIPoE',
+  JNAPAction.applyAutoIPoE: 'isSupportAutoIPoE',
+  JNAPAction.getAutoIPoEStatus: 'isSupportAutoIPoE',
+  JNAPAction.getAutoIPoELog: 'isSupportAutoIPoE',
+  JNAPAction.resetAutoIPoE: 'isSupportAutoIPoE',
 };
 
-/// Gates known to answer wrong, with the issue that fixes them.
-const _brokenGates = <JNAPAction, String>{
-  JNAPAction.getWANExternal:
-      'isSupportWANExternal ignores its services argument; #1906 deletes it',
+/// Actions that need a gate and have none yet.
+const _missingGates = <JNAPAction, String>{
+  JNAPAction.getAutoMasterStatus: 'JNAPService has no Setup12, so there is '
+      'no isServiceSupport gate for it; a #1923 PR adds both',
+};
+
+/// Actions that would need a gate, but that nothing in lib/ sends.
+const _noCaller = <JNAPAction, String>{
+  JNAPAction.execSysCommand:
+      'a caller adds an isServiceSupport gate on Diagnostics9',
 };
 
 final _wellFormedUrl =
     RegExp(r'^http://linksys\.com/jnap/([a-z0-9]+/)+[A-Z][A-Za-z0-9]*$');
 
+/// Whether a file of lib/ outside the action table sends [action].
+bool _hasCaller(JNAPAction action) {
+  final reference = RegExp('JNAPAction\\.${action.name}\\b');
+  return Directory('lib')
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((file) =>
+          file.path.endsWith('.dart') &&
+          !file.path.contains('lib/core/jnap/actions/'))
+      .any((file) => reference.hasMatch(file.readAsStringSync()));
+}
+
 void main() {
-  // isServiceSupport reads the cache manager before it looks at the services
-  // it is given, and the cache manager reaches for the temp directory. #1923's
-  // P2 (one holder of the router's services) makes this unnecessary.
-  //
-  // The directory is this file's own: other suites write their cache file
-  // into the shared system temp directory.
-  TestWidgetsFlutterBinding.ensureInitialized();
-  final tempDir = Directory.systemTemp.createTempSync('better_action_spec_');
-  tearDownAll(() => tempDir.deleteSync(recursive: true));
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(
-    const MethodChannel('plugins.flutter.io/path_provider'),
-    (_) async => tempDir.path,
-  );
+  stubTempDirectory();
 
   final spec = JnapSpec.load();
 
@@ -222,33 +233,52 @@ void main() {
     expect(malformed, isEmpty);
   });
 
-  test('every action with no URL at the baseline has a gate', () {
-    final unresolved = [
+  test('every action that needs a gate has one', () {
+    // No URL at the baseline, or a URL only a newer service defines.
+    final needsGate = {
       for (final action in JNAPAction.values)
         if (atBaseline[action.name] == null) action,
-    ];
-    expect(unresolved.toSet(), _gates.keys.toSet());
+      ..._definedOnlyAfterBaseline.keys,
+    };
+    expect(
+        needsGate, {..._gateOf.keys, ..._missingGates.keys, ..._noCaller.keys});
   });
 
-  for (final MapEntry(key: action, value: gate) in _gates.entries) {
-    final name = gate.service.split('/').last;
-
-    test("${action.name}'s upgrade comes with $name, outside the baseline",
-        () async {
-      expect(spec.baselineServices.contains(gate.service), isFalse,
-          reason: 'a baseline service needs no gate');
-      final withService =
-          await resolveActions([...spec.appServicesAtBaseline, gate.service]);
-      expect(withService[action.name], isNotNull);
-    });
-
+  for (final MapEntry(key: action, value: gateName) in _gateOf.entries) {
     test(
-      "${action.name}'s gate opens on $name and stays shut at the baseline",
-      () {
-        expect(gate.isOpen([gate.service]), isTrue);
-        expect(gate.isOpen(spec.appServicesAtBaseline), isFalse);
+      "${action.name}'s gate, $gateName, checks a service outside the "
+      'baseline that defines it',
+      () async {
+        final services = serviceHelperGates[gateName]!
+            .services
+            .map((service) => service.value)
+            .toList();
+        expect(services.where(spec.baselineServices.contains), isEmpty,
+            reason: 'a baseline service needs no gate');
+        // With the gated services, the action has a URL one of them defines.
+        final withGate =
+            await resolveActions([...spec.appServicesAtBaseline, ...services]);
+        final url = withGate[action.name];
+        expect(url, isNotNull);
+        expect(spec.definersOf(url!, services), isNotEmpty);
       },
-      skip: _brokenGates[action],
+      skip: _wrongService[action],
+    );
+  }
+
+  for (final MapEntry(key: action, value: reason) in _missingGates.entries) {
+    test(
+      '${action.name} has an isServiceSupport gate on the service that '
+      'defines it',
+      () {
+        final service = _definedOnlyAfterBaseline[action];
+        expect(
+          serviceHelperGates.values.where((gate) =>
+              gate.services.any((candidate) => candidate.value == service)),
+          isNotEmpty,
+        );
+      },
+      skip: reason,
     );
   }
 
@@ -287,8 +317,8 @@ void main() {
         if (!hasMalformedUrl(action)) '_malformedUrl: ${action.name}',
       for (final action in _wrongService.keys)
         if (!undefinedAtPin(action)) '_wrongService: ${action.name}',
-      for (final action in _brokenGates.keys)
-        if (!_gates.containsKey(action)) '_brokenGates: ${action.name}',
+      for (final action in _noCaller.keys)
+        if (_hasCaller(action)) '_noCaller: ${action.name}',
     ];
     expect(stale, isEmpty);
   });
