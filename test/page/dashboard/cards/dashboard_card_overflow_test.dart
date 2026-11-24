@@ -250,19 +250,21 @@ void main() {
   // ─── The main width sweep ─────────────────────────────────────────────────
   //
   // 18 cards x their realizable spans x their tabs x 26 locales. The count is
-  // pinned because the grouping hides a narrowing: 63 coordinates report the same
-  // green whether each ran 26 locales or 1.
+  // pinned because the grouping hides a narrowing: 61 coordinates report the same
+  // green whether each ran 26 locales or 1. 1,638 until #1130 made
+  // `firewall_overview` one view instead of two tabs (−2 coordinates, −52 cells).
   runOverflowSweep(
     family: CardWidthFamily(_gate),
-    expectedCellCount: 1638,
+    expectedCellCount: 1586,
   );
 
   // ─── The normal band (#1318) ──────────────────────────────────────────────
   //
   // The sweep above pumps the widths the grid produces for each span, and claims
   // that is exhaustive because overflow is monotonic in width. Since
-  // #1288/#1290/#1321 seven cards declare a `normalAbove`, so their narrowest
-  // realization renders a *different form* — popup at 191.4px for six of them,
+  // #1288/#1290/#1321 seven cards declare a `normalAbove` (eight since #1130 gave
+  // `firewall_overview` one), so their narrowest
+  // realization renders a *different form* — popup at 191.4px for seven of them,
   // 260.5px compact for `dhcp_reservations`, whose `minColumns: 4` puts its own
   // floor above `kPopupBelow`; and compact at 288.0px for the four whose threshold
   // is above it — and a different form is not a narrower instance of the same one.
@@ -275,7 +277,7 @@ void main() {
   // tab, `de`, 500px, +41px): tab 2 in `de` used to be covered by transitivity from
   // the 191.4px normal case, and #1288 removed that without replacing it.
   //
-  // So each of the seven is swept once more, at [normalBandCaseFor] — the narrowest
+  // So each of the eight is swept once more, at [normalBandCaseFor] — the narrowest
   // width the grid produces at or above its own threshold. One width, because
   // monotonicity is intact *within* a form: see that function for the argument, and
   // `the gate's own widths cannot reach the normal band` below for the half of it
@@ -368,7 +370,7 @@ void main() {
     // The inventory, asserted rather than narrated — the counts in the comment
     // above are the whole justification for this sweep's existence and its size.
     test(
-        'the seven cards that declare a threshold, at 9 card x tab coordinates',
+        'the eight cards that declare a threshold, at 10 card x tab coordinates',
         () {
       expect(
         {for (final s in normalBandSpecs) s.id: s.normalAbove},
@@ -380,6 +382,9 @@ void main() {
           'time_settings': 256.0,
           'dhcp_reservations': 369.0,
           'network_health': 366.0,
+          // #1130: the narrowest width at which the full card reads in every
+          // locale and state — a DMZ host given by MAC is the binding string.
+          'firewall_overview': 272.0,
         },
         reason: 'a card that gains or loses a `normalAbove` changes what this '
             'sweep covers, so the list is pinned here rather than left to the '
@@ -387,8 +392,8 @@ void main() {
       );
       expect(
         normalBandSpecs.fold<int>(0, (n, s) => n + tabCountFor(s.id)),
-        9,
-        reason: 'six single-view cards plus network_health\'s three tabs',
+        10,
+        reason: 'seven single-view cards plus network_health\'s three tabs',
       );
       // #1183's motivating coordinate, named so a change that drops it is a
       // failure rather than a silent narrowing.
@@ -448,6 +453,7 @@ void main() {
         // to reach by width and *both* its realizations go to compact (#1321).
         'dhcp_reservations': ['261=compact', '288=compact'],
         'network_health': ['191=popup', '288=compact'],
+        'firewall_overview': ['191=popup', '288=normal'],
       });
     });
 
@@ -470,6 +476,7 @@ void main() {
           'time_settings': '256.0@1120x3',
           'dhcp_reservations': '369.0@401x4',
           'network_health': '366.0@2216x3',
+          'firewall_overview': '272.0@400x3',
         },
         reason:
             'every threshold happens to be exactly realizable at the card\'s '
@@ -480,9 +487,10 @@ void main() {
     });
   });
 
+  // 234 until #1130 gave `firewall_overview` a threshold: +1 coordinate, +26.
   runOverflowSweep(
     family: CardNormalBandFamily(_gate),
-    expectedCellCount: 234,
+    expectedCellCount: 260,
   );
 
   // AC6 as a guard rather than an enumeration (#1321).
@@ -663,8 +671,10 @@ void main() {
     }
   });
 
+  // 52 for the tri-band Channels tab, and 52 for each of the Firewall card's
+  // two ends (#1130): one view × two widths × 26 locales.
   runOverflowSweep(
     family: CardProfileFamily(_gate),
-    expectedCellCount: 52,
+    expectedCellCount: 156,
   );
 }

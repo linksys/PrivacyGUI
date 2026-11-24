@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_settings.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_status.dart';
+import 'package:privacy_gui/page/mac_filter/providers/mac_filter_data_provider.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_state.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_rules.dart';
@@ -35,6 +36,9 @@ class UspMacFilterNotifier extends AutoDisposeNotifier<MacFilterState>
     return MacFilterState.initial();
   }
 
+  /// Reads the router, not `macFilterDataProvider`: that session-wide copy
+  /// learns of a mode change only, so its list can be stale after a hardware
+  /// privacy switch move (#1755). The page also needs the online devices.
   @override
   Future<(MacFilterSettings?, MacFilterStatus?)> performFetch({
     bool forceRemote = false,
@@ -61,6 +65,9 @@ class UspMacFilterNotifier extends AutoDisposeNotifier<MacFilterState>
     await ref.read(uspMutationLockProvider).withLock(() async {
       await _svc.setMacFilter(settings.mode, settings.macs);
     });
+    // The menu's Instant Privacy badge reads the session-wide filter; the
+    // router's push would reach it too, but not while SSE is down (#1755).
+    ref.invalidate(macFilterDataProvider);
     logger.d('[USP][MacFilter]: saved — mode: ${settings.mode}, '
         'count: ${settings.macs.length}');
   }

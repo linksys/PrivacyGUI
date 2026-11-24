@@ -4,12 +4,14 @@ import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/admin_users.g.dart';
+import 'package:privacy_gui/generated/data_elements_network_operations.g.dart';
 import 'package:privacy_gui/generated/device_operations.g.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/generated/time_settings_operations.g.dart';
 import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
 import 'package:privacy_gui/page/admin/models/admin_ui_models.dart';
+import 'package:privacy_gui/page/admin/models/network_action_models.dart';
 
 final uspAdminServiceProvider = Provider<UspAdminService>(
   (ref) => UspAdminService(ref.read(uspClientProvider)!),
@@ -202,22 +204,113 @@ class UspAdminService {
   // System Operations
   // ---------------------------------------------------------------------------
 
-  /// Reboot the router.
-  Future<void> reboot() async {
+  /// Reboots the router, and with it every node in its mesh.
+  ///
+  /// On firmware with Architecture#195, `Device.Reboot()` restarts the
+  /// controller alone, and the whole network is `X_LINKSYS_RebootAll()`. Which
+  /// one this router has is read right before the call (see
+  /// [readNetworkActionStatus]): the leaf is present with the commands and
+  /// absent without them, on older firmware and on a unit with the mesh off.
+  /// Read here rather than at login, so that a Remote Assistance session, which
+  /// resolves no capabilities, takes the same path as a local one. A failed
+  /// read sends nothing: guessing `Device.Reboot()` would restart only the
+  /// controller on firmware that has the new command.
+  Future<RouterRestartStart> reboot() => _restart(
+        network: DataElementsNetworkOperations.rebootAll,
+        router: DeviceOperations.reboot,
+      );
+
+  /// Factory-resets the router, and with it every node in its mesh: as
+  /// [reboot], with `X_LINKSYS_FactoryResetAll()` and `Device.FactoryReset()`.
+  /// The controller is reset even when an agent does not confirm; such an agent
+  /// keeps the old network and has to be reset with its button.
+  Future<RouterRestartStart> factoryReset() => _restart(
+        network: DataElementsNetworkOperations.factoryResetAll,
+        router: DeviceOperations.factoryReset,
+      );
+
+  /// Reads `Network.X_LINKSYS_NetworkActionStatus` (Architecture#195), or null
+  /// when this router does not have it — and so has no whole-network commands.
+  ///
+  /// Read fresh, past the throttler's cache: a waiter polls it while the value
+  /// moves. The leaf reads `""` until a whole-network action runs, so presence
+  /// is the test, never the value.
+  Future<NetworkActionStatus?> readNetworkActionStatus() async {
     try {
-      await DeviceOperations.reboot(_usp);
+      final response = await _usp.get([_networkActionStatus], fresh: true);
+      if (!response.containsKey(_networkActionStatus)) return null;
+      return NetworkActionStatus.fromValue(
+          response[_networkActionStatus]?.toString() ?? '');
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
   }
 
-  /// Factory reset the router.
-  Future<void> factoryReset() async {
-    try {
-      await DeviceOperations.factoryReset(_usp);
-    } catch (e) {
-      throw mapUspErrorToServiceError(e);
+  static const _networkActionStatus =
+      'Device.WiFi.DataElements.Network.X_LINKSYS_NetworkActionStatus';
+
+  /// The fault a whole-network command answers while one is already running.
+  static const _networkActionBusy = 7002;
+
+  Future<RouterRestartStart> _restart({
+    required Future<Map<String, dynamic>> Function(UspClient) network,
+    required Future<Map<String, dynamic>> Function(UspClient) router,
+  }) async {
+    final status = await readNetworkActionStatus();
+    if (status == null) {
+      try {
+        await router(_usp);
+      } catch (e) {
+        throw mapUspErrorToServiceError(e);
+      }
+      return RouterRestartStart.router;
     }
+
+    // Already running, by the read just made: sending would only be refused,
+    // and a command sent into another one is not something to find out about
+    // on a live network.
+    if (status == NetworkActionStatus.running) {
+      return RouterRestartStart.alreadyRunning;
+    }
+
+    final Map<String, dynamic> output;
+    try {
+      output = await network(_usp);
+    } catch (e) {
+      final error = mapUspErrorToServiceError(e);
+      // Another client may have started one since the read.
+      if (error.code == _networkActionBusy) {
+        return RouterRestartStart.alreadyRunning;
+      }
+      throw error;
+    }
+    // `Started` is the answer, and a reply with no Status is taken as the
+    // command accepted. `Busy` is read here as well as from the fault, because
+    // the definition names it as a Status value and which of the two shapes
+    // the agent sends has not been measured.
+    final reply = output['Status'];
+    switch (reply) {
+      case null || 'Started':
+        return RouterRestartStart.network;
+      case 'Busy':
+        return RouterRestartStart.alreadyRunning;
+    }
+    // Any other Status — `Failed`, or a value this app does not know — is not
+    // the start the definition names, and waiting on it would only time out.
+    // But an agent that answers in its own words may have started anyway, and
+    // reporting that as a failure would leave the network restarting under an
+    // error and outside recovery. So the leaf decides.
+    NetworkActionStatus? after;
+    try {
+      after = await readNetworkActionStatus();
+    } on ServiceError {
+      // Unreadable is no evidence it started; the reply is reported as it is.
+    }
+    if (after == NetworkActionStatus.running) return RouterRestartStart.network;
+    throw UspCompleteFailureError(
+      summary: 'The whole-network command replied Status $reply',
+      failures: const [],
+    );
   }
 
   AdminUserUIModel _buildAdminUserUIModel(AdminUsers users) {

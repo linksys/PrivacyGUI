@@ -77,7 +77,9 @@ pubspec_overrides.yaml
 !**/ios/**/default.pbxuser
 !**/ios/**/default.perspectivev3
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
-/pubspec.lock
+# /pubspec.lock is tracked on purpose (#1414): this is an application, so the
+# lock is the record of which dependency versions a build was made from, and CI
+# installs it with `--enforce-lockfile`. Do not add it back here.
 /ios/Podfile.lock
 /plugins/build/
 plugins/connecting_wifi_plugin/example/pubspec.lock
@@ -86,10 +88,6 @@ plugins/sms_receiver_plugin/example/pubspec.lock
 plugins/universal_link_plugin/example/pubspec.lock
 build/app/outputs/*
 
-plugins/connecting_wifi_plugin/example/pubspec.lock
-plugins/ios_push_notification_plugin/example/pubspec.lock
-plugins/sms_receiver_plugin/example/pubspec.lock
-plugins/universal_link_plugin/example/pubspec.lock
 artifacts/webApp
 
 # Goldens

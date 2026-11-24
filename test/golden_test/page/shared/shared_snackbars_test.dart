@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/components/localizations/service_error_localizations.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/errors/usp_refusal_reason.dart';
 import 'package:privacy_gui/core/usp/models/usp_operation_result.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/firmware_update/localizations/firmware_failure_localizations.dart';
@@ -234,6 +235,41 @@ final _rows = <_Row>[
   _Row.failed('error_wan_invalid_mtu',
       (c) => _wanRefusal(c, WanRefusalNames.invalidMtu)),
 
+  // --- WAN save applied in part (issue #1711): the reason, then on its own
+  // line that part of the save landed. A refused field, and the full sentence
+  // a step that times out gives, the longer of the two kinds of first line ---
+  _Row.failed(
+    'error_wan_partly_applied_invalid_server',
+    (c) => localizeWanSaveError(
+        c,
+        const SavePartlyAppliedError(InvalidInputError(
+            field: WanRefusalNames.invalidServer, code: 7012))),
+  ),
+  _Row.failed(
+    'error_wan_partly_applied_network',
+    (c) =>
+        localizeWanSaveError(c, const SavePartlyAppliedError(NetworkError())),
+  ),
+
+  // --- Firewall / NAT save refusals: the message each reason the router names
+  // gets (linksys/FWDEV#204, #1775). Shown through `showSaveErrorSnackBar`,
+  // which uses the failure style for these. ---
+  for (final reason in UspRefusalReason.values)
+    if (reason != UspRefusalReason.unknown)
+      _Row.failed(
+          'error_refused_${_snake(reason.name)}',
+          (c) => _serviceError(
+                c,
+                UspCompleteFailureError(summary: 's', failures: [
+                  UspErrorDetail(
+                    requestedPath: 'Device.NAT.PortMapping.1.ExternalPort',
+                    errorCode: 7012,
+                    errorMessage: '',
+                    refusalReason: reason,
+                  ),
+                ]),
+              )),
+
   // --- Other fixed failure messages ---
   _Row.failed(
       'failed_no_target_bank_available', (c) => loc(c).noTargetBankAvailable),
@@ -247,8 +283,9 @@ final _rows = <_Row>[
           const NetworkError(detail: 'connection closed').toString())),
 
   // --- Wrapping ---
-  // Instant Setup passes the caught exception's `toString()` straight through
-  // (`pnp_notifier.dart`'s `errorMessage: '$e'`). Unbounded and unlocalized, it
+  // Instant Setup passed the caught exception's `toString()` straight through
+  // (`pnp_notifier.dart`'s `errorMessage: '$e'`, until #1511 P1 typed it and
+  // localized it). Unbounded and unlocalized, it
   // is the longest text a snackbar can be handed, so it is the one picture of
   // the snackbar wrapping across several lines.
   _Row.failed(

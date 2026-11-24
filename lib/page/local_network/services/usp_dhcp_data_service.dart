@@ -98,6 +98,7 @@ class UspDhcpDataService {
                 mac: r.chaddr,
                 ip: r.yiaddr,
                 enable: r.enable,
+                name: r.name ?? '',
               ))
           .toList();
 

@@ -61,9 +61,9 @@ import 'package:sliver_dashboard/sliver_dashboard.dart';
 /// | 2 | `card_density_scope` | the pick is resolved *after* the no-threshold short-circuit | a card with no threshold still honours a pick |
 /// | 3 | `card_density_scope` | drop `picked != CardDensity.normal`, so normal pins | an explicit normal pick does not pin |
 /// | 4 | `card_density_scope` | read the pick at a hardcoded 12 instead of `currentMaxColumns` | *retired by #1400* — 2 at the time; the reader takes no breakpoint any more |
-/// | 5 | `usp_widget_specs` | popup arm drops `isResizable: false` | the popup card has none, and its neighbour still has all eight |
-/// | 6 | `usp_widget_specs` | compact arm writes `isResizable: false` instead of `true` | compact keeps its handles — its floor is a limit, not a lock |
-/// | 7 | `usp_widget_specs` | `_applyFloors` computes `minW` but does not write it | the same drag on a compact card stops at four slots |
+/// | 5 | `usp_card_sizing` | popup arm drops `isResizable: false` | the popup card has none, and its neighbour still has all eight |
+/// | 6 | `usp_card_sizing` | compact arm writes `isResizable: false` instead of `true` | compact keeps its handles — its floor is a limit, not a lock |
+/// | 7 | `usp_card_sizing` | `_applyFloors` computes `minW` but does not write it | the same drag on a compact card stops at four slots |
 /// | 8 | `sliver_dashboard` 0.9.0 | `onResizeUpdate` clamps to `1` instead of `originalItem.minW` | 2 — the floor test and its own control; the 31-test persistence file stays green |
 ///
 /// Row 8 is the one row that edits the package rather than us, because the

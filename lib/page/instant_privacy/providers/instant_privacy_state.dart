@@ -45,10 +45,6 @@ class UspInstantPrivacyState
   /// not an edit on this page.
   bool get isOtherFilterOn => settings.original.mode == MacFilterMode.deny;
 
-  /// Whether the device as last read is in `Allow` — the menu badge's source,
-  /// which reports what is applied rather than an unsaved edit.
-  bool get isAppliedOn => settings.original.mode == MacFilterMode.allow;
-
   @override
   UspInstantPrivacyState copyWith({
     Preservable<MacFilterSettings>? settings,

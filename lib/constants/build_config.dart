@@ -66,8 +66,6 @@ class BuildConfig {
 
   static const bool enableThemeStudio =
       bool.fromEnvironment('theme_studio', defaultValue: false);
-  static const bool enableTestConsole =
-      bool.fromEnvironment('test_console', defaultValue: false);
 
   /// E2E test build flag (umbrella). Set `--dart-define=E2E_MOCK=true` when
   /// building the web app for the Playwright E2E suite, where the USP bridge

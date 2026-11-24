@@ -12,8 +12,8 @@ import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
-import 'package:privacy_gui/page/_shared/utils/mesh_topology_builder.dart';
-import 'package:privacy_gui/page/_shared/utils/mesh_network_builder.dart';
+import 'package:privacy_gui/page/_shared/services/mesh_topology_builder.dart';
+import 'package:privacy_gui/page/_shared/services/mesh_network_builder.dart';
 import 'package:privacy_gui/generated/data_elements_interfaces.g.dart';
 import 'package:privacy_gui/generated/data_elements_mlo_clients.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
@@ -124,6 +124,11 @@ class UspDevicesDataService {
     );
   }
 
+  /// Makes every read sent after it, [fetchMeshTopology] included, go to the router
+  /// rather than to a result read before a mesh node joined or left (#1828); see
+  /// [UspClient.dropSharedReads]. Call it when the app learns of the change.
+  void dropSharedReads() => _usp.dropSharedReads();
+
   /// Fetches mesh topology via DataElements (fire-and-forget from provider).
   ///
   /// Delegates nested multi-instance parsing
@@ -187,8 +192,10 @@ class UspDevicesDataService {
   /// not erase a type another client wrote.
   ///
   /// [hostInstancePaths] is every row of the device, all written in the one
-  /// Set: devidentd keeps the name per MAC, and a device's rows merge by the
-  /// FriendlyName it reads back, so naming one row would split them (#1719).
+  /// Set: devidentd keeps the name per MAC, so a row left out keeps its old
+  /// name, and the device shows it whenever that row is the only one present.
+  /// The rows merge by `X_LINKSYS_DetectedName` (#1719), which the user's name
+  /// does not change, so naming them does not regroup them.
   Future<void> updateIdentity({
     required List<String> hostInstancePaths,
     required String name,

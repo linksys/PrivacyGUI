@@ -10,6 +10,9 @@ import 'package:privacy_gui/page/dashboard/mascot/health/health_dimension.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 
 void main() {
+  // English, so these assertions also pin the copy the keys replaced (#1312).
+  final en = lookupAppLocalizations(const Locale('en'));
+
   group('DevicesHealthDimension', () {
     late DevicesHealthDimension dimension;
 
@@ -129,7 +132,7 @@ void main() {
           ]),
         );
 
-        final summary = dimension.getSummary(context);
+        final summary = dimension.getSummary(context, en);
 
         expect(summary.status, 'All Online');
         expect(summary.items.any((i) => i.label == 'Connected'), true);
@@ -140,7 +143,7 @@ void main() {
           devices: createDevicesData([]),
         );
 
-        final summary = dimension.getSummary(context);
+        final summary = dimension.getSummary(context, en);
 
         expect(summary.status, 'No devices');
       });

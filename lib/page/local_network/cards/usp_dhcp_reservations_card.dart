@@ -15,6 +15,8 @@ import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/_shared/components/dashboard_card_template.dart';
 import 'package:privacy_gui/page/dhcp/views/dialogs/dhcp_reservation_edit_dialog.dart';
+import 'package:privacy_gui/page/dhcp/views/helpers/dhcp_reservation_error_localization.dart';
+import 'package:privacy_gui/page/_shared/helpers/read_lan_for_host_check.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspDhcpReservationsCard extends ConsumerWidget {
@@ -202,13 +204,17 @@ class UspDhcpReservationsCard extends ConsumerWidget {
     WidgetRef ref,
     List<DhcpReservationUIModel> reservations,
   ) async {
+    final lan = await readLanForHostCheck(context, ref);
+    if (lan == null || !context.mounted) return;
     final options = _buildDeviceOptions(ref);
-    final result = await showAppDialog<({String mac, String ip, bool enable})>(
+    final result = await showAppDialog<DhcpReservationDialogResult>(
       context: context,
       builder: (_) => DhcpReservationEditDialog(
         macDeviceOptions: options.mac,
         ipDeviceOptions: options.ip,
         existingReservations: reservations,
+        lanIp: lan.ip,
+        lanSubnetMask: lan.mask,
       ),
     );
     if (result == null || !context.mounted) return;
@@ -221,8 +227,10 @@ class UspDhcpReservationsCard extends ConsumerWidget {
                 mac: result.mac,
                 ip: result.ip,
                 enable: result.enable,
+                name: result.name,
               ),
       successMessage: loc(context).reservationAdded,
+      localizeError: localizeDhcpReservationSaveError,
     );
   }
 
@@ -235,7 +243,8 @@ class UspDhcpReservationsCard extends ConsumerWidget {
         .map((d) => AppAutoCompleteOption(
               label: d.name,
               value: d.mac,
-              subtitle: d.ip,
+              // No IPv4: no subtitle, as in the MAC filter's picker.
+              subtitle: d.ip.isNotEmpty ? d.ip : null,
               isActive: d.isActive,
             ))
         .toList();

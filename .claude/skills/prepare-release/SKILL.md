@@ -96,10 +96,12 @@ If no View files changed: report SKIP (no UI changes)
 **Step 3.1: Verify Dependencies**
 
 ```bash
-flutter pub get
+fvm flutter pub get --enforce-lockfile
 ```
 
-- If dependency resolution fails: **ERROR**
+The same install CI's setup action runs (#1414): exactly what the committed `pubspec.lock` says, under the pinned SDK.
+
+- If it fails: **ERROR** — `pubspec.yaml` and `pubspec.lock` disagree (a dependency change shipped without its lock), or the lock was resolved under a different SDK. CI rejects the same tree.
 - If clean: report PASS
 
 **Step 3.2: Dry Run Build Check (Optional)**

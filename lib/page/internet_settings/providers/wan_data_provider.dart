@@ -193,12 +193,26 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
 
   Future<WanData> _fetch() async {
     final svc = ref.read(uspWanDataServiceProvider);
-    final model = await svc.fetch();
+    // The DNS row (#1702) is read beside the status, not inside it: the status
+    // read is shared with Diagnostics, which reads the DNS table itself.
+    final dnsFuture = _fetchDnsServers(svc);
+    final model = (await svc.fetch()).withDnsServers(await dnsFuture);
     // The counterpart to the listener log above: together they show whether an
     // invalidation actually produced a re-fetch, which is the link that was broken on
     // FW 2.0.
     logger.d('[WAN] fetched: isUp=${model.isUp} ip="${model.ipAddress}"');
 
     return WanData(model: model);
+  }
+
+  /// [UspWanDataService.fetchDnsServers], which does not throw; caught here too
+  /// so that nothing about the DNS row can fail the card (#1702).
+  static Future<List<String>> _fetchDnsServers(UspWanDataService svc) async {
+    try {
+      return await svc.fetchDnsServers();
+    } catch (e) {
+      logger.w('[WAN] DNS server read failed, hiding the row: $e');
+      return const <String>[];
+    }
   }
 }

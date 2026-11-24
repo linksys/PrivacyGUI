@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/administration/models/administration_settings.dart';
+import 'package:privacy_gui/page/administration/providers/upnp_data_provider.dart';
 import 'package:privacy_gui/page/administration/providers/usp_administration_notifier.dart';
 import 'package:privacy_gui/page/administration/services/usp_administration_service.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
@@ -355,6 +356,68 @@ void main() {
       await notifier.save();
       await Future.delayed(Duration.zero);
       expect(firewallBuilds, 2);
+    });
+
+    test('a UPnP change refreshes what the Firewall card shows', () async {
+      // The router pushes nothing for Device.UPnP., so without this the card
+      // would show the pre-save value until the dashboard is refreshed (#1130).
+      when(() => svc.setManagementWifiEnabled(any())).thenAnswer((_) async {});
+      when(() => svc.setUpnpEnabled(any())).thenAnswer((_) async {});
+      when(() => svc.fetch()).thenAnswer((_) async => _settings());
+      var upnpReads = 0;
+      final container = ProviderContainer(overrides: [
+        uspAdministrationServiceProvider.overrideWithValue(svc),
+        uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+        upnpDataProvider.overrideWith((ref) async {
+          upnpReads++;
+          return true;
+        }),
+      ]);
+      addTearDown(container.dispose);
+      container.listen(uspAdministrationProvider, (_, __) {});
+      container.listen(upnpDataProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspAdministrationProvider.notifier);
+      expect(upnpReads, 1);
+
+      notifier.setManagementWifiEnabled(false);
+      await notifier.save();
+      await Future.delayed(Duration.zero);
+      expect(upnpReads, 1, reason: 'the management rule is not UPnP');
+
+      notifier.setUpnpEnabled(false);
+      await notifier.save();
+      await Future.delayed(Duration.zero);
+      expect(upnpReads, 2);
+    });
+
+    test('a failed UPnP Set refreshes what the Firewall card shows too',
+        () async {
+      // The page re-reads after a failure because nobody knows what landed;
+      // the card must not keep showing the value from before the save.
+      when(() => svc.setUpnpEnabled(any()))
+          .thenThrow(const NetworkError(detail: 'response lost'));
+      when(() => svc.fetch()).thenAnswer((_) async => _settings());
+      var upnpReads = 0;
+      final container = ProviderContainer(overrides: [
+        uspAdministrationServiceProvider.overrideWithValue(svc),
+        uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+        upnpDataProvider.overrideWith((ref) async {
+          upnpReads++;
+          return true;
+        }),
+      ]);
+      addTearDown(container.dispose);
+      container.listen(uspAdministrationProvider, (_, __) {});
+      container.listen(upnpDataProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspAdministrationProvider.notifier);
+      expect(upnpReads, 1);
+
+      notifier.setUpnpEnabled(false);
+      await expectLater(notifier.save(), throwsA(isA<NetworkError>()));
+      await Future.delayed(Duration.zero);
+      expect(upnpReads, 2);
     });
 
     test('a firmware without the rule never writes it', () async {

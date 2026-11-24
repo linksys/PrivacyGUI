@@ -229,6 +229,36 @@ void _supportedDeviceTests() {
     expect(f.container.read(autoIPoEPageProvider).isDirty, isTrue);
     expect(f.calls, isEmpty);
   });
+  // Issue #1711: once the page has moved onto the router's values nothing the
+  // user typed is left to save, an IPoE draft picked earlier in the edit
+  // included, so it goes as it does after a successful save.
+  test('failed save that moved the page onto the router drops the IPoE draft',
+      () async {
+    f = IPoEFixture();
+    await f.ready();
+    f.notifier.updateConnectionType(UspWanConnectionType.ipoe);
+    f.notifier.updateConnectionType(UspWanConnectionType.pppoe);
+    f.notifier.updateField(
+        (form) => form.copyWith(pppUsername: 'user', pppPassword: 'pass'));
+    const refused = SavePartlyAppliedError(InvalidInputError());
+    when(() => f.wan.saveAll(any(), any(),
+            pppInstancePath: any(named: 'pppInstancePath'),
+            vlanInstancePath: any(named: 'vlanInstancePath')))
+        .thenAnswer((_) async {
+      // The router took PPPoE and refused the credentials.
+      f.form = const UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.pppoe, mtu: 1500);
+      throw refused;
+    });
+
+    await expectLater(f.notifier.save(), throwsA(same(refused)));
+
+    final state = f.container.read(uspInternetSettingsProvider);
+    expect(state.settings.current.form, f.form);
+    expect(f.container.read(autoIPoEPageProvider).isDirty, isFalse);
+    expect(f.notifier.isDirty(), isFalse);
+    expect(state.status.isEditing, isFalse);
+  });
   test('IPoE Save dispatches once and stays dirty until verified completion',
       () async {
     f = IPoEFixture();

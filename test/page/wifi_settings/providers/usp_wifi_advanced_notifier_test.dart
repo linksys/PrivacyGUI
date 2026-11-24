@@ -128,6 +128,7 @@ WifiRadioUIModel _radioModel({
   required String instancePath,
   required String band,
   required int channel,
+  int? channelInUse,
   required bool autoChannelEnable,
 }) =>
     WifiRadioUIModel(
@@ -137,6 +138,7 @@ WifiRadioUIModel _radioModel({
       transmitPower: 100,
       maxBitRate: 2402,
       channel: channel,
+      channelInUse: channelInUse ?? channel,
       autoChannelEnable: autoChannelEnable,
       channelBandwidth: '80MHz',
       supportedStandards: 'a,n,ac,ax',
@@ -688,6 +690,27 @@ void main() {
         '${_r2}IEEE80211hEnabled': false,
         '${_r2}AutoChannelEnable': true,
       });
+    });
+
+    // #1782: the check is on the configured channel, the one the router
+    // keeps and returns to; the channel in use is where the radio is now.
+    test('a radio set to a DFS channel is forced even when on a non-DFS one',
+        () async {
+      final device = _Device(_bench(dfs: true));
+      final c = createContainer(device, radios: [
+        _radioModel(
+            instancePath: _r2,
+            band: '5GHz',
+            channel: 100,
+            channelInUse: 36,
+            autoChannelEnable: false),
+      ]);
+      final notifier = await loaded(c);
+
+      notifier.setDfsEnabled(false);
+      await notifier.save();
+
+      expect(device.sets.single['${_r2}AutoChannelEnable'], isTrue);
     });
 
     test('a 5 GHz radio on a non-DFS channel or on auto is not forced',

@@ -45,6 +45,9 @@ class AppSemanticRoleLabels {
       SemanticRoleLabel.busy => l10n.processing,
       SemanticRoleLabel.checkbox => l10n.semanticRoleCheckbox,
       SemanticRoleLabel.dropdown => l10n.semanticRoleDropdown,
+      // `AppPasswordInput`'s eye button, named for what a tap does (ui_kit
+      // 3.6.2). Every password field in the app has one.
+      SemanticRoleLabel.hidePassword => l10n.semanticRoleHidePassword,
       SemanticRoleLabel.iconButton => l10n.semanticRoleIconButton,
       SemanticRoleLabel.ipAddress => l10n.ipAddress,
       SemanticRoleLabel.listTile => l10n.semanticRoleListTile,
@@ -52,10 +55,13 @@ class AppSemanticRoleLabels {
       SemanticRoleLabel.menu => l10n.menu,
       SemanticRoleLabel.pinInput => l10n.semanticRolePinInput,
       SemanticRoleLabel.radio => l10n.semanticRoleRadio,
+      SemanticRoleLabel.showPassword => l10n.semanticRoleShowPassword,
       SemanticRoleLabel.toggle => l10n.semanticRoleSwitch,
       // Unreachable from `lib/`: `GlobalMaterialLocalizations` names every
-      // dismiss barrier before the kit asks, and nothing mounts a slider or a
-      // side sheet, or sets `onDeleted:` on an `AppTag`/`AppBadge`.
+      // dismiss barrier before the kit asks, nothing mounts an `AppAvatar`, a
+      // slider or a side sheet, and nothing sets `onDeleted:` on an
+      // `AppTag`/`AppBadge`.
+      SemanticRoleLabel.avatar ||
       SemanticRoleLabel.deleteTarget ||
       SemanticRoleLabel.dismissBarrier ||
       SemanticRoleLabel.sideSheet ||

@@ -7,6 +7,7 @@ import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import 'package:privacy_gui/page/dashboard/providers/all_widget_specs_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
+import 'package:privacy_gui/page/dashboard/views/components/card_and_preset_names.dart';
 import 'package:privacy_gui/page/dashboard/views/dialogs/preset_selection_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -89,7 +90,8 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
                 Icon(currentPreset.icon, size: 20),
                 AppGap.sm(),
                 Expanded(
-                  child: AppText.bodyMedium(currentPreset.displayName),
+                  child: AppText.bodyMedium(
+                      currentPreset.resolveName(loc(context))),
                 ),
               ] else
                 Expanded(
@@ -195,7 +197,7 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
               if (isAppWidgetCard) {
                 // Enhanced display for App Widget Cards
                 return ListTile(
-                  title: AppText.bodyMedium(spec.displayName),
+                  title: AppText.bodyMedium(spec.resolveName(loc(context))),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -222,8 +224,8 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(loc(context)
-                                    .addedWidgetNamed(spec.displayName)),
+                                content: Text(loc(context).addedWidgetNamed(
+                                    spec.resolveName(loc(context)))),
                                 duration: const Duration(seconds: 1),
                               ),
                             );
@@ -236,7 +238,7 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
               } else {
                 // Standard display for Built-in Widgets
                 return ListTile(
-                  title: AppText.bodyMedium(spec.displayName),
+                  title: AppText.bodyMedium(spec.resolveName(loc(context))),
                   trailing: AppIconButton(
                     icon: const Icon(Icons.add_circle_outline),
                     onTap: () async {
@@ -247,8 +249,8 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(loc(context)
-                                .addedWidgetNamed(spec.displayName)),
+                            content: Text(loc(context).addedWidgetNamed(
+                                spec.resolveName(loc(context)))),
                             duration: const Duration(seconds: 1),
                           ),
                         );

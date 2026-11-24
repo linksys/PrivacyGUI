@@ -9,7 +9,6 @@ import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/service_error_view.dart';
-import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/_shared/mode/surface_strategy_provider.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_feature_state.dart';
 import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_form_validator.dart';
@@ -272,19 +271,21 @@ class UspInternetSettingsView extends ConsumerWidget {
       } else {
         showSuccessSnackBar(context, loc(context).changesSaved);
       }
-    } on InvalidInputError catch (e) {
-      // A check the page makes before saving, or a refusal the firmware named
-      // (linksys/FWDEV#212).
-      if (context.mounted) {
-        showFailedSnackBar(context, localizeWanSaveError(context, e));
-      }
     } catch (e) {
-      if (context.mounted) {
-        showSaveErrorSnackBar(context, e);
-      }
+      if (context.mounted) showWanSaveError(context, e);
     }
   }
 }
+
+/// Shows the snackbar for a failed WAN save.
+///
+/// [showSaveErrorSnackBar] picks the style, as for every page's save; the
+/// message reads through [localizeWanSaveError], so a check the page makes
+/// before saving, a refusal the firmware named (linksys/FWDEV#212), and a save
+/// applied in part (issue #1711) still name the field, and anything else reads
+/// as [localizeServiceError] gives it.
+void showWanSaveError(BuildContext context, Object error) =>
+    showSaveErrorSnackBar(context, error, localize: localizeWanSaveError);
 
 /// Whether a save transition should trigger the Bridge Mode redirect dialog:
 /// the WAN entered bridge (was not bridge, now is) and a hostname is known.

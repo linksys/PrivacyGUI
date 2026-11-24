@@ -9,6 +9,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/page/admin/models/network_action_models.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_notifier.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_state.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
@@ -311,7 +312,10 @@ class _RebootingAdminNotifier extends UspAdminNotifier {
   Future<UspAdminState> build() => Completer<UspAdminState>().future;
 
   @override
-  Future<void> reboot() => rebooting.future;
+  Future<RouterRestartStart> reboot() async {
+    await rebooting.future;
+    return RouterRestartStart.router;
+  }
 }
 
 /// Records every recovery the flow asks for and declines it, so the test can
@@ -352,8 +356,14 @@ class _RecordingAdminNotifier extends UspAdminNotifier {
   Future<UspAdminState> build() => Completer<UspAdminState>().future;
 
   @override
-  Future<void> reboot() async => calls.add('reboot');
+  Future<RouterRestartStart> reboot() async {
+    calls.add('reboot');
+    return RouterRestartStart.router;
+  }
 
   @override
-  Future<void> factoryReset() async => calls.add('factoryReset');
+  Future<RouterRestartStart> factoryReset() async {
+    calls.add('factoryReset');
+    return RouterRestartStart.router;
+  }
 }

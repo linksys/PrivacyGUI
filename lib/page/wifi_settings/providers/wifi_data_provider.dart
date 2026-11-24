@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/tr181_path.dart';
 import 'package:privacy_gui/framework/diagnostic_loggable.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
@@ -200,5 +202,47 @@ class WifiDataNotifier extends AsyncNotifier<WifiData> {
       logger.w('[WiFi] push-triggered refetch failed, keeping previous value',
           error: e, stackTrace: st);
     }
+  }
+
+  /// Re-reads each radio's channel utilization, and only that (#1295).
+  ///
+  /// Nothing pushes a utilization change, and the only Wi-Fi change the core
+  /// subscriptions push (`subscriptions.g.dart`) is a client joining, so
+  /// without this the Channels tab keeps the reading from the last time one
+  /// did. `channelUtilizationRefreshProvider`
+  /// (`channel_utilization_refresh_provider.dart`) calls it while that tab is
+  /// on screen.
+  ///
+  /// The readings are applied to whatever [state] holds when they arrive, so a
+  /// re-read that landed meanwhile keeps its radios and clients. Nothing is
+  /// published while a re-read is still in flight: [build] reads utilization
+  /// too, and publishing over it would put back the radios from before it. A
+  /// failed read keeps the previous readings, as [_refreshFromPush] keeps the
+  /// previous value.
+  Future<void> refreshUtilization() async {
+    final current = state.valueOrNull;
+    if (current == null || state.isLoading) return;
+    final Map<String, int> byRadioPath;
+    try {
+      byRadioPath = await ref
+          .read(uspWifiDataServiceProvider)
+          .fetchUtilizationByRadioPath(current.codegenContext);
+    } on ServiceError catch (e) {
+      logger.w('[WiFi] utilization refresh failed, keeping the previous '
+          'readings: $e');
+      return;
+    }
+    final latest = state.valueOrNull;
+    if (latest == null || state.isLoading) return;
+    state = AsyncData(WifiData(
+      codegenContext: latest.codegenContext,
+      wifiClientMap: latest.wifiClientMap,
+      connectionDetailMap: latest.connectionDetailMap,
+      radioModels: [
+        for (final radio in latest.radioModels)
+          radio.withUtilization(
+              byRadioPath[ensureTrailingDot(radio.instancePath)]),
+      ],
+    ));
   }
 }

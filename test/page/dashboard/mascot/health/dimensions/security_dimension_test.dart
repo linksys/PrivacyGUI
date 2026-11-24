@@ -10,6 +10,9 @@ import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart'
 import 'package:privacy_gui/page/firewall/services/usp_firewall_service.dart';
 
 void main() {
+  // English, so these assertions also pin the copy the keys replaced (#1312).
+  final en = lookupAppLocalizations(const Locale('en'));
+
   group('SecurityHealthDimension', () {
     late SecurityHealthDimension dimension;
 
@@ -100,7 +103,7 @@ void main() {
               createFirewallData(ipv4: true, ipv6: true, dmzEnabled: false),
         );
 
-        final summary = dimension.getSummary(context);
+        final summary = dimension.getSummary(context, en);
 
         expect(summary.status, 'Protected');
       });
@@ -110,7 +113,7 @@ void main() {
           firewall: createFirewallData(ipv4: false),
         );
 
-        final summary = dimension.getSummary(context);
+        final summary = dimension.getSummary(context, en);
 
         expect(summary.status, 'At Risk');
       });
@@ -120,7 +123,7 @@ void main() {
           firewall: createFirewallData(ipv4: true, dmzEnabled: true),
         );
 
-        final summary = dimension.getSummary(context);
+        final summary = dimension.getSummary(context, en);
 
         expect(summary.status, 'DMZ Active');
       });

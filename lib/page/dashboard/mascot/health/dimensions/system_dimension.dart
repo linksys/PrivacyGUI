@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -23,7 +24,7 @@ class SystemHealthDimension extends HealthDimension {
   HealthDimensionType get type => HealthDimensionType.system;
 
   @override
-  String get displayName => 'System';
+  String resolveName(AppLocalizations l10n) => l10n.system;
 
   @override
   IconData get icon => Icons.memory;
@@ -48,12 +49,14 @@ class SystemHealthDimension extends HealthDimension {
   }
 
   @override
-  DimensionSummary getSummary(HealthEvaluationContext context) {
+  DimensionSummary getSummary(
+    HealthEvaluationContext context,
+    AppLocalizations l10n,
+  ) {
     final info = context.systemInfo;
     if (info == null) {
-      return const DimensionSummary(
-        status: 'Loading...',
-        hint: 'Tap for actions',
+      return DimensionSummary(
+        status: l10n.loadingEllipsis,
       );
     }
 
@@ -64,28 +67,27 @@ class SystemHealthDimension extends HealthDimension {
 
     String status;
     if (maxUsage < SystemThresholds.excellent) {
-      status = 'Healthy';
+      status = l10n.healthy;
     } else if (maxUsage < SystemThresholds.good) {
-      status = 'Normal';
+      status = l10n.mascotSystemNormal;
     } else if (maxUsage < SystemThresholds.fair) {
-      status = 'Moderate Load';
+      status = l10n.mascotSystemModerateLoad;
     } else {
-      status = 'High Load';
+      status = l10n.mascotSystemHighLoad;
     }
 
     final items = <SummaryItem>[
-      SummaryItem('CPU', '$cpu%'),
-      SummaryItem('Memory', '$memory%'),
+      SummaryItem(l10n.cpu, '$cpu%'),
+      SummaryItem(l10n.memory, '$memory%'),
     ];
 
     if (model.formattedUptime.isNotEmpty) {
-      items.add(SummaryItem('Uptime', model.formattedUptime));
+      items.add(SummaryItem(l10n.uptime, model.formattedUptime));
     }
 
     return DimensionSummary(
       status: status,
       items: items,
-      hint: 'Tap for actions',
     );
   }
 

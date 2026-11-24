@@ -55,10 +55,10 @@ import '../../../../util/statistics/stats_section_probe.dart';
 ///   | signal quality          | 4 (data-driven) | `Wrap`                    |
 ///   | device distribution     | 3      | `Wrap`                             |
 ///   | resource trends         | 2      | `Wrap`                             |
-///   | cpu distribution        | **1**  | `Flexible` + bounded `maxLines`    |
+///   | cpu distribution        | **1**  | soft-wrapped label, ≤ 2 lines      |
 ///
-/// The last row is the one that makes the table load-bearing. Its `Row` holds a
-/// single dot and a single `cpuUsageSamples(...)` label; `Wrap` hands each child
+/// The last row is the one that makes the table load-bearing. It is a single
+/// mark and a single `cpuUsageSamples(...)` label; `Wrap` hands each child
 /// loose constraints, so a label wider than the row overflows inside a `Wrap`
 /// exactly as it does inside a `Row`. That site needs the *text* to wrap, not the
 /// row — and a PR that applied `Wrap` four times would leave `fr` / `fr_CA` red.
@@ -73,7 +73,8 @@ import '../../../../util/statistics/stats_section_probe.dart';
 /// statistic misinforms in a way a missing one does not (density design §2.10a
 /// point 2), so the chosen degradations move text rather than dropping it, and
 /// the groups below assert that: every label whole, unellipsized, not clipped,
-/// and the reflow bounded to two lines at the production floor.
+/// and the reflow bounded at the production floor — two lines, or three for the
+/// four-entry signal quality legend (#1324 declared change (d)).
 ///
 /// ## Mutation ledger
 ///
@@ -81,16 +82,20 @@ import '../../../../util/statistics/stats_section_probe.dart';
 /// layout test that cannot fail is worse than none, because it reports the shape
 /// as pinned (precedent: `stats_traffic_monitor_legend_test.dart`).
 ///
-///   | mutation                                       | what failed                 |
-///   |------------------------------------------------|-----------------------------|
-///   | all four rows at their pre-fix shape            | 14 overflow cells @288px    |
-///   | signal quality `Wrap(spacing: 200)` → 4 runs    | 4 bounded-reflow tests      |
-///   | cpu label `maxLines: 2` → `1`                   | 2 clipped tests (fr, fr_CA) |
-///   | cpu label's `Flexible` + `maxLines` removed      | 3 line-capped tests         |
+///   | mutation                                         | what failed               |
+///   |--------------------------------------------------|---------------------------|
+///   | all four rows at their pre-fix shape              | 14 overflow cells @288px  |
+///   | signal quality `Wrap(spacing: 200)` → 4 runs      | 4 bounded-reflow tests    |
+///   | cpu entry `.statistic` → `.seriesName`            | 3 soft-wrap tests         |
+///   | cpu `fr` label lengthened until it paints 3 lines | 1 line-budget test (fr)   |
 ///
-/// The last two rows are the pair worth reading together: the cap must exist (a
-/// lone unflexed label cannot yield, so it would grow the legend into the chart)
-/// **and** must be high enough for French. One assertion cannot hold both ends.
+/// Row 1 is #1488's measurement; rows 2–4 were run against #1324's kit entries.
+///
+/// The last two rows are the pair worth reading together: the label must not be
+/// cut short **and** must not grow without limit — the chart above it is
+/// `Expanded`, so an unbounded label grows the legend into it. Since #1324 the
+/// kit entry carries no `maxLines`, so the second end is held by the painted line
+/// count alone; without that assertion the row-4 mutation stays green.
 void main() {
   setUpAll(() async {
     // Real fonts: text widths — and therefore overflow — are meaningless under
@@ -236,11 +241,15 @@ void main() {
           // satisfied by a legend shredded into one group per line. Runs are
           // counted off the labels' own y positions, clustered at 2px, because
           // `Wrap` exposes no run count.
+          // #1324 declared change (d): the kit's 16px `ChartMark` replaces the
+          // 8px dot, so the four-entry signal quality legend may take a third
+          // run at 320px. Every label above is still asserted whole.
+          final maxRuns = identical(site, _signalQualitySite) ? 3 : 2;
           expect(
             _runCount(tops),
-            lessThanOrEqualTo(2),
-            reason: '${site.name} legend took more than two lines in $tag at '
-                '320px (label tops: $tops)',
+            lessThanOrEqualTo(maxRuns),
+            reason: '${site.name} legend took more than $maxRuns lines in $tag '
+                'at 320px (label tops: $tops)',
           );
         });
       }
@@ -276,30 +285,28 @@ void main() {
             reason: '"$label" ends in the sample count; an ellipsis would eat '
                 'the number this legend exists to state',
           );
+          // #1324 declared change (e): the kit's `AppChartLegendEntry.statistic`
+          // never clips — it hard-codes `maxLines: null` — so the widget carries
+          // no cap. The two-line budget is held below instead, by the lines the
+          // label actually paints.
           expect(
             text.maxLines,
-            isNotNull,
-            reason: 'the label must be line-capped: it is the only child that '
-                'can yield, so an uncapped one would grow the legend into the '
-                'chart instead of overflowing',
-          );
-          expect(
-            text.maxLines,
-            lessThanOrEqualTo(2),
-            reason:
-                'two lines is the budget — the chart above it is `Expanded` '
-                'and yields the height, but not without limit',
+            isNull,
+            reason: 'the kit `.statistic` entry is uncapped by design (#1324 '
+                'declared change (e))',
           );
           expect(
             tester.isTextClipped(finder),
             isFalse,
-            reason: '"$label" hit its `maxLines` cap in $tag at 320px, so the '
-                'cap is too low for this string',
+            reason: '"$label" was clipped in $tag at 320px',
           );
           expect(
             tester.textLineCount(finder),
-            lessThanOrEqualTo(text.maxLines!),
-            reason: '"$label" painted on more lines than its cap allows',
+            lessThanOrEqualTo(2),
+            reason: 'two lines is the budget — the chart above it is '
+                '`Expanded` and yields the height, but not without limit, and '
+                'with no `maxLines` nothing else stops "$label" growing the '
+                'legend into it',
           );
           if (!kLocalesWithoutWordSpaces.contains(tag)) {
             expect(
@@ -366,17 +373,7 @@ final _sites = <_LegendSite>[
   // this section at 9 widths × 26 locales (`page_surface_cases.dart`), so the 22
   // not listed here are measured, just not for legibility. These four are the
   // widest realizations of the row, so a regression in it reddens here first.
-  _LegendSite(
-    name: 'signal quality',
-    section: () => const StatsSignalQualitySection(),
-    locales: const ['ru', 'th', 'es', 'pl'],
-    labels: (l10n) => [
-      '${l10n.excellent}: ${_distribution.signalLevelDistribution[3]}',
-      '${l10n.good}: ${_distribution.signalLevelDistribution[2]}',
-      '${l10n.fair}: ${_distribution.signalLevelDistribution[1]}',
-      '${l10n.poor}: ${_distribution.signalLevelDistribution[0]}',
-    ],
-  ),
+  _signalQualitySite,
   // 5 of 26 at 320px — de, el, es, es_AR, fi; worst `el` at 28px.
   _LegendSite(
     name: 'device distribution',
@@ -407,6 +404,21 @@ final _sites = <_LegendSite>[
   _softWrapSite,
 ];
 
+/// The four-entry signal quality legend — the widest `Wrap` site. Held by
+/// identity so the run-count budget in #1324 declared change (d) cannot drift
+/// onto another site through a display-name edit.
+final _signalQualitySite = _LegendSite(
+  name: 'signal quality',
+  section: () => const StatsSignalQualitySection(),
+  locales: const ['ru', 'th', 'es', 'pl'],
+  labels: (l10n) => [
+    '${l10n.excellent}: ${_distribution.signalLevelDistribution[3]}',
+    '${l10n.good}: ${_distribution.signalLevelDistribution[2]}',
+    '${l10n.fair}: ${_distribution.signalLevelDistribution[1]}',
+    '${l10n.poor}: ${_distribution.signalLevelDistribution[0]}',
+  ],
+);
+
 /// The one site `Wrap` cannot fix — a single dot and a single label.
 ///
 /// 2 of 26 locales at 320px (fr, fr_CA, ~26px). `de` is measured clean and is
@@ -424,8 +436,8 @@ final _softWrapSite = _LegendSite(
 ///
 /// Split by identity, not by [_LegendSite.name]: the name is display prose for test
 /// names and failure output, so a wording change to it would silently put the
-/// soft-wrap site into this list — where the assertions are `maxLines` is null and the
-/// run count is at most 2, both of which are false of it by design.
+/// soft-wrap site into this list — where the run-count assertion is inert for it (one
+/// label is one run by construction) and would read as coverage it is not.
 final _wrapSites =
     _sites.where((s) => !identical(s, _softWrapSite)).toList(growable: false);
 

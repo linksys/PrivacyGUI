@@ -58,7 +58,8 @@ grep -rn "class.*extends StatelessWidget" lib/page/*/views/   # inspect for cust
 
 ### E. Naming conventions (Article III) — usually LOW/MEDIUM
 - Files: `snake_case`, singular folder-noun files (`*_service.dart`, `*_provider.dart`, `*_state.dart`)
-- Classes: `[Feature]Service`, `[Feature]Notifier`, `[Feature]State`, `*UIModel`, `Mock[Class]`
+- Classes: `[Feature]Service`, `[Feature]Notifier`, `[Feature]State`, `*UIModel`, `Mock[Class]` — `*UIModel` is required only on a class a Service builds from codegen **and** a Provider/State hands to a View (§3.3.4, both halves); do not flag a `models/` class that fails either half for lacking it
+- Test groups: no class prefix required (§3.6.2) — do not flag a group for lacking `[ClassName] - `
 - Providers: `lowerCamelCase` ending in `Provider`
 - Test cases: no numbering (no `TC001`, `Test case 1`)
 ```bash
@@ -66,7 +67,7 @@ grep -rn "test('TC\|test(\"TC\|Test case [0-9]" test/
 ```
 
 ### F. Test coverage & organization (Article I, VIII) — usually MEDIUM
-- Every Service/Provider SHOULD have a corresponding test under `test/page/[feature]/services|providers/`
+- Every Service/Provider SHOULD have a corresponding test under `test/page/[feature]/services|providers/`. Tests split by scenario as `[file_name]_[scenario]_test.dart` (§3.2) count as that file's test — do not report the source as untested because there is no plain `[file_name]_test.dart`
 - New tests MUST use mocktail, not mockito
 ```bash
 # Find services/providers lacking a sibling test file (cross-reference lib/ vs test/)

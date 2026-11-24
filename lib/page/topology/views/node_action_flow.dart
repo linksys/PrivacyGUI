@@ -14,9 +14,9 @@ import 'package:privacy_gui/page/topology/providers/node_action_notifier.dart';
 
 /// Which node actions [node] offers (#876).
 ///
-/// The router offers both: they are the Administration page's
-/// `Device.Reboot()` / `Device.FactoryReset()`, and FWDEV#202 gives its row no
-/// node commands. An agent offers what it reports in
+/// The router offers both: they are the Administration page's whole-network
+/// reboot and reset (`router_restart_actions.dart`), and FWDEV#202 gives its
+/// row no node commands. An agent offers what it reports in
 /// `X_LINKSYS_SupportedOperations`.
 Set<NodeAction> nodeActionsOf(NodeEntity node) => switch (node) {
       MasterNode() => NodeAction.values.toSet(),

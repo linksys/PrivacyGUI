@@ -15,6 +15,11 @@ class WanStatusUIModel extends Equatable with DiagnosticLoggable {
   final bool ipv6Enabled;
   final List<String> ipv6Addresses;
 
+  /// The IPv4 DNS servers the WAN is using, from `Device.DNS.Client.Server.*`
+  /// (#1702). Empty when there are none or they could not be read; the card
+  /// then hides its DNS row.
+  final List<String> dnsServers;
+
   const WanStatusUIModel({
     required this.isUp,
     required this.ipAddress,
@@ -24,10 +29,24 @@ class WanStatusUIModel extends Equatable with DiagnosticLoggable {
     this.gateway = '',
     this.ipv6Enabled = false,
     this.ipv6Addresses = const [],
+    this.dnsServers = const [],
   });
 
   @override
   String get diagnosticName => 'WanStatusUIModel';
+
+  /// This model with [dnsServers] replaced.
+  WanStatusUIModel withDnsServers(List<String> dnsServers) => WanStatusUIModel(
+        isUp: isUp,
+        ipAddress: ipAddress,
+        subnetMask: subnetMask,
+        addressingType: addressingType,
+        mtu: mtu,
+        gateway: gateway,
+        ipv6Enabled: ipv6Enabled,
+        ipv6Addresses: ipv6Addresses,
+        dnsServers: dnsServers,
+      );
 
   @override
   Map<String, Object?> get namedProps => {
@@ -39,5 +58,6 @@ class WanStatusUIModel extends Equatable with DiagnosticLoggable {
         'gateway': gateway,
         'ipv6Enabled': ipv6Enabled,
         'ipv6Addresses': ipv6Addresses,
+        'dnsServers': dnsServers,
       };
 }

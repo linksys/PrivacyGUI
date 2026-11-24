@@ -11,6 +11,7 @@ class WiFiRadio {
   final bool enable;
   final String status;
   final int channel;
+  final String channelsInUse;
   final String operatingFrequencyBand;
   final String operatingChannelBandwidth;
   final String possibleChannels;
@@ -28,6 +29,7 @@ class WiFiRadio {
     required this.enable,
     required this.status,
     required this.channel,
+    required this.channelsInUse,
     required this.operatingFrequencyBand,
     required this.operatingChannelBandwidth,
     required this.possibleChannels,
@@ -48,6 +50,7 @@ class WiFiRadio {
         'enable: $enable, '
         'status: $status, '
         'channel: $channel, '
+        'channelsInUse: $channelsInUse, '
         'operatingFrequencyBand: $operatingFrequencyBand, '
         'operatingChannelBandwidth: $operatingChannelBandwidth, '
         'possibleChannels: $possibleChannels, '
@@ -97,6 +100,7 @@ class WiFiRadios {
     'Device.WiFi.Radio.*.Enable',
     'Device.WiFi.Radio.*.Status',
     'Device.WiFi.Radio.*.Channel',
+    'Device.WiFi.Radio.*.ChannelsInUse',
     'Device.WiFi.Radio.*.OperatingFrequencyBand',
     'Device.WiFi.Radio.*.OperatingChannelBandwidth',
     'Device.WiFi.Radio.*.PossibleChannels',
@@ -139,6 +143,9 @@ class WiFiRadios {
       }
       if (!response.containsKey('${p}Channel')) {
         missing.add('${p}Channel');
+      }
+      if (!response.containsKey('${p}ChannelsInUse')) {
+        missing.add('${p}ChannelsInUse');
       }
       if (!response.containsKey('${p}OperatingFrequencyBand')) {
         missing.add('${p}OperatingFrequencyBand');
@@ -183,6 +190,7 @@ class WiFiRadios {
             response['${p}Enable'] == '1',
         status: (response['${p}Status'] ?? '') as String,
         channel: int.tryParse(response['${p}Channel']?.toString() ?? '') ?? 0,
+        channelsInUse: (response['${p}ChannelsInUse'] ?? '') as String,
         operatingFrequencyBand:
             (response['${p}OperatingFrequencyBand'] ?? '') as String,
         operatingChannelBandwidth:

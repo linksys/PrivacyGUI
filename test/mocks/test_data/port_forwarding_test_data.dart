@@ -1,4 +1,5 @@
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
+import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
 
 /// Test data builder for Port Forwarding tests.
@@ -59,6 +60,22 @@ class PortForwardingTestData {
         createRule(),
         createRangeRule(),
       ];
+
+  /// A saved port-triggering rule (`Device.NAT.PortTrigger.{i}`).
+  static PortTriggeringRuleUIModel createTriggerRule({
+    String? instancePath = 'Device.NAT.PortTrigger.1.',
+    String description = 'FTP Trigger',
+    int triggerPort = 21,
+    String triggerProtocol = 'TCP',
+    bool enabled = true,
+  }) =>
+      PortTriggeringRuleUIModel(
+        instancePath: instancePath,
+        enabled: enabled,
+        description: description,
+        triggerPort: triggerPort,
+        triggerProtocol: triggerProtocol,
+      );
 
   // ---------------------------------------------------------------------------
   // PortForwardingData (L1)

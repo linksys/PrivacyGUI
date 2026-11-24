@@ -8,6 +8,9 @@ import 'package:privacy_gui/page/static_routing/services/usp_static_routing_serv
 
 import '../../../util/usp_param_templates.dart';
 
+import '../../../mocks/test_data/usp_add_refusal_test_data.dart';
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 const _lan = 'Device.IP.Interface.3';
@@ -495,29 +498,26 @@ void main() {
     // leaf FW refused, and the others pointing at it.
     Map<String, dynamic> refusedEdit(String leaf, String message) {
       const p = 'Device.Routing.Router.1.IPv4Forwarding.30.';
-      return {
-        'success': false,
-        'result': {
-          'data': <String, dynamic>{},
-          'error': {
-            for (final l in [
-              'Enable',
-              'DestIPAddress',
-              'DestSubnetMask',
-              'GatewayIPAddress',
-              'Interface',
-              'Alias',
-            ])
-              '$p$l': {
-                'errorCode': 7012,
-                'errorMessage': l == leaf
-                    ? message
-                    : "SetParameterGroup: group set failed at '$p$leaf' "
-                        '(Invalid value)',
-              },
-          },
+      return UspEnvelopeTestData.parameterErrors(
+        {
+          for (final l in [
+            'Enable',
+            'DestIPAddress',
+            'DestSubnetMask',
+            'GatewayIPAddress',
+            'Interface',
+            'Alias',
+          ])
+            '$p$l': (
+              code: 7012,
+              message: l == leaf
+                  ? message
+                  : "SetParameterGroup: group set failed at '$p$leaf' "
+                      '(Invalid value)',
+            ),
         },
-      };
+        success: false,
+      );
     }
 
     void answerSet(Map<String, dynamic> envelope) {
@@ -570,18 +570,11 @@ void main() {
 
     test('a refused Edit without an error name stays the batch error',
         () async {
-      answerSet({
-        'success': false,
-        'result': {
-          'data': <String, dynamic>{},
-          'error': {
-            'Device.Routing.Router.1.IPv4Forwarding.30.Enable': {
-              'errorCode': 9999,
-              'errorMessage': 'Transport error: HTTP error: HTTP 503',
-            },
-          },
-        },
-      });
+      answerSet(UspEnvelopeTestData.failedAsAWhole(
+        ['Device.Routing.Router.1.IPv4Forwarding.30.Enable'],
+        errorCode: 9999,
+        errorMessage: 'Transport error: HTTP error: HTTP 503',
+      ));
 
       await expectLater(
         service.saveBatch(
@@ -647,18 +640,12 @@ void main() {
     // A step that failed leaves the router in a state the next step was not
     // checked against: at 20 routes, an Add after a failed Delete is a 21st.
     test('a failed Delete stops the save before Set and Add', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-            'success': false,
-            'result': {
-              'data': <String, dynamic>{},
-              'error': {
-                'Device.Routing.Router.1.IPv4Forwarding.31.': {
-                  'errorCode': 9999,
-                  'errorMessage': 'Transport error: HTTP error: HTTP 503',
-                },
-              },
-            },
-          });
+      when(() => mockUsp.delete(any()))
+          .thenAnswer((_) async => UspEnvelopeTestData.failedAsAWhole(
+                ['Device.Routing.Router.1.IPv4Forwarding.31.'],
+                errorCode: 9999,
+                errorMessage: 'Transport error: HTTP error: HTTP 503',
+              ));
       final other = saved.copyWith(
           instancePath: 'Device.Routing.Router.1.IPv4Forwarding.31.',
           name: 'other');
@@ -712,20 +699,19 @@ void main() {
     });
 
     test('a partly refused Add fails the save', () async {
-      when(() => mockUsp.add(any())).thenAnswer((_) async => {
-            'success': true,
-            'result': {
-              'data': {
-                'instances': ['Device.Routing.Router.1.IPv4Forwarding.32.']
-              },
-              'error': {
-                'Device.Routing.Router.1.IPv4Forwarding.': {
-                  'errorCode': 7004,
-                  'errorMessage': 'Add failed',
+      when(() => mockUsp.add(any()))
+          .thenAnswer((_) async => UspEnvelopeTestData.pathErrors(
+                {
+                  'Device.Routing.Router.1.IPv4Forwarding.': (
+                    code: 7004,
+                    message: 'Add failed',
+                  ),
                 },
-              },
-            },
-          });
+                success: true,
+                data: {
+                  'instances': ['Device.Routing.Router.1.IPv4Forwarding.32.']
+                },
+              ));
 
       await expectLater(
         service.saveBatch(
@@ -798,15 +784,10 @@ void main() {
 
     test('saveRipEnabled throws when the router refuses it', () async {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': false,
-                'result': {
-                  'data': <String, dynamic>{},
-                  'error': {
-                    ripPath: {'errorCode': 7026, 'errorMessage': 'Invalid path'}
-                  },
-                },
-              });
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {ripPath: (code: 7026, message: 'Invalid path')},
+                success: false,
+              ));
 
       expect(() => service.saveRipEnabled(true),
           throwsA(isA<UspCompleteFailureError>()));
@@ -1042,6 +1023,38 @@ void main() {
         () => service.saveBatch(original: original, current: []),
         throwsA(isA<ServiceError>()),
       );
+    });
+  });
+
+  // usp-client 0.14.0 (linksys/usp_framework#114): a refused route is created
+  // anyway; it is deleted, so a retry adds one route.
+  group('UspStaticRoutingService — a refused Add is undone', () {
+    test('the route is deleted', () async {
+      const row = 'Device.Routing.Router.1.IPv4Forwarding.30.';
+      when(() => mockUsp.add(any())).thenAnswer((_) async =>
+          UspAddRefusalTestData.refusedAdd(
+              instances: [row],
+              refusedRow: row,
+              refusedParam: 'DestIPAddress',
+              message:
+                  'ErrorInvalidIPAddress: 127.20.0.0 is a reserved address.'));
+      when(() => mockUsp.delete(any()))
+          .thenAnswer((_) async => UspAddRefusalTestData.accepted);
+
+      await expectLater(
+        service.saveBatch(original: const [], current: [
+          StaticRouteUIModel(
+            enabled: true,
+            name: 'NewRoute',
+            destIpAddress: '127.20.0.0',
+            destSubnetMask: '255.255.0.0',
+            gatewayIpAddress: '192.168.1.1',
+            interfaceName: 'LAN',
+          ),
+        ]),
+        throwsA(isA<ServiceError>()),
+      );
+      verify(() => mockUsp.delete([row])).called(1);
     });
   });
 }

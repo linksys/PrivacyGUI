@@ -7,6 +7,9 @@ import 'package:privacy_gui/page/dashboard/mascot/health/health_dimension.dart';
 import 'package:privacy_gui/page/firmware_update/providers/firmware_banks_data_provider.dart';
 
 void main() {
+  // English, so these assertions also pin the copy the keys replaced (#1312).
+  final en = lookupAppLocalizations(const Locale('en'));
+
   group('FirmwareHealthDimension', () {
     late FirmwareHealthDimension dimension;
 
@@ -155,7 +158,7 @@ void main() {
           ),
         );
 
-        final summary = dimension.getSummary(context);
+        final summary = dimension.getSummary(context, en);
 
         expect(summary.status, 'Up to Date');
         expect(summary.items.any((i) => i.label == 'Current'), true);
@@ -164,6 +167,7 @@ void main() {
       test('up-to-date router: Up to Date, Current only, no Available row', () {
         final summary = dimension.getSummary(
           HealthEvaluationContext(firmware: upToDateRouter()),
+          en,
         );
 
         expect(summary.status, 'Up to Date');
@@ -182,6 +186,7 @@ void main() {
       test('update available: the Available row shows the ota version', () {
         final summary = dimension.getSummary(
           HealthEvaluationContext(firmware: updateAvailableRouter()),
+          en,
         );
 
         expect(summary.status, 'Update Available');
@@ -207,6 +212,7 @@ void main() {
               ],
             ),
           ),
+          en,
         );
 
         expect(summary.status, 'Up to Date');

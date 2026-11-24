@@ -8,7 +8,6 @@ class RoutePath {
   static const localLoginPassword = '/localLoginPassword';
   static const localRouterRecovery = 'localRouterRecovery';
   static const localPasswordReset = 'localPasswordReset';
-  static const autoParentFirstLogin = '/autoParentFirstLogin';
 
   /// dashboard
   static const dashboardHome = '/dashboardHome';
@@ -45,7 +44,6 @@ class RoutePath {
   static const uspNotificationHistory = '/uspNotificationHistory';
   static const uspAdvancedSettings = '/uspAdvancedSettings';
   static const uspStatistics = '/uspStatistics';
-  static const uspTestConsole = '/uspTestConsole';
   static const uspWifiSettings = '/uspWifiSettings';
   static const uspApps = '/uspApps';
   static const uspSpeedTest = '/uspSpeedTest';
@@ -64,6 +62,7 @@ class RoutePath {
   static const uspDmz = 'uspDmz';
   static const uspAdministration = 'uspAdministration';
   static const uspPortForwardingDetail = 'uspPortForwardingDetail';
+  static const uspDdns = 'uspDdns';
   static const uspStaticRouting = 'uspStaticRouting';
   static const uspIpv6PortService = 'uspIpv6PortService';
 
@@ -148,14 +147,20 @@ class RoutePath {
   /// PnP
   static const pnp = '/pnp';
   static const pnpConfig = 'pnpConfig';
-  static const pnpNoInternetConnection = '/pnpNoInternetConnection';
+
+  /// The no-internet troubleshooting tree. `:caller` names who entered it and so
+  /// how it ends — see [TroubleshootingCaller] (#1511 P1). In the path rather
+  /// than in `extra` or a query parameter: a web reload drops `extra`, and child
+  /// navigation drops a query parameter, while a missing path parameter fails an
+  /// assert instead of being lost.
+  static const pnpNoInternetConnection =
+      '/pnpNoInternetConnection/:${TroubleshootingCaller.param}';
   static const pnpUnplugModem = 'pnpUnplugModem';
   static const pnpModemLightsOff = 'pnpModemLightsOff';
   static const pnpWaitingModem = 'pnpWaitingModem';
   static const pnpPPPOE = 'pnpPPPOE';
   static const pnpIspTypeSelection = 'pnpIspTypeSelection';
   static const pnpStaticIp = 'pnpStaticIp';
-  static const pnpIspAuth = 'pnpIspAuth';
   static const pnpAddNodes = 'pnpAddNodes';
 
   /// Safe Browsing
@@ -190,7 +195,6 @@ class RouteNamed {
   static const localLoginPassword = 'localLoginPassword';
   static const localRouterRecovery = 'localRouterRecovery';
   static const localPasswordReset = 'localPasswordReset';
-  static const autoParentFirstLogin = 'autoParentFirstLogin';
 
   /// dashboard
   static const dashboardMenu = 'dashboardMenu';
@@ -219,11 +223,12 @@ class RouteNamed {
   // menu's password / time zone / reboot page.
   static const uspAdministration = 'uspAdministration';
   static const uspLocalNetwork = 'uspLocalNetwork';
+  // Advanced Settings → DDNS (#641). Not [settingsDDNS], 1.x's route name.
+  static const uspDdns = 'uspDdns';
   static const uspStaticRouting = 'uspStaticRouting';
   static const uspAdvancedSettings = 'uspAdvancedSettings';
   static const uspIpv6PortService = 'uspIpv6PortService';
   static const uspStatistics = 'uspStatistics';
-  static const uspTestConsole = 'uspTestConsole';
   static const pnpAutoIPoE = 'pnpAutoIPoE';
   static const uspInternetSettings = 'uspInternetSettings';
   static const uspWifiSettings = 'uspWifiSettings';
@@ -323,8 +328,12 @@ class RouteNamed {
   static const pnpPPPOE = 'pnpPPPOE';
   static const pnpIspTypeSelection = 'pnpIspTypeSelection';
   static const pnpStaticIp = 'pnpStaticIp';
-  static const pnpIspAuth = 'pnpIspAuth';
   static const pnpAddNodes = 'pnpAddNodes';
+
+  /// The route of the PnP wizard step [stepId] (#1511 P4), whose path is the
+  /// id itself under `/pnp/pnpConfig`. Derived rather than declared so that a
+  /// step added to the step list needs no constant here.
+  static String pnpStep(String stepId) => 'pnpStep_$stepId';
 
   /// Support
   static const faqList = 'faqList';
@@ -343,4 +352,19 @@ class RouteNamed {
 
   /// debug
   static const debug = 'debug';
+}
+
+/// The `:caller` segment of [RoutePath.pnpNoInternetConnection] (#1511 P1).
+///
+/// Navigation inside the tree forwards the current path parameters, so only the
+/// two entry points spell a caller out.
+class TroubleshootingCaller {
+  static const param = 'caller';
+
+  /// PnP's entry check found no internet.
+  static const pnp = 'pnp';
+
+  /// The dashboard. No entry ships yet; the route accepts it so that the second
+  /// caller is real and tested, not hypothetical.
+  static const dashboard = 'dashboard';
 }

@@ -123,12 +123,14 @@ void main() {
   });
 
   group('isEmptyWiFiRadio', () {
-    WiFiRadio radio({int channel = 0, String band = ''}) =>
+    WiFiRadio radio(
+            {int channel = 0, String channelsInUse = '', String band = ''}) =>
         WifiSettingsTestData.createRadio(
           instancePath: 'Device.WiFi.Radio.4.',
           enable: false,
           status: '',
           channel: channel,
+          channelsInUse: channelsInUse,
           operatingFrequencyBand: band,
           operatingChannelBandwidth: '',
           possibleChannels: '',
@@ -144,6 +146,10 @@ void main() {
       expect(isEmptyWiFiRadio(radio()), isTrue);
       expect(isEmptyWiFiRadio(radio(band: '5GHz')), isFalse);
       expect(isEmptyWiFiRadio(radio(channel: 36)), isFalse);
+    });
+
+    test('a channel in use alone does not keep it (#1782)', () {
+      expect(isEmptyWiFiRadio(radio(channelsInUse: '36')), isTrue);
     });
   });
 
@@ -171,10 +177,13 @@ void main() {
           status: '',
         );
 
-    test('blank is empty; the new MAC field does not count, as before', () {
+    test('blank is empty; a host by IP or by MAC keeps it', () {
       expect(isEmptyDmzEntry(entry()), isTrue);
-      expect(isEmptyDmzEntry(entry(destMac: 'AA:BB:CC:DD:EE:01')), isTrue);
+      expect(isEmptyDmzEntry(entry(destMac: '')), isTrue);
       expect(isEmptyDmzEntry(entry(destIp: '192.168.1.50')), isFalse);
+      // #1775: the page reads the MAC now, so a row holding only a MAC is a
+      // DMZ host. Dropping it would make the next save add a second row.
+      expect(isEmptyDmzEntry(entry(destMac: 'AA:BB:CC:DD:EE:01')), isFalse);
     });
   });
 

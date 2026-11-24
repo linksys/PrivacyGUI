@@ -10,8 +10,10 @@ import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/_shared/models/pdf_report_data.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
+import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
+import 'package:privacy_gui/util/network_utils.dart';
 
 /// One `label: value` line in the report.
 class PdfKeyValue {
@@ -293,7 +295,7 @@ class UspPdfService {
     return [
       _sectionTitle('WAN Status'),
       _keyValue('Status', wan.isUp ? 'Up' : 'Down'),
-      _keyValue('IP Address', wan.ipAddress),
+      _keyValue('IP Address', NetworkUtils.addressOrPlaceholder(wan.ipAddress)),
       _keyValue('Subnet Mask', wan.subnetMask),
       if (wan.gateway.isNotEmpty) _keyValue('Gateway', wan.gateway),
       _keyValue('Addressing Type', wan.addressingType),
@@ -312,7 +314,7 @@ class UspPdfService {
     if (lan == null) return [];
     return [
       _sectionTitle('LAN Network'),
-      _keyValue('IP Address', lan.ipAddress),
+      _keyValue('IP Address', NetworkUtils.addressOrPlaceholder(lan.ipAddress)),
       _keyValue('Subnet Mask', lan.subnetMask),
       _keyValue('DHCP', lan.dhcpEnabled ? 'Enabled' : 'Disabled'),
       if (lan.dhcpEnabled) _keyValue('DHCP Range', lan.dhcpRange),
@@ -329,6 +331,20 @@ class UspPdfService {
   // ===========================================================================
   // Page 2: WiFi
   // ===========================================================================
+
+  /// The key-value rows of one radio's box on the WiFi page. "Channel" is the
+  /// channel the radio is on, which a fixed channel can differ from when
+  /// hostapd moves the radio (#1782).
+  @visibleForTesting
+  static List<PdfKeyValue> wifiRadioRows(WifiRadioUIModel radio) => [
+        PdfKeyValue('Status', radio.enable ? 'Enabled' : 'Disabled'),
+        PdfKeyValue('Channel', radio.channelInUseDisplay),
+        PdfKeyValue('Bandwidth', radio.channelBandwidth),
+        PdfKeyValue('TX Power', radio.txPowerDisplay),
+        PdfKeyValue('Max Bit Rate', '${radio.maxBitRate} Mbps'),
+        if (radio.supportedStandards.isNotEmpty)
+          PdfKeyValue('Standards', radio.supportedStandards),
+      ];
 
   static List<pw.Widget> _buildWifi(PdfReportData data) {
     final radios = data.radioModels ?? [];
@@ -352,13 +368,8 @@ class UspPdfService {
                     pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12),
               ),
               pw.SizedBox(height: 4),
-              _keyValue('Status', radio.enable ? 'Enabled' : 'Disabled'),
-              _keyValue('Channel', radio.channelDisplay),
-              _keyValue('Bandwidth', radio.channelBandwidth),
-              _keyValue('TX Power', radio.txPowerDisplay),
-              _keyValue('Max Bit Rate', '${radio.maxBitRate} Mbps'),
-              if (radio.supportedStandards.isNotEmpty)
-                _keyValue('Standards', radio.supportedStandards),
+              ...wifiRadioRows(radio)
+                  .map((row) => _keyValue(row.label, row.value)),
               if (radio.accessPoints.isNotEmpty) ...[
                 pw.SizedBox(height: 6),
                 pw.Text('Access Points:',
@@ -415,7 +426,7 @@ class UspPdfService {
   }
 
   static pw.Widget _deviceTable(
-    List<dynamic> devices, {
+    List<ClientDevice> devices, {
     required bool isOnline,
   }) {
     final headers = isOnline
@@ -428,21 +439,34 @@ class UspPdfService {
       cellPadding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
       headers: headers,
-      data: devices.map((d) {
+      data: deviceTableRows(devices, isOnline: isOnline),
+    );
+  }
+
+  /// The device table's rows. A device with no IPv4 prints
+  /// [NetworkUtils.noAddress], as the app shows it (#1838).
+  @visibleForTesting
+  static List<List<String>> deviceTableRows(
+    List<ClientDevice> devices, {
+    required bool isOnline,
+  }) =>
+      devices.map((d) {
         if (isOnline) {
-          return [
+          return <String>[
             d.displayName,
             d.mac,
-            d.ip,
+            NetworkUtils.addressOrPlaceholder(d.ip),
             d.isWifi ? 'WiFi' : 'Ethernet',
             d.signalStrength != null ? '${d.signalStrength} dBm' : '—',
             d.band ?? '—',
           ];
         }
-        return [d.displayName, d.mac, d.ip];
-      }).toList(),
-    );
-  }
+        return <String>[
+          d.displayName,
+          d.mac,
+          NetworkUtils.addressOrPlaceholder(d.ip),
+        ];
+      }).toList();
 
   static List<pw.Widget> _buildDhcpClients(PdfReportData data) {
     final clients = data.dhcpClients ?? [];
@@ -934,15 +958,24 @@ class UspPdfService {
   static List<pw.Widget> _buildDmzSettings(DmzUIModel dmz) {
     return [
       _sectionTitle('DMZ'),
-      _keyValue('Status', dmz.isEnabled ? 'Enabled' : 'Disabled'),
-      if (dmz.isEnabled) ...[
-        _keyValue('Destination IP', dmz.destIp),
-        _keyValue('Source',
-            dmz.sourceType == DmzSourceType.any ? 'Any' : dmz.sourcePrefix),
-      ],
+      ...dmzRows(dmz).map((row) => _keyValue(row.label, row.value)),
       pw.SizedBox(height: 12),
     ];
   }
+
+  /// The DMZ section's rows. The host is printed by the type the router holds
+  /// it by: a host given by MAC leaves `DestIP` empty (#1775).
+  static List<PdfKeyValue> dmzRows(DmzUIModel dmz) => [
+        PdfKeyValue('Status', dmz.isEnabled ? 'Enabled' : 'Disabled'),
+        if (dmz.isEnabled) ...[
+          if (dmz.destinationType == DmzDestinationType.mac)
+            PdfKeyValue('Destination MAC', dmz.destMac)
+          else
+            PdfKeyValue('Destination IP', dmz.destIp),
+          PdfKeyValue('Source',
+              dmz.sourceType == DmzSourceType.any ? 'Any' : dmz.sourcePrefix),
+        ],
+      ];
 
   // ===========================================================================
   // Page 6: Port Rules + Routing

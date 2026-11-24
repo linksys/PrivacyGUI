@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_data_service.dart';
 
@@ -222,6 +223,157 @@ void main() {
         sseController.close();
         container.dispose();
       });
+    });
+  });
+
+  // #1295: nothing pushes a DataElements utilization change, so the Channels
+  // tab re-reads it itself, and only it.
+  group('refreshUtilization', () {
+    setUpAll(() => registerFallbackValue(WifiCodegenContext.empty));
+
+    // 46 on 2.4 GHz and 11 on 5 GHz, the bench's readings (2026-11-09).
+    List<WifiRadioUIModel> radios() => [
+          WifiSettingsTestData.createRadioUIModel(utilization: 46),
+          WifiSettingsTestData.createRadioUIModel(
+              instancePath: 'Device.WiFi.Radio.2.',
+              band: '5GHz',
+              channel: 36,
+              utilization: 11),
+        ];
+
+    setUp(() {
+      when(() => mockService.fetch()).thenAnswer((_) async =>
+          WifiSettingsTestData.createWifiDataFetchResult(
+              radioModels: radios()));
+    });
+
+    test(
+        'publishes the new readings onto the current data, and only re-reads '
+        'utilization', () async {
+      when(() => mockService.fetchUtilizationByRadioPath(any()))
+          .thenAnswer((_) async => {'Device.WiFi.Radio.1.': 58});
+      final container = createContainer();
+      final before = await container.read(wifiDataProvider.future);
+      clearInteractions(mockService);
+
+      await container.read(wifiDataProvider.notifier).refreshUtilization();
+
+      final after = container.read(wifiDataProvider).requireValue;
+      // The 5 GHz radio is not in the new readings, so it is unknown now.
+      expect(after.radioModels.map((r) => r.utilization), [58, null]);
+      expect(after.radioModels.map((r) => r.band),
+          before.radioModels.map((r) => r.band));
+      expect(after.codegenContext, before.codegenContext);
+      verify(() => mockService.fetchUtilizationByRadioPath(any())).called(1);
+      verifyNever(() => mockService.fetch());
+      container.dispose();
+    });
+
+    test(
+        'the readings land on the newest data, not on what was there when the '
+        'read started', () async {
+      final read = Completer<Map<String, int>>();
+      when(() => mockService.fetchUtilizationByRadioPath(any()))
+          .thenAnswer((_) => read.future);
+      final container = createContainer();
+      container.listen(wifiDataProvider, (_, __) {});
+      await container.read(wifiDataProvider.future);
+
+      final refreshing =
+          container.read(wifiDataProvider.notifier).refreshUtilization();
+      // While the read is out, a save re-reads the Wi-Fi data and brings the
+      // 5 GHz radio back disabled.
+      when(() => mockService.fetch()).thenAnswer((_) async =>
+          WifiSettingsTestData.createWifiDataFetchResult(radioModels: [
+            radios()[0],
+            WifiSettingsTestData.createRadioUIModel(
+                instancePath: 'Device.WiFi.Radio.2.',
+                band: '5GHz',
+                channel: 36,
+                enable: false,
+                utilization: 11),
+          ]));
+      container.invalidate(wifiDataProvider);
+      await container.read(wifiDataProvider.future);
+      read.complete({'Device.WiFi.Radio.1.': 58, 'Device.WiFi.Radio.2.': 20});
+      await refreshing;
+
+      final after = container.read(wifiDataProvider).requireValue;
+      expect(after.radioModels.map((r) => r.enable), [true, false]);
+      expect(after.radioModels.map((r) => r.utilization), [58, 20]);
+      container.dispose();
+    });
+
+    test(
+        'does not publish while a Wi-Fi re-read is in flight, which brings '
+        'its own readings', () async {
+      final read = Completer<Map<String, int>>();
+      when(() => mockService.fetchUtilizationByRadioPath(any()))
+          .thenAnswer((_) => read.future);
+      final container = createContainer();
+      container.listen(wifiDataProvider, (_, __) {});
+      await container.read(wifiDataProvider.future);
+
+      final refreshing =
+          container.read(wifiDataProvider.notifier).refreshUtilization();
+      // A save re-reads the Wi-Fi data, and that read is still out when the
+      // utilization read comes back.
+      final rebuild = Completer<WifiDataFetchResult>();
+      when(() => mockService.fetch()).thenAnswer((_) => rebuild.future);
+      container.invalidate(wifiDataProvider);
+      container.read(wifiDataProvider);
+      read.complete({'Device.WiFi.Radio.1.': 99, 'Device.WiFi.Radio.2.': 99});
+      await refreshing;
+
+      expect(container.read(wifiDataProvider).isLoading, isTrue,
+          reason: 'the utilization refresh published the pre-save radios over '
+              'the re-read in flight (PR #1796 review)');
+
+      rebuild.complete(WifiSettingsTestData.createWifiDataFetchResult(
+          radioModels: radios()));
+      final after = await container.read(wifiDataProvider.future);
+      expect(after.radioModels.map((r) => r.utilization), [46, 11]);
+      container.dispose();
+    });
+
+    test('does not read at all while a Wi-Fi re-read is in flight', () async {
+      // The re-read reads utilization itself, so a read now is a wasted
+      // request (PR #1796 review, round 2: this guard had no test).
+      when(() => mockService.fetchUtilizationByRadioPath(any()))
+          .thenAnswer((_) async => const {});
+      final container = createContainer();
+      container.listen(wifiDataProvider, (_, __) {});
+      await container.read(wifiDataProvider.future);
+
+      final rebuild = Completer<WifiDataFetchResult>();
+      when(() => mockService.fetch()).thenAnswer((_) => rebuild.future);
+      container.invalidate(wifiDataProvider);
+      container.read(wifiDataProvider);
+      await container.read(wifiDataProvider.notifier).refreshUtilization();
+
+      verifyNever(() => mockService.fetchUtilizationByRadioPath(any()));
+      rebuild.complete(WifiSettingsTestData.createWifiDataFetchResult(
+          radioModels: radios()));
+      await container.read(wifiDataProvider.future);
+      container.dispose();
+    });
+
+    test('a failed read keeps the previous readings', () async {
+      when(() => mockService.fetchUtilizationByRadioPath(any()))
+          .thenThrow(const NetworkError(detail: 'timeout'));
+      final container = createContainer();
+      await container.read(wifiDataProvider.future);
+
+      await container.read(wifiDataProvider.notifier).refreshUtilization();
+
+      expect(
+          container
+              .read(wifiDataProvider)
+              .requireValue
+              .radioModels
+              .map((r) => r.utilization),
+          [46, 11]);
+      container.dispose();
     });
   });
 }

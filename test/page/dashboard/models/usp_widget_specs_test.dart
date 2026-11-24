@@ -31,6 +31,15 @@ void main() {
       }
     });
 
+    test('no built-in card sets a description', () {
+      // Decided on #1312. The settings panel's description tooltip is for
+      // package widgets, whose description comes from a remote template; a
+      // built-in one would be English in every locale.
+      for (final spec in UspWidgetSpecs.all) {
+        expect(spec.description, isNull, reason: spec.id);
+      }
+    });
+
     test('non-hideable cards: stats_panel, device_info, network_status', () {
       final nonHideable =
           UspWidgetSpecs.all.where((s) => !s.canHide).map((s) => s.id).toSet();

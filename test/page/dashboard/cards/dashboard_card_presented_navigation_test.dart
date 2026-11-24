@@ -224,15 +224,17 @@ String? _currentRouteName(GoRouter router) =>
     router.routerDelegate.currentConfiguration.last.route.name;
 
 void main() {
-  /// Opens [cardId]'s presentation from its popup tile, presses its detail button,
-  /// and asserts the user arrives on a usable detail page — then presses back and
-  /// asserts they arrive on a clean Dashboard.
+  /// Opens [cardId]'s presentation from its popup tile, presses its detail button
+  /// — or [entry], for a card whose way out is something else — and asserts the
+  /// user arrives on a usable detail page, then presses back and asserts they
+  /// arrive on a clean Dashboard.
   Future<void> enterAndReturn(
     WidgetTester tester, {
     required String cardId,
     required double screenWidth,
     required double cardWidth,
     required Type presentation,
+    String? entry,
   }) async {
     await runWithOverflowCollection((_) async {
       final router = await _pumpDashboard(
@@ -251,7 +253,7 @@ void main() {
               'a $presentation — a case that drifted onto the other branch '
               'would leave this one unmeasured');
 
-      await tester.tap(find.bySemanticsIdentifier('card-detail-$key'));
+      await tester.tap(find.bySemanticsIdentifier(entry ?? 'card-detail-$key'));
       await settleIgnoringAnimations(tester);
 
       final detail = _currentRouteName(router)!;
@@ -315,6 +317,46 @@ void main() {
         }
       });
     }
+  });
+
+  // The Firewall card has no detail button: each of its rows opens a different
+  // page (#1130), so a row is what has to close the presentation first. One row
+  // stands for all four, because they share one `navigateFromCard` call.
+  group('a presented Firewall card\'s row', () {
+    testWidgets('dialog branch', (tester) async {
+      final handle = tester.ensureSemantics();
+      try {
+        final widthCase = pickedTileCase();
+        await enterAndReturn(
+          tester,
+          cardId: 'firewall_overview',
+          screenWidth: widthCase.screenWidth,
+          cardWidth: widthCase.cardWidth,
+          presentation: AppDialog,
+          entry: 'firewall-card-dmz',
+        );
+      } finally {
+        handle.dispose();
+      }
+    });
+
+    testWidgets('sheet branch', (tester) async {
+      final handle = tester.ensureSemantics();
+      try {
+        const screenWidth =
+            kCardPresentationWidth + kCardPresentationInset * 2 - 1;
+        await enterAndReturn(
+          tester,
+          cardId: 'firewall_overview',
+          screenWidth: screenWidth,
+          cardWidth: cardWidthAt(screenWidth, UspWidgetSpecs.popupColumns),
+          presentation: AppBottomSheet,
+          entry: 'firewall-card-dmz',
+        );
+      } finally {
+        handle.dispose();
+      }
+    });
   });
 
   /// The other half of the guard: a card in the grid pops nothing.

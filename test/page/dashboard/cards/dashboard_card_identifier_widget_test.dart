@@ -55,10 +55,10 @@ import '../../../util/overflow_probe.dart';
 
 /// Card id → the identifier its detail-entry button must publish.
 ///
-/// Thirteen buttons over eleven distinct route targets: `wifi_status` and
+/// Twelve buttons over ten distinct route targets: `wifi_status` and
 /// `wifi_networks` both enter `uspWifiSettings`, and `system_status` and
 /// `traffic_analysis` both enter `uspStatistics`. That is why the id is the card's
-/// and not the route's — a route-derived id would leave four of the thirteen
+/// and not the route's — a route-derived id would leave four of the twelve
 /// buttons sharing a handle with another card.
 ///
 /// One caveat for the specs written against this table: `device_info`'s footer is
@@ -68,7 +68,8 @@ import '../../../util/overflow_probe.dart';
 /// arrives, not when the card does. Every case here supplies one (the fixture is
 /// `kitchenSinkOverrides`), so this file measures the hook and not the gate; a spec
 /// that clicks it straight after load has to wait for the button rather than assume
-/// it. The other twelve are unconditional.
+/// it. The other eleven are unconditional. Thirteen until #1130 took
+/// `firewall_overview`'s away: its rows open four different pages.
 const Map<String, String> kCardDetailIdentifiers = {
   'device_info': 'card-detail-device-info',
   'network_status': 'card-detail-network-status',
@@ -81,7 +82,6 @@ const Map<String, String> kCardDetailIdentifiers = {
   'time_settings': 'card-detail-time-settings',
   'dhcp_reservations': 'card-detail-dhcp-reservations',
   'port_forwarding': 'card-detail-port-forwarding',
-  'firewall_overview': 'card-detail-firewall-overview',
   'traffic_analysis': 'card-detail-traffic-analysis',
 };
 
@@ -91,11 +91,11 @@ const Map<String, String> kCardDetailIdentifiers = {
 /// `cardPopupIdentifierFor` it would agree with any renaming, including one that
 /// pointed two cards at one tile.
 ///
-/// Seventeen, not thirteen. A tile is not the detail button — it is the control
+/// Seventeen, not twelve. A tile is not the detail button — it is the control
 /// that opens the presentation — so the set is every card with a popup path, which
 /// is the whole registry except `stats_panel` (`UspWidgetSpecs.cardsWithoutPopupForm`:
 /// it is the one card not built through `DashboardCardTemplate`, so it has no popup
-/// form to render). That deliberately includes the four cards with no detail entry:
+/// form to render). That deliberately includes the five cards with no detail entry:
 /// for them the presentation is the only place their content can be read once
 /// degraded, so the tile is the only handle that matters at all.
 const Map<String, String> kCardPopupIdentifiers = {

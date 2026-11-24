@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/usp/models/sse_notification.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/wan_interface_path_provider.dart';
+import 'package:privacy_gui/generated/subscriptions.g.dart';
 
 import '../mocks.dart';
 
@@ -258,8 +259,43 @@ void main() {
       );
     });
 
-    test('other Pool.{i} values map to nothing', () async {
-      await sendAndExpectEmpty('Device.DHCPv4.Server.Pool.4.LeaseTime');
+    test('the pool range and mask → dhcpPoolSettings', () async {
+      // The values a LAN subnet change moves after the Set has returned
+      // (PrivacyGUI#1729): MinAddress / MaxAddress follow the new mask late.
+      await sendAndExpect(
+        'Device.DHCPv4.Server.Pool.4.MinAddress',
+        InvalidationDomain.dhcpPoolSettings,
+      );
+      await sendAndExpect(
+        'Device.DHCPv4.Server.Pool.4.MaxAddress',
+        InvalidationDomain.dhcpPoolSettings,
+      );
+      await sendAndExpect(
+        'Device.DHCPv4.Server.Pool.4.SubnetMask',
+        InvalidationDomain.dhcpPoolSettings,
+      );
+    });
+
+    test('other Pool.{i} settings → dhcpPoolSettings, not the DHCP lists',
+        () async {
+      await sendAndExpect(
+        'Device.DHCPv4.Server.Pool.4.LeaseTime',
+        InvalidationDomain.dhcpPoolSettings,
+      );
+    });
+
+    test('the app subscribes the pool settings this mapping relies on', () {
+      // lanDataProvider learns the pool the router settled on after a mask
+      // change only from these ValueChanges (PrivacyGUI#1729). They arrive
+      // because a core subscription covers the whole pool table; one narrowed
+      // to the Client table would drop them with nothing else failing.
+      bool subscribed(String path) => coreSubscriptions
+          .any((s) => s.$2 == 'ValueChange' && path.startsWith(s.$3));
+
+      for (final leaf in ['MinAddress', 'MaxAddress', 'SubnetMask']) {
+        expect(subscribed('Device.DHCPv4.Server.Pool.1.$leaf'), isTrue,
+            reason: 'no core ValueChange subscription covers Pool.{i}.$leaf');
+      }
     });
 
     test('Device.DHCPv4.*.StaticAddress.* → dhcpReservations', () async {
@@ -288,6 +324,117 @@ void main() {
       await sendAndExpect(
         'Device.Ethernet.Interface.1.Status',
         InvalidationDomain.ethernetInterfaces,
+      );
+    });
+
+    // The payload the router sends when the hardware privacy switch or a save
+    // changes the mode, measured on 2.0.4.26102917 (PrivacyGUI#1755).
+    test('the MAC filter mode leaf → macFilter', () async {
+      await sendAndExpect(
+        'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode',
+        InvalidationDomain.macFilter,
+      );
+    });
+
+    test('another Network leaf is not macFilter', () async {
+      await sendAndExpectEmpty('Device.WiFi.DataElements.Network.ControllerID');
+    });
+
+    test('the app subscribes the MAC filter mode leaf, not the Network object',
+        () {
+      // The menu's Instant Privacy badge learns of a switch move only from this
+      // ValueChange. The whole `Network.` object would push every mesh change.
+      final mode = coreSubscriptions.where((s) =>
+          s.$2 == 'ValueChange' &&
+          s.$3 == 'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode');
+      expect(mode, hasLength(1),
+          reason: 'no core ValueChange subscription on the mode leaf');
+      expect(
+          coreSubscriptions
+              .where((s) => s.$3 == 'Device.WiFi.DataElements.Network.'),
+          isEmpty);
+    });
+
+    // The payloads the controller sends when an agent leaves and rejoins the mesh,
+    // measured on 2.0.4.26111122 (PrivacyGUI#1828).
+    test('a node leaving DataElements (ObjectDeletion) → meshNodes', () async {
+      await sendAndExpect(
+        'Device.WiFi.DataElements.Network.Device.5.',
+        InvalidationDomain.meshNodes,
+        type: 'ObjectDeletion',
+      );
+    });
+
+    test('a node joining DataElements (ObjectCreation) → meshNodes', () async {
+      await sendAndExpect(
+        'Device.WiFi.DataElements.Network.Device.6.',
+        InvalidationDomain.meshNodes,
+        type: 'ObjectCreation',
+      );
+    });
+
+    test('a node row without the trailing dot is still meshNodes', () async {
+      await sendAndExpect(
+        'Device.WiFi.DataElements.Network.Device.5',
+        InvalidationDomain.meshNodes,
+        type: 'ObjectDeletion',
+      );
+    });
+
+    test('an object event on a row nested under a node is not meshNodes',
+        () async {
+      await sendAndExpectEmpty(
+        'Device.WiFi.DataElements.Network.Device.1.Radio.1.BSS.2.STA.7.',
+        type: 'ObjectCreation',
+      );
+    });
+
+    test('a value under the node table is not meshNodes', () async {
+      await sendAndExpectEmpty(
+          'Device.WiFi.DataElements.Network.Device.5.MultiAPDevice.Backhaul.LinkType');
+    });
+
+    test('the node table prefix does not take the MAC filter mode leaf',
+        () async {
+      await sendAndExpect(
+        'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode',
+        InvalidationDomain.macFilter,
+      );
+    });
+
+    test('the app subscribes the node table\'s object events, not its values',
+        () {
+      // The topology learns of a node joining or leaving only from these two. A
+      // ValueChange on the table would push every node metric as it moves.
+      const table = 'Device.WiFi.DataElements.Network.Device.';
+      final onTable = coreSubscriptions.where((s) => s.$3 == table);
+      expect(onTable.map((s) => s.$2),
+          unorderedEquals(['ObjectCreation', 'ObjectDeletion']));
+    });
+
+    // What an update moves: the client's Status and LastError, and its host
+    // name's Status and LastUpdate (PrivacyGUI#641).
+    test('a DDNS client status → dynamicDns', () async {
+      await sendAndExpect(
+        'Device.DynamicDNS.Client.1.Status',
+        InvalidationDomain.dynamicDns,
+      );
+    });
+
+    test('a DDNS host name status → dynamicDns', () async {
+      await sendAndExpect(
+        'Device.DynamicDNS.Client.1.Hostname.1.Status',
+        InvalidationDomain.dynamicDns,
+      );
+    });
+
+    test('the app subscribes the DDNS client table', () {
+      // The page's status follows an update only through this ValueChange; it
+      // covers the host names, which are rows of the client table.
+      expect(
+        coreSubscriptions.where((s) =>
+            s.$2 == 'ValueChange' && s.$3 == 'Device.DynamicDNS.Client.'),
+        hasLength(1),
       );
     });
 

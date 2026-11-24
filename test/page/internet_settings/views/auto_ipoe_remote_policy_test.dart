@@ -20,6 +20,8 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../mocks/provider_overrides/mock_common.dart';
 import '../../../mocks/test_data/auto_ipoe_test_data.dart';
+import 'package:privacy_gui/page/instant_setup/models/troubleshooting_ending.dart';
+import 'package:privacy_gui/route/constants.dart';
 
 class _PolicyData extends AutoIPoEDataNotifier {
   int resolutions = 0;
@@ -78,7 +80,10 @@ void _supportedDeviceTests() {
       final data = _PolicyData();
       final page = _PolicyPage();
       final router = GoRouter(routes: [
-        GoRoute(path: '/', builder: (_, __) => const PnpIPoEView()),
+        GoRoute(
+            path: '/',
+            builder: (_, __) => const PnpIPoEView(
+                ending: TroubleshootingEnding(exitLocation: RoutePath.pnp))),
       ]);
       addTearDown(router.dispose);
       await tester.pumpWidget(ProviderScope(

@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/ai/ai_logging.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/page/ai_assistant/models/stored_aws_credentials.dart';
 
 /// Single key holding the whole record.
 ///
@@ -21,10 +21,6 @@ const _kRecordKey = 'ai_assistant_aws_credentials';
 /// abandoning that place is unsafe — so this only stops a caller (a `View`
 /// awaiting a restore, say) from hanging on a keychain that never answers.
 const _kCallerTimeout = Duration(seconds: 10);
-
-final awsCredentialsStoreProvider = Provider<AwsCredentialsStore>((ref) {
-  return AwsCredentialsStore(const FlutterSecureStorage());
-});
 
 /// Bedrock credentials entered by the user, held in encrypted storage.
 ///
@@ -50,7 +46,7 @@ final awsCredentialsStoreProvider = Provider<AwsCredentialsStore>((ref) {
 /// stalled operation's place in the queue is what makes credentials go missing
 /// or come back.
 ///
-/// The ordering guarantee holds because [awsCredentialsStoreProvider] is a
+/// The ordering guarantee holds because `awsCredentialsStoreProvider` is a
 /// plain [Provider], i.e. one instance for the session. Making it `autoDispose`
 /// would hand out fresh chains and revive the race invisibly.
 ///
@@ -325,19 +321,4 @@ class AwsCredentialsStore {
     final trimmed = value.trim();
     return trimmed.isEmpty ? null : trimmed;
   }
-}
-
-/// Credentials loaded from storage.
-class StoredAwsCredentials {
-  const StoredAwsCredentials({
-    required this.accessKeyId,
-    required this.secretAccessKey,
-    this.modelId,
-  });
-
-  final String accessKeyId;
-  final String secretAccessKey;
-
-  /// Model chosen when these credentials were saved, if any.
-  final String? modelId;
 }

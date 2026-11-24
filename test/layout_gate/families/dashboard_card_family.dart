@@ -114,7 +114,7 @@ abstract class _CardFamily extends CardOverflowFamily {
 }
 
 /// The main sweep: every card, at the narrowest realization of each column span
-/// its spec declares, on every tab, in every locale. 1,638 cells.
+/// its spec declares, on every tab, in every locale. 1,586 cells.
 ///
 /// The only family that dumps PNGs and collects report rows, which is the whole
 /// reason #1343 is the ticket the ratchet and report hooks were shaped by.

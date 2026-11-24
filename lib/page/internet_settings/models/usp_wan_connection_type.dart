@@ -9,6 +9,19 @@ const kPppKeepAliveSecondsMax = 180;
 const kPppKeepAliveDefaultSeconds = 30;
 const kPppCredentialMaxLength = 255;
 
+/// The WAN VLAN ID the page takes: 3–4094, LinksysWRT 1.0's rule, kept for 2.0
+/// on 2026-11-02 (issue #1754). The firmware takes TR-181's 1–4094
+/// (linksys/feed_usp PR #75) and ships the WAN row disabled with ID 1
+/// (linksys/targets PR #293), so `Enable` alone would tag the WAN with VLAN 1.
+/// Refusing 1 and 2 is what makes the user type an ID with the switch.
+const kVlanIdMin = 3;
+const kVlanIdMax = 4094;
+
+/// TR-181 `VLANPriority`: 0–7, or -1 for none. -1 is what the shipped WAN row
+/// reads and what clears a priority; 0 is a priority of its own.
+const kVlanPriorityNone = -1;
+const kVlanPriorityMax = 7;
+
 /// The messages netmngr refuses a WAN write with (linksys/feed_usp#55, patches
 /// 036 and 039; fault 7012, nothing written). Each is the refused leaf's whole
 /// `errorMessage`, measured on 2.0.3.26102008. The service reads them off a
@@ -133,4 +146,8 @@ enum UspWanConnectionType {
   /// Whether this type runs PPP over a tunnel row: `GRE.Tunnel` for PPTP,
   /// `L2TPv2.Tunnel` for L2TP.
   bool get isTunnel => this == pptp || this == l2tp;
+
+  /// Whether the page offers WAN VLAN tagging on this type (linksys/FWDEV issue #231):
+  /// every type but Bridge and Auto-IPoE (issue #1754).
+  bool get supportsVlan => this == dhcp || this == staticIp || isPppBased;
 }

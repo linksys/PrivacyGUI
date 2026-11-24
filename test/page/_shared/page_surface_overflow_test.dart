@@ -57,14 +57,16 @@ import '../../util/settle.dart';
 /// pages, and why those, lives in `page_surface_cases.dart`. This file is
 /// the declaration, the fifty-one pins, and the readability guards that sit beside
 /// the fixes this family has prompted — **16 fixed sites in `lib/`, 14 of them from
-/// wave 4 alone**, guarded by **13 groups**. The two counts differ because rule 4's
+/// wave 4 alone**, guarded by **12 groups** (13 until #1836 deleted the USP test
+/// console, and with it wave 4's fifth site and its group). The two counts differ because rule 4's
 /// unit is the site and a group's unit is the page. `admin` holds the wave's sixth and
 /// seventh (a responsive band in the page, a header in one card and a skeleton row in
 /// another — two sites, three parts) and `apps` its eighth, ninth and tenth; in both
 /// cases a single group asserts all of them, because the later ones are only reachable
 /// through the shape the responsive fix changed, so guarding them separately would mean
 /// pumping the same page twice to read two halves of one layout. The groups' own docs
-/// carry those ordinals, which is how the 14 can be counted back out of this file.
+/// carry those ordinals, which is how 13 of the 14 can be counted back out of this
+/// file; the fifth left with `test_console`.
 /// `kReadabilityGuardPages` in
 /// `test/layout_gate/page_sweep_suites.dart` is what pins that mapping, one entry per
 /// group title.
@@ -276,9 +278,11 @@ void main() {
   // of its cells failed — and v2.40.2 fixed it. The tripwire that pinned the
   // arithmetic (`test/page/instant_setup/views/pnp_setup_view_test.dart`) went red
   // with an empty incident list on the bump and was deleted, which is the order §8's
-  // graduation rule asks for: fix to zero, then declare, then capture.
+  // graduation rule asks for: fix to zero, then declare, then capture. It was
+  // `page.pnp_setup` until #1511 P4; it and the three below now sweep
+  // `PnpFlowFrameView`, which is what draws the stepper and the status screens.
   runOverflowSweep(
-    family: PageSurfaceFamily(kPnpSetupPageCase),
+    family: PageSurfaceFamily(kPnpFlowFramePageCase),
     expectedCellCount: 234,
   );
 
@@ -290,7 +294,7 @@ void main() {
   // in the same screenful. `page_surface_cases.dart` carries why it is a second case
   // rather than a relaxed first one, and why it is the loader exemption's second entry.
   runOverflowSweep(
-    family: PageSurfaceFamily(kPnpSetupFirmwarePageCase),
+    family: PageSurfaceFamily(kPnpFlowFrameFirmwarePageCase),
     expectedCellCount: 234,
   );
 
@@ -303,11 +307,11 @@ void main() {
   // why `isSplitMode` being derived is what makes `LayoutBlock` / `QrImageView` the only
   // honest discriminators.
   runOverflowSweep(
-    family: PageSurfaceFamily(kPnpSetupCompleteSplitPageCase),
+    family: PageSurfaceFamily(kPnpFlowFrameCompleteSplitPageCase),
     expectedCellCount: 234,
   );
   runOverflowSweep(
-    family: PageSurfaceFamily(kPnpSetupCompleteUnifiedPageCase),
+    family: PageSurfaceFamily(kPnpFlowFrameCompleteUnifiedPageCase),
     expectedCellCount: 234,
   );
 
@@ -315,8 +319,8 @@ void main() {
   // session. All six arrived at zero, so no widget fix landed with this wave; the
   // prediction it was filed on ("expect finds in narrow-column login forms") is
   // falsified in `page_surface_cases.dart`'s wave 3 header. Five needed only a
-  // declaration; `auto_parent_first_login` needed the wave's one new fixture, and it
-  // is the family's only loader-is-content page.
+  // declaration; the sixth, `auto_parent_first_login`, needed the wave's one new
+  // fixture, and #1511 P0 deleted it as dead code.
   runOverflowSweep(
     family: PageSurfaceFamily(kHomePageCase),
     expectedCellCount: 234,
@@ -339,11 +343,6 @@ void main() {
 
   runOverflowSweep(
     family: PageSurfaceFamily(kMenuPageCase),
-    expectedCellCount: 234,
-  );
-
-  runOverflowSweep(
-    family: PageSurfaceFamily(kAutoParentFirstLoginPageCase),
     expectedCellCount: 234,
   );
 
@@ -442,11 +441,6 @@ void main() {
   );
 
   runOverflowSweep(
-    family: PageSurfaceFamily(kTestConsolePageCase),
-    expectedCellCount: 234,
-  );
-
-  runOverflowSweep(
     family: PageSurfaceFamily(kSliverDashboardPageCase),
     expectedCellCount: 234,
   );
@@ -468,6 +462,36 @@ void main() {
 
   runOverflowSweep(
     family: PageSurfaceFamily(kDmzPageCase),
+    expectedCellCount: 234,
+  );
+
+  // The same page with the DMZ host given by MAC (#1775).
+  runOverflowSweep(
+    family: PageSurfaceFamily(kDmzMacPageCase),
+    expectedCellCount: 234,
+  );
+
+  // Advanced Settings → DDNS (#641): the provider card and the status card; see
+  // `kDdnsPageCase`.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kDdnsPageCase),
+    expectedCellCount: 234,
+  );
+
+  // #1511 P4: the PnP wizard's steps as pages of their own. `pnp_setup` swept the
+  // Wi-Fi step under the stepper; since the steps became routes the frame and the
+  // step are separate page views, and Your Network is swept for the first time —
+  // it was the wizard's third step, behind two taps per cell.
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPnpWifiStepPageCase),
+    expectedCellCount: 234,
+  );
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPnpGuestStepPageCase),
+    expectedCellCount: 234,
+  );
+  runOverflowSweep(
+    family: PageSurfaceFamily(kPnpYourNetworkStepPageCase),
     expectedCellCount: 234,
   );
 
@@ -1544,158 +1568,6 @@ void main() {
             'height it leaves alone above are part of the fix, and a title that '
             'reaches the ellipsis behind maxLines: 2 has lost what the fix was '
             'protecting:\n${failures.join('\n')}',
-      );
-    });
-  });
-
-  group('readability at the site wave 4 fixed in test_console', () {
-    // The wave's fifth fix and the epic's only locale-independent one:
-    // `usp_test_console_view.dart:1147` overflowed 52 of 234 cells — every locale at
-    // 320px by +109px and every locale at 480px by +29px, the *same* number each
-    // time, because the five `Notification Type` items are hard-coded English and
-    // `DropdownButtonFormField` sizes itself to the widest of them. The console had
-    // no narrow layout at all: two `Expanded(flex: 1)` panes either side of a
-    // divider, so a 320px screen gave each one 159px.
-    //
-    // The fix stacks the panes below 600px, so this is a reflow and rule 4's usual
-    // text pair is again the wrong instrument. Two claims need pinning, and the
-    // second is the one that makes the first worth making:
-    //
-    // 1. **The axis, in both directions.** Stacked below 600px, side by side at and
-    //    above it. Without the second half the threshold could drift to
-    //    `double.infinity` and every sweep would stay green while the desktop
-    //    console — the only place this page is ever used — lost its log panel to the
-    //    bottom of a scroll.
-    // 2. **The width the reflow was for.** The dropdown asks 236px; it was granted
-    //    127px at 320px and 207px at 480px. Asserting the grant at all nine widths
-    //    says what the sweep's green cannot: not merely that nothing overflowed, but
-    //    that the widest item still has room, which is the difference between this
-    //    fix and an `isExpanded: true` that would have ellipsized the label and gone
-    //    green just the same.
-    testWidgets('the console stacks its panes below 600px, dropdown kept whole',
-        (tester) async {
-      final failures = <String>[];
-      // Layout mode is a function of width alone *and* nothing on this page is
-      // localized, so the eight non-320 widths are read in one locale — `ar`, which
-      // is the one that matters here: in RTL the `Row` puts the controls on the
-      // right, so it is the side-by-side branch's mirror image and the only cell
-      // that would catch a shape assertion written as "log is to the right of".
-      final ar = AppLocalizations.supportedLocales
-          .firstWhere((locale) => localeTag(locale) == 'ar');
-
-      /// What the widest item, `4 - OperationComplete`, asks of the field.
-      ///
-      /// Derived from the pre-fix run rather than from a text metric: the field was
-      /// granted 127px at 320px and reported +109px, and 207px at 480px and reported
-      /// +29px. Both say 236. A literal for the reason the other wave-4 guards give
-      /// for theirs — a threshold or a font change should have to restate its effect
-      /// here rather than recompute agreement with itself.
-      const dropdownAsks = 236.0;
-
-      for (final width in kPageSweepWidths) {
-        final stackExpected = width < 600.0;
-        final locales =
-            width == 320.0 ? AppLocalizations.supportedLocales : <Locale>[ar];
-
-        for (final locale in locales) {
-          final tag = localeTag(locale);
-          await setLayoutSurface(tester, Size(width, kPageSweepHeight));
-          await tester.pumpWidget(KeyedSubtree(
-            key: ValueKey('console-panes-$tag-${width.toInt()}'),
-            child: pageSurfaceHost(
-              view: kTestConsolePageCase.view(),
-              locale: locale,
-              overrides: kTestConsolePageCase.overrides(),
-            ),
-          ));
-          await settleIgnoringAnimations(tester);
-
-          // The control pane's root and the log pane's list. Both are this page's
-          // only instance of their type — the count assertion below is what says so
-          // out loud, and it is also what notices a pane being dropped, which is why
-          // `kTestConsolePageCase` requires `SelectionArea` as well.
-          final controls = find.byType(SingleChildScrollView);
-          final log = find.byType(SelectionArea);
-          final dropdown = find.byType(DropdownButtonFormField<int>);
-          if (controls.evaluate().length != 1 ||
-              log.evaluate().length != 1 ||
-              dropdown.evaluate().length != 1) {
-            failures.add('$tag @${width.toInt()}px: found '
-                '${controls.evaluate().length} control pane(s), '
-                '${log.evaluate().length} log pane(s) and '
-                '${dropdown.evaluate().length} dropdown(s), so nothing was '
-                'measured');
-            continue;
-          }
-
-          final controlRect = tester.getRect(controls);
-          final logRect = tester.getRect(log);
-          // Read as disjointness on one axis and overlap on the other, rather than
-          // as "same top" or "log is to the right of": these two rects are a pane
-          // root and a sub-part of the other pane (the list sits under the log's
-          // header, 65px lower), and `ar` puts the controls on the right. Disjoint
-          // horizontally + overlapping vertically is true of both, and of neither
-          // stacking.
-          //
-          // Both computed, both asserted: a layout that is neither — overlapping
-          // panes, or one collapsed to nothing — fails whichever direction it was
-          // pumped in, where a single `stacked != expected` would let it pass half
-          // the time.
-          final stacked = logRect.top >= controlRect.bottom - 0.5 &&
-              (logRect.width - controlRect.width).abs() < 0.5;
-          final sideBySide = (logRect.left >= controlRect.right - 0.5 ||
-                  controlRect.left >= logRect.right - 0.5) &&
-              logRect.top < controlRect.bottom &&
-              controlRect.top < logRect.bottom;
-          final geometry = 'controls '
-              '${controlRect.left.toStringAsFixed(1)}..'
-              '${controlRect.right.toStringAsFixed(1)} × '
-              '${controlRect.top.toStringAsFixed(1)}..'
-              '${controlRect.bottom.toStringAsFixed(1)}, log '
-              '${logRect.left.toStringAsFixed(1)}..'
-              '${logRect.right.toStringAsFixed(1)} × '
-              '${logRect.top.toStringAsFixed(1)}..'
-              '${logRect.bottom.toStringAsFixed(1)}';
-          if (stacked != stackExpected || sideBySide == stackExpected) {
-            failures.add('$tag @${width.toInt()}px: expected the panes '
-                '${stackExpected ? 'stacked' : 'side by side'} but read '
-                'stacked=$stacked sideBySide=$sideBySide — $geometry');
-          }
-
-          final dropdownWidth = tester.getSize(dropdown).width;
-          if (dropdownWidth < dropdownAsks - 0.5) {
-            failures.add('$tag @${width.toInt()}px: the Notification Type '
-                'dropdown was granted '
-                '${dropdownWidth.toStringAsFixed(1)}px for a '
-                '${dropdownAsks.toStringAsFixed(1)}px widest item — $geometry');
-          }
-
-          // The half a width assertion cannot see. `1 - ValueChange` is the
-          // selected item and so the one actually painted; if the field is ever
-          // made to fit by ellipsis rather than by width, this is where it shows.
-          final selected = find.descendant(
-            of: dropdown,
-            matching: find.text('1 - ValueChange'),
-          );
-          if (selected.evaluate().isEmpty) {
-            failures.add('$tag @${width.toInt()}px: the dropdown painted no '
-                '"1 - ValueChange", so its selection was not measured');
-          } else if (tester.isTextClipped(selected.first)) {
-            failures.add('$tag @${width.toInt()}px: the dropdown label '
-                'ellipsized despite being granted '
-                '${dropdownWidth.toStringAsFixed(1)}px');
-          }
-        }
-      }
-
-      expect(
-        failures,
-        isEmpty,
-        reason: 'the #1380 fix at usp_test_console_view.dart:1147 stacks the '
-            "console's two panes below 600px; the axis in both directions and "
-            'the 236px the reflow was for are both part of the fix, and a '
-            'dropdown that fits by ellipsis has lost what it '
-            'bought:\n${failures.join('\n')}',
       );
     });
   });

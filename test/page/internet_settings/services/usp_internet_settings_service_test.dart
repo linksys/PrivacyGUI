@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_typ
 import 'package:privacy_gui/page/internet_settings/services/usp_internet_settings_service.dart';
 
 import '../../../mocks/test_data/internet_settings_test_data.dart';
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -203,6 +204,11 @@ Map<String, dynamic> Function(List<String>) createFetchMockHandler({
   };
 }
 
+/// The last Set that wrote the VLAN row, from `verify(...).captured`.
+Map<String, dynamic> _vlanSetOf(List<dynamic> captured) =>
+    captured.whereType<Map<String, dynamic>>().lastWhere(
+        (params) => params.keys.any((k) => k.contains('VLANTermination')));
+
 void main() {
   late MockUspClient mockUsp;
   late UspInternetSettingsService service;
@@ -346,14 +352,51 @@ void main() {
       expect(result.form.pppPassword, equals(''));
       expect(result.form.connectionTrigger, equals('AlwaysOn'));
       expect(result.form.vlanEnabled, isFalse);
+      expect(result.form.vlanPriority, equals(-1));
       expect(result.pppInstancePath, isNull);
       expect(result.vlanInstancePath, isNull);
     });
 
+    test('reads the shipped WAN VLAN row: off, VLAN ID 1, no priority',
+        () async {
+      // As read on 2.0.4.26111203 (issue #1754).
+      final handler = createFetchMockHandler(vlanResponse: const {
+        'Device.Ethernet.VLANTermination.1.Enable': '0',
+        'Device.Ethernet.VLANTermination.1.VLANID': '1',
+        'Device.Ethernet.VLANTermination.1.VLANPriority': '-1',
+      });
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async =>
+          handler(invocation.positionalArguments[0] as List<String>));
+
+      final result = await service.fetchSettings();
+
+      expect(result.vlanInstancePath,
+          equals('Device.Ethernet.VLANTermination.1.'));
+      expect(result.form.vlanEnabled, isFalse);
+      expect(result.form.vlanId, equals(1));
+      expect(result.form.vlanPriority, equals(-1));
+    });
+
+    test('reads a tagged WAN with its ID and priority', () async {
+      final handler = createFetchMockHandler(vlanResponse: const {
+        'Device.Ethernet.VLANTermination.1.Enable': '1',
+        'Device.Ethernet.VLANTermination.1.VLANID': '100',
+        'Device.Ethernet.VLANTermination.1.VLANPriority': '5',
+      });
+      when(() => mockUsp.get(any())).thenAnswer((invocation) async =>
+          handler(invocation.positionalArguments[0] as List<String>));
+
+      final result = await service.fetchSettings();
+
+      expect(result.form.vlanEnabled, isTrue);
+      expect(result.form.vlanId, equals(100));
+      expect(result.form.vlanPriority, equals(5));
+    });
+
     test('two VLAN terminations read as none: which is the WAN is unknown',
         () async {
-      // No leaf ties the WAN to its VLAN row on 2.0.3.26102008 (it has none
-      // at all), so a second row is not guessed at.
+      // 2.0.4.26111203 ships one row (issue #1754), so a second row is not guessed
+      // at.
       final handler = createFetchMockHandler(vlanResponse: {
         ..._vlanResponse,
         'Device.Ethernet.VLANTermination.3.Enable': true,
@@ -668,6 +711,149 @@ void main() {
       expect(dhcpv6['Device.DHCPv6.Client.1.Enable'], isFalse);
     });
 
+    test('steps with nothing to write do not make a later fault partly applied',
+        () async {
+      // PPPoE On Demand with the credentials, the connection mode and the VLAN
+      // unchanged: the PPP link, PPP fields and VLAN steps have nothing to
+      // write, and the generated update answers each without sending. The
+      // IPv6 Set is the save's first write, so its fault leaves the router as
+      // it was, and the error says only why (issue #1711).
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'Device.IP.Interface.2.IPv6Enable': (
+                    code: 7004,
+                    message: 'Parameter not writable',
+                  ),
+                },
+                success: false,
+              ));
+      const original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.pppoe,
+        connectionTrigger: 'OnDemand',
+        idleDisconnectTime: 15,
+        ipv6Enabled: true,
+      );
+      final edited = original.copyWith(ipv6Enabled: false);
+
+      await expectLater(
+        service.saveAll(original, edited,
+            pppInstancePath: 'Device.PPP.Interface.1.',
+            vlanInstancePath: 'Device.Ethernet.VLANTermination.1.'),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+      verify(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .called(1);
+    });
+
+    test(
+        'a Keep Alive save that only rewrites the router\'s echo values '
+        'does not make a later fault partly applied', () async {
+      // Keep Alive sends its LCP echo values on every save (FWDEV#212), so the
+      // PPP fields step lands even when nothing on the form changed there.
+      // Only the IPv6 change is the user's, and it is refused (issue #1711).
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((invocation) async {
+        final params =
+            invocation.positionalArguments[0] as Map<String, dynamic>;
+        if (params.keys.any((k) => k.endsWith('IPv6Enable'))) {
+          return UspEnvelopeTestData.parameterErrors(
+            {
+              'Device.IP.Interface.2.IPv6Enable': (
+                code: 7004,
+                message: 'Parameter not writable',
+              ),
+            },
+            success: false,
+          );
+        }
+        return {
+          'success': true,
+          'result': {'data': <String, dynamic>{}}
+        };
+      });
+      const original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.pppoe,
+        connectionTrigger: 'AlwaysOn',
+        lcpEchoInterval: 30,
+        ipv6Enabled: true,
+      );
+      final edited = original.copyWith(ipv6Enabled: false);
+
+      await expectLater(
+        service.saveAll(original, edited,
+            pppInstancePath: 'Device.PPP.Interface.1.'),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+      final sent = verify(() => mockUsp.set(captureAny(),
+              allowPartial: any(named: 'allowPartial')))
+          .captured
+          .cast<Map<String, dynamic>>();
+      expect(sent.any((p) => p.keys.any((k) => k.endsWith('LCPEcho'))), isTrue,
+          reason:
+              'the echo values are still sent, as on every Keep Alive save');
+    });
+
+    test(
+        'a Keep Alive save that changes the echo interval is partly applied '
+        'when a later step fails', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((invocation) async {
+        final params =
+            invocation.positionalArguments[0] as Map<String, dynamic>;
+        if (params.keys.any((k) => k.endsWith('IPv6Enable'))) {
+          return UspEnvelopeTestData.parameterErrors(
+            {
+              'Device.IP.Interface.2.IPv6Enable': (
+                code: 7004,
+                message: 'Parameter not writable',
+              ),
+            },
+            success: false,
+          );
+        }
+        return {
+          'success': true,
+          'result': {'data': <String, dynamic>{}}
+        };
+      });
+      const original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.pppoe,
+        connectionTrigger: 'AlwaysOn',
+        lcpEchoInterval: 30,
+        ipv6Enabled: true,
+      );
+      final edited = original.copyWith(lcpEchoInterval: 60, ipv6Enabled: false);
+
+      await expectLater(
+        service.saveAll(original, edited,
+            pppInstancePath: 'Device.PPP.Interface.1.'),
+        throwsA(isA<SavePartlyAppliedError>()),
+      );
+    });
+
+    test('a dropped Set after an earlier step landed is partly applied',
+        () async {
+      // The bench case (issue #1711): DHCP → PPPoE, AddressingType=IPCP lands
+      // through the ordered Set, and the PPP credentials Set never answers.
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenThrow('Set failed: Transport error: Request timeout');
+      const original =
+          UspInternetSettingsForm(connectionType: UspWanConnectionType.dhcp);
+      final edited = original.copyWith(
+        connectionType: UspWanConnectionType.pppoe,
+        pppUsername: 'user',
+        pppPassword: 'pass',
+      );
+
+      await expectLater(
+        service.saveAll(original, edited,
+            pppInstancePath: 'Device.PPP.Interface.1.'),
+        throwsA(isA<SavePartlyAppliedError>()
+            .having((e) => e.cause, 'cause', isA<NetworkError>())),
+      );
+    });
+
     test('adds PPP instance when switching to PPPoE without existing instance',
         () async {
       when(() => mockUsp.add(any())).thenAnswer((_) async => {
@@ -779,6 +965,115 @@ void main() {
         final map = params as Map<String, dynamic>;
         expect(map.keys.any((k) => k.contains('VLANTermination')), isFalse);
       }
+    });
+
+    group('WAN VLAN (issue #1754)', () {
+      // The shipped WAN row on a DHCP WAN: off, VLAN ID 1, no priority.
+      const shipped = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        vlanEnabled: false,
+        vlanId: 1,
+        vlanPriority: -1,
+        mtu: 1500,
+      );
+      const vlanRow = 'Device.Ethernet.VLANTermination.1.';
+
+      test('turning VLAN on sends Enable, the ID and the priority', () async {
+        await service.saveAll(
+          shipped,
+          shipped.copyWith(vlanEnabled: true, vlanId: 100, vlanPriority: 5),
+          vlanInstancePath: vlanRow,
+        );
+
+        final captured = verify(() => mockUsp.set(captureAny())).captured;
+        expect(
+            _vlanSetOf(captured),
+            equals({
+              '${vlanRow}Enable': true,
+              '${vlanRow}VLANID': 100,
+              '${vlanRow}VLANPriority': 5,
+            }));
+      });
+
+      test('a priority of none saves -1', () async {
+        final tagged =
+            shipped.copyWith(vlanEnabled: true, vlanId: 100, vlanPriority: 5);
+
+        await service.saveAll(
+          tagged,
+          tagged.copyWith(vlanPriority: -1),
+          vlanInstancePath: vlanRow,
+        );
+
+        final captured = verify(() => mockUsp.set(captureAny())).captured;
+        expect(_vlanSetOf(captured), equals({'${vlanRow}VLANPriority': -1}));
+      });
+
+      test('turning VLAN off sends Enable alone, whatever the ID and priority',
+          () async {
+        // From the PR #1794 review: a caller may hand over an ID and priority
+        // typed while VLAN was on; with VLAN off they are not the user's.
+        final tagged =
+            shipped.copyWith(vlanEnabled: true, vlanId: 100, vlanPriority: 5);
+
+        await service.saveAll(
+          tagged,
+          tagged.copyWith(vlanEnabled: false, vlanId: 0, vlanPriority: 3),
+          vlanInstancePath: vlanRow,
+        );
+
+        final captured = verify(() => mockUsp.set(captureAny())).captured;
+        expect(_vlanSetOf(captured), equals({'${vlanRow}Enable': false}));
+      });
+
+      test('a type change carries the VLAN edit made with it', () async {
+        const pppoe = UspInternetSettingsForm(
+          connectionType: UspWanConnectionType.pppoe,
+          pppUsername: 'user',
+          pppPassword: 'pass',
+          vlanEnabled: false,
+          vlanId: 1,
+          mtu: 1492,
+        );
+
+        await service.saveAll(
+          pppoe,
+          pppoe.copyWith(
+            connectionType: UspWanConnectionType.dhcp,
+            vlanEnabled: true,
+            vlanId: 100,
+            mtu: 1500,
+          ),
+          pppInstancePath: 'Device.PPP.Interface.1.',
+          vlanInstancePath: vlanRow,
+        );
+
+        final captured = verify(() => mockUsp.set(captureAny())).captured;
+        expect(_vlanSetOf(captured),
+            equals({'${vlanRow}Enable': true, '${vlanRow}VLANID': 100}));
+      });
+
+      test('a Bridge save leaves the VLAN row as the router holds it',
+          () async {
+        // VLAN switched on, its ID emptied, then the type changed to Bridge,
+        // which offers no VLAN field: none of it is the user's to save.
+        await service.saveAll(
+          shipped,
+          shipped.copyWith(
+            connectionType: UspWanConnectionType.bridge,
+            vlanEnabled: true,
+            vlanId: 0,
+          ),
+          vlanInstancePath: vlanRow,
+        );
+
+        final captured = verify(() => mockUsp.set(captureAny(),
+            allowPartial: any(named: 'allowPartial'))).captured;
+        expect(
+            captured.whereType<Map<String, dynamic>>().where((params) =>
+                params.keys.any((k) => k.contains('VLANTermination'))),
+            isEmpty);
+      });
     });
 
     test('switching to DHCP sends only AddressingType', () async {
@@ -1016,18 +1311,15 @@ void main() {
       // disconnect — a genuine config failure that must still reach the user,
       // never swallowed by the fire-and-forget handling.
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': false,
-                'result': {
-                  'data': <String, dynamic>{},
-                  'error': {
-                    'Device.IP.Interface.2.Enable': {
-                      'errorCode': 7006,
-                      'errorMessage': 'Invalid value',
-                    },
-                  },
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'Device.IP.Interface.2.Enable': (
+                    code: 7006,
+                    message: 'Invalid value',
+                  ),
                 },
-              });
+                success: false,
+              ));
 
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.dhcp,
@@ -1296,18 +1588,15 @@ void main() {
       // A fault code on Enable means the router rejected the exit before any
       // disconnect — a genuine failure the user must see.
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': false,
-                'result': {
-                  'data': <String, dynamic>{},
-                  'error': {
-                    'Device.IP.Interface.2.Enable': {
-                      'errorCode': 7006,
-                      'errorMessage': 'Invalid value',
-                    },
-                  },
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'Device.IP.Interface.2.Enable': (
+                    code: 7006,
+                    message: 'Invalid value',
+                  ),
                 },
-              });
+                success: false,
+              ));
 
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.bridge,
@@ -1316,9 +1605,12 @@ void main() {
         connectionType: UspWanConnectionType.dhcp,
       );
 
+      // The target mode's AddressingType=DHCP landed before Enable=true was
+      // refused, so the save is applied in part (issue #1711).
       await expectLater(
         service.saveAll(original, edited),
-        throwsA(isA<ServiceError>()),
+        throwsA(isA<SavePartlyAppliedError>()
+            .having((e) => e.cause, 'cause', isA<UspCompleteFailureError>())),
       );
     });
 
@@ -2315,24 +2607,27 @@ void main() {
               'result': {'data': <String, dynamic>{}}
             };
           }
-          return {
-            'success': false,
-            'result': {
-              'data': <String, dynamic>{},
-              'error': {
-                for (final p in paths)
-                  p: {
-                    'errorCode': 7012,
-                    'errorMessage': p.endsWith(refused)
-                        ? message
-                        : "SetParameterGroup: group set failed at '$tunnel$refused' "
-                            '(Invalid value)',
-                  },
-              },
+          return UspEnvelopeTestData.parameterErrors(
+            {
+              for (final p in paths)
+                p: (
+                  code: 7012,
+                  message: p.endsWith(refused)
+                      ? message
+                      : "SetParameterGroup: group set failed at '$tunnel$refused' "
+                          '(Invalid value)',
+                ),
             },
-          };
+            success: false,
+          );
         });
       }
+
+      /// The tunnel Set comes after the WAN row and the PPP link have landed,
+      /// so its refusal reaches the page as part of a save already applied in
+      /// part (issue #1711), with the check it names kept inside.
+      Matcher partlyApplied(Matcher cause) =>
+          isA<SavePartlyAppliedError>().having((e) => e.cause, 'cause', cause);
 
       for (final (leaf, message) in [
         ('RemoteEndpoints', 'Invalid server'),
@@ -2349,9 +2644,15 @@ void main() {
                     connectionType: UspWanConnectionType.dhcp, mtu: 1460),
                 pptpStatic,
                 pppInstancePath: pppPath),
-            throwsA(isA<InvalidInputError>()
-                .having((e) => e.field, 'field', message)
-                .having((e) => e.code, 'code', 7012)),
+            throwsA(allOf(
+              partlyApplied(isA<InvalidInputError>()
+                  .having((e) => e.field, 'field', message)
+                  .having((e) => e.code, 'code', 7012)),
+              // The wrapper reads as its cause in a log keyed on the code.
+              isA<SavePartlyAppliedError>()
+                  .having((e) => e.code, 'code', 7012)
+                  .having((e) => e.detail, 'detail', message),
+            )),
           );
         });
       }
@@ -2365,8 +2666,8 @@ void main() {
                   connectionType: UspWanConnectionType.dhcp, mtu: 1460),
               pptpStatic,
               pppInstancePath: pppPath),
-          throwsA(isA<InvalidInputError>()
-              .having((e) => e.field, 'field', 'Invalid DNS server')),
+          throwsA(partlyApplied(isA<InvalidInputError>()
+              .having((e) => e.field, 'field', 'Invalid DNS server'))),
         );
       });
 
@@ -2379,7 +2680,7 @@ void main() {
                   connectionType: UspWanConnectionType.dhcp, mtu: 1460),
               pptpStatic,
               pppInstancePath: pppPath),
-          throwsA(isA<UspCompleteFailureError>()),
+          throwsA(partlyApplied(isA<UspCompleteFailureError>())),
         );
       });
     });
@@ -2402,18 +2703,15 @@ void main() {
     test('a rejected bridge SET fails at once, without waiting', () {
       fakeAsync((async) {
         when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-            .thenAnswer((_) async => {
-                  'success': false,
-                  'result': {
-                    'data': <String, dynamic>{},
-                    'error': {
-                      'Device.IP.Interface.2.Enable': {
-                        'errorCode': 7006,
-                        'errorMessage': 'Invalid value',
-                      },
-                    },
+            .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                  {
+                    'Device.IP.Interface.2.Enable': (
+                      code: 7006,
+                      message: 'Invalid value',
+                    ),
                   },
-                });
+                  success: false,
+                ));
 
         Object? error;
         service
@@ -2610,20 +2908,17 @@ void main() {
     test('saveAll throws UspCompleteFailureError on SET failure', () async {
       // Mock for _resolveInstance()
       when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
-      // WASM v0.11.0 format: success=false
+      // Unified format: success=false
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': false,
-                'result': {
-                  'data': <String, dynamic>{},
-                  'error': {
-                    'Device.IP.Interface.2.MaxMTUSize': {
-                      'errorCode': 7004,
-                      'errorMessage': 'Parameter not writable',
-                    },
-                  },
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'Device.IP.Interface.2.MaxMTUSize': (
+                    code: 7004,
+                    message: 'Parameter not writable',
+                  ),
                 },
-              });
+                success: false,
+              ));
 
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.dhcp,
@@ -2637,26 +2932,21 @@ void main() {
       );
     });
 
-    test('saveAll throws UspPartialFailureError on SET partial failure',
-        () async {
+    test('a SET that lands in part is a save applied in part', () async {
       // Mock for _resolveInstance()
       when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
-      // WASM v0.11.0 format: success=true but has error field
+      // Unified format: success=true but errors has entries
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': true,
-                'result': {
-                  'data': {
-                    'Device.IP.Interface.2.MaxMTUSize': 1400,
-                  },
-                  'error': {
-                    'Device.IP.Interface.2.SomeOtherParam': {
-                      'errorCode': 7026,
-                      'errorMessage': 'Parameter does not exist',
-                    },
-                  },
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'Device.IP.Interface.2.SomeOtherParam': (
+                    code: 7026,
+                    message: 'Parameter does not exist',
+                  ),
                 },
-              });
+                success: true,
+                data: {'Device.IP.Interface.2.MaxMTUSize': 1400},
+              ));
 
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.dhcp,
@@ -2664,9 +2954,12 @@ void main() {
       );
       final edited = original.copyWith(mtu: 1400);
 
+      // MaxMTUSize landed though the Set failed: the router holds part of the
+      // save even with no step before it (issue #1711).
       expect(
         () => service.saveAll(original, edited),
-        throwsA(isA<UspPartialFailureError>()),
+        throwsA(isA<SavePartlyAppliedError>()
+            .having((e) => e.cause, 'cause', isA<UspPartialFailureError>())),
       );
     });
 
@@ -2674,18 +2967,15 @@ void main() {
       // Mock for _resolveInstance()
       when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': false,
-                'result': {
-                  'data': <String, dynamic>{},
-                  'error': {
-                    'Device.IP.Interface.2.MaxMTUSize': {
-                      'errorCode': 7004,
-                      'errorMessage': 'Parameter not writable',
-                    },
-                  },
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'Device.IP.Interface.2.MaxMTUSize': (
+                    code: 7004,
+                    message: 'Parameter not writable',
+                  ),
                 },
-              });
+                success: false,
+              ));
 
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.dhcp,
@@ -2705,24 +2995,21 @@ void main() {
       }
     });
 
-    test('UspPartialFailureError contains success and failure paths', () async {
+    test('a SET that lands in part keeps its success and failure paths',
+        () async {
       // Mock for _resolveInstance()
       when(() => mockUsp.get(any())).thenAnswer((_) async => aliasResponse);
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': true,
-                'result': {
-                  'data': {
-                    'Device.IP.Interface.2.MaxMTUSize': 1400,
-                  },
-                  'error': {
-                    'Device.IP.Interface.2.SomeOtherParam': {
-                      'errorCode': 7026,
-                      'errorMessage': 'Parameter does not exist',
-                    },
-                  },
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'Device.IP.Interface.2.SomeOtherParam': (
+                    code: 7026,
+                    message: 'Parameter does not exist',
+                  ),
                 },
-              });
+                success: true,
+                data: {'Device.IP.Interface.2.MaxMTUSize': 1400},
+              ));
 
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.dhcp,
@@ -2732,8 +3019,9 @@ void main() {
 
       try {
         await service.saveAll(original, edited);
-        fail('Expected UspPartialFailureError');
-      } on UspPartialFailureError catch (e) {
+        fail('Expected SavePartlyAppliedError');
+      } on SavePartlyAppliedError catch (partly) {
+        final e = partly.cause as UspPartialFailureError;
         expect(e.summary, contains('WAN update partial failure'));
         expect(e.summary, contains('Parameter does not exist'));
         expect(e.successPaths, isNotEmpty);

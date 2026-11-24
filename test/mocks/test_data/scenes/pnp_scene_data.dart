@@ -7,172 +7,164 @@
 //
 // Every other page in the layout gate is a *destination*: it fetches, and its
 // provider's state is "loading" then "loaded". The PnP pages are a **state
-// machine's screens** — nine views over one `pnpProvider`, where the phase
-// decides not just whether the page has data but *which page-sized tree it
-// renders*. `PnpNotifier.build()` returns `AdminCheckingInternet` for all of
-// them, which is the phase before any of the nine has anything to show.
+// machine's screens** — views over one `pnpProvider` (nine when this was
+// written), where the phase decides not just whether the page has data but
+// *which page-sized tree it renders*. `PnpNotifier.build()` returns
+// `AdminCheckingInternet`, which is the phase before any of them has anything
+// to show.
+//
+// Since #1511 P1 the no-internet troubleshooting pages are a state machine of
+// their own (`internetTroubleshootingProvider`) and no longer read `pnpProvider`;
+// their scenes are at the bottom of this file, handed to
+// `internetTroubleshootingOverrides()` instead.
 //
 // So a "fixture" here is a phase, and picking it is picking which of a view's
 // branches is measured. Each state below records the branch it selects and why
 // that branch is the widest one the view has — the same rule
 // `page_surface_cases.dart` applies to every other page's fixture.
 
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
+import 'package:privacy_gui/page/instant_setup/models/troubleshooting_ending.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_band.dart';
-import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_settings.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_flow_plan.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_ready_band.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
+import 'package:privacy_gui/route/constants.dart';
 
 // ---------------------------------------------------------------------------
-// WiFi configuration — the wizard's editable payload
+// The router's Wi-Fi — what the wizard reads, and its steps' drafts begin at
 // ---------------------------------------------------------------------------
+//
+// Since #1511 P4 the wizard's form is not on the flow's phase: each setting
+// step has a draft, begun at the router read. So a fixture here is a
+// `PnpWizardData`, handed to `pnpOverrides(state, router: …)`, and the plan
+// it implies is on the composed `PnpState` below.
 
-/// Unified mode: one SSID and one password across all bands.
+/// Unified mode: one SSID and one password across all bands, and a guest SSID.
 ///
-/// `mainBands` is empty, so `PnpWifiConfig.isSplitMode` is false and
-/// `PnpSetupView` renders its single unified `LayoutBlock`. Used by the
-/// lifecycle test in `test/page/instant_setup/views/pnp_setup_view_test.dart`,
-/// which is about the four unified-mode controllers specifically.
-///
-/// `guestSsidInstancePaths` is non-empty on purpose: it is what
-/// `_buildStepperForm` counts to decide there is a guest step, so this wizard has
-/// three steps — main Wi-Fi, guest Wi-Fi and Your Network, which is always
-/// shown since #1734. [pnpNoGuestWifiConfig] is the same router with no guest
-/// SSID, a two-step wizard.
-const pnpUnifiedWifiConfig = PnpWifiConfig(
+/// `bands` is empty, so the main network is not split and the Wi-Fi step
+/// renders its single unified `LayoutBlock`. The guest network is what gives
+/// the wizard three steps — main Wi-Fi, guest Wi-Fi and Your Network, which is
+/// always shown since #1734. [pnpNoGuestRouter] is the same router with no
+/// guest SSID, a two-step wizard.
+const pnpUnifiedRouter = PnpWizardData(
+  main: PnpMainWifiSettings(
+    ssid: 'Linksys-Unified',
+    password: 'unified-password',
+    ssidInstancePaths: ['Device.WiFi.SSID.1'],
+    accessPointInstancePaths: ['Device.WiFi.AccessPoint.1'],
+  ),
+  guest: PnpGuestWifiSettings(
+    enabled: true,
+    ssid: 'Linksys-Unified-Guest',
+    password: 'guest-password',
+    ssidInstancePaths: ['Device.WiFi.SSID.4'],
+    accessPointInstancePaths: ['Device.WiFi.AccessPoint.4'],
+  ),
+);
+
+/// [pnpUnifiedRouter] with no guest SSID (#1734): main Wi-Fi, then Your
+/// Network, so Save is on the second step.
+const pnpNoGuestRouter = PnpWizardData(
+    main: PnpMainWifiSettings(
   ssid: 'Linksys-Unified',
   password: 'unified-password',
-  originalSsid: 'Linksys-Unified',
-  originalPassword: 'unified-password',
   ssidInstancePaths: ['Device.WiFi.SSID.1'],
   accessPointInstancePaths: ['Device.WiFi.AccessPoint.1'],
-  guestEnabled: true,
-  guestSsid: 'Linksys-Unified-Guest',
-  guestPassword: 'guest-password',
-  originalGuestEnabled: true,
-  originalGuestSsid: 'Linksys-Unified-Guest',
-  originalGuestPassword: 'guest-password',
-  guestSsidInstancePaths: ['Device.WiFi.SSID.4'],
-  guestAccessPointInstancePaths: ['Device.WiFi.AccessPoint.4'],
+));
+
+/// Split mode: three main bands and two guest bands, each with its own SSID
+/// and password.
+///
+/// The **widest** of the two modes and therefore the gate's fixture: a split
+/// step emits one `LayoutBlock` per band, each holding a band label, an
+/// `AppTextField` and an `AppPasswordInput` with its rule list — three times
+/// the form the unified block is. `splitMode` is the router's fact, decided by
+/// the read, so it is set here rather than derived from the names.
+const pnpSplitRouter = PnpWizardData(
+  main: PnpMainWifiSettings(
+    // The unified fields still exist on a split router: they are the primary
+    // SSID, which the wizard does not edit in split mode.
+    ssid: 'Linksys-2.4G',
+    password: 'band-password-24',
+    bands: [
+      PnpWifiBand(
+        bandName: '2.4 GHz',
+        frequency: '2.4GHz',
+        ssid: 'Linksys-2.4G',
+        password: 'band-password-24',
+        ssidInstancePath: 'Device.WiFi.SSID.1',
+        accessPointInstancePath: 'Device.WiFi.AccessPoint.1',
+        radioPath: 'Device.WiFi.Radio.1',
+      ),
+      PnpWifiBand(
+        bandName: '5 GHz',
+        frequency: '5GHz',
+        ssid: 'Linksys-5G',
+        password: 'band-password-5',
+        ssidInstancePath: 'Device.WiFi.SSID.2',
+        accessPointInstancePath: 'Device.WiFi.AccessPoint.2',
+        radioPath: 'Device.WiFi.Radio.2',
+      ),
+      PnpWifiBand(
+        bandName: '6 GHz',
+        frequency: '6GHz',
+        ssid: 'Linksys-6G',
+        password: 'band-password-6',
+        ssidInstancePath: 'Device.WiFi.SSID.3',
+        accessPointInstancePath: 'Device.WiFi.AccessPoint.3',
+        radioPath: 'Device.WiFi.Radio.3',
+      ),
+    ],
+    splitMode: true,
+  ),
+  guest: PnpGuestWifiSettings(
+    enabled: true,
+    ssid: 'Linksys-Guest-2.4G',
+    password: 'guest-password-24',
+    ssidInstancePaths: ['Device.WiFi.SSID.4', 'Device.WiFi.SSID.5'],
+    accessPointInstancePaths: [
+      'Device.WiFi.AccessPoint.4',
+      'Device.WiFi.AccessPoint.5',
+    ],
+    bands: [
+      PnpWifiBand(
+        bandName: '2.4 GHz',
+        frequency: '2.4GHz',
+        ssid: 'Linksys-Guest-2.4G',
+        password: 'guest-password-24',
+        ssidInstancePath: 'Device.WiFi.SSID.4',
+        accessPointInstancePath: 'Device.WiFi.AccessPoint.4',
+        radioPath: 'Device.WiFi.Radio.1',
+      ),
+      PnpWifiBand(
+        bandName: '5 GHz',
+        frequency: '5GHz',
+        ssid: 'Linksys-Guest-5G',
+        password: 'guest-password-5',
+        ssidInstancePath: 'Device.WiFi.SSID.5',
+        accessPointInstancePath: 'Device.WiFi.AccessPoint.5',
+        radioPath: 'Device.WiFi.Radio.2',
+      ),
+    ],
+    splitMode: true,
+  ),
 );
 
-/// [pnpUnifiedWifiConfig]'s router with no guest SSID (#1734): main Wi-Fi, then
-/// Your Network, so Save is on the second step. Before #1734 a single router of
-/// this shape had a one-step wizard that saved from main Wi-Fi.
-const pnpNoGuestWifiConfig = PnpWifiConfig(
-  ssid: 'Linksys-Unified',
-  password: 'unified-password',
-  originalSsid: 'Linksys-Unified',
-  originalPassword: 'unified-password',
-  ssidInstancePaths: ['Device.WiFi.SSID.1'],
-  accessPointInstancePaths: ['Device.WiFi.AccessPoint.1'],
-);
-
-/// Split mode: three bands, each with its own SSID and password.
-///
-/// The **widest** of the two modes and therefore the gate's fixture.
-/// `_buildSplitModeMainWifi` emits one `LayoutBlock` per band, each holding a
-/// band label, an `AppTextField` and an `AppPasswordInput` with its rule list —
-/// so three bands render three times the form the unified block does. Unified
-/// mode renders one block and would under-measure the page, which is the same
-/// argument `kDhcpPageCase` makes about its empty-list state.
-///
-/// `PnpWifiConfig.isSplitMode` compares `originalSsid` across bands, so the
-/// three differ there and not merely in `ssid` — a fixture whose bands shared an
-/// `originalSsid` would silently fall back to the unified block.
-const pnpSplitWifiConfig = PnpWifiConfig(
-  // Still required by the model, and still what `dispose()` tears down: split
-  // mode does not stop the four unified-mode controllers from existing.
-  ssid: 'Linksys-2.4G',
-  password: 'band-password-24',
-  originalSsid: 'Linksys-2.4G',
-  originalPassword: 'band-password-24',
-  mainBands: [
-    PnpWifiBand(
-      bandName: '2.4 GHz',
-      frequency: '2.4GHz',
-      ssid: 'Linksys-2.4G',
-      password: 'band-password-24',
-      originalSsid: 'Linksys-2.4G',
-      originalPassword: 'band-password-24',
-      ssidInstancePath: 'Device.WiFi.SSID.1',
-      accessPointInstancePath: 'Device.WiFi.AccessPoint.1',
-      radioPath: 'Device.WiFi.Radio.1',
-    ),
-    PnpWifiBand(
-      bandName: '5 GHz',
-      frequency: '5GHz',
-      ssid: 'Linksys-5G',
-      password: 'band-password-5',
-      originalSsid: 'Linksys-5G',
-      originalPassword: 'band-password-5',
-      ssidInstancePath: 'Device.WiFi.SSID.2',
-      accessPointInstancePath: 'Device.WiFi.AccessPoint.2',
-      radioPath: 'Device.WiFi.Radio.2',
-    ),
-    PnpWifiBand(
-      bandName: '6 GHz',
-      frequency: '6GHz',
-      ssid: 'Linksys-6G',
-      password: 'band-password-6',
-      originalSsid: 'Linksys-6G',
-      originalPassword: 'band-password-6',
-      ssidInstancePath: 'Device.WiFi.SSID.3',
-      accessPointInstancePath: 'Device.WiFi.AccessPoint.3',
-      radioPath: 'Device.WiFi.Radio.3',
-    ),
-  ],
-  guestEnabled: true,
-  guestSsid: 'Linksys-Guest-2.4G',
-  guestPassword: 'guest-password-24',
-  originalGuestEnabled: true,
-  originalGuestSsid: 'Linksys-Guest-2.4G',
-  originalGuestPassword: 'guest-password-24',
-  guestSsidInstancePaths: ['Device.WiFi.SSID.4', 'Device.WiFi.SSID.5'],
-  guestAccessPointInstancePaths: [
-    'Device.WiFi.AccessPoint.4',
-    'Device.WiFi.AccessPoint.5',
-  ],
-  guestBands: [
-    PnpWifiBand(
-      bandName: '2.4 GHz',
-      frequency: '2.4GHz',
-      ssid: 'Linksys-Guest-2.4G',
-      password: 'guest-password-24',
-      originalSsid: 'Linksys-Guest-2.4G',
-      originalPassword: 'guest-password-24',
-      ssidInstancePath: 'Device.WiFi.SSID.4',
-      accessPointInstancePath: 'Device.WiFi.AccessPoint.4',
-      radioPath: 'Device.WiFi.Radio.1',
-    ),
-    PnpWifiBand(
-      bandName: '5 GHz',
-      frequency: '5GHz',
-      ssid: 'Linksys-Guest-5G',
-      password: 'guest-password-5',
-      originalSsid: 'Linksys-Guest-5G',
-      originalPassword: 'guest-password-5',
-      ssidInstancePath: 'Device.WiFi.SSID.5',
-      accessPointInstancePath: 'Device.WiFi.AccessPoint.5',
-      radioPath: 'Device.WiFi.Radio.2',
-    ),
-  ],
-);
+/// The plan of a router with a guest SSID: Wi-Fi, guest, then Your Network.
+const pnpPlanWithGuest = PnpFlowPlan(settingStepIds: ['wifi', 'guest']);
 
 // ---------------------------------------------------------------------------
-// Mesh nodes — what turns the two-step wizard into a three-step one
+// Mesh nodes — what Your Network lists
 // ---------------------------------------------------------------------------
 
-/// Two nodes, because `_buildStepperForm` adds its network step on
-/// `meshNodes.length > 1` and a single-node network gets no third step.
-///
-/// The step itself is never rendered by the gate — only step 0 is measured — but
-/// the step *count* is, because `AppStepper` lays out one label per step and
-/// three localized labels in a 288px content box is a strictly harder layout
-/// problem than two.
+/// Two nodes, a controller and an agent, so Your Network renders a list with a
+/// divider and both role labels — the wider of its two shapes.
 final pnpMeshNodes = <NodeEntity>[
   MasterNode(
     deviceId: '11:22:33:44:55:66',
@@ -195,13 +187,13 @@ final pnpMeshNodes = <NodeEntity>[
 // WAN settings — what the two ISP forms prefill from
 // ---------------------------------------------------------------------------
 
-/// The router's current WAN settings, carried on [NoInternet].
+/// The router's current WAN settings, as `troubleshootingWanPrefillProvider`
+/// answers them.
 ///
 /// Both ISP forms prefill from this in `initState` and **only** from this:
-/// `PnpPppoeView._prefillFromCurrentSettings` and its `PnpStaticIpView`
-/// counterpart both bail unless the phase is `NoInternet` with a non-null
-/// `currentWanSettings`. A fixture without it renders every field empty, which
-/// is a narrower tree than any real user sees.
+/// `PnpPppoeView._prefill` and its `PnpStaticIpView` counterpart run only once
+/// the prefill has a value. A fixture without it renders every field empty,
+/// which is a narrower tree than any real user sees.
 ///
 /// Two fields are load-bearing beyond their own text:
 /// - `vlanEnabled` flips `PnpPppoeView._showVlan`, which adds the VLAN label and
@@ -228,6 +220,15 @@ const pnpCurrentWanSettings = UspInternetSettingsForm(
   dnsServer2: '203.0.113.11',
 );
 
+/// [pnpCurrentWanSettings] with WAN VLAN tagging off: the PPPoE form opens with
+/// its VLAN row collapsed to "Add VLAN ID".
+final pnpWanWithoutVlan = pnpCurrentWanSettings.copyWith(vlanEnabled: false);
+
+/// [pnpCurrentWanSettings] tagged with VLAN 1, which the firmware takes and the
+/// GUI's 3–4094 rule does not (issue #1754): the PPPoE form opens with the VLAN
+/// ID in error and Save held.
+final pnpWanVlanIdOutOfRange = pnpCurrentWanSettings.copyWith(vlanId: 1);
+
 // ---------------------------------------------------------------------------
 // Composed PnpStates — one per branch the gate measures
 // ---------------------------------------------------------------------------
@@ -252,38 +253,28 @@ const pnpAdminReadFailureState = PnpState(
   serialNumber: 'SN-TEST',
 );
 
-/// `NoInternet` — the phase the whole troubleshooter branch runs under.
-///
-/// Four of the nine views are on screen while the state machine sits here:
-/// `PnpNoInternetView` (the hub), `PnpIspSettingsView`, and the two ISP forms.
-/// `PnpWaitingModemView` is on screen here too, before its countdown starts.
-///
-/// `currentWanSettings` is what makes it the widest such state — see
-/// [pnpCurrentWanSettings].
-const pnpNoInternetState = PnpState(
-  phase: NoInternet(
-    ssid: 'Linksys-Test',
-    currentWanSettings: pnpCurrentWanSettings,
-  ),
+/// `WizardConfiguring` — the wizard on its steps, with the plan of a router
+/// with a guest SSID and two mesh nodes: three steps, and a Your Network with a
+/// list. Handed to `pnpOverrides` with [pnpSplitRouter], the widest form a step
+/// has. See [pnpSplitRouter] and [pnpMeshNodes] for why each is the wider
+/// choice.
+final pnpWizardConfiguringState = PnpState(
+  phase: const WizardConfiguring(),
+  plan: pnpPlanWithGuest,
+  meshNodes: pnpMeshNodes,
   serialNumber: 'SN-TEST',
 );
 
-/// `WizardConfiguring` — the only phase `PnpSetupView` renders a form in.
-///
-/// Split mode plus guest bands plus two mesh nodes, i.e. the three-step wizard
-/// with a per-band form on step 0: the widest tree that view has. See
-/// [pnpSplitWifiConfig] and [pnpMeshNodes] for why each of the three is the
-/// wider choice.
-final pnpWizardConfiguringState = PnpState(
-  phase: WizardConfiguring(
-    wifiConfig: pnpSplitWifiConfig,
-    meshNodes: pnpMeshNodes,
+/// `WizardYourNetwork` — the flow on Your Network, after the save (#1511 P5):
+/// the same plan and nodes as [pnpWizardConfiguringState], one phase later.
+final pnpWizardYourNetworkState = pnpWizardConfiguringState.copyWith(
+  phase: const WizardYourNetwork(
+    ready: WizardWifiReady(ssid: 'Linksys-Home', password: 'home-password'),
   ),
-  serialNumber: 'SN-TEST',
 );
 
 // ---------------------------------------------------------------------------
-// The rest of `PnpSetupView`'s phases (#1554 §4)
+// The flow's status screens (#1554 §4), drawn by `PnpFlowFrameView`
 // ---------------------------------------------------------------------------
 //
 // The wizard's other screens, added when it got its first golden suite. Everything
@@ -293,23 +284,35 @@ final pnpWizardConfiguringState = PnpState(
 // the missing sweep cell in with the goldens precisely so the firmware phase's
 // fixture is written once and used by both.
 //
-// **`PnpSetupView` renders nine phases through seven builders**, and the mapping is
-// what decides how many scenes belong here rather than how many phases exist:
-// `WizardSaving`, `WizardSaved` and `WizardCheckingFirmware` all reach
-// `_buildSavingOverlay` and are pixel-identical, so one scene stands for three.
+// **`PnpFlowFrameView` draws eight status screens for nine phases** (they were
+// `PnpSetupView`'s until #1511 P4), and the mapping is what decides how many
+// scenes belong here rather than how many phases exist:
+// `WizardSaving` and `WizardSaved` both reach `_buildLoadingCard` with the save's
+// copy and are pixel-identical, so one scene stands for two; `WizardCheckingFirmware`
+// reaches the same card with its own copy since #1511 P5, so it has its own.
 // `WizardWifiReady` is the opposite — one phase, two builders, chosen on
 // `isSplitMode` — so it takes two.
 
-/// `WizardSaving` — the overlay three phases share.
+/// `WizardSaving` — the card two phases share.
 ///
-/// Stands in for `WizardSaved` and `WizardCheckingFirmware` too: all three land on
-/// `_buildSavingOverlay`, which takes no arguments, so the three are the same tree
-/// and the same picture. A scene each would be three identical goldens whose only
-/// difference is a name — and the *reason* they are identical is worth stating
-/// somewhere, because the day one of them grows its own copy is the day this scene
-/// stops covering it.
+/// Stands in for `WizardSaved` too: both land on `_buildLoadingCard` with the
+/// save's copy, so the two are the same tree and the same picture. A scene each
+/// would be two identical goldens whose only difference is a name — and the
+/// *reason* they are identical is worth stating somewhere, because the day one of
+/// them grows its own copy is the day this scene stops covering it. That day came
+/// for `WizardCheckingFirmware`, the third phase this used to stand for: see
+/// [pnpWizardCheckingFirmwareState].
 const pnpWizardSavingState = PnpState(
   phase: WizardSaving(),
+  serialNumber: 'SN-TEST',
+);
+
+/// `WizardCheckingFirmware` — the loading card with the firmware check's copy.
+///
+/// Its own scene since #1511 P5, when the check moved from straight after the
+/// save to after Your Network's Done and stopped sharing the save's copy.
+const pnpWizardCheckingFirmwareState = PnpState(
+  phase: WizardCheckingFirmware(),
   serialNumber: 'SN-TEST',
 );
 
@@ -355,7 +358,7 @@ const pnpWizardTestingReconnectState = PnpState(
 /// warning note, and no button of any kind.
 ///
 /// A **named** version: the empty-version variant drops one line and is pinned by
-/// assertion in `pnp_setup_view_firmware_test.dart`, so a fixture for it here would
+/// assertion in `pnp_flow_frame_view_test.dart`, so a fixture for it here would
 /// buy a picture of the line above it.
 ///
 /// The literal is deliberately not one the firmware fixtures use — `testActiveBank`'s
@@ -417,14 +420,30 @@ const pnpWizardWifiReadySplitState = PnpState(
   serialNumber: 'SN-TEST',
 );
 
-/// `WizardError` — the recoverable failure, with the message the view prints.
-///
-/// A `ServiceError`-shaped sentence rather than a placeholder: this phase's `message`
-/// reaches the screen verbatim, so a fixture saying `'error'` would photograph a
-/// layout no real failure produces.
+/// `WizardError` — the wizard's Wi-Fi read failed, the way a read most often
+/// does: the router did not answer. The screen localizes the error itself.
 const pnpWizardErrorState = PnpState(
-  phase: WizardError(
-    message: 'The router did not respond while saving your Wi-Fi settings.',
-  ),
+  phase: WizardError(error: NetworkError()),
   serialNumber: 'SN-TEST',
 );
+
+// ---------------------------------------------------------------------------
+// The no-internet troubleshooting tree (#1511 P1)
+// ---------------------------------------------------------------------------
+//
+// Its pages read `internetTroubleshootingProvider` and its WAN prefill, not
+// `pnpProvider`. At rest the run is on `TroubleshootingNoInternet` — the state a
+// default `internetTroubleshootingOverrides()` pins — so the only scene it needs
+// is the WAN above and the caller's ending below.
+
+/// PnP's ending, as the route layer hands it to the hub and to Auto-IPoE.
+///
+/// With a "continue without internet", because that is what PnP supplies and so
+/// what renders the hub's "Log into router" button: an ending without one would
+/// sweep a hub that is a button shorter than any PnP user sees.
+const pnpTroubleshootingEndingScene = TroubleshootingEnding(
+  exitLocation: RoutePath.pnp,
+  continueWithoutInternet: _continueToDashboard,
+);
+
+Future<String> _continueToDashboard() async => RoutePath.uspDashboard;

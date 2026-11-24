@@ -368,22 +368,27 @@ String localizeServiceError(BuildContext context, Object error) {
 
 The `switch` is **exhaustive** over the sealed `ServiceError` — this is a design point: when a subclass is added, the compiler warns that a case is missing here, **forcing you to add the l10n**, so nothing is missed.
 
-### 4.2 batch errors: display the specific message of the first entry
+### 4.2 batch errors: display the reason the router named, else the first entry's message
 
-`Usp*FailureError` holds multiple `failures`. **Strategy: always display the specific error of `failures.first`** (translated into the corresponding l10n sentence by its `errorCode`).
+`Usp*FailureError` holds multiple `failures`. **Strategy: display the reason the router named, else the specific error of `failures.first`** (translated into the corresponding l10n sentence by its `errorCode`).
 
 - ❌ Do not use "N settings failed" — vague, and the user has no way to fix it.
 - ✅ Display the specific error of the first entry; if there is still a second entry after the user fixes it, the next save will display the next one — still traceable.
+- ✅ **A named reason comes first, from any entry** (#1775). linksys/FWDEV#204's checks put an error name at the start of the refused leaf's message (`ErrorRulesOverlap: …`, code 7012), and a refused Set lists every other leaf it carried under the same code with `SetParameterGroup: group set failed at …` — the refused leaf need not be listed first. `UspResultParser` reads the name into `UspErrorDetail.refusalReason` (a `UspRefusalReason`) when the failure comes in, and `mapUspErrorToServiceError` does the same for a thrown one. The mapper looks for the first entry whose `refusalReason` is not `unknown` and shows that reason's message; with none, `failures.first.errorCode` decides as below. **Never read `errorMessage` in the mapper** — a new name is a new `UspRefusalReason` value, which the exhaustive switch then asks you to localize.
 
 ```dart
 String _localizeFaultCode(BuildContext context, int code) => switch (code) {
-  7004 || 7005 || 7006 || 9008 => loc(context).errorInvalidInput,
-  7026 || 7027 || 9005 || 9007 => loc(context).errorResourceNotFound,
+  7004 || 7005 || 7006 || 9008 || 9997 => loc(context).errorInvalidInput,
+  7016 || 7026 || 7027 || 9005 || 9007 => loc(context).errorResourceNotFound,
+  7022                         => loc(context).errorCommandRefused,
   9001                         => loc(context).errorUnauthorized,
+  9998                         => loc(context).errorUnexpected,
   9999                         => loc(context).errorNetwork,
   _                            => loc(context).errorUnexpected,   // unknown vendor code does not leak the original text
 };
 ```
+
+9997–9999 are the WASM client's own codes, not the router's (usp-client 0.15.0, #1787): 9999 transport or session, 9998 an answer it could not decode, 9997 input it refused before sending.
 
 ---
 
@@ -397,10 +402,10 @@ String _localizeFaultCode(BuildContext context, int code) => switch (code) {
    errorInvalidInput, errorNetwork, errorConnectivity, errorTimeout,
    errorServiceNotReady, errorUnexpected
    ```
-   Plus the shared: `failedToLoadSettings`, `retry`.
+   Plus the shared: `failedToLoadSettings`, `retry`. And one `errorRefusedXxx` per `UspRefusalReason` value (the reason a firmware refusal names, see §4.2), named after the value: `UspRefusalReason.rulesOverlap` → `errorRefusedRulesOverlap`.
 3. **Multi-language**: after adding the English key to `app_en.arb`, also add translations for the other 25 locales (`app_es.arb` / `app_ja.arb` …).
 
-**In most cases you don't need to add an error key** — the existing 12 types already cover common errors. You only need to when adding a ServiceError subclass (see §6).
+**In most cases you don't need to add an error key** — the existing 12 types already cover common errors. You only need to when adding a ServiceError subclass (see §6), or a `UspRefusalReason` value for a new firmware error name (§4.2).
 
 ---
 
@@ -435,7 +440,7 @@ Only do this when none of the existing types can express a certain error semanti
 
 ### Known Limitations
 
-- **A GET's per-path codes other than 9999 read as "absent"**: since #1212 a 9999 GET failure throws and maps to `NetworkError`, and a 7026 leaves its path absent. Any other per-path code also leaves its path absent, because codegen `_fromResponse` receives only the path→value map. See [`usp-error-handling-reference.md`](usp-error-handling-reference.md) §2.5.
+- **A GET's per-path errors read as "absent"**: a GET that failed as a whole throws (#1212; since usp-client 0.16.0 that is any `result.errors` entry of `kind: request`: the client's 9997–9999, or the router refusing the whole Get with its own code, #1787). An entry of `kind: path`, such as a 7026, leaves its path absent, because codegen `_fromResponse` receives only the path→value map. Only `kind` tells the two apart: both carry a code on every requested path. See [`usp-error-handling-reference.md`](usp-error-handling-reference.md) §2.5.
 - **`_localizeFaultCode` and `_mapProtocolError` must stay in sync**: the fetch path (string → `_mapProtocolError` in `mapUspErrorToServiceError`) and the save batch path (envelope → `_localizeFaultCode` in `localizeServiceError`) must give consistent results for the same firmware code. Change one and the other must change too. `_localizeFaultCode`'s doc comment already states "Mirrors `_mapProtocolError` … MUST stay in sync"; the reverse direction (the `usp_error.dart` side) currently **has no** back-pointing reminder, so when changing `_mapProtocolError` you must remember to go back and sync `_localizeFaultCode` yourself.
 
 ### Out of This Pipeline's Scope

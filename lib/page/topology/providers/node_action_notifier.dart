@@ -16,9 +16,11 @@ final nodeActionProvider =
 /// Reboots or factory-resets one mesh agent and the agents behind it (#876).
 ///
 /// The controller is not handled here: its row refuses a node command (7002),
-/// and its reboot and reset are `Device.Reboot()` / `Device.FactoryReset()`,
-/// which the Administration page owns and which already take every child with
-/// them (FWDEV#202).
+/// and its reboot and reset are the Administration page's, which act on the
+/// whole network — `X_LINKSYS_RebootAll()` / `X_LINKSYS_FactoryResetAll()`
+/// where the router has them (Architecture#195), `Device.Reboot()` /
+/// `Device.FactoryReset()` on firmware where those take every child with them
+/// (FWDEV#202). See `router_restart_actions.dart`.
 class NodeActionNotifier extends Notifier<void> {
   @override
   void build() {}

@@ -70,28 +70,18 @@ class StatsCpuDistributionSection extends ConsumerWidget {
         // loose constraints, so a label wider than the row would overflow inside a
         // `Wrap` exactly as it does inside this `Row`.
         //
-        // So the *text* yields, not the row: `Flexible` gives the label the width
-        // left after the dot, and it soft-wraps to at most two lines. Two is the
-        // budget rather than unlimited because the chart above is `Expanded` and
-        // pays for every line — at 238px, French's "Échantillons d'utilisation du
-        // processeur : 10" (the longest of the 26, and 26px over before this) takes
-        // two.
+        // So the *text* yields, not the row: the kit entry gives the label the
+        // width left after the mark (its own `Flexible`), and it soft-wraps — at
+        // 238px, French's "Échantillons d'utilisation du processeur : 10" (the
+        // longest of the 26, and 26px over before #1488) takes two lines.
         //
-        // No ellipsis: the label ends in the sample count, which is the only thing
-        // this legend states.
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            StatsLegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            Flexible(
-              child: AppText.labelSmall(
-                loc(context).cpuUsageSamples(history.length),
-                maxLines: 2,
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
+        // `.statistic`, not `.seriesName` (#1324): the label ends in the sample
+        // count, which is the only thing this legend states, so it must never be
+        // clipped by an ellipsis. The mark is the bar chart's block.
+        AppChartLegendEntry.statistic(
+          mark: const ChartMark.block(),
+          color: colorScheme.primary,
+          label: loc(context).cpuUsageSamples(history.length),
         ),
       ],
     );

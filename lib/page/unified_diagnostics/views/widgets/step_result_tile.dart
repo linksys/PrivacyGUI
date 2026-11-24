@@ -185,7 +185,8 @@ class StepResultTile extends StatelessWidget {
         ],
       WifiSignalCheckUIModel r => [
           _ResultDetail(loc(context).band, r.band),
-          _ResultDetail(loc(context).channel, '${r.channel}'),
+          // The channel the radio is on, not the configured one (#1782).
+          _ResultDetail(loc(context).channel, '${r.channelInUse ?? '--'}'),
           _ResultDetail(
               loc(context).signal,
               r.connectedDevices == 0
@@ -197,7 +198,7 @@ class StepResultTile extends StatelessWidget {
           for (final radio in r.radios.where((rd) => rd.hasClients))
             _ResultDetail(
               radio.isResolved
-                  ? '${radio.band} Ch${radio.channel}'
+                  ? '${radio.band} Ch${radio.channelInUse ?? '--'}'
                   : loc(context).unresolved,
               '${radio.averageRssi} dBm avg / min ${radio.minRssi} '
               '(${radio.clientCount} clients)',

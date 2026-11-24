@@ -10,6 +10,8 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/capability/capability_provider.dart';
 import 'package:privacy_gui/core/capability/device_capability.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_data.dart';
+import 'package:privacy_gui/page/mac_filter/providers/mac_filter_data_provider.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_notifier.dart';
 import 'package:privacy_gui/page/mac_filter/providers/mac_filter_state.dart';
 
@@ -24,6 +26,20 @@ class FixedMacFilterNotifier extends UspMacFilterNotifier {
 
   @override
   MacFilterState build() => _fixedState;
+}
+
+/// The session-wide `macFilterDataProvider` (L1) pinned to [_fixedData], with no
+/// read and no SSE listener. [push] stands in for a re-read after a pushed mode
+/// change: it replaces the value the way the real notifier does.
+class FixedMacFilterDataNotifier extends MacFilterDataNotifier {
+  final MacFilterData _fixedData;
+
+  FixedMacFilterDataNotifier(this._fixedData);
+
+  @override
+  Future<MacFilterData> build() async => _fixedData;
+
+  void push(MacFilterData data) => state = AsyncData(data);
 }
 
 /// The MAC Filtering notifier alone, defaulting to [gateMacFilterState].

@@ -7,7 +7,7 @@ import 'overflow_details.dart';
 
 part 'html_generate_functions.dart';
 
-const _coverageIgnore = ['apps', 'system_log', 'test_console'];
+const _coverageIgnore = ['apps', 'system_log'];
 
 /// Strip the report folder prefix so [path] is relative to the report location.
 String _relativeToReport(String path, String folderStr) {

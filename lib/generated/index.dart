@@ -31,6 +31,7 @@ export 'setup_state.g.dart';
 export 'l2tp_tunnels.g.dart';
 export 'static_routing.g.dart';
 export 'dynamic_routing.g.dart';
+export 'dynamic_dns.g.dart';
 export 'gre_tunnels.g.dart';
 export 'dhcpv6clients.g.dart';
 export 'ipv6rd_settings.g.dart';

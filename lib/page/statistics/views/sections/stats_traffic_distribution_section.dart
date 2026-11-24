@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
+import 'package:privacy_gui/core/utils/usp_formatters.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
 import 'package:privacy_gui/page/statistics/views/components/stats_section_card.dart';
@@ -73,18 +73,24 @@ class StatsTrafficDistributionSection extends ConsumerWidget {
         if (wan != null || lan != null)
           _InterfaceBreakdownBars(wan: wan, lan: lan),
         AppGap.sm(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        // Value-bearing labels, so `.statistic` (never clipped). The chart is a
+        // donut, so the mark is the pie swatch (#1324).
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppSpacing.lg,
+          runSpacing: AppSpacing.xs,
           children: [
-            StatsLegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall(
-                loc(context).wanSpeed(UspFormatters.formatBytes(wanTotal))),
-            AppGap.lg(),
-            StatsLegendDot(color: colorScheme.secondary),
-            AppGap.xs(),
-            AppText.labelSmall(
-                loc(context).lanSpeed(UspFormatters.formatBytes(lanTotal))),
+            AppChartLegendEntry.statistic(
+              mark: const ChartMark.swatch(),
+              color: colorScheme.primary,
+              label: loc(context).wanSpeed(UspFormatters.formatBytes(wanTotal)),
+            ),
+            AppChartLegendEntry.statistic(
+              mark: const ChartMark.swatch(),
+              color: colorScheme.secondary,
+              label: loc(context).lanSpeed(UspFormatters.formatBytes(lanTotal)),
+            ),
           ],
         ),
       ],

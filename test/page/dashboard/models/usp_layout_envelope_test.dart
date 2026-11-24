@@ -625,7 +625,7 @@ void main() {
   // then on it is an ordinary v4 payload.
   //
   // The migration lives here, in pure JSON, rather than in the controller that
-  // triggers it: `usp_layout_envelope.dart` cannot import `usp_widget_specs.dart`
+  // triggers it: `usp_layout_envelope.dart` cannot import `usp_card_sizing.dart`
   // without a cycle, and the fold needs neither — moving a value from one place in
   // a map to another is not a geometry question.
   group('v3 picks are folded onto their items on decode (#1400)', () {

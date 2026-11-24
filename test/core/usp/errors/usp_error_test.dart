@@ -4,7 +4,10 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
+import 'package:privacy_gui/core/usp/errors/usp_refusal_reason.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
 
 void main() {
   group('parseUspError', () {
@@ -247,6 +250,43 @@ void main() {
       expect(mapUspErrorToServiceError(raw), isA<InvalidInputError>());
     });
 
+    // A thrown write the router refused with a FWDEV#204 name (#1775). Only
+    // the wrapper is measured (7005/7026 above); a name inside it is not, so
+    // these pin where it is read and what it becomes. It becomes the same
+    // shape a refused write's envelope does, so one localizer path serves both.
+    group('a thrown refusal that names its reason', () {
+      const raw = 'Set failed: Protocol error: Decoding error: Received error '
+          'response: ErrorMultipleDestinations: clear DestIP first. '
+          '(code: 7012)';
+
+      test('carries the reason on a one-entry complete failure', () {
+        final error = mapUspErrorToServiceError(raw);
+        expect(error, isA<UspCompleteFailureError>());
+        final failure = (error as UspCompleteFailureError).failures.single;
+        expect(failure.refusalReason, UspRefusalReason.multipleDestinations);
+        expect(failure.errorCode, 7012);
+        expect(error.code, 7012);
+      });
+
+      test('inside the client transport wrapper, too', () {
+        final error = mapUspErrorToServiceError(
+            'Set failed: Transport error: Protocol error: Decoding error: '
+            'Received error response: ErrorInvalidDestinationMACAddress: '
+            "'zz' is not a MAC address. (code: 7012)");
+        expect((error as UspCompleteFailureError).failures.single.refusalReason,
+            UspRefusalReason.invalidDestinationMacAddress);
+      });
+
+      test('a fault with no name it knows maps as before', () {
+        // 7012 alone is not in the protocol table: UnexpectedError, unchanged.
+        expect(
+            mapUspErrorToServiceError(
+                'Set failed: Protocol error: Decoding error: Received error '
+                'response: Invalid value (code: 7012)'),
+            isA<UnexpectedError>());
+      });
+    });
+
     test('maps Protocol fault 7027 to ResourceNotFoundError', () {
       const raw =
           'Delete failed: Protocol error: Decoding error: Received error response: '
@@ -332,6 +372,19 @@ void main() {
       const raw = 'Get failed: Protocol error: Malformed message: bad data';
       expect(mapUspErrorToServiceError(raw), isA<UnexpectedError>());
     });
+
+    // A code with no arm of its own still says what the router answered, and
+    // a caller that knows what it means for its own command reads it there:
+    // a whole-network reboot refused as a whole with 7002 is one already
+    // running (#1777).
+    test('keeps the router code of an unmapped Protocol error', () {
+      const raw = 'Operate failed: Protocol error: Busy (code: 7002)';
+
+      final mapped = mapUspErrorToServiceError(raw);
+
+      expect(mapped, isA<UnexpectedError>());
+      expect(mapped.code, 7002);
+    });
   });
 
   group('shared Operate error contract', () {
@@ -342,19 +395,21 @@ void main() {
       final fixture = entry as Map<String, dynamic>;
       test(fixture['name'] as String, () {
         String? raw;
+        const command = 'Device.X_LINKSYS_AutoIPoE.Apply()';
         try {
-          UspClient.extractOperateResult({
-            'success': false,
-            'result': {
-              'data': <String, dynamic>{},
-              'error': {
-                'Device.X_LINKSYS_AutoIPoE.Apply()': {
-                  'errorCode': fixture['errorCode'],
-                  'errorMessage': fixture['errorMessage'],
-                },
-              },
-            },
-          });
+          // The `errors` entry usp-client 0.16.0 resolves for it
+          // (test/web/usp_operate_test.mjs checks the fixture against it).
+          UspClient.extractOperateResult(UspEnvelopeTestData.envelope(
+            success: false,
+            errors: [
+              (
+                kind: fixture['errorKind'] as String,
+                path: command,
+                errorCode: fixture['errorCode'],
+                errorMessage: fixture['errorMessage'] as String,
+              ),
+            ],
+          ));
         } catch (error) {
           raw = error as String;
         }
@@ -377,9 +432,11 @@ void main() {
   });
 
   group('isUnansweredTransportFailure', () {
-    // Both messages are the per-path `errorMessage` the WASM client returned on
-    // FLWRT 2.0.2 (2026-10-05). Both carry `errorCode: 9999`, which is why the
-    // message has to decide.
+    // The first two messages are the per-path `errorMessage` the WASM client
+    // returned on FLWRT 2.0.2 (2026-10-05), both under `errorCode: 9999`, which
+    // is why the message has to decide. The last two are the same failures as
+    // usp-client 0.15.0 reports them: one transport prefix, and the router's
+    // own message for the refusal, its code in `errorCode` (#1787).
     test('is true when the browser never got an answer', () {
       expect(
         isUnansweredTransportFailure(
@@ -396,6 +453,33 @@ void main() {
           'Transport error: Protocol error: Decoding error: Received error '
           'response: ProcessSet_AllowPartialFalse: Allow partial=false not '
           'supported across more than one USP Service (code: 7005)',
+        ),
+        isFalse,
+      );
+    });
+
+    test('is true for a lost answer on usp-client 0.15.0', () {
+      expect(
+        isUnansweredTransportFailure(
+          'Transport error: HTTP error: error sending request: '
+          'JsValue(TypeError: Failed to fetch\nTypeError: Failed to fetch)',
+        ),
+        isTrue,
+      );
+    });
+
+    test('is false for a refusal on usp-client 0.15.0', () {
+      expect(
+        isUnansweredTransportFailure(
+          'ProcessSet_AllowPartialFalse: Allow partial=false not supported '
+          'across more than one USP Service',
+        ),
+        isFalse,
+      );
+      expect(
+        isUnansweredWifiWrite(
+          'ProcessSet_AllowPartialFalse: Allow partial=false not supported '
+          'across more than one USP Service',
         ),
         isFalse,
       );

@@ -75,6 +75,34 @@ class UspDhcpReservationsNotifier
   }
 
   // ---------------------------------------------------------------------------
+  // save — re-read the router after a refused save
+  // ---------------------------------------------------------------------------
+
+  /// A save that failed re-reads the router and puts the page on what it
+  /// holds, when that differs from what the page last read: FW refuses a value
+  /// by name (linksys/FWDEV#211) but obuspa still commits the rest of the same
+  /// Set, and an Add or Delete earlier in the batch may have landed. The error
+  /// still reaches the page. A save that wrote nothing keeps the user's edits
+  /// for a retry.
+  ///
+  /// Since usp-client 0.14.0 (linksys/usp_framework#114) a refused Add reaches
+  /// here too: the service deletes the row the router kept, and when that
+  /// fails, the row is on the router and this read puts it on the page with
+  /// its path, so a second Save does not add it again. When that read fails
+  /// as well, the next Save reads the router before it writes. All of this is
+  /// [saveReadingBackAfterFailure]; the dashboard card is refreshed for the
+  /// same reason.
+  @override
+  Future<DhcpReservationsFeatureState> save() async {
+    try {
+      return await saveReadingBackAfterFailure(super.save);
+    } on ServiceError {
+      ref.invalidate(dhcpDataProvider);
+      rethrow;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // performSave — diff original vs current, batch API calls
   // ---------------------------------------------------------------------------
 
@@ -129,17 +157,22 @@ class UspDhcpReservationsNotifier
   }
 
   /// Add a reservation immediately (writes to router).
+  ///
+  /// A failed Add still re-reads the dashboard's reservations: FW may have
+  /// refused one value of the Add (linksys/FWDEV#211) and kept the rest.
   Future<void> immediateAdd({
     required String mac,
     required String ip,
     bool enable = true,
+    String name = '',
   }) async {
     try {
       await ref.read(uspMutationLockProvider).withLock(() async {
-        await _svc.immediateAdd(mac: mac, ip: ip, enable: enable);
+        await _svc.immediateAdd(mac: mac, ip: ip, enable: enable, name: name);
       });
     } on ServiceError catch (e) {
       logger.e('[USP][DHCP]: Immediate add failed', error: e);
+      ref.invalidate(dhcpDataProvider);
       rethrow;
     }
     ref.invalidate(dhcpDataProvider);

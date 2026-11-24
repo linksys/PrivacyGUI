@@ -44,6 +44,10 @@ void main() {
         expect(form.lcpEchoInterval, 30);
       });
 
+      test('the VLAN priority defaults to none, -1 (issue #1754)', () {
+        expect(form.vlanPriority, -1);
+      });
+
       test('boolean fields default to false', () {
         expect(form.mtuAuto, isFalse);
         expect(form.vlanEnabled, isFalse);
@@ -98,6 +102,7 @@ void main() {
         expect(base.copyWith(lcpEchoInterval: 10).lcpEchoInterval, 10);
         expect(base.copyWith(vlanEnabled: true).vlanEnabled, isTrue);
         expect(base.copyWith(vlanId: 100).vlanId, 100);
+        expect(base.copyWith(vlanPriority: 5).vlanPriority, 5);
         expect(base.copyWith(mtu: 1492).mtu, 1492);
         expect(base.copyWith(mtuAuto: true).mtuAuto, isTrue);
         expect(base.copyWith(wanMacAddress: 'AA:BB:CC:DD:EE:FF').wanMacAddress,
@@ -149,6 +154,7 @@ void main() {
           base.copyWith(serverAddress: 'x'),
           base.copyWith(vlanEnabled: true),
           base.copyWith(vlanId: 1),
+          base.copyWith(vlanPriority: 5),
           base.copyWith(mtu: 1),
           base.copyWith(mtuAuto: true),
           base.copyWith(wanMacAddress: 'x'),
@@ -161,7 +167,7 @@ void main() {
         ];
 
         // Sanity: one mutation per field declared on the model.
-        expect(mutations.length, 25);
+        expect(mutations.length, 26);
 
         for (final mutated in mutations) {
           expect(mutated, isNot(equals(base)));

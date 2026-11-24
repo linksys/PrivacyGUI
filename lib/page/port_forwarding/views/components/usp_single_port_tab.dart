@@ -10,7 +10,7 @@ import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/usp_port_forwarding_page_notifier.dart';
 import 'package:privacy_gui/page/dashboard/views/dialogs/port_forwarding_dialog.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_rule_limits.dart';
-import 'package:privacy_gui/page/port_forwarding/views/components/lan_for_rule_dialog.dart';
+import 'package:privacy_gui/page/_shared/helpers/read_lan_for_host_check.dart';
 import 'package:privacy_gui/page/_shared/components/rule_limit_note.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -154,7 +154,7 @@ class UspSinglePortTab extends ConsumerWidget {
   }
 
   Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
-    final lan = await lanForRuleDialog(context, ref);
+    final lan = await readLanForHostCheck(context, ref);
     if (lan == null || !context.mounted) return;
     final deviceOptions = _buildIpv4DeviceOptions(ref);
     final result = await showAppDialog<PortForwardingDialogResult>(
@@ -181,7 +181,7 @@ class UspSinglePortTab extends ConsumerWidget {
 
   Future<void> _showEditDialog(BuildContext context, WidgetRef ref,
       PortForwardingRuleUIModel rule) async {
-    final lan = await lanForRuleDialog(context, ref);
+    final lan = await readLanForHostCheck(context, ref);
     if (lan == null || !context.mounted) return;
     final deviceOptions = _buildIpv4DeviceOptions(ref);
     final result = await showAppDialog<PortForwardingDialogResult>(

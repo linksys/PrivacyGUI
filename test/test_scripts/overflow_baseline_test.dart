@@ -1808,8 +1808,9 @@ void main() {
     test('names only paths that git can actually report on', () {
       // A gitignored path in the pathspec reads as coverage and provides none:
       // `git status --porcelain -- <ignored>` is silent, so the stamp would stay
-      // clean through any change to it. pubspec.lock is the live example — it is
-      // ignored in this repo, which is why it is not on the list.
+      // clean through any change to it. pubspec.lock was the live example: it
+      // stayed off the list while it was ignored, and joined it when #1414
+      // started tracking it.
       for (final path in kBaselineMeasuredPaths) {
         final ignored = Process.runSync('git', ['check-ignore', path]);
         expect(ignored.exitCode, isNot(0),

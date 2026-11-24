@@ -499,6 +499,50 @@ void main() {
       container.dispose();
     });
 
+    // PR #1784 review (Hank, Peter): when the read-back fails as well, an
+    // added route the save may have written has no path on the page. The
+    // next Save reads the router first instead of adding it a second time.
+    test(
+        'whose read-back fails after an add makes the next save read the '
+        'router first, not add again', () async {
+      final added = route2.copyWith(instancePath: null);
+      var reads = 0;
+      when(() => mockService.fetch()).thenAnswer((_) async {
+        reads++;
+        if (reads == 2) throw const NetworkError(detail: 'offline');
+        return reads == 1 ? [route1] : [route1, route2];
+      });
+      when(() => mockService.saveBatch(
+                original: any(named: 'original'),
+                current: any(named: 'current'),
+              ))
+          .thenThrow(const UspPartialFailureError(
+              summary: 's', successPaths: [], failures: []));
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      final notifier = container.read(uspStaticRoutingProvider.notifier);
+      notifier.addRoute(StaticRouteUIModel(
+        enabled: added.enabled,
+        name: added.name,
+        destIpAddress: added.destIpAddress,
+        destSubnetMask: added.destSubnetMask,
+        gatewayIpAddress: added.gatewayIpAddress,
+        interfaceName: added.interfaceName,
+      ));
+
+      await expectLater(
+          notifier.save(), throwsA(isA<UspPartialFailureError>()));
+      await expectLater(
+          notifier.save(), throwsA(isA<SaveDiscardedForRouterRowsError>()));
+      verify(() => mockService.saveBatch(
+            original: any(named: 'original'),
+            current: any(named: 'current'),
+          )).called(1);
+      expect(container.read(uspStaticRoutingProvider).settings.current.routes,
+          [route1, route2]);
+      container.dispose();
+    });
+
     // The routes went in before the switch was refused: shown with their
     // instance paths, so a second Save does not Add them again.
     test('of the switch after routes were added shows the added routes',

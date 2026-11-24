@@ -111,7 +111,10 @@ function reply(kind, id, command, faultCode = 7004) {
 }
 
 async function operate(kind, {name = 'Apply', token = true, faultCode, status} = {}) {
-  const command = `Device.X_LINKSYS_AutoIPoE.${name}()`;
+  // `validation`: a command path the client refuses before sending (9997).
+  const command = kind === 'validation'
+    ? `Device.X_LINKSYS_AutoIPoE.${name}`
+    : `Device.X_LINKSYS_AutoIPoE.${name}()`;
   const args = {...fixture.args};
   if (name === 'Apply') args.Settings = JSON.stringify({password: secret});
   let calls = 0;
@@ -145,12 +148,23 @@ async function operate(kind, {name = 'Apply', token = true, faultCode, status} =
   const client = builder.build();
   try {
     const response = await client.operate(command, args);
-    assert.equal(calls, 1, 'a mutation is never dispatched twice');
+    if (kind === 'validation') assert.equal(calls, 0, 'refused input is never sent');
+    else assert.equal(calls, 1, 'a mutation is never dispatched twice');
     return {response, command, sentCommandKey};
   } finally {
     client.free();
     globalThis.fetch = originalFetch;
   }
+}
+
+// The one `errors` entry a failed operate reports, for [command]. The list is
+// the member the app reads (usp-client 0.16.0); the `error` map next to it is
+// deprecated, and nothing in the app reads it.
+function failureOf(response, command) {
+  assert.equal(response.result.errors.length, 1);
+  const [entry] = response.result.errors;
+  assert.equal(entry.path, command);
+  return entry;
 }
 
 for (const name of ['Apply', 'Reset', 'ResolvePending']) {
@@ -176,7 +190,7 @@ for (const [kind, text] of [
     const {response, command} = await operate(kind);
     assert.equal(response.success, false);
     assert.equal(response.result.data?.outputArgs?.Result, undefined);
-    assert.ok(response.result.error[command].errorMessage.includes(text));
+    assert.ok(failureOf(response, command).errorMessage.includes(text));
   });
 }
 for (const kind of ['async', 'no_match']) {
@@ -191,8 +205,8 @@ for (const faultCode of [7004, 7022, 4294967295]) {
   test(`command fault ${faultCode} preserves the unsigned fault code`, async () => {
     const {response, command} = await operate('command', {faultCode});
     assert.equal(response.success, false);
-    assert.deepEqual(response.result.error[command], {
-      errorCode: faultCode, errorMessage: 'Synthetic refusal',
+    assert.deepEqual(failureOf(response, command), {
+      kind: 'path', path: command, errorCode: faultCode, errorMessage: 'Synthetic refusal',
     });
   });
 }
@@ -203,12 +217,12 @@ for (const [kind, options, pattern] of [
   ['network', {}, /Failed to fetch/],
   ['timeout', {}, /Synthetic timeout/],
   ['body', {}, /Body read interrupted/],
-  ['protocol', {faultCode: 7004}, /Synthetic refusal.*7004/],
+  ['protocol', {faultCode: 7004}, /^Synthetic refusal$/],
 ]) {
   test(`${kind} ${options.status ?? ''} preserves the shared failure response`, async () => {
     const {response, command} = await operate(kind, options);
     assert.equal(response.success, false);
-    assert.match(response.result.error[command].errorMessage, pattern);
+    assert.match(failureOf(response, command).errorMessage, pattern);
   });
 }
 
@@ -219,9 +233,12 @@ for (const fixture of errorCases) {
       status: fixture.status, faultCode: fixture.faultCode,
     });
     assert.equal(response.success, false);
-    const error = response.result.error[command];
-    assert.equal(error.errorCode, fixture.errorCode);
-    assert.ok(error.errorMessage.startsWith(fixture.errorMessage), fixture.name);
+    // The Dart test builds `errors` from the same fixture: one entry, its
+    // `kind` the one UspClient decides by (usp-client 0.16.0, #1787).
+    const entry = failureOf(response, command);
+    assert.equal(entry.kind, fixture.errorKind);
+    assert.equal(entry.errorCode, fixture.errorCode);
+    assert.ok(entry.errorMessage.startsWith(fixture.errorMessage), fixture.name);
   });
 }
 

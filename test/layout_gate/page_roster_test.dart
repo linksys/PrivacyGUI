@@ -152,21 +152,6 @@ void main() {
       expect(roster.paths, isNot(contains(path)));
     });
 
-    test('the page a one-level glob misses is discovered', () {
-      expect(
-        discovered,
-        contains(
-          'lib/page/login/auto_parent/views/auto_parent_first_login_view.dart',
-        ),
-        reason: 'this is the file that makes the difference between 45 and 46, '
-            'and it sits two levels under lib/page/ rather than one. It is also '
-            'exactly the kind of page a coverage record forgets. The test used to '
-            'be named after its ordinal ("the 45th page"); #1549 added a page and '
-            'the ordinal was the only thing about it that changed, which is a name '
-            'promising something the assertion never checked.',
-      );
-    });
-
     test('no discovered page view is absent from the roster', () {
       expect(
         roster.unrecordedPages(discovered),
@@ -393,12 +378,17 @@ void main() {
       // (`linksys/privacyGUI-UI-kit#70` → `936c1da6` → v2.40.2), and the figure is
       // #1378's own measurement, unchanged by the bump: what moved is the verdict on
       // those cells, not their cost.
-      expect(byPath['$pnp/pnp_setup_view.dart']!.msPerCell, 34.3);
+      //
+      // `pnp_setup_view.dart` itself is gone since #1511 P4 — its 34.3 went with the
+      // file — and its first case lives on as the frame's: `pnp_flow_frame`, the
+      // stepper over the Wi-Fi step, measured on this column's basis.
+      expect(byPath['$pnp/pnp_flow_frame_view.dart']!.msPerCell, 30.6);
       expect(
-        byPath['$pnp/pnp_setup_view.dart']!.disposition,
+        byPath['$pnp/pnp_flow_frame_view.dart']!.disposition,
         PageRosterDisposition.swept,
         reason:
-            'this row read `queued` for one day. If it reads `queued` again, a '
+            'the stepper\'s row, and the stepper read `queued` for one day once '
+            '(linksys/privacyGUI-UI-kit#70). If this reads `queued` again, a '
             'page left the gate — which is a deletion from kPageSurfaceCases that '
             'assertion 3 below would also catch, and one nobody should be able to '
             'make quietly.',
@@ -483,21 +473,23 @@ void main() {
       expect(roster.needsFixture, isEmpty);
 
       // PnpIPoEView adds one pending fixture after the original queue was cleared.
-      // The four pages below still have their declared coverage; a new queued
-      // page must not erase that completed work.
+      // The three pages below still have their declared coverage; a new queued
+      // page must not erase that completed work. There were four until #1511 P0:
+      // wave 3's one unit of debt, `auto_parent_first_login_view.dart` — a
+      // directory deeper than the other login views, and unmeasurable because its
+      // opening state was its only state — was deleted as dead code, so it left
+      // this set by being deleted, not by being dropped.
       const paidDown = {
         'lib/page/instant_setup/views/pnp_ipoe_view.dart',
-        // Wave 3's one unit of debt: #1370's glob found this file one directory
-        // deeper than the other login views and could not measure it at all,
-        // because its opening state is the only state it has.
-        'lib/page/login/auto_parent/views/auto_parent_first_login_view.dart',
         // #1370 recorded this as needing a fixture and #1378 wrote it — one
         // composed `NoInternet` state, shared with three other pages in the flow.
         'lib/page/instant_setup/views/pnp_waiting_modem_view.dart',
         // The subtler one: queued for a day, so it was *sweep* debt, never fixture
         // debt — its fixture got all 208 cells past the loader on the first
-        // attempt and a ui_kit defect is what held it.
-        'lib/page/instant_setup/views/pnp_setup_view.dart',
+        // attempt and a ui_kit defect is what held it. It was
+        // `pnp_setup_view.dart` until #1511 P4; the stepper that debt was about is
+        // the frame's now, and so is the row.
+        'lib/page/instant_setup/views/pnp_flow_frame_view.dart',
         // #1377 counted this page as fixture-free because `statisticsOverrides()`
         // exists. It was debt anyway: the populated state lived in
         // `test/golden_test/`, which #1361 forbids importing from here, and the
@@ -535,7 +527,7 @@ void main() {
       );
     });
 
-    test('the register reads 47 swept, 0 queued, 2 excluded', () {
+    test('the register reads 51 swept, 0 queued, 2 excluded', () {
       // 2/41/2 when #1382 shipped it; wave 1 (#1377) moved five from queued to
       // swept, wave 2 (#1378) nine — eight on the day, and `pnp_setup` the day
       // after, when ui_kit v2.40.2 unblocked it — wave 3 (#1379) six, and wave 4
@@ -547,7 +539,7 @@ void main() {
       // short version is that unreachability is the only reason this epic accepts
       // and none of the four is unreachable.
       //
-      // 47 swept + 2 excluded = 49 accounted for. PnpIPoEView's supported-ready
+      // 49 swept + 2 excluded = 51 accounted for. PnpIPoEView's supported-ready
       // fixture now exercises its settings, completed result, and log panel.
       //
       // The 44th is #1549's `firmware_ota_view.dart`, and it is the first row added
@@ -570,8 +562,26 @@ void main() {
       // Administration, the UPnP switch — and it arrives the same way again.
       // The 47th is #879's `add_nodes_view.dart`, the same way once more, and the
       // 48th #1734's `pnp_add_nodes_view.dart`, the same flow in the wizard's frame.
+      // The 50th is #641's `usp_ddns_view.dart`, Advanced Settings → DDNS, the
+      // same way.
+      //
+      // Then the first row the register lost: #1511 P0 deleted
+      // `auto_parent_first_login_view.dart`, a wave 3 page, as dead code — its route
+      // was reachable only by typing the URL, and its only exit named a route
+      // nothing registers. 50 → 49, with the file, not by un-sweeping it.
+      //
+      // Then #1511 P4 split `pnp_setup_view.dart` — every step and every status
+      // screen of the wizard — into the frame the PnP shell draws and the three
+      // steps, each a route: one row went, four came, straight to `swept` with the
+      // `lib/` change that made them. 49 → 52.
+      //
+      // Then the second row the register lost: #1836 deleted
+      // `usp_test_console_view.dart` with the USP test console it was — a wave 4
+      // page, and one of the four exclusion candidates that wave kept because it was
+      // reachable in every debug build. Its find was fixed in #1380 and its file is
+      // gone, so the row goes with the file. 52 → 51.
       expect(
-          roster.withDisposition(PageRosterDisposition.swept), hasLength(49));
+          roster.withDisposition(PageRosterDisposition.swept), hasLength(51));
       expect(
         roster.withDisposition(PageRosterDisposition.queued).map((r) => r.path),
         isEmpty,
@@ -595,7 +605,8 @@ void main() {
             'because usp_dashboard_view.dart:64 constructs it and so a user '
             'reaches it. Routed and reachable are different questions, which is '
             'why the check that decided these two is named in the reason column. '
-            'usp_test_console_view is the sharpest case: route_usp_dashboard.dart'
+            'usp_test_console_view was the sharpest case (#1836 has since deleted '
+            'the console): route_usp_dashboard.dart'
             ':201 gates it behind `kDebugMode || enableTestConsole`, so it is '
             'absent from a default release build and present in every debug one — '
             'reachable, therefore in, and it carried the epic\'s largest single '
@@ -666,7 +677,7 @@ void main() {
       );
     });
 
-    test('47 of 49 pages are swept and two are excluded', () {
+    test('52 of 54 pages are swept and two are excluded', () {
       // Written out rather than counted, and that is the point of the test. This is
       // the roster half of the join assertion 3 checks both directions of, so a
       // length check would pass against 43 rows that are not these 43.
@@ -713,6 +724,7 @@ void main() {
         'lib/page/apps/views/usp_apps_view.dart',
         'lib/page/dashboard/views/usp_dashboard_view.dart',
         'lib/page/dashboard/views/usp_sliver_dashboard_view.dart',
+        'lib/page/ddns/views/usp_ddns_view.dart',
         'lib/page/devices/views/usp_device_detail_view.dart',
         'lib/page/devices/views/usp_device_list_view.dart',
         'lib/page/dhcp/views/usp_dhcp_detail_view.dart',
@@ -727,7 +739,11 @@ void main() {
         'lib/page/instant_setup/views/pnp_modem_lights_off_view.dart',
         'lib/page/instant_setup/views/pnp_no_internet_view.dart',
         'lib/page/instant_setup/views/pnp_pppoe_view.dart',
-        'lib/page/instant_setup/views/pnp_setup_view.dart',
+        // #1511 P4: `pnp_setup_view.dart` became these four.
+        'lib/page/instant_setup/views/pnp_flow_frame_view.dart',
+        'lib/page/instant_setup/views/pnp_wifi_step_view.dart',
+        'lib/page/instant_setup/views/pnp_guest_step_view.dart',
+        'lib/page/instant_setup/views/pnp_your_network_step_view.dart',
         'lib/page/instant_setup/views/pnp_static_ip_view.dart',
         'lib/page/instant_setup/views/pnp_unplug_modem_view.dart',
         'lib/page/instant_setup/views/pnp_waiting_modem_view.dart',
@@ -735,7 +751,6 @@ void main() {
         'lib/page/ipv6_port_service/views/usp_ipv6_port_service_view.dart',
         'lib/page/landing/views/home_view.dart',
         'lib/page/local_network/views/usp_local_network_view.dart',
-        'lib/page/login/auto_parent/views/auto_parent_first_login_view.dart',
         'lib/page/login/views/local_reset_router_password_view.dart',
         'lib/page/login/views/local_router_recovery_view.dart',
         'lib/page/login/views/login_local_view.dart',
@@ -747,7 +762,6 @@ void main() {
         'lib/page/statistics/views/usp_statistics_view.dart',
         'lib/page/support/views/usp_support_view.dart',
         'lib/page/system_log/views/usp_system_log_view.dart',
-        'lib/page/test_console/views/usp_test_console_view.dart',
         'lib/page/topology/views/usp_node_detail_view.dart',
         'lib/page/topology/views/usp_topology_view.dart',
         'lib/page/unified_diagnostics/views/unified_diagnostics_view.dart',

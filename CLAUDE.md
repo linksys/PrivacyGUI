@@ -12,8 +12,11 @@ This is a Flutter application for managing Linksys networking devices. It provid
 
 ### Dependencies and Setup
 ```bash
-flutter pub get                    # Install dependencies
+fvm flutter pub get                # Install exactly what the committed pubspec.lock says
+fvm flutter pub upgrade            # Deliberate upgrade only — in a PR of its own
 ```
+
+`pubspec.lock` is committed and CI installs it with `--enforce-lockfile` (#1414), so a PR that changes `pubspec.yaml` — a constraint, a new package, a ui_kit `ref:` — must commit the lock that goes with it, or CI's setup step fails. Upgrading packages is a PR of its own whose diff is the lock; never fold a `pub upgrade` into an unrelated change, and resolve under `fvm` so the SDK-pinned packages match CI.
 
 ### Running the Application
 ```bash

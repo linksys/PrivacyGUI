@@ -4,7 +4,6 @@ import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_check_result.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_progress.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_phase.dart';
-import 'package:privacy_gui/page/firmware_update/models/firmware_upload_method.dart';
 
 class FirmwareUpdateState extends Equatable {
   final FirmwareUpdatePhase phase;
@@ -23,9 +22,6 @@ class FirmwareUpdateState extends Equatable {
   /// no `BuildContext`, so any sentence it could put here would be English in all
   /// 26 locales. See [FirmwareFailure] and `localizeFirmwareFailure`.
   final FirmwareFailure? failure;
-
-  /// The upload method used for the current/last upload (null if not started).
-  final UploadMethod? uploadMethod;
 
   /// What the last OTA check found, if one has run.
   ///
@@ -74,7 +70,6 @@ class FirmwareUpdateState extends Equatable {
     this.uploadedChunks = 0,
     this.totalChunks = 0,
     this.failure,
-    this.uploadMethod,
     this.otaCheck = const FirmwareOtaCheckResult.notChecked(),
     this.otaProgress,
     this.stateReadError,
@@ -98,8 +93,8 @@ class FirmwareUpdateState extends Equatable {
   /// read like a clear at four call sites and do nothing.
   ///
   /// A flag beats making these fields nullable-with-sentinel because the compiler
-  /// can see it, and beats adding a clear flag to all thirteen because the other
-  /// ten have no caller that wants one.
+  /// can see it, and beats adding a clear flag to all twelve because the other
+  /// nine have no caller that wants one.
   FirmwareUpdateState copyWith({
     FirmwareUpdatePhase? phase,
     FirmwareImageUIModel? activeBank,
@@ -110,7 +105,6 @@ class FirmwareUpdateState extends Equatable {
     int? uploadedChunks,
     int? totalChunks,
     FirmwareFailure? failure,
-    UploadMethod? uploadMethod,
     FirmwareOtaCheckResult? otaCheck,
     FirmwareOtaInstallProgress? otaProgress,
     String? stateReadError,
@@ -130,7 +124,6 @@ class FirmwareUpdateState extends Equatable {
       // The clear wins when both are given: it is the more explicit of the two,
       // where a value can also arrive from an unrelated `??` further up.
       failure: clearFailure ? null : failure ?? this.failure,
-      uploadMethod: uploadMethod ?? this.uploadMethod,
       otaCheck: otaCheck ?? this.otaCheck,
       otaProgress: clearOtaProgress ? null : otaProgress ?? this.otaProgress,
       stateReadError:
@@ -149,7 +142,6 @@ class FirmwareUpdateState extends Equatable {
         uploadedChunks,
         totalChunks,
         failure,
-        uploadMethod,
         otaCheck,
         otaProgress,
         stateReadError,

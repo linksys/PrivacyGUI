@@ -14,6 +14,7 @@ import 'package:privacy_gui/core/usp/models/operate_result.dart';
 import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/utils/wifi_channel.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/generated/data_elements_network_info.g.dart';
@@ -29,6 +30,7 @@ import 'package:privacy_gui/page/unified_diagnostics/models/device_score.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_probe_ui_models.dart';
 import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_result.dart';
 import 'package:privacy_gui/page/_shared/components/wifi_ui.dart';
+import 'package:privacy_gui/page/_shared/services/mesh_node_backhaul.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart';
 
 final unifiedDiagnosticsServiceProvider =
@@ -271,6 +273,7 @@ class UnifiedDiagnosticsService {
               instancePath: r.instancePath,
               band: r.operatingFrequencyBand,
               channel: r.channel,
+              channelInUse: parseChannelInUse(r.channelsInUse),
               channelBandwidth: r.operatingChannelBandwidth,
               transmitPower: r.transmitPower,
               status: r.status,
@@ -445,6 +448,7 @@ class UnifiedDiagnosticsService {
                 instancePath: r.instancePath,
                 band: r.operatingFrequencyBand,
                 channel: r.channel,
+                channelInUse: parseChannelInUse(r.channelsInUse),
                 channelBandwidth: r.operatingChannelBandwidth,
                 transmitPower: r.transmitPower,
                 status: r.status,
@@ -498,6 +502,7 @@ class UnifiedDiagnosticsService {
         instancePath: r.instancePath,
         band: r.operatingFrequencyBand,
         channel: r.channel,
+        channelInUse: parseChannelInUse(r.channelsInUse),
         status: r.status,
       );
     }
@@ -505,6 +510,7 @@ class UnifiedDiagnosticsService {
       instancePath: '',
       band: 'Unknown',
       channel: 0,
+      channelInUse: null,
       status: 'Unknown',
     );
 
@@ -522,6 +528,7 @@ class UnifiedDiagnosticsService {
               instancePath: b.instancePath,
               band: b.band,
               channel: b.channel,
+              channelInUse: b.channelInUse,
               status: b.status,
               clientCount: b.clientCount,
               averageRssi: b.averageRssi,
@@ -535,6 +542,7 @@ class UnifiedDiagnosticsService {
         instancePath: '',
         band: 'Unknown',
         channel: 0,
+        channelInUse: null,
         status: 'Unknown',
         clientCount: unknownBucket.clientCount,
         averageRssi: unknownBucket.averageRssi,
@@ -847,6 +855,7 @@ class _RadioBucket {
   final String instancePath;
   final String band;
   final int channel;
+  final int? channelInUse;
   final String status;
   final List<int> rssiSamples = [];
   int clientCount = 0;
@@ -855,6 +864,7 @@ class _RadioBucket {
     required this.instancePath,
     required this.band,
     required this.channel,
+    required this.channelInUse,
     required this.status,
   });
 

@@ -10,7 +10,7 @@ import 'package:sliver_dashboard/sliver_dashboard.dart' show LayoutItem;
 /// #1299 — the inversion, at the seam where a stored pick becomes geometry.
 ///
 /// #1232 runs **width → density**. This ticket runs **density → the sizes that
-/// are legal**, and `UspWidgetSpecs._applyCardForm` is the whole of that arrow: a
+/// are legal**, and `UspCardSizing._applyCardForm` is the whole of that arrow: a
 /// function from (item, grid, pick) to a box whose `isResizable`, `minW` and
 /// `minH` say what the chosen form allows. Everything else in the feature — the
 /// panel, the persistence, the render scope — only moves the pick around.
@@ -26,7 +26,7 @@ import 'package:sliver_dashboard/sliver_dashboard.dart' show LayoutItem;
 ///
 /// ## Mutation table
 ///
-/// Each row is one edit to `usp_widget_specs.dart` — except 19-21 and 23-25, which
+/// Each row is one edit to `usp_card_sizing.dart` — except 19-21 and 23-25, which
 /// edit the models in `card_form_choice.dart` — applied to the real file and run
 /// against this file *and* `usp_card_form_persistence_test.dart` (some of the
 /// arithmetic is only observable once a pick has been through the pref). The counts
@@ -561,7 +561,7 @@ void main() {
   // Which cards get a control at all
   // ---------------------------------------------------------------------------
   group('selectableForms', () {
-    test('offers compact only to the seven cards that read it', () {
+    test('offers compact only to the eight cards that read it', () {
       final withCompact = UspWidgetSpecs.all
           .map((spec) => spec.id)
           .where((id) =>
@@ -578,10 +578,12 @@ void main() {
           'time_settings',
           'dhcp_reservations',
           'network_health',
+          // #1130: drops (i), the chevron and the flag column.
+          'firewall_overview',
         ],
         reason: 'A compact entry on a card that ignores the density renders '
             'exactly the normal form — a control that visibly does nothing. '
-            'Building compact forms for the other eleven is #1288-#1291-scale '
+            'Building compact forms for the other ten is #1288-#1291-scale '
             'card-own design work and out of scope.',
       );
     });

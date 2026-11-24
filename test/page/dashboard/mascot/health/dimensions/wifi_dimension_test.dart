@@ -8,6 +8,9 @@ import 'package:privacy_gui/page/dashboard/mascot/health/health_dimension.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 
 void main() {
+  // English, so these assertions also pin the copy the keys replaced (#1312).
+  final en = lookupAppLocalizations(const Locale('en'));
+
   group('WifiHealthDimension', () {
     late WifiHealthDimension dimension;
 
@@ -26,6 +29,7 @@ void main() {
         transmitPower: 100,
         maxBitRate: 1200,
         channel: 6,
+        channelInUse: 6,
         autoChannelEnable: true,
         channelBandwidth: '20MHz',
         supportedStandards: '802.11ax',
@@ -102,7 +106,7 @@ void main() {
           ),
         );
 
-        final summary = dimension.getSummary(context);
+        final summary = dimension.getSummary(context, en);
 
         expect(summary.status, 'All Active');
         expect(summary.items.any((i) => i.label == 'Radios'), true);
@@ -118,7 +122,7 @@ void main() {
           ),
         );
 
-        final summary = dimension.getSummary(context);
+        final summary = dimension.getSummary(context, en);
 
         expect(summary.status, 'All Disabled');
       });

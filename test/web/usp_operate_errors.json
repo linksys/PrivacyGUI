@@ -3,8 +3,9 @@
     "name": "expired HTTP session",
     "kind": "http",
     "status": 401,
+    "errorKind": "request",
     "errorCode": 9999,
-    "errorMessage": "Transport error: Transport error: HTTP error: HTTP 401",
+    "errorMessage": "Transport error: HTTP error: HTTP 401",
     "category": "transport",
     "httpStatus": 401,
     "mappedCode": 401,
@@ -14,8 +15,9 @@
     "name": "HTTP service unavailable",
     "kind": "http",
     "status": 503,
+    "errorKind": "request",
     "errorCode": 9999,
-    "errorMessage": "Transport error: Transport error: HTTP error: HTTP 503",
+    "errorMessage": "Transport error: HTTP error: HTTP 503",
     "category": "transport",
     "httpStatus": 503,
     "mappedCode": 503,
@@ -24,8 +26,9 @@
   {
     "name": "fetch failure",
     "kind": "network",
+    "errorKind": "request",
     "errorCode": 9999,
-    "errorMessage": "Transport error: Transport error: HTTP error: error sending request:",
+    "errorMessage": "Transport error: HTTP error: error sending request:",
     "category": "transport",
     "serviceError": "NetworkError"
   },
@@ -33,8 +36,9 @@
     "name": "protocol fault",
     "kind": "protocol",
     "faultCode": 7004,
-    "errorCode": 9999,
-    "errorMessage": "Transport error: Protocol error: Decoding error: Received error response: Synthetic refusal (code: 7004)",
+    "errorKind": "request",
+    "errorCode": 7004,
+    "errorMessage": "Synthetic refusal",
     "category": "protocol",
     "mappedCode": 7004,
     "serviceError": "InvalidInputError"
@@ -43,6 +47,7 @@
     "name": "command refusal",
     "kind": "command",
     "faultCode": 7022,
+    "errorKind": "path",
     "errorCode": 7022,
     "errorMessage": "Synthetic refusal",
     "category": "operation",
@@ -52,9 +57,23 @@
   {
     "name": "empty response",
     "kind": "empty",
-    "errorCode": 9999,
-    "errorMessage": "Transport error: Protocol error: Decoding error: Empty response data",
+    "faultCode": 9998,
+    "errorKind": "request",
+    "errorCode": 9998,
+    "errorMessage": "Protocol error: Decoding error: Empty response data",
     "category": "protocol",
+    "mappedCode": 9998,
     "serviceError": "UnexpectedError"
+  },
+  {
+    "name": "refused input",
+    "kind": "validation",
+    "faultCode": 9997,
+    "errorKind": "request",
+    "errorCode": 9997,
+    "errorMessage": "Validation error: Command path must contain parentheses",
+    "category": "validation",
+    "mappedCode": 9997,
+    "serviceError": "InvalidInputError"
   }
 ]

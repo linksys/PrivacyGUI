@@ -1622,11 +1622,11 @@ void main() {
       // silently reverts to the package defaults for as long as it is published.
       //
       // Every field is named, not just the ones this ticket switched off. The
-      // constraint is `^2.6.0` and `pubspec.lock` is gitignored, so a minor with
-      // one more modifier field — or one flipped default — arrives on a
-      // `flutter pub get` with no diff to review. `swapModeModifier` is why this
-      // is written out: it was already live and unnoticed because nothing here
-      // enumerated the set.
+      // constraint is `^2.6.0`, so a minor with one more modifier field — or one
+      // flipped default — arrives with a `pub upgrade`, and the only diff to
+      // review is a version number in `pubspec.lock`. `swapModeModifier` is why
+      // this is written out: it was already live and unnoticed because nothing
+      // here enumerated the set.
       void expectPolicy(ProviderContainer container, String site) {
         final controller = container.read(uspSliverDashboardControllerProvider);
         expect(controller.maxHistoryLength, 0, reason: 'history: $site');

@@ -21,15 +21,17 @@ import '../../../util/overflow_probe.dart';
 ///
 /// The #1183 gate (`dashboard_card_overflow_test.dart`) pins no density, so
 /// every card selects its own form from the width the grid gives it — which for
-/// 11 of the 18 cards is still always normal, because they declare no
-/// `normalAbove` (#1240 AC 1). The other **seven** declare one (#1288-#1291,
-/// #1321), and they are the cards a width can put into this form.
+/// 10 of the 18 cards is still always normal, because they declare no
+/// `normalAbove` (#1240 AC 1). The other **eight** declare one (#1288-#1291,
+/// #1321, #1130), and they are the cards a width can put into this form.
 ///
-/// The sweep below is wider than those seven: it covers the **nine** cards the grid
+/// The sweep below is wider than those eight: it covers the **nine** cards the grid
 /// can render under [kPopupBelow] at all, whether or not they declare a threshold
-/// — see [canReachPopupBand]. Three of the nine (`network_status`,
-/// `system_status`, `firewall_overview`) reach the band by width but stay normal
-/// there, so for them this measures a form only a #1299 pick can produce. Kept in
+/// — see [canReachPopupBand]. Two of the nine (`network_status`,
+/// `system_status`) reach the band by width but stay normal there, so for them
+/// this measures a form only a #1299 pick can produce. `firewall_overview` was the
+/// third until #1130 gave it a threshold: its full form does not read below 272px,
+/// so the grid's 191.4px now selects its popup form by width. Kept in
 /// rather than filtered on `normalAbove`, because a card that declares one later
 /// must not be arriving at its first measurement at the same time.
 ///
@@ -166,7 +168,7 @@ void main() {
       expect(UspWidgetSpecs.all, hasLength(18));
       expect(
         UspWidgetSpecs.all.where((s) => s.normalAbove != null).length,
-        7,
+        8,
         reason: 'the cards a width can put into a degraded form at all',
       );
       expect(
@@ -191,8 +193,7 @@ void main() {
           .map((s) => s.id)
           .toList();
 
-      expect(
-          pinnedOnly, ['network_status', 'system_status', 'firewall_overview'],
+      expect(pinnedOnly, ['network_status', 'system_status'],
           reason: 'these reach the band by width but stay normal there, so the '
               'sweep measures a form only a #1299 pick produces. A card leaving '
               'this list has just started selecting popup by width — which is a '

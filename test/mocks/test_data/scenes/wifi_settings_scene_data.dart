@@ -188,6 +188,7 @@ final quickSetupOnState = UspWifiSettingsState(
         ssid: 'HomeNetwork',
         password: '',
         securityMode: 'WPA2-Personal',
+        hasOpenNetwork: false,
         supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal', 'None'],
       ),
       quickSetupGuest: WifiQuickSetupSettings(
@@ -196,6 +197,7 @@ final quickSetupOnState = UspWifiSettingsState(
         ssid: 'HomeNetwork-Guest',
         password: '',
         securityMode: 'WPA2-Personal',
+        hasOpenNetwork: false,
         supportedSecurityModes: ['WPA2-Personal', 'None'],
       ),
     ),
@@ -208,6 +210,7 @@ final quickSetupOnState = UspWifiSettingsState(
         ssid: 'HomeNetwork',
         password: '',
         securityMode: 'WPA2-Personal',
+        hasOpenNetwork: false,
         supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal', 'None'],
       ),
       quickSetupGuest: WifiQuickSetupSettings(
@@ -216,6 +219,7 @@ final quickSetupOnState = UspWifiSettingsState(
         ssid: 'HomeNetwork-Guest',
         password: '',
         securityMode: 'WPA2-Personal',
+        hasOpenNetwork: false,
         supportedSecurityModes: ['WPA2-Personal', 'None'],
       ),
     ),
@@ -224,6 +228,37 @@ final quickSetupOnState = UspWifiSettingsState(
     quickSetupMainAggregate: _quickSetupMainAggregate,
     quickSetupGuestAggregate: _quickSetupGuestAggregate,
   ),
+);
+
+/// Quick Setup ON with the main 5 GHz band open on the router (#1720). The
+/// Main card still reads WPA2 — the first band's mode — but the open band has
+/// no passphrase to keep, so a mode change asks for one.
+final quickSetupOnMainBandOpenState = UspWifiSettingsState(
+  settings: Preservable(
+    original: _quickSetupMainBandOpen,
+    current: _quickSetupMainBandOpen,
+  ),
+  status: quickSetupOnState.status,
+);
+
+final _quickSetupMainBandOpen = WifiSettingsSettings(
+  networks: [
+    _main24,
+    _main5.copyWith(securityMode: 'None'),
+    _guest24,
+    _guest5,
+  ],
+  quickSetupEnabled: true,
+  quickSetupMain: const WifiQuickSetupSettings(
+    isGuest: false,
+    enabled: true,
+    ssid: 'HomeNetwork',
+    password: '',
+    securityMode: 'WPA2-Personal',
+    hasOpenNetwork: true,
+    supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal', 'None'],
+  ),
+  quickSetupGuest: quickSetupOnState.settings.original.quickSetupGuest,
 );
 
 /// Dirty state — SSID changed, showing Save/Cancel bottom bar

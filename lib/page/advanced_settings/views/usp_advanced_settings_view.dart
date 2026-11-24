@@ -91,6 +91,12 @@ class UspAdvancedSettingsView extends StatelessWidget {
         title: loc(context).portForwarding,
         onTap: () => context.pushNamed(RouteNamed.uspPortForwardingDetail),
       ),
+      // Next to Port Forwarding: 1.x had both under Apps & Gaming (#641).
+      AppSectionItemData(
+        identifier: 'advanced-settings-ddns',
+        title: loc(context).ddns,
+        onTap: () => context.pushNamed(RouteNamed.uspDdns),
+      ),
       AppSectionItemData(
         identifier: 'advanced-settings-static-routing',
         title: loc(context).staticRouting,

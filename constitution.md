@@ -4,7 +4,7 @@
 **Status:** Active
 **Context:** Source of Truth for Architectural Discipline
 **Ratified:** 2025-12-09
-**Last Amended:** 2026-10-21
+**Last Amended:** 2026-11-16
 
 ## Preamble
 This document establishes the immutable principles governing the development process of the Linksys Flutter application. It serves as the architectural DNA of the system, ensuring consistency, simplicity, and quality across all implementations.
@@ -179,10 +179,14 @@ All files MUST use `snake_case`:
 | Provider | `[feature]_provider.dart` | `auth_provider.dart`, `dmz_settings_provider.dart` |
 | State | `[feature]_state.dart` | `auth_state.dart`, `dmz_settings_state.dart` |
 | Model | Based on class name | `dmz_settings.dart`, `dmz_ui_settings.dart` |
-| Test | `[file_name]_test.dart` | `auth_service_test.dart` |
+| Test of one source file | `[file_name]_test.dart` | `auth_service_test.dart` |
+| Test of one source file, split by scenario | `[file_name]_[scenario]_test.dart` | `usp_client_rebind_test.dart` |
+| Test that covers no single source file | Named after what it checks | `composition_root_test.dart`, `mode_contract_roster_test.dart` |
 | Test Data Builder | `[feature]_test_data.dart` | `dmz_test_data.dart`, `auth_test_data.dart` |
 
 **Note**: File names use the **singular** form (`service.dart`, not `services.dart`).
+
+*Amended 2026-11-11 (#1313): the Test row used to assume every test file is named after one `lib/` source, and 42% of test files on `dev-2.7.4` (258 of 613) are not. 50 of them split one source's tests by scenario — `usp_client.dart` alone has seven. Others check a rule across many files — architecture scans, rosters, call-site scans, overflow sweeps — and have no source name to take. Backwards compatible: a test of one source file is named exactly as before.*
 
 ---
 
@@ -215,6 +219,9 @@ class DMZSettingsState extends FeatureState<DMZSettingsUIModel, DMZStatus> { ...
 **3.3.4: Model Classes**
 
 **UI Models** (Presentation Layer):
+
+The `UIModel` suffix is required on one kind of class: one that a Service builds from codegen models (Article VI) **and** that a Provider or State hands to a View to render. Both halves must hold. A class that fails either keeps a name that says what it is. Layout, grid geometry, configuration and registry classes usually fail the first half, but it is the test that decides, not the category.
+
 ```dart
 // Naming pattern: [Feature][Type]UIModel (must end with UIModel)
 class DMZSettingsUIModel extends Equatable { ... }
@@ -222,6 +229,8 @@ class WirelessConfigUIModel extends Equatable { ... }
 class SpeedTestUIModel extends Equatable { ... }
 class FirmwareUpdateUIModel extends Equatable { ... }
 ```
+
+*Amended 2026-11-11 (#1313): the rule named the pattern without saying which classes it binds, so whether `CardGridGeometry`, `WidgetSpec` and `UspLayoutEnvelope` in `lib/page/dashboard/models/` broke it could not be answered from the text. Under the test above, no type in that directory is a UI Model: none is built by a Service, and none imports codegen. Backwards compatible: the definition only says where the suffix is required, so no class is renamed in either direction.*
 
 **Generated Models** (USP Codegen, `lib/generated/*.g.dart`):
 ```dart
@@ -350,23 +359,35 @@ test('Test case 1', () { ... });
 ```
 
 **3.6.2: Test Group Naming**
+
+A group name states what its tests share — the subject, method, behaviour, scenario or category. It does not have to name the class under test:
+* In a test file named after one source file (Section 3.2), the path already names the class. A class prefix would repeat the file name in every group.
+* In a test file that covers no single source file, the group name is all the reader has, so it must make sense on its own.
+
 ```dart
-// Naming pattern: [ClassName] - [Feature/Category]
-group('AuthService - Session Token Management', () { ... });
-group('AuthNotifier - Cloud Login', () { ... });
-group('DMZService - Settings Transformation', () { ... });
+// ✅ Correct
+group('cache dedup', () { ... });                             // bridge_request_throttler_test.dart
+group('fetchSettings', () { ... });                           // usp_internet_settings_service_test.dart
+group('every AppMode is named in every root', () { ... });    // composition_root_test.dart
+group('AuthService - Session Token Management', () { ... });  // a class prefix is allowed, not required
+
+// ❌ Incorrect: numbering says nothing about what the tests share
+group('Group 1', () { ... });
+group('TC-01', () { ... });
 ```
+
+*Amended 2026-11-11 (#1313): this section used to require `[ClassName] - [Feature/Category]`, and on `dev-2.7.4` 136 of 1,861 groups (7%) followed it. The prefix restates the file name wherever the test file is named after its source, and cannot be formed where there is no single source. Nothing in the repo filters tests by class name; `--plain-name` is used only with layout-gate page keys. The part kept is the part that carried information: a group says what its tests share. Backwards compatible: the amendment removes a requirement and adds none that an existing group breaks (no group in the repo uses numbering), so no group is renamed, the 136 prefixed ones included.*
 
 **3.6.3: Test File Organization**
 ```dart
-// test/page/wifi/services/wifi_service_test.dart
+// test/page/wifi/services/wifi_service_test.dart — the path names the class
 void main() {
-  group('WifiService - fetchSettings', () {
+  group('fetchSettings', () {
     test('returns UI model on success', () { ... });
     test('throws ServiceError on USP error', () { ... });
   });
 
-  group('WifiService - updateSsid', () {
+  group('updateSsid', () {
     test('transforms UI model to codegen update', () { ... });
     test('calls UspService with correct parameters', () { ... });
   });
@@ -457,6 +478,9 @@ involved, so this does not bend Rule 2 below, which governs L2 notifiers reading
 - State MUST extend `FeatureState<TSettings, TStatus>`
 - Implement `performFetch()` and `performSave()` template methods
 - Pass the notifier provider's `.notifier` to the route — the mixin already makes the notifier a `PreservableContract`, so no second provider is needed
+- **Exception — the steps of a flow that saves once.** When a multi-step flow writes every step together, from the flow, in one save (the PnP wizard), each step keeps its working copy in an `AutoDispose` notifier whose state still extends `FeatureState<TSettings, TStatus>` over a `Preservable`, but **without** `PreservableAutoDisposeNotifierMixin`: a step never reads or writes the router on its own, so the mixin's `performFetch`/`performSave` template has nothing to run, and `has_service_error_roster_test.dart` rightly refuses a mixin user whose status can carry no read error. Each step implements `isDirty()`/`revert()`/`markAsSaved()` on its `Preservable`, and the route's guard is one `PreservableContract` over the steps — the `_WifiPageDirtyProxy` shape (`pnpWizardDraftsProvider`). A page whose notifier fetches or saves is not this case.
+
+*Amended 2026-11-13 (#1511 P4): the exception was added. Rationale: the PnP wizard's steps became one draft each, and the flow — not a step — reads the router once when the wizard starts and writes every step in one SET, because any Wi-Fi write restarts every radio. Taking the mixin meant two template methods that throw and a status with a fake error field to satisfy the roster test. Backwards compatible: it adds an exception and narrows nothing; no existing page changes, and the roster test still binds every notifier that uses the mixin.*
 
 **Route Configuration**:
 ```dart
@@ -467,7 +491,7 @@ LinksysRoute(
 )
 ```
 
-Passing `preservableProvider` **is** what turns the guard on; there is no separate flag. Write a provider of your own only when one page's dirty state spans more than one notifier — the Wi-Fi page's `preservableUspWifiPageProvider` combines two tabs through `_WifiPageDirtyProxy` and is the one example.
+Passing `preservableProvider` **is** what turns the guard on; there is no separate flag. Write a provider of your own only when one page's dirty state spans more than one notifier — there are two: the Wi-Fi page's `preservableUspWifiPageProvider` combines two tabs through `_WifiPageDirtyProxy`, and the PnP wizard's `pnpWizardDraftsProvider` combines its steps' drafts the same way (the §4.2 exception above).
 
 Reference implementation: `lib/page/dmz/providers/usp_dmz_notifier.dart`
 Detailed Guide: `doc/dirty_guard/dirty_guard_framework_guide.md`
@@ -674,37 +698,9 @@ class WifiService {
 
 **Section 5.4.3: Architecture Compliance Check**
 
-After completing the work, execute the following checks:
+`test/architecture/generated_types_only_in_services_test.dart` enforces the generated-model rule on every PR: under `lib/page/`, only a file inside a `services/` directory may import `lib/generated/`. It has no allowlist.
 
-```bash
-# ═══════════════════════════════════════════════════════════════
-# Generated Models Tier Isolation Check
-# ═══════════════════════════════════════════════════════════════
-
-# 1️⃣ Check if generated models are imported in the Provider layer
-grep -r "import.*generated/" lib/page/*/providers/
-# ✅ Should return 0 results (both L1 and L2 providers delegate to Services)
-
-# 2️⃣ Check if generated models are imported in the UI layer
-grep -r "import.*generated/" lib/page/*/views/
-# ✅ Should return 0 results
-
-# 3️⃣ Check if Service layer correctly imports generated models
-grep -r "import.*generated/" lib/page/*/services/
-# ✅ Should have results (Service layer should import generated models)
-
-# ═══════════════════════════════════════════════════════════════
-# Error Handling Tier Isolation Check (Article XIII)
-# ═══════════════════════════════════════════════════════════════
-
-# 4️⃣ Check if Provider layer has ServiceError imports (correct)
-grep -r "import.*core/errors/service_error" lib/page/*/providers/
-# ✅ Should have results when providers handle errors
-
-# 5️⃣ Check if Service layer correctly imports ServiceError
-grep -r "import.*core/errors/service_error" lib/page/*/services/
-# ✅ Should have results (Service layer should import ServiceError)
-```
+*Amended 2026-11-20 (#1833): the five grep commands that stood here were replaced by that test. Rationale: nobody ran them; their directory globs (`lib/page/*/providers/`, `lib/page/*/views/`) missed `_shared/utils/` and nested features, which is how nine files came to import `lib/generated/` outside `services/`; and three of the five only checked that some file somewhere did import something. Backwards compatible: the rule is unchanged, and it is now checked. The two error-handling greps go with them; Article XIII states that rule.*
 
 **Section 5.4.4: UI Model Creation Decision Criteria**
 
@@ -1134,7 +1130,7 @@ Future<WifiState> fetchSettings() async {
 
 **Section 13.4: Provider Layer Error Handling**
 
-**Responsibility**: The Provider layer only handles `ServiceError` types. MUST NOT catch generic exceptions or underlying error types.
+**Responsibility**: The Provider layer only handles `ServiceError` types. MUST NOT catch generic exceptions or underlying error types — the one exception is Section 13.4.3.
 
 **13.4.1: AsyncNotifier Pattern (Type C pages)**
 
@@ -1218,6 +1214,36 @@ Future<void> performSave() async {
 }
 ```
 
+**13.4.3: Phase-Machine Notifiers**
+
+"Unknown errors should bubble up" relies on something above the provider turning a thrown error into a state: `AsyncNotifier` makes it `AsyncError`, and the mixin's `fetch()`/`save()` handle what `performFetch()`/`performSave()` rethrow. A notifier whose state is a phase it sets itself — a `Notifier` over a sealed phase class, such as `PnpNotifier` — has nothing above it. An error that escapes leaves the phase where it was, and where that phase is a spinner or a progress screen with no button, the user is stuck with no way out.
+
+So a method that sets such a phase MUST end on a phase the user can leave, whatever is thrown:
+- catch `ServiceError` as Section 13.4 requires;
+- then catch what is left, log it with its stack, wrap it as `UnexpectedError(originalError: e)`, and land on the same failure phase a `ServiceError` would;
+- never store `'$e'`, and never turn the error into success.
+
+```dart
+// lib/page/instant_setup/providers/pnp_notifier.dart
+state = state.copyWith(phase: const WizardInitializing()); // a spinner, no button
+try {
+  _enterSteps(await _svc.fetchWizardData());
+} on ServiceError catch (e) {
+  state = state.copyWith(phase: WizardError(error: e));
+} catch (e, stack) {
+  // ✅ Section 13.4.3: not the router's answer but a bug of ours, and the
+  // spinner has no way out — typed, then the same failure phase.
+  logger.e('[PnP] Wizard init failed outside the services',
+      error: e, stackTrace: stack);
+  state = state.copyWith(
+      phase: WizardError(error: UnexpectedError(originalError: e)));
+}
+```
+
+This is not the "Wrong Example" above: that one catches everything and swallows it, so the user is told nothing; this one types what it catches and shows the user the failure. It does not apply to a method whose phase still has a way out, such as a retry that leaves the user on a page with its buttons.
+
+*Amended 2026-11-16 (#1816 review): this section was added. Rationale: the review narrowed `PnpNotifier`'s catches to `on ServiceError` by Section 13.4's text, and that left the wizard's spinner, the save and reconnect screens, and the troubleshooting flow's ISP-save and modem-check screens with no way out on any error that is not a `ServiceError`. The services already type every failure from the router, so what is left is a bug in our own code, which is rare — but this is the first-run setup, where a dead end is the worst outcome, and the global handler only logs. Backwards compatible: it allows one catch in one kind of notifier and requires nothing of a page built on `AsyncNotifier` or the Preservable mixin.*
+
 ---
 
 **Section 13.5: USP Error Handling Infrastructure**
@@ -1232,6 +1258,7 @@ All USP error parsing and `ServiceError` mapping is centralized in a single util
 |----------|---------|
 | `parseUspError(Object error)` | Parses raw USP error string into structured `UspError` (operation, category, fault code, HTTP status) |
 | `mapUspErrorToServiceError(Object error)` | Parses + maps to `ServiceError` subtype — **the only function USP Services need to call** |
+| `UspRefusalReason.fromErrorMessage(String)` (`lib/core/usp/errors/usp_refusal_reason.dart`) | Reads the error name a firmware refusal puts at the start of its message (`ErrorRulesOverlap: …`) into a typed reason. Called by `UspResultParser` and `mapUspErrorToServiceError` only; Services never call it |
 
 **Mapping summary**:
 
@@ -1247,7 +1274,10 @@ All USP error parsing and `ServiceError` mapping is centralized in a single util
 | Protocol (fault 7004, 9008) | `InvalidInputError` |
 | Protocol (fault 9001) | `UnauthorizedError` |
 | Validation | `InvalidInputError` |
+| Any category whose router message names a `UspRefusalReason` | `UspCompleteFailureError`, one entry carrying the reason |
 | Unrecognized | `UnexpectedError` |
+
+*Amended 2026-11-09 (#1775): the refusal-reason row and utility were added. Rationale: linksys/FWDEV#204 names why a write was refused in the message, under a code (7012) that says only that it was; the reason is parsed once here so the UI maps a type, never the router's text. Backwards compatible: a message naming no known reason maps exactly as before. Its parser lives in its own file, next to this one, because `UspResultParser` calls it too and `usp_error.dart` already imports that parser's file.*
 
 **Reference implementation**: `lib/page/dmz/services/usp_dmz_service.dart`
 
@@ -1611,7 +1641,9 @@ These need judgement, so they are disciplines rather than mechanically-checkable
 
 **No `RemoteX extends LocalX` overriding only the differences.** The two implementations are **peers**. Inheriting one from the other re-creates precisely the defect this Article removes — local as the silent default, which is why `ForceCommand.none` receives local behaviour nearly everywhere and why `lib/core/connection/` (349 lines) has no mode concept at all. It fails silently because the subclass is correct on the day it is written: every member it does not override is the local answer, so a member added to the parent later is inherited by remote without anyone deciding that it should be.
 
-**A member needs a measured difference, not an anticipated one.** Before adding a contract member, count the production call sites that actually differ. Applied to multi-step USP sequences straddling a transport rebind, the answer was **no**: both sequences have exactly one caller each and it is the debug console, itself gated behind `BuildConfig.enableTestConsole`, so no production path can reach the scenario. A member justified only by a scenario nobody can reach still has to be honoured by every future implementation.
+**A member needs a measured difference, not an anticipated one.** Before adding a contract member, count the production call sites that actually differ. Applied to multi-step USP sequences straddling a transport rebind, the answer was **no**: both sequences had exactly one caller each, and it was the debug console, gated behind a build flag, so no production path could reach the scenario. #1836 has since deleted the console and both sequences with it. A member justified only by a scenario nobody can reach still has to be honoured by every future implementation.
+
+*Amended 2026-11-20 (#1836): the worked example above is now in the past tense. Rationale: #1836 deleted the USP test console, its `BuildConfig.enableTestConsole` flag and both sequences, so the sentence named a flag that no longer exists. Backwards compatible: the rule is unchanged; only its example's tense and the deleted flag's name changed.*
 
 **A mode expresses a missing concept by its strategy not using a surface — never by a bool that hides UI.** "Remote has no mascot" is not `hideMascot: true`; it is a remote `SurfaceStrategy` that does not offer one. The flag form is what §17.1 deleted three instances of.
 

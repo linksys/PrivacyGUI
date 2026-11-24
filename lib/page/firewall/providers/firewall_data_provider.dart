@@ -29,11 +29,21 @@ class FirewallRuleSummary extends Equatable {
 class DmzEntrySummary extends Equatable {
   final bool enable;
   final String destIp;
+  final String destMac;
 
-  const DmzEntrySummary({required this.enable, required this.destIp});
+  const DmzEntrySummary({
+    required this.enable,
+    required this.destIp,
+    this.destMac = '',
+  });
+
+  /// The DMZ host: of [destIp] and [destMac] the router sets one, and the
+  /// non-empty one is the host (FWDEV#204), as on the DMZ page
+  /// (`UspDmzService.uiModelOf`). A host given by MAC leaves [destIp] empty.
+  String get host => destMac.isNotEmpty ? destMac : destIp;
 
   @override
-  List<Object?> get props => [enable, destIp];
+  List<Object?> get props => [enable, destIp, destMac];
 }
 
 // ---------------------------------------------------------------------------

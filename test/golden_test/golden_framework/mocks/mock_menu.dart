@@ -1,9 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_data.dart';
+import 'package:privacy_gui/page/mac_filter/providers/mac_filter_data_provider.dart';
 import 'package:privacy_gui/core/capability/capability_provider.dart';
 import 'package:privacy_gui/core/capability/device_capability.dart';
+
+import '../../../mocks/provider_overrides/mock_mac_filter.dart'
+    show FixedMacFilterDataNotifier;
 
 class FixedLanDataNotifierForMenu extends LanDataNotifier {
   final LanData _fixedData;
@@ -14,25 +17,17 @@ class FixedLanDataNotifierForMenu extends LanDataNotifier {
   Future<LanData> build() async => _fixedData;
 }
 
-class FixedInstantPrivacyNotifier extends UspInstantPrivacyNotifier {
-  final UspInstantPrivacyState _fixedState;
-
-  FixedInstantPrivacyNotifier(this._fixedState);
-
-  @override
-  UspInstantPrivacyState build() => _fixedState;
-}
-
 List<Override> menuOverrides({
   required LanData lanData,
-  required UspInstantPrivacyState privacyState,
+  required MacFilterData privacy,
 }) =>
     [
       lanDataProvider.overrideWith(
         () => FixedLanDataNotifierForMenu(lanData),
       ),
-      uspInstantPrivacyProvider.overrideWith(
-        () => FixedInstantPrivacyNotifier(privacyState),
+      // The Instant Privacy badge reads the session-wide MAC filter (#1755).
+      macFilterDataProvider.overrideWith(
+        () => FixedMacFilterDataNotifier(privacy),
       ),
       // The Instant Privacy card exists only on firmware that serves the MAC
       // filter (#1635); without this the card, and the badge row this fixture pins

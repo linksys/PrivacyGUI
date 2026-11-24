@@ -3,8 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
 import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
+import 'package:privacy_gui/page/administration/providers/upnp_data_provider.dart';
+import 'package:privacy_gui/page/ipv6_port_service/providers/ipv6_port_service_data_provider.dart';
 import 'package:privacy_gui/page/dashboard/orchestrator/dashboard_orchestrator.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_data.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
+import 'package:privacy_gui/page/mac_filter/providers/mac_filter_data_provider.dart';
 
 /// Connection state a test can move by hand. `build()` is overridden so none of
 /// the real notifier's wiring (SSE manager, auth listener) runs.
@@ -24,6 +29,17 @@ class _CountingWanDataNotifier extends WanDataNotifier {
   Future<WanData> build() async {
     builds++;
     throw StateError('not read by these tests');
+  }
+}
+
+/// Counts reads of the session-wide MAC filter (the menu's Instant Privacy badge).
+class _CountingMacFilterDataNotifier extends MacFilterDataNotifier {
+  int builds = 0;
+
+  @override
+  Future<MacFilterData> build() async {
+    builds++;
+    return const MacFilterData(mode: MacFilterMode.disabled, macs: []);
   }
 }
 
@@ -154,6 +170,94 @@ void main() {
       await settle();
 
       expect(wan.builds, 1);
+    });
+  });
+
+  group('DashboardOrchestrator - the MAC filter (#1755)', () {
+    // A hardware privacy switch move made while the router is off is applied at
+    // boot, and its push goes out before the app is back. Only a re-read after
+    // the recovery wait brings the menu's Instant Privacy badge to it.
+    test('is re-read after a recovery wait', () async {
+      final connection = _DrivenConnectionState();
+      final macFilter = _CountingMacFilterDataNotifier();
+      final container = ProviderContainer(overrides: [
+        appConnectionStateProvider.overrideWith(() => connection),
+        macFilterDataProvider.overrideWith(() => macFilter),
+      ]);
+      addTearDown(container.dispose);
+      container.listen(appConnectionStateProvider, (_, __) {});
+      container.listen(macFilterDataProvider, (_, __) {});
+      container.listen(dashboardOrchestratorProvider, (_, __) {});
+      await pumpEventQueue();
+      expect(macFilter.builds, 1);
+
+      connection.move(AppConnectionState.waitingForRecovery);
+      connection.move(AppConnectionState.authenticated);
+      await pumpEventQueue();
+      container.read(macFilterDataProvider);
+      await pumpEventQueue();
+
+      expect(macFilter.builds, 2);
+    });
+  });
+
+  group('DashboardOrchestrator - UPnP (#1130)', () {
+    // The Firewall card shows UPnP, and the router pushes nothing for it, so
+    // only the dashboard's re-reads bring it up to date.
+    test('is re-read after a recovery wait', () async {
+      final connection = _DrivenConnectionState();
+      var upnpReads = 0;
+      final container = ProviderContainer(overrides: [
+        appConnectionStateProvider.overrideWith(() => connection),
+        upnpDataProvider.overrideWith((ref) async {
+          upnpReads++;
+          return true;
+        }),
+      ]);
+      addTearDown(container.dispose);
+      container.listen(appConnectionStateProvider, (_, __) {});
+      container.listen(upnpDataProvider, (_, __) {});
+      container.listen(dashboardOrchestratorProvider, (_, __) {});
+      await pumpEventQueue();
+      expect(upnpReads, 1);
+
+      connection.move(AppConnectionState.waitingForRecovery);
+      connection.move(AppConnectionState.authenticated);
+      await pumpEventQueue();
+      container.read(upnpDataProvider);
+      await pumpEventQueue();
+
+      expect(upnpReads, 2);
+    });
+  });
+
+  group('DashboardOrchestrator - IPv6 Port Service rules (#1130)', () {
+    // They decide the Firewall card's "nothing opened" sentence, and nothing
+    // the app hears is pushed for them.
+    test('are re-read after a recovery wait', () async {
+      final connection = _DrivenConnectionState();
+      var reads = 0;
+      final container = ProviderContainer(overrides: [
+        appConnectionStateProvider.overrideWith(() => connection),
+        ipv6PortServiceDataProvider.overrideWith((ref) async {
+          reads++;
+          return const [];
+        }),
+      ]);
+      addTearDown(container.dispose);
+      container.listen(appConnectionStateProvider, (_, __) {});
+      container.listen(ipv6PortServiceDataProvider, (_, __) {});
+      container.listen(dashboardOrchestratorProvider, (_, __) {});
+      await pumpEventQueue();
+      expect(reads, 1);
+
+      connection.move(AppConnectionState.waitingForRecovery);
+      connection.move(AppConnectionState.authenticated);
+      await pumpEventQueue();
+      container.read(ipv6PortServiceDataProvider);
+      await pumpEventQueue();
+
+      expect(reads, 2);
     });
   });
 }

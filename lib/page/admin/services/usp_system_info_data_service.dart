@@ -87,6 +87,7 @@ class UspSystemInfoDataService {
       baseMacAddress: _nonEmptyUpper(systemInfo.baseMacAddress),
       userDeviceLocation: nonEmpty(systemInfo.userDeviceLocation),
       friendlyName: nonEmpty(systemInfo.friendlyName),
+      hostName: nonEmpty(systemInfo.hostName),
     );
   }
 

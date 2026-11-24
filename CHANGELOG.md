@@ -2,6 +2,142 @@
 
 All notable changes to PrivacyGUI after version 2.0.0 are documented in this file.
 
+## [2.7.4] - 2026-11-24
+
+- 493bf7cf - fix(pnp): refresh the app-wide Wi-Fi cache once a PnP Wi-Fi save lands, so Wi-Fi Settings shows the new name (#1511)
+- b2610330 - fix(dmz): refresh the Firewall card's data after a DMZ save (#1912)
+- d1eb7fe3 - fix(wifi): match DataElements radios to SSIDs by their BSS BSSIDs, so 2.4 GHz utilization is not unknown on FW 2.0.4.26111304 (#1911)
+- 9f63fafc - refactor: generated codegen types only in services/, and a guard test in place of constitution 5.4.3's greps (#1833)
+- 95f3c41c - test(architecture): presentation_no_service_import_test has no allowlist (#1836 item 4)
+- 03202165 - fix(devices): read a Hosts address of 0.0.0.0 as no IPv4, with one placeholder and one LAN-host check app-wide (#1838) (#1884)
+- 46da36fb - fix: the console leftovers review round 1 found (#1836)
+- 45107cc8 - fix(dashboard): a card that leaves during a failed GET subscribes to nothing, and pin what review asked for (#1837)
+- 6af7d0eb - refactor: delete the USP test console and what only it used (#1836)
+- a16273a4 - refactor(ai-assistant): the router assistant view reaches the credentials store through providers/ and models/ (#1836)
+- 8dd6a8ce - refactor(dashboard): move the package widget data layer into a service, a data cache and a live notifier (#1837)
+- 9aa25fa3 - fix(internet-settings): show what the router holds after a WAN save fails partway (issue #1711) (#1842)
+- 1e0795fa - feat(internet-settings): WAN VLAN tagging on every WAN type, a required VLAN ID and the priority (issue #1754) (#1858)
+- a669e5ea - feat(firmware-update): upload in 192 KiB chunks over HTTP and remove the retired WebSocket (turbo) path (#1874)
+- 622781a5 - fix(wifi-advanced): apply the issue #1767 Client Steering and Node Steering copy (#1811) (#1859)
+- fde83590 - fix: keep the SSH password out of expect's arguments (linksys/Architecture#281)
+- 7c7a17f5 - fix: read the router passwords from the environment in the tester tools (linksys/Architecture#281)
+- 4cb4bc40 - fix(topology): re-read DataElements when a mesh node joins or leaves (#1828) (#1850)
+- bffbb573 - test(shell): build the pending Remote Assistance session from the shared test data (#1844)
+- b3aea839 - fix(shell): keep the dashboard banners in the semantics tree under the ShellRoute (#1844)
+- 6de4a547 - fix(pnp): keep the step bar in the semantics tree under the ShellRoute (#1841)
+- fdb12266 - fix(instant-setup): review round 6 for #1816 — no step opens or saves past one that cannot be saved; the sign-out behind a spinner
+- 1f35023d - fix(port-forwarding,dhcp,ipv6-port-service): show device-list field errors as text so they keep taking keys on web (#1829)
+- 40f55041 - fix(instant-setup): review round 5 for #1816 — reconnect asks again before calling a write lost, sign-out before the login page
+- 34c91c6b - test(dmz,static-routing): hold the five fields to text-mode errors
+- 7820430e - fix(instant-setup): review fixes for #1816 — typed errors, a way out of every screen that waits, harvestable hooks
+- 2e01cdf2 - fix(dmz,static-routing): show field errors as text so focus survives on web
+- 4068ee29 - chore(deps): bump ui_kit_library and generative_ui to v3.6.10
+- 27e5b236 - fix(instant-setup): leaving add nodes reads the nodes again on web too — the route's onExit, not the push future (#1511 P4, #1734)
+- a8121d23 - fix(instant-setup): the step footer's E2E hooks are literals again, and a test keeps them so (#1511 P5)
+- 61538ac6 - fix(instant-setup): review fixes for #1511 P5
+- c918503e - test(instant-setup): remove #1511 P6's probe step
+- d315bec1 - test(instant-setup): a third setting step, to measure what adding one touches (#1511 P6)
+- 1afc547d - feat(instant-setup): the PnP wizard saves on its last setting step, and Your Network comes after the save (#1511 P5)
+- 90ae4cd1 - refactor(instant-setup): the two new provider files follow Art. III's *_provider.dart (#1511 P4)
+- 05816d5c - fix(instant-setup): in-app Back in the PnP wizard goes back through the browser's history, and leaving asks even with no session (#1511 P4)
+- 0112d067 - docs(constitution): Art. IV §4.2 exception for the steps of a flow that saves once (#1511 P4)
+- ee2ebb0e - fix(instant-setup): review and bench fixes for #1511 P4
+- a47cccb6 - refactor(instant-setup): the PnP wizard's steps are routes, its form is one draft per step, and the shell draws the stepper (#1511 P4)
+- 9f8b0559 - test(instant-setup): REQ-B4's comment names what holds the flow now that it is autoDispose (#1511 P3)
+- 06c155b9 - refactor(instant-setup): the PnP flow lives as long as the user is in it — pnpProvider is autoDispose, held by the shell (#1511 P3)
+- 5abfdbc3 - docs(instant-setup): stale descriptions after #1511 P1/P2, and one assertion that could not fail (#1511 review)
+- aa038525 - test(instant-setup): only the PnP shell navigates on a PnP phase (#1511 P2 AC 1)
+- 802734a4 - fix(instant-setup): the ISP forms prefill once from the first WAN read, and show a failed save the constitution's way (#1511 P1 review)
+- e4c0f414 - refactor(instant-setup): troubleshooting's provider handles ServiceError alone; the lock timeout is typed in the service (#1511 P1 review)
+- 4ac1252b - test(instant-setup): a recovered troubleshooting run comes back to /pnp and the entry restarts the flow into the wizard, once (#1511 P2)
+- 3b25a27f - refactor(instant-setup): one ShellRoute over the PnP flow owns its phase->page mapping (#1511 P2)
+- 9800d148 - refactor(instant-setup): review fixes for #1511 P1 — typed ISP save error, prefill tests, names
+- 15f61623 - refactor(instant-setup): no-internet troubleshooting becomes a sub-flow with its own state, ended by its caller (#1511 P1)
+- 76e0a64b - refactor(login): delete the dead auto_parent first-login page and its route (#1511 P0)
+- 8bb87444 - feat(admin): reboot and factory-reset the whole network with X_LINKSYS_RebootAll / X_LINKSYS_FactoryResetAll (#1777) (#1809)
+- 597d9c61 - fix(wan): stop writing a VLAN ID while VLAN is off (#1072) (#1794)
+- 1c832138 - docs(ipv6-port-service): say which dashboard services the no-client error matches (#1130)
+- f014bf87 - fix(dashboard): the Firewall card's UPnP and IPv6 reads after a failed save or with no client (#1130)
+- 0c889abd - docs(usp): the demo transport returns usp-client's unified shape, not v0.11.0's (PR #1810 review)
+- 9bf8126f - refactor(usp): read a write's failures from usp-client's errors list, not the deprecated error map
+- 79e497a7 - fix(dashboard): the Firewall card's "nothing opened" sentence counts IPv6 Port Service rules (#1130)
+- 1b55dbe9 - fix(wifi): Quick Setup keeps the password when only the WPA mode changes (#1720)
+- 24916c56 - fix(l10n): Portuguese EULA wording swapped between pt and pt_PT; Turkish "up to date" said "update" (#1312)
+- 9f2f4817 - feat(dashboard): the Firewall card shows what the internet can reach, one row per settings page (#1130)
+- b90744ce - refactor(mascot): fixes from the branch review (#1312)
+- 4154ffd3 - feat(ddns): Dynamic DNS settings page on FLWRT 2.0's Device.DynamicDNS (#641) (#1795)
+- 51d54641 - feat(l10n): translate the dashboard names and the mascot in all 25 locales (#1312)
+- f993894a - fix(mascot): no "all WiFi radios are active" for a router with no radio (#1312)
+- fb289a1a - feat(mascot): everything the mascot says comes from ARB keys (#1312)
+- e51ed8d4 - feat(dashboard): card and preset names in the user's language (#1312)
+- 96a34241 - refactor(mascot): delete the dialog code nothing reaches (#1312)
+- 1c6e4577 - fix(wifi): radios with no usable utilization are unknown, not a failed read (PR #1796 review, round 2)
+- 6c5ee716 - docs(usp): say where the 9997 arm is reached and that 9998 has two sources (PR #1801 review)
+- 7593f837 - test(#1324): bound the CPU legend label to two painted lines again (PR #1788 review)
+- 9e156c4f - fix(wifi): keep utilization readings through an empty read and an in-flight re-read (PR #1796 review)
+- 867aedc9 - feat(usp): vendor usp-client 0.16.0, and read a failed Get or Operate by its kind (#1787)
+- ce980f26 - refactor(wifi): move the utilization refresh timer out of the L1 provider's file (#1295)
+- 96f89cc4 - feat(wifi): re-read channel utilization every 60 s while the Channels tab is open (#1295)
+- 04569194 - test(wifi): check the unknown utilization line in every readability locale, and drop a stale "deferred" (#1295)
+- a1633b11 - chore(deps): say what golden-ci actually lacks (#1414)
+- ea733a58 - feat(wifi): show each radio's channel utilization on the WiFi Performance Channels tab (#1295)
+- 55a7ba00 - docs(usp): parseAddRemovingRefusedRows runs inside the mutation lock, and a delete can move the paths it returns (PR #1784 review)
+- 7f644ab8 - test(remote-assistance): pin the two initiate guards no test reached (PR #1784 review)
+- 1aa77dcd - fix(dhcp, static-routing): when the read-back after a failed save fails too, the next save reads the router first (PR #1784 review)
+- 70e699fc - docs(constitution): one deciding test for UI Models, and tighter wording (#1313)
+- 220ef6f4 - chore(deps): correct what the lock does not cover, and fix what assumed it was ignored (#1414)
+- e81f7a9b - test(#1324): pin gauge legend start alignment and series-derived legend completeness
+- 4e068497 - docs(constitution): amend Article III test naming to what the suite does (#1313)
+- 172d68ba - chore(deps): commit pubspec.lock and install it with --enforce-lockfile (#1414)
+- 4970445c - test(golden): capture the channel in use when it is unknown, and the channel dialog (#1782)
+- 4168e4c9 - fix(#1324): keep the CPU & Memory gauge legend start-aligned
+- 9589dccf - feat(wifi): print the channel a radio is on (ChannelsInUse), keep Channel for writes (#1782)
+- 944ded5f - docs(usp): say which Adds parseAddRemovingRefusedRows does not cover, and why (PR #1784 review)
+- 7f25e563 - fix(remote-assistance): the PIN request and the initiate flow stop at the notifier's end too (PR #1784 review)
+- 4ba2c65b - test(#1324): drop the deleted class name from a doc comment
+- 821d3167 - test(#1324): align #1488 legend guards with declared changes (d)(e)
+- da71dd7e - wip(#1324): widget tests pinning declared changes (a)(b)(c)
+- e92ac518 - wip(#1324): dart format
+- 5edc277c - test(dmz): pin that the PDF report and the firewall data follow a DMZ host given by MAC (#1775)
+- 7665e883 - fix(dmz): the dashboard card and the Statistics page name a DMZ host given by MAC (#1775)
+- 4c1e91a8 - fix(dmz): switch the DMZ host between IP and MAC in one Set, clearing first, as the bench accepts (#1775)
+- d008ef9c - fix(dmz): refuse a broadcast or multicast MAC as the DMZ host before save (#1775)
+- ce8d2b9c - feat(dmz): give the DMZ host by IP or by MAC, with LAN devices suggested in both fields (#1775)
+- 0cced22f - test(usp): BatchTally's own tests: what a batch save tells its page (#1775)
+- a6f05f16 - fix(remote-assistance): stop both session polls when the notifier goes away, so neither reads a disposed container
+- 508b9a76 - fix(usp): vendor usp-client 0.14.0, so a refused Add reports its refusal, and delete the row it leaves behind (#1775, linksys/usp_framework#114)
+- 9437f94f - test(usp): refusal tests use the bench's messages and refused leaves on every table (#1775)
+- 743e0b38 - feat(usp): show the reason the router gives when it refuses a firewall or NAT save (#1775)
+- 2f847677 - wip(#1324): migrate remaining legends, delete StatsLegendDot, update layout-gate premise
+- e742858f - wip(#1324): migrate error_rates (+warning colour), gauges, comparison, distribution, monitor, resource legends
+- c69f6c2e - wip(#1324): migrate cpu_distribution and packet_loss legends to AppChartLegendEntry.statistic
+- d6118f9d - wip(#1324): migrate first statistics legends to kit AppChartLegend; add trafficRateBytesPerSec
+- fbcd3d5f - test(golden): capture the unsaved-changes prompt raised before opening an editable page (#1433)
+- 30753e06 - fix(navigation): ask before one editable page opens another, not twice on leaving (#1433)
+- 4567929f - docs(dashboard): point comments at the files usp_widget_specs.dart was split into (#1311)
+- 61118a00 - refactor(dashboard): move span arithmetic and card-form policy out together (#1311)
+- 96b0edd4 - refactor(dashboard): move the card specs and their lookup out of usp_widget_specs.dart (#1311)
+- 4c2bef5d - fix(topology): show the router's LAN addresses on its node detail page (#1722) (#1776)
+- 5ffd40f6 - refactor(mac-filter): check and canonicalise a MAC in one call (#1737)
+- f6d74d96 - chore(deps): move ui_kit_library and generative_ui from v3.6.6 to v3.6.9 (#1761, #1763)
+- 9bf1d35f - feat(instant-privacy): show a hardware privacy switch change on the menu without a reload (#1755) (#1770)
+- 048c636c - fix(local-network): keep the saved LAN pool after a subnet mask change and follow the router's pool push (#1729) (#1758)
+- ff5467b5 - fix(mac-filter): keep an IP search from matching MAC digits in the add-device dialog (#1737)
+- 3818af54 - test(mac-filter): screenshot the add-device dialog with a bare MAC typed (#1737)
+- 7dd6d8da - ci: run checks now that the base is dev-2.7.4
+- 4ed7b3bb - test(dhcp): run #1698's page wiring in CI (refused Save/Add, name check on the page)
+- e9abbb27 - fix(wan): read only PPP LowerLayers for the type, not the credentials (#1702)
+- 0cce6602 - feat(dhcp): reservation name, and FW's reservation refusals shown by name (#1698)
+- f7b670db - feat(topology, system-info): name a renamed parent on the backhaul card, and fall back to the controller's host name (#1751) (#1752)
+- ef33eb7a - test(wan): drop an invalid const on a non-const factory (#1702)
+- 820ca7d6 - fix(wan): read the DNS row beside the status read, not inside it (#1702)
+- e7ea83ce - feat(wan): show WAN DNS servers, name the PPP type, pick the lowest-metric gateway (#1702)
+- 93281472 - feat(mac-filter): find a MAC typed without separators in the add-device search (#1737)
+- 366bb44d - chore(deps): move ui_kit_library and generative_ui from v3.5.0 to v3.6.6 (#1753)
+- 89cdcbe9 - chore: bump version to 2.7.4
+- 774cbf66 - feat(mac-filter): accept a MAC typed without separators in the add-device dialog (#1737)
+- f47156ba - fix(mac-filter): keep focus in the add-device MAC field while typing on web (#1736)
+
 ## [2.7.3] - 2026-10-30
 
 - 9e2fe3b5 - feat(internet-settings): PPTP / L2TP WAN with 1.0's fields and checks, rows picked from what the router reports (#839, #840) (#1744)

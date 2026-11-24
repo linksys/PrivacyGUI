@@ -3,12 +3,28 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
+import 'package:privacy_gui/validator_rules/lan_host_ipv4.dart';
 import 'package:ui_kit_library/ui_kit.dart';
+
+/// What [DhcpReservationEditDialog] pops with on submit. [name] is `''` when
+/// the reservation has none.
+typedef DhcpReservationDialogResult = ({
+  String mac,
+  String ip,
+  bool enable,
+  String name,
+});
 
 /// Unified dialog for adding or editing a DHCP reservation.
 ///
 /// Pass [reservation] to pre-fill for editing; omit for adding.
-/// Returns a `({String mac, String ip, bool enable})` record on submit, or null on cancel.
+/// Returns a [DhcpReservationDialogResult] on submit, or null on cancel.
+///
+/// The MAC and IP fields show their errors as text
+/// (`AppErrorDisplayMode.text`), not as a tooltip. On web, on Flutter 3.47.2,
+/// a tooltip-mode field showing an error stops taking keys once it is clicked
+/// again (linksys/privacyGUI-UI-kit#100; #1829).
+/// `autocomplete_error_text_mode_test.dart` holds both fields to text mode.
 class DhcpReservationEditDialog extends StatefulWidget {
   final DhcpReservationUIModel? reservation;
   final List<AppAutoCompleteOption> macDeviceOptions;
@@ -24,12 +40,24 @@ class DhcpReservationEditDialog extends StatefulWidget {
   /// empty list explicitly, at the call site, where a reader can see it.
   final List<DhcpReservationUIModel> existingReservations;
 
+  /// The router's LAN address and mask. With both, the address must be a LAN
+  /// host's, as for port forwarding and the DMZ host (#1838): in the LAN
+  /// subnet and not the router's own. Null skips that part of the check.
+  ///
+  /// Required, though nullable, as [existingReservations] is: a call site that
+  /// left them out would skip the LAN check without anyone seeing it. One that
+  /// genuinely has no LAN passes null explicitly.
+  final String? lanIp;
+  final String? lanSubnetMask;
+
   const DhcpReservationEditDialog({
     super.key,
     this.reservation,
     this.macDeviceOptions = const [],
     this.ipDeviceOptions = const [],
     required this.existingReservations,
+    required this.lanIp,
+    required this.lanSubnetMask,
   });
 
   @override
@@ -39,13 +67,13 @@ class DhcpReservationEditDialog extends StatefulWidget {
 
 class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
   static final _macRule = MACAddressRule();
-  static final _ipRule = IpAddressRule();
-  static final _ipNoReservedRule = IpAddressNoReservedRule();
 
   late TextEditingController _macController;
   late TextEditingController _ipController;
+  late TextEditingController _nameController;
   final _macFocusNode = FocusNode();
   final _ipFocusNode = FocusNode();
+  final _nameFocusNode = FocusNode();
   late bool _enabled;
   Map<String, String> _errors = {};
 
@@ -61,19 +89,24 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
     final r = widget.reservation;
     _macController = TextEditingController(text: r?.mac ?? '');
     _ipController = TextEditingController(text: r?.ip ?? '');
+    _nameController = TextEditingController(text: r?.name ?? '');
     _enabled = r?.enable ?? true;
     _macFocusNode.addListener(_onMacFocusChange);
     _ipFocusNode.addListener(_onIpFocusChange);
+    _nameFocusNode.addListener(_onNameFocusChange);
   }
 
   @override
   void dispose() {
     _macFocusNode.removeListener(_onMacFocusChange);
     _ipFocusNode.removeListener(_onIpFocusChange);
+    _nameFocusNode.removeListener(_onNameFocusChange);
     _macFocusNode.dispose();
     _ipFocusNode.dispose();
+    _nameFocusNode.dispose();
     _macController.dispose();
     _ipController.dispose();
+    _nameController.dispose();
     super.dispose();
   }
 
@@ -85,6 +118,10 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
     if (!_ipFocusNode.hasFocus) _validate();
   }
 
+  void _onNameFocusChange() {
+    if (!_nameFocusNode.hasFocus) _validate();
+  }
+
   void _validate() {
     final errors = <String, String>{};
     final mac = _macController.text.trim();
@@ -94,12 +131,11 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
       errors['mac'] = 'invalidMacAddressFormat';
     }
 
+    // The same check as every form that writes a LAN host's address (#1838).
     if (ip.isNotEmpty) {
-      if (!_ipRule.validate(ip)) {
-        errors['ip'] = 'invalidIpv4Format';
-      } else if (!_ipNoReservedRule.validate(ip)) {
-        errors['ip'] = 'reservedIpNotAllowed';
-      }
+      final problem = lanHostIpv4Problem(ip,
+          lanIp: widget.lanIp, lanSubnetMask: widget.lanSubnetMask);
+      if (problem != null) errors['ip'] = problem.messageKey;
     }
 
     // Reject duplicates against existing reservations (excluding the one being
@@ -131,6 +167,12 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
       errors['ip'] = 'duplicateIpAddress';
     }
 
+    // FW's name rule (linksys/FWDEV#211), checked here so a name FW would
+    // refuse is never sent: obuspa commits the rest of a refused Set.
+    final nameError =
+        DhcpReservationUIModel.validateName(_nameController.text, others);
+    if (nameError != null) errors['name'] = nameError;
+
     setState(() => _errors = errors);
   }
 
@@ -140,8 +182,13 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
       'invalidMacAddressFormat' => loc(context).invalidMacAddressFormat,
       'invalidIpv4Format' => loc(context).invalidIpv4Format,
       'reservedIpNotAllowed' => loc(context).reservedIpNotAllowed,
+      'invalidIpAddress' => loc(context).invalidIpAddress,
       'duplicateMacAddress' => loc(context).duplicateMacAddress,
       'duplicateIpAddress' => loc(context).duplicateIpAddress,
+      DhcpReservationNameErrors.tooLong =>
+        loc(context).maxCharacters(DhcpReservationUIModel.nameMaxLength),
+      DhcpReservationNameErrors.invalid => loc(context).reservationNameInvalid,
+      DhcpReservationNameErrors.inUse => loc(context).reservationNameInUse,
       _ => key,
     };
   }
@@ -162,8 +209,10 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
               final match = widget.macDeviceOptions
                   .where((o) => o.value == value)
                   .firstOrNull;
-              if (match?.subtitle != null) {
-                _ipController.text = match!.subtitle!;
+              // A device with no IPv4 has no subtitle (#1838); picking it
+              // clears the field rather than keeping another device's address.
+              if (match != null) {
+                _ipController.text = match.subtitle ?? '';
               }
               _validate();
             },
@@ -173,6 +222,8 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
               identifier: 'dhcp-reservation-mac',
               hintText: loc(context).macAddressHint,
               errorText: _localizeError(_errors['mac']),
+              // Text, not tooltip: see the class doc.
+              errorDisplayMode: AppErrorDisplayMode.text,
             ),
           ),
           AppGap.lg(),
@@ -194,7 +245,18 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
               identifier: 'dhcp-reservation-ip',
               hintText: loc(context).ipAddressHint,
               errorText: _localizeError(_errors['ip']),
+              // Text, not tooltip: see the class doc.
+              errorDisplayMode: AppErrorDisplayMode.text,
             ),
+          ),
+          AppGap.lg(),
+          // After MAC and IP, so those two fields keep their positions.
+          AppTextField(
+            controller: _nameController,
+            focusNode: _nameFocusNode,
+            identifier: 'dhcp-reservation-name',
+            hintText: loc(context).reservationNameHint,
+            errorText: _localizeError(_errors['name']),
           ),
           AppGap.lg(),
           Row(
@@ -230,6 +292,8 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
     if (!_isFormValid) return;
     final mac = _macController.text.trim();
     final ip = _ipController.text.trim();
-    context.pop((mac: mac, ip: ip, enable: _enabled));
+    final DhcpReservationDialogResult result =
+        (mac: mac, ip: ip, enable: _enabled, name: _nameController.text);
+    context.pop(result);
   }
 }

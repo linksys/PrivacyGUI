@@ -4,8 +4,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart'
-    show unwrapUspClientError;
-import 'package:privacy_gui/core/usp/models/usp_operation_result.dart';
+    show isUspClientFaultCode, unwrapUspClientError;
 import 'package:privacy_gui/core/usp/transport/usp_transport.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
@@ -302,6 +301,15 @@ class UspClient {
   /// the throttler to limit concurrent outbound requests to the router.
   /// Set by [uspClientProvider] during initialization.
   BridgeRequestThrottler? throttler;
+
+  /// Makes the next [get] of any path go to the router: drops the [throttler]'s
+  /// cached results and the in-flight requests a new [get] would join
+  /// ([BridgeRequestThrottler.dropSharedReads]).
+  ///
+  /// For a change the router announces outside a write, such as a mesh node
+  /// joining or leaving (#1828). A write drops only completed results; see
+  /// [_invalidatingReads]. Without a throttler there is nothing shared to drop.
+  void dropSharedReads() => throttler?.dropSharedReads();
 
   Future<void> login(String password) async {
     await _client.login(password);
@@ -1062,8 +1070,8 @@ class UspClient {
           : await _client.operate(command, args: args);
       sw.stop();
 
-      // usp-client 0.13.0 unified format:
-      // { success, result: { data: { commandKey, requestPath, outputArgs }, error? } }
+      // usp-client unified format (0.13.0; `errors` since 0.16.0):
+      // { success, result: { data: { commandKey, requestPath, outputArgs }, error?, errors? } }
       // Throws when the agent refused the command — see extractOperateResult.
       final response = extractOperateResult(rawResponse);
       final label = _idLabel(id);
@@ -1083,46 +1091,43 @@ class UspClient {
   }
 
   /// Decodes a GET's unified envelope into the flat path→value map, and
-  /// **throws when the read never reached the router**.
+  /// **throws when the read failed as a whole**.
   ///
   /// The WASM client resolves a lost connection, a 401 and a 5xx alike as
-  /// `success: false` with a per-path `9999` (#1212, measured from Node against
-  /// the vendored client). Reading `data` alone turned each of them into an
-  /// empty answer: a required-leaf model threw 9998 ("invalid input"), a table
-  /// read as "no rows", an optional leaf as "the firmware does not have it".
+  /// `success: false` (#1212, measured from Node against the vendored client).
+  /// Reading `data` alone turned each of them into an empty answer: a
+  /// required-leaf model threw 9998 ("invalid input"), a table read as
+  /// "no rows", an optional leaf as "the firmware does not have it".
   ///
-  /// **Only `9999` throws, and `success` is not the test.** A path the router
-  /// does not have comes back as a per-path `7026`, with `success: true` when
-  /// other paths were read and `success: false` when it was the only one
-  /// (measured on FW 2.0.3, 2026-10-13). Both are an answer — that path is
-  /// absent — so the paths that were read are returned and the missing one is
-  /// left out, as before. Throwing on `success == false` would turn "this
-  /// router has no RIP" into a network error.
+  /// **Only an `errors` entry of `kind: request` throws, and `success` is not
+  /// the test** (usp-client 0.16.0, #1787). `request` is the call as a whole:
+  /// the client's own transport (9999), decode (9998) or validation (9997)
+  /// failure, or the router refusing the whole Get (a USP `Error`, with the
+  /// router's code). A path the router does not have is `kind: path`, a
+  /// per-path `7026`, with `success: true` when other paths were read and
+  /// `success: false` when it was the only one (measured on FW 2.0.3,
+  /// 2026-10-13). That is an answer — the path is absent — so the paths that
+  /// were read are returned and the missing one is left out. Throwing on
+  /// `success == false`, or on every requested path carrying an error, would
+  /// turn "this router has no RIP" into a failure; only `kind` tells a lone
+  /// 7026 from a refused Get, since both carry a router code on every
+  /// requested path.
   ///
   /// It throws a string in the USP layer's own shape, as
-  /// [extractOperateResult] does, with the category the client put inside its
-  /// `Transport error: ` wrapper restored by [unwrapUspClientError] — so a 401
-  /// still reads `HTTP 401` to [_isAuthError] and the usual
-  /// `mapUspErrorToServiceError` classifies the rest.
+  /// [extractOperateResult] does (see [_failedAsAWhole]), so a 401 still reads
+  /// `HTTP 401` to [_isAuthError] and the usual `mapUspErrorToServiceError`
+  /// classifies the rest.
   @visibleForTesting
   static Map<String, String> extractGetResult(Map<String, dynamic> raw) {
     final result = raw['result'];
-    final errors = result is Map ? result['error'] : null;
-    if (errors is Map) {
-      for (final detail in errors.values) {
-        if (detail is! Map) continue;
-        final code = detail['errorCode'];
-        if (code != 9999 && code != '9999') continue;
-        final message = detail['errorMessage']?.toString() ?? 'Request failed';
-        throw 'Get failed: ${unwrapUspClientError(message)}';
-      }
-    }
+    final failure = _requestFailureIn(result);
+    if (failure != null) throw _failedAsAWhole('Get', failure);
 
-    // No 9999, so the router answered. A lone per-path error (7026) was
-    // measured with an empty `data`; whether the client can also omit `data`
-    // there is not settled from its source (PR #1716 review), and either way
-    // it is an answer with nothing in it — so a missing `data` reads as no
-    // rows, never as a protocol failure that would make "absent" an error.
+    // Nothing failed as a whole, so the router answered. A lone per-path error
+    // (7026) was measured with an empty `data`; whether the client can also
+    // omit `data` there is not settled from its source (PR #1716 review), and
+    // either way it is an answer with nothing in it — so a missing `data` reads
+    // as no rows, never as a protocol failure that would make "absent" an error.
     final data = result is Map ? result['data'] : null;
     if (data is! Map) return const {};
     return {
@@ -1166,7 +1171,13 @@ class UspClient {
     // rather than against. Four lines, and being wrong the other way means this
     // PR's own bug comes back silently.
     if (raw['success'] == false) {
-      throw _operateRefusal((raw['result'] as Map?)?['error']);
+      final result = raw['result'];
+      // A failure of the call as a whole (usp-client 0.16.0 `kind: request`):
+      // the client's own 9997–9999, or the router refusing the request, which
+      // is not the command failing (#1787).
+      final failure = _requestFailureIn(result);
+      if (failure != null) throw _failedAsAWhole('Operate', failure);
+      throw _operateRefusal(result is Map ? result['errors'] : null);
     }
 
     final result = raw['result'] as Map?;
@@ -1194,35 +1205,87 @@ class UspClient {
     return output;
   }
 
-  /// Builds the refusal string from the unified response's `error` member.
+  /// The first entry of a unified result's `errors` list whose `kind` is
+  /// `request`, or null when the call did not fail as a whole.
   ///
-  /// The member is keyed by the path that failed, each entry carrying
-  /// `errorCode` / `errorMessage`. Everything is optional on purpose: a
-  /// `success: false` with no readable detail must still throw, because a caller
-  /// handed `{}` cannot tell a refusal from a success.
-  static String _operateRefusal(Object? error) {
+  /// usp-client 0.16.0 reads `kind` from the structure of the answer, never
+  /// from the shape of a path: `request` is the call as a whole (a USP
+  /// `Error`, or a transport, decode, validation or session failure), `path`
+  /// one requested path (a Get's 7026, an Operate's command failure).
+  static Map<Object?, Object?>? _requestFailureIn(Object? result) {
+    final errors = result is Map ? result['errors'] : null;
+    if (errors is! List) return null;
+    for (final entry in errors) {
+      if (entry is Map && entry['kind'] == 'request') return entry;
+    }
+    return null;
+  }
+
+  /// What a Get or an Operate that failed as a whole throws, in the USP
+  /// layer's own shape, so `mapUspErrorToServiceError` classifies it as it did
+  /// before usp-client 0.15.0 (#1787).
+  ///
+  /// - 9999, the transport sentinel: the client's message with its category
+  ///   restored by [unwrapUspClientError] and nothing appended, so a 401 still
+  ///   reads `HTTP 401` to [_isAuthError] and the transport arm.
+  /// - 9998 and 9997, the client's decode and validation failures: the same,
+  ///   with the code appended for the protocol and validation arms.
+  /// - Any other code is the router refusing the request as a whole. Up to
+  ///   0.14.0 the client wrapped that in a 9999 whose message was
+  ///   `Protocol error: … (code: N)`; it is rebuilt in that shape so it keeps
+  ///   reaching `_mapProtocolError` by the router's code. That is what keeps a
+  ///   7016 for a mesh node that has left reading as `ResourceNotFoundError`
+  ///   (`node_action_flow.dart`), not as a command the router refused.
+  static String _failedAsAWhole(String operation, Map<Object?, Object?> entry) {
+    final code = _integerCode(entry['errorCode']);
+    final message = entry['errorMessage']?.toString() ?? '';
+    final clientMessage =
+        unwrapUspClientError(message.isEmpty ? 'Request failed' : message);
+    if (code == 9999) return '$operation failed: $clientMessage';
+    if (code != null && isUspClientFaultCode(code)) {
+      return '$operation failed: $clientMessage (code: $code)';
+    }
+    final why =
+        message.isEmpty ? 'the router gave no reason' : _requoteCodes(message);
+    final suffix = code == null ? '' : ' (code: $code)';
+    return '$operation failed: Protocol error: $why$suffix';
+  }
+
+  /// An `errorCode` as an integer, or null when it is not one. It arrives
+  /// untyped from a JS object, and an integral JS number can cross the interop
+  /// boundary as a Dart `double` (see [_operateRefusal]).
+  static int? _integerCode(Object? code) => switch (code) {
+        final num n when n.isFinite && n == n.truncateToDouble() => n.toInt(),
+        final String s => int.tryParse(s),
+        _ => null,
+      };
+
+  /// [message] with every `(code: N)` in it requoted as `[code: N]`, so the
+  /// only parenthesised code in a thrown string is the one this file appends
+  /// (see [_operateRefusal]).
+  static String _requoteCodes(String message) => message.replaceAllMapped(
+        RegExp(r'\(code:\s*(\d+)\)'),
+        (m) => '[code: ${m.group(1)}]',
+      );
+
+  /// Builds the refusal string for a command the router refused, from the
+  /// unified response's `errors` list (usp-client 0.16.0, `kind: path`).
+  ///
+  /// Each entry carries the `path` that failed, `errorCode` and `errorMessage`.
+  /// Everything is optional on purpose: a `success: false` with no readable
+  /// detail must still throw, because a caller handed `{}` cannot tell a
+  /// refusal from a success. A failure of the call as a whole never reaches
+  /// here: [extractOperateResult] throws it through [_failedAsAWhole] first.
+  static String _operateRefusal(Object? errors) {
     String? path;
     Object? code;
     String? message;
 
-    if (error is Map && error.isNotEmpty) {
-      final first = error.entries.first;
-      path = first.key.toString();
-      final detail = first.value;
-      if (detail is Map) {
-        code = detail['errorCode'];
-        message = detail['errorMessage']?.toString();
-      } else if (detail != null) {
-        message = detail.toString();
-      }
-    }
-
-    // Client failures retain their category so services can distinguish an
-    // expired session or lost response from a command the agent refused.
-    if (code == 9999 &&
-        message != null &&
-        message.startsWith('Transport error: ')) {
-      return 'Operate failed: ${unwrapUspClientError(message)}';
+    final first = errors is List && errors.isNotEmpty ? errors.first : null;
+    if (first is Map) {
+      path = first['path']?.toString();
+      code = first['errorCode'];
+      message = first['errorMessage']?.toString();
     }
 
     final what = path ?? 'the command';
@@ -1245,10 +1308,7 @@ class UspClient {
     //
     // Square brackets keep every character of what the router said while leaving
     // exactly one parenthesised code in the string — ours.
-    final quoted = message?.replaceAllMapped(
-      RegExp(r'\(code:\s*(\d+)\)'),
-      (m) => '[code: ${m.group(1)}]',
-    );
+    final quoted = message == null ? null : _requoteCodes(message);
     final why = (quoted == null || quoted.isEmpty)
         ? 'the router gave no reason'
         : quoted;
@@ -1286,134 +1346,6 @@ class UspClient {
   // OBUSPA Subscription — Device.LocalAgent.Subscription management
   // ===========================================================================
 
-  /// Creates an OBUSPA subscription via USP Add + Set.
-  ///
-  /// This creates a `Device.LocalAgent.Subscription.{i}` instance in OBUSPA,
-  /// configures Enable/NotifType/ReferenceList, and returns the created
-  /// instance path with its Recipient (auto-assigned to the calling
-  /// Controller — typically Controller.2 or .3 for localui/UDS).
-  ///
-  /// [notifType] is the USP notification type string:
-  /// "ValueChange", "ObjectCreation", "ObjectDeletion",
-  /// "OperationComplete", or "Event".
-  ///
-  /// [referenceList] is the TR-181 path or command to monitor,
-  /// e.g., "Device.IP.Diagnostics.IPPing()" for OperationComplete.
-  ///
-  /// Returns a map with keys: `instancePath`, `recipient`, plus the
-  /// configured parameters.
-  ///
-  /// Throws if the Add or Set operations fail.
-  Future<Map<String, String>> createNotifySubscription({
-    required String notifType,
-    required String referenceList,
-  }) async {
-    final id = _genReqId();
-    final sw = Stopwatch()..start();
-    const objectPath = 'Device.LocalAgent.Subscription.';
-
-    // Step 1: Snapshot existing instance IDs
-    final before = await _withAuthRetry(
-        () async => extractGetResult(await _client.get([objectPath])));
-    final existingIds = before.keys
-        .where((k) => k.endsWith('.Enable'))
-        .map((k) {
-          final parts = k.split('.');
-          return parts.length >= 5 ? parts[parts.length - 2] : '';
-        })
-        .where((id) => id.isNotEmpty)
-        .toSet();
-
-    // Step 2: Add subscription instance
-    final addResult = await _withAuthRetry(
-      () => _client.add([
-        {'path': objectPath, 'params': <String, dynamic>{}},
-      ]),
-    );
-
-    // Step 3: Resolve instance path from structured result.
-    // add() returns the WASM v0.11.0 unified shape
-    // {success, result: {data: {instances: [<path>, ...]}}}. Parse it via the
-    // canonical UspResultParser rather than reading keys by hand (the old
-    // addResult['results'] / createdInstances path was the pre-unified shape and
-    // is always null now → every subscription fell through to the GET-diff).
-    String instancePath;
-
-    String? createdPath;
-    final parsedAdd = UspResultParser.parseAddResult(addResult);
-    if (parsedAdd is UspSuccess<List<String>>) {
-      final created = parsedAdd.allCreatedInstances;
-      if (created.isNotEmpty) createdPath = created.first.affectedPath;
-    }
-
-    if (createdPath != null && createdPath.startsWith('Device.')) {
-      instancePath = createdPath.endsWith('.') ? createdPath : '$createdPath.';
-    } else {
-      // Discover new instance via GET diff
-      final after = await _withAuthRetry(
-          () async => extractGetResult(await _client.get([objectPath])));
-      final afterIds = after.keys
-          .where((k) => k.endsWith('.Enable'))
-          .map((k) {
-            final parts = k.split('.');
-            return parts.length >= 5 ? parts[parts.length - 2] : '';
-          })
-          .where((id) => id.isNotEmpty)
-          .toSet();
-      final newIds = afterIds.difference(existingIds);
-      if (newIds.isEmpty) {
-        throw StateError(
-          'USP Add succeeded but no new instance found in $objectPath',
-        );
-      }
-      instancePath = '$objectPath${newIds.first}.';
-    }
-
-    // Step 4: Set Enable, NotifType, ReferenceList
-    await _withAuthRetry(
-      () => _client.set({
-        '${instancePath}Enable': 'true',
-        '${instancePath}NotifType': notifType,
-        '${instancePath}ReferenceList': referenceList,
-      }),
-    );
-
-    // Step 5: Read back to verify
-    final verify = await _withAuthRetry(
-      () async => extractGetResult(await _client.get([
-        '${instancePath}Recipient',
-        '${instancePath}Enable',
-        '${instancePath}NotifType',
-        '${instancePath}ReferenceList',
-      ])),
-    );
-
-    sw.stop();
-    final recipient = verify['${instancePath}Recipient'] ?? '';
-    logger.d(
-      '$_tag#$id CREATE_SUBSCRIPTION $instancePath '
-      'type=$notifType ref=$referenceList → Recipient=$recipient '
-      '(${sw.elapsedMilliseconds}ms)',
-    );
-
-    return {'instancePath': instancePath, ...verify};
-  }
-
-  /// Deletes an OBUSPA subscription instance.
-  Future<void> deleteNotifySubscription(String instancePath) async {
-    final id = _genReqId();
-    final sw = Stopwatch()..start();
-    await _withAuthRetry(() => _client.delete([instancePath]));
-    sw.stop();
-    final shortPath = instancePath.startsWith('Device.')
-        ? instancePath.substring(7)
-        : instancePath;
-    logger.d(
-      '$_tag#$id DELETE_SUBSCRIPTION $shortPath '
-      '(${sw.elapsedMilliseconds}ms)',
-    );
-  }
-
   /// Lists all OBUSPA subscriptions via the WASM client.
   ///
   /// Returns raw subscription objects from the router. Each entry typically
@@ -1428,79 +1360,6 @@ class UspClient {
       '(${sw.elapsedMilliseconds}ms)',
     );
     return subs;
-  }
-
-  /// Deletes all OBUSPA subscriptions on the router.
-  ///
-  /// Called at startup to purge stale subscriptions from previous sessions.
-  /// Browser refresh doesn't trigger dispose(), so subscriptions accumulate
-  /// on the router, causing duplicate SSE notifications.
-  ///
-  /// Uses GET-based enumeration (same proven approach as
-  /// [createNotifySubscription] Step 1) rather than relying on the WASM
-  /// `listSubscriptions()` output format.
-  ///
-  /// Returns the number of subscriptions deleted.
-  Future<int> purgeAllSubscriptions() async {
-    final id = _genReqId();
-    final sw = Stopwatch()..start();
-    const objectPath = 'Device.LocalAgent.Subscription.';
-
-    // Enumerate all subscription instances via GET
-    final allParams = await _withAuthRetry(
-        () async => extractGetResult(await _client.get([objectPath])));
-
-    // Extract unique instance IDs from keys like
-    // "Device.LocalAgent.Subscription.3.Enable"
-    final instanceIds = <String>{};
-    for (final key in allParams.keys) {
-      final match =
-          RegExp(r'Device\.LocalAgent\.Subscription\.(\d+)\.').firstMatch(key);
-      if (match != null) {
-        instanceIds.add(match.group(1)!);
-      }
-    }
-
-    if (instanceIds.isEmpty) {
-      sw.stop();
-      logger.d(
-        '$_tag#$id PURGE_SUBSCRIPTIONS → 0 (none found, '
-        '${sw.elapsedMilliseconds}ms)',
-      );
-      return 0;
-    }
-
-    // Log what we're about to delete
-    for (final instId in instanceIds) {
-      final prefix = '$objectPath$instId.';
-      final notifType = allParams['${prefix}NotifType'] ?? '?';
-      final refList = allParams['${prefix}ReferenceList'] ?? '?';
-      logger.d(
-        '$_tag#$id PURGE: $prefix '
-        '(type=$notifType, ref=$refList)',
-      );
-    }
-
-    int deleted = 0;
-    for (final instId in instanceIds) {
-      final instancePath = '$objectPath$instId.';
-      try {
-        await _withAuthRetry(() => _client.delete([instancePath]));
-        deleted++;
-      } catch (e) {
-        logger.w(
-          '$_tag#$id PURGE failed to delete '
-          '$instancePath: $e',
-        );
-      }
-    }
-
-    sw.stop();
-    logger.d(
-      '$_tag#$id PURGE_SUBSCRIPTIONS → deleted $deleted/'
-      '${instanceIds.length} (${sw.elapsedMilliseconds}ms)',
-    );
-    return deleted;
   }
 
   // ===========================================================================

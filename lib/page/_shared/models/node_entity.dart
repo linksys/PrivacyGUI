@@ -6,8 +6,8 @@ import 'package:privacy_gui/page/_shared/models/network_entity.dart';
 /// A command one mesh agent can run on itself (FWDEV#202).
 ///
 /// The agent reports which it runs in `X_LINKSYS_SupportedOperations`; the
-/// controller's own row reports none, because `Device.Reboot()` and
-/// `Device.FactoryReset()` act on it instead.
+/// controller's own row reports none, because the router's reboot and reset
+/// are whole-network commands instead (`router_restart_actions.dart`).
 enum NodeAction {
   reboot('Reboot'),
   factoryReset('FactoryReset');

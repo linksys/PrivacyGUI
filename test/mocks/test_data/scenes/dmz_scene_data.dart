@@ -34,6 +34,18 @@ const enabledCidrModel = DmzUIModel(
   sourcePrefix: '10.0.0.0/24',
 );
 
+/// The DMZ host by MAC (#1775), the MAC field empty so its hint shows — the
+/// longest text the destination card renders — and the CIDR field expanded,
+/// as in [enabledCidrModel].
+const enabledMacCidrModel = DmzUIModel(
+  isEnabled: true,
+  destinationType: DmzDestinationType.mac,
+  destIp: '',
+  destMac: '',
+  sourceType: DmzSourceType.cidr,
+  sourcePrefix: '10.0.0.0/24',
+);
+
 const dirtyCurrentModel = DmzUIModel(
   isEnabled: true,
   destIp: '192.168.1.200',
@@ -93,5 +105,11 @@ DmzFeatureState dirtyState({bool isSaving = false}) {
 /// `UiKitBottomBarConfig`, ui_kit's own, and out of scope per #1380.
 final gateDmzState = dataState(
   enabledCidrModel,
+  instancePath: 'Device.Firewall.DMZ.1.',
+);
+
+/// [gateDmzState] with the host given by MAC: `page.dmz_mac`.
+final gateDmzMacState = dataState(
+  enabledMacCidrModel,
   instancePath: 'Device.Firewall.DMZ.1.',
 );

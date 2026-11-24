@@ -27,13 +27,6 @@ void main() {
     service = UspMacFilterService(usp);
   });
 
-  void stubGet(String mode, String list) {
-    when(() => usp.get(any())).thenAnswer((_) async => {
-          _modePath: mode,
-          _listPath: list,
-        });
-  }
-
   void stubOperateOk() {
     when(() => usp.operate(any(), args: any(named: 'args')))
         .thenAnswer((_) async => {
@@ -43,53 +36,6 @@ void main() {
               }
             });
   }
-
-  // ---------------------------------------------------------------------------
-  // fetch — read side (comma-split, mode parse)
-  // ---------------------------------------------------------------------------
-
-  group('fetch', () {
-    test('parses mode and comma-joined list', () async {
-      stubGet('Deny', 'AA:BB:CC:DD:EE:01,AA:BB:CC:DD:EE:02');
-
-      final data = await service.fetch();
-
-      expect(data.mode, MacFilterMode.deny);
-      expect(data.macs, ['AA:BB:CC:DD:EE:01', 'AA:BB:CC:DD:EE:02']);
-    });
-
-    test('empty list string yields empty macs (no phantom "")', () async {
-      stubGet('Disabled', '');
-
-      final data = await service.fetch();
-
-      expect(data.mode, MacFilterMode.disabled);
-      expect(data.macs, isEmpty);
-    });
-
-    test('Allow mode parses', () async {
-      stubGet('Allow', 'AA:BB:CC:DD:EE:01');
-
-      final data = await service.fetch();
-
-      expect(data.mode, MacFilterMode.allow);
-      expect(data.macs, ['AA:BB:CC:DD:EE:01']);
-    });
-
-    test('unknown mode string falls back to Disabled (defensive)', () async {
-      stubGet('Weird', '');
-
-      final data = await service.fetch();
-
-      expect(data.mode, MacFilterMode.disabled);
-    });
-
-    test('maps a thrown USP error to ServiceError', () async {
-      when(() => usp.get(any())).thenThrow(Exception('boom'));
-
-      expect(() => service.fetch(), throwsA(isA<ServiceError>()));
-    });
-  });
 
   // ---------------------------------------------------------------------------
   // fetchAll — the online devices the pages offer
@@ -153,6 +99,24 @@ void main() {
 
       expect(result.connectedDevices.map((d) => d.mac),
           ['EE:52:09:F8:2E:95', 'AA:BB:CC:00:00:04']);
+    });
+
+    // #1838: a Hosts IPAddress of 0.0.0.0 is no address, here as on every
+    // other page; the picker then shows the device without a subtitle.
+    test('a client reporting 0.0.0.0 is offered with no address', () async {
+      stubHosts({
+        ...host(1, 'ee:52:09:f8:2e:95',
+            layer1: 'Device.WiFi.Radio.2', type: 'Wi-Fi'),
+        'Device.Hosts.Host.1.IPAddress': '0.0.0.0',
+        ...host(2, 'aa:bb:cc:00:00:04', layer1: 'Device.WiFi.Radio.1'),
+      });
+
+      final result = await service.fetchAll();
+
+      expect(result.connectedDevices.map((d) => (d.mac, d.ipAddress)), [
+        ('EE:52:09:F8:2E:95', ''),
+        ('AA:BB:CC:00:00:04', '192.168.1.102'),
+      ]);
     });
 
     test('an offline Wi-Fi client is not offered', () async {
@@ -346,7 +310,7 @@ void main() {
       });
       stubOperateOk();
 
-      await service.fetch();
+      await service.fetchAll();
       await service.setMacFilter(MacFilterMode.allow, ['AA:BB:CC:DD:EE:01']);
 
       expect(paths, isNot(contains(contains('AccessPoint'))));

@@ -219,6 +219,36 @@ void main() {
   Rect rectOf(WidgetTester tester, Text text) =>
       tester.getRect(find.byWidget(text));
 
+  /// [text] painted in full, at its own size, and in the same font size as the
+  /// SNR line in [besideSnrOf] — the channel utilization readout's three ways
+  /// of becoming unreadable without overflowing anything (#1295).
+  void expectWholeAndUnshrunken(WidgetTester tester, Text text,
+      {required List<Text> besideSnrOf}) {
+    expect(isClipped(tester, text), isFalse,
+        reason: '"${text.data}" is clipped at this width.');
+
+    // A `FittedBox` (or any scaling transform) lays the text out at full size
+    // and paints it smaller, so the painted rect is what gives it away.
+    final paragraph = tester.renderObject<RenderParagraph>(find.byWidget(text));
+    final painted = rectOf(tester, text).size;
+    expect(painted.width, closeTo(paragraph.size.width, 0.5),
+        reason: '"${text.data}" is painted ${painted.width}px wide but laid '
+            'out at ${paragraph.size.width}px, so it is scaled down.');
+    expect(painted.height, closeTo(paragraph.size.height, 0.5),
+        reason: '"${text.data}" is painted ${painted.height}px tall but laid '
+            'out at ${paragraph.size.height}px, so it is scaled down.');
+
+    final snrFontSize = tester
+        .renderObject<RenderParagraph>(find.byWidget(besideSnrOf.first))
+        .text
+        .style
+        ?.fontSize;
+    expect(snrFontSize, isNotNull);
+    expect(paragraph.text.style?.fontSize, snrFontSize,
+        reason: '"${text.data}" is set smaller than the SNR line it sits '
+            'under.');
+  }
+
   group('legend entries survive degradation (#1229)', () {
     // A legend is a colour→series mapping, and the `Wrap` may reorder it or push
     // entries onto later runs. What it may not do is lose one: a dropped entry
@@ -374,13 +404,13 @@ void main() {
         // would silently match nothing and pass on `hasLength(0)` if the band
         // regex also stopped matching.
         final channels =
-            texts.where((t) => t.data!.startsWith('${l.channel} ')).toList();
+            texts.where((t) => _isChannelReadout(t.data!, l)).toList();
         final snrs = texts.where((t) => t.data!.contains(_snrMarker)).toList();
         expect(channels, hasLength(bands.length),
             reason:
                 'every radio needs its channel and bandwidth — that is what '
                 'makes the bands comparable rather than merely listed. Looked '
-                'for a "${l.channel} " prefix in: '
+                'for a "${l.channel} " prefix and a "$_bandwidthSeparator" in: '
                 '${texts.map((t) => t.data).toList()}');
         expect(snrs, hasLength(bands.length),
             reason: 'every radio needs its own SNR readout.');
@@ -431,6 +461,58 @@ void main() {
       });
     }
 
+    // #1295: each radio's channel utilization, one line under its SNR. The
+    // gate cannot see a line that wraps or is shrunk to fit — both overflow
+    // nothing — so the three ways it could stop being readable are asserted
+    // here: clipped, scaled down by a transform, or set smaller than the SNR
+    // line it sits under. Plus attribution, as for the channel readout above.
+    //
+    // `th` is the widest locale at this width (see the band/channel row's
+    // figures in `usp_wifi_performance_card.dart`). The tri-band profile, so
+    // that both forms of the line are checked in every locale here: a reading
+    // on 2.4 and 5 GHz, and the unknown form on 6 GHz.
+    for (final tag in ['en', 'ru', 'tr', 'th']) {
+      testWidgets(
+          'each radio\'s channel utilization, read or unknown, is whole and '
+          'unshrunken at the narrowest width in $tag', (tester) async {
+        final locale = _localeFor(tag);
+        await pumpNarrowest(tester,
+            tabIndex: 2,
+            locale: locale,
+            extraOverrides: triBandProfile.overrides());
+        final l = await AppLocalizations.delegate.load(locale);
+
+        // 46 on 2.4 GHz and 11 on 5 GHz (the bench's readings), none on 6 GHz.
+        final readouts = [
+          exactly(tester, l.channelUtilizationValue(18)),
+          exactly(tester, l.channelUtilizationValue(4)),
+          exactly(tester, l.channelUtilizationUnavailable),
+        ];
+        final texts = renderedTexts(tester);
+        final bands = texts
+            .where((t) => _bandRe.hasMatch(t.data!.trim()))
+            .toList()
+          ..sort(
+              (a, b) => rectOf(tester, a).top.compareTo(rectOf(tester, b).top));
+        final snrs = texts.where((t) => t.data!.contains(_snrMarker)).toList();
+        expect(bands.map((t) => t.data), ['2.4GHz', '5GHz', '6GHz']);
+
+        for (final (i, readout) in readouts.indexed) {
+          expectWholeAndUnshrunken(tester, readout, besideSnrOf: snrs);
+
+          final rect = rectOf(tester, readout);
+          expect(rect.top, greaterThan(rectOf(tester, bands[i]).top),
+              reason: '"${readout.data}" sits above its own band label.');
+          if (i + 1 < bands.length) {
+            expect(rect.bottom,
+                lessThanOrEqualTo(rectOf(tester, bands[i + 1]).top),
+                reason: '"${readout.data}" runs into the next radio\'s block, '
+                    'so it reads as that radio\'s utilization.');
+          }
+        }
+      });
+    }
+
     testWidgets('the channel readout is right-aligned while it fits (#1266)',
         (tester) async {
       // `Wrap(alignment: spaceBetween)` is only a drop-in for the old `Spacer`
@@ -451,7 +533,7 @@ void main() {
       final texts = renderedTexts(tester);
       final bands = texts.where((t) => _bandRe.hasMatch(t.data!.trim()));
       final channels =
-          texts.where((t) => t.data!.startsWith('${l.channel} ')).toList();
+          texts.where((t) => _isChannelReadout(t.data!, l)).toList();
       expect(channels, isNotEmpty);
 
       var sharedRuns = 0;
@@ -591,10 +673,22 @@ void main() {
           reason: 'each of the three radios needs its own SNR readout. '
               'Rendered: ${texts.map((t) => t.data).toList()}');
 
+      // #1295: one channel utilization line per radio. The 6GHz radio's is
+      // unknown in this profile, so the tab carries both forms of the line.
+      final l = await AppLocalizations.delegate.load(locale);
+      final utilizations = [
+        exactly(tester, l.channelUtilizationValue(18)),
+        exactly(tester, l.channelUtilizationValue(4)),
+        exactly(tester, l.channelUtilizationUnavailable),
+      ];
+      for (final t in utilizations) {
+        expectWholeAndUnshrunken(tester, t, besideSnrOf: snrs);
+      }
+
       // Inside the viewport, not merely un-overflowed: the donut's spill is the
       // reason this is measured against the viewport rect rather than trusted.
       final viewport = cardContentViewport(tester);
-      for (final t in [...bands, ...snrs]) {
+      for (final t in [...bands, ...snrs, ...utilizations]) {
         expect(isClipped(tester, t), isFalse,
             reason: '"${t.data}" is clipped at this width.');
         final rect = rectOf(tester, t);
@@ -612,9 +706,10 @@ void main() {
       // Six radios is one past today's hardware (see `testRadiosSixRadio`), and
       // that is the point: it is the smallest load that puts this tab clearly
       // past its viewport, so the net is measured rather than assumed.
+      final locale = _localeFor('tr');
       final incidents = await pumpNarrowest(tester,
           tabIndex: 2,
-          locale: _localeFor('tr'),
+          locale: locale,
           extraOverrides: sixRadioProfile.overrides());
 
       expect(incidents, isEmpty,
@@ -651,12 +746,26 @@ void main() {
               'a radio was dropped from the render rather than scrolled to. '
               'Rendered: ${texts.map((t) => t.data).toList()}');
 
+      // #1295: and each radio's channel utilization line, the last line of
+      // its block — two readings and four unknown (the 6GHz radio and the three
+      // this profile adds report none).
+      final l = await AppLocalizations.delegate.load(locale);
+      final utilizations = texts
+          .where((t) =>
+              t.data == l.channelUtilizationUnavailable ||
+              t.data == l.channelUtilizationValue(18) ||
+              t.data == l.channelUtilizationValue(4))
+          .toList();
+      expect(utilizations, hasLength(6),
+          reason: 'every radio needs its channel utilization line. Rendered: '
+              '${texts.map((t) => t.data).toList()}');
+
       // Reachable = inside the viewport plus what can be scrolled to. Content
       // past that is laid out and unreachable at every scroll offset, which looks
       // exactly like scrolling and is not.
       final viewport = cardContentViewport(tester);
       final reachableBottom = viewport.bottom + shortfall!;
-      for (final t in snrs) {
+      for (final t in [...snrs, ...utilizations]) {
         final rect = rectOf(tester, t);
         expect(isClipped(tester, t), isFalse,
             reason: '"${t.data}" is clipped, so scrolling did not give this '
@@ -676,6 +785,17 @@ final _bandRe = RegExp(r'^\d+(\.\d+)?GHz$');
 /// The SNR readout's literal prefix. `snrValue` is `SNR: {value} dB`, and the
 /// marker is taken from the string's own shape rather than hardcoded per locale.
 const _snrMarker = 'SNR';
+
+/// What the channel readout puts between the channel and the bandwidth
+/// (`usp_wifi_performance_card.dart`).
+const _bandwidthSeparator = '·';
+
+/// The `<channel> <n> · <bandwidth>` readout. The prefix alone is not enough
+/// since #1295: the channel utilization line also starts with the word for
+/// channel in some locales (`Channel utilization: 18%`, `Kanal kullanımı: %18`),
+/// and the bandwidth separator is what only the channel readout has.
+bool _isChannelReadout(String data, AppLocalizations l) =>
+    data.startsWith('${l.channel} ') && data.contains(_bandwidthSeparator);
 
 Locale _localeFor(String tag) =>
     AppLocalizations.supportedLocales.firstWhere((l) {

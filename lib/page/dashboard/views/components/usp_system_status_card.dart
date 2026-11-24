@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
+import 'package:privacy_gui/core/utils/usp_formatters.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
@@ -689,7 +689,10 @@ class _CorrelationView extends StatelessWidget {
             AppChartLegendEntry.seriesName(
               mark: const ChartMark.line(dashed: true, dot: true),
               color: colorScheme.tertiary,
-              label: loc(context).trafficRate,
+              // Names its unit: this series is read against the right-hand
+              // axis, and the legend draws both axes' series with the same ink
+              // (#1324, kit #30).
+              label: loc(context).trafficRateBytesPerSec,
             ),
           ],
         ),

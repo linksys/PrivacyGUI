@@ -48,25 +48,27 @@ class StatsTrafficTrendsSection extends ConsumerWidget {
     final packetsMax =
         _niceMaxPackets(packetRates.isEmpty ? 0 : packetRates.reduce(math.max));
 
+    final series = [
+      AppChartSeries(
+        label: loc(context).bytesPerSec,
+        data: byteRates,
+        filled: true,
+        color: colorScheme.primary,
+      ),
+      AppChartSeries(
+        label: loc(context).packetsPerSec,
+        data: packetRates,
+        dashed: true,
+        color: colorScheme.tertiary,
+        useSecondaryAxis: true,
+      ),
+    ];
+
     return Column(
       children: [
         Expanded(
           child: AppLineChart(
-            series: [
-              AppChartSeries(
-                label: loc(context).bytesPerSec,
-                data: byteRates,
-                filled: true,
-                color: colorScheme.primary,
-              ),
-              AppChartSeries(
-                label: loc(context).packetsPerSec,
-                data: packetRates,
-                dashed: true,
-                color: colorScheme.tertiary,
-                useSecondaryAxis: true,
-              ),
-            ],
+            series: series,
             yAxis: AppChartAxis(min: 0, max: bytesMax),
             yLabelFormatter: _formatBytesLabel,
             secondaryYAxis: AppChartAxis(min: 0, max: packetsMax),
@@ -80,18 +82,11 @@ class StatsTrafficTrendsSection extends ConsumerWidget {
           ),
         ),
         AppGap.sm(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            StatsLegendDot(color: colorScheme.primary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).bytesPerSec),
-            AppGap.lg(),
-            Container(width: 16, height: 2, color: colorScheme.tertiary),
-            AppGap.xs(),
-            AppText.labelSmall(loc(context).packetsPerSec),
-          ],
-        ),
+        // Derived from the same list the chart drew (#1324), so the packets
+        // series is keyed by the dashed, dotted stroke the chart actually paints
+        // rather than a solid bar. `showDots` is left at the default on both, so
+        // the two agree on point markers.
+        AppChartLegend.line(series: series),
       ],
     );
   }

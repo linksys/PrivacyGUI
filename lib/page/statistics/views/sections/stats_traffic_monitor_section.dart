@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/_shared/utils/usp_formatters.dart';
+import 'package:privacy_gui/core/utils/usp_formatters.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_traffic_analysis_notifier.dart';
 import 'package:privacy_gui/page/statistics/views/components/stats_section_card.dart';
@@ -118,23 +118,23 @@ class StatsTrafficMonitorSection extends ConsumerWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                StatsLegendDot(color: colorScheme.primary),
-                AppGap.xs(),
+                // Kit entries (#1324): `.seriesName` keeps the one-line ellipsis
+                // and glues each mark to its label. The marks are the chart's
+                // strokes — filled upload, plain download — with point markers,
+                // since `showDots` is at its default.
                 Flexible(
-                  child: AppText.labelSmall(
-                    loc(context).upload,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  child: AppChartLegendEntry.seriesName(
+                    mark: const ChartMark.lineFilled(dot: true),
+                    color: colorScheme.primary,
+                    label: loc(context).upload,
                   ),
                 ),
                 AppGap.lg(),
-                StatsLegendDot(color: colorScheme.secondary),
-                AppGap.xs(),
                 Flexible(
-                  child: AppText.labelSmall(
-                    loc(context).download,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  child: AppChartLegendEntry.seriesName(
+                    mark: const ChartMark.line(dot: true),
+                    color: colorScheme.secondary,
+                    label: loc(context).download,
                   ),
                 ),
               ],

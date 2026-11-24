@@ -10,11 +10,13 @@ import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/providers/wan_interface_path_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/generated/dns_client.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/generated/static_routing.g.dart';
 import 'package:privacy_gui/generated/wan_ipv6addresses.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
+import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 
 // ---------------------------------------------------------------------------
 // Provider
@@ -48,6 +50,10 @@ class UspWanDataService {
   /// the other values (`DHCP`, `Static`, `PPPoE`, a tunnel type).
   static const bridgeAddressingType = 'Bridge';
 
+  /// The `AddressingType` every PPP-based WAN reports — PPPoE, PPTP and L2TP
+  /// alike — so it names no type on its own (#1702).
+  static const pppAddressingType = 'IPCP';
+
   final UspClient _usp;
   final bool _autoIPoESupported;
 
@@ -56,6 +62,11 @@ class UspWanDataService {
 
   /// Fetches WAN status + gateway + IPv6 addresses and returns a
   /// [WanStatusUIModel].
+  ///
+  /// The DNS servers are a separate read, [fetchDnsServers], which
+  /// `wanDataProvider` merges in: Diagnostics also calls this method, reads
+  /// `Device.DNS.Client.*` on its own, and on the Auto-IPoE path must read
+  /// nothing but the connection object.
   Future<WanStatusUIModel> fetch() async {
     try {
       final active = await ActiveIpv4Connection.fetch(
@@ -95,11 +106,14 @@ class UspWanDataService {
       // A WAN with no IPv4Address row (WAN down; FW 2.0.2 in bridge mode) is a
       // down WAN with no address, not a failed read (#1615).
       final ipv4 = wanStatus.ipv4Addresses.firstOrNull;
+      final rawType = ipv4?.addressingType ?? '';
       return WanStatusUIModel(
         isUp: ipv4 != null && wanStatus.status.toLowerCase() == 'up',
         ipAddress: ipv4?.ipAddress ?? '',
         subnetMask: ipv4?.subnetMask ?? '',
-        addressingType: ipv4?.addressingType ?? '',
+        addressingType: rawType == pppAddressingType
+            ? await _fetchPppTypeLabel(wanStatus.instancePath)
+            : rawType,
         mtu: wanStatus.maxMtuSize,
         gateway: extra.gateway,
         ipv6Enabled: wanStatus.ipv6Enabled,
@@ -188,15 +202,22 @@ class UspWanDataService {
       // on any router. The route's Interface value may or may not carry a
       // trailing dot, so both sides are compared dot-terminated — a bare
       // `contains('Interface.2')` would also match Interface.20 / .21.
+      //
+      // Of several, the lowest `ForwardingMetric` is the one in use: on PPTP /
+      // L2TP the underlay's default route is listed on the WAN too, with a
+      // higher metric, and may come first (linksys/FWDEV#212, #1702). A tie
+      // keeps the first listed.
       final wanIface = ensureTrailingDot(wanPath);
       final routes = routing.items.expand((router) => router.forwardings);
+      StaticRoute? best;
       for (final route in routes) {
         if (route.destIpAddress == '0.0.0.0' &&
-            ensureTrailingDot(route.interface_) == wanIface) {
-          return route.gatewayIpAddress;
+            ensureTrailingDot(route.interface_) == wanIface &&
+            (best == null || route.forwardingMetric < best.forwardingMetric)) {
+          best = route;
         }
       }
-      return '';
+      return best?.gatewayIpAddress ?? '';
     } catch (e) {
       logger.w('[USP][WanData]: Gateway fetch failed: $e');
       return '';
@@ -223,5 +244,119 @@ class UspWanDataService {
       logger.w('[USP][WanData]: IPv6 address fetch failed: $e');
       return const <String>[];
     }
+  }
+
+  /// The IPv4 DNS servers the WAN is using, or empty when there are none or
+  /// they cannot be read (#1702). Never throws.
+  ///
+  /// The in-use resolvers are the enabled `Device.DNS.Client.Server.*` rows on
+  /// the WAN interface (linksys/FWDEV#212). `IPv4Address.{i}.X_LINKSYS_DNSServers`
+  /// is not read: it is the Static form's configured list, not the list in
+  /// use. On PPTP / L2TP the rows on the WAN are the tunnel's, as on 1.0. The
+  /// same table is read with and without Auto-IPoE: the connection object
+  /// carries no resolver list.
+  ///
+  /// A failed read hides the row and never fails the card.
+  Future<List<String>> fetchDnsServers() async {
+    try {
+      final dnsFuture = DnsClient.fetch(_usp);
+      final wanPathFuture = resolveWanInterfacePath(_usp);
+      await Future.wait([dnsFuture, wanPathFuture]);
+      return wanDnsServers((await dnsFuture).servers, await wanPathFuture);
+    } catch (e) {
+      logger.w('[USP][WanData]: DNS server fetch failed: $e');
+      return const <String>[];
+    }
+  }
+
+  /// The addresses of [servers] that are enabled, on [wanPath] and IPv4, in
+  /// table order.
+  ///
+  /// `Interface` is compared dot-terminated on both sides, as the gateway is,
+  /// so a server on `Interface.20` does not match a WAN on `Interface.2`.
+  static List<String> wanDnsServers(List<DnsServer> servers, String wanPath) {
+    final wanIface = ensureTrailingDot(wanPath);
+    return [
+      for (final server in servers)
+        if (server.enabled &&
+            ensureTrailingDot(server.interface_) == wanIface &&
+            _isIpv4(server.address))
+          server.address,
+    ];
+  }
+
+  static final _ipv4 = RegExp(r'^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$');
+
+  /// Whether [value] is a dotted-quad IPv4 address.
+  static bool _isIpv4(String value) {
+    final match = _ipv4.firstMatch(value);
+    if (match == null) return false;
+    for (var i = 1; i <= 4; i++) {
+      if (int.parse(match.group(i)!) > 255) return false;
+    }
+    return true;
+  }
+
+  /// The PPP type an `IPCP` WAN on [wanPath] runs — `PPPoE`, `PPTP` or `L2TP`
+  /// — as the Internet Settings page names it (#1702).
+  ///
+  /// `IPCP` is reported for all three; the PPP row's `LowerLayers` tells them
+  /// apart (`GRE.Tunnel` = PPTP, `L2TPv2.Tunnel` = L2TP, anything else =
+  /// PPPoE), which is [UspWanConnectionType.fromRawFields]'s own rule. The PPP
+  /// row is the one the WAN's `LowerLayers` names, or the only row.
+  ///
+  /// Only the `LowerLayers` leaves are read, in one GET. The generated
+  /// `PppInterface` model would also pull the PPP credentials (`Username`,
+  /// `Password`) over the wire, which this read has no use for.
+  ///
+  /// When the PPP row cannot be read the raw `IPCP` is kept, as before: a type
+  /// guessed as PPPoE would be wrong on PPTP / L2TP, and the card must not fail.
+  Future<String> _fetchPppTypeLabel(String wanPath) async {
+    try {
+      final wanLowerPath = '${wanPath}LowerLayers';
+      final response = await _usp.get([wanLowerPath, pppLowerLayersPath]);
+      final lowerLayers = wanPppLowerLayers(
+        pppLowerLayersByRow(response),
+        '${response[wanLowerPath] ?? ''}',
+      );
+      if (lowerLayers == null) return pppAddressingType;
+      return UspWanConnectionType.fromRawFields(
+        addressingType: pppAddressingType,
+        interfaceEnabled: true,
+        lowerLayers: lowerLayers,
+      ).label;
+    } catch (e) {
+      logger.w('[USP][WanData]: PPP type fetch failed: $e');
+      return pppAddressingType;
+    }
+  }
+
+  /// The one PPP leaf the type read needs, for every row.
+  static const pppLowerLayersPath = 'Device.PPP.Interface.*.LowerLayers';
+
+  static final _pppLowerLayersKey =
+      RegExp(r'^(Device\.PPP\.Interface\.\d+\.)LowerLayers$');
+
+  /// `Device.PPP.Interface.{i}.` (dot-terminated) → its `LowerLayers`, in
+  /// response order, from a GET of [pppLowerLayersPath].
+  static Map<String, String> pppLowerLayersByRow(
+      Map<String, dynamic> response) {
+    final rows = <String, String>{};
+    for (final entry in response.entries) {
+      final row = _pppLowerLayersKey.firstMatch(entry.key)?.group(1);
+      if (row != null) rows[row] = '${entry.value ?? ''}';
+    }
+    return rows;
+  }
+
+  /// The `LowerLayers` of the PPP row the WAN runs on: the row
+  /// [wanLowerLayers] names, or the only row. Null when there are no rows, or
+  /// several and the WAN names none of them. The same rule the Internet
+  /// Settings page reads its PPP row by.
+  static String? wanPppLowerLayers(
+      Map<String, String> rows, String wanLowerLayers) {
+    final named = rows[ensureTrailingDot(wanLowerLayers)];
+    if (named != null) return named;
+    return rows.length == 1 ? rows.values.single : null;
   }
 }

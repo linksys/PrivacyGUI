@@ -48,6 +48,16 @@ class MacFilterNetwork {
     );
   }
 
+  static Future<Subscription<MacFilterNetwork>> subscribe(
+      UspClient client) async {
+    return client.subscribe<MacFilterNetwork>(
+      id: 'mac-filter-mode-valuechange',
+      notifType: NotifType.valueChange,
+      paths: ['Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode'],
+      parser: MacFilterNetwork._fromResponse,
+    );
+  }
+
   @override
   String toString() {
     return 'MacFilterNetwork('

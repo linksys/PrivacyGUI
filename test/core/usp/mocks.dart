@@ -8,6 +8,8 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/transport/usp_transport.dart';
 
+import '../../mocks/test_data/usp_envelope_test_data.dart';
+
 class MockUspBridgeClient extends Mock implements UspBridgeClient {}
 
 class MockUspClient extends Mock implements UspClient {}
@@ -168,21 +170,13 @@ class UnauthenticatedTransport implements UspTransport {
         failWith ?? (rejections > 0 ? unauthenticatedError() : null);
     if (failure != null) {
       if (failWith == null) rejections--;
-      return {
-        'success': false,
-        'result': {
-          'data': <String, dynamic>{},
-          'error': {
-            for (final p in paths)
-              p: {
-                'errorCode': 9999,
-                'errorMessage': failure is Exception
-                    ? failure.toString().replaceFirst('Exception: ', '')
-                    : '$failure',
-              },
-          },
-        },
-      };
+      return UspEnvelopeTestData.failedAsAWhole(
+        paths,
+        errorCode: 9999,
+        errorMessage: failure is Exception
+            ? failure.toString().replaceFirst('Exception: ', '')
+            : '$failure',
+      );
     }
     return {
       'success': true,

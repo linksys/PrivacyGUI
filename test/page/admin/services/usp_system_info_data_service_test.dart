@@ -4,6 +4,8 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/admin/services/usp_system_info_data_service.dart';
 
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 void main() {
@@ -195,7 +197,7 @@ void main() {
   // X_LINKSYS_UserDeviceLocation; DeviceInfo.FriendlyName is read as a
   // fallback in case something else set it. Both read "" when unset.
   group('UspSystemInfoDataService — router name (#1691)', () {
-    void stubName({Object? location, Object? friendlyName}) {
+    void stubName({Object? location, Object? friendlyName, Object? hostName}) {
       when(() => mockUsp.get(any(), priority: any(named: 'priority')))
           .thenAnswer((_) async {
         final paths = _.positionalArguments[0] as List;
@@ -206,11 +208,45 @@ void main() {
               'Device.DeviceInfo.X_LINKSYS_UserDeviceLocation': location,
             if (friendlyName != null)
               'Device.DeviceInfo.FriendlyName': friendlyName,
+            if (hostName != null) 'Device.DeviceInfo.HostName': hostName,
           };
         }
         return firmwareImagesResponse;
       });
     }
+
+    // The fallback name when neither is set (#1751), read in the same Get.
+    test('carries DeviceInfo.HostName into the UI model', () async {
+      stubName(hostName: 'Linksys12345');
+
+      final model = await svc.fetch();
+
+      expect(model.hostName, 'Linksys12345');
+    });
+
+    test('reads HostName in the same Get as the rest of system info', () async {
+      stubName(hostName: 'Linksys12345');
+
+      await svc.fetch();
+
+      final calls = verify(
+              () => mockUsp.get(captureAny(), priority: any(named: 'priority')))
+          .captured
+          .cast<List>();
+      final systemInfoGet = calls.singleWhere(
+          (paths) => paths.any((p) => p.toString().contains('Manufacturer')));
+      expect(systemInfoGet, contains('Device.DeviceInfo.HostName'));
+    });
+
+    test('no HostName, or "", is no host name and does not fail the fetch',
+        () async {
+      stubName();
+      expect((await svc.fetch()).hostName, isNull,
+          reason: 'optional: an image without the leaf reads null');
+
+      stubName(hostName: '');
+      expect((await svc.fetch()).hostName, isNull);
+    });
 
     test('carries the location and FriendlyName into the UI model', () async {
       stubName(location: 'Office', friendlyName: 'Main router');
@@ -265,18 +301,15 @@ void main() {
     test('a refused Set throws UspCompleteFailureError', () {
       // What the firmware does for 65 bytes: the whole Set is refused.
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': false,
-                'result': {
-                  'data': <String, dynamic>{},
-                  'error': {
-                    'Device.DeviceInfo.X_LINKSYS_UserDeviceLocation': {
-                      'errorCode': 9007,
-                      'errorMessage': 'Invalid parameter value',
-                    },
-                  },
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'Device.DeviceInfo.X_LINKSYS_UserDeviceLocation': (
+                    code: 9007,
+                    message: 'Invalid parameter value',
+                  ),
                 },
-              });
+                success: false,
+              ));
 
       expect(() => svc.updateRouterName('x'),
           throwsA(isA<UspCompleteFailureError>()));

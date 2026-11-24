@@ -127,13 +127,16 @@ class _WifiChannelDialogState extends State<WifiChannelDialog> {
                 : null,
           ),
           AppGap.sm(),
-          // Per mockup, always surface the channel the router is actually using
-          // — in both Auto and manual modes — whenever manual options exist.
+          // Per mockup, surface the channel the radio is on — in both Auto and
+          // manual modes — whenever manual options exist. That is
+          // `channelInUse`, not `channel`: a fixed channel keeps its configured
+          // value when hostapd moves the radio (#1782). When it is unknown the
+          // line is left out rather than naming a channel the radio may not be
+          // on; the card that opened the dialog already shows it as unknown.
           if (!_hasManualChannels)
             AppText.bodySmall(loc(context).channelNoManualOptions)
-          else
-            AppText.bodySmall(
-                loc(context).channelCurrentlyUsing(widget.radio.channel)),
+          else if (widget.radio.channelInUse case final inUse?)
+            AppText.bodySmall(loc(context).channelCurrentlyUsing(inUse)),
         ],
       ),
       actions: [

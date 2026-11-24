@@ -40,8 +40,8 @@ import '../../../util/dashboard/dashboard_card_probe.dart';
 ///
 /// **A forced compact card cannot go below 4 columns**, which realizes at 260.5px.
 /// The #1183 gate pumps only each spec's min / preferred / max spans — 3, 6 and 8
-/// for six of the seven compact consumers — so the span this ticket makes their
-/// floor is pumped by nothing. And for two of the seven the automatic rule would
+/// for seven of the eight compact consumers — so the span this ticket makes their
+/// floor is pumped by nothing. And for two of the eight the automatic rule would
 /// not select compact there at all: 260.5px is above `lan_info`'s 250 and
 /// `time_settings`' 256, so those two render their compact form at that width only
 /// because the user asked, which is exactly the "width the automatic rule would
@@ -263,6 +263,7 @@ void main() {
           'connected_devices',
           'time_settings',
           'network_health',
+          'firewall_overview',
         ],
         reason: 'these declare no ${UspWidgetSpecs.compactMinColumns}-column '
             'span, so ${forcedCompactFloorCase.widthKey}px is a width no sweep but this one '
@@ -291,7 +292,7 @@ void main() {
       );
     });
 
-    test('and for two of the seven the rule there would say normal', () {
+    test('and for two of the eight the rule there would say normal', () {
       // Which cards make this file's compact sweep *forced* rather than merely
       // un-pumped. Named rather than counted: the two are the cards whose
       // threshold sits below the 4-column realization, and a spec edit that moves
@@ -351,15 +352,16 @@ void main() {
 
   // ─── A forced compact card at its floor ───────────────────────────────────
   //
-  // 7 cards x 3 locales, at the 261px the pick floors them at and the row count
+  // 8 cards x 3 locales, at the 261px the pick floors them at and the row count
   // [forcedCompactFloorRows] takes the max of — see it for the four cards the
   // constant alone would measure a shorter card than the floor permits for.
   //
   // 18 until #1325 gave `dhcp_reservations` a `normalAbove`, which is the predicate
   // `selectableForms` reads: a threshold added for the normal band's sake made a
-  // seventh card pickable-compact, and this pin is what said so.
+  // seventh card pickable-compact, and this pin is what said so. 21 until #1130
+  // did the same for `firewall_overview`, the eighth.
   runOverflowSweep(
     family: const ForcedCompactFloorFamily(),
-    expectedCellCount: 21,
+    expectedCellCount: 24,
   );
 }

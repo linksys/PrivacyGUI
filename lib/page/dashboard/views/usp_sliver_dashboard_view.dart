@@ -619,10 +619,10 @@ class _UspSliverDashboardViewState
   /// [items] can hold more than one card: the shortcut deletes the whole selection
   /// when the focused card is in it, and the trash drop does the same. A sentence
   /// with a count in it needs ICU plural categories authored in all 26 locales,
-  /// and a sentence with a card name in it would mix an unlocalized
-  /// `WidgetSpec.displayName` into a translated string. Neither buys the user
-  /// anything the dialog does not already have: the cards being removed are the
-  /// ones under the pointer or highlighted behind the barrier.
+  /// and a sentence with a card name in it needs one name per card it lists
+  /// (resolved per locale by `WidgetSpecName.resolveName`, #1312). Neither buys
+  /// the user anything the dialog does not already have: the cards being removed
+  /// are the ones under the pointer or highlighted behind the barrier.
   ///
   /// ## Why this is not `showAppConfirmDialog`
   ///

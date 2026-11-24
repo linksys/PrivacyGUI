@@ -28,8 +28,15 @@ import 'package:privacy_gui/core/usp/models/usp_operation_result.dart'
 /// }
 /// ```
 sealed class ServiceError implements Exception {
-  /// Diagnostic raw fault code (firmware 7xxx/9xxx, WASM 9999, codegen 9998…).
-  /// For logging/debugging only — `null` when there is no code.
+  /// Diagnostic raw fault code (firmware 7xxx/9xxx, WASM client 9997–9999,
+  /// codegen 9998/9996…). For logging/debugging only — `null` when there is no
+  /// code.
+  ///
+  /// 9998 has two sources: the WASM client (an answer it could not decode,
+  /// usp-client 0.15.0) and codegen (a required leaf missing from a read). The
+  /// error's category tells them apart, not the code: the client's is mapped
+  /// as `Protocol error:`, codegen's as `Validation error:` (see
+  /// `mapUspErrorToServiceError`).
   final int? code;
 
   /// Raw technical message (firmware text / WASM string / error identifier).
@@ -274,6 +281,32 @@ final class SavedButUnconfirmedError extends ServiceError {
 /// not a save that landed — the message says neither.
 final class SaveDiscardedForRouterRowsError extends ServiceError {
   const SaveDiscardedForRouterRowsError({super.code, super.detail});
+}
+
+/// A save failed after part of it had been applied.
+///
+/// Thrown by a save the router applies in steps, one Set at a time (the WAN
+/// save, issue #1711), when a step fails after an earlier step landed, or when
+/// the failing step itself landed in part. The router now holds some of the
+/// save, so this is not a save that wrote nothing, and the message says so.
+/// [cause] is the failing step's own error: it still says why, including the
+/// field a firmware refusal names. A consumer that tells errors apart by type
+/// unwraps [cause] first, as `localizeServiceError` and `localizeWanSaveError`
+/// do.
+final class SavePartlyAppliedError extends ServiceError {
+  final ServiceError cause;
+  const SavePartlyAppliedError(this.cause);
+
+  /// [cause]'s, so a log keyed on the code reads the same as the bare error.
+  @override
+  int? get code => cause.code;
+
+  /// [cause]'s, for the same reason as [code].
+  @override
+  String? get detail => cause.detail;
+
+  @override
+  String toString() => 'Partly applied: $cause';
 }
 
 /// Router connectivity error (cannot reach router)

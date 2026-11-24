@@ -35,6 +35,20 @@ List<int> parsePossibleChannels(String raw) {
   return result;
 }
 
+/// Parses a TR-181 `ChannelsInUse` string into the channel the radio is on, or
+/// null when that is unknown (#1782).
+///
+/// FL-WRT 2.0 reads it from the driver and sends one number, the primary
+/// channel, even at 80 MHz and wider. A failed read comes back as "", and
+/// TR-181 also allows a list or a range of the channels the radio sees in use,
+/// which name no one channel; both are unknown, as is "0", which is no channel.
+/// Never fall back to `Channel`: that is the configured value, which a fixed
+/// channel keeps when hostapd's 20/40 MHz coexistence check moves the radio.
+int? parseChannelInUse(String raw) {
+  final channel = int.tryParse(raw.trim());
+  return channel != null && channel > 0 ? channel : null;
+}
+
 /// 5 GHz DFS channels (IEEE 802.11h): UNII-2A (52–64) + UNII-2C (100–144).
 /// These are the only channels subject to Dynamic Frequency Selection; 2.4 GHz
 /// and 6 GHz channels are never DFS.

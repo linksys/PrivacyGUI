@@ -107,7 +107,7 @@ class UspWifiStatusCard extends ConsumerWidget {
                   ),
                   Expanded(
                     child: AppText.bodyMedium(
-                        wifiDisplayValue(context, radio.channelDisplay)),
+                        wifiDisplayValue(context, radio.channelInUseDisplay)),
                   ),
                   AppIconButton(
                     icon: AppIcon.font(Icons.edit, size: 18),

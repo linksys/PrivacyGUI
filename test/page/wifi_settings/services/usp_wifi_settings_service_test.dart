@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dar
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
 import '../../../mocks/test_data/wifi_settings_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
@@ -21,37 +22,29 @@ Map<String, dynamic> uspSuccess({Map<String, dynamic> data = const {}}) => {
       'result': {'data': data},
     };
 
+/// A failed SET on [path]: a 9999 is the client's transport failure, the call
+/// failing as a whole (`kind: request`); any other code the router refusing
+/// that parameter (`kind: parameter`).
 Map<String, dynamic> uspFailure(
         {String path = 'bulk_operation',
         int errorCode = 7004,
         String errorMessage = 'Operation failed'}) =>
-    {
-      'success': false,
-      'result': {
-        'data': <String, dynamic>{},
-        'error': {
-          path: {
-            'errorCode': errorCode,
-            'errorMessage': errorMessage,
-          }
-        },
-      },
-    };
+    errorCode == 9999
+        ? UspEnvelopeTestData.failedAsAWhole([path],
+            errorCode: errorCode, errorMessage: errorMessage)
+        : UspEnvelopeTestData.parameterErrors(
+            {path: (code: errorCode, message: errorMessage)},
+            success: false,
+          );
 
 /// A per-path SET error whose request never got an answer — what the WASM
 /// client reports when the browser's `fetch` fails under a WiFi restart.
-Map<String, dynamic> uspUnanswered(String path) => {
-      'success': false,
-      'result': {
-        'data': <String, dynamic>{},
-        'error': {
-          path: {
-            'errorCode': 9999,
-            'errorMessage': 'Transport error: Failed to fetch',
-          }
-        },
-      },
-    };
+Map<String, dynamic> uspUnanswered(String path) =>
+    UspEnvelopeTestData.failedAsAWhole(
+      [path],
+      errorCode: 9999,
+      errorMessage: 'Transport error: Failed to fetch',
+    );
 
 /// Sends [plan] the way a caller would, returning what it planned and the
 /// outcome — the shape these tests assert on.
@@ -124,6 +117,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 36,
+          channelsInUse: '36',
           operatingFrequencyBand: '5GHz',
           operatingChannelBandwidth: '80MHz',
           possibleChannels: '36,40,44,48,52,56,60,64',
@@ -148,6 +142,30 @@ void main() {
 
       // supportedBandwidths parsed from comma-separated string
       expect(n.supportedBandwidths, ['Auto', '20MHz', '40MHz', '80MHz']);
+    });
+
+    // #1782: the form edits the setting, so a radio set to 40 that hostapd
+    // moved to 36 still shows 40 there.
+    test('the form carries the configured channel, not the channel in use', () {
+      final n = svc
+          .buildWifiNetworks(
+            ssids: WiFiSsids(items: [WifiSettingsTestData.createSsid()]),
+            accessPoints: WiFiAccessPoints(
+                items: [WifiSettingsTestData.createAccessPoint()]),
+            radios: WiFiRadios(items: [
+              WifiSettingsTestData.createRadio(
+                operatingFrequencyBand: '5GHz',
+                channel: 40,
+                channelsInUse: '36',
+                possibleChannels: '36,40,44,48',
+                autoChannelEnable: false,
+              ),
+            ]),
+          )
+          .single;
+
+      expect(n.channel, 40);
+      expect(n.channelDisplay, '40');
     });
 
     test('populates availableChannelsPerBandwidth with bonding rules', () {
@@ -182,6 +200,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 36,
+          channelsInUse: '36',
           operatingFrequencyBand: '5GHz',
           operatingChannelBandwidth: '80MHz',
           possibleChannels: '36,40,44,48,52,56,60,64',
@@ -260,6 +279,7 @@ void main() {
             enable: true,
             status: 'Up',
             channel: 36,
+            channelsInUse: '36',
             operatingFrequencyBand: '5GHz',
             operatingChannelBandwidth: '80MHz',
             possibleChannels: '36,40,44,48,52,56,60,64,100,104,108,112',
@@ -348,6 +368,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 6,
+          channelsInUse: '6',
           operatingFrequencyBand: '2.4GHz',
           operatingChannelBandwidth: '20MHz',
           possibleChannels: '1,2,3,4,5,6,7,8,9,10,11',
@@ -430,6 +451,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 6,
+          channelsInUse: '6',
           operatingFrequencyBand: '2.4GHz',
           operatingChannelBandwidth: '20MHz',
           possibleChannels: '1,2,3,4,5,6,7,8,9,10,11',
@@ -446,6 +468,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 36,
+          channelsInUse: '36',
           operatingFrequencyBand: '5GHz',
           operatingChannelBandwidth: '80MHz',
           possibleChannels: '36,40,44,48',
@@ -518,6 +541,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 1,
+          channelsInUse: '1',
           operatingFrequencyBand: '6GHz', // already normalized
           operatingChannelBandwidth: '80MHz',
           possibleChannels: '1,5,9,13,17,21,25,29',
@@ -614,6 +638,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 6,
+          channelsInUse: '6',
           operatingFrequencyBand: '2.4GHz',
           operatingChannelBandwidth: '20MHz',
           possibleChannels: '1,6,11',
@@ -700,6 +725,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 6,
+          channelsInUse: '6',
           operatingFrequencyBand: '2.4GHz',
           operatingChannelBandwidth: '20MHz',
           possibleChannels: '1,6,11',
@@ -716,6 +742,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 36,
+          channelsInUse: '36',
           operatingFrequencyBand: '5GHz',
           operatingChannelBandwidth: '80MHz',
           possibleChannels: '36,40,44,48',
@@ -780,6 +807,7 @@ void main() {
           enable: true,
           status: 'Up',
           channel: 6,
+          channelsInUse: '6',
           operatingFrequencyBand: band,
           operatingChannelBandwidth: '20MHz',
           possibleChannels: '1,6,11',
@@ -1069,6 +1097,7 @@ void main() {
       'Device.WiFi.Radio.1.Enable': true,
       'Device.WiFi.Radio.1.Status': 'Up',
       'Device.WiFi.Radio.1.Channel': 36,
+      'Device.WiFi.Radio.1.ChannelsInUse': '36',
       'Device.WiFi.Radio.1.OperatingFrequencyBand': '5GHz',
       'Device.WiFi.Radio.1.OperatingChannelBandwidth': '80MHz',
       'Device.WiFi.Radio.1.PossibleChannels': '36,40,44,48',
@@ -1092,6 +1121,21 @@ void main() {
         }),
         isTrue,
       );
+    });
+
+    // #1782: hostapd's 20/40 MHz coexistence check can move a radio set to 40
+    // onto 36. `Channel` keeps 40, and FW keeps it so on purpose so this
+    // comparison holds (#1295); the channel in use is not what was written.
+    test('a written channel is proved by Channel, not by the channel in use',
+        () async {
+      routerReads({
+        ...router,
+        'Device.WiFi.Radio.1.Channel': 40,
+        'Device.WiFi.Radio.1.ChannelsInUse': '36',
+      });
+
+      expect(await writeSvc.isApplied({'Device.WiFi.Radio.1.Channel': 40}),
+          isTrue);
     });
 
     test('false while any written leaf still reads the old value', () async {
@@ -1544,6 +1588,7 @@ void main() {
         ssid: 'Home-Guest',
         password: '',
         securityMode: 'None',
+        hasOpenNetwork: true,
         supportedSecurityModes: [],
       );
 
@@ -1601,6 +1646,7 @@ void main() {
         ssid: 'Home',
         password: '',
         securityMode: 'WPA2-Personal',
+        hasOpenNetwork: false,
         supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal'],
       );
 
@@ -1653,6 +1699,7 @@ void main() {
         ssid: 'Home',
         password: '',
         securityMode: 'WPA2-Personal',
+        hasOpenNetwork: false,
         supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal'],
       );
       final original = WifiSettingsSettings(
@@ -1708,6 +1755,7 @@ void main() {
         ssid: 'Home',
         password: '',
         securityMode: 'WPA2-Personal',
+        hasOpenNetwork: false,
         supportedSecurityModes: ['WPA2-Personal'],
       );
       late WifiSettingsSettings original;
@@ -1762,14 +1810,14 @@ void main() {
         expect(renameAndSave(), throwsA(isA<ServiceError>()));
       });
 
-      test('a refusal still throws — 9999 with a fault inside is an answer',
-          () async {
+      test(
+          'a refusal still throws — the router\'s own code and message are an '
+          'answer (usp-client 0.15.0, #1787)', () async {
         when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
             .thenAnswer((_) async => uspFailure(
                   path: 'Device.WiFi.SSID.1.SSID',
-                  errorCode: 9999,
-                  errorMessage: 'Transport error: Protocol error: Received '
-                      'error response: Invalid value (code: 7012)',
+                  errorCode: 7012,
+                  errorMessage: 'Invalid value',
                 ));
 
         expect(renameAndSave(), throwsA(isA<UspCompleteFailureError>()));
@@ -1875,6 +1923,7 @@ void main() {
         ssid: 'Home',
         password: '',
         securityMode: 'WPA2-Personal',
+        hasOpenNetwork: false,
         supportedSecurityModes: ['None', 'WPA2-Personal'],
       );
 
@@ -1983,6 +2032,7 @@ void main() {
         ssid: 'Home',
         password: '',
         securityMode: 'WPA3-Personal-Transition',
+        hasOpenNetwork: false,
         supportedSecurityModes: [
           'None',
           'WPA2-Personal',

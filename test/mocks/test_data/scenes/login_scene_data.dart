@@ -1,4 +1,4 @@
-/// Composed states for the four `lib/page/login/` pages the layout gate sweeps
+/// Composed states for the three `lib/page/login/` pages the layout gate sweeps
 /// (#1379, wave 3).
 ///
 /// A `_scene_data` file rather than a `_test_data` one, per CLAUDE.md's testing
@@ -9,10 +9,9 @@
 ///
 /// Wave 1 and wave 2's scenes carry lists — devices, reservations, wizard configs.
 /// The login pages carry almost nothing, and that is a property of the pages rather
-/// than a thin fixture: three of the four are forms whose fields start empty, and
-/// their providers are USP-mode **stubs** (`routerPasswordProvider`,
-/// `autoParentFirstLoginProvider`) whose only job today is to decide which of two
-/// branches a view renders. So a scene here is one flag or one nullable int, and the
+/// than a thin fixture: all three are forms whose fields start empty, and the
+/// provider two of them read is a USP-mode **stub** (`routerPasswordProvider`) whose
+/// only job today is to decide which of two branches a view renders. So a scene here is one flag or one nullable int, and the
 /// value of stating it as a named final is that the case which uses it can say *why*
 /// that branch is the one under measurement.
 library;

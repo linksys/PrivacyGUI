@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/url_links.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/support/faq_data.dart';
-import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_state.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-
-import 'dashboard_dialog_provider.dart' show DiagnosticsResult;
 
 import 'health/health_dimension.dart';
 import 'health/health_dimension_registry.dart';
@@ -24,8 +22,6 @@ class HealthDialogProvider extends MascotDialogProvider {
   HealthDialogProvider({
     required this.ref,
     required this.controller,
-    required this.onRunFullDiagnostics,
-    required this.onRunFlowDiagnostics,
     required this.onPrintReport,
     required this.onOpenThemeStudio,
     required this.onOpenAiAssistant,
@@ -35,13 +31,11 @@ class HealthDialogProvider extends MascotDialogProvider {
     required this.getFaqItemTitle,
     required this.isThemeStudioEnabled,
     required this.getRouterTime,
+    required this.l10n,
   });
 
   final WidgetRef ref;
   final MascotController controller;
-  final Future<DiagnosticsResult> Function() onRunFullDiagnostics;
-  final Future<DiagnosticsResult> Function(DiagnosticFlow flow)
-      onRunFlowDiagnostics;
   final Future<void> Function() onPrintReport;
   final VoidCallback onOpenThemeStudio;
   final VoidCallback onOpenAiAssistant;
@@ -51,6 +45,12 @@ class HealthDialogProvider extends MascotDialogProvider {
   final String Function(FaqCategory category) getFaqCategoryTitle;
   final String Function(FaqItem item) getFaqItemTitle;
   final DateTime? Function() getRouterTime;
+
+  /// The strings for every node this builds, in the app's locale (#1312).
+  ///
+  /// A node's `text` is what a screen reader announces, and the UI Kit expects
+  /// it pre-translated, so it is resolved here rather than in a widget.
+  final AppLocalizations l10n;
 
   static final List<FaqCategory> _faqCategories = [
     FaqSetupCategory(),
@@ -119,40 +119,40 @@ class HealthDialogProvider extends MascotDialogProvider {
     return options[index];
   }
 
-  static const _generalGreetings = [
-    'Hi there! How can I help?',
-    'Hello! Everything running smoothly?',
-    'Hey! Need any help?',
-    'Welcome back!',
-  ];
+  List<String> get _generalGreetings => [
+        l10n.mascotGreetingAny1,
+        l10n.mascotGreetingAny2,
+        l10n.mascotGreetingAny3,
+        l10n.mascotGreetingAny4,
+      ];
 
-  static const _morningGreetings = [
-    'Good morning! Ready to check your network?',
-    'Rise and shine! How\'s the network?',
-    'Morning! Everything connected?',
-    'Good morning! Need any help?',
-  ];
+  List<String> get _morningGreetings => [
+        l10n.mascotGreetingMorning1,
+        l10n.mascotGreetingMorning2,
+        l10n.mascotGreetingMorning3,
+        l10n.mascotGreetingMorning4,
+      ];
 
-  static const _afternoonGreetings = [
-    'Good afternoon! Everything running smoothly?',
-    'Hey there! How\'s your day?',
-    'Afternoon! Need any help?',
-    'Good afternoon! Network check?',
-  ];
+  List<String> get _afternoonGreetings => [
+        l10n.mascotGreetingAfternoon1,
+        l10n.mascotGreetingAfternoon2,
+        l10n.mascotGreetingAfternoon3,
+        l10n.mascotGreetingAfternoon4,
+      ];
 
-  static const _eveningGreetings = [
-    'Good evening! Winding down?',
-    'Evening! Quick network check?',
-    'Good evening! How was your day?',
-    'Hey! Checking in before bed?',
-  ];
+  List<String> get _eveningGreetings => [
+        l10n.mascotGreetingEvening1,
+        l10n.mascotGreetingEvening2,
+        l10n.mascotGreetingEvening3,
+        l10n.mascotGreetingEvening4,
+      ];
 
-  static const _nightGreetings = [
-    'Hello, night owl!',
-    'Burning the midnight oil?',
-    'Late night check-in?',
-    'Can\'t sleep? Let\'s check the network!',
-  ];
+  List<String> get _nightGreetings => [
+        l10n.mascotGreetingNight1,
+        l10n.mascotGreetingNight2,
+        l10n.mascotGreetingNight3,
+        l10n.mascotGreetingNight4,
+      ];
 
   void _handleDimensionTap(HealthDimensionType dimensionType) {
     final dimension = HealthDimensions.byType(dimensionType);
@@ -163,11 +163,11 @@ class HealthDialogProvider extends MascotDialogProvider {
 
     // Build evaluation context for summary
     final evalContext = ref.read(healthEvaluationContextProvider);
-    final summary = dimension.getSummary(evalContext);
+    final summary = dimension.getSummary(evalContext, l10n);
 
     controller.showDialog(MascotDialogNode.custom(
       id: 'dimension_${dimensionType.name}',
-      text: dimension.displayName,
+      text: dimension.resolveName(l10n),
       barrier: MascotDialogBarrier.dismissible,
       contentBuilder: (ctx, textColor) => DimensionDetailView(
         dimension: dimension,
@@ -238,76 +238,17 @@ class HealthDialogProvider extends MascotDialogProvider {
       }
     }
 
-    // Diagnostics result
-    if (nodeId == 'diagnostics_result') {
-      if (optionId == 'back') return _diagnosticsMenu();
-      if (optionId == 'main') return getInitialDialog();
-    }
-
-    // Diagnostics menu
-    if (nodeId == 'diagnostics_menu') {
-      if (optionId == 'back') return getInitialDialog();
-      if (optionId == 'full') return _runFullDiagnostics();
-      final flow = _flowFromOptionId(optionId);
-      if (flow != null) return _runFlowDiagnostics(flow);
-    }
-
     return null;
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  // Diagnostics
+  // Print Report
   // ══════════════════════════════════════════════════════════════════════════
 
-  MascotDialogNode _diagnosticsMenu() {
-    return const MascotDialogNode(
-      id: 'diagnostics_menu',
-      text: 'What would you like to check?',
-      barrier: MascotDialogBarrier.dismissible,
-      options: [
-        MascotDialogOption(
-          id: 'full',
-          label: 'Full diagnostic',
-          icon: Icons.checklist,
-        ),
-        MascotDialogOption(
-          id: 'internet',
-          label: 'Internet connection',
-          icon: Icons.public,
-        ),
-        MascotDialogOption(
-          id: 'wifi',
-          label: 'WiFi coverage',
-          icon: Icons.wifi,
-        ),
-        MascotDialogOption(
-          id: 'back',
-          label: 'Back',
-          icon: Icons.arrow_back,
-        ),
-      ],
-    );
-  }
-
-  DiagnosticFlow? _flowFromOptionId(String optionId) {
-    return switch (optionId) {
-      'internet' => DiagnosticFlow.internet,
-      'wifi' => DiagnosticFlow.wifiCoverage,
-      _ => null,
-    };
-  }
-
-  Future<MascotDialogNode> _runFullDiagnostics() async {
-    _showLoading('Running full diagnostic...');
-    final result = await onRunFullDiagnostics();
-    return _buildDiagnosticsResult(result);
-  }
-
-  Future<MascotDialogNode> _runFlowDiagnostics(DiagnosticFlow flow) async {
-    final flowName = _flowDisplayName(flow);
-    _showLoading('Checking $flowName...');
-    final result = await onRunFlowDiagnostics(flow);
-    return _buildDiagnosticsResult(result);
+  Future<void> _handlePrint() async {
+    _showLoading(l10n.mascotGeneratingReport);
+    await onPrintReport();
+    controller.dismissDialog();
   }
 
   void _showLoading(String message) {
@@ -319,54 +260,6 @@ class HealthDialogProvider extends MascotDialogProvider {
     ));
   }
 
-  String _flowDisplayName(DiagnosticFlow flow) {
-    return switch (flow) {
-      DiagnosticFlow.internet => 'internet connection',
-      DiagnosticFlow.wifiCoverage => 'WiFi coverage',
-      DiagnosticFlow.meshBackhaul => 'mesh backhaul',
-      DiagnosticFlow.deviceIssues => 'device issues',
-      DiagnosticFlow.intermittent => 'intermittent issues',
-    };
-  }
-
-  MascotDialogNode _buildDiagnosticsResult(DiagnosticsResult result) {
-    final type =
-        result.hasIssues ? MascotDialogType.error : MascotDialogType.success;
-    final animation = result.hasIssues
-        ? MascotAnimationKey.sad
-        : MascotAnimationKey.celebrate;
-
-    return MascotDialogNode(
-      id: 'diagnostics_result',
-      text: result.message,
-      type: type,
-      suggestedAnimation: animation,
-      barrier: MascotDialogBarrier.dismissible,
-      options: const [
-        MascotDialogOption(
-          id: 'back',
-          label: 'Run another test',
-          icon: Icons.refresh,
-        ),
-        MascotDialogOption(
-          id: 'main',
-          label: 'Main menu',
-          icon: Icons.home,
-        ),
-      ],
-    );
-  }
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // Print Report
-  // ══════════════════════════════════════════════════════════════════════════
-
-  Future<void> _handlePrint() async {
-    _showLoading('Generating report...');
-    await onPrintReport();
-    controller.dismissDialog();
-  }
-
   // ══════════════════════════════════════════════════════════════════════════
   // FAQ
   // ══════════════════════════════════════════════════════════════════════════
@@ -374,7 +267,7 @@ class HealthDialogProvider extends MascotDialogProvider {
   MascotDialogNode _faqCategoriesMenu() {
     return MascotDialogNode(
       id: 'faq_categories',
-      text: 'What do you need help with?',
+      text: l10n.mascotFaqPrompt,
       barrier: MascotDialogBarrier.dismissible,
       options: [
         ..._faqCategories.asMap().entries.map((entry) => MascotDialogOption(
@@ -382,9 +275,9 @@ class HealthDialogProvider extends MascotDialogProvider {
               label: getFaqCategoryTitle(entry.value),
               icon: _iconForCategory(entry.value),
             )),
-        const MascotDialogOption(
+        MascotDialogOption(
           id: 'back',
-          label: 'Back',
+          label: l10n.back,
           icon: Icons.arrow_back,
         ),
       ],
@@ -403,9 +296,9 @@ class HealthDialogProvider extends MascotDialogProvider {
               label: getFaqItemTitle(entry.value),
               icon: Icons.open_in_new,
             )),
-        const MascotDialogOption(
+        MascotDialogOption(
           id: 'back',
-          label: 'Back',
+          label: l10n.back,
           icon: Icons.arrow_back,
         ),
       ],

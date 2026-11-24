@@ -352,6 +352,7 @@ const _wideChannelWifiData = WifiData(
       transmitPower: -1,
       maxBitRate: 300,
       channel: 11,
+      channelInUse: 11,
       autoChannelEnable: true,
       channelBandwidth: '20/40MHz',
       supportedStandards: 'b,g,n',
@@ -363,6 +364,7 @@ const _wideChannelWifiData = WifiData(
       transmitPower: -1,
       maxBitRate: 4800,
       channel: 233,
+      channelInUse: 233,
       autoChannelEnable: true,
       channelBandwidth: '160MHz',
       supportedStandards: 'a,n,ac,ax,be',
@@ -439,6 +441,7 @@ WifiData _radiosWithClients(int n) {
           // 3-digit bandwidth), so the first block wraps to two runs at the floor
           // exactly as the rest of this file measures it.
           channel: 233,
+          channelInUse: 233,
           autoChannelEnable: true,
           channelBandwidth: '320MHz',
           supportedStandards: 'a,n,ac,ax,be',

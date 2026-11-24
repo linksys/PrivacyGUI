@@ -3,9 +3,25 @@
 // Any modifications will be overwritten on next generation
 
 const coreSubscriptions = [
+  (
+    'mesh-nodes-objectcreation',
+    'ObjectCreation',
+    'Device.WiFi.DataElements.Network.Device.'
+  ),
+  (
+    'mesh-nodes-objectdeletion',
+    'ObjectDeletion',
+    'Device.WiFi.DataElements.Network.Device.'
+  ),
+  (
+    'mac-filter-mode-valuechange',
+    'ValueChange',
+    'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode'
+  ),
   ('ethernet-valuechange', 'ValueChange', 'Device.Ethernet.Interface.'),
   ('wan-status-valuechange', 'ValueChange', 'Device.IP.Interface.'),
   ('dhcp-clients-02', 'ValueChange', 'Device.DHCPv4.Server.Pool.'),
+  ('ddns-valuechange', 'ValueChange', 'Device.DynamicDNS.Client.'),
   ('wifi-clients-01', 'ObjectCreation', 'Device.WiFi.AccessPoint.'),
   ('connected-devices-objectcreation', 'ObjectCreation', 'Device.Hosts.Host.'),
   ('connected-devices-objectdeletion', 'ObjectDeletion', 'Device.Hosts.Host.'),

@@ -11,6 +11,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
+import 'package:privacy_gui/page/admin/models/network_action_models.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_notifier.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_state.dart';
@@ -46,10 +47,10 @@ class FixedAdminNotifier extends UspAdminNotifier {
   }) async {}
 
   @override
-  Future<void> reboot() async {}
+  Future<RouterRestartStart> reboot() async => RouterRestartStart.router;
 
   @override
-  Future<void> factoryReset() async {}
+  Future<RouterRestartStart> factoryReset() async => RouterRestartStart.router;
 }
 
 class FixedSystemInfoDataNotifierForAdmin extends SystemInfoDataNotifier {

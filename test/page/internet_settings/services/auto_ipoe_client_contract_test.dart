@@ -13,6 +13,7 @@ import 'package:privacy_gui/page/internet_settings/services/auto_ipoe_service.da
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../mocks/test_data/auto_ipoe_test_data.dart';
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
 
 class MockTransport extends Mock implements UspTransport {}
 
@@ -108,18 +109,17 @@ void main() {
         final fixture = entry as Map<String, dynamic>;
         test('${fixture['name']} keeps its category without replay', () async {
           when(() => transport.operate(command, args: any(named: 'args')))
-              .thenAnswer((_) async => {
-                    'success': false,
-                    'result': {
-                      'data': <String, dynamic>{},
-                      'error': {
-                        command: {
-                          'errorCode': fixture['errorCode'],
-                          'errorMessage': fixture['errorMessage'],
-                        },
-                      },
-                    },
-                  });
+              .thenAnswer((_) async => UspEnvelopeTestData.envelope(
+                    success: false,
+                    errors: [
+                      (
+                        kind: fixture['errorKind'] as String,
+                        path: command,
+                        errorCode: fixture['errorCode'],
+                        errorMessage: fixture['errorMessage'] as String,
+                      ),
+                    ],
+                  ));
           await expectLater(
             invoke(),
             throwsA(isA<ServiceError>().having(

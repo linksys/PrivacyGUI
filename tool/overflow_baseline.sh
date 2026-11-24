@@ -230,8 +230,10 @@ fi
 # same way for a direct `dart run … extract`; the extractor's test asserts the two
 # lists match, so read the doc comment there before editing either. `pubspec.yaml`
 # earns its place by pinning the ui_kit_library / generative_ui refs — most of the
-# widgets these rows measure are not in this repo at all.
-MEASURED_PATHS=(lib test pubspec.yaml)
+# widgets these rows measure are not in this repo at all — and `pubspec.lock`,
+# tracked since #1414, by pinning the resolved version of every package they draw
+# with.
+MEASURED_PATHS=(lib test pubspec.yaml pubspec.lock)
 COMMIT="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
 if [ -n "$(git status --porcelain -- "${MEASURED_PATHS[@]}" 2>/dev/null)" ]; then
   COMMIT="$COMMIT-dirty"

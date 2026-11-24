@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/localization/supported_locales_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
@@ -228,6 +230,10 @@ class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
     _fireTrigger(trigger);
   }
 
+  /// The strings an alert is built from, read when it fires so it is in the
+  /// locale the app is in at that moment (#1312).
+  AppLocalizations get _l10n => ref.read(appLocalizationsProvider);
+
   DomainEvaluation? _evaluateWanStatus() {
     final wan = ref.read(wanDataProvider).valueOrNull;
     if (wan == null) return null;
@@ -243,10 +249,10 @@ class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
 
     if (!currentUp) {
       debugPrint('[Mascot][Trigger]: WAN went down');
-      return (trigger: TriggerDefinitions.wanDown(), advanced: advanced);
+      return (trigger: TriggerDefinitions.wanDown(_l10n), advanced: advanced);
     }
     debugPrint('[Mascot][Trigger]: WAN restored');
-    return (trigger: TriggerDefinitions.wanRestored(), advanced: advanced);
+    return (trigger: TriggerDefinitions.wanRestored(_l10n), advanced: advanced);
   }
 
   DomainEvaluation? _evaluateDeviceChanges() {
@@ -279,7 +285,7 @@ class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
     logger.d('[Mascot][Trigger]: New device joined '
         '(${joined.length} new, ${currentMacs.length} clients)');
     return (
-      trigger: TriggerDefinitions.newDeviceJoined(newDevice),
+      trigger: TriggerDefinitions.newDeviceJoined(_l10n, newDevice),
       advanced: advanced,
     );
   }
@@ -305,7 +311,10 @@ class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
     }
 
     debugPrint('[Mascot][Trigger]: Firewall disabled');
-    return (trigger: TriggerDefinitions.firewallDisabled(), advanced: advanced);
+    return (
+      trigger: TriggerDefinitions.firewallDisabled(_l10n),
+      advanced: advanced
+    );
   }
 
   DomainEvaluation? _evaluateWifiChanges() {
@@ -326,7 +335,7 @@ class MascotTriggerNotifier extends AutoDisposeNotifier<MascotTriggerState> {
     final band = newlyDisabled.first;
     debugPrint('[Mascot][Trigger]: WiFi radio disabled — $band');
     return (
-      trigger: TriggerDefinitions.wifiRadioDisabled(band),
+      trigger: TriggerDefinitions.wifiRadioDisabled(_l10n, band),
       advanced: advanced,
     );
   }

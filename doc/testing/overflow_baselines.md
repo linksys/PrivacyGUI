@@ -20,6 +20,28 @@ IPv6 port services page at FWDEV#204's 15-rule limit. **The other 234 are `page.
 been red by exactly that group since; this capture records it rather than leaving the drift for the
 next PR to explain.
 
+**#1775's**: 16,146 → **16,848** (+702 rows, every one `clean`; none removed and none changed, read
+off the diff of the re-capture). 234 are `page.dmz_mac`, the DMZ page with the host given by MAC.
+**The other 468 are `page.add_nodes` and `page.pnp_add_nodes`, which #1740 (`c047a1e7c`) declared and
+swept without re-capturing**, the same drift as `page.pnp_ipoe` above, recorded here for the same
+reason.
+
+**#1511 P0's**: 16,848 → **16,848** (−234 / +234, every added row `clean`, read off the diff of the
+re-capture). The 234 removed are `page.auto_parent_first_login`: P0 deleted that page as dead code,
+so its group left `# groups` with it — the first group this dataset has lost to a deleted page
+rather than to a narrowed sweep. **The 234 added are `page.ddns`, which #641 (`4154ffd37`) declared
+and swept without re-capturing**, the same drift as the two above. The two moves cancel, so the
+`# cells` header does not move; read the diff, not the count.
+
+**#1511 P4's**: 16,848 → **17,550** (−936 / +1,638, every added row `clean`, read off the diff of
+the re-capture; no other group changed). `pnp_setup_view.dart` became the PnP shell's frame and
+the wizard's three steps, each a page view. The four removed groups are `page.pnp_setup`,
+`page.pnp_setup_firmware` and `page.pnp_setup_complete_{split,unified}`; they come back as
+`page.pnp_flow_frame*`, the same four screens now drawn by `PnpFlowFrameView`. The three new ones
+are the steps — `page.pnp_wifi_step`, `page.pnp_guest_step` and `page.pnp_your_network_step`, the
+last swept for the first time (it was the wizard's third step, behind two taps per cell). Its first
+sweep found one overflow, fixed in `lib/` before the case was declared, so every row is `clean`.
+
 Every port in epic #1335 is signed off by one claim: *the ported sweep measures
 the same cells and reaches the same verdicts as before*. The main card sweep
 measures 1,917 coordinates. Nobody can check that by reading output, so this
@@ -328,12 +350,14 @@ swept reads as 234 rows saying `no longer measured`, and only if somebody runs
 `check`.
 
 **`-dirty` in `# commit` means what it says.** The suffix is appended when any of
-`lib/`, `test/` or `pubspec.yaml` carried uncommitted work at capture time — that
-last one because most of the widgets these rows measure are not in this repo:
-`ui_kit_library` and `generative_ui` are git dependencies pinned by ref there, so
-bumping the ref moves rows exactly as directly as editing `lib/` does. (Not
-`pubspec.lock`: it is gitignored here, so no stamp can see a resolved-version
-drift. `assets/fonts/` is not on the list either — not because fonts are
+`lib/`, `test/`, `pubspec.yaml` or `pubspec.lock` carried uncommitted work at
+capture time — the last two because most of the widgets these rows measure are not
+in this repo: `ui_kit_library` and `generative_ui` are git dependencies pinned by
+ref in `pubspec.yaml`, so bumping the ref moves rows exactly as directly as editing
+`lib/` does, and `pubspec.lock` pins the resolved version of every package they
+draw with, so a local `pub upgrade` does too. (The lock joined the list when #1414
+started tracking it; while it was gitignored no stamp could see it.
+`assets/fonts/` is not on the list either — not because fonts are
 irrelevant, they decide every measurement in this dataset, but because none of
 the fonts these sweeps load live there: all five call `loadAppFonts()`, which
 reads the ui_kit faces from the pub-cache checkout `pubspec.yaml` pins and the
@@ -597,11 +621,11 @@ before trusting the next one:
 
 | Sweep | Suite | Cells | Overflows | Groups |
 |---|---|---|---|---|
-| `card` | `dashboard_card_overflow_test.dart` | 1,943 | 0 | `width` 1638 · `normal_band` 234 · `profile` 52 · `single_view` 12 · `tab_registry` 6 · `profile_data` 1 |
+| `card` | `dashboard_card_overflow_test.dart` | 2,023 | 0 | `width` 1586 · `normal_band` 260 · `profile` 156 · `single_view` 13 · `tab_registry` 5 · `profile_data` 3 (1,943 until #1130 made `firewall_overview` one view with a threshold and two data profiles) |
 | `chrome` | `page_chrome_overflow_test.dart` | 1,248 | 0 | `header` 936 · `top_bar` 312 |
 | `popup` | `dashboard_card_popup_overflow_test.dart` | 347 | 0 | `form` 234 · `picked_dialog` 51 · `dialog` 27 · `picked_value` 17 · `picked_height` 17 · `exempt` 1 |
-| `forced_form` | `dashboard_card_forced_form_overflow_test.dart` | 77 | 0 | `popup_tile` 51 · `compact_floor` 21 · `skeleton` 5 (6 until #1367) |
-| `page` | `page_surface_overflow_test.dart` | 11,934 | 0 | **51 groups × 234** over 44 pages (50 groups before #1554's second pair, 49 over the same 44 pages before its first — #1549's split is what took the page count from 43 to 44, and it took the group count from 48 with it; 45 groups before #1489's follow-up, 43 before #1489; × 208 until #1372) — `dhcp` · `wifi_settings` (#1349) · `device_list` · `device_detail` · `topology` · `node_detail` · `port_forwarding` (#1377) · `pnp_entry` · `pnp_no_internet` · `pnp_isp_settings` · `pnp_pppoe` · `pnp_static_ip` · `pnp_unplug_modem` · `pnp_modem_lights_off` · `pnp_waiting_modem` · `pnp_setup` (#1378) · `home` · `login_local` · `local_router_recovery` · `local_reset_router_password` · `menu` · `auto_parent_first_login` (#1379) · `admin` · `advanced_settings` · `apps` · `dmz` · `firewall` · `firmware_update` · `instant_privacy` · `instant_safety` · `internet_settings` · `ipv6_port_service` · `local_network` · `remote_assistance` · `router_assistant` · `sliver_dashboard` · `static_routing` · `statistics` · `support` · `system_log` · `test_console` · `unified_diagnostics` · `usp_dashboard` (#1380) · `statistics_devices` · `statistics_system` · `wifi_settings_advanced` · `port_range` · `port_triggering` (#1489, five sibling tabs of three pages already listed above) · `firmware_ota` (#1549, the 44th page, split off `firmware_update`) · `pnp_setup_firmware` (#1554, a second *fixture state* of `pnp_setup` rather than a tab — the wizard's locked firmware stage) · `firmware_failed` (#1554, the same mechanism on `firmware_update`, and the one case in this dataset that arrived because of a defect: the `failed` phase's title `Row` overflowed at 320px in four locales, unswept until it existed) |
+| `forced_form` | `dashboard_card_forced_form_overflow_test.dart` | 80 | 0 | `popup_tile` 51 · `compact_floor` 24 (21 until #1130) · `skeleton` 5 (6 until #1367) |
+| `page` | `page_surface_overflow_test.dart` | 11,934 | 0 | **51 groups × 234** over 44 pages (50 groups before #1554's second pair, 49 over the same 44 pages before its first — #1549's split is what took the page count from 43 to 44, and it took the group count from 48 with it; 45 groups before #1489's follow-up, 43 before #1489; × 208 until #1372) — `dhcp` · `wifi_settings` (#1349) · `device_list` · `device_detail` · `topology` · `node_detail` · `port_forwarding` (#1377) · `pnp_entry` · `pnp_no_internet` · `pnp_isp_settings` · `pnp_pppoe` · `pnp_static_ip` · `pnp_unplug_modem` · `pnp_modem_lights_off` · `pnp_waiting_modem` · `pnp_setup` (#1378) · `home` · `login_local` · `local_router_recovery` · `local_reset_router_password` · `menu` · `auto_parent_first_login` (#1379) · `admin` · `advanced_settings` · `apps` · `dmz` · `firewall` · `firmware_update` · `instant_privacy` · `instant_safety` · `internet_settings` · `ipv6_port_service` · `local_network` · `remote_assistance` · `router_assistant` · `sliver_dashboard` · `static_routing` · `statistics` · `support` · `system_log` · `test_console` (deleted with the console in #1836) · `unified_diagnostics` · `usp_dashboard` (#1380) · `statistics_devices` · `statistics_system` · `wifi_settings_advanced` · `port_range` · `port_triggering` (#1489, five sibling tabs of three pages already listed above) · `firmware_ota` (#1549, the 44th page, split off `firmware_update`) · `pnp_setup_firmware` (#1554, a second *fixture state* of `pnp_setup` rather than a tab — the wizard's locked firmware stage) · `firmware_failed` (#1554, the same mechanism on `firmware_update`, and the one case in this dataset that arrived because of a defect: the `failed` phase's title `Row` overflowed at 320px in four locales, unswept until it existed) |
 
 **`card`'s density cells come to 1,638 + 208 + 52 = 1,898**, the figure
 [overflow_gate_architecture.md](overflow_gate_architecture.md) §1.2 measured

@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 
 import '../../../mocks/test_data/firmware_update_test_data.dart';
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -282,18 +283,15 @@ void main() {
       final container = createContainer();
       await container.read(systemInfoDataProvider.future);
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': false,
-                'result': {
-                  'data': <String, dynamic>{},
-                  'error': {
-                    'Device.DeviceInfo.X_LINKSYS_UserDeviceLocation': {
-                      'errorCode': 9007,
-                      'errorMessage': 'Invalid parameter value',
-                    },
-                  },
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'Device.DeviceInfo.X_LINKSYS_UserDeviceLocation': (
+                    code: 9007,
+                    message: 'Invalid parameter value',
+                  ),
                 },
-              });
+                success: false,
+              ));
       clearInteractions(mockUsp);
 
       await expectLater(

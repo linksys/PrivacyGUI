@@ -1,8 +1,5 @@
 import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
-import 'package:privacy_gui/framework/preservable.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
-import 'package:privacy_gui/page/mac_filter/models/mac_filter_settings.dart';
-import 'package:privacy_gui/page/mac_filter/models/mac_filter_status.dart';
+import 'package:privacy_gui/page/mac_filter/models/mac_filter_data.dart';
 import 'package:privacy_gui/page/mac_filter/models/mac_filter_mode.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 
@@ -27,18 +24,6 @@ const _lanInfoSafetyOff = LanInfoUIModel(
 const menuLanDataBadgesOn = LanData(model: _lanInfoSafetyOn);
 const menuLanDataBadgesOff = LanData(model: _lanInfoSafetyOff);
 
-const menuPrivacyOn = UspInstantPrivacyState(
-  settings: Preservable(
-    original: MacFilterSettings(mode: MacFilterMode.allow, macs: []),
-    current: MacFilterSettings(mode: MacFilterMode.allow, macs: []),
-  ),
-  status: MacFilterStatus(isLoading: false),
-);
+const menuPrivacyOn = MacFilterData(mode: MacFilterMode.allow, macs: []);
 
-const menuPrivacyOff = UspInstantPrivacyState(
-  settings: Preservable(
-    original: MacFilterSettings.empty(),
-    current: MacFilterSettings.empty(),
-  ),
-  status: MacFilterStatus(isLoading: false),
-);
+const menuPrivacyOff = MacFilterData(mode: MacFilterMode.disabled, macs: []);

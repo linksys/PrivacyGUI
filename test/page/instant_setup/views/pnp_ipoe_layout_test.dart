@@ -3,9 +3,7 @@ import 'package:privacy_gui/page/internet_settings/services/auto_ipoe_service.da
 import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_page_provider.dart';
 import 'package:privacy_gui/page/internet_settings/providers/auto_ipoe_page_state.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_notifier.dart';
-import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
+import 'package:privacy_gui/page/instant_setup/models/troubleshooting_ending.dart';
 
 import '../../../mocks/test_data/auto_ipoe_test_data.dart';
 
@@ -106,15 +104,13 @@ class ActionPage extends AutoIPoEPageNotifier {
   }
 }
 
-class ActionPnp extends PnpNotifier {
-  int starts = 0;
-  @override
-  PnpState build() => PnpState.initial();
-  @override
-  Future<void> startPostLoginFlow() async {
-    starts++;
-  }
-}
+/// The caller's ending, as the route layer hands it to Auto-IPoE (#1511 P1).
+///
+/// "Continue" used to run PnP's `startPostLoginFlow()` and then go to `/pnp`;
+/// it now only goes to the ending's exit, so these cases read whether the page
+/// continued off the page it continued to — `pnp continued` — where they used
+/// to count `startPostLoginFlow()` calls.
+const _ending = TroubleshootingEnding(exitLocation: RoutePath.pnp);
 
 void main() {
   group('Auto-IPoE PnP', _pnpTests);
@@ -156,14 +152,13 @@ void _pnpTests() {
           if (scenario == 'saveFailure') throw const ConnectivityError();
         },
       );
-      final pnp = ActionPnp();
       final retryData = RetryReadData();
       final router = GoRouter(
         initialLocation: '/ipoe',
         routes: [
           GoRoute(
             path: '/ipoe',
-            builder: (_, __) => const PnpIPoEView(),
+            builder: (_, __) => const PnpIPoEView(ending: _ending),
           ),
           GoRoute(
             path: RoutePath.pnp,
@@ -187,7 +182,6 @@ void _pnpTests() {
             autoIPoEDataProvider.overrideWith(() => retryData),
             autoIPoEPageProvider.overrideWith(() => page),
             autoIPoEServiceProvider.overrideWith((ref) => ActionService()),
-            pnpProvider.overrideWith(() => pnp),
           ],
           child: MaterialApp.router(
             theme: AppTheme.create(brightness: Brightness.dark),
@@ -211,7 +205,7 @@ void _pnpTests() {
       callback();
       await tester.pump();
       expect(page.saves, 1);
-      expect(pnp.starts, 0);
+      expect(find.text('pnp continued'), findsNothing);
       expect(next, findsNothing);
       expect(find.byKey(const ValueKey('auto-ipoe-pnp-back')), findsNothing);
       expect(find.byType(AutoIPoESection), findsNothing);
@@ -224,7 +218,7 @@ void _pnpTests() {
       dispatched.complete();
       await tester.pump();
       await tester.pump();
-      expect(pnp.starts, 0);
+      expect(find.text('pnp continued'), findsNothing);
       if (scenario == 'disposed') {
         expect(find.text('away'), findsOneWidget);
         expect(tester.takeException(), isNull);
@@ -243,7 +237,7 @@ void _pnpTests() {
           findsOneWidget,
         );
         expect(page.saves, 1);
-        expect(pnp.starts, 0);
+        expect(find.text('pnp continued'), findsNothing);
         return;
       }
       if (scenario == 'readFailure') {
@@ -261,7 +255,7 @@ void _pnpTests() {
         expect(page.saves, 1);
         expect(retryData.checks, 0);
         expect(retryData.reads, 0);
-        expect(pnp.starts, 0);
+        expect(find.text('pnp continued'), findsNothing);
         retryData.recover(pending);
       }
       if (scenario == 'edited') {
@@ -281,7 +275,12 @@ void _pnpTests() {
       await tester.pump();
       await tester.pump();
       await tester.pump();
-      expect(pnp.starts, ['success', 'readFailure'].contains(scenario) ? 1 : 0);
+      expect(
+        find.text('pnp continued'),
+        ['success', 'readFailure'].contains(scenario)
+            ? findsOneWidget
+            : findsNothing,
+      );
       expect(page.saves, 1);
       if (scenario == 'failure') {
         expect(find.text('Retry'), findsNothing);
@@ -301,7 +300,7 @@ void _pnpTests() {
         await tester.pump();
         expect(find.text('WAN selection'), findsOneWidget);
         expect(page.saves, 1);
-        expect(pnp.starts, 0);
+        expect(find.text('pnp continued'), findsNothing);
         expect(retryData.exits, 1);
         expect(retryData.resetOnExit, true);
       }
@@ -346,13 +345,12 @@ void _pnpTests() {
             status: AutoIPoEPageStatus(snapshot: snapshot),
           ),
         );
-        final pnp = ActionPnp();
         final router = GoRouter(
           initialLocation: '/ipoe',
           routes: [
             GoRoute(
               path: '/ipoe',
-              builder: (_, __) => const PnpIPoEView(),
+              builder: (_, __) => const PnpIPoEView(ending: _ending),
             ),
             GoRoute(
               path: '/wan',
@@ -383,7 +381,6 @@ void _pnpTests() {
                         reset: false,
                       ),
               ),
-              pnpProvider.overrideWith(() => pnp),
             ],
             child: MaterialApp.router(
               theme: AppTheme.create(brightness: Brightness.dark),
@@ -440,7 +437,7 @@ void _pnpTests() {
           await tester.pump();
           expect(find.text('WAN selection'), findsOneWidget);
           expect(page.saves, 0);
-          expect(pnp.starts, 0);
+          expect(find.text('pnp continued'), findsNothing);
           expect(tester.takeException(), isNull);
           return;
         }
@@ -455,7 +452,6 @@ void _pnpTests() {
           page.saves,
           ['initial', 'failed', 'edited'].contains(scenario) ? 1 : 0,
         );
-        expect(pnp.starts, scenario == 'ready' ? 1 : 0);
         expect(
           find.text('pnp continued'),
           scenario == 'ready' ? findsOneWidget : findsNothing,
@@ -481,7 +477,8 @@ void _pnpTests() {
     );
     final router = GoRouter(
       routes: [
-        GoRoute(path: '/', builder: (_, __) => const PnpIPoEView()),
+        GoRoute(
+            path: '/', builder: (_, __) => const PnpIPoEView(ending: _ending)),
       ],
     );
     addTearDown(router.dispose);
@@ -548,7 +545,9 @@ void _pnpTests() {
       final fetch = Completer<AutoIPoESnapshot>();
       final router = GoRouter(
         routes: [
-          GoRoute(path: '/', builder: (_, __) => const PnpIPoEView()),
+          GoRoute(
+              path: '/',
+              builder: (_, __) => const PnpIPoEView(ending: _ending)),
         ],
       );
       addTearDown(router.dispose);
@@ -600,7 +599,9 @@ void _pnpTests() {
       data.onExit = () => done.future;
       final router = GoRouter(
         routes: [
-          GoRoute(path: '/', builder: (_, __) => const PnpIPoEView()),
+          GoRoute(
+              path: '/',
+              builder: (_, __) => const PnpIPoEView(ending: _ending)),
           GoRoute(
             path: '/wan',
             name: RouteNamed.pnpIspTypeSelection,
@@ -807,7 +808,7 @@ void _pnpTests() {
               GoRoute(
                 path: '/ipoe',
                 name: RouteNamed.pnpAutoIPoE,
-                builder: (_, __) => const PnpIPoEView(),
+                builder: (_, __) => const PnpIPoEView(ending: _ending),
               ),
             ],
           );

@@ -31,8 +31,8 @@ import '../../../../util/overflow_probe.dart';
 ///     is green with the net present *and* green with the net absent until the
 ///     content actually spills. The membership table below is therefore executable
 ///     rather than prose: `netTabs` is the same table as the density design's
-///     §2.10g point 5, and `the net is where the table says it is` walks all 20
-///     tabs of all six tabbed cards against it.
+///     §2.10g point 5, and `the net is where the table says it is` walks every
+///     tab of every tabbed card against it.
 ///  2. **The conversion cost nothing.** Opting a tab in means deleting a vertical
 ///     `Expanded`/`Flexible` — flex needs a bounded height to divide and a scroll
 ///     view has none — so a tab is only convertible if that flex was distributing
@@ -52,8 +52,11 @@ import '../../../../util/overflow_probe.dart';
 ///   | traffic_analysis   t2 Distrib. | in      | donut 180px, 67px of slack      |
 ///   | system_status      t0 Monitor  | in      | gauges width-bound: 72.7 / 100  |
 ///   | network_health     t0 Health   | **out** | gauge grows 87 → 120px with box |
-///   | firewall_overview  t0/t1       | **out** | 15–39px leftover slot           |
 ///   | the other 13 tabs              | **out** | chart height *is* the card's     |
+///
+/// `firewall_overview` was a sixth tabbed card, declined for a 15–39px leftover
+/// slot, until #1130 made it one list of rows. It scrolls through the template
+/// now, like any single-content card, so it has no tab to classify.
 ///
 /// The declines are not laziness — they are the same measurement reaching the
 /// opposite answer. `AppGauge` **respects** its incoming constraints (unlike
@@ -123,7 +126,6 @@ void main() {
     'traffic_analysis': {2}, // Distribution — #1296
     'system_status': {0}, // Monitor — #1296
     'network_health': <int>{}, // declined: the gauge grows with its box
-    'firewall_overview': <int>{}, // declined: 15–39px leftover slot
   };
 
   /// The conversions #1296 made, as (card, tab) pairs. Derived from [netTabs]

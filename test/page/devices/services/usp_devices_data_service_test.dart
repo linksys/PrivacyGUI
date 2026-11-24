@@ -9,6 +9,8 @@ import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/devices/services/usp_devices_data_service.dart';
 
+import '../../../mocks/test_data/usp_envelope_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 /// Raw USP response for 2 connected devices.
@@ -712,6 +714,13 @@ void main() {
     });
   });
 
+  group('UspDevicesDataService — dropSharedReads', () {
+    test('drops the client\'s shared reads (#1828)', () {
+      svc.dropSharedReads();
+      verify(() => mockUsp.dropSharedReads()).called(1);
+    });
+  });
+
   // The detail page names a client and picks its icon (#1691): the name is
   // X_LINKSYS_UserDeviceLocation, the icon the app's own code in
   // X_LINKSYS_UserDeviceType, both on the client's Hosts.Host row.
@@ -848,18 +857,15 @@ void main() {
 
     test('a refused Set throws UspCompleteFailureError', () {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'success': false,
-                'result': {
-                  'data': <String, dynamic>{},
-                  'error': {
-                    'Device.Hosts.Host.3.X_LINKSYS_UserDeviceLocation': {
-                      'errorCode': 9007,
-                      'errorMessage': 'Invalid parameter value',
-                    },
-                  },
+          .thenAnswer((_) async => UspEnvelopeTestData.parameterErrors(
+                {
+                  'Device.Hosts.Host.3.X_LINKSYS_UserDeviceLocation': (
+                    code: 9007,
+                    message: 'Invalid parameter value',
+                  ),
                 },
-              });
+                success: false,
+              ));
 
       expect(
         () => svc.updateIdentity(

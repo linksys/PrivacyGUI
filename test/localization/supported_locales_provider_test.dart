@@ -189,4 +189,39 @@ void main() {
       }
     });
   });
+
+  group('appLocalizationsProvider', () {
+    ProviderContainer given({
+      required Locale? persisted,
+      required List<Locale> shipped,
+    }) {
+      final container = ProviderContainer(overrides: [
+        supportedLocalesProvider.overrideWithValue(shipped),
+        appSettingsProvider
+            .overrideWith(() => FakeAppSettingsNotifier.of(locale: persisted)),
+      ]);
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('is the strings of the locale the app runs in', () {
+      // What the mascot's bubbles and alerts are built from, away from any
+      // widget (#1312).
+      final container = given(
+        persisted: const Locale('ja'),
+        shipped: const [Locale('en'), Locale('ja')],
+      );
+
+      expect(container.read(appLocalizationsProvider).localeName, 'ja');
+    });
+
+    test('is English, not a throw, for a locale the build stripped', () {
+      // `lookupAppLocalizations` throws on a locale gen-l10n did not compile in;
+      // reading through activeLocaleProvider is what keeps it from seeing one.
+      final container =
+          given(persisted: const Locale('ja'), shipped: const [Locale('en')]);
+
+      expect(container.read(appLocalizationsProvider).localeName, 'en');
+    });
+  });
 }

@@ -1,9 +1,12 @@
 import 'dart:async';
 
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter/widgets.dart' show Locale;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/localization/supported_locales_provider.dart';
 import 'package:privacy_gui/page/dashboard/mascot/triggers/mascot_trigger.dart';
 import 'package:privacy_gui/page/dashboard/mascot/triggers/mascot_trigger_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
@@ -115,15 +118,22 @@ void main() {
   /// keeps the notifier — and its four domain listeners — alive.
   /// Pass `dashboardReady: false` to hold [dashboardDomainReadyProvider] in
   /// `AsyncLoading` for the whole test — the one state in which `build()`
-  /// deliberately captures no baseline.
+  /// deliberately captures no baseline. Pass [locale] to run the app in it.
   ///
   /// The `sseInvalidationProvider` override is deliberately still here even
   /// though the notifier no longer reads it: it is what lets
   /// `a change that lands long after the event still fires` replay the full
   /// production sequence — event first, value 550 ms later — and that sequence
   /// is what the previous clock-driven implementation got wrong.
-  ProviderContainer mount(FakeAsync async, {bool dashboardReady = true}) {
+  ProviderContainer mount(
+    FakeAsync async, {
+    bool dashboardReady = true,
+    Locale? locale,
+  }) {
     final container = ProviderContainer(overrides: [
+      if (locale != null)
+        appLocalizationsProvider
+            .overrideWithValue(lookupAppLocalizations(locale)),
       sseInvalidationProvider.overrideWith((ref) => sse.stream),
       dashboardDomainReadyProvider.overrideWith(
         (ref) => dashboardReady ? Future.value() : Completer<void>().future,
@@ -191,6 +201,22 @@ void main() {
         settle(async);
 
         expect(fired.map((t) => t.id), ['wan_down']);
+
+        container.dispose();
+      });
+    });
+
+    test('an alert is in the language the app runs in', () {
+      // #1312. The notifier reads the strings when the trigger fires, through
+      // appLocalizationsProvider; `app_ja.arb`'s mascotEventWanDown.
+      fakeAsync((async) {
+        final container = mount(async, locale: const Locale('ja'));
+
+        wan.setData(SystemHealthTestData.createWanData(isUp: false));
+        settle(async);
+
+        expect(fired.single.message,
+            'インターネット接続が切断されました。WAN ケーブルを確認するか、ISP にお問い合わせください。');
 
         container.dispose();
       });

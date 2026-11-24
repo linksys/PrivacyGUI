@@ -84,6 +84,12 @@ final sseInvalidationProvider = StreamProvider<InvalidationEvent>((ref) {
   return controller.stream;
 });
 
+/// A row of the DataElements node table, `Device.WiFi.DataElements.Network.Device.{i}.`.
+/// The trailing dot is optional: the router sends it (bench, 2.0.4.26111122), but
+/// a path without it is still that row.
+final _meshNodeRow =
+    RegExp(r'^Device\.WiFi\.DataElements\.Network\.Device\.\d+\.?$');
+
 /// Maps a notification to an [InvalidationDomain] based on the TR-181 path
 /// in the payload.
 ///
@@ -141,12 +147,37 @@ InvalidationDomain? _mapToDomain(
       path.contains('StaticAddress')) {
     return InvalidationDomain.dhcpReservations;
   }
+  // Every other pool value is a pool setting. A LAN subnet change moves
+  // MinAddress / MaxAddress after the Set has returned, so this is how the app
+  // learns the range the router settled on (PrivacyGUI#1729). It arrives over
+  // dhcp-clients-02, which subscribes the whole `Device.DHCPv4.Server.Pool.`
+  // table: narrowing that subscription to the Client table drops it.
+  if (path.startsWith('Device.DHCPv4.Server.Pool.')) {
+    return InvalidationDomain.dhcpPoolSettings;
+  }
   if (path.startsWith('Device.Routing.Router.') &&
       path.contains('IPv4Forwarding')) {
     return InvalidationDomain.staticRouting;
   }
   if (path.startsWith('Device.Ethernet.Interface.')) {
     return InvalidationDomain.ethernetInterfaces;
+  }
+  // A node joining or leaving the mesh (PrivacyGUI#1828): an event on a row of the
+  // node table itself, `Network.Device.{i}.`. Only an object event names a row; a
+  // value change names a parameter. Anything else under the table (a radio, a BSS
+  // or a station row, or a value) is not a node change and maps to nothing. Each
+  // meshNodes event re-reads DataElements and drops every shared USP read, so
+  // station churn must not reach it; a phone's station on a controller BSS did not
+  // push at all on the bench, other stations were not tried. The MAC filter mode
+  // leaf sits on `Network.` itself, outside this prefix.
+  if (path.startsWith('Device.WiFi.DataElements.Network.Device.')) {
+    return _meshNodeRow.hasMatch(path) ? InvalidationDomain.meshNodes : null;
+  }
+  if (path == 'Device.WiFi.DataElements.Network.X_LINKSYS_MACFilterMode') {
+    return InvalidationDomain.macFilter;
+  }
+  if (path.startsWith('Device.DynamicDNS.')) {
+    return InvalidationDomain.dynamicDns;
   }
   if (wanPath != null && path.startsWith(wanPath)) {
     return InvalidationDomain.wanStatus;

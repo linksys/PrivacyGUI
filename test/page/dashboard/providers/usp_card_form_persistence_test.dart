@@ -73,7 +73,7 @@ import '../../../util/dashboard/layout_provider_harness.dart';
 ///
 /// Each row is one edit to `usp_layout_controller.dart`, applied to the real file
 /// and run against this file and `card_form_choice_test.dart`; see that file for
-/// the `usp_widget_specs.dart` half. Counts are from the run, not predicted.
+/// the `usp_card_sizing.dart` half. Counts are from the run, not predicted.
 ///
 /// Five rows are retired rather than deleted. Each of them is a mutation #1400
 /// made *unwritable* — the code it edited no longer exists, and the property it

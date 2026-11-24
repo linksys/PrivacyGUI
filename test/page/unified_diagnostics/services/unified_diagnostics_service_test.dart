@@ -241,6 +241,7 @@ void main() {
         'Device.WiFi.Radio.1.Enable': 'true',
         'Device.WiFi.Radio.1.Status': 'Up',
         'Device.WiFi.Radio.1.Channel': '6',
+        'Device.WiFi.Radio.1.ChannelsInUse': '6',
         'Device.WiFi.Radio.1.OperatingFrequencyBand': '2.4GHz',
         'Device.WiFi.Radio.1.OperatingChannelBandwidth': '20MHz',
         'Device.WiFi.Radio.1.PossibleChannels': '1-11',
@@ -255,6 +256,7 @@ void main() {
         'Device.WiFi.Radio.2.Enable': 'true',
         'Device.WiFi.Radio.2.Status': 'Up',
         'Device.WiFi.Radio.2.Channel': '36',
+        'Device.WiFi.Radio.2.ChannelsInUse': '36',
         'Device.WiFi.Radio.2.OperatingFrequencyBand': '5GHz',
         'Device.WiFi.Radio.2.OperatingChannelBandwidth': '80MHz',
         'Device.WiFi.Radio.2.PossibleChannels': '36-165',
@@ -266,6 +268,14 @@ void main() {
         'Device.WiFi.Radio.2.IEEE80211hEnabled': 'true',
         'Device.WiFi.Radio.2.SupportedOperatingChannelBandwidths':
             '20MHz,40MHz,80MHz',
+      };
+
+  /// [wifiRadiosResponse] with the 5 GHz radio set to 40 and on 36, as
+  /// hostapd's 20/40 MHz coexistence check left it on 2.0.4.26103108 (#1782).
+  Map<String, dynamic> swappedRadiosResponse() => {
+        ...wifiRadiosResponse(),
+        'Device.WiFi.Radio.2.Channel': '40',
+        'Device.WiFi.Radio.2.ChannelsInUse': '36',
       };
 
   Map<String, dynamic> connectedDeviceFields(
@@ -907,6 +917,16 @@ void main() {
       expect(radios[1].is5GHz, isTrue);
       expect(radios[1].is6GHz, isFalse);
     });
+
+    test('carries the channel in use and the configured one apart', () async {
+      when(() => mockUsp.get(any()))
+          .thenAnswer((_) async => swappedRadiosResponse());
+
+      final radio = (await service.checkWifiRadios())[1];
+
+      expect(radio.channel, 40);
+      expect(radio.channelInUse, 36);
+    });
   });
 
   group('checkConnectedDevices', () {
@@ -1169,6 +1189,16 @@ void main() {
       expect(coverage.averageSignalStrength, 0);
       expect(coverage.hasWeakSignalDevices, isFalse);
     });
+
+    test('carries the channel in use and the configured one apart', () async {
+      when(() => mockUsp.get(any()))
+          .thenAnswer((_) async => swappedRadiosResponse());
+
+      final radio = (await service.analyzeWifiCoverage()).radios[1];
+
+      expect(radio.channel, 40);
+      expect(radio.channelInUse, 36);
+    });
   });
 
   group('analyzeWifiSignalPerRadio', () {
@@ -1203,6 +1233,23 @@ void main() {
       expect(r2.averageRssi, -45);
     });
 
+    test('carries the channel in use and the configured one apart', () async {
+      final response = <String, dynamic>{
+        ...swappedRadiosResponse(),
+        ...wifiAccessPointFields(2, 'Device.WiFi.SSID.2.'),
+        ...wifiSsidFields(2, 'Device.WiFi.Radio.2.'),
+        ...wifiClientFields(2, 1, signalStrength: -45, active: true),
+      };
+      when(() => mockUsp.get(any())).thenAnswer((_) async => response);
+
+      final r2 = (await service.analyzeWifiSignalPerRadio())
+          .radios
+          .firstWhere((r) => r.instancePath == 'Device.WiFi.Radio.2.');
+
+      expect(r2.channel, 40);
+      expect(r2.channelInUse, 36);
+    });
+
     test('routes clients to unknown bucket when AP→SSID→Radio cannot resolve',
         () async {
       final response = <String, dynamic>{
@@ -1221,6 +1268,7 @@ void main() {
       expect(unknown.clientCount, 1);
       expect(unknown.averageRssi, -60);
       expect(unknown.isResolved, isFalse);
+      expect(unknown.channelInUse, isNull);
     });
 
     test('skips inactive clients', () async {

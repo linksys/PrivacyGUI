@@ -173,6 +173,7 @@ class MeshNode {
   final String? serialNumber;
   final String? softwareVersion;
   final String? supportedOperations;
+  final String? nodeActionStatus;
   final int? collectionInterval;
   final DateTime? multiApLastContactTime;
   final String? multiApEasyMeshAgentOperationMode;
@@ -200,6 +201,7 @@ class MeshNode {
     this.serialNumber,
     this.softwareVersion,
     this.supportedOperations,
+    this.nodeActionStatus,
     this.collectionInterval,
     this.multiApLastContactTime,
     this.multiApEasyMeshAgentOperationMode,
@@ -230,6 +232,7 @@ class MeshNode {
         'serialNumber: $serialNumber, '
         'softwareVersion: $softwareVersion, '
         'supportedOperations: $supportedOperations, '
+        'nodeActionStatus: $nodeActionStatus, '
         'collectionInterval: $collectionInterval, '
         'multiApLastContactTime: $multiApLastContactTime, '
         'multiApEasyMeshAgentOperationMode: $multiApEasyMeshAgentOperationMode, '
@@ -268,6 +271,7 @@ class DataElementsNetwork {
     'Device.WiFi.DataElements.Network.Device.*.SerialNumber',
     'Device.WiFi.DataElements.Network.Device.*.SoftwareVersion',
     'Device.WiFi.DataElements.Network.Device.*.X_LINKSYS_SupportedOperations',
+    'Device.WiFi.DataElements.Network.Device.*.X_LINKSYS_NodeActionStatus',
     'Device.WiFi.DataElements.Network.Device.*.CollectionInterval',
     'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.LastContactTime',
     'Device.WiFi.DataElements.Network.Device.*.MultiAPDevice.EasyMeshAgentOperationMode',
@@ -569,6 +573,9 @@ class DataElementsNetwork {
             response.containsKey('${p}X_LINKSYS_SupportedOperations')
                 ? response['${p}X_LINKSYS_SupportedOperations'] as String
                 : null,
+        nodeActionStatus: response.containsKey('${p}X_LINKSYS_NodeActionStatus')
+            ? response['${p}X_LINKSYS_NodeActionStatus'] as String
+            : null,
         collectionInterval: response.containsKey('${p}CollectionInterval')
             ? int.tryParse(response['${p}CollectionInterval']?.toString() ?? '')
             : null,
@@ -660,5 +667,33 @@ class DataElementsNetwork {
       ));
     }
     return DataElementsNetwork(items: items);
+  }
+
+  static Future<Subscription<DataElementsNetwork>> subscribeObjectCreation(
+      UspClient client) async {
+    return client.subscribe<DataElementsNetwork>(
+      id: 'mesh-nodes-objectcreation',
+      notifType: NotifType.objectCreation,
+      paths: ['Device.WiFi.DataElements.Network.Device.'],
+      parser: DataElementsNetwork._fromResponse,
+    );
+  }
+
+  static Future<Subscription<DataElementsNetwork>> subscribeObjectDeletion(
+      UspClient client) async {
+    return client.subscribe<DataElementsNetwork>(
+      id: 'mesh-nodes-objectdeletion',
+      notifType: NotifType.objectDeletion,
+      paths: ['Device.WiFi.DataElements.Network.Device.'],
+      parser: DataElementsNetwork._fromResponse,
+    );
+  }
+
+  static Future<List<Subscription<DataElementsNetwork>>> subscribeAll(
+      UspClient client) async {
+    return [
+      await subscribeObjectCreation(client),
+      await subscribeObjectDeletion(client),
+    ];
   }
 }

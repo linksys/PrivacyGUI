@@ -8,12 +8,14 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 class DataElementsNetworkInfo {
   final String? id;
   final String? controllerId;
+  final String? networkActionStatus;
   final DateTime? timeStamp;
   final int? deviceNumberOfEntries;
 
   const DataElementsNetworkInfo({
     this.id,
     this.controllerId,
+    this.networkActionStatus,
     this.timeStamp,
     this.deviceNumberOfEntries,
   });
@@ -21,6 +23,7 @@ class DataElementsNetworkInfo {
   static const _paths = [
     'Device.WiFi.DataElements.Network.ID',
     'Device.WiFi.DataElements.Network.ControllerID',
+    'Device.WiFi.DataElements.Network.X_LINKSYS_NetworkActionStatus',
     'Device.WiFi.DataElements.Network.TimeStamp',
     'Device.WiFi.DataElements.Network.DeviceNumberOfEntries',
   ];
@@ -40,6 +43,12 @@ class DataElementsNetworkInfo {
               .containsKey('Device.WiFi.DataElements.Network.ControllerID')
           ? response['Device.WiFi.DataElements.Network.ControllerID'] as String
           : null,
+      networkActionStatus: response.containsKey(
+              'Device.WiFi.DataElements.Network.X_LINKSYS_NetworkActionStatus')
+          ? response[
+                  'Device.WiFi.DataElements.Network.X_LINKSYS_NetworkActionStatus']
+              as String
+          : null,
       timeStamp: DateTime.tryParse(
           response['Device.WiFi.DataElements.Network.TimeStamp']?.toString() ??
               ''),
@@ -58,6 +67,7 @@ class DataElementsNetworkInfo {
     return 'DataElementsNetworkInfo('
         'id: $id, '
         'controllerId: $controllerId, '
+        'networkActionStatus: $networkActionStatus, '
         'timeStamp: $timeStamp, '
         'deviceNumberOfEntries: $deviceNumberOfEntries'
         ')';

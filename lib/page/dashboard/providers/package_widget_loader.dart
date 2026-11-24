@@ -1,12 +1,12 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/apps/providers/apps_capability_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/package_widget_data_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
+import 'package:privacy_gui/page/dashboard/services/package_widget_service.dart';
 
 import '../models/package_widget_template.dart';
 
@@ -19,6 +19,10 @@ import '../models/package_widget_template.dart';
 /// 4. Parse JSON into [PackageWidgetTemplate]
 /// 5. 30-second poll detects package install/remove via key set difference
 ///    (lightweight: only re-fetches apps.json, not all template URLs)
+///
+/// The fetches go through [packageWidgetServiceProvider], read when each one
+/// is made, and only after the capability gate: a router without apps — or a
+/// test fixture that pins the capability off — gets `{}` with no I/O.
 ///
 /// NOT autoDispose — persists across tab switches.
 final packageWidgetLoaderProvider = AsyncNotifierProvider<PackageWidgetLoader,
@@ -60,7 +64,6 @@ class PackageWidgetLoader
   /// Fetch apps.json and load ALL template URLs. Used on initial load
   /// and manual refresh — not on poll (which is lightweight).
   Future<Map<String, PackageWidgetTemplate>> _loadAllTemplates() async {
-    final baseUrl = Uri.base.origin;
     final templates = <String, PackageWidgetTemplate>{};
 
     try {
@@ -68,7 +71,7 @@ class PackageWidgetLoader
       if (entries == null) return {}; // fetch failed
 
       for (final MapEntry(key: _, value: templateUrl) in entries.entries) {
-        final template = await _fetchTemplate(baseUrl, templateUrl);
+        final template = await _fetchTemplate(templateUrl);
         if (template != null) {
           templates[template.widgetId] = template;
         }
@@ -86,60 +89,30 @@ class PackageWidgetLoader
   /// Fetch apps.json and extract widget entries as widgetId → templateUrl.
   /// Returns null on failure.
   Future<Map<String, String>?> _fetchWidgetEntries() async {
-    final baseUrl = Uri.base.origin;
-
     try {
-      final response = await http.get(Uri.parse('$baseUrl/api/apps.json'));
-      if (response.statusCode != 200) {
-        logger.w('[USP][PkgWidgets]: apps.json HTTP ${response.statusCode}');
-        _lastFetchSuccess = false;
-        return null;
-      }
-
-      final appsJson = jsonDecode(response.body) as Map<String, dynamic>;
-      final allApps = <Map<String, dynamic>>[
-        ..._safeList(appsJson['apps']),
-        ..._safeList(appsJson['userApps']),
-      ];
-
-      final entries = <String, String>{};
-      for (final app in allApps) {
-        final widget = app['widget'] as Map<String, dynamic>?;
-        if (widget == null) continue;
-        final templateUrl = widget['templateUrl'] as String?;
-        final widgetId = widget['id'] as String?;
-        if (templateUrl == null || widgetId == null) continue;
-        entries[widgetId] = templateUrl;
-      }
-
-      _lastFetchSuccess = true;
+      final entries =
+          await ref.read(packageWidgetServiceProvider).fetchWidgetEntries();
+      _lastFetchSuccess = entries != null;
       return entries;
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.w('[USP][PkgWidgets]: Failed to fetch apps.json: $e');
       _lastFetchSuccess = false;
       return null;
     }
   }
 
-  /// Fetch and parse a single template URL.
-  Future<PackageWidgetTemplate?> _fetchTemplate(
-      String baseUrl, String templateUrl) async {
+  /// Fetch and parse a single template URL. Returns null on failure.
+  Future<PackageWidgetTemplate?> _fetchTemplate(String templateUrl) async {
     try {
-      final fullUrl =
-          templateUrl.startsWith('http') ? templateUrl : '$baseUrl$templateUrl';
-      final response = await http.get(Uri.parse(fullUrl));
-      if (response.statusCode != 200) {
-        logger.w('[USP][PkgWidgets]: Template HTTP '
-            '${response.statusCode} for $templateUrl');
-        return null;
+      final template = await ref
+          .read(packageWidgetServiceProvider)
+          .fetchTemplate(templateUrl);
+      if (template != null) {
+        logger.d('[USP][PkgWidgets]: Loaded: ${template.widgetId} '
+            '(${template.displayName})');
       }
-
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      final template = PackageWidgetTemplate.fromJson(json);
-      logger.d('[USP][PkgWidgets]: Loaded: ${template.widgetId} '
-          '(${template.displayName})');
       return template;
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.w('[USP][PkgWidgets]: Failed to load template $templateUrl: $e');
       return null;
     }
@@ -180,11 +153,10 @@ class PackageWidgetLoader
       // Fetch templates only for newly added widgets
       if (added.isNotEmpty) {
         logger.d('[USP][PkgWidgets]: New widgets detected: $added');
-        final baseUrl = Uri.base.origin;
         for (final id in added) {
           final templateUrl = freshEntries[id];
           if (templateUrl == null) continue;
-          final template = await _fetchTemplate(baseUrl, templateUrl);
+          final template = await _fetchTemplate(templateUrl);
           if (template != null) {
             current[template.widgetId] = template;
           }
@@ -207,12 +179,5 @@ class PackageWidgetLoader
     } catch (e) {
       logger.w('[USP][PkgWidgets]: Poll error: $e');
     }
-  }
-
-  /// Safely extract a List<Map> from a JSON value that could be
-  /// List, Map (empty), or null.
-  static List<Map<String, dynamic>> _safeList(dynamic value) {
-    if (value is List) return value.cast<Map<String, dynamic>>();
-    return [];
   }
 }
