@@ -4,38 +4,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 
 import '../../../test_data/device_info_test_data.dart';
+import 'better_action_resolution.dart';
+
+/// A service's family, the part of its name before the version:
+/// router13 → router.
+String _family(JNAPService service) =>
+    RegExp(r'^[a-zA-Z]+?(?=\d|$)').firstMatch(service.name)!.group(0)!;
+
+/// A service's version: router13 → 13. A name without a number is the first.
+int _version(JNAPService service) =>
+    int.tryParse(RegExp(r'\d+$').firstMatch(service.name)?.group(0) ?? '') ?? 1;
 
 void main() {
-  test('better action - test sorting', () {
-    final services =
-        List.from(jsonDecode(testDeviceInfo)['output']['services']);
-    final List<JNAPService> supportedServices = services
-        .where((routerService) => JNAPService.appSupportedServices
-            .any((supportedService) => routerService == supportedService.value))
-        .map((service) => JNAPService.appSupportedServices.firstWhere(
-            (supportedService) => supportedService.value == service))
-        .toList();
-    final serviceMap = groupAndSortJNAPServices(supportedServices);
-
-    final setupServiceList = List<JNAPService>.from(serviceMap['setup'] ?? []);
-    final routerServiceList =
-        List<JNAPService>.from(serviceMap['router'] ?? []);
-
-    final indexOfSetup = setupServiceList.indexOf(JNAPService.setup);
-    final indexOfSetup5 = setupServiceList.indexOf(JNAPService.setup5);
-    final indexOfSetup11 = setupServiceList.indexOf(JNAPService.setup11);
-    expect(true, indexOfSetup11 > indexOfSetup);
-    expect(true, indexOfSetup11 > indexOfSetup5);
-    expect(true, indexOfSetup5 > indexOfSetup);
-
-    final indexOfRouter = routerServiceList.indexOf(JNAPService.router);
-    final indexOfRouter8 = routerServiceList.indexOf(JNAPService.router8);
-    final indexOfRouter10 = routerServiceList.indexOf(JNAPService.router10);
-    expect(true, indexOfRouter10 > indexOfRouter);
-    expect(true, indexOfRouter10 > indexOfRouter8);
-    expect(true, indexOfRouter8 > indexOfRouter);
-  });
-
   test('test update better actions', () {
     initBetterActions();
     final services =
@@ -46,6 +26,53 @@ void main() {
     expect(
       'http://linksys.com/jnap/core/SetAdminPassword3',
       JNAPAction.pnpSetAdminPassword.actionValue,
+    );
+  });
+
+  test(
+      'a router that reports no service the app knows gets the lowest versions',
+      () async {
+    final seed = await resolveActions(const []);
+    final unknown =
+        await resolveActions(const ['http://linksys.com/jnap/unknown/Unknown']);
+    expect(unknown, seed);
+  });
+
+  // buildBetterActions applies a router's services in JNAPService order, so
+  // that a newer version's URL wins. That holds while each family is declared
+  // from its lowest version up, and while no action takes a URL from two
+  // families.
+  test('JNAPService lists each family from its lowest version up', () {
+    final byFamily = <String, List<JNAPService>>{};
+    for (final service in JNAPService.values) {
+      byFamily.putIfAbsent(_family(service), () => []).add(service);
+    }
+    final outOfOrder = [
+      for (final MapEntry(key: family, value: services) in byFamily.entries)
+        for (var i = 1; i < services.length; i++)
+          if (_version(services[i]) <= _version(services[i - 1]))
+            '$family: ${services[i - 1].name} before ${services[i].name}',
+    ];
+    expect(outOfOrder, isEmpty);
+  });
+
+  test('no action takes a URL from two families of services', () async {
+    final seed = await resolveActions(const []);
+    final families = <String, Set<String>>{};
+    for (final service in JNAPService.values) {
+      final alone = await resolveActions([service.value]);
+      for (final MapEntry(key: action, value: url) in alone.entries) {
+        if (url != seed[action]) {
+          families.putIfAbsent(action, () => {}).add(_family(service));
+        }
+      }
+    }
+    expect(
+      {
+        for (final MapEntry(key: action, value: names) in families.entries)
+          if (names.length > 1) action: names,
+      },
+      isEmpty,
     );
   });
 }

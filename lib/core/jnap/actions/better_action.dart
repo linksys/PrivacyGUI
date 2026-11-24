@@ -1,5 +1,3 @@
-import 'package:collection/collection.dart';
-
 part 'jnap_action.dart';
 
 part 'jnap_service.dart';
@@ -36,50 +34,13 @@ void initBetterActions() {
 
 void buildBetterActions(List<String> routerServices) {
   initBetterActions();
-  final List<JNAPService> supportedServices = routerServices
-      .where((routerService) => JNAPService.appSupportedServices
-          .any((supportedService) => routerService == supportedService.value))
-      .map((service) => JNAPService.appSupportedServices
-          .firstWhere((supportedService) => supportedService.value == service))
-      .toList();
-  final serviceMap = groupAndSortJNAPServices(supportedServices);
-  final sortedServiceList =
-      serviceMap.values.reduce((all, value) => all..addAll(value));
-  for (final service in sortedServiceList) {
-    _updateBetterActions(service);
-  }
-}
-
-Map<String, List<JNAPService>> groupAndSortJNAPServices(
-    List<JNAPService> services) {
-  final groupedServices = groupBy<JNAPService, String>(services, (service) {
-    final name = service.name;
-    final match = RegExp(r'(\d+)').firstMatch(name);
-    if (match != null) {
-      return name.substring(0, name.indexOf(match.group(0)!));
+  final reported = routerServices.toSet();
+  // JNAPService lists each family of services from its lowest version up,
+  // and no action takes a URL from two families, so applying a router's
+  // services in that order lets the newest version win (#1923).
+  for (final service in JNAPService.values) {
+    if (reported.contains(service.value)) {
+      _updateBetterActions(service);
     }
-    return name;
-  });
-
-  final sortedGroupedServices = <String, List<JNAPService>>{};
-
-  groupedServices.forEach((key, value) {
-    sortedGroupedServices[key] = value.sorted((a, b) {
-      final aMatch = RegExp(r'(\d+)').firstMatch(a.name);
-      final bMatch = RegExp(r'(\d+)').firstMatch(b.name);
-
-      if (aMatch != null && bMatch != null) {
-        return int.parse(aMatch.group(1)!)
-            .compareTo(int.parse(bMatch.group(1)!));
-      } else if (aMatch != null) {
-        return 1;
-      } else if (bMatch != null) {
-        return -1;
-      } else {
-        return a.name.compareTo(b.name);
-      }
-    }).toList();
-  });
-
-  return sortedGroupedServices;
+  }
 }
