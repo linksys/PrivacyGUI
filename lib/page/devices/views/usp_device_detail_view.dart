@@ -274,11 +274,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                     label: loc(context).connectedTo,
                     value: device.parentNodeName!,
                   ),
-                if (device.hasDataUsed)
-                  DeviceDataUsedTiles(
-                    bytesReceived: device.totalBytesReceived,
-                    bytesSent: device.totalBytesSent,
-                  ),
+                if (device.hasDataUsed) DeviceDataUsedTiles(device: device),
               ],
             ),
           ],
@@ -342,10 +338,7 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
           AppGap.sm(),
           LayoutBlock(
             padding: const EdgeInsets.all(AppSpacing.md),
-            child: DeviceDataUsedTiles(
-              bytesReceived: device.totalBytesReceived,
-              bytesSent: device.totalBytesSent,
-            ),
+            child: DeviceDataUsedTiles(device: device),
           ),
         ],
       ],

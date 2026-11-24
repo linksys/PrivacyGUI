@@ -8,6 +8,7 @@ import 'package:privacy_gui/page/devices/providers/device_detail_provider.dart';
 import 'package:privacy_gui/page/devices/views/usp_device_detail_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
+import 'package:ui_kit_library/ui_kit.dart' show AppTooltip;
 
 import '../../../mocks/provider_overrides/mock_common.dart';
 import '../../../mocks/provider_overrides/mock_devices.dart';
@@ -125,5 +126,65 @@ void main() {
     expect(find.text('5.0 MB'), findsOneWidget);
     expect(find.text('1.0 MB'), findsOneWidget);
     expect(find.text(l10n.sinceRouterLastRestarted), findsOneWidget);
+  });
+
+  // Each interface's own counters, behind an (i) so the card keeps one total.
+  group('per-interface usage behind (i)', () {
+    DeviceDetailState merged({int? wiredReceived = 2097152}) =>
+        DeviceDetailState(
+          device: DevicesTestData.createMultiInterfaceClient(
+            additionalInterfaces: [
+              DevicesTestData.createWiredInterface(
+                mac: 'AA:BB:CC:DD:EE:FE',
+                ip: '192.168.1.204',
+                bytesReceived: wiredReceived,
+                bytesSent: 524288,
+              ),
+            ],
+          ).copyWith(bytesReceived: 3145728, bytesSent: 524288),
+        );
+
+    Future<void> openInfo(WidgetTester tester) async {
+      await tester.tap(find.descendant(
+        of: find.byType(AppTooltip),
+        matching: find.byIcon(Icons.info_outline),
+      ));
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    testWidgets('lists each interface\'s own Download and Upload',
+        (tester) async {
+      await pump(tester, merged());
+
+      // 3 MiB on the Wi-Fi row, 2 MiB on the cable's, 512 KiB sent on each.
+      expect(find.text('3.0 MB'), findsNothing, reason: 'closed until tapped');
+      await openInfo(tester);
+
+      expect(find.text('3.0 MB'), findsOneWidget);
+      expect(find.text('2.0 MB'), findsOneWidget);
+      expect(find.text('512 KB'), findsNWidgets(2));
+    });
+
+    testWidgets('an interface with no counter reads a dash', (tester) async {
+      await pump(tester, merged(wiredReceived: null));
+      await openInfo(tester);
+
+      // The cable's Download has no counter; both Uploads still read.
+      expect(find.text('—'), findsOneWidget);
+      expect(find.text('512 KB'), findsNWidgets(2));
+    });
+
+    testWidgets('a single-interface device has no (i)', (tester) async {
+      await pump(
+        tester,
+        DeviceDetailState(
+          device: DevicesTestData.createWiredClient()
+              .copyWith(bytesReceived: 3145728, bytesSent: 524288),
+        ),
+      );
+
+      expect(find.text(l10n.download), findsOneWidget);
+      expect(find.byType(AppTooltip), findsNothing);
+    });
   });
 }
