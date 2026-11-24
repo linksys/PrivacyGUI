@@ -1840,6 +1840,16 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
   }
 
   // ── B-6: Recurrence detection (localStorage) ─────────────────────────
+  //
+  // TO BE REPLACED by the router's shared reboot record
+  // (linksys/linksys-ai-msdm#744, docs/contracts/SESSION.md § Reboot record).
+  // This timestamp lives in this browser only: another device, the Instant AI
+  // chat and the hardware button never see it. It is written when the reboot
+  // request is sent, not when the router actually came back up, and it carries
+  // no session or re-check. Once the router keeps the record, read "restarted
+  // in the last 24 hours" from it, and send restarts through the same
+  // operation the AI uses so both write one record (roadmap definition of
+  // done 5: fixes in one place).
 
   static const _restartKey = 'instant_test_last_restart';
 
