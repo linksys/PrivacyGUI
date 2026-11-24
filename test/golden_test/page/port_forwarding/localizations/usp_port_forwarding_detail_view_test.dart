@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/port_forwarding/views/components/usp_port_range_tab.dart'
     show UspPortRangeTab;
@@ -173,40 +172,26 @@ void main() {
           setup: (overrides) => overrides.addAll(
             portForwardingOverrides(dataState()),
           ),
-          steps: (tester) async {
+          steps: withSemantics((tester) async {
             final addBtn = find.descendant(
               of: find.byType(UspSinglePortTab),
               matching: find.byType(AppIconButton),
             );
             await tester.tap(addBtn.first);
             await settleWithTimeout(tester);
-            // Single port dialog has 4 fields (desc, extPort, intPort, client)
-            final allFields = find.byType(EditableText);
-            final count = allFields.evaluate().length;
-            if (count < 4) return;
-            final baseIndex = count - 4;
+            // By identifier, as the port range case below (#1080, #1870): a
+            // positional index types into the wrong box once a field is added
+            // or removed.
             // Description — over 32 chars
-            await tester.tap(allFields.at(baseIndex));
-            await tester.pump();
-            tester.testTextInput.enterText('x' * 33);
-            await tester.pump();
+            await typeInto(tester, 'pf-single-description', 'x' * 33);
             // External port — out of range
-            await tester.tap(allFields.at(baseIndex + 1));
-            await tester.pump();
-            tester.testTextInput.enterText('99999');
-            await tester.pump();
+            await typeInto(tester, 'pf-single-external-port', '99999');
             // Internal port — out of range
-            await tester.tap(allFields.at(baseIndex + 2));
-            await tester.pump();
-            tester.testTextInput.enterText('0');
-            await tester.pump();
+            await typeInto(tester, 'pf-single-internal-port', '0');
             // Internal client — invalid IP
-            await tester.tap(allFields.at(baseIndex + 3));
-            await tester.pump();
-            tester.testTextInput.enterText('not-an-ip');
-            await tester.pump();
+            await typeInto(tester, 'pf-single-internal-ip', 'not-an-ip');
             await tester.pump(const Duration(milliseconds: 100));
-          },
+          }),
         ),
         'dialog_validation_port_range': Interaction(
           setup: (overrides) => overrides.addAll(
