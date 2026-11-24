@@ -105,7 +105,7 @@ enum _JNAPActionValue {
   // TODO - Checking for the reference
   getGamingPrioritizationSettings(
       value:
-          'http://linksys.com/jnap/gamingprioritization/GetGamingPrioritizationSettings:'),
+          'http://linksys.com/jnap/gamingprioritization/GetGamingPrioritizationSettings'),
   // TODO - Checking for the reference
   setGamingPrioritizationSettings(
       value:
