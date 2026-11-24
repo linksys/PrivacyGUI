@@ -204,6 +204,15 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           onTap: () {
             _navigateTo(RouteNamed.menuInstantVerify);
           }),
+      AppSectionItemData(
+          title: loc(context).instantTest,
+          description: loc(context).instantTestDesc,
+          // 'troubleshoot' — distinct from the speed-test cards' networkCheck,
+          // and fits the "fix common problems" purpose.
+          iconData: LinksysIcons.troubleshoot,
+          onTap: () {
+            _navigateTo(RouteNamed.menuInstantTest);
+          }),
       if (isSupportVPN)
         AppSectionItemData(
             title: loc(context).vpn,

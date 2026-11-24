@@ -1,0 +1,894 @@
+import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
+import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
+import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
+import 'package:privacy_gui/page/instant_verify/models/wan_ip_comparison.dart';
+
+enum VerdictPriority { critical, warning, info, allClear }
+
+/// A single actionable finding shown on the Overview tab.
+///
+/// Only findings with a clear fix path (auto-launchable or concrete instruction)
+/// should appear on the customer-facing Overview. Technical findings without
+/// a customer action go to agent tabs only.
+class VerdictFinding {
+  final VerdictPriority priority;
+
+  /// Short headline: "Your internet is slow (12 Mbps)"
+  final String headline;
+
+  /// Optional plain-language summary; the full headline remains in details.
+  final String? summary;
+
+  /// Plain-language explanation + what to do next.
+  final String explanation;
+
+  /// Button label for auto-fix, or null if instruction-only.
+  final String? actionLabel;
+
+  /// Key identifying which action to trigger. See [VerdictEngine] constants.
+  final String? actionKey;
+
+  /// Which check number produced this finding (for post-restart escalation D-26).
+  final int? checkNumber;
+
+  /// The help flow that walks through this problem (the route's `flow`
+  /// parameter), or null when the finding's own action is the whole fix.
+  final int? helpFlow;
+
+  /// ISP escalation text to show after a failed restart attempt (D-26).
+  final String? postRestartEscalation;
+
+  /// Summarises the per-device weak-WiFi list, so a view that lists those
+  /// devices individually can show them in its place.
+  final bool aboutIssueDevices;
+
+  /// The part of the network this finding is about.
+  final VerdictArea area;
+
+  const VerdictFinding({
+    required this.priority,
+    required this.headline,
+    this.summary,
+    required this.explanation,
+    this.actionLabel,
+    this.actionKey,
+    this.checkNumber,
+    this.helpFlow,
+    this.postRestartEscalation,
+    this.aboutIssueDevices = false,
+    this.area = VerdictArea.router,
+  });
+
+  bool get hasAutoFix => actionKey != null;
+}
+
+enum VerdictCheckStatus { pass, warning, notice }
+
+/// The part of the network a check or finding is about. The results list
+/// one row per area, with the area's problems under it.
+enum VerdictArea { router, internet, speed, devices, nodes }
+
+/// One check the engine ran beyond the core connection checks (router,
+/// internet, websites, speed, devices, firmware) and what it measured, so
+/// every finding traces back to a check in the results.
+class VerdictCheck {
+  final VerdictArea area;
+  final String label;
+  final VerdictCheckStatus status;
+  final String result;
+  const VerdictCheck(this.area, this.label, this.status, this.result);
+}
+
+/// Full verdict result: ranked findings + check count.
+class Verdict {
+  final List<VerdictFinding> findings;
+
+  /// Total number of checks run (for "X checks passed" trust indicator).
+  final int checksRun;
+
+  /// The additional checks that ran, in run order.
+  final List<VerdictCheck> checks;
+
+  const Verdict(
+      {required this.findings, this.checksRun = 0, this.checks = const []});
+
+  VerdictFinding? get primaryFinding =>
+      findings.isEmpty ? null : findings.first;
+
+  /// Always-visible findings (up to 2 shown without expand).
+  List<VerdictFinding> get visibleFindings => findings.take(2).toList();
+
+  /// Overflow findings shown only when user expands.
+  List<VerdictFinding> get hiddenFindings =>
+      findings.length > 2 ? findings.skip(2).toList() : [];
+
+  bool get isAllClear =>
+      findings.isEmpty ||
+      findings.every((f) => f.priority == VerdictPriority.allClear);
+
+  VerdictPriority get overallPriority =>
+      findings.isEmpty ? VerdictPriority.allClear : findings.first.priority;
+
+  bool get isPreliminary => false;
+}
+
+/// Computes the customer-facing verdict from available diagnostic inputs.
+///
+/// Diagnostic chain order (most → least severe):
+/// 1. Router reachable (gateway ping to 192.168.1.1)
+/// 2. WAN status — connected/disconnected
+/// 3. WAN IP assigned — modem DHCP worked
+/// 4. Internet reachable (DNS check)
+/// 5. Internet speed
+/// 6. Latency
+/// 7. Device WiFi quality (signal + data rate combined)
+/// 8. 2.4 GHz band overcrowding
+/// 9. Firmware update available
+/// 10. Long uptime
+class VerdictEngine {
+  static const String actionRestartRouter = 'restart_router';
+  static const String actionFirmwareUpdate = 'firmware_update';
+  static const String actionBridgeModeHelp = 'bridge_mode_help';
+
+  static Verdict compute({
+    required bool? gatewayReachable,
+    required bool? wanConnected,
+    required String? wanIpAddress,
+    WanIpComparison? wanIpComparison,
+    required bool? dnsWorking,
+    required double? downloadMbps,
+    required int? latencyMs,
+    /// True when the internet speed test ran but failed to complete
+    /// (timeout / CDN unreachable / 0 result). Surfaces as a warning so a
+    /// failed check is never swept into an all-clear verdict.
+    bool speedTestFailed = false,
+    required bool? firmwareUpdateAvailable,
+    required String? firmwareVersion,
+    required int? uptimeSeconds,
+    /// DNS servers the router is using (from GetWANStatus wanConnection).
+    /// When provided, Check 4 surfaces server addresses + targeted advice.
+    List<String>? dnsServers,
+    /// IPv6 WAN status — shown alongside DNS failure for context.
+    bool? wanIpv6Connected,
+    /// WAN connection type (DHCP/PPPoE/Static) — PPPoE may need re-auth.
+    String? wanType,
+    /// Result of silent public DNS check (Google DoH at 8.8.8.8).
+    /// True = public DNS resolved → ISP DNS specifically is the problem.
+    /// False = public DNS also failed → broader internet connectivity issue.
+    /// Null = check not run (DNS was OK, or check skipped).
+    bool? publicDnsWorking,
+    /// Whether configured DNS server IPs respond to ICMP ping from the router.
+    /// Combined with [publicDnsWorking] for three-way root-cause diagnosis:
+    ///   public=true + ping=true  → DNS service broken, routing OK
+    ///   public=true + ping=false → Cannot reach DNS servers at all
+    ///   public=false             → Internet appears unreachable
+    bool? configuredDnsReachable,
+    required List<DeviceScore> deviceScores,
+    required List<DiagnosticClient> clients,
+    required List<MeshNodeInfo> meshNodes,
+    required double? planSpeedMbps,
+    bool? isWifiScheduleBlocking,
+    bool? isInstantPrivacyOn,
+    bool? isInstantPauseActive,
+    int? cpuLoadPct,
+    int? cpuLoadPctStart,
+    int? memoryLoadPct,
+    int? wifiSnrDb,
+    bool? isPmfRequired,
+    // New checks (items 28, 30, 38, 43)
+    bool? isBandSteeringMissteer,    // 5GHz-capable device stuck on 2.4 GHz with steering on
+    bool? hasEthernetNoLink,         // Wired device with no physical link detected
+    bool? hasZombieMeshNode,         // Node with good RSSI but degraded throughput
+    int? dhcpPoolUtilizationPct,     // 0-100, percentage of DHCP pool used
+    bool? isDeviceInApMode,          // Linksys is in AP mode — RFC1918 WAN IP is intentional
+  }) {
+    final findings = <VerdictFinding>[];
+    final checks = <VerdictCheck>[];
+    const pass = VerdictCheckStatus.pass;
+    const warning = VerdictCheckStatus.warning;
+    const notice = VerdictCheckStatus.notice;
+    int checksRun = 0;
+
+    // ── Check 1: Router reachable (ping 192.168.1.1) ─────────────────────
+    if (gatewayReachable != null) {
+      checksRun++;
+      if (!gatewayReachable) {
+        findings.add(const VerdictFinding(
+          priority: VerdictPriority.critical,
+          helpFlow: 1,
+          area: VerdictArea.router,
+          headline: 'Your router can\'t be reached',
+          explanation:
+              'Try refreshing the page. If this keeps happening, your router may need a restart.',
+          actionLabel: 'Restart Router',
+          actionKey: actionRestartRouter,
+          checkNumber: 1,
+          postRestartEscalation: 'Your router may not be responding. Contact Linksys support.',
+        ));
+        return Verdict(findings: findings, checksRun: checksRun);
+      }
+    }
+
+    // ── Check 2: WAN connection ───────────────────────────────────────────
+    if (wanConnected != null) {
+      checksRun++;
+      if (!wanConnected) {
+        findings.add(const VerdictFinding(
+          priority: VerdictPriority.critical,
+          helpFlow: 1,
+          area: VerdictArea.internet,
+          headline: 'No internet connection detected',
+          explanation:
+              'Check that:\n'
+              '• Your modem is powered on (look for the WAN or Internet light)\n'
+              '• The cable from your modem to your router\'s WAN/Internet port is firmly plugged in\n\n'
+              'If cables look fine, your internet service may be down — contact your provider.',
+        ));
+        return Verdict(findings: findings, checksRun: checksRun);
+      }
+    }
+
+    // ── Check 3: WAN IP assigned (ISP DHCP) ──────────────────────────────
+    if (wanConnected == true && wanIpAddress != null) {
+      checksRun++;
+      final hasIp = wanIpAddress.isNotEmpty;
+      if (!hasIp) {
+        findings.add(VerdictFinding(
+          priority: VerdictPriority.critical,
+          helpFlow: 1,
+          area: VerdictArea.internet,
+          headline: 'Your router connected but didn\'t get an address',
+          explanation:
+              'The router line is active but your internet provider didn\'t assign an '
+              'IP address. This usually means the modem needs a restart. '
+              'Unplug your modem (the box from your ISP), wait 30 seconds, plug it back in, '
+              'then restart the router.',
+          actionLabel: 'Restart Router',
+          actionKey: actionRestartRouter,
+          checkNumber: 3,
+          postRestartEscalation: _ispEscalation(
+            'my router shows it\'s connected but didn\'t get an IP address',
+          ),
+        ));
+        return Verdict(findings: findings, checksRun: checksRun);
+      }
+    }
+
+    // Compare only when both a usable current address and a saved reference
+    // exist. First observation and unavailable storage are not passing tests.
+    if (wanConnected == true && wanIpComparison?.canCompare == true) {
+      final comparison = wanIpComparison!;
+      checksRun++;
+      checks.add(VerdictCheck(
+        VerdictArea.internet,
+        'ISP address change',
+        comparison.hasChanged ? notice : pass,
+        comparison.hasChanged ? 'Different from saved address' : 'Matches saved address',
+      ));
+      if (comparison.hasChanged) {
+        final staticService = wanType?.toLowerCase().contains('static') == true;
+        findings.add(VerdictFinding(
+          priority: staticService ? VerdictPriority.warning : VerdictPriority.info,
+          area: VerdictArea.internet,
+          headline: 'Your internet address has changed',
+          summary: 'Check static-IP assignments and approved IP lists',
+          explanation:
+              'Your router\'s WAN IP is now ${comparison.currentAddress}; '
+              'the saved address was ${comparison.referenceAddress}. '
+              'Address changes can be normal with a dynamic internet service. '
+              'If you pay for a static IP, ask your provider to confirm the assignment. '
+              'If a work VPN or other service uses an approved IP list (allowlisting), '
+              'ask its administrator to verify the permitted address. '
+              'This change alone does not confirm an outage or a blocked service. '
+              'With another router or a shared ISP address, your public IP may be different. '
+              'After checking, you can save the current address as your reference in Network details.',
+        ));
+      }
+    }
+
+    // ── Check 3b: Double-NAT / CGNAT detection ───────────────────────────────
+    // TEMPORARILY DISABLED: Support team determined double-NAT/CGNAT are not
+    // actionable support issues at this time. Bridge mode guidance (Flow 6)
+    // also disabled. Re-enable when support team validates the guidance.
+    // Detection logic preserved for future use — see Context/jnap-field-index.md.
+    // ignore: dead_code
+    if (false && wanConnected == true && wanIpAddress != null) {
+      // double-NAT/CGNAT detection suppressed — support team decision
+    }
+
+    // ── Check 4: Internet reachable (DNS/website access) ─────────────────
+    if (dnsWorking != null && wanConnected != false) {
+      checksRun++;
+      if (!dnsWorking) {
+        // The checks list already shows the router and internet results;
+        // the explanation says only what is wrong and what helps.
+        final custom = dnsServers
+                ?.where((s) => !_isIspOrPrivateDns(s))
+                .toList() ??
+            const <String>[];
+        final dnsNote = custom.isEmpty
+            ? ''
+            : ' You\'re using custom DNS servers (${custom.join(', ')}). If '
+                'they can\'t be reached, switch back to automatic DNS.';
+        final wanTypeNote =
+            (wanType == 'PPPoE' || wanType == 'PPTP' || wanType == 'L2TP')
+                ? ' If your $wanType session dropped, a restart reconnects it.'
+                : '';
+        final pcNote = isInstantPauseActive == true
+            ? ' Internet access is also paused for some devices.'
+            : '';
+
+        // ── Three-way root-cause differentiation ─────────────────────────
+        // publicDnsWorking=true + configuredDnsReachable=true
+        //   → DNS IPs are up but DNS service is broken (process/port 53 issue)
+        // publicDnsWorking=true + configuredDnsReachable=false
+        //   → Can't reach ISP DNS servers at all — routing issue
+        // publicDnsWorking=true + configuredDnsReachable=null
+        //   → Internet works, ISP DNS broken (can't narrow further)
+        // publicDnsWorking=false
+        //   → Internet appears unreachable — possible ISP outage
+        final String rootCauseContext;
+        final String postRestartMsg;
+        if (publicDnsWorking == true) {
+          if (configuredDnsReachable == true) {
+            // DNS servers are reachable by IP but DNS service isn't working
+            rootCauseContext =
+                'Your provider\'s DNS servers are online but not answering. '
+                'Restarting your router clears its DNS cache.';
+            postRestartMsg =
+                'Since restarting didn\'t fix it, your ISP\'s DNS service is '
+                'likely having an issue. Contact your provider and say: '
+                '"My router can reach your DNS servers by IP but DNS queries '
+                'are failing. It looks like a DNS service outage."';
+          } else if (configuredDnsReachable == false) {
+            // Can't even ping the ISP DNS IPs — routing is broken
+            rootCauseContext =
+                'Your router can\'t reach your provider\'s DNS servers. '
+                'Restart your modem, wait 30 seconds, then restart the router.';
+            postRestartMsg =
+                'Since restarting didn\'t fix it, there\'s likely a routing '
+                'issue between your modem and ISP. Contact your provider and '
+                'say: "My router cannot reach your DNS servers at all. '
+                'I\'ve restarted both modem and router."';
+          } else {
+            // Public DNS works, configured DNS status unknown
+            rootCauseContext =
+                'Your internet connection works; only website lookups (DNS) '
+                'are failing. Restarting your router clears its DNS cache.';
+            postRestartMsg =
+                'Since restarting didn\'t fix it, your ISP\'s DNS servers may '
+                'be having an outage. Contact your provider and say: '
+                '"My router is connected but websites won\'t load. '
+                'Your DNS servers appear to be down."';
+          }
+        } else if (publicDnsWorking == false) {
+          rootCauseContext =
+              'The internet itself looks unreachable, which may be an outage '
+              'at your provider. Check the cables, then restart your modem '
+              'and router.';
+          postRestartMsg = _ispEscalation('websites won\'t load');
+        } else {
+          rootCauseContext = 'Your router is connected, but website lookups '
+              '(DNS) are failing. A restart usually fixes this.';
+          postRestartMsg = _ispEscalation('websites won\'t load');
+        }
+
+        findings.add(VerdictFinding(
+          priority: VerdictPriority.critical,
+          helpFlow: 1,
+          area: VerdictArea.internet,
+          headline: 'Websites aren\'t loading',
+          explanation: '$rootCauseContext$dnsNote$wanTypeNote$pcNote',
+          actionLabel: 'Restart Router',
+          actionKey: actionRestartRouter,
+          checkNumber: 4,
+          postRestartEscalation: postRestartMsg,
+        ));
+      }
+    }
+
+    // ── Check 5: Internet speed ───────────────────────────────────────────
+    if (downloadMbps != null && wanConnected != false && dnsWorking != false) {
+      checksRun++;
+      final plan = planSpeedMbps;
+
+      // Check if weak WiFi on connected devices might explain the slow speed
+      final hasWeakDevices = deviceScores.any((d) => d.isIssue);
+      final weakNote = hasWeakDevices
+          ? ' Note: this test runs from your current device — if it has a weak WiFi signal, the reading may be lower than your router\'s actual speed.'
+          : '';
+
+      // Weak-WiFi elevation (PRD v0.7 D-8): if test device has weak WiFi,
+      // elevate that as primary finding ahead of speed
+      if (hasWeakDevices && downloadMbps < 25) {
+        findings.add(VerdictFinding(
+          priority: VerdictPriority.warning,
+          helpFlow: 2,
+          area: VerdictArea.speed,
+          headline: 'WiFi may be affecting the speed test',
+          explanation:
+              'This speed test runs from this device. We found connection issues on '
+              'one or more devices, but cannot tell whether this device is affected.\n\n'
+              'Choose One device is slow to check an affected device, then run the speed test again.',
+          checkNumber: 7,
+        ));
+      }
+
+      if (downloadMbps < 5) {
+        findings.add(VerdictFinding(
+          priority: VerdictPriority.critical,
+          helpFlow: 2,
+          area: VerdictArea.speed,
+          headline:
+              'Your internet is very slow (${downloadMbps.toStringAsFixed(0)} Mbps)',
+          explanation:
+              'Getting about ${downloadMbps.toStringAsFixed(0)} Mbps \u2014 barely enough for video calls.'
+              '${hasWeakDevices ? '' : ' '}$weakNote '
+              'Speed can vary based on time of day, how many devices are active, '
+              'and your distance from the router.',
+          actionLabel: 'Restart Router',
+          actionKey: actionRestartRouter,
+          checkNumber: 5,
+          postRestartEscalation: _ispEscalation(
+            'my speed is only ${downloadMbps.toStringAsFixed(0)} Mbps',
+          ),
+        ));
+      } else if (downloadMbps < 25 ||
+          (plan != null && downloadMbps < plan * 0.5)) {
+        final planText = plan != null
+            ? ' (your plan is ${plan.toStringAsFixed(0)} Mbps)'
+            : '';
+        findings.add(VerdictFinding(
+          priority: VerdictPriority.warning,
+          helpFlow: 2,
+          area: VerdictArea.speed,
+          headline:
+              'Your internet is slower than expected (${downloadMbps.toStringAsFixed(0)} Mbps$planText)',
+          summary: 'Your internet is slower than expected',
+          explanation:
+              'Getting about ${downloadMbps.toStringAsFixed(0)} Mbps.$weakNote '
+              'Speed can vary based on time of day, how many devices are active, '
+              'and your distance from the router.',
+          actionLabel: 'Restart Router',
+          actionKey: actionRestartRouter,
+          checkNumber: 6,
+          postRestartEscalation: _ispEscalation(
+            'my internet is slower than what I\'m paying for. '
+            'My speed test shows ${downloadMbps.toStringAsFixed(0)} Mbps',
+          ),
+        ));
+      }
+    }
+
+    // ── Check 5b: Speed test couldn't complete ───────────────────────────
+    // A check that ran but didn't finish is itself an issue — never silently
+    // all-clear. (Only when the internet is otherwise up; if WAN/DNS already
+    // failed, that's the real headline, not the speed test.)
+    if (speedTestFailed && wanConnected != false && dnsWorking != false) {
+      findings.add(const VerdictFinding(
+        priority: VerdictPriority.warning,
+        helpFlow: 2,
+        area: VerdictArea.speed,
+        headline: "We couldn't finish the speed test",
+        explanation:
+            'The internet speed check didn\'t complete — this can happen on a '
+            'busy or briefly-dropped connection. Other checks looked fine, but '
+            'we can\'t confirm your speed until this finishes. Try running the '
+            'test again.',
+      ));
+    }
+
+    // ── Check 6: Latency ─────────────────────────────────────────────────
+    if (latencyMs != null && wanConnected != false && dnsWorking != false) {
+      checksRun++;
+      if (latencyMs > 100) {
+        findings.add(VerdictFinding(
+          priority: VerdictPriority.warning,
+          helpFlow: 2,
+          area: VerdictArea.speed,
+          headline: 'High lag detected (${latencyMs}ms)',
+          explanation:
+              'High latency causes delays in video calls and online games. '
+              'Try restarting your modem. If it persists, contact your provider.',
+        ));
+      }
+    }
+
+    // ── Check 7: Device WiFi quality (signal + data rate combined) ────────
+    if (deviceScores.isNotEmpty) {
+      checksRun++;
+      // isFlagged already combines: signal < -75 dBm OR tx/rx rate < 10 Mbps
+      final issueDevices = deviceScores.where((d) => d.isIssue).toList()
+        ..sort((a, b) => a.score.compareTo(b.score));
+
+      if (issueDevices.isNotEmpty) {
+        final count = issueDevices.length;
+        final deviceWord = count == 1 ? 'device' : 'devices';
+        final names = issueDevices
+            .take(3)
+            .map((d) => d.client.displayNameWithOui)
+            .toList();
+        final nameText = names.length >= 3
+            ? '${names.sublist(0, 2).join(', ')}, and ${count - 2} more'
+            : names.join(' and ');
+
+        final tooFarCount = issueDevices
+            .where((d) => (d.client.signalDecibels ?? 0) < -75)
+            .length;
+        final slowRateCount = issueDevices
+            .where((d) =>
+                (d.client.txRateMbps ?? 0) < 10 ||
+                (d.client.rxRateMbps ?? 0) < 10)
+            .length;
+
+        String advice;
+        if (tooFarCount > count / 2) {
+          advice =
+              '$nameText ${count == 1 ? 'has' : 'have'} a weak signal. '
+              'Moving your router to a more central location could help.';
+        } else if (slowRateCount > count / 2) {
+          advice =
+              '$nameText ${count == 1 ? 'is' : 'are'} getting very slow WiFi speeds. '
+              'Check for thick walls or interference between these devices and your router. '
+              'Moving them closer often helps.';
+        } else {
+          advice =
+              '$nameText ${count == 1 ? 'has' : 'have'} a weak WiFi connection. '
+              'Check for walls, metal objects, or appliances between them and your router.';
+        }
+
+        findings.add(VerdictFinding(
+          priority: VerdictPriority.warning,
+          helpFlow: 31,
+          area: VerdictArea.devices,
+          headline: '$count $deviceWord with weak WiFi',
+          explanation: advice,
+          checkNumber: 7,
+          aboutIssueDevices: true,
+        ));
+      }
+    }
+
+    // ── Check 8: 2.4 GHz band overcrowding ───────────────────────────────
+    // Check 16 (band selection) folds into this finding when both fire.
+    VerdictFinding? crowding;
+    if (clients.isNotEmpty) {
+      final wirelessClients = clients.where((c) => c.isWireless).toList();
+      if (wirelessClients.length >= 4) {
+        checksRun++;
+        final twoFourCount =
+            wirelessClients.where((c) => c.band.contains('2.4')).length;
+        final ratio = twoFourCount / wirelessClients.length;
+        final crowded = ratio >= 0.6 && twoFourCount >= 4;
+        checks.add(VerdictCheck(VerdictArea.devices, 'WiFi bands', crowded ? notice : pass,
+            '$twoFourCount of ${wirelessClients.length} devices on 2.4 GHz'));
+        if (crowded) {
+          findings.add(crowding = VerdictFinding(
+            priority: VerdictPriority.info,
+            helpFlow: 4,
+            area: VerdictArea.devices,
+            headline:
+                '$twoFourCount of ${wirelessClients.length} devices are on the slower 2.4 GHz band',
+            explanation:
+                'The 2.4 GHz band is more congested and slower than 5 GHz. '
+                'On your devices, go to WiFi settings and connect to the 5 GHz network '
+                '(same name, same password — your phone will prefer it if it\'s in range).',
+          ));
+        }
+      }
+    }
+
+    // ── Check 9: Mesh backhaul health ────────────────────────────────────
+    if (meshNodes.length > 1) {
+      checksRun++;
+      final weakNodes = meshNodes.where((n) => n.hasWeakBackhaul).toList();
+      checks.add(VerdictCheck(VerdictArea.nodes,
+          'WiFi node connections',
+          weakNodes.isEmpty ? pass : warning,
+          weakNodes.isEmpty
+              ? '${meshNodes.length - 1} connected well'
+              : 'Weak: ${weakNodes.map((n) => n.name).join(', ')}'));
+      if (weakNodes.isNotEmpty) {
+        final names = weakNodes.map((n) => n.name).join(', ');
+        final count = weakNodes.length;
+        final nodeWord = count == 1 ? 'child node' : 'child nodes';
+        findings.add(VerdictFinding(
+          priority: VerdictPriority.warning,
+          helpFlow: 4,
+          area: VerdictArea.nodes,
+          headline:
+              '$count $nodeWord ${count == 1 ? 'has' : 'have'} a weak connection to your router',
+          explanation:
+              '$names ${count == 1 ? 'is' : 'are'} connected wirelessly with a weak signal '
+              '(${weakNodes.map((n) => '${n.backhaulRssi} dBm').join(', ')}). '
+              'Moving ${count == 1 ? 'it' : 'them'} closer to your main router, '
+              'or connecting via Ethernet, will improve network reliability.',
+        ));
+      }
+    }
+
+    // ── Check 12: WiFi access restrictions ───────────────────────────────────
+    if (isWifiScheduleBlocking != null) {
+      checksRun++;
+      checks.add(VerdictCheck(VerdictArea.devices,
+          'WiFi schedule',
+          isWifiScheduleBlocking ? notice : pass,
+          isWifiScheduleBlocking ? 'May be turning WiFi off' : 'Not blocking'));
+    }
+    if (isWifiScheduleBlocking == true) {
+      findings.add(const VerdictFinding(
+        priority: VerdictPriority.info,
+        helpFlow: 3,
+        area: VerdictArea.devices,
+        headline: 'Your WiFi schedule may be blocking connections',
+        explanation: 'Your router has a WiFi schedule that turns off wireless access during certain hours. If your WiFi isn\'t working at a specific time, check your schedule settings.',
+      ));
+    }
+    if (isInstantPrivacyOn != null) {
+      checksRun++;
+      checks.add(VerdictCheck(VerdictArea.devices, 'Instant Privacy', isInstantPrivacyOn ? warning : pass,
+          isInstantPrivacyOn ? "On — new devices can't join" : 'Off'));
+    }
+    if (isInstantPrivacyOn == true) {
+      findings.add(const VerdictFinding(
+        priority: VerdictPriority.warning,
+        helpFlow: 3,
+        area: VerdictArea.devices,
+        headline: 'Instant Privacy is blocking new devices',
+        explanation: 'Instant Privacy is on — new devices can\'t connect until it\'s turned off. Go to your router settings to disable Instant Privacy.',
+      ));
+    }
+    if (isInstantPauseActive != null) {
+      checksRun++;
+      checks.add(VerdictCheck(VerdictArea.devices, 'Internet pause', isInstantPauseActive ? warning : pass,
+          isInstantPauseActive ? 'A pause is active' : 'No pause active'));
+    }
+    if (isInstantPauseActive == true) {
+      findings.add(const VerdictFinding(
+        priority: VerdictPriority.warning,
+        helpFlow: 3,
+        area: VerdictArea.devices,
+        headline: 'Internet access is paused',
+        explanation: 'A parental control pause is active. This blocks internet access for some devices. Check your parental control settings.',
+      ));
+    }
+
+    // ── Check 13: CPU / Memory (two-sample: #24) ──────────────────────────────
+    // Two-sample logic: the first sample (cpuLoadPctStart) is taken during our
+    // own JNAP burst and may show a false spike. Only fire if:
+    //   a) The END sample (cpuLoadPct) is high — confirms sustained load, OR
+    //   b) Both samples are high — confirmed sustained even across the run.
+    // If only the start sample exists (preliminary verdict), skip CPU check
+    // entirely — wait for the end sample to avoid false positives.
+    if (cpuLoadPct != null || memoryLoadPct != null) {
+      checksRun++;
+      final busy = (cpuLoadPct ?? 0) > 80 || (memoryLoadPct ?? 0) > 85;
+      checks.add(VerdictCheck(VerdictArea.router, 'Router load', busy ? warning : pass, [
+        if (cpuLoadPct != null) 'Processor $cpuLoadPct%',
+        if (memoryLoadPct != null) 'Memory $memoryLoadPct%',
+      ].join(' · ')));
+    }
+    if (cpuLoadPct != null && cpuLoadPct > 80) {
+      findings.add(VerdictFinding(
+        priority: VerdictPriority.warning,
+        // Restarting is the fix; no help flow.
+        area: VerdictArea.router,
+        headline: 'Your router is under high load ($cpuLoadPct% CPU)',
+        summary: 'Your router is very busy',
+        explanation: 'An overloaded processor can drop packets and slow all devices. A restart usually clears this.',
+        actionLabel: 'Restart Router',
+        actionKey: actionRestartRouter,
+      ));
+    }
+    if (memoryLoadPct != null && memoryLoadPct > 85) {
+      findings.add(VerdictFinding(
+        priority: VerdictPriority.warning,
+        // Restarting is the fix; no help flow.
+        area: VerdictArea.router,
+        headline: 'Your router\'s memory is nearly full ($memoryLoadPct%)',
+        summary: 'Your router is running low on memory',
+        explanation: 'Low memory causes slowdowns and dropped connections. A restart will clear it.',
+        actionLabel: 'Restart Router',
+        actionKey: actionRestartRouter,
+      ));
+    }
+
+    // ── Check 14: Channel interference (SNR) ─────────────────────────────────
+    if (wifiSnrDb != null) {
+      checksRun++;
+      checks.add(VerdictCheck(VerdictArea.devices, 'WiFi interference', wifiSnrDb < 20 ? notice : pass,
+          wifiSnrDb < 20 ? 'Interference from nearby networks' : 'Clear'));
+      if (wifiSnrDb < 20) {
+        findings.add(const VerdictFinding(
+          priority: VerdictPriority.info,
+          helpFlow: 5,
+          area: VerdictArea.devices,
+          headline: 'WiFi interference from nearby networks',
+          explanation: 'Your 5 GHz radio is experiencing interference, likely from neighboring WiFi networks. This is common in apartments and dense buildings. Contact Linksys support about adjusting your WiFi channel.',
+        ));
+      }
+    }
+
+    // ── Check 15: WPA3 PMF Required (breaks IoT devices) ─────────────────────
+    if (isPmfRequired != null) {
+      checksRun++;
+      checks.add(VerdictCheck(VerdictArea.devices, 'Smart home compatibility', isPmfRequired ? warning : pass,
+          isPmfRequired ? 'Strict security may block some devices' : 'Compatible'));
+      if (isPmfRequired) {
+        findings.add(const VerdictFinding(
+          priority: VerdictPriority.warning,
+          helpFlow: 3,
+          area: VerdictArea.devices,
+          headline: 'WiFi security setting may block smart home devices',
+          explanation: 'Your router has strict Protected Management Frames (PMF) enabled. Some smart home devices (Ring, Nest, smart bulbs) can\'t connect with this setting. Switch to WPA2/WPA3 compatibility mode in your WiFi Security settings.',
+        ));
+      }
+    }
+
+    // ── Check 16: Band steering mis-steer (item 28) ──────────────────────────
+    if (isBandSteeringMissteer != null) {
+      checksRun++;
+      checks.add(VerdictCheck(VerdictArea.devices, 'Band selection', isBandSteeringMissteer ? warning : pass,
+          isBandSteeringMissteer ? 'A device is stuck on 2.4 GHz' : 'Devices on the right band'));
+      if (isBandSteeringMissteer && crowding != null) {
+        // One problem, one line: the crowding count, with the stuck device
+        // as the reason it matters. It takes the band-selection finding's
+        // place, so it doesn't rank above earlier warnings.
+        findings.remove(crowding);
+        findings.add(VerdictFinding(
+          priority: VerdictPriority.warning,
+          helpFlow: crowding.helpFlow,
+          area: VerdictArea.devices,
+          headline: crowding.headline,
+          explanation: '${crowding.explanation} Some of these devices can '
+              'use 5 GHz but are stuck on 2.4 GHz; moving them closer to '
+              'your router, or forgetting and reconnecting, usually fixes '
+              'this.',
+        ));
+      } else if (isBandSteeringMissteer) {
+        findings.add(const VerdictFinding(
+          priority: VerdictPriority.warning,
+          helpFlow: 31,
+          area: VerdictArea.devices,
+          headline: 'A device is stuck on the slower 2.4 GHz band',
+          explanation:
+              'Your router has automatic band selection on, but one or more '
+              '5 GHz-capable devices are on the slower 2.4 GHz band. '
+              'Moving the device closer to your router, or forgetting and '
+              'reconnecting, usually fixes this.',
+        ));
+      }
+    }
+
+    // ── Check 17: Ethernet no-link (item 30) ─────────────────────────────────
+    if (hasEthernetNoLink != null) {
+      checksRun++;
+      checks.add(VerdictCheck(VerdictArea.devices, 'Wired connections', hasEthernetNoLink ? warning : pass,
+          hasEthernetNoLink ? 'A wired device has no link' : 'All linked'));
+      if (hasEthernetNoLink) {
+        findings.add(const VerdictFinding(
+          priority: VerdictPriority.warning,
+          helpFlow: 3,
+          area: VerdictArea.devices,
+          headline: 'A wired device has no network link',
+          explanation:
+              'One or more devices are plugged in via Ethernet cable but '
+              'the port shows no connection. Check that the cable is firmly '
+              'plugged in at both ends. Try a different cable or port.',
+        ));
+      }
+    }
+
+    // ── Check 18: Zombie mesh node (item 38) ─────────────────────────────────
+    if (hasZombieMeshNode != null) {
+      checksRun++;
+      checks.add(VerdictCheck(VerdictArea.nodes, 'WiFi node speed', hasZombieMeshNode ? warning : pass,
+          hasZombieMeshNode ? 'A node is slower than expected' : 'As expected'));
+      if (hasZombieMeshNode) {
+        findings.add(const VerdictFinding(
+          priority: VerdictPriority.warning,
+          helpFlow: 4,
+          area: VerdictArea.nodes,
+          headline: 'A child node is connected but not working well',
+          explanation:
+              'One of your child nodes is connected to your router but '
+              'its speed is much lower than expected — devices in that area '
+              'will be slow even though the node appears connected. '
+              'Try restarting your router. If it keeps happening, '
+              'move the node closer or connect it with an Ethernet cable.',
+          actionLabel: 'Restart Router',
+          actionKey: actionRestartRouter,
+        ));
+      }
+    }
+
+    // ── Check 19: DHCP pool near capacity (item 43) ────────────────────────
+    if (dhcpPoolUtilizationPct != null) {
+      checksRun++;
+      checks.add(VerdictCheck(VerdictArea.devices, 'Device addresses', dhcpPoolUtilizationPct >= 90 ? warning : pass,
+          dhcpPoolUtilizationPct >= 90 ? '$dhcpPoolUtilizationPct% in use' : '$dhcpPoolUtilizationPct% in use'));
+      if (dhcpPoolUtilizationPct >= 90) {
+        findings.add(VerdictFinding(
+          priority: VerdictPriority.warning,
+          helpFlow: 3,
+          area: VerdictArea.devices,
+          headline:
+              'Your network address pool is almost full ($dhcpPoolUtilizationPct% used)',
+          explanation:
+              'Your router can only support a limited number of devices. '
+              'When the pool is full, new devices will fail to connect '
+              'even with the correct password. Contact Linksys support '
+              'to increase the pool size.',
+        ));
+      }
+    }
+
+    // ── Check 10: Firmware update ──────────────────────────────────────────
+    if (firmwareUpdateAvailable == true) {
+      checksRun++;
+      final versionText =
+          firmwareVersion != null ? ' ($firmwareVersion)' : '';
+      findings.add(VerdictFinding(
+        priority: VerdictPriority.info,
+        area: VerdictArea.router,
+        headline: 'A software update is available$versionText',
+        explanation:
+            'Keeping your router updated improves performance and security.',
+        actionLabel: 'Update Now',
+        actionKey: actionFirmwareUpdate,
+      ));
+    } else if (firmwareUpdateAvailable != null) {
+      checksRun++;
+    }
+
+    // ── Check 11: Long uptime ─────────────────────────────────────────────
+    if (uptimeSeconds != null) {
+      checksRun++;
+      final days = uptimeSeconds ~/ 86400;
+      checks.add(VerdictCheck(VerdictArea.router, 'Time since restart', days >= 30 ? notice : pass,
+          days < 1 ? 'Less than a day' : '$days day${days == 1 ? '' : 's'}'));
+      if (days >= 30) {
+        findings.add(VerdictFinding(
+          priority: VerdictPriority.info,
+          area: VerdictArea.router,
+          headline: 'Your router has been running for $days days without a restart',
+          explanation:
+              'A restart can clear up slowdowns that build up over time. '
+              'Once a month is a good habit.',
+          actionLabel: 'Restart Router',
+          actionKey: actionRestartRouter,
+        ));
+      }
+    }
+
+    findings.sort((a, b) => a.priority.index.compareTo(b.priority.index));
+
+    return Verdict(
+      findings: findings,
+      checksRun: checksRun > 0 ? checksRun : 8,
+      checks: checks,
+    );
+  }
+
+  /// True if [ip] looks like an ISP-assigned or private-network DNS server.
+  /// Private: 10.x, 172.16-31.x, 192.168.x.
+  /// ISP infra: 172.30.x (common Comcast/Cox range visible in tests).
+  static bool _isIspOrPrivateDns(String ip) {
+    final parts = ip.split('.');
+    if (parts.length != 4) return false;
+    final a = int.tryParse(parts[0]) ?? -1;
+    final b = int.tryParse(parts[1]) ?? -1;
+    if (a == 10) return true;
+    if (a == 172 && b >= 16 && b <= 31) return true;
+    if (a == 192 && b == 168) return true;
+    return false;
+  }
+
+  /// Generates ISP escalation text (PRD v0.7 D-26, D-31, D-32).
+  static String _ispEscalation(String symptom) =>
+      'Since restarting didn\'t fix it, the issue is likely '
+      'outside your router.\n\n'
+      'When you call your internet provider, say:\n'
+      '"My router shows it\'s connected but $symptom. '
+      'I restarted my router but the problem persists."';
+}
