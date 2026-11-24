@@ -188,6 +188,4 @@ enum JNAPService {
   const JNAPService({required this.value});
 
   final String value;
-
-  static List<JNAPService> get appSupportedServices => JNAPService.values;
 }
