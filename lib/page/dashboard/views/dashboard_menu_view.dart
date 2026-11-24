@@ -211,6 +211,8 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             // 'troubleshoot' — distinct from the speed-test cards' networkCheck,
             // and fits the "fix common problems" purpose.
             iconData: LinksysIcons.troubleshoot,
+            // Instant Test ships as a beta (linksys/linksys-ai-msdm#747).
+            isBeta: true,
             onTap: () {
               _navigateTo(RouteNamed.menuInstantTest);
             }),

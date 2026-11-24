@@ -3,6 +3,7 @@ import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:privacy_gui/page/components/styled/status_label.dart';
 
 /// Home-page entry card for Instant-Test.
 ///
@@ -28,6 +29,8 @@ class InstantTestCard extends StatelessWidget {
               Icon(LinksysIcons.troubleshoot, color: scheme.primary),
               const AppGap.small2(),
               AppText.titleMedium('Instant-Test'),
+              const AppGap.small2(),
+              betaLabel(),
               const Spacer(),
               Icon(LinksysIcons.chevronRight, color: scheme.onSurfaceVariant),
             ],

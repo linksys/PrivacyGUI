@@ -143,6 +143,7 @@ class _InstantTestHelpViewState extends ConsumerState<InstantTestHelpView> {
       // Back steps back within the flow first, then pops the page.
       builder: (context, stepBack, _) => StyledAppPageView(
         title: InstantTestHelpView.title(widget.flow),
+        markLabel: 'Beta',
         scrollable: true,
         onBackTap: stepBack,
         child: (context, constraints) => DiagnosticSelectionArea(

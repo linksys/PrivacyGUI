@@ -36,6 +36,7 @@ class MyDevicesTab extends ConsumerWidget {
         .fetch(forceSpeedTest: true);
     return StyledAppPageView(
       title: 'Device details',
+      markLabel: 'Beta',
       scrollable: true,
       onRefresh: () async => refresh(),
       // Refresh sits in the title row, as on Instant-Topology.
