@@ -518,10 +518,12 @@ class VerdictEngine {
                 d.client.signalDecibels != null &&
                 isWeakClientSignal(d.client.signalDecibels!))
             .length;
+        // Only a reported rate can make a device "slow": an unknown rate is
+        // unknown, not 0 Mbps (linksys/linksys-ai-msdm#746, contract I9).
         final slowRateCount = issueDevices
             .where((d) =>
-                (d.client.txRateMbps ?? 0) < 10 ||
-                (d.client.rxRateMbps ?? 0) < 10)
+                (d.client.txRateMbps != null && d.client.txRateMbps! < 10) ||
+                (d.client.rxRateMbps != null && d.client.rxRateMbps! < 10))
             .length;
 
         String advice;
