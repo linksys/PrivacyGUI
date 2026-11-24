@@ -141,6 +141,7 @@ final menus = [
       args: state.extra as Map<String, dynamic>? ?? const {},
     ),
   ),
+  if (BuildConfig.enableInstantTest) instantTestRoute,
   LinksysRoute(
     name: RouteNamed.devicePicker,
     path: RoutePath.devicePicker,
@@ -152,3 +153,43 @@ final menus = [
     ),
   ),
 ];
+
+/// Instant Test home and its child routes. Listed in [menus] only when the
+/// build sets `enable_instant_test`; tests build it directly so the feature's
+/// own tests run in every build.
+final instantTestRoute = LinksysRoute(
+  name: RouteNamed.menuInstantTest,
+  path: RoutePath.menuInstantTest,
+  config: LinksysRouteConfig(
+    column: ColumnGrid(column: 9),
+  ),
+  builder: (context, state) => const InstantTestPage(),
+  routes: [
+    LinksysRoute(
+      name: RouteNamed.instantTestDevices,
+      path: RoutePath.instantTestDevices,
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 9),
+      ),
+      builder: (context, state) => const InstantTestDevicesPage(),
+    ),
+    LinksysRoute(
+      name: RouteNamed.instantTestNetwork,
+      path: RoutePath.instantTestNetwork,
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 9),
+      ),
+      builder: (context, state) => const MyNetworkTab(),
+    ),
+    LinksysRoute(
+      name: RouteNamed.instantTestHelp,
+      path: RoutePath.instantTestHelp,
+      config: LinksysRouteConfig(
+        column: ColumnGrid(column: 9),
+      ),
+      builder: (context, state) => InstantTestHelpView(
+        flow: int.tryParse(state.uri.queryParameters['flow'] ?? '') ?? 0,
+      ),
+    ),
+  ],
+);

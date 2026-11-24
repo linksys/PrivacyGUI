@@ -1,0 +1,92 @@
+import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
+
+/// Shared router-restart confirmation used across all Instant-Test surfaces
+/// (Help Me Fix It, Instant-Test overview, My Network).
+///
+/// Enforces the once-per-session singleton (PRD B-5) and the confirmation
+/// dialog (PRD D-23), then calls the single source of truth
+/// `provider.restartRouter()`. Pass [onRestarted] for any surface-specific
+/// follow-up (e.g. the overview tab's restart countdown).
+Future<bool> confirmAndRestart(BuildContext context, WidgetRef ref,
+    {VoidCallback? onRestarted}) async {
+  final state = ref.read(instantVerifyPivotProvider);
+  // The address to return to is the one the browser reached the router at —
+  // not a hardcoded 192.168.1.1 (Q-02).
+  final returnAddress =
+      Uri.base.host.isNotEmpty ? Uri.base.host : 'your router';
+  if (state.hasRestartedThisSession) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: AppText.bodyMedium(
+            'You\'ve already restarted this session. If the issue persists, contact Linksys Support.',
+            color: Theme.of(context).colorScheme.onInverseSurface),
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
+    return false;
+  }
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const AppText.titleMedium('Restart your router?'),
+      content: AppText.bodyMedium(
+          'All devices will disconnect for about 2 minutes.\n\n'
+          'If you\'re on WiFi, this page will go blank. '
+          'Wait 2 minutes, reconnect to your WiFi, then return to $returnAddress.'),
+      actions: [
+        AppTextButton('Cancel',
+                onTap: () => Navigator.of(ctx).pop(false)),
+        AppFilledButton('Restart',
+                onTap: () => Navigator.of(ctx).pop(true)),
+      ],
+    ),
+  );
+  if (confirmed == true && context.mounted) {
+    final navigator = Navigator.of(context, rootNavigator: true);
+    // Prominent, centered progress while the router reboots (J-08 — a bottom
+    // SnackBar was too subtle; QA wanted a clear "it's happening" signal).
+    // On WiFi the page reloads on reconnect and clears this; the barrier is
+    // dismissible so a wired user is never stuck.
+    final progressRoute = DialogRoute<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => const AlertDialog(
+        content: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+                width: Spacing.large2,
+                height: Spacing.large2,
+                child: CircularProgressIndicator(strokeWidth: 2)),
+            AppGap.large1(),
+            Expanded(
+              child: AppText.bodyMedium('Restarting your router…\n'
+                  'This takes about 2 minutes.'),
+            ),
+          ],
+        ),
+      ),
+    );
+    navigator.push(progressRoute);
+    try {
+      await ref.read(instantVerifyPivotProvider.notifier).restartRouter();
+    } catch (_) {
+      if (progressRoute.isActive) navigator.removeRoute(progressRoute);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: AppText.bodyMedium(
+              'The restart could not be confirmed. Wait for your router to reconnect, then check again before retrying.',
+              color: Theme.of(context).colorScheme.onInverseSurface),
+        ));
+      }
+      return false;
+    }
+    onRestarted?.call();
+    return true;
+  }
+  return false;
+}
