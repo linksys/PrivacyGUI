@@ -37,6 +37,9 @@ void main() {
       isEmpty,
       reason: 'a service was added: regenerate the snapshot',
     );
+    // A result whose input is gone, renamed say, would never be checked.
+    expect(results.keys.where((name) => !inputs.containsKey(name)), isEmpty,
+        reason: 'an input was renamed or removed: regenerate the snapshot');
   });
 
   for (final name in inputs.keys) {
