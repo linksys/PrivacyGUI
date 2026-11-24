@@ -60,6 +60,7 @@
   "download": "Download",
   "lastDownloadRate": "Seneste downloadhastighed",
   "lastUploadRate": "Seneste uploadhastighed",
+  "sinceRouterLastRestarted": "Siden routeren sidst genstartede",
   "duid": "DUID",
   "editDhcpReservation": "Rediger DHCP-reservation",
   "enabled": "Aktiveret",

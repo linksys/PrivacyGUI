@@ -60,6 +60,7 @@
   "download": "Débit descendant",
   "lastDownloadRate": "Dernier débit descendant",
   "lastUploadRate": "Dernier débit montant",
+  "sinceRouterLastRestarted": "Depuis le dernier redémarrage du routeur",
   "duid": "DUID",
   "editDhcpReservation": "Modifier une réservation DHCP",
   "enabled": "Activé",

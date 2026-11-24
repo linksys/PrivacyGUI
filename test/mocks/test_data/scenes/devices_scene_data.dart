@@ -57,6 +57,10 @@ final wifiDeviceGood = ClientDevice(
   ),
   parentNodeId: 'node-1',
   parentNodeName: 'Living Room',
+  // A Wi-Fi phone's WANStats on the bench, 2026-11-24 14:34 (#1927), so the
+  // device detail page draws its Download and Upload rows.
+  bytesReceived: 337992894,
+  bytesSent: 66739319,
 );
 
 final wiredDevice1 = ClientDevice(

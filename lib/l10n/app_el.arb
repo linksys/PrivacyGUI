@@ -60,6 +60,7 @@
   "download": "Λήψη",
   "lastDownloadRate": "Τελευταίος ρυθμός λήψης",
   "lastUploadRate": "Τελευταίος ρυθμός φόρτωσης",
+  "sinceRouterLastRestarted": "Από την τελευταία επανεκκίνηση του δρομολογητή",
   "duid": "DUID",
   "editDhcpReservation": "Επεξεργασία δέσμευσης DHCP",
   "enabled": "Ενεργοποιήθηκε",

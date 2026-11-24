@@ -60,6 +60,7 @@
   "download": "Unduh",
   "lastDownloadRate": "Kecepatan unduh terakhir",
   "lastUploadRate": "Kecepatan unggah terakhir",
+  "sinceRouterLastRestarted": "Sejak router terakhir dinyalakan ulang",
   "duid": "DUID",
   "editDhcpReservation": "Edit Reservasi DHCP",
   "enabled": "Diaktifkan",

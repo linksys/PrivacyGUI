@@ -60,6 +60,7 @@
   "download": "تنزيل",
   "lastDownloadRate": "آخر معدل تنزيل",
   "lastUploadRate": "آخر معدل تحميل",
+  "sinceRouterLastRestarted": "منذ آخر إعادة تشغيل لجهاز التوجيه",
   "duid": "DUID",
   "editDhcpReservation": "تحرير حجز DHCP (بروتوكول التكوين الديناميكي للمضيف)",
   "enabled": "ممكَّن",

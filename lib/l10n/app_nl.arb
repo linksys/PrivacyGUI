@@ -60,6 +60,7 @@
   "download": "Downloaden",
   "lastDownloadRate": "Laatste downloadsnelheid",
   "lastUploadRate": "Laatste uploadsnelheid",
+  "sinceRouterLastRestarted": "Sinds de router voor het laatst opnieuw is opgestart",
   "duid": "DUID",
   "editDhcpReservation": "DHCP-reservering bewerken",
   "enabled": "Ingeschakeld",

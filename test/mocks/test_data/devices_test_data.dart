@@ -133,12 +133,16 @@ class DevicesTestData {
     String mac = '11:22:33:44:55:FE',
     String ip = '192.168.1.151',
     bool isActive = true,
+    int? bytesReceived,
+    int? bytesSent,
   }) =>
       ClientInterfaceInfo(
         mac: mac,
         ip: ip,
         connectionType: ConnectionType.wired,
         isActive: isActive,
+        bytesReceived: bytesReceived,
+        bytesSent: bytesSent,
       );
 
   // ===========================================================================

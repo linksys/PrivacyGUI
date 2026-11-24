@@ -60,6 +60,7 @@
   "download": "Загрузка",
   "lastDownloadRate": "Последняя скорость загрузки",
   "lastUploadRate": "Последняя скорость отправки",
+  "sinceRouterLastRestarted": "С момента последней перезагрузки маршрутизатора",
   "duid": "DUID",
   "editDhcpReservation": "Редактировать резервирование DHCP",
   "enabled": "Включено",

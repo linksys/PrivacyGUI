@@ -162,6 +162,18 @@ The YAML definitions are **not vendored** into this repo and individual definiti
   - a local session receives both.
   - Remote Assistance was not tried.
 
+**`connected_devices.g.dart` carries `WANStats` (#1927) and `X_LINKSYS_IsMeshNode`; it is contract first.**
+- **Source:** 0.19.0 output from linksys/usp_framework PR #126 at `fbe5a02` (branch `feat/1927-hosts-wanstats`, open), which sits on `main` @ `ff67c76`, the merge of #124. Taken with `git archive fbe5a02 usp-definitions`.
+- **What the definitions add:** `connected_devices.yaml` 2.4.0 (#126) adds `wanStatsBytesSent` / `wanStatsBytesReceived` on `.WANStats.BytesSent` / `.BytesReceived`. Both are read-only, optional `int`s: the bytes the row's MAC exchanged through the router, added once a connection ends. 2.3.0 (#124, merged, linksys/PrivacyGUI#1443) added `linksysIsMeshNode` on `.X_LINKSYS_IsMeshNode`. Nothing reads that field yet; it comes in here only because it is in `main`.
+- **What the file gains:** against `main`'s output, the two fields, the two paths in the table's one Get, and their `int.tryParse`. Against the file checked in before, also `linksysIsMeshNode`.
+- **The rest of the output:** every other file the command writes is unchanged. `index.dart` comes out in a different order with the same exports and is left as checked in.
+- **Consumer:** `MeshNetworkBuilder` puts each row's counters on its `ClientDevice` / `ClientInterfaceInfo`. The device detail page shows their sum as Download / Upload.
+- **Bench, 2026-11-24 (M60, 2.0.4.26112201):** the exact Get `ConnectedDevices.fetch()` sends (35 paths) went through usp-bridge with the WASM client. Its four counters equal `obuspa -c get` two seconds later. Replayed through `UspClient.extractGetResult`, the generated `fetch()` and `MeshNetworkBuilder`, the same numbers reach both clients. Posted on PR #126.
+- **Recheck once #126 merges (#1927):**
+  1. Regenerate `connected_devices.g.dart` from merged `main` and diff it against this output. Anything but a description is a contract change to read first.
+  2. Confirm both leaves are still `optional`. A required counter would fail the whole table on firmware without `WANStats`.
+  3. Before #1927 closes, reboot the router and re-read the counters. The page's "Since the router last restarted" depends on what that shows (#1927 to-do 2).
+
 Make sure that clone's `main` is up to date with `upstream` (`github.com/linksys/usp_framework`), not just with `origin`. Generating from a stale fork `main` silently reproduces the bug #1555 fixed: the fork's `data_elements_network.yaml` was the 2026-08-05 revision and had no `data_elements_network_info.yaml`.
 
 ## Update procedure

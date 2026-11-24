@@ -96,6 +96,7 @@ import 'package:privacy_gui/page/apps/views/usp_apps_view.dart';
 import 'package:privacy_gui/page/dashboard/views/components/dashboard_header_bar.dart';
 import 'package:privacy_gui/page/dashboard/views/usp_dashboard_view.dart';
 import 'package:privacy_gui/page/dashboard/views/usp_sliver_dashboard_view.dart';
+import 'package:privacy_gui/page/devices/views/components/device_data_used_tiles.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_filter_panel.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_device_list_tile.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
@@ -434,11 +435,19 @@ final kDeviceListPageCase = PageSurfaceCase(
 /// directions here — this view has no loader at all; its degenerate tree is a
 /// centred "device not found" column. [PageSurfaceCase.requires] is what catches
 /// it.
+///
+/// [DeviceDataUsedTiles] (#1927) is required too: the connection card builds
+/// it only for a device with a WANStats counter, so the fixture carries one,
+/// and a fixture that lost it would sweep the card without its longest line.
 final kDeviceDetailPageCase = PageSurfaceCase(
   id: 'device_detail',
   view: () => UspDeviceDetailView(mac: wifiDetailNoReservation.device!.mac),
   overrides: () => deviceDetailOverrides(detail: wifiDetailNoReservation),
-  requires: const [UspSignalStrengthIndicator, DetailSpeedCard],
+  requires: const [
+    UspSignalStrengthIndicator,
+    DetailSpeedCard,
+    DeviceDataUsedTiles,
+  ],
   forbids: const [AppLoader],
 );
 

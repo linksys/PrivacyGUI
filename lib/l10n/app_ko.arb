@@ -60,6 +60,7 @@
   "download": "다운로드",
   "lastDownloadRate": "최근 다운로드 속도",
   "lastUploadRate": "최근 업로드 속도",
+  "sinceRouterLastRestarted": "라우터가 마지막으로 다시 시작된 이후",
   "duid": "DUID",
   "editDhcpReservation": "DHCP 예약 편집",
   "enabled": "활성화됨",

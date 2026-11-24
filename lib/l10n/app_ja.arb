@@ -60,6 +60,7 @@
   "download": "ダウンロード",
   "lastDownloadRate": "直近のダウンロード速度",
   "lastUploadRate": "直近のアップロード速度",
+  "sinceRouterLastRestarted": "ルーターの前回の再起動以降",
   "duid": "DUID",
   "editDhcpReservation": "DHCP 予約を編集",
   "enabled": "有効",

@@ -60,6 +60,7 @@
   "download": "下載",
   "lastDownloadRate": "最近下載速率",
   "lastUploadRate": "最近上傳速率",
+  "sinceRouterLastRestarted": "自路由器上次重新啟動以來",
   "duid": "裝置唯一識別碼（DUID）",
   "editDhcpReservation": "編輯 DHCP 保留",
   "enabled": "已啓用",

@@ -16,6 +16,7 @@ import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
 import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/page/devices/providers/device_detail_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
+import 'package:privacy_gui/page/devices/views/components/device_data_used_tiles.dart';
 import 'package:privacy_gui/page/devices/views/dialogs/device_identity_edit_dialog.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
@@ -273,6 +274,11 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
                     label: loc(context).connectedTo,
                     value: device.parentNodeName!,
                   ),
+                if (device.hasDataUsed)
+                  DeviceDataUsedTiles(
+                    bytesReceived: device.totalBytesReceived,
+                    bytesSent: device.totalBytesSent,
+                  ),
               ],
             ),
           ],
@@ -328,6 +334,17 @@ class _UspDeviceDetailViewState extends ConsumerState<UspDeviceDetailView> {
               icon: Icons.router,
               label: loc(context).connectedTo,
               value: device.parentNodeName!,
+            ),
+          ),
+        ],
+        // One total for the device, over every interface above (#1927).
+        if (device.hasDataUsed) ...[
+          AppGap.sm(),
+          LayoutBlock(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: DeviceDataUsedTiles(
+              bytesReceived: device.totalBytesReceived,
+              bytesSent: device.totalBytesSent,
             ),
           ),
         ],
