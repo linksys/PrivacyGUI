@@ -472,7 +472,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
     final findings = <_SlowDeviceFinding>[];
 
     // 1. Weak signal
-    if (signal != null && signal < -75) {
+    if (signal != null && isWeakClientSignal(signal)) {
       final critical = signal < -82;
       findings.add(_SlowDeviceFinding(
         icon: LinksysIcons.signalWifiOff,
@@ -499,7 +499,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
             'Forget the WiFi network and reconnect — it should join 5 GHz.',
         fix: 'Forget WiFi and reconnect to join the 5 GHz band',
       ));
-    } else if (band.contains('2.4') && (signal == null || signal >= -75)) {
+    } else if (band.contains('2.4') &&
+        (signal == null || !isWeakClientSignal(signal))) {
       findings.add(_SlowDeviceFinding(
         icon: LinksysIcons.wifi,
         color: InstantTestTone.warning.color(context),
@@ -531,7 +532,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
     }
 
     // 4. Low link rate for the band (5 GHz should be 100+, 2.4 GHz should be 30+)
-    if (txRate != null && (signal == null || signal >= -75)) {
+    if (txRate != null && (signal == null || !isWeakClientSignal(signal))) {
       final threshold = band.contains('5') ? 100 : 30;
       if (txRate < threshold) {
         findings.add(_SlowDeviceFinding(

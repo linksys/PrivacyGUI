@@ -2,6 +2,7 @@ import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
 import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
 import 'package:privacy_gui/page/instant_verify/models/wan_ip_comparison.dart';
+import 'package:privacy_gui/page/instant_verify/models/diagnostic_thresholds.dart';
 
 enum VerdictPriority { critical, warning, info, allClear }
 
@@ -481,7 +482,7 @@ class VerdictEngine {
     // ── Check 6: Latency ─────────────────────────────────────────────────
     if (latencyMs != null && wanConnected != false && dnsWorking != false) {
       checksRun++;
-      if (latencyMs > 100) {
+      if (isLatencyHigh(latencyMs)) {
         findings.add(VerdictFinding(
           priority: VerdictPriority.warning,
           helpFlow: 2,
@@ -497,7 +498,7 @@ class VerdictEngine {
     // ── Check 7: Device WiFi quality (signal + data rate combined) ────────
     if (deviceScores.isNotEmpty) {
       checksRun++;
-      // isFlagged already combines: signal < -75 dBm OR tx/rx rate < 10 Mbps
+      // isFlagged already combines: weak signal (<= -75 dBm) OR tx/rx rate < 10 Mbps
       final issueDevices = deviceScores.where((d) => d.isIssue).toList()
         ..sort((a, b) => a.score.compareTo(b.score));
 
@@ -513,12 +514,16 @@ class VerdictEngine {
             : names.join(' and ');
 
         final tooFarCount = issueDevices
-            .where((d) => (d.client.signalDecibels ?? 0) < -75)
+            .where((d) =>
+                d.client.signalDecibels != null &&
+                isWeakClientSignal(d.client.signalDecibels!))
             .length;
+        // Only a reported rate can make a device "slow": an unknown rate is
+        // unknown, not 0 Mbps (linksys/linksys-ai-msdm#746, contract I9).
         final slowRateCount = issueDevices
             .where((d) =>
-                (d.client.txRateMbps ?? 0) < 10 ||
-                (d.client.rxRateMbps ?? 0) < 10)
+                (d.client.txRateMbps != null && d.client.txRateMbps! < 10) ||
+                (d.client.rxRateMbps != null && d.client.rxRateMbps! < 10))
             .length;
 
         String advice;
@@ -662,7 +667,7 @@ class VerdictEngine {
     // entirely — wait for the end sample to avoid false positives.
     if (cpuLoadPct != null || memoryLoadPct != null) {
       checksRun++;
-      final busy = (cpuLoadPct ?? 0) > 80 || (memoryLoadPct ?? 0) > 85;
+      final busy = (cpuLoadPct ?? 0) > 80 || (memoryLoadPct != null && isMemoryHigh(memoryLoadPct));
       checks.add(VerdictCheck(VerdictArea.router, 'Router load', busy ? warning : pass, [
         if (cpuLoadPct != null) 'Processor $cpuLoadPct%',
         if (memoryLoadPct != null) 'Memory $memoryLoadPct%',
@@ -680,7 +685,7 @@ class VerdictEngine {
         actionKey: actionRestartRouter,
       ));
     }
-    if (memoryLoadPct != null && memoryLoadPct > 85) {
+    if (memoryLoadPct != null && isMemoryHigh(memoryLoadPct)) {
       findings.add(VerdictFinding(
         priority: VerdictPriority.warning,
         // Restarting is the fix; no help flow.
@@ -845,9 +850,9 @@ class VerdictEngine {
     if (uptimeSeconds != null) {
       checksRun++;
       final days = uptimeSeconds ~/ 86400;
-      checks.add(VerdictCheck(VerdictArea.router, 'Time since restart', days >= 30 ? notice : pass,
+      checks.add(VerdictCheck(VerdictArea.router, 'Time since restart', uptimeSuggestsRestart(days) ? notice : pass,
           days < 1 ? 'Less than a day' : '$days day${days == 1 ? '' : 's'}'));
-      if (days >= 30) {
+      if (uptimeSuggestsRestart(days)) {
         findings.add(VerdictFinding(
           priority: VerdictPriority.info,
           area: VerdictArea.router,

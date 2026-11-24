@@ -551,6 +551,27 @@ void main() {
           isEmpty);
     });
 
+    // linksys/linksys-ai-msdm#746: a device with no reported rate is not
+    // counted as slow. Two issue devices: one weak-signal with unknown rates,
+    // one strong-signal with a 5 Mbps rate. Counting the unknown rate as 0
+    // made both "slow" and gave the slow-speeds advice.
+    test('unknown data rate is not counted as slow', () {
+      final unknownRate = DeviceScore.compute(
+          _client(mac: 'AA:BB:CC:DD:EE:01', hostname: 'Tablet', signal: -80));
+      final slow = DeviceScore.compute(_client(
+          mac: 'AA:BB:CC:DD:EE:02',
+          hostname: 'Laptop',
+          signal: -60,
+          txRate: 5,
+          rxRate: 5));
+      expect(unknownRate.isIssue, isTrue);
+      expect(slow.isIssue, isTrue);
+      final v = _compute(deviceScores: [unknownRate, slow]);
+      final finding =
+          v.findings.firstWhere((f) => f.headline.contains('weak WiFi'));
+      expect(finding.explanation, isNot(contains('very slow WiFi speeds')));
+    });
+
     test('empty deviceScores → skipped', () {
       final v = _compute(deviceScores: []);
       expect(
@@ -728,13 +749,20 @@ void main() {
   // ── Check 11: Long uptime ────────────────────────────────────────────────
 
   group('VerdictEngine — Check 11: Long uptime', () {
-    test('30+ days → info with restart action', () {
-      final v = _compute(uptimeSeconds: 30 * 86400); // 30 days
+    // Shared table router.uptime.restart_hint: hint only after MORE than 30
+    // days (> 30, decided on linksys-ai-msdm#622), as the engine does.
+    test('31 days → info with restart action', () {
+      final v = _compute(uptimeSeconds: 31 * 86400);
       final finding = v.findings
           .firstWhere((f) => f.headline.contains('running'));
       expect(finding.priority, VerdictPriority.info);
-      expect(finding.headline, contains('30 days'));
+      expect(finding.headline, contains('31 days'));
       expect(finding.actionKey, VerdictEngine.actionRestartRouter);
+    });
+
+    test('exactly 30 days → no finding (boundary)', () {
+      final v = _compute(uptimeSeconds: 30 * 86400);
+      expect(v.findings.where((f) => f.headline.contains('running')), isEmpty);
     });
 
     test('90 days → shows correct count', () {

@@ -1,0 +1,9 @@
+{
+  "canonical": {
+    "repo": "linksys/linksys-ai-msdm",
+    "ref": "13c67d169f15867f52e03e63dfd7caaef82dbede",
+    "path": "docs/contracts/thresholds.v0.json"
+  },
+  "sha256": "dce136156acdf5098c33b4f0be097af0edac09ac6f7e3d07d835bb1f60b4082c",
+  "note": "Pinned copy of the shared threshold table (canonical home: ai-msdm, decided on linksys/linksys-ai-msdm#745). Re-vendor with tools/instant_test/check_thresholds_sync.sh --update; never edit thresholds.v0.json by hand."
+}

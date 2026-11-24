@@ -16,6 +16,7 @@ import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/label/status_label.dart';
+import 'package:privacy_gui/page/instant_verify/models/diagnostic_thresholds.dart';
 
 /// PRD v0.7 Tab 1: My Devices
 ///
@@ -112,11 +113,11 @@ _SignalBadge _badgeFor(DiagnosticClient client) {
   final signal = client.signalDecibels;
   final rate = client.txRateMbps;
 
-  // Poor: signal < -75 dBm OR data rate < 10 Mbps
-  if (signal != null && signal < -75) return _SignalBadge.poor;
+  // Poor: weak signal (<= -75 dBm) OR data rate < 10 Mbps
+  if (signal != null && isWeakClientSignal(signal)) return _SignalBadge.poor;
   if (rate != null && rate < 10) return _SignalBadge.poor;
 
-  // Weak: signal -70 to -75 dBm OR data rate 10-30 Mbps
+  // Weak: signal above -75 up to -70 dBm OR data rate 10-30 Mbps
   if (signal != null && signal <= -70) return _SignalBadge.weak;
   if (rate != null && rate < 30) return _SignalBadge.weak;
 

@@ -457,11 +457,24 @@ void main() {
       expect(find.text('Weak'), findsOneWidget);
     });
 
-    testWidgets('signal -75 dBm = Weak (not Poor)', (tester) async {
+    // Shared table wifi.client_signal.weak: -75 dBm is weak (<= -75, decided
+    // on linksys-ai-msdm#622), so it gets the Poor badge.
+    testWidgets('signal -75 dBm = Poor (boundary)', (tester) async {
       final state = InstantVerifyPivotState(
         phase: PivotLoadPhase.complete,
         browserTestStep: 'complete',
         clients: [_client(mac: '00:00:00:00:00:01', hostname: 'Test', signal: -75, txRate: 50)],
+      );
+      await tester.pumpWidget(_buildTab(state));
+      await tester.pumpAndSettle();
+      expect(find.text('Poor'), findsOneWidget);
+    });
+
+    testWidgets('signal -74 dBm = Weak (not Poor)', (tester) async {
+      final state = InstantVerifyPivotState(
+        phase: PivotLoadPhase.complete,
+        browserTestStep: 'complete',
+        clients: [_client(mac: '00:00:00:00:00:01', hostname: 'Test', signal: -74, txRate: 50)],
       );
       await tester.pumpWidget(_buildTab(state));
       await tester.pumpAndSettle();

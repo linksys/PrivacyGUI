@@ -19,6 +19,7 @@ import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
 import 'package:privacy_gui/page/instant_verify/models/verdict.dart';
 import 'package:privacy_gui/page/instant_verify/services/wan_ip_history.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
+import 'package:privacy_gui/page/instant_verify/models/diagnostic_thresholds.dart';
 
 final instantVerifyPivotProvider =
     NotifierProvider<InstantVerifyPivotNotifier, InstantVerifyPivotState>(
@@ -649,7 +650,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       hasZombieMeshNode = s.meshNodes.any((n) =>
           !n.isController &&
           n.backhaulRssi != null &&
-          n.backhaulRssi! > -70 && // RSSI looks fine
+          !isWeakBackhaulSignal(n.backhaulRssi!) && // RSSI looks fine
           n.backhaulSpeedMbps != null &&
           n.backhaulSpeedMbps! < 80); // but throughput is degraded
     }
