@@ -1,10 +1,9 @@
 {
   "schema_version": 1,
-  "minimum_decisions": 40,
+  "minimum_decisions": 28,
   "required_dart_classes": [
     "UspClient",
-    "UspClientBuilder",
-    "UspWsClient"
+    "UspClientBuilder"
   ],
   "required_dart_globals": [
     "__uspClientReady"
@@ -21,9 +20,6 @@
     "UspClientBuilder": {
       "Symbol.dispose": "Generated JavaScript lifecycle alias; the built client owns the active lifecycle.",
       "free": "The short-lived builder is not retained by the Dart wrapper."
-    },
-    "UspWsClient": {
-      "Symbol.dispose": "Generated JavaScript lifecycle alias; Dart calls free() explicitly."
     }
   },
   "local_js_globals": {
@@ -31,14 +27,6 @@
       "kind": "getter",
       "defined_in": "web/usp_init.js",
       "reason": "PrivacyGUI awaits the Promise installed by its non-module Wasm bootstrap."
-    },
-    "sendWebSocketConnectNative": {
-      "defined_in": "web/usp_init.js",
-      "reason": "PrivacyGUI shim copies Wasm bytes before the mandatory first WebSocket frame."
-    },
-    "sendOperateRecordNative": {
-      "defined_in": "web/usp_init.js",
-      "reason": "PrivacyGUI shim copies Wasm bytes before sending firmware Operate records."
     }
   }
 }

@@ -13,10 +13,10 @@
 
 ---
 
-## Layer Quick Reference (main line: USP read/write = HTTP POST, not WebSocket)
+## Layer Quick Reference (main line: USP read/write = HTTP POST)
 
-**Set the full picture straight first**: at the bottom this project talks to the router over only **HTTP / SSE / WebSocket** transports (SSE is essentially a long-lived HTTP connection; Bluetooth is listed in `pubspec.yaml` but is not actually used in `lib/`).
-But for the topic "how a USP request goes out, and how errors come back", there is **only one main line, plus two side branches** — they are not equal "pick one of three" options; they are different dimensions:
+**Set the full picture straight first**: at the bottom this project talks to the router over only **HTTP / SSE** transports (SSE is essentially a long-lived HTTP connection; Bluetooth is listed in `pubspec.yaml` but is not actually used in `lib/`).
+But for the topic "how a USP request goes out, and how errors come back", there is **only one main line, plus one side branch** — they are not equal "pick one of three" options; they are different dimensions:
 
 **Main line (request / response) — almost all of §1–§3 talks about this one:**
 Every feature's get/set/add/delete/operate goes through `UspClient`(WASM) → HTTP POST `/api/v1/usp`.
@@ -40,10 +40,9 @@ Every feature's get/set/add/delete/operate goes through `UspClient`(WASM) → HT
 `UspBridgeClient.notifications()` reads `/api/v1/notifications` with Fetch + ReadableStream, **pure Dart, does not go through WASM**.
 It is not "another path for sending a request" but another interaction mode (server→frontend). It is a different story from "error mapping"; just be aware it exists.
 
-**Side branch 2 — WebSocket (special case, separate class)**: used **only** for firmware upload,
-`UspWsClientWrapper` connects to `wss://.../usp-ws` (the WASM holds the socket); across the whole codebase only `firmware_ws_upload_strategy.dart` uses it, and it has its own exception handling. The rest of this doc does not touch it.
+There used to be a second side branch, a WebSocket push for firmware upload (`UspWsClientWrapper` to `wss://.../usp-ws`). #1874 removed it with the router's endpoint, so firmware upload is an ordinary Operate on the main line.
 
-> In one sentence: **just follow the main line**; SSE is "receive push", WebSocket is "transfer firmware", neither is on the error-mapping topic of §1–§3.
+> In one sentence: **just follow the main line**; SSE is "receive push", and it is not on the error-mapping topic of §1–§3.
 
 ---
 
@@ -191,7 +190,7 @@ The Dart-side `parseUspError` (`usp_error.dart`) relies on this fixed structure 
 - `_faultCode = \(code:\s*(\d+)\)` grabs the fault code from the end of detail
 - `_httpStatus = HTTP error: HTTP (\d+)` grabs the HTTP status code
 
-⚠ Exception: a few strings that don't match `"{X} failed:"` (e.g. WS's `"UspWsClient is closed"`, SSE's `StateError`) can't be parsed → `parseUspError` returns null → mapped to `UnexpectedError`.
+⚠ Exception: a few strings that don't match `"{X} failed:"` (e.g. SSE's `StateError`) can't be parsed → `parseUspError` returns null → mapped to `UnexpectedError`.
 
 ### 2.1.1 Thrown-string prefixes
 
@@ -209,10 +208,7 @@ Dart error mapping **only needs to handle these 7** (main line, the everyday USP
 | unsubscribe | `"Unsubscribe failed: "` |
 | listSubscriptions | `"List subscriptions failed: "` |
 
-**There are 7 more WebSocket strings that can be ignored** (`"encode Msg failed: "`, `"wrap Record failed: "`, `"unwrap Record failed: "`, `"decode Msg failed: "`, `"encode Operate failed: "`, `"build WSConnect failed: "`, `"UspWsClient is closed"`). Reasons:
-- They belong to **side branch 2 (WebSocket firmware upload)**, not on the everyday GET/SET/notification path.
-- The whole section is wrapped by `#[cfg(feature = "websocket")]` (the `ws_binding` module in `wasm/mod.rs`), and `Cargo.toml`'s `default = ["native"]` **does not include the websocket feature** — unless build explicitly passes `--features websocket`, these 7 functions along with their error strings **are not compiled into the WASM binary at all**.
-- Conclusion: `mapUspErrorToServiceError` does not need to handle them.
+**There are 7 more WebSocket strings that can be ignored** (`"encode Msg failed: "`, `"wrap Record failed: "`, `"unwrap Record failed: "`, `"decode Msg failed: "`, `"encode Operate failed: "`, `"build WSConnect failed: "`, `"UspWsClient is closed"`). They come from the `ws_binding` module in `wasm/mod.rs`, behind `#[cfg(feature = "websocket")]`. The vendored package was built with that feature (`web/usp-artifacts.json`), but since #1874 nothing in the app calls those functions, so `mapUspErrorToServiceError` does not need to handle them.
 
 ### 2.2 category (5 kinds) + nested sub-strings (error.rs; this is the string that follows the prefix, and also appears inside the 9999 errorMessage)
 
@@ -294,7 +290,7 @@ Behavioral characteristics and limitations:
    - These two types store `List<UspErrorDetail> failures` (full path+code+message), so fault codes are not lost; helpers like `UspErrorDetail`'s `isObjectNotFound`/`isInvalidParameterValue` are available.
    - Path 2 only produces the two **container types** `UspPartial/CompleteFailureError`; unlike path 1, it does not subdivide into `ResourceNotFoundError`/`InvalidInputError` by code. This is **by design** — a batch may have multiple entries each with a different code, which cannot be stuffed into a single semantic type. Semanticization happens in the **View**: iterate over `failures`, judge the code with a helper per entry to decide what to display (for how, see [implementation guide](error-handling-implementation-guide.md) §4.2).
 2. **9999 has no dedicated mapping**: it is the most common client-side code, but the mapping only looks at the category string inside message, not at code 9999 itself (it currently works fine, because the string is sufficient).
-3. **WS / SSE `StateError`** (e.g. `'WebSocket connection timeout'`) does not match the `"{Op} failed:"` format, so by the time it reaches `mapUspErrorToServiceError` it just becomes a generic `UnexpectedError`.
+3. **SSE `StateError`** does not match the `"{Op} failed:"` format, so by the time it reaches `mapUspErrorToServiceError` it just becomes a generic `UnexpectedError`.
 4. **The string contract is fragile** (the "Error Contract" self-comment table at the top of `usp_error.dart`): the transport/auth/protocol mappings rely on substring/regex against Rust strings; **the moment the Rust-side string changes, it silently fails**. §2.1/§2.2 are the complete client-side output contract of the current Rust, and can be turned into a contract test to pin it down (note: the passed-through 7xxx/9xxx are not in this contract; they are decided by firmware).
 
 ### 2.5 Fixed (#1212): a GET-failure 9999 was disguised as 9998
