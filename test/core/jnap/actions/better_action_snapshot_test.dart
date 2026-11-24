@@ -14,12 +14,11 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 
-import '../../../../test_scripts/better_action_snapshot.dart';
+import 'better_action_resolution.dart';
 
 void main() {
-  final snapshot = jsonDecode(
-          File('test/test_data/better_action_snapshot.json').readAsStringSync())
-      as Map<String, dynamic>;
+  final snapshot =
+      jsonDecode(File(snapshotPath).readAsStringSync()) as Map<String, dynamic>;
   final inputs = (snapshot['inputs'] as Map<String, dynamic>)
       .map((name, services) => MapEntry(name, List<String>.from(services)));
   final results = snapshot['results'] as Map<String, dynamic>;
@@ -33,17 +32,16 @@ void main() {
   test('the snapshot names every action and gives every service an input', () {
     expect(seed.keys.toSet(), JNAPAction.values.map((a) => a.name).toSet(),
         reason: 'an action was added or removed: regenerate the snapshot');
-    final services = JNAPService.values.map((s) => s.value);
     expect(
-      services.where((service) => !inputs.containsKey(onlyInput(service))),
+      appServices.where((service) => !inputs.containsKey(onlyInput(service))),
       isEmpty,
       reason: 'a service was added: regenerate the snapshot',
     );
   });
 
   for (final name in inputs.keys) {
-    test('each action resolves as recorded, for "$name"', () {
-      final actual = resolveActions(inputs[name]!);
+    test('each action resolves as recorded, for "$name"', () async {
+      final actual = await resolveActions(inputs[name]!);
       final expected = expectedFor(name);
       final changed = [
         for (final action in expected.keys)
