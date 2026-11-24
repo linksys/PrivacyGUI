@@ -212,6 +212,18 @@ void main() {
     expect(undefined, isEmpty);
   });
 
+  test('every action has a URL at the pin', () {
+    // A router at the pin reports every service, so no action is left
+    // without one.
+    expect(
+      [
+        for (final action in JNAPAction.values)
+          if (atPin[action.name] == null) action.name,
+      ],
+      isEmpty,
+    );
+  });
+
   test('what the app sends at the pin, the pin defines', () {
     final undefined = [
       for (final action in JNAPAction.values)
@@ -305,6 +317,7 @@ void main() {
           in _definedOnlyAfterBaseline.entries)
         if (!undefinedAtBaseline(action) ||
             spec.baselineServices.contains(service) ||
+            atPin[action.name] == null ||
             !spec.defines(service, atPin[action.name]!))
           '_definedOnlyAfterBaseline: ${action.name}',
       for (final action in _notInSpec.keys)
