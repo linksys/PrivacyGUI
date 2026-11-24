@@ -75,6 +75,7 @@ class ConnectedDevice {
   final String? linksysUserDeviceName;
   final String? linksysUserDeviceLocation;
   final String? linksysUserDeviceType;
+  final bool? linksysIsMeshNode;
   final List<ConnectedDeviceIpv4> ipv4Addresses;
   final List<ConnectedDeviceIpv6> ipv6Addresses;
 
@@ -110,6 +111,7 @@ class ConnectedDevice {
     this.linksysUserDeviceName,
     this.linksysUserDeviceLocation,
     this.linksysUserDeviceType,
+    this.linksysIsMeshNode,
     required this.ipv4Addresses,
     required this.ipv6Addresses,
   });
@@ -148,6 +150,7 @@ class ConnectedDevice {
         'linksysUserDeviceName: $linksysUserDeviceName, '
         'linksysUserDeviceLocation: $linksysUserDeviceLocation, '
         'linksysUserDeviceType: $linksysUserDeviceType, '
+        'linksysIsMeshNode: $linksysIsMeshNode, '
         'ipv4Addresses: $ipv4Addresses, '
         'ipv6Addresses: $ipv6Addresses'
         ')';
@@ -209,6 +212,7 @@ class ConnectedDevices {
     'Device.Hosts.Host.*.X_LINKSYS_UserDeviceName',
     'Device.Hosts.Host.*.X_LINKSYS_UserDeviceLocation',
     'Device.Hosts.Host.*.X_LINKSYS_UserDeviceType',
+    'Device.Hosts.Host.*.X_LINKSYS_IsMeshNode',
     'Device.Hosts.Host.*.IPv4Address.*.IPAddress',
     'Device.Hosts.Host.*.IPv6Address.*.IPAddress',
   ];
@@ -395,6 +399,11 @@ class ConnectedDevices {
             response.containsKey('${p}X_LINKSYS_UserDeviceType')
                 ? response['${p}X_LINKSYS_UserDeviceType'] as String
                 : null,
+        linksysIsMeshNode: response.containsKey('${p}X_LINKSYS_IsMeshNode')
+            ? (response['${p}X_LINKSYS_IsMeshNode'] == true ||
+                response['${p}X_LINKSYS_IsMeshNode'] == 'true' ||
+                response['${p}X_LINKSYS_IsMeshNode'] == '1')
+            : null,
         ipv4Addresses: ipv4Addresses,
         ipv6Addresses: ipv6Addresses,
       ));
