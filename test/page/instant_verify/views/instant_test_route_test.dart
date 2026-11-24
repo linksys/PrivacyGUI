@@ -83,6 +83,16 @@ void main() {
     expect(find.text('Menu page'), findsOneWidget);
   });
 
+  // Instant Test ships as a beta (linksys/linksys-ai-msdm#747): the home page
+  // and the pages a flow opens carry the Beta mark next to their title.
+  testWidgets('Instant-Test home and its flow pages are marked Beta',
+      (tester) async {
+    await open(tester);
+    expect(find.text('Beta'), findsOneWidget);
+    await tapText(tester, "Internet isn't working");
+    expect(find.text('Beta'), findsWidgets);
+  });
+
   testWidgets('a flow is its own page with its own title and back',
       (tester) async {
     final router = await open(tester);

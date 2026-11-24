@@ -136,6 +136,7 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
     // light guide and support in the footer.
     return StyledAppPageView(
       title: loc(context).instantTest,
+      markLabel: 'Beta',
       scrollable: true,
       // The local preview opens here with nothing underneath.
       backState: Navigator.of(context).canPop()
