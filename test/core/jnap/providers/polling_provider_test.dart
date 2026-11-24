@@ -1697,4 +1697,42 @@ void main() {
       });
     });
   });
+
+  group("following the router's services", () {
+    // #1923 P2: each poll's GetDeviceInfo keeps the action table, and the
+    // gates that read the same services, on what the router reports now, as
+    // after a firmware update that adds a service.
+    const core = 'http://linksys.com/jnap/core/Core';
+    const wirelessAP5 = 'http://linksys.com/jnap/wirelessap/WirelessAP5';
+
+    Future<JNAPTransactionSuccessWrap> reporting(List<String> services) async =>
+        JNAPTransactionSuccessWrap(
+          result: 'OK',
+          data: transactions.last.commands
+              .map((command) => MapEntry(
+                  command.key,
+                  JNAPSuccess(
+                      result: 'OK',
+                      output: command.key == JNAPAction.getDeviceInfo
+                          ? {'services': services}
+                          : const {})))
+              .toList(),
+        );
+
+    testWidgets('a poll that reports new services rebuilds the action table',
+        (tester) async {
+      buildBetterActions(const [core]);
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) => reporting(const [core, wirelessAP5]));
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+
+      expect(routerServices, {core, wirelessAP5});
+      expect(JNAPAction.clientDeauth.actionValue,
+          'http://linksys.com/jnap/wirelessap/ClientDeauth');
+
+      await stopAndSettle(tester);
+    });
+  });
 }

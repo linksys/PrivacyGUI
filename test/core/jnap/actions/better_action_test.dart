@@ -38,6 +38,45 @@ void main() {
     expect(unknown, seed);
   });
 
+  group('refreshBetterActions', () {
+    const core = 'http://linksys.com/jnap/core/Core';
+    const wirelessAP5 = 'http://linksys.com/jnap/wirelessap/WirelessAP5';
+
+    String? clientDeauth() {
+      try {
+        return JNAPAction.clientDeauth.actionValue;
+      } on TypeError {
+        return null;
+      }
+    }
+
+    tearDown(initBetterActions);
+
+    test('follows a router whose services changed, as after a firmware update',
+        () {
+      buildBetterActions(const [core]);
+      expect(clientDeauth(), isNull);
+
+      refreshBetterActions(const [core, wirelessAP5]);
+      expect(clientDeauth(), 'http://linksys.com/jnap/wirelessap/ClientDeauth');
+      expect(routerServices, {core, wirelessAP5});
+
+      refreshBetterActions(const [core]);
+      expect(clientDeauth(), isNull);
+      expect(routerServices, {core});
+    });
+
+    test('leaves the table alone while the services stay the same', () {
+      buildBetterActions(const [core, wirelessAP5]);
+      final before = routerServices;
+
+      refreshBetterActions(const [wirelessAP5, core]);
+
+      expect(identical(routerServices, before), isTrue,
+          reason: 'the same services in another order are no change');
+    });
+  });
+
   // buildBetterActions applies a router's services in JNAPService order, so
   // that a newer version's URL wins. That holds while each family is declared
   // from its lowest version up, and while no action takes a URL from two

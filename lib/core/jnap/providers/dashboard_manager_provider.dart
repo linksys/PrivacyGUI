@@ -170,6 +170,9 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     }
     benchMark.end();
     // state = state.copyWith(deviceInfo: nodeDeviceInfo);
+    // Build the action table for this router here, not in each caller
+    // (#1923). The gates read the same services.
+    buildBetterActions(nodeDeviceInfo.services);
     return nodeDeviceInfo;
   }
 

@@ -394,6 +394,16 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
             logger.e('Failed to update Fernet key: $e');
           }
 
+          // Follow a router whose services changed since the action table was
+          // built, as after a firmware update. The gates read the same
+          // services, so they follow too (#1923).
+          final deviceInfo = result.data[JNAPAction.getDeviceInfo];
+          final services =
+              deviceInfo is JNAPSuccess ? deviceInfo.output['services'] : null;
+          if (services is List) {
+            refreshBetterActions(services.whereType<String>().toList());
+          }
+
           await _additionalPolling();
           return result.copyWith(isReady: true);
         },
