@@ -1,11 +1,11 @@
 function buildWebApp() {
   echo "start building web app #${buildNumber}-${force}-${cloud}"
   echo "base href is ${href}"
-  echo "source revision is ${SOURCE_REVISION}, remote assistance is ${ENABLE_REMOTE_ASSISTANCE}, remote read-only is ${REMOTE_READ_ONLY}, router AI is ${ENABLE_ROUTER_AI}"
+  echo "source revision is ${SOURCE_REVISION}, remote assistance is ${ENABLE_REMOTE_ASSISTANCE}, remote read-only is ${REMOTE_READ_ONLY}, router AI is ${ENABLE_ROUTER_AI}, instant test is ${ENABLE_INSTANT_TEST}"
 
   # The qa and non-qa branches this replaces were byte-identical, which is how
   # both of the flags below came to be appended twice.
-  flutter build web --target=lib/main.dart --base-href="/${href}" --build-number="${buildNumber}" --dart-define=force="${force}" --dart-define=cloud_env="${cloud}" --dart-define=enable_env_picker="${picker}" --dart-define=ca="${ca}" $enableHTMLRenderer --dart-define=year="${YEAR}" --dart-define=source_revision="${SOURCE_REVISION}" --dart-define=enable_remote_assistance="${ENABLE_REMOTE_ASSISTANCE}" --dart-define=remote_read_only="${REMOTE_READ_ONLY}" --dart-define=enable_router_ai="${ENABLE_ROUTER_AI}"
+  flutter build web --target=lib/main.dart --base-href="/${href}" --build-number="${buildNumber}" --dart-define=force="${force}" --dart-define=cloud_env="${cloud}" --dart-define=enable_env_picker="${picker}" --dart-define=ca="${ca}" $enableHTMLRenderer --dart-define=year="${YEAR}" --dart-define=source_revision="${SOURCE_REVISION}" --dart-define=enable_remote_assistance="${ENABLE_REMOTE_ASSISTANCE}" --dart-define=remote_read_only="${REMOTE_READ_ONLY}" --dart-define=enable_router_ai="${ENABLE_ROUTER_AI}" --dart-define=enable_instant_test="${ENABLE_INSTANT_TEST}"
   # rm -rf ./build/web/canvasKit
 }
 
@@ -51,6 +51,15 @@ fi
 ENABLE_ROUTER_AI="${ENABLE_ROUTER_AI:-false}"
 if [ "$ENABLE_ROUTER_AI" != "true" ] && [ "$ENABLE_ROUTER_AI" != "false" ]; then
     echo "ENABLE_ROUTER_AI must be exactly 'true' or 'false', got '${ENABLE_ROUTER_AI}'" >&2
+    exit 1
+fi
+
+# Instant Test entry points (menu card, dashboard card, route tree). Off unless
+# an Instant AI lane asks for it; same contract as above. The mock-data
+# preview has its own define and is never set here.
+ENABLE_INSTANT_TEST="${ENABLE_INSTANT_TEST:-false}"
+if [ "$ENABLE_INSTANT_TEST" != "true" ] && [ "$ENABLE_INSTANT_TEST" != "false" ]; then
+    echo "ENABLE_INSTANT_TEST must be exactly 'true' or 'false', got '${ENABLE_INSTANT_TEST}'" >&2
     exit 1
 fi
 

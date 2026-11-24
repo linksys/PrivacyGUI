@@ -20,7 +20,7 @@ GoRouter instantTestRouter({String initialLocation = instantTestHome}) =>
           builder: (context, state) =>
               const Scaffold(body: Center(child: Text('Menu page'))),
           routes: [
-            menus.firstWhere((route) => route.name == RouteNamed.menuInstantTest),
+            instantTestRoute,
           ],
         ),
       ],

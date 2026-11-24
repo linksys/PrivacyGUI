@@ -97,6 +97,23 @@ class BuildConfig {
   static const bool enableRouterAi =
       bool.fromEnvironment('enable_router_ai', defaultValue: false);
 
+  // Gates every Instant Test entry point: the menuInstantTest route tree, its
+  // Menu card and its dashboard card. Off by default, so a production build
+  // shows none of it. Instant AI lanes (CF test images) set it together with
+  // enable_router_ai so both ship in one UI_VER
+  // (linksys/linksys-ai-msdm#699). Kept `const` so dart2js drops the guarded
+  // entry points from a default build.
+  static const bool enableInstantTest =
+      bool.fromEnvironment('enable_instant_test', defaultValue: false);
+
+  // Registers the Instant Test mock-data preview (/instant-prototype), which
+  // skips the login redirect. Only tools/instant_test sets it. It is separate
+  // from `force`: force=local is the router-hosted mode every firmware GUI
+  // uses, so gating the preview on force alone would ship a no-login route.
+  static const bool enableInstantTestPrototype = bool.fromEnvironment(
+      'enable_instant_test_prototype',
+      defaultValue: false);
+
   @pragma('vm:entry-point')
   static load() async {
     logger.d('load build configuration');

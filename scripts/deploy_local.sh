@@ -14,6 +14,7 @@ cd "$(dirname "$0")/.."
 echo "▶ Building Flutter web (force=local)..."
 ~/.pub-cache/bin/fvm flutter build web \
   --dart-define=force=local \
+  --dart-define=enable_instant_test=true \
   --no-tree-shake-icons
 
 echo "▶ Deploying to router at 192.168.1.1..."

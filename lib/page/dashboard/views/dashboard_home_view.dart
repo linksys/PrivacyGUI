@@ -19,6 +19,7 @@ import 'package:privacy_gui/page/dashboard/views/components/port_and_speed.dart'
 import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
 import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
 import 'package:privacy_gui/page/vpn/views/vpn_status_tile.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_test_card.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:go_router/go_router.dart';
@@ -78,9 +79,11 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           children: [
             const DashboardHomeTitle(),
             const AppGap.large1(),
-            InstantTestCard(
-                onTap: () => context.pushNamed(RouteNamed.menuInstantTest)),
-            const AppGap.medium(),
+            if (BuildConfig.enableInstantTest) ...[
+              InstantTestCard(
+                  onTap: () => context.pushNamed(RouteNamed.menuInstantTest)),
+              const AppGap.medium(),
+            ],
             !hasLanPort
                 ? _desktopNoLanPortsLayout()
                 : horizontalLayout
@@ -220,9 +223,11 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       children: [
         DashboardHomeTitle(),
         AppGap.large1(),
-        InstantTestCard(
-            onTap: () => context.pushNamed(RouteNamed.menuInstantTest)),
-        AppGap.medium(),
+        if (BuildConfig.enableInstantTest) ...[
+          InstantTestCard(
+              onTap: () => context.pushNamed(RouteNamed.menuInstantTest)),
+          AppGap.medium(),
+        ],
         InternetConnectionWidget(),
         AppGap.medium(),
         DashboardHomePortAndSpeed(),

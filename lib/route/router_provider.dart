@@ -77,6 +77,7 @@ part 'route_advanced_settings.dart';
 part 'route_pnp.dart';
 part 'route_add_nodes.dart';
 part 'route_menu.dart';
+
 // init path enum
 enum LocalWhereToGo {
   pnp,
@@ -122,10 +123,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       pnpRoute,
       pnpTroubleshootingRoute,
       addNodesRoute,
-      // Local test builds only: Instant-Test preview on mock data, used by
-      // tools/instant_test. Customer builds do not register it.
-      if (BuildConfig.forceCommandType == ForceCommand.local)
-        instantPrototypeRoute(),
+      // Instant-Test preview on mock data, used by tools/instant_test only.
+      // Needs its own define: force=local alone is every firmware GUI.
+      if (BuildConfig.enableInstantTestPrototype) instantPrototypeRoute(),
     ],
     redirect: (context, state) {
       if (!ref.read(accessPolicyProvider).canWrite) {
@@ -151,7 +151,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         return router._redirectLogic(state);
       } else if (state.matchedLocation.startsWith(RoutePath.pnp)) {
         return router._goPnpPath(state);
-      } else if (BuildConfig.forceCommandType == ForceCommand.local &&
+      } else if (BuildConfig.enableInstantTestPrototype &&
           state.matchedLocation.startsWith(RoutePath.instantPrototype)) {
         // Local test builds only: the Instant-Test preview runs on mock data
         // and makes no router calls, so it needs no login.

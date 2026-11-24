@@ -10,5 +10,6 @@ FLUTTER_BIN="${FLUTTER_BIN:-flutter}"
 if [[ "${1:-}" == "--build" ]]; then
   "$FLUTTER_BIN" build web --no-pub --target=lib/main.dart --base-href=/ \
     --dart-define=force=local --dart-define=enable_env_picker=false \
+    --dart-define=enable_instant_test=true --dart-define=enable_instant_test_prototype=true \
     --dart-define=cloud_env=prod --no-tree-shake-icons --output=build/instant_test
 fi

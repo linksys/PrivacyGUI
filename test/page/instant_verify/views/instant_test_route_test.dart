@@ -36,8 +36,7 @@ void main() {
                             context.pushNamed(RouteNamed.menuInstantTest),
                         child: const Text('Menu page'))),
                 routes: [
-                  menus.firstWhere(
-                      (route) => route.name == RouteNamed.menuInstantTest),
+                  instantTestRoute,
                 ],
               ),
             ],
@@ -53,7 +52,8 @@ void main() {
     final router = buildRouter();
     addTearDown(router.dispose);
     await tester.pumpWidget(testableRouter(router: router, overrides: [
-      instantVerifyPivotProvider.overrideWith(MockInstantVerifyPivotNotifier.new),
+      instantVerifyPivotProvider
+          .overrideWith(MockInstantVerifyPivotNotifier.new),
       browserDiagnosticServiceProvider
           .overrideWithValue(MockBrowserDiagnosticService()),
     ]));
