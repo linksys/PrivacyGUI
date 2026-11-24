@@ -1,0 +1,107 @@
+# Per-PR mockable integration flows (tier: mock).
+# Classification and rationale: integration_test/FLOW-TIERS.md
+# Mock JNAP layer flag confirmed in review round 1: the app reads the 'force'
+#   dart-define (lib/constants/build_config.dart), same as integration_web.sh.
+name: Integration (mock tier, per-PR)
+
+on:
+  pull_request:
+    branches: [main, 'dev-1.*']   # integration_test/ exists on the 1.x line only
+    paths:
+      - 'lib/**'
+      - 'integration_test/**'
+      - 'pubspec.yaml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-mock-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mock-flows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        # 13 mockable flows per integration_test/FLOW-TIERS.md
+        flow:
+          - administration_test
+          - advanced_routing_test
+          - apps_and_gaming_test
+          - dashboard_home_test
+          - dhcp_reservations_test
+          - dmz_test
+          - firewall_test
+          - instant_admin_test
+          - instant_privacy_test
+          - instant_safety_test
+          - local_network_settings_test
+          - menu_test
+          - recovery_and_login_test
+      max-parallel: 4
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Setup SSH for Private Deps
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.UI_KIT_DEPLOY_KEY }}
+
+      - name: Configure Git SSH
+        run: git config --global url."git@github.com:".insteadOf "https://github.com/"
+
+      # env.template is not tracked in git; fall back to an empty .env (review W-1).
+      - name: Setup Environment
+        run: |
+          mkdir -p assets/agents
+          if [ -f assets/agents/env.template ]; then
+            cp assets/agents/env.template assets/agents/.env
+          else
+            touch assets/agents/.env
+          fi
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Setup Chrome + chromedriver
+        uses: browser-actions/setup-chrome@v1
+        with:
+          install-chromedriver: true
+
+      - name: Start chromedriver
+        run: |
+          chromedriver --port=4444 &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:4444/status > /dev/null && break
+            sleep 1
+          done
+
+      # NOTE: this bypasses integration_web.sh, so test_meta setUp/tearDown hooks do
+      # NOT run. Mock-tier flows must be self-contained (see FLOW-TIERS.md caveat).
+      - name: Run ${{ matrix.flow }} (mocked JNAP)
+        run: |
+          flutter drive \
+            --driver=test_driver/integration_test.dart \
+            --target=integration_test/${{ matrix.flow }}.dart \
+            --dart-define=force=local \
+            -d web-server --headless \
+            --browser-name=chrome --driver-port=4444
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mock-flow-failure-${{ matrix.flow }}
+          path: |
+            build/integration_test/
+          retention-days: 7
