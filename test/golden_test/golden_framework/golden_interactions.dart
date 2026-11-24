@@ -107,6 +107,18 @@ Future<void> typeInto(
   await tester.pump();
 }
 
+/// Takes the focus off the field being typed into, so a form that validates on
+/// focus-loss shows the last field's error too.
+///
+/// [typeInto] only validates the field *before* the one it types into; without
+/// this the last field of a validation case keeps its focus and never shows an
+/// error. Unfocusing is used rather than tapping somewhere, because every
+/// target that is safe to tap carries localized text.
+Future<void> blurFocus(WidgetTester tester) async {
+  FocusManager.instance.primaryFocus?.unfocus();
+  await tester.pump();
+}
+
 /// Runs [steps] with a semantics tree, which the runner does not build, so the
 /// fields can be found by identifier. The handle is released before the case
 /// ends, as `flutter_test` requires.
