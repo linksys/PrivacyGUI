@@ -19,6 +19,7 @@ import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_setting_steps_provider.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_wifi_draft_provider.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 
 /// PnP state machine notifier.
 ///
@@ -409,7 +410,17 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   /// The completion screen's credentials are built here, from the write, and
   /// carried by Your Network to the firmware stage: after a flash there may be
   /// no session left to build them from (REQ-B4).
+  ///
+  /// The app-wide Wi-Fi cache is dropped here too. Wi-Fi Settings and the
+  /// dashboard's Wi-Fi cards read the router's Wi-Fi from [wifiDataProvider],
+  /// and nothing pushes an SSID change to it — no subscription covers
+  /// `Device.WiFi.SSID.` — so after a rename it kept the old name until a
+  /// reload (#1910 retest, #1511 handover note). Here rather than right after
+  /// the SET: this point is reached only once the write has landed and the
+  /// router answers, and a read taken while the radios restart is not to be
+  /// trusted (#1499). Wi-Fi Settings does the same after its own save.
   Future<void> _finishSave(PnpWifiWrite write) async {
+    ref.invalidate(wifiDataProvider);
     await _acknowledgeSetup();
     state = state.copyWith(phase: const WizardSaved());
     for (final id in state.plan?.settingStepIds ?? const <String>[]) {

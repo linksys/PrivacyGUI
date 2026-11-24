@@ -29,10 +29,12 @@ import 'package:privacy_gui/page/instant_setup/providers/pnp_setting_steps_provi
 import 'package:privacy_gui/page/instant_setup/providers/pnp_wifi_draft_provider.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_status_service.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../mocks/provider_overrides/mock_firmware_update.dart';
 import '../../../mocks/test_data/devices_test_data.dart';
+import '../../../mocks/test_data/wifi_settings_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
@@ -41,6 +43,18 @@ class MockPnpService extends Mock implements PnpService {}
 class MockPnpStatusService extends Mock implements PnpStatusService {}
 
 class MockSessionNotifier extends Mock implements SessionNotifier {}
+
+/// The app-wide Wi-Fi cache, counting how often it is read from the router
+/// (#1910 retest, #1511 handover note).
+class _CountingWifiDataNotifier extends WifiDataNotifier {
+  int builds = 0;
+
+  @override
+  Future<WifiData> build() async {
+    builds++;
+    return WifiSettingsTestData.createWifiData();
+  }
+}
 
 /// Mountable session notifier that records [saveSelectedNetwork] calls.
 ///
@@ -694,6 +708,7 @@ void main() {
       Duration answerWindow = const Duration(seconds: 30),
       Duration pollInterval = Duration.zero,
       Duration saveDeadline = const Duration(milliseconds: 200),
+      _CountingWifiDataNotifier? wifiData,
     }) {
       when(() => mockPnpStatusService.acknowledge(any()))
           .thenAnswer((_) async {});
@@ -712,6 +727,7 @@ void main() {
           // A save no longer runs the firmware stage — Your Network's Done does
           // (#1511 P5) — but the cases below that press Done reach it.
           firmwareUpdateNotifierProvider.overrideWith(() => firmware),
+          if (wifiData != null) wifiDataProvider.overrideWith(() => wifiData),
         ],
       ));
     }
@@ -837,6 +853,71 @@ void main() {
       expect(container.read(pnpProvider).phase, isA<WizardYourNetwork>());
       verify(() => mockPnpService.isWifiApplied(editedWrite)).called(1);
       container.dispose();
+    });
+
+    // #1910 retest (bench 2026-11-24): after a PnP rename, Wi-Fi Settings kept
+    // showing the old name until a reload, because nothing refreshed the
+    // app-wide Wi-Fi cache and no subscription pushes an SSID change.
+    group('the app-wide Wi-Fi cache', () {
+      late _CountingWifiDataNotifier wifiData;
+
+      setUp(() => wifiData = _CountingWifiDataNotifier());
+
+      /// [createSaveContainer] with the Wi-Fi cache already read once and kept
+      /// alive, as an earlier visit to the dashboard leaves it.
+      Future<ProviderContainer> containerWithWifiCached() async {
+        final container = createSaveContainer(wifiData: wifiData);
+        container.listen(wifiDataProvider, (_, __) {});
+        await container.read(wifiDataProvider.future);
+        return container;
+      }
+
+      Future<void> settle(ProviderContainer container) async {
+        await Future<void>.delayed(Duration.zero);
+        await container.read(wifiDataProvider.future);
+      }
+
+      test('a save that landed reads it again', () async {
+        final container = await containerWithWifiCached();
+
+        await saveFrom(container);
+        await settle(container);
+
+        expect(container.read(pnpProvider).phase, isA<WizardYourNetwork>());
+        expect(wifiData.builds, 2);
+        container.dispose();
+      });
+
+      test(
+          'an unanswered write reads it again once the router shows it '
+          'applied', () async {
+        when(() => mockPnpService.saveWifi(any()))
+            .thenAnswer((_) async => PnpWifiWriteOutcome.unanswered);
+        final container = await containerWithWifiCached();
+
+        await saveFrom(container);
+        await settle(container);
+
+        expect(container.read(pnpProvider).phase, isA<WizardYourNetwork>());
+        expect(wifiData.builds, 2);
+        container.dispose();
+      });
+
+      test('a refused write leaves it alone and goes back to the form',
+          () async {
+        // Only a write that landed is followed by a read: one taken while the
+        // radios restart is not to be trusted (#1499).
+        when(() => mockPnpService.saveWifi(any())).thenThrow(
+            const UspCompleteFailureError(summary: 's', failures: []));
+        final container = await containerWithWifiCached();
+
+        await saveFrom(container);
+        await settle(container);
+
+        expect(container.read(pnpProvider).phase, isA<WizardConfiguring>());
+        expect(wifiData.builds, 1);
+        container.dispose();
+      });
     });
 
     test(
