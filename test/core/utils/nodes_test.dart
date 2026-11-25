@@ -179,4 +179,72 @@ void main() {
       expect(isNodeModel(modelNumber: 'XYZ123', hardwareVersion: '1'), false);
     });
   });
+
+  // The node pages and the quick panel lay a node out as Cognitive Mesh when
+  // this is true.
+  group('isCognitiveMeshRouter, for the rest of the Cognitive Mesh family', () {
+    test('is true for Maple, Oak, Elm, Cherry, the LN series and Pinnacle',
+        () {
+      for (final model in [
+        'MX6200',
+        'MBE7000',
+        'MBE7100',
+        'LN11',
+        'LN12',
+        'LN14',
+        'LN15',
+        'LN16',
+        'SPNM60',
+        'SPNM61',
+        'SPNM62',
+      ]) {
+        expect(isCognitiveMeshRouter(modelNumber: model, hardwareVersion: '1'),
+            isTrue,
+            reason: model);
+      }
+    });
+
+    test('is false for a Velop node and a model it does not know', () {
+      for (final model in ['WHW03', 'MX5300', 'MX4200', 'XYZ123', '']) {
+        expect(isCognitiveMeshRouter(modelNumber: model, hardwareVersion: '1'),
+            isFalse,
+            reason: model);
+      }
+    });
+
+    // EA9350 is listed for hardware version 3 only.
+    test('is false for a model listed only for another hardware version', () {
+      expect(isCognitiveMeshRouter(modelNumber: 'EA9350', hardwareVersion: '1'),
+          isFalse);
+    });
+  });
+
+  // The dashboard lays the router's ports out in a row when this is true
+  // (dashboard_home_provider.dart).
+  group('isHorizontalPorts', () {
+    test('is true for Elm (LN11)', () {
+      expect(isHorizontalPorts(modelNumber: 'LN11', hardwareVersion: '1'),
+          isTrue);
+      expect(isHorizontalPorts(modelNumber: 'LN11-EU', hardwareVersion: '1'),
+          isTrue);
+    });
+
+    test('is false for every other router, and one it does not know', () {
+      for (final model in ['LN12', 'LN16', 'M63', 'MX4200', 'MR9600', '']) {
+        expect(isHorizontalPorts(modelNumber: model, hardwareVersion: '1'),
+            isFalse,
+            reason: model);
+      }
+    });
+  });
+
+  // The health check offers the speed test unless the model's rule turns it
+  // off (speed_test_display.dart); no rule does today.
+  group('isShowSpeedTest', () {
+    test('shows the speed test on every model, known or not', () {
+      for (final model in ['M63', 'LN11', 'MX4200', 'MR9600', 'XYZ123', '']) {
+        expect(isShowSpeedTest(modelNumber: model), isTrue, reason: model);
+      }
+    });
+  });
 }
