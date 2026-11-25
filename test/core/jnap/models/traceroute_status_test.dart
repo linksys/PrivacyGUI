@@ -20,7 +20,8 @@ void main() {
 
     expect(status.toMap(), {
       'isRunning': false,
-      'tracerouteLog': status.tracerouteLog,
+      'tracerouteLog':
+          'traceroute to 8.8.8.8 (8.8.8.8), 30 hops max\n 1  192.168.2.1  1.204 ms\n',
     });
   });
 
