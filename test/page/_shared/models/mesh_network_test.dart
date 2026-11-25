@@ -115,6 +115,21 @@ void main() {
       });
     });
 
+    // #1443: an offline extender is listed in `slaves` but is not online.
+    group('onlineSlaves', () {
+      test('leaves out an offline extender', () {
+        final online = DevicesTestData.createMeshNetwork().slaves.single;
+        final offline =
+            DevicesTestData.createOfflineSlave(deviceId: 'AA:BB:CC:DD:EE:99');
+        final network = DevicesTestData.createSingleNodeNetwork()
+            .copyWith(slaves: [online, offline]);
+
+        expect(network.onlineSlaves, [online]);
+        expect(network.nodeCount, 3,
+            reason: 'nodeCount counts every listed node, offline included');
+      });
+    });
+
     group('nodeCount', () {
       test('returns 1 for single-node network', () {
         final network = DevicesTestData.createSingleNodeNetwork();
