@@ -17,6 +17,16 @@ void main() {
     expect(settings.macAddresses, ['AA:BB:CC:DD:EE:01', 'AA:BB:CC:DD:EE:02']);
   });
 
+  test('writes the fields it read, under the names it reads them by', () {
+    expect(MACFilterSettings.fromMap(_output).toMap(), _output);
+  });
+
+  test('survives a trip through JSON text', () {
+    final settings = MACFilterSettings.fromMap(_output);
+
+    expect(MACFilterSettings.fromJson(settings.toJson()), settings);
+  });
+
   test('reads the same output from JSON text', () {
     final settings = MACFilterSettings.fromJson(
         '{"macFilterMode":"Deny","maxMACAddresses":32,"macAddresses":[]}');

@@ -29,7 +29,7 @@ class MACFilterSettings extends Equatable {
     return <String, dynamic>{
       'macFilterMode': macFilterMode,
       'maxMACAddresses': maxMACAddresses,
-      'macAddressed': macAddresses,
+      'macAddresses': macAddresses,
     };
   }
 
