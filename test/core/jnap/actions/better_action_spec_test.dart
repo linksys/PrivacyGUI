@@ -305,8 +305,6 @@ void main() {
       });
       expect(afterPin, atBaseline);
     },
-    skip: 'initBetterActions does not clear what an earlier call mapped, so '
-        'getWANExternal and clientDeauth keep the last router\'s URL (#1923)',
   );
 
   test('every listed exception still applies', () {
