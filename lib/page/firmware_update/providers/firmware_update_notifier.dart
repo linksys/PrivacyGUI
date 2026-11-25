@@ -179,11 +179,12 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
   /// stays `false` because the page-open call wants the cache when there is one.
   ///
   /// **`catch`, not `on ServiceError`.** The bridge does not only fail with one:
-  /// `UspMutationLock.withLock` throws a bare `TimeoutException` after 30 s by
-  /// design, and a codegen parse of an unexpected payload throws a `TypeError`.
-  /// Neither reached the old arm, so neither set `stateReadError` — and the page's
-  /// card needs both that field and an unreadable banks provider, so the result was
-  /// a firmware page with no card, no error and nothing to retry.
+  /// a codegen parse of an unexpected payload throws a `TypeError`, and a
+  /// `TimeoutException` raised outside the mutation lock still arrives bare until
+  /// #1831 converts the rest of its sources (the lock's own is a `TimeoutError`
+  /// now). Neither reached the old arm, so neither set `stateReadError` — and the
+  /// page's card needs both that field and an unreadable banks provider, so the
+  /// result was a firmware page with no card, no error and nothing to retry.
   Future<void> loadBanks({bool refresh = false}) async {
     try {
       // Read from L1 provider (Single Source of Truth)
@@ -646,11 +647,11 @@ class FirmwareUpdateNotifier extends AutoDisposeNotifier<FirmwareUpdateState> {
       // The belt [checkForUpdate] has, and the stakes here are higher than a
       // button that spins. `triggering` is `isUpdating`, and `_firmwareExitGuard`
       // in `route_usp_dashboard.dart` returns `!state.isUpdating` — it **silently**
-      // vetoes the Navigator pop, so a phase left set by an unforeseen throw traps
-      // the user on a page with no card explaining why. `UspMutationLock` throwing
-      // its own `TimeoutException` after 30 s is not hypothetical: the dispatch runs
-      // under that lock, and a `TimeoutException` is deliberately not a
-      // `ServiceError`.
+      // vetoes the Navigator pop, so a phase left set by an unforeseen throw — one
+      // that is not a `ServiceError`, which the arm above does not see — traps the
+      // user on a page with no card explaining why. The mutation lock's timeout
+      // used to be exactly that; it is a `TimeoutError` now (#1831), but a codegen
+      // `TypeError` is still possible.
       //
       // A no-op on every path that ends normally — each has set a phase of its own —
       // except `abandoned`, which writes nothing because `cancel()` has already

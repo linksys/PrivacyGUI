@@ -143,20 +143,20 @@ class _FlakyBanksNotifier extends FirmwareBanksDataNotifier {
 
 /// A read that fails with something other than a [ServiceError].
 ///
-/// `TimeoutException` because it is the one this app raises on purpose:
-/// `UspMutationLock.withLock` throws it after 30 s, deliberately not as a
-/// `ServiceError`. A codegen parse of an unexpected payload reaches the same arm
-/// with a `TypeError`.
+/// `TimeoutException` because one raised outside the mutation lock still
+/// arrives bare until #1831 converts the rest of its sources (the lock's own is
+/// a `TimeoutError` now). A codegen parse of an unexpected payload reaches the
+/// same arm with a `TypeError`.
 class _TimingOutBanksNotifier extends FirmwareBanksDataNotifier {
   @override
   Future<FirmwareBanksData> build() async =>
-      throw TimeoutException('mutation lock', const Duration(seconds: 30));
+      throw TimeoutException('banks read', const Duration(seconds: 30));
 
   /// The same failure on the path `verify()` takes. `refresh()` rethrows raw, so
   /// this is what actually arrives at the notifier's own catch.
   @override
   Future<FirmwareBanksData> refresh() async =>
-      throw TimeoutException('mutation lock', const Duration(seconds: 30));
+      throw TimeoutException('banks read', const Duration(seconds: 30));
 }
 
 /// The real [UspMutationLock], with every window shortened to a few
@@ -490,8 +490,8 @@ void main() {
 
     test('a read failure that is not a ServiceError is still a read error',
         () async {
-      // The bridge does not only fail with `ServiceError`. `UspMutationLock`
-      // throws a bare `TimeoutException` after 30 s by design, and a codegen
+      // The bridge does not only fail with `ServiceError`. A `TimeoutException`
+      // raised outside the mutation lock still arrives bare (#1831), and a codegen
       // parse of an unexpected payload throws a `TypeError` — neither is caught by
       // an `on ServiceError` arm. Recording nothing for them leaves
       // `stateReadError` null with the banks provider in `AsyncError`, and the
@@ -1382,7 +1382,7 @@ void main() {
         'lets the user leave', () async {
       // The trap this closes: `verify()` used to catch `on ServiceError` only,
       // while `firmwareBanksDataProvider.refresh()` rethrows whatever it got. A
-      // `TimeoutException` — which `UspMutationLock` raises on purpose — therefore
+      // `TimeoutException` — which the mutation lock raised at the time — therefore
       // went straight past `_fail()`, the phase stayed `verifying`, and
       // `verifying` is `isUpdating`: `_firmwareExitGuard` in
       // `route_usp_dashboard.dart` returns `!isUpdating`, so the back arrow was
@@ -2241,9 +2241,9 @@ void main() {
         // the browser Back button for the rest of the session, with no card on
         // screen saying why.
         //
-        // A `TimeoutException` rather than a contrived one: `UspMutationLock`
-        // throws exactly this after 30 s, deliberately not as a `ServiceError`, and
-        // the install dispatch runs under that lock.
+        // Any throw that is not a `ServiceError`. A `TimeoutException` because the
+        // mutation lock raised exactly that until #1831, and one from outside the
+        // lock still can.
         when(() => mockOtaInstaller.install(
                   otaInstance: any(named: 'otaInstance'),
                   onProgress: any(named: 'onProgress'),
@@ -2328,11 +2328,10 @@ void main() {
       });
 
       test('a mutation timeout reaches the failure card', () async {
-        // The consumer end of the mapping the install service does. The lock throws
-        // a bare `TimeoutException`, which is not a `ServiceError` and so matched no
-        // `catch` between it and the button: the dispatch appeared to do nothing for
-        // 30 s, left no card, and escaped an unawaited `onTap`. Mapped in the
-        // service — where Article XIII §13.3 puts it — this arm now runs, and what
+        // The consumer end of the lock's `TimeoutError` (#1831). While the lock
+        // threw a bare `TimeoutException`, it matched no `catch` between it and the
+        // button: the dispatch appeared to do nothing for 30 s, left no card, and
+        // escaped an unawaited `onTap`. As a `ServiceError` this arm runs, and what
         // it has to produce is a phase the user can leave: `triggering` is
         // `isUpdating`, which `_firmwareExitGuard` silently vetoes the back arrow on.
         when(() => mockOtaInstaller.install(
@@ -2721,8 +2720,8 @@ void main() {
       test('a read failure that is not a ServiceError is still a read error',
           () async {
         // Same argument as `loadBanks`': the two reads share one field and one
-        // card, and a `TimeoutException` out of the mutation lock leaves the page
-        // exactly as unreadable as a `NetworkError` does.
+        // card, and a throw that is not a `ServiceError` leaves the page exactly as
+        // unreadable as a `NetworkError` does.
         when(() => mockOtaInstaller.observe(
                   onProgress: any(named: 'onProgress'),
                   isCancelled: any(named: 'isCancelled'),

@@ -130,8 +130,8 @@ void main() {
       verifyNever(() => mockService.run(any(), near));
     });
 
-    // The lock throws a Dart TimeoutException, not a ServiceError; letting it
-    // through would skip the page's error handling altogether.
+    // A timeout inside the lock leaves it as a TimeoutError (#1831); a bare
+    // TimeoutException would skip the page's error handling altogether.
     test('a lock timeout is reported like any other failure', () async {
       final c = container();
       when(() => mockService.run(any(), far))

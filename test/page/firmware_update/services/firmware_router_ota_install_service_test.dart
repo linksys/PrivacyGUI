@@ -190,8 +190,7 @@ void main() {
 
       // The width is the point. This loop can run for twenty minutes; a lock held
       // across it would block every other mutation in the app for that long and
-      // would sit under the lock's own 30s timeout, which throws a
-      // `TimeoutException` rather than a `ServiceError`.
+      // would sit under the lock's own 30s timeout.
       expect(lockedDuringDispatch, isTrue);
       expect(lockedDuringPoll, isFalse);
       expect(lock.isLocked, isFalse);
@@ -210,17 +209,16 @@ void main() {
 
     test('a mutation timeout leaves as a ServiceError, not a TimeoutException',
         () async {
-      // `UspMutationLock.withLock` throws a bare `TimeoutException` on purpose —
-      // it is core, not a feature service, and constitution Article XIII §13.3
-      // makes the mapping this layer's job. Nothing above this line could do it:
-      // every `on ServiceError` between here and the button was blind to it, so
-      // the dispatch appeared to do nothing for 30s, left no failure card, and
-      // then escaped an unawaited `onTap` as an uncaught async error.
+      // While the lock threw a bare `TimeoutException`, every `on ServiceError`
+      // between here and the button was blind to it, so the dispatch appeared to
+      // do nothing for 30s, left no failure card, and then escaped an unawaited
+      // `onTap` as an uncaught async error. The lock raises a `TimeoutError` now
+      // (#1831), for its own timeout and for a `TimeoutException` thrown inside
+      // it; this pins that the dispatch's reaches the caller as one.
       //
-      // Thrown from the dispatcher rather than by letting the lock time out for
-      // real: the lock's timeout is 30s and is not injectable from here, and a
-      // suite that waits it out is a suite nobody runs. What is under test is the
-      // `catch`, and the exception reaching it is the same object either way.
+      // Thrown from the dispatcher, inside the real lock, rather than by letting
+      // the lock time out: its timeout is 30s and is not injectable from here,
+      // and a suite that waits it out is a suite nobody runs.
       when(() => firmware.requestOtaInstall(
               otaInstance: any(named: 'otaInstance')))
           .thenThrow(TimeoutException(
