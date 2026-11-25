@@ -145,6 +145,7 @@ enum JNAPService {
   setup9(value: 'http://linksys.com/jnap/nodes/setup/Setup9'),
   setup10(value: 'http://linksys.com/jnap/nodes/setup/Setup10'),
   setup11(value: 'http://linksys.com/jnap/nodes/setup/Setup11'),
+  setup12(value: 'http://linksys.com/jnap/nodes/setup/Setup12'),
   smartMode(value: 'http://linksys.com/jnap/nodes/smartmode/SmartMode'),
   smartMode2(value: 'http://linksys.com/jnap/nodes/smartmode/SmartMode2'),
   selectableWAN(value: 'http://linksys.com/jnap/nodes/setup/SelectableWAN'),
@@ -188,6 +189,4 @@ enum JNAPService {
   const JNAPService({required this.value});
 
   final String value;
-
-  static List<JNAPService> get appSupportedServices => JNAPService.values;
 }

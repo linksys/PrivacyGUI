@@ -13,7 +13,6 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/wan_external_provider.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
@@ -62,8 +61,6 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-
-    ref.read(wanExternalProvider.notifier).fetch();
   }
 
   @override

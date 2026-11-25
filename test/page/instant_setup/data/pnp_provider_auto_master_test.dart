@@ -20,10 +20,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/auto_master_status.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
@@ -55,6 +57,11 @@ void main() {
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(secureStorageChannel, (_) async => null);
 
+  // The real ServiceHelper: whether the reads go out depends on the router's
+  // services, not on a stub.
+  setUpAll(() => getIt.registerSingleton<ServiceHelper>(ServiceHelper()));
+  tearDownAll(() => getIt.unregister<ServiceHelper>());
+
   late MockRouterRepository mockRepo;
   late ProviderContainer container;
   late PnpNotifier notifier;
@@ -69,6 +76,9 @@ void main() {
   setUp(() {
     lastScheduled = null;
     lastSend = null;
+    // A router with Setup12, the only service that defines GetAutoMasterStatus,
+    // so the reads below are sent (#1923).
+    buildBetterActions([JNAPService.setup12.value]);
     mockRepo = MockRouterRepository();
     container = ProviderContainer(overrides: [
       routerRepositoryProvider.overrideWithValue(mockRepo),
@@ -451,6 +461,32 @@ void main() {
             [null, AutoMasterStatus.idle, started]);
       });
     }
+  });
+
+  // Only Setup12 defines GetAutoMasterStatus (#1923). On a router without it,
+  // none of the three reads goes out, and each answers as on firmware that
+  // does not support it: no status, so PnP does not wait for Auto Master.
+  group('on a router without Setup12', () {
+    setUp(() => buildBetterActions(const ['http://linksys.com/jnap/core/Core']));
+
+    test('checkAutoMasterStatus sends nothing and answers null', () async {
+      whenSend(() async => _statusSuccess('Running'));
+      expect(await notifier.checkAutoMasterStatus(), isNull);
+      expect(lastSend, isNull);
+    });
+
+    test('pollAutoMasterUntilRunning sends nothing and ends at once',
+        () async {
+      whenScheduled(Stream.fromIterable([_statusSuccess('Running')]));
+      expect(await notifier.pollAutoMasterUntilRunning().toList(), isEmpty);
+      expect(lastScheduled, isNull);
+    });
+
+    test('pollAutoMasterStatus sends nothing and ends at once', () async {
+      whenScheduled(Stream.fromIterable([_statusSuccess('Running')]));
+      expect(await notifier.pollAutoMasterStatus().toList(), isEmpty);
+      expect(lastScheduled, isNull);
+    });
   });
 
   group('testConnectionReconnected', () {
