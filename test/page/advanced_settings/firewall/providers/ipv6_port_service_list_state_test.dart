@@ -24,4 +24,18 @@ void main() {
     expect(state.maxRules, 50);
     expect(state.maxDescriptionLength, 32);
   });
+
+  test('copyWith changes only what it names', () {
+    final state = Ipv6PortServiceListState.fromMap({
+      'rules': [_rule.toMap()],
+      'maxRules': 15,
+    });
+
+    final changed = state.copyWith(maxRules: 5, maxDescriptionLength: 8);
+
+    expect(changed.maxRules, 5);
+    expect(changed.maxDescriptionLength, 8);
+    expect(changed.rules, [_rule]);
+    expect(changed.copyWith(maxRules: 15, maxDescriptionLength: 32), state);
+  });
 }
