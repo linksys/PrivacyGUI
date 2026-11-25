@@ -26,4 +26,19 @@ void main() {
     expect(options.exceedMaxRetry(2), isFalse);
     expect(options.exceedMaxRetry(3), isTrue);
   });
+
+  test('copyWith changes only what it names', () {
+    const options = JNAPRetryOptions();
+
+    final patient = options.copyWith(retries: 3);
+    final quicker = options.copyWith(retryDelays: [Duration(seconds: 1)]);
+    final same = options.copyWith();
+
+    expect(patient.retries, 3);
+    expect(patient.retryDelays, const [Duration(seconds: 3)]);
+    expect(quicker.retries, 1);
+    expect(quicker.getRetryDelay(0), const Duration(seconds: 1));
+    expect(same.retries, 1);
+    expect(same.retryDelays, [const Duration(seconds: 3)]);
+  });
 }
