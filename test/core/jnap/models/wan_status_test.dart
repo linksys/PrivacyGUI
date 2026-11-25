@@ -108,6 +108,32 @@ void main() {
       expect(RouterWANStatus.fromJson(status.toJson()), status);
     });
 
+    test('writes back the IPv6 WAN it read', () {
+      final status = RouterWANStatus.fromJson(_dualStackText);
+
+      expect(status.toMap()['wanIPv6Connection'], {
+        'wanType': 'SLAAC',
+        'networkInfo': {
+          'ipAddress': '2001:b011:7001:0761:e831:9b30:ca98:9a58',
+          'gateway': 'fe80:0000:0000:0000:d2f0:dbff:fe89:5800',
+          'dhcpLeaseMinutes': null,
+          'dnsServer1': '2001:b000:0168:0000:0000:0000:0000:0002',
+          'dnsServer2': '2001:b000:0168:0000:0000:0000:0000:0001',
+          'dnsServer3': null,
+        },
+      });
+    });
+
+    test('survives a trip through JSON text', () {
+      final status = RouterWANStatus.fromJson(_dualStackText);
+
+      final restored = RouterWANStatus.fromJson(status.toJson());
+
+      expect(restored, status);
+      expect(restored.wanIPv6Connection?.networkInfo?.dnsServer2,
+          '2001:b000:0168:0000:0000:0000:0000:0001');
+    });
+
     test('copyWith changes only what it names', () {
       final status = RouterWANStatus.fromJson(_dualStackText);
 
@@ -155,6 +181,12 @@ void main() {
           WANIPv6ConnectionInfo.fromMap(const {'wanType': 'Pass-through'})
               .networkInfo,
           isNull);
+    });
+
+    test('the IPv6 connection survives a trip through JSON text', () {
+      final ipv6 = status.wanIPv6Connection!;
+
+      expect(WANIPv6ConnectionInfo.fromJson(ipv6.toJson()), ipv6);
     });
 
     test('a supported combination', () {
