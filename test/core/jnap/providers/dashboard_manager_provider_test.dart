@@ -269,6 +269,17 @@ void main() {
     });
 
     group('what the poll says', () {
+      test('reads a time in the router\'s noon hour as noon', () {
+        start(poll: {
+          JNAPAction.getLocalTime:
+              _ok({'currentTime': '2024-12-25T12:34:42+0800'}),
+        });
+
+        final time = DateTime.fromMillisecondsSinceEpoch(
+            app.read(dashboardManagerProvider).localTime);
+        expect([time.hour, time.minute, time.second], [12, 34, 42]);
+      });
+
       test('supports the health check modules the router lists', () {
         start(poll: {
           JNAPAction.getSupportedHealthCheckModules: _ok({
