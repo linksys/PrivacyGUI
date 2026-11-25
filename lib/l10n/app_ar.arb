@@ -1060,6 +1060,7 @@
   "serial": "الرقم التسلسلي",
   "temperature": "درجة الحرارة",
   "temperatureCelsius": "{value} °C",
+  "temperatureFahrenheit": "{value} °F",
   "serialNumberLabel": "الرقم التسلسلي",
   "server": "الخادم",
   "serverLabel": "الخادم: {server}",

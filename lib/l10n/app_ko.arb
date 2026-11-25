@@ -1060,6 +1060,7 @@
   "serial": "일련번호",
   "temperature": "온도",
   "temperatureCelsius": "{value}°C",
+  "temperatureFahrenheit": "{value}°F",
   "serialNumberLabel": "일련번호",
   "server": "서버",
   "serverLabel": "서버: {server}",

@@ -1060,6 +1060,7 @@
   "serial": "シリアル",
   "temperature": "温度",
   "temperatureCelsius": "{value}°C",
+  "temperatureFahrenheit": "{value}°F",
   "serialNumberLabel": "シリアル番号",
   "server": "サーバー",
   "serverLabel": "サーバー: {server}",

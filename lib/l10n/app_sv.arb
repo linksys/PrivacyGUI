@@ -1060,6 +1060,7 @@
   "serial": "Serienummer",
   "temperature": "Temperatur",
   "temperatureCelsius": "{value} °C",
+  "temperatureFahrenheit": "{value} °F",
   "serialNumberLabel": "Serienummer",
   "server": "Server",
   "serverLabel": "Server: {server}",

@@ -9,6 +9,12 @@ import 'package:privacy_gui/page/_shared/models/node_entity.dart';
 import 'package:privacy_gui/page/admin/cards/usp_device_info_card.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
+import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/providers/app_settings/app_settings.dart';
+import 'package:privacy_gui/providers/app_settings/temperature_unit.dart';
+import 'package:privacy_gui/providers/app_settings/temperature_unit_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../mocks/provider_overrides/mock_dashboard_cards.dart';
@@ -37,15 +43,19 @@ Widget _buildTestWidget({
   String? baseMacAddress,
   DevicesData? devicesData,
   SystemMonitorState? systemMonitorState,
+  String? region = 'TW',
 }) {
   return ProviderScope(
-    overrides: cardOverrides(
-      systemMonitorState: systemMonitorState,
-      devicesData: devicesData ?? _gatewayFallbackDevices,
-      systemInfoData: SystemInfoData(
-        model: SystemInfoTestData.create(baseMacAddress: baseMacAddress),
+    overrides: [
+      ...cardOverrides(
+        systemMonitorState: systemMonitorState,
+        devicesData: devicesData ?? _gatewayFallbackDevices,
+        systemInfoData: SystemInfoData(
+          model: SystemInfoTestData.create(baseMacAddress: baseMacAddress),
+        ),
       ),
-    ),
+      platformRegionProvider.overrideWithValue(region),
+    ],
     child: MaterialApp(
       theme: _testTheme,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -58,6 +68,8 @@ Widget _buildTestWidget({
 }
 
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+
   group('UspDeviceInfoCard — MAC (#1665)', () {
     testWidgets(
         'shows the router base MAC while the master node is the GATEWAY '
@@ -118,9 +130,19 @@ void main() {
   });
 
   // The router's CPU temperature (#1926), from the system monitor's poll, so
-  // it moves without a re-login; the session-cached SystemInfo would not.
+  // it moves without a re-login; the session-cached SystemInfo would not. It
+  // sits beside the manufacturer in the hero, above the fold, as a tag the user
+  // taps to switch between °C and °F.
   group('UspDeviceInfoCard — temperature (#1926)', () {
-    testWidgets('shows the latest snapshot\'s CPU temperature', (tester) async {
+    Future<TemperatureUnit?> savedUnit() async {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString(pAppSettings);
+      return saved == null ? null : AppSettings.fromJson(saved).temperatureUnit;
+    }
+
+    testWidgets(
+        'shows the latest snapshot\'s CPU temperature in the hero, beside the '
+        'manufacturer', (tester) async {
       await tester.pumpWidget(_buildTestWidget(
         systemMonitorState: SystemMonitorTestData.state([
           SystemMonitorTestData.snapshot(cpuTemperatureCelsius: 48),
@@ -129,10 +151,48 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // InfoGrid draws its labels upper-cased, as it does SERIAL.
-      expect(find.text('TEMPERATURE'), findsOneWidget);
       expect(find.text('50 °C'), findsOneWidget);
       expect(find.text('48 °C'), findsNothing);
+      expect(
+          find.ancestor(
+              of: find.text('50 °C'), matching: find.byType(HeroBlock)),
+          findsOneWidget);
+      expect(find.text('TEMPERATURE'), findsNothing,
+          reason: 'no longer an InfoGrid item below the fold');
+    });
+
+    testWidgets('reads °F where the browser\'s region is the United States',
+        (tester) async {
+      await tester.pumpWidget(_buildTestWidget(
+        region: 'US',
+        systemMonitorState: SystemMonitorTestData.state(
+            [SystemMonitorTestData.snapshot(cpuTemperatureCelsius: 50)]),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('122 °F'), findsOneWidget);
+      expect(find.text('50 °C'), findsNothing);
+    });
+
+    testWidgets('a tap switches the unit, and the pick is saved',
+        (tester) async {
+      await tester.pumpWidget(_buildTestWidget(
+        systemMonitorState: SystemMonitorTestData.state(
+            [SystemMonitorTestData.snapshot(cpuTemperatureCelsius: 50)]),
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('50 °C'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('122 °F'), findsOneWidget);
+      expect(await savedUnit(), TemperatureUnit.fahrenheit);
+
+      await tester.tap(find.text('122 °F'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('50 °C'), findsOneWidget);
+      expect(await savedUnit(), TemperatureUnit.celsius);
     });
 
     testWidgets('moves when a new snapshot arrives, with no re-login',
@@ -154,7 +214,7 @@ void main() {
     });
 
     // No sensor row, or -274: the monitor reads null, and the card shows no
-    // line rather than a temperature it does not have.
+    // temperature rather than one it does not have.
     for (final (label, state) in [
       (
         'the latest poll has no reading',
@@ -163,13 +223,14 @@ void main() {
       ),
       ('nothing has been polled yet', const SystemMonitorState()),
     ]) {
-      testWidgets('has no temperature row when $label', (tester) async {
+      testWidgets('shows no temperature when $label', (tester) async {
         await tester.pumpWidget(_buildTestWidget(systemMonitorState: state));
         await tester.pumpAndSettle();
 
-        expect(find.text('TEMPERATURE'), findsNothing);
-        expect(find.text('SERIAL'), findsOneWidget,
-            reason: 'the rest of the card still renders');
+        expect(find.byType(AppTag), findsNothing);
+        expect(
+            find.text(SystemInfoTestData.defaultManufacturer), findsOneWidget,
+            reason: 'the manufacturer line still renders');
       });
     }
   });

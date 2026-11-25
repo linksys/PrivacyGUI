@@ -1060,6 +1060,7 @@
   "serial": "Số sê-ri",
   "temperature": "Nhiệt độ",
   "temperatureCelsius": "{value}°C",
+  "temperatureFahrenheit": "{value}°F",
   "serialNumberLabel": "Số sê-ri",
   "server": "Máy chủ",
   "serverLabel": "Máy chủ: {server}",

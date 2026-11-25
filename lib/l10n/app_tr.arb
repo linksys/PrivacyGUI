@@ -1060,6 +1060,7 @@
   "serial": "Seri",
   "temperature": "Sıcaklık",
   "temperatureCelsius": "{value} °C",
+  "temperatureFahrenheit": "{value} °F",
   "serialNumberLabel": "Seri Numarası",
   "server": "Sunucu",
   "serverLabel": "Sunucu: {server}",

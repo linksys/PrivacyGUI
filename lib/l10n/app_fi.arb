@@ -1060,6 +1060,7 @@
   "serial": "Sarjanumero",
   "temperature": "Lämpötila",
   "temperatureCelsius": "{value} °C",
+  "temperatureFahrenheit": "{value} °F",
   "serialNumberLabel": "Sarjanumero",
   "server": "Palvelin",
   "serverLabel": "Palvelin: {server}",

@@ -1060,6 +1060,7 @@
   "serial": "Serial",
   "temperature": "Suhu",
   "temperatureCelsius": "{value} °C",
+  "temperatureFahrenheit": "{value} °F",
   "serialNumberLabel": "Nomor Seri",
   "server": "Server",
   "serverLabel": "Server: {server}",

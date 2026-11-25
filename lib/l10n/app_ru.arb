@@ -1060,6 +1060,7 @@
   "serial": "Серийный номер",
   "temperature": "Температура",
   "temperatureCelsius": "{value} °C",
+  "temperatureFahrenheit": "{value} °F",
   "serialNumberLabel": "Серийный номер",
   "server": "Сервер",
   "serverLabel": "Сервер: {server}",

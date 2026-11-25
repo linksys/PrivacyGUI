@@ -1060,6 +1060,7 @@
   "serial": "Σειριακός αριθμός",
   "temperature": "Θερμοκρασία",
   "temperatureCelsius": "{value} °C",
+  "temperatureFahrenheit": "{value} °F",
   "serialNumberLabel": "Σειριακός αριθμός",
   "server": "Διακομιστής",
   "serverLabel": "Διακομιστής: {server}",
