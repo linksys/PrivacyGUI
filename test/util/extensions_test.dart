@@ -58,6 +58,14 @@ void main() {
       expect(const Duration(minutes: -5, seconds: -7).convertToHMS(),
           '-00:05:07');
     });
+
+    // A DHCP lease that ran out more than an hour before the router's clock.
+    test('puts one minus sign before a time past by an hour or more', () {
+      expect(const Duration(hours: -1, minutes: -30).convertToHMS(),
+          '-01:30:00');
+      expect(const Duration(hours: -12, seconds: -1).convertToHMS(),
+          '-12:00:01');
+    });
   });
 
   group('the language picker', () {
