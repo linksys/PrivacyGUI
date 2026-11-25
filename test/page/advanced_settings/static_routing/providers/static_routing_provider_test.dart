@@ -8,24 +8,7 @@ import 'package:privacy_gui/page/advanced_settings/static_routing/providers/stat
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
 
 import '../../../../common/router_boundary.dart';
-
-/// `GetLANSettings` output: 192.168.1.1/24.
-const _lan = <String, dynamic>{
-  'minNetworkPrefixLength': 16,
-  'maxNetworkPrefixLength': 30,
-  'minAllowedDHCPLeaseMinutes': 1,
-  'maxDHCPReservationDescriptionLength': 63,
-  'hostName': 'Linksys00042',
-  'ipAddress': '192.168.1.1',
-  'networkPrefixLength': 24,
-  'isDHCPEnabled': true,
-  'dhcpSettings': {
-    'firstClientIPAddress': '192.168.1.100',
-    'lastClientIPAddress': '192.168.1.149',
-    'leaseMinutes': 1440,
-    'reservations': <Map<String, dynamic>>[],
-  },
-};
+import '../../_router_lan.dart';
 
 const _lanRoute = <String, dynamic>{
   'name': 'Lab',
@@ -47,7 +30,7 @@ const _internetRoute = <String, dynamic>{
   },
 };
 
-/// `GetRoutingSettings` output, after the spec's sample.
+/// `GetRoutingSettings` output, after the legacy JNAP reference's sample.
 Map<String, dynamic> _routing(
   List<Map<String, dynamic>> entries, {
   bool nat = true,
@@ -70,7 +53,7 @@ void main() {
 
   setUp(() {
     router = RouterBoundary()
-      ..holds(JNAPAction.getLANSettings, _lan)
+      ..holds(JNAPAction.getLANSettings, routerLan)
       ..holds(
           JNAPAction.getRoutingSettings, _routing([_lanRoute, _internetRoute]));
     container = ProviderContainer(overrides: [
@@ -103,12 +86,23 @@ void main() {
       expect(page().subnetMask, '255.255.255.0');
     });
 
-    test('reports a read the router refuses, and keeps the page', () async {
-      router.refuses(JNAPAction.getRoutingSettings);
+    test('reports a read the router refuses, and keeps what it showed',
+        () async {
+      await notifier.fetch();
+      router
+        // A LAN the failed read must not take on.
+        ..holds(JNAPAction.getLANSettings,
+            {...routerLan, 'ipAddress': '10.0.0.1', 'networkPrefixLength': 16})
+        ..refuses(JNAPAction.getRoutingSettings);
 
       await expectLater(notifier.fetch(), throwsA(isA<JNAPError>()));
 
-      expect(page(), StaticRoutingState.empty());
+      expect(page().setting.entries, [
+        NamedStaticRouteEntry.fromMap(_lanRoute),
+        NamedStaticRouteEntry.fromMap(_internetRoute),
+      ]);
+      expect(page().routerIp, '192.168.1.1');
+      expect(page().subnetMask, '255.255.255.0');
     });
   });
 

@@ -67,8 +67,8 @@ void main() {
     });
 
     test('turns down shorter and longer prefixes', () {
-      // The spec allows 8 to 30. A /31 typed into the page must read as
-      // invalid, not throw out of the check.
+      // The legacy JNAP reference allows 8 to 30. A /31 typed into the
+      // page must read as invalid, not throw out of the check.
       expect(notifier.isValidSubnetMask(7), isFalse);
       expect(notifier.isValidSubnetMask(31), isFalse);
       expect(notifier.isValidSubnetMask(32), isFalse);
