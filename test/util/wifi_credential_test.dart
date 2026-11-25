@@ -53,4 +53,66 @@ void main() {
       expect(credential.generate(), r'WIFI:S:Cafe\:Guest;T:nopass;H:false;;');
     });
   });
+
+  group('WiFiCredential.parse', () {
+    test('reads the name, password and hidden flag, in any field order', () {
+      final credential =
+          WiFiCredential.parse('WIFI:T:WPA;S:MyHome;P:abcd1234;H:true;;');
+
+      expect(credential.ssid, 'MyHome');
+      expect(credential.password, 'abcd1234');
+      expect(credential.isHidden, isTrue);
+    });
+
+    test('reads an open network as open, with no password', () {
+      final credential =
+          WiFiCredential.parse('WIFI:S:Cafe Guest;T:nopass;H:false;;');
+
+      expect(credential.ssid, 'Cafe Guest');
+      expect(credential.password, '');
+      expect(credential.type, SecurityType.none);
+      expect(credential.isHidden, isFalse);
+    });
+
+    test('reads a text that is not a Wi-Fi code as an empty credential', () {
+      final credential = WiFiCredential.parse('https://www.linksys.com');
+
+      expect(credential.ssid, '');
+      expect(credential.password, '');
+      expect(credential.type, SecurityType.none);
+      expect(credential.isHidden, isFalse);
+    });
+  });
+
+  group('WiFiCredential.copyWith', () {
+    const home = WiFiCredential(
+      ssid: 'MyHome',
+      password: 'abcd1234',
+      type: SecurityType.wpa,
+      isHidden: true,
+    );
+
+    test('keeps every field it is not given', () {
+      final copy = home.copyWith();
+
+      expect(copy.ssid, 'MyHome');
+      expect(copy.password, 'abcd1234');
+      expect(copy.type, SecurityType.wpa);
+      expect(copy.isHidden, isTrue);
+    });
+
+    test('replaces each field it is given', () {
+      final copy = home.copyWith(
+        ssid: 'MyHome-Guest',
+        password: 'guest-pass',
+        type: SecurityType.none,
+        isHidden: false,
+      );
+
+      expect(copy.ssid, 'MyHome-Guest');
+      expect(copy.password, 'guest-pass');
+      expect(copy.type, SecurityType.none);
+      expect(copy.isHidden, isFalse);
+    });
+  });
 }
