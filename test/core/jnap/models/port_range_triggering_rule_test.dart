@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart';
 
-/// One rule of `GetPortRangeTriggeringRules`, after the spec's sample.
+/// One rule of `GetPortRangeTriggeringRules`, after the legacy JNAP
+/// reference's sample.
 const _output = <String, dynamic>{
   'isEnabled': true,
   'firstTriggerPort': 6667,

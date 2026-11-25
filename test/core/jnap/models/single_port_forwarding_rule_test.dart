@@ -1,26 +1,22 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/jnap/models/single_port_forwarding_rule.dart';
 
-/// One rule of `GetSinglePortForwardingRules`, the spec's sample.
-const _output = <String, dynamic>{
-  'isEnabled': true,
-  'externalPort': 3074,
-  'protocol': 'TCP',
-  'internalServerIPAddress': '192.168.1.150',
-  'internalPort': 3074,
-  'description': 'XBox Live (TM)',
-};
+import '../../../test_data/single_port_forwarding_test_state.dart';
+
+/// The first rule of the router-shaped test data.
+final _output = Map<String, dynamic>.from(
+    (singlePortForwardingListTestState['rules'] as List).first as Map);
 
 void main() {
   test('reads a rule', () {
     final rule = SinglePortForwardingRule.fromMap(_output);
 
-    expect(rule.isEnabled, isTrue);
-    expect(rule.externalPort, 3074);
-    expect(rule.protocol, 'TCP');
-    expect(rule.internalServerIPAddress, '192.168.1.150');
-    expect(rule.internalPort, 3074);
-    expect(rule.description, 'XBox Live (TM)');
+    expect(rule.isEnabled, isFalse);
+    expect(rule.externalPort, 999);
+    expect(rule.protocol, 'Both');
+    expect(rule.internalServerIPAddress, '10.137.1.123');
+    expect(rule.internalPort, 9999);
+    expect(rule.description, 'XBOX');
   });
 
   test('writes the fields it read', () {
@@ -37,7 +33,7 @@ void main() {
     final rule = SinglePortForwardingRule.fromMap(_output);
 
     final changed = rule.copyWith(
-      isEnabled: false,
+      isEnabled: true,
       externalPort: 8080,
       protocol: 'Both',
       internalServerIPAddress: '192.168.1.30',
@@ -46,7 +42,7 @@ void main() {
     );
 
     expect(changed.toMap(), {
-      'isEnabled': false,
+      'isEnabled': true,
       'externalPort': 8080,
       'protocol': 'Both',
       'internalServerIPAddress': '192.168.1.30',

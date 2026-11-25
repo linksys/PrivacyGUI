@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
 
-/// `GetDMZSettings` output, the spec's sample.
+/// `GetDMZSettings` output, the legacy JNAP reference's sample.
 const _output = <String, dynamic>{
   'isDMZEnabled': true,
   'sourceRestriction': {

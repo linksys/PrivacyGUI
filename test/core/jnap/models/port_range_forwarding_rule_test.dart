@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/jnap/models/port_range_forwarding_rule.dart';
 
-/// One rule of `GetPortRangeForwardingRules`, the spec's sample.
+/// One rule of `GetPortRangeForwardingRules`, the legacy JNAP reference's
+/// sample.
 const _output = <String, dynamic>{
   'isEnabled': true,
   'firstExternalPort': 6888,

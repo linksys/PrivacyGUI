@@ -16,7 +16,8 @@ void main() {
   });
 
   test('has no on/off state on a router that does not support it', () {
-    // The spec leaves isExpressForwardingEnabled out when unsupported.
+    // The legacy JNAP reference leaves isExpressForwardingEnabled out when
+    // unsupported.
     final settings = ExpressForwardingSettings.fromMap(
         const {'isExpressForwardingSupported': false});
 

@@ -4,7 +4,7 @@ import 'package:privacy_gui/core/jnap/models/dyn_dns_settings.dart';
 import 'package:privacy_gui/core/jnap/models/no_ip_settings.dart';
 import 'package:privacy_gui/core/jnap/models/tzo_settings.dart';
 
-/// `GetDDNSSettings` output, the spec's sample.
+/// `GetDDNSSettings` output, the legacy JNAP reference's sample.
 const _dynDns = <String, dynamic>{
   'ddnsProvider': 'DynDNS',
   'dynDNSSettings': {

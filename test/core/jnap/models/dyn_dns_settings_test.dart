@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/jnap/models/dyn_dns_settings.dart';
 
-/// The `dynDNSSettings` of `GetDDNSSettings`, the spec's sample.
+/// The `dynDNSSettings` of `GetDDNSSettings`, the legacy JNAP reference's
+/// sample.
 const _account = <String, dynamic>{
   'username': 'bob',
   'password': 'iambob',

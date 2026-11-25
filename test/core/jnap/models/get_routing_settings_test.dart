@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
 
-/// `GetRoutingSettings` output, the spec's sample.
+/// `GetRoutingSettings` output, the legacy JNAP reference's sample.
 const _output = <String, dynamic>{
   'isNATEnabled': true,
   'isDynamicRoutingEnabled': false,
