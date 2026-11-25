@@ -15,6 +15,21 @@ void main() {
         'traceroute to 8.8.8.8 (8.8.8.8), 30 hops max');
   });
 
+  test('writes back what it read, under the router\'s names', () {
+    final status = TracerouteStatus.fromJson(_doneText);
+
+    expect(status.toMap(), {
+      'isRunning': false,
+      'tracerouteLog': status.tracerouteLog,
+    });
+  });
+
+  test('survives a trip through JSON text', () {
+    final status = TracerouteStatus.fromJson(_doneText);
+
+    expect(TracerouteStatus.fromJson(status.toJson()), status);
+  });
+
   test('copyWith changes only what it names', () {
     final status = TracerouteStatus.fromJson(_doneText);
 
