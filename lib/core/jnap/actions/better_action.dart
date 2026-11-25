@@ -396,6 +396,9 @@ void _updateBetterActions(JNAPService service) {
 
 // Set an initial value (lowest version) to each JNAP action
 void initBetterActions() {
+  // Start from scratch: an action that only a service defines must not keep
+  // the URL the last router gave it (#1923).
+  _betterActionMap.clear();
   _betterActionMap[JNAPAction.transaction] = _JNAPActionValue.transaction.value;
   _betterActionMap[JNAPAction.checkAdminPassword] =
       _JNAPActionValue.checkAdminPassword.value;
