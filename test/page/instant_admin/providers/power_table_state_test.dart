@@ -26,6 +26,12 @@ void main() {
       expect(PowerTableState.fromMap(_state).toMap(), _state);
     });
 
+    test('survives a JSON round trip', () {
+      final state = PowerTableState.fromMap(_state);
+
+      expect(PowerTableState.fromJson(state.toJson()), state);
+    });
+
     test('leaves the region out when there is none', () {
       final state = PowerTableState.fromMap(
           const {'isPowerTableSelectable': false, 'supportedCountries': []});
