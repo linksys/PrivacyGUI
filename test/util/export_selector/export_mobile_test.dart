@@ -25,7 +25,12 @@ void main() {
   /// one a dismissal.
   late String sheetAnswer;
 
-  setUpAll(() => logger.d('export_mobile_test'));
+  setUpAll(() {
+    // The app's logger keeps the log file Storage names when it is first
+    // used. Using it now, before Storage.init(), keeps the app's own lines
+    // out of the test's log file.
+    logger.d('export_mobile_test');
+  });
 
   setUp(() async {
     temp = Directory.systemTemp.createTempSync('export_');

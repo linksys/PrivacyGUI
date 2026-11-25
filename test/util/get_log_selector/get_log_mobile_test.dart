@@ -14,7 +14,12 @@ import 'package:privacy_gui/util/get_log_selector/get_log_mobile.dart';
 void main() {
   late Directory temp;
 
-  setUpAll(() => logger.d('get_log_mobile_test'));
+  setUpAll(() {
+    // The app's logger keeps the log file Storage names when it is first
+    // used. Using it now, before Storage.init(), keeps the app's own lines
+    // out of the test's log file.
+    logger.d('get_log_mobile_test');
+  });
 
   setUp(() {
     temp = Directory.systemTemp.createTempSync('get_log_');
