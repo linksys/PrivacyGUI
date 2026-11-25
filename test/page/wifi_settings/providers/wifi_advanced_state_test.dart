@@ -4,6 +4,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_advanced_state.dart';
 
+import '../../../test_data/wifi_advanced_settings_test_state.dart';
+
 const _loaded = WifiAdvancedSettingsState(
   isIptvEnabled: false,
   isClientSteeringEnabled: true,
@@ -57,5 +59,34 @@ void main() {
         isAirtimeFairnessEnabled: true,
       ),
     );
+  });
+
+  group('as a map', () {
+    test('reads the settings as the test data writes them', () {
+      final state =
+          WifiAdvancedSettingsState.fromMap(wifiAdvancedSettingsTestState);
+
+      expect(state.isIptvEnabled, isNull);
+      expect(state.isClientSteeringEnabled, isTrue);
+      expect(state.isNodesSteeringEnabled, isTrue);
+      expect(state.isMLOEnabled, isTrue);
+      expect(state.isDFSEnabled, isTrue);
+      expect(state.isAirtimeFairnessEnabled, isNull);
+    });
+
+    test('writes back the map it was read from, unknown settings as null', () {
+      final state =
+          WifiAdvancedSettingsState.fromMap(wifiAdvancedSettingsTestState);
+
+      expect(state.toMap(), wifiAdvancedSettingsTestState);
+    });
+
+    test('reads back from the JSON it writes', () {
+      expect(WifiAdvancedSettingsState.fromJson(_loaded.toJson()), _loaded);
+      expect(
+          WifiAdvancedSettingsState.fromJson(
+              const WifiAdvancedSettingsState().toJson()),
+          const WifiAdvancedSettingsState());
+    });
   });
 }

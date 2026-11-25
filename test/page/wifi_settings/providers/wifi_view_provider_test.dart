@@ -36,4 +36,40 @@ void main() {
     notifier().setMacFilteringViewChanged(false);
     expect(flags(), const WiFiViewState());
   });
+
+  group('the flags as a map', () {
+    const map = <String, dynamic>{
+      'isWifiListViewStateChanged': true,
+      'isWifiAdvancedSettingsViewStateChanged': false,
+      'isMacFilteringViewStateChanged': true,
+    };
+
+    test('write and read each tab by name', () {
+      final flags = WiFiViewState.fromMap(map);
+
+      expect(flags.isWifiListViewStateChanged, isTrue);
+      expect(flags.isWifiAdvancedSettingsViewStateChanged, isFalse);
+      expect(flags.isMacFilteringViewStateChanged, isTrue);
+      expect(flags.toMap(), map);
+    });
+
+    test('read back from the JSON they write', () {
+      final flags = WiFiViewState.fromMap(map);
+
+      expect(WiFiViewState.fromJson(flags.toJson()), flags);
+    });
+
+    test('flags read twice are the same; a change to any tab is not', () {
+      final flags = WiFiViewState.fromMap(map);
+
+      expect(WiFiViewState.fromMap(map), flags);
+      for (final edited in [
+        flags.copyWith(isWifiListViewStateChanged: false),
+        flags.copyWith(isWifiAdvancedSettingsViewStateChanged: true),
+        flags.copyWith(isMacFilteringViewStateChanged: false),
+      ]) {
+        expect(edited, isNot(flags));
+      }
+    });
+  });
 }
