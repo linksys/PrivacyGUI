@@ -112,7 +112,7 @@ void main() {
           isAirtimeFairnessEnabled: true,
         ),
       );
-      expect(page(), fetched);
+      expect(page(), same(fetched));
     });
 
     test('shows no MLO, DFS or airtime fairness the router says it lacks',
@@ -143,11 +143,12 @@ void main() {
 
     test('a refused read reaches the caller and leaves the page as it was',
         () async {
+      final before = page();
       router.refuses(JNAPAction.getDFSSettings);
 
       await expectLater(notifier().fetch(), throwsA(isA<JNAPError>()));
 
-      expect(page(), const WifiAdvancedSettingsState());
+      expect(page(), same(before));
     });
   });
 

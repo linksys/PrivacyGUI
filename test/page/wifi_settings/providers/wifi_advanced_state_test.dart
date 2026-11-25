@@ -14,18 +14,20 @@ const _loaded = WifiAdvancedSettingsState(
 );
 
 void main() {
+  // Built at run time, as a fetch builds it, so that the comparison goes
+  // through props and not through one canonical const instance.
   test('the same settings read twice are unchanged', () {
-    expect(
-      _loaded,
-      const WifiAdvancedSettingsState(
-        isIptvEnabled: false,
-        isClientSteeringEnabled: true,
-        isNodesSteeringEnabled: false,
-        isMLOEnabled: true,
-        isDFSEnabled: false,
-        isAirtimeFairnessEnabled: true,
-      ),
+    final readAgain = const WifiAdvancedSettingsState().copyWith(
+      isIptvEnabled: false,
+      isClientSteeringEnabled: true,
+      isNodesSteeringEnabled: false,
+      isMLOEnabled: true,
+      isDFSEnabled: false,
+      isAirtimeFairnessEnabled: true,
     );
+
+    expect(readAgain, isNot(same(_loaded)));
+    expect(readAgain, _loaded);
   });
 
   test('a change to any switch is a change', () {
