@@ -121,6 +121,20 @@ void main() {
       expect(saved.supportedCountries, page().supportedCountries);
     });
 
+    test('a refused write throws, and polling still resumes', () async {
+      open(_pollWith(_powerTable));
+      router.refuses(JNAPAction.setPowerTableSettings,
+          result: 'ErrorInvalidCountry');
+
+      await expectLater(
+          notifier().save(PowerTableCountries.eee),
+          throwsA(isA<JNAPError>()
+              .having((e) => e.result, 'result', 'ErrorInvalidCountry')));
+
+      expect(polling.stopped, 1);
+      expect(polling.started, 1);
+    });
+
     test('a read-only login is refused before polling is touched', () async {
       open(_pollWith(_powerTable), policy: const AccessPolicy(canWrite: false));
 
