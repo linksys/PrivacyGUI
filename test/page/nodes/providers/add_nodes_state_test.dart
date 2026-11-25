@@ -52,6 +52,20 @@ void main() {
     expect(AddNodesState.fromJson(state.toJson()), state);
   });
 
+  test('reads back the MAC addresses it onboarded', () {
+    const state = AddNodesState(
+        isLoading: false, anyOnboarded: true, onboardedMACList: [bedroomMac]);
+
+    final read = AddNodesState.fromJson(state.toJson());
+
+    expect(read.onboardedMACList, [bedroomMac]);
+    expect(read, state);
+  });
+
+  test('reads a state with no loading flag as not loading', () {
+    expect(AddNodesState.fromMap(const {}).isLoading, isFalse);
+  });
+
   test('a state read twice is the same state; a change to any field is not',
       () {
     final state = found();
