@@ -127,8 +127,6 @@ bool _hasCaller(JNAPAction action) {
 }
 
 void main() {
-  stubTempDirectory();
-
   final spec = JnapSpec.load();
 
   // Each resolves from a fresh start; see resolveActions.
