@@ -862,8 +862,15 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
     return status;
   }
 
+  /// Whether this router serves GetAutoMasterStatus, which only Setup12
+  /// defines (#1923). Without it, none of the reads below goes out, and each
+  /// answers as on firmware that does not support it.
+  bool get _isAutoMasterSupported =>
+      serviceHelper.isSupportAutoMaster(state.deviceInfo?.services);
+
   @override
   Future<AutoMasterStatus?> checkAutoMasterStatus() async {
+    if (!_isAutoMasterSupported) return null;
     try {
       final result = await ref.read(routerRepositoryProvider).send(
             JNAPAction.getAutoMasterStatus,
@@ -892,6 +899,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
 
   @override
   Stream<AutoMasterStatus?> pollAutoMasterStatus() {
+    if (!_isAutoMasterSupported) return const Stream.empty();
     return ref
         .read(routerRepositoryProvider)
         .scheduledCommand(
@@ -951,6 +959,7 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
   /// fast we miss the running edge). It keeps polling on `idle`/error/`null`.
   @override
   Stream<AutoMasterStatus?> pollAutoMasterUntilRunning() {
+    if (!_isAutoMasterSupported) return const Stream.empty();
     return ref
         .read(routerRepositoryProvider)
         .scheduledCommand(
