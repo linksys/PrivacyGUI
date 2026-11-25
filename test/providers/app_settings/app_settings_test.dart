@@ -86,4 +86,12 @@ void main() {
     expect(settings, isNot(const AppSettings(locale: Locale('de'))));
     expect(settings, isNot(const AppSettings(themeMode: ThemeMode.dark)));
   });
+
+  test('settings with another theme color are not equal', () {
+    final amber = AppSettings(themeColor: const Color(0xFFFFC107));
+
+    expect(amber, AppSettings(themeColor: const Color(0xFFFFC107)));
+    expect(amber, isNot(AppSettings(themeColor: const Color(0xFF673AB7))));
+    expect(amber, isNot(AppSettings()));
+  });
 }
