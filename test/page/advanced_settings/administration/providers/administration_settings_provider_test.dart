@@ -122,13 +122,18 @@ void main() {
       expect(page().canDisAllowLocalMangementWirelessly, isFalse);
     });
 
-    test('reports a read the router refuses, and keeps the page', () async {
-      router.refuses(JNAPAction.getALGSettings);
-      final before = page();
+    test('reports a read the router refuses, and keeps what it showed',
+        () async {
+      await notifier.fetch();
+      router
+        // A change the failed transaction must not bring in.
+        ..holds(JNAPAction.getUPnPSettings, {..._upnp, 'isUPnPEnabled': false})
+        ..refuses(JNAPAction.getALGSettings);
 
       await expectLater(notifier.fetch(), throwsA(isA<JNAPError>()));
 
-      expect(page(), before);
+      expect(page().isUPnPEnabled, isTrue);
+      expect(page().enabledALG, isTrue);
     });
   });
 
