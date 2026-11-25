@@ -51,5 +51,18 @@ void main() {
       expect(state.copyWith(country: PowerTableCountries.twn),
           PowerTableState.fromMap(_state));
     });
+
+    test('copyWith keeps the region when it is given none', () {
+      final state = PowerTableState.fromMap(_state)
+          .copyWith(isPowerTableSelectable: false);
+
+      expect(state.isPowerTableSelectable, isFalse);
+      expect(state.country, PowerTableCountries.twn);
+    });
+
+    test('describes itself by its fields', () {
+      expect(PowerTableState.fromMap(_state).toString(),
+          allOf(contains('PowerTableState'), contains('twn')));
+    });
   });
 }

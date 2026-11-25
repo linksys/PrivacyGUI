@@ -49,5 +49,18 @@ void main() {
       expect(settings.supportedCountries, ['CHN', 'TWN', 'EEE', 'USA']);
       expect(settings, isNot(PowerTableSettings.fromMap(_routerAnswer)));
     });
+
+    test('copyWith keeps the region when it is given none', () {
+      final settings = PowerTableSettings.fromMap(_routerAnswer)
+          .copyWith(isPowerTableSelectable: false);
+
+      expect(settings.isPowerTableSelectable, isFalse);
+      expect(settings.country, 'TWN');
+    });
+
+    test('describes itself by its fields', () {
+      expect(PowerTableSettings.fromMap(_routerAnswer).toString(),
+          allOf(contains('PowerTableSettings'), contains('TWN')));
+    });
   });
 }

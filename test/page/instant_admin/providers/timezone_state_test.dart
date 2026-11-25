@@ -51,5 +51,12 @@ void main() {
       expect(state.supportedTimezones.single.timeZoneID, 'NST03:30');
       expect(state, isNot(TimezoneState.fromMap(_state)));
     });
+
+    test('copyWith keeps the DST switch when it is given none', () {
+      final state = TimezoneState.fromMap(_state).copyWith(timezoneId: 'PST8');
+
+      expect(state.timezoneId, 'PST8');
+      expect(state.isDaylightSaving, isTrue);
+    });
   });
 }

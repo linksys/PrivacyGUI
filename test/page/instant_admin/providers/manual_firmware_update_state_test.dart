@@ -28,6 +28,14 @@ void main() {
       expect(redraws, 3);
     });
 
+    test('copyWith changes the progress, and keeps it when given none', () {
+      final installing = ManualUpdateInstalling(40);
+
+      expect(installing.copyWith(64).progress, 64);
+      expect(installing.copyWith(null).progress, 40);
+      expect(installing.copyWith(null), isNot(same(installing)));
+    });
+
     test('stopping before it starts does nothing', () {
       expect(() => ManualUpdateInstalling(0).stop(), returnsNormally);
       expect(() => ManualUpdateRebooting().stop(), returnsNormally);
@@ -54,9 +62,17 @@ void main() {
     });
 
     test('copyWith changes what it is given and keeps the rest', () {
-      final file = FileInfo(name: 'fw.bin', bytes: image).copyWith(name: 'b');
+      final file = FileInfo(name: 'fw.bin', bytes: image);
+      final other = Uint8List.fromList([0x01, 0x02]);
 
-      expect(file, FileInfo(name: 'b', bytes: image));
+      expect(file.copyWith(name: 'b'), FileInfo(name: 'b', bytes: image));
+      expect(
+          file.copyWith(bytes: other), FileInfo(name: 'fw.bin', bytes: other));
+    });
+
+    test('describes itself by its name and bytes', () {
+      expect(FileInfo(name: 'fw.bin', bytes: image).toString(),
+          'FileInfo(name: fw.bin, bytes: [39, 5, 25, 86])');
     });
   });
 
@@ -116,6 +132,16 @@ void main() {
       expect(state.copyWith(file: () => null),
           ManualFirmwareUpdateState(status: rebooting));
       expect(state.copyWith(), state);
+    });
+
+    test('describes itself by its file and status', () {
+      expect(
+          ManualFirmwareUpdateState(
+                  file: FileInfo(name: 'fw.bin', bytes: image),
+                  status: ManualUpdateRebooting())
+              .toString(),
+          allOf(contains('ManualFirmwareUpdateState'), contains('fw.bin'),
+              contains('ManualUpdateRebooting')));
     });
   });
 }
