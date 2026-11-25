@@ -72,10 +72,7 @@ const _notInSpec = <JNAPAction, String>{
 const _malformedUrl = <JNAPAction, String>{};
 
 /// Actions the app sends at the pin under a service that does not define them.
-const _wrongService = <JNAPAction, String>{
-  JNAPAction.getWANExternal:
-      'upgraded under Router13, which does not define it (#1906)',
-};
+const _wrongService = <JNAPAction, String>{};
 
 /// The gate of each action that needs one (no URL at the baseline, or a URL
 /// only a newer service defines): the ServiceHelper check its call sites use,
@@ -84,7 +81,6 @@ const _wrongService = <JNAPAction, String>{
 /// services each gate checks, and jnap_service_supported_test.dart that it
 /// opens on them.
 const _gateOf = <JNAPAction, String>{
-  JNAPAction.getWANExternal: 'isSupportWANExternal',
   JNAPAction.clientDeauth: 'isSupportClientDeauth',
   JNAPAction.reboot2: 'isSupportChildReboot',
   JNAPAction.factoryReset2: 'isSupportChildFactoryReset',

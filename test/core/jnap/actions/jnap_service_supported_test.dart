@@ -1,5 +1,6 @@
 // Pins every ServiceHelper gate: each one opens on exactly the services it
-// checks. Every isServiceSupport gate stays (#1923):
+// checks. Every isServiceSupport gate stays, unless its action is deleted
+// (#1923):
 // - removing a gate fails to compile here, through service_helper_gates.dart;
 // - adding a gate fails "every gate is listed" until it is listed there.
 import 'dart:convert';
@@ -12,10 +13,7 @@ import '../../../test_data/device_info_test_data.dart';
 import 'service_helper_gates.dart';
 
 /// Gates known to answer wrong, with the issue that fixes them.
-const _brokenGates = {
-  'isSupportWANExternal': 'it ignores its services argument; #1906 deletes it '
-      'together with GetWANExternal',
-};
+const _brokenGates = <String, String>{};
 
 void main() {
   test('every gate ServiceHelper declares is listed', () {
