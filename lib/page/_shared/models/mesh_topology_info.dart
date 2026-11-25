@@ -41,6 +41,28 @@ class MeshTopologyInfo extends Equatable with DiagnosticLoggable {
   /// direction that reads `0` (not filled) is null here.
   final Map<String, ({int? downlink, int? uplink})> clientRateMap;
 
+  /// MACs (uppercase) of the mesh's own backhaul stations, which are not
+  /// clients (#1839).
+  ///
+  /// Two sources, each enough on its own:
+  /// - every station on a backhaul-only BSS (`BackhaulUse` true and
+  ///   `FronthaulUse` false). This one covers an agent that is rejoining: its
+  ///   backhaul station gets a `Hosts` row about 50 s before DataElements lists
+  ///   the agent itself, and DataElements lists the station under that BSS 2–3
+  ///   s after the row appears (measured on 2.0.4.26112201). Until then, and
+  ///   until the next DataElements read after that, the row still reads as a
+  ///   client;
+  /// - every radio's `BackhaulSta.MACAddress`, which an agent that
+  ///   DataElements lists reports for its own backhaul.
+  ///
+  /// The first source takes a station only from a BSS that reports both
+  /// flags that way. A BSS with both flags true, with only one of them
+  /// reported, or with neither can carry clients, and nothing about a station
+  /// there says which it is, so such a station is here only if the second
+  /// source names it. Built by `MeshTopologyBuilder.backhaulStationsOf`; none
+  /// of these MACs is in the client maps above.
+  final Set<String> backhaulStations;
+
   /// Wired client MAC (uppercase) → node device ID, from DataElements
   /// `Interface.{j}.Neighbor.{k}` with `IsIEEE1905=false` (#1688 item 2).
   ///
@@ -78,6 +100,7 @@ class MeshTopologyInfo extends Equatable with DiagnosticLoggable {
     this.clientSignalMap = const {},
     this.clientBandSsidMap = const {},
     this.clientRateMap = const {},
+    this.backhaulStations = const {},
     this.wiredClientToNodeMap = const {},
     this.ambiguousWiredClients = const {},
     this.mloClients,
@@ -104,6 +127,7 @@ class MeshTopologyInfo extends Equatable with DiagnosticLoggable {
         'clientSignalMap': clientSignalMap,
         'clientBandSsidMap': clientBandSsidMap,
         'clientRateMap': clientRateMap,
+        'backhaulStations': backhaulStations,
         'wiredClientToNodeMap': wiredClientToNodeMap,
         'ambiguousWiredClients': ambiguousWiredClients,
         'mloClients': mloClients,

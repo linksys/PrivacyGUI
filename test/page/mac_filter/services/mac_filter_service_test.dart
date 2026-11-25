@@ -150,6 +150,32 @@ void main() {
       expect(result.connectedDevices.map((d) => d.mac), ['DC:52:85:5D:D0:7C']);
     });
 
+    // #1839. While an agent rejoins, its backhaul station has an online Wi-Fi
+    // Hosts row. It is a node's own interface, so it is not offered either.
+    test("a node's backhaul station is not offered", () async {
+      const bss = 'Device.WiFi.DataElements.Network.Device.1.Radio.1.BSS.2.';
+      stubHosts(
+        {
+          ...host(1, 'aa:bb:cc:dd:ee:0d',
+              layer1: 'Device.WiFi.Radio.1', type: 'Wi-Fi'),
+          ...host(2, '11:22:33:44:55:01',
+              layer1: 'Device.WiFi.Radio.2', type: 'Wi-Fi'),
+        },
+        dataElements: {
+          ...nodes(['aa:bb:cc:dd:ee:01']),
+          '${bss}BSSID': 'aa:bb:cc:dd:ee:f2',
+          '${bss}SSID': 'BackhaulSsid',
+          '${bss}BackhaulUse': 'true',
+          '${bss}FronthaulUse': 'false',
+          '${bss}STA.1.MACAddress': 'aa:bb:cc:dd:ee:0d',
+        },
+      );
+
+      final result = await service.fetchAll();
+
+      expect(result.connectedDevices.map((d) => d.mac), ['11:22:33:44:55:01']);
+    });
+
     // The node list only narrows the picker. A router without DataElements, or
     // a fault reading it, must leave the MAC filter page usable.
     test('a DataElements fault still returns the clients, excluding no node',
