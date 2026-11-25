@@ -172,13 +172,6 @@ class MockServiceHelper extends _i1.Mock implements _i2.ServiceHelper {
       ) as bool);
 
   @override
-  bool isSupportWANExternal([List<String>? services]) => (super.noSuchMethod(
-        Invocation.method(#isSupportWANExternal, [services]),
-        returnValue: false,
-        returnValueForMissingStub: false,
-      ) as bool);
-
-  @override
   bool isSupportClientDeauth([List<String>? services]) => (super.noSuchMethod(
         Invocation.method(#isSupportClientDeauth, [services]),
         returnValue: false,

@@ -252,9 +252,6 @@ enum JNAPAction {
   setExpressForwardingSettings(null, upgrades: {
     JNAPService.router6: 'router/SetExpressForwardingSettings',
   }),
-  getWANExternal(null, upgrades: {
-    JNAPService.router13: 'router/GetWANExternal',
-  }),
   // routerManagement
   getManagementSettings('routermanagement/GetManagementSettings', upgrades: {
     JNAPService.routerManagement2: 'routermanagement/GetManagementSettings2',

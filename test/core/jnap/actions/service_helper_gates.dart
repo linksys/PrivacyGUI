@@ -1,6 +1,7 @@
 // The ServiceHelper gates and the services each one checks, for the #1923
-// tests. Every isServiceSupport gate stays (#1923): jnap_service_supported_test.dart
-// fails to compile when one goes, and fails when one is added and not listed.
+// tests. Every isServiceSupport gate stays, unless its action is deleted
+// (#1923): jnap_service_supported_test.dart fails to compile when one goes,
+// and fails when one is added and not listed.
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 
@@ -93,10 +94,6 @@ final serviceHelperGates = <String, Gate>{
   'isSupportChildFactoryReset': (
     isOpen: ([s]) => _helper.isSupportChildFactoryReset(s),
     services: {JNAPService.core9},
-  ),
-  'isSupportWANExternal': (
-    isOpen: ([s]) => _helper.isSupportWANExternal(s),
-    services: {JNAPService.router13},
   ),
   'isSupportClientDeauth': (
     isOpen: ([s]) => _helper.isSupportClientDeauth(s),
