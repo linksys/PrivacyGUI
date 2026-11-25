@@ -7,7 +7,6 @@ import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 import 'package:privacy_gui/core/jnap/models/traceroute_status.dart';
 import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/wan_external_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_state.dart';
@@ -36,8 +35,6 @@ class InstantVerifyNotifier extends Notifier<InstantVerifyState> {
         ? null
         : GuestRadioSettings.fromMap(guestRadioSettingsResult.output);
 
-    final wanExternal =
-        ref.watch(wanExternalProvider.select((state) => state.wanExternal));
     final state = InstantVerifyState(
       wanConnection: wanStatus?.wanConnection,
       radioInfo: radioInfo ??
@@ -48,7 +45,6 @@ class InstantVerifyNotifier extends Notifier<InstantVerifyState> {
             isGuestNetworkEnabled: false,
             radios: [],
           ),
-      wanExternal: wanExternal,
     );
     return state;
   }

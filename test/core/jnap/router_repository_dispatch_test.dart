@@ -119,10 +119,9 @@ void main() {
 
   setUp(() {
     // Every service the app knows about, so that actions the app only enables
-    // when the router advertises a service (clientDeauth, getWANExternal, ...)
+    // when the router advertises a service (clientDeauth, ...)
     // have a value to send.
-    buildBetterActions(
-        JNAPService.appSupportedServices.map((s) => s.value).toList());
+    buildBetterActions(JNAPService.values.map((s) => s.value).toList());
     recorder = _RecordingExecutor();
     container = containerWith(policy: AccessPolicy.full);
     repo = container.read(routerRepositoryProvider);

@@ -229,6 +229,7 @@
       "http://linksys.com/jnap/nodes/setup/Setup9",
       "http://linksys.com/jnap/nodes/setup/Setup10",
       "http://linksys.com/jnap/nodes/setup/Setup11",
+      "http://linksys.com/jnap/nodes/setup/Setup12",
       "http://linksys.com/jnap/nodes/smartmode/SmartMode",
       "http://linksys.com/jnap/nodes/smartmode/SmartMode2",
       "http://linksys.com/jnap/nodes/setup/SelectableWAN",
@@ -360,6 +361,7 @@
       "http://linksys.com/jnap/nodes/setup/Setup9",
       "http://linksys.com/jnap/nodes/setup/Setup10",
       "http://linksys.com/jnap/nodes/setup/Setup11",
+      "http://linksys.com/jnap/nodes/setup/Setup12",
       "http://linksys.com/jnap/nodes/smartmode/SmartMode",
       "http://linksys.com/jnap/nodes/smartmode/SmartMode2",
       "http://linksys.com/jnap/nodes/setup/SelectableWAN",
@@ -1436,6 +1438,9 @@
     "only: http://linksys.com/jnap/nodes/setup/Setup11": [
       "http://linksys.com/jnap/nodes/setup/Setup11"
     ],
+    "only: http://linksys.com/jnap/nodes/setup/Setup12": [
+      "http://linksys.com/jnap/nodes/setup/Setup12"
+    ],
     "only: http://linksys.com/jnap/nodes/smartmode/SmartMode": [
       "http://linksys.com/jnap/nodes/smartmode/SmartMode"
     ],
@@ -1581,7 +1586,7 @@
       "setFirmwareUpdateSettings": "http://linksys.com/jnap/firmwareupdate/SetFirmwareUpdateSettings",
       "updateFirmwareNow": "http://linksys.com/jnap/nodes/firmwareupdate/UpdateFirmwareNow",
       "nodesUpdateFirmwareNow": "http://linksys.com/jnap/nodes/firmwareupdate/UpdateFirmwareNow",
-      "getGamingPrioritizationSettings": "http://linksys.com/jnap/gamingprioritization/GetGamingPrioritizationSettings:",
+      "getGamingPrioritizationSettings": "http://linksys.com/jnap/gamingprioritization/GetGamingPrioritizationSettings",
       "setGamingPrioritizationSettings": "http://linksys.com/jnap/gamingprioritization/SetGamingPrioritizationSettings",
       "getGuestNetworkClients": "http://linksys.com/jnap/guestnetwork/GetGuestNetworkClients",
       "getGuestNetworkSettings": "http://linksys.com/jnap/guestnetwork/GetGuestNetworkSettings",
@@ -1643,7 +1648,6 @@
       "getEthernetPortConnections": "http://linksys.com/jnap/router/GetEthernetPortConnections",
       "getExpressForwardingSettings": null,
       "setExpressForwardingSettings": null,
-      "getWANExternal": null,
       "getManagementSettings": "http://linksys.com/jnap/routermanagement/GetManagementSettings",
       "setManagementSettings": "http://linksys.com/jnap/routermanagement/SetManagementSettings",
       "getUPnPSettings": "http://linksys.com/jnap/routerupnp/GetUPnPSettings",
@@ -1777,7 +1781,6 @@
       "setWANSettings": "http://linksys.com/jnap/router/SetWANSettings5",
       "getExpressForwardingSettings": "http://linksys.com/jnap/router/GetExpressForwardingSettings",
       "setExpressForwardingSettings": "http://linksys.com/jnap/router/SetExpressForwardingSettings",
-      "getWANExternal": "http://linksys.com/jnap/router/GetWANExternal",
       "getManagementSettings": "http://linksys.com/jnap/routermanagement/GetManagementSettings2",
       "setManagementSettings": "http://linksys.com/jnap/routermanagement/SetManagementSettings2",
       "setupSetAdminPassword": "http://linksys.com/jnap/nodes/setup/SetAdminPassword2",
@@ -1817,7 +1820,6 @@
       "setWANSettings": "http://linksys.com/jnap/router/SetWANSettings5",
       "getExpressForwardingSettings": "http://linksys.com/jnap/router/GetExpressForwardingSettings",
       "setExpressForwardingSettings": "http://linksys.com/jnap/router/SetExpressForwardingSettings",
-      "getWANExternal": "http://linksys.com/jnap/router/GetWANExternal",
       "getManagementSettings": "http://linksys.com/jnap/routermanagement/GetManagementSettings2",
       "setManagementSettings": "http://linksys.com/jnap/routermanagement/SetManagementSettings2",
       "setupSetAdminPassword": "http://linksys.com/jnap/nodes/setup/SetAdminPassword2",
@@ -1855,7 +1857,6 @@
       "setWANSettings": "http://linksys.com/jnap/router/SetWANSettings4",
       "getExpressForwardingSettings": "http://linksys.com/jnap/router/GetExpressForwardingSettings",
       "setExpressForwardingSettings": "http://linksys.com/jnap/router/SetExpressForwardingSettings",
-      "getWANExternal": "http://linksys.com/jnap/router/GetWANExternal",
       "getManagementSettings": "http://linksys.com/jnap/routermanagement/GetManagementSettings2",
       "setManagementSettings": "http://linksys.com/jnap/routermanagement/SetManagementSettings2",
       "setupSetAdminPassword": "http://linksys.com/jnap/nodes/setup/SetAdminPassword2",
@@ -1891,7 +1892,6 @@
       "setWANSettings": "http://linksys.com/jnap/router/SetWANSettings4",
       "getExpressForwardingSettings": "http://linksys.com/jnap/router/GetExpressForwardingSettings",
       "setExpressForwardingSettings": "http://linksys.com/jnap/router/SetExpressForwardingSettings",
-      "getWANExternal": "http://linksys.com/jnap/router/GetWANExternal",
       "getManagementSettings": "http://linksys.com/jnap/routermanagement/GetManagementSettings2",
       "setManagementSettings": "http://linksys.com/jnap/routermanagement/SetManagementSettings2",
       "setupSetAdminPassword": "http://linksys.com/jnap/nodes/setup/SetAdminPassword2",
@@ -2075,9 +2075,6 @@
     },
     "only: http://linksys.com/jnap/router/Router10": {
       "getWANSettings": "http://linksys.com/jnap/router/GetWANSettings5"
-    },
-    "only: http://linksys.com/jnap/router/Router13": {
-      "getWANExternal": "http://linksys.com/jnap/router/GetWANExternal"
     },
     "only: http://linksys.com/jnap/router/Router14": {
       "setWANSettings": "http://linksys.com/jnap/router/SetWANSettings5"
