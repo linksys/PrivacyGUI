@@ -313,6 +313,7 @@ class DeviceManagerState extends Equatable {
     return [
       wirelessConnections,
       radioInfos,
+      guestRadioSettings,
       deviceList,
       wanStatus,
       backhaulInfoData,
