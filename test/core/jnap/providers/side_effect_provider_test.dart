@@ -8,6 +8,8 @@
 // reads the outcome after pumping, never awaiting it (#1866 BRIEF rule 11).
 // side_effect_boot_check_test.dart pins the "is it back" predicate itself.
 
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
@@ -320,15 +322,53 @@ void main() {
     });
   });
 
-  test('a side effect keeps what copyWith does not name', () {
-    const effect = JNAPSideEffect(hasSideEffect: true, reason: 'manual');
+  group('a side effect as a value', () {
+    test('keeps what copyWith does not name', () {
+      const effect = JNAPSideEffect(hasSideEffect: true, reason: 'manual');
 
-    final moved = effect.copyWith(progress: 40);
+      final moved = effect.copyWith(progress: 40);
 
-    expect(
-        moved,
-        const JNAPSideEffect(
-            hasSideEffect: true, reason: 'manual', progress: 40));
-    expect(moved, isNot(effect));
+      expect(
+          moved,
+          const JNAPSideEffect(
+              hasSideEffect: true, reason: 'manual', progress: 40));
+      expect(moved, isNot(effect));
+      expect(moved.copyWith(), moved);
+    });
+
+    test('writes itself out and reads itself back', () {
+      final effect = JNAPSideEffect.fromJson(
+          jsonDecode('{"hasSideEffect": true, "reason": "DeviceRestart", '
+              '"progress": 40}') as Map<String, dynamic>);
+
+      expect(effect.toJson(),
+          {'hasSideEffect': true, 'reason': 'DeviceRestart', 'progress': 40});
+      expect(JNAPSideEffect.fromJson(effect.toJson()), effect);
+      expect(JNAPSideEffect.fromJson(effect.copyWith(progress: 80).toJson()),
+          isNot(effect));
+    });
+
+    test('writes no reason when it has none', () {
+      final idle = JNAPSideEffect.fromJson(
+          const {'hasSideEffect': false, 'reason': null, 'progress': 0});
+
+      expect(idle.reason, isNull);
+      expect(idle.toJson(),
+          {'hasSideEffect': false, 'reason': null, 'progress': 0});
+    });
+  });
+
+  group('overrides as a value', () {
+    test('are equal when they hold the same condition', () {
+      bool backAtOnce() => true;
+      bool neverBack() => false;
+
+      expect(JNAPSideEffectOverrides(maxRetry: 5, condition: backAtOnce),
+          JNAPSideEffectOverrides(maxRetry: 5, condition: backAtOnce));
+      expect(JNAPSideEffectOverrides(maxRetry: 5, condition: backAtOnce),
+          isNot(JNAPSideEffectOverrides(maxRetry: 5, condition: neverBack)));
+      expect(JNAPSideEffectOverrides(condition: backAtOnce).toString(),
+          contains('JNAPSideEffectOverrides'));
+    });
   });
 }
