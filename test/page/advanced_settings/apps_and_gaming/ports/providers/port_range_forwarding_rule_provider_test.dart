@@ -130,6 +130,10 @@ void main() {
     });
 
     test('flags a range that starts or ends on a single port', () {
+      // A range holds its first and last ports. That the router refuses a
+      // single port on a range's end is inferred from the comment in
+      // AppsAndGamingViewNotifier.save, which meets the router's overlap
+      // error across the two lists; it was not checked on a router.
       expect(notifier.isPortConflict(3074, 3080, 'TCP'), isTrue);
       expect(notifier.isPortConflict(3070, 3074, 'TCP'), isTrue);
       expect(notifier.isPortConflict(3074, 3074, 'TCP'), isTrue);

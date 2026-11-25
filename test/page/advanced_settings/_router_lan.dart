@@ -1,4 +1,4 @@
-/// `GetLANSettings` output for the port pages' tests: 192.168.1.1/24.
+/// `GetLANSettings` output for the advanced settings tests: 192.168.1.1/24.
 const routerLan = <String, dynamic>{
   'minNetworkPrefixLength': 16,
   'maxNetworkPrefixLength': 30,

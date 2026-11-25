@@ -76,9 +76,11 @@ void main() {
     });
 
     test('turns down the router, the network address and other networks', () {
-      // The broadcast address is left out: on the Dart VM the validator
-      // computes it with a 64-bit `~` and lets it through (see the #1866
-      // wave 5 report); dart2js, which 1.x ships, turns it down.
+      // The broadcast address, 192.168.1.255, is left out. The validator
+      // computes it as (~mask | network) >>> 0: dart2js, which 1.x ships,
+      // gives `~` 32 bits and turns .255 down, but the Dart VM these tests
+      // run on gives it 64 bits, gets a negative number and lets .255
+      // through. A test here could only pin the VM's wrong answer.
       expect(notifier.isDeviceIpValidate('192.168.1.1'), isFalse);
       expect(notifier.isDeviceIpValidate('192.168.1.0'), isFalse);
       expect(notifier.isDeviceIpValidate('192.168.2.150'), isFalse);
@@ -125,6 +127,10 @@ void main() {
     });
 
     test('flags a port on either end of a range', () {
+      // A range holds its first and last ports. That the router refuses a
+      // single port on a range's end is inferred from the comment in
+      // AppsAndGamingViewNotifier.save, which meets the router's overlap
+      // error across the two lists; it was not checked on a router.
       expect(notifier.isPortConflict(6888, 'TCP'), isTrue);
       expect(notifier.isPortConflict(6900, 'TCP'), isTrue);
     });

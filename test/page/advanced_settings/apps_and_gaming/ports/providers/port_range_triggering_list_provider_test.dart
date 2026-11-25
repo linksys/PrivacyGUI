@@ -27,7 +27,8 @@ const _irc = <String, dynamic>{
   'description': 'IRC',
 };
 
-/// `GetPortRangeTriggeringRules` output, after the spec's sample.
+/// `GetPortRangeTriggeringRules` output, after the legacy JNAP reference's
+/// sample.
 Map<String, dynamic> _rules(List<Map<String, dynamic>> rules) =>
     {'rules': rules, 'maxDescriptionLength': 12, 'maxRules': 15};
 

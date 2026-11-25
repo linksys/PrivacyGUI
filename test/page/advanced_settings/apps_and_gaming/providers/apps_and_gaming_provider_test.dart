@@ -13,7 +13,7 @@ import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/app
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_state.dart';
 
 import '../../../../common/router_boundary.dart';
-import '../ports/providers/_router_lan.dart';
+import '../../_router_lan.dart';
 
 const _wanStatus = <String, dynamic>{
   'macAddress': '00:11:22:33:44:55',

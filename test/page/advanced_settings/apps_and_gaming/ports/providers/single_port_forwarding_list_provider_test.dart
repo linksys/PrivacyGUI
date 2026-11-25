@@ -8,7 +8,7 @@ import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/provide
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/single_port_forwarding_list_state.dart';
 
 import '../../../../../common/router_boundary.dart';
-import '_router_lan.dart';
+import '../../../_router_lan.dart';
 
 const _xbox = <String, dynamic>{
   'isEnabled': true,
@@ -28,7 +28,9 @@ const _ssh = <String, dynamic>{
   'description': 'SSH',
 };
 
-/// `GetSinglePortForwardingRules` output, after the spec's sample.
+/// `GetSinglePortForwardingRules` output, after the legacy JNAP reference's
+/// sample. Not the router-shaped test data: its limits, 50 and 32, are the
+/// fallbacks, so a test could not tell them from what the router said.
 Map<String, dynamic> _rules(List<Map<String, dynamic>> rules) =>
     {'rules': rules, 'maxDescriptionLength': 12, 'maxRules': 20};
 

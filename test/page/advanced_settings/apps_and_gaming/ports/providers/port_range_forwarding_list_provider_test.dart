@@ -8,7 +8,7 @@ import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/provide
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/port_range_forwarding_list_state.dart';
 
 import '../../../../../common/router_boundary.dart';
-import '_router_lan.dart';
+import '../../../_router_lan.dart';
 
 const _torrent = <String, dynamic>{
   'isEnabled': true,
@@ -28,7 +28,8 @@ const _voip = <String, dynamic>{
   'description': 'VoIP',
 };
 
-/// `GetPortRangeForwardingRules` output, after the spec's sample.
+/// `GetPortRangeForwardingRules` output, after the legacy JNAP reference's
+/// sample.
 Map<String, dynamic> _rules(List<Map<String, dynamic>> rules) =>
     {'rules': rules, 'maxDescriptionLength': 12, 'maxRules': 15};
 
@@ -78,12 +79,22 @@ void main() {
       expect(page().maxDescriptionLength, 32);
     });
 
-    test('reports a read the router refuses, and keeps the page', () async {
-      router.refuses(JNAPAction.getPortRangeForwardingRules);
+    test('reports a read the router refuses, and keeps what it showed',
+        () async {
+      await notifier.fetch();
+      router
+        // A LAN the failed read must not take on.
+        ..holds(JNAPAction.getLANSettings,
+            {...routerLan, 'ipAddress': '10.0.0.1', 'networkPrefixLength': 16})
+        ..refuses(JNAPAction.getPortRangeForwardingRules);
 
       await expectLater(notifier.fetch(), throwsA(isA<JNAPError>()));
 
-      expect(page(), const PortRangeForwardingListState());
+      expect(page().rules, [
+        PortRangeForwardingRule.fromMap(_torrent),
+        PortRangeForwardingRule.fromMap(_voip),
+      ]);
+      expect(page().routerIp, '192.168.1.1');
     });
   });
 
