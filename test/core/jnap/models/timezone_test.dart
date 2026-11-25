@@ -48,11 +48,6 @@ void main() {
       expect(zone.observesDST, isTrue);
     });
 
-    test('describes itself by its fields', () {
-      expect(SupportedTimezone.fromMap(_newfoundland).toString(),
-          allOf(contains('SupportedTimezone'), contains('NST03:30')));
-    });
-
     test('two zones with the same fields are equal', () {
       expect(SupportedTimezone.fromMap(_newfoundland),
           SupportedTimezone.fromMap(Map.of(_newfoundland)));

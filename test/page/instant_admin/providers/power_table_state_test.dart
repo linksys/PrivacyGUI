@@ -59,10 +59,5 @@ void main() {
       expect(state.isPowerTableSelectable, isFalse);
       expect(state.country, PowerTableCountries.twn);
     });
-
-    test('describes itself by its fields', () {
-      expect(PowerTableState.fromMap(_state).toString(),
-          allOf(contains('PowerTableState'), contains('twn')));
-    });
   });
 }

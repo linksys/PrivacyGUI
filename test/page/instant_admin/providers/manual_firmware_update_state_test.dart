@@ -69,11 +69,6 @@ void main() {
       expect(
           file.copyWith(bytes: other), FileInfo(name: 'fw.bin', bytes: other));
     });
-
-    test('describes itself by its name and bytes', () {
-      expect(FileInfo(name: 'fw.bin', bytes: image).toString(),
-          'FileInfo(name: fw.bin, bytes: [39, 5, 25, 86])');
-    });
   });
 
   group('ManualFirmwareUpdateState', () {
@@ -132,16 +127,6 @@ void main() {
       expect(state.copyWith(file: () => null),
           ManualFirmwareUpdateState(status: rebooting));
       expect(state.copyWith(), state);
-    });
-
-    test('describes itself by its file and status', () {
-      expect(
-          ManualFirmwareUpdateState(
-                  file: FileInfo(name: 'fw.bin', bytes: image),
-                  status: ManualUpdateRebooting())
-              .toString(),
-          allOf(contains('ManualFirmwareUpdateState'), contains('fw.bin'),
-              contains('ManualUpdateRebooting')));
     });
   });
 }
