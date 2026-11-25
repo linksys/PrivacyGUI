@@ -42,7 +42,9 @@ void main() {
     test('shows nothing before a node is picked', () {
       open('');
 
-      expect(page(), const NodeDetailState());
+      expect(page().deviceId, '');
+      expect(page().location, '');
+      expect(page().connectedDevices, isEmpty);
     });
 
     test('the router: its place, hardware, addresses and the Internet above it',
@@ -165,7 +167,7 @@ void main() {
           reason: 'the stop cancels the one that was due');
     });
 
-    testWidgets('a stop-only toggle stops, whether or not a blink is on',
+    testWidgets('a stop-only toggle stops even with no blink on',
         (tester) async {
       open('bedroom');
 
@@ -174,6 +176,27 @@ void main() {
 
       expect(router.actions, [JNAPAction.stopBlinkNodeLed]);
       expect(page().blinkingStatus, BlinkingStatus.blinkNode);
+    });
+
+    testWidgets('a stop-only toggle stops a blink that is on, and forgets it',
+        (tester) async {
+      open('bedroom');
+      await notifier().toggleBlinkNode();
+      await tester.pump();
+
+      await notifier().toggleBlinkNode(true);
+      await tester.pump();
+
+      expect(router.actions,
+          [JNAPAction.startBlinkNodeLed, JNAPAction.stopBlinkNodeLed]);
+      expect(page().blinkingStatus, BlinkingStatus.blinkNode);
+      expect((await SharedPreferences.getInstance()).get(blinkingDeviceId),
+          isNull);
+
+      await tester.pump(const Duration(seconds: 24));
+      expect(router.actions.where((a) => a == JNAPAction.stopBlinkNodeLed),
+          hasLength(1),
+          reason: 'the stop cancels the one that was due');
     });
 
     testWidgets('a refused start offers the blink again', (tester) async {
