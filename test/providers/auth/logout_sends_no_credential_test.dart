@@ -34,6 +34,7 @@ import 'package:privacy_gui/core/jnap/jnap_command_executor_mixin.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/jnap/spec/jnap_spec.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -75,12 +76,21 @@ Map<String, dynamic> _firmwareStatus({
         },
     };
 
+/// The install's own request. The check sends the same action, with
+/// `onlyCheck: true`.
+bool _isInstallRequest(_Received r) =>
+    r.action == JNAPAction.updateFirmwareNow.actionValue &&
+    r.data['onlyCheck'] == false;
+
 /// One request as the router received it.
 class _Received {
-  _Received(this.action, this.header);
+  _Received(this.action, this.header, this.data);
 
   final String action;
   final Map<String, String> header;
+
+  /// The request's body, for a single action; empty for a transaction.
+  final Map<String, dynamic> data;
 
   bool get carriesCredential => header.keys.any(_credentialHeaders.contains);
 
@@ -112,7 +122,9 @@ class _RecordingRouter with JNAPCommandExecutor<Response> {
   @override
   Future<Response> execute(BaseCommand command) async {
     final http = command as BaseHttpCommand;
-    received.add(_Received(command.spec.action, Map.of(http.header)));
+    final spec = command.spec;
+    received.add(_Received(spec.action, Map.of(http.header),
+        spec is JNAPCommandSpec ? Map.of(spec.data) : const {}));
     final delay = delays[command.spec.action];
     if (delay != null) await Future.delayed(delay);
     if (command is TransactionHttpCommand) {
@@ -264,6 +276,9 @@ void main() {
     // The first poll, then one tick of the timer.
     await tester.pump(const Duration(seconds: 2));
     await tester.pump(const Duration(seconds: 61));
+    // Only the first poll reaches the router here: the timer's ticks are
+    // answered from the command cache, whose expiry reads the real clock,
+    // not this test's. Without logout()'s stopPolling() the case still fails.
     expect(router.received.where((r) => r.action.contains('Transaction')),
         isNotEmpty,
         reason: 'polling did run while logged in');
@@ -354,6 +369,8 @@ void main() {
       ..answerAfter(JNAPAction.updateFirmwareNow, const Duration(seconds: 1));
     final started = firmware.updateFirmware();
     await tester.pump(const Duration(milliseconds: 200));
+    expect(router.received.where(_isInstallRequest), hasLength(1),
+        reason: 'the install did start while logged in');
     expect(container.read(firmwareUpdateProvider).isUpdating, isTrue);
 
     final after = await logOut(tester);
@@ -376,15 +393,14 @@ void main() {
       await tester.pump(const Duration(seconds: 2));
     }
     expect(firmware.getAvailableUpdateNumber(), 1);
-    // Still installing at every check, so the install's checks never end on
-    // their own while the case runs.
+    // Still installing at every check, so the install's checks would go on
+    // until they run out: 60 of them, 2 s apart.
     router.answer(JNAPAction.getFirmwareUpdateStatus,
         _firmwareStatus(update: true, installing: true));
     final started = firmware.updateFirmware();
     await tester.pump(const Duration(seconds: 4));
     await started;
-    expect(router.received.map((r) => r.action),
-        contains(JNAPAction.updateFirmwareNow.actionValue),
+    expect(router.received.where(_isInstallRequest), hasLength(1),
         reason: 'the install did start while logged in');
 
     expect(container.read(firmwareUpdateProvider).isUpdating, isTrue);

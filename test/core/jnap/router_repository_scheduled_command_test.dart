@@ -313,6 +313,30 @@ void main() {
   });
 
   queueTest(
+      'a stop condition that throws ends the loop with its error, '
+      'without onCompleted', (tester) async {
+    // The condition runs outside the request's try, so what it throws ends the
+    // loop. Pinned so that a change to it is made on purpose: the firmware
+    // install's condition parses each status with casts, so a status it
+    // cannot read ends the install's checks this way.
+    final loop = run(
+      firstDelay: 0,
+      retryDelay: 100,
+      maxRetry: 5,
+      condition: (_) => throw const FormatException('not a status'),
+    );
+
+    await drainQueue(tester);
+
+    expect(executor.requests, hasLength(1));
+    expect(loop.results, hasLength(1),
+        reason: 'the answer is yielded before the condition reads it');
+    expect(loop.errors.single, isA<FormatException>());
+    expect(loop.completed, isEmpty);
+    expect(loop.done.isCompleted, isTrue);
+  });
+
+  queueTest(
       'every request skips the cache, is tried once, '
       'and uses the timeout override', (tester) async {
     run(firstDelay: 0, retryDelay: 100, maxRetry: 2, requestTimeout: 3000);
