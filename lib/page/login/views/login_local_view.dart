@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/layouts/center_or_scroll.dart';
 import 'package:privacy_gui/constants/error_code.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -62,7 +61,6 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
           .checkDeviceInfo(null)
           .then((value) {
         _deviceInfo = value;
-        buildBetterActions(value.services);
         if (_p != null) {
           _passwordController.text = _p!;
           _doLogin();
