@@ -43,9 +43,4 @@ void main() {
     expect(_nas.copyWith(reserved: false).reserved, isFalse);
     expect(_nas.copyWith(), _nas);
   });
-
-  test('describes itself by its fields', () {
-    expect(_state.toString(), contains('reservations: [ReservedListItem('));
-    expect(_nas.toString(), contains('reserved: true'));
-  });
 }

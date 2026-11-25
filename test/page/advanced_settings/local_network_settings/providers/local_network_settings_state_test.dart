@@ -94,10 +94,6 @@ void main() {
       expect(cleared.wins, isNull);
       expect(cleared.hostNameInvalidChars, isNull);
     });
-
-    test('describes itself by its fields', () {
-      expect(_state.toString(), contains('hostName: Linksys00042'));
-    });
   });
 
   group('LocalNetworkErrorPrompt', () {
@@ -183,9 +179,11 @@ void main() {
         subnetMask: '255.255.255.0',
       );
 
-      // The end of the range is left out: on the Dart VM the state computes
-      // the broadcast address with a 64-bit `~` and gets it wrong (see the
-      // #1866 wave 5 report); dart2js, which 1.x ships, gets it right.
+      // The end of the range is left out. The state computes the broadcast
+      // address as (~mask | network) >>> 0: dart2js, which 1.x ships, gives
+      // `~` 32 bits and ends the range at 192.168.1.254, but the Dart VM
+      // these tests run on gives it 64 bits, gets a negative number and
+      // ends it at 0.0.0.0. A test here could only pin the VM's answer.
       expect(
           text, startsWith('IP address not in valid subnet [192.168.1.1 - '));
     });

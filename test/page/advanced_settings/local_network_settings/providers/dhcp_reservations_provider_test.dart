@@ -229,10 +229,13 @@ void main() {
 
     test('reserves a device added by hand as new, whatever its check says', () {
       notifier.updateDevices(const [_laptop]);
+      // Checked already: without isNew the add would flip it to unreserved.
       final added = page().devices.single.copyWith(reserved: true);
 
       notifier.updateReservations(added, true);
 
+      expect(page().reservations, hasLength(2));
+      expect(page().reservations.last.data.macAddress, 'AA:BB:CC:DD:EE:03');
       expect(page().reservations.last.reserved, isTrue);
     });
 
