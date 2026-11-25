@@ -200,5 +200,13 @@ void main() {
           'dashboardHome');
       expect(PnpTroubleshooterState.fromMap(const {}).enterRouteName, '');
     });
+
+    test('copyWith keeps the route when it is given none', () {
+      expect(
+          PnpTroubleshooterState(enterRouteName: 'dashboardHome')
+              .copyWith()
+              .enterRouteName,
+          'dashboardHome');
+    });
   });
 }
