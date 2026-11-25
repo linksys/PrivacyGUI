@@ -6,11 +6,13 @@
 // that copy the loop into a mock (router_boundary.dart,
 // firmware_update_provider_test.dart) lean on what is pinned here.
 //
-// One case is red on the base branch and skipped until #1904 P1: cancelling
-// the subscription during a retry delay still sends one more request, because
-// an async* loop only notices the cancel at its next yield, which comes after
-// the next send. P1 ties work to the session, so it cannot rely on a cancel
-// alone.
+// A loop can be tied to the login its work began in (#1904 P1): a logout then
+// ends it before its next request. The "tied to a login" group pins that.
+//
+// One case is red and skipped until #1904 P2: cancelling the subscription
+// during a retry delay still sends one more request, because an async* loop
+// only notices the cancel at its next yield, which comes after the next send.
+// A loop tied to the login does not rely on a cancel to stop.
 //
 // Time is the test binding's fake clock. Each request waits for the command
 // queue's next 50 ms tick before it reaches the executor, so the checks below
@@ -22,19 +24,26 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart';
 import 'package:privacy_gui/constants/jnap_const.dart';
+import 'package:privacy_gui/core/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/command/http/base_http_command.dart';
 import 'package:privacy_gui/core/jnap/jnap_command_executor_mixin.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-/// Skipped until #1904 P1, which must stop the loop before its next request.
-const _redUntil1904P1 = true;
+import '../../common/di.dart';
+
+/// Skipped until #1904 P2, which makes a cancel stop the loop before its next
+/// request.
+const _redUntil1904P2 = true;
 
 /// What the router does with one request.
 typedef _Answer = Response Function();
@@ -87,6 +96,8 @@ class _LocalConnectivityNotifier extends ConnectivityNotifier {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  // A logout resets the device manager, which asks the service helper.
+  mockDependencyRegister();
   final messenger =
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
   messenger.setMockMethodCallHandler(
@@ -149,15 +160,22 @@ void main() {
   }
 
   /// Starts a loop of [JNAPAction.getFirmwareUpdateStatus] and collects what it
-  /// yields, and the one `onCompleted` call.
-  ({List<JNAPResult> results, List<bool> completed, Completer<void> done}) run({
+  /// yields, the errors it ends with, and the one `onCompleted` call.
+  ({
+    List<JNAPResult> results,
+    List<Object> errors,
+    List<bool> completed,
+    Completer<void> done,
+  }) run({
     int firstDelay = 1000,
     int retryDelay = 2000,
     int maxRetry = 10,
     bool Function(JNAPResult)? condition,
     int? requestTimeout,
+    int? logoutGeneration,
   }) {
     final results = <JNAPResult>[];
+    final errors = <Object>[];
     final completed = <bool>[];
     final done = Completer<void>();
     repo
@@ -169,9 +187,10 @@ void main() {
           condition: condition,
           onCompleted: completed.add,
           requestTimeoutOverride: requestTimeout,
+          logoutGeneration: logoutGeneration,
         )
-        .listen(results.add, onDone: done.complete);
-    return (results: results, completed: completed, done: done);
+        .listen(results.add, onError: errors.add, onDone: done.complete);
+    return (results: results, errors: errors, completed: completed, done: done);
   }
 
   queueTest('waits the first delay, then sends once per retry delay',
@@ -317,10 +336,76 @@ void main() {
     expect(executor.settings, [(10000, 0)]);
   });
 
+  group('tied to a login', () {
+    // A loop given the AuthNotifier.logoutGeneration its work began in (#1904
+    // P1). The real AuthNotifier, so the logout is the app's own.
+    AuthNotifier auth() => container.read(authProvider.notifier);
+
+    setUp(() {
+      FlutterSecureStorage.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({});
+    });
+
+    // AuthNotifier's constructor installs a handler on the shared client.
+    tearDown(() => LinksysHttpClient.onError = null);
+
+    queueTest('ends at a logout, before its next request', (tester) async {
+      final loop = run(
+        firstDelay: 0,
+        retryDelay: 2000,
+        logoutGeneration: auth().logoutGeneration,
+      );
+      await advance(tester, 500);
+      expect(executor.requests, hasLength(1));
+
+      await auth().logout();
+      await drainQueue(tester);
+
+      expect(executor.requests, hasLength(1),
+          reason: 'nothing is sent once the logout has happened');
+      expect(loop.errors.single, isA<LoggedOutException>());
+      expect(loop.completed, isEmpty,
+          reason: 'neither did the condition hold, nor did the retries run '
+              'out, so the caller is told neither');
+      expect(loop.done.isCompleted, isTrue);
+    });
+
+    queueTest('started after the logout it belongs to, sends nothing',
+        (tester) async {
+      // Work that began before a logout and reaches its loop only after it,
+      // such as a firmware check whose first request was still out.
+      final generation = auth().logoutGeneration;
+      await auth().logout();
+
+      final loop =
+          run(firstDelay: 0, retryDelay: 100, logoutGeneration: generation);
+      await drainQueue(tester);
+
+      expect(executor.requests, isEmpty);
+      expect(loop.errors.single, isA<LoggedOutException>());
+      expect(loop.completed, isEmpty);
+    });
+
+    queueTest('a loop not tied to the login goes on across a logout',
+        (tester) async {
+      // The other owners keep today's behaviour until #1904 P2 ties them.
+      final loop = run(firstDelay: 0, retryDelay: 1000, maxRetry: 3);
+      await advance(tester, 500);
+      expect(executor.requests, hasLength(1));
+
+      await auth().logout();
+      await drainQueue(tester);
+
+      expect(executor.requests, hasLength(3));
+      expect(loop.errors, isEmpty);
+      expect(loop.completed, [true]);
+    });
+  });
+
   queueTest(
       'cancelling the subscription stops the loop before its next '
       'request',
-      skip: _redUntil1904P1, (tester) async {
+      skip: _redUntil1904P2, (tester) async {
     final results = <JNAPResult>[];
     final subscription = repo
         .scheduledCommand(
