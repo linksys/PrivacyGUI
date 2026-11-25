@@ -145,6 +145,34 @@ void main() {
           '==================================');
     });
 
+    testWidgets('describes the screen it was taken on', (tester) async {
+      late BuildContext context;
+      await tester.pumpWidget(MediaQuery(
+        data: const MediaQueryData(
+          size: Size(390, 844),
+          devicePixelRatio: 3,
+          textScaler: TextScaler.linear(1.3),
+          padding: EdgeInsets.only(top: 47, bottom: 34),
+        ),
+        child: Builder(builder: (c) {
+          context = c;
+          return const SizedBox();
+        }),
+      ));
+
+      expect(getScreenInfo(context).split('\n'), [
+        '================================= Screen Info '
+            '==================================',
+        'Screen size: Size(390.0, 844.0)',
+        // The size in device pixels: 390 x 844 at a pixel ratio of 3.
+        'Physical Screen size: Size(1170.0, 2532.0)',
+        'Screen pixel ratio: 3.0',
+        'Font scale: 1.3',
+        'Top padding of safe area: 47.0',
+        'Bottom padding of safe area: 34.0',
+      ]);
+    });
+
     // On the web this is the exported log (get_log_web.dart). The sections
     // stay empty on the Dart VM, which never fills the web log.
     testWidgets('on the web, lists its sections in order', (tester) async {
