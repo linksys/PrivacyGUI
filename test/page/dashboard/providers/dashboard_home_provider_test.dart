@@ -179,6 +179,20 @@ void main() {
       expect(home().speedCheckTimestamp, 1767604500000);
     });
 
+    // The router's timestamps are ISO 8601, on a 24-hour clock. Read on a
+    // 12-hour one, a test run at 12:30 UTC showed as run at 00:30.
+    test('reads a test run in the 12 o\'clock hour at the time it ran', () {
+      pollReports(homeNetworkPoll(extra: {
+        JNAPAction.getHealthCheckResults: {
+          'healthCheckResults': [
+            _speedTest('2026-01-05T12:30:00Z', upload: 44559, download: 93356),
+          ],
+        },
+      }));
+
+      expect(home().speedCheckTimestamp, 1767616200000);
+    });
+
     test('shows dashes before any test has run', () {
       expect(
           home().uploadResult, const DashboardSpeedItem(value: '--', unit: ''));
