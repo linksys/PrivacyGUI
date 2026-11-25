@@ -85,6 +85,30 @@ void main() {
       }
     });
 
+    // generate escapes ; : , " and \ with a backslash.
+    test('undoes the escapes in a name and password', () {
+      final credential = WiFiCredential.parse(
+          r'WIFI:S:Home\;Net;P:a\\b\;c\,d\:e\"f;T:WPA;H:false;;');
+
+      expect(credential.ssid, 'Home;Net');
+      expect(credential.password, r'a\b;c,d:e"f');
+    });
+
+    test('reads back the name and password of the code generate writes', () {
+      const credential = WiFiCredential(
+        ssid: r'Cafe;Guest:2,"A"\',
+        password: r'p\a;s:s,"w"',
+        type: SecurityType.wpa,
+        isHidden: true,
+      );
+
+      final parsed = WiFiCredential.parse(credential.generate());
+
+      expect(parsed.ssid, r'Cafe;Guest:2,"A"\');
+      expect(parsed.password, r'p\a;s:s,"w"');
+      expect(parsed.isHidden, isTrue);
+    });
+
     test('reads an open network as open, with no password', () {
       final credential =
           WiFiCredential.parse('WIFI:S:Cafe Guest;T:nopass;H:false;;');
