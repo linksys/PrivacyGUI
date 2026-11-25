@@ -83,6 +83,7 @@ void main() {
       final backhaul = BackHaulInfoData.fromJson(_wirelessText);
 
       final faster = backhaul.copyWith(speedMbps: '480.000');
+      expect(backhaul.copyWith(), backhaul);
 
       expect(faster.speedMbps, '480.000');
       expect(faster.wirelessConnectionInfo, backhaul.wirelessConnectionInfo);
@@ -118,6 +119,8 @@ void main() {
           BackHaulInfoData.fromJson(_wirelessText).wirelessConnectionInfo!;
 
       final moved = link.copyWith(channel: 149, txRate: () => null);
+      expect(moved, isNot(link));
+      expect(link.copyWith(), link);
 
       expect(moved.channel, 149);
       expect(moved.txRate, isNull);

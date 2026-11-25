@@ -35,6 +35,7 @@ void main() {
     final status = TracerouteStatus.fromJson(_doneText);
 
     final again = status.copyWith(isRunning: true);
+    expect(status.copyWith(), status);
 
     expect(again.isRunning, isTrue);
     expect(again.tracerouteLog,

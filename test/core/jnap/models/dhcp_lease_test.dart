@@ -57,6 +57,7 @@ void main() {
     final lease = DhcpLease.fromJson(_laptopText);
 
     final renewed = lease.copyWith(expiration: '2026-11-19T13:00:00Z');
+    expect(lease.copyWith(), lease);
 
     expect(renewed.expiration, '2026-11-19T13:00:00Z');
     expect(renewed.ipAddress, lease.ipAddress);

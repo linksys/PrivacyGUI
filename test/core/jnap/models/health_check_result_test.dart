@@ -71,6 +71,7 @@ void main() {
       final result = HealthCheckResult.fromJson(_decode(_speedTestText));
 
       final later = result.copyWith(timestamp: '2023-08-08T08:00:00Z');
+      expect(result.copyWith(), result);
 
       expect(later.timestamp, '2023-08-08T08:00:00Z');
       expect(later.speedTestResult, result.speedTestResult);
@@ -100,6 +101,7 @@ void main() {
           HealthCheckResult.fromJson(_decode(_speedTestText)).speedTestResult!;
 
       final slower = speed.copyWith(downloadBandwidth: 50000, latency: 9);
+      expect(speed.copyWith(), speed);
 
       expect((slower.downloadBandwidth, slower.latency), (50000, 9));
       expect(slower.uploadBandwidth, 44559);

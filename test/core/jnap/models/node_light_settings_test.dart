@@ -57,6 +57,7 @@ void main() {
     final settings = NodeLightSettings.night();
 
     final later = settings.copyWith(startHour: 22, allDayOff: false);
+    expect(settings.copyWith(), settings);
 
     expect((later.startHour, later.endHour, later.allDayOff), (22, 8, false));
     expect(later.isNightModeEnable, isTrue);

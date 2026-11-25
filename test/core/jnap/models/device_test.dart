@@ -196,6 +196,8 @@ void main() {
           (null, null, null));
       expect(RawDeviceConnection.fromJson(full.toJson()), full);
       final moved = full.copyWith(ipAddress: '192.168.1.194');
+      expect(full.copyWith(), full);
+      expect(full.copyWith(ipAddress: '192.168.1.194'), isNot(full));
       expect(moved.ipAddress, '192.168.1.194');
       expect(moved.macAddress, full.macAddress);
     });
@@ -207,6 +209,8 @@ void main() {
       expect(RawDeviceProperty.fromJson(property.toJson()), property);
       expect(property.copyWith(value: 'Kitchen').value, 'Kitchen');
       expect(property.copyWith(value: 'Kitchen').name, 'userDeviceName');
+      expect(property.copyWith(), property);
+      expect(property.copyWith(value: 'Kitchen'), isNot(property));
     });
 
     test('a unit', () {
@@ -215,6 +219,8 @@ void main() {
       expect(unit.firmwareDate, '2023-06-01T00:00:00Z');
       expect(RawDeviceUnit.fromJson(unit.toJson()), unit);
       final updated = unit.copyWith(firmwareVersion: 'S9010ZCU3AWG1');
+      expect(unit.copyWith(), unit);
+      expect(unit.copyWith(firmwareVersion: 'S9010ZCU3AWG1'), isNot(unit));
       expect(updated.firmwareVersion, 'S9010ZCU3AWG1');
       expect(updated.serialNumber, 'R5CT1234567');
     });
@@ -227,6 +233,8 @@ void main() {
       expect(model.hardwareVersion, '1');
       expect(RawDeviceModel.fromJson(model.toJson()), model);
       final retyped = model.copyWith(deviceType: 'Phone');
+      expect(model.copyWith(), model);
+      expect(model.copyWith(deviceType: 'Phone'), isNot(model));
       expect(retyped.deviceType, 'Phone');
       expect(retyped.manufacturer, 'Samsung');
     });
@@ -244,6 +252,8 @@ void main() {
       expect(RawDeviceKnownInterface.fromJson(known.toJson()), known);
       expect(known.copyWith(band: '6GHz').band, '6GHz');
       expect(known.copyWith(band: '6GHz').macAddress, 'D2:60:CB:A0:3D:17');
+      expect(known.copyWith(), known);
+      expect(known.copyWith(band: '6GHz'), isNot(known));
     });
   });
 }

@@ -85,6 +85,8 @@ void main() {
           }).description,
           isNull);
       final newer = update.copyWith(firmwareVersion: '1.1.14.203000');
+      expect(update.copyWith(), update);
+      expect(update.copyWith(firmwareVersion: '1.1.14.203000'), isNot(update));
       expect(newer.firmwareVersion, '1.1.14.203000');
       expect(newer.firmwareDate, update.firmwareDate);
     });
@@ -97,6 +99,8 @@ void main() {
       expect(FirmwareUpdateOperationStatus.fromJson(operation.toJson()),
           operation);
       final further = operation.copyWith(progressPercent: 80);
+      expect(operation.copyWith(), operation);
+      expect(operation.copyWith(progressPercent: 80), isNot(operation));
       expect((further.operation, further.progressPercent), ('Installing', 80));
     });
   });

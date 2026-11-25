@@ -57,6 +57,7 @@ void main() {
     final link = WirelessConnection.fromJson(_laptopText);
 
     final weaker = link.copyWith(signalBecibels: -80, txRate: 600);
+    expect(link.copyWith(), link);
 
     expect((weaker.signalDecibels, weaker.txRate), (-80, 600));
     expect(weaker.rxRate, 960);

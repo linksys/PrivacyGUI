@@ -138,6 +138,7 @@ void main() {
       final status = RouterWANStatus.fromJson(_dualStackText);
 
       final down = status.copyWith(wanStatus: 'Disconnected');
+      expect(status.copyWith(), status);
 
       expect(down.wanStatus, 'Disconnected');
       expect(down.wanConnection, status.wanConnection);
@@ -164,6 +165,8 @@ void main() {
       });
       expect(WANConnectionInfo.fromJson(ipv4.toJson()), ipv4);
       final static = ipv4.copyWith(wanType: 'Static', dnsServer3: '1.1.1.1');
+      expect(ipv4.copyWith(), ipv4);
+      expect(ipv4.copyWith(dnsServer3: '1.1.1.1'), isNot(ipv4));
       expect((static.wanType, static.dnsServer3), ('Static', '1.1.1.1'));
       expect(static.ipAddress, '220.133.10.20');
     });
@@ -175,6 +178,10 @@ void main() {
       expect(IPv6NetworkInfo.fromJson(network.toJson()), network);
       expect(ipv6.copyWith(wanType: 'Automatic').networkInfo, network);
       final leased = network.copyWith(dhcpLeaseMinutes: 60);
+      expect(network.copyWith(), network);
+      expect(ipv6.copyWith(), ipv6);
+      expect(ipv6.copyWith(wanType: 'Automatic'), isNot(ipv6));
+      expect(network.copyWith(dhcpLeaseMinutes: 60), isNot(network));
       expect(leased.dhcpLeaseMinutes, 60);
       expect(leased.ipAddress, network.ipAddress);
       expect(
@@ -197,6 +204,9 @@ void main() {
       expect(
           SupportedWANCombination.fromJson(combination.toJson()), combination);
       expect(combination.copyWith(wanIPv6Type: 'Pass-through').wanType, 'DHCP');
+      expect(combination.copyWith(), combination);
+      expect(combination.copyWith(wanIPv6Type: 'Pass-through'),
+          isNot(combination));
     });
   });
 }

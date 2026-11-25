@@ -43,6 +43,7 @@ void main() {
       expect(manual.updatePolicy, 'Manual');
       expect(manual.autoUpdateWindow, settings.autoUpdateWindow);
       expect(manual, isNot(settings));
+      expect(settings.copyWith(), settings);
     });
   });
 
@@ -58,6 +59,8 @@ void main() {
 
       expect(FirmwareAutoUpdateWindow.fromJson(window.toJson()), window);
       final later = window.copyWith(startMinute: 180);
+      expect(window.copyWith(), window);
+      expect(window.copyWith(startMinute: 180), isNot(window));
       expect((later.startMinute, later.durationMinutes), (180, 180));
     });
   });

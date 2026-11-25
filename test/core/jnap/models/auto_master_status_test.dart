@@ -37,4 +37,14 @@ void main() {
         isNot(const GetAutoMasterStatusResponse(
             autoMasterStatus: AutoMasterStatus.running)));
   });
+
+  test('reads back each status it writes', () {
+    for (final value in ['Idle', 'Running', 'Complete', 'Failed']) {
+      final response =
+          GetAutoMasterStatusResponse.fromMap({'autoMasterStatus': value});
+
+      expect(GetAutoMasterStatusResponse.fromMap(response.toMap()), response);
+      expect(response.toMap(), {'autoMasterStatus': value});
+    }
+  });
 }

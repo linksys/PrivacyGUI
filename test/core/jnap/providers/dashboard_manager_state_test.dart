@@ -249,6 +249,24 @@ void main() {
       expect(DashboardManagerState.fromJson(dashboard().toJson()), dashboard());
     });
 
+    test('reads a map that lists no radios as having none', () {
+      final state = DashboardManagerState.fromMap(const {
+        'isGuestNetworkEnabled': false,
+        'healthCheckModules': <String>[],
+        'uptimes': 19555,
+        'lanConnections': <String>[],
+        'localTime': 1735083282000,
+      });
+
+      expect(state.mainRadios, isEmpty);
+      expect(state.guestRadios, isEmpty);
+      expect(state.uptimes, 19555);
+      expect(
+          state,
+          const DashboardManagerState(
+              uptimes: 19555, localTime: 1735083282000));
+    });
+
     test('copyWith changes only what it names', () {
       start(_poll());
       final state = dashboard();

@@ -31,6 +31,7 @@ void main() {
     final status = PingStatus.fromJson(_runningText);
 
     final finished = status.copyWith(isRunning: false);
+    expect(status.copyWith(), status);
 
     expect(finished.isRunning, isFalse);
     expect(finished.pingLog, status.pingLog);

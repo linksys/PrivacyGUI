@@ -73,6 +73,7 @@ void main() {
       final phone = Layer2Connection.fromJson(_phoneText);
 
       final slower = phone.copyWith(negotiatedMbps: 390);
+      expect(phone.copyWith(), phone);
 
       expect(slower.negotiatedMbps, 390);
       expect(slower.wireless, phone.wireless);
@@ -100,6 +101,7 @@ void main() {
       final link = NodeWirelessLayer2Connections.fromJson(_nodeLinkText);
 
       final later = link.copyWith(timestamp: '2023-09-04T02:40:00Z');
+      expect(link.copyWith(), link);
 
       expect(later.timestamp, '2023-09-04T02:40:00Z');
       expect(later.macAddress, link.macAddress);

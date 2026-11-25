@@ -61,6 +61,8 @@ void main() {
     final node = NodeWirelessConnections.fromJson(_masterText);
 
     final emptied = node.copyWith(connections: []);
+    expect(node.copyWith(), node);
+    expect(node.copyWith(connections: []), isNot(node));
 
     expect(emptied.connections, isEmpty);
     expect(emptied.deviceID, node.deviceID);
