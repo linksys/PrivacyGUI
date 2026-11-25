@@ -35,6 +35,7 @@ class HealthCheckState extends Equatable {
   @override
   List<Object?> get props => [
         step,
+        timestamp,
         status,
         result,
         meterValue,

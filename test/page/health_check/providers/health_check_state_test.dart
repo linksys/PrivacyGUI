@@ -101,6 +101,13 @@ void main() {
     }
   });
 
+  // Constitution 4.2: a state lists every field in props.
+  test('a test from another time is another state', () {
+    final state = HealthCheckState.fromJson(healthCheckStateSuccessGood);
+
+    expect(state.copyWith(timestamp: '2024-06-25T09:20:09Z'), isNot(state));
+  });
+
   test('an edit keeps the fields it does not name, and can drop the server',
       () {
     final state = HealthCheckState.fromJson(healthCheckStateSuccessGood)
