@@ -126,6 +126,21 @@ void main() {
       expect(phone, isNot(RawDevice.fromJson(_masterText)));
     });
 
+    test('reads a GetDevices device, which lists its MAC addresses', () {
+      // Routers without DeviceList4 answer GetDevices: MAC addresses in
+      // place of interfaces.
+      final legacy = _decode(_masterText.replaceFirst(
+          '"properties"',
+          '"knownMACAddresses": ["30:23:03:2E:AF:EE", "30:23:03:2E:AF:EF"], '
+              '"properties"'));
+
+      final master = RawDevice.fromMap(legacy);
+
+      expect(
+          master.knownMACAddresses, ['30:23:03:2E:AF:EE', '30:23:03:2E:AF:EF']);
+      expect(master.knownInterfaces, isNull);
+    });
+
     test('names the OS, maker and model from the unit, or the user\'s own', () {
       final phone = RawDevice.fromMap(_decode(_phoneText));
       expect(phone.operatingSystem, 'Android 13');
