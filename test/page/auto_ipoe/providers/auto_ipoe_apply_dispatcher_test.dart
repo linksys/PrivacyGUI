@@ -46,8 +46,13 @@ void main() {
   AutoIPoEApplyDispatcher dispatcher() =>
       container.read(autoIPoEApplyDispatcherProvider);
 
-  const settings = AutoIPoESettings.init();
-  const status = AutoIPoEStatus.init();
+  // Not the defaults, so a dispatcher that passed a default instead of what it
+  // was given would not match; and not const, so the match cannot rest on one
+  // canonical instance.
+  final settings =
+      AutoIPoESettings(isEnabled: true, selectedMode: AutoIPoEMode.auto);
+  final status = AutoIPoEStatus.fromMap(
+      const {'isEnabled': true, 'isCurrentWANType': true, 'mode': 'Auto'});
 
   setUp(() {
     bridge = _RecordingBridge();
