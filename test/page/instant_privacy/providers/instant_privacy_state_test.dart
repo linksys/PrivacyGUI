@@ -36,21 +36,21 @@ void main() {
     expect(state.settings.myMac, isNull);
   });
 
+  // Built at run time, as a fetch builds it, so that the comparison goes
+  // through each class's props and not through one canonical const instance.
   test('the same filter read twice is unchanged', () {
-    expect(
-      _loaded,
-      const InstantPrivacyState(
-        status: InstantPrivacyStatus(mode: MacFilterMode.allow),
-        settings: InstantPrivacySettings(
-          mode: MacFilterMode.allow,
-          macAddresses: ['A4:BB:6D:00:00:10'],
-          denyMacAddresses: [],
-          maxMacAddresses: 32,
-          bssids: ['80:69:1A:00:02:51'],
-          myMac: 'A4:BB:6D:00:00:10',
-        ),
+    final readAgain = InstantPrivacyState.init().copyWith(
+      status: InstantPrivacyStatus(mode: MacFilterMode.reslove('Allow')),
+      settings: InstantPrivacySettings.init().copyWith(
+        mode: MacFilterMode.reslove('Allow'),
+        macAddresses: ['A4:BB:6D:00:00:10'],
+        bssids: ['80:69:1A:00:02:51'],
+        myMac: 'A4:BB:6D:00:00:10',
       ),
     );
+
+    expect(readAgain, isNot(same(_loaded)));
+    expect(readAgain, _loaded);
   });
 
   test('a change to the mode or to either list is a change', () {

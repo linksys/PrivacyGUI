@@ -168,7 +168,7 @@ void main() {
     test('returns the state it ends in', () async {
       final returned = await notifier().fetch();
 
-      expect(returned, page());
+      expect(returned, same(page()));
     });
 
     test('a refused read reaches the caller and leaves the page as it was',
@@ -178,7 +178,7 @@ void main() {
 
       await expectLater(notifier().fetch(), throwsA(isA<JNAPError>()));
 
-      expect(page(), before);
+      expect(page(), same(before));
     });
   });
 
