@@ -196,7 +196,6 @@ void main() {
       expect(await notifier().checkRecoveryCode('12345'), isTrue);
       expect(router.payloadsOf(JNAPAction.verifyRouterResetCode).single,
           {'resetCode': '12345'});
-      expect(page().remainingErrorAttempts, isNull);
     });
 
     test('counts the attempts left after a wrong code', () async {

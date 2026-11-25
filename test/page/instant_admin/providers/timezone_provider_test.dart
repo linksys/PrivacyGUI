@@ -153,16 +153,21 @@ void main() {
       });
     });
 
-    test('reads the settings back and polls at once after the save', () async {
-      router.holds(JNAPAction.getTimeSettings,
-          {..._timeSettings, 'timeZoneID': 'NST03:30'});
+    test('after the save, shows what the router reads back, and polls at once',
+        () async {
       notifier().setSelectedTimezone(indexOf('NST03:30'));
+      // The router reads back a zone other than the one chosen, so the page
+      // can only show it by reading it back.
+      router.holds(JNAPAction.getTimeSettings, {
+        ..._timeSettings,
+        'timeZoneID': 'GMT0-NO-DST',
+        'autoAdjustForDST': false,
+      });
 
       await notifier().save();
 
-      expect(router.actions.where((a) => a == JNAPAction.getTimeSettings),
-          hasLength(2));
-      expect(page().timezoneId, 'NST03:30');
+      expect(page().timezoneId, 'GMT0-NO-DST');
+      expect(page().isDaylightSaving, isFalse);
       expect(polling.forced, 1);
     });
 
