@@ -39,7 +39,7 @@ class SetRoutingSettings extends Equatable {
       isNATEnabled: map['isNATEnabled'] as bool,
       isDynamicRoutingEnabled: map['isDynamicRoutingEnabled'] as bool,
       entries: List<NamedStaticRouteEntry>.from(
-        (map['entries'] as List<int>).map<NamedStaticRouteEntry>(
+        (map['entries'] as List).map<NamedStaticRouteEntry>(
           (x) => NamedStaticRouteEntry.fromMap(x as Map<String, dynamic>),
         ),
       ),
