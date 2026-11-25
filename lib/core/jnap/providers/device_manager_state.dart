@@ -134,7 +134,7 @@ class LinksysDevice extends RawDevice {
             )
           : null,
       knownMACAddresses: map['knownMACAddresses'] != null
-          ? List<String>.from((map['knownMACAddresses'] as List<String>))
+          ? List<String>.from(map['knownMACAddresses'] as List)
           : null,
       nodeType: map['nodeType'] != null ? map['nodeType'] as String : null,
       connectedDevices: map['connectedDevices'] != null

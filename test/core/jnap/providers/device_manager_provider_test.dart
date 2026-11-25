@@ -515,6 +515,33 @@ void main() {
       expect(device(_guestPhoneId).connectedWifiType, WifiConnectionType.main);
     });
 
+    test('reads a router that lists MAC addresses, not interfaces (GetDevices)',
+        () {
+      // Routers without DeviceList4 answer GetDevices, which names each
+      // device's MAC addresses instead of its interfaces.
+      Map<String, dynamic> legacy(Map<String, dynamic> device) => Map.of(device)
+        ..remove('knownInterfaces')
+        ..['knownMACAddresses'] = [
+          for (final connection in device['connections'] as List)
+            (connection as Map)['macAddress'],
+        ];
+      final listed = _devices['devices'] as List<Map<String, dynamic>>;
+      start(_poll()
+        ..[JNAPAction.getDevices] = _ok({
+          'revision': 6022,
+          'devices': [
+            legacy(
+                listed.firstWhere((device) => device['deviceID'] == _masterId)),
+            legacy(
+                listed.firstWhere((device) => device['deviceID'] == _iPhoneId)),
+          ],
+        }));
+
+      expect(device(_iPhoneId).knownMACAddresses, [_iPhoneMac]);
+      expect(device(_iPhoneId).getMacAddress(), _iPhoneMac);
+      expect(device(_iPhoneId).signalDecibels, -62);
+    });
+
     test('reads the WAN status, the radios and the guest network', () {
       start(_poll());
 
