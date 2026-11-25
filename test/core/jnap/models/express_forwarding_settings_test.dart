@@ -43,5 +43,10 @@ void main() {
     expect(changed.isExpressForwardingEnabled, isFalse);
     expect(changed.isExpressForwardingSupported, isTrue);
     expect(changed.copyWith(isExpressForwardingEnabled: true), settings);
+    expect(
+        settings
+            .copyWith(isExpressForwardingSupported: false)
+            .isExpressForwardingEnabled,
+        isTrue);
   });
 }

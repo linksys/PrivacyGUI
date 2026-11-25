@@ -50,5 +50,7 @@ void main() {
 
     expect(changed.canManageWirelessly, isFalse);
     expect(changed.copyWith(canManageWirelessly: true), settings);
+    expect(
+        settings.copyWith(canManageRemotely: true).canManageWirelessly, isTrue);
   });
 }

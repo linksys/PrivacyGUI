@@ -34,5 +34,6 @@ void main() {
 
     expect(changed.isUPnPEnabled, isFalse);
     expect(changed.copyWith(isUPnPEnabled: true), settings);
+    expect(settings.copyWith(canUsersConfigure: false).isUPnPEnabled, isTrue);
   });
 }
