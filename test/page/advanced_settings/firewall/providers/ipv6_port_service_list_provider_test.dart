@@ -113,6 +113,22 @@ void main() {
       expect(saved.rules, [IPv6FirewallRule.fromMap(_cameraRule)]);
       expect(page().rules, saved.rules);
     });
+
+    test('reports a write the router refuses, and keeps the user edit',
+        () async {
+      router.refuses(JNAPAction.setIPv6FirewallRules,
+          result: 'ErrorRulesOverlap');
+      notifier.deleteRule(IPv6FirewallRule.fromMap(_cameraRule));
+
+      await expectLater(
+        notifier.save(),
+        throwsA(isA<JNAPError>()
+            .having((error) => error.result, 'result', 'ErrorRulesOverlap')),
+      );
+
+      expect(router.actions, [JNAPAction.setIPv6FirewallRules]);
+      expect(page().rules, [IPv6FirewallRule.fromMap(_nasRule)]);
+    });
   });
 
   group('editing the list', () {
