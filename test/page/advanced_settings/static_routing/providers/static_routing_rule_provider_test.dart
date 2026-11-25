@@ -65,6 +65,14 @@ void main() {
       expect(notifier.isValidSubnetMask(24), isTrue);
       expect(notifier.isValidSubnetMask(30), isTrue);
     });
+
+    test('turns down shorter and longer prefixes', () {
+      // The spec allows 8 to 30. A /31 typed into the page must read as
+      // invalid, not throw out of the check.
+      expect(notifier.isValidSubnetMask(7), isFalse);
+      expect(notifier.isValidSubnetMask(31), isFalse);
+      expect(notifier.isValidSubnetMask(32), isFalse);
+    });
   });
 
   group('the gateway rule', () {
@@ -109,6 +117,7 @@ void main() {
     test('turns down a route that breaks any one rule', () {
       final broken = <String, NamedStaticRouteEntry>{
         'no name': _route(name: ''),
+        'a /31 mask': _route(prefixLength: 31),
         'a malformed destination': _route(destination: '192.168.50'),
         'a reserved destination': _route(destination: '127.0.0.0'),
         'a LAN gateway off the LAN': _route(gateway: '10.0.0.1'),
