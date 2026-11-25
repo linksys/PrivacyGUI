@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/route/router_logger.dart';
+import 'package:privacy_gui/route/router_provider.dart';
 
 /// The lines [body] logs, as the console shows them in a debug build.
 List<String> _logged(void Function() body) {
@@ -29,6 +30,10 @@ void main() {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
+    final router = container.read(routerProvider);
+
+    expect(router.routerDelegate.builder.observers,
+        [same(container.read(routerLoggerProvider))]);
     expect(container.read(routerLoggerProvider), isA<RouterLogger>());
   });
 
