@@ -73,7 +73,7 @@ class AddWiredNodesState extends Equatable {
       isLoading: map['isLoading'] ?? false,
       forceStop: map['forceStop'] ?? false,
       loadingMessage: map['loadingMessage'],
-      onboardingTime: map['onboardingTime'],
+      onboardingTime: map['onboardingTime'] ?? 0,
       nodes: map['nodes'] != null
           ? List<LinksysDevice>.from(
               map['nodes']?.map((x) => LinksysDevice.fromMap(x)))

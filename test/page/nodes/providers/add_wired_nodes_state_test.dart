@@ -64,6 +64,10 @@ void main() {
     expect(state.nodes, isNull);
   });
 
+  test('reads a state with no onboarding time as none spent', () {
+    expect(AddWiredNodesState.fromMap(const {}).onboardingTime, 0);
+  });
+
   test('a state read twice is the same state; a change to any field is not',
       () {
     final state = running();
