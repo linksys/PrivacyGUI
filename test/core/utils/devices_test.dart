@@ -133,6 +133,18 @@ void main() {
         expect(device.getDeviceName(), 'Android Oreo Phone');
       });
 
+      // The maker comes first, with a space, as the comment in getDeviceName
+      // says: 'Samsung Android Oreo Mobile'.
+      test('with a maker but no model is its maker, system and type', () {
+        final device = _device({
+          'friendlyName': 'android-0123456789abcdef',
+          'model': {'deviceType': 'Mobile', 'manufacturer': 'Samsung'},
+          'unit': {'operatingSystem': 'Android Oreo'},
+        });
+
+        expect(device.getDeviceName(), 'Samsung Android Oreo Mobile');
+      });
+
       test('without a model or system keeps its host name', () {
         final device = _device({
           'friendlyName': 'android-0123456789abcdef',
