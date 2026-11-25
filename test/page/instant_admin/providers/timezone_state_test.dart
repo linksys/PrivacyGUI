@@ -52,6 +52,16 @@ void main() {
       expect(state, isNot(TimezoneState.fromMap(_state)));
     });
 
+    test('two states with different zone lists are different', () {
+      // Both read from maps, so neither is a canonical const instance.
+      final state = TimezoneState.fromMap(_state);
+      final noZones = TimezoneState.fromMap(
+          Map.of(_state)..['supportedTimezones'] = <Object>[]);
+
+      expect(noZones, isNot(state));
+      expect(TimezoneState.fromMap(Map.of(_state)), state);
+    });
+
     test('copyWith keeps the DST switch when it is given none', () {
       final state = TimezoneState.fromMap(_state).copyWith(timezoneId: 'PST8');
 

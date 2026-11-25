@@ -12,7 +12,8 @@ class TimezoneState extends Equatable {
   final String? error;
 
   @override
-  List<Object?> get props => [isDaylightSaving, timezoneId, error];
+  List<Object?> get props =>
+      [isDaylightSaving, timezoneId, supportedTimezones, error];
 
   const TimezoneState({
     required this.isDaylightSaving,
