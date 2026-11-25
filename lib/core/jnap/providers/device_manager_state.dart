@@ -156,7 +156,7 @@ class LinksysDevice extends RawDevice {
           ? WirelessConnectionInfo.fromMap(map['wirelessConnectionInfo'])
           : null,
       speedMbps: map['speedMbps'] ?? '--',
-      mloList: map['mloList'] ?? [],
+      mloList: List<String>.from(map['mloList'] ?? []),
     );
   }
 
