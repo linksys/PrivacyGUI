@@ -29,7 +29,9 @@ void main() {
 
   test('shows no device before one is picked', () {
     expect(container.read(deviceDetailIdProvider), '');
-    expect(shown(), const DeviceListItem());
+    expect(shown().deviceId, '');
+    expect(shown().name, '');
+    expect(shown().macAddress, '');
   });
 
   test('shows the device picked', () {

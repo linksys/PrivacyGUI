@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_provider.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_state.dart';
 
@@ -44,9 +45,9 @@ Map<String, dynamic> _orphan() => {
 void main() {
   late ProviderContainer container;
 
-  void pollReports(Map<JNAPAction, dynamic> poll) {
+  void pollReports(Map<JNAPAction, JNAPResult> poll) {
     container = ProviderContainer(overrides: [
-      pollingProvider.overrideWith(() => RecordingPolling(poll.cast())),
+      pollingProvider.overrideWith(() => RecordingPolling(poll)),
     ]);
     addTearDown(container.dispose);
   }

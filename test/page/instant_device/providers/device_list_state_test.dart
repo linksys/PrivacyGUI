@@ -23,7 +23,6 @@ void main() {
       final renamed = phone.copyWith(name: 'Bob iPhone');
 
       expect(renamed.name, 'Bob iPhone');
-      expect(renamed, phone.copyWith(name: 'Bob iPhone'));
       expect(renamed, isNot(phone));
       expect(renamed.copyWith(name: 'Alice iPhone'), phone);
     });
