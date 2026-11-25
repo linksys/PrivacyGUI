@@ -359,6 +359,24 @@ void main() {
   });
 
   group('overrides as a value', () {
+    test('keep their delays and retries when copied with a condition', () {
+      const overrides = JNAPSideEffectOverrides(
+        retryDelayInSec: 10,
+        maxRetry: 18,
+        maxPollTimeInSec: 300,
+        timeDelayStartInSec: 0,
+      );
+
+      final copied = overrides.copyWith(condition: () => true);
+
+      expect(copied.retryDelayInSec, 10);
+      expect(copied.maxRetry, 18);
+      expect(copied.maxPollTimeInSec, 300);
+      expect(copied.timeDelayStartInSec, 0);
+      expect(copied.condition?.call(), isTrue);
+      expect(overrides.copyWith().maxRetry, 18);
+    });
+
     test('are equal when they hold the same condition', () {
       bool backAtOnce() => true;
       bool neverBack() => false;
