@@ -90,7 +90,7 @@ class HealthCheckState extends Equatable {
       'step': step,
       'timestamp': timestamp,
       'result': result.map((x) => x.toJson()).toList(),
-      'error': error,
+      'error': error?.toJson(),
       'status': status,
       'meterValue': meterValue,
       'randomValue': randomValue,

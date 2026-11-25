@@ -71,6 +71,13 @@ void main() {
     });
   });
 
+  test('writes its error as a map, and reads it back from that map', () {
+    final state = HealthCheckState.fromJson(healthCheckStateError);
+
+    expect(state.toMap()['error'], {'result': 'Empty resultID', 'error': null});
+    expect(HealthCheckState.fromMap(state.toMap()), state);
+  });
+
   test('writes and reads back the servers and the one chosen', () {
     final state = HealthCheckState.init()
         .copyWith(servers: [_server], selectedServer: _server);
