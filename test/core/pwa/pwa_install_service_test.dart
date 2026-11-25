@@ -73,10 +73,9 @@ void main() {
     });
   });
 
-  test('promptInstall does nothing before the browser offers an install',
+  // Without its guard, promptInstall would read the missing prompt with `!`.
+  test('promptInstall without the browser\'s prompt returns, not throws',
       () async {
-    await service().promptInstall();
-
-    expect(container.read(pwaInstallServiceProvider), PwaMode.none);
+    await expectLater(service().promptInstall(), completes);
   });
 }

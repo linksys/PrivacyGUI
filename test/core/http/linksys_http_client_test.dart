@@ -23,6 +23,10 @@ Duration _noDelay(int retryCount) => Duration.zero;
 
 const _cloud = 'https://cloud.test';
 
+// Expected values the code also builds as const are built at run time
+// here: two equal const values are one instance, so == would hold
+// whatever their props say.
+
 void main() {
   late List<Object?> reported;
 
@@ -179,7 +183,7 @@ void main() {
 
       expect(network.received, hasLength(2));
       expect(reported,
-          [const ErrorResponse(status: 1000, code: 'REQUEST_TIMEOUT')]);
+          [ErrorResponse(status: 1000, code: 'REQUEST_TIMEOUT')]);
     });
 
     test(
@@ -193,7 +197,7 @@ void main() {
           throwsA(isA<http.ClientException>()));
 
       expect(network.received, hasLength(1));
-      expect(reported, [const ErrorResponse(status: -1, code: 'UNKNOWN_ERROR')]);
+      expect(reported, [ErrorResponse(status: -1, code: 'UNKNOWN_ERROR')]);
     });
   });
 
