@@ -24,19 +24,23 @@ const _loaded = VPNSettings(
 
 void main() {
   group('VPNSettings', () {
+    // Built at run time, as a fetch builds them, so that the comparison goes
+    // through each class's props and not through one canonical const instance.
     test('settings read twice are the same settings', () {
-      expect(
-        _loaded,
-        const VPNSettings(
-          userCredentials: VPNUserCredentials(
-              username: 'alice@example.com',
-              authMode: AuthMode.eap,
-              secret: 's'),
-          gatewaySettings: _gateway,
-          serviceSettings:
-              VPNServiceSetSettings(enabled: true, autoConnect: false),
-        ),
+      final readAgain = const VPNSettings(
+        serviceSettings:
+            VPNServiceSetSettings(enabled: false, autoConnect: false),
+      ).copyWith(
+        userCredentials: _user.copyWith(username: 'alice@example.com'),
+        gatewaySettings: _gateway.copyWith(dnsName: 'vpn.example.com'),
+        serviceSettings:
+            const VPNServiceSetSettings(enabled: false, autoConnect: false)
+                .copyWith(enabled: true),
       );
+
+      expect(readAgain, isNot(same(_loaded)));
+      expect(readAgain.userCredentials, isNot(same(_user)));
+      expect(readAgain, _loaded);
     });
 
     test('an edit to any field makes them differ', () {
@@ -58,10 +62,9 @@ void main() {
     test('an edit keeps every field it does not name', () {
       final edited = _loaded.copyWith(tunneledUserIP: '192.168.1.100');
 
-      expect(edited.userCredentials, _user);
-      expect(edited.gatewaySettings, _gateway);
-      expect(edited.serviceSettings,
-          const VPNServiceSetSettings(enabled: true, autoConnect: false));
+      expect(edited.userCredentials, same(_loaded.userCredentials));
+      expect(edited.gatewaySettings, same(_loaded.gatewaySettings));
+      expect(edited.serviceSettings, same(_loaded.serviceSettings));
       expect(edited.isEditingCredentials, isFalse);
     });
   });
@@ -86,8 +89,8 @@ void main() {
       expect(state.status.tunnelStatus, IPsecStatus.disconnected);
       expect(state.status.statistics, isNull);
       expect(state.status.testResult, isNull);
-      expect(state.settings.serviceSettings,
-          const VPNServiceSetSettings(enabled: false, autoConnect: false));
+      expect(state.settings.serviceSettings.enabled, isFalse);
+      expect(state.settings.serviceSettings.autoConnect, isFalse);
       expect(state.settings.userCredentials, isNull);
       expect(state.settings.gatewaySettings, isNull);
       expect(state.settings.tunneledUserIP, isNull);

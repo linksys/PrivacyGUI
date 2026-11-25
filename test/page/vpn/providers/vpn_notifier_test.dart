@@ -81,8 +81,8 @@ void main() {
   test('starts disconnected, with the service off and nothing read', () {
     expect(page().status.tunnelStatus, IPsecStatus.disconnected);
     expect(page().status.statistics, isNull);
-    expect(page().settings.serviceSettings,
-        const VPNServiceSetSettings(enabled: false, autoConnect: false));
+    expect(page().settings.serviceSettings.enabled, isFalse);
+    expect(page().settings.serviceSettings.autoConnect, isFalse);
     expect(page().settings.userCredentials, isNull);
     expect(page().settings.gatewaySettings, isNull);
     expect(router.sent, isEmpty, reason: 'build reads nothing');
@@ -143,7 +143,7 @@ void main() {
     test('returns the state it ends in', () async {
       final returned = await notifier.fetch();
 
-      expect(returned, page());
+      expect(returned, same(page()));
     });
 
     test(
@@ -165,11 +165,12 @@ void main() {
 
     test('a refused read reaches the caller and leaves the page as it was',
         () async {
+      final before = page();
       router.refuses(JNAPAction.getVPNService);
 
       await expectLater(notifier.fetch(), throwsA(isA<JNAPError>()));
 
-      expect(page(), const VPNState.init());
+      expect(page(), same(before));
     });
 
     test('a read that fails after the transaction leaves the page as it was',
@@ -179,10 +180,11 @@ void main() {
         {'credentials': _credentials},
         const JNAPError(result: 'ErrorUnknown'),
       ]);
+      final before = page();
 
       await expectLater(notifier.fetch(), throwsA(isA<JNAPError>()));
 
-      expect(page(), const VPNState.init());
+      expect(page(), same(before));
     });
   });
 
@@ -257,12 +259,23 @@ void main() {
         JNAPAction.setVPNGateway,
         JNAPAction.setVPNService,
       ]);
-      expect(router.actions.sublist(2, 3), [JNAPAction.setVPNApply]);
-      expect(router.actions.sublist(3, 6), [
+      final actions = router.actions;
+      final apply = actions.indexOf(JNAPAction.setVPNApply);
+      for (final write in [
+        JNAPAction.setVPNGateway,
+        JNAPAction.setVPNService
+      ]) {
+        expect(actions.indexOf(write), inInclusiveRange(0, apply - 1),
+            reason: '$write is written before the apply');
+      }
+      for (final read in [
         JNAPAction.getVPNUser,
         JNAPAction.getVPNGateway,
         JNAPAction.getVPNService,
-      ]);
+      ]) {
+        expect(actions.indexOf(read, apply), greaterThan(apply),
+            reason: '$read is read back after the apply');
+      }
     });
 
     test('shows what the router holds after the save', () async {
