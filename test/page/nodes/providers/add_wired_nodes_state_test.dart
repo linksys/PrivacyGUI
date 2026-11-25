@@ -44,6 +44,17 @@ void main() {
     expect(read, state);
   });
 
+  // Through the map, not JSON: a device's JSON does not read back yet
+  // (LinksysDevice.fromMap casts its decoded MLO list; lib/core, not here).
+  test('writes the nodes it found as maps, and reads them back', () {
+    final state = running().copyWith(nodes: [bedroom]);
+
+    expect(state.toMap()['nodes'], [bedroom.toMap()]);
+    final read = AddWiredNodesState.fromMap(state.toMap());
+    expect(read.nodes?.single.deviceID, 'bedroom');
+    expect(read, state);
+  });
+
   test('reads a state with no loading or stop flag as neither', () {
     final state = AddWiredNodesState.fromMap(const {'onboardingTime': 0});
 

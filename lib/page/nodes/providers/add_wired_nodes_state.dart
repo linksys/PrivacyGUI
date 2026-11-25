@@ -58,7 +58,7 @@ class AddWiredNodesState extends Equatable {
       'forceStop': forceStop,
       'loadingMessage': loadingMessage,
       'onboardingTime': onboardingTime,
-      'nodes': nodes,
+      'nodes': nodes?.map((x) => x.toMap()).toList(),
     };
   }
 
