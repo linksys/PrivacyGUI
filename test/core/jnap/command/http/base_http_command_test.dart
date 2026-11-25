@@ -29,9 +29,10 @@ final _ok = _answer({
   'output': {'serialNumber': '20J2060A839173'},
 });
 
-/// The HTTP client: hands back each answer in turn, the last from then on.
-class _Router with JNAPCommandExecutor<Response> {
-  _Router(this.answers);
+/// An executor standing in for the HTTP client: hands back each answer in
+/// turn, the last from then on.
+class _ScriptedExecutor with JNAPCommandExecutor<Response> {
+  _ScriptedExecutor(this.answers);
 
   final List<Response> answers;
   final List<BaseCommand> executed = [];
@@ -69,9 +70,9 @@ void main() {
     await pumpEventQueue();
   });
 
-  JNAPHttpCommand command(_Router router) => JNAPHttpCommand(
+  JNAPHttpCommand command(_ScriptedExecutor executor) => JNAPHttpCommand(
         url: 'https://192.168.1.1/JNAP/',
-        executor: router,
+        executor: executor,
         action: _getDeviceInfo,
         fetchRemote: true,
         cacheLevel: CacheLevel.noCache,
@@ -89,44 +90,44 @@ void main() {
   testWidgets(
       'retries an unexpected error once, 3 s later, and answers with '
       'the retry', (tester) async {
-    final router = _Router([_unexpected, _ok]);
+    final executor = _ScriptedExecutor([_unexpected, _ok]);
 
-    final outcome = publish(command(router));
+    final outcome = publish(command(executor));
     await tester.pump(const Duration(milliseconds: 2999));
-    expect(router.executed, hasLength(1));
+    expect(executor.executed, hasLength(1));
     expect(outcome.value, isNull);
     await tester.pump(const Duration(milliseconds: 1));
 
-    expect(router.executed, hasLength(2));
+    expect(executor.executed, hasLength(2));
     expect((outcome.value as JNAPSuccess).output['serialNumber'],
         '20J2060A839173');
   });
 
   testWidgets('gives up with the error when the retry fails too',
       (tester) async {
-    final router = _Router([_unexpected]);
+    final executor = _ScriptedExecutor([_unexpected]);
 
-    final outcome = publish(command(router));
+    final outcome = publish(command(executor));
     await tester.pump(const Duration(seconds: 3));
 
-    expect(router.executed, hasLength(2));
+    expect(executor.executed, hasLength(2));
     expect((outcome.error as JNAPError).result, '_ErrorUnexpected');
   });
 
   testWidgets('passes any other error on at once', (tester) async {
-    final router = _Router([_unauthorized, _ok]);
+    final executor = _ScriptedExecutor([_unauthorized, _ok]);
 
-    final outcome = publish(command(router));
+    final outcome = publish(command(executor));
     await tester.pump();
 
-    expect(router.executed, hasLength(1));
+    expect(executor.executed, hasLength(1));
     expect((outcome.error as JNAPError).result, '_ErrorUnauthorized');
     await tester.pump(const Duration(seconds: 3));
-    expect(router.executed, hasLength(1));
+    expect(executor.executed, hasLength(1));
   });
 
   testWidgets('retries a transaction the same way', (tester) async {
-    final router = _Router([
+    final executor = _ScriptedExecutor([
       _unexpected,
       _answer({
         'result': 'OK',
@@ -140,7 +141,7 @@ void main() {
     ]);
     final transaction = TransactionHttpCommand(
       url: 'https://192.168.1.1/JNAP/',
-      executor: router,
+      executor: executor,
       payload: [
         {
           'action': 'http://linksys.com/jnap/core/IsAdminPasswordDefault',
@@ -155,17 +156,17 @@ void main() {
     final outcome = publish(transaction);
     await tester.pump(const Duration(seconds: 3));
 
-    expect(router.executed, hasLength(2));
+    expect(executor.executed, hasLength(2));
     final result = outcome.value as JNAPTransactionSuccessWrap;
     expect((result.data.single.value as JNAPSuccess).output,
         {'isAdminPasswordDefault': false});
   });
 
   test('sends the action and its headers, with the data as JSON', () async {
-    final router = _Router([_ok]);
+    final executor = _ScriptedExecutor([_ok]);
     final sent = JNAPHttpCommand(
       url: 'https://192.168.1.1/JNAP/',
-      executor: router,
+      executor: executor,
       action: 'http://linksys.com/jnap/devicelist/SetDeviceProperties',
       data: {'deviceID': 'tablet-id'},
       extraHeader: {
