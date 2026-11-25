@@ -218,6 +218,18 @@ void main() {
           {'rules': []});
     });
 
+    test('writes the port ranges alone when only they changed', () async {
+      container
+          .read(portRangeForwardingListProvider.notifier)
+          .deleteRule(PortRangeForwardingRule.fromMap(_torrent));
+
+      await notifier.save();
+
+      expect(writes(), [JNAPAction.setPortRangeForwardingRules]);
+      expect(router.payloadsOf(JNAPAction.setPortRangeForwardingRules).single,
+          {'rules': []});
+    });
+
     test('writes the port ranges first when the single ports fail first',
         () async {
       // Moving a port from a range to a single-port rule: the single-port
