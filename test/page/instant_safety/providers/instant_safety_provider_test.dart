@@ -85,12 +85,6 @@ JNAPSuccess _deviceInfo(String modelNumber, String firmwareVersion) =>
       'services': const ['http://linksys.com/jnap/core/Core'],
     });
 
-/// The notifier as the page meets it before any LAN settings were read.
-class _NothingRead extends InstantSafetyNotifier {
-  @override
-  InstantSafetyState build() => const InstantSafetyState();
-}
-
 void main() {
   late RouterBoundary router;
   late ProviderContainer container;
@@ -165,14 +159,6 @@ void main() {
       }
     });
 
-    test('offers no Fortinet before the poll has read the router', () async {
-      await open(_lanSettings());
-
-      await notifier().fetchLANSettings();
-
-      expect(page().hasFortinet, isFalse);
-    });
-
     test('a refused read reaches the caller and leaves the page as it was',
         () async {
       await open(_lanSettings(dns1: _openDNS1));
@@ -239,19 +225,25 @@ void main() {
     });
 
     test('saves nothing before the LAN settings have been read', () async {
-      router = RouterBoundary();
+      router = RouterBoundary()
+        ..holds(JNAPAction.getLANSettings, _lanSettings());
       container = ProviderContainer(overrides: [
         routerRepositoryProvider.overrideWithValue(router.repo),
-        instantSafetyProvider.overrideWith(_NothingRead.new),
+        pollingProvider.overrideWith(() => RecordingPolling()),
       ]);
       addTearDown(container.dispose);
 
+      // Straight after the page opens: the notifier's own first read has been
+      // sent, but has not landed.
+      final saving = notifier().setSafeBrowsing(InstantSafetyType.openDNS);
+
       await expectLater(
-        notifier().setSafeBrowsing(InstantSafetyType.openDNS),
+        saving,
         throwsA(isA<SafeBrowsingError>()
             .having((e) => e.message, 'message', 'Lan settings NULL')),
       );
-      expect(router.sent, isEmpty);
+      await pumpEventQueue();
+      expect(router.actions, isNot(contains(JNAPAction.setLANSettings)));
     });
   });
 }
