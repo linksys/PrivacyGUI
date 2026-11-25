@@ -54,7 +54,9 @@ class HealthCheckResult extends Equatable {
       timestamp: json['timestamp'],
       healthCheckModulesRequested:
           List.from(json['healthCheckModulesRequested']),
-      speedTestResult: SpeedTestResult.fromJson(json['speedTestResult']),
+      speedTestResult: json['speedTestResult'] == null
+          ? null
+          : SpeedTestResult.fromJson(json['speedTestResult']),
     );
   }
 }

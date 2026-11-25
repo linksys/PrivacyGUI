@@ -40,6 +40,18 @@ void main() {
       expect(speed.downloadBandwidth, 93356);
     });
 
+    test('reads a result that holds no speed test', () {
+      // A result for a module other than SpeedTest carries no speed test.
+      final output = _decode(_speedTestText)
+        ..remove('speedTestResult')
+        ..['healthCheckModulesRequested'] = ['ChannelAnalyzer'];
+
+      final result = HealthCheckResult.fromJson(output);
+
+      expect(result.speedTestResult, isNull);
+      expect(result.toJson(), output);
+    });
+
     test('survives a trip through JSON text', () {
       final result = HealthCheckResult.fromJson(_decode(_speedTestText));
 
