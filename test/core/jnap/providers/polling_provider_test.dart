@@ -1734,5 +1734,53 @@ void main() {
 
       await stopAndSettle(tester);
     });
+
+    // A poll answered after polling stopped or paused speaks for a router
+    // nobody is watching any more. The flow that stopped it builds the table
+    // for the router it moves to, and the late answer must not undo that.
+    testWidgets('a poll answered after polling stops leaves the action table '
+        'alone', (tester) async {
+      final onTheWire = Completer<JNAPTransactionSuccessWrap>();
+      buildBetterActions(const [core]);
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) => onTheWire.future);
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      expect(transactions, hasLength(1), reason: 'the poll is on the wire');
+
+      notifier.stopPolling();
+      buildBetterActions(const [core, wirelessAP5]);
+      onTheWire.complete(reporting(const [core]));
+      await tester.pump();
+
+      expect(routerServices, {core, wirelessAP5},
+          reason: 'the table is the next router\'s');
+    });
+
+    testWidgets('a poll answered while polling is paused leaves the action '
+        'table alone', (tester) async {
+      final onTheWire = Completer<JNAPTransactionSuccessWrap>();
+      buildBetterActions(const [core]);
+      whenSend((_) async => deviceMode('Master'));
+      whenTransaction((_) => onTheWire.future);
+
+      notifier.startPolling();
+      await advanceToFirstPoll(tester);
+      expect(transactions, hasLength(1), reason: 'the poll is on the wire');
+
+      // What PnP does: pause polling, then build the table for its router.
+      notifier.paused = true;
+      buildBetterActions(const [core, wirelessAP5]);
+      onTheWire.complete(reporting(const [core]));
+      await tester.pump();
+
+      expect(routerServices, {core, wirelessAP5},
+          reason: "the table is PnP's router's");
+
+      notifier.paused = false;
+      await advanceToFirstPoll(tester);
+      await stopAndSettle(tester);
+    });
   });
 }

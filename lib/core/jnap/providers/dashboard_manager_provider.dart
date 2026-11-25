@@ -153,6 +153,11 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     }
   }
 
+  /// Reads this router's device info, from the dashboard state when it has
+  /// it, and builds the action table for the services it reports (#1923).
+  /// This is where a logged-in flow builds the table, and the gates read the
+  /// same services. PnP builds its own, in `fetchDeviceInfo`
+  /// (pnp_provider.dart).
   Future<NodeDeviceInfo> checkDeviceInfo(String? serialNumber) async {
     final benchMark = BenchMarkLogger(name: 'checkDeviceInfo');
     benchMark.start();
@@ -170,8 +175,6 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     }
     benchMark.end();
     // state = state.copyWith(deviceInfo: nodeDeviceInfo);
-    // Build the action table for this router here, not in each caller
-    // (#1923). The gates read the same services.
     buildBetterActions(nodeDeviceInfo.services);
     return nodeDeviceInfo;
   }
