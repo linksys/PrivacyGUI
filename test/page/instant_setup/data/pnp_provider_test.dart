@@ -1,8 +1,7 @@
 // PnpNotifier's reads of the router, over a RouterBoundary: the router it sets
-// up, its mode, its auto configuration, its settings and its nodes, and the
-// stop rules of the two Auto Master polls, run through RouterBoundary's
-// scheduledCommand so their conditions decide when each poll ends (#1920,
-// #1921, #1866 wave 6). The save is in pnp_provider_save_test.dart.
+// up, its mode, its auto configuration, its settings and its nodes (#1921,
+// #1866 wave 6). The save is in pnp_provider_save_test.dart; the Auto Master
+// polls are in pnp_provider_auto_master_test.dart.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,9 +10,7 @@ import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
-import 'package:privacy_gui/core/jnap/models/auto_master_status.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
@@ -221,8 +218,10 @@ void main() {
     });
 
     test('offers no WiFi before the router was read', () {
-      expect(notifier.getDefaultWiFiSettings(),
-          const PnpWiFiSettings(isSplitMode: false, radios: []));
+      final defaults = notifier.getDefaultWiFiSettings();
+
+      expect(defaults.isSplitMode, isFalse);
+      expect(defaults.radios, isEmpty);
     });
 
     test('offers the router\'s guest WiFi as the defaults', () async {
@@ -252,71 +251,6 @@ void main() {
 
       expect(notifier.state.childNodes.map((node) => node.deviceID),
           ['router', 'node']);
-    });
-  });
-
-  group('the Auto Master polls', () {
-    JNAPSuccess status(String value) =>
-        JNAPSuccess(result: 'OK', output: {'autoMasterStatus': value});
-
-    group('pollAutoMasterStatus waits for Auto Master to finish', () {
-      for (final terminal in ['Complete', 'Idle', 'Failed']) {
-        test('and stops at $terminal', () async {
-          router.holdsInTurn(JNAPAction.getAutoMasterStatus, [
-            status('Running').output,
-            status(terminal).output,
-            status('Running').output,
-          ]);
-
-          final seen = await notifier.pollAutoMasterStatus().toList();
-
-          expect(seen,
-              [AutoMasterStatus.running, AutoMasterStatus.fromValue(terminal)]);
-        });
-      }
-
-      test('through refusals, for 24 reads at most', () async {
-        router.holdsInTurn(JNAPAction.getAutoMasterStatus, [
-          const JNAPError(result: errorJNAPUnauthorized),
-          status('Running').output,
-        ]);
-
-        final seen = await notifier.pollAutoMasterStatus().toList();
-
-        expect(seen, hasLength(24));
-        expect(seen.first, isNull);
-        expect(seen.skip(1), everyElement(AutoMasterStatus.running));
-      });
-    });
-
-    group('pollAutoMasterUntilRunning waits for Auto Master to start', () {
-      for (final started in ['Running', 'Complete', 'Failed']) {
-        test('and stops at $started', () async {
-          router.holdsInTurn(JNAPAction.getAutoMasterStatus, [
-            status('Idle').output,
-            status(started).output,
-            status('Idle').output,
-          ]);
-
-          final seen = await notifier.pollAutoMasterUntilRunning().toList();
-
-          expect(seen,
-              [AutoMasterStatus.idle, AutoMasterStatus.fromValue(started)]);
-        });
-      }
-
-      test('through Idle and refusals, for 18 reads at most', () async {
-        router.holdsInTurn(JNAPAction.getAutoMasterStatus, [
-          const JNAPError(result: 'ErrorUnknown'),
-          status('Idle').output,
-        ]);
-
-        final seen = await notifier.pollAutoMasterUntilRunning().toList();
-
-        expect(seen, hasLength(18));
-        expect(seen.first, isNull);
-        expect(seen.skip(1), everyElement(AutoMasterStatus.idle));
-      });
     });
   });
 }

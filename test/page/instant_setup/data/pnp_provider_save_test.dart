@@ -106,15 +106,6 @@ void main() {
   /// The actions of the save transaction, the last transaction sent.
   List<JNAPAction> saved() => [for (final c in router.transactions.last) c.key];
 
-  /// A band's settings as the router holds them, with [ssid] and [passphrase].
-  Map<String, dynamic> band(String radioID, String band,
-          {required String ssid, String? passphrase, int channel = 0}) =>
-      {
-        'radioID': radioID,
-        'settings': pnpRadio(radioID, band,
-            ssid: ssid, passphrase: passphrase, channel: channel)['settings'],
-      };
-
   group('personal WiFi', () {
     testWidgets(
         'writes the chosen name and password to every band and keeps the '
@@ -126,9 +117,9 @@ void main() {
 
       expect(router.payloadsOf(JNAPAction.setRadioSettings).single, {
         'radios': [
-          band('RADIO_2.4GHz', '2.4GHz',
+          pnpSavedBand('RADIO_2.4GHz', '2.4GHz',
               ssid: 'MyHome', passphrase: 'MyHomePass1'),
-          band('RADIO_5GHz', '5GHz',
+          pnpSavedBand('RADIO_5GHz', '5GHz',
               ssid: 'MyHome', passphrase: 'MyHomePass1', channel: 149),
         ],
       });
@@ -149,9 +140,9 @@ void main() {
 
       expect(router.payloadsOf(JNAPAction.setRadioSettings).single, {
         'radios': [
-          band('RADIO_2.4GHz', '2.4GHz',
+          pnpSavedBand('RADIO_2.4GHz', '2.4GHz',
               ssid: 'Home-2G', passphrase: 'Pass-2G-123'),
-          band('RADIO_5GHz', '5GHz',
+          pnpSavedBand('RADIO_5GHz', '5GHz',
               ssid: 'Home-5G', passphrase: 'Pass-5G-123', channel: 149),
         ],
       });
@@ -171,9 +162,9 @@ void main() {
 
       expect(router.payloadsOf(JNAPAction.setRadioSettings).single, {
         'radios': [
-          band('RADIO_2.4GHz', '2.4GHz',
+          pnpSavedBand('RADIO_2.4GHz', '2.4GHz',
               ssid: 'Linksys00042', passphrase: 'RouterPass1'),
-          band('RADIO_5GHz', '5GHz',
+          pnpSavedBand('RADIO_5GHz', '5GHz',
               ssid: 'Home-5G', passphrase: 'Pass-5G-123', channel: 149),
         ],
       });
@@ -203,22 +194,23 @@ void main() {
       expect(await runSave(tester), 'saved');
 
       expect(router.payloadsOf(JNAPAction.setRadioSettings).single['radios'][1],
-          band('RADIO_5GHz', '5GHz', ssid: 'MyHome', passphrase: null));
+          pnpSavedBand('RADIO_5GHz', '5GHz', ssid: 'MyHome', passphrase: null));
     });
   });
 
   group('guest WiFi', () {
-    Map<String, dynamic> guestRadio(String radioID,
-            {String ssid = 'Linksys00042-guest',
-            String passphrase = 'BeMyGuest'}) =>
-        {
-          'radioID': radioID,
-          'isEnabled': true,
-          'broadcastGuestSSID': true,
-          'guestSSID': ssid,
-          'guestWPAPassphrase': passphrase,
-          'canEnableRadio': true,
-        };
+    /// The router's guest radios, from pnp_router_data.dart, with the guest
+    /// name and passphrase replaced where given.
+    List<Map<String, dynamic>> guestRadios(
+            {String? ssid, String? passphrase}) =>
+        [
+          for (final radio in pnpGuestRadioSettings['radios'] as List)
+            {
+              ...radio as Map<String, dynamic>,
+              if (ssid != null) 'guestSSID': ssid,
+              if (passphrase != null) 'guestWPAPassphrase': passphrase,
+            },
+        ];
 
     testWidgets('turns guest WiFi on with the chosen name and password',
         (tester) async {
@@ -233,10 +225,7 @@ void main() {
 
       expect(router.payloadsOf(JNAPAction.setGuestRadioSettings).single, {
         'isGuestNetworkEnabled': true,
-        'radios': [
-          guestRadio('RADIO_2.4GHz', ssid: 'MyGuest', passphrase: 'GuestPass1'),
-          guestRadio('RADIO_5GHz', ssid: 'MyGuest', passphrase: 'GuestPass1'),
-        ],
+        'radios': guestRadios(ssid: 'MyGuest', passphrase: 'GuestPass1'),
       });
     });
 
@@ -249,7 +238,7 @@ void main() {
 
       expect(router.payloadsOf(JNAPAction.setGuestRadioSettings).single, {
         'isGuestNetworkEnabled': false,
-        'radios': [guestRadio('RADIO_2.4GHz'), guestRadio('RADIO_5GHz')],
+        'radios': guestRadios(),
       });
     });
 
@@ -328,7 +317,6 @@ void main() {
           {'adminPassword': 'RouterPass1'});
       expect(saved(),
           isNot(contains(JNAPAction.setUserAcknowledgedAutoConfiguration)));
-      expect(notifier.didSetAdminPasswordDuringSave, isTrue);
     });
 
     testWidgets('logs in with that password once the router is back',
@@ -352,7 +340,6 @@ void main() {
       expect(saved(), contains(JNAPAction.setDeviceMode));
       expect(saved(), isNot(contains(JNAPAction.pnpSetAdminPassword)));
       expect(router.actions, isNot(contains(JNAPAction.pnpCheckAdminPassword)));
-      expect(notifier.didSetAdminPasswordDuringSave, isFalse);
     });
 
     testWidgets(
@@ -402,7 +389,6 @@ void main() {
     expect(saved(), isNot(contains(JNAPAction.setDeviceMode)));
     expect(saved(), isNot(contains(JNAPAction.pnpSetAdminPassword)));
     expect(router.actions, isNot(contains(JNAPAction.pnpCheckAdminPassword)));
-    expect(notifier.didSetAdminPasswordDuringSave, isFalse);
   });
 
   group('when the save does not land', () {

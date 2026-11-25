@@ -52,6 +52,21 @@ Map<String, dynamic> pnpRadio(
       },
     };
 
+/// One band of a `SetRadioSettings` payload: the band's settings as
+/// [pnpRadio] holds them, with [ssid] and [passphrase].
+Map<String, dynamic> pnpSavedBand(
+  String radioID,
+  String band, {
+  required String ssid,
+  String? passphrase,
+  int channel = 0,
+}) =>
+    {
+      'radioID': radioID,
+      'settings': pnpRadio(radioID, band,
+          ssid: ssid, passphrase: passphrase, channel: channel)['settings'],
+    };
+
 /// `GetRadioInfo` output of a two-band router.
 Map<String, dynamic> pnpRadioInfo({
   List<Map<String, dynamic>>? radios,
