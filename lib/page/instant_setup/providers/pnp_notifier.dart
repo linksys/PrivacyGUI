@@ -325,13 +325,16 @@ class PnpNotifier extends AutoDisposeNotifier<PnpState> {
   /// the lock does for any hung call. Holding it for the request's full lifetime
   /// (up to 288 s measured) would starve the firmware stage that follows: its
   /// check takes this lock and gives up after 15 s.
+  ///
+  /// The window running out is the lock's [TimeoutError] (#1831). Nothing in
+  /// `saveWifi` raises one of its own, so that arm is "no answer", not a fault.
   Future<PnpWifiWriteOutcome> _writeWifi(PnpWifiWrite write) async {
     try {
       return await ref.read(uspMutationLockProvider).withLock(
             () => _svc.saveWifi(write),
             timeout: ref.read(pnpWifiAnswerWindowProvider),
           );
-    } on TimeoutException {
+    } on TimeoutError {
       logger.i('[PnP] WiFi write not answered within the window — the router '
           'is asked once it is reachable again');
       return PnpWifiWriteOutcome.unanswered;

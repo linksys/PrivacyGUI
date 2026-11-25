@@ -159,6 +159,21 @@ class _TimingOutBanksNotifier extends FirmwareBanksDataNotifier {
       throw TimeoutException('mutation lock', const Duration(seconds: 30));
 }
 
+/// The real [UspMutationLock], with every window shortened to a few
+/// milliseconds.
+///
+/// For a test that needs the lock to run out for real — what it throws then is
+/// production's, not a stand-in's — without waiting the 30 s (or the upload's
+/// 60 s per chunk) it would take.
+class _ShortWindowLock extends UspMutationLock {
+  @override
+  Future<T> withLock<T>(
+    Future<T> Function() action, {
+    Duration timeout = UspMutationLock.defaultTimeout,
+  }) =>
+      super.withLock(action, timeout: const Duration(milliseconds: 20));
+}
+
 /// A router that answers the first read and then stops answering.
 ///
 /// The shape that matters after a check: the check itself succeeded, and the
@@ -180,6 +195,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(Uint8List(0));
+    registerFallbackValue(<String, String>{});
   });
 
   setUp(() {
@@ -683,6 +699,43 @@ void main() {
       expect(state.failure?.error, isA<NetworkError>());
     });
 
+    test(
+        'a chunk that outlasts the mutation lock ends the upload on the '
+        'failure card, not in uploading', () async {
+      // #1831. Through the real uploader and the real lock: each chunk is one
+      // Operate under the lock, and `runUpload` maps `ServiceError` only. While
+      // the lock threw a bare `TimeoutException`, a chunk the router never
+      // answered passed that arm — no `_fail`, the phase stayed `uploading`
+      // (`isUpdating`, which `_firmwareExitGuard` vetoes the back arrow on), and
+      // the view only logged it.
+      final bytes = validImage();
+      when(() => mockUsp.operate(any(), args: any(named: 'args')))
+          .thenAnswer((_) => Completer<Map<String, dynamic>>().future);
+      final lock = _ShortWindowLock();
+      final container = createContainer(
+        picker: _StubPickerService(
+          FirmwarePickedFile(name: 'fw.img', size: bytes.length, bytes: bytes),
+        ),
+        uploader: FirmwareLocalUploadService(mockUsp, lock),
+        extra: [uspMutationLockProvider.overrideWithValue(lock)],
+      );
+      addTearDown(container.dispose);
+      final notifier = container.read(firmwareUpdateNotifierProvider.notifier);
+
+      await notifier.pickAndValidateFile();
+      await expectLater(
+        notifier.runUpload(commandKey: '1'),
+        throwsA(isA<TimeoutError>()),
+      );
+
+      final state = container.read(firmwareUpdateNotifierProvider);
+      expect(state.phase, FirmwareUpdatePhase.failed);
+      expect(state.failure?.error, isA<TimeoutError>());
+      expect(state.isUpdating, isFalse,
+          reason: 'the exit guard reads this; a page the user cannot leave '
+              'and that says nothing is the defect');
+    });
+
     test('triggerInstall succeeds, moves through triggering→installing',
         () async {
       when(() => mockService.triggerLocalDownload(
@@ -721,6 +774,34 @@ void main() {
         container.read(firmwareUpdateNotifierProvider).phase,
         FirmwareUpdatePhase.failed,
       );
+    });
+
+    test(
+        'a dispatch that outlasts the mutation lock ends on the failure card, '
+        'not in triggering', () async {
+      // #1831. The local-install dispatch runs under the lock and
+      // `triggerInstall` maps `ServiceError` only. While the lock threw a bare
+      // `TimeoutException`, it passed that arm: no `_fail`, the phase stayed
+      // `triggering` (`isUpdating`), and the view only logged it.
+      when(() => mockService.triggerLocalDownload(
+            targetInstance: any(named: 'targetInstance'),
+          )).thenAnswer((_) => Completer<void>().future);
+      final container = createContainer(
+        extra: [uspMutationLockProvider.overrideWithValue(_ShortWindowLock())],
+      );
+      addTearDown(container.dispose);
+
+      await expectLater(
+        container
+            .read(firmwareUpdateNotifierProvider.notifier)
+            .triggerInstall(targetInstance: 2),
+        throwsA(isA<TimeoutError>()),
+      );
+
+      final state = container.read(firmwareUpdateNotifierProvider);
+      expect(state.phase, FirmwareUpdatePhase.failed);
+      expect(state.failure?.error, isA<TimeoutError>());
+      expect(state.isUpdating, isFalse);
     });
 
     test('verify returns done on version match', () async {
