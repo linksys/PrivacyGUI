@@ -27,8 +27,9 @@ const _lan = <String, dynamic>{
   },
 };
 
-/// `GetDMZSettings` output, as in the spec's sample: on, open to a source
-/// range, to a server picked by its address.
+/// `GetDMZSettings` output, as in the legacy JNAP reference's sample: on,
+/// open to a source range, to a server picked by its address. Not the
+/// router-shaped test data, which has no source range.
 const _dmzToAddress = <String, dynamic>{
   'isDMZEnabled': true,
   'sourceRestriction': {
@@ -105,12 +106,15 @@ void main() {
       expect(notifier.ipAddress, '10.0.0.0');
     });
 
-    test('reports a read the router refuses, and keeps the page', () async {
+    test('reports a read the router refuses, and keeps what it showed',
+        () async {
+      await notifier.fetch();
       router.refuses(JNAPAction.getDMZSettings);
 
       await expectLater(notifier.fetch(), throwsA(isA<JNAPError>()));
 
-      expect(page().settings, const DMZSettings(isDMZEnabled: false));
+      expect(page().settings, DMZSettings.fromMap(_dmzToAddress));
+      expect(page().sourceType, DMZSourceType.range);
     });
   });
 
