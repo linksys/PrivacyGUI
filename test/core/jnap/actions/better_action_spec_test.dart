@@ -69,11 +69,7 @@ const _notInSpec = <JNAPAction, String>{
 };
 
 /// Actions whose URL is malformed. Nothing calls them today.
-const _malformedUrl = <JNAPAction, String>{
-  JNAPAction.getGamingPrioritizationSettings:
-      'ends in ":" (jnap_action_value.dart:108); the spec action is '
-          'GetGamingPrioritizationSettings (#1923)',
-};
+const _malformedUrl = <JNAPAction, String>{};
 
 /// Actions the app sends at the pin under a service that does not define them.
 const _wrongService = <JNAPAction, String>{

@@ -1581,7 +1581,7 @@
       "setFirmwareUpdateSettings": "http://linksys.com/jnap/firmwareupdate/SetFirmwareUpdateSettings",
       "updateFirmwareNow": "http://linksys.com/jnap/nodes/firmwareupdate/UpdateFirmwareNow",
       "nodesUpdateFirmwareNow": "http://linksys.com/jnap/nodes/firmwareupdate/UpdateFirmwareNow",
-      "getGamingPrioritizationSettings": "http://linksys.com/jnap/gamingprioritization/GetGamingPrioritizationSettings:",
+      "getGamingPrioritizationSettings": "http://linksys.com/jnap/gamingprioritization/GetGamingPrioritizationSettings",
       "setGamingPrioritizationSettings": "http://linksys.com/jnap/gamingprioritization/SetGamingPrioritizationSettings",
       "getGuestNetworkClients": "http://linksys.com/jnap/guestnetwork/GetGuestNetworkClients",
       "getGuestNetworkSettings": "http://linksys.com/jnap/guestnetwork/GetGuestNetworkSettings",
