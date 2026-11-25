@@ -129,6 +129,12 @@ void main() {
       expect(notifier.isPortConflict(3070, 3080, 'Both'), isTrue);
     });
 
+    test('flags a range that starts or ends on a single port', () {
+      expect(notifier.isPortConflict(3074, 3080, 'TCP'), isTrue);
+      expect(notifier.isPortConflict(3070, 3074, 'TCP'), isTrue);
+      expect(notifier.isPortConflict(3074, 3074, 'TCP'), isTrue);
+    });
+
     test('lets a range around a single port through on the other protocol', () {
       expect(notifier.isPortConflict(3070, 3080, 'UDP'), isFalse);
     });

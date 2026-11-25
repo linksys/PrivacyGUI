@@ -124,6 +124,19 @@ void main() {
       expect(notifier.isPortConflict(6890, 'Both'), isTrue);
     });
 
+    test('flags a port on either end of a range', () {
+      expect(notifier.isPortConflict(6888, 'TCP'), isTrue);
+      expect(notifier.isPortConflict(6900, 'TCP'), isTrue);
+    });
+
+    test('flags the port of a one-port range', () {
+      container
+          .read(portRangeForwardingListProvider.notifier)
+          .addRule(_range(8080, 8080, 'TCP'));
+
+      expect(notifier.isPortConflict(8080, 'TCP'), isTrue);
+    });
+
     test('lets a port inside a range through on the other protocol', () {
       expect(notifier.isPortConflict(6890, 'UDP'), isFalse);
     });
