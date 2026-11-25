@@ -36,8 +36,9 @@ class WiFiCredential {
             ssid = element.group(2) ?? '';
             break;
           case 'T':
+            // WPA, WEP or nopass; nopass, like any other, is no security.
             type = SecurityType.values.firstWhere(
-                (e) => e.toString() == (element.group(2) ?? 'none'),
+                (e) => e.name == (element.group(2) ?? '').toLowerCase(),
                 orElse: () => SecurityType.none);
             break;
           case 'P':

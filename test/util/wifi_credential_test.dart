@@ -64,6 +64,27 @@ void main() {
       expect(credential.isHidden, isTrue);
     });
 
+    // generate writes the type as WPA or WEP, the way phones read it.
+    test('reads the security type', () {
+      expect(
+          WiFiCredential.parse('WIFI:S:MyHome;P:abcd1234;T:WPA;H:false;;').type,
+          SecurityType.wpa);
+      expect(WiFiCredential.parse('WIFI:S:Old;T:WEP;P:12345;;').type,
+          SecurityType.wep);
+      expect(WiFiCredential.parse('WIFI:S:MyHome;T:wpa;P:abcd1234;;').type,
+          SecurityType.wpa);
+    });
+
+    test('reads back the type of the code generate writes', () {
+      for (final type in SecurityType.values) {
+        final credential =
+            WiFiCredential(ssid: 'MyHome', password: 'abcd1234', type: type);
+
+        expect(WiFiCredential.parse(credential.generate()).type, type,
+            reason: type.name);
+      }
+    });
+
     test('reads an open network as open, with no password', () {
       final credential =
           WiFiCredential.parse('WIFI:S:Cafe Guest;T:nopass;H:false;;');
