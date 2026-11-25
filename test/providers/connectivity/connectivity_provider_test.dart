@@ -19,7 +19,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -52,6 +51,10 @@ Map<String, dynamic> _deviceInfo(String serialNumber) => {
       'services': ['http://linksys.com/jnap/core/Core'],
     };
 
+// Expected values the code also builds as const are built at run time
+// here: two equal const values are one instance, so == would hold
+// whatever their props say.
+
 const _connectivityChannel =
     MethodChannel('dev.fluttercommunity.plus/connectivity');
 const _connectivityEvents =
@@ -77,10 +80,7 @@ void main() {
   late List<String> networkInfoCalls;
   late bool online;
 
-  setUpAll(() {
-    logger.d('connectivity_provider_test');
-    initBetterActions();
-  });
+  setUpAll(initBetterActions);
 
   setUp(() async {
     connection = 'wifi';
@@ -129,7 +129,7 @@ void main() {
   test('starts with no connection and no internet', () {
     expect(
         state(),
-        const ConnectivityState(
+        ConnectivityState(
             hasInternet: false, connectivityInfo: ConnectivityInfo()));
   });
 
@@ -214,8 +214,8 @@ void main() {
       // The client asks again after a 503, half a second later.
       await notifier.forceUpdate();
 
-      expect(state().cloudAvailabilityInfo,
-          const AvailabilityInfo(isCloudOk: false));
+      expect(
+          state().cloudAvailabilityInfo, AvailabilityInfo(isCloudOk: false));
     });
 
     test('with no connection, records that and checks nothing', () async {

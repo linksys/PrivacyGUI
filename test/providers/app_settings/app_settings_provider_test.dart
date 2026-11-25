@@ -9,6 +9,10 @@ import 'package:privacy_gui/providers/app_settings/app_settings.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// Expected values the code also builds as const are built at run time
+// here: two equal const values are one instance, so == would hold
+// whatever their props say.
+
 void main() {
   late ProviderContainer container;
 
@@ -25,7 +29,7 @@ void main() {
   }
 
   test('starts with the defaults', () {
-    expect(container.read(appSettingsProvider), const AppSettings());
+    expect(container.read(appSettingsProvider), AppSettings());
   });
 
   test('load reads the settings saved on an earlier launch', () async {
@@ -49,7 +53,7 @@ void main() {
     notifier.load();
 
     expect(await settingsWhen((s) => s.themeMode == ThemeMode.system),
-        const AppSettings());
+        AppSettings());
   });
 
   test('update saves the settings, then shows them', () async {
@@ -61,7 +65,7 @@ void main() {
 
     expect(
         await settingsWhen((s) => s.themeMode == ThemeMode.dark),
-        const AppSettings(themeMode: ThemeMode.dark, locale: Locale('de')));
+        AppSettings(themeMode: ThemeMode.dark, locale: const Locale('de')));
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString(pAppSettings),
         '{"themeMode":"dark","locale":"de","themeColor":null}');

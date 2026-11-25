@@ -79,8 +79,10 @@ void main() {
   test('settings with another theme mode or language are not equal', () {
     const settings = AppSettings(themeMode: ThemeMode.dark, locale: Locale('de'));
 
+    // Built at run time: an equal const would be the same instance, and equal
+    // whatever props says.
     expect(settings,
-        const AppSettings(themeMode: ThemeMode.dark, locale: Locale('de')));
+        AppSettings(themeMode: ThemeMode.dark, locale: const Locale('de')));
     expect(settings, isNot(const AppSettings(locale: Locale('de'))));
     expect(settings, isNot(const AppSettings(themeMode: ThemeMode.dark)));
   });
