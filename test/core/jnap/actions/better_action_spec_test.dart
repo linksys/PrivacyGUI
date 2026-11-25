@@ -45,7 +45,6 @@ const _definedOnlyAfterBaseline = <JNAPAction, String>{
   JNAPAction.getAutoIPoEStatus: '${_jnap}autoipoe/AutoIPoE',
   JNAPAction.getAutoIPoELog: '${_jnap}autoipoe/AutoIPoE',
   JNAPAction.resetAutoIPoE: '${_jnap}autoipoe/AutoIPoE',
-  // JNAPService has no Setup12, so the app cannot gate this on its service.
   JNAPAction.getAutoMasterStatus: '${_jnap}nodes/setup/Setup12',
 };
 
@@ -93,13 +92,11 @@ const _gateOf = <JNAPAction, String>{
   JNAPAction.getAutoIPoEStatus: 'isSupportAutoIPoE',
   JNAPAction.getAutoIPoELog: 'isSupportAutoIPoE',
   JNAPAction.resetAutoIPoE: 'isSupportAutoIPoE',
+  JNAPAction.getAutoMasterStatus: 'isSupportAutoMaster',
 };
 
 /// Actions that need a gate and have none yet.
-const _missingGates = <JNAPAction, String>{
-  JNAPAction.getAutoMasterStatus: 'JNAPService has no Setup12, so there is '
-      'no isServiceSupport gate for it; a #1923 PR adds both',
-};
+const _missingGates = <JNAPAction, String>{};
 
 /// Actions that would need a gate, but that nothing in lib/ sends.
 const _noCaller = <JNAPAction, String>{

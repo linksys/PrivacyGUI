@@ -27,6 +27,10 @@ final serviceHelperGates = <String, Gate>{
     isOpen: ([s]) => _helper.isSupportSetup(s),
     services: {JNAPService.setup},
   ),
+  'isSupportAutoMaster': (
+    isOpen: ([s]) => _helper.isSupportAutoMaster(s),
+    services: {JNAPService.setup12},
+  ),
   'isSupportGuestNetwork': (
     isOpen: ([s]) => _helper.isSupportGuestNetwork(s),
     services: {JNAPService.guestNetwork},

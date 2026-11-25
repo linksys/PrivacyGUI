@@ -229,6 +229,7 @@
       "http://linksys.com/jnap/nodes/setup/Setup9",
       "http://linksys.com/jnap/nodes/setup/Setup10",
       "http://linksys.com/jnap/nodes/setup/Setup11",
+      "http://linksys.com/jnap/nodes/setup/Setup12",
       "http://linksys.com/jnap/nodes/smartmode/SmartMode",
       "http://linksys.com/jnap/nodes/smartmode/SmartMode2",
       "http://linksys.com/jnap/nodes/setup/SelectableWAN",
@@ -360,6 +361,7 @@
       "http://linksys.com/jnap/nodes/setup/Setup9",
       "http://linksys.com/jnap/nodes/setup/Setup10",
       "http://linksys.com/jnap/nodes/setup/Setup11",
+      "http://linksys.com/jnap/nodes/setup/Setup12",
       "http://linksys.com/jnap/nodes/smartmode/SmartMode",
       "http://linksys.com/jnap/nodes/smartmode/SmartMode2",
       "http://linksys.com/jnap/nodes/setup/SelectableWAN",
@@ -1435,6 +1437,9 @@
     ],
     "only: http://linksys.com/jnap/nodes/setup/Setup11": [
       "http://linksys.com/jnap/nodes/setup/Setup11"
+    ],
+    "only: http://linksys.com/jnap/nodes/setup/Setup12": [
+      "http://linksys.com/jnap/nodes/setup/Setup12"
     ],
     "only: http://linksys.com/jnap/nodes/smartmode/SmartMode": [
       "http://linksys.com/jnap/nodes/smartmode/SmartMode"
