@@ -4,6 +4,8 @@
 // shapes here are the ones the app reads and writes: each `toValue` names the
 // value on the wire, and `VPNService` takes each model from the key it reads.
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
@@ -274,6 +276,162 @@ void main() {
 
       expect(result.success, isFalse);
       expect(result.latency, isNull);
+    });
+  });
+
+  // Each model's JSON is its map; reading it back gives an equal model, built
+  // at run time so that the comparison goes through props.
+  group('reading a model back from the JSON it writes', () {
+    test('a user', () {
+      final user = VPNUserCredentials.fromMap(_credentials);
+
+      expect(user.toJson(), _credentials);
+      expect(VPNUserCredentials.fromJson(jsonEncode(user.toJson())), user);
+    });
+
+    test('a gateway', () {
+      final gateway = VPNGatewaySettings.fromMap(_gateway);
+
+      expect(gateway.toJson(), _gateway);
+      expect(
+          VPNGatewaySettings.fromJson(jsonEncode(gateway.toJson())), gateway);
+    });
+
+    test('statistics', () {
+      final statistics = VPNStatistics.fromMap(_statistics);
+
+      expect(statistics.toMap(), _statistics);
+      expect(statistics.toJson(), _statistics);
+      expect(
+          VPNStatistics.fromJson(jsonEncode(statistics.toJson())), statistics);
+    });
+
+    test('the service switches', () {
+      final switches = VPNServiceSetSettings.fromMap(
+          const {'enabled': true, 'autoConnect': false});
+
+      expect(switches.toJson(), {'enabled': true, 'autoConnect': false});
+      expect(VPNServiceSetSettings.fromJson(jsonEncode(switches.toJson())),
+          switches);
+    });
+
+    test('the service, with and without statistics', () {
+      final service = VPNServiceSettings.fromMap(_service);
+
+      expect(service.toMap(), _service);
+      expect(
+          VPNServiceSettings.fromJson(jsonEncode(service.toJson())), service);
+
+      final down = VPNServiceSettings.fromMap(const {
+        'enabled': false,
+        'autoConnect': false,
+        'tunnelStatus': 'Disconnected',
+      });
+      expect(down.toMap(), {
+        'enabled': false,
+        'autoConnect': false,
+        'statistics': null,
+        'tunnelStatus': 'Disconnected',
+      });
+    });
+
+    test('a test result', () {
+      final result = VPNTestResult.fromMap(const {
+        'success': true,
+        'statusMessage': 'IPsec SA established',
+        'latency': 42,
+      });
+
+      expect(result.toMap(), {
+        'success': true,
+        'statusMessage': 'IPsec SA established',
+        'latency': 42,
+      });
+      expect(VPNTestResult.fromJson(jsonEncode(result.toJson())), result);
+    });
+  });
+
+  group('equality and edits', () {
+    test('a service read twice is the same service; a changed field is not',
+        () {
+      final service = VPNServiceSettings.fromMap(_service);
+
+      expect(VPNServiceSettings.fromMap(_service), service);
+      for (final edited in [
+        service.copyWith(enabled: false),
+        service.copyWith(autoConnect: true),
+        service.copyWith(tunnelStatus: IPsecStatus.failed),
+        service.copyWith(statistics: service.statistics!.copyWith(uptime: 1)),
+      ]) {
+        expect(edited, isNot(service));
+      }
+    });
+
+    test('an edit to the service keeps the fields it does not name', () {
+      final service = VPNServiceSettings.fromMap(_service);
+
+      final failed = service.copyWith(tunnelStatus: IPsecStatus.failed);
+
+      expect(failed.toMap(), {..._service, 'tunnelStatus': 'Failed'});
+    });
+
+    test('an edit to the statistics keeps the counters it does not name', () {
+      final statistics = VPNStatistics.fromMap(_statistics);
+
+      expect(
+        statistics
+            .copyWith(uptime: 7200)
+            .copyWith(packetsSent: 1)
+            .copyWith(packetsReceived: 2)
+            .copyWith(bytesSent: 3)
+            .copyWith(bytesReceived: 4)
+            .copyWith(currentBandwidth: 5)
+            .copyWith(activeSAs: 6)
+            .copyWith(rekeyCount: 7)
+            .toMap(),
+        {
+          'uptime': 7200,
+          'packetsSent': 1,
+          'packetsReceived': 2,
+          'bytesSent': 3,
+          'bytesReceived': 4,
+          'currentBandwidth': 5,
+          'activeSAs': 6,
+          'rekeyCount': 7,
+        },
+      );
+      expect(statistics.copyWith(), statistics);
+      expect(statistics.copyWith(), isNot(same(statistics)));
+    });
+
+    test('an edit to a test result keeps the fields it does not name', () {
+      final result = VPNTestResult.fromMap(const {
+        'success': true,
+        'statusMessage': 'IPsec SA established',
+        'latency': 42,
+      });
+
+      expect(
+        result.copyWith(latency: 10).toMap(),
+        {
+          'success': true,
+          'statusMessage': 'IPsec SA established',
+          'latency': 10
+        },
+      );
+      expect(
+        result.copyWith(success: false, statusMessage: 'Timed out').toMap(),
+        {'success': false, 'statusMessage': 'Timed out', 'latency': 42},
+      );
+    });
+
+    test('a changed user name or auth mode keeps the secret', () {
+      final user = VPNUserCredentials.fromMap(_credentials);
+
+      expect(user.copyWith(username: 'bob').toMap(),
+          {..._credentials, 'username': 'bob'});
+      expect(user.copyWith(authMode: AuthMode.psk).toMap(),
+          {..._credentials, 'authMode': 'PSK'});
     });
   });
 }
