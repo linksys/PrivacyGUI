@@ -231,5 +231,16 @@ void main() {
       expect(await notifier().checkRecoveryCode('00000'), isFalse);
       expect(page().remainingErrorAttempts, isNull);
     });
+
+    test('a right code after a wrong one clears the count', () async {
+      router.holdsInTurn(JNAPAction.verifyRouterResetCode,
+          [wrongCode(4), <String, dynamic>{}]);
+
+      await notifier().checkRecoveryCode('00000');
+      expect(page().remainingErrorAttempts, 4);
+
+      expect(await notifier().checkRecoveryCode('12345'), isTrue);
+      expect(page().remainingErrorAttempts, isNull);
+    });
   });
 }
