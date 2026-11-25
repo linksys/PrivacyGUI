@@ -33,12 +33,12 @@ class TroubleshootingState extends Equatable {
   factory TroubleshootingState.fromMap(Map<String, dynamic> map) {
     return TroubleshootingState(
       deviceStatusList: List<DeviceStatusModel>.from(
-        (map['deviceStatusList'] as List<int>).map<DeviceStatusModel>(
+        (map['deviceStatusList'] as List).map<DeviceStatusModel>(
           (x) => DeviceStatusModel.fromMap(x as Map<String, dynamic>),
         ),
       ),
       dhcpClientList: List<DhcpClientModel>.from(
-        (map['dhchClientList'] as List<int>).map<DhcpClientModel>(
+        (map['dhchClientList'] as List).map<DhcpClientModel>(
           (x) => DhcpClientModel.fromMap(x as Map<String, dynamic>),
         ),
       ),

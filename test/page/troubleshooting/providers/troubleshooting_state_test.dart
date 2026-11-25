@@ -34,6 +34,13 @@ void main() {
     });
   });
 
+  test('reads back from the map and the JSON it writes', () {
+    final state = _state();
+
+    expect(TroubleshootingState.fromMap(state.toMap()), state);
+    expect(TroubleshootingState.fromJson(state.toJson()), state);
+  });
+
   test('a state read twice is the same state; a changed list is not', () {
     final state = _state();
 
