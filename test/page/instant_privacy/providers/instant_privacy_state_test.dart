@@ -157,4 +157,17 @@ void main() {
     expect(state.settings.mode, MacFilterMode.disabled);
     expect(state.settings.maxMacAddresses, 56);
   });
+
+  test('the state reads back from the JSON it writes', () {
+    final state = InstantPrivacyState.fromMap(const {
+      'status': {'mode': 'allow'},
+      'settings': _loadedSettingsMap,
+    });
+
+    expect(state.toMap(), {
+      'status': {'mode': 'allow'},
+      'settings': _loadedSettingsMap,
+    });
+    expect(InstantPrivacyState.fromJson(state.toJson()), state);
+  });
 }
