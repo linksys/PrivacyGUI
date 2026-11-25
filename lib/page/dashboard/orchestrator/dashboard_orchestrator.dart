@@ -247,6 +247,9 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
                 totalMemoryKb: model.totalMemory,
                 freeMemoryKb: model.freeMemory,
                 uptimeSeconds: model.uptime,
+                // Read with this system info, so the card keeps its
+                // temperature across a refresh (#1926).
+                cpuTemperatureCelsius: model.cpuTemperatureCelsius,
               ),
             );
       }).catchError((e) {

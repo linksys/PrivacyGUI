@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
+import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/_shared/components/card_density_scope.dart';
@@ -30,6 +31,12 @@ class UspDeviceInfoCard extends ConsumerWidget {
     // device list does, so at login, on every refresh and whenever DataElements
     // has no controller row the node's ID is the literal 'GATEWAY' (#1665).
     final macAddress = info.baseMacAddress;
+
+    // The CPU's temperature from the system monitor's latest poll (#1926), so
+    // it moves while the page is open. `info` is the session-cached SystemInfo,
+    // read at login, and would hold the login-time value.
+    final cpuTemperature = ref.watch(uspSystemMonitorProvider
+        .select((s) => s.latest?.cpuTemperatureCelsius));
 
     // Hostname and the detail link still come from the master node: the link
     // needs a node lookup key, and the synthetic master resolves too.
@@ -140,6 +147,11 @@ class UspDeviceInfoCard extends ConsumerWidget {
                   label: 'MAC',
                   value: macAddress,
                   copyable: true,
+                ),
+              if (cpuTemperature != null)
+                InfoGridItem(
+                  label: loc(context).temperature,
+                  value: loc(context).temperatureCelsius(cpuTemperature),
                 ),
             ],
           ),

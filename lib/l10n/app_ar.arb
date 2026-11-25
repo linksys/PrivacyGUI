@@ -1058,6 +1058,8 @@
   "selectTestServer": "اختر خادم الاختبار",
   "selectingFile": "جارٍ اختيار الملف…",
   "serial": "الرقم التسلسلي",
+  "temperature": "درجة الحرارة",
+  "temperatureCelsius": "{value} °C",
   "serialNumberLabel": "الرقم التسلسلي",
   "server": "الخادم",
   "serverLabel": "الخادم: {server}",

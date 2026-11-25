@@ -1058,6 +1058,8 @@
   "selectTestServer": "เลือกเซิร์ฟเวอร์ทดสอบ",
   "selectingFile": "กำลังเลือกไฟล์…",
   "serial": "ซีเรียล",
+  "temperature": "อุณหภูมิ",
+  "temperatureCelsius": "{value} °C",
   "serialNumberLabel": "หมายเลขซีเรียล",
   "server": "เซิร์ฟเวอร์",
   "serverLabel": "เซิร์ฟเวอร์: {server}",

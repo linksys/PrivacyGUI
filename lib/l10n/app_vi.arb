@@ -1058,6 +1058,8 @@
   "selectTestServer": "Chọn máy chủ kiểm tra",
   "selectingFile": "Đang chọn tệp…",
   "serial": "Số sê-ri",
+  "temperature": "Nhiệt độ",
+  "temperatureCelsius": "{value}°C",
   "serialNumberLabel": "Số sê-ri",
   "server": "Máy chủ",
   "serverLabel": "Máy chủ: {server}",

@@ -1058,6 +1058,8 @@
   "selectTestServer": "Valitse testipalvelin",
   "selectingFile": "Valitaan tiedostoa…",
   "serial": "Sarjanumero",
+  "temperature": "Lämpötila",
+  "temperatureCelsius": "{value} °C",
   "serialNumberLabel": "Sarjanumero",
   "server": "Palvelin",
   "serverLabel": "Palvelin: {server}",

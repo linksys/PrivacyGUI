@@ -1058,6 +1058,8 @@
   "selectTestServer": "Wybierz serwer testowy",
   "selectingFile": "Wybieranie pliku…",
   "serial": "Numer seryjny",
+  "temperature": "Temperatura",
+  "temperatureCelsius": "{value} °C",
   "serialNumberLabel": "Numer seryjny",
   "server": "Serwer",
   "serverLabel": "Serwer: {server}",

@@ -1058,6 +1058,8 @@
   "selectTestServer": "Test Sunucusu Seç",
   "selectingFile": "Dosya seçiliyor…",
   "serial": "Seri",
+  "temperature": "Sıcaklık",
+  "temperatureCelsius": "{value} °C",
   "serialNumberLabel": "Seri Numarası",
   "server": "Sunucu",
   "serverLabel": "Sunucu: {server}",

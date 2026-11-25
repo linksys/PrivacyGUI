@@ -9,6 +9,11 @@ class SystemSnapshot extends Equatable {
   final int freeMemoryKb;
   final int uptimeSeconds;
 
+  /// The router's CPU temperature in whole °C (#1926): the
+  /// `TemperatureSensor` row named `cpu-top-thermal`. Null when the router has
+  /// no such row, or reports no reading for it.
+  final int? cpuTemperatureCelsius;
+
   const SystemSnapshot({
     required this.timestamp,
     required this.cpuPercent,
@@ -16,6 +21,7 @@ class SystemSnapshot extends Equatable {
     required this.totalMemoryKb,
     required this.freeMemoryKb,
     required this.uptimeSeconds,
+    this.cpuTemperatureCelsius,
   });
 
   int get usedMemoryKb => totalMemoryKb - freeMemoryKb;
@@ -40,6 +46,7 @@ class SystemSnapshot extends Equatable {
         totalMemoryKb,
         freeMemoryKb,
         uptimeSeconds,
+        cpuTemperatureCelsius,
       ];
 }
 

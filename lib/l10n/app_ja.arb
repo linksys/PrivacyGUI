@@ -1058,6 +1058,8 @@
   "selectTestServer": "テストサーバーを選択",
   "selectingFile": "ファイルを選択中…",
   "serial": "シリアル",
+  "temperature": "温度",
+  "temperatureCelsius": "{value}°C",
   "serialNumberLabel": "シリアル番号",
   "server": "サーバー",
   "serverLabel": "サーバー: {server}",

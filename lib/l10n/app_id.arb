@@ -1058,6 +1058,8 @@
   "selectTestServer": "Pilih Server Tes",
   "selectingFile": "Memilih berkas…",
   "serial": "Serial",
+  "temperature": "Suhu",
+  "temperatureCelsius": "{value} °C",
   "serialNumberLabel": "Nomor Seri",
   "server": "Server",
   "serverLabel": "Server: {server}",

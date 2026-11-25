@@ -1058,6 +1058,8 @@
   "selectTestServer": "Επιλογή διακομιστή δοκιμής",
   "selectingFile": "Επιλογή αρχείου…",
   "serial": "Σειριακός αριθμός",
+  "temperature": "Θερμοκρασία",
+  "temperatureCelsius": "{value} °C",
   "serialNumberLabel": "Σειριακός αριθμός",
   "server": "Διακομιστής",
   "serverLabel": "Διακομιστής: {server}",
