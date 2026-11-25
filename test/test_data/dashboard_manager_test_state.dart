@@ -1151,12 +1151,6 @@ const dashboardManagerTestState = {
   "lanConnections": ["None", "None", "None", "None"],
   "skuModelNumber": "MBE70",
   "localTime": 1728375356000,
-  "wanExternal": {
-    "PublicWanIPv4": "118.163.122.211",
-    "PublicWanIPv6": null,
-    "PrivateWanIPv4": "192.168.1.86",
-    "PrivateWanIPv6": null
-  },
   "cpuLoad": "0.00",
   "memoryLoad": "0.49"
 };

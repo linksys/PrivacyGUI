@@ -45,7 +45,6 @@ const _definedOnlyAfterBaseline = <JNAPAction, String>{
   JNAPAction.getAutoIPoEStatus: '${_jnap}autoipoe/AutoIPoE',
   JNAPAction.getAutoIPoELog: '${_jnap}autoipoe/AutoIPoE',
   JNAPAction.resetAutoIPoE: '${_jnap}autoipoe/AutoIPoE',
-  // JNAPService has no Setup12, so the app cannot gate this on its service.
   JNAPAction.getAutoMasterStatus: '${_jnap}nodes/setup/Setup12',
 };
 
@@ -69,17 +68,10 @@ const _notInSpec = <JNAPAction, String>{
 };
 
 /// Actions whose URL is malformed. Nothing calls them today.
-const _malformedUrl = <JNAPAction, String>{
-  JNAPAction.getGamingPrioritizationSettings:
-      'ends in ":" (jnap_action_value.dart:108); the spec action is '
-          'GetGamingPrioritizationSettings (#1923)',
-};
+const _malformedUrl = <JNAPAction, String>{};
 
 /// Actions the app sends at the pin under a service that does not define them.
-const _wrongService = <JNAPAction, String>{
-  JNAPAction.getWANExternal:
-      'upgraded under Router13, which does not define it (#1906)',
-};
+const _wrongService = <JNAPAction, String>{};
 
 /// The gate of each action that needs one (no URL at the baseline, or a URL
 /// only a newer service defines): the ServiceHelper check its call sites use,
@@ -88,7 +80,6 @@ const _wrongService = <JNAPAction, String>{
 /// services each gate checks, and jnap_service_supported_test.dart that it
 /// opens on them.
 const _gateOf = <JNAPAction, String>{
-  JNAPAction.getWANExternal: 'isSupportWANExternal',
   JNAPAction.clientDeauth: 'isSupportClientDeauth',
   JNAPAction.reboot2: 'isSupportChildReboot',
   JNAPAction.factoryReset2: 'isSupportChildFactoryReset',
@@ -101,13 +92,11 @@ const _gateOf = <JNAPAction, String>{
   JNAPAction.getAutoIPoEStatus: 'isSupportAutoIPoE',
   JNAPAction.getAutoIPoELog: 'isSupportAutoIPoE',
   JNAPAction.resetAutoIPoE: 'isSupportAutoIPoE',
+  JNAPAction.getAutoMasterStatus: 'isSupportAutoMaster',
 };
 
 /// Actions that need a gate and have none yet.
-const _missingGates = <JNAPAction, String>{
-  JNAPAction.getAutoMasterStatus: 'JNAPService has no Setup12, so there is '
-      'no isServiceSupport gate for it; a #1923 PR adds both',
-};
+const _missingGates = <JNAPAction, String>{};
 
 /// Actions that would need a gate, but that nothing in lib/ sends.
 const _noCaller = <JNAPAction, String>{
@@ -131,8 +120,6 @@ bool _hasCaller(JNAPAction action) {
 }
 
 void main() {
-  stubTempDirectory();
-
   final spec = JnapSpec.load();
 
   // Each resolves from a fresh start; see resolveActions.
@@ -309,8 +296,6 @@ void main() {
       });
       expect(afterPin, atBaseline);
     },
-    skip: 'initBetterActions does not clear what an earlier call mapped, so '
-        'getWANExternal and clientDeauth keep the last router\'s URL (#1923)',
   );
 
   test('every listed exception still applies', () {
