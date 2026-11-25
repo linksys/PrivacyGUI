@@ -1,5 +1,6 @@
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
+import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_network.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
@@ -17,22 +18,53 @@ import 'package:privacy_gui/validator_rules/lan_host_ipv4.dart';
 /// Transforms Hosts (ConnectedDevices), WiFi enrichment, and DataElements
 /// into the unified MeshNetwork architecture.
 ///
-/// **DataElements decides which nodes exist; Hosts only describes them
-/// (#1688).** The node list, each node's role and its parent come from
+/// **DataElements decides which nodes are online; Hosts describes them
+/// (#1688).** The online nodes, each one's role and its parent come from
 /// [MeshTopologyInfo.nodes] (`MeshTopologyBuilder`, which tells the controller
 /// from an agent by its backhaul). A `Hosts` row is attached to a node when its
 /// `PhysAddress` equals that node's `Device.{i}.ID` (linksys/FWDEV#208) and
 /// supplies what DataElements does not carry — the node's IP and host name —
 /// and such a row is not also listed as a client. FL-WRT 2.0 has no mesh-role
-/// leaf on `Hosts` (see `mesh_node_identity.dart`), so there is no other way to
-/// tell a node's row from a client's.
+/// leaf on `Hosts` (see `mesh_node_identity.dart`); the one other fact about a
+/// row is the firmware's node marker below, which says only that the MAC has
+/// been a node.
 ///
-/// **A node DataElements does not report is not built.** On 2.0 an agent that
-/// drops off the mesh leaves `DataElements.Network.Device.` and nothing marks
-/// its lingering `Hosts` row as a node, so it disappears rather than rendering
-/// offline. Showing it offline needs the app to remember which MACs were nodes;
-/// that is deliberately not built yet, because how long such a row lingers on
-/// 2.0 has not been measured on a multi-node bench (#1688, #1443).
+/// **An offline node comes from the firmware's node marker (#1443).** On 2.0
+/// an agent that loses power leaves `DataElements.Network.Device.` about 130 s
+/// after its last contact, while its `Hosts` row stays (hostmngr keeps it for
+/// 24 h after the host leaves, across a clean controller reboot too).
+/// Firmware marks that row `X_LINKSYS_IsMeshNode` once its MAC has been a
+/// DataElements `Device.{i}.ID`, and never clears the mark. So a row is read in
+/// this order:
+/// 1. its MAC is a DataElements node: that node's own row;
+/// 2. marked: an offline node, built as a [SlaveNode] with no DataElements ID,
+///    whether the row is active or not;
+/// 3. anything else: a client.
+///
+/// **A marked row that is active is still an offline node.** The mark says the
+/// MAC *was* a node and DataElements says it is not one now, while `Active`
+/// says the host answers on the LAN. A Linksys node that is factory reset and
+/// wired to the controller joins the mesh by itself, and a node that restarts
+/// answers on the LAN before DataElements lists it again (about 50 s after a
+/// clean controller reboot, measured 2026-11-23). In both cases the row is a
+/// node on its way back, not a client, so it reads offline until DataElements
+/// lists it. This departs from the firmware's guidance on PrivacyGUI#1443,
+/// which keeps such a row a client.
+///
+/// Known limitation: a former node set up as a router of its own and then
+/// wired behind this network (router behind router, or Bridge Mode) does not
+/// join. On an M60 its WAN MAC is its AL-MAC (measured on 2.0.4.26112201), so
+/// its row here is the marked one, active for as long as it is connected. It
+/// reads as an offline extender for that whole time, instead of as the client
+/// it is, because nothing on the controller tells the two apart. Being no
+/// client, it is also missing wherever the app lists clients: the device
+/// list, the device pickers of DMZ, port forwarding and DHCP reservations,
+/// and the Ethernet port names; the DHCP lease list shows it offline; and
+/// device analytics drops its history as a node's. Setting up DMZ or a port
+/// forward to that inner router is the usual reason to have one, so this is
+/// the case to watch for in support reports.
+///
+/// Firmware without the leaf reads null, which builds no offline node.
 class MeshNetworkBuilder {
   MeshNetworkBuilder._();
 
@@ -53,17 +85,32 @@ class MeshNetworkBuilder {
     required String gatewayName,
     SystemInfoUIModel? systemInfo,
   }) {
-    // 1. Separate the nodes' own Hosts rows from the clients. A row is a node's
-    //    when its PhysAddress is a DataElements node ID; it is keyed by that
-    //    normalized MAC so each node can find its row below.
+    // 1. Separate the nodes' own Hosts rows from the clients, in the order the
+    //    class doc gives. A row is a node's when its PhysAddress is a
+    //    DataElements node ID; it is keyed by that normalized MAC so each node
+    //    can find its row below. A marked row no node matches is an offline
+    //    node's (#1443), keyed the same way so a MAC listed twice builds one
+    //    node.
+    //
+    //    "No node matches" is only a verdict when DataElements answered. With
+    //    no nodes at all (the first build before the mesh read returns, or a
+    //    first mesh read that failed; a later failure keeps the topology
+    //    already known, in `DevicesDataNotifier`), nothing is known about
+    //    which agents are up, the same
+    //    rule `SlaveNode.livenessKnown` keeps, so no offline node is built and
+    //    the row is read as a client, as before #1443.
     final nodeMacSet =
         meshNodeMacSet(meshTopology.nodes.map((n) => n.deviceId));
+    final meshAnswered = meshTopology.isNotEmpty;
     final nodeHostRows = <String, ConnectedDevice>{};
+    final offlineNodeRows = <String, ConnectedDevice>{};
     final clientHostDevices = <ConnectedDevice>[];
 
     for (final d in connectedDevices.items) {
       if (isMeshNodeHost(d.macAddress, nodeMacSet)) {
         nodeHostRows[meshNodeMacKey(d.macAddress)] ??= d;
+      } else if (meshAnswered && _isOfflineNodeRow(d)) {
+        offlineNodeRows[meshNodeMacKey(d.macAddress)] ??= d;
       } else if (d.interface_.isNotEmpty || d.isActive) {
         clientHostDevices.add(d);
       }
@@ -80,8 +127,8 @@ class MeshNetworkBuilder {
     // still reports a single (master) node, so `nodes.isNotEmpty` would be true
     // even though there is no other node a client could belong to — and then
     // every unresolved client would be called an orphan on a one-node network.
-    // Use the topology's own `hasMesh` (any SlaveNode present), which matches
-    // MeshNetwork.hasMesh.
+    // Use the topology's own `hasMesh` (any SlaveNode DataElements lists, so
+    // any online one), which matches MeshNetwork.hasMesh.
     final topologyHasMesh = meshTopology.nodes.hasMesh;
 
     final allBuiltClients = clientHostDevices
@@ -175,13 +222,8 @@ class MeshNetworkBuilder {
         slaveMeshInfo: slaveMeshInfo,
         connectedClients: slaveClients,
         // Every slave built here is one DataElements reported, so it is online
-        // and its liveness is known by construction. Before #1688 the slaves
-        // came from Hosts rows tagged `DeviceRole=slave`, and a powered-off
-        // extender showed as an *offline* row: its Hosts row lingered while it
-        // had left DataElements (#1430). On 2.0 nothing tags that lingering row
-        // as a node, so the offline shape cannot be built from this input — see
-        // the class doc. `livenessKnown` stays a parameter so that rebuilding an
-        // offline node later does not change the model.
+        // and its liveness is known by construction. The offline shape is
+        // built from Hosts below (step 9).
         livenessKnown: true,
       );
 
@@ -224,6 +266,15 @@ class MeshNetworkBuilder {
         unassigned.addAll(e.value.map((c) => c.copyWith(isUnattributed: true)));
       }
     }
+
+    // 9. Offline nodes (#1443): one per marked Hosts row that no DataElements
+    //    node matched. Nothing reports where an offline node was attached, so
+    //    it has no backhaul and the topology draws it under the gateway. It
+    //    has no clients: they left the mesh with it. Added after step 8, so a
+    //    client whose parent ID names one is an orphan above rather than a
+    //    client of a node that holds none, which would drop it from the
+    //    network altogether.
+    slaves.addAll(offlineNodeRows.values.map(_buildOfflineSlaveNode));
 
     return MeshNetwork(
       master: patchedMaster,
@@ -672,6 +723,82 @@ class MeshNetworkBuilder {
       userDeviceName: nonEmpty(slaveDevice?.linksysUserDeviceLocation),
       // What the node detail page offers (#876); DataElements is its only source.
       actions: slaveMeshInfo.actions,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private: offline SlaveNode (#1443)
+  // ---------------------------------------------------------------------------
+
+  /// Whether [row] is an offline node's: firmware marks it as a former mesh
+  /// node. Its `Active` does not matter (see the class doc for why an active
+  /// row is still an offline node). Called only for rows no DataElements node
+  /// matched, so a node DataElements lists is never read offline here.
+  ///
+  /// `true` only, not "not false": firmware without the leaf reads null, and a
+  /// null must build no offline node.
+  static bool _isOfflineNodeRow(ConnectedDevice row) =>
+      row.linksysIsMeshNode == true;
+
+  /// The stamp an offline node's duration is counted from, or null when [row]
+  /// carries none.
+  ///
+  /// Only an inactive row has one. `ActiveLastChange` is the row's last change
+  /// of `Active`: on an inactive row that is when the node went offline, but
+  /// on an active row it is when the host came back onto the LAN, so counting
+  /// from it would print minutes for a node that has been gone for hours. An
+  /// active row therefore reads as unknown.
+  ///
+  /// A zero date (`0001-01-01T00:00:00Z`) and the 1970 epoch sentinel are not
+  /// stamps either, so anything before 1971 reads as none and the UI shows the
+  /// duration as unknown, never as a huge or zero value.
+  static DateTime? _offlineStamp(ConnectedDevice row) {
+    if (row.isActive) return null;
+    final stamp = row.activeLastChange;
+    if (stamp == null || stamp.isBefore(DateTime.utc(1971))) return null;
+    return stamp;
+  }
+
+  /// An agent that left DataElements, from the `Hosts` row firmware still
+  /// marks as a node.
+  ///
+  /// It has no [SlaveNode.dataElementsId], so with `livenessKnown: true` it
+  /// reads offline. Its name follows the same chain as an online agent's
+  /// ([_buildSlaveNode]): an agent's `X_LINKSYS_FriendlyName` reads back the
+  /// name the user gave it, and it stays on the row while the agent is offline,
+  /// when `HostName` is empty. Model and manufacturer come from the row's
+  /// `X_LINKSYS_` leaves, which are often empty; nothing else on the
+  /// controller has them once the agent is gone.
+  ///
+  /// It carries no address. The row may still hold the one the agent last
+  /// had, but that address can be reassigned while the agent is away, so
+  /// showing it would state something the network no longer says.
+  ///
+  /// Its [SlaveNode.deviceId] is the row's MAC upper-cased, the form
+  /// `MeshTopologyBuilder` gives every DataElements ID (Hosts reports lower
+  /// case on FL-WRT 2.0). One node keeps one ID as it goes offline and comes
+  /// back, so the topology does not read it as a different node. That holds
+  /// while both tables separate a MAC with colons, as 2.0 does: a row spelled
+  /// another way would give the node a second ID, and a Node Detail page
+  /// opened on it would read "not found" once the node is back.
+  ///
+  /// No [SlaveNode.hostInstancePath], so the page offers no rename. A rename
+  /// writes to the row index read before the dialog opened, and Hosts rows
+  /// renumber while a node rejoins (measured 4 → 5 → 4), so the name could
+  /// land on another device (#1840); renaming a node that is not there buys
+  /// nothing. No action is offered either: the commands go through
+  /// DataElements, which no longer lists the node.
+  static SlaveNode _buildOfflineSlaveNode(ConnectedDevice row) {
+    return SlaveNode(
+      deviceId: row.macAddress.trim().toUpperCase(),
+      friendlyName: nonEmpty(row.linksysFriendlyName),
+      hostName: nonEmpty(row.hostName),
+      model: nonEmpty(row.linksysModelName) ?? '',
+      manufacturer: nonEmpty(row.linksysManufacturer) ?? '',
+      backhaul: BackhaulInfo.none,
+      livenessKnown: true,
+      userDeviceName: nonEmpty(row.linksysUserDeviceLocation),
+      offlineSince: _offlineStamp(row),
     );
   }
 }

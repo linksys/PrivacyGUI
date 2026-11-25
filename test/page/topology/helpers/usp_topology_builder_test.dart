@@ -665,10 +665,9 @@ void main() {
     //      whether the node is up or powered off). The master is the data source
     //      itself and stays online unconditionally.
     // AC5: an offline node carries no fabricated backhaul level.
-    // AC6: an offline node reaches NodeState.inactive, which is the gate for
-    //      usp_topology_view.dart:142 (offline nodes are not navigable) and
-    //      node_detail_popup.dart:99 (Details button hidden when not online) —
-    //      previously dead code because nodes were always online.
+    // AC6: an offline node reaches NodeState.inactive, which the topology
+    //      greys out. It no longer gates navigation: since #1443 an offline
+    //      extender opens its Node Detail page, which renders its liveness.
     // =========================================================================
 
     group('node liveness → status (#1430)', () {
@@ -850,6 +849,57 @@ void main() {
         final gateway =
             topology.nodes.firstWhere((n) => n.styleSlot == 'primary');
         expect(gateway.status, NodeState.active);
+      });
+
+      // #1443: the shape MeshNetworkBuilder builds from a marked Hosts row —
+      // no DataElements ID, no backhaul. Nothing says where it was attached, so
+      // it goes under the gateway, inactive, and is not logged as a miss.
+      test('an offline extender from Hosts sits under the gateway, inactive',
+          () {
+        final meshNetwork = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [DevicesTestData.createOfflineSlave()],
+        );
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        final extender =
+            topology.nodes.firstWhere((n) => n.styleSlot == 'secondary');
+        expect(extender.status, NodeState.inactive);
+        expect(extender.parentId, 'gateway');
+      });
+
+      // An online node still naming an offline extender as its parent reports
+      // a stale parent. It must not be drawn online beneath an offline node:
+      // the offline extender is no one's parent, so it resolves as a miss and
+      // goes under the gateway.
+      test('an online node naming an offline extender goes under the gateway',
+          () {
+        const offlineMac = 'AA:BB:CC:DD:FF:0D';
+        final meshNetwork = MeshNetwork(
+          master: DevicesTestData.createMaster(),
+          slaves: [
+            DevicesTestData.createOfflineSlave(deviceId: offlineMac),
+            DevicesTestData.createWifiSlave(
+              dataElementsId: DevicesTestData.slaveMac1,
+              backhaul:
+                  BackhaulInfo(linkType: 'Wi-Fi', parentNodeId: offlineMac),
+            ),
+          ],
+        );
+
+        final topology = UspTopologyBuilder.buildFromMeshNetwork(
+          meshNetwork: meshNetwork,
+          info: sysInfo,
+        );
+
+        final online = topology.nodes
+            .firstWhere((n) => n.id == 'extender-${DevicesTestData.slaveMac1}');
+        expect(online.status, NodeState.active);
+        expect(online.parentId, 'gateway');
       });
     });
 

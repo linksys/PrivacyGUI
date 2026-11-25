@@ -127,9 +127,9 @@ void main() {
       handle.dispose();
     });
 
-    // Gate 1 of 2 (node_detail_popup.dart:98). The dashboard card
-    // (usp_network_topology_card.dart:79-80) and the AI topology section both
-    // rely on this default, so the hook must be absent there.
+    // The one gate left (`showDetailsButton`, node_detail_popup.dart). The
+    // dashboard card (usp_network_topology_card.dart:79-80) and the AI topology
+    // section both rely on this default, so the hook must be absent there.
     testWidgets('absent when showDetailsButton is not set (the default)',
         (tester) async {
       final handle = tester.ensureSemantics();
@@ -146,9 +146,9 @@ void main() {
       handle.dispose();
     });
 
-    // Gate 2 of 2 (node_detail_popup.dart:98). E2E must therefore assert node
-    // state before locating this hook — an offline node yields count 0.
-    testWidgets('absent when the node is offline', (tester) async {
+    // No liveness gate (#1443): an offline extender opens its Node Detail
+    // page, so its panel offers the button and the hook is there.
+    testWidgets('present when the node is offline (#1443)', (tester) async {
       final handle = tester.ensureSemantics();
 
       await tester.pumpWidget(wrap(
@@ -158,7 +158,7 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(find.bySemanticsIdentifier(detailsIdentifier), findsNothing);
+      expect(find.bySemanticsIdentifier(detailsIdentifier), findsOneWidget);
 
       handle.dispose();
     });

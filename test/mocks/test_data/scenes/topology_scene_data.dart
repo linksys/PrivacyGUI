@@ -18,6 +18,7 @@
 //   composed states, ready to hand to a provider override. What a golden, a
 //   density test or a layout-gate cell pumps a real page with.
 
+import 'package:clock/clock.dart';
 import 'package:privacy_gui/page/_shared/models/backhaul_info.dart';
 import 'package:privacy_gui/page/_shared/models/client_device.dart';
 import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
@@ -250,14 +251,17 @@ final masterNodeNamed = UspNodeDetailState(
 /// `isOnline` false — see [slaveNodeOnlineWithDevices] for the same node with the
 /// match, and `SlaveNode.isOnline` for why one field decides it.
 ///
-/// The suite's one offline node-detail scene, and it stays offline on purpose. It
-/// is a real reachable state, not fixture rot: the powered-off extender #1430
-/// exists to catch looks exactly like this. And every width sweep that pumps it —
-/// the golden suite's `slave_offline`, `usp_node_detail_backhaul_overflow_test` —
-/// renders the *wider* of the two liveness labels: `offline` is longer than
-/// `online` in every one of the 26 locales where the two differ, and equal in the
-/// rest (measured across `lib/l10n/app_*.arb`, #1465). An online fixture would
-/// quietly narrow all of them.
+/// It stays offline on purpose, but it is no longer the shape a real mesh
+/// produces: since #1443 `MeshNetworkBuilder` builds an offline extender from
+/// its `Hosts` row, with no backhaul, model, serial or firmware (see
+/// [slaveNodeOfflineFromHosts]). This one keeps its Wi-Fi backhaul and
+/// hardware fields because the width sweeps need them: every sweep that pumps
+/// it — the golden suite's `slave_offline`,
+/// `usp_node_detail_backhaul_overflow_test` — renders the *wider* of the two
+/// liveness labels (`offline` is longer than `online` in every one of the 26
+/// locales where the two differ, and equal in the rest, measured across
+/// `lib/l10n/app_*.arb`, #1465) beside the backhaul tiles. An online fixture
+/// would quietly narrow all of them.
 ///
 /// **Childless, which is what #1476 changed.** This was `slaveNodeWithDevices`,
 /// an offline slave with one wired client — and liveness and client attribution
@@ -279,6 +283,88 @@ final slaveNodeOffline = UspNodeDetailState(
     softwareVersion: '1.0.10.200000',
     connectedClients: const [],
     backhaul: BackhaulInfo(linkType: 'Wi-Fi', signalStrength: -50),
+  ),
+  connectedClients: const [],
+);
+
+/// When [slaveNodeOfflineFromHosts] went offline: the 2026-11-23 bench agent's
+/// `ActiveLastChange` (#1443).
+final offlineExtenderSince = DateTime.utc(2026, 11, 23, 9, 10, 8);
+
+/// The clock a test or golden fixes so [slaveNodeOfflineFromHosts] reads
+/// "Offline for 3 hrs" every day: 3 h 7 min after [offlineExtenderSince].
+final offlineExtenderNow =
+    offlineExtenderSince.add(const Duration(hours: 3, minutes: 7));
+
+/// The offline extender FL-WRT 2.0 actually produces (#1443), unlike
+/// [slaveNodeOffline]: `MeshNetworkBuilder` builds it from a `Hosts` row that
+/// firmware marks `X_LINKSYS_IsMeshNode` and that matches no DataElements
+/// agent; the row here is inactive, so it carries the time the node left.
+///
+/// So it carries only what that row has: the name (`X_LINKSYS_FriendlyName`)
+/// and when it went offline. No row to rename through either: the builder
+/// leaves it out (#1840). No backhaul, no
+/// address, no firmware or serial, and the model is empty, as the row's
+/// `X_LINKSYS_ModelName` was on the bench. [slaveNodeOffline] keeps its Wi-Fi
+/// backhaul and model because the width sweeps need its wider tiles; this
+/// scene is the shape the page meets on a real mesh.
+final slaveNodeOfflineFromHosts = UspNodeDetailState(
+  node: SlaveNode(
+    deviceId: 'AA:BB:CC:DD:FF:01',
+    friendlyName: 'Linksys67890',
+    model: '',
+    backhaul: BackhaulInfo.none,
+    offlineSince: offlineExtenderSince,
+  ),
+  connectedClients: const [],
+);
+
+/// [slaveNodeOfflineFromHosts] for a golden, which cannot fix the clock: the
+/// golden harness installs none, so a fixed stamp would read one more hour
+/// every hour and diff against its own baseline. A getter recomputed per access
+/// instead, as [slaveNodeWithBackhaulTiming] does, so it always went offline
+/// 3 h 7 min before `clock.now()` and reads "Offline for 3 hrs". Hour
+/// granularity leaves 53 minutes for a suite to run before the text moves.
+UspNodeDetailState get slaveNodeOfflineForGolden => UspNodeDetailState(
+      node: SlaveNode(
+        deviceId: 'AA:BB:CC:DD:FF:01',
+        friendlyName: 'Linksys67890',
+        model: '',
+        backhaul: BackhaulInfo.none,
+        offlineSince:
+            clock.now().subtract(const Duration(hours: 3, minutes: 7)),
+      ),
+      connectedClients: const [],
+    );
+
+/// [meshNetworkDevicesData] with a second extender that is offline, in the
+/// shape FL-WRT 2.0 produces (#1443): built from its `Hosts` row, so no
+/// backhaul and no parent, which is why the topology draws it under the
+/// gateway. The online extender stays, so the tree shows the two side by side.
+final meshNetworkWithOfflineExtenderDevicesData = DevicesData(
+  meshNetwork: meshNetworkDevicesData.meshNetwork.copyWith(
+    slaves: [
+      ...meshNetworkDevicesData.meshNetwork.slaves,
+      SlaveNode(
+        deviceId: 'AA:BB:CC:DD:FF:02',
+        friendlyName: 'Linksys67890',
+        model: '',
+        backhaul: BackhaulInfo.none,
+        offlineSince: offlineExtenderSince,
+      ),
+    ],
+  ),
+);
+
+/// [slaveNodeOfflineFromHosts] with a row that carries no usable stamp: the
+/// page reads "Offline duration unknown", never a zero. Constructed rather
+/// than copied, because `copyWith` cannot clear a field.
+final slaveNodeOfflineNoStamp = UspNodeDetailState(
+  node: SlaveNode(
+    deviceId: 'AA:BB:CC:DD:FF:01',
+    friendlyName: 'Linksys67890',
+    model: '',
+    backhaul: BackhaulInfo.none,
   ),
   connectedClients: const [],
 );

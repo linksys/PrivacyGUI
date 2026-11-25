@@ -910,6 +910,8 @@
   "noWifiSignalData": "Tidak ada data sinyal WiFi...",
   "nodeDetail": "Detail Node",
   "nodeNotFound": "Node tidak ditemukan",
+  "nodeOfflineFor": "Offline selama {duration}",
+  "nodeOfflineDurationUnknown": "Durasi offline tidak diketahui",
   "none": "Tidak ada",
   "notApplicableForEthernetDevices": "Tidak berlaku untuk perangkat Ethernet",
   "notAvailable": "Tidak tersedia",

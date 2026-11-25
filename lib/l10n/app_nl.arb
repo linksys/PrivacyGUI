@@ -910,6 +910,8 @@
   "noWifiSignalData": "Geen WiFi-signaalgegevens...",
   "nodeDetail": "Nodedetails",
   "nodeNotFound": "Node niet gevonden",
+  "nodeOfflineFor": "Offlineduur: {duration}",
+  "nodeOfflineDurationUnknown": "Offlineduur onbekend",
   "none": "Geen",
   "notApplicableForEthernetDevices": "Niet van toepassing op Ethernet-apparaten",
   "notAvailable": "Niet beschikbaar",

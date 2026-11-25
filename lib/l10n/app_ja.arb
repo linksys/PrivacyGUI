@@ -910,6 +910,8 @@
   "noWifiSignalData": "WiFi 信号データがありません...",
   "nodeDetail": "ノードの詳細",
   "nodeNotFound": "ノードが見つかりません",
+  "nodeOfflineFor": "オフライン期間: {duration}",
+  "nodeOfflineDurationUnknown": "オフライン期間: 不明",
   "none": "なし",
   "notApplicableForEthernetDevices": "イーサネットデバイスには適用されません",
   "notAvailable": "利用できません",

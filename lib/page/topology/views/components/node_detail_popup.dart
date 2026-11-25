@@ -38,9 +38,8 @@ class NodeDetailPopup extends StatelessWidget {
     // This used to resolve `deviceId` inline and go to Node Detail, which is a
     // mesh node's page. A leaf carries no `deviceId`, so once ui_kit 3.4.0 began
     // opening a panel for one, the button was drawn and did nothing.
-    // `topologyNavTargetFor` already answers this for every kind of node — and
-    // carries the offline gate for mesh nodes (#1465) — so reusing it is also
-    // what keeps the two routes from drifting apart.
+    // `topologyNavTargetFor` already answers this for every kind of node, so
+    // reusing it is also what keeps the two routes from drifting apart.
     // Resolved from the same metadata the rows below read, not from
     // `node.metadata` — see `topologyNavTargetFor`'s own note on why those are
     // two things.
@@ -214,15 +213,14 @@ class NodeDetailPopup extends StatelessWidget {
         // Details button (optional).
         //
         // No liveness gate here. Whether a node has a reachable page is
-        // `topologyNavTargetFor`'s question, and `builder` has already asked it —
-        // that function keeps the offline gate for mesh nodes (#1465) and
-        // deliberately does *not* apply one to a leaf, because an offline device
-        // opens its Device Detail page from the device list too and that page
-        // renders the correct state.
+        // `topologyNavTargetFor`'s question, and `builder` has already asked it.
+        // It gates no node on liveness: an offline device or extender opens its
+        // detail page, and that page renders the correct state (#1443).
         //
-        // Re-testing `status` here re-imposed the gate on leaves, so an offline
-        // device's panel showed no way to reach the page the resolver had just
-        // said was reachable. Two places answering one question, disagreeing.
+        // Re-testing `status` here re-imposed a gate the resolver does not have,
+        // so an offline node's panel showed no way to reach the page the
+        // resolver had just said was reachable. Two places answering one
+        // question, disagreeing.
         if (showDetailsButton)
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.md),

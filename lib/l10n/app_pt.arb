@@ -910,6 +910,8 @@
   "noWifiSignalData": "Sem dados de sinal WiFi...",
   "nodeDetail": "Detalhes do nó",
   "nodeNotFound": "Nó não encontrado",
+  "nodeOfflineFor": "Off-line há {duration}",
+  "nodeOfflineDurationUnknown": "Tempo off-line desconhecido",
   "none": "Nenhum",
   "notApplicableForEthernetDevices": "Não aplicável a dispositivos Ethernet",
   "notAvailable": "Não disponível",

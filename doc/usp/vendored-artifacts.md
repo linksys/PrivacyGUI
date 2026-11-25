@@ -162,6 +162,20 @@ The YAML definitions are **not vendored** into this repo and individual definiti
   - a local session receives both.
   - Remote Assistance was not tried.
 
+**`connected_devices.g.dart` carries `X_LINKSYS_IsMeshNode` (#1443).**
+- **Source:** 0.19.0 output from `usp_framework` `main` @ `ff67c76`, the merge of linksys/usp_framework#124 (2026-11-23), taken with `git archive ff67c76 usp-definitions`.
+- **What the definition adds:** `connected_devices.yaml` 2.3.0 adds `linksysIsMeshNode` on `Device.Hosts.Host.{i}.X_LINKSYS_IsMeshNode`, a read-only, optional `boolean`. Firmware sets it when the row's MAC has been a DataElements `Device.{i}.ID` and never clears it, so the row keeps it while the node is offline and until the row ages out.
+- **What the file gains:** the field, its path in the `Device.Hosts.Host.*` batch, and a parse that reads `true`, `"true"` and `"1"` as true. It is null when the router leaves the leaf out.
+- **Consumer:** `MeshNetworkBuilder` builds an offline extender from a row that carries the flag and matches no DataElements agent, whether the row is active or not; the duration is counted only from an inactive row's `ActiveLastChange`.
+- **Where the app departs from the definition:** the definition's description reads an *active* row with true that no DataElements Device lists as a former node still on the LAN, not an offline node. The app reads that row as an offline node on its way back: a Linksys node that is factory reset and wired to the controller joins the mesh by itself, and a node that restarts is on the LAN before DataElements lists it again. `MeshNetworkBuilder`'s class doc gives the reasoning and the known limitation it costs (#1443).
+- **The rest of the output:** every other file the command writes is unchanged. `index.dart` comes out in a different order with the same exports and is left as checked in.
+- **Firmware side:** linksys/feed_usp#89 (hostmngr, merged 2026-11-23).
+  - Measured on a controller at `2.0.4.26112201` with an agent at `2.0.4.26111122` (#1443):
+    - the leaf reads 1 on the agent's row only;
+    - it stays 1 while the agent is powered off and across a controller reboot;
+    - it reads 0 until the agent is back in DataElements on the first boot after an upgrade from firmware without it.
+  - **Firmware without the leaf is out of scope** while FL-WRT 2.0 has not shipped (decided on #1443). That covers anything before linksys/feed_usp#89, such as `2.0.4.26111122`. On such a build it is not measured whether the `Device.Hosts.Host.*` batch still succeeds with the leaf absent. It could answer a per-path 7026 for the unknown path, which `UspClient.extractGetResult` leaves out, as measured for the optional DataElements leaves above. Or it could refuse the whole Get (`kind: request`); `ConnectedDevices.fetch` would then throw, and the device list, topology and dashboard would fail. Measure this before supporting such a build.
+
 Make sure that clone's `main` is up to date with `upstream` (`github.com/linksys/usp_framework`), not just with `origin`. Generating from a stale fork `main` silently reproduces the bug #1555 fixed: the fork's `data_elements_network.yaml` was the 2026-08-05 revision and had no `data_elements_network_info.yaml`.
 
 ## Update procedure

@@ -910,6 +910,8 @@
   "noWifiSignalData": "ไม่มีข้อมูลสัญญาณ WiFi...",
   "nodeDetail": "รายละเอียดโหนด",
   "nodeNotFound": "ไม่พบโหนด",
+  "nodeOfflineFor": "ออฟไลน์มา {duration}",
+  "nodeOfflineDurationUnknown": "ไม่ทราบระยะเวลาที่ออฟไลน์",
   "none": "ไม่มี",
   "notApplicableForEthernetDevices": "ไม่สามารถใช้กับอุปกรณ์ Ethernet ได้",
   "notAvailable": "ไม่พร้อมใช้งาน",

@@ -910,6 +910,8 @@
   "noWifiSignalData": "WiFi sinyal verisi yok...",
   "nodeDetail": "Düğüm Ayrıntıları",
   "nodeNotFound": "Düğüm bulunamadı",
+  "nodeOfflineFor": "{duration} süredir çevrimdışı",
+  "nodeOfflineDurationUnknown": "Çevrimdışı kalma süresi bilinmiyor",
   "none": "Hiçbiri",
   "notApplicableForEthernetDevices": "Ethernet cihazları için geçerli değil",
   "notAvailable": "Kullanılamıyor",
