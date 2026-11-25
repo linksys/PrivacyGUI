@@ -396,11 +396,13 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
 
           // Follow a router whose services changed since the action table was
           // built, as after a firmware update. The gates read the same
-          // services, so they follow too (#1923).
+          // services, so they follow too (#1923). A poll that outlived its run
+          // leaves the table alone: the flow that stopped or paused polling
+          // builds it for the router it moves to, as PnP does.
           final deviceInfo = result.data[JNAPAction.getDeviceInfo];
           final services =
               deviceInfo is JNAPSuccess ? deviceInfo.output['services'] : null;
-          if (services is List) {
+          if (services is List && !_isCancelled(generation)) {
             refreshBetterActions(services.whereType<String>().toList());
           }
 

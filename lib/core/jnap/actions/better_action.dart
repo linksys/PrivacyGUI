@@ -42,9 +42,9 @@ void initBetterActions() {
   }
 }
 
-void buildBetterActions(List<String> routerServices) {
+void buildBetterActions(List<String> services) {
   initBetterActions();
-  final reported = Set<String>.unmodifiable(routerServices);
+  final reported = Set<String>.unmodifiable(services);
   _routerServices = reported;
   // JNAPService lists each family of services from its lowest version up,
   // and no action takes a URL from two families, so applying a router's
@@ -59,11 +59,11 @@ void buildBetterActions(List<String> routerServices) {
 /// Builds the action table again when the router reports other services than
 /// the table was built for, as after a firmware update. Polling calls it with
 /// each GetDeviceInfo it reads (#1923).
-void refreshBetterActions(List<String> routerServices) {
-  final reported = routerServices.toSet();
+void refreshBetterActions(List<String> services) {
+  final reported = services.toSet();
   if (reported.length == _routerServices.length &&
       reported.containsAll(_routerServices)) {
     return;
   }
-  buildBetterActions(routerServices);
+  buildBetterActions(services);
 }
