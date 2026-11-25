@@ -27,5 +27,6 @@ void main() {
     expect(email.copyWith(addressList: ['me@example.com']).addressList,
         ['me@example.com']);
     expect(email.copyWith(), email);
+    expect(email.copyWith(addressList: ['me@example.com']), isNot(email));
   });
 }

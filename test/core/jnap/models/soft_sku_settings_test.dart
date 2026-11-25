@@ -15,5 +15,6 @@ void main() {
     expect(SoftSKUSettings.fromJson(settings.toJson()), settings);
     expect(settings.copyWith(modelNumber: 'M63TS-EU').modelNumber, 'M63TS-EU');
     expect(settings.copyWith(), settings);
+    expect(settings.copyWith(modelNumber: 'M63TS-EU'), isNot(settings));
   });
 }

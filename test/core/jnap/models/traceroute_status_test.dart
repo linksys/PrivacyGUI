@@ -36,7 +36,8 @@ void main() {
     final again = status.copyWith(isRunning: true);
 
     expect(again.isRunning, isTrue);
-    expect(again.tracerouteLog, status.tracerouteLog);
+    expect(again.tracerouteLog,
+        'traceroute to 8.8.8.8 (8.8.8.8), 30 hops max\n 1  192.168.2.1  1.204 ms\n');
     expect(again, isNot(status));
   });
 }
