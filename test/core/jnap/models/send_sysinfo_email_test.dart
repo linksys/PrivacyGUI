@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/jnap/models/send_sysinfo_email.dart';
 
@@ -9,6 +11,14 @@ void main() {
     expect(email.toJson(), {
       'addressList': ['support@example.com', 'me@example.com'],
     });
+  });
+
+  test('reads back the addresses it wrote, from JSON text', () {
+    final email = SendSysinfoEmail.fromJson(
+        jsonDecode('{"addressList": ["support@example.com", "me@example.com"]}')
+            as Map<String, dynamic>);
+
+    expect(email.addressList, ['support@example.com', 'me@example.com']);
   });
 
   test('copyWith changes only what it names', () {
