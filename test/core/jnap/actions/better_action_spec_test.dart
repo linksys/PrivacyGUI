@@ -52,8 +52,10 @@ const _definedOnlyAfterBaseline = <JNAPAction, String>{
 /// Actions whose URL no service of the pinned linksys/JNAP defines.
 const _notInSpec = <JNAPAction, String>{
   JNAPAction.transaction: 'the JNAP transaction endpoint; no service lists it',
-  // linksys/JNAP has no vpn namespace at all. The VPN module comes from
-  // another feed; which one is not checked (#1923).
+  // The app's VPN actions come from Project Panache (Forti-SASE, 2025-05),
+  // whose JNAP side no firmware implements: no branch of linksys/JNAP and no
+  // feed has a vpn namespace, so isSupportVPN is false on every 1.x router.
+  // The feature stays for now (#1923).
   JNAPAction.setVPNUser: 'VPN is not in linksys/JNAP',
   JNAPAction.getVPNUser: 'VPN is not in linksys/JNAP',
   JNAPAction.setVPNGateway: 'VPN is not in linksys/JNAP',
