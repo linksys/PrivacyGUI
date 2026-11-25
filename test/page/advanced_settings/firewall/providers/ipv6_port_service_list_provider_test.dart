@@ -8,32 +8,18 @@ import 'package:privacy_gui/page/advanced_settings/firewall/providers/ipv6_port_
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/ipv6_port_service_list_state.dart';
 
 import '../../../../common/router_boundary.dart';
+import '../../../../test_data/ipv6_port_service_list_test_state.dart';
 
-const _nasRule = <String, dynamic>{
-  'isEnabled': true,
-  'ipv6Address': '2001:db8::10',
-  'portRanges': [
-    {'protocol': 'TCP', 'firstPort': 3000, 'lastPort': 3001},
-  ],
-  'description': 'ports 3000-3001',
-};
+/// The two rules of the router-shaped test data: "222" and "777".
+final _first = Map<String, dynamic>.from(
+    (ipv6PortServiceListTestState['rules'] as List)[0] as Map);
+final _second = Map<String, dynamic>.from(
+    (ipv6PortServiceListTestState['rules'] as List)[1] as Map);
 
-const _cameraRule = <String, dynamic>{
-  'isEnabled': false,
-  'ipv6Address': '2001:db8::20',
-  'portRanges': [
-    {'protocol': 'UDP', 'firstPort': 554, 'lastPort': 554},
-  ],
-  'description': 'Camera',
-};
-
-/// `GetIPv6FirewallRules` output, after the spec's sample.
-Map<String, dynamic> _rules(List<Map<String, dynamic>> rules) => {
-      'rules': rules,
-      'maxPortRanges': 2,
-      'maxDescriptionLength': 64,
-      'maxRules': 15,
-    };
+/// `GetIPv6FirewallRules` output holding [rules], with the test data's
+/// limits: 15 rules of 64 characters.
+Map<String, dynamic> _rules(List<Map<String, dynamic>> rules) =>
+    {...ipv6PortServiceListTestState, 'rules': rules};
 
 void main() {
   late RouterBoundary router;
@@ -45,7 +31,7 @@ void main() {
 
   setUp(() {
     router = RouterBoundary()
-      ..holds(JNAPAction.getIPv6FirewallRules, _rules([_nasRule, _cameraRule]));
+      ..holds(JNAPAction.getIPv6FirewallRules, _rules([_first, _second]));
     container = ProviderContainer(overrides: [
       routerRepositoryProvider.overrideWithValue(router.repo),
     ]);
@@ -60,8 +46,8 @@ void main() {
 
       expect(shown, page());
       expect(page().rules, [
-        IPv6FirewallRule.fromMap(_nasRule),
-        IPv6FirewallRule.fromMap(_cameraRule)
+        IPv6FirewallRule.fromMap(_first),
+        IPv6FirewallRule.fromMap(_second)
       ]);
       expect(page().maxRules, 15);
       expect(page().maxDescriptionLength, 64);
@@ -77,12 +63,18 @@ void main() {
       expect(page().maxDescriptionLength, 32);
     });
 
-    test('reports a read the router refuses, and keeps the page', () async {
+    test('reports a read the router refuses, and keeps what it showed',
+        () async {
+      await notifier.fetch();
       router.refuses(JNAPAction.getIPv6FirewallRules);
 
       await expectLater(notifier.fetch(), throwsA(isA<JNAPError>()));
 
-      expect(page().rules, isEmpty);
+      expect(page().rules, [
+        IPv6FirewallRule.fromMap(_first),
+        IPv6FirewallRule.fromMap(_second)
+      ]);
+      expect(page().maxRules, 15);
     });
   });
 
@@ -94,23 +86,23 @@ void main() {
 
     test('writes the rules the user kept, without the one they deleted',
         () async {
-      notifier.deleteRule(IPv6FirewallRule.fromMap(_cameraRule));
+      notifier.deleteRule(IPv6FirewallRule.fromMap(_second));
 
       await notifier.save();
 
       expect(router.payloadsOf(JNAPAction.setIPv6FirewallRules).single, {
-        'rules': [_nasRule],
+        'rules': [_first],
       });
     });
 
     test('reads the rules back from the router after the write', () async {
-      router.holds(JNAPAction.getIPv6FirewallRules, _rules([_cameraRule]));
+      router.holds(JNAPAction.getIPv6FirewallRules, _rules([_second]));
 
       final saved = await notifier.save();
 
       expect(router.actions,
           [JNAPAction.setIPv6FirewallRules, JNAPAction.getIPv6FirewallRules]);
-      expect(saved.rules, [IPv6FirewallRule.fromMap(_cameraRule)]);
+      expect(saved.rules, [IPv6FirewallRule.fromMap(_second)]);
       expect(page().rules, saved.rules);
     });
 
@@ -118,7 +110,7 @@ void main() {
         () async {
       router.refuses(JNAPAction.setIPv6FirewallRules,
           result: 'ErrorRulesOverlap');
-      notifier.deleteRule(IPv6FirewallRule.fromMap(_cameraRule));
+      notifier.deleteRule(IPv6FirewallRule.fromMap(_second));
 
       await expectLater(
         notifier.save(),
@@ -127,7 +119,7 @@ void main() {
       );
 
       expect(router.actions, [JNAPAction.setIPv6FirewallRules]);
-      expect(page().rules, [IPv6FirewallRule.fromMap(_nasRule)]);
+      expect(page().rules, [IPv6FirewallRule.fromMap(_first)]);
     });
   });
 
@@ -153,7 +145,7 @@ void main() {
     test('replaces a rule in place', () {
       notifier.editRule(0, added);
 
-      expect(page().rules, [added, IPv6FirewallRule.fromMap(_cameraRule)]);
+      expect(page().rules, [added, IPv6FirewallRule.fromMap(_second)]);
     });
 
     test('is full once it holds as many rules as the router allows', () {

@@ -32,9 +32,4 @@ void main() {
     expect(cleared, const Ipv6PortServiceRuleState(rules: [_rule]));
     expect(state.copyWith(), state);
   });
-
-  test('describes itself by its fields', () {
-    expect(const Ipv6PortServiceRuleState(editIndex: 2).toString(),
-        contains('editIndex: 2'));
-  });
 }

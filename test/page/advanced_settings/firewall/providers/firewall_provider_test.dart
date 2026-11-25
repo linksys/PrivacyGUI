@@ -8,19 +8,11 @@ import 'package:privacy_gui/page/advanced_settings/firewall/providers/firewall_p
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/firewall_state.dart';
 
 import '../../../../common/router_boundary.dart';
+import '../../../../test_data/firewall_settings_test_state.dart';
 
-/// `GetFirewallSettings` output, the spec's sample.
-const _firewall = <String, dynamic>{
-  'isIPv4FirewallEnabled': true,
-  'isIPv6FirewallEnabled': true,
-  'blockMulticast': false,
-  'blockNATRedirection': false,
-  'blockIDENT': true,
-  'blockAnonymousRequests': true,
-  'blockIPSec': true,
-  'blockPPTP': true,
-  'blockL2TP': true,
-};
+/// `GetFirewallSettings` output, as the router-shaped test data holds it.
+final _firewall =
+    Map<String, dynamic>.from(firewallSettingsTestState['settings']!);
 
 void main() {
   late RouterBoundary router;
@@ -49,13 +41,14 @@ void main() {
       expect(page().settings.blockMulticast, isFalse);
     });
 
-    test('reports a read the router refuses, and keeps the page', () async {
+    test('reports a read the router refuses, and keeps what it showed',
+        () async {
+      await notifier.fetch();
       router.refuses(JNAPAction.getFirewallSettings);
-      final before = page();
 
       await expectLater(notifier.fetch(), throwsA(isA<JNAPError>()));
 
-      expect(page(), before);
+      expect(page().settings, FirewallSettings.fromMap(_firewall));
     });
   });
 
@@ -67,14 +60,14 @@ void main() {
 
     test('writes every switch the page shows', () async {
       notifier.setSettings(
-          page().settings.copyWith(blockMulticast: true, blockL2TP: false));
+          page().settings.copyWith(blockMulticast: true, blockIDENT: false));
 
       await notifier.save();
 
       expect(router.payloadsOf(JNAPAction.setFirewallSettings).single, {
         ..._firewall,
         'blockMulticast': true,
-        'blockL2TP': false,
+        'blockIDENT': false,
       });
     });
 
@@ -93,12 +86,12 @@ void main() {
     test('reports a write the router refuses, and reads nothing back',
         () async {
       router.refuses(JNAPAction.setFirewallSettings);
-      notifier.setSettings(page().settings.copyWith(blockPPTP: false));
+      notifier.setSettings(page().settings.copyWith(blockPPTP: true));
 
       await expectLater(notifier.save(), throwsA(isA<JNAPError>()));
 
       expect(router.actions, [JNAPAction.setFirewallSettings]);
-      expect(page().settings.blockPPTP, isFalse);
+      expect(page().settings.blockPPTP, isTrue);
     });
   });
 }

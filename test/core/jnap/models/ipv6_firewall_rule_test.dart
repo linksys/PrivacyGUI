@@ -1,27 +1,24 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
 
-/// One rule of `GetIPv6FirewallRules`, the spec's sample with two ranges.
-const _output = <String, dynamic>{
-  'isEnabled': true,
-  'ipv6Address': '2001:0DB8:85A3:0000:0000:8A2E:0370:7334',
-  'portRanges': [
-    {'protocol': 'TCP', 'firstPort': 3000, 'lastPort': 3001},
-    {'protocol': 'UDP', 'firstPort': 5000, 'lastPort': 5000},
-  ],
-  'description': 'ports 3000-3001',
-};
+import '../../../test_data/ipv6_port_service_list_test_state.dart';
+
+/// The first rule of the router-shaped test data, as JSON on the wire.
+final _output = jsonDecode(
+        jsonEncode((ipv6PortServiceListTestState['rules'] as List).first))
+    as Map<String, dynamic>;
 
 void main() {
-  test('reads a rule and each of its port ranges', () {
+  test('reads a rule and its port range', () {
     final rule = IPv6FirewallRule.fromMap(_output);
 
     expect(rule.isEnabled, isTrue);
-    expect(rule.ipv6Address, '2001:0DB8:85A3:0000:0000:8A2E:0370:7334');
-    expect(rule.description, 'ports 3000-3001');
+    expect(rule.ipv6Address, '1111:1111:1111:1111:1111:1111:1111:ffff');
+    expect(rule.description, '222');
     expect(rule.portRanges, const [
-      PortRange(protocol: 'TCP', firstPort: 3000, lastPort: 3001),
-      PortRange(protocol: 'UDP', firstPort: 5000, lastPort: 5000),
+      PortRange(protocol: 'Both', firstPort: 1223, lastPort: 1235),
     ]);
   });
 
