@@ -44,7 +44,7 @@ class HealthCheckResult extends Equatable {
       'resultID': resultID,
       'timestamp': timestamp,
       'healthCheckModulesRequested': healthCheckModulesRequested,
-      'speedTestResult': speedTestResult,
+      'speedTestResult': speedTestResult?.toJson(),
     }..removeWhere((key, value) => value == null);
   }
 

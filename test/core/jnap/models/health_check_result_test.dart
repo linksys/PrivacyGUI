@@ -47,6 +47,14 @@ void main() {
           result);
     });
 
+    test('writes back what it read, its speed test as a map', () {
+      final output = _decode(_speedTestText);
+      final result = HealthCheckResult.fromJson(output);
+
+      expect(result.toJson(), output);
+      expect(HealthCheckResult.fromJson(result.toJson()), result);
+    });
+
     test('copyWith changes only what it names', () {
       final result = HealthCheckResult.fromJson(_decode(_speedTestText));
 
