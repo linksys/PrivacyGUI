@@ -14,6 +14,11 @@ class ServiceHelper {
   bool isSupportSetup([List<String>? services]) =>
       isServiceSupport(JNAPService.setup, services);
 
+  /// Whether the router reports Auto Master's status (GetAutoMasterStatus),
+  /// which only Setup12 defines.
+  bool isSupportAutoMaster([List<String>? services]) =>
+      isServiceSupport(JNAPService.setup12, services);
+
   bool isSupportGuestNetwork([List<String>? services]) =>
       isServiceSupport(JNAPService.guestNetwork, services);
 
@@ -64,9 +69,6 @@ class ServiceHelper {
 
   bool isSupportChildFactoryReset([List<String>? services]) =>
       isServiceSupport(JNAPService.core9, services);
-
-  bool isSupportWANExternal([List<String>? services]) =>
-      isServiceSupport(JNAPService.router13);
 
   bool isSupportClientDeauth([List<String>? services]) =>
       isServiceSupport(JNAPService.wirelessAP5, services);

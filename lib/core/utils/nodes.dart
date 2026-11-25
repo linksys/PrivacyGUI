@@ -130,9 +130,7 @@
 
     */
 import 'package:collection/collection.dart';
-import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/main.dart';
 
 const List<Map<String, dynamic>> _velopModelMap = [
   {
@@ -492,19 +490,11 @@ bool isCognitiveMeshRouter({
       false;
 }
 
-bool isServiceSupport(JNAPService service, [List<String>? services]) {
-  final provider = container.read(linksysCacheManagerProvider);
-
-  if (services != null ||
-      provider.data[JNAPAction.getDeviceInfo.actionValue] != null) {
-    final currentServices = services ??
-        provider.data[JNAPAction.getDeviceInfo.actionValue]['data']['output']
-            ['services'] as List<dynamic>? ??
-        [];
-    return currentServices.contains(service.value);
-  }
-  return false;
-}
+/// Whether the router reports [service]: in [services] when given, otherwise
+/// in the services the action table was last built for (routerServices), so
+/// a gate and the URL it guards never disagree (#1923).
+bool isServiceSupport(JNAPService service, [List<String>? services]) =>
+    (services ?? routerServices).contains(service.value);
 
 bool isHorizontalPorts({
   required String modelNumber,

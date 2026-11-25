@@ -399,9 +399,6 @@ class RouterNotifier extends ChangeNotifier {
         final nodeDeviceInfo = await _ref
             .read(dashboardManagerProvider.notifier)
             .checkDeviceInfo(serialNumber);
-        // Build/Update better actions
-        logger.d('[Prepare]: build better actions');
-        buildBetterActions(nodeDeviceInfo.services);
         // Update global model number
         _ref.read(globalModelNumberProvider.notifier).state =
             nodeDeviceInfo.modelNumber;
