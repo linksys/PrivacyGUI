@@ -57,6 +57,14 @@ void main() {
       expect(DeviceListItem.fromJson(item.toJson()), item);
     });
 
+    test('a guest item reads back as a guest item', () {
+      final guest = DeviceListItem.fromMap({..._itemMap, 'type': 'guest'});
+
+      expect(guest.type, WifiConnectionType.guest);
+      expect(guest.toMap()['type'], 'guest');
+      expect(DeviceListItem.fromJson(guest.toJson()), guest);
+    });
+
     test('reads an item written before MLO as not MLO', () {
       final first = ((deviceListTestState['devices'] as List).first as Map)
           .cast<String, dynamic>();
