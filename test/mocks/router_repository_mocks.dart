@@ -409,6 +409,7 @@ class MockRouterRepository extends _i1.Mock implements _i8.RouterRepository {
     dynamic Function(bool)? onCompleted,
     int? requestTimeoutOverride,
     bool? auth = false,
+    int? logoutGeneration,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -424,6 +425,7 @@ class MockRouterRepository extends _i1.Mock implements _i8.RouterRepository {
             #onCompleted: onCompleted,
             #requestTimeoutOverride: requestTimeoutOverride,
             #auth: auth,
+            #logoutGeneration: logoutGeneration,
           },
         ),
         returnValue: _i9.Stream<_i4.JNAPResult>.empty(),
