@@ -13,13 +13,14 @@ import '../../../mocks/test_data/internet_settings_test_data.dart';
 
 class MockUspClient extends Mock implements UspClient {}
 
-/// A lock whose holder never lets go, the way `UspMutationLock` ends a hung
-/// WASM call: a bare `TimeoutException`.
+/// A hung WASM call: the real [UspMutationLock], whose action never answers,
+/// run out at once — so what it throws is production's, not a stand-in's.
 class _TimingOutLock extends UspMutationLock {
   @override
   Future<T> withLock<T>(Future<T> Function() action,
           {Duration timeout = UspMutationLock.defaultTimeout}) =>
-      throw TimeoutException('USP mutation timed out', timeout);
+      super.withLock(() => Completer<T>().future,
+          timeout: const Duration(milliseconds: 1));
 }
 
 /// The ISP save the no-internet troubleshooting flow runs (#1511 P1).
@@ -208,8 +209,9 @@ void main() {
   });
 
   test('a save that outlasts the mutation lock is a TimeoutError', () async {
-    // Typed where it starts, so the provider above can handle ServiceError
-    // alone (constitution §13.4) and still leave its progress screen.
+    // Typed by the lock (#1831), so the provider above can handle
+    // ServiceError alone (constitution §13.4) and still leave its progress
+    // screen.
     final timingOut = InternetTroubleshootingService(
       internetSettings: UspInternetSettingsService(mockUsp),
       checkInternetConnected: () async => false,

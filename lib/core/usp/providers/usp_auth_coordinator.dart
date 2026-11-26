@@ -53,8 +53,17 @@ class UspAuthCoordinator {
   // - WASM: "HTTP 401 Unauthorized"
   // - WASM/Rust: "Login failed: Authentication error: Invalid credentials"
   // - Bridge CGI: "Invalid username or password", "Invalid password"
+  // - WASM/Rust, from `refreshToken`: "Token refresh failed: Authentication
+  //   error: Authentication token has expired (code: 2)" — the router will
+  //   not refresh this session (#1666 AC4). Measured 2026-11-26 (M60, FW
+  //   2.0.4.26112201, usp-client 0.16.0) for a token that genuinely expired
+  //   312 s and more before, and word for word the same for a never-issued or
+  //   tampered one; 94 s after expiry a refresh still succeeded. It carries no
+  //   `HTTP 401`, so before this a heartbeat that could never refresh again
+  //   read it as a network error and retried on every beat.
   static final _invalidCredentialsPattern = RegExp(
-    r'HTTP (?:error: HTTP )?401|Invalid (username or password|password|credentials)',
+    r'HTTP (?:error: HTTP )?401|Invalid (username or password|password|credentials)'
+    r'|Authentication token has expired',
     caseSensitive: false,
   );
 
@@ -369,8 +378,10 @@ class UspAuthCoordinator {
   /// Proactive token refresh — called on every SSE heartbeat (~30s).
   ///
   /// Strategy: Only refreshes when elapsed time ≥ [_refreshThreshold] (12 min)
-  /// to avoid unnecessary network calls. On 401, triggers force logout instead
-  /// of attempting [restoreSession], because:
+  /// to avoid unnecessary network calls. When the router will not refresh the
+  /// session — a 401, or `refreshToken`'s "Authentication token has expired",
+  /// which is what a tab that slept past the token's lifetime wakes to (#1666)
+  /// — triggers force logout instead of attempting [restoreSession], because:
   /// - SSE heartbeat arriving means the connection is live
   /// - A 401 on proactive refresh means the session was externally terminated
   ///   (e.g., SSH killed the session on the router)

@@ -62,22 +62,13 @@ class NodeActionNotifier extends Notifier<void> {
       try {
         await lock.withLock(() => svc.run(action, node.deviceId));
       } on ServiceError catch (e) {
+        // The lock's timeout included: it is a `TimeoutError` (#1831).
         logger.e(
             '[USP][NodeAction]: ${action.name} ${node.deviceId} failed '
             'after ${sent.length} sent',
             error: e);
         throw NodeActionFailure(
           cause: e,
-          failedNodeId: node.deviceId,
-          sentNodeIds: List.unmodifiable(sent),
-        );
-      } on TimeoutException catch (e) {
-        logger.e(
-            '[USP][NodeAction]: ${action.name} ${node.deviceId} timed '
-            'out after ${sent.length} sent',
-            error: e);
-        throw NodeActionFailure(
-          cause: TimeoutError(detail: e.message),
           failedNodeId: node.deviceId,
           sentNodeIds: List.unmodifiable(sent),
         );

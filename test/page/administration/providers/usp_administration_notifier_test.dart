@@ -439,11 +439,11 @@ void main() {
 
     test('a Set that outlasts the lock is a TimeoutError and is re-read',
         () async {
-      // The lock throws a bare TimeoutException at its window. Left as one it
-      // skipped the re-read (only ServiceError was caught) and reached the view
-      // as an unexpected error, with the switch still showing the unsent value.
-      // A hung write is the case where nobody knows what the router holds,
-      // which is what the re-read is for.
+      // The lock's timeout is a TimeoutError (#1831). While it was a bare
+      // TimeoutException it skipped the re-read (only ServiceError was caught)
+      // and reached the view as an unexpected error, with the switch still
+      // showing the unsent value. A hung write is the case where nobody knows
+      // what the router holds, which is what the re-read is for.
       when(() => svc.setUpnpEnabled(any())).thenAnswer((_) async {});
       var reads = 0;
       when(() => svc.fetch()).thenAnswer((_) async {
@@ -501,14 +501,15 @@ void main() {
   });
 }
 
-/// A lock whose action never finishes inside its window: throws what
-/// [UspMutationLock.withLock] throws when the window closes, at once.
+/// A lock whose action never finishes inside its window: the real
+/// [UspMutationLock], run out at once — so what it throws is production's,
+/// not a stand-in's.
 class _TimingOutLock extends UspMutationLock {
   @override
   Future<T> withLock<T>(Future<T> Function() action,
           {Duration timeout = UspMutationLock.defaultTimeout}) =>
-      Future.error(TimeoutException(
-          'USP mutation timed out after ${timeout.inSeconds}s', timeout));
+      super.withLock(() => Completer<T>().future,
+          timeout: const Duration(milliseconds: 1));
 }
 
 /// A real lock that counts how many times it is entered.

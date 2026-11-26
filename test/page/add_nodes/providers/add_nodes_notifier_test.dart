@@ -14,6 +14,8 @@ import 'package:privacy_gui/page/add_nodes/providers/add_nodes_state.dart';
 import 'package:privacy_gui/page/add_nodes/services/add_nodes_service.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 
+import '../../../mocks/short_window_lock.dart';
+
 class MockAddNodesService extends Mock implements AddNodesService {}
 
 /// Records the refreshes the flow asks of the topology, and does nothing else.
@@ -102,10 +104,11 @@ void main() {
   ProviderContainer createContainer({
     Duration perNodeLimit = const Duration(seconds: 2),
     Duration joinLimit = const Duration(milliseconds: 200),
+    UspMutationLock? lock,
   }) {
     final container = ProviderContainer(overrides: [
       addNodesServiceProvider.overrideWithValue(service),
-      uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+      uspMutationLockProvider.overrideWithValue(lock ?? UspMutationLock()),
       addNodesTimingsProvider.overrideWithValue(AddNodesTimings(
         pollInterval: const Duration(milliseconds: 1),
         perNodeLimit: perNodeLimit,
@@ -224,10 +227,11 @@ void main() {
     Future<ProviderContainer> readyContainer({
       Duration perNodeLimit = const Duration(seconds: 2),
       Duration joinLimit = const Duration(milliseconds: 200),
+      UspMutationLock? lock,
     }) async {
       feedSessions([_idle]);
-      final container =
-          createContainer(perNodeLimit: perNodeLimit, joinLimit: joinLimit);
+      final container = createContainer(
+          perNodeLimit: perNodeLimit, joinLimit: joinLimit, lock: lock);
       await settleOn(container, AddNodesPhase.ready);
       return container;
     }
@@ -270,6 +274,26 @@ void main() {
       expect(state.phase, AddNodesPhase.failed);
       expect(state.error, isA<UnexpectedError>());
       expect(state.canStart, isTrue);
+    });
+
+    test('a Start() the mutation lock gives up on fails as a timeout',
+        () async {
+      // #1831: the lock raises its timeout as a `TimeoutError`, so this lands
+      // on the `on ServiceError` arm with every other failure. The router may
+      // have started a session, and no Stop() goes out for it: with no answer
+      // it cannot be told from one the pairing button started.
+      final container = await readyContainer(lock: ShortWindowLock());
+      when(() => service.start())
+          .thenAnswer((_) => Completer<OnboardingStartResult>().future);
+
+      await container.read(addNodesProvider.notifier).start();
+
+      final state = container.read(addNodesProvider);
+      expect(state.phase, AddNodesPhase.failed);
+      expect(state.error, isA<TimeoutError>(),
+          reason: 'the view words a TimeoutError as "timed out"');
+      expect(state.canStart, isTrue);
+      verifyNever(() => service.stop());
     });
 
     test('a session is followed through its phases to a joined node', () async {

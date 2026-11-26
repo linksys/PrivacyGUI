@@ -33,6 +33,7 @@ import 'package:privacy_gui/page/firmware_update/models/firmware_ota_install_res
 import 'package:privacy_gui/page/firmware_update/services/firmware_router_ota_install_service.dart';
 import 'package:privacy_gui/page/firmware_update/services/usp_firmware_update_service.dart';
 
+import '../../../mocks/short_window_lock.dart';
 import '../../../mocks/test_data/firmware_update_test_data.dart';
 
 class MockUspFirmwareUpdateService extends Mock
@@ -190,8 +191,7 @@ void main() {
 
       // The width is the point. This loop can run for twenty minutes; a lock held
       // across it would block every other mutation in the app for that long and
-      // would sit under the lock's own 30s timeout, which throws a
-      // `TimeoutException` rather than a `ServiceError`.
+      // would sit under the lock's own 30s timeout.
       expect(lockedDuringDispatch, isTrue);
       expect(lockedDuringPoll, isFalse);
       expect(lock.isLocked, isFalse);
@@ -210,17 +210,16 @@ void main() {
 
     test('a mutation timeout leaves as a ServiceError, not a TimeoutException',
         () async {
-      // `UspMutationLock.withLock` throws a bare `TimeoutException` on purpose —
-      // it is core, not a feature service, and constitution Article XIII §13.3
-      // makes the mapping this layer's job. Nothing above this line could do it:
-      // every `on ServiceError` between here and the button was blind to it, so
-      // the dispatch appeared to do nothing for 30s, left no failure card, and
-      // then escaped an unawaited `onTap` as an uncaught async error.
+      // While the lock threw a bare `TimeoutException`, every `on ServiceError`
+      // between here and the button was blind to it, so the dispatch appeared to
+      // do nothing for 30s, left no failure card, and then escaped an unawaited
+      // `onTap` as an uncaught async error. The lock raises a `TimeoutError` now
+      // (#1831), for its own timeout and for a `TimeoutException` thrown inside
+      // it; this pins that the dispatch's reaches the caller as one.
       //
-      // Thrown from the dispatcher rather than by letting the lock time out for
-      // real: the lock's timeout is 30s and is not injectable from here, and a
-      // suite that waits it out is a suite nobody runs. What is under test is the
-      // `catch`, and the exception reaching it is the same object either way.
+      // Thrown from the dispatcher, inside the real lock: the half where a
+      // `TimeoutException` comes out of the action. The lock's own window running
+      // out is the next test.
       when(() => firmware.requestOtaInstall(
               otaInstance: any(named: 'otaInstance')))
           .thenThrow(TimeoutException(
@@ -237,6 +236,26 @@ void main() {
       // `checking` phase, so a `verifyNever` here would forbid the thing this
       // service is now required to do.
       verify(() => firmware.fetchAutoUpdate()).called(1);
+    });
+
+    test('the lock giving up on the dispatch leaves as a TimeoutError',
+        () async {
+      // The other half: the dispatch never answers and the lock's own window
+      // runs out. The real lock with its window shortened, so what reaches the
+      // caller is what production throws.
+      lock = ShortWindowLock();
+      when(() => firmware.requestOtaInstall(
+              otaInstance: any(named: 'otaInstance')))
+          .thenAnswer((_) => Completer<String>().future);
+      feed([_at('0')]);
+
+      await expectLater(
+        buildService().install(otaInstance: 3),
+        throwsA(isA<TimeoutError>()),
+      );
+      // The baseline read only, as above: the poll loop is never reached.
+      verify(() => firmware.fetchAutoUpdate()).called(1);
+      expect(lock.isLocked, isFalse);
     });
 
     test('a dispatch with no commandKey never reaches the poll loop', () async {
