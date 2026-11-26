@@ -106,7 +106,15 @@ void main() {
   final singleRouter = MeshNetwork(master: DevicesTestData.createMaster());
   final withNode = MeshNetwork(
     master: DevicesTestData.createMaster(),
-    slaves: [DevicesTestData.createWifiSlave()],
+    slaves: [
+      DevicesTestData.createWifiSlave(
+          dataElementsId: DevicesTestData.slaveMac1),
+    ],
+  );
+  // #1443: an offline extender is listed but is not in the mesh.
+  final withOfflineNodeOnly = MeshNetwork(
+    master: DevicesTestData.createMaster(),
+    slaves: [DevicesTestData.createOfflineSlave()],
   );
 
   group('Administration - the router\'s confirmation (#876)', () {
@@ -128,6 +136,18 @@ void main() {
 
       expect(find.text('Reset Parent and all its child/s to Factory Default'),
           findsOneWidget);
+    });
+
+    testWidgets('a router whose only node is offline keeps the single copy',
+        (tester) async {
+      await openAdmin(tester, devicesOf(withOfflineNodeOnly));
+      await readDevices(tester);
+
+      await tapButton(tester, 'admin-factory-reset');
+
+      expect(find.text('Reset Parent and all its child/s to Factory Default'),
+          findsNothing);
+      expect(find.text('Reset to Factory Default'), findsOneWidget);
     });
 
     // The Administration page needs no devices to offer its buttons, so they

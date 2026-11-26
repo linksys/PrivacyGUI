@@ -926,12 +926,20 @@ class UspPdfService {
   /// Devices counts online clients only. A node's `connectedClients` also
   /// holds offline ones, and the report counted active clients before PR #1068
   /// (#1121).
+  ///
+  /// An offline extender (#1443) says so in its role. The table has no status
+  /// column, and without the word its empty model and firmware read as a node
+  /// that reports nothing rather than one that is not there.
   @visibleForTesting
   static List<List<String>> meshTopologyRows(List<NodeEntity> nodes) {
     return nodes
         .map((n) => [
               n.displayName,
-              n.isMaster ? 'Master' : 'Extender',
+              switch (n) {
+                MasterNode() => 'Master',
+                SlaveNode(isOnline: true) => 'Extender',
+                SlaveNode() => 'Extender (Offline)',
+              },
               n.model,
               n.softwareVersion,
               '${n.connectedClients.online.length}',

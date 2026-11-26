@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
+import 'package:privacy_gui/page/_shared/utils/cpu_temperature_pick.dart';
 
 // ---------------------------------------------------------------------------
 // Provider
@@ -54,6 +55,11 @@ class UspSystemMonitorService {
       totalMemoryKb: info.totalMemory,
       freeMemoryKb: info.freeMemory,
       uptimeSeconds: info.uptime,
+      cpuTemperatureCelsius: cpuTemperatureOf(
+        info.temperatureSensors,
+        nameOf: (s) => s.name,
+        valueOf: (s) => s.value,
+      ),
     );
   }
 }

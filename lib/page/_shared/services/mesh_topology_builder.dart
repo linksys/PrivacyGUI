@@ -64,6 +64,7 @@ class MeshTopologyBuilder {
     final clientSignalMap = <String, int>{};
     final clientBandSsidMap = <String, ({String band, String ssid})>{};
     final clientRateMap = <String, ({int? downlink, int? uplink})>{};
+    final backhaulStations = backhaulStationsOf(network);
 
     for (final node in network.items) {
       final rawId = node.id.trim().toUpperCase();
@@ -84,6 +85,9 @@ class MeshTopologyBuilder {
             final mac = sta.macAddress.trim();
             if (mac.isNotEmpty && nodeDeviceId.isNotEmpty) {
               final upperMac = mac.toUpperCase();
+              // A node's backhaul station is part of the mesh, not a client
+              // (#1839), so it goes into none of the client maps.
+              if (backhaulStations.contains(upperMac)) continue;
               clientToNodeMap[upperMac] = nodeDeviceId;
               // DataElements STA.SignalStrength is RCPI (0-220), convert to
               // RSSI. This field is declared `check_maximum 255` upstream, so
@@ -198,7 +202,10 @@ class MeshTopologyBuilder {
         : wiredClientAttribution(
             network: network,
             interfaces: interfaces,
-            wifiStations: clientToNodeMap.keys.toSet(),
+            // Every station, a backhaul one included. A rejoining agent's
+            // backhaul station is a bridge-FDB entry too, and its MAC is no
+            // node's MAC (rule 2) until DataElements lists the agent again.
+            wifiStations: {...clientToNodeMap.keys, ...backhaulStations},
           );
 
     return MeshTopologyInfo(
@@ -207,6 +214,7 @@ class MeshTopologyBuilder {
       clientSignalMap: clientSignalMap,
       clientBandSsidMap: clientBandSsidMap,
       clientRateMap: clientRateMap,
+      backhaulStations: backhaulStations,
       wiredClientToNodeMap: wired?.byNode ?? const {},
       ambiguousWiredClients: wired?.ambiguous ?? const {},
       mloClients: mld == null
@@ -301,6 +309,30 @@ class MeshTopologyBuilder {
     return result;
   }
 
+  /// The mesh's own backhaul stations in [network], as
+  /// [MeshTopologyInfo.backhaulStations] describes them (#1839).
+  ///
+  /// Also read by the MAC filter, whose device list comes from `Hosts` as well
+  /// and must not offer a node's own interface for blocking.
+  static Set<String> backhaulStationsOf(DataElementsNetwork network) {
+    String key(String mac) => mac.trim().toUpperCase();
+    final macs = <String>{};
+    for (final node in network.items) {
+      for (final radio in node.radios) {
+        final bsta = nonUnsetMac(radio.backhaulStaMacAddress);
+        if (bsta != null) macs.add(key(bsta));
+        for (final bss in radio.bssList) {
+          if (bss.backhaulUse != true || bss.fronthaulUse != false) continue;
+          for (final sta in bss.stations) {
+            final mac = key(sta.macAddress);
+            if (mac.isNotEmpty) macs.add(mac);
+          }
+        }
+      }
+    }
+    return macs;
+  }
+
   /// A BSS's band: the controller's own BSSID map first, where it answers
   /// (#1118: it knows only the controller's BSSIDs), then the radio's band
   /// from its operating class (#1686). The one rule for a station's band and
@@ -356,9 +388,9 @@ class MeshTopologyBuilder {
   ///    `Interface.{j}.MACAddress`, `Backhaul.MACAddress`,
   ///    `Backhaul.BackhaulMACAddress`, its radios' `BackhaulSta.MACAddress` and
   ///    its BSSIDs.
-  /// 3. A MAC in [wifiStations] (a `BSS.STA` entry) is a Wi-Fi client, not a
-  ///    wired one: a Wi-Fi STA is a bridge-FDB entry too, and the station entry
-  ///    wins.
+  /// 3. A MAC in [wifiStations] (a `BSS.STA` entry, a backhaul station
+  ///    included) is on Wi-Fi, not a wired client: a Wi-Fi STA is a bridge-FDB
+  ///    entry too, and the station entry wins.
   /// 4. A MAC exactly one node lists goes to `byNode`. A MAC two or more nodes
   ///    list goes to `ambiguous`: each node sees it through its own uplink.
   ///

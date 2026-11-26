@@ -1043,6 +1043,9 @@ final testSystemMonitorWithHistory = SystemMonitorState(
       totalMemoryKb: 524288,
       freeMemoryKb: 234288 - i * 5000,
       uptimeSeconds: 86400 + i * 10,
+      // The CPU sensor's range on the 2026-11-24 bench, so the Device
+      // Information card draws its temperature tag in every sweep (#1926).
+      cpuTemperatureCelsius: 50 + i % 3,
     ),
   ),
   refreshInterval: Duration(seconds: 10),

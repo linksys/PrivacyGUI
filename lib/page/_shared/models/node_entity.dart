@@ -102,10 +102,13 @@ sealed class NodeEntity extends NetworkEntity with DiagnosticNamed {
   /// [SlaveNode].
   ///
   /// Do **not** derive this from the Hosts row's `Device.Hosts.Host.{i}.Active`
-  /// value. That field drives client online/offline, but firmware leaves it `0`
-  /// for a *node* row whether the node is up or powered off (measured on the
-  /// live bench, #1430), because node rows key on a STA-side MAC the backfill
-  /// lookup never matches.
+  /// value. A node is online when DataElements lists it. On LinksysWRT 1.x
+  /// firmware left `Active` at `0` for a node row whether the node was up or
+  /// powered off (#1430). On FL-WRT 2.0 `Active` is right for an agent's row,
+  /// but liveness still does not read it: a marked row DataElements does not
+  /// list is an offline node whether `Active` is true or false
+  /// (`MeshNetworkBuilder`, #1443), and `Active` only decides whether that node
+  /// has a stamp to count its offline duration from.
   @override
   bool get isOnline;
 
@@ -333,12 +336,12 @@ final class SlaveNode extends NodeEntity {
   /// non-empty set is judged offline, and that is intended — it is the
   /// powered-off extender #1430 exists to catch.
   ///
-  /// **No producer builds that offline shape today.** Since #1688
-  /// `MeshNetworkBuilder` builds each slave from a DataElements agent, so every
-  /// slave it makes has a [dataElementsId] and is passed `livenessKnown: true`.
-  /// On FL-WRT 2.0 a powered-off agent's lingering `Hosts` row carries nothing
-  /// that marks it as a node, so it is not built at all rather than built
-  /// offline. The rule stays here for the offline recovery #1688 defers.
+  /// **Where the offline shape comes from.** `MeshNetworkBuilder` builds each
+  /// online slave from a DataElements agent (#1688), so it has a
+  /// [dataElementsId]. It builds the offline shape from a `Hosts` row that
+  /// firmware marks `X_LINKSYS_IsMeshNode` and that matches no DataElements
+  /// agent, active or not (#1443). That node has no [dataElementsId] and is
+  /// passed `livenessKnown: true`, so it reads offline.
   ///
   /// Defaults to `true` so that every construction site keeps AC1's rule
   /// unchanged; defaulting to `false` would not be a default but a rule change,
@@ -351,7 +354,9 @@ final class SlaveNode extends NodeEntity {
   /// This agent's `Device.Hosts.Host.{i}.` row — the one whose `PhysAddress`
   /// is its DataElements ID — where a rename writes
   /// `X_LINKSYS_UserDeviceLocation` (#1688 item 4). Null when no row matched:
-  /// there is nothing to write to, so the agent cannot be renamed.
+  /// there is nothing to write to, so the agent cannot be renamed. Also null on
+  /// an offline extender (#1443): a rename writes to a row index read earlier,
+  /// and rows renumber while a node rejoins (#1840).
   final String? hostInstancePath;
 
   /// The name the user gave this agent: its Hosts row's
@@ -364,6 +369,20 @@ final class SlaveNode extends NodeEntity {
   /// leaf and on an agent that reports none; an action is offered only when
   /// it is listed here.
   final Set<NodeAction> actions;
+
+  /// When this node went offline: its `Hosts` row's `ActiveLastChange`. Set
+  /// only on the offline shape (#1443), and only when that row is inactive.
+  /// Null on an online node; on an offline node whose row is active again
+  /// (back on the LAN, not yet back in DataElements), where the stamp is when
+  /// it came back rather than when it left; and on a row with no usable stamp.
+  /// The UI shows each null as unknown rather than as zero.
+  ///
+  /// On FL-WRT 2.0 the stamp is written once, when the row turns inactive
+  /// (about 40 s after the agent's last contact), and is not refreshed after
+  /// that. A duration computed from it is therefore a little short, unless the
+  /// stamp itself is wrong: one written before NTP set the router's clock
+  /// makes it long (see `kMaxOfflineDuration`).
+  final DateTime? offlineSince;
 
   SlaveNode({
     required this.deviceId,
@@ -383,23 +402,23 @@ final class SlaveNode extends NodeEntity {
     this.hostInstancePath,
     this.userDeviceName,
     this.actions = const {},
+    this.offlineSince,
   });
 
   @override
   bool get isMaster => false;
 
   /// A slave is online when it matched a DataElements agent. A powered-off node
-  /// leaves `DataElements.Network.Device.` within ~20-50s while its
-  /// `Device.Hosts.Host` row persists, so an unmatched node row is the offline
-  /// shape (#1430, AC1). That figure is from the 1.x bench; see
-  /// [livenessKnown] for why no producer builds the shape on 2.0 yet.
+  /// leaves `DataElements.Network.Device.` while its `Device.Hosts.Host` row
+  /// persists, so an unmatched node row is the offline shape (#1430, AC1). On
+  /// FL-WRT 2.0 the agent leaves DataElements about 130 s after its last
+  /// contact; see [livenessKnown] for where the shape is built.
   ///
   /// The match is only a verdict when there was something to match against. With
   /// [livenessKnown] false the absent match says nothing, and asserting offline
-  /// there would render a healthy mesh offline and non-navigable
-  /// (`usp_topology_view.dart` blocks taps on an offline node, and
-  /// `node_detail_popup.dart` hides its Details button) for the whole session on
-  /// any firmware or transport state that does not deliver DataElements.
+  /// there would render a healthy mesh offline, with an offline duration, for
+  /// the whole session on any firmware or transport state that does not deliver
+  /// DataElements.
   @override
   bool get isOnline => !livenessKnown || dataElementsId != null;
 
@@ -437,6 +456,7 @@ final class SlaveNode extends NodeEntity {
     String? hostInstancePath,
     String? userDeviceName,
     Set<NodeAction>? actions,
+    DateTime? offlineSince,
   }) {
     return SlaveNode(
       deviceId: deviceId ?? this.deviceId,
@@ -456,6 +476,7 @@ final class SlaveNode extends NodeEntity {
       hostInstancePath: hostInstancePath ?? this.hostInstancePath,
       userDeviceName: userDeviceName ?? this.userDeviceName,
       actions: actions ?? this.actions,
+      offlineSince: offlineSince ?? this.offlineSince,
     );
   }
 
@@ -478,6 +499,7 @@ final class SlaveNode extends NodeEntity {
         hostInstancePath,
         userDeviceName,
         actions,
+        offlineSince,
       ];
 
   @override
@@ -502,6 +524,7 @@ final class SlaveNode extends NodeEntity {
         'hostInstancePath': hostInstancePath,
         'userDeviceName': userDeviceName,
         'actions': actions,
+        'offlineSince': offlineSince,
       };
 }
 

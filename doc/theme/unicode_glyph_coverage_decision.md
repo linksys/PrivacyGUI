@@ -52,6 +52,10 @@ Measured with fontTools against the pinned `ui_kit_library` (`v2.34.5`,
 | U+2014 `—` | YES | YES | YES | YES | YES | **all 11** |
 | U+00BB `»` | YES | YES | YES | YES | no | 6 of 11 |
 | U+203A `›` | YES | YES | YES | YES | no | 6 of 11 |
+| U+00B0 `°` | YES | YES | YES | YES | YES | **all 11** |
+| U+2103 `℃` | no | no | YES | no | no | 1 of 11 |
+
+U+00B0 and U+2103 were measured on 2026-11-25 against `ui_kit_library` `98948d9` and the subsets regenerated for #1926. The temperature on the Device Information card is written `°C` (U+00B0 then `C`), not the single-codepoint `℃`, which only `NotoSans-Latin` has.
 
 The arrows resolve in every browser tested, which is why this was never visible
 as a bug. That resolution comes from a system font outside the declared set —

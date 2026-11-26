@@ -4,6 +4,8 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/services/usp_system_monitor_service.dart';
 
+import '../../../mocks/test_data/system_monitor_test_data.dart';
+
 class MockUspClient extends Mock implements UspClient {}
 
 void main() {
@@ -23,9 +25,11 @@ void main() {
     int cpuUsage = 25,
     int totalMemory = 512000,
     int freeMemory = 256000,
+    Map<String, String> sensors = const {},
   }) {
     when(() => mockUsp.get(any(), priority: any(named: 'priority')))
         .thenAnswer((_) async => {
+              ...sensors,
               'Device.DeviceInfo.Manufacturer': 'Linksys',
               'Device.DeviceInfo.ModelName': 'MX5300',
               'Device.DeviceInfo.SerialNumber': 'ABC123',
@@ -116,6 +120,40 @@ void main() {
           .thenThrow('Get failed: Transport error: HTTP error: HTTP 503');
 
       await expectLater(svc.fetchSnapshot(), throwsA(isA<NetworkError>()));
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // CPU temperature (#1926)
+  // ---------------------------------------------------------------------------
+
+  group('UspSystemMonitorService — CPU temperature (#1926)', () {
+    test('is the cpu-top-thermal row, picked by Name', () async {
+      stubSystemInfo(sensors: SystemMonitorTestData.benchTemperatureSensors());
+
+      final result = await svc.fetchSnapshot();
+
+      expect(result.cpuTemperatureCelsius, 50);
+    });
+
+    // -274 is below absolute zero: TR-181's "no reading", not a temperature.
+    test('is null when the row reads -274', () async {
+      stubSystemInfo(
+          sensors:
+              SystemMonitorTestData.benchTemperatureSensors(cpuValue: '-274'));
+
+      final result = await svc.fetchSnapshot();
+
+      expect(result.cpuTemperatureCelsius, isNull);
+    });
+
+    test('is null when no row is named cpu-top-thermal', () async {
+      stubSystemInfo(sensors: SystemMonitorTestData.wifiChipSensorOnly());
+
+      final result = await svc.fetchSnapshot();
+
+      expect(result.cpuTemperatureCelsius, isNull);
+      expect(result.cpuPercent, 25, reason: 'the rest of the snapshot reads');
     });
   });
 }

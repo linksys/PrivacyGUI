@@ -180,7 +180,12 @@ void main() {
     test('prints name, role, model and firmware beside the count', () {
       final rows = UspPdfService.meshTopologyRows([
         DevicesTestData.createMaster(friendlyName: 'Living Room'),
-        DevicesTestData.createWifiSlave(friendlyName: 'Office'),
+        // Online: a DataElements ID. Without one, `livenessKnown: true` makes
+        // the builder's slave the offline shape.
+        DevicesTestData.createWifiSlave(
+          friendlyName: 'Office',
+          dataElementsId: DevicesTestData.slaveMac1,
+        ),
       ]);
 
       expect(rows.first, [
@@ -191,6 +196,19 @@ void main() {
         '0',
       ]);
       expect(rows.last[1], 'Extender');
+    });
+
+    // #1443: the table has no status column, so an offline extender says so in
+    // its role; otherwise its empty model and firmware read as a node that
+    // reports nothing rather than one that is not there.
+    test('an offline extender says so in its role (#1443)', () {
+      final rows = UspPdfService.meshTopologyRows([
+        DevicesTestData.createMaster(friendlyName: 'Living Room'),
+        DevicesTestData.createOfflineSlave(friendlyName: 'Office'),
+      ]);
+
+      expect(rows.last[0], 'Office');
+      expect(rows.last[1], 'Extender (Offline)');
     });
   });
 

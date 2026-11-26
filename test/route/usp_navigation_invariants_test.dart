@@ -876,8 +876,8 @@ void main() {
         ),
         // #1614: the node detail panel's own "Details" button. It resolves
         // through the same `topologyNavTargetFor` the tap above uses — one copy,
-        // so the two destinations and the #1465 offline gate cannot drift — which
-        // is why the argument is a variable here too.
+        // so the two destinations cannot drift — which is why the argument is a
+        // variable here too.
         //
         // An entry point, and `pushNamed` for the same reason: it opens a
         // device's or a node's detail page from the topology, and back must
