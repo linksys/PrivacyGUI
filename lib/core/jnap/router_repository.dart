@@ -8,7 +8,12 @@ import 'package:privacy_gui/core/cache/utility.dart';
 import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
+import 'package:privacy_gui/providers/auth/auth_exception.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
+
+// Where the loops tied to a login end, for this file's importers.
+export 'package:privacy_gui/providers/auth/auth_exception.dart'
+    show LoggedOutException;
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/constants/jnap_const.dart';
@@ -50,15 +55,6 @@ class CommandWrap {
 }
 
 const defaultAdminPassword = 'admin';
-
-/// Ends a [RouterRepository.scheduledCommand] loop whose login has ended.
-class LoggedOutException implements Exception {
-  const LoggedOutException();
-
-  @override
-  String toString() =>
-      'LoggedOutException: the login this work belonged to has ended';
-}
 
 /// For a stream handed to a page: a logout ends it quietly.
 ///
