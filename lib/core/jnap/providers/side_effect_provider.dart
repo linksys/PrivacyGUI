@@ -36,6 +36,10 @@ class JNAPSideEffectOverrides extends Equatable {
     bool Function()? condition,
   }) {
     return JNAPSideEffectOverrides(
+      retryDelayInSec: retryDelayInSec,
+      maxRetry: maxRetry,
+      maxPollTimeInSec: maxPollTimeInSec,
+      timeDelayStartInSec: timeDelayStartInSec,
       condition: condition ?? this.condition,
     );
   }

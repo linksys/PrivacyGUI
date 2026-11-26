@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 final pnpTroubleshooterProvider =
     NotifierProvider<PnpTroubleshooterNotifier, PnpTroubleshooterState>(
@@ -29,6 +30,9 @@ class PnpTroubleshooterNotifier extends Notifier<PnpTroubleshooterState> {
       retryDelay = 15000;
     }
 
+    // The check belongs to this login. A logout ends it, and with it the
+    // page's next steps, which run from onCompleted (#1904).
+    final logoutGeneration = ref.read(authProvider.notifier).logoutGeneration;
     return ref
         .read(routerRepositoryProvider)
         .scheduledCommand(
@@ -40,7 +44,9 @@ class PnpTroubleshooterNotifier extends Notifier<PnpTroubleshooterState> {
               : false,
           onCompleted: onCompleted,
           auth: true,
+          logoutGeneration: logoutGeneration,
         )
+        .endAtLogout()
         .map((result) => (result is JNAPSuccess)
             ? _isNewSettingPassed(result, settingWanType)
             : false);
