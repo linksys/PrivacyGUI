@@ -769,21 +769,6 @@ The roster holds the components the pilot pages use (issue #1935); issue #1936 a
 <!-- identifier-roster:begin -->
 | Component | Identifier | Why |
 |---|---|---|
-| `AppTextField` | `{id}` | Every constructor puts it on the text field node, which the web engine drops. |
-| `AppPasswordField` | `{id}` | It is on the text field node, which the web engine drops. |
-| `AppPasswordField` | `{id}-visibility` | The toggle is `now-password-show` or `now-password-hide`, by state. |
-| `AppIPFormField` | `{id}-octet-0` | Each octet's identifier is on the octet's text field node, which the web engine drops. |
-| `AppIPFormField` | `{id}-octet-1` | As `{id}-octet-0`. |
-| `AppIPFormField` | `{id}-octet-2` | As `{id}-octet-0`. |
-| `AppIPFormField` | `{id}-octet-3` | As `{id}-octet-0`. |
-| `AppDropdownButton` | `{id}` | No `identifier` parameter. |
-| `AppSwitch` | `{id}` | No `identifier` parameter. |
-| `AppIconButton` | `{id}` | `build()` never uses its `identifier` field. |
-| `AppCard` | `{id}` | `build()` never uses its `identifier` field. |
-| `AppListCard` | `{id}` | No `identifier` parameter. |
-| `AppSettingCard` | `{id}` | No `identifier` parameter. |
-| `AppText` | `{id}` | No `identifier` parameter. |
-| `AppFullScreenSpinner` | `{id}` | No `identifier` parameter. |
 <!-- identifier-roster:end -->
 
 ### 11.5 Code review checklist (2.x 16.5)

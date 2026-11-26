@@ -65,18 +65,22 @@ final Map<String, _Component> _roster = {
   'AppDropdownButton': (
     constructors: {
       'AppDropdownButton': (id) => AppDropdownButton<String>(
+            identifier: id,
             items: const ['a', 'b'],
             label: (item) => item,
+            itemKey: (item) => item,
             onChanged: _noopValue,
           ),
     },
-    identifiers: ['{id}'],
+    // `a` is the selected item, `b` is not. Both are in the open menu only.
+    identifiers: ['{id}', '{id}-item-a', '{id}-item-b'],
   ),
   'AppSwitch': (
     constructors: {
-      'AppSwitch': (id) => AppSwitch(value: true, onChanged: _noopValue),
-      'AppSwitch.withIcon': (id) =>
-          AppSwitch.withIcon(value: true, onChanged: _noopValue),
+      'AppSwitch': (id) =>
+          AppSwitch(identifier: id, value: true, onChanged: _noopValue),
+      'AppSwitch.withIcon': (id) => AppSwitch.withIcon(
+          identifier: id, value: true, onChanged: _noopValue),
     },
     identifiers: ['{id}'],
   ),
@@ -134,50 +138,74 @@ final Map<String, _Component> _roster = {
   ),
   'AppListCard': (
     constructors: {
-      'AppListCard': (id) =>
-          AppListCard(title: const AppText('Card'), onTap: _noop),
+      'AppListCard': (id) => AppListCard(
+          identifier: id, title: const AppText('Card'), onTap: _noop),
     },
     identifiers: ['{id}'],
   ),
   'AppSettingCard': (
     constructors: {
-      'AppSettingCard': (id) => AppSettingCard(title: 'Card', onTap: _noop),
+      'AppSettingCard': (id) =>
+          AppSettingCard(identifier: id, title: 'Card', onTap: _noop),
       'AppSettingCard.noBorder': (id) =>
-          AppSettingCard.noBorder(title: 'Card', onTap: _noop),
+          AppSettingCard.noBorder(identifier: id, title: 'Card', onTap: _noop),
     },
     identifiers: ['{id}'],
   ),
   'AppText': (
     constructors: {
-      'AppText': (id) => const AppText('Text'),
+      'AppText': (id) => AppText('Text', identifier: id),
       // A selectable text is a read-only text field to the engine.
-      'AppText (selectable)': (id) => const AppText('Text', selectable: true),
-      'AppText.displayLarge': (id) => const AppText.displayLarge('Text'),
-      'AppText.displayMedium': (id) => const AppText.displayMedium('Text'),
-      'AppText.displaySmall': (id) => const AppText.displaySmall('Text'),
-      'AppText.headlineLarge': (id) => const AppText.headlineLarge('Text'),
-      'AppText.headlineMedium': (id) => const AppText.headlineMedium('Text'),
-      'AppText.headlineSmall': (id) => const AppText.headlineSmall('Text'),
-      'AppText.titleLarge': (id) => const AppText.titleLarge('Text'),
-      'AppText.titleMedium': (id) => const AppText.titleMedium('Text'),
-      'AppText.titleSmall': (id) => const AppText.titleSmall('Text'),
-      'AppText.labelLarge': (id) => const AppText.labelLarge('Text'),
-      'AppText.labelMedium': (id) => const AppText.labelMedium('Text'),
-      'AppText.labelSmall': (id) => const AppText.labelSmall('Text'),
-      'AppText.bodyLarge': (id) => const AppText.bodyLarge('Text'),
-      'AppText.bodyMedium': (id) => const AppText.bodyMedium('Text'),
-      'AppText.bodySmall': (id) => const AppText.bodySmall('Text'),
-      'AppText.bodyExtraSmall': (id) => const AppText.bodyExtraSmall('Text'),
+      'AppText (selectable)': (id) =>
+          AppText('Text', identifier: id, selectable: true),
+      'AppText.displayLarge': (id) =>
+          AppText.displayLarge('Text', identifier: id),
+      'AppText.displayMedium': (id) =>
+          AppText.displayMedium('Text', identifier: id),
+      'AppText.displaySmall': (id) =>
+          AppText.displaySmall('Text', identifier: id),
+      'AppText.headlineLarge': (id) =>
+          AppText.headlineLarge('Text', identifier: id),
+      'AppText.headlineMedium': (id) =>
+          AppText.headlineMedium('Text', identifier: id),
+      'AppText.headlineSmall': (id) =>
+          AppText.headlineSmall('Text', identifier: id),
+      'AppText.titleLarge': (id) => AppText.titleLarge('Text', identifier: id),
+      'AppText.titleMedium': (id) =>
+          AppText.titleMedium('Text', identifier: id),
+      'AppText.titleSmall': (id) => AppText.titleSmall('Text', identifier: id),
+      'AppText.labelLarge': (id) => AppText.labelLarge('Text', identifier: id),
+      'AppText.labelMedium': (id) =>
+          AppText.labelMedium('Text', identifier: id),
+      'AppText.labelSmall': (id) => AppText.labelSmall('Text', identifier: id),
+      'AppText.bodyLarge': (id) => AppText.bodyLarge('Text', identifier: id),
+      'AppText.bodyMedium': (id) => AppText.bodyMedium('Text', identifier: id),
+      'AppText.bodySmall': (id) => AppText.bodySmall('Text', identifier: id),
+      'AppText.bodyExtraSmall': (id) =>
+          AppText.bodyExtraSmall('Text', identifier: id),
     },
     identifiers: ['{id}'],
   ),
   'AppFullScreenSpinner': (
     constructors: {
-      'AppFullScreenSpinner': (id) => const AppFullScreenSpinner(),
+      'AppFullScreenSpinner': (id) => AppFullScreenSpinner(identifier: id),
     },
     identifiers: ['{id}'],
   ),
 };
+
+/// What the roster does before it looks for an identifier that a component
+/// shows only after an interaction, keyed as the rows of the 11.4 table are:
+/// `<component> -> <pattern>`.
+final Map<String, Future<void> Function(WidgetTester tester)> _reveal = {
+  'AppDropdownButton -> {id}-item-a': _openDropdown,
+  'AppDropdownButton -> {id}-item-b': _openDropdown,
+};
+
+Future<void> _openDropdown(WidgetTester tester) async {
+  await tester.tap(find.byType(AppDropdownButton<String>));
+  await tester.pumpAndSettle();
+}
 
 /// A component of `plugins/widgets` that the roster pumps: each public
 /// constructor, given an identifier, and the identifiers the component
@@ -211,6 +239,7 @@ void main() {
             in constructors.entries) {
           await tester.pumpWidget(testableWidget(child: build(_id)));
           await tester.pump();
+          await _reveal[row]?.call(tester);
           final problem = identifierProblem(tester, identifier);
           if (problem != null) problems.add('$constructor: $problem');
         }
