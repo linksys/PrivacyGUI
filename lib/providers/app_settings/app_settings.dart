@@ -32,7 +32,7 @@ class AppSettings extends Equatable {
   }
 
   @override
-  List<Object?> get props => [themeMode, locale, themeColor];
+  List<Object?> get props => [themeMode, locale];
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
