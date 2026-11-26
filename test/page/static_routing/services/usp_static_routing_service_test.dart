@@ -570,11 +570,11 @@ void main() {
 
     test('a refused Edit without an error name stays the batch error',
         () async {
-      answerSet(UspEnvelopeTestData.failedAsAWhole(
-        ['Device.Routing.Router.1.IPv4Forwarding.30.Enable'],
-        errorCode: 9999,
-        errorMessage: 'Transport error: HTTP error: HTTP 503',
-      ));
+      // A 503: since #1666 `UspClient` throws it, and the batch records it
+      // as the failed step it was before.
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenThrow(UspEnvelopeTestData.unansweredWrite('Set',
+              errorMessage: 'Transport error: HTTP error: HTTP 503'));
 
       await expectLater(
         service.saveBatch(
@@ -640,12 +640,9 @@ void main() {
     // A step that failed leaves the router in a state the next step was not
     // checked against: at 20 routes, an Add after a failed Delete is a 21st.
     test('a failed Delete stops the save before Set and Add', () async {
-      when(() => mockUsp.delete(any()))
-          .thenAnswer((_) async => UspEnvelopeTestData.failedAsAWhole(
-                ['Device.Routing.Router.1.IPv4Forwarding.31.'],
-                errorCode: 9999,
-                errorMessage: 'Transport error: HTTP error: HTTP 503',
-              ));
+      when(() => mockUsp.delete(any())).thenThrow(
+          UspEnvelopeTestData.unansweredWrite('Delete',
+              errorMessage: 'Transport error: HTTP error: HTTP 503'));
       final other = saved.copyWith(
           instancePath: 'Device.Routing.Router.1.IPv4Forwarding.31.',
           name: 'other');

@@ -37,14 +37,12 @@ Map<String, dynamic> uspFailure(
             success: false,
           );
 
-/// A per-path SET error whose request never got an answer — what the WASM
-/// client reports when the browser's `fetch` fails under a WiFi restart.
-Map<String, dynamic> uspUnanswered(String path) =>
-    UspEnvelopeTestData.failedAsAWhole(
-      [path],
-      errorCode: 9999,
-      errorMessage: 'Transport error: Failed to fetch',
-    );
+/// A SET whose request never got an answer — what `UspClient` throws when the
+/// browser's `fetch` fails under a WiFi restart (#1666); [errorMessage] is the
+/// client's own text.
+Object uspUnanswered({String? errorMessage}) => errorMessage == null
+    ? UspEnvelopeTestData.unansweredWrite('Set')
+    : UspEnvelopeTestData.unansweredWrite('Set', errorMessage: errorMessage);
 
 /// Sends [plan] the way a caller would, returning what it planned and the
 /// outcome — the shape these tests assert on.
@@ -1276,8 +1274,7 @@ void main() {
     test('a lost reply is "unanswered" — a channel change reloads the radio',
         () async {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer(
-              (_) async => uspUnanswered('Device.WiFi.Radio.1.Channel'));
+          .thenThrow(uspUnanswered());
 
       final result = await sent(writeSvc.updateRadioChannel(
         'Device.WiFi.Radio.1.',
@@ -1777,7 +1774,7 @@ void main() {
 
       test('a lost reply is "unanswered", not a failure', () async {
         when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-            .thenAnswer((_) async => uspUnanswered('Device.WiFi.SSID.1.SSID'));
+            .thenThrow(uspUnanswered());
 
         expect(await renameAndSave(), WifiWriteOutcome.unanswered);
       });
@@ -1787,13 +1784,9 @@ void main() {
           '— Guardian could not reach a router that was reloading its radios '
           '(CLOUD_GUARDIANS#215)', () async {
         when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-            .thenAnswer((_) async => uspFailure(
-                  path: 'Device.WiFi.SSID.1.SSID',
-                  errorCode: 9999,
-                  // Verbatim from #215's log.
-                  errorMessage:
-                      'Transport error: Transport error: HTTP error: HTTP 500',
-                ));
+            .thenThrow(uspUnanswered(
+                // #215's log, with usp-client 0.15.0's single prefix.
+                errorMessage: 'Transport error: HTTP error: HTTP 500'));
 
         expect(await renameAndSave(), WifiWriteOutcome.unanswered);
       });
@@ -1801,13 +1794,10 @@ void main() {
       test('an HTTP 4xx still throws — a 401 must end the session (#1627)',
           () async {
         when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-            .thenAnswer((_) async => uspFailure(
-                  path: 'Device.WiFi.SSID.1.SSID',
-                  errorCode: 9999,
-                  errorMessage: 'Transport error: HTTP error: HTTP 401',
-                ));
+            .thenThrow(uspUnanswered(
+                errorMessage: 'Transport error: HTTP error: HTTP 401'));
 
-        expect(renameAndSave(), throwsA(isA<ServiceError>()));
+        expect(renameAndSave(), throwsA(isA<NotAuthenticatedError>()));
       });
 
       test(
