@@ -322,6 +322,69 @@ void main() {
     });
   });
 
+  // A write the router accepted, then a re-read it refused. The page reports
+  // the refusal, although the write landed; nothing is deleted, and Save stays
+  // on for another try (#1974, settled in #1977's review).
+  group('a refused re-read after an accepted write', () {
+    test(
+        'single-port re-read refused twice: the save reports it, writes the '
+        'same single-port list twice and stops before the triggering edit',
+        () async {
+      router.holdsInTurn(JNAPAction.getSinglePortForwardingRules, [
+        _list([_xbox]),
+        _refused,
+        _refused,
+        _list([_xbox, _web]),
+      ]);
+      await openPage();
+      container
+          .read(singlePortForwardingListProvider.notifier)
+          .addRule(SinglePortForwardingRule.fromMap(_web));
+      container
+          .read(portRangeTriggeringListProvider.notifier)
+          .addRule(PortRangeTriggeringRule.fromMap(_newGame));
+
+      await expectLater(notifier.save(), throwsA(isA<JNAPError>()));
+
+      expect(writes(), [
+        JNAPAction.setSinglePortForwardingRules,
+        JNAPAction.setSinglePortForwardingRules,
+      ]);
+      expect(router.payloadsOf(JNAPAction.setSinglePortForwardingRules), [
+        {
+          'rules': [_xbox, _web],
+        },
+        {
+          'rules': [_xbox, _web],
+        },
+      ]);
+      expect(notifier.isReadComplete(), isTrue,
+          reason: 'the page is still read, so Save stays on');
+      expect(notifier.isChanged(), isTrue,
+          reason: 'the triggering edit is still there to save');
+    });
+
+    test(
+        'the closing re-read refused: the save reports it, '
+        'and the page counts as unread until it reads again', () async {
+      router.holdsInTurn(JNAPAction.getPortRangeTriggeringRules, [
+        _list([_game]),
+        _list([_game, _newGame]),
+        _refused,
+        _list([_game, _newGame]),
+      ]);
+      await openPage();
+      container
+          .read(portRangeTriggeringListProvider.notifier)
+          .addRule(PortRangeTriggeringRule.fromMap(_newGame));
+
+      await expectLater(notifier.save(), throwsA(isA<JNAPError>()));
+
+      expect(writes(), [JNAPAction.setPortRangeTriggeringRules]);
+      expect(notifier.isReadComplete(), isFalse);
+    });
+  });
+
   group('fetch', () {
     test('reads every tab even when one is refused, then reports the refusal',
         () async {
