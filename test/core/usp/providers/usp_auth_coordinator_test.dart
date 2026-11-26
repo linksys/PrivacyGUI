@@ -23,6 +23,19 @@ class TestUspClient extends Mock implements UspClient {
 
 class MockTokenStorage extends Mock implements UspTokenStorage {}
 
+/// What `refreshToken` throws when the router will not refresh the session,
+/// verbatim: a plain String, from the vendored usp-client (#1666 AC4).
+///
+/// Measured on the bench (2026-11-26, M60, FW `2.0.4.26112201`, usp-client
+/// 0.16.0) for a token that genuinely expired 312 s, 910 s and 2192 s before,
+/// and word for word the same for one the router never issued and one whose
+/// signature was changed. (94 s after expiry the refresh still succeeded.) It
+/// never carries `HTTP 401`: these stubs threw `Exception('HTTP 401
+/// Unauthorized')` before, a shape `refreshToken` does not produce, which is
+/// how a heartbeat that could never refresh again went on retrying.
+const _sessionNotRefreshable = 'Token refresh failed: Authentication error: '
+    'Authentication token has expired (code: 2)';
+
 void main() {
   late TestUspClient mockUsp;
   late MockTokenStorage mockStorage;
@@ -112,12 +125,15 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // ensureAuth — 401 error triggers force logout
+  // ensureAuth — a session the router will not refresh triggers force logout
   // ---------------------------------------------------------------------------
-  group('ensureAuth — 401 error', () {
-    test('calls onForceLogout on HTTP 401', () async {
+  group('ensureAuth — the router will not refresh the session', () {
+    // #1666 AC4: a tab that slept past the token's lifetime wakes to this on
+    // its next heartbeat. It used to be read as a network error and retried
+    // on every beat, so the session stayed on screen and never worked again.
+    test('calls onForceLogout', () async {
       when(() => mockUsp.refreshToken(token: any(named: 'token')))
-          .thenThrow(Exception('HTTP 401 Unauthorized'));
+          .thenThrow(_sessionNotRefreshable);
 
       bool logoutCalled = false;
       coordinator.onForceLogout = () => logoutCalled = true;
@@ -127,9 +143,9 @@ void main() {
       expect(logoutCalled, isTrue);
     });
 
-    test('clears token storage on 401', () async {
+    test('clears token storage', () async {
       when(() => mockUsp.refreshToken(token: any(named: 'token')))
-          .thenThrow(Exception('HTTP 401 Unauthorized'));
+          .thenThrow(_sessionNotRefreshable);
       coordinator.onForceLogout = () {};
 
       await coordinator.ensureAuth();
@@ -310,7 +326,7 @@ void main() {
           .thenAnswer((invocation) async {
         callCount++;
         if (callCount == 1) {
-          throw Exception('HTTP 401 Unauthorized');
+          throw _sessionNotRefreshable;
         }
         // Second call with stored token succeeds
       });
@@ -347,7 +363,7 @@ void main() {
       when(() => mockUsp.isAuthenticated).thenReturn(false);
       when(() => mockStorage.load()).thenReturn('expired-token');
       when(() => mockUsp.refreshToken(token: 'expired-token'))
-          .thenThrow(Exception('HTTP 401 Unauthorized'));
+          .thenThrow(_sessionNotRefreshable);
 
       await coordinator.restoreSession();
 
@@ -420,7 +436,7 @@ void main() {
       when(() => mockUsp.isAuthenticated).thenReturn(false);
       when(() => mockStorage.load()).thenReturn('expired-token');
       when(() => mockUsp.refreshToken(token: 'expired-token'))
-          .thenThrow(Exception('HTTP 401 Unauthorized'));
+          .thenThrow(_sessionNotRefreshable);
 
       bool logoutCalled = false;
       coordinator.onForceLogout = () => logoutCalled = true;
@@ -436,7 +452,7 @@ void main() {
       when(() => mockUsp.isAuthenticated).thenReturn(false);
       when(() => mockStorage.load()).thenReturn('expired-token');
       when(() => mockUsp.refreshToken(token: 'expired-token'))
-          .thenThrow(Exception('HTTP 401 Unauthorized'));
+          .thenThrow(_sessionNotRefreshable);
 
       bool logoutCalled = false;
       coordinator.onForceLogout = () => logoutCalled = true;
@@ -497,7 +513,7 @@ void main() {
         () async {
       // Make refreshToken throw 401
       when(() => mockUsp.refreshToken(token: any(named: 'token')))
-          .thenThrow(Exception('HTTP 401 Unauthorized'));
+          .thenThrow(_sessionNotRefreshable);
       coordinator.onForceLogout = () {};
 
       // ensureAuth gets 401 — should reset _lastTokenRefresh
@@ -641,6 +657,36 @@ void main() {
   // _isAuthError — pattern matching
   // ---------------------------------------------------------------------------
   group('_isAuthError pattern matching', () {
+    test(
+        "matches refreshToken's text for a session the router will not "
+        'refresh (#1666)', () async {
+      when(() => mockUsp.refreshToken(token: any(named: 'token')))
+          .thenThrow(_sessionNotRefreshable);
+
+      bool logoutCalled = false;
+      coordinator.onForceLogout = () => logoutCalled = true;
+
+      await coordinator.ensureAuth();
+
+      expect(logoutCalled, isTrue);
+    });
+
+    test('does NOT match an authentication error nobody has measured',
+        () async {
+      // The client carries other auth texts ("Session expired",
+      // "Authentication required"); none was seen from `refreshToken`, so
+      // none ends the session until it is (#1666, PR B's decision).
+      when(() => mockUsp.refreshToken(token: any(named: 'token'))).thenThrow(
+          'Token refresh failed: Authentication error: Authentication required');
+
+      bool logoutCalled = false;
+      coordinator.onForceLogout = () => logoutCalled = true;
+
+      await coordinator.ensureAuth();
+
+      expect(logoutCalled, isFalse);
+    });
+
     test('matches actual WASM error format', () async {
       when(() => mockUsp.refreshToken(token: any(named: 'token'))).thenThrow(
           Exception('Get failed: Transport error: HTTP error: HTTP 401'));
