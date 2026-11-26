@@ -12,6 +12,7 @@ import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_exception.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_state.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 final addNodesProvider =
     NotifierProvider.autoDispose<AddNodesNotifier, AddNodesState>(
@@ -20,6 +21,17 @@ final addNodesProvider =
 class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
   @override
   AddNodesState build() => const AddNodesState();
+
+  /// The login the running flow belongs to (#1904). The flow's loops end at a
+  /// logout, and so does the flow. Null while no flow runs, so a loop asked
+  /// for on its own is not tied to a login.
+  int? _logoutGeneration;
+
+  bool get _loggedOut {
+    final generation = _logoutGeneration;
+    return generation != null &&
+        ref.read(authProvider.notifier).loggedOutSince(generation);
+  }
 
   Future<bool> getAutoOnboardingSettings() {
     return ref
@@ -46,6 +58,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
             logger.d('[AddNodes]: GetAutoOnboardingStatus Done!');
           },
           auth: true,
+          logoutGeneration: _logoutGeneration,
         );
   }
 
@@ -56,6 +69,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
 
     final polling = ref.read(pollingProvider.notifier);
     polling.stopPolling();
+    _logoutGeneration = ref.read(authProvider.notifier).logoutGeneration;
 
     try {
       state = state.copyWith(isLoading: true, loadingMessage: 'searching');
@@ -66,6 +80,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
       const retryDelay = Duration(seconds: 3);
 
       for (var attempt = 1; attempt <= maxRetries; attempt++) {
+        if (_loggedOut) throw const LoggedOutException();
         try {
           await repo.send(JNAPAction.startBlueboothAutoOnboarding, auth: true);
           logger.d(
@@ -161,9 +176,14 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
         isLoading: false,
         onboardedMACList: onboardedMACList,
       );
+    } on LoggedOutException {
+      // The login the onboarding belonged to has ended; its page is gone.
+      logger.d('[AddNodes]: Logged out, the onboarding is dropped');
     } finally {
       state = state.copyWith(isLoading: false);
-      polling.startPolling();
+      // Not on the login screen: polling would read with no login.
+      if (!_loggedOut) polling.startPolling();
+      _logoutGeneration = null;
     }
   }
 
@@ -179,6 +199,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
             // Basic 3 minutes, add 2 minutes for each one more node
             maxRetry: refreshing ? 5 : 9 + onboardedMACList.length * 6,
             auth: true,
+            logoutGeneration: _logoutGeneration,
             action: JNAPAction.getDevices,
             condition: (result) {
               if (result is JNAPSuccess) {
@@ -249,6 +270,7 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
             retryDelayInMilliSec: refreshing ? 3000 : 3000,
             maxRetry: refreshing ? 1 : 20,
             auth: true,
+            logoutGeneration: _logoutGeneration,
             action: JNAPAction.getBackhaulInfo,
             condition: (result) {
               if (result is JNAPSuccess) {
@@ -285,23 +307,34 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
 
   Future startRefresh() async {
     state = state.copyWith(isLoading: true, loadingMessage: 'searching');
+    _logoutGeneration = ref.read(authProvider.notifier).logoutGeneration;
 
     List<LinksysDevice> childNodes = [];
     List<BackHaulInfoData> backhaulInfoList = [];
 
-    await for (final result
-        in pollForNodesOnline(state.onboardedMACList ?? [], refreshing: true)) {
-      childNodes = result.where((element) => element.nodeType != null).toList();
+    try {
+      await for (final result in pollForNodesOnline(
+          state.onboardedMACList ?? [],
+          refreshing: true)) {
+        childNodes =
+            result.where((element) => element.nodeType != null).toList();
+      }
+      await for (final result
+          in pollNodesBackhaulInfo(childNodes, refreshing: true)) {
+        backhaulInfoList = result;
+      }
+      state = state.copyWith(
+        childNodes: collectChildNodeData(childNodes, backhaulInfoList),
+        isLoading: false,
+        loadingMessage: '',
+      );
+    } on LoggedOutException {
+      // The login the refresh belonged to has ended; its page is gone.
+      logger.d('[AddNodes]: Logged out, the refresh is dropped');
+      state = state.copyWith(isLoading: false, loadingMessage: '');
+    } finally {
+      _logoutGeneration = null;
     }
-    await for (final result
-        in pollNodesBackhaulInfo(childNodes, refreshing: true)) {
-      backhaulInfoList = result;
-    }
-    state = state.copyWith(
-      childNodes: collectChildNodeData(childNodes, backhaulInfoList),
-      isLoading: false,
-      loadingMessage: '',
-    );
   }
 
   List<LinksysDevice> collectChildNodeData(

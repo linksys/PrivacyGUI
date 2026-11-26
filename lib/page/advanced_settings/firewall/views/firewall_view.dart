@@ -74,29 +74,30 @@ class _FirewallViewState extends ConsumerState<FirewallView>
           isPositiveEnabled: _preservedState != firewallState ||
               _preservedIPv6State != ipv6State,
           onPositiveTap: () {
-            List<Future> futures = [
-              _preservedState != firewallState
-                  ? ref.read(firewallProvider.notifier).save()
-                  : Future.value(null),
-              _preservedIPv6State != ipv6State
-                  ? ref.read(ipv6PortServiceListProvider.notifier).save()
-                  : Future.value(null),
+            // Each tab's baseline follows its own write, so a write the
+            // router refuses on one tab does not hide the other tab's save.
+            Object? firewallError;
+            Object? ipv6Error;
+            final saves = [
+              if (_preservedState != firewallState)
+                ref.read(firewallProvider.notifier).save().then<void>(
+                    (saved) => setState(() => _preservedState = saved),
+                    onError: (Object error) => firewallError = error),
+              if (_preservedIPv6State != ipv6State)
+                ref
+                    .read(ipv6PortServiceListProvider.notifier)
+                    .save()
+                    .then<void>(
+                        (saved) => setState(() => _preservedIPv6State = saved),
+                        onError: (Object error) => ipv6Error = error),
             ];
-            doSomethingWithSpinner(context, Future.wait(futures))
-                .then((values) {
-              final newFirewallState = values?[0];
-              final newIPv6State = values?[1];
-              setState(() {
-                if (newFirewallState is FirewallState) {
-                  _preservedState = newFirewallState;
-                }
-                if (newIPv6State is Ipv6PortServiceListState) {
-                  _preservedIPv6State = newIPv6State;
-                }
-              });
-              showChangesSavedSnackBar();
-            }).onError((error, stackTrace) {
-              showErrorMessageSnackBar(error);
+            doSomethingWithSpinner(context, Future.wait(saves)).then((_) {
+              final error = firewallError ?? ipv6Error;
+              if (error == null) {
+                showChangesSavedSnackBar();
+              } else {
+                showErrorMessageSnackBar(error);
+              }
             });
           }),
       onBackTap: _preservedState != firewallState

@@ -141,7 +141,8 @@ class PowerTableNotifier extends Notifier<PowerTableState> {
           data: {'country': country.name.toUpperCase()},
           auth: true,
         )
-        .then((_) => ref.read(pollingProvider.notifier).startPolling())
+        // Whatever the router answered, or polling stays off after a refusal.
+        .whenComplete(() => ref.read(pollingProvider.notifier).startPolling())
         .then((_) => ref.read(pollingProvider.notifier).forcePolling())
         .then(
           (_) => state.copyWith(country: country),

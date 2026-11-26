@@ -64,5 +64,6 @@ class InstantVerifyState extends Equatable {
   bool get stringify => true;
 
   @override
-  List<Object?> get props => [wanConnection, radioInfo];
+  List<Object?> get props =>
+      [wanConnection, radioInfo, guestRadioSettings, isRunning];
 }

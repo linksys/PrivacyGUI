@@ -348,10 +348,13 @@ void main() {
     test('moves the logout generation on', () async {
       start(secure: {pLocalPassword: 'TestAdmin1!'});
       final before = notifier().logoutGeneration;
+      expect(notifier().loggedOutSince(before), isFalse);
 
       await notifier().logout();
 
       expect(notifier().logoutGeneration, isNot(before));
+      expect(notifier().loggedOutSince(before), isTrue);
+      expect(notifier().loggedOutSince(notifier().logoutGeneration), isFalse);
     });
   });
 
