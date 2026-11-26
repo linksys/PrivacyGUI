@@ -95,9 +95,15 @@ final authProvider =
 class AuthNotifier extends AsyncNotifier<AuthState> {
   // Router AI builds only: set by the first init() of this app launch.
   bool _aiStartupReconciled = false;
-  // Router AI builds only: bumped by every logout, so a bootstrap that
-  // started before a logout never shows the widget after it.
-  int _aiLogoutCount = 0;
+  int _logoutGeneration = 0;
+
+  /// Moves on at every logout, before the logout changes anything else.
+  ///
+  /// Work that belongs to a login reads it when the work begins, and stops
+  /// once it has moved on (#1904). [RouterRepository.scheduledCommand] does
+  /// this for the loops it is given it for; in Router AI builds, a bootstrap
+  /// that began before a logout never shows the widget after it.
+  int get logoutGeneration => _logoutGeneration;
 
   AuthNotifier() : super() {
     LinksysHttpClient.onError = (error) async {
@@ -374,12 +380,17 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   Future logout() async {
     logger.d('[Prepare]: Logout');
+    // First, before the login is forgotten (#1904). Work tied to the login
+    // ends before its next request. Polling stops before a Router AI build
+    // empties the auth state below: a poll that ticked while the stores are
+    // cleared would go out with the factory default password.
+    _logoutGeneration++;
+    ref.read(pollingProvider.notifier).stopPolling();
     if (BuildConfig.enableRouterAi) {
       // A logout settles this launch's AI session. If the first init() is
       // still reading storage, it must not bootstrap the old password after
       // this revocation.
       _aiStartupReconciled = true;
-      _aiLogoutCount++;
       // A widget bundle still downloading must not re-arm itself on the login
       // screen when it finishes.
       ref.read(routerAiDisarmProvider)();
@@ -411,6 +422,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       ref.read(pollingProvider.notifier).init();
       return AuthState.empty();
     });
+    // Again: a start-up that was already under way may have started polling
+    // while the stores were cleared, in a build that keeps the login until
+    // then.
     ref.read(pollingProvider.notifier).stopPolling();
     ref.read(selectedNetworkIdProvider.notifier).state = null;
   }
@@ -424,7 +438,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future<void> _bootstrapAiSession(String password) async {
-    final logoutCount = _aiLogoutCount;
+    final logoutGeneration = _logoutGeneration;
     try {
       final active =
           await ref.read(aiSessionServiceProvider).bootstrap(password);
@@ -434,11 +448,11 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       }
       // The widget appears only once the router login and the AI session are
       // both authenticated, never on the login screen. A logout while the
-      // bootstrap was in flight normally cancels it (it throws); the counter
-      // also covers a logout that lands between the response and this line.
-      // It is used instead of the auth state because init() re-runs on every
-      // redirect and briefly puts the state into loading.
-      if (logoutCount == _aiLogoutCount) {
+      // bootstrap was in flight normally cancels it (it throws); the
+      // generation also covers a logout that lands between the response and
+      // this line. It is used instead of the auth state because init() re-runs
+      // on every redirect and briefly puts the state into loading.
+      if (logoutGeneration == _logoutGeneration) {
         ref.read(routerAiLoaderProvider)();
       }
     } catch (_) {

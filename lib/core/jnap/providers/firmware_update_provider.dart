@@ -126,6 +126,9 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
 
   Stream<List<FirmwareUpdateStatus>> fetchFirmwareUpdateStream(
       {bool force = false, int retry = 3}) async* {
+    // Read as the check begins, so that a logout before its status reads, even
+    // one while the first request is still out, ends them (#1904).
+    final logoutGeneration = ref.read(authProvider.notifier).logoutGeneration;
     final lastCheckTime =
         (state.nodesStatus?.map((e) => e.lastSuccessfulCheckTime).toList() ??
                     [])
@@ -153,7 +156,9 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
           )
           .then((_) {});
       yield* _startCheckFirmwareUpdateStatus(
-          retryTimes: retry, onCompleted: (_) {});
+          retryTimes: retry,
+          onCompleted: (_) {},
+          logoutGeneration: logoutGeneration);
     }
   }
 
@@ -178,6 +183,8 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     // Checked before `isUpdating` is set, so a refused write never shows the
     // page its updating spinner.
     enforceAccess(ref, (policy) => policy.checkWrite(action));
+    // The install is followed for as long as this login lasts (#1904).
+    final logoutGeneration = ref.read(authProvider.notifier).logoutGeneration;
     final benchmark = BenchMarkLogger(name: 'FirmwareUpdate');
     benchmark.start();
     state = state.copyWith(isUpdating: true);
@@ -207,6 +214,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     _sub?.cancel();
     ref.read(pollingProvider.notifier).stopPolling();
     _sub = _startCheckFirmwareUpdateStatus(
+      logoutGeneration: logoutGeneration,
       retryTimes: 60 * getAvailableUpdateNumber(),
       stopCondition: (result) =>
           _checkFirmwareUpdateComplete(result, state.nodesStatus ?? []),
@@ -240,6 +248,14 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
       // does not parse, is logged here, as nothing else logs it.
       onError: (Object error, StackTrace stackTrace) {
         if (error is JNAPError) return;
+        if (error is LoggedOutException) {
+          // The router goes on installing, but nothing here follows it any
+          // more, so nothing else would ever turn the spinner off.
+          logger.i('[FIRMWARE]: Update firmware: no longer followed, '
+              'logged out');
+          state = state.copyWith(isUpdating: false);
+          return;
+        }
         logger.e('[FIRMWARE]: Update firmware: status check failed',
             error: error, stackTrace: stackTrace);
       },
@@ -374,6 +390,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     int? retryDelayInMilliSec,
     bool Function(JNAPResult)? stopCondition,
     Function(bool exceedMaxRetry)? onCompleted,
+    required int logoutGeneration,
   }) {
     final action = serviceHelper.isSupportNodeFirmwareUpdate()
         ? JNAPAction.getNodesFirmwareUpdateStatus
@@ -388,6 +405,7 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
           onCompleted: onCompleted,
           requestTimeoutOverride: 3000,
           auth: true,
+          logoutGeneration: logoutGeneration,
         )
         .map((result) {
       if (result is! JNAPSuccess) {

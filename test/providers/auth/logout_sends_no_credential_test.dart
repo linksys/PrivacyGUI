@@ -8,9 +8,10 @@
 // default (`loginType` is `none`, router_repository.dart:395), so the check is
 // on every request the router receives once logout() has returned.
 //
-// The cases for the firmware check and the firmware install are red on the
-// base branch: that is the bug #1904 reports. They are skipped until #1904 P1
-// ties that work to the session. Run them with `skip: false` to see it.
+// The cases for the firmware check and the firmware install were red before
+// #1904 P1: that is the bug #1904 reports. P1 ties that work to the login
+// (`AuthNotifier.logoutGeneration`), so a logout ends it before its next
+// request.
 //
 // #1904 P2 adds a case here for each of the other scheduled owners.
 
@@ -33,15 +34,12 @@ import 'package:privacy_gui/core/jnap/jnap_command_executor_mixin.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/jnap/spec/jnap_spec.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../common/di.dart';
-
-/// Skipped until #1904 P1: on the base branch these cases are red, because
-/// the firmware check and the install go on after a logout.
-const _redUntil1904P1 = true;
 
 const _password = 'TestAdmin1!';
 
@@ -78,12 +76,21 @@ Map<String, dynamic> _firmwareStatus({
         },
     };
 
+/// The install's own request. The check sends the same action, with
+/// `onlyCheck: true`.
+bool _isInstallRequest(_Received r) =>
+    r.action == JNAPAction.updateFirmwareNow.actionValue &&
+    r.data['onlyCheck'] == false;
+
 /// One request as the router received it.
 class _Received {
-  _Received(this.action, this.header);
+  _Received(this.action, this.header, this.data);
 
   final String action;
   final Map<String, String> header;
+
+  /// The request's body, for a single action; empty for a transaction.
+  final Map<String, dynamic> data;
 
   bool get carriesCredential => header.keys.any(_credentialHeaders.contains);
 
@@ -102,12 +109,24 @@ class _RecordingRouter with JNAPCommandExecutor<Response> {
 
   void answer(JNAPAction action, Map<String, dynamic> output) =>
       outputs[action.actionValue] = output;
+
+  /// How long the router takes to answer an action. The request counts as
+  /// received when it arrives, before the wait.
+  final Map<String, Duration> delays = {};
+
+  void answerAfter(JNAPAction action, Duration delay) =>
+      delays[action.actionValue] = delay;
+
   final List<_Received> received = [];
 
   @override
   Future<Response> execute(BaseCommand command) async {
     final http = command as BaseHttpCommand;
-    received.add(_Received(command.spec.action, Map.of(http.header)));
+    final spec = command.spec;
+    received.add(_Received(spec.action, Map.of(http.header),
+        spec is JNAPCommandSpec ? Map.of(spec.data) : const {}));
+    final delay = delays[command.spec.action];
+    if (delay != null) await Future.delayed(delay);
     if (command is TransactionHttpCommand) {
       return Response(
           jsonEncode({
@@ -257,6 +276,9 @@ void main() {
     // The first poll, then one tick of the timer.
     await tester.pump(const Duration(seconds: 2));
     await tester.pump(const Duration(seconds: 61));
+    // Only the first poll reaches the router here: the timer's ticks are
+    // answered from the command cache, whose expiry reads the real clock,
+    // not this test's. Without logout()'s stopPolling() the case still fails.
     expect(router.received.where((r) => r.action.contains('Transaction')),
         isNotEmpty,
         reason: 'polling did run while logged in');
@@ -266,8 +288,31 @@ void main() {
     expect(after, isEmpty);
   });
 
+  netTest(
+      'polling started while the logout is under way sends nothing after it',
+      (tester) async {
+    // A start-up that reaches checkAndStartPolling while logout() clears the
+    // stores. A build that keeps the login until then lets it start, so the
+    // logout stops polling again at its end.
+    await logIn();
+
+    final loggingOut = auth().logout();
+    container.read(pollingProvider.notifier).checkAndStartPolling();
+    await loggingOut;
+    final mark = router.received.length;
+    for (var i = 0; i < 30; i++) {
+      await tester.pump(const Duration(seconds: 5));
+    }
+
+    // Its device-mode read may already be queued and go out after the logout
+    // (the command queue is not cleared), but that read carries no
+    // credential. The polls that would carry one never start.
+    expect(router.received.sublist(mark).where((r) => r.carriesCredential),
+        isEmpty);
+  });
+
   netTest('a firmware check started before the logout sends nothing after it',
-      skip: _redUntil1904P1, (tester) async {
+      (tester) async {
     // The bug: the dashboard starts the check as it opens, and a logout in the
     // next 5 s leaves its two status reads to go out with the default password.
     await logIn();
@@ -285,9 +330,59 @@ void main() {
   });
 
   netTest(
+      'a firmware check whose first request is still being answered at the '
+      'logout sends nothing after it', (tester) async {
+    // The check reaches its status reads only once the router has answered
+    // its first request, which here is after the logout. They belong to the
+    // login the check began in, not to whatever is current when they start.
+    await logIn();
+    router.answerAfter(
+        JNAPAction.updateFirmwareNow, const Duration(seconds: 1));
+    container
+        .read(firmwareUpdateProvider.notifier)
+        .fetchAvailableFirmwareUpdates();
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(router.received.map((r) => r.action),
+        contains(JNAPAction.updateFirmwareNow.actionValue),
+        reason: 'the check did start while logged in');
+
+    final after = await logOut(tester);
+
+    expect(after.where((r) => r.carriesCredential), isEmpty);
+  });
+
+  netTest(
+      'a firmware install whose request is still being answered at the '
+      'logout sends nothing after it, and shows no install', (tester) async {
+    await logIn();
+    router.answer(
+        JNAPAction.getFirmwareUpdateStatus, _firmwareStatus(update: true));
+    final firmware = container.read(firmwareUpdateProvider.notifier);
+    firmware.fetchAvailableFirmwareUpdates();
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(seconds: 2));
+    }
+    expect(firmware.getAvailableUpdateNumber(), 1);
+    router
+      ..answer(JNAPAction.getFirmwareUpdateStatus,
+          _firmwareStatus(update: true, installing: true))
+      ..answerAfter(JNAPAction.updateFirmwareNow, const Duration(seconds: 1));
+    final started = firmware.updateFirmware();
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(router.received.where(_isInstallRequest), hasLength(1),
+        reason: 'the install did start while logged in');
+    expect(container.read(firmwareUpdateProvider).isUpdating, isTrue);
+
+    final after = await logOut(tester);
+    await started;
+
+    expect(after.where((r) => r.carriesCredential), isEmpty);
+    expect(container.read(firmwareUpdateProvider).isUpdating, isFalse);
+  });
+
+  netTest(
       'a firmware install followed before the logout sends nothing '
-      'after it',
-      skip: _redUntil1904P1, (tester) async {
+      'after it, and shows no install once logged out', (tester) async {
     await logIn();
     router.answer(
         JNAPAction.getFirmwareUpdateStatus, _firmwareStatus(update: true));
@@ -298,19 +393,23 @@ void main() {
       await tester.pump(const Duration(seconds: 2));
     }
     expect(firmware.getAvailableUpdateNumber(), 1);
-    // Still installing at every check, so the install's checks never end on
-    // their own while the case runs.
+    // Still installing at every check, so the install's checks would go on
+    // until they run out: 60 of them, 2 s apart.
     router.answer(JNAPAction.getFirmwareUpdateStatus,
         _firmwareStatus(update: true, installing: true));
     final started = firmware.updateFirmware();
     await tester.pump(const Duration(seconds: 4));
     await started;
-    expect(router.received.map((r) => r.action),
-        contains(JNAPAction.updateFirmwareNow.actionValue),
+    expect(router.received.where(_isInstallRequest), hasLength(1),
         reason: 'the install did start while logged in');
+
+    expect(container.read(firmwareUpdateProvider).isUpdating, isTrue);
 
     final after = await logOut(tester);
 
     expect(after.where((r) => r.carriesCredential), isEmpty);
+    // Nothing follows the install any more, so nothing would ever turn this
+    // off: the next login would find a spinner that never ends.
+    expect(container.read(firmwareUpdateProvider).isUpdating, isFalse);
   });
 }

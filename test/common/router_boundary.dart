@@ -85,6 +85,7 @@ class RouterBoundary {
       onCompleted: anyNamed('onCompleted'),
       requestTimeoutOverride: anyNamed('requestTimeoutOverride'),
       auth: anyNamed('auth'),
+      logoutGeneration: anyNamed('logoutGeneration'),
     )).thenAnswer((invocation) {
       final named = invocation.namedArguments;
       return _poll(
