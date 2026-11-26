@@ -911,6 +911,8 @@
   "noWifiSignalData": "لا توجد بيانات إشارة WiFi...",
   "nodeDetail": "تفاصيل العُقدة",
   "nodeNotFound": "العُقدة غير موجودة",
+  "nodeOfflineFor": "غير متصل منذ {duration}",
+  "nodeOfflineDurationUnknown": "مدة عدم الاتصال غير معروفة",
   "none": "لا شيء",
   "notApplicableForEthernetDevices": "لا ينطبق على أجهزة Ethernet",
   "notAvailable": "غير متاح",

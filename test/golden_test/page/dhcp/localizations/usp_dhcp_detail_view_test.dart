@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/dhcp/views/usp_dhcp_detail_view.dart';
 import 'package:privacy_gui/page/dhcp/views/components/usp_dhcp_reservations_detail_card.dart';
@@ -102,7 +101,7 @@ void main() {
               clients: testClients,
             ),
           ),
-          steps: (tester) async {
+          steps: withSemantics((tester) async {
             final addBtn = find.descendant(
               of: find.byType(UspDhcpReservationsDetailCard),
               matching: find.byType(AppIconButton),
@@ -110,20 +109,15 @@ void main() {
             await tester.tap(addBtn.first);
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 300));
-            final fields = find.byType(EditableText);
-            final count = fields.evaluate().length;
-            if (count < 2) return;
-            final baseIndex = count - 2;
-            await tester.tap(fields.at(baseIndex));
-            await tester.pump();
-            tester.testTextInput.enterText('invalid-mac');
-            await tester.pump();
-            await tester.tap(fields.at(baseIndex + 1));
-            await tester.pump();
-            tester.testTextInput.enterText('999.999.999.999');
-            await tester.pump();
+            // By identifier (#1870): "the last two fields" became IP and Name
+            // once the Name field was added after IP (#1698), so the MAC field
+            // stayed empty and `invalid-mac` was validated as an IP address.
+            await typeInto(tester, 'dhcp-reservation-mac', 'invalid-mac');
+            await typeInto(tester, 'dhcp-reservation-ip', '999.999.999.999');
+            // The dialog validates on focus-loss, so IP's error needs one.
+            await blurFocus(tester);
             await tester.pump(const Duration(milliseconds: 100));
-          },
+          }),
         ),
       },
     ),

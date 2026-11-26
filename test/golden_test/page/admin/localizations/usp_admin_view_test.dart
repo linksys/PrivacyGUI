@@ -132,7 +132,7 @@ void main() {
           setup: (overrides) => overrides.addAll(
             adminOverrides(testAdminState),
           ),
-          steps: (tester) async {
+          steps: withSemantics((tester) async {
             final changeBtn = find.descendant(
               of: find.byType(UspPasswordCard),
               matching: find.byType(AppButton),
@@ -140,23 +140,14 @@ void main() {
             await tester.tap(changeBtn.first);
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 300));
-            // Enter a short, invalid password to trigger rule failures
-            final fields = find.byType(EditableText);
-            final count = fields.evaluate().length;
-            if (count < 2) return;
-            final baseIndex = count - 2;
+            // By identifier, not position (#1870): a field added to the dialog
+            // would otherwise move the text into the wrong box without failing.
             // New Password — fails length, uppercase, number, special char
-            await tester.tap(fields.at(baseIndex));
-            await tester.pump();
-            tester.testTextInput.enterText('aaa');
-            await tester.pump();
+            await typeInto(tester, 'admin-new-password', 'aaa');
             // Confirm Password — mismatched
-            await tester.tap(fields.at(baseIndex + 1));
-            await tester.pump();
-            tester.testTextInput.enterText('bbb');
-            await tester.pump();
+            await typeInto(tester, 'admin-confirm-password', 'bbb');
             await tester.pump(const Duration(milliseconds: 100));
-          },
+          }),
         ),
         'dialog_factory_reset': Interaction(
           setup: (overrides) => overrides.addAll(

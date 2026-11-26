@@ -911,6 +911,8 @@
   "noWifiSignalData": "WiFi 신호 데이터 없음...",
   "nodeDetail": "노드 세부 정보",
   "nodeNotFound": "노드를 찾을 수 없음",
+  "nodeOfflineFor": "{duration} 동안 오프라인",
+  "nodeOfflineDurationUnknown": "오프라인 기간 알 수 없음",
   "none": "없음",
   "notApplicableForEthernetDevices": "이더넷 장치에는 적용되지 않음",
   "notAvailable": "사용할 수 없음",

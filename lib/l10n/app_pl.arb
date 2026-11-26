@@ -911,6 +911,8 @@
   "noWifiSignalData": "Brak danych o sygnale WiFi...",
   "nodeDetail": "Szczegóły węzła",
   "nodeNotFound": "Nie znaleziono węzła",
+  "nodeOfflineFor": "Czas offline: {duration}",
+  "nodeOfflineDurationUnknown": "Czas offline nieznany",
   "none": "Brak",
   "notApplicableForEthernetDevices": "Nie dotyczy urządzeń Ethernet",
   "notAvailable": "Niedostępne",

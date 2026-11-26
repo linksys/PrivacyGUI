@@ -373,6 +373,9 @@ class UspCommandProvider implements IRouterCommandProvider {
               'name': node.displayName,
               'mac': node.deviceId,
               'model': node.model,
+              // An offline extender (#1443) is listed too; without this the
+              // model would read it as a working one with an unknown link.
+              'isOnline': node.isOnline,
               'backhaulLinkType': node.backhaul.linkType,
               'backhaulSignalStrength': node.backhaul.signalStrength,
               'backhaulUplinkRate': node.backhaul.uplinkRate,
@@ -926,7 +929,7 @@ String buildRouterContext(ProviderReader read) {
           .join('\n'));
       for (final ext in extenders) {
         buffer.writeln(
-            '- ${ext.displayName}: ${ext.model}, backhaul=${ext.backhaul.linkType ?? "unknown"}, rssi=${ext.backhaul.signalStrength ?? "N/A"}');
+            '- ${ext.displayName}: ${ext.isOnline ? "online" : "offline"}, ${ext.model}, backhaul=${ext.backhaul.linkType ?? "unknown"}, rssi=${ext.backhaul.signalStrength ?? "N/A"}');
       }
       buffer.writeln();
     }

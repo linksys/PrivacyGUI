@@ -42,19 +42,14 @@ class TopologyNavTarget extends Equatable {
 /// Lives here rather than beside a view because two of them ask: the full-page
 /// view routes a tree row's tap, and the detail panel's own Details button routes
 /// from wherever the panel was opened. One copy is what keeps the two
-/// destinations — and the offline gate below — from drifting apart.
+/// destinations from drifting apart.
 ///
-/// The two node families are deliberately treated differently:
-///
-/// - **Clients** are navigable regardless of status. An offline client opens
-///   its Device Detail page just like it does from the device list and from a
-///   node's "Connected devices" list; the destination already renders the
-///   correct online/offline state, so there is nothing to gate against.
-/// - **Master / slave nodes** keep an offline gate. Their Node Detail page still
-///   hardcodes an active status badge, so opening it for a powered-off node
-///   would show a wrong (green) status. That is tracked by #1465; until it is
-///   fixed, the node arm stays gated. Do NOT "tidy" the leaf arm to match
-///   the node arm — the difference is intentional.
+/// **No node is gated on liveness.** An offline client opens its Device Detail
+/// page, as it does from the device list. An offline extender opens its Node
+/// Detail page (#1443), which renders `node.isOnline` (#1465) and says how long
+/// the node has been offline. Both destinations render the right state, so
+/// there is nothing to gate against. A node is unreachable only when it has no
+/// identifier to route by.
 TopologyNavTarget? topologyNavTargetFor(
   GraphNode node, {
   Map<String, dynamic>? metadata,
@@ -73,8 +68,6 @@ TopologyNavTarget? topologyNavTargetFor(
   final fields = metadata ?? node.metadata;
 
   if (TopologySlots.isMeshNode(node)) {
-    // Offline gate for mesh nodes only — see #1465 (doc above).
-    if (node.status == NodeState.inactive) return null;
     final deviceId = fields?['deviceId'] as String?;
     if (deviceId == null || deviceId.isEmpty) return null;
     return TopologyNavTarget(

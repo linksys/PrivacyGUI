@@ -358,6 +358,30 @@ class DevicesTestData {
         backhaul: createEthernetBackhaul(),
       );
 
+  /// Creates an offline extender, the shape `MeshNetworkBuilder` builds from a
+  /// `Hosts` row firmware marks `X_LINKSYS_IsMeshNode` that is in no
+  /// DataElements agent (#1443): no DataElements ID, no backhaul, no address,
+  /// no clients, no actions.
+  ///
+  /// [model] defaults to `''` because the row's `X_LINKSYS_ModelName` is
+  /// usually empty. [offlineSince] is the row's `ActiveLastChange`; null is a
+  /// row with no usable stamp.
+  static SlaveNode createOfflineSlave({
+    String deviceId = slaveMac1,
+    String? friendlyName,
+    String model = '',
+    DateTime? offlineSince,
+    String? userDeviceName,
+  }) =>
+      SlaveNode(
+        deviceId: deviceId,
+        friendlyName: friendlyName,
+        model: model,
+        backhaul: BackhaulInfo.none,
+        userDeviceName: userDeviceName,
+        offlineSince: offlineSince,
+      );
+
   // ===========================================================================
   // MeshNetwork Factories
   // ===========================================================================
@@ -379,6 +403,10 @@ class DevicesTestData {
   }
 
   /// Creates a mesh network with one master and one WiFi slave.
+  ///
+  /// The default slave is online (it has a DataElements ID), as every slave
+  /// that carries clients is: an offline one is built from its Hosts row
+  /// alone and has none (#1443).
   static MeshNetwork createMeshNetwork({
     MasterNode? master,
     List<ClientDevice>? masterClients,
@@ -396,12 +424,14 @@ class DevicesTestData {
           createMaster(connectedClients: mClients),
       slaves: [
         slave?.copyWith(connectedClients: sClients) ??
-            createWifiSlave(connectedClients: sClients),
+            createWifiSlave(
+                dataElementsId: slaveMac1, connectedClients: sClients),
       ],
     );
   }
 
-  /// Creates a multi-slave mesh network.
+  /// Creates a multi-slave mesh network. Both slaves are online, as in
+  /// [createMeshNetwork].
   static MeshNetwork createMultiSlaveMeshNetwork({
     List<ClientDevice>? masterClients,
     List<ClientDevice>? slave1Clients,
@@ -414,6 +444,7 @@ class DevicesTestData {
       slaves: [
         createWifiSlave(
           deviceId: slaveMac1,
+          dataElementsId: slaveMac1,
           hostName: 'Extender-1',
           connectedClients: slave1Clients ??
               [
@@ -426,6 +457,7 @@ class DevicesTestData {
         ),
         createEthernetSlave(
           deviceId: slaveMac2,
+          dataElementsId: slaveMac2,
           hostName: 'Extender-2',
           connectedClients: slave2Clients ??
               [

@@ -911,6 +911,8 @@
   "noWifiSignalData": "Aucune donnée de signal WiFi...",
   "nodeDetail": "Détails du nœud",
   "nodeNotFound": "Nœud introuvable",
+  "nodeOfflineFor": "Hors ligne depuis {duration}",
+  "nodeOfflineDurationUnknown": "Durée hors ligne inconnue",
   "none": "Aucun",
   "notApplicableForEthernetDevices": "Non applicable aux périphériques Ethernet",
   "notAvailable": "Non disponible",

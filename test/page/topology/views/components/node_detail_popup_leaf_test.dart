@@ -187,10 +187,11 @@ void main() {
 
     testWidgets('is offered for an offline leaf, which has a page to reach',
         (tester) async {
-      // The gate that is deliberately absent. An offline mesh node is unreachable
-      // (#1465), but an offline *device* opens its Device Detail page from the
-      // device list too and that page renders the correct state — so re-testing
-      // liveness here would contradict the resolver that has already said yes.
+      // The gate that is deliberately absent. An offline *device* opens its
+      // Device Detail page from the device list too, and that page renders the
+      // correct state, so re-testing liveness here would contradict the resolver
+      // that has already said yes. Since #1443 the same holds for an offline
+      // extender.
       final node = leafFor(
           DevicesTestData.createOfflineClient(mac: '11:22:33:44:55:04'));
       expect(node.status, NodeState.inactive);
@@ -239,14 +240,16 @@ void main() {
     });
 
     testWidgets('is not drawn for a node with nowhere to go', (tester) async {
-      // An offline mesh node: the #1465 gate makes it unreachable, and a button
-      // that cannot navigate should not be offered.
+      // A mesh node with no deviceId has no page to open, offline or not:
+      // #1443 removed the liveness gate, so a missing identifier is the only
+      // thing left that makes a node unreachable. A button that cannot
+      // navigate should not be offered.
       final node = GraphNode(
         id: 'extender-x',
         name: 'Slave',
         styleSlot: 'secondary',
         status: NodeState.inactive,
-        metadata: const {'isMaster': false, 'deviceId': 'S-1'},
+        metadata: const {'isMaster': false},
       );
       expect(topologyNavTargetFor(node), isNull);
 

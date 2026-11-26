@@ -911,6 +911,8 @@
   "noWifiSignalData": "Δεν υπάρχουν δεδομένα σήματος WiFi...",
   "nodeDetail": "Λεπτομέρειες κόμβου",
   "nodeNotFound": "Ο κόμβος δεν βρέθηκε",
+  "nodeOfflineFor": "Εκτός σύνδεσης για {duration}",
+  "nodeOfflineDurationUnknown": "Άγνωστη διάρκεια εκτός σύνδεσης",
   "none": "Κανένα",
   "notApplicableForEthernetDevices": "Δεν ισχύει για συσκευές Ethernet",
   "notAvailable": "Μη διαθέσιμο",

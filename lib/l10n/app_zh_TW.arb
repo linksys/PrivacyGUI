@@ -911,6 +911,8 @@
   "noWifiSignalData": "沒有 WiFi 訊號資料...",
   "nodeDetail": "節點詳細資料",
   "nodeNotFound": "找不到節點",
+  "nodeOfflineFor": "已離線 {duration}",
+  "nodeOfflineDurationUnknown": "離線時間不明",
   "none": "無",
   "notApplicableForEthernetDevices": "不適用於乙太網路裝置",
   "notAvailable": "無法使用",

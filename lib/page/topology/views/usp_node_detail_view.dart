@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,11 +23,13 @@ import 'package:privacy_gui/page/devices/views/dialogs/device_identity_edit_dial
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
+import 'package:privacy_gui/page/topology/helpers/offline_duration.dart';
 import 'package:privacy_gui/page/topology/providers/node_detail_provider.dart';
 import 'package:privacy_gui/page/topology/views/components/backhaul_signal_indicator.dart';
 import 'package:privacy_gui/page/topology/views/components/node_actions_card.dart';
 import 'package:privacy_gui/page/topology/views/node_action_flow.dart';
 import 'package:privacy_gui/util/date_format_utils.dart';
+import 'package:privacy_gui/util/network_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Node detail page — displays mesh node info and connected devices.
@@ -324,6 +327,22 @@ class UspNodeDetailView extends ConsumerWidget {
                           ),
                         ],
                       ),
+                      // How long an offline extender has been offline (#1443,
+                      // REQ-6a), or "unknown" when its row carries no usable
+                      // stamp — never zero. Under the chips rather than in
+                      // the badge: the badge's label is the state, this is a
+                      // fact about it, and a translated duration would make the
+                      // chip row wrap.
+                      if (node is SlaveNode && !node.isOnline) ...[
+                        AppGap.xs(),
+                        Semantics(
+                          identifier: 'node-detail-offline-duration',
+                          child: AppText.bodySmall(
+                            _offlineForText(context, node),
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -414,6 +433,16 @@ class UspNodeDetailView extends ConsumerWidget {
                   icon: Icons.language,
                   label: loc(context).lanIp,
                   value: lanIp,
+                )
+              // An offline extender carries no address (#1443), and it has no
+              // WAN rows either, so hiding the row would leave this card a
+              // bare title. It reads the placeholder instead, with nothing to
+              // copy, as a client with no IPv4 does on its own page (#1838).
+              else if (node is SlaveNode && !node.isOnline)
+                DetailInfoTile(
+                  icon: Icons.language,
+                  label: loc(context).lanIp,
+                  value: NetworkUtils.noAddress,
                 ),
               // LAN IPv6 — routable addresses first; a link-local address
               // swaps its leading icon for a scope badge (see #1128/#1129).
@@ -503,6 +532,34 @@ class UspNodeDetailView extends ConsumerWidget {
                   ),
                   Icon(Icons.chevron_right,
                       size: 20, color: colorScheme.onSurfaceVariant),
+                ],
+              ),
+            ),
+            AppGap.sm(),
+          ] else if (!node.isOnline) ...[
+            // An offline extender (#1443): nothing on the controller says where
+            // it was attached. The topology draws it under the gateway only
+            // because it has to go somewhere; naming the gateway here would
+            // state a link nothing measured, so the page says "unknown". Not
+            // tappable: there is no node to go to.
+            LayoutBlock(
+              identifier: 'node-detail-parent-unknown',
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                children: [
+                  Icon(Icons.link,
+                      size: 16, color: colorScheme.onSurfaceVariant),
+                  AppGap.sm(),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppText.labelSmall(loc(context).connectedTo,
+                            color: colorScheme.onSurfaceVariant),
+                        AppText.bodyMedium(loc(context).unknown),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -597,7 +654,9 @@ class UspNodeDetailView extends ConsumerWidget {
             // Reachable since #1430's liveness change: a node whose
             // DataElements subtree never arrived now stays online and
             // navigable (see `SlaveNode.livenessKnown`), so this page is
-            // reachable in exactly the state that carries no backhaul.
+            // reachable in exactly the state that carries no backhaul. An
+            // offline extender (#1443) lands here too: it has no backhaul at
+            // all, and the block above already says its parent is unknown.
             LayoutBlock(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
@@ -613,8 +672,10 @@ class UspNodeDetailView extends ConsumerWidget {
                     ],
                   ),
                   AppGap.xs(),
-                  // Deliberately not "no backhaul": the node is connected (it
-                  // is in the topology), only the medium is unreported.
+                  // Deliberately not "no backhaul". An online node is
+                  // connected and only its medium is unreported; an offline
+                  // one had a medium nothing reports any more. Either way the
+                  // honest word is "unknown".
                   AppText.bodyMedium(loc(context).unknown),
                 ],
               ),
@@ -780,4 +841,24 @@ class UspNodeDetailView extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// "Offline for N minutes/hours/days" for an offline extender, or "Offline
+/// duration unknown" when its row carries no usable stamp (#1443 AC1, AC3, AC4).
+///
+/// The unknown case is a sentence of its own rather than `nodeOfflineFor` with
+/// "Unknown" put in, which reads as a broken sentence in most locales.
+///
+/// Counted from `clock.now()`, not `DateTime.now()`, so a test can fix the
+/// clock and a golden reads the same text every day.
+String _offlineForText(BuildContext context, SlaveNode node) {
+  final elapsed = nodeOfflineDuration(node, clock.now());
+  if (elapsed == null) return loc(context).nodeOfflineDurationUnknown;
+  final parts = offlineDurationParts(elapsed);
+  final duration = switch (parts.unit) {
+    OfflineDurationUnit.minutes => loc(context).nMinutes(parts.count),
+    OfflineDurationUnit.hours => loc(context).nHours(parts.count),
+    OfflineDurationUnit.days => loc(context).nDays(parts.count),
+  };
+  return loc(context).nodeOfflineFor(duration);
 }

@@ -18,6 +18,12 @@ import 'package:privacy_gui/page/static_routing/models/static_routing_ui_model.d
 // ---------------------------------------------------------------------------
 // Sample route models
 // ---------------------------------------------------------------------------
+//
+// Interfaces are the two values the service produces, `LAN` and `Internet`
+// (`StaticRouteUIModel.interfaceOptions`); a `WAN` here matched neither, so the
+// edit dialog showed no interface selected (#1870). An `Internet` route's gateway
+// is outside the LAN subnet, as the dialog requires; the 203.0.113.0/24
+// (TEST-NET-3) gateways keep each address's length unchanged.
 
 const route1 = StaticRouteUIModel(
   instancePath: 'Device.Routing.Router.1.IPv4Forwarding.1.',
@@ -25,8 +31,8 @@ const route1 = StaticRouteUIModel(
   name: 'Corporate LAN',
   destIpAddress: '10.0.0.0',
   destSubnetMask: '255.0.0.0',
-  gatewayIpAddress: '192.168.1.1',
-  interfaceName: 'WAN',
+  gatewayIpAddress: '203.0.113.1',
+  interfaceName: 'Internet',
 );
 
 const route2 = StaticRouteUIModel(
@@ -45,8 +51,8 @@ const disabledRoute = StaticRouteUIModel(
   name: 'VPN Subnet',
   destIpAddress: '10.8.0.0',
   destSubnetMask: '255.255.255.0',
-  gatewayIpAddress: '192.168.1.100',
-  interfaceName: 'WAN',
+  gatewayIpAddress: '203.0.113.100',
+  interfaceName: 'Internet',
 );
 
 // ---------------------------------------------------------------------------
@@ -132,8 +138,8 @@ const _gateRoutes = [
     name: '',
     destIpAddress: '198.51.100.128',
     destSubnetMask: '255.255.255.255',
-    gatewayIpAddress: '192.168.1.254',
-    interfaceName: 'WAN',
+    gatewayIpAddress: '203.0.113.254',
+    interfaceName: 'Internet',
   ),
 ];
 
