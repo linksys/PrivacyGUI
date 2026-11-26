@@ -26,7 +26,7 @@ class SendSysinfoEmail extends Equatable {
   factory SendSysinfoEmail.fromJson(Map<String, dynamic> map) {
     return SendSysinfoEmail(
         addressList: List<String>.from(
-      (map['addressList'] as List<String>),
+      map['addressList'] as List,
     ));
   }
 
