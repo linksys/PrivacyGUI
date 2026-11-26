@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
 import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 import '../../../core/jnap/actions/better_action.dart';
 import '../../../core/jnap/models/health_check_result.dart';
@@ -50,6 +51,8 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
   Future<void> runHealthCheck(Module module, {int? serverId}) async {
     if (module == Module.speedtest) {
       final run = ++_run;
+      // The run belongs to this login: a logout ends its status reads (#1904).
+      final logoutGeneration = ref.read(authProvider.notifier).logoutGeneration;
       state = HealthCheckState.init().copyWith(
         servers: state.servers, // Preserve servers
         selectedServer: state.selectedServer,
@@ -88,6 +91,7 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
               firstDelayInMilliSec: 0,
               retryDelayInMilliSec: 100,
               maxRetry: -1,
+              logoutGeneration: logoutGeneration,
               condition: (result) {
                 if (result is JNAPError) {
                   statusError = result;
@@ -201,6 +205,15 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
             );
           });
         }
+      }, onError: (Object error) {
+        // A logout ended the run. Nothing follows it any more, so the page
+        // must not open on a speed test that never finishes.
+        if (error is LoggedOutException) {
+          logger.d('[SpeedTest] Logged out, the run is dropped');
+          resetState();
+          return;
+        }
+        logger.e('[SpeedTest] Status reads failed', error: error);
       });
     }
   }

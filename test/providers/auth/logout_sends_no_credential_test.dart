@@ -13,7 +13,8 @@
 // (`AuthNotifier.logoutGeneration`), so a logout ends it before its next
 // request.
 //
-// #1904 P2 adds a case here for each of the other scheduled owners.
+// #1904 P2 ties the other scheduled owners to the login too, each with a case
+// below that failed before its owner was tied.
 
 import 'dart:convert';
 import 'dart:io';
@@ -35,6 +36,7 @@ import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/jnap/spec/jnap_spec.dart';
+import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -515,6 +517,43 @@ void main() {
     await checked;
 
     expect(router.received.sublist(mark), isEmpty);
+  });
+
+  // ---- #1904 P2: the other owners of a scheduled loop ----
+
+  netTest('a speed test started before the logout sends nothing after it',
+      (tester) async {
+    // Its status read repeats every 100 ms until the test reports an end
+    // (maxRetry: -1). A speed test left running at a logout read on with the
+    // default password for as long as the app stayed open.
+    await logIn();
+    router
+      ..answer(JNAPAction.runHealthCheck, const {'resultID': 7})
+      ..answer(JNAPAction.getHealthCheckStatus, const {
+        'healthCheckModuleCurrentlyRunning': 'SpeedTest',
+        'speedTestResult': {
+          'resultID': 7,
+          'exitCode': 'Unavailable',
+          'serverID': '3967',
+          'latency': 0,
+          'downloadBandwidth': 0,
+          'uploadBandwidth': 0,
+        },
+      });
+    final health = container.read(healthCheckProvider.notifier);
+    health.runHealthCheck(Module.speedtest);
+    await tester.pump(const Duration(seconds: 1));
+    expect(
+        router.received.where(
+            (r) => r.action == JNAPAction.getHealthCheckStatus.actionValue),
+        isNotEmpty,
+        reason: 'the speed test is running');
+
+    final after = await logOut(tester);
+
+    expect(after.where((r) => r.carriesCredential), isEmpty);
+    // Nothing follows the run any more, so the page must not open on it.
+    expect(container.read(healthCheckProvider).status, isNot('RUNNING'));
   });
 
   netTest(
