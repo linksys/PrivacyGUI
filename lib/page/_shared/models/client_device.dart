@@ -47,6 +47,15 @@ class ClientInterfaceInfo with EquatableMixin, DiagnosticNamed {
   /// row.
   final String? hostInstancePath;
 
+  /// Bytes this interface's Hosts row received through the router, from the
+  /// device's side (`WANStats.BytesReceived`, #1927). Null when the row has
+  /// no counter.
+  final int? bytesReceived;
+
+  /// Bytes this interface's Hosts row sent through the router
+  /// (`WANStats.BytesSent`, #1927). Null when the row has no counter.
+  final int? bytesSent;
+
   const ClientInterfaceInfo({
     required this.mac,
     required this.ip,
@@ -55,6 +64,8 @@ class ClientInterfaceInfo with EquatableMixin, DiagnosticNamed {
     this.layer1Interface = '',
     this.wifi,
     this.hostInstancePath,
+    this.bytesReceived,
+    this.bytesSent,
   });
 
   /// Whether this is a WiFi interface.
@@ -78,6 +89,8 @@ class ClientInterfaceInfo with EquatableMixin, DiagnosticNamed {
         layer1Interface,
         wifi,
         hostInstancePath,
+        bytesReceived,
+        bytesSent,
       ];
 
   @override
@@ -92,6 +105,8 @@ class ClientInterfaceInfo with EquatableMixin, DiagnosticNamed {
         'layer1Interface': layer1Interface,
         'wifi': wifi,
         'hostInstancePath': hostInstancePath,
+        'bytesReceived': bytesReceived,
+        'bytesSent': bytesSent,
       };
 }
 
@@ -220,6 +235,17 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
           if (interface.hostInstancePath != null) interface.hostInstancePath!,
       ];
 
+  // ─── Data used (#1927) ───
+  /// Bytes the primary interface's Hosts row received through the router,
+  /// from the device's side (`WANStats.BytesReceived`). Null when the row has
+  /// no counter. What the page shows is [totalBytesReceived].
+  final int? bytesReceived;
+
+  /// Bytes the primary interface's Hosts row sent through the router
+  /// (`WANStats.BytesSent`). Null when the row has no counter. What the page
+  /// shows is [totalBytesSent].
+  final int? bytesSent;
+
   // ─── Multi-interface ───
   /// Additional network interfaces for this device.
   final List<ClientInterfaceInfo> additionalInterfaces;
@@ -246,6 +272,8 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
     this.userDeviceName,
     this.hostsDeviceId,
     this.hostInstancePath,
+    this.bytesReceived,
+    this.bytesSent,
     this.additionalInterfaces = const [],
   }) : _parentNodeName = parentNodeName;
 
@@ -313,6 +341,30 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
   /// Total throughput in kbps (uplink + downlink).
   int get totalThroughput => (downlinkRate ?? 0) + (uplinkRate ?? 0);
 
+  /// Bytes this device received through the router, over every interface:
+  /// FL-WRT 2.0 counts per Hosts row, one row per MAC (#1927). Null when no
+  /// row has a counter.
+  int? get totalBytesReceived => _sumOrNull([
+        bytesReceived,
+        for (final interface in additionalInterfaces) interface.bytesReceived,
+      ]);
+
+  /// Bytes this device sent through the router, over every interface. Null
+  /// when no row has a counter.
+  int? get totalBytesSent => _sumOrNull([
+        bytesSent,
+        for (final interface in additionalInterfaces) interface.bytesSent,
+      ]);
+
+  /// Whether the router has a counter for this device (#1927). A device it
+  /// has none for shows no Download / Upload rows, rather than reading 0 B.
+  bool get hasDataUsed => totalBytesReceived != null || totalBytesSent != null;
+
+  static int? _sumOrNull(List<int?> counters) {
+    final present = counters.whereType<int>();
+    return present.isEmpty ? null : present.reduce((a, b) => a + b);
+  }
+
   /// Whether to display signal information (WiFi + online + has signal).
   bool get hasSignalDisplay => isWifi && isActive && signalStrength != null;
 
@@ -358,6 +410,8 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
     String? userDeviceName,
     String? hostsDeviceId,
     String? hostInstancePath,
+    int? bytesReceived,
+    int? bytesSent,
     List<ClientInterfaceInfo>? additionalInterfaces,
   }) {
     return ClientDevice(
@@ -385,6 +439,8 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
       userDeviceName: userDeviceName ?? this.userDeviceName,
       hostsDeviceId: hostsDeviceId ?? this.hostsDeviceId,
       hostInstancePath: hostInstancePath ?? this.hostInstancePath,
+      bytesReceived: bytesReceived ?? this.bytesReceived,
+      bytesSent: bytesSent ?? this.bytesSent,
       additionalInterfaces: additionalInterfaces ?? this.additionalInterfaces,
     );
   }
@@ -412,6 +468,8 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
         userDeviceName,
         hostsDeviceId,
         hostInstancePath,
+        bytesReceived,
+        bytesSent,
         additionalInterfaces,
       ];
 
@@ -441,6 +499,8 @@ final class ClientDevice extends NetworkEntity with DiagnosticNamed {
         'userDeviceName': userDeviceName,
         'hostsDeviceId': hostsDeviceId,
         'hostInstancePath': hostInstancePath,
+        'bytesReceived': bytesReceived,
+        'bytesSent': bytesSent,
         'additionalInterfaces': additionalInterfaces,
       };
 }

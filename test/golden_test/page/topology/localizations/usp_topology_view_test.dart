@@ -25,6 +25,14 @@ void main() {
                 systemInfoData: testSystemInfoData,
               ),
             ),
+        // An offline extender beside an online one (#1443), drawn under the
+        // gateway because nothing reports where it was attached.
+        'mesh_offline_extender': (overrides) => overrides.addAll(
+              topologyViewOverrides(
+                devicesData: meshNetworkWithOfflineExtenderDevicesData,
+                systemInfoData: testSystemInfoData,
+              ),
+            ),
       },
     ),
   );

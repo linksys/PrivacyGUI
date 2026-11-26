@@ -4,6 +4,28 @@
 
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
+/// Nested instance from parent multi-instance table
+class SystemInfoTemperatureSensor {
+  final String instancePath;
+  final String? name;
+  final int? value;
+
+  const SystemInfoTemperatureSensor({
+    required this.instancePath,
+    this.name,
+    this.value,
+  });
+
+  @override
+  String toString() {
+    return 'SystemInfoTemperatureSensor('
+        'instancePath: $instancePath, '
+        'name: $name, '
+        'value: $value'
+        ')';
+  }
+}
+
 /// System and device identification with active firmware reference
 class SystemInfo {
   final String manufacturer;
@@ -23,6 +45,7 @@ class SystemInfo {
   final int? firmwareImageNumberOfEntries;
   final String activeFirmwareImage;
   final String bootFirmwareImage;
+  final List<SystemInfoTemperatureSensor> temperatureSensors;
 
   const SystemInfo({
     required this.manufacturer,
@@ -42,6 +65,7 @@ class SystemInfo {
     this.firmwareImageNumberOfEntries,
     required this.activeFirmwareImage,
     required this.bootFirmwareImage,
+    required this.temperatureSensors,
   });
 
   static const _paths = [
@@ -62,6 +86,8 @@ class SystemInfo {
     'Device.DeviceInfo.FirmwareImageNumberOfEntries',
     'Device.DeviceInfo.ActiveFirmwareImage',
     'Device.DeviceInfo.BootFirmwareImage',
+    'Device.DeviceInfo.TemperatureStatus.TemperatureSensor.*.Name',
+    'Device.DeviceInfo.TemperatureStatus.TemperatureSensor.*.Value',
   ];
 
   /// Fetch all parameters via USP Get message
@@ -107,6 +133,31 @@ class SystemInfo {
     }
     if (missing.isNotEmpty) {
       throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
+    }
+    final childBase_0 =
+        'Device.DeviceInfo.TemperatureStatus.TemperatureSensor.';
+    final childIds_0 = <String>{};
+    for (final key in response.keys) {
+      if (key.startsWith(childBase_0)) {
+        final rest = key.substring(childBase_0.length);
+        final dot = rest.indexOf('.');
+        if (dot > 0) childIds_0.add(rest.substring(0, dot));
+      }
+    }
+    final childSorted_0 = childIds_0.toList()
+      ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+    final temperatureSensors = <SystemInfoTemperatureSensor>[];
+    for (final cid_0 in childSorted_0) {
+      final cp_0 = '$childBase_0$cid_0.';
+      temperatureSensors.add(SystemInfoTemperatureSensor(
+        instancePath: cp_0,
+        name: response.containsKey('${cp_0}Name')
+            ? response['${cp_0}Name'] as String
+            : null,
+        value: response.containsKey('${cp_0}Value')
+            ? int.tryParse(response['${cp_0}Value']?.toString() ?? '')
+            : null,
+      ));
     }
     return SystemInfo(
       manufacturer:
@@ -166,6 +217,7 @@ class SystemInfo {
           (response['Device.DeviceInfo.ActiveFirmwareImage'] ?? '') as String,
       bootFirmwareImage:
           (response['Device.DeviceInfo.BootFirmwareImage'] ?? '') as String,
+      temperatureSensors: temperatureSensors,
     );
   }
 
@@ -222,7 +274,8 @@ class SystemInfo {
         'cpuUsage: $cpuUsage, '
         'firmwareImageNumberOfEntries: $firmwareImageNumberOfEntries, '
         'activeFirmwareImage: $activeFirmwareImage, '
-        'bootFirmwareImage: $bootFirmwareImage'
+        'bootFirmwareImage: $bootFirmwareImage, '
+        'temperatureSensors: $temperatureSensors'
         ')';
   }
 }

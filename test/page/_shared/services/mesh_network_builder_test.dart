@@ -42,6 +42,10 @@ void main() {
     String? linksysDetectedName,
     String? linksysUserDeviceType,
     String? linksysUserDeviceLocation,
+    int? wanStatsBytesSent,
+    int? wanStatsBytesReceived,
+    bool? linksysIsMeshNode,
+    DateTime? activeLastChange,
   }) {
     return ConnectedDevice(
       instancePath: instancePath,
@@ -69,6 +73,10 @@ void main() {
       linksysDetectedName: linksysDetectedName,
       linksysUserDeviceType: linksysUserDeviceType,
       linksysUserDeviceLocation: linksysUserDeviceLocation,
+      wanStatsBytesSent: wanStatsBytesSent,
+      wanStatsBytesReceived: wanStatsBytesReceived,
+      linksysIsMeshNode: linksysIsMeshNode,
+      activeLastChange: activeLastChange,
     );
   }
 
@@ -1941,19 +1949,14 @@ void main() {
       });
     });
 
-    // #1430 — node liveness, under #1688's rule that the nodes come from
+    // #1430 — node liveness, under #1688's rule that the online nodes come from
     // DataElements.
     //
-    // Before #1688 the slaves were the Hosts rows tagged `DeviceRole=slave`, so
-    // a powered-off extender was an *offline* node: its Hosts row lingered
-    // while it had already left `DataElements.Network.Device.`, and an
-    // unmatched row was the offline shape. FL-WRT 2.0 has no `DeviceRole`, so
-    // that lingering row is indistinguishable from a client and the offline
-    // shape cannot be built from this input. The decision recorded on #1688 is
-    // to build every node from DataElements now and add offline recovery (the
-    // app remembering which MACs were nodes) once a multi-node bench has
-    // measured how long an agent's row lingers on 2.0. These tests pin what
-    // holds today; the offline case is the next one to add, not a regression.
+    // FL-WRT 2.0 has no `DeviceRole` on Hosts, so a row says nothing about
+    // being a node except through the firmware's node marker,
+    // `X_LINKSYS_IsMeshNode`. An offline node is built from that marker (#1443,
+    // the "an offline extender" group). These tests pin the online side, and a
+    // row without the marker staying out of the nodes.
     group('node liveness (#1430, under #1688)', () {
       test('every agent DataElements reports is built online', () {
         final result = MeshNetworkBuilder.build(
@@ -1982,9 +1985,9 @@ void main() {
         expect(result.master.isOnline, isTrue);
       });
 
-      // AC5b, still true: liveness is DataElements membership, never the Hosts
-      // row's `Active`. A node row reads `Active=0` whether the node is up or
-      // not (#1430's bench measurement), so isActive:false is the point here.
+      // AC5b: liveness is DataElements membership, never the Hosts row's
+      // `Active`. #1430's bench measured node rows reading `Active=0` while the
+      // node was up, so isActive:false is the case to pin.
       test('a node whose Hosts row reads Active=0 is still online (AC5b)', () {
         final result = MeshNetworkBuilder.build(
           connectedDevices: ConnectedDevices(items: [
@@ -2011,15 +2014,14 @@ void main() {
         expect(result.allClients, isEmpty);
       });
 
-      // The single-extender house with its extender powered off: DataElements
-      // lists only the controller, and the extender's lingering Hosts row has
-      // nothing to mark it as a node. Today it is not built as a node at all —
-      // the gap the class doc of MeshNetworkBuilder names. The assertion is on
-      // the slaves only: the lingering row is not active, so it is not listed
-      // as a client either.
+      // The single-extender house with its extender powered off, on firmware
+      // without the node marker: DataElements lists only the controller, and
+      // the extender's lingering Hosts row reads `X_LINKSYS_IsMeshNode` null,
+      // so nothing marks it as a node and it is not built as one. The row is
+      // not active, so it is not listed as a client either.
       test(
-          'an agent DataElements no longer reports is not built (offline '
-          'recovery deferred, #1688)', () {
+          'an agent DataElements no longer reports, with no node marker, is '
+          'not built', () {
         final result = MeshNetworkBuilder.build(
           connectedDevices: ConnectedDevices(items: [
             buildConnectedDevice(
@@ -2038,6 +2040,7 @@ void main() {
         );
 
         expect(result.slaves, isEmpty);
+        expect(result.allClients, isEmpty);
       });
     });
 
@@ -2374,6 +2377,68 @@ void main() {
       });
     });
 
+    // Data used (#1927): FL-WRT 2.0 counts per Hosts row in WANStats, the
+    // bytes the row's MAC exchanged through the router. Counters from the
+    // 2026-11-24 14:34 bench read (2.0.4.26112201): the wired Mac.
+    group('data used from WANStats (#1927)', () {
+      test('carries a row\'s counters onto the client', () {
+        final client = MeshNetworkBuilder.build(
+          connectedDevices: ConnectedDevices(items: [
+            buildConnectedDevice(
+              macAddress: '80:69:1a:13:43:fc',
+              hostName: 'TW-AUSTINC-MAC',
+              interfaceType: 'Ethernet',
+              wanStatsBytesReceived: 114924318,
+              wanStatsBytesSent: 9985679,
+            ),
+          ]),
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: MeshTopologyInfo.empty,
+          gatewayName: 'Router',
+        ).allClients.single;
+
+        expect(client.totalBytesReceived, 114924318);
+        expect(client.totalBytesSent, 9985679);
+      });
+
+      // One device on a cable and on Wi-Fi is two rows, each with its own
+      // counters, merged by the name devidentd detected (#1719).
+      test('a merged device adds up the counters of every row', () {
+        final client = MeshNetworkBuilder.build(
+          connectedDevices: ConnectedDevices(items: [
+            buildConnectedDevice(
+              macAddress: '80:69:1a:13:43:fc',
+              instancePath: 'Device.Hosts.Host.1.',
+              hostName: 'TW-AUSTINC-MAC',
+              interfaceType: 'Ethernet',
+              linksysDetectedName: 'TW-AUSTINC-MAC',
+              wanStatsBytesReceived: 114924318,
+              wanStatsBytesSent: 9985679,
+            ),
+            buildConnectedDevice(
+              macAddress: 'aa:c8:bf:74:39:f6',
+              instancePath: 'Device.Hosts.Host.2.',
+              hostName: 'Mac',
+              interface_: 'Device.WiFi.Radio.1',
+              interfaceType: 'Wi-Fi',
+              linksysDetectedName: 'TW-AUSTINC-MAC',
+              wanStatsBytesReceived: 2000000,
+              wanStatsBytesSent: 300000,
+            ),
+          ]),
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: MeshTopologyInfo.empty,
+          gatewayName: 'Router',
+        ).allClients.single;
+
+        expect(client.interfaceCount, 2);
+        expect(client.totalBytesReceived, 116924318);
+        expect(client.totalBytesSent, 10285679);
+      });
+    });
+
     // The router's own name (#1691). The controller has no Hosts row, so its
     // name is on DeviceInfo, and only X_LINKSYS_UserDeviceLocation is written.
     // Measured on 2.0.3.26101472: writing the location leaves FriendlyName
@@ -2525,6 +2590,403 @@ void main() {
       ]);
 
       expect(result.slaves.single.ipAddress, '192.168.1.189');
+    });
+  });
+
+  // #1443. On FL-WRT 2.0 a powered-off agent leaves DataElements about 130 s
+  // after its last contact, while its Hosts row stays. Firmware marks that row
+  // `X_LINKSYS_IsMeshNode` (linksys/feed_usp#89), so a marked row no
+  // DataElements node matches is built as an offline extender, active or not.
+  // The values are the 2026-11-23 bench (controller 2.0.4.26112201, one Wi-Fi
+  // agent).
+  group('MeshNetworkBuilder.build — an offline extender (#1443)', () {
+    const controllerMac = 'AA:BB:CC:DD:EE:01';
+    const agentMac = 'aa:bb:cc:dd:ee:08';
+    final wentOffline = DateTime.utc(2026, 11, 23, 9, 10, 8);
+
+    MeshNetwork buildWith(
+      List<ConnectedDevice> rows, {
+      List<NodeEntity>? nodes,
+      Map<String, String> clientToNodeMap = const {},
+    }) =>
+        MeshNetworkBuilder.build(
+          connectedDevices: ConnectedDevices(items: rows),
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: MeshTopologyInfo(
+            nodes: nodes ?? [buildMasterNode(deviceId: controllerMac)],
+            clientToNodeMap: clientToNodeMap,
+          ),
+          gatewayName: 'Router',
+        );
+
+    ConnectedDevice agentRow({
+      bool? isMeshNode = true,
+      bool isActive = false,
+      DateTime? activeLastChange,
+      String interface_ = '',
+      String instancePath = 'Device.Hosts.Host.4.',
+      String? friendlyName = 'Linksys67890',
+      String? userDeviceLocation,
+    }) =>
+        buildConnectedDevice(
+          macAddress: agentMac,
+          instancePath: instancePath,
+          interface_: interface_,
+          isActive: isActive,
+          linksysIsMeshNode: isMeshNode,
+          activeLastChange: activeLastChange ?? wentOffline,
+          linksysFriendlyName: friendlyName,
+          linksysUserDeviceLocation: userDeviceLocation,
+        );
+
+    test('a marked row no node matches is an offline extender', () {
+      final result = buildWith([agentRow()]);
+
+      expect(result.slaves, hasLength(1));
+      final slave = result.slaves.single;
+      expect(slave.isOnline, isFalse);
+      expect(slave.dataElementsId, isNull);
+      // Upper-cased, as MeshTopologyBuilder gives every DataElements ID: one
+      // node keeps one ID as it goes offline and comes back.
+      expect(slave.deviceId, agentMac.toUpperCase());
+      expect(slave.offlineSince, wentOffline);
+      expect(slave.backhaul, BackhaulInfo.none);
+      expect(slave.connectedClients, isEmpty);
+      expect(slave.actions, isEmpty,
+          reason: 'node commands go through DataElements, which no longer '
+              'lists the node');
+      expect(result.allClients, isEmpty,
+          reason: 'the row is the node\'s, not also a client');
+    });
+
+    test('takes the name an online agent shows, but offers no rename', () {
+      final slave = buildWith([
+        agentRow(friendlyName: 'Office', userDeviceLocation: 'Office'),
+      ]).slaves.single;
+
+      expect(slave.displayName, 'Office');
+      expect(slave.userDeviceName, 'Office');
+      // A rename writes to the row index read earlier, and rows renumber
+      // while a node rejoins (#1840), so an offline node has no row to write.
+      expect(slave.hostInstancePath, isNull);
+    });
+
+    test('carries no address, though the row may still hold the last one', () {
+      final slave = buildWith([
+        buildConnectedDevice(
+          macAddress: agentMac,
+          ipAddress: '192.168.1.189',
+          isActive: false,
+          linksysIsMeshNode: true,
+          activeLastChange: wentOffline,
+        ),
+      ]).slaves.single;
+
+      expect(slave.ipAddress, isNull);
+      expect(slave.ipv6Addresses, isEmpty);
+    });
+
+    // A marked row that answers on the LAN is a node on its way back: a reset
+    // node wired to the controller joins by itself, and a restarting node is
+    // on the LAN before DataElements lists it. It reads offline, not as a
+    // client. Its `ActiveLastChange` is when it came back, not when it left,
+    // so it carries no stamp and the duration reads unknown.
+    test('a marked row that is active is an offline extender with no stamp',
+        () {
+      final cameBack = DateTime.utc(2026, 11, 23, 9, 25, 37);
+      final result = buildWith([
+        agentRow(
+          isActive: true,
+          activeLastChange: cameBack,
+          interface_: 'Device.Ethernet.Interface.2',
+        ),
+      ]);
+
+      expect(result.slaves, hasLength(1));
+      expect(result.slaves.single.isOnline, isFalse);
+      expect(result.slaves.single.offlineSince, isNull,
+          reason: 'the stamp is when it came back onto the LAN');
+      expect(result.allClients, isEmpty, reason: 'not also listed as a client');
+    });
+
+    // The clean controller reboot measured on 2026-11-23: before the agent was
+    // back in DataElements its row read Active 1, then 0, then 1. Each read is
+    // the same offline extender, so the node no longer flips between a client
+    // and an offline node while it comes back.
+    test('stays one offline extender while Active flips during a rejoin', () {
+      for (final active in [true, false, true]) {
+        final result = buildWith([agentRow(isActive: active)]);
+
+        expect(result.slaves, hasLength(1), reason: 'Active=$active');
+        expect(result.slaves.single.isOnline, isFalse,
+            reason: 'Active=$active');
+        expect(result.allClients, isEmpty, reason: 'Active=$active');
+      }
+    });
+
+    test('an unmarked or null-marked inactive row builds no node', () {
+      for (final mark in <bool?>[false, null]) {
+        final result = buildWith([
+          agentRow(isMeshNode: mark, interface_: 'Device.WiFi.Radio.1'),
+        ]);
+
+        expect(result.slaves, isEmpty, reason: 'mark=$mark');
+        expect(result.allClients.map((c) => c.mac), [agentMac.toUpperCase()],
+            reason: 'mark=$mark: an offline client, as before #1443');
+      }
+    });
+
+    test('a marked row DataElements lists is the online node, built once', () {
+      final result = buildWith(
+        [agentRow()],
+        nodes: [
+          buildMasterNode(deviceId: controllerMac),
+          buildSlaveNode(deviceId: 'AA:BB:CC:DD:EE:08'),
+        ],
+      );
+
+      expect(result.slaves, hasLength(1));
+      expect(result.slaves.single.isOnline, isTrue);
+      expect(result.slaves.single.offlineSince, isNull);
+    });
+
+    test('builds no offline node when DataElements did not answer', () {
+      // No nodes at all: the first build before the mesh read returns, or a
+      // first read that failed. "No node matches" is then no verdict
+      // (livenessKnown), so the row is read as it was before #1443.
+      final result = buildWith(
+        [agentRow(interface_: 'Device.WiFi.Radio.1')],
+        nodes: const [],
+      );
+
+      expect(result.slaves, isEmpty);
+      expect(result.allClients.single.mac, agentMac.toUpperCase(),
+          reason: 'the row stays a client');
+    });
+
+    test('an online agent keeps its clients beside an offline extender', () {
+      const onlineAgentMac = 'AA:BB:CC:DD:EE:02';
+      const clientMac = '11:22:33:44:55:01';
+      final result = buildWith(
+        [
+          agentRow(),
+          buildConnectedDevice(macAddress: onlineAgentMac, hostName: 'Den'),
+          buildConnectedDevice(
+            macAddress: clientMac,
+            hostName: 'Phone',
+            interface_: 'Device.WiFi.Radio.1',
+            isActive: true,
+          ),
+        ],
+        nodes: [
+          buildMasterNode(deviceId: controllerMac),
+          buildSlaveNode(deviceId: onlineAgentMac),
+        ],
+        clientToNodeMap: const {clientMac: onlineAgentMac},
+      );
+
+      final online = result.slaves.singleWhere((s) => s.isOnline);
+      final offline = result.slaves.singleWhere((s) => !s.isOnline);
+      expect(online.deviceId, onlineAgentMac);
+      expect(online.connectedClients.single.hostName, 'Phone');
+      expect(offline.deviceId, agentMac.toUpperCase());
+      expect(offline.connectedClients, isEmpty);
+      expect(result.allClients, hasLength(1));
+      expect(result.unassignedClients, isEmpty);
+    });
+
+    // DataElements writes `clientToNodeMap` from the nodes it lists, so this
+    // needs it to disagree with itself. If it does, the client must not vanish:
+    // the offline node holds no clients, so it is an orphan.
+    test('a client naming an offline extender as parent is unattributed', () {
+      const clientMac = '11:22:33:44:55:01';
+      final result = buildWith(
+        [
+          agentRow(),
+          buildConnectedDevice(
+            macAddress: clientMac,
+            hostName: 'Phone',
+            interface_: 'Device.WiFi.Radio.1',
+            isActive: true,
+          ),
+        ],
+        clientToNodeMap: {clientMac: agentMac.toUpperCase()},
+      );
+
+      expect(result.slaves.single.connectedClients, isEmpty);
+      expect(result.allClients.single.hostName, 'Phone');
+      expect(result.unassignedClients.single.isUnattributed, isTrue);
+    });
+
+    test('a MAC listed twice builds one offline node, the first row winning',
+        () {
+      final result = buildWith([
+        agentRow(friendlyName: 'First'),
+        agentRow(friendlyName: 'Second', instancePath: 'Device.Hosts.Host.5.'),
+      ]);
+
+      expect(result.slaves, hasLength(1));
+      expect(result.slaves.single.displayName, 'First');
+    });
+
+    test('a MAC spelled two ways is still one offline node', () {
+      final result = buildWith([
+        agentRow(),
+        buildConnectedDevice(
+          macAddress: 'AA-BB-CC-DD-EE-08',
+          instancePath: 'Device.Hosts.Host.5.',
+          isActive: false,
+          linksysIsMeshNode: true,
+          activeLastChange: wentOffline,
+        ),
+      ]);
+
+      expect(result.slaves, hasLength(1));
+    });
+
+    test('an active and an inactive row of one MAC build one node', () {
+      // The first row decides, as for any MAC listed twice: here the active
+      // one, so the node is offline with no stamp to count from.
+      final result = buildWith([
+        agentRow(isActive: true),
+        agentRow(instancePath: 'Device.Hosts.Host.5.'),
+      ]);
+
+      expect(result.slaves, hasLength(1));
+      expect(result.slaves.single.isOnline, isFalse);
+      expect(result.slaves.single.offlineSince, isNull);
+      expect(result.allClients, isEmpty);
+    });
+
+    test('a zero date, the epoch and an absent stamp are no stamp (AC3)', () {
+      for (final stamp in [
+        DateTime.utc(1, 1, 1),
+        DateTime.utc(1970, 1, 1),
+      ]) {
+        final slave =
+            buildWith([agentRow(activeLastChange: stamp)]).slaves.single;
+        expect(slave.offlineSince, isNull, reason: 'stamp=$stamp');
+      }
+      final noStamp = buildWith([
+        buildConnectedDevice(
+          macAddress: agentMac,
+          isActive: false,
+          linksysIsMeshNode: true,
+        ),
+      ]).slaves.single;
+      expect(noStamp.offlineSince, isNull);
+    });
+  });
+
+  // #1839. While an agent rejoins, its backhaul station has a Hosts row for
+  // about 50 s, shaped as on the bench: active, IPAddress 0.0.0.0, no host
+  // name, on Wi-Fi.
+  group('MeshNetworkBuilder.build — a backhaul station (#1839)', () {
+    const controllerMac = 'AA:BB:CC:DD:EE:01';
+    const agentMac = 'aa:bb:cc:dd:ee:08';
+    const backhaulStaMac = 'aa:bb:cc:dd:ee:0d';
+    final backhaulStations = {backhaulStaMac.toUpperCase()};
+
+    ConnectedDevice backhaulStaRow({String mac = backhaulStaMac}) =>
+        buildConnectedDevice(
+          macAddress: mac,
+          instancePath: 'Device.Hosts.Host.4.',
+          ipAddress: '0.0.0.0',
+          interface_: 'Device.WiFi.Radio.1',
+          interfaceType: 'Wi-Fi',
+          isActive: true,
+        );
+
+    MeshNetwork buildWith(
+      List<ConnectedDevice> rows, {
+      Set<String> backhaulStations = const {},
+    }) =>
+        MeshNetworkBuilder.build(
+          connectedDevices: ConnectedDevices(items: rows),
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: MeshTopologyInfo(
+            nodes: [buildMasterNode(deviceId: controllerMac)],
+            clientToNodeMap: const {},
+            backhaulStations: backhaulStations,
+          ),
+          gatewayName: 'Router',
+        );
+
+    test('its row is neither a node nor a client', () {
+      final result =
+          buildWith([backhaulStaRow()], backhaulStations: backhaulStations);
+
+      expect(result.slaves, isEmpty);
+      expect(result.allClients, isEmpty);
+    });
+
+    test('during a rejoin only the offline extender is listed', () {
+      final result = buildWith([
+        buildConnectedDevice(
+          macAddress: agentMac,
+          instancePath: 'Device.Hosts.Host.5.',
+          isActive: false,
+          linksysIsMeshNode: true,
+          activeLastChange: DateTime.utc(2026, 11, 17, 6, 23),
+        ),
+        backhaulStaRow(),
+      ], backhaulStations: backhaulStations);
+
+      expect(result.slaves.single.isOnline, isFalse);
+      expect(result.allClients, isEmpty);
+    });
+
+    // The backhaul test comes after the node tests, so a MAC that is a
+    // node's and also in the set stays that node's row.
+    test("a node's own row is kept even when its MAC is in the set", () {
+      const onlineAgentMac = 'AA:BB:CC:DD:EE:02';
+      final result = MeshNetworkBuilder.build(
+        connectedDevices: ConnectedDevices(items: [
+          buildConnectedDevice(
+              macAddress: onlineAgentMac, ipAddress: '192.168.1.189'),
+          buildConnectedDevice(
+            macAddress: agentMac,
+            instancePath: 'Device.Hosts.Host.5.',
+            isActive: false,
+            linksysIsMeshNode: true,
+          ),
+        ]),
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        meshTopology: MeshTopologyInfo(
+          nodes: [
+            buildMasterNode(deviceId: controllerMac),
+            buildSlaveNode(deviceId: onlineAgentMac),
+          ],
+          clientToNodeMap: const {},
+          backhaulStations: {onlineAgentMac, agentMac.toUpperCase()},
+        ),
+        gatewayName: 'Router',
+      );
+
+      expect(result.slaves.singleWhere((s) => s.isOnline).ipAddress,
+          '192.168.1.189',
+          reason: 'the online node keeps its Hosts row');
+      expect(result.slaves.where((s) => !s.isOnline), hasLength(1),
+          reason: 'the offline node is still built');
+    });
+
+    test('a MAC spelled with dashes is still dropped', () {
+      final result = buildWith([backhaulStaRow(mac: 'aa-bb-cc-dd-ee-0d')],
+          backhaulStations: backhaulStations);
+
+      expect(result.allClients, isEmpty);
+    });
+
+    // The first seconds of the window, before DataElements lists the station
+    // under the backhaul BSS: nothing says it is a node's yet, so it is a
+    // client, as before. A limit recorded on #1839.
+    test('a row no backhaul station matches is still a client', () {
+      final result = buildWith([backhaulStaRow()]);
+
+      expect(result.allClients.single.mac, backhaulStaMac.toUpperCase());
     });
   });
 }

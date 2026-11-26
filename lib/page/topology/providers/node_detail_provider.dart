@@ -17,10 +17,14 @@ final uspNodeDetailProvider =
   final node = meshNetwork.findNode(deviceId);
   if (node == null) return UspNodeDetailState.empty();
 
-  // Look up parent node for slaves
+  // Look up parent node for slaves. Only an online one: a node still naming
+  // an offline extender (#1443) reports a stale parent, which the topology
+  // resolves as a miss and draws under the gateway, so this page does not
+  // claim a link to it either.
   NodeEntity? parentNode;
   if (node is SlaveNode && node.backhaul.parentNodeId != null) {
-    parentNode = meshNetwork.findNode(node.backhaul.parentNodeId!);
+    final parent = meshNetwork.findNode(node.backhaul.parentNodeId!);
+    if (parent != null && parent.isOnline) parentNode = parent;
   }
 
   return UspNodeDetailState(

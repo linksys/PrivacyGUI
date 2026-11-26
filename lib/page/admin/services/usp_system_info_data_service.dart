@@ -8,6 +8,7 @@ import 'package:privacy_gui/generated/firmware_images.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/page/_shared/services/empty_row.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
+import 'package:privacy_gui/page/_shared/utils/cpu_temperature_pick.dart';
 import 'package:privacy_gui/page/_shared/utils/mesh_backhaul_link.dart'
     show nonEmpty;
 import 'package:privacy_gui/page/firmware_update/models/firmware_image_ui_model.dart'
@@ -88,6 +89,11 @@ class UspSystemInfoDataService {
       userDeviceLocation: nonEmpty(systemInfo.userDeviceLocation),
       friendlyName: nonEmpty(systemInfo.friendlyName),
       hostName: nonEmpty(systemInfo.hostName),
+      cpuTemperatureCelsius: cpuTemperatureOf(
+        systemInfo.temperatureSensors,
+        nameOf: (s) => s.name,
+        valueOf: (s) => s.value,
+      ),
     );
   }
 
