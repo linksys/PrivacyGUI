@@ -171,7 +171,7 @@ class _Firmware extends FirmwareUpdateNotifier {
   FirmwareUpdateState build() => FirmwareUpdateState.empty();
 
   @override
-  Future<void> fetchAvailableFirmwareUpdates() async {
+  Future<void> fetchAvailableFirmwareUpdates({int? logoutGeneration}) async {
     checks++;
   }
 
