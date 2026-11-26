@@ -114,13 +114,20 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
             force: true, retry: 2, logoutGeneration: logoutGeneration)
         .last
         .then<List<FirmwareUpdateStatus>?>((resultList) => resultList)
-        // A check ended by a logout has nothing to report, so it leaves the
-        // state as it is rather than saying no update was found.
         .onError<LoggedOutException>((error, stackTrace) => null)
         .onError((error, stackTrace) => [])
         .then((resultList) {
       benchmark.end();
-      if (resultList == null) return;
+      if (resultList == null) {
+        // Ended by a logout: it reports no update, so no caller goes on to
+        // install one after the logout, as PnP and the auto-parent first
+        // login would. The state is written directly, not through
+        // _examineStatusResult, whose ref.read a debug build refuses once the
+        // logout's reset of polling has changed what this notifier watches.
+        state = state.copyWith(
+            nodesStatus: const [], isWaitingChildrenAfterUpdating: false);
+        return;
+      }
       // In addition to the build function, state updates here should also be examined
       final statusRecord = _examineStatusResult(resultList);
       logger.d(
@@ -146,8 +153,8 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     // `state`, which rebuilds this notifier when a poll has changed what it
     // watches: in a debug build, Riverpod refuses a `ref.read` from a notifier
     // that has not rebuilt yet.
-    final generation =
-        logoutGeneration ?? ref.read(authProvider.notifier).logoutGeneration;
+    final auth = ref.read(authProvider.notifier);
+    final generation = logoutGeneration ?? auth.logoutGeneration;
     // Read before the first await for the same reason: a poll, or a logout's
     // reset of polling, may land while the first request is out.
     final repository = ref.read(routerRepositoryProvider);
@@ -161,7 +168,9 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
           : JNAPAction.updateFirmwareNow;
       // A check that continues an install the user has logged out of since
       // asks nothing.
-      if (_loggedOutSince(generation)) throw const LoggedOutException();
+      if (auth.logoutGeneration != generation) {
+        throw const LoggedOutException();
+      }
       await repository
           .send(
             action,
@@ -280,39 +289,39 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     );
   }
 
-  /// [logoutGeneration] is the login of the install this finishes. Once a
+  /// [logoutGeneration] is the login of the install this finishes; left null,
+  /// it is the current one, as for [fetchAvailableFirmwareUpdates]. Once a
   /// logout has ended it, nothing more is asked of the router and polling is
   /// not started on the login screen (#1904). The install itself is done, so
-  /// it is still recorded as such.
+  /// it is recorded as such either way.
   Future finishFirmwareUpdate({int? logoutGeneration}) {
     // Read now: the forced poll below changes what this notifier watches, and
     // a debug build refuses a `ref.read` from it until it has rebuilt.
     final auth = ref.read(authProvider.notifier);
-    bool loggedOut() =>
-        logoutGeneration != null && auth.logoutGeneration != logoutGeneration;
+    final generation = logoutGeneration ?? auth.logoutGeneration;
+    bool loggedOut() => auth.logoutGeneration != generation;
+    void recordDone() => SharedPreferences.getInstance().then((pref) {
+          pref.setBool(pFWUpdated, true);
+        });
     final polling = ref.read(pollingProvider.notifier);
     if (loggedOut()) {
       state = state.copyWith(isUpdating: false);
+      recordDone();
       return Future.value();
     }
     return polling
         .forcePolling()
         .then((_) => loggedOut()
             ? null
-            : fetchAvailableFirmwareUpdates(logoutGeneration: logoutGeneration))
+            : fetchAvailableFirmwareUpdates(logoutGeneration: generation))
         .then((_) {
       state = state.copyWith(isUpdating: false);
-      SharedPreferences.getInstance().then((pref) {
-        pref.setBool(pFWUpdated, true);
-      });
+      recordDone();
 
       if (loggedOut()) return;
       polling.startPolling();
     });
   }
-
-  bool _loggedOutSince(int logoutGeneration) =>
-      ref.read(authProvider.notifier).logoutGeneration != logoutGeneration;
 
   bool _checkFirmwareUpdateComplete(
     JNAPResult result,

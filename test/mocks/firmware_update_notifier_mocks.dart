@@ -183,18 +183,18 @@ class MockFirmwareUpdateNotifier extends _i2.Notifier<_i3.FirmwareUpdateState>
       ) as _i5.Future<dynamic>);
 
   @override
-  List<(_i7.LinksysDevice, _i6.FirmwareUpdateStatus)> getIDStatusRecords() =>
+  List<(_i7.LinksysDevice?, _i6.FirmwareUpdateStatus)> getIDStatusRecords() =>
       (super.noSuchMethod(
         Invocation.method(
           #getIDStatusRecords,
           [],
         ),
-        returnValue: <(_i7.LinksysDevice, _i6.FirmwareUpdateStatus)>[],
+        returnValue: <(_i7.LinksysDevice?, _i6.FirmwareUpdateStatus)>[],
         returnValueForMissingStub: <(
-          _i7.LinksysDevice,
+          _i7.LinksysDevice?,
           _i6.FirmwareUpdateStatus
         )>[],
-      ) as List<(_i7.LinksysDevice, _i6.FirmwareUpdateStatus)>);
+      ) as List<(_i7.LinksysDevice?, _i6.FirmwareUpdateStatus)>);
 
   @override
   int getAvailableUpdateNumber() => (super.noSuchMethod(
@@ -205,6 +205,16 @@ class MockFirmwareUpdateNotifier extends _i2.Notifier<_i3.FirmwareUpdateState>
         returnValue: 0,
         returnValueForMissingStub: 0,
       ) as int);
+
+  @override
+  bool isFailedCheckFirmwareUpdate() => (super.noSuchMethod(
+        Invocation.method(
+          #isFailedCheckFirmwareUpdate,
+          [],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
 
   @override
   bool isRecordConsistent(
