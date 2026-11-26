@@ -54,6 +54,7 @@ void main() {
         'diagnostics_rec_many_devices_title',
         'diagnostics_rec_bandwidth_hog_title',
         'diagnostics_rec_bottleneck_title',
+        'diagnostics_rec_busy_channel_title',
       ];
       for (final titleKey in expectedTitleKeys) {
         // Title exists and is not the fallback (key itself).
