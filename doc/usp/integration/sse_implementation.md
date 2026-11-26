@@ -136,8 +136,7 @@ sequenceDiagram
     Note over User,App: === Logout ===
     User->>Auth: Logout
     Auth->>Mgr: sseManager.disconnect()
-    Auth->>Mgr: sseManager.registry.unregisterAll()
-    Note over Mgr: Bridge deletes OBUSPA subs for each
+    Note over Mgr: Forgets every subscription and holder (remote: Guardian cleanup)
     Auth->>Auth: syncAfterLogout() → UspService.logout()
 
     Note over User,App: === Page Close (Web) ===
@@ -159,7 +158,7 @@ sequenceDiagram
 | **Stream error / heartbeat timeout** | Auto-reconnect (backoff) | `SseConnectionManager` internally | `sse_connection_manager.dart:255` |
 | **Token refresh (Stage 1)** | SSE stays connected (same session) | — | `usp_service.dart:134` |
 | **Full re-login (Stage 2)** | `disconnect()` → `connect()` | `onTokenRefreshed` callback | `sse_manager.dart:77-81` |
-| **Logout** | `disconnect()` → `unregisterAll()` | `AuthProvider.logout()` | `auth_provider.dart:112-115` |
+| **Logout** | `disconnect()` | `AuthProvider.logout()` | `auth_provider.dart` |
 | **Page close** | `abortSse()` sync + `disconnect()` async | `SseUnloadHandler` (`beforeunload`/`pagehide`) | `sse_manager.dart:86-91` |
 | **Provider dispose** | `dispose()` (full cleanup) | Riverpod `ref.onDispose` | `sse_providers.dart:31` |
 
@@ -612,7 +611,8 @@ flowchart LR
 | Heartbeat timeout (45s) | Cancel stream -> reconnect | Same as above | Same as above |
 | Browser refresh | New session starts (WASM state lost) | Fresh bootstrap, re-login via stored password | Old OBUSPA subscriptions may persist as orphans |
 | Intentional disconnect | No reconnect, state -> `disconnected` | Subscriptions retained in memory | OBUSPA subscriptions survive |
-| Logout / dispose | Stop and clean | `unregisterAll()` calls bridge unsubscribe for each | Bridge deletes OBUSPA subs |
+| Logout | Stop and clean | `disconnect()` forgets every subscription and holder | Remote: Guardian cleanup (fire-and-forget) |
+| Dispose | Stop and clean | `unregisterAll()` calls bridge unsubscribe for each | Bridge deletes OBUSPA subs |
 | App lifecycle resume | `tryReconnect()` if state is `suspended` | Same as reconnect | Same |
 | Page unload (Web) | `abortSse()` (sync) + `disconnect()` (async) | No cleanup (browser closing) | OBUSPA subscriptions survive |
 

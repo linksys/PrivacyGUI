@@ -274,14 +274,15 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       // authProvider in an error state with the credential still present.
       await ref.read(appModeProfileProvider).session.end(ref, cause);
 
-      // Disconnect SSE and unregister subscriptions BEFORE USP logout —
-      // subscription cleanup uses authenticated requests, so the token
-      // must still be valid.
+      // Disconnect SSE BEFORE USP logout: the disconnect ends the session's
+      // subscriptions, and the remote strategy's cleanup of them on Guardian
+      // uses authenticated requests. There is no separate unregister step: the
+      // disconnect has already forgotten every subscription, so an
+      // `unregisterAll()` after it had nothing left to send.
       final sseManager = ref.read(sseManagerProvider);
       if (sseManager != null) {
         logger.d('[Auth]: logout: disconnecting SSE');
         await sseManager.disconnect();
-        await sseManager.registry.unregisterAll();
       }
 
       // Now safe to logout USP

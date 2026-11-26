@@ -125,12 +125,12 @@ class RemoteSseStrategy implements SseOperationStrategy {
   }
 
   /// `teardown: true`, so a 401 is thrown and swallowed below but never reported.
-  /// Logout reaches this through `unregisterAll()` after `session.end()` has spent
-  /// the credential, where a reported 401 asks for a logout from inside the
-  /// logout — the loop [onSseDisconnected]'s cleanup closed. `disconnect()`
-  /// empties the registry first, so today that list is empty; this keeps the loop
-  /// closed if the two steps are ever reordered. The other caller, a single
-  /// handler's cleanup, ignores the failure as well.
+  /// A release can arrive after `session.end()` has spent the credential, where a
+  /// reported 401 asks for a logout from inside the logout — the loop
+  /// [onSseDisconnected]'s cleanup closed. Logout itself does not reach this:
+  /// its `disconnect()` forgets every subscription, so a release that arrives
+  /// later sends nothing. The callers are the last holder's release of one id
+  /// and `SseManager.dispose`'s `unregisterAll()`; both ignore the failure.
   @override
   Future<void> unregisterSubscriptions(List<String> subscriptionIds) async {
     for (final id in subscriptionIds) {
