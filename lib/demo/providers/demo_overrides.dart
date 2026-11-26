@@ -65,8 +65,11 @@ class DemoProviders {
       uspBridgeClientProvider.overrideWith((ref) => null),
 
       // 8. USP Auth Coordinator: Uses the demo UspClient (always authenticated)
-      uspAuthCoordinatorProvider.overrideWith(
-          (ref) => UspAuthCoordinator(demoUsp, UspTokenStorage())),
+      uspAuthCoordinatorProvider.overrideWith((ref) => UspAuthCoordinator(
+            demoUsp,
+            UspTokenStorage(),
+            gate: ref.read(sessionAuthGateProvider),
+          )),
 
       // 9. Package Widget Loader: Use demo templates from assets
       packageWidgetLoaderProvider.overrideWith(() => DemoPackageWidgetLoader()),

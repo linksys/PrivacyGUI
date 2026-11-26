@@ -471,6 +471,22 @@ void main() {
       verify(() => auth.logout(cause: EndCause.sessionLost)).called(2);
     });
 
+    // The whole local chain, with the router's own words (#1666 AC4): a 401, a
+    // refresh the router refuses with the measured text, then the real
+    // coordinator's restore, which has nothing left to try.
+    test('local: a session the router will not refresh ends once, unretried',
+        () async {
+      transport.refreshFailure = 'Token refresh failed: Authentication error: '
+          'Authentication token has expired (code: 2)';
+      wire(const LocalModeProfile());
+
+      await expectLater(client.get([path]),
+          throwsA(predicate((e) => '$e'.contains('HTTP 401'))));
+
+      verify(() => auth.logout(cause: EndCause.sessionLost)).called(1);
+      expect(transport.requests, 1, reason: 'no retry after a failed reauth');
+    });
+
     test('local: the token is refreshed, the call retried, the session kept',
         () async {
       wire(const LocalModeProfile());

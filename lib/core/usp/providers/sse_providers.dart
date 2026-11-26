@@ -100,8 +100,10 @@ final uspBridgeClientProvider = Provider<UspBridgeClient?>((ref) {
   return bridge;
 });
 
-/// The one owner of "does this 401 end the session?" (#1666) — see
-/// [SessionAuthGate].
+/// Who answers "does this 401 end the session?" (#1666) for USP commands, the
+/// heartbeat refresh and the session restore — see [SessionAuthGate]. The
+/// bridge's `onAuthFailed` below still answers for itself until the second half
+/// of #1666's PR C.
 ///
 /// Built once and never rebuilt: it reads, never watches, so the session epoch
 /// it keeps lasts as long as the app. The mode's answer comes from

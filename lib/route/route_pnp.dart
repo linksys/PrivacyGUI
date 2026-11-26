@@ -122,8 +122,25 @@ class _PnpSessionLostExitState extends ConsumerState<_PnpSessionLostExit> {
   static bool _isSignedIn(AsyncValue<AuthState> auth) =>
       (auth.value?.loginType ?? LoginType.none) != LoginType.none;
 
-  static bool _inFirmwareStage(PnpPhase phase) =>
-      phase is WizardUpdatingFirmware || phase is WizardCheckingFirmware;
+  /// The phases [_pnpWizardExitGuard] locks as the firmware stage. Exhaustive,
+  /// like the guard: a phase added later has to be decided here too.
+  static bool _inFirmwareStage(PnpPhase phase) => switch (phase) {
+        WizardUpdatingFirmware() || WizardCheckingFirmware() => true,
+        WizardSaving() ||
+        WizardSaved() ||
+        WizardTestingReconnect() ||
+        WizardConfiguring() ||
+        WizardNeedsReconnect() ||
+        AdminCheckingInternet() ||
+        AdminInternetConnected() ||
+        AdminReadFailure() ||
+        NoInternet() ||
+        WizardInitializing() ||
+        WizardYourNetwork() ||
+        WizardWifiReady() ||
+        WizardError() =>
+          false,
+      };
 
   @override
   void initState() {
@@ -157,15 +174,16 @@ class _PnpSessionLostExitState extends ConsumerState<_PnpSessionLostExit> {
       });
       return;
     }
-    final router = ref.read(routerProvider);
-    final at = router.routerDelegate.currentConfiguration.uri.path;
+    final container = ProviderScope.containerOf(context, listen: false);
+    final at = container
+        .read(routerProvider)
+        .routerDelegate
+        .currentConfiguration
+        .uri
+        .path;
+    // Already out of the setup: something else took the user away.
     if (!at.startsWith(RoutePath.pnp)) return;
-    // Under the wizard the exit guard runs and takes the flag back; set it
-    // anywhere else and it would outlive this navigation (#1816 review).
-    if (at.startsWith('${RoutePath.pnp}/${RoutePath.pnpConfig}')) {
-      ref.read(_pnpLeavingForLoginProvider.notifier).state = true;
-    }
-    router.go(RoutePath.localLoginPassword);
+    _goToLoginFromSetup(container);
   }
 
   @override
@@ -176,6 +194,21 @@ class _PnpSessionLostExitState extends ConsumerState<_PnpSessionLostExit> {
 
   @override
   Widget build(BuildContext context) => widget.child;
+}
+
+/// Goes from the setup to the login page, past the wizard's exit guard.
+///
+/// Sets [_pnpLeavingForLoginProvider] only under `/pnp/pnpConfig`, where the
+/// guard runs and takes it back: set anywhere else, it would outlive this
+/// navigation and let the next run's Back from the first step leave without
+/// asking (#1816 review).
+void _goToLoginFromSetup(ProviderContainer container) {
+  final router = container.read(routerProvider);
+  final at = router.routerDelegate.currentConfiguration.uri.path;
+  if (at.startsWith('${RoutePath.pnp}/${RoutePath.pnpConfig}')) {
+    container.read(_pnpLeavingForLoginProvider.notifier).state = true;
+  }
+  router.go(RoutePath.localLoginPassword);
 }
 
 /// Set just before the editing branch's own `go` to the login page, and taken
@@ -218,8 +251,7 @@ Future<bool> _leaveSetupByLoggingOut(
     } else {
       await signOut;
     }
-    container.read(_pnpLeavingForLoginProvider.notifier).state = true;
-    container.read(routerProvider).go(RoutePath.localLoginPassword);
+    _goToLoginFromSetup(container);
   });
   return false;
 }

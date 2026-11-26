@@ -374,6 +374,31 @@ void main() {
       expect(client.isReauthInProgress, isFalse);
     });
 
+    // The ticket is the one the attempt took when it started (#1666): a reauth
+    // that outlives its session cannot end the one that replaced it.
+    test('a reauth whose session was replaced while it ran ends nothing',
+        () async {
+      final client = UspClient.withTransport(
+          _RecordingTransport('session-1')..failRefresh = true,
+          baseUrl: 'https://one');
+      var forcedLogouts = 0;
+      final gate = SessionAuthGate(
+          authBehavior: AuthBehavior.local, endSession: () => forcedLogouts++)
+        ..begin();
+      client.attachAuthGate(gate);
+      final restore = Completer<SessionRestoreOutcome>();
+      client.onReauthRequired = () => restore.future;
+
+      final pending = client.reauth();
+      await Future<void>.delayed(Duration.zero);
+      gate.begin(); // the user logged in again while the restore ran
+      restore.complete(SessionRestoreOutcome.rejected);
+
+      await expectLater(pending, throwsA(anything));
+      expect(forcedLogouts, 0);
+      expect(gate.isLive, isTrue);
+    });
+
     test('a Stage 2 that cannot reach the router rethrows and ends nothing',
         () async {
       final client = UspClient.withTransport(

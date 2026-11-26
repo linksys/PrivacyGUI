@@ -34,9 +34,8 @@ class UspAuthCoordinator {
   final UspClient? _usp;
   final UspTokenStorage _tokenStorage;
 
-  /// Where a refused credential is reported (#1666). Null only in tests that
-  /// do not need one.
-  final SessionAuthGate? _gate;
+  /// Where a refused credential is reported (#1666).
+  final SessionAuthGate _gate;
 
   DateTime? _lastTokenRefresh;
   Completer<void>? _refreshInProgress;
@@ -86,13 +85,16 @@ class UspAuthCoordinator {
     return _accountLockedPattern.hasMatch(error.toString());
   }
 
-  UspAuthCoordinator(this._usp, this._tokenStorage, {SessionAuthGate? gate})
-      : _gate = gate {
+  UspAuthCoordinator(
+    this._usp,
+    this._tokenStorage, {
+    required SessionAuthGate gate,
+  }) : _gate = gate {
     // Here, beside the other two, because this is the first place in Riverpod
     // that holds the façade: `UspClient` is built in `di.dart` and by Remote
     // Assistance's `activate()`, and the boot restore reads this provider
     // before anything else needs the gate.
-    if (gate != null) _usp?.attachAuthGate(gate);
+    _usp?.attachAuthGate(gate);
     _usp?.onReauthRequired = restoreSession;
     _usp?.onRefreshTokenSuccess = () {
       _lastTokenRefresh = DateTime.now();
@@ -219,6 +221,7 @@ class UspAuthCoordinator {
   /// Implementation of session restore with token-only strategy.
   Future<SessionRestoreOutcome> _restoreSessionImpl() async {
     // Step 1: If WASM client already has a token, try refreshing it
+    var inMemoryUnanswered = false;
     if (_usp!.isAuthenticated) {
       try {
         await _usp.refreshToken();
@@ -232,6 +235,7 @@ class UspAuthCoordinator {
               'trying stored token');
         } else {
           logger.w('[USP][Auth]: in-memory token refresh failed: $e');
+          inMemoryUnanswered = true;
         }
         // Fall through to try stored token
       }
@@ -240,6 +244,13 @@ class UspAuthCoordinator {
     // Step 2: Try restoring from sessionStorage
     final storedToken = _tokenStorage.load();
     if (storedToken == null || storedToken.isEmpty) {
+      // Nothing was refused if the router never answered about the token in
+      // memory: that is a network error, not a verdict on the credential.
+      if (inMemoryUnanswered) {
+        logger.d('[USP][Auth]: restoreSession: no stored token, and the '
+            'in-memory one could not be checked');
+        return SessionRestoreOutcome.unreachable;
+      }
       logger.d('[USP][Auth]: restoreSession: no stored token');
       return SessionRestoreOutcome.rejected;
     }
@@ -413,7 +424,7 @@ class UspAuthCoordinator {
       return;
     }
 
-    final ticket = _gate?.ticket;
+    final ticket = _gate.ticket;
     final tried = _usp.sessionToken;
     _refreshInProgress = Completer<void>();
     try {
@@ -427,7 +438,7 @@ class UspAuthCoordinator {
         _clearStoredTokenIf(tried);
         logger.w('[USP][Auth]: Proactive refresh refused — ending the '
             'session: $e');
-        if (ticket != null) _gate?.end(ticket);
+        _gate.end(ticket);
       } else {
         logger.w(
             '[USP][Auth]: Proactive refresh failed (non-auth, will retry): $e');

@@ -288,8 +288,11 @@ class UspClient {
   /// not begun gets.
   SessionAuthGate? _authGate;
 
+  /// Attaches the app's 401 gate (see [_authGate]). Called by
+  /// `UspAuthCoordinator`'s constructor; the last one attached is used.
   void attachAuthGate(SessionAuthGate gate) => _authGate = gate;
 
+  /// The gate [attachAuthGate] attached, or null before anything has.
   @visibleForTesting
   SessionAuthGate? get authGate => _authGate;
 
@@ -353,7 +356,8 @@ class UspClient {
   /// Two-stage re-authentication: refreshToken first, then a session restore.
   /// Uses a Completer lock to prevent concurrent reauth attempts.
   ///
-  /// Completes when the session can be used again and throws when it cannot;
+  /// Completes when the session can be used again and throws when it cannot
+  /// (an exception naming the restore's outcome, or the restore's own error);
   /// the bridge's own 401 handling reads a throw as "reauth failed". When the
   /// restore finds the credential **rejected**, the session ends through the
   /// gate (#1666), with the ticket taken when this attempt started: a reauth
@@ -416,7 +420,7 @@ class UspClient {
       if (restore != null) {
         final outcome = await restore();
         if (outcome != SessionRestoreOutcome.restored) {
-          throw _SessionNotRestored(outcome);
+          throw _SessionNotRestoredException(outcome);
         }
         didFullRelogin = true;
         logger.d('$_tag Full re-login succeeded');
@@ -449,7 +453,7 @@ class UspClient {
       // The trigger was a 401 and the refresh failed too. Only a credential
       // the router refused ends the session; a router that could not be asked
       // may answer the next request.
-      if (e is _SessionNotRestored &&
+      if (e is _SessionNotRestoredException &&
           e.outcome == SessionRestoreOutcome.rejected &&
           ticket != null) {
         logger.w('$_tag The router refused every token — ending the session');
@@ -469,9 +473,10 @@ class UspClient {
       // Stage 1 (refreshToken) typically extends the same session, so
       // SSE reconnect is only needed after Stage 2 (full re-login).
       //
-      // Not after the session has ended (#1666): `connect()` clears the
+      // Only while a session is live (#1666): `connect()` clears the
       // intentional-disconnect flag, so a reconnect that lands during or after
-      // a logout reopens a stream nobody will close.
+      // a logout reopens a stream nobody will close, and before a session has
+      // begun there is no stream to move to the new token.
       //
       // Deliberately NOT gated on supersession, unlike everything above. Reaching
       // here past the Stage 2 bail-out means the swap landed *during* the
@@ -485,7 +490,7 @@ class UspClient {
       // is unreachable in production and this is a no-op there. Stated because the
       // ungated call looks like an oversight otherwise: it is the correct
       // behaviour for the next caller, not a live path.
-      if (didFullRelogin && !(_authGate?.hasEnded ?? false)) {
+      if (didFullRelogin && (_authGate?.isLive ?? true)) {
         onTokenRefreshed?.call();
       }
     }
@@ -1603,8 +1608,8 @@ class UspClient {
 }
 
 /// [UspClient.reauth]'s failure when the session restore did not restore.
-class _SessionNotRestored implements Exception {
-  const _SessionNotRestored(this.outcome);
+class _SessionNotRestoredException implements Exception {
+  const _SessionNotRestoredException(this.outcome);
 
   final SessionRestoreOutcome outcome;
 

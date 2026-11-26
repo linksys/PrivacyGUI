@@ -461,6 +461,28 @@ void main() {
       verify(() => mockStorage.clear()).called(1);
     });
 
+    // A network error on the token in memory, and none in storage: nothing was
+    // refused, so it is not a verdict on the credential (#1666, C1 review).
+    test('an unanswered in-memory refresh with no stored token is unreachable',
+        () async {
+      when(() => mockUsp.refreshToken(token: any(named: 'token')))
+          .thenThrow(Exception('Connection refused'));
+      when(() => mockStorage.load()).thenReturn(null);
+
+      expect(await coordinator.restoreSession(),
+          SessionRestoreOutcome.unreachable);
+    });
+
+    test('a refused in-memory refresh with no stored token is rejected',
+        () async {
+      when(() => mockUsp.refreshToken(token: any(named: 'token')))
+          .thenThrow(_sessionNotRefreshable);
+      when(() => mockStorage.load()).thenReturn(null);
+
+      expect(
+          await coordinator.restoreSession(), SessionRestoreOutcome.rejected);
+    });
+
     test('a network error is unreachable, and keeps the token', () async {
       when(() => mockUsp.isAuthenticated).thenReturn(false);
       when(() => mockStorage.load()).thenReturn('stored-token');
@@ -664,7 +686,7 @@ void main() {
     late UspAuthCoordinator nullCoordinator;
 
     setUp(() {
-      nullCoordinator = UspAuthCoordinator(null, mockStorage);
+      nullCoordinator = UspAuthCoordinator(null, mockStorage, gate: gate);
     });
 
     test('reloginWithNewPassword throws ServiceNotInitializedError', () async {
