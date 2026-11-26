@@ -30,6 +30,7 @@ import 'package:privacy_gui/page/instant_setup/data/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/data/pnp_state.dart';
 
+import '../../../common/router_boundary.dart';
 import '../../../mocks/router_repository_mocks.dart';
 
 /// Builds a getAutoMasterStatus JNAPSuccess with the given raw status payload
@@ -400,6 +401,66 @@ void main() {
       expect(scheduledArg<int?>('requestTimeoutOverride'), 3000);
       expect(scheduledArg<int>('retryDelayInMilliSec'), 5000);
     });
+  });
+
+  // What ends each poll. The stubbed streams above end when their list ends,
+  // so the polls' conditions never run there; RouterBoundary's scheduledCommand
+  // checks each answer against the condition, as the real one does, and stops
+  // at the first that meets it.
+  group('what ends each poll', () {
+    late RouterBoundary router;
+    late PnpNotifier polled;
+
+    setUp(() {
+      router = RouterBoundary();
+      final boundary = ProviderContainer(overrides: [
+        routerRepositoryProvider.overrideWithValue(router.repo),
+      ]);
+      addTearDown(boundary.dispose);
+      polled = boundary.read(pnpProvider.notifier) as PnpNotifier;
+    });
+
+    Map<String, dynamic> status(String raw) => {'autoMasterStatus': raw};
+
+    for (final (raw, finished) in [
+      ('Complete', AutoMasterStatus.complete),
+      ('Idle', AutoMasterStatus.idle),
+      ('Failed', AutoMasterStatus.failed),
+    ]) {
+      test(
+          'the completion poll goes on through a 401 and Running, and stops '
+          'at $raw', () async {
+        router.holdsInTurn(JNAPAction.getAutoMasterStatus, [
+          _unauthorized(),
+          status('Running'),
+          status(raw),
+          status('Running'),
+        ]);
+
+        expect(await polled.pollAutoMasterStatus().toList(),
+            [null, AutoMasterStatus.running, finished]);
+      });
+    }
+
+    for (final (raw, started) in [
+      ('Running', AutoMasterStatus.running),
+      ('Complete', AutoMasterStatus.complete),
+      ('Failed', AutoMasterStatus.failed),
+    ]) {
+      test(
+          'the wait-for-running poll goes on through an error and Idle, and '
+          'stops at $raw', () async {
+        router.holdsInTurn(JNAPAction.getAutoMasterStatus, [
+          const JNAPError(result: '_ErrorUnknownAction'),
+          status('Idle'),
+          status(raw),
+          status('Idle'),
+        ]);
+
+        expect(await polled.pollAutoMasterUntilRunning().toList(),
+            [null, AutoMasterStatus.idle, started]);
+      });
+    }
   });
 
   // Only Setup12 defines GetAutoMasterStatus (#1923). On a router without it,

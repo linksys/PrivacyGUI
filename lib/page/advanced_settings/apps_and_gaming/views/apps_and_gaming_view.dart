@@ -27,9 +27,14 @@ class _AppsGamingSettingsViewState extends ConsumerState<AppsGamingSettingsView>
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
 
+    // A tab the router refused to show stays unread, and Save stays off
+    // until the page is opened again and reads it (#1974).
     doSomethingWithSpinner(
             context, ref.read(appsAndGamingProvider.notifier).fetch())
-        .then((state) {});
+        .then((state) {})
+        .onError((error, stackTrace) {
+      showErrorMessageSnackBar(error);
+    });
   }
 
   @override
@@ -91,7 +96,8 @@ class _AppsGamingSettingsViewState extends ConsumerState<AppsGamingSettingsView>
       tabController: _tabController,
       bottomBar: PageBottomBar(
         isPositiveEnabled:
-            ref.read(appsAndGamingProvider.notifier).isChanged() &&
+            ref.read(appsAndGamingProvider.notifier).isReadComplete() &&
+                ref.read(appsAndGamingProvider.notifier).isChanged() &&
                 ref.watch(appsAndGamingProvider.notifier).isDataValid(),
         onPositiveTap: () {
           doSomethingWithSpinner(

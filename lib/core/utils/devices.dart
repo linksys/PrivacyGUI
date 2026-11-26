@@ -39,7 +39,7 @@ extension DeviceUtil on RawDevice {
         androidDeviceName = '${operatingSystem!} ${model.deviceType}';
         if (manufacturer != null) {
           // e.g. 'Samsung Android Oreo Mobile'
-          androidDeviceName = manufacturer + androidDeviceName;
+          androidDeviceName = '$manufacturer $androidDeviceName';
         }
       }
     }

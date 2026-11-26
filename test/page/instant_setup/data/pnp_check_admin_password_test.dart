@@ -82,4 +82,12 @@ void main() {
           (error) => error.delayTimeRemaining, 'delayTimeRemaining', isNull)),
     );
   });
+
+  test('no password is a wrong one, and the router is not asked', () async {
+    await expectLater(
+      container.read(pnpProvider.notifier).checkAdminPassword(null),
+      throwsA(isA<ExceptionInvalidAdminPassword>()),
+    );
+    verifyZeroInteractions(router);
+  });
 }
