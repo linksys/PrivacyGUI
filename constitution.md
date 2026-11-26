@@ -102,8 +102,6 @@ These dependencies predate this constitution. They are listed, not fixed (#1804,
 | `lib/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart` | `lib/core/jnap/router_repository.dart` | |
 | `lib/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart` | `routerRepositoryProvider` | `isLoggedIn()` |
 | `lib/core/jnap/models/node_light_settings.dart` | `lib/page/nodes/_nodes.dart` | `NodeLightStatus` |
-| `lib/core/jnap/providers/polling_provider.dart` | `lib/page/instant_privacy/providers/instant_privacy_provider.dart` | `instantPrivacyProvider` |
-| `lib/core/jnap/providers/polling_provider.dart` | `lib/page/vpn/providers/vpn_notifier.dart` | `vpnProvider` |
 <!-- boundary-exceptions:end -->
 
 To retire a row, move the call into the feature's notifier (or the type out of `lib/page/`), then delete the row. Deleting a row is not an amendment. Adding one is.
