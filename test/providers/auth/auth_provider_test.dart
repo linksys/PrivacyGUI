@@ -217,7 +217,8 @@ void main() {
     });
 
     // Only the cloud account login, removed in #1849, stored a refresh token.
-    test('says an expired account login token is over too: nothing refreshes it',
+    test(
+        'says an expired account login token is over too: nothing refreshes it',
         () async {
       start(secure: {
         pSessionToken: _token(expiresIn: 60, refreshToken: 'refresh'),
@@ -228,8 +229,7 @@ void main() {
           throwsA(isA<SessionTokenExpiredException>()));
     });
 
-    test('handleSessionTokenError settles any error as no token',
-        () async {
+    test('handleSessionTokenError settles any error as no token', () async {
       expect(
           await notifier().handleSessionTokenError(
               NoSessionTokenFoundException(), StackTrace.empty),
