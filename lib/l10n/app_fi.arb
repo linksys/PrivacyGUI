@@ -60,6 +60,7 @@
   "download": "Lataus",
   "lastDownloadRate": "Viimeisin latausnopeus",
   "lastUploadRate": "Viimeisin lähetysnopeus",
+  "sinceRouterLastRestarted": "Reitittimen edellisestä uudelleenkäynnistyksestä lähtien",
   "duid": "DUID",
   "editDhcpReservation": "Muokkaa DHCP-varausta",
   "enabled": "Käytössä",

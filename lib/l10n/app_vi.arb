@@ -60,6 +60,7 @@
   "download": "Tải xuống",
   "lastDownloadRate": "Tốc độ tải xuống gần nhất",
   "lastUploadRate": "Tốc độ tải lên gần nhất",
+  "sinceRouterLastRestarted": "Kể từ lần khởi động lại gần nhất của router",
   "duid": "DUID",
   "editDhcpReservation": "Chỉnh sửa địa chỉ DHCP dành riêng",
   "enabled": "Bật",

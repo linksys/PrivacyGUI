@@ -60,6 +60,7 @@
   "download": "Download",
   "lastDownloadRate": "Letzte Download-Rate",
   "lastUploadRate": "Letzte Upload-Rate",
+  "sinceRouterLastRestarted": "Seit dem letzten Neustart des Routers",
   "duid": "DUID",
   "editDhcpReservation": "DHCP-Reservierung bearbeiten",
   "enabled": "Aktiviert",

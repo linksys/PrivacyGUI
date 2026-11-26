@@ -185,6 +185,8 @@
   "download": "Download",
   "lastDownloadRate": "Last download rate",
   "lastUploadRate": "Last upload rate",
+  "sinceRouterLastRestarted": "Since the router last restarted",
+  "@sinceRouterLastRestarted": {"description": "Device Details, the line under the Download and Upload totals of the data a device has sent and received through the router: the totals count from the router's last restart, not from when the device connected."},
   "downlink": "Downlink",
   "duid": "DUID",
   "editPortForwarding": "Edit Port Forwarding",

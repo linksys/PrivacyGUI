@@ -42,6 +42,8 @@ void main() {
     String? linksysDetectedName,
     String? linksysUserDeviceType,
     String? linksysUserDeviceLocation,
+    int? wanStatsBytesSent,
+    int? wanStatsBytesReceived,
     bool? linksysIsMeshNode,
     DateTime? activeLastChange,
   }) {
@@ -71,6 +73,8 @@ void main() {
       linksysDetectedName: linksysDetectedName,
       linksysUserDeviceType: linksysUserDeviceType,
       linksysUserDeviceLocation: linksysUserDeviceLocation,
+      wanStatsBytesSent: wanStatsBytesSent,
+      wanStatsBytesReceived: wanStatsBytesReceived,
       linksysIsMeshNode: linksysIsMeshNode,
       activeLastChange: activeLastChange,
     );
@@ -2370,6 +2374,68 @@ void main() {
         expect(client.modelName, isNull);
         expect(client.operatingSystem, isNull);
         expect(client.displayName, 'host');
+      });
+    });
+
+    // Data used (#1927): FL-WRT 2.0 counts per Hosts row in WANStats, the
+    // bytes the row's MAC exchanged through the router. Counters from the
+    // 2026-11-24 14:34 bench read (2.0.4.26112201): the wired Mac.
+    group('data used from WANStats (#1927)', () {
+      test('carries a row\'s counters onto the client', () {
+        final client = MeshNetworkBuilder.build(
+          connectedDevices: ConnectedDevices(items: [
+            buildConnectedDevice(
+              macAddress: '80:69:1a:13:43:fc',
+              hostName: 'TW-AUSTINC-MAC',
+              interfaceType: 'Ethernet',
+              wanStatsBytesReceived: 114924318,
+              wanStatsBytesSent: 9985679,
+            ),
+          ]),
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: MeshTopologyInfo.empty,
+          gatewayName: 'Router',
+        ).allClients.single;
+
+        expect(client.totalBytesReceived, 114924318);
+        expect(client.totalBytesSent, 9985679);
+      });
+
+      // One device on a cable and on Wi-Fi is two rows, each with its own
+      // counters, merged by the name devidentd detected (#1719).
+      test('a merged device adds up the counters of every row', () {
+        final client = MeshNetworkBuilder.build(
+          connectedDevices: ConnectedDevices(items: [
+            buildConnectedDevice(
+              macAddress: '80:69:1a:13:43:fc',
+              instancePath: 'Device.Hosts.Host.1.',
+              hostName: 'TW-AUSTINC-MAC',
+              interfaceType: 'Ethernet',
+              linksysDetectedName: 'TW-AUSTINC-MAC',
+              wanStatsBytesReceived: 114924318,
+              wanStatsBytesSent: 9985679,
+            ),
+            buildConnectedDevice(
+              macAddress: 'aa:c8:bf:74:39:f6',
+              instancePath: 'Device.Hosts.Host.2.',
+              hostName: 'Mac',
+              interface_: 'Device.WiFi.Radio.1',
+              interfaceType: 'Wi-Fi',
+              linksysDetectedName: 'TW-AUSTINC-MAC',
+              wanStatsBytesReceived: 2000000,
+              wanStatsBytesSent: 300000,
+            ),
+          ]),
+          wifiClientMap: {},
+          connectionDetailMap: {},
+          meshTopology: MeshTopologyInfo.empty,
+          gatewayName: 'Router',
+        ).allClients.single;
+
+        expect(client.interfaceCount, 2);
+        expect(client.totalBytesReceived, 116924318);
+        expect(client.totalBytesSent, 10285679);
       });
     });
 

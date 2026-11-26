@@ -484,6 +484,10 @@ class MeshNetworkBuilder {
       userDeviceName: nonEmpty(device.linksysUserDeviceLocation),
       hostsDeviceId: device.deviceId,
       hostInstancePath: device.instancePath,
+      // This row's WANStats (#1927): what its MAC exchanged through the
+      // router, counted once a connection ends (linksys/usp_framework#126).
+      bytesReceived: device.wanStatsBytesReceived,
+      bytesSent: device.wanStatsBytesSent,
     );
   }
 
@@ -572,6 +576,10 @@ class MeshNetworkBuilder {
               layer1Interface: d.layer1Interface,
               wifi: d.wifi,
               hostInstancePath: d.hostInstancePath,
+              // Each row has its own counters (#1927); the device's total
+              // adds them up.
+              bytesReceived: d.bytesReceived,
+              bytesSent: d.bytesSent,
             ))
         .toList();
 

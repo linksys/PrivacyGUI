@@ -60,6 +60,7 @@
   "download": "Karşıdan Yükle",
   "lastDownloadRate": "Son indirme hızı",
   "lastUploadRate": "Son yükleme hızı",
+  "sinceRouterLastRestarted": "Yönlendiricinin son yeniden başlatılmasından bu yana",
   "duid": "DUID",
   "editDhcpReservation": "DHCP Ayırma Düzenle",
   "enabled": "Etkin",

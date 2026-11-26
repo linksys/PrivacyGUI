@@ -60,6 +60,7 @@
   "download": "Download",
   "lastDownloadRate": "Ultima velocità di download",
   "lastUploadRate": "Ultima velocità di upload",
+  "sinceRouterLastRestarted": "Dall'ultimo riavvio del router",
   "duid": "DUID",
   "editDhcpReservation": "Modifica Prenotazione DHCP",
   "enabled": "Attivato",

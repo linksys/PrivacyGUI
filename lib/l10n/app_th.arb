@@ -60,6 +60,7 @@
   "download": "ดาวน์โหลด",
   "lastDownloadRate": "อัตราดาวน์โหลดล่าสุด",
   "lastUploadRate": "อัตราอัปโหลดล่าสุด",
+  "sinceRouterLastRestarted": "ตั้งแต่เราเตอร์รีสตาร์ทครั้งล่าสุด",
   "duid": "DUID",
   "editDhcpReservation": "แก้ไขการสำรอง DHCP",
   "enabled": "ใช้งาน",
