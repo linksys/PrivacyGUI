@@ -28,7 +28,7 @@ Flutter App (WASM)
     |     |
     +-- SseManager (facade)
           +-- SseConnectionManager   -- SSE stream lifecycle
-          +-- SseSubscriptionRegistry -- bridge-only subscription tracking
+          +-- SseSubscriptionRegistry -- subscriptions and their holders (one router registration per id)
           +-- SseEventRouter          -- every notification to every handler; each matches by type + path
 ```
 
@@ -246,7 +246,7 @@ REST call hits 401
 | File | Class | Responsibility |
 |------|-------|----------------|
 | `sse_connection_manager.dart` | `SseConnectionManager` | SSE stream lifecycle, exponential backoff (1s -> 60s), heartbeat watchdog (45s = 30s heartbeat + 15s grace) |
-| `sse_subscription_registry.dart` | `SseSubscriptionRegistry` | Bridge-only subscription tracking, `register()` / `unregister()` / `resubscribeAll()` |
+| `sse_subscription_registry.dart` | `SseSubscriptionRegistry` | The session's subscriptions and who holds each: `hold()` / `release()` / `unregisterAll()`. One router registration per id while anyone holds it; a hold joins a registration or unregister in flight (#1887) |
 | `sse_event_router.dart` | `SseEventRouter` | JSON parse -> every notification to every handler; a handler matches its own by type + path (`SseNotification.isFor`) |
 | `sse_manager.dart` | `SseManager` | Facade composing the above three. Primary API for Riverpod providers. Also wires `onSseSubscribe` delegate into `UspService` for codegen `subscribe()` |
 | `sse_operation_awaiter.dart` | `SseOperationAwaiter` | Async Operate commands (Ping/Traceroute) via OperationComplete, polling fallback |
@@ -360,7 +360,7 @@ This pattern exists because one-shot Operate commands (IPPing, TraceRoute) produ
 - **Invalidation signals**: Wildcard handler in `sseInvalidationProvider` matches by `param_path` / `obj_path` from the notification payload
 - **OperationComplete**: Wildcard handler in `SseOperationAwaiter` matches by `command_key` (primary) or `command_name` (fallback)
 
-The router has no per-subscription handlers. #1887 deleted them; their one user, the package widget handler, never fired under Remote Assistance. The subscription itself must still be created, so the router sends the notifications.
+The router has no per-subscription handlers. #1887 deleted them; their one user, the package widget handler, never fired under Remote Assistance. Holding a subscription (`SseManager.hold`, which `subscribe` calls) only makes the router send the notifications; the awaiter holds its own with `hold` and matches by `command_key`.
 
 ### 4.2 WiFi Stats Noise Elimination
 

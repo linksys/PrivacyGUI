@@ -24,7 +24,7 @@ import 'usp_client.dart';
 /// final manager = SseManager(usp: usp, bridge: bridge, strategy: strategy);
 /// await manager.connect();
 ///
-/// // Register a subscription with handler
+/// // Hold a subscription and hear it
 /// final cleanup = await manager.subscribe(
 ///   subscriptionId: 'wifi-ssid-valuechange',
 ///   notifType: 'ValueChange',
@@ -32,7 +32,8 @@ import 'usp_client.dart';
 ///   onNotification: (notification) { ... },
 /// );
 ///
-/// // Later: cleanup removes handler AND unregisters subscription
+/// // Later: cleanup removes the handler and releases the hold; the router
+/// // unregisters the id once its last holder has released it
 /// await cleanup();
 ///
 /// // Shutdown
@@ -48,7 +49,11 @@ class SseManager {
   final SseUnloadHandler _unloadHandler = SseUnloadHandler();
 
   List<SubscriptionDef> _coreSubscriptions = [];
-  bool _registrationInProgress = false;
+
+  /// The core set's holder in the registry: one for the whole set, however
+  /// often the orchestrator registers it, so registering it again holds
+  /// nothing twice and a second registration in flight joins the first.
+  final Object _coreHolder = Object();
 
   /// See [CoreSubscriptionState]. Set by [registerCoreSubscriptions] and put
   /// back to pending by [disconnect], so a later session cannot inherit it.
@@ -168,42 +173,59 @@ class SseManager {
     _unloadHandler.register();
   }
 
-  /// Registers a subscription and hears it, in one call: [onNotification]
-  /// gets each notification of [notifType] on [referenceList] or under it
+  /// Holds a subscription and hears it, in one call: [onNotification] gets each
+  /// notification of [notifType] on [referenceList] or under it
   /// ([SseNotification.isFor]).
   ///
   /// Heard by type and path, not by [subscriptionId], which is not a key to
   /// hear by (see [SseNotification.subscriptionId]).
   ///
-  /// Returns an async cleanup function that:
-  /// 1. Removes the handler from the router
-  /// 2. Unregisters the subscription from both OBUSPA and bridge
+  /// Returns the cleanup: it removes the handler and releases the hold
+  /// ([hold]).
   Future<Future<void> Function()> subscribe({
     required String subscriptionId,
     required String notifType,
     required String referenceList,
     required SseNotificationHandler onNotification,
   }) async {
-    // Register via strategy
-    await registry.registerAll([
-      SubscriptionDef(
-        subscriptionId: subscriptionId,
-        notifType: notifType,
-        referenceList: referenceList,
-      ),
-    ]);
-
+    final release = await hold(
+      subscriptionId: subscriptionId,
+      notifType: notifType,
+      referenceList: referenceList,
+    );
     final removeHandler = _addHandlerFor(
       notifType: notifType,
       referenceList: referenceList,
       onNotification: onNotification,
     );
-
-    // Return combined cleanup
     return () async {
       removeHandler();
-      await registry.unregister(subscriptionId);
+      await release();
     };
+  }
+
+  /// Holds a subscription on the router, so it sends the notifications, without
+  /// hearing them: for a caller that matches them itself, as the operation
+  /// awaiter matches `OperationComplete` by `command_key`.
+  ///
+  /// Other holders of [subscriptionId] may share it; the router keeps it until
+  /// the last one has released it ([SseSubscriptionRegistry]). Returns the
+  /// release, which counts once however often it is called, and does nothing
+  /// once the session has ended.
+  Future<Future<void> Function()> hold({
+    required String subscriptionId,
+    required String notifType,
+    required String referenceList,
+  }) async {
+    final holder = Object();
+    await registry.hold([
+      SubscriptionDef(
+        subscriptionId: subscriptionId,
+        notifType: notifType,
+        referenceList: referenceList,
+      ),
+    ], holder: holder);
+    return () => registry.release(subscriptionId, holder: holder);
   }
 
   VoidCallback _addHandlerFor({
@@ -228,9 +250,8 @@ class SseManager {
     return router.addWildcardHandler(handler);
   }
 
-  /// SSE delegate implementation injected into [UspClient]: the same
-  /// registration and the same hearing as [subscribe], in the shape the
-  /// delegate returns.
+  /// SSE delegate implementation injected into [UspClient]: the same hold and
+  /// the same hearing as [subscribe], in the shape the delegate returns.
   Future<({void Function() removeHandler, Future<void> Function() unregister})>
       _handleSseSubscribe({
     required String subscriptionId,
@@ -238,25 +259,17 @@ class SseManager {
     required String referenceList,
     required void Function() onNotification,
   }) async {
-    // Register via strategy
-    await registry.registerAll([
-      SubscriptionDef(
-        subscriptionId: subscriptionId,
-        notifType: notifType,
-        referenceList: referenceList,
-      ),
-    ]);
-
+    final release = await hold(
+      subscriptionId: subscriptionId,
+      notifType: notifType,
+      referenceList: referenceList,
+    );
     final removeHandler = _addHandlerFor(
       notifType: notifType,
       referenceList: referenceList,
       onNotification: (_) => onNotification(),
     );
-
-    return (
-      removeHandler: removeHandler,
-      unregister: () => registry.unregister(subscriptionId),
-    );
+    return (removeHandler: removeHandler, unregister: release);
   }
 
   /// Sets the core subscriptions to register.
@@ -305,25 +318,19 @@ class SseManager {
   /// Registers core subscriptions.
   ///
   /// Called by orchestrator after domain providers are ready.
-  /// Strategy handles the actual registration logic.
+  /// Strategy handles the actual registration logic. A call while one is in
+  /// flight joins it ([_coreHolder]).
   Future<void> registerCoreSubscriptions() async {
     if (_coreSubscriptions.isEmpty) {
       logger.d('[USP][SSE]: No core subscriptions to register');
       return;
     }
 
-    if (_registrationInProgress) {
-      logger.d('[USP][SSE]: Registration already in progress, skipping');
-      return;
-    }
-    _registrationInProgress = true;
-
     try {
-      await registry.registerAll(_coreSubscriptions);
+      await registry.hold(_coreSubscriptions, holder: _coreHolder);
       logger.d('[USP][SSE]: Registered ${registry.activeIds.length} '
           'core subscriptions');
     } finally {
-      _registrationInProgress = false;
       final active = registry.activeIds;
       final registered = _coreSubscriptions
           .where((s) => active.contains(s.subscriptionId))

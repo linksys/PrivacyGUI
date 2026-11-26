@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/models/sse_connection_state.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/models/core_subscription_state.dart';
+import 'package:privacy_gui/core/usp/models/sse_notification.dart';
 import 'package:privacy_gui/core/usp/services/sse_remote_strategy.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
@@ -254,6 +255,120 @@ void main() {
       expect(handlerCalled, 1);
 
       await manager.dispose();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Several holders of one subscription id (#1887)
+  // ---------------------------------------------------------------------------
+  group('holders of one subscription id', () {
+    // Package widgets share one id per widget, `pkg-<widgetId>-valuechange`:
+    // two live notifiers keyed by two templates of one widget hold it at once.
+    Future<Future<void> Function()> hold(
+      SseManager manager, {
+      SseNotificationHandler? onNotification,
+    }) =>
+        manager.subscribe(
+          subscriptionId: 'pkg-w1-valuechange',
+          notifType: 'ValueChange',
+          referenceList: 'Device.X.',
+          onNotification: onNotification ?? (_) {},
+        );
+
+    test(
+        'one holder cleaning up leaves the other subscribed and hearing, with '
+        'no unregister sent', () async {
+      final manager = createManager();
+      addTearDown(manager.dispose);
+      var heard = 0;
+      final first = await hold(manager);
+      await hold(manager, onNotification: (_) => heard++);
+
+      await first();
+      await manager.connect();
+      streamController.add(notificationEvent(
+        subscriptionId: 'pkg-w1-valuechange',
+        type: 'ValueChange',
+        valueChange: {'param_path': 'Device.X.Value', 'param_value': '1'},
+      ));
+      await Future.delayed(Duration.zero);
+
+      verifyNever(() => mockBridge.unsubscribe(
+            subscriptionId: 'pkg-w1-valuechange',
+          ));
+      expect(manager.registry.activeIds, contains('pkg-w1-valuechange'));
+      expect(heard, 1);
+    });
+
+    test('the last holder to clean up unregisters the id, once', () async {
+      final manager = createManager();
+      addTearDown(manager.dispose);
+      final first = await hold(manager);
+      final second = await hold(manager);
+
+      await first();
+      await second();
+
+      verify(() => mockBridge.unsubscribe(
+            subscriptionId: 'pkg-w1-valuechange',
+          )).called(1);
+      expect(manager.registry.activeIds, isNot(contains('pkg-w1-valuechange')));
+    });
+
+    test('two holders registering one id at once send one registration',
+        () async {
+      final gate = Completer<Map<String, dynamic>>();
+      when(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenAnswer((_) => gate.future);
+      final manager = createManager();
+      addTearDown(manager.dispose);
+
+      final both = Future.wait([hold(manager), hold(manager)]);
+      await Future.delayed(Duration.zero);
+      gate.complete({});
+      await both;
+
+      verify(() => mockBridge.subscribe(
+            subscriptionId: 'pkg-w1-valuechange',
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).called(1);
+    });
+
+    test('calling one cleanup twice counts once', () async {
+      final manager = createManager();
+      addTearDown(manager.dispose);
+      final first = await hold(manager);
+      await hold(manager);
+
+      await first();
+      await first();
+
+      verifyNever(() => mockBridge.unsubscribe(
+            subscriptionId: 'pkg-w1-valuechange',
+          ));
+      expect(manager.registry.activeIds, contains('pkg-w1-valuechange'));
+    });
+
+    test(
+        'a cleanup from before an intentional disconnect does not cancel the '
+        'next session\'s holder of the id', () async {
+      final manager = createManager();
+      addTearDown(manager.dispose);
+      final stale = await hold(manager);
+      await manager.disconnect();
+      await hold(manager);
+      clearInteractions(mockBridge);
+
+      await stale();
+
+      verifyNever(() => mockBridge.unsubscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+          ));
+      expect(manager.registry.activeIds, contains('pkg-w1-valuechange'));
     });
   });
 
@@ -964,6 +1079,39 @@ void main() {
 
       expect(manager.coreSubscriptions.value,
           const CoreSubscriptionsReady(registered: 1, failed: 1));
+    });
+
+    test(
+        'a second registration while one is in flight joins it: one '
+        'registration per id, and both end ready', () async {
+      // The orchestrator registers the core set again when it rebuilds.
+      final gate = Completer<Map<String, dynamic>>();
+      when(() => mockBridge.subscribe(
+            subscriptionId: any(named: 'subscriptionId'),
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenAnswer((_) => gate.future);
+      final manager = createManager();
+      addTearDown(manager.dispose);
+      manager.setCoreSubscriptions([('sub-1', 'ValueChange', 'Device.X.')]);
+
+      var secondDone = false;
+      final first = manager.registerCoreSubscriptions();
+      final second =
+          manager.registerCoreSubscriptions().then((_) => secondDone = true);
+      await Future.delayed(Duration.zero);
+      expect(secondDone, isFalse, reason: 'it waits for the first');
+
+      gate.complete({});
+      await Future.wait([first, second]);
+
+      verify(() => mockBridge.subscribe(
+            subscriptionId: 'sub-1',
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).called(1);
+      expect(manager.coreSubscriptions.value,
+          const CoreSubscriptionsReady(registered: 1, failed: 0));
     });
 
     test('an intentional disconnect puts it back to pending', () async {

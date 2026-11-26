@@ -189,6 +189,34 @@ void main() {
       });
     });
 
+    test(
+        'a card that leaves while its subscribe is in flight removes the '
+        'subscription once it arrives', () {
+      // Safe only because the registry counts holders (#1887): this cleanup
+      // removes this notifier's hold on `pkg-<widgetId>-valuechange`, not a
+      // newer holder's under the same id.
+      fakeAsync((async) {
+        var cleanups = 0;
+        final subscribed = Completer<Future<void> Function()?>();
+        when(() => service.fetchUspPaths(any())).thenAnswer((_) async => {});
+        when(() => service.subscribeValueChanges(
+              widgetId: any(named: 'widgetId'),
+              subscription: any(named: 'subscription'),
+              onValueChange: any(named: 'onValueChange'),
+            )).thenAnswer((_) => subscribed.future);
+
+        final card = mount(_uspTemplate());
+        async.flushMicrotasks();
+        card.close();
+        // autoDispose runs on the event queue, not as a microtask.
+        async.elapse(Duration.zero);
+        subscribed.complete(() async => cleanups++);
+        async.flushMicrotasks();
+
+        expect(cleanups, 1);
+      });
+    });
+
     test('two cards of one template share one subscription', () async {
       // The drag-feedback copy of a card is a second renderer of the same
       // template. Sharing the live notifier is what stops that copy from
