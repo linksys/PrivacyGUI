@@ -8,7 +8,12 @@ import 'package:privacy_gui/core/cache/utility.dart';
 import 'package:privacy_gui/core/jnap/access/access_policy.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
+import 'package:privacy_gui/providers/auth/auth_exception.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
+
+// Where the loops tied to a login end, for this file's importers.
+export 'package:privacy_gui/providers/auth/auth_exception.dart'
+    show LoggedOutException;
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/constants/jnap_const.dart';
@@ -51,13 +56,18 @@ class CommandWrap {
 
 const defaultAdminPassword = 'admin';
 
-/// Ends a [RouterRepository.scheduledCommand] loop whose login has ended.
-class LoggedOutException implements Exception {
-  const LoggedOutException();
-
-  @override
-  String toString() =>
-      'LoggedOutException: the login this work belonged to has ended';
+/// For a stream handed to a page: a logout ends it quietly.
+///
+/// A [RouterRepository.scheduledCommand] loop tied to a login ends with a
+/// [LoggedOutException]. A page that listens without `onError` would take
+/// that as an uncaught error, and the page is gone by then anyway. Here the
+/// stream simply ends, after [onLoggedOut], which puts the owner's state back
+/// where nothing is running. Any other error passes through.
+extension EndAtLogout<T> on Stream<T> {
+  Stream<T> endAtLogout([void Function()? onLoggedOut]) => handleError(
+        (Object _) => onLoggedOut?.call(),
+        test: (error) => error is LoggedOutException,
+      );
 }
 
 final routerRepositoryProvider = Provider((ref) {
@@ -263,8 +273,7 @@ class RouterRepository {
     bool exceedMaxRetry = true;
     void endIfLoggedOut() {
       if (logoutGeneration != null &&
-          ref.read(authProvider.notifier).logoutGeneration !=
-              logoutGeneration) {
+          ref.read(authProvider.notifier).loggedOutSince(logoutGeneration)) {
         logger.d('SCHEDULED COMMAND: command {$action}: logged out, STOP!');
         throw const LoggedOutException();
       }

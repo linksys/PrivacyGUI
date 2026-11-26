@@ -100,6 +100,15 @@ class MockAuthNotifier extends _i2.AsyncNotifier<_i3.AuthState>
       ) as _i4.Future<_i3.AuthState>);
 
   @override
+  bool loggedOutSince(int? generation) => (super.noSuchMethod(
+        Invocation.method(
+          #loggedOutSince,
+          [generation],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+  @override
   _i4.Future<_i3.AuthState> build() => (super.noSuchMethod(
         Invocation.method(#build, []),
         returnValue: _i4.Future<_i3.AuthState>.value(
