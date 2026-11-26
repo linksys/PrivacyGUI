@@ -6,7 +6,8 @@
 // Two service sets matter. A router reports every service its JNAP defines,
 // whether the app's JNAPService lists it or not.
 // - The baseline: the services of the JNAP release in the oldest firmware 1.x
-//   still supports. They need no gate. Provisional: tag 1.0.0 (#1923).
+//   still supports. They need no gate. Tag 1.0.0, the first release
+//   (decided 2026-11-25, #1923).
 // - The pin: the services of the JNAP that firmware builds today.
 //
 // "Defined" is exact: a URL an upgrade gives must be in the list of the

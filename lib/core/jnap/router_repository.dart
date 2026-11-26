@@ -51,6 +51,15 @@ class CommandWrap {
 
 const defaultAdminPassword = 'admin';
 
+/// Ends a [RouterRepository.scheduledCommand] loop whose login has ended.
+class LoggedOutException implements Exception {
+  const LoggedOutException();
+
+  @override
+  String toString() =>
+      'LoggedOutException: the login this work belonged to has ended';
+}
+
 final routerRepositoryProvider = Provider((ref) {
   return RouterRepository(ref);
 });
@@ -231,6 +240,12 @@ class RouterRepository {
   ///
   /// Scheduling polling a SINGLE JNAP without caching
   ///
+  /// [logoutGeneration] ties the loop to a login. Pass
+  /// [AuthNotifier.logoutGeneration] as it was when the work this loop belongs
+  /// to began. Once a logout has moved it on, the loop sends nothing more and
+  /// ends with a [LoggedOutException], and [onCompleted] is not called: the
+  /// condition did not hold, and the retries did not run out. Left null, the
+  /// loop goes on across a logout (#1904).
   Stream<JNAPResult> scheduledCommand({
     required JNAPAction action,
     int retryDelayInMilliSec = 5000,
@@ -241,6 +256,7 @@ class RouterRepository {
     Function(bool exceedMaxRetry)? onCompleted,
     int? requestTimeoutOverride,
     bool auth = false,
+    int? logoutGeneration,
   }) async* {
     int retry = 0;
     bool exceedMaxRetry = true;
@@ -248,6 +264,14 @@ class RouterRepository {
       logger.d('SCHEDULED COMMAND: publish command {$action}: $retry times');
       if (retry <= 1) {
         await Future.delayed(Duration(milliseconds: firstDelayInMilliSec));
+      }
+      // After the delay and before the request, so that a logout during the
+      // delay stops the request it was waiting to send.
+      if (logoutGeneration != null &&
+          ref.read(authProvider.notifier).logoutGeneration !=
+              logoutGeneration) {
+        logger.d('SCHEDULED COMMAND: command {$action}: logged out, STOP!');
+        throw const LoggedOutException();
       }
       late JNAPResult result;
       try {
