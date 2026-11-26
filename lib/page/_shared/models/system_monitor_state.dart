@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 
 /// A single snapshot of CPU and memory usage at a point in time.
 class SystemSnapshot extends Equatable {
@@ -9,6 +10,11 @@ class SystemSnapshot extends Equatable {
   final int freeMemoryKb;
   final int uptimeSeconds;
 
+  /// The router's CPU temperature in whole °C (#1926): the
+  /// `TemperatureSensor` row named `cpu-top-thermal`. Null when the router has
+  /// no such row, or reports no reading for it.
+  final int? cpuTemperatureCelsius;
+
   const SystemSnapshot({
     required this.timestamp,
     required this.cpuPercent,
@@ -16,7 +22,26 @@ class SystemSnapshot extends Equatable {
     required this.totalMemoryKb,
     required this.freeMemoryKb,
     required this.uptimeSeconds,
+    this.cpuTemperatureCelsius,
   });
+
+  /// The snapshot [model] holds: the system info the session read at login or
+  /// on a refresh, which the dashboard pushes before the monitor's first poll.
+  /// It carries the CPU temperature, or the Device Information card would lose
+  /// it until that poll (#1926).
+  factory SystemSnapshot.fromSystemInfo(
+    SystemInfoUIModel model, {
+    required DateTime timestamp,
+  }) =>
+      SystemSnapshot(
+        timestamp: timestamp,
+        cpuPercent: model.cpuPercent,
+        memoryPercent: model.memoryPercent,
+        totalMemoryKb: model.totalMemory,
+        freeMemoryKb: model.freeMemory,
+        uptimeSeconds: model.uptime,
+        cpuTemperatureCelsius: model.cpuTemperatureCelsius,
+      );
 
   int get usedMemoryKb => totalMemoryKb - freeMemoryKb;
 
@@ -40,6 +65,7 @@ class SystemSnapshot extends Equatable {
         totalMemoryKb,
         freeMemoryKb,
         uptimeSeconds,
+        cpuTemperatureCelsius,
       ];
 }
 

@@ -238,16 +238,9 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
     // Push initial snapshot to system monitor when system info arrives
     unawaited(
       ref.read(systemInfoDataProvider.future).then((sysData) {
-        final model = sysData.model;
         ref.read(uspSystemMonitorProvider.notifier).pushSnapshot(
-              SystemSnapshot(
-                timestamp: DateTime.now(),
-                cpuPercent: model.cpuPercent,
-                memoryPercent: model.memoryPercent,
-                totalMemoryKb: model.totalMemory,
-                freeMemoryKb: model.freeMemory,
-                uptimeSeconds: model.uptime,
-              ),
+              SystemSnapshot.fromSystemInfo(sysData.model,
+                  timestamp: DateTime.now()),
             );
       }).catchError((e) {
         logger.w('[USP][Orchestrator]: System monitor snapshot failed: $e');

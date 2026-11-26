@@ -36,6 +36,7 @@ class SystemInfoTestData {
     int freeMemory = 256000,
     int cpuUsage = 25,
     String? baseMacAddress,
+    int? cpuTemperatureCelsius,
   }) =>
       SystemInfoUIModel(
         manufacturer: manufacturer,
@@ -48,5 +49,6 @@ class SystemInfoTestData {
         freeMemory: freeMemory,
         cpuUsage: cpuUsage,
         baseMacAddress: baseMacAddress,
+        cpuTemperatureCelsius: cpuTemperatureCelsius,
       );
 }

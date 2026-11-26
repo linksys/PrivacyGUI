@@ -188,6 +188,14 @@ The YAML definitions are **not vendored** into this repo and individual definiti
   2. ~~Confirm both leaves are still `optional`. A required counter would fail the whole table on firmware without `WANStats`.~~ **Done 2026-11-25:** both are `optional: true` in the merged YAML.
   3. ~~Before #1927 closes, reboot the router and re-read the counters. The page's "Since the router last restarted" depends on what that shows (#1927 to-do 2).~~ **Done 2026-11-25:** the wired Mac's row read `BytesReceived` 169,930,579 before and 10,412 after the router restarted (twice in between, for reasons not known), so the caption stands. The readings are on #1927.
 
+**`system_info.g.dart` carries the temperature sensors (#1926).**
+- **Source:** 0.19.0 output from `usp_framework` `main` @ `d601860`, which holds linksys/usp_framework#125 (merged 2026-11-24), taken with `git archive d601860 usp-definitions`. When `dev-2.7.5` was merged in on 2026-11-26, generating from `main` @ `830e771` (#127) gave this file byte for byte.
+- **What the definition adds:** `system_info.yaml` 2.5.0 adds the child table `temperatureSensors` on `.TemperatureStatus.TemperatureSensor.`, with `name` (`.Name`) and `value` (`.Value`, an `int`). Both are read-only and optional. The table is read in the same Get as the rest of DeviceInfo.
+- **What the file gains:** `SystemInfoTemperatureSensor`, the `temperatureSensors` list (a required constructor parameter), the two wildcard paths and their parse. A hand-written `SystemInfo(...)` must now pass `temperatureSensors`. The one in `test/core/models/device_info_test.dart` passes `[]`.
+- **The rest of the output:** `connected_devices.g.dart` comes out byte for byte as #1927 checked it in (above). `index.dart` comes out in a different order with the same exports and is left as checked in.
+- **Consumer:** `UspSystemMonitorService.fetchSnapshot()` picks the row named `cpu-top-thermal` into `SystemSnapshot.cpuTemperatureCelsius`, and treats -274 as no reading. The Device Information card shows the latest snapshot's value.
+- **Bench, 2026-11-24 (M60, 2.0.4.26112201):** the exact Get `SystemInfo.fetch()` sends (19 paths) went through usp-bridge with the WASM client. It returned five rows with no per-path error, the same names `obuspa -c get` read, and values within 1 °C a second apart. Replayed through `UspClient.extractGetResult` and the generated `fetch()`, picking by name gave `cpu-top-thermal` = 50. Posted on PR #125.
+
 Make sure that clone's `main` is up to date with `upstream` (`github.com/linksys/usp_framework`), not just with `origin`. Generating from a stale fork `main` silently reproduces the bug #1555 fixed: the fork's `data_elements_network.yaml` was the 2026-08-05 revision and had no `data_elements_network_info.yaml`.
 
 ## Update procedure
