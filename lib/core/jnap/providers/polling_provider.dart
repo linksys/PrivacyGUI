@@ -15,9 +15,7 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/page/vpn/providers/vpn_notifier.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/core/utils/fernet_manager.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
 
@@ -151,6 +149,11 @@ class CoreTransactionData extends Equatable {
   }
 }
 
+/// The core poll loop behind the dashboard.
+///
+/// A feature that needs fresh state after each poll does not get called from
+/// here: it listens to [pollCompletedProvider], which says what it can count on
+/// (#1834). Polling itself reads only what lives under lib/core.
 class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   static Timer? _timer;
 
@@ -421,7 +424,12 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
             refreshBetterActions(services.whereType<String>().toList());
           }
 
-          await _additionalPolling();
+          // Polling's own reads, under lib/core. The features read when the
+          // poll completes (pollCompletedProvider), and a poll that outlived
+          // its run reads nothing: its session may be gone (#1834).
+          if (!_isCancelled(generation)) {
+            await _additionalPolling();
+          }
           return result.copyWith(isReady: true);
         },
       ).onError((e, stackTrace) {
@@ -572,12 +580,6 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     if (serviceHelper.isSupportLedMode()) {
       await ref.read(nodeLightSettingsProvider.notifier).fetch();
     }
-    if (serviceHelper.isSupportVPN()) {
-      await ref.read(vpnProvider.notifier).fetch(false, true);
-    }
-
-    await ref.read(instantPrivacyProvider.notifier).fetch(statusOnly: true);
-
     if (BuildConfig.enableRemoteAssistance) {
       final loginType = ref.read(authProvider).value?.loginType;
       logger.i('[Polling]: _additionalPolling loginType: $loginType');

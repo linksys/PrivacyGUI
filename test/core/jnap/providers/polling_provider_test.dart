@@ -73,11 +73,6 @@ class _RecordingAuthNotifier extends AuthNotifier {
   }
 }
 
-/// Skipped until #1834 P1, whose "poll completed" signal stays silent for a
-/// poll that outlived its run. Today such a poll still runs the features'
-/// reads (#1904).
-const _redUntil1834P1 = true;
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -1982,11 +1977,10 @@ void main() {
       macFilterSettings = () async => macFilter('Disabled');
     });
 
-    testWidgets('isReady waits for Instant Privacy to read its status',
-        (tester) async {
-      // Today a poll is published as ready only once the features have read.
-      // #1834 P1 changes this on purpose (decided 2026-11-26): the features
-      // will read after the poll completes, and isReady will not wait for them.
+    testWidgets('isReady does not wait for Instant Privacy', (tester) async {
+      // Changed by #1834 P1 (decided 2026-11-26). Until then a poll was
+      // published as ready only once the features had read. Now they read after
+      // the poll completes, so isReady does not wait for them.
       whenRouterAnswers();
       await buildInstantPrivacy(tester);
       final status = Completer<JNAPSuccess>();
@@ -1995,25 +1989,25 @@ void main() {
       notifier.startPolling();
       await advanceToFirstPoll(tester);
       expect(polls(), 1, reason: 'the poll has answered');
-      expect(container.read(pollingProvider).value?.isReady ?? false, isFalse,
-          reason: 'Instant Privacy has not');
+      expect(container.read(pollingProvider).value?.isReady, isTrue,
+          reason: 'though Instant Privacy has not');
 
       status.complete(macFilter('Allow'));
       await tester.pump();
       await tester.pump();
 
-      expect(container.read(pollingProvider).value?.isReady, isTrue);
       expect(container.read(instantPrivacyProvider).status.mode,
-          MacFilterMode.allow);
+          MacFilterMode.allow,
+          reason: 'it read after the poll');
 
       await stopAndSettle(tester);
     });
 
     testWidgets(
-        'a failed Instant Privacy read fails the poll, and the internet shows '
-        'offline', (tester) async {
-      // #1834 P1 changes this on purpose (decided 2026-11-26, as a bug): a
-      // feature's failed read will no longer fail the poll.
+        'a failed Instant Privacy read leaves the poll and the internet as they '
+        'are', (tester) async {
+      // Changed by #1834 P1 (decided 2026-11-26, as a bug). Until then a
+      // feature's failed read failed the poll, and the internet showed offline.
       whenRouterAnswers();
       await buildInstantPrivacy(tester);
 
@@ -2027,17 +2021,17 @@ void main() {
       await advanceOneTick(tester);
 
       expect(polls(), 2);
-      expect(container.read(pollingProvider).hasError, isTrue,
-          reason: 'the transaction itself answered OK');
-      expect(container.read(internetStatusProvider), InternetStatus.offline);
+      expect(container.read(pollingProvider).hasError, isFalse,
+          reason: 'the transaction answered OK');
+      expect(container.read(internetStatusProvider), InternetStatus.online);
 
       await stopAndSettle(tester);
     });
 
-    testWidgets('a timed-out Instant Privacy read counts towards silence',
-        (tester) async {
-      // #1834 P1 changes this on purpose as well (decided 2026-11-26): a
-      // feature's failure will not count towards the router's silence.
+    testWidgets('a timed-out Instant Privacy read does not count towards '
+        'silence', (tester) async {
+      // Changed by #1834 P1 as well (decided 2026-11-26). Until then a
+      // feature's timeout got the router reported unreachable.
       whenRouterAnswers();
       await buildInstantPrivacy(tester);
       macFilterSettings = () async => throw TimeoutException('no answer');
@@ -2046,8 +2040,8 @@ void main() {
       await advanceToFirstPoll(tester);
       await advanceToUnreachable(tester);
 
-      expect(container.read(routerUnreachableProvider), greaterThan(0),
-          reason: 'every transaction was answered, yet the router is reported');
+      expect(container.read(routerUnreachableProvider), 0,
+          reason: 'every transaction was answered');
 
       await stopAndSettle(tester);
     });
@@ -2145,7 +2139,7 @@ void main() {
     });
 
     testWidgets('a poll answered after polling stops reads no feature',
-        skip: _redUntil1834P1, (tester) async {
+        (tester) async {
       // A logout stops polling while a poll may still be on the wire. When that
       // poll answers, the features must not read: the session that asked is
       // gone, and their reads would carry the factory default credential
