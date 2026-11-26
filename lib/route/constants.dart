@@ -176,7 +176,6 @@ class RoutePath {
   /// DDNS
   static const settingsDDNS = 'ddnsSettings';
 
-
   /// Device picker
   static const devicePicker = 'devicePicker';
 
@@ -343,7 +342,6 @@ class RouteNamed {
 
   /// DDNS
   static const settingsDDNS = 'ddnsSettings';
-
 
   /// Device picker
   static const devicePicker = 'devicePicker';
