@@ -316,6 +316,27 @@ void main() {
         isEmpty);
   });
 
+  netTest(
+      'a forced poll whose device-mode read is out at the logout sends '
+      'nothing after it', (tester) async {
+    // A poll that has no command set yet reads the device mode first and
+    // builds one (polling_provider.dart, _polling). The logout lands while that
+    // read is out. The transaction it was going to send belongs to a login
+    // that has ended (#1904, from #1834's review).
+    await logIn();
+    router.answerAfter(JNAPAction.getDeviceMode, const Duration(seconds: 1));
+    final polled = container.read(pollingProvider.notifier).forcePolling();
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(router.received.map((r) => r.action),
+        contains(JNAPAction.getDeviceMode.actionValue),
+        reason: 'the device-mode read is out');
+
+    final after = await logOut(tester);
+    await polled;
+
+    expect(after.where((r) => r.carriesCredential), isEmpty);
+  });
+
   netTest('a firmware check started before the logout sends nothing after it',
       (tester) async {
     // The bug: the dashboard starts the check as it opens, and a logout in the
