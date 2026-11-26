@@ -99,11 +99,24 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   /// Moves on at every logout, before the logout changes anything else.
   ///
-  /// Work that belongs to a login reads it when the work begins, and stops
-  /// once it has moved on (#1904). [RouterRepository.scheduledCommand] does
-  /// this for the loops it is given it for; in Router AI builds, a bootstrap
-  /// that began before a logout never shows the widget after it.
+  /// Work that belongs to a login reads it when the work begins, and asks
+  /// [loggedOutSince] before each step that would reach the router (#1904).
+  /// [RouterRepository.scheduledCommand] does this for each loop that is
+  /// given a generation. In Router AI builds, a bootstrap that began before a
+  /// logout never shows the widget after it.
+  ///
+  /// Where an API takes a generation that may be null, the convention is:
+  /// - an entry point that starts work, such as
+  ///   `FirmwareUpdateNotifier.fetchAvailableFirmwareUpdates`, reads null as
+  ///   the current login;
+  /// - [RouterRepository.scheduledCommand], which is handed work already
+  ///   under way, reads null as not tied. It cannot tell when that work began,
+  ///   so it cannot take the current login for it.
   int get logoutGeneration => _logoutGeneration;
+
+  /// Whether a logout has happened since [generation] was read from
+  /// [logoutGeneration]. The one place the two are compared (#1904).
+  bool loggedOutSince(int generation) => _logoutGeneration != generation;
 
   AuthNotifier() : super() {
     LinksysHttpClient.onError = (error) async {
@@ -452,7 +465,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       // generation also covers a logout that lands between the response and
       // this line. It is used instead of the auth state because init() re-runs
       // on every redirect and briefly puts the state into loading.
-      if (logoutGeneration == _logoutGeneration) {
+      if (!loggedOutSince(logoutGeneration)) {
         ref.read(routerAiLoaderProvider)();
       }
     } catch (_) {

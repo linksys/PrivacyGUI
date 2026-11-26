@@ -229,7 +229,7 @@ class WANIPv6ConnectionInfo extends Equatable {
   Map<String, dynamic> toMap() {
     return {
       'wanType': wanType,
-      'networkInfo': networkInfo,
+      'networkInfo': networkInfo?.toMap(),
     }..removeWhere((key, value) => value == null);
   }
 

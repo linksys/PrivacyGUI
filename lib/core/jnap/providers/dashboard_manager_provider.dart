@@ -104,7 +104,7 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     }
 
     final localTime = (timeString != null
-            ? DateFormat("yyyy-MM-ddThh:mm:ssZ").tryParse(timeString)
+            ? DateFormat("yyyy-MM-ddTHH:mm:ssZ").tryParse(timeString)
             : DateTime.now())
         ?.millisecondsSinceEpoch;
     newState = newState.copyWith(localTime: localTime);

@@ -13,6 +13,7 @@ import 'package:privacy_gui/core/jnap/models/send_sysinfo_email.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/page/troubleshooting/_troubleshooting.dart';
 import 'package:privacy_gui/page/troubleshooting/providers/troubleshooting_state.dart';
@@ -167,6 +168,8 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
   }
 
   Stream<PingStatus> getPingStatus() {
+    // The reads belong to this login; a logout ends them (#1904).
+    final logoutGeneration = ref.read(authProvider.notifier).logoutGeneration;
     return ref
         .read(routerRepositoryProvider)
         .scheduledCommand(
@@ -182,7 +185,9 @@ class TroubleshootingNotifier extends Notifier<TroubleshootingState> {
             }
           },
           auth: true,
+          logoutGeneration: logoutGeneration,
         )
+        .endAtLogout()
         .map((event) {
       if (event is JNAPSuccess) {
         return PingStatus.fromMap(event.output);
