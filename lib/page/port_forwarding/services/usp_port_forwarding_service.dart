@@ -205,7 +205,8 @@ class UspPortForwardingService {
               r.instancePath != null && !currentPaths.contains(r.instancePath))
           .toList();
       for (final r in toDelete.reversed) {
-        final result = await PortForwarding.delete(_usp, [r.instancePath!]);
+        final result = await writeOrUnanswered(
+            () => PortForwarding.delete(_usp, [r.instancePath!]));
         tally.record('Delete', UspResultParser.parseDeleteResult(result));
       }
 
@@ -235,27 +236,28 @@ class UspPortForwardingService {
         }
       }
       if (toUpdate.isNotEmpty) {
-        final result = await PortForwarding.update(_usp, toUpdate);
+        final result = await writeOrUnanswered(
+            () => PortForwarding.update(_usp, toUpdate));
         tally.record('Update', UspResultParser.parseSetResult(result));
       }
 
       // 3. Add (single batch call)
       final toAdd = current.where((r) => r.instancePath == null).toList();
       if (toAdd.isNotEmpty) {
-        final result = await PortForwarding.add(
-          _usp,
-          toAdd
-              .map((r) => {
-                    'Enable': r.enabled,
-                    'ExternalPort': r.externalPort,
-                    'ExternalPortEndRange': r.externalPortEndRange,
-                    'InternalPort': _internalPortFor(r),
-                    'InternalClient': r.internalClient,
-                    'Protocol': r.protocol,
-                    'Description': r.description,
-                  })
-              .toList(),
-        );
+        final result = await writeOrUnanswered(() => PortForwarding.add(
+              _usp,
+              toAdd
+                  .map((r) => {
+                        'Enable': r.enabled,
+                        'ExternalPort': r.externalPort,
+                        'ExternalPortEndRange': r.externalPortEndRange,
+                        'InternalPort': _internalPortFor(r),
+                        'InternalClient': r.internalClient,
+                        'Protocol': r.protocol,
+                        'Description': r.description,
+                      })
+                  .toList(),
+            ));
         await tally.recordAdd(_usp, 'Add', result);
       }
 
@@ -297,7 +299,8 @@ class UspPortForwardingService {
               r.instancePath != null && !currentPaths.contains(r.instancePath))
           .toList();
       for (final r in toDelete.reversed) {
-        final result = await PortTriggering.delete(_usp, [r.instancePath!]);
+        final result = await writeOrUnanswered(
+            () => PortTriggering.delete(_usp, [r.instancePath!]));
         tally.record('Delete', UspResultParser.parseDeleteResult(result));
       }
 
@@ -348,25 +351,26 @@ class UspPortForwardingService {
         }
       }
       if (toUpdate.isNotEmpty) {
-        final result = await PortTriggering.update(_usp, toUpdate);
+        final result = await writeOrUnanswered(
+            () => PortTriggering.update(_usp, toUpdate));
         tally.record('Update', UspResultParser.parseSetResult(result));
       }
 
       // 3. Add (parent + forward rules)
       final toAdd = current.where((r) => r.instancePath == null).toList();
       for (final r in toAdd) {
-        final result = await PortTriggering.add(
-          _usp,
-          [
-            {
-              'Enable': r.enabled,
-              'Description': r.description,
-              'Port': r.triggerPort,
-              'PortEndRange': r.triggerPortEndRange,
-              'Protocol': r.triggerProtocol,
-            }
-          ],
-        );
+        final result = await writeOrUnanswered(() => PortTriggering.add(
+              _usp,
+              [
+                {
+                  'Enable': r.enabled,
+                  'Description': r.description,
+                  'Port': r.triggerPort,
+                  'PortEndRange': r.triggerPortEndRange,
+                  'Protocol': r.triggerProtocol,
+                }
+              ],
+            ));
 
         // Extract instance path from structured response
         // A refused parent is deleted (a UspFailure then). One the delete
@@ -395,13 +399,14 @@ class UspPortForwardingService {
         }
         if (parentPath != null) {
           for (final fr in r.forwardRules) {
-            final fwd = await PortTriggering.addPortTriggerForwardRule(
-              _usp,
-              parentPath,
-              forwardPort: fr.forwardPort,
-              forwardPortEndRange: fr.forwardPortEndRange,
-              forwardProtocol: fr.forwardProtocol,
-            );
+            final fwd = await writeOrUnanswered(
+                () => PortTriggering.addPortTriggerForwardRule(
+                      _usp,
+                      parentPath!,
+                      forwardPort: fr.forwardPort,
+                      forwardPortEndRange: fr.forwardPortEndRange,
+                      forwardProtocol: fr.forwardProtocol,
+                    ));
             await tally.recordAdd(_usp, 'Add forward', fwd);
           }
         }
@@ -445,8 +450,8 @@ class UspPortForwardingService {
             r.instancePath != null && !currentPaths.contains(r.instancePath))
         .toList();
     for (final r in toDelete.reversed) {
-      final result = await PortTriggering.deletePortTriggerForwardRule(
-          _usp, r.instancePath!);
+      final result = await writeOrUnanswered(() =>
+          PortTriggering.deletePortTriggerForwardRule(_usp, r.instancePath!));
       tally.record('Delete forward', UspResultParser.parseDeleteResult(result));
     }
 
@@ -466,20 +471,21 @@ class UspPortForwardingService {
       updateParams['${cur.instancePath}Protocol'] = cur.forwardProtocol;
     }
     if (updateParams.isNotEmpty) {
-      final result = await _usp.set(updateParams);
+      final result = await writeOrUnanswered(() => _usp.set(updateParams));
       tally.record('Update forward', UspResultParser.parseSetResult(result));
     }
 
     // 3. Add brand-new forward rules (null instancePath).
     final toAdd = current.where((r) => r.instancePath == null).toList();
     for (final fr in toAdd) {
-      final result = await PortTriggering.addPortTriggerForwardRule(
-        _usp,
-        parentPath,
-        forwardPort: fr.forwardPort,
-        forwardPortEndRange: fr.forwardPortEndRange,
-        forwardProtocol: fr.forwardProtocol,
-      );
+      final result = await writeOrUnanswered(
+          () => PortTriggering.addPortTriggerForwardRule(
+                _usp,
+                parentPath,
+                forwardPort: fr.forwardPort,
+                forwardPortEndRange: fr.forwardPortEndRange,
+                forwardProtocol: fr.forwardProtocol,
+              ));
       await tally.recordAdd(_usp, 'Add forward', result);
     }
   }
