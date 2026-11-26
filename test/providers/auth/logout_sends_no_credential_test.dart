@@ -37,6 +37,7 @@ import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/jnap/spec/jnap_spec.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
+import 'package:privacy_gui/page/instant_topology/providers/instant_topology_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacy_gui/page/troubleshooting/providers/troubleshooting_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
@@ -85,6 +86,27 @@ Map<String, dynamic> _firmwareStatus({
 bool _isInstallRequest(_Received r) =>
     r.action == JNAPAction.updateFirmwareNow.actionValue &&
     r.data['onlyCheck'] == false;
+
+/// One node of `GetDevices` output, online unless [online] is false.
+Map<String, dynamic> _node(String id, {bool online = true}) => {
+      'connections': [
+        if (online)
+          {'macAddress': 'AA:00:00:00:00:01', 'ipAddress': '192.168.1.2'},
+      ],
+      'properties': [
+        {'name': 'userDeviceLocation', 'value': id},
+      ],
+      'unit': <String, dynamic>{},
+      'deviceID': id,
+      'maxAllowedProperties': 16,
+      'model': {'deviceType': 'Infrastructure', 'modelNumber': 'MX6200'},
+      'isAuthority': false,
+      'lastChangeRevision': 1,
+      'knownInterfaces': [
+        {'macAddress': 'AA:00:00:00:00:01', 'interfaceType': 'Wireless'},
+      ],
+      'nodeType': 'Slave',
+    };
 
 /// One request as the router received it.
 class _Received {
@@ -620,6 +642,37 @@ void main() {
         troubleshooting.getPingStatus);
 
     expect(after.where((r) => r.carriesCredential), isEmpty);
+  });
+
+  netTest(
+      "a node reboot's wait for the node to go offline sends nothing after "
+      'the logout, and ends the reboot', (tester) async {
+    // After rebooting a node, the topology reads the devices every 3 s, up to
+    // 20 times, until the node is offline. The page then forces a poll and
+    // starts polling again, so the reboot must end with the logout.
+    await logIn();
+    router.answer(JNAPAction.getDevices, {
+      'devices': [_node('node-1')],
+      'revision': 1,
+    });
+    Object? ended;
+    container
+        .read(instantTopologyProvider.notifier)
+        .reboot(['node-1']).then((_) {}, onError: (Object e) {
+      ended = e;
+    });
+    // The first device read goes out 3 s after the reboot is asked for.
+    await tester.pump(const Duration(milliseconds: 4500));
+    expect(
+        router.received
+            .where((r) => r.action == JNAPAction.getDevices.actionValue),
+        isNotEmpty,
+        reason: 'the wait is under way');
+
+    final after = await logOut(tester);
+
+    expect(after.where((r) => r.carriesCredential), isEmpty);
+    expect(ended, isA<LoggedOutException>());
   });
 
   netTest(

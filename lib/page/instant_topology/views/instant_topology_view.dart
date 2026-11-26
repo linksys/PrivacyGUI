@@ -10,6 +10,7 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -384,7 +385,10 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView>
           showSuccessSnackBar(context, loc(context).successExclamation);
         }).catchError((error) {
           showRouterNotFoundAlert(context, ref);
-        }, test: (error) => error is JNAPSideEffectError);
+        }, test: (error) => error is JNAPSideEffectError).catchError(
+            // A logout ended the wait, and the page is gone (#1904).
+            (_) {},
+            test: (error) => error is LoggedOutException);
       }
     });
   }
@@ -417,7 +421,10 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView>
             // If the master is restored to factory settings, the current session becomes invalid
             showRouterNotFoundAlert(context, ref);
           }
-        });
+        }).catchError(
+            // A logout ended the wait, and the page is gone (#1904).
+            (_) {},
+            test: (error) => error is LoggedOutException);
       }
     });
   }
