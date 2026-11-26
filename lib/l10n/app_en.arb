@@ -553,6 +553,69 @@
     }
   },
   "channelUtilizationUnavailable": "Channel utilization: —",
+  "channelFinder": "Channel Finder",
+  "channelFinderDescription": "See how busy each WiFi channel is around your router.",
+  "channelFinderScanNote": "A scan takes about 45 seconds. WiFi may pause briefly while it runs.",
+  "channelFinderScan": "Scan",
+  "channelFinderScanAgain": "Scan again",
+  "channelFinderLastScan": "Last scan: {time}",
+  "@channelFinderLastScan": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "channelFinderNoScan": "No scan yet. Scan to see how busy each channel is.",
+  "channelFinderScanningNeighbors": "Listening for nearby networks…",
+  "channelFinderScanningChannels": "Measuring how busy each channel is…",
+  "channelFinderChannel": "Channel {channel}",
+  "@channelFinderChannel": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "channelFinderInUse": "In use",
+  "channelFinderBusy": "{percent}% busy",
+  "@channelFinderBusy": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "channelFinderBusyUnknown": "Busyness not measured",
+  "channelFinderNetworks": "{count, plural, =0{No networks} =1{1 network} other{{count} networks}}",
+  "@channelFinderNetworks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "channelFinderStrongest": "Strongest {dbm} dBm",
+  "@channelFinderStrongest": {
+    "placeholders": {
+      "dbm": {
+        "type": "int"
+      }
+    }
+  },
+  "channelFinderNetworksOnChannel": "Networks on channel {channel}",
+  "@channelFinderNetworksOnChannel": {
+    "placeholders": {
+      "channel": {
+        "type": "int"
+      }
+    }
+  },
+  "channelFinderHiddenNetwork": "Hidden network",
+  "channelFinderNoNetworksOnChannel": "The router heard no networks on this channel.",
+  "channelFinderOpen": "Open Channel Finder",
+  "channelFinderLegendBusy": "50% busy or more",
+  "channelFinderLegendOther": "Other channels",
   "speed": "Speed",
   "speedTest": "Speed Test",
   "ssid": "SSID",
@@ -1305,6 +1368,7 @@
   "dnsPing": "DNS Ping",
   "dnsLookupStep": "DNS Lookup",
   "wifiSignal": "WiFi Signal",
+  "diagnosticsChannelCongestion": "Channel Congestion",
   "diagnosticsRecWanDownTitle": "WAN Connection Down",
   "diagnosticsRecNoIpTitle": "No IP Address",
   "diagnosticsRecDhcpFailTitle": "DHCP Failed",
@@ -1315,6 +1379,7 @@
   "diagnosticsRecSlowDownloadTitle": "Slow Download Speed",
   "diagnosticsRecSlowUploadTitle": "Slow Upload Speed",
   "diagnosticsRecWeakWifiTitle": "Weak WiFi Signal",
+  "diagnosticsRecBusyChannelTitle": "Busy WiFi Channel",
   "diagnosticsRecManyDevicesTitle": "Too Many Devices",
   "diagnosticsRecBandwidthHogTitle": "High Bandwidth Devices",
   "diagnosticsRecBottleneckTitle": "Network Bottleneck Detected",
@@ -1328,6 +1393,7 @@
   "diagnosticsRecSlowDownloadDesc": "Contact your ISP about download speed issues.",
   "diagnosticsRecSlowUploadDesc": "Check for devices uploading large files.",
   "diagnosticsRecWeakWifiDesc": "Move closer to router or add a mesh node.",
+  "diagnosticsRecBusyChannelDesc": "The channel your WiFi is on is busy. Open Channel Finder to see how busy each channel is.",
   "diagnosticsRecManyDevicesDesc": "Consider enabling QoS or disconnecting unused devices.",
   "diagnosticsRecBandwidthHogDesc": "Some devices are using a lot of bandwidth.",
   "diagnosticsRecBottleneckDesc": "Network latency detected at a specific hop.",

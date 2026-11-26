@@ -18,6 +18,7 @@ class RecommendationCatalog {
       'diagnostics_rec_slow_download_title' => 'Slow Download Speed',
       'diagnostics_rec_slow_upload_title' => 'Slow Upload Speed',
       'diagnostics_rec_weak_wifi_title' => 'Weak WiFi Signal',
+      'diagnostics_rec_busy_channel_title' => 'Busy Wi-Fi Channel',
       'diagnostics_rec_many_devices_title' => 'Too Many Devices',
       'diagnostics_rec_bandwidth_hog_title' => 'High Bandwidth Devices',
       'diagnostics_rec_bottleneck_title' => 'Network Bottleneck Detected',
@@ -47,6 +48,8 @@ class RecommendationCatalog {
         'Check for devices uploading large files.',
       'diagnostics_rec_weak_wifi_desc' =>
         'Move closer to router or add a mesh node.',
+      'diagnostics_rec_busy_channel_desc' =>
+        'The channel your Wi-Fi is on is busy. Open Channel Finder to see how busy each channel is.',
       'diagnostics_rec_many_devices_desc' =>
         'Consider enabling QoS or disconnecting unused devices.',
       'diagnostics_rec_bandwidth_hog_desc' =>

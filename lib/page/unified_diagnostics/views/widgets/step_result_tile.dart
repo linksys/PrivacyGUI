@@ -160,6 +160,8 @@ class StepResultTile extends StatelessWidget {
       DiagnosticStep.dnsLookup => loc(context).dnsLookupStep,
       DiagnosticStep.runningSpeedTest => loc(context).speedTest,
       DiagnosticStep.checkingWifiSignal => loc(context).wifiSignal,
+      DiagnosticStep.checkingChannelCongestion =>
+        loc(context).diagnosticsChannelCongestion,
       DiagnosticStep.checkingConnectedDevices => loc(context).connectedDevices,
       DiagnosticStep.runningTraceroute => loc(context).traceroute,
       DiagnosticStep.checkingMeshBackhaul => loc(context).meshBackhaul,
@@ -234,6 +236,20 @@ class StepResultTile extends StatelessWidget {
           if (r.lowDataRateDevices.isNotEmpty)
             _ResultDetail(loc(context).lowDataRate,
                 r.lowDataRateDevices.take(3).join(', ')),
+        ],
+      ChannelCongestionCheckUIModel r => [
+          for (final radio in r.radios)
+            _ResultDetail(
+              radio.band,
+              [
+                if (radio.channel != null)
+                  loc(context).channelFinderChannel(radio.channel!),
+                switch (radio.utilizationPercent) {
+                  final percent? => loc(context).channelFinderBusy(percent),
+                  null => loc(context).channelFinderBusyUnknown,
+                },
+              ].join(' · '),
+            ),
         ],
       WifiCoverageCheckUIModel r => [
           _ResultDetail(

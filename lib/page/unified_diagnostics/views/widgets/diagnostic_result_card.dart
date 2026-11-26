@@ -204,6 +204,16 @@ class DiagnosticResultCard extends StatelessWidget {
               ? 'All hops responsive'
               : '${r.slowHops.length} slow hops detected',
         ),
+      ChannelCongestionCheckUIModel r => (
+          'Channel Congestion',
+          r.busiest?.utilizationPercent?.toString() ?? '--',
+          r.busiest?.utilizationPercent == null ? '' : '%',
+          switch (r.busiest) {
+            ChannelCongestionRadioUIModel(:final band, :final channel?) =>
+              'Busiest: channel $channel on $band',
+            _ => 'No channel reading',
+          },
+        ),
       _ when result.step == DiagnosticStep.runningSpeedTest => (
           'Speed Test',
           _getSpeedMetric(result.rawData),
@@ -265,6 +275,7 @@ class DiagnosticResultCard extends StatelessWidget {
       DiagnosticStep.dnsLookup => 'DNS Lookup',
       DiagnosticStep.runningSpeedTest => 'Speed Test',
       DiagnosticStep.checkingWifiSignal => 'WiFi Signal',
+      DiagnosticStep.checkingChannelCongestion => 'Channel Congestion',
       DiagnosticStep.checkingConnectedDevices => 'Connected Devices',
       DiagnosticStep.runningTraceroute => 'Traceroute',
       DiagnosticStep.checkingMeshBackhaul => 'Mesh Backhaul',

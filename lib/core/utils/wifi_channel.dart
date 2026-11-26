@@ -79,3 +79,9 @@ List<int> filterDfsChannels(
     (dfsEnabled || band != '5GHz')
         ? channels
         : channels.where((ch) => !dfsChannels5GHz.contains(ch)).toList();
+
+/// Channel utilization (0–255) from which a channel counts as busy: 50 %.
+/// Channel Finder draws a channel at or above it in the theme's warning colour,
+/// and the diagnostics congestion step warns when the channel a radio is on
+/// reaches it (#1778).
+const busyChannelUtilization = 128;

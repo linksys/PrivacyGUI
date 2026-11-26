@@ -116,6 +116,7 @@ class DiagnosticRunningView extends ConsumerWidget {
         ],
       DiagnosticFlow.wifiCoverage => [
           DiagnosticStep.checkingWifiSignal,
+          DiagnosticStep.checkingChannelCongestion,
         ],
       DiagnosticFlow.meshBackhaul => [
           DiagnosticStep.checkingMeshBackhaul,

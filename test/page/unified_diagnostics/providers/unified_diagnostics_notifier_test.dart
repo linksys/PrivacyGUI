@@ -22,6 +22,10 @@ import 'package:privacy_gui/page/unified_diagnostics/models/diagnostic_state.dar
 import 'package:privacy_gui/page/unified_diagnostics/providers/unified_diagnostics_notifier.dart';
 import 'package:privacy_gui/page/unified_diagnostics/services/diagnostic_report_service.dart';
 import 'package:privacy_gui/page/unified_diagnostics/services/unified_diagnostics_service.dart';
+import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
+
+import '../../../mocks/test_data/wifi_settings_test_data.dart';
 
 class _MockUnifiedDiagnosticsService extends Mock
     implements UnifiedDiagnosticsService {}
@@ -33,6 +37,35 @@ class _MockReportService extends Mock implements DiagnosticReportService {}
 class _MockScope extends Mock implements DiagnosticScope {}
 
 class _MockUspClient extends Mock implements UspClient {}
+
+/// The session's Wi-Fi data for the congestion step (#1778): [radios] at
+/// first, [refreshed] once `refreshUtilization()` has run, and a failed read
+/// when [fail] is set.
+class _FakeWifiDataNotifier extends WifiDataNotifier {
+  final List<WifiRadioUIModel> radios;
+  final List<WifiRadioUIModel>? refreshed;
+  final bool fail;
+  int refreshCount = 0;
+
+  _FakeWifiDataNotifier(this.radios, {this.refreshed, this.fail = false});
+
+  @override
+  Future<WifiData> build() async {
+    if (fail) throw StateError('Wi-Fi read failed');
+    return WifiData(
+        codegenContext: WifiCodegenContext.empty, radioModels: radios);
+  }
+
+  @override
+  Future<void> refreshUtilization() async {
+    refreshCount++;
+    final next = refreshed;
+    if (next != null) {
+      state = AsyncData(WifiData(
+          codegenContext: WifiCodegenContext.empty, radioModels: next));
+    }
+  }
+}
 
 void main() {
   late _MockUnifiedDiagnosticsService mockService;
@@ -110,13 +143,15 @@ void main() {
     registerFallbackValue(const UnifiedDiagnosticsState());
   });
 
-  ProviderContainer createContainer() {
+  ProviderContainer createContainer({_FakeWifiDataNotifier? wifiData}) {
     final container = ProviderContainer(
       overrides: [
         unifiedDiagnosticsServiceProvider.overrideWithValue(mockService),
         networkDiagnosticsExecutorProvider.overrideWithValue(mockExecutor),
         // Override speed test provider to avoid real network calls
         speedTestProvider.overrideWith(() => _MockSpeedTestNotifier()),
+        wifiDataProvider
+            .overrideWith(() => wifiData ?? _FakeWifiDataNotifier(const [])),
       ],
     );
     // Keep AutoDispose provider alive for the duration of each test.
@@ -870,9 +905,92 @@ void main() {
 
         final state = container.read(unifiedDiagnosticsProvider);
         expect(state.step, DiagnosticStep.showingResults);
-        expect(state.results.single, isA<WifiCoverageCheckUIModel>());
-        expect(state.results.single.severity, DiagnosticSeverity.ok);
+        expect(state.results.first, isA<WifiCoverageCheckUIModel>());
+        expect(state.results.first.severity, DiagnosticSeverity.ok);
+        expect(state.results.last, isA<ChannelCongestionCheckUIModel>());
         container.dispose();
+      });
+
+      group('channel congestion step (#1778)', () {
+        setUp(() {
+          when(() => mockService.analyzeWifiCoverage())
+              .thenAnswer((_) async => const WifiCoverageUIModel(
+                    totalWirelessDevices: 4,
+                    weakSignalDevices: [],
+                    averageSignalStrength: -55,
+                    radios: [],
+                  ));
+        });
+
+        Future<UnifiedDiagnosticsState> run(
+            _FakeWifiDataNotifier wifiData) async {
+          final container = createContainer(wifiData: wifiData);
+          addTearDown(container.dispose);
+          await container
+              .read(unifiedDiagnosticsProvider.notifier)
+              .selectFlow(DiagnosticFlow.wifiCoverage);
+          await Future.delayed(Duration.zero);
+          return container.read(unifiedDiagnosticsProvider);
+        }
+
+        WifiRadioUIModel radio(String band, int? utilization,
+                {int channel = 6}) =>
+            WifiSettingsTestData.createRadioUIModel(
+                instancePath: 'Device.WiFi.Radio.${band == '5GHz' ? 2 : 1}.',
+                band: band,
+                channel: channel,
+                utilization: utilization);
+
+        test('warns and recommends Channel Finder when a channel is busy',
+            () async {
+          final state = await run(_FakeWifiDataNotifier(
+              [radio('2.4GHz', 40), radio('5GHz', 140, channel: 48)]));
+
+          final step = state.results.last as ChannelCongestionCheckUIModel;
+          expect(step.severity, DiagnosticSeverity.warning);
+          expect(step.busiest?.band, '5GHz');
+          final rec =
+              state.recommendations.singleWhere((r) => r.id == 'busy_channel');
+          expect(rec.actionId, RecommendationUIModel.openChannelFinder);
+        });
+
+        test('is ok and recommends nothing when every channel is below half',
+            () async {
+          final state = await run(
+              _FakeWifiDataNotifier([radio('2.4GHz', 40), radio('5GHz', 127)]));
+
+          expect(state.results.last.severity, DiagnosticSeverity.ok);
+          expect(state.recommendations.where((r) => r.id == 'busy_channel'),
+              isEmpty);
+        });
+
+        test('judges the utilization read just now, not the cached one',
+            () async {
+          final wifiData = _FakeWifiDataNotifier(
+            [radio('5GHz', 20)],
+            refreshed: [radio('5GHz', 200)],
+          );
+          final state = await run(wifiData);
+
+          expect(wifiData.refreshCount, 1);
+          expect(state.results.last.severity, DiagnosticSeverity.warning);
+        });
+
+        test('is skipped when no radio has a reading', () async {
+          final state = await run(_FakeWifiDataNotifier([radio('5GHz', null)]));
+
+          expect(state.results.last.severity, DiagnosticSeverity.skipped);
+        });
+
+        test('a failed Wi-Fi read is an error step, and the flow still ends',
+            () async {
+          final state = await run(_FakeWifiDataNotifier(const [], fail: true));
+
+          expect(state.step, DiagnosticStep.showingResults);
+          expect(state.results.last.step,
+              DiagnosticStep.checkingChannelCongestion);
+          expect(state.results.last.isError, isTrue);
+        });
       });
     });
 

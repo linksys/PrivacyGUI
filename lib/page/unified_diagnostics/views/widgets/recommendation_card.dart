@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/_shared/components/layout_blocks.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../models/diagnostic_state.dart';
@@ -35,6 +37,16 @@ class RecommendationCard extends StatelessWidget {
                   AppGap.xs(),
                   AppText.bodySmall(
                       _getDescription(context, rec.descriptionKey)),
+                  if (rec.actionId == RecommendationUIModel.openChannelFinder)
+                    Padding(
+                      padding: const EdgeInsets.only(top: AppSpacing.sm),
+                      child: AppButton.text(
+                        identifier: 'diagnostics-rec-open-channel-finder',
+                        label: loc(context).channelFinderOpen,
+                        onTap: () =>
+                            context.pushNamed(RouteNamed.uspChannelFinder),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -65,6 +77,8 @@ class RecommendationCard extends StatelessWidget {
         loc(context).diagnosticsRecSlowUploadTitle,
       'diagnostics_rec_weak_wifi_title' =>
         loc(context).diagnosticsRecWeakWifiTitle,
+      'diagnostics_rec_busy_channel_title' =>
+        loc(context).diagnosticsRecBusyChannelTitle,
       'diagnostics_rec_many_devices_title' =>
         loc(context).diagnosticsRecManyDevicesTitle,
       'diagnostics_rec_bandwidth_hog_title' =>
@@ -93,6 +107,8 @@ class RecommendationCard extends StatelessWidget {
         loc(context).diagnosticsRecSlowUploadDesc,
       'diagnostics_rec_weak_wifi_desc' =>
         loc(context).diagnosticsRecWeakWifiDesc,
+      'diagnostics_rec_busy_channel_desc' =>
+        loc(context).diagnosticsRecBusyChannelDesc,
       'diagnostics_rec_many_devices_desc' =>
         loc(context).diagnosticsRecManyDevicesDesc,
       'diagnostics_rec_bandwidth_hog_desc' =>

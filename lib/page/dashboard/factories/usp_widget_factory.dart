@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import '../models/usp_widget_specs.dart';
 import 'package:privacy_gui/page/admin/cards/usp_device_info_card.dart';
 import 'package:privacy_gui/page/admin/cards/usp_time_settings_card.dart';
+import 'package:privacy_gui/page/channel_finder/cards/channel_finder_card.dart';
 import 'package:privacy_gui/page/devices/cards/usp_connected_devices_card.dart';
 import 'package:privacy_gui/page/firewall/cards/usp_firewall_overview_card.dart';
 import 'package:privacy_gui/page/internet_settings/cards/usp_network_status_card.dart';
@@ -90,7 +91,7 @@ class UspWidgetFactory {
   /// `layout_item_factory.dart` makes when it places a card on the grid, so the
   /// presentation is the height the dashboard would have given the card. It used
   /// to be `minHeightRows`, which is the floor the grid enforces rather than the
-  /// box the card is laid out in: eleven of the eighteen specs prefer more than
+  /// box the card is laid out in: eleven of the nineteen specs prefer more than
   /// their floor, topology by two whole rows (a floor of 3, `strict(5)`), so its
   /// presentation was 392px of a card that fills 664 — measured in the built app
   /// as "obviously too small". `maxHeightRows` is the other wrong end: the ceiling
@@ -128,6 +129,7 @@ class UspWidgetFactory {
       'network_health' => UspNetworkHealthCard(),
       'firewall_overview' => UspFirewallOverviewCard(),
       'wifi_performance' => UspWifiPerformanceCard(),
+      'channel_finder' => ChannelFinderCard(),
       // 'speed_test' => UspSpeedTestCard(), // disabled: blocked by FW support (#857)
       _ => null,
     };

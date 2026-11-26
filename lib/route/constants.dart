@@ -45,6 +45,7 @@ class RoutePath {
   static const uspAdvancedSettings = '/uspAdvancedSettings';
   static const uspStatistics = '/uspStatistics';
   static const uspWifiSettings = '/uspWifiSettings';
+  static const uspChannelFinder = '/uspChannelFinder'; // #1778
   static const uspApps = '/uspApps';
   static const uspSpeedTest = '/uspSpeedTest';
   static const uspFirmwareUpdate = '/uspFirmwareUpdate';
@@ -175,8 +176,6 @@ class RoutePath {
   /// DDNS
   static const settingsDDNS = 'ddnsSettings';
 
-  ///Channel Finder
-  static const channelFinderOptimize = 'channelFinderOptimize';
 
   /// Device picker
   static const devicePicker = 'devicePicker';
@@ -232,6 +231,7 @@ class RouteNamed {
   static const pnpAutoIPoE = 'pnpAutoIPoE';
   static const uspInternetSettings = 'uspInternetSettings';
   static const uspWifiSettings = 'uspWifiSettings';
+  static const uspChannelFinder = 'uspChannelFinder'; // #1778
   static const uspApps = 'uspApps';
   static const uspUnifiedDiagnostics = 'uspUnifiedDiagnostics';
   static const uspSpeedTest = 'uspSpeedTest';
@@ -344,8 +344,6 @@ class RouteNamed {
   /// DDNS
   static const settingsDDNS = 'ddnsSettings';
 
-  ///Channel Finder
-  static const channelFinderOptimize = 'channelFinderOptimize';
 
   /// Device picker
   static const devicePicker = 'devicePicker';

@@ -6,6 +6,8 @@ import 'package:privacy_gui/core/usp/models/operate_result.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/services/network_diagnostics_executor.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 // Speed Test disabled: blocked by FW support (#857)
 // import 'package:privacy_gui/page/unified_diagnostics/models/speed_test_state.dart';
 // import 'package:privacy_gui/page/unified_diagnostics/providers/speed_test_notifier.dart';
@@ -800,8 +802,30 @@ class UnifiedDiagnosticsNotifier
       _publish(gen, state.copyWith(results: List.from(results)));
     }
 
+    // Step 2: how busy the channel each radio is on is (#1778). Read live,
+    // with no scan: a scan would pause Wi-Fi in the middle of the check. A
+    // busy channel recommends Channel Finder, which compares every channel.
+    if (!_isCurrent(gen)) return;
+    state = state.copyWith(step: DiagnosticStep.checkingChannelCongestion);
+    try {
+      results.add(ChannelCongestionCheckUIModel.fromRadios(
+          await _readRadiosWithLiveUtilization()));
+      _publish(gen, state.copyWith(results: List.from(results)));
+    } catch (e) {
+      results.add(_errorResult(DiagnosticStep.checkingChannelCongestion, e));
+      _publish(gen, state.copyWith(results: List.from(results)));
+    }
+
     if (!_isCurrent(gen)) return;
     await _analyzeAndShowResults(results);
+  }
+
+  /// The session's Wi-Fi radios, their DataElements utilization re-read just
+  /// now (#1295). Read, not watched (constitution Article IV Rule 2).
+  Future<List<WifiRadioUIModel>> _readRadiosWithLiveUtilization() async {
+    await ref.read(wifiDataProvider.future);
+    await ref.read(wifiDataProvider.notifier).refreshUtilization();
+    return (await ref.read(wifiDataProvider.future)).radioModels;
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -1055,6 +1079,16 @@ class UnifiedDiagnosticsNotifier
               descriptionKey: 'diagnostics_rec_weak_wifi_desc',
               priority: 7,
               actionId: 'moveCloser',
+            ));
+          }
+        case DiagnosticStep.checkingChannelCongestion:
+          if (result is ChannelCongestionCheckUIModel && result.isCongested) {
+            recommendations.add(const RecommendationUIModel(
+              id: 'busy_channel',
+              titleKey: 'diagnostics_rec_busy_channel_title',
+              descriptionKey: 'diagnostics_rec_busy_channel_desc',
+              priority: 7,
+              actionId: RecommendationUIModel.openChannelFinder,
             ));
           }
         case DiagnosticStep.checkingConnectedDevices:

@@ -79,16 +79,41 @@ void main() {
       expect(UspDashboardPreset.essential.cardIds.length, 6);
     });
 
-    test('standard has 12 cards', () {
-      expect(UspDashboardPreset.standard.cardIds.length, 12);
+    test('standard has 13 cards', () {
+      expect(UspDashboardPreset.standard.cardIds.length, 13);
     });
 
-    test('professional has 18 cards (all)', () {
-      expect(UspDashboardPreset.professional.cardIds.length, 18);
+    test('professional has 19 cards (all)', () {
+      expect(UspDashboardPreset.professional.cardIds.length, 19);
     });
 
-    test('monitoring has 8 cards', () {
-      expect(UspDashboardPreset.monitoring.cardIds.length, 8);
+    // "All cards" is what the preset promises in its description, so it is
+    // pinned against the registry rather than by a count alone: a card added
+    // to the registry and forgotten here fails by name (#1778).
+    test('professional is every registered card', () {
+      expect(
+        UspDashboardPreset.professional.cardIds.toSet(),
+        UspWidgetSpecs.all.map((s) => s.id).toSet(),
+      );
+    });
+
+    test('monitoring has 9 cards', () {
+      expect(UspDashboardPreset.monitoring.cardIds.length, 9);
+    });
+
+    // #1778: the Channel Finder card is in the three presets that show Wi-Fi
+    // detail, and not in Essential or the Remote Support layout.
+    test('channel_finder is in standard, professional and monitoring only', () {
+      expect(
+        UspDashboardPreset.values
+            .where((p) => p.cardIds.contains('channel_finder'))
+            .toList(),
+        const [
+          UspDashboardPreset.standard,
+          UspDashboardPreset.professional,
+          UspDashboardPreset.monitoring,
+        ],
+      );
     });
 
     test('all cardIds exist in UspWidgetSpecs', () {

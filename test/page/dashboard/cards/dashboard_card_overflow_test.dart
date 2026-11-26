@@ -249,13 +249,15 @@ void main() {
 
   // ─── The main width sweep ─────────────────────────────────────────────────
   //
-  // 18 cards x their realizable spans x their tabs x 26 locales. The count is
-  // pinned because the grouping hides a narrowing: 61 coordinates report the same
+  // 19 cards x their realizable spans x their tabs x 26 locales. The count is
+  // pinned because the grouping hides a narrowing: 63 coordinates report the same
   // green whether each ran 26 locales or 1. 1,638 until #1130 made
-  // `firewall_overview` one view instead of two tabs (−2 coordinates, −52 cells).
+  // `firewall_overview` one view instead of two tabs (−2 coordinates, −52 cells),
+  // and 1,638 again since #1778 added `channel_finder` at its two widths,
+  // 260.5px and 288px (+2 coordinates, +52 cells).
   runOverflowSweep(
     family: CardWidthFamily(_gate),
-    expectedCellCount: 1586,
+    expectedCellCount: 1638,
   );
 
   // ─── The normal band (#1318) ──────────────────────────────────────────────
@@ -590,7 +592,7 @@ void main() {
   // The sweeps above are one router shape. `kCardDataProfileSweeps` adds the
   // (card, tab) pairs worth measuring on a second one — see
   // `card_data_profiles.dart` for why the list is opt-in per card rather than
-  // all 18, and what that deliberately does not claim.
+  // all 19, and what that deliberately does not claim.
   //
   // Same widths, same 26 locales, same one-tree-per-measurement rule as above;
   // only the data differs. One thing is deliberately *not* shared with the default
@@ -671,10 +673,11 @@ void main() {
     }
   });
 
-  // 52 for the tri-band Channels tab, and 52 for each of the Firewall card's
-  // two ends (#1130): one view × two widths × 26 locales.
+  // 52 for the tri-band Channels tab, 52 for each of the Firewall card's two
+  // ends (#1130), and 52 for each of the Channel Finder card's idle, scanning
+  // and failed states (#1778): one view × two widths × 26 locales.
   runOverflowSweep(
     family: CardProfileFamily(_gate),
-    expectedCellCount: 156,
+    expectedCellCount: 312,
   );
 }

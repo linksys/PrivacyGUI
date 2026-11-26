@@ -359,6 +359,10 @@ void main() {
     });
   });
 
+  // The Channel Finder card has no detail button either: its body is the link
+  // to its page and its footer is the Scan button (#1778), so the body is what
+  // has to close the presentation first.
+
   /// The other half of the guard: a card in the grid pops nothing.
   ///
   /// The pop is conditional on `CardDensityScope.isPresented`, and in the grid the
