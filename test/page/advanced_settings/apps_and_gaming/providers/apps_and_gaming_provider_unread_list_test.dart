@@ -250,6 +250,7 @@ void main() {
       router.holdsInTurn(JNAPAction.getDDNSSettings, [_refused, _noIpAccount]);
       await openPage();
 
+      expect(notifier.isReadComplete(), isFalse);
       await notifier.save();
 
       expect(router.payloadsOf(JNAPAction.setDDNSSetting), isEmpty);
