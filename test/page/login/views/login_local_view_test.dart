@@ -25,6 +25,7 @@ import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 
 import '../../../common/di.dart';
+import '../../../common/semantics_identifiers.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
 import '../../../test_data/device_info_test_data.dart';
@@ -100,9 +101,7 @@ void main() {
       'login-forgot-password',
       'login-submit',
     ];
-    final found = {
-      for (final id in ids) id: find.bySemanticsIdentifier(id).evaluate().length
-    };
+    final found = identifierCounts(ids);
     await tester.enterText(
         find.bySemanticsIdentifier('login-password'), 'admin123');
     await tester.pump();

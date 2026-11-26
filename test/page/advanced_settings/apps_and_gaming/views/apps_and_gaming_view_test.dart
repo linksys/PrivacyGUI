@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/app
 
 import '../../../../common/config.dart';
 import '../../../../common/di.dart';
+import '../../../../common/semantics_identifiers.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/testable_router.dart';
 import '../../../../mocks/apps_and_gaming_view_notifier_spec_mocks.dart';
@@ -24,12 +25,6 @@ const _tabIds = [
   'apps-gaming-tab-port-range',
   'apps-gaming-tab-port-triggering',
 ];
-
-/// The identifiers that [ids] name, each with the number of nodes that have
-/// it. Semantics must be on.
-Map<String, int> _found(List<String> ids) => {
-      for (final id in ids) id: find.bySemanticsIdentifier(id).evaluate().length
-    };
 
 // E2E tests reach each tab by these (constitution 11.2, 11.3): a raw Tab takes
 // no identifier, and its text is translated.
@@ -83,11 +78,11 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    final tabs = _found(_tabIds);
-    final addBefore = _found(['pf-single-add']);
+    final tabs = identifierCounts(_tabIds);
+    final addBefore = identifierCounts(['pf-single-add']);
     await tester.tap(find.bySemanticsIdentifier('apps-gaming-tab-single-port'));
     await tester.pumpAndSettle();
-    final addAfter = _found(['pf-single-add']);
+    final addAfter = identifierCounts(['pf-single-add']);
     // Before any expect: flutter_test checks for a live handle before
     // tear-down runs.
     semantics.dispose();

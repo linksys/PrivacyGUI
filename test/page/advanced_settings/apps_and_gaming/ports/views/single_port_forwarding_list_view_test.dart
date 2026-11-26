@@ -8,6 +8,7 @@ import 'package:privacy_gui/route/route_model.dart';
 import '../../../../../common/config.dart';
 import '../../../../../common/di.dart';
 import '../../../../../common/screen.dart';
+import '../../../../../common/semantics_identifiers.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../common/testable_router.dart';
 import '../../../../../mocks/single_port_forwarding_list_notifier_mocks.dart';
@@ -30,12 +31,6 @@ SinglePortForwardingRule _rule({
       internalPort: 3074,
       description: description,
     );
-
-/// The identifiers that [ids] name, each with the number of nodes that have
-/// it. Semantics must be on.
-Map<String, int> _found(List<String> ids) => {
-      for (final id in ids) id: find.bySemanticsIdentifier(id).evaluate().length
-    };
 
 void main() {
   group('singlePortForwardingRuleKey', () {
@@ -105,7 +100,7 @@ void main() {
       final semantics = tester.ensureSemantics();
       await pumpList(tester, device480w);
 
-      final found = _found(rowIds);
+      final found = identifierCounts(rowIds);
       await tester.tap(find.bySemanticsIdentifier('pf-single-delete-80-udp'));
       await tester.pumpAndSettle();
       // Before any expect: flutter_test checks for a live handle before
@@ -121,10 +116,10 @@ void main() {
       final semantics = tester.ensureSemantics();
       await pumpList(tester, device1440w);
 
-      final rows = _found(rowIds);
+      final rows = identifierCounts(rowIds);
       await tester.tap(find.bySemanticsIdentifier('pf-single-edit-80-tcp'));
       await tester.pumpAndSettle();
-      final editing = _found([
+      final editing = identifierCounts([
         'pf-single-save-80-tcp',
         'pf-single-cancel-80-tcp',
         'pf-single-description',

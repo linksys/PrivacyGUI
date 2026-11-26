@@ -8,6 +8,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import '../../../common/config.dart';
 import '../../../common/di.dart';
 import '../../../common/screen.dart';
+import '../../../common/semantics_identifiers.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 
@@ -142,15 +143,12 @@ void main() {
             onNegitiveTap: () {},
           ));
 
-      final found = {
-        for (final id in [
-          'speed-test-again',
-          'speed-test-close',
-          'page-save',
-          'page-cancel',
-        ])
-          id: find.bySemanticsIdentifier(id).evaluate().length,
-      };
+      final found = identifierCounts([
+        'speed-test-again',
+        'speed-test-close',
+        'page-save',
+        'page-cancel',
+      ]);
       semantics.dispose();
 
       expect(found, {

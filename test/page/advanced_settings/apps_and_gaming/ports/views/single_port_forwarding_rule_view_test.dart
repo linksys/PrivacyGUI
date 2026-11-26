@@ -6,6 +6,7 @@ import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.
 import 'package:privacy_gui/route/route_model.dart';
 
 import '../../../../../common/di.dart';
+import '../../../../../common/semantics_identifiers.dart';
 import '../../../../../common/testable_router.dart';
 
 const _rule = SinglePortForwardingRule(
@@ -30,12 +31,6 @@ const _formIds = [
   'pf-single-select-device',
   'pf-single-submit',
 ];
-
-/// The identifiers that [ids] name, each with the number of nodes that have
-/// it. Semantics must be on.
-Map<String, int> _found(List<String> ids) => {
-      for (final id in ids) id: find.bySemanticsIdentifier(id).evaluate().length
-    };
 
 // E2E tests locate the rule form's controls by these (constitution 11.2,
 // 11.3). Adding and updating share one submit identifier (issue #1935,
@@ -62,7 +57,7 @@ void main() {
     final semantics = tester.ensureSemantics();
     await pumpRule(tester, {});
 
-    final found = _found([..._formIds, 'pf-single-enabled']);
+    final found = identifierCounts([..._formIds, 'pf-single-enabled']);
     semantics.dispose();
 
     expect(found, {for (final id in _formIds) id: 1, 'pf-single-enabled': 0});
@@ -76,7 +71,7 @@ void main() {
       'edit': _rule,
     });
 
-    final found = _found([..._formIds, 'pf-single-enabled']);
+    final found = identifierCounts([..._formIds, 'pf-single-enabled']);
     await tester.tap(find.bySemanticsIdentifier('pf-single-enabled'));
     await tester.pumpAndSettle();
     await tester.tap(find.bySemanticsIdentifier('pf-single-protocol'));

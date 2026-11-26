@@ -4,14 +4,9 @@ import 'package:privacy_gui/page/components/settings_view/editable_table_setting
 import 'package:privacygui_widgets/widgets/text/app_text.dart';
 
 import '../../../common/config.dart';
+import '../../../common/semantics_identifiers.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_widget.dart';
-
-/// The identifiers that [ids] name, each with the number of nodes that have
-/// it. Semantics must be on.
-Map<String, int> _found(List<String> ids) => {
-      for (final id in ids) id: find.bySemanticsIdentifier(id).evaluate().length
-    };
 
 // E2E tests locate a table's controls by these (constitution 11.2, 11.3): a
 // row's key comes from its data, never from its position.
@@ -45,7 +40,7 @@ void main() {
     final semantics = tester.ensureSemantics();
     await pumpTable(tester);
 
-    final found = _found([
+    final found = identifierCounts([
       'pf-edit-web',
       'pf-delete-web',
       'pf-edit-ftp',
@@ -68,7 +63,8 @@ void main() {
 
     await tester.tap(find.bySemanticsIdentifier('pf-edit-web'));
     await tester.pumpAndSettle();
-    final found = _found(['pf-save-web', 'pf-cancel-web', 'pf-edit-web']);
+    final found =
+        identifierCounts(['pf-save-web', 'pf-cancel-web', 'pf-edit-web']);
     semantics.dispose();
 
     expect(found, {'pf-save-web': 1, 'pf-cancel-web': 1, 'pf-edit-web': 0});
@@ -81,7 +77,7 @@ void main() {
 
     await tester.tap(find.bySemanticsIdentifier('pf-add'));
     await tester.pumpAndSettle();
-    final found = _found(['pf-save-new', 'pf-cancel-new']);
+    final found = identifierCounts(['pf-save-new', 'pf-cancel-new']);
     semantics.dispose();
 
     expect(found, {'pf-save-new': 1, 'pf-cancel-new': 1});

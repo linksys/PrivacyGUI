@@ -17,6 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../common/config.dart';
 import '../../../common/di.dart';
+import '../../../common/semantics_identifiers.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_router.dart';
 import '../../../mocks/_index.dart';
@@ -115,9 +116,7 @@ void main() {
       'menu-restart-network',
       'menu-setup-new-product',
     ];
-    final found = {
-      for (final id in ids) id: find.bySemanticsIdentifier(id).evaluate().length
-    };
+    final found = identifierCounts(ids);
     await tester.tap(find.bySemanticsIdentifier('menu-restart-network'));
     await tester.pumpAndSettle();
     final confirms = find.text('Ok').evaluate().length;

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
 
 import '../../../common/config.dart';
+import '../../../common/semantics_identifiers.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../common/testable_widget.dart';
 
@@ -32,16 +33,13 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    final found = {
-      for (final id in [
-        'pf-edit-web',
-        'pf-delete-web',
-        'pf-edit-ftp',
-        'pf-delete-ftp',
-        'pf-add',
-      ])
-        id: find.bySemanticsIdentifier(id).evaluate().length,
-    };
+    final found = identifierCounts([
+      'pf-edit-web',
+      'pf-delete-web',
+      'pf-edit-ftp',
+      'pf-delete-ftp',
+      'pf-add',
+    ]);
     await tester.tap(find.bySemanticsIdentifier('pf-delete-ftp'));
     // Before any expect: flutter_test checks for a live handle before
     // tear-down runs.
