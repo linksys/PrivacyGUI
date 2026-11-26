@@ -95,7 +95,7 @@ void main() {
       // Add a handler to router and verify it receives events through
       // the connection → router wiring
       int handlerCalled = 0;
-      manager.router.addHandler('sub-1', (_) => handlerCalled++);
+      manager.router.addWildcardHandler((_) => handlerCalled++);
 
       await manager.connect();
       streamController.add(notificationEvent(
@@ -193,7 +193,7 @@ void main() {
         onNotification: (_) {},
       );
 
-      expect(manager.router.registeredIds, contains('test-sub'));
+      expect(manager.router.wildcardHandlerCount, 1);
 
       await manager.dispose();
     });
@@ -210,7 +210,7 @@ void main() {
 
       await cleanup();
 
-      expect(manager.router.registeredIds, isNot(contains('test-sub')));
+      expect(manager.router.wildcardHandlerCount, 0);
 
       await manager.dispose();
     });
@@ -247,12 +247,105 @@ void main() {
       streamController.add(notificationEvent(
         subscriptionId: 'test-sub',
         type: 'ValueChange',
+        valueChange: {'param_path': 'Device.Test.Value', 'param_value': '1'},
       ));
       await Future.delayed(Duration.zero);
 
       expect(handlerCalled, 1);
 
       await manager.dispose();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Hearing a subscription: by type and path, not by id (#1887)
+  // ---------------------------------------------------------------------------
+  group('hearing a subscription', () {
+    // Guardian sends a notification under `remote-<id>`, the id the remote
+    // strategy registered there (measured on QA Guardian, 2026-11-26), so a
+    // handler keyed by our id never heard it under Remote Assistance. See
+    // SseNotification.subscriptionId for why no id is a key to hear by.
+    Future<int Function()> listen(
+      SseManager manager, {
+      String notifType = 'ValueChange',
+      required String referenceList,
+    }) async {
+      var heard = 0;
+      await manager.subscribe(
+        subscriptionId: 'pkg-w1-valuechange',
+        notifType: notifType,
+        referenceList: referenceList,
+        onNotification: (_) => heard++,
+      );
+      await manager.connect();
+      return () => heard;
+    }
+
+    void push(String path, {String type = 'ValueChange'}) {
+      streamController.add(notificationEvent(
+        subscriptionId: 'remote-pkg-w1-valuechange',
+        type: type,
+        valueChange: type == 'ValueChange'
+            ? {'param_path': path, 'param_value': 'v'}
+            : null,
+        objCreation: type == 'ObjectCreation' ? {'obj_path': path} : null,
+      ));
+    }
+
+    test(
+        'a value change Guardian sends under its remote- id reaches the handler',
+        () async {
+      final manager = createManager();
+      addTearDown(manager.dispose);
+      final heard = await listen(manager, referenceList: 'Device.X.');
+
+      push('Device.X.1.Value');
+      await Future.delayed(Duration.zero);
+
+      expect(heard(), 1);
+    });
+
+    test('a reference list with a wildcard instance matches each instance',
+        () async {
+      final manager = createManager();
+      addTearDown(manager.dispose);
+      final heard = await listen(
+        manager,
+        referenceList: 'Device.WiFi.SSID.*.SSID',
+      );
+
+      push('Device.WiFi.SSID.1.SSID');
+      push('Device.WiFi.SSID.2.SSID');
+      push('Device.WiFi.SSID.2.Status');
+      await Future.delayed(Duration.zero);
+
+      expect(heard(), 2);
+    });
+
+    test('a parameter reference list does not match a longer parameter name',
+        () async {
+      final manager = createManager();
+      addTearDown(manager.dispose);
+      final heard = await listen(manager, referenceList: 'Device.X.Enable');
+
+      push('Device.X.Enable');
+      push('Device.X.EnableExtra');
+      await Future.delayed(Duration.zero);
+
+      expect(heard(), 1);
+    });
+
+    test('a notification of another type or under another path is not heard',
+        () async {
+      final manager = createManager();
+      addTearDown(manager.dispose);
+      final heard = await listen(manager, referenceList: 'Device.X.');
+
+      push('Device.X.1.', type: 'ObjectCreation');
+      push('Device.Y.1.Value');
+      await Future.delayed(Duration.zero);
+
+      expect(heard(), 0);
     });
   });
 
@@ -410,11 +503,9 @@ void main() {
     test('calls router.dispose', () async {
       final manager = createManager();
       manager.addWildcardHandler((_) {});
-      manager.router.addHandler('test', (_) {});
 
       await manager.dispose();
 
-      expect(manager.router.registeredIds, isEmpty);
       expect(manager.router.wildcardHandlerCount, 0);
     });
 

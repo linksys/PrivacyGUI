@@ -62,4 +62,125 @@ void main() {
       expect(a.payload, b.payload);
     });
   });
+
+  group('path', () {
+    test('is the param_path of a ValueChange', () {
+      expect(_valueChange('Device.WiFi.SSID.1.SSID').path,
+          'Device.WiFi.SSID.1.SSID');
+    });
+
+    test('is the obj_path of an ObjectCreation and an ObjectDeletion', () {
+      const creation = SseNotification(
+        subscriptionId: 'cpe-3',
+        type: 'ObjectCreation',
+        payload: {
+          'obj_creation': {'obj_path': 'Device.Hosts.Host.5.'},
+        },
+      );
+      const deletion = SseNotification(
+        subscriptionId: 'cpe-3',
+        type: 'ObjectDeletion',
+        payload: {
+          'obj_deletion': {'obj_path': 'Device.Hosts.Host.5.'},
+        },
+      );
+
+      expect(creation.path, 'Device.Hosts.Host.5.');
+      expect(deletion.path, 'Device.Hosts.Host.5.');
+    });
+
+    test('is null for an OperationComplete, whose local payload has no path',
+        () {
+      const complete = SseNotification(
+        subscriptionId: 'cpe-3',
+        type: 'OperationComplete',
+        payload: {
+          'oper_complete': {'command_name': 'IPPing()'},
+        },
+      );
+
+      expect(complete.path, isNull);
+    });
+
+    test('is null when the payload lacks it', () {
+      const bare = SseNotification(
+        subscriptionId: 'cpe-3',
+        type: 'ValueChange',
+        payload: {},
+      );
+
+      expect(bare.path, isNull);
+    });
+  });
+
+  group('isFor', () {
+    bool covers(String referenceList, String path) => _valueChange(path).isFor(
+          notifType: 'ValueChange',
+          referenceList: referenceList,
+        );
+
+    test('an object reference list covers the object and everything under it',
+        () {
+      expect(covers('Device.WiFi.SSID.', 'Device.WiFi.SSID.1.SSID'), isTrue);
+      expect(covers('Device.WiFi.SSID.1.', 'Device.WiFi.SSID.1.SSID'), isTrue);
+      expect(
+          covers('Device.WiFi.SSID.1.', 'Device.WiFi.SSID.10.SSID'), isFalse);
+      expect(covers('Device.WiFi.SSID.', 'Device.WiFi.SSIDX.1.SSID'), isFalse);
+    });
+
+    test('a parameter reference list covers that parameter only', () {
+      expect(covers('Device.X.Enable', 'Device.X.Enable'), isTrue);
+      expect(covers('Device.X.Enable', 'Device.X.EnableExtra'), isFalse);
+      expect(covers('Device.X.Enable', 'Device.X.Enable.Y'), isFalse);
+    });
+
+    test('a * segment matches any one instance', () {
+      expect(
+          covers('Device.WiFi.SSID.*.SSID', 'Device.WiFi.SSID.3.SSID'), isTrue);
+      expect(covers('Device.WiFi.SSID.*.SSID', 'Device.WiFi.SSID.3.Status'),
+          isFalse);
+      expect(
+          covers('Device.WiFi.SSID.*.', 'Device.WiFi.SSID.3.Status'), isTrue);
+    });
+
+    test('from a search expression on, it covers everything', () {
+      expect(
+          covers('Device.WiFi.SSID.[Enable==true].SSID',
+              'Device.WiFi.SSID.2.Status'),
+          isTrue);
+      expect(
+          covers('Device.WiFi.SSID.[Enable==true].SSID',
+              'Device.WiFi.Radio.1.Channel'),
+          isFalse,
+          reason: 'the segments before the expression still have to match');
+    });
+
+    test('another type is not for it', () {
+      expect(
+          _valueChange('Device.X.Value')
+              .isFor(notifType: 'ObjectCreation', referenceList: 'Device.X.'),
+          isFalse);
+    });
+
+    test('a notification with no path is for nothing', () {
+      const complete = SseNotification(
+        subscriptionId: 'cpe-3',
+        type: 'OperationComplete',
+        payload: {},
+      );
+
+      expect(
+          complete.isFor(
+              notifType: 'OperationComplete', referenceList: 'Device.'),
+          isFalse);
+    });
+  });
 }
+
+SseNotification _valueChange(String path) => SseNotification(
+      subscriptionId: 'cpe-15',
+      type: 'ValueChange',
+      payload: {
+        'value_change': {'param_path': path, 'param_value': 'v'},
+      },
+    );

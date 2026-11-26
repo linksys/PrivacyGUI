@@ -168,13 +168,16 @@ class SseManager {
     _unloadHandler.register();
   }
 
-  /// Registers a subscription and adds a notification handler in one call.
+  /// Registers a subscription and hears it, in one call: [onNotification]
+  /// gets each notification of [notifType] on [referenceList] or under it
+  /// ([SseNotification.isFor]).
+  ///
+  /// Heard by type and path, not by [subscriptionId], which is not a key to
+  /// hear by (see [SseNotification.subscriptionId]).
   ///
   /// Returns an async cleanup function that:
   /// 1. Removes the handler from the router
   /// 2. Unregisters the subscription from both OBUSPA and bridge
-  ///
-  /// This is the primary API for consumers.
   Future<Future<void> Function()> subscribe({
     required String subscriptionId,
     required String notifType,
@@ -190,8 +193,11 @@ class SseManager {
       ),
     ]);
 
-    // Add handler to event router
-    final removeHandler = router.addHandler(subscriptionId, onNotification);
+    final removeHandler = _addHandlerFor(
+      notifType: notifType,
+      referenceList: referenceList,
+      onNotification: onNotification,
+    );
 
     // Return combined cleanup
     return () async {
@@ -199,6 +205,20 @@ class SseManager {
       await registry.unregister(subscriptionId);
     };
   }
+
+  VoidCallback _addHandlerFor({
+    required String notifType,
+    required String referenceList,
+    required SseNotificationHandler onNotification,
+  }) =>
+      router.addWildcardHandler((notification) {
+        if (notification.isFor(
+          notifType: notifType,
+          referenceList: referenceList,
+        )) {
+          onNotification(notification);
+        }
+      });
 
   /// Adds a handler that receives ALL notifications regardless of
   /// subscription_id. Useful for invalidation signals.
@@ -208,11 +228,9 @@ class SseManager {
     return router.addWildcardHandler(handler);
   }
 
-  /// SSE delegate implementation injected into [UspClient].
-  ///
-  /// Uses wildcard handler + path prefix matching because the CPE delivers
-  /// events using its own internal subscription_id (e.g., "cpe-5"), not the
-  /// client-assigned one.
+  /// SSE delegate implementation injected into [UspClient]: the same
+  /// registration and the same hearing as [subscribe], in the shape the
+  /// delegate returns.
   Future<({void Function() removeHandler, Future<void> Function() unregister})>
       _handleSseSubscribe({
     required String subscriptionId,
@@ -229,37 +247,16 @@ class SseManager {
       ),
     ]);
 
-    // Wildcard handler: match by type + path prefix
-    final removeHandler = router.addWildcardHandler((notification) {
-      if (notification.type != notifType) return;
-      final path = _extractNotifPath(notification);
-      if (path != null && path.startsWith(referenceList)) {
-        onNotification();
-      }
-    });
+    final removeHandler = _addHandlerFor(
+      notifType: notifType,
+      referenceList: referenceList,
+      onNotification: (_) => onNotification(),
+    );
 
     return (
       removeHandler: removeHandler,
       unregister: () => registry.unregister(subscriptionId),
     );
-  }
-
-  /// Extracts the TR-181 path from a notification for delegate matching.
-  static String? _extractNotifPath(SseNotification notification) {
-    final payload = notification.payload;
-    switch (notification.type) {
-      case 'ValueChange':
-        return (payload['value_change'] as Map<String, dynamic>?)?['param_path']
-            as String?;
-      case 'ObjectCreation':
-        return (payload['obj_creation'] as Map<String, dynamic>?)?['obj_path']
-            as String?;
-      case 'ObjectDeletion':
-        return (payload['obj_deletion'] as Map<String, dynamic>?)?['obj_path']
-            as String?;
-      default:
-        return null;
-    }
   }
 
   /// Sets the core subscriptions to register.

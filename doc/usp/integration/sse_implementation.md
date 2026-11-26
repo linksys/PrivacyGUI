@@ -29,7 +29,7 @@ Flutter App (WASM)
     +-- SseManager (facade)
           +-- SseConnectionManager   -- SSE stream lifecycle
           +-- SseSubscriptionRegistry -- bridge-only subscription tracking
-          +-- SseEventRouter          -- event demux by subscription_id + wildcard
+          +-- SseEventRouter          -- every notification to every handler; each matches by type + path
 ```
 
 ### Connection State Machine
@@ -247,7 +247,7 @@ REST call hits 401
 |------|-------|----------------|
 | `sse_connection_manager.dart` | `SseConnectionManager` | SSE stream lifecycle, exponential backoff (1s -> 60s), heartbeat watchdog (45s = 30s heartbeat + 15s grace) |
 | `sse_subscription_registry.dart` | `SseSubscriptionRegistry` | Bridge-only subscription tracking, `register()` / `unregister()` / `resubscribeAll()` |
-| `sse_event_router.dart` | `SseEventRouter` | JSON parse -> route by `subscription_id`, wildcard handlers for cross-cutting concerns |
+| `sse_event_router.dart` | `SseEventRouter` | JSON parse -> every notification to every handler; a handler matches its own by type + path (`SseNotification.isFor`) |
 | `sse_manager.dart` | `SseManager` | Facade composing the above three. Primary API for Riverpod providers. Also wires `onSseSubscribe` delegate into `UspService` for codegen `subscribe()` |
 | `sse_operation_awaiter.dart` | `SseOperationAwaiter` | Async Operate commands (Ping/Traceroute) via OperationComplete, polling fallback |
 | `sse_unload_handler.dart` | `SseUnloadHandler` | Conditional export: Web version listens `beforeunload`/`pagehide` to `abortSse()` synchronously; non-Web is a no-op stub |
@@ -347,16 +347,20 @@ This pattern exists because one-shot Operate commands (IPPing, TraceRoute) produ
 
 ## 4. Critical Design Decisions
 
-### 4.1 CPE Subscription ID Mismatch
+### 4.1 The Subscription ID Is Not a Key to Hear By
 
-**Problem:** When we register a subscription with `subscriptionId: "connected-devices-objectcreation"`, the CPE delivers the event with its own internal ID (`cpe-3`, `cpe-15`, etc.). Subscription-specific handlers registered under our client ID never fire.
+**What arrives:** the `subscription_id` on a notification has never been an id a handler could rely on.
+- **Earlier firmware:** the CPE delivered every event under its own internal id (`cpe-3`, `cpe-15`, …), whatever id we registered, such as `connected-devices-objectcreation`. The examples in §5 are from then.
+- **FW 2.0.4.26112521, local bridge (bench, 2026-11-26):** the bridge delivers under the id we registered. It also hands every stream the notifications of other sessions' subscriptions.
+- **Remote Assistance (QA Guardian, 2026-11-26):** Guardian delivers under `remote-<id>`, the id `RemoteSseStrategy` registered there. A handler keyed by our id never fires.
 
-**Solution:** Use wildcard handlers for all cross-cutting matching:
+**Solution:** match by type and path, never by id:
 
+- **Subscriptions**: `SseManager.subscribe` hears through a wildcard handler that keeps what `SseNotification.isFor` says its subscription asked for: the same type, and a path its reference list covers
 - **Invalidation signals**: Wildcard handler in `sseInvalidationProvider` matches by `param_path` / `obj_path` from the notification payload
 - **OperationComplete**: Wildcard handler in `SseOperationAwaiter` matches by `command_key` (primary) or `command_name` (fallback)
 
-The per-subscription handlers in `SseEventRouter._handlers` are technically unused for routing -- but the OBUSPA subscription itself must still be created to tell the router to generate notifications.
+The router has no per-subscription handlers. #1887 deleted them; their one user, the package widget handler, never fired under Remote Assistance. The subscription itself must still be created, so the router sends the notifications.
 
 ### 4.2 WiFi Stats Noise Elimination
 
@@ -412,6 +416,8 @@ On unload, `bridge.abortSse()` synchronously cancels the Fetch API's `AbortContr
 ---
 
 ## 5. SSE Event Format
+
+> The `subscription_id` values below (`cpe-N`) were recorded on an earlier firmware; see §4.1 for what arrives now.
 
 ### Heartbeat
 
@@ -651,7 +657,7 @@ sequenceDiagram
 
 | Issue | Impact | Workaround | Status |
 |-------|--------|------------|--------|
-| **CPE subscription_id mismatch** | Per-subscription handlers never fire | Wildcard handlers + path/command_name matching | Permanent workaround |
+| **Subscription id is not a key** | A per-subscription handler never fires under Remote Assistance (`remote-<id>`); the local id changed with firmware (§4.1) | Type + path matching (`SseNotification.isFor`), command_key for OperationComplete; no per-id handlers (#1887) | Permanent |
 | ~~**Token refresh -> SSE silent failure**~~ | After full re-login (`restoreSession()`), SSE previously stayed connected with old session. | `SseManager` wires `_usp.onTokenRefreshed` callback that forces `disconnect()` + `connect()` with the new token (`sse_manager.dart:77-81`) | **FIXED** (2026-03-23) |
 | ~~**Stale subscriptions on refresh**~~ | OBUSPA subscriptions persist after browser refresh | Effectively mitigated: core subscription IDs are fixed constants from `subscriptions.g.dart` (codegen). Bridge is idempotent by `subscription_id` — re-registering the same ID reuses the existing OBUSPA sub. No orphans are created as long as IDs remain stable across sessions. `purgeAllSubscriptions()` available in Test Console for edge cases (e.g., ID rename across versions). | **Mitigated** |
 | ~~**WASM `add` returns empty for LocalAgent**~~ | Can't get new subscription instance path | Not a problem — bridge handles full OBUSPA lifecycle automatically (FW 1.0.16). Client never needs to directly manipulate `LocalAgent.Subscription`. | **Not an issue** |
